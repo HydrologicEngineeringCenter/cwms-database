@@ -900,7 +900,7 @@ IS
 -- function cat_ts(...)
 --
 --
-   FUNCTION cat_ts (
+   FUNCTION cat_ts_tab (
       p_officeid              IN   VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL
    )
@@ -922,7 +922,7 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_ts;
+   END cat_ts_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_ts_cwms_20(...)
@@ -997,7 +997,7 @@ IS
 -------------------------------------------------------------------------------
 -- function cat_ts_cwms_20(...)
 --
-   FUNCTION cat_ts_cwms_20 (
+   FUNCTION cat_ts_cwms_20_tab (
       p_officeid              IN   VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL
    )
@@ -1019,7 +1019,7 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_ts_cwms_20;
+   END cat_ts_cwms_20_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_loc(...)
@@ -1092,7 +1092,7 @@ IS
 -- function cat_loc(...)
 --
 --
-   FUNCTION cat_loc (
+   FUNCTION cat_loc_tab (
       p_officeid         IN   VARCHAR2 DEFAULT NULL,
       p_elevation_unit   IN   VARCHAR2 DEFAULT 'm'
    )
@@ -1114,7 +1114,7 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_loc;
+   END cat_loc_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_loc_alias(...)
@@ -1182,7 +1182,7 @@ IS
 -- function cat_loc_alias(...)
 --
 --
-   FUNCTION cat_loc_alias (
+   FUNCTION cat_loc_alias_tab (
       p_officeid   IN   VARCHAR2 DEFAULT NULL,
       p_cwmsid     IN   VARCHAR2 DEFAULT NULL
    )
@@ -1204,7 +1204,7 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_loc_alias;
+   END cat_loc_alias_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_param(...)
@@ -1227,7 +1227,7 @@ IS
 -- function cat_param(...)
 --
 --
-   FUNCTION cat_param
+   FUNCTION cat_param_tab
       RETURN cat_param_tab_t PIPELINED
    IS
       query_cursor   sys_refcursor;
@@ -1246,7 +1246,7 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_param;
+   END cat_param_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_sub_param(...)
@@ -1266,7 +1266,7 @@ IS
 -- function cat_sub_param(...)
 --
 --
-   FUNCTION cat_sub_param
+   FUNCTION cat_sub_param_tab
       RETURN cat_sub_param_tab_t PIPELINED
    IS
       query_cursor   sys_refcursor;
@@ -1285,7 +1285,7 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_sub_param;
+   END cat_sub_param_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_sub_loc(...)
@@ -1321,7 +1321,7 @@ IS
 -- function cat_sub_loc(...)
 --
 --
-   FUNCTION cat_sub_loc (p_officeid IN VARCHAR2 DEFAULT NULL)
+   FUNCTION cat_sub_loc_tab (p_officeid IN VARCHAR2 DEFAULT NULL)
       RETURN cat_sub_loc_tab_t PIPELINED
    IS
       query_cursor   sys_refcursor;
@@ -1344,7 +1344,7 @@ IS
 
 --
       RETURN;
-   END cat_sub_loc;
+   END cat_sub_loc_tab;
 
    -------------------------------------------------------------------------------
 -- procedure cat_state(...)
@@ -1363,7 +1363,7 @@ IS
 -- function cat_state(...)
 --
 --
-   FUNCTION cat_state
+   FUNCTION cat_state_tab
       RETURN cat_state_tab_t PIPELINED
    IS
       query_cursor   sys_refcursor;
@@ -1382,7 +1382,7 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_state;
+   END cat_state_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_county(...)
@@ -1421,7 +1421,7 @@ IS
 -- function cat_state(...)
 --
 --
-   FUNCTION cat_county (p_stateint IN VARCHAR2 DEFAULT NULL)
+   FUNCTION cat_county_tab (p_stateint IN VARCHAR2 DEFAULT NULL)
       RETURN cat_county_tab_t PIPELINED
    IS
       query_cursor   sys_refcursor;
@@ -1440,7 +1440,7 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_county;
+   END cat_county_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_timezone(...)
@@ -1459,7 +1459,7 @@ IS
 -- function cat_timezone(...)
 --
 --
-   FUNCTION cat_timezone
+   FUNCTION cat_timezone_tab
       RETURN cat_timezone_tab_t PIPELINED
    IS
       query_cursor   sys_refcursor;
@@ -1478,7 +1478,7 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_timezone;
+   END cat_timezone_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_dss_file(...)
@@ -1541,7 +1541,7 @@ IS
 -- function cat_dss_file(...)
 --
 --
-   FUNCTION cat_dss_file (
+   FUNCTION cat_dss_file_tab (
       p_filemgr_url   IN   VARCHAR2 DEFAULT NULL,
       p_file_name     IN   VARCHAR2 DEFAULT NULL
    )
@@ -1563,7 +1563,7 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_dss_file;
+   END cat_dss_file_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_dss_xchg_set(...)
@@ -1685,7 +1685,7 @@ IS
 -- function cat_dss_xchg_set(...)
 --
 --
-   FUNCTION cat_dss_xchg_set (
+   FUNCTION cat_dss_xchg_set_tab (
       p_officeid      IN   VARCHAR2 DEFAULT NULL,
       p_filemgr_url   IN   VARCHAR2 DEFAULT NULL,
       p_file_name     IN   VARCHAR2 DEFAULT NULL
@@ -1708,7 +1708,7 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_dss_xchg_set;
+   END cat_dss_xchg_set_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_dss_xchg_ts_map(...)
@@ -1789,7 +1789,7 @@ IS
 -- function cat_dss_xchg_ts_map(...)
 --
 --
-   FUNCTION cat_dss_xchg_ts_map (
+   FUNCTION cat_dss_xchg_ts_map_tab (
       p_officeid          IN   VARCHAR2,
       p_dss_xchg_set_id   IN   VARCHAR2
    )
@@ -1811,6 +1811,6 @@ IS
       CLOSE query_cursor;
 
       RETURN;
-   END cat_dss_xchg_ts_map;
+   END cat_dss_xchg_ts_map_tab;
 END cwms_cat;
 /
