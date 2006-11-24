@@ -1,4 +1,4 @@
-/* Formatted on 2006/10/30 06:12 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/11/20 11:37 (Formatter Plus v4.8.7) */
 CREATE OR REPLACE PACKAGE cwms_ts AUTHID CURRENT_USER
 AS
    FUNCTION get_time_on_after_interval (
@@ -15,6 +15,29 @@ AS
    )
       RETURN DATE;
 
+   FUNCTION get_parameter_code (
+      p_base_parameter_id   IN   VARCHAR2,
+      p_sub_parameter_id    IN   VARCHAR2,
+      p_office_id           IN   VARCHAR2 DEFAULT NULL,
+      p_create              IN   VARCHAR2 DEFAULT 'T'
+   )
+      RETURN NUMBER;
+
+   FUNCTION get_parameter_code (
+      p_base_parameter_code   IN   NUMBER,
+      p_sub_parameter_id      IN   VARCHAR2,
+      p_office_code           IN   NUMBER,
+      p_create                IN   BOOLEAN DEFAULT TRUE
+   )
+      RETURN NUMBER;
+
+   FUNCTION get_ts_ni_hash (
+      p_parameter_code        IN   VARCHAR2,
+      p_parameter_type_code   IN   VARCHAR2,
+      p_duration_code         IN   VARCHAR2
+   )
+      RETURN VARCHAR2;
+
 --
 --*******************************************************************   --
 --*******************************************************************   --
@@ -22,9 +45,9 @@ AS
 -- DELETE_TS -
 --
    PROCEDURE delete_ts (
-      p_timeseries_desc   IN   VARCHAR2,
-      p_delete_action     IN   VARCHAR2 DEFAULT cwms_util.delete_all,
-      p_office_id         IN   VARCHAR2 DEFAULT NULL
+      p_cwms_ts_id      IN   VARCHAR2,
+      p_delete_action   IN   VARCHAR2 DEFAULT cwms_util.delete_all,
+      p_office_id       IN   VARCHAR2 DEFAULT NULL
    );
 
 --
@@ -35,9 +58,9 @@ AS
 --
 --v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
    PROCEDURE create_ts (
-      p_office_id         IN   VARCHAR2,
-      p_timeseries_desc   IN   VARCHAR2,
-      p_utc_offset        IN   NUMBER DEFAULT NULL
+      p_office_id    IN   VARCHAR2,
+      p_cwms_ts_id   IN   VARCHAR2,
+      p_utc_offset   IN   NUMBER DEFAULT NULL
    );
 
 --
@@ -47,7 +70,7 @@ AS
 -- CREATE_TS -
 --
    PROCEDURE create_ts (
-      p_timeseries_desc     IN   VARCHAR2,
+      p_cwms_ts_id          IN   VARCHAR2,
       p_utc_offset          IN   NUMBER DEFAULT NULL,
       p_interval_forward    IN   NUMBER DEFAULT NULL,
       p_interval_backward   IN   NUMBER DEFAULT NULL,
@@ -64,7 +87,7 @@ AS
 --
    PROCEDURE create_ts_code (
       p_ts_code             OUT      NUMBER,
-      p_timeseries_desc     IN       VARCHAR2,
+      p_cwms_ts_id          IN       VARCHAR2,
       p_utc_offset          IN       NUMBER DEFAULT NULL,
       p_interval_forward    IN       NUMBER DEFAULT NULL,
       p_interval_backward   IN       NUMBER DEFAULT NULL,
@@ -81,17 +104,17 @@ AS
 --
 --v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
    PROCEDURE retrieve_ts (
-      p_at_tsv_rc         IN OUT   sys_refcursor,
-      p_units             IN       VARCHAR2,
-      p_officeid          IN       VARCHAR2,
-      p_timeseries_desc   IN       VARCHAR2,
-      p_start_time        IN       DATE,
-      p_end_time          IN       DATE,
-      p_timezone          IN       VARCHAR2 DEFAULT 'GMT',
-      p_trim              IN       NUMBER DEFAULT cwms_util.false_num,
-      p_inclusive         IN       NUMBER DEFAULT NULL,
-      p_versiondate       IN       DATE DEFAULT NULL,
-      p_max_version       IN       NUMBER DEFAULT cwms_util.true_num
+      p_at_tsv_rc     IN OUT   sys_refcursor,
+      p_units         IN       VARCHAR2,
+      p_officeid      IN       VARCHAR2,
+      p_cwms_ts_id    IN       VARCHAR2,
+      p_start_time    IN       DATE,
+      p_end_time      IN       DATE,
+      p_timezone      IN       VARCHAR2 DEFAULT 'GMT',
+      p_trim          IN       NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive     IN       NUMBER DEFAULT NULL,
+      p_versiondate   IN       DATE DEFAULT NULL,
+      p_max_version   IN       NUMBER DEFAULT cwms_util.true_num
    );
 
 --
@@ -101,17 +124,17 @@ AS
 -- RETREIVE_TS -
 --
    PROCEDURE retrieve_ts (
-      p_at_tsv_rc         IN OUT   sys_refcursor,
-      p_units             IN       VARCHAR2,
-      p_timeseries_desc   IN       VARCHAR2,
-      p_start_time        IN       DATE,
-      p_end_time          IN       DATE,
-      p_time_zone         IN       VARCHAR2 DEFAULT 'UTC',
-      p_trim              IN       VARCHAR2 DEFAULT 'F',
-      p_inclusive         IN       NUMBER DEFAULT NULL,
-      p_version_date      IN       DATE DEFAULT NULL,
-      p_max_version       IN       VARCHAR2 DEFAULT 'T',
-      p_office_id         IN       VARCHAR2 DEFAULT NULL
+      p_at_tsv_rc      IN OUT   sys_refcursor,
+      p_units          IN       VARCHAR2,
+      p_cwms_ts_id     IN       VARCHAR2,
+      p_start_time     IN       DATE,
+      p_end_time       IN       DATE,
+      p_time_zone      IN       VARCHAR2 DEFAULT 'UTC',
+      p_trim           IN       VARCHAR2 DEFAULT 'F',
+      p_inclusive      IN       NUMBER DEFAULT NULL,
+      p_version_date   IN       DATE DEFAULT NULL,
+      p_max_version    IN       VARCHAR2 DEFAULT 'T',
+      p_office_id      IN       VARCHAR2 DEFAULT NULL
    );
 
 --
@@ -124,7 +147,7 @@ AS
       p_transaction_time   OUT      DATE,
       p_at_tsv_rc          OUT      sys_refcursor,
       p_units              IN       VARCHAR2,
-      p_timeseries_desc    IN       VARCHAR2,
+      p_cwms_ts_id         IN       VARCHAR2,
       p_start_time         IN       DATE,
       p_end_time           IN       DATE,
       p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
@@ -144,7 +167,7 @@ AS
 --v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
    PROCEDURE store_ts (
       p_office_id         IN   VARCHAR2,
-      p_timeseries_desc   IN   VARCHAR2,
+      p_cwms_ts_id        IN   VARCHAR2,
       p_units             IN   VARCHAR2,
       p_timeseries_data   IN   tsv_array,
       p_store_rule        IN   VARCHAR2 DEFAULT NULL,
@@ -160,13 +183,53 @@ AS
 -- STORE_TS -
 --
    PROCEDURE store_ts (
-      p_timeseries_desc   IN   VARCHAR2,
+      p_cwms_ts_id        IN   VARCHAR2,
       p_units             IN   VARCHAR2,
       p_timeseries_data   IN   tsv_array,
       p_store_rule        IN   VARCHAR2 DEFAULT NULL,
       p_override_prot     IN   NUMBER DEFAULT cwms_util.false_num,
       p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,
       p_office_id         IN   VARCHAR2 DEFAULT NULL
+   );
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- RENAME_TS_JAVA -
+--
+--v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
+   PROCEDURE rename_ts (
+      p_office_id             IN   VARCHAR2,
+      p_timeseries_desc_old   IN   VARCHAR2,
+      p_timeseries_desc_new   IN   VARCHAR2
+   );
+
+--^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^^^^ -
+--
+   PROCEDURE rename_ts (
+      p_cwms_ts_id_old   IN   VARCHAR2,
+      p_cwms_ts_id_new   IN   VARCHAR2,
+      p_utc_offset_new   IN   NUMBER DEFAULT NULL,
+      p_office_id        IN   VARCHAR2 DEFAULT NULL
+   );
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- PARSE_TS -
+--
+   PROCEDURE parse_ts (
+      p_cwms_ts_id          IN       VARCHAR2,
+      p_base_location_id    OUT      VARCHAR2,
+      p_sub_location_id     OUT      VARCHAR2,
+      p_base_parameter_id   OUT      VARCHAR2,
+      p_sub_parameter_id    OUT      VARCHAR2,
+      p_parameter_type_id   OUT      VARCHAR2,
+      p_interval_id         OUT      VARCHAR2,
+      p_duration_id         OUT      VARCHAR2,
+      p_version_id          OUT      VARCHAR2
    );
 END;
 /

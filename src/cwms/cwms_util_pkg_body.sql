@@ -20,7 +20,7 @@ AS
       RETURN FROM_TZ (CAST (p_in_date AS TIMESTAMP), p_in_tz) AT TIME ZONE 'GMT';
    END;
 
-   FUNCTION return_base_id (p_full_id IN VARCHAR2)
+   FUNCTION get_base_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2
    IS
       l_num          NUMBER := INSTR (p_full_id, '-', 1, 1);
@@ -45,7 +45,7 @@ AS
       END IF;
    END;
 
-   FUNCTION return_sub_id (p_full_id IN VARCHAR2)
+   FUNCTION get_sub_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2
    IS
       l_num          NUMBER := INSTR (p_full_id, '-', 1, 1);
@@ -141,36 +141,44 @@ AS
 -- Return the office code for the specified office id,
 -- or the user's primary office if the office id is null
 --
-   FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
-      RETURN NUMBER
-   IS
-      l_office_code   NUMBER := NULL;
-   BEGIN
---   if p_office_id is null
---   then
---     select primary_office
---       into l_office_code
---       from at_sec_user_office
---      where user_id = sys_context('userenv', 'session_user');
---   else
---     select office_code
---       into l_office_code
---       from cwms_office
---      where office_id = p_office_id;
---   end if;
-      NULL;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         NULL;
-         RETURN l_office_code;
-   END get_office_code;
+	FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
+	   RETURN NUMBER
+	IS
+	   l_office_code   NUMBER := NULL;
+	BEGIN
+-- 	   IF p_office_id IS NULL
+-- 	   THEN
+-- 	      SELECT primary_office
+-- 	        INTO l_office_code
+-- 	        FROM at_sec_user_office
+-- 	       WHERE user_id = SYS_CONTEXT ('userenv', 'session_user');
+-- 	   ELSE
+	      SELECT office_code
+	        INTO l_office_code
+	        FROM cwms_office
+	       WHERE office_id = p_office_id;
+--	   END IF;
+	  RETURN l_office_code;
+	EXCEPTION
+	   WHEN NO_DATA_FOUND
+	   THEN
+	      cwms_err.RAISE ('INVALID_OFFICE_ID', p_office_id);
+	      
+	END get_office_code;
+
 
    PROCEDURE TEST
    IS
    BEGIN
       DBMS_OUTPUT.put_line ('successful test');
    END;
+
+	FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
+	   RETURN VARCHAR2
+	IS
+	BEGIN
+	   RETURN p_base_id || SUBSTR ('-', 1, LENGTH (p_sub_id)) || p_sub_id;
+	END;
 
 ----------------------------------------------------------------------------
    PROCEDURE DUMP (p_str IN VARCHAR2, p_len IN PLS_INTEGER DEFAULT 80)

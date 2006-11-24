@@ -1,4 +1,4 @@
-/* Formatted on 2006/10/31 06:43 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/11/17 10:00 (Formatter Plus v4.8.7) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --********************************************************************** -
@@ -7,29 +7,24 @@ AS
 -- get_ts_code returns ts_code...
 --
 ---------------------------------------------------------------------------
-   FUNCTION get_ts_code (officeid IN VARCHAR2, cwmstsid IN VARCHAR2)
+   FUNCTION get_ts_code (p_office_id IN VARCHAR2, p_cwms_ts_id IN VARCHAR2)
       RETURN NUMBER
    IS
-      l_ts_code   NUMBER;
+      l_ts_code   NUMBER := NULL;
    BEGIN
       SELECT ts_code
         INTO l_ts_code
         FROM mv_cwms_ts_id
-       WHERE UPPER (cwms_ts_id) = UPPER (cwmstsid)
-         AND UPPER (office_id) = UPPER (officeid);
+       WHERE UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id)
+         AND UPPER (office_id) = UPPER (p_office_id);
 
       RETURN l_ts_code;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         raise_application_error (-20210,
-                                     'WARNING(cwms_loc.get_ts_code): '
-                                  || cwmstsid
-                                  || ' FOR OFFICE: '
-                                  || officeid
-                                  || ' NOT FOUND',
-                                  TRUE
-                                 );
+         cwms_err.RAISE ('TS_ID_NOT_FOUND',
+                         p_office_id || '.' || p_cwms_ts_id
+                        );
       WHEN OTHERS
       THEN
          RAISE;
@@ -71,7 +66,7 @@ AS
 -- get_county_code return office_code
 --
 ------------------------------------------------------------------------------*/
-   FUNCTION get_office_code (officeid IN VARCHAR2)
+   FUNCTION get_office_code (p_office_id IN VARCHAR2)
       RETURN NUMBER
    IS
       l_office_code   NUMBER;
@@ -81,16 +76,13 @@ AS
       SELECT office_code
         INTO l_office_code
         FROM cwms_office
-       WHERE office_id = UPPER (officeid);
+       WHERE office_id = UPPER (p_office_id);
 
       RETURN l_office_code;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
-         raise_application_error (-20211,
-                                  'Invalid office_id: ' || officeid,
-                                  TRUE
-                                 );
+         cwms_err.raise('INVALID_OFFICE_ID', p_office_id);
       WHEN OTHERS
       THEN
          RAISE;
@@ -929,11 +921,12 @@ AS
    )
    IS
       l_base_location_id     at_base_location.base_location_id%TYPE
-                                  := cwms_util.return_base_id (p_location_id);
+                                  := cwms_util.get_base_id (p_location_id);
       --
       l_sub_location_id      at_physical_location.sub_location_id%TYPE
-                                   := cwms_util.return_sub_id (p_location_id);
+                                   := cwms_util.get_sub_id (p_location_id);
       --
+      l_db_office_id			  cwms_office.office_id%TYPE;
       l_db_office_code       cwms_office.office_code%TYPE;
       l_base_location_code   at_base_location.base_location_code%TYPE;
       l_location_code        at_physical_location.location_code%TYPE;
@@ -956,7 +949,24 @@ AS
       l_hashcode             NUMBER;
    --
    BEGIN
-      --.
+      	--
+	--------------------------------------------------------
+	-- Set office_id...
+	--------------------------------------------------------
+	   IF p_office_id IS NULL
+	   THEN
+	      l_db_office_id := cwms_util.user_office_id;
+	   ELSE
+	      l_db_office_id := UPPER (p_office_id);
+	   END IF;
+	
+	   DBMS_APPLICATION_INFO.set_module ('rename_ts_code', 'get office code');
+	--------------------------------------------------------
+	-- Get the office_code...
+	--------------------------------------------------------
+	   l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+		--.
       -- Check if a Base Location already exists for this p_location_id...
       BEGIN
          SELECT base_location_code, base_location_id
@@ -980,7 +990,7 @@ AS
       IF l_base_loc_exists
       THEN
          BEGIN
-            l_location_code := get_location_code (p_office_id, p_location_id);
+            l_location_code := get_location_code (l_db_office_id, p_location_id);
             --.
             cwms_err.RAISE ('LOCATION_ID_ALREADY_EXISTS',
                             'cwms_loc',
@@ -1194,16 +1204,16 @@ AS
       l_location_id_old          VARCHAR2 (49)    := TRIM (p_location_id_old);
       l_location_id_new          VARCHAR2 (49)    := TRIM (p_location_id_new);
       l_base_location_id_old     at_base_location.base_location_id%TYPE
-                              := cwms_util.return_base_id (l_location_id_old);
+                              := cwms_util.get_base_id (l_location_id_old);
       --
       l_sub_location_id_old      at_physical_location.sub_location_id%TYPE
-                               := cwms_util.return_sub_id (l_location_id_old);
+                               := cwms_util.get_sub_id (l_location_id_old);
       --
       l_base_location_id_new     at_base_location.base_location_id%TYPE
-                              := cwms_util.return_base_id (l_location_id_new);
+                              := cwms_util.get_base_id (l_location_id_new);
       --
       l_sub_location_id_new      at_physical_location.sub_location_id%TYPE
-                               := cwms_util.return_sub_id (l_location_id_new);
+                               := cwms_util.get_sub_id (l_location_id_new);
       --
       l_db_office_code           cwms_office.office_code%TYPE;
       l_base_location_code_old   at_base_location.base_location_code%TYPE;
@@ -1462,7 +1472,7 @@ AS
       END CASE;
 
       COMMIT;
-		--
+   --
    END rename_location;
 
 --********************************************************************** -
@@ -1512,10 +1522,10 @@ AS
    IS
       l_count                NUMBER;
       l_base_location_id     at_base_location.base_location_id%TYPE
-                                  := cwms_util.return_base_id (p_location_id);
+                                  := cwms_util.get_base_id (p_location_id);
       --
       l_sub_location_id      at_physical_location.sub_location_id%TYPE
-                                   := cwms_util.return_sub_id (p_location_id);
+                                   := cwms_util.get_sub_id (p_location_id);
       --
       l_base_location_code   NUMBER;
       l_location_code        NUMBER;
@@ -1629,10 +1639,10 @@ AS
    IS
       l_count                NUMBER;
       l_base_location_id     at_base_location.base_location_id%TYPE
-                                  := cwms_util.return_base_id (p_location_id);
+                                  := cwms_util.get_base_id (p_location_id);
       --
       l_sub_location_id      at_physical_location.sub_location_id%TYPE
-                                   := cwms_util.return_sub_id (p_location_id);
+                                   := cwms_util.get_sub_id (p_location_id);
       --
       l_base_location_code   NUMBER;
       l_location_code        NUMBER;
@@ -1737,7 +1747,7 @@ AS
       END IF;
    --
    END delete_location_cascade;
-	
+
 --********************************************************************** -
 --********************************************************************** -
 --
@@ -1750,9 +1760,9 @@ AS
       p_active            IN   VARCHAR2 DEFAULT 'T',
       p_office_id         IN   VARCHAR2 DEFAULT NULL
    )
-	IS
-	BEGIN
-	   NULL;
-	END copy_location;
+   IS
+   BEGIN
+      NULL;
+   END copy_location;
 END cwms_loc;
 /

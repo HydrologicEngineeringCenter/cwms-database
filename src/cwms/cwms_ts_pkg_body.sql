@@ -59,19 +59,133 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 --*******************************************************************   --
 --*******************************************************************   --
 --
+-- GET_PARAMETER_CODE -
+--
+	FUNCTION get_parameter_code (
+	   p_base_parameter_id   IN   VARCHAR2,
+	   p_sub_parameter_id    IN   VARCHAR2,
+	   p_office_id           IN   VARCHAR2 DEFAULT NULL,
+	   p_create              IN   VARCHAR2 DEFAULT 'T'
+	)
+	   RETURN NUMBER
+	IS
+	   l_base_parameter_code   NUMBER;
+	BEGIN
+	   SELECT base_parameter_code
+	     INTO l_base_parameter_code
+	     FROM cwms_base_parameter
+	    WHERE UPPER (base_parameter_id) = UPPER (p_base_parameter_id);
+		 
+		dbms_output.put_line(l_base_parameter_code);
+	   --
+	   RETURN get_parameter_code (l_base_parameter_code,
+	                              p_sub_parameter_id,
+	                              cwms_loc.get_office_code (p_office_id),
+	                              cwms_util.return_true_or_false (p_create)
+	                             );
+	END;
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- GET_PARAMETER_CODE -
+--
+	FUNCTION get_parameter_code (
+	   p_base_parameter_code   IN   NUMBER,
+	   p_sub_parameter_id      IN   VARCHAR2,
+	   p_office_code           IN   NUMBER,
+	   p_create                IN   BOOLEAN DEFAULT TRUE
+	)
+	   RETURN NUMBER
+	IS
+	   l_parameter_code      NUMBER;
+	   l_base_parameter_id   cwms_base_parameter.base_parameter_id%TYPE;
+	BEGIN
+	   BEGIN
+	      IF p_sub_parameter_id IS NOT NULL
+	      THEN
+	         SELECT parameter_code
+	           INTO l_parameter_code
+	           FROM at_parameter ap
+	          WHERE base_parameter_code = p_base_parameter_code
+	            AND db_office_code IN
+	                                (p_office_code, cwms_util.db_office_code_all)
+	            AND UPPER (sub_parameter_id) = UPPER (p_sub_parameter_id);
+	      ELSE
+	         SELECT parameter_code
+	           INTO l_parameter_code
+	           FROM at_parameter ap
+	          WHERE base_parameter_code = p_base_parameter_code
+	            AND db_office_code IN (cwms_util.db_office_code_all);
+	      END IF;
+	   EXCEPTION
+	      WHEN NO_DATA_FOUND
+	      THEN                                      -- Insert new sub_parameter...
+	         IF p_create OR p_create IS NULL
+	         THEN
+	            INSERT INTO at_parameter
+	                        (parameter_code, db_office_code,
+	                         base_parameter_code, sub_parameter_id
+	                        )
+	                 VALUES (cwms_seq.NEXTVAL, p_office_code,
+	                         p_base_parameter_code, p_sub_parameter_id
+	                        )
+	              RETURNING parameter_code
+	                   INTO l_parameter_code;
+	         ELSE
+	            SELECT base_parameter_id
+	              INTO l_base_parameter_id
+	              FROM cwms_base_parameter
+	             WHERE base_parameter_code = p_base_parameter_code;
+	
+	            cwms_err.RAISE ('INVALID_PARAM_ID',
+	                            cwms_util.concat_base_sub_id (l_base_parameter_id,
+	                                                          p_sub_parameter_id
+	                                                         )
+	                           );
+	         END IF;
+	   END;
+	
+	   RETURN l_parameter_code;
+	END get_parameter_code;
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- GET_TS_NI_HASH -
+--
+	FUNCTION get_ts_ni_hash (
+	   p_parameter_code        IN   VARCHAR2,
+	   p_parameter_type_code   IN   VARCHAR2,
+	   p_duration_code         IN   VARCHAR2
+	)
+	   RETURN VARCHAR2
+	IS
+	BEGIN
+	   RETURN    p_parameter_code
+	          || '-'
+	          || p_parameter_type_code
+	          || '-'
+	          || p_duration_code;
+	END get_ts_ni_hash;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
 -- CREATE_TS -
 --
 --v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
    PROCEDURE create_ts (
       p_office_id         IN   VARCHAR2,
-      p_timeseries_desc   IN   VARCHAR2,
+      p_cwms_ts_id   IN   VARCHAR2,
       p_utc_offset        IN   NUMBER DEFAULT NULL
    )
 	IS
 	   l_ts_code number;
 	BEGIN
    create_ts_code (l_ts_code,
-                   p_timeseries_desc,
+                   p_cwms_ts_id,
                    p_utc_offset,
                    p_office_id
                   );
@@ -83,7 +197,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 -- CREATE_TS -
 --
 	PROCEDURE create_ts (
-	   p_timeseries_desc     IN   VARCHAR2,
+	   p_cwms_ts_id     IN   VARCHAR2,
 	   p_utc_offset          IN   NUMBER DEFAULT NULL,
 	   p_interval_forward    IN   NUMBER DEFAULT NULL,
 	   p_interval_backward   IN   NUMBER DEFAULT NULL,
@@ -95,7 +209,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 	   l_ts_code   NUMBER;
 	BEGIN
 	   create_ts_code (l_ts_code,
-	                   p_timeseries_desc,
+	                   p_cwms_ts_id,
 	                   p_utc_offset,
 	                   p_interval_forward,
 	                   p_interval_backward,
@@ -112,7 +226,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 --
    PROCEDURE create_ts_code (
       p_ts_code             OUT      NUMBER,
-      p_timeseries_desc     IN       VARCHAR2,
+      p_cwms_ts_id     		 IN       VARCHAR2,
       p_utc_offset          IN       NUMBER DEFAULT NULL,
       p_interval_forward    IN       NUMBER DEFAULT NULL,
       p_interval_backward   IN       NUMBER DEFAULT NULL,
@@ -160,34 +274,34 @@ BEGIN
                                     );
 
    --parse values from timeseries_desc using regular expressions
-   SELECT cwms_util.return_base_id (REGEXP_SUBSTR (p_timeseries_desc,
+   SELECT cwms_util.get_base_id (REGEXP_SUBSTR (p_cwms_ts_id,
                                                    '[^.]+',
                                                    1,
                                                    1
                                                   )
                                    ) base_location_id,
-          cwms_util.return_sub_id (REGEXP_SUBSTR (p_timeseries_desc,
+          cwms_util.get_sub_id (REGEXP_SUBSTR (p_cwms_ts_id,
                                                   '[^.]+',
                                                   1,
                                                   1
                                                  )
                                   ) sub_location_id,
-          cwms_util.return_base_id (REGEXP_SUBSTR (p_timeseries_desc,
+          cwms_util.get_base_id (REGEXP_SUBSTR (p_cwms_ts_id,
                                                    '[^.]+',
                                                    1,
                                                    2
                                                   )
                                    ) base_parameter_id,
-          cwms_util.return_sub_id (REGEXP_SUBSTR (p_timeseries_desc,
+          cwms_util.get_sub_id (REGEXP_SUBSTR (p_cwms_ts_id,
                                                   '[^.]+',
                                                   1,
                                                   2
                                                  )
                                   ) sub_parameter_id,
-          REGEXP_SUBSTR (p_timeseries_desc, '[^.]+', 1, 3) parameter_type_id,
-          REGEXP_SUBSTR (p_timeseries_desc, '[^.]+', 1, 4) interval_id,
-          REGEXP_SUBSTR (p_timeseries_desc, '[^.]+', 1, 5) duration_id,
-          REGEXP_SUBSTR (p_timeseries_desc, '[^.]+', 1, 6) VERSION
+          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 3) parameter_type_id,
+          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 4) interval_id,
+          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 5) duration_id,
+          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 6) VERSION
      INTO l_base_location_id,
           l_sub_location_id,
           l_base_parameter_id,
@@ -217,7 +331,7 @@ BEGIN
                                    ('check for cwms_code, create if necessary');
 
    --generate hash and lock table for that hash value to serialize ts_create as timeseries_desc is not pkeyed.
-   SELECT ORA_HASH (UPPER (l_office_id) || UPPER (p_timeseries_desc),
+   SELECT ORA_HASH (UPPER (l_office_id) || UPPER (p_cwms_ts_id),
                     1073741823
                    )
      INTO l_hashcode
@@ -234,7 +348,7 @@ BEGIN
    THEN
       DBMS_LOCK.sleep (2);
    ELSE
-      -- BEGIN
+      -- BEGIN...
       DBMS_APPLICATION_INFO.set_action
                               ('check for location_code, create if necessary');
          -- check for valid base_location_code based on id passed in, if not there then create, -
@@ -287,7 +401,7 @@ BEGIN
          OR l_interval_code IS NULL
       THEN
          l_str_error :=
-              'ERROR: Invalid Time Series Description: ' || p_timeseries_desc;
+              'ERROR: Invalid Time Series Description: ' || p_cwms_ts_id;
 
          IF l_base_parameter_code IS NULL
          THEN
@@ -389,11 +503,9 @@ BEGIN
                  VALUES (cwms_seq.NEXTVAL, l_office_code, l_location_code,
                          l_parameter_code, l_parameter_type_code,
                          l_interval_code, l_duration_code, l_version,
-                            l_parameter_code
-                         || '-'
-                         || l_parameter_type_code
-                         || '-'
-                         || l_duration_code,
+								 get_ts_ni_hash(l_parameter_code, 
+								                l_parameter_type_code, 
+													 l_duration_code),
                          l_utc_offset, l_active_flag
                         )
               RETURNING ts_code
@@ -426,7 +538,7 @@ END create_ts_code;
 	   p_transaction_time   OUT      DATE,
 	   p_at_tsv_rc          OUT      sys_refcursor,
 	   p_units              IN       VARCHAR2,
-	   p_timeseries_desc    IN       VARCHAR2,
+	   p_cwms_ts_id    IN       VARCHAR2,
 	   p_start_time         IN       DATE,
 	   p_end_time           IN       DATE,
 	   p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
@@ -441,7 +553,7 @@ END create_ts_code;
 	   p_transaction_time := CAST ((SYSTIMESTAMP AT TIME ZONE 'GMT') AS DATE);
 	   retrieve_ts (p_at_tsv_rc,
 	                p_units,
-	                p_timeseries_desc,
+	                p_cwms_ts_id,
 	                p_start_time,
 	                p_end_time,
 	                p_time_zone,
@@ -463,7 +575,7 @@ END create_ts_code;
 	   p_at_tsv_rc         IN OUT   sys_refcursor,
 	   p_units             IN       VARCHAR2,
 	   p_officeid          IN       VARCHAR2,
-	   p_timeseries_desc   IN       VARCHAR2,
+	   p_cwms_ts_id   IN       VARCHAR2,
 	   p_start_time        IN       DATE,
 	   p_end_time          IN       DATE,
 	   p_timezone      	  IN       VARCHAR2 DEFAULT 'GMT',
@@ -500,7 +612,7 @@ END create_ts_code;
 	   --
 	   retrieve_ts (p_at_tsv_rc,
 	                p_units,
-	                p_timeseries_desc,
+	                p_cwms_ts_id,
 	                p_start_time,
 	                p_end_time,
 	                p_timezone,
@@ -520,7 +632,7 @@ END create_ts_code;
    PROCEDURE retrieve_ts (
       p_at_tsv_rc         IN OUT   sys_refcursor,
       p_units             IN       VARCHAR2,
-      p_timeseries_desc   IN       VARCHAR2,
+      p_cwms_ts_id   IN       VARCHAR2,
       p_start_time        IN       DATE,
       p_end_time          IN       DATE,
       p_time_zone         IN       VARCHAR2 DEFAULT 'UTC',
@@ -592,7 +704,7 @@ END create_ts_code;
 		       l_versioned, l_ts_code
 		  FROM mv_cwms_ts_id
 		 WHERE office_id = UPPER (l_office_id)
-		   AND UPPER (cwms_ts_id) = UPPER (p_timeseries_desc);
+		   AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
 	
 		IF l_ts_interval=0 
 		THEN
@@ -1009,7 +1121,7 @@ END create_ts_code;
 --v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
 	PROCEDURE store_ts (
 	   p_office_id         IN   VARCHAR2,
-	   p_timeseries_desc   IN   VARCHAR2,
+	   p_cwms_ts_id   IN   VARCHAR2,
 	   p_units             IN   VARCHAR2,
 	   p_timeseries_data   IN   tsv_array,
 	   p_store_rule        IN   VARCHAR2 DEFAULT NULL,
@@ -1030,7 +1142,7 @@ END create_ts_code;
 		   cwms_err.raise('INVALID_T_F_FLAG_OLD', p_override_prot);
 		END IF;
 		
-	   store_ts (p_timeseries_desc,
+	   store_ts (p_cwms_ts_id,
 	             p_units,
 	             p_timeseries_data,
 	             p_store_rule,
@@ -1047,7 +1159,7 @@ END create_ts_code;
 -- STORE_TS -
 --	
 	PROCEDURE store_ts (
-	   p_timeseries_desc   IN   VARCHAR2,
+	   p_cwms_ts_id   IN   VARCHAR2,
 	   p_units             IN   VARCHAR2,
 	   p_timeseries_data   IN   tsv_array,
 	   p_store_rule        IN   VARCHAR2 DEFAULT NULL,
@@ -1095,7 +1207,7 @@ END create_ts_code;
 	
 		dbms_application_info.set_action('Determine utc_offset of incoming data set');
 	
-    	select regexp_substr(p_timeseries_desc,'[^.]+',1,4) interval_id 
+    	select regexp_substr(p_cwms_ts_id,'[^.]+',1,4) interval_id 
         into l_interval_id 
 	     from dual;
 	
@@ -1136,7 +1248,7 @@ END create_ts_code;
 -- 	    
 --       exception 
 	  when too_many_rows then
-        raise_application_error(-20110, 'ERROR: Incoming data set is contains irregular data. Unable to store data for '||p_timeseries_desc, true);
+        raise_application_error(-20110, 'ERROR: Incoming data set is contains irregular data. Unable to store data for '||p_cwms_ts_id, true);
       end;
 	
 	else
@@ -1154,7 +1266,7 @@ END create_ts_code;
       select ts_code, interval_utc_offset 
         into l_ts_code, existing_utc_offset
 	    from mv_CWMS_TS_ID m 
-       where upper(m.CWMS_TS_ID) = upper(p_timeseries_desc)
+       where upper(m.CWMS_TS_ID) = upper(p_cwms_ts_id)
 	     and m.OFFICE_ID = upper(l_office_id);
 		 
       dbms_application_info.set_action('TS_CODE was found - check its utc_offset against the dataset''s and/or set an undefined utc_offset');
@@ -1184,13 +1296,13 @@ END create_ts_code;
       
       create_ts_code(p_ts_code=>l_ts_code, 
 		               p_office_id=>l_office_id, 
-							p_timeseries_desc=>p_timeseries_desc, 
+							p_cwms_ts_id=>p_cwms_ts_id, 
 							p_utc_offset=>utc_offset);
  
     end; -- END - Find TS_CODE
 
     if l_ts_code is null then
-      raise_application_error(-20105, 'Unable to create or locate ts_code for '||p_timeseries_desc, true);
+      raise_application_error(-20105, 'Unable to create or locate ts_code for '||p_cwms_ts_id, true);
     end if;
 
     dbms_application_info.set_action('check for unit conversion factors');
@@ -1274,7 +1386,7 @@ END create_ts_code;
 	
 	dbms_output.put_line('*****************************'         || CHR(10) ||
 	                     'IN STORE_TS'                           || CHR(10) ||
-						 'TS Description: ' || p_timeseries_desc || CHR(10) ||
+						 'TS Description: ' || p_cwms_ts_id || CHR(10) ||
 						 '       TS CODE: ' || l_ts_code           || CHR(10) ||
 						 '    Store Rule: ' || p_store_rule      || CHR(10) ||
 						 '      Override: ' || p_override_prot   || CHR(10) ||
@@ -2141,7 +2253,7 @@ END create_ts_code;
 		--   cwms_xchg.time_series_updated(
 		--     l_ts_code, 
 		--     l_office_id, 
-		--     p_timeseries_desc,
+		--     p_cwms_ts_id,
 		--     p_store_rule, 
 		--     p_units,
 		--     l_override_prot, 
@@ -2198,96 +2310,466 @@ END create_ts_code;
 --
 -- DELETE_TS -
 --
-/* Formatted on 2006/10/30 14:38 (Formatter Plus v4.8.7) */
-PROCEDURE delete_ts (
-   p_timeseries_desc   IN   VARCHAR2,
-   p_delete_action     IN   VARCHAR2 DEFAULT cwms_util.delete_all,
-   p_office_id         IN   VARCHAR2 DEFAULT NULL
-)
-IS
-   l_office_id       VARCHAR2 (16);
-   l_ts_code         NUMBER;
-   l_ts_code_new     NUMBER        := NULL;
-   l_delete_action   VARCHAR2 (16) := UPPER (p_delete_action);
-   l_delete_date     DATE          := SYSDATE;
-   l_tmp_del_date    DATE          := l_delete_date + 1;
+	PROCEDURE delete_ts (
+	   p_cwms_ts_id   IN   VARCHAR2,
+	   p_delete_action     IN   VARCHAR2 DEFAULT cwms_util.delete_all,
+	   p_office_id         IN   VARCHAR2 DEFAULT NULL
+	)
+	IS
+	   l_office_id       VARCHAR2 (16);
+	   l_ts_code         NUMBER;
+	   l_ts_code_new     NUMBER        := NULL;
+	   l_delete_action   VARCHAR2 (16) := UPPER (p_delete_action);
+	   l_delete_date     DATE          := SYSDATE;
+	   l_tmp_del_date    DATE          := l_delete_date + 1;
+	--
+	BEGIN
+	   --
+	   IF p_office_id IS NULL
+	   THEN
+	      l_office_id := cwms_util.user_office_id;
+	   ELSE
+	      l_office_id := p_office_id;
+	   END IF;
+	
+	   --
+	   BEGIN
+	      SELECT ts_code
+	        INTO l_ts_code
+	        FROM mv_cwms_ts_id mcts
+	       WHERE UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
+	         AND UPPER (mcts.office_id) = UPPER (l_office_id);
+	   EXCEPTION
+	      WHEN NO_DATA_FOUND
+	      THEN
+	         cwms_err.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
+	   END;
+	
+	   --
+	   IF NVL (l_delete_action, cwms_util.delete_all) = cwms_util.delete_all
+	   THEN
+	      l_delete_action := cwms_util.delete_all;
+	   ELSIF l_delete_action = cwms_util.delete_data
+	   THEN
+	      l_delete_action := cwms_util.delete_data;
+	   ELSE
+	      cwms_err.RAISE ('INVALID_DELETE_ACTION', p_delete_action);
+	   END IF;
+	
+	   -- If deleting the data only, then a new replacement ts_code must --
+	   -- be created --
+	   --
+	   IF l_delete_action = cwms_util.delete_data
+	   THEN     -- Create replacement ts_id - temporarily disabled by setting a --
+	            -- delete date - need to do this so as not to violate unique    --
+	            -- constraint --
+	      SELECT cwms_seq.NEXTVAL
+	        INTO l_ts_code_new
+	        FROM DUAL;
+	
+	      INSERT INTO at_cwms_ts_spec
+	         SELECT l_ts_code_new, office_code, location_code, parameter_code,
+	                parameter_type_code, interval_code, duration_code, VERSION,
+	                ts_ni_hash, description, interval_utc_offset,
+	                interval_forward, interval_backward, interval_offset_id,
+	                time_zone_code, version_flag, migrate_ver_flag, active_flag,
+	                l_tmp_del_date, data_source
+	           FROM at_cwms_ts_spec acts
+	          WHERE acts.ts_code = l_ts_code;
+	   END IF;
+	
+	   -- Delete the timeseries id --
+	   UPDATE at_cwms_ts_spec
+	      SET location_code = 0,
+	          delete_date = l_delete_date
+	    WHERE ts_code = l_ts_code;
+	
+	   IF l_delete_action = cwms_util.delete_data
+	   THEN
+	      -- Activate the replacement ts_id by setting the delete_date to null --
+	      UPDATE at_cwms_ts_spec
+	         SET delete_date = NULL
+	       WHERE ts_code = l_ts_code_new;
+	   END IF;
+	
+	   --
+	   COMMIT;
+	   --
+	   delete_ts_cleanup (l_ts_code, l_ts_code_new, l_delete_action);
+	--
+	END delete_ts;
 --
-BEGIN
-   --
-   IF p_office_id IS NULL
-   THEN
-      l_office_id := cwms_util.user_office_id;
-   ELSE
-      l_office_id := p_office_id;
-   END IF;
-
-   --
-   BEGIN
-      SELECT ts_code
-        INTO l_ts_code
-        FROM mv_cwms_ts_id mcts
-       WHERE UPPER (mcts.cwms_ts_id) = UPPER (p_timeseries_desc)
-         AND UPPER (mcts.office_id) = UPPER (l_office_id);
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         cwms_err.RAISE ('TS_ID_NOT_FOUND', p_timeseries_desc);
-   END;
-
-   --
-   IF NVL (l_delete_action, cwms_util.delete_all) = cwms_util.delete_all
-   THEN
-      l_delete_action := cwms_util.delete_all;
-   ELSIF l_delete_action = cwms_util.delete_data
-   THEN
-      l_delete_action := cwms_util.delete_data;
-   ELSE
-      cwms_err.RAISE ('INVALID_DELETE_ACTION', p_delete_action);
-   END IF;
-
-   -- If deleting the data only, then a new replacement ts_code must --
-   -- be created --
-   --
-   IF l_delete_action = cwms_util.delete_data
-   THEN     -- Create replacement ts_id - temporarily disabled by setting a --
-            -- delete date - need to do this so as not to violate unique    --
-            -- constraint --
-      SELECT cwms_seq.NEXTVAL
-        INTO l_ts_code_new
-        FROM DUAL;
-
-      INSERT INTO at_cwms_ts_spec
-         SELECT l_ts_code_new, office_code, location_code, parameter_code,
-                parameter_type_code, interval_code, duration_code, VERSION,
-                ts_ni_hash, description, interval_utc_offset,
-                interval_forward, interval_backward, interval_offset_id,
-                time_zone_code, version_flag, migrate_ver_flag, active_flag,
-                l_tmp_del_date, data_source
-           FROM at_cwms_ts_spec acts
-          WHERE acts.ts_code = l_ts_code;
-   END IF;
-
-   -- Delete the timeseries id --
-   UPDATE at_cwms_ts_spec
-      SET location_code = 0,
-          delete_date = l_delete_date
-    WHERE ts_code = l_ts_code;
-
-   IF l_delete_action = cwms_util.delete_data
-   THEN
-      -- Activate the replacement ts_id by setting the delete_date to null --
-      UPDATE at_cwms_ts_spec
-         SET delete_date = NULL
-       WHERE ts_code = l_ts_code_new;
-   END IF;
-
-   --
-   COMMIT;
-   --
-   delete_ts_cleanup (l_ts_code, l_ts_code_new, l_delete_action);
+--*******************************************************************   --
+--*******************************************************************   --
 --
-END delete_ts;
---	
+-- RENAME...
+--
+--v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
+	PROCEDURE rename_ts (
+	   p_office_id             IN   VARCHAR2,
+	   p_timeseries_desc_old   IN   VARCHAR2,
+	   p_timeseries_desc_new   IN   VARCHAR2
+	)
+--^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^^^^ -
+	IS
+	   l_utc_offset   NUMBER := NULL;
+	BEGIN
+	   rename_ts (p_timeseries_desc_old,
+	              p_timeseries_desc_new,
+	              l_utc_offset,
+	              p_office_id
+	             );
+	END;
+	--
+	---------------------------------------------------------------------
+	--
+	-- Rename a time series id.
+	-- If no data exists, then you can rename every part of a cwms_ts_id.
+	-- If data exists then you can rename everything except the interval.
+	--
+	---------------------------------------------------------------------
+	--
+	PROCEDURE rename_ts (
+	   p_cwms_ts_id_old   IN   VARCHAR2,
+	   p_cwms_ts_id_new   IN   VARCHAR2,
+	   p_utc_offset_new   IN   NUMBER DEFAULT NULL,
+	   p_office_id        IN   VARCHAR2 DEFAULT NULL
+	)
+	IS
+	   l_utc_offset_old            at_cwms_ts_spec.interval_utc_offset%TYPE;
+	   --
+	   l_location_code_old         at_cwms_ts_spec.location_code%TYPE;
+	   l_interval_code_old         cwms_interval.interval_code%TYPE;
+	   --
+	   l_base_location_id_new      at_base_location.base_location_id%TYPE;
+	   l_sub_location_id_new       at_physical_location.sub_location_id%TYPE;
+	   l_location_new              VARCHAR2 (49);
+	   l_base_parameter_id_new     cwms_base_parameter.base_parameter_id%TYPE;
+	   l_sub_parameter_id_new      at_parameter.sub_parameter_id%TYPE;
+	   l_parameter_type_id_new     cwms_parameter_type.parameter_type_id%TYPE;
+	   l_interval_id_new           cwms_interval.interval_id%TYPE;
+	   l_duration_id_new           cwms_duration.duration_id%TYPE;
+	   l_version_id_new            at_cwms_ts_spec.VERSION%TYPE;
+	   l_utc_offset_new            at_cwms_ts_spec.interval_utc_offset%TYPE;
+	   --
+	   l_location_code_new         at_cwms_ts_spec.location_code%TYPE;
+	   l_interval_dur_new          cwms_interval.INTERVAL%TYPE;
+	   l_interval_code_new         cwms_interval.interval_code%TYPE;
+	   l_base_parameter_code_new   cwms_base_parameter.base_parameter_code%TYPE;
+	   l_parameter_type_code_new   cwms_parameter_type.parameter_type_code%TYPE;
+	   l_parameter_code_new        at_parameter.parameter_code%TYPE;
+	   l_duration_code_new         cwms_duration.duration_code%TYPE;
+	   --
+	   l_office_code               NUMBER;
+	   l_ts_code_old               NUMBER;
+	   l_ts_code_new               NUMBER;
+	   l_office_id                 cwms_office.office_id%TYPE;
+	   l_has_data                  BOOLEAN;
+	   l_tmp                       NUMBER;
+	--
+	BEGIN
+	   DBMS_APPLICATION_INFO.set_module ('rename_ts_code',
+	                                     'get ts_code from materialized view'
+	                                    );
+	
+	--
+	--------------------------------------------------------
+	-- Set office_id...
+	--------------------------------------------------------
+	   IF p_office_id IS NULL
+	   THEN
+	      l_office_id := cwms_util.user_office_id;
+	   ELSE
+	      l_office_id := UPPER (p_office_id);
+	   END IF;
+	
+	   DBMS_APPLICATION_INFO.set_module ('rename_ts_code', 'get office code');
+	--------------------------------------------------------
+	-- Get the office_code...
+	--------------------------------------------------------
+	   l_office_code := cwms_util.get_office_code (l_office_id);
+	--------------------------------------------------------
+	-- Confirm old cwms_ts_id exists...
+	--------------------------------------------------------
+	   l_ts_code_old := cwms_loc.get_ts_code (l_office_id, p_cwms_ts_id_old);
+	
+	--
+	--------------------------------------------------------
+	-- Retrieve old codes for the old ts_code...
+	--------------------------------------------------------
+	--
+	   SELECT location_code, interval_code, acts.INTERVAL_UTC_OFFSET
+	     INTO l_location_code_old, l_interval_code_old, l_utc_offset_old
+	     FROM at_cwms_ts_spec acts
+	    WHERE ts_code = l_ts_code_old;
+	dbms_output.put_line('l_utc_offset_old-1: ' || l_utc_offset_old);
+	--------------------------------------------------------
+	-- Confirm new cwms_ts_id does not exist...
+	--------------------------------------------------------
+	   BEGIN
+	      --
+	      l_ts_code_new := cwms_loc.get_ts_code (l_office_id, p_cwms_ts_id_new);
+	   --
+	   EXCEPTION
+	-----------------------------------------------------------------
+	-- Exception means cwms_ts_id_new does not exist - a good thing!.
+	-----------------------------------------------------------------
+	      WHEN OTHERS
+	      THEN
+	         l_ts_code_new := NULL;
+	   END;
+	
+	   IF l_ts_code_new IS NOT NULL
+	   THEN
+	      cwms_err.RAISE ('TS_ALREADY_EXISTS',
+	                      l_office_id || '.' || p_cwms_ts_id_new
+	                     );
+	   END IF;
+	
+	------------------------------------------------------------------
+	-- Parse cwms_id_new --
+	------------------------------------------------------------------
+	   parse_ts (p_cwms_ts_id_new,
+	             l_base_location_id_new,
+	             l_sub_location_id_new,
+	             l_base_parameter_id_new,
+	             l_sub_parameter_id_new,
+	             l_parameter_type_id_new,
+	             l_interval_id_new,
+	             l_duration_id_new,
+	             l_version_id_new
+	            );
+	   --
+	   l_location_new :=
+	      cwms_util.concat_base_sub_id (l_base_location_id_new,
+	                                    l_sub_location_id_new
+	                                   );
+	
+	---------------------------
+	-- Validate the interval --
+	---------------------------
+	   BEGIN
+	      SELECT interval_code, INTERVAL, interval_id
+	        INTO l_interval_code_new, l_interval_dur_new, l_interval_id_new
+	        FROM cwms_interval ci
+	       WHERE UPPER (ci.interval_id) = UPPER (l_interval_id_new);
+	   EXCEPTION
+	      WHEN NO_DATA_FOUND
+	      THEN
+	         cwms_err.RAISE ('INVALID_INTERVAL_ID', l_interval_id_new);
+	      WHEN OTHERS
+	      THEN
+	         RAISE;
+	   END;
+	
+	----------------------------------
+	-- Validate the base parameter --
+	----------------------------------
+	   BEGIN
+	      SELECT base_parameter_code
+	        INTO l_base_parameter_code_new
+	        FROM cwms_base_parameter
+	       WHERE UPPER (base_parameter_id) = UPPER (l_base_parameter_id_new);
+	   EXCEPTION
+	      WHEN NO_DATA_FOUND
+	      THEN
+	         cwms_err.RAISE ('INVALID_PARAM_ID', l_base_parameter_id_new);
+	      WHEN OTHERS
+	      THEN
+	         RAISE;
+	   END;
+	
+	---------------------------------
+	-- Validate the parameter type --
+	---------------------------------
+	   BEGIN
+	      SELECT parameter_type_code
+	        INTO l_parameter_type_code_new
+	        FROM cwms_parameter_type
+	       WHERE UPPER (parameter_type_id) = UPPER (l_parameter_type_id_new);
+	   EXCEPTION
+	      WHEN NO_DATA_FOUND
+	      THEN
+	         cwms_err.RAISE ('INVALID_PARAM_TYPE', l_parameter_type_id_new);
+	      WHEN OTHERS
+	      THEN
+	         RAISE;
+	   END;
+	
+	---------------------------
+	-- Validate the duration --
+	---------------------------
+	   BEGIN
+	      SELECT duration_code
+	        INTO l_duration_code_new
+	        FROM cwms_duration
+	       WHERE UPPER (duration_id) = UPPER (l_duration_id_new);
+	   EXCEPTION
+	      WHEN NO_DATA_FOUND
+	      THEN
+	         cwms_err.RAISE ('INVALID_DURATION_ID', l_duration_id_new);
+	      WHEN OTHERS
+	      THEN
+	         RAISE;
+	   END;
+	
+	--------------------------------------------------------
+	-- Set default utc_offset if null was passed in as new...
+	--------------------------------------------------------
+	   IF p_utc_offset_new IS NULL
+	   THEN
+		   dbms_output.put_line('l_utc_offset_old-2: ' || l_utc_offset_old);
+         l_utc_offset_new := l_utc_offset_old;
+	   ELSIF l_interval_code_new = cwms_util.irregular_interval_code
+		THEN
+			l_utc_offset_new := cwms_util.utc_offset_irregular;
+	   ELSIF l_utc_offset_new < 0 OR l_utc_offset_new >= l_interval_dur_new
+	   THEN
+	         cwms_err.RAISE ('INVALID_UTC_OFFSET',
+	                         l_utc_offset_new,
+	                         l_interval_dur_new
+	                        );
+	   ELSE
+		   l_utc_offset_new := p_utc_offset_new;
+		END IF;
+	   dbms_output.put_line('l_utc_offset_new: ' || l_utc_offset_new);
+	---------------------------------------------------
+	-- Check whether the ts_code has associated data --
+	---------------------------------------------------
+	   SELECT COUNT (*)
+	     INTO l_tmp
+	     FROM at_tsv
+	    WHERE ts_code = l_ts_code_old;
+	
+	   l_has_data := l_tmp > 0;
+	
+	------------------------------------------------------------------
+	-- Perform these checks only if the ts_code has associated data --
+	------------------------------------------------------------------
+	   IF l_has_data
+	   THEN
+	--------------------------------------------------------------
+	-- Do not allow the interval to change, except to irregular --
+	--------------------------------------------------------------
+	      IF     l_interval_code_old <> cwms_util.irregular_interval_code
+	         AND l_interval_code_new <> l_interval_code_old
+	      THEN
+	         cwms_err.RAISE
+	                  ('GENERIC_ERROR',
+	                   'Cannot change to a regular interval when data is present'
+	                  );
+	      END IF;
+	
+	----------------------------------------------------
+	-- Do not allow the interval UTC offset to change --
+	----------------------------------------------------
+	      IF l_utc_offset_new <> l_utc_offset_old
+	      THEN
+	         cwms_err.RAISE
+	                       ('GENERIC_ERROR',
+	                        'Cannot change interval offsets when data is present'
+	                       );
+	      END IF;
+	   END IF;
+	----------------------------------------------------
+	-- Determine the new location_code --
+	----------------------------------------------------
+	   BEGIN
+	      l_location_code_new :=
+	                     cwms_loc.get_location_code (l_office_id, l_location_new);
+	   EXCEPTION                                 -- New Location does not exist...
+	      WHEN OTHERS
+	      THEN
+			dbms_output.put_line('location new: ' || l_location_new || chr(10) ||
+			                     'office_id:    ' || l_office_id);
+	         cwms_loc.create_location (p_location_id => l_location_new, 
+				                          p_office_id   => l_office_id);
+	         dbms_output.put_line('location created');
+				--
+	         l_location_code_new :=
+	                     cwms_loc.get_location_code (l_office_id, l_location_new);
+	   END;
+	
+	----------------------------------------------------
+	-- Determine the new parameter_code --
+	----------------------------------------------------
+	   l_parameter_code_new :=
+	      get_parameter_code (p_base_parameter_code      => l_base_parameter_code_new,
+	                          p_sub_parameter_id         => l_sub_parameter_id_new,
+	                          p_office_code              => l_office_code,
+	                          p_create                   => TRUE
+	                         );
+	
+
+	--
+	----------------------------------------------------
+	-- Perform the Rename by updating at_cwms_ts_spec --
+	----------------------------------------------------
+	--
+	   UPDATE at_cwms_ts_spec s
+	      SET s.location_code = l_location_code_new,
+	          s.parameter_code = l_parameter_code_new,
+	          s.parameter_type_code = l_parameter_type_code_new,
+	          s.interval_code = l_interval_code_new,
+	          s.duration_code = l_duration_code_new,
+	          s.VERSION = l_version_id_new,
+	          s.ts_ni_hash =
+	             get_ts_ni_hash (l_parameter_code_new,
+	                             l_parameter_type_code_new,
+	                             l_duration_code_new
+	                            ),
+	          s.interval_utc_offset = l_utc_offset_new
+	    WHERE s.ts_code = l_ts_code_old;
+	
+	   COMMIT;
+	   --
+	   DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+	--
+	END rename_ts;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- PARSE_TS -
+--
+	PROCEDURE parse_ts (
+	      p_cwms_ts_id          IN       VARCHAR2,
+	      p_base_location_id    OUT      VARCHAR2,
+	      p_sub_location_id     OUT      VARCHAR2,
+	      p_base_parameter_id   OUT      VARCHAR2,
+	      p_sub_parameter_id    OUT      VARCHAR2,
+	      p_parameter_type_id   OUT      VARCHAR2,
+	      p_interval_id         OUT      VARCHAR2,
+	      p_duration_id         OUT      VARCHAR2,
+	      p_version_id          OUT      VARCHAR2
+	)
+	IS
+	BEGIN
+	   SELECT cwms_util.get_base_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 1))
+	                                                             base_location_id,
+	          cwms_util.get_sub_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 1))
+	                                                              sub_location_id,
+	          cwms_util.get_base_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 2))
+	                                                            base_parameter_id,
+	          cwms_util.get_sub_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 2))
+	                                                             sub_parameter_id,
+	          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 3) parameter_type_id,
+	          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 4) interval_id,
+	          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 5) duration_id,
+	          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 6) VERSION
+	     INTO p_base_location_id,
+	          p_sub_location_id,
+	          p_base_parameter_id,
+	          p_sub_parameter_id,
+	          p_parameter_type_id,
+	          p_interval_id,
+	          p_duration_id,
+	          p_version_id
+	     FROM DUAL;
+	END parse_ts;
+
+	
 END cwms_ts; --end package body
 /
 

@@ -1,4 +1,4 @@
-/* Formatted on 2006/10/30 05:48 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/11/20 14:30 (Formatter Plus v4.8.7) */
 CREATE OR REPLACE PACKAGE cwms_util AUTHID CURRENT_USER
 AS
 /******************************************************************************
@@ -36,6 +36,10 @@ AS
    max_sub_id_length             CONSTANT NUMBER        := 32;
    max_full_id_length            CONSTANT NUMBER
                                 := max_base_id_length + max_sub_id_length + 1;
+   --
+   db_office_code_all            CONSTANT NUMBER        := 53;
+	--
+	irregular_interval_code			CONSTANT NUMBER		  := 29;
 
    TYPE ts_list IS TABLE OF VARCHAR2 (200)
       INDEX BY BINARY_INTEGER;
@@ -55,16 +59,19 @@ AS
    FUNCTION is_false (p_true_false IN VARCHAR2)
       RETURN BOOLEAN;
 
-        --
+   --
    -- Retruns TRUE if p_true_false is T or True
    -- Returns FALSE if p_true_false is F or False.
    FUNCTION return_true_or_false (p_true_false IN VARCHAR2)
       RETURN BOOLEAN;
 
-   FUNCTION return_base_id (p_full_id IN VARCHAR2)
+   FUNCTION get_base_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2;
 
-   FUNCTION return_sub_id (p_full_id IN VARCHAR2)
+   FUNCTION get_sub_id (p_full_id IN VARCHAR2)
+      RETURN VARCHAR2;
+
+   FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
       RETURN VARCHAR2;
 
 --------------------------------------------------------
