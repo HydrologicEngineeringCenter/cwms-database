@@ -2680,11 +2680,8 @@ END create_ts_code;
 	   EXCEPTION                                 -- New Location does not exist...
 	      WHEN OTHERS
 	      THEN
-			dbms_output.put_line('location new: ' || l_location_new || chr(10) ||
-			                     'office_id:    ' || l_office_id);
 	         cwms_loc.create_location (p_location_id => l_location_new, 
-				                          p_office_id   => l_office_id);
-	         dbms_output.put_line('location created');
+				                          p_db_office_id   => l_office_id);
 				--
 	         l_location_code_new :=
 	                     cwms_loc.get_location_code (l_office_id, l_location_new);

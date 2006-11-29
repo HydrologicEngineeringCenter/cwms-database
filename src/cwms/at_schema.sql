@@ -2183,8 +2183,34 @@ AS
 		   AND apl.location_code <> 0
           )
 /
-
-
+-------------------------
+-- AV_ALIASES view.
+-- 
+CREATE OR REPLACE VIEW av_aliases (db_office_id,
+                                   location_id,
+                                   agency_id,
+                                   alias_id,
+                                   agency_name,
+                                   alias_public_name,
+                                   alias_long_name
+                                  )
+AS
+   SELECT co.office_id db_office_id,
+             abl.base_location_id
+          || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
+          || apl.sub_location_id location_id,
+          aagn.agency_id, aaln.alias_id, aagn.agency_name,
+          aaln.alias_public_name, aaln.alias_long_name
+     FROM at_agency_name aagn,
+          at_alias_name aaln,
+          at_base_location abl,
+          at_physical_location apl,
+          cwms_office co
+    WHERE aaln.agency_code = aagn.agency_code
+      AND aaln.location_code = apl.location_code
+      AND apl.base_location_code = abl.base_location_code
+      AND abl.db_office_code = co.office_code
+/
 -----------------------------
 -- AT_UNIT_ALIAS TABLE.
 --

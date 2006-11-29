@@ -1,8 +1,6 @@
+/* Formatted on 2006/11/24 13:04 (Formatter Plus v4.8.7) */
 CREATE OR REPLACE PACKAGE cwms_cat AUTHID CURRENT_USER
 IS
-   true_num    CONSTANT NUMBER := 1;
-   false_num   CONSTANT NUMBER := 0;
-
    TYPE cat_ts_rec_t IS RECORD (
       office_id             VARCHAR2 (16),
       cwms_ts_id            VARCHAR2 (183),
@@ -47,6 +45,15 @@ IS
       source_id   VARCHAR2 (16),
       gage_id     VARCHAR2 (32)
    );
+
+   TYPE cat_loc_alias_abrev_rec_t IS RECORD (
+      office_id     VARCHAR2 (16),
+      location_id   VARCHAR2 (49),
+      agency_id     VARCHAR2 (16),
+      alias_id      VARCHAR2 (16)
+   );
+
+   TYPE cat_loc_alias_abrev_tab_t IS TABLE OF cat_loc_alias_abrev_rec_t;
 
    TYPE cat_loc_alias_tab_t IS TABLE OF cat_loc_alias_rec_t;
 
@@ -140,6 +147,7 @@ IS
 
    FUNCTION cat_ts_obj2tab (o IN cat_ts_otab_t)
       RETURN cat_ts_tab_t;
+
 -- cat_ts_cwms_20...
    FUNCTION cat_ts_cwms_20_rec2obj (r IN cat_ts_cwms_20_rec_t)
       RETURN cat_ts_cwms_20_obj_t;
@@ -152,6 +160,7 @@ IS
 
    FUNCTION cat_ts_cwms_20_obj2tab (o IN cat_ts_cwms_20_otab_t)
       RETURN cat_ts_cwms_20_tab_t;
+
 -- cat_loc...
    FUNCTION cat_loc_rec2obj (r IN cat_loc_rec_t)
       RETURN cat_loc_obj_t;
@@ -164,6 +173,7 @@ IS
 
    FUNCTION cat_loc_obj2tab (o IN cat_loc_otab_t)
       RETURN cat_loc_tab_t;
+
 -- cat_loc_alias...
    FUNCTION cat_loc_alias_rec2obj (r IN cat_loc_alias_rec_t)
       RETURN cat_loc_alias_obj_t;
@@ -176,6 +186,7 @@ IS
 
    FUNCTION cat_loc_alias_obj2tab (o IN cat_loc_alias_otab_t)
       RETURN cat_loc_alias_tab_t;
+
 -- cat_param...
    FUNCTION cat_param_rec2obj (r IN cat_param_rec_t)
       RETURN cat_param_obj_t;
@@ -188,6 +199,7 @@ IS
 
    FUNCTION cat_param_obj2tab (o IN cat_param_otab_t)
       RETURN cat_param_tab_t;
+
 -- cat_sub_param.
    FUNCTION cat_sub_param_rec2obj (r IN cat_sub_param_rec_t)
       RETURN cat_sub_param_obj_t;
@@ -200,6 +212,7 @@ IS
 
    FUNCTION cat_sub_param_obj2tab (o IN cat_sub_param_otab_t)
       RETURN cat_sub_param_tab_t;
+
 -- cat_sub_loc...
    FUNCTION cat_sub_loc_rec2obj (r IN cat_sub_loc_rec_t)
       RETURN cat_sub_loc_obj_t;
@@ -212,6 +225,7 @@ IS
 
    FUNCTION cat_sub_loc_obj2tab (o IN cat_sub_loc_otab_t)
       RETURN cat_sub_loc_tab_t;
+
 -- cat_state.
    FUNCTION cat_state_rec2obj (r IN cat_state_rec_t)
       RETURN cat_state_obj_t;
@@ -224,6 +238,7 @@ IS
 
    FUNCTION cat_state_obj2tab (o IN cat_state_otab_t)
       RETURN cat_state_tab_t;
+
 -- cat_county.
    FUNCTION cat_county_rec2obj (r IN cat_county_rec_t)
       RETURN cat_county_obj_t;
@@ -236,6 +251,7 @@ IS
 
    FUNCTION cat_county_obj2tab (o IN cat_county_otab_t)
       RETURN cat_county_tab_t;
+
 -- cat_timezone.
    FUNCTION cat_timezone_rec2obj (r IN cat_timezone_rec_t)
       RETURN cat_timezone_obj_t;
@@ -248,6 +264,7 @@ IS
 
    FUNCTION cat_timezone_obj2tab (o IN cat_timezone_otab_t)
       RETURN cat_timezone_tab_t;
+
 -- cat_dss_file.
    FUNCTION cat_dss_file_rec2obj (r IN cat_dss_file_rec_t)
       RETURN cat_dss_file_obj_t;
@@ -260,6 +277,7 @@ IS
 
    FUNCTION cat_dss_file_obj2tab (o IN cat_dss_file_otab_t)
       RETURN cat_dss_file_tab_t;
+
 -- cat_dss_xchg_set.
    FUNCTION cat_dss_xchg_set_rec2obj (r IN cat_dss_xchg_set_rec_t)
       RETURN cat_dss_xchg_set_obj_t;
@@ -272,6 +290,7 @@ IS
 
    FUNCTION cat_dss_xchg_set_obj2tab (o IN cat_dss_xchg_set_otab_t)
       RETURN cat_dss_xchg_set_tab_t;
+
 -- cat_dss_xchg_ts_map.
    FUNCTION cat_dss_xchg_ts_map_rec2obj (r IN cat_dss_xchg_ts_map_rec_t)
       RETURN cat_dss_xchg_ts_map_obj_t;
@@ -546,8 +565,8 @@ IS
 --
 --
    PROCEDURE cat_sub_loc (
-      p_cwms_cat    OUT      sys_refcursor,
-      p_officeid    IN       VARCHAR2 DEFAULT NULL
+      p_cwms_cat   OUT      sys_refcursor,
+      p_officeid   IN       VARCHAR2 DEFAULT NULL
    );
 
 -------------------------------------------------------------------------------
@@ -788,6 +807,67 @@ IS
       p_cwms_cat          OUT      sys_refcursor,
       p_officeid          IN       VARCHAR2,
       p_dss_xchg_set_id   IN       VARCHAR2
+   );
+
+-------------------------------------------------------------------------------
+-- CAT_LOC_ALIASES                                                           --
+--
+-- These procedures and functions catalog a location's aliases in the database.
+--
+-- Function returns may be used as source of SELECT statements.
+--
+-- The p_abbreviated option allows one to choose between an abreviated ref cursor
+-- that only contains the agency and alias ids or a complete ref cursor that
+-- contains more descriptive information on the agency and alias ids.
+--
+-- Default abreviated ref cursor contains...
+--
+--    Name                Datatype      Description
+--    ------------------- ------------- ------------------------------------------
+--    office_id           varchar2(16)  Name of owning office
+--    location_id         varchar2(49)  CWMS base-sub location name.
+--    agency_id           varchar2(16)  Agency Id.
+--    alias_id            varchar2(16)  Alias Id.
+--
+-- The complete ref cursor (p_abreviated = F)...
+--
+--    Name                Datatype      Description
+--    ------------------- ------------- ------------------------------------------
+--    office_id           varchar2(16)  Name of owning office
+--    location_id         varchar2(49)  CWMS base-sub location name.
+--    agency_id           varchar2(16)  Agency's Id.
+--    alias_id            varchar2(16)  Alias' Id.
+--    agency_name         varchar2(80)  Agency's Name.
+--    alias_public_name   varchar2(32)  Alias' Public Name.
+--    alias_long_name     varchar2(80)  Alias' Long Name.
+--
+-- If the p_office_id parameter is not null, only records with matching office ids
+-- are returned.  Otherwise, records for all offices are returned.
+--
+-- The records are returned sorted by office_id, location_id, agency_id, alias_id.
+--
+--
+-------------------------------------------------------------------------------
+-- function cat_loc(...)
+--
+--
+   FUNCTION cat_loc_alias_abrev_tab (
+      p_location_id   IN   VARCHAR2 DEFAULT NULL,
+      p_agency_id     IN   VARCHAR2 DEFAULT NULL,
+      p_office_id     IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN cat_loc_alias_abrev_tab_t PIPELINED;
+
+   -------------------------------------------------------------------------------
+-- procedure cat_loc_aliases(...)
+--
+--
+   PROCEDURE cat_loc_aliases (
+      p_cwms_cat      OUT      sys_refcursor,
+      p_location_id   IN       VARCHAR2 DEFAULT NULL,
+      p_agency_id     IN       VARCHAR2 DEFAULT NULL,
+      p_abreviated    IN       VARCHAR2 DEFAULT 'T',
+      p_office_id     IN       VARCHAR2 DEFAULT NULL
    );
 END cwms_cat;
 /

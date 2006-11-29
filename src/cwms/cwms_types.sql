@@ -85,14 +85,19 @@ CREATE OR REPLACE TYPE loc_type AS OBJECT (
 )
 /
 
-DROP TYPE source_array;
+DROP TYPE alias_array;
 
-CREATE OR REPLACE
-TYPE source_type AS OBJECT (source_id VARCHAR2(16),
-                            gage_id   VARCHAR2(32));
+CREATE OR REPLACE TYPE alias_type AS OBJECT (
+   agency_id           VARCHAR2(16),
+   alias_id            VARCHAR2(16),
+   agency_name         VARCHAR2(80),
+   alias_public_name   VARCHAR2(32),
+   alias_long_name     VARCHAR2(80)
+)
 /
 
-CREATE OR REPLACE TYPE source_array IS TABLE OF source_type;
+CREATE OR REPLACE
+TYPE alias_array IS TABLE OF alias_type
 /
 
 -------------------------------------------------

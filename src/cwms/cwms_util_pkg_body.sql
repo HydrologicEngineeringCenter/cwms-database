@@ -12,7 +12,8 @@ AS
 *                                      changed to DATE datatype
 *   1.0        8/29/2005   Portin      Original
 ******************************************************************************/--
-   -- return the p_in_date which is in p_in_tz as a date in UTC
+	--
+	-- return the p_in_date which is in p_in_tz as a date in UTC
    FUNCTION date_from_tz_to_utc (p_in_date IN DATE, p_in_tz IN VARCHAR2)
       RETURN DATE
    IS

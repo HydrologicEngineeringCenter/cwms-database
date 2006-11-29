@@ -1,4 +1,4 @@
-/* Formatted on 2006/10/31 06:48 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/11/28 07:29 (Formatter Plus v4.8.7) */
 CREATE OR REPLACE PACKAGE cwms_loc AUTHID CURRENT_USER
 AS
 /******************************************************************************
@@ -82,7 +82,6 @@ AS
 --
    PROCEDURE create_location (
       p_location_id        IN   VARCHAR2,
-      p_office_id          IN   VARCHAR2 DEFAULT NULL,
       p_location_type      IN   VARCHAR2 DEFAULT NULL,
       p_elevation          IN   NUMBER DEFAULT NULL,
       p_elev_unit_id       IN   VARCHAR2 DEFAULT NULL,
@@ -96,7 +95,8 @@ AS
       p_time_zone_id       IN   VARCHAR2 DEFAULT NULL,
       p_county_name        IN   VARCHAR2 DEFAULT NULL,
       p_state_initial      IN   VARCHAR2 DEFAULT NULL,
-      p_active             IN   VARCHAR2 DEFAULT NULL
+      p_active             IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
 
 --********************************************************************** -
@@ -143,7 +143,7 @@ AS
    PROCEDURE rename_location (
       p_location_id_old   IN   VARCHAR2,
       p_location_id_new   IN   VARCHAR2,
-      p_office_id         IN   VARCHAR2 DEFAULT NULL
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 
 --
@@ -173,7 +173,6 @@ AS
 --
    PROCEDURE update_location (
       p_location_id        IN   VARCHAR2,
-      p_office_id          IN   VARCHAR2 DEFAULT NULL,
       p_location_type      IN   VARCHAR2 DEFAULT NULL,
       p_elevation          IN   NUMBER DEFAULT NULL,
       p_elev_unit_id       IN   VARCHAR2 DEFAULT NULL,
@@ -188,7 +187,8 @@ AS
       p_county_name        IN   VARCHAR2 DEFAULT NULL,
       p_state_initial      IN   VARCHAR2 DEFAULT NULL,
       p_active             IN   VARCHAR2 DEFAULT NULL,
-      p_ignorenulls        IN   VARCHAR2 DEFAULT 'T'
+      p_ignorenulls        IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
 
 --
@@ -202,13 +202,13 @@ AS
 ---
 --
    PROCEDURE delete_location (
-      p_location_id   IN   VARCHAR2,
-      p_office_id     IN   VARCHAR2 DEFAULT NULL
+      p_location_id    IN   VARCHAR2,
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE delete_location_cascade (
-      p_location_id   IN   VARCHAR2,
-      p_office_id     IN   VARCHAR2 DEFAULT NULL
+      p_location_id    IN   VARCHAR2,
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
    );
 
 --********************************************************************** -
@@ -221,7 +221,67 @@ AS
       p_location_id_old   IN   VARCHAR2,
       p_location_id_new   IN   VARCHAR2,
       p_active            IN   VARCHAR2 DEFAULT 'T',
-      p_office_id         IN   VARCHAR2 DEFAULT NULL
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE store_aliases (
+      p_location_id    IN   VARCHAR2,
+      p_alias_array    IN   alias_array,
+      p_store_rule     IN   VARCHAR2 DEFAULT 'DELETE INSERT',
+      p_ignorenulls    IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE store_alias (
+      p_location_id         IN   VARCHAR2,
+      p_agency_id           IN   VARCHAR2,
+      p_alias_id            IN   VARCHAR2,
+      p_agency_name         IN   VARCHAR2 DEFAULT NULL,
+      p_alias_public_name   IN   VARCHAR2 DEFAULT NULL,
+      p_alias_long_name     IN   VARCHAR2 DEFAULT NULL,
+      p_ignorenulls         IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE store_location (
+      p_location_id        IN   VARCHAR2,
+      p_location_type      IN   VARCHAR2 DEFAULT NULL,
+      p_elevation          IN   NUMBER DEFAULT NULL,
+      p_elev_unit_id       IN   VARCHAR2 DEFAULT NULL,
+      p_vertical_datum     IN   VARCHAR2 DEFAULT NULL,
+      p_latitude           IN   NUMBER DEFAULT NULL,
+      p_longitude          IN   NUMBER DEFAULT NULL,
+      p_horizontal_datum   IN   VARCHAR2 DEFAULT NULL,
+      p_public_name        IN   VARCHAR2 DEFAULT NULL,
+      p_long_name          IN   VARCHAR2 DEFAULT NULL,
+      p_description        IN   VARCHAR2 DEFAULT NULL,
+      p_time_zone_id       IN   VARCHAR2 DEFAULT NULL,
+      p_county_name        IN   VARCHAR2 DEFAULT NULL,
+      p_state_initial      IN   VARCHAR2 DEFAULT NULL,
+      p_active             IN   VARCHAR2 DEFAULT NULL,
+      p_ignorenulls        IN   VARCHAR2 DEFAULT 'T',
+      p_alias_array        IN   alias_array,
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE retrieve_location (
+      p_location_id        IN       VARCHAR2,
+      p_elev_unit_id       IN       VARCHAR2 DEFAULT 'm',
+      p_location_type      OUT      VARCHAR2,
+      p_elevation          OUT      NUMBER,
+      p_vertical_datum     OUT      VARCHAR2,
+      p_latitude           OUT      NUMBER,
+      p_longitude          OUT      NUMBER,
+      p_horizontal_datum   OUT      VARCHAR2,
+      p_public_name        OUT      VARCHAR2,
+      p_long_name          OUT      VARCHAR2,
+      p_description        OUT      VARCHAR2,
+      p_time_zone_id       OUT      VARCHAR2,
+      p_county_name        OUT      VARCHAR2,
+      p_state_initial      OUT      VARCHAR2,
+      p_active             OUT      VARCHAR2,
+      p_alias_cursor       OUT      sys_refcursor,
+      p_db_office_id       IN       VARCHAR2 DEFAULT NULL
    );
 END cwms_loc;
 /

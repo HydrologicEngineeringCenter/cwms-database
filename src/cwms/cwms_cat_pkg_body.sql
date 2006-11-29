@@ -1,4 +1,4 @@
-/* Formatted on 2006/10/31 11:11 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/11/24 13:19 (Formatter Plus v4.8.7) */
 CREATE OR REPLACE PACKAGE BODY cwms_cat
 IS
 -------------------------------------------------------------------------------
@@ -1256,7 +1256,8 @@ IS
    IS
    BEGIN
       OPEN p_cwms_cat FOR
-         SELECT   cp.base_parameter_id, cs.sub_parameter_id, cs.sub_parameter_desc
+         SELECT   cp.base_parameter_id, cs.sub_parameter_id,
+                  cs.sub_parameter_desc
              FROM at_parameter cs, cwms_base_parameter cp
             WHERE cp.base_parameter_code(+) = cs.base_parameter_code
          ORDER BY cp.base_parameter_id ASC, cs.sub_parameter_id ASC;
@@ -1303,17 +1304,19 @@ IS
       THEN
          l_office_id := cwms_util.user_office_id;
       ELSE
-         l_office_id := upper(p_officeid);
+         l_office_id := UPPER (p_officeid);
       END IF;
 
       l_office_code := cwms_loc.get_office_code (l_office_id);
 
       OPEN p_cwms_cat FOR
          SELECT   sub_location_id, description
-             FROM (SELECT distinct apl.sub_location_id, apl.description
-                     FROM at_physical_location apl, at_base_location abl
-                    WHERE apl.base_location_code = abl.base_location_code
-						    and abl.db_office_code = l_office_code)
+             FROM (SELECT DISTINCT apl.sub_location_id, apl.description
+                              FROM at_physical_location apl,
+                                   at_base_location abl
+                             WHERE apl.base_location_code =
+                                                        abl.base_location_code
+                               AND abl.db_office_code = l_office_code)
          ORDER BY UPPER (sub_location_id);
    END cat_sub_loc;
 
@@ -1812,5 +1815,166 @@ IS
 
       RETURN;
    END cat_dss_xchg_ts_map_tab;
+
+-------------------------------------------------------------------------------
+-- function cat_loc_alias_abrev_tab(...)
+--
+--
+   FUNCTION cat_loc_alias_abrev_tab (
+      p_location_id   IN   VARCHAR2 DEFAULT NULL,
+      p_agency_id     IN   VARCHAR2 DEFAULT NULL,
+      p_office_id     IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN cat_loc_alias_abrev_tab_t PIPELINED
+   IS
+      output_row     cat_loc_alias_abrev_rec_t;
+      query_cursor   sys_refcursor;
+   BEGIN
+      cat_loc_aliases (query_cursor,
+                       p_location_id,
+                       p_agency_id,
+                       'T',
+                       p_office_id
+                      );
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END cat_loc_alias_abrev_tab;
+
+-------------------------------------------------------------------------------
+-- procedure cat_loc_alias(...)
+--
+--
+   PROCEDURE cat_loc_aliases (
+      p_cwms_cat      OUT      sys_refcursor,
+      p_location_id   IN       VARCHAR2 DEFAULT NULL,
+      p_agency_id     IN       VARCHAR2 DEFAULT NULL,
+      p_abreviated    IN       VARCHAR2 DEFAULT 'T',
+      p_office_id     IN       VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_office_id       VARCHAR2 (16);
+      l_abreviated      BOOLEAN
+                  := cwms_util.return_true_or_false (NVL (p_abreviated, 'T'));
+      l_loc_string      VARCHAR2 (16)
+             := UPPER (REPLACE (REPLACE (p_location_id, '*', '%'), '?', '_'));
+      l_agency_string   VARCHAR2 (16)
+               := UPPER (REPLACE (REPLACE (p_agency_id, '*', '%'), '?', '_'));
+
+   BEGIN
+      --
+      IF p_office_id IS NULL
+      THEN
+         l_office_id := cwms_util.user_office_id;
+      ELSE
+         l_office_id := UPPER (p_office_id);
+      END IF;
+
+      IF l_abreviated
+      THEN
+         IF p_location_id IS NULL AND p_agency_id IS NULL
+         THEN
+            OPEN p_cwms_cat FOR
+               SELECT   db_office_id, location_id, agency_id, alias_id
+                   FROM av_aliases
+                  WHERE db_office_id = l_office_id
+               ORDER BY UPPER (db_office_id),
+                        UPPER (location_id),
+                        UPPER (agency_id),
+                        UPPER (alias_id);
+         ELSIF p_location_id IS NOT NULL AND p_agency_id IS NOT NULL
+         THEN
+            OPEN p_cwms_cat FOR
+               SELECT   db_office_id, location_id, agency_id, alias_id
+                   FROM av_aliases
+                  WHERE db_office_id = l_office_id
+                    AND UPPER (location_id) LIKE l_loc_string
+                    AND UPPER (agency_id) LIKE l_agency_string
+               ORDER BY UPPER (db_office_id),
+                        UPPER (location_id),
+                        UPPER (agency_id),
+                        UPPER (alias_id);
+         ELSIF p_agency_id IS NULL
+         THEN
+            OPEN p_cwms_cat FOR
+               SELECT   db_office_id, location_id, agency_id, alias_id
+                   FROM av_aliases
+                  WHERE db_office_id = l_office_id
+                    AND UPPER (location_id) LIKE l_loc_string
+               ORDER BY UPPER (db_office_id),
+                        UPPER (location_id),
+                        UPPER (agency_id),
+                        UPPER (alias_id);
+         ELSE
+            OPEN p_cwms_cat FOR
+               SELECT   db_office_id, location_id, agency_id, alias_id
+                   FROM av_aliases
+                  WHERE db_office_id = l_office_id
+                    AND UPPER (agency_id) LIKE l_agency_string
+               ORDER BY UPPER (db_office_id),
+                        UPPER (location_id),
+                        UPPER (agency_id),
+                        UPPER (alias_id);
+         END IF;
+      ELSE
+         IF p_location_id IS NULL AND p_agency_id IS NULL
+         THEN
+            OPEN p_cwms_cat FOR
+               SELECT   db_office_id, location_id, agency_id, alias_id,
+                        agency_name, alias_public_name, alias_long_name
+                   FROM av_aliases
+                  WHERE db_office_id = l_office_id
+               ORDER BY UPPER (db_office_id),
+                        UPPER (location_id),
+                        UPPER (agency_id),
+                        UPPER (alias_id);
+         ELSIF p_location_id IS NOT NULL AND p_agency_id IS NOT NULL
+         THEN
+            OPEN p_cwms_cat FOR
+               SELECT   db_office_id, location_id, agency_id, alias_id,
+                        agency_name, alias_public_name, alias_long_name
+                   FROM av_aliases
+                  WHERE db_office_id = l_office_id
+                    AND UPPER (location_id) LIKE l_loc_string
+                    AND UPPER (agency_id) LIKE l_agency_string
+               ORDER BY UPPER (db_office_id),
+                        UPPER (location_id),
+                        UPPER (agency_id),
+                        UPPER (alias_id);
+         ELSIF p_agency_id IS NULL
+         THEN
+            OPEN p_cwms_cat FOR
+               SELECT   db_office_id, location_id, agency_id, alias_id,
+                        agency_name, alias_public_name, alias_long_name
+                   FROM av_aliases
+                  WHERE db_office_id = l_office_id
+                    AND UPPER (location_id) LIKE l_loc_string
+               ORDER BY UPPER (db_office_id),
+                        UPPER (location_id),
+                        UPPER (agency_id),
+                        UPPER (alias_id);
+         ELSE
+            OPEN p_cwms_cat FOR
+               SELECT   db_office_id, location_id, agency_id, alias_id,
+                        agency_name, alias_public_name, alias_long_name
+                   FROM av_aliases
+                  WHERE db_office_id = l_office_id
+                    AND UPPER (agency_id) LIKE l_agency_string
+               ORDER BY UPPER (db_office_id),
+                        UPPER (location_id),
+                        UPPER (agency_id),
+                        UPPER (alias_id);
+         END IF;
+      END IF;
+   END cat_loc_aliases;
 END cwms_cat;
 /
