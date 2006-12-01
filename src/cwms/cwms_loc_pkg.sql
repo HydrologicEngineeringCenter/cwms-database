@@ -1,4 +1,4 @@
-/* Formatted on 2006/11/28 07:29 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/12/01 12:25 (Formatter Plus v4.8.7) */
 CREATE OR REPLACE PACKAGE cwms_loc AUTHID CURRENT_USER
 AS
 /******************************************************************************
@@ -265,7 +265,7 @@ AS
    );
 
    PROCEDURE retrieve_location (
-      p_location_id        IN       VARCHAR2,
+      p_location_id        IN OUT   VARCHAR2,
       p_elev_unit_id       IN       VARCHAR2 DEFAULT 'm',
       p_location_type      OUT      VARCHAR2,
       p_elevation          OUT      NUMBER,

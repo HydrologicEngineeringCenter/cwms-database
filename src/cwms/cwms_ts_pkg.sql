@@ -1,6 +1,12 @@
-/* Formatted on 2006/11/20 11:37 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/12/01 12:22 (Formatter Plus v4.8.7) */
 CREATE OR REPLACE PACKAGE cwms_ts AUTHID CURRENT_USER
 AS
+   FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
+      RETURN VARCHAR2;
+
+   FUNCTION get_db_unit_id (p_cwms_ts_id IN VARCHAR2)
+      RETURN VARCHAR2;
+
    FUNCTION get_time_on_after_interval (
       p_unsnapped_datetime   IN   DATE,
       p_ts_offset            IN   NUMBER,
@@ -146,8 +152,8 @@ AS
    PROCEDURE retrieve_ts_java (
       p_transaction_time   OUT      DATE,
       p_at_tsv_rc          OUT      sys_refcursor,
-      p_units              IN       VARCHAR2,
-      p_cwms_ts_id         IN       VARCHAR2,
+      p_units              IN OUT   VARCHAR2,
+      p_cwms_ts_id         IN OUT   VARCHAR2,
       p_start_time         IN       DATE,
       p_end_time           IN       DATE,
       p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',

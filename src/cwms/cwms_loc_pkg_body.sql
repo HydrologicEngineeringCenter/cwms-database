@@ -1,4 +1,4 @@
-/* Formatted on 2006/11/29 08:57 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/12/01 12:31 (Formatter Plus v4.8.7) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --********************************************************************** -
@@ -71,7 +71,6 @@ AS
    IS
       l_office_code   NUMBER;
    BEGIN
-
       SELECT office_code
         INTO l_office_code
         FROM cwms_office
@@ -2185,7 +2184,7 @@ AS
 --*---------------------------------------------------------------------*-
 --
    PROCEDURE retrieve_location (
-      p_location_id        IN       VARCHAR2,
+      p_location_id        IN OUT   VARCHAR2,
       p_elev_unit_id       IN       VARCHAR2 DEFAULT 'm',
       p_location_type      OUT      VARCHAR2,
       p_elevation          OUT      NUMBER,
@@ -2204,12 +2203,12 @@ AS
       p_db_office_id       IN       VARCHAR2 DEFAULT NULL
    )
    IS
-      l_office_id          VARCHAR2 (16);
-      l_office_code        NUMBER;
-      l_location_code      NUMBER;
+      l_office_id       VARCHAR2 (16);
+      l_office_code     NUMBER;
+      l_location_code   NUMBER;
       --
-      l_alias_cursor       sys_refcursor;
-		--
+      l_alias_cursor    sys_refcursor;
+   --
    BEGIN
       IF p_db_office_id IS NULL
       THEN
@@ -2221,6 +2220,12 @@ AS
       --
       l_office_code := get_office_code (l_office_id);
       l_location_code := get_location_code (l_office_id, p_location_id);
+
+      --
+      SELECT al.location_id
+        INTO p_location_id
+        FROM av_loc al
+       WHERE al.location_code = l_location_code;
 
       --
       SELECT apl.location_type,
@@ -2253,8 +2258,8 @@ AS
                                 l_office_id
                                );
       --
-		p_alias_cursor := l_alias_cursor;
-		--
+      p_alias_cursor := l_alias_cursor;
+      --
    --
    END retrieve_location;
 END cwms_loc;

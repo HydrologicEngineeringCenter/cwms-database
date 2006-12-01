@@ -1,7 +1,75 @@
 CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 
  --******************************************************************************/   
-   FUNCTION get_Time_On_After_Interval (
+	--
+	--*******************************************************************   --
+	--*******************************************************************   --
+	--
+	-- GET_CWMS_TS_ID -
+	--
+	-- Simply returns the cwms_ts_id using the case stored in the database	--
+	--
+	FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
+	   RETURN VARCHAR2
+	IS
+	   l_cwms_ts_id   VARCHAR2 (183);
+	BEGIN
+	   SELECT cwms_ts_id
+	     INTO l_cwms_ts_id
+	     FROM mv_cwms_ts_id mcti
+	    WHERE UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
+	      AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
+	
+	   --
+	   RETURN l_cwms_ts_id;
+	END;
+	--*******************************************************************   --
+	--*******************************************************************   --
+	--
+	-- GET_DB_UNIT_ID -
+	--
+	FUNCTION get_db_unit_id (p_cwms_ts_id IN VARCHAR2)
+	   RETURN VARCHAR2
+	IS
+	   l_base_location_id    at_base_location.base_location_id%TYPE;
+	   l_sub_location_id     at_physical_location.sub_location_id%TYPE;
+	   l_base_parameter_id   cwms_base_parameter.base_parameter_id%TYPE;
+	   l_sub_parameter_id    at_parameter.sub_parameter_id%TYPE;
+	   l_parameter_type_id   cwms_parameter_type.parameter_type_id%TYPE;
+	   l_interval_id         cwms_interval.interval_id%TYPE;
+	   l_duration_id         cwms_duration.duration_id%TYPE;
+	   l_version_id          at_cwms_ts_spec.VERSION%TYPE;
+	   l_db_unit_id          cwms_unit.unit_id%TYPE;
+	BEGIN
+	   parse_ts (p_cwms_ts_id,
+	             l_base_location_id,
+	             l_sub_location_id,
+	             l_base_parameter_id,
+	             l_sub_parameter_id,
+	             l_parameter_type_id,
+	             l_interval_id,
+	             l_duration_id,
+	             l_version_id
+	            );
+	
+	   --
+	   SELECT unit_id
+	     INTO l_db_unit_id
+	     FROM cwms_unit cu, cwms_base_parameter cbp
+	    WHERE cu.unit_code = cbp.unit_code
+	      AND cbp.base_parameter_id = l_base_parameter_id;
+	
+	   --
+	   RETURN l_db_unit_id;
+	END;
+	--
+	--*******************************************************************   --
+	--*******************************************************************   --
+	--
+	-- GET_TIME_ON_AFTER_INTERVAL -
+	--
+	--
+	FUNCTION get_Time_On_After_Interval (
      p_unsnapped_datetime     IN   DATE,
 	  p_ts_offset              IN   NUMBER,
 	  p_ts_interval            IN   NUMBER
@@ -533,37 +601,50 @@ END create_ts_code;
 --*******************************************************************   --
 --
 -- RETREIVE_TS_JAVA -
+/* Formatted on 2006/12/01 11:30 (Formatter Plus v4.8.7) */
 --   
-	PROCEDURE retrieve_ts_java (
-	   p_transaction_time   OUT      DATE,
-	   p_at_tsv_rc          OUT      sys_refcursor,
-	   p_units              IN       VARCHAR2,
-	   p_cwms_ts_id    IN       VARCHAR2,
-	   p_start_time         IN       DATE,
-	   p_end_time           IN       DATE,
-	   p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
-	   p_trim               IN       VARCHAR2 DEFAULT 'F',
-	   p_inclusive          IN       NUMBER DEFAULT NULL,
-	   p_version_date       IN       DATE DEFAULT NULL,
-	   p_max_version        IN       VARCHAR2 DEFAULT 'T',
-	   p_office_id          IN       VARCHAR2 DEFAULT NULL
-	)
-	IS
-	BEGIN
-	   p_transaction_time := CAST ((SYSTIMESTAMP AT TIME ZONE 'GMT') AS DATE);
-	   retrieve_ts (p_at_tsv_rc,
-	                p_units,
-	                p_cwms_ts_id,
-	                p_start_time,
-	                p_end_time,
-	                p_time_zone,
-	                p_trim,
-	                p_inclusive,
-	                p_version_date,
-	                p_max_version,
-	                p_office_id
-	               );
-	END retrieve_ts_java;
+
+PROCEDURE retrieve_ts_java (
+   p_transaction_time   OUT      DATE,
+   p_at_tsv_rc          OUT      sys_refcursor,
+   p_units              IN OUT   VARCHAR2,
+   p_cwms_ts_id         IN OUT   VARCHAR2,
+   p_start_time         IN       DATE,
+   p_end_time           IN       DATE,
+   p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
+   p_trim               IN       VARCHAR2 DEFAULT 'F',
+   p_inclusive          IN       NUMBER DEFAULT NULL,
+   p_version_date       IN       DATE DEFAULT NULL,
+   p_max_version        IN       VARCHAR2 DEFAULT 'T',
+   p_office_id          IN       VARCHAR2 DEFAULT NULL
+)
+IS
+BEGIN
+   p_transaction_time := CAST ((SYSTIMESTAMP AT TIME ZONE 'GMT') AS DATE);
+
+      --
+   p_cwms_ts_id := get_cwms_ts_id(p_cwms_ts_id, p_office_id);
+      --
+   IF p_units IS NULL
+   THEN
+      p_units := get_db_unit_id (p_cwms_ts_id);
+   END IF;
+
+   --
+   retrieve_ts (p_at_tsv_rc,
+                p_units,
+                p_cwms_ts_id,
+                p_start_time,
+                p_end_time,
+                p_time_zone,
+                p_trim,
+                p_inclusive,
+                p_version_date,
+                p_max_version,
+                p_office_id
+               );
+END retrieve_ts_java;
+
 --
 --*******************************************************************   --
 --*******************************************************************   --
@@ -575,7 +656,7 @@ END create_ts_code;
 	   p_at_tsv_rc         IN OUT   sys_refcursor,
 	   p_units             IN       VARCHAR2,
 	   p_officeid          IN       VARCHAR2,
-	   p_cwms_ts_id   IN       VARCHAR2,
+	   p_cwms_ts_id   	  IN       VARCHAR2,
 	   p_start_time        IN       DATE,
 	   p_end_time          IN       DATE,
 	   p_timezone      	  IN       VARCHAR2 DEFAULT 'GMT',
@@ -632,7 +713,7 @@ END create_ts_code;
    PROCEDURE retrieve_ts (
       p_at_tsv_rc         IN OUT   sys_refcursor,
       p_units             IN       VARCHAR2,
-      p_cwms_ts_id   IN       VARCHAR2,
+      p_cwms_ts_id   	  IN       VARCHAR2,
       p_start_time        IN       DATE,
       p_end_time          IN       DATE,
       p_time_zone         IN       VARCHAR2 DEFAULT 'UTC',
