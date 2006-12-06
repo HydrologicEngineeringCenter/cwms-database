@@ -2376,102 +2376,134 @@ END retrieve_ts_java;
 	          WHERE ts_code = p_ts_code_old;
 	   END CASE;
 	END delete_ts_cleanup;
+    --
+    --*******************************************************************   --
+    --*******************************************************************   --
+    --
+    -- DELETE_TS -
+    --
+    ---------------------------------------------------------------------   --
+    -- valid p_delete_actions:                                              --
+    --  delete_key: This action will delete the cwms_ts_id only if there
+    --              is no actual data associated with this cwms_ts_id.
+    --              If there is data assciated with the cwms_ts_id, then
+    --              an exception is thrown.
+    --  delete_data: This action will delete all of the data associated
+    --               with the cwms_ts_id. The cwms_ts_id is not deleted.
+    --  delete_all: This action will delete both the data and the
+    --              cwms_ts_id.
+    ----------------------------------------------------------------------  --
+    PROCEDURE delete_ts (
+       p_cwms_ts_id      IN   VARCHAR2,
+       p_delete_action   IN   VARCHAR2 DEFAULT cwms_util.delete_all,
+       p_office_id       IN   VARCHAR2 DEFAULT NULL
+    )
+    IS
+       l_office_id       VARCHAR2 (16);
+       l_ts_code         NUMBER;
+       l_count           NUMBER;
+       l_ts_code_new     NUMBER        := NULL;
+       l_delete_action   VARCHAR2 (16)
+                           := UPPER (NVL (p_delete_action, cwms_util.delete_all));
+       l_delete_date     DATE          := SYSDATE;
+       l_tmp_del_date    DATE          := l_delete_date + 1;
+    --
+    BEGIN
+       --
+       IF p_office_id IS NULL
+       THEN
+          l_office_id := cwms_util.user_office_id;
+       ELSE
+          l_office_id := p_office_id;
+       END IF;
 
---
+       --
+       BEGIN
+          SELECT ts_code
+            INTO l_ts_code
+            FROM mv_cwms_ts_id mcts
+           WHERE UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
+             AND UPPER (mcts.office_id) = UPPER (l_office_id);
+       EXCEPTION
+          WHEN NO_DATA_FOUND
+          THEN
+             cwms_err.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
+       END;
 
---*******************************************************************   --
---*******************************************************************   --
---
--- DELETE_TS -
---
-	PROCEDURE delete_ts (
-	   p_cwms_ts_id   IN   VARCHAR2,
-	   p_delete_action     IN   VARCHAR2 DEFAULT cwms_util.delete_all,
-	   p_office_id         IN   VARCHAR2 DEFAULT NULL
-	)
-	IS
-	   l_office_id       VARCHAR2 (16);
-	   l_ts_code         NUMBER;
-	   l_ts_code_new     NUMBER        := NULL;
-	   l_delete_action   VARCHAR2 (16) := UPPER (p_delete_action);
-	   l_delete_date     DATE          := SYSDATE;
-	   l_tmp_del_date    DATE          := l_delete_date + 1;
-	--
-	BEGIN
-	   --
-	   IF p_office_id IS NULL
-	   THEN
-	      l_office_id := cwms_util.user_office_id;
-	   ELSE
-	      l_office_id := p_office_id;
-	   END IF;
-	
-	   --
-	   BEGIN
-	      SELECT ts_code
-	        INTO l_ts_code
-	        FROM mv_cwms_ts_id mcts
-	       WHERE UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
-	         AND UPPER (mcts.office_id) = UPPER (l_office_id);
-	   EXCEPTION
-	      WHEN NO_DATA_FOUND
-	      THEN
-	         cwms_err.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
-	   END;
-	
-	   --
-	   IF NVL (l_delete_action, cwms_util.delete_all) = cwms_util.delete_all
-	   THEN
-	      l_delete_action := cwms_util.delete_all;
-	   ELSIF l_delete_action = cwms_util.delete_data
-	   THEN
-	      l_delete_action := cwms_util.delete_data;
-	   ELSE
-	      cwms_err.RAISE ('INVALID_DELETE_ACTION', p_delete_action);
-	   END IF;
-	
-	   -- If deleting the data only, then a new replacement ts_code must --
-	   -- be created --
-	   --
-	   IF l_delete_action = cwms_util.delete_data
-	   THEN     -- Create replacement ts_id - temporarily disabled by setting a --
-	            -- delete date - need to do this so as not to violate unique    --
-	            -- constraint --
-	      SELECT cwms_seq.NEXTVAL
-	        INTO l_ts_code_new
-	        FROM DUAL;
-	
-	      INSERT INTO at_cwms_ts_spec
-	         SELECT l_ts_code_new, office_code, location_code, parameter_code,
-	                parameter_type_code, interval_code, duration_code, VERSION,
-	                ts_ni_hash, description, interval_utc_offset,
-	                interval_forward, interval_backward, interval_offset_id,
-	                time_zone_code, version_flag, migrate_ver_flag, active_flag,
-	                l_tmp_del_date, data_source
-	           FROM at_cwms_ts_spec acts
-	          WHERE acts.ts_code = l_ts_code;
-	   END IF;
-	
-	   -- Delete the timeseries id --
-	   UPDATE at_cwms_ts_spec
-	      SET location_code = 0,
-	          delete_date = l_delete_date
-	    WHERE ts_code = l_ts_code;
-	
-	   IF l_delete_action = cwms_util.delete_data
-	   THEN
-	      -- Activate the replacement ts_id by setting the delete_date to null --
-	      UPDATE at_cwms_ts_spec
-	         SET delete_date = NULL
-	       WHERE ts_code = l_ts_code_new;
-	   END IF;
-	
-	   --
-	   COMMIT;
-	   --
-	   delete_ts_cleanup (l_ts_code, l_ts_code_new, l_delete_action);
-	--
-	END delete_ts;
+       CASE
+          WHEN l_delete_action = cwms_util.delete_key
+          THEN
+             SELECT COUNT (*)
+               INTO l_count
+               FROM av_tsv
+              WHERE ts_code = l_ts_code;
+
+             --
+             IF l_count = 0
+             THEN
+                UPDATE at_cwms_ts_spec
+                   SET location_code = 0,
+                       delete_date = l_delete_date
+                 WHERE ts_code = l_ts_code;
+             ELSE
+                cwms_err.RAISE
+                              ('GENERIC_ERROR',
+                                  'cwms_ts_id: '
+                               || p_cwms_ts_id
+                               || ' contains data. Cannot use the DELETE KEY action'
+                              );
+             END IF;
+          WHEN    l_delete_action = cwms_util.delete_all
+               OR l_delete_action = cwms_util.delete_data
+          THEN
+             -- If deleting the data only, then a new replacement ts_code must --
+             -- be created --
+             --
+             IF l_delete_action = cwms_util.delete_data
+             THEN
+               -- Create replacement ts_id - temporarily disabled by setting a --
+               -- delete date - need to do this so as not to violate unique    --
+               -- constraint --
+                SELECT cwms_seq.NEXTVAL
+                  INTO l_ts_code_new
+                  FROM DUAL;
+
+                INSERT INTO at_cwms_ts_spec
+                   SELECT l_ts_code_new, office_code, location_code,
+                          parameter_code, parameter_type_code, interval_code,
+                          duration_code, VERSION, ts_ni_hash, description,
+                          interval_utc_offset, interval_forward,
+                          interval_backward, interval_offset_id, time_zone_code,
+                          version_flag, migrate_ver_flag, active_flag,
+                          l_tmp_del_date, data_source
+                     FROM at_cwms_ts_spec acts
+                    WHERE acts.ts_code = l_ts_code;
+             END IF;
+
+             -- Delete the timeseries id --
+             UPDATE at_cwms_ts_spec
+                SET location_code = 0,
+                    delete_date = l_delete_date
+              WHERE ts_code = l_ts_code;
+
+             IF l_delete_action = cwms_util.delete_data
+             THEN
+                -- Activate the replacement ts_id by setting the delete_date to null --
+                UPDATE at_cwms_ts_spec
+                   SET delete_date = NULL
+                 WHERE ts_code = l_ts_code_new;
+             END IF;
+          --
+       ELSE
+             cwms_err.RAISE ('INVALID_DELETE_ACTION', p_delete_action);
+       END CASE;
+
+       --
+       COMMIT;
+       --
+       delete_ts_cleanup (l_ts_code, l_ts_code_new, l_delete_action);
+    --
+    END delete_ts;
 --
 --*******************************************************************   --
 --*******************************************************************   --

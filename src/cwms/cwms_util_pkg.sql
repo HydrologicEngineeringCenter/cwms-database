@@ -22,7 +22,7 @@ AS
                                                 := 'REPLACE WITH NON MISSING';
    delete_insert                 CONSTANT VARCHAR2 (16) := 'DELETE INSERT';
    --
-   -- delete_key                    CONSTANT VARCHAR2 (16) := 'DELETE KEY';
+   delete_key                    CONSTANT VARCHAR2 (16) := 'DELETE KEY';
    delete_data                   CONSTANT VARCHAR2 (16) := 'DELETE DATA';
    delete_all                    CONSTANT VARCHAR2 (16) := 'DELETE ALL';
    --
