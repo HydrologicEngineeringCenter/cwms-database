@@ -1,4 +1,4 @@
-/* Formatted on 2006/11/20 14:30 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/12/11 09:10 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util AUTHID CURRENT_USER
 AS
 /******************************************************************************
@@ -38,11 +38,23 @@ AS
                                 := max_base_id_length + max_sub_id_length + 1;
    --
    db_office_code_all            CONSTANT NUMBER        := 53;
-	--
-	irregular_interval_code			CONSTANT NUMBER		  := 29;
+   --
+   irregular_interval_code       CONSTANT NUMBER        := 29;
 
    TYPE ts_list IS TABLE OF VARCHAR2 (200)
       INDEX BY BINARY_INTEGER;
+
+   --
+   FUNCTION min_dms (p_decimal_degrees IN NUMBER)
+      RETURN NUMBER;
+
+   --
+   FUNCTION sec_dms (p_decimal_degrees IN NUMBER)
+      RETURN NUMBER;
+
+   --
+   FUNCTION min_dm (p_decimal_degrees IN NUMBER)
+      RETURN NUMBER;
 
    --
    -- return the p_in_date which is in p_in_tz as a date in UTC

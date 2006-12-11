@@ -1,4 +1,4 @@
-/* Formatted on 2006/10/25 05:10 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/12/11 09:09 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -12,8 +12,97 @@ AS
 *                                      changed to DATE datatype
 *   1.0        8/29/2005   Portin      Original
 ******************************************************************************/--
-	--
-	-- return the p_in_date which is in p_in_tz as a date in UTC
+   FUNCTION min_dms (p_decimal_degrees IN NUMBER)
+      RETURN NUMBER
+   IS
+      l_sec_dms   NUMBER;
+      l_min_dms   NUMBER;
+   BEGIN
+      l_sec_dms :=
+         ROUND (  (  (  ABS (p_decimal_degrees - TRUNC (p_decimal_degrees))
+                      * 60.0
+                     )
+                   - TRUNC (  ABS (  p_decimal_degrees
+                                   - TRUNC (p_decimal_degrees)
+                                  )
+                            * 60
+                           )
+                  )
+                * 60.0,
+                2
+               );
+      l_min_dms :=
+               TRUNC (ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60);
+
+      IF l_sec_dms = 60
+      THEN
+         RETURN l_min_dms + 1;
+      ELSE
+         RETURN l_min_dms;
+      END IF;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         NULL;
+      WHEN OTHERS
+      THEN
+         -- Consider logging the error and then re-raise
+         RAISE;
+   END min_dms;
+
+--
+   FUNCTION sec_dms (p_decimal_degrees IN NUMBER)
+      RETURN NUMBER
+   IS
+      l_sec_dms   NUMBER;
+   BEGIN
+      l_sec_dms :=
+         ROUND (  (  (  ABS (p_decimal_degrees - TRUNC (p_decimal_degrees))
+                      * 60.0
+                     )
+                   - min_dms (p_decimal_degrees)
+                  )
+                * 60.0,
+                2
+               );
+
+      IF l_sec_dms = 60
+      THEN
+         RETURN 0;
+      ELSE
+         RETURN l_sec_dms;
+      END IF;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         NULL;
+      WHEN OTHERS
+      THEN
+         -- Consider logging the error and then re-raise
+         RAISE;
+   END sec_dms;
+
+--
+   FUNCTION min_dm (p_decimal_degrees IN NUMBER)
+      RETURN NUMBER
+   IS
+   BEGIN
+      RETURN ROUND ((ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60
+                    ),
+                    2
+                   );
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         NULL;
+      WHEN OTHERS
+      THEN
+         -- Consider logging the error and then re-raise
+         RAISE;
+   END min_dm;
+
+   --
+   -- return the p_in_date which is in p_in_tz as a date in UTC
    FUNCTION date_from_tz_to_utc (p_in_date IN DATE, p_in_tz IN VARCHAR2)
       RETURN DATE
    IS
@@ -142,31 +231,30 @@ AS
 -- Return the office code for the specified office id,
 -- or the user's primary office if the office id is null
 --
-	FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
-	   RETURN NUMBER
-	IS
-	   l_office_code   NUMBER := NULL;
-	BEGIN
--- 	   IF p_office_id IS NULL
--- 	   THEN
--- 	      SELECT primary_office
--- 	        INTO l_office_code
--- 	        FROM at_sec_user_office
--- 	       WHERE user_id = SYS_CONTEXT ('userenv', 'session_user');
--- 	   ELSE
-	      SELECT office_code
-	        INTO l_office_code
-	        FROM cwms_office
-	       WHERE office_id = p_office_id;
---	   END IF;
-	  RETURN l_office_code;
-	EXCEPTION
-	   WHEN NO_DATA_FOUND
-	   THEN
-	      cwms_err.RAISE ('INVALID_OFFICE_ID', p_office_id);
-	      
-	END get_office_code;
+   FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN NUMBER
+   IS
+      l_office_code   NUMBER := NULL;
+   BEGIN
+--       IF p_office_id IS NULL
+--       THEN
+--          SELECT primary_office
+--            INTO l_office_code
+--            FROM at_sec_user_office
+--           WHERE user_id = SYS_CONTEXT ('userenv', 'session_user');
+--       ELSE
+      SELECT office_code
+        INTO l_office_code
+        FROM cwms_office
+       WHERE office_id = p_office_id;
 
+--    END IF;
+      RETURN l_office_code;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         cwms_err.RAISE ('INVALID_OFFICE_ID', p_office_id);
+   END get_office_code;
 
    PROCEDURE TEST
    IS
@@ -174,12 +262,12 @@ AS
       DBMS_OUTPUT.put_line ('successful test');
    END;
 
-	FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
-	   RETURN VARCHAR2
-	IS
-	BEGIN
-	   RETURN p_base_id || SUBSTR ('-', 1, LENGTH (p_sub_id)) || p_sub_id;
-	END;
+   FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      RETURN p_base_id || SUBSTR ('-', 1, LENGTH (p_sub_id)) || p_sub_id;
+   END;
 
 ----------------------------------------------------------------------------
    PROCEDURE DUMP (p_str IN VARCHAR2, p_len IN PLS_INTEGER DEFAULT 80)
