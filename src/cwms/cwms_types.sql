@@ -46,7 +46,11 @@ CREATE OR REPLACE TYPE date_table_type AS TABLE OF DATE;
 -- CREATE OR REPLACE TYPE TSVArray IS TABLE OF AT_TIME_SERIES_VALUE%ROWTYPE
 --	INDEX BY BINARY_INTEGER;
 
-
+DROP TYPE source_array;
+CREATE OR REPLACE TYPE source_type AS OBJECT (source_id VARCHAR2(16), gage_id   VARCHAR2(32));
+/
+CREATE OR REPLACE TYPE source_array IS TABLE OF source_type;
+/
 
 CREATE OR REPLACE TYPE loc_type_ds AS OBJECT (
    office_id        VARCHAR2 (16),
@@ -252,6 +256,7 @@ create or replace type cat_dss_xchg_ts_map_obj_t as object(
    dss_unit_id           varchar2(16),
    dss_timezone_name     varchar2(28),
    dss_tz_usage_id       varchar2(8));
+/
 
 create type cat_dss_xchg_ts_map_otab_t as table of cat_dss_xchg_ts_map_obj_t;
 /
