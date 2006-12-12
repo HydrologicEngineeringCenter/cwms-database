@@ -1445,8 +1445,8 @@ END retrieve_ts_java;
 
 	-- 
 	-- Determine the min and max date in the dataset, convert 
-	-- the min & max dates to GMT dates.
-	-- The min & max dates are used to determine which 
+	-- the min and max dates to GMT dates.
+	-- The min and max dates are used to determine which 
 	-- at_tsv tables need to be accessed during the store.
 	--
 	  	  
