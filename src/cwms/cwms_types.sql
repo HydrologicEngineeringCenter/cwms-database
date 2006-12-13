@@ -1,25 +1,73 @@
 -- Defines the CWMS date-time, value, and quality types. 
 --
-SET TIME ON
-SELECT SYSDATE FROM DUAL;
-SET ECHO ON
+-- The following types must be dropped or redefined before the types they 
+-- depend on can be redefined.
+--
+create or replace type tsv_array is table of number;
+/
+create or replace type at_tsv_array is table of number;
+/
+create or replace type loc_type_ds as object (dummy number);
+/
+create or replace type source_array is table of number;
+/
+create or replace type alias_array is table of number;
+/
+create or replace type cat_ts_otab_t as table of number;
+/
+create or replace type cat_ts_cwms_20_otab_t as table of number;
+/
+create or replace type cat_loc_otab_t as table of number;
+/
+create or replace type cat_loc_alias_otab_t as table of number;
+/
+create or replace type cat_param_otab_t as table of number;
+/
+create or replace type cat_sub_param_otab_t as table of number;
+/
+create or replace type cat_sub_loc_otab_t as table of number;
+/
+create or replace type cat_state_otab_t as table of number;
+/
+create or replace type cat_county_otab_t as table of number;
+/
+create or replace type cat_timezone_otab_t as table of number;
+/
+create or replace type cat_dss_file_otab_t as table of number;
+/
+create or replace type cat_dss_xchg_set_otab_t as table of number;
+/
+create or replace type cat_dss_xchg_ts_map_otab_t as table of number;
+/
+/*
+drop type tsv_array;
+drop type at_tsv_array;
+drop type loc_type_ds;
+drop type source_array;
+drop type alias_array;
+drop type cat_ts_otab_t;
+drop type cat_ts_cwms_20_otab_t;
+drop type cat_loc_otab_t;
+drop type cat_loc_alias_otab_t;
+drop type cat_param_otab_t;
+drop type cat_sub_param_otab_t;
+drop type cat_sub_loc_otab_t;
+drop type cat_state_otab_t;
+drop type cat_county_otab_t;
+drop type cat_timezone_otab_t;
+drop type cat_dss_file_otab_t;
+drop type cat_dss_xchg_set_otab_t;
+drop type cat_dss_xchg_ts_map_otab_t;
+*/
 
--- Is there a way to check if the types exist prior to dropping them?
-
-DROP TYPE tsv_array force;
-DROP TYPE tsv_type force;
-
-CREATE OR REPLACE TYPE tsv_type 
-                    AS OBJECT (date_time timestamp with time zone,
-                               value BINARY_DOUBLE, 
-							   quality_code NUMBER);
+CREATE OR REPLACE TYPE tsv_type AS OBJECT (
+   date_time    timestamp with time zone,
+   value        BINARY_DOUBLE, 
+   quality_code NUMBER);
 /
 
 CREATE OR REPLACE TYPE tsv_array IS TABLE OF tsv_type;
 /
-
--- Need to drop the array type due to its dependency on the at_tsv_type.
-DROP TYPE at_tsv_array;
 
 -- This type represents a row in the time series value table.
 -- BINARY_INTEGER or PLS_INTEGER should be used instead of NUMBER, which is better?
@@ -46,7 +94,6 @@ CREATE OR REPLACE TYPE date_table_type AS TABLE OF DATE;
 -- CREATE OR REPLACE TYPE TSVArray IS TABLE OF AT_TIME_SERIES_VALUE%ROWTYPE
 --	INDEX BY BINARY_INTEGER;
 
-DROP TYPE source_array;
 CREATE OR REPLACE TYPE source_type AS OBJECT (source_id VARCHAR2(16), gage_id   VARCHAR2(32));
 /
 CREATE OR REPLACE TYPE source_array IS TABLE OF source_type;
@@ -89,8 +136,6 @@ CREATE OR REPLACE TYPE loc_type AS OBJECT (
 )
 /
 
-DROP TYPE alias_array;
-
 CREATE OR REPLACE TYPE alias_type AS OBJECT (
    agency_id           VARCHAR2(16),
    alias_id            VARCHAR2(16),
@@ -99,9 +144,7 @@ CREATE OR REPLACE TYPE alias_type AS OBJECT (
    alias_long_name     VARCHAR2(80)
 )
 /
-
-CREATE OR REPLACE
-TYPE alias_array IS TABLE OF alias_type
+CREATE OR REPLACE TYPE alias_array IS TABLE OF alias_type;
 /
 
 -------------------------------------------------
@@ -109,27 +152,12 @@ TYPE alias_array IS TABLE OF alias_type
 -- so JPublisher stays happy                   --
 -------------------------------------------------
 
-drop type cat_ts_otab_t;
-drop type cat_ts_cwms_20_otab_t;
-drop type cat_loc_otab_t;
-drop type cat_loc_alias_otab_t;
-drop type cat_param_otab_t;
-drop type cat_sub_param_otab_t;
-drop type cat_sub_loc_otab_t;
-drop type cat_state_otab_t;
-drop type cat_county_otab_t;
-drop type cat_timezone_otab_t;
-drop type cat_dss_file_otab_t;
-drop type cat_dss_xchg_set_otab_t;
-drop type cat_dss_xchg_ts_map_otab_t;
-
 create or replace type cat_ts_obj_t as object(
    office_id           varchar2(16),
    cwms_ts_id          varchar2(183),
    interval_utc_offset number);
 /                   
-
-create type cat_ts_otab_t as table of cat_ts_obj_t;
+create or replace type cat_ts_otab_t as table of cat_ts_obj_t;
 /
 
 create or replace type cat_ts_cwms_20_obj_t as object(
@@ -140,8 +168,7 @@ create or replace type cat_ts_cwms_20_obj_t as object(
    inactive            number,
    lrts_timezone       varchar2(28));
 /
-
-create type cat_ts_cwms_20_otab_t as table of cat_ts_cwms_20_obj_t;
+create or replace type cat_ts_cwms_20_otab_t as table of cat_ts_cwms_20_obj_t;
 /
 
 create or replace type cat_loc_obj_t as object(
@@ -160,8 +187,7 @@ create or replace type cat_loc_obj_t as object(
    long_name      varchar2(80),
    description    varchar2(512));
 /
-
-create type cat_loc_otab_t as table of cat_loc_obj_t;
+create or replace type cat_loc_otab_t as table of cat_loc_obj_t;
 /
 
 create or replace type cat_loc_alias_obj_t as object(
@@ -170,8 +196,7 @@ create or replace type cat_loc_alias_obj_t as object(
    source_id varchar2(16),
    gage_id   varchar2(32));
 /
-
-create type cat_loc_alias_otab_t as table of cat_loc_alias_obj_t;
+create or replace type cat_loc_alias_otab_t as table of cat_loc_alias_obj_t;
 /
 
 create or replace type cat_param_obj_t as object(
@@ -182,8 +207,7 @@ create or replace type cat_param_obj_t as object(
    unit_long_name    varchar2(80),
    unit_description  varchar2(80));
 /
-
-create type cat_param_otab_t as table of cat_param_obj_t;
+create or replace type cat_param_otab_t as table of cat_param_obj_t;
 /
 
 create or replace type cat_sub_param_obj_t as object(
@@ -191,24 +215,21 @@ create or replace type cat_sub_param_obj_t as object(
    subparameter_id varchar2(32),
    description     varchar2(80));
 /
-
-create type cat_sub_param_otab_t as table of cat_sub_param_obj_t;
+create or replace type cat_sub_param_otab_t as table of cat_sub_param_obj_t;
 /
 
 create or replace type cat_sub_loc_obj_t as object(
    sublocation_id  varchar2(32),
    description     varchar2(80));
 /
-
-create type cat_sub_loc_otab_t as table of cat_sub_loc_obj_t;
+create or replace type cat_sub_loc_otab_t as table of cat_sub_loc_obj_t;
 /
 
 create or replace type cat_state_obj_t as object(
    state_initial varchar2(2),
    state_name    varchar2(40));
 /
-
-create type cat_state_otab_t as table of cat_state_obj_t;
+create or replace type cat_state_otab_t as table of cat_state_obj_t;
 /
 
 create or replace type cat_county_obj_t as object(
@@ -216,8 +237,7 @@ create or replace type cat_county_obj_t as object(
    county_name   varchar2(40),
    state_initial varchar2(2));
 /
-
-create type cat_county_otab_t as table of cat_county_obj_t;
+create or replace type cat_county_otab_t as table of cat_county_obj_t;
 /
 
 create or replace type cat_timezone_obj_t as object(
@@ -225,16 +245,14 @@ create or replace type cat_timezone_obj_t as object(
    utc_offset    interval day(2) to second(6),
    dst_offset    interval day(2) to second(6)); 
 /
-
-create type cat_timezone_otab_t as table of cat_timezone_obj_t;
+create or replace type cat_timezone_otab_t as table of cat_timezone_obj_t;
 /
 
 create or replace type cat_dss_file_obj_t as object(
    dss_filemgr_url varchar2(32),
    dss_file_name   number(10));
 /
-
-create type cat_dss_file_otab_t as table of cat_dss_file_obj_t;
+create or replace type cat_dss_file_otab_t as table of cat_dss_file_obj_t;
 /
 
 create or replace type cat_dss_xchg_set_obj_t as object(
@@ -245,8 +263,7 @@ create or replace type cat_dss_xchg_set_obj_t as object(
    dss_file_name            varchar2(255),
    dss_xchg_direction_id    varchar2(16));
 /                                         
-
-create type cat_dss_xchg_set_otab_t as table of cat_dss_xchg_set_obj_t;
+create or replace type cat_dss_xchg_set_otab_t as table of cat_dss_xchg_set_obj_t;
 /
 
 create or replace type cat_dss_xchg_ts_map_obj_t as object(
@@ -257,12 +274,8 @@ create or replace type cat_dss_xchg_ts_map_obj_t as object(
    dss_timezone_name     varchar2(28),
    dss_tz_usage_id       varchar2(8));
 /
-
-create type cat_dss_xchg_ts_map_otab_t as table of cat_dss_xchg_ts_map_obj_t;
+create or replace type cat_dss_xchg_ts_map_otab_t as table of cat_dss_xchg_ts_map_obj_t;
 /
+commit;
 
-
-SHOW ERRORS
-SET ECHO OFF
-SET TIME OFF
 

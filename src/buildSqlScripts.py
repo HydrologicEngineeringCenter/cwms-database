@@ -7184,16 +7184,16 @@ for table1 in tables :
         except : 
             pass
             
-print prefix[ALL] + "SET TIME ON"
-print "BUILDCWMS~SPOOL %s" % logFileName["BUILDCWMS"]
+#print prefix[ALL] + "SET TIME ON"
+#print "BUILDCWMS~SPOOL %s" % logFileName["BUILDCWMS"]
 #print "BUILDUSER~SPOOL %s" % logFileName["BUILDUSER"]
-print "DROPCWMS~SPOOL %s"  % logFileName["DROPCWMS"]
+#print "DROPCWMS~SPOOL %s"  % logFileName["DROPCWMS"]
 #print "DROPUSER~SPOOL %s"  % logFileName["DROPUSER"]
-print prefix[ALL] + "SELECT SYSDATE FROM DUAL;"
-print prefix[ALL] + "SET ECHO ON"
-print prefix[ALL] + "SET SERVEROUTPUT ON"
-print prefix[ALL] + "BEGIN DBMS_OUTPUT.ENABLE(20000); END;"
-print prefix[ALL] + "/"
+#print prefix[ALL] + "SELECT SYSDATE FROM DUAL;"
+#print prefix[ALL] + "SET ECHO ON"
+#print prefix[ALL] + "SET SERVEROUTPUT ON"
+#print prefix[ALL] + "BEGIN DBMS_OUTPUT.ENABLE(20000); END;"
+#print prefix[ALL] + "/"
 
 for table in tables_rev :
     tableName = eval("%sTableName" % table)
@@ -7269,9 +7269,9 @@ for table in tables :
     except :
         pass
 
-print prefix[ALL] + "SPOOL OFF"
-print prefix[ALL] + "SET ECHO OFF"
-print prefix[ALL] + "SET TIME OFF"
+#print prefix[ALL] + "SPOOL OFF"
+#print prefix[ALL] + "SET ECHO OFF"
+#print prefix[ALL] + "SET TIME OFF"
 
 #--------------------------------------------------------------------#
 # read in the output we just generated and parse to individual files #

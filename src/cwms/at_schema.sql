@@ -1,8 +1,57 @@
 /* CWMS Version 2.0
 This script should be run by the cwms schema owner.
 */ 
-
-
+----------------------------------------------------
+-- drop tables, mviews & mview logs if they exist --
+----------------------------------------------------
+begin                    
+   begin execute immediate 'drop table at_ts_table_properties cascade constraints';    exception when others then null; end;
+   begin execute immediate 'drop table at_base_location cascade constraints';          exception when others then null; end;
+   begin execute immediate 'drop table at_physical_location cascade constraints';      exception when others then null; end;
+   begin execute immediate 'drop table at_agency_name cascade constraints';            exception when others then null; end;
+   begin execute immediate 'drop table at_alias_name cascade constraints';             exception when others then null; end;
+   begin execute immediate 'drop table at_data_stream_id cascade constraints';         exception when others then null; end;
+   begin execute immediate 'drop table at_parameter cascade constraints';              exception when others then null; end;
+   begin execute immediate 'drop table at_display_units cascade constraints';          exception when others then null; end;
+   begin execute immediate 'drop table at_alarm_id cascade constraints';               exception when others then null; end;
+   begin execute immediate 'drop table at_alarm_criteria cascade constraints';         exception when others then null; end;
+   begin execute immediate 'drop table at_val_screening_id cascade constraints';       exception when others then null; end;
+   begin execute immediate 'drop table at_val_screening_criteria cascade constraints'; exception when others then null; end;
+   begin execute immediate 'drop table at_val_duration_magnitude cascade constraints'; exception when others then null; end;
+   begin execute immediate 'drop table at_cwms_ts_spec cascade constraints';           exception when others then null; end;
+   begin execute immediate 'drop table at_shef_decode cascade constraints';            exception when others then null; end;
+   begin execute immediate 'drop table at_validation cascade constraints';             exception when others then null; end;
+   begin execute immediate 'drop table at_alarm cascade constraints';                  exception when others then null; end;
+   begin execute immediate 'drop table at_comp_vt cascade constraints';                exception when others then null; end;
+   begin execute immediate 'drop table at_transform_criteria cascade constraints';     exception when others then null; end;
+   begin execute immediate 'drop table at_unit_alias cascade constraints';             exception when others then null; end;
+   begin execute immediate 'drop table at_user_preferences cascade constraints';       exception when others then null; end;
+   begin execute immediate 'drop table at_office_settings cascade constraints';        exception when others then null; end;
+   begin execute immediate 'drop table at_dss_file cascade constraints';               exception when others then null; end;
+   begin execute immediate 'drop table at_dss_ts_spec cascade constraints';            exception when others then null; end;
+   begin execute immediate 'drop table at_dss_ts_xchg_spec cascade constraints';       exception when others then null; end;
+   begin execute immediate 'drop table at_dss_rating_spec cascade constraints';        exception when others then null; end;
+   begin execute immediate 'drop table at_dss_rating_xchg_spec cascade constraints';   exception when others then null; end;
+   begin execute immediate 'drop table at_dss_xchg_set cascade constraints';           exception when others then null; end;
+   begin execute immediate 'drop table at_dss_ts_xchg_map cascade constraints';        exception when others then null; end;
+   begin execute immediate 'drop table at_dss_rating_xchg_map cascade constraints';    exception when others then null; end;
+   begin execute immediate 'drop table at_ts_msg_archive_1 cascade constraints';       exception when others then null; end;
+   begin execute immediate 'drop table at_ts_msg_archive_2 cascade constraints';       exception when others then null; end;
+   begin execute immediate 'drop table at_report_templates cascade constraints';       exception when others then null; end;
+   begin execute immediate 'drop table at_clob cascade constraints';                   exception when others then null; end;
+   begin execute immediate 'drop materialized view log on at_base_location';           exception when others then null; end;
+   begin execute immediate 'drop materialized view log on at_physical_location';       exception when others then null; end;
+   begin execute immediate 'drop materialized view log on at_cwms_ts_spec';            exception when others then null; end;
+   begin execute immediate 'drop materialized view log on cwms_office';                exception when others then null; end;
+   begin execute immediate 'drop materialized view log on cwms_parameter_type';        exception when others then null; end;
+   begin execute immediate 'drop materialized view log on cwms_base_parameter';        exception when others then null; end;
+   begin execute immediate 'drop materialized view log on at_parameter';               exception when others then null; end;
+   begin execute immediate 'drop materialized view log on cwms_interval';              exception when others then null; end;
+   begin execute immediate 'drop materialized view log on cwms_duration';              exception when others then null; end;
+   begin execute immediate 'drop materialized view log on cwms_unit';                  exception when others then null; end;
+   begin execute immediate 'drop materialized view mv_cwms_ts_id';                     exception when others then null; end;
+end;
+/
 
 -------------------
 -- CREATE TABLES --
@@ -4176,8 +4225,21 @@ COMMENT ON COLUMN AT_DSS_FILE.DSS_FILE_NAME IS 'Operating system path name for f
 -----------------------------
 -- AT_DSS_FILE constraints
 --
-ALTER TABLE AT_DSS_FILE ADD CONSTRAINT PK_AT_DSS_FILE PRIMARY KEY (DSS_FILE_CODE);
-ALTER TABLE AT_DSS_FILE ADD CONSTRAINT UK_AT_DSS_FILE UNIQUE (DSS_FILEMGR_URL, DSS_FILE_NAME);
+ALTER TABLE AT_DSS_FILE ADD CONSTRAINT AT_DSS_FILE_UK UNIQUE (DSS_FILEMGR_URL, DSS_FILE_NAME);
+ALTER TABLE AT_DSS_FILE ADD CONSTRAINT AT_DSS_FILE_PK PRIMARY KEY (DSS_FILE_CODE) 
+    USING INDEX
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               );
+
 
 SHOW ERRORS;
 COMMIT;
@@ -4230,11 +4292,23 @@ COMMENT ON COLUMN AT_DSS_TS_SPEC.TZ_USAGE_CODE           IS 'Reference to time z
 -----------------------------
 -- AT_DSS_TS_SPEC constraints
 --
-ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT PK_AT_DSS_TS_SPEC   PRIMARY KEY (DSS_TS_CODE);
-ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT FK_AT_DSS_TS_SPEC_1 FOREIGN KEY (DSS_PARAMETER_TYPE_CODE) REFERENCES CWMS_DSS_PARAMETER_TYPE(DSS_PARAMETER_TYPE_CODE);
-ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT FK_AT_DSS_TS_SPEC_2 FOREIGN KEY (UNIT_CODE) REFERENCES CWMS_UNIT(UNIT_CODE);
-ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT FK_AT_DSS_TS_SPEC_3 FOREIGN KEY (TIMEZONE_CODE) REFERENCES CWMS_TIME_ZONE(TIME_ZONE_CODE);
-ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT FK_AT_DSS_TS_SPEC_4 FOREIGN KEY (TZ_USAGE_CODE) REFERENCES CWMS_TZ_USAGE(TZ_USAGE_CODE);
+ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_FK1  FOREIGN KEY (DSS_PARAMETER_TYPE_CODE) REFERENCES CWMS_DSS_PARAMETER_TYPE(DSS_PARAMETER_TYPE_CODE);
+ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_FK2  FOREIGN KEY (UNIT_CODE) REFERENCES CWMS_UNIT(UNIT_CODE);
+ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_FK3  FOREIGN KEY (TIMEZONE_CODE) REFERENCES CWMS_TIME_ZONE(TIME_ZONE_CODE);
+ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_FK4  FOREIGN KEY (TZ_USAGE_CODE) REFERENCES CWMS_TZ_USAGE(TZ_USAGE_CODE);
+ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_PK   PRIMARY KEY (DSS_TS_CODE)
+    USING INDEX
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               );
 -----------------------------
 -- AT_DSS_TS_SPEC indicies
 --
@@ -4261,6 +4335,7 @@ CREATE INDEX AT_DSS_TS_SPEC_PATHNAME ON AT_DSS_TS_SPEC
           FREELIST GROUPS 1
           BUFFER_POOL DEFAULT
        );
+
 SHOW ERRORS;
 COMMIT;
 
@@ -4299,10 +4374,23 @@ COMMENT ON COLUMN AT_DSS_TS_XCHG_SPEC.DSS_TS_CODE      IS 'Reference to time ser
 -----------------------------
 -- AT_DSS_TS_XCHG_SPEC constraints
 --
-ALTER TABLE AT_DSS_TS_XCHG_SPEC ADD CONSTRAINT PK_AT_DSS_TS_XCHG_SPEC   PRIMARY KEY (DSS_TS_XCHG_CODE);
-ALTER TABLE AT_DSS_TS_XCHG_SPEC ADD CONSTRAINT FK_AT_DSS_TS_XCHG_SPEC_1 FOREIGN KEY (TS_CODE) REFERENCES AT_CWMS_TS_SPEC(TS_CODE);
-ALTER TABLE AT_DSS_TS_XCHG_SPEC ADD CONSTRAINT FK_AT_DSS_TS_XCHG_SPEC_2 FOREIGN KEY (DSS_TS_CODE) REFERENCES AT_DSS_TS_SPEC(DSS_TS_CODE);
+ALTER TABLE AT_DSS_TS_XCHG_SPEC ADD CONSTRAINT AT_DSS_TS_XCHG_SPEC_FK1  FOREIGN KEY (TS_CODE) REFERENCES AT_CWMS_TS_SPEC(TS_CODE);
+ALTER TABLE AT_DSS_TS_XCHG_SPEC ADD CONSTRAINT AT_DSS_TS_XCHG_SPEC_FK2  FOREIGN KEY (DSS_TS_CODE) REFERENCES AT_DSS_TS_SPEC(DSS_TS_CODE);
+ALTER TABLE AT_DSS_TS_XCHG_SPEC ADD CONSTRAINT AT_DSS_TS_XCHG_SPEC_PK   PRIMARY KEY (DSS_TS_XCHG_CODE) 
+    USING INDEX
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               );
 
+/*
 -----------------------------
 -- AT_DSS_RATING_SPEC table
 --
@@ -4356,7 +4444,7 @@ ALTER TABLE AT_DSS_RATING_SPEC ADD CONSTRAINT FK_AT_DSS_RATING_SPEC_3 FOREIGN KE
 ALTER TABLE AT_DSS_RATING_SPEC ADD CONSTRAINT FK_AT_DSS_RATING_SPEC_4 FOREIGN KEY (TIMEZONE_CODE)   REFERENCES CWMS_TIME_ZONE (TIME_ZONE_CODE);
 ALTER TABLE AT_DSS_RATING_SPEC ADD CONSTRAINT FK_AT_DSS_RATING_SPEC_5 FOREIGN KEY (TZ_USAGE_CODE)   REFERENCES CWMS_TZ_USAGE (TZ_USAGE_CODE);
 -----------------------------
--- AT_DSS_TS_SPEC indicies
+-- AT_DSS_RATING_SPEC indicies
 --
 CREATE UNIQUE INDEX AT_DSS_RATING_SPEC_UI ON AT_DSS_RATING_SPEC
    (
@@ -4421,7 +4509,7 @@ COMMENT ON COLUMN AT_DSS_RATING_XCHG_SPEC.DSS_RATING_CODE      IS 'Reference to 
 ALTER TABLE AT_DSS_RATING_XCHG_SPEC ADD CONSTRAINT PK_AT_DSS_RATING_XCHG_SPEC   PRIMARY KEY (DSS_RATING_XCHG_CODE);
 -- ALTER TABLE AT_DSS_RATING_XCHG_SPEC ADD CONSTRAINT FK_AT_DSS_RATING_XCHG_SPEC_1 FOREIGN KEY (RATING_CODE)     REFERENCES AT_RATING_SPEC (RATING_CODE);
 ALTER TABLE AT_DSS_RATING_XCHG_SPEC ADD CONSTRAINT FK_AT_DSS_RATING_XCHG_SPEC_2 FOREIGN KEY (DSS_RATING_CODE) REFERENCES AT_DSS_RATING_SPEC (DSS_RATING_CODE);
-
+*/
 -----------------------------
 -- AT_DSS_XCHG_SET table
 --
@@ -4456,20 +4544,33 @@ CREATE TABLE AT_DSS_XCHG_SET
 COMMENT ON TABLE  AT_DSS_XCHG_SET                   IS 'Oracle/HEC-DSS exchange set specification';
 COMMENT ON COLUMN AT_DSS_XCHG_SET.DSS_XCHG_SET_CODE IS 'Primary key used to relate specification to other entities';
 COMMENT ON COLUMN AT_DSS_XCHG_SET.DSS_FILE_CODE     IS 'Reference to location of HEC-DSS file';
-COMMENT ON COLUMN AT_DSS_XCHG_SET.OFFICE_CODE        IS 'Reference to CWMS office';
+COMMENT ON COLUMN AT_DSS_XCHG_SET.OFFICE_CODE       IS 'Reference to CWMS office';
 COMMENT ON COLUMN AT_DSS_XCHG_SET.DSS_XCHG_SET_ID   IS 'Text identifier of exchange set';
 COMMENT ON COLUMN AT_DSS_XCHG_SET.DESCRIPTION       IS 'Text description of exchange set';
 COMMENT ON COLUMN AT_DSS_XCHG_SET.REALTIME          IS 'Reference to realtime exchange direction or NULL if not realtime';
 -----------------------------
 -- AT_DSS_XCHG_SET constraints
 --
-ALTER TABLE AT_DSS_XCHG_SET ADD CONSTRAINT PK_AT_DSS_XCHG_SET   PRIMARY KEY (DSS_XCHG_SET_CODE);
-ALTER TABLE AT_DSS_XCHG_SET ADD CONSTRAINT FK_AT_DSS_XCHG_SET_1 FOREIGN KEY (DSS_FILE_CODE) REFERENCES AT_DSS_FILE(DSS_FILE_CODE);
-ALTER TABLE AT_DSS_XCHG_SET ADD CONSTRAINT FK_AT_DSS_XCHG_SET_2 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE(OFFICE_CODE);
-ALTER TABLE AT_DSS_XCHG_SET ADD CONSTRAINT FK_AT_DSS_XCHG_SET_3 FOREIGN KEY (REALTIME) REFERENCES CWMS_DSS_XCHG_DIRECTION(DSS_XCHG_DIRECTION_CODE);
+ALTER TABLE AT_DSS_XCHG_SET ADD CONSTRAINT AT_DSS_XCHG_SET_FK1  FOREIGN KEY (DSS_FILE_CODE) REFERENCES AT_DSS_FILE(DSS_FILE_CODE);
+ALTER TABLE AT_DSS_XCHG_SET ADD CONSTRAINT AT_DSS_XCHG_SET_FK2  FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE(OFFICE_CODE);
+ALTER TABLE AT_DSS_XCHG_SET ADD CONSTRAINT AT_DSS_XCHG_SET_FK3  FOREIGN KEY (REALTIME) REFERENCES CWMS_DSS_XCHG_DIRECTION(DSS_XCHG_DIRECTION_CODE);
+ALTER TABLE AT_DSS_XCHG_SET ADD CONSTRAINT AT_DSS_XCHG_SET_PK   PRIMARY KEY (DSS_XCHG_SET_CODE) 
+    USING INDEX
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               );
 -----------------------------
 -- AT_DSS_XCHG_SET indicies
 --
+
 CREATE UNIQUE INDEX AT_DSS_XCHG_SET_UI ON AT_DSS_XCHG_SET
    (  
        OFFICE_CODE,
@@ -4490,6 +4591,7 @@ CREATE UNIQUE INDEX AT_DSS_XCHG_SET_UI ON AT_DSS_XCHG_SET
           FREELIST GROUPS 1
           BUFFER_POOL DEFAULT
        );
+
 SHOW ERRORS;
 COMMIT;
 
@@ -4528,11 +4630,22 @@ COMMENT ON COLUMN AT_DSS_TS_XCHG_MAP.DSS_TS_XCHG_CODE     IS 'Reference to Oracl
 -----------------------------
 -- AT_DSS_TS_XCHG_MAP constraints
 --
-ALTER TABLE AT_DSS_TS_XCHG_MAP ADD CONSTRAINT PK_AT_DSS_TS_XCHG_MAP   PRIMARY KEY (DSS_TS_XCHG_MAP_CODE);
-ALTER TABLE AT_DSS_TS_XCHG_MAP ADD CONSTRAINT UK_AT_DSS_TS_XCHG_MAP   UNIQUE      (DSS_XCHG_SET_CODE, DSS_TS_XCHG_CODE);
-ALTER TABLE AT_DSS_TS_XCHG_MAP ADD CONSTRAINT FK_AT_DSS_TS_XCHG_MAP_1 FOREIGN KEY (DSS_XCHG_SET_CODE) REFERENCES AT_DSS_XCHG_SET (DSS_XCHG_SET_CODE);
-ALTER TABLE AT_DSS_TS_XCHG_MAP ADD CONSTRAINT FK_AT_DSS_TS_XCHG_MAP_2 FOREIGN KEY (DSS_TS_XCHG_CODE)  REFERENCES AT_DSS_TS_XCHG_SPEC (DSS_TS_XCHG_CODE);
-
+ALTER TABLE AT_DSS_TS_XCHG_MAP ADD CONSTRAINT AT_DSS_TS_XCHG_MAP_UK   UNIQUE      (DSS_XCHG_SET_CODE, DSS_TS_XCHG_CODE);
+ALTER TABLE AT_DSS_TS_XCHG_MAP ADD CONSTRAINT AT_DSS_TS_XCHG_MAP_FK1  FOREIGN KEY (DSS_XCHG_SET_CODE) REFERENCES AT_DSS_XCHG_SET (DSS_XCHG_SET_CODE);
+ALTER TABLE AT_DSS_TS_XCHG_MAP ADD CONSTRAINT AT_DSS_TS_XCHG_MAP_FK2  FOREIGN KEY (DSS_TS_XCHG_CODE)  REFERENCES AT_DSS_TS_XCHG_SPEC (DSS_TS_XCHG_CODE);
+ALTER TABLE AT_DSS_TS_XCHG_MAP ADD CONSTRAINT AT_DSS_TS_XCHG_MAP_PK   PRIMARY KEY (DSS_TS_XCHG_MAP_CODE) 
+    USING INDEX
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               );
 -----------------------------
 -- AT_DSS_TS_XCHG_MAP_RULES trigger
 --
@@ -4555,7 +4668,7 @@ declare
    l_ts_code            at_dss_ts_xchg_spec.ts_code%type;
    l_realtime           at_dss_xchg_set.realtime%type;
    l_set_id             at_dss_xchg_set.dss_xchg_set_id%type;
-   l_ts_id              at_cwms_ts_id_mview.cwms_ts_id%type;
+   l_ts_id              mv_cwms_ts_id.cwms_ts_id%type;
 
    --
    -- all at_dss_ts_xchg_set records that are mapped to at_dss_ts_xchg_spec
@@ -4606,7 +4719,7 @@ begin
                --
                select cwms_ts_id 
                into   l_ts_id
-               from   at_cwms_ts_id_mview 
+               from   mv_cwms_ts_id 
                where  ts_code=l_ts_xchg_spec.ts_code;
                    
                cwms_err.raise('XCHG_TS_ERROR', l_ts_id, l_set_id, l_xchg_set.dss_xchg_set_id);
@@ -4628,6 +4741,7 @@ end at_dss_ts_xchg_map_rules;
 SHOW ERRORS;
 COMMIT;
 
+/*
 -----------------------------
 -- AT_DSS_RATING_XCHG_MAP table
 --
@@ -4762,7 +4876,7 @@ end at_dss_rating_xchg_map_rules;
 /
 SHOW ERRORS;
 COMMIT;
-
+*/
 -----------------------------
 -- AT_DSS_XCHG_SET_RULES trigger
 --
@@ -4795,7 +4909,7 @@ declare
              at_dss_ts_xchg_map map2,
              at_dss_ts_xchg_spec xspec1,
              at_dss_ts_xchg_spec xspec2,
-             at_cwms_ts_id_mview v
+             mv_cwms_ts_id v
        where     xspec1.ts_code = xspec2.ts_code
              and map1.dss_ts_xchg_code = xspec1.dss_ts_xchg_code
              and map2.dss_ts_xchg_code = xspec2.dss_ts_xchg_code
@@ -4819,19 +4933,16 @@ COMMIT;
 -----------------------------
 
 -----------------------------
--- AT_XCHG_TS_INFO_1 table
+-- AT_TS_MSG_ARCHIVE_1 table
 --
-create table at_xchg_ts_info_1
+create table at_ts_msg_archive_1
 (
-   code       number(10)    not null,
-   ts_code    number(10)    not null,
-   store_time timestamp(6)  not null,
-   store_rule varchar2(32)  not null,
-   p_override char(1)       not null,
-   units      varchar2(16)  not null,
-   ts_data    tsv_array
+   code            number(10)    not null,
+   ts_code         number(10)    not null,
+   message_time    timestamp(6)  not null,
+   first_data_time date          not null,
+   last_data_time  date          not null
 )
-nested table ts_data store as at_xchg_ts_info_1_ts_data
 tablespace cwms_20at_data
 pctused    0
 pctfree    10
@@ -4851,58 +4962,18 @@ noparallel
 monitoring;
 
 -----------------------------
--- AT_XCHG_TS_INFO_1 comments
+-- AT_TS_MSG_ARCHIVE_1 comments
 --
-comment on table  at_xchg_ts_info_1            is 'Record of calls to cwms_ts.store_ts() API during odd months';
-comment on column at_xchg_ts_info_1.code       is 'Primary Key';
-comment on column at_xchg_ts_info_1.ts_code    is 'TS Code of data';
-comment on column at_xchg_ts_info_1.store_time is 'Time cwms_ts.store_ts() was called';
-comment on column at_xchg_ts_info_1.store_rule is 'Store rule passed to cwms_ts.store_ts()';
-comment on column at_xchg_ts_info_1.p_override is 'Protection override flag passed to cwms_ts.store_ts()';
-comment on column at_xchg_ts_info_1.units      is 'Units of data passed to cwms_ts.store_ts()';
-comment on column at_xchg_ts_info_1.ts_data    is 'Data passed to cwms_ts.store_ts()';
-
+comment on table  at_ts_msg_archive_1                 is 'Archive of queued messages for incoming TS data - odd months';
+comment on column at_ts_msg_archive_1.code            is 'Primary Key';
+comment on column at_ts_msg_archive_1.ts_code         is 'TS Code of data';
+comment on column at_ts_msg_archive_1.message_time    is 'Message creation time';
+comment on column at_ts_msg_archive_1.first_data_time is 'Start of time window of data stored';
+comment on column at_ts_msg_archive_1.last_data_time  is 'End of time window of data stored';
 -----------------------------
--- AT_XCHG_TS_INFO_1 indicies
+-- AT_TS_MSG_ARCHIVE_1 constraints
 --
-create unique index at_xchg_ts_info_1_pk on at_xchg_ts_info_1
-(code)
-logging
-tablespace cwms_20at_data
-pctfree    10
-initrans   2
-maxtrans   255
-storage    (
-            initial          64k
-            minextents       1
-            maxextents       2147483645
-            pctincrease      0
-            buffer_pool      default
-           )
-noparallel;
-
-create unique index at_xchg_ts_info_1_u1 on at_xchg_ts_info_1
-(ts_code, store_time)
-logging
-tablespace cwms_20at_data
-pctfree    10
-initrans   2
-maxtrans   255
-storage    (
-            initial          64k
-            minextents       1
-            maxextents       2147483645
-            pctincrease      0
-            buffer_pool      default
-           )
-noparallel;
-
------------------------------
--- AT_XCHG_TS_INFO_1 constraints
---
-alter table at_xchg_ts_info_1 add constraint at_xchg_ts_info_1_pk
- primary key
- (code)
+alter table at_ts_msg_archive_1 add constraint at_ts_msg_archive_1_pk primary key (code)
     using index 
     tablespace cwms_20at_data
     pctfree    10
@@ -4914,23 +4985,39 @@ alter table at_xchg_ts_info_1 add constraint at_xchg_ts_info_1_pk
                 maxextents       2147483645
                 pctincrease      0
                );
+-----------------------------
+-- AT_TS_MSG_ARCHIVE_1 indicies
+--
+create unique index at_ts_msg_archive_1_u1 on at_ts_msg_archive_1
+(ts_code, message_time)
+logging
+tablespace cwms_20at_data
+pctfree    10
+initrans   2
+maxtrans   255
+storage    (
+            initial          64k
+            minextents       1
+            maxextents       2147483645
+            pctincrease      0
+            buffer_pool      default
+           )
+noparallel;
 
+show errors;
 commit;
 
 -----------------------------
--- AT_XCHG_TS_INFO_2 table
+-- AT_TS_MSG_ARCHIVE_2 table
 --
-create table at_xchg_ts_info_2
+create table at_ts_msg_archive_2
 (
-   code       number(10)    not null,
-   ts_code    number(10)    not null,
-   store_time timestamp(6)  not null,
-   store_rule varchar2(32)  not null,
-   p_override char(1)       not null,
-   units      varchar2(16)  not null,
-   ts_data    tsv_array
+   code            number(10)    not null,
+   ts_code         number(10)    not null,
+   message_time    timestamp(6)  not null,
+   first_data_time date          not null,
+   last_data_time  date          not null
 )
-nested table ts_data store as at_xchg_ts_info_2_ts_data
 tablespace cwms_20at_data
 pctused    0
 pctfree    10
@@ -4950,58 +5037,18 @@ noparallel
 monitoring;
 
 -----------------------------
--- AT_XCHG_TS_INFO_2 comments
+-- AT_TS_MSG_ARCHIVE_2 comments
 --
-comment on table  at_xchg_ts_info_2            is 'Record of calls to cwms_ts.store_ts() API during even months';
-comment on column at_xchg_ts_info_2.code       is 'Primary Key';
-comment on column at_xchg_ts_info_2.ts_code    is 'TS Code of data';
-comment on column at_xchg_ts_info_2.store_time is 'Time cwms_ts.store_ts() was called';
-comment on column at_xchg_ts_info_2.store_rule is 'Store rule passed to cwms_ts.store_ts()';
-comment on column at_xchg_ts_info_2.p_override is 'Protection override flag passed to cwms_ts.store_ts()';
-comment on column at_xchg_ts_info_2.units      is 'Units of data passed to cwms_ts.store_ts()';
-comment on column at_xchg_ts_info_2.ts_data    is 'Data passed to cwms_ts.store_ts()';
-
+comment on table  at_ts_msg_archive_2                 is 'Archive of queued messages for incoming TS data - odd months';
+comment on column at_ts_msg_archive_2.code            is 'Primary Key';
+comment on column at_ts_msg_archive_2.ts_code         is 'TS Code of data';
+comment on column at_ts_msg_archive_2.message_time    is 'Message creation time';
+comment on column at_ts_msg_archive_2.first_data_time is 'Start of time window of data stored';
+comment on column at_ts_msg_archive_2.last_data_time  is 'End of time window of data stored';
 -----------------------------
--- AT_XCHG_TS_INFO_2 indicies
+-- AT_TS_MSG_ARCHIVE_2 constraints
 --
-create unique index at_xchg_ts_info_2_pk on at_xchg_ts_info_2
-(code)
-logging
-tablespace cwms_20at_data
-pctfree    10
-initrans   2
-maxtrans   255
-storage    (
-            initial          64k
-            minextents       1
-            maxextents       2147483645
-            pctincrease      0
-            buffer_pool      default
-           )
-noparallel;
-
-create unique index at_xchg_ts_info_2_u1 on at_xchg_ts_info_2
-(ts_code, store_time)
-logging
-tablespace cwms_20at_data
-pctfree    10
-initrans   2
-maxtrans   255
-storage    (
-            initial          64k
-            minextents       1
-            maxextents       2147483645
-            pctincrease      0
-            buffer_pool      default
-           )
-noparallel;
-
------------------------------
--- AT_XCHG_TS_INFO_2 constraints
---
-alter table at_xchg_ts_info_2 add constraint at_xchg_ts_info_2_pk
- primary key
- (code)
+alter table at_ts_msg_archive_2 add constraint at_ts_msg_archive_2_pk primary key (code)
     using index 
     tablespace cwms_20at_data
     pctfree    10
@@ -5013,9 +5060,72 @@ alter table at_xchg_ts_info_2 add constraint at_xchg_ts_info_2_pk
                 maxextents       2147483645
                 pctincrease      0
                );
+-----------------------------
+-- AT_TS_MSG_ARCHIVE_2 indicies
+--
 
+create unique index at_ts_msg_archive_2_u1 on at_ts_msg_archive_2
+(ts_code, message_time)
+logging
+tablespace cwms_20at_data
+pctfree    10
+initrans   2
+maxtrans   255
+storage    (
+            initial          64k
+            minextents       1
+            maxextents       2147483645
+            pctincrease      0
+            buffer_pool      default
+           )
+noparallel;
+
+show errors;
 commit;
 
+-----------------------------------------
+-- stop and delete any existing queues --
+-----------------------------------------
+begin
+   begin dbms_aqadm.stop_queue(queue_name  => 'realtime_ops');              exception  when others then null; end;
+   begin dbms_aqadm.drop_queue(queue_name  => 'realtime_ops');              exception  when others then null; end;
+   begin dbms_aqadm.drop_queue_table(queue_table  => 'realtime_ops_table'); exception  when others then null; end;
+   begin dbms_aqadm.stop_queue(queue_name  => 'status');                    exception  when others then null; end;
+   begin dbms_aqadm.drop_queue(queue_name  => 'status');                    exception  when others then null; end;
+   begin dbms_aqadm.drop_queue_table(queue_table  => 'status_table');       exception  when others then null; end;
+end;
+/
+
+-----------------------------
+-- create and start queues --
+-----------------------------
+begin                 
+   dbms_aqadm.create_queue_table(
+      queue_table        => 'realtime_ops_table', 
+      queue_payload_type => 'sys.aq$_jms_text_message',
+      multiple_consumers => true);
+      
+   dbms_aqadm.create_queue(
+      queue_name  => 'realtime_ops',
+      queue_table => 'realtime_ops_table');
+      
+   dbms_aqadm.start_queue(queue_name => 'realtime_ops');
+   
+   dbms_aqadm.create_queue_table(
+      queue_table        => 'status_table', 
+      queue_payload_type => 'sys.aq$_jms_text_message',
+      multiple_consumers => true);
+      
+   dbms_aqadm.create_queue(
+      queue_name  => 'status',
+      queue_table => 'status_table');
+      
+   dbms_aqadm.start_queue(queue_name => 'status');
+end;
+/
+
+show errors;
+commit;
 -----------------------------
 -- AT_REPORT_TEMPLATES table
 --
@@ -5122,17 +5232,11 @@ insert into at_report_templates values
 
 insert into at_report_templates values
 (
-'/cat_ts_table/text',
-'Generates text from cat_ts_table records',
-'
-TIME SERIES CATALOG
-REPORT GENERATED BY $host AT $time
-
-',
-'$1%-8.8s$4%-8d$3%12d$2\n',
-'
-$count TOTAL RECORDS PROCESSED
-'
+   '/cat_ts_table/text',
+   'Generates text from cat_ts_table records',
+   '\nTIME SERIES CATALOG\nREPORT GENERATED BY $host AT $time\n\n',
+   '$1%-8.8s$4%-8d$3%12d$2\n',
+   '\n$count TOTAL RECORDS PROCESSED\n'
 );
 
 commit;
@@ -5298,30 +5402,3 @@ commit;
 SHOW ERRORS;
 COMMIT;
 
------------------------------
--- create and start queues --
------------------------------
----exec dbms_aqadm.stop_queue(queue_name  => 'xchg_queue');
----exec dbms_aqadm.drop_queue(queue_name  => 'xchg_queue');
----exec dbms_aqadm.drop_queue_table(queue_table  => 'xchg_queue_table');
-
-begin                 
-   dbms_aqadm.create_queue_table(
-      queue_table        => 'xchg_queue_table', 
-      queue_payload_type => 'sys.aq$_jms_text_message',
-      multiple_consumers => true);
-      
-   dbms_aqadm.create_queue(
-      queue_name  => 'xchg_queue',
-      queue_table => 'xchg_queue_table');
-      
-   dbms_aqadm.start_queue(queue_name => 'xchg_queue');
-end;
-/
-show errors
-/
-commit
-/  
-
-SHOW ERRORS;
-COMMIT;

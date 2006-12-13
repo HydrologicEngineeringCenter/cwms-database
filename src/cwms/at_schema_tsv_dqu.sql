@@ -1,13 +1,6 @@
 /* CWMS Version 2.0 
 This script should be run by the cwms schema owner.
 */ 
-
-SET TIME ON
-SPOOL at_schema_part_1.lst
-SELECT SYSDATE FROM DUAL;
-SET ECHO ON
-set serveroutput on
-
 exec cwms_util.create_view
 /
 show errors;
@@ -35,7 +28,3 @@ from av_tsv               tsv,
      tsv.ts_code    = ts.ts_code
  and ts.unit_id     = c.from_unit_id
 / 
-
-SPOOL OFF
-SET ECHO OFF
-SET TIME OFF
