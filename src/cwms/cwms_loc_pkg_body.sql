@@ -145,7 +145,7 @@ AS
       THEN
          l_county_name := 'Unknown County or County N/A';
       ELSE
-         l_county_name := 'p_county_name';
+         l_county_name := p_county_name;
       END IF;
 
        --
