@@ -147,6 +147,33 @@ CREATE OR REPLACE TYPE alias_type AS OBJECT (
 CREATE OR REPLACE TYPE alias_array IS TABLE OF alias_type;
 /
 
+CREATE OR REPLACE TYPE screen_crit_type AS OBJECT (
+   season_start_date                NUMBER,
+   range_reject_lo                  NUMBER,
+   range_reject_hi                  NUMBER,
+   range_question_lo                NUMBER,
+   range_question_hi                NUMBER,
+   rate_change_reject_rise          NUMBER,
+   rate_change_reject_fall          NUMBER,
+   rate_change_quest_rise           NUMBER,
+   rate_change_quest_fall           NUMBER,
+   rate_change_disp_interval_code   NUMBER,
+   const_reject_duration_code       NUMBER,
+   const_reject_min                 NUMBER,
+   const_reject_max                 NUMBER,
+   const_reject_n_miss              NUMBER,
+   const_quest_duration_code        NUMBER,
+   const_quest_min                  NUMBER,
+   const_quest_max                  NUMBER,
+   const_quest_n_miss               NUMBER,
+   estimate_expression              VARCHAR2 (32 BYTE),
+   duration_mag_test_flag           VARCHAR2 (1 BYTE)
+)
+/
+
+CREATE OR REPLACE
+TYPE SCREEN_CRIT_ARRAY IS TABLE OF SCREEN_CRIT_type
+/
 -------------------------------------------------
 -- Types coresponding to CWMS_CAT record types --
 -- so JPublisher stays happy                   --
