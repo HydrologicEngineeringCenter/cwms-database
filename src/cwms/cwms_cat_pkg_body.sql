@@ -721,7 +721,8 @@ IS
                                      r.dss_xchg_set_description,
                                      r.dss_filemgr_url,
                                      r.dss_file_name,
-                                     r.dss_xchg_direction_id
+                                     r.dss_xchg_direction_id,
+                                     r.dss_xchg_last_update
                                     );
    END cat_dss_xchg_set_rec2obj;
 
@@ -757,6 +758,7 @@ IS
          r.dss_filemgr_url := o.dss_filemgr_url;
          r.dss_file_name := o.dss_file_name;
          r.dss_xchg_direction_id := o.dss_xchg_direction_id;
+         r.dss_xchg_last_update := o.dss_xchg_last_update;
       END IF;
 
       RETURN r;
@@ -1671,7 +1673,8 @@ IS
                         ELSE (SELECT dss_xchg_direction_id
                                 FROM cwms_dss_xchg_direction
                                WHERE dss_xchg_direction_code = realtime)
-                     END
+                     END,
+                     last_update
                 FROM at_dss_file f, at_dss_xchg_set s, cwms_office o
                WHERE s.office_code = l_office_code
                  AND s.dss_file_code = f.dss_file_code

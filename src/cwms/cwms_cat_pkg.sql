@@ -119,7 +119,8 @@ IS
       dss_xchg_set_description   VARCHAR (80),
       dss_filemgr_url            VARCHAR2 (32),
       dss_file_name              VARCHAR2 (255),
-      dss_xchg_direction_id      VARCHAR2 (16)
+      dss_xchg_direction_id      VARCHAR2 (16),
+      dss_xchg_last_update       TIMESTAMP(6)
    );
 
    TYPE cat_dss_xchg_set_tab_t IS TABLE OF cat_dss_xchg_set_rec_t;

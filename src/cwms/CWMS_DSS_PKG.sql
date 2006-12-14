@@ -66,28 +66,39 @@ is
       p_description          in   varchar2,
       p_dss_filemgr_url      in   varchar2,
       p_dss_file_name        in   varchar2,
-      p_realtime             in   varchar2,
+      p_realtime             in   varchar2,                        
+      p_last_update          in   timestamp,
       p_update_description   in   number default cwms_util.true_num,
       p_update_filemgr_url   in   number default cwms_util.true_num,
       p_update_file_name     in   number default cwms_util.true_num,
-      p_update_realtime      in   number default cwms_util.true_num)
+      p_update_realtime      in   number default cwms_util.true_num,
+      p_update_last_update   in   number default cwms_util.true_num)
       return number;
 
 --------------------------------------------------------------------------------
 -- procedure update_dss_xchg_set(...)
 --
    procedure update_dss_xchg_set(
-      p_dss_xchg_set_code    out      number,
-      p_office_id            in       varchar2,
-      p_dss_xchg_set_id      in       varchar2,
-      p_description          in       varchar2,
-      p_dss_filemgr_url      in       varchar2,
-      p_dss_file_name        in       varchar2,
-      p_realtime             in       varchar2,
-      p_update_description   in       number default cwms_util.true_num,
-      p_update_filemgr_url   in       number default cwms_util.true_num,
-      p_update_file_name     in       number default cwms_util.true_num,
-      p_update_realtime      in       number default cwms_util.true_num);
+      p_dss_xchg_set_code    out  number,
+      p_office_id            in   varchar2,
+      p_dss_xchg_set_id      in   varchar2,
+      p_description          in   varchar2,
+      p_dss_filemgr_url      in   varchar2,
+      p_dss_file_name        in   varchar2,
+      p_realtime             in   varchar2,
+      p_last_update          in   timestamp,
+      p_update_description   in   number default cwms_util.true_num,
+      p_update_filemgr_url   in   number default cwms_util.true_num,
+      p_update_file_name     in   number default cwms_util.true_num,
+      p_update_realtime      in   number default cwms_util.true_num,
+      p_update_last_update   in   number default cwms_util.true_num);
+
+--------------------------------------------------------------------------------
+-- procedure update_dss_xchg_set_time(...)
+--
+   procedure update_dss_xchg_set_time(
+      p_dss_xchg_set_code    in  number,
+      p_last_update          in  timestamp);
 
 --------------------------------------------------------------------------------
 -- procedure map_ts_in_xchg_set(...)

@@ -261,7 +261,8 @@ create or replace type cat_dss_xchg_set_obj_t as object(
    dss_xchg_set_description varchar(80), 
    dss_filemgr_url          varchar2(32),
    dss_file_name            varchar2(255),
-   dss_xchg_direction_id    varchar2(16));
+   dss_xchg_direction_id    varchar2(16),
+   dss_xchg_last_update     timestamp(6));
 /                                         
 create or replace type cat_dss_xchg_set_otab_t as table of cat_dss_xchg_set_obj_t;
 /

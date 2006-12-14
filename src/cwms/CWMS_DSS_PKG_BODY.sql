@@ -519,25 +519,20 @@ as
       p_description          in   varchar2,
       p_dss_filemgr_url      in   varchar2,
       p_dss_file_name        in   varchar2,
-      p_realtime             in   varchar2,
+      p_realtime             in   varchar2,                        
+      p_last_update          in   timestamp,
       p_update_description   in   number default cwms_util.true_num,
       p_update_filemgr_url   in   number default cwms_util.true_num,
       p_update_file_name     in   number default cwms_util.true_num,
-      p_update_realtime      in   number default cwms_util.true_num)
+      p_update_realtime      in   number default cwms_util.true_num,
+      p_update_last_update   in   number default cwms_util.true_num)
       return number
    is
-      update_description    boolean
-                          := nvl(p_update_description, cwms_util.false_num) !=
-                                                                    cwms_util.false_num;
-      update_filemgr_url    boolean
-                          := nvl(p_update_filemgr_url, cwms_util.false_num) !=
-                                                                    cwms_util.false_num;
-      update_file_name      boolean
-                            := nvl(p_update_file_name, cwms_util.false_num) !=
-                                                                    cwms_util.false_num;
-      update_realtime       boolean
-                             := nvl(p_update_realtime, cwms_util.false_num) !=
-                                                                    cwms_util.false_num;
+      update_description    boolean := nvl(p_update_description, cwms_util.false_num) != cwms_util.false_num;
+      update_filemgr_url    boolean := nvl(p_update_filemgr_url, cwms_util.false_num) != cwms_util.false_num;
+      update_file_name      boolean := nvl(p_update_file_name, cwms_util.false_num)   != cwms_util.false_num;
+      update_realtime       boolean := nvl(p_update_realtime, cwms_util.false_num)    != cwms_util.false_num;
+      update_last_update    boolean := nvl(p_update_last_update, cwms_util.false_num) != cwms_util.false_num;
       l_office_code         at_dss_xchg_set.office_code%type;
       l_dss_xchg_set_code   at_dss_xchg_set.dss_xchg_set_code%type;
       l_realtime_code       at_dss_xchg_set.realtime%type            := null;
@@ -560,10 +555,9 @@ as
       exception
          when no_data_found then
             cwms_err.raise('INVALID_ITEM',
-                                 p_dss_xchg_set_id,
-                                 'HEC-DSS exchange set');
+                           p_dss_xchg_set_id,
+                           'HEC-DSS exchange set');
       end;
-
       ------------------------------------
       -- verify the specified direction --
       ------------------------------------
@@ -577,8 +571,8 @@ as
          exception
             when no_data_found then
                cwms_err.raise('INVALID_ITEM',
-                                    p_realtime,
-                                    'HEC-DSS exchange direction');
+                              p_realtime,
+                              'HEC-DSS exchange direction');
          end;
       end if;
 
@@ -625,46 +619,62 @@ as
                            create_dss_file(l_dss_filemgr_url, l_dss_file_name);
       end if;
 
-      ---------------------------------------------
-      -- create and execute the UPDATE statement --
-      ---------------------------------------------
+      ------------------------------------------------
+      -- create and execute the UPDATE statement(s) --
+      ------------------------------------------------
       if    update_description
          or update_filemgr_url
          or update_file_name
-         or update_realtime then
-         sql_text := 'update at_dss_xchg_set set ';
-
-         if update_description then
-            sql_text := sql_text || 'description=''' || p_description || '''';
-
-            if    update_filemgr_url
+         or update_realtime 
+         or update_last_update then
+         begin
+         
+            if    update_description
+               or update_filemgr_url
                or update_file_name
                or update_realtime then
-               sql_text := sql_text || ', ';
+                sql_text := 'update at_dss_xchg_set set ';
+
+                if update_description then
+                   sql_text := sql_text || 'description=''' || p_description || '''';
+
+                   if    update_filemgr_url
+                      or update_file_name
+                      or update_realtime then
+                      sql_text := sql_text || ', ';
+                   end if;
+                end if;
+
+                if    update_filemgr_url
+                   or update_file_name then
+                   sql_text := sql_text || 'dss_file_code=' || l_dss_file_code;
+
+                   if update_realtime then
+                      sql_text := sql_text || ', ';
+                   end if;
+                end if;
+
+                if update_realtime then
+                   if p_realtime is null then
+                      sql_text := sql_text || 'realtime=NULL';
+                   else
+                      sql_text := sql_text || 'realtime=' || l_realtime_code;
+                   end if;
+                end if;
+
+                sql_text :=
+                       sql_text || ' where dss_xchg_set_code=' || l_dss_xchg_set_code;
+
+                execute immediate sql_text;
             end if;
-         end if;
-
-         if    update_filemgr_url
-            or update_file_name then
-            sql_text := sql_text || 'dss_file_code=' || l_dss_file_code;
-
-            if update_realtime then
-               sql_text := sql_text || ', ';
+              
+            if update_last_update then
+               update at_dss_xchg_set
+                  set last_update = p_last_update
+                where dss_xchg_set_code = l_dss_xchg_set_code;                 
             end if;
-         end if;
-
-         if update_realtime then
-            if p_realtime is null then
-               sql_text := sql_text || 'realtime=NULL';
-            else
-               sql_text := sql_text || 'realtime=' || l_realtime_code;
-            end if;
-         end if;
-
-         sql_text :=
-                sql_text || ' where dss_xchg_set_code=' || l_dss_xchg_set_code;
-
-         execute immediate sql_text;
+            commit;
+         end;
       end if;
 
       return l_dss_xchg_set_code;
@@ -674,17 +684,19 @@ as
 -- procedure update_dss_xchg_set(...)
 --
    procedure update_dss_xchg_set(
-      p_dss_xchg_set_code    out      number,
-      p_office_id            in       varchar2,
-      p_dss_xchg_set_id      in       varchar2,
-      p_description          in       varchar2,
-      p_dss_filemgr_url      in       varchar2,
-      p_dss_file_name        in       varchar2,
-      p_realtime             in       varchar2,
-      p_update_description   in       number default cwms_util.true_num,
-      p_update_filemgr_url   in       number default cwms_util.true_num,
-      p_update_file_name     in       number default cwms_util.true_num,
-      p_update_realtime      in       number default cwms_util.true_num)
+      p_dss_xchg_set_code    out  number,
+      p_office_id            in   varchar2,
+      p_dss_xchg_set_id      in   varchar2,
+      p_description          in   varchar2,
+      p_dss_filemgr_url      in   varchar2,
+      p_dss_file_name        in   varchar2,
+      p_realtime             in   varchar2,                        
+      p_last_update          in   timestamp,
+      p_update_description   in   number default cwms_util.true_num,
+      p_update_filemgr_url   in   number default cwms_util.true_num,
+      p_update_file_name     in   number default cwms_util.true_num,
+      p_update_realtime      in   number default cwms_util.true_num,
+      p_update_last_update   in   number default cwms_util.true_num)
    is
    begin
       p_dss_xchg_set_code :=
@@ -692,12 +704,48 @@ as
                              p_dss_xchg_set_id,
                              p_description,
                              p_dss_filemgr_url,
+                             p_dss_file_name,
                              p_realtime,
+                             p_last_update,
                              p_update_description,
                              p_update_filemgr_url,
                              p_update_file_name,
-                             p_update_realtime);
+                             p_update_realtime,
+                             p_update_last_update);
    end update_dss_xchg_set;
+
+--------------------------------------------------------------------------------
+-- procedure update_dss_xchg_set_time(...)
+--
+   procedure update_dss_xchg_set_time(
+      p_dss_xchg_set_code    in  number,
+      p_last_update          in  timestamp)
+   is
+      l_last_update at_dss_xchg_set.last_update%type := null;
+   begin
+      if p_last_update is null then
+         cwms_err.raise('INVALID_ITEM', 
+                        'NULL', 
+                        'timestamp for this procedure.  Use UPDATE_DSS_XCHG_SET instead');
+      else                                                  
+         begin
+            select last_update
+              into l_last_update
+              from at_dss_xchg_set
+             where dss_xchg_set_code = p_dss_xchg_set_code;
+             
+            if l_last_update is not null and l_last_update >= p_last_update then
+               cwms_err.raise('INVALID_ITEM', 
+                              'Specified timestamp', 
+                              'timestamp for this exhange set because it pre-dates the existing last update time.');
+            end if;    
+         exception
+            when no_data_found then
+               cwms_err.raise('INVALID_ITEM', 'Specfied value', 'exchange set code.');
+         end;                  
+      end if;
+   end update_dss_xchg_set_time;
+      
 
 -------------------------------------------------------------------------------
 -- function create_dss_ts_spec(...)
