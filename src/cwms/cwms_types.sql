@@ -13,6 +13,8 @@ create or replace type source_array is table of number;
 /
 create or replace type alias_array is table of number;
 /
+create or replace type screen_crit_array is table of number;
+/
 create or replace type cat_ts_otab_t as table of number;
 /
 create or replace type cat_ts_cwms_20_otab_t as table of number;
@@ -47,6 +49,7 @@ drop type source_array;
 drop type alias_array;
 drop type cat_ts_otab_t;
 drop type cat_ts_cwms_20_otab_t;
+drop type screen_crit_array;
 drop type cat_loc_otab_t;
 drop type cat_loc_alias_otab_t;
 drop type cat_param_otab_t;
