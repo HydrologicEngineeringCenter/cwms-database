@@ -15,26 +15,24 @@ begin
    begin execute immediate 'drop table at_display_units cascade constraints';          exception when others then null; end;
    begin execute immediate 'drop table at_alarm_id cascade constraints';               exception when others then null; end;
    begin execute immediate 'drop table at_alarm_criteria cascade constraints';         exception when others then null; end;
-   begin execute immediate 'drop table at_val_screening_id cascade constraints';       exception when others then null; end;
-   begin execute immediate 'drop table at_val_screening_criteria cascade constraints'; exception when others then null; end;
-   begin execute immediate 'drop table at_val_duration_magnitude cascade constraints'; exception when others then null; end;
+   begin execute immediate 'drop table at_screening_id cascade constraints';           exception when others then null; end;
+   begin execute immediate 'drop table at_screening_criteria cascade constraints';     exception when others then null; end;
+   begin execute immediate 'drop table at_screening_dur_mag cascade constraints';      exception when others then null; end;
    begin execute immediate 'drop table at_cwms_ts_spec cascade constraints';           exception when others then null; end;
    begin execute immediate 'drop table at_shef_decode cascade constraints';            exception when others then null; end;
-   begin execute immediate 'drop table at_validation cascade constraints';             exception when others then null; end;
+   begin execute immediate 'drop table at_screening cascade constraints';              exception when others then null; end;
    begin execute immediate 'drop table at_alarm cascade constraints';                  exception when others then null; end;
    begin execute immediate 'drop table at_comp_vt cascade constraints';                exception when others then null; end;
    begin execute immediate 'drop table at_transform_criteria cascade constraints';     exception when others then null; end;
    begin execute immediate 'drop table at_unit_alias cascade constraints';             exception when others then null; end;
    begin execute immediate 'drop table at_user_preferences cascade constraints';       exception when others then null; end;
    begin execute immediate 'drop table at_office_settings cascade constraints';        exception when others then null; end;
+   begin execute immediate 'drop table at_properties cascade constraints';             exception when others then null; end;
    begin execute immediate 'drop table at_dss_file cascade constraints';               exception when others then null; end;
    begin execute immediate 'drop table at_dss_ts_spec cascade constraints';            exception when others then null; end;
    begin execute immediate 'drop table at_dss_ts_xchg_spec cascade constraints';       exception when others then null; end;
-   begin execute immediate 'drop table at_dss_rating_spec cascade constraints';        exception when others then null; end;
-   begin execute immediate 'drop table at_dss_rating_xchg_spec cascade constraints';   exception when others then null; end;
    begin execute immediate 'drop table at_dss_xchg_set cascade constraints';           exception when others then null; end;
    begin execute immediate 'drop table at_dss_ts_xchg_map cascade constraints';        exception when others then null; end;
-   begin execute immediate 'drop table at_dss_rating_xchg_map cascade constraints';    exception when others then null; end;
    begin execute immediate 'drop table at_ts_msg_archive_1 cascade constraints';       exception when others then null; end;
    begin execute immediate 'drop table at_ts_msg_archive_2 cascade constraints';       exception when others then null; end;
    begin execute immediate 'drop table at_report_templates cascade constraints';       exception when others then null; end;
@@ -2173,63 +2171,6 @@ LOGGING
 TABLESPACE cwms_20at_data
 NOPARALLEL
 /
--------------------------
--- AV_LOC view.
--- 
-CREATE OR REPLACE VIEW av_loc (location_code,
-                               base_location_code,
-                               db_office_id,
-                               base_location_id,
-                               sub_location_id,
-                               location_id,
-                               location_type,
-                               unit_system,
-                               elevation,
-                               unit_id,
-                               vertical_datum,
-                               longitude,
-                               latitude,
-                               horizontal_datum,
-                               time_zone_name,
-                               county_name,
-                               state_initial,
-                               public_name,
-                               long_name,
-                               description,
-                               active_flag
-                              )
-AS
-   SELECT apl.location_code, abl.base_location_code,
-          co.office_id db_office_id, abl.base_location_id,
-          apl.sub_location_id,
-             abl.base_location_id
-          || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
-          || apl.sub_location_id location_id,
-          apl.location_type, adu.unit_system,
-          apl.elevation * cuc.factor + cuc.offset elevation,
-          cuc.to_unit_id unit_id, apl.vertical_datum, apl.longitude,
-          apl.latitude, apl.horizontal_datum, ctz.time_zone_name,
-          cc.county_name, cs.state_initial, apl.public_name, apl.long_name,
-          apl.description, apl.active_flag
-     FROM at_physical_location apl,
-          at_base_location abl,
-          cwms_county cc,
-          cwms_office co,
-          cwms_state cs,
-          cwms_time_zone ctz,
-          at_display_units adu,
-          cwms_unit_conversion cuc
-    WHERE (cc.county_code = NVL (apl.county_code, 0))
-      AND (cs.state_code = NVL (cc.state_code, 0))
-      AND (abl.db_office_code = co.office_code)
-      AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
-      AND apl.base_location_code = abl.base_location_code
-      AND apl.location_code != 0
-      AND adu.parameter_code =
-                         cwms_ts.get_parameter_code ('Elev', NULL, 'ALL', 'F')
-      AND cuc.from_unit_id = 'm'
-      AND cuc.to_unit_code = adu.display_unit_code
-/
 
 -------------------------
 -- AV_SCREEN_ALARM_ID view.
@@ -4347,6 +4288,29 @@ INSERT INTO AT_UNIT_ALIAS (ALIAS_ID, DB_OFFICE_CODE, UNIT_CODE) VALUES (
 	)
 );
 
+CREATE TABLE AT_PROPERTIES
+    (
+        OFFICE_CODE    NUMBER(10),
+        PROP_CATEGORY  VARCHAR2(256) NOT NULL,
+        PROP_ID        VARCHAR2(256) NOT NULL,
+        PROP_VALUE     VARCHAR2(256),
+        PROP_COMMENT   VARCHAR2(256)
+    )
+    LOGGING 
+    NOCOMPRESS 
+    NOCACHE
+    NOPARALLEL
+    NOMONITORING;
+                                  
+COMMENT ON TABLE AT_PROPERTIES IS 'Generic properties, such as for Java application.';
+COMMENT ON COLUMN AT_PROPERTIES.OFFICE_CODE   IS 'References the office that "owns" this property.';
+COMMENT ON COLUMN AT_PROPERTIES.PROP_CATEGORY IS 'Major category or component to which property applies.';
+COMMENT ON COLUMN AT_PROPERTIES.PROP_ID       IS 'Property name.';
+COMMENT ON COLUMN AT_PROPERTIES.PROP_VALUE    IS 'Property value.';
+COMMENT ON COLUMN AT_PROPERTIES.PROP_COMMENT  IS 'Notes about property usage or value.';
+    
+ALTER TABLE AT_PROPERTIES ADD CONSTRAINT AT_PROPERTIES_FK FOREIGN KEY(OFFICE_CODE)REFERENCES CWMS_OFFICE (OFFICE_CODE);
+ALTER TABLE AT_PROPERTIES ADD CONSTRAINT AT_PROPERTIES_PK PRIMARY KEY(OFFICE_CODE, PROP_CATEGORY, PROP_ID);
 
 -------------------------------
 -- START OF DSS XCHG SECTION --

@@ -53,6 +53,8 @@ connect cwms_20/&cwms_passwd@&inst
 
 @@cwms/CWMS_DSS_PKG
 @@cwms/CWMS_DSS_PKG_BODY
+
+@@cwms/at_schema_2
 --
 -- all done
 --
