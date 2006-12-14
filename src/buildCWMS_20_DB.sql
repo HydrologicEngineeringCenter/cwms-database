@@ -30,19 +30,29 @@ set serveroutput on
 connect cwms_20/&cwms_passwd@&inst
 @@buildCwms
 @@cwms/cwms_types
+
 @@cwms/CWMS_ERR_PKG
-@@cwms/CWMS_UTIL_PKG
-@@cwms/CWMS_LOC_PKG
-@@cwms/CWMS_CAT_PKG
-@@cwms/CWMS_TS_PKG
+@@cwms/CWMS_ERR_PKG_BODY
+
 @@cwms/at_schema
 @@cwms/at_schema_tsv
-@@cwms/CWMS_ERR_PKG_BODY
+
+@@cwms/CWMS_UTIL_PKG
 @@cwms/CWMS_UTIL_PKG_BODY
+
 @@cwms/at_schema_tsv_dqu
+
+@@cwms/CWMS_LOC_PKG
 @@cwms/CWMS_LOC_PKG_BODY
+
+@@cwms/CWMS_CAT_PKG
 @@cwms/CWMS_CAT_PKG_BODY
+
+@@cwms/CWMS_TS_PKG
 @@cwms/CWMS_TS_PKG_BODY
+
+@@cwms/CWMS_DSS_PKG
+@@cwms/CWMS_DSS_PKG_BODY
 --
 -- all done
 --
