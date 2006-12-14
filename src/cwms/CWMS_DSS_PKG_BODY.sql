@@ -18,7 +18,7 @@ as
       return l_office_code;
    exception
       when no_data_found then
-         cwms3.cwms_err.raise('INVALID_ITEM', p_office_id, 'CWMS office');
+         cwms_err.raise('INVALID_ITEM', p_office_id, 'CWMS office');
    end get_office_code;
 
 --------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ as
       procedure bad_pathname
       is
       begin
-         cwms3.cwms_err.raise('INVALID_ITEM', p_pathname, 'HEC-DSS pathname');
+         cwms_err.raise('INVALID_ITEM', p_pathname, 'HEC-DSS pathname');
       end bad_pathname;
    begin
       if substr(l_pathname, 1, 1) != '/' then
@@ -114,7 +114,7 @@ as
       p_f_pathname_part   in   varchar2,
       p_parameter_type    in   varchar2 default null,
       p_units             in   varchar2 default null,
-      p_timezone          in   varchar2 default null,
+      p_time_zone          in   varchar2 default null,
       p_tz_usage          in   varchar2 default null)
       return varchar2
    is
@@ -143,8 +143,8 @@ as
          l_dss_ts_id := l_dss_ts_id || ';Units=' || p_units;
       end if;
 
-      if p_timezone is not null then
-         l_dss_ts_id := l_dss_ts_id || ';Timezone=' || p_timezone;
+      if p_time_zone is not null then
+         l_dss_ts_id := l_dss_ts_id || ';Time_zone=' || p_time_zone;
       end if;
 
       if p_tz_usage is not null then
@@ -160,7 +160,7 @@ as
    function create_dss_file(
       p_dss_filemgr_url   in   varchar2,
       p_dss_file_name     in   varchar2,
-      p_fail_if_exists    in   number default false_num)
+      p_fail_if_exists    in   number default cwms_util.false_num)
       return number
    is
       l_dss_file_code   number;
@@ -168,26 +168,26 @@ as
       begin
          select dss_file_code
            into l_dss_file_code
-           from cwms3.at_dss_file
+           from at_dss_file
           where     dss_filemgr_url = p_dss_filemgr_url
                 and dss_file_name = p_dss_file_name;
 
-         if p_fail_if_exists != false_num then
-            cwms3.cwms_err.raise('ITEM_ALREADY_EXISTS',
+         if p_fail_if_exists != cwms_util.false_num then
+            cwms_err.raise('ITEM_ALREADY_EXISTS',
                                  'HEC-DSS file',
                                  p_dss_filemgr_url || p_dss_file_name);
          end if;
       exception
          when no_data_found then
             begin
-               insert into cwms3.at_dss_file
+               insert into at_dss_file
                     values (cwms_seq.nextval, p_dss_filemgr_url,
                             p_dss_file_name)
                  returning dss_file_code
                       into l_dss_file_code;
             exception
                when others then
-                  cwms3.cwms_err.raise('ITEM_NOT_CREATED',
+                  cwms_err.raise('ITEM_NOT_CREATED',
                                        'HEC-DSS file',
                                        p_dss_filemgr_url || p_dss_file_name);
             end;
@@ -203,7 +203,7 @@ as
       p_dss_file_code   in   number)
    is
    begin
-      delete from cwms3.at_dss_file
+      delete from at_dss_file
             where dss_file_code = p_dss_file_code;
    end delete_dss_file;
 
@@ -218,14 +218,14 @@ as
    begin
       select dss_file_code
         into l_dss_file_code
-        from cwms3.at_dss_file
+        from at_dss_file
        where     dss_filemgr_url = p_dss_filemgr_url
              and dss_file_name = p_dss_file_name;
 
       delete_dss_file(l_dss_file_code);
    exception
       when no_data_found then
-         cwms3.cwms_err.raise('INVALID_ITEM',
+         cwms_err.raise('INVALID_ITEM',
                               p_dss_filemgr_url || p_dss_file_name,
                               'HEC-DSS file');
    end delete_dss_file;
@@ -240,7 +240,7 @@ as
       p_dss_filemgr_url   in   varchar2,
       p_dss_file_name     in   varchar2,
       p_realtime          in   varchar2 default null,
-      p_fail_if_exists    in   number default false_num)
+      p_fail_if_exists    in   number default cwms_util.false_num)
       return number
    is
       l_office_code         number(10);
@@ -261,11 +261,11 @@ as
          begin
             select dss_xchg_direction_code
               into l_realtime_code_in
-              from cwms3.cwms_dss_xchg_direction
+              from cwms_dss_xchg_direction
              where upper(dss_xchg_direction_id) = upper(p_realtime);
          exception
             when no_data_found then
-               cwms3.cwms_err.raise('INVALID_ITEM',
+               cwms_err.raise('INVALID_ITEM',
                                     p_realtime,
                                     'HEC-DSS exchange direction');
          end;
@@ -282,14 +282,14 @@ as
                 realtime
            into l_dss_xchg_set_code, l_dss_file_code, l_description,
                 l_realtime_code
-           from cwms3.at_dss_xchg_set
+           from at_dss_xchg_set
           where     office_code = l_office_code
                 and dss_xchg_set_id = p_dss_xchg_set_id;
 
-         if    p_fail_if_exists != false_num
+         if    p_fail_if_exists != cwms_util.false_num
             or l_description != p_description
             or nvl(l_realtime_code, 0) != nvl(l_realtime_code_in, 0) then
-            cwms3.cwms_err.raise('ITEM_ALREADY_EXISTS',
+            cwms_err.raise('ITEM_ALREADY_EXISTS',
                                  'HEC-DSS exchange set',
                                  p_dss_xchg_set_id);
          end if;
@@ -304,12 +304,12 @@ as
          ---------------------------------------
          select dss_filemgr_url, dss_file_name
            into l_dss_filemgr_url, l_dss_file_name
-           from cwms3.at_dss_file
+           from at_dss_file
           where dss_file_code = l_dss_file_code;
 
          if    l_dss_filemgr_url != p_dss_filemgr_url
             or l_dss_file_name != p_dss_file_name then
-            cwms3.cwms_err.raise('ITEM_ALREADY_EXISTS',
+            cwms_err.raise('ITEM_ALREADY_EXISTS',
                                  'HEC-DSS exchange set',
                                  p_office_id || '/' || p_dss_xchg_set_id);
          end if;
@@ -318,18 +318,18 @@ as
          -- create the item --
          ---------------------
          l_dss_file_code :=
-               create_dss_file(p_dss_filemgr_url, p_dss_file_name, false_num);
+               create_dss_file(p_dss_filemgr_url, p_dss_file_name, cwms_util.false_num);
 
          begin
-            insert into cwms3.at_dss_xchg_set
+            insert into at_dss_xchg_set
                  values (cwms_seq.nextval, l_office_code, l_dss_file_code,
                          p_dss_xchg_set_id, p_description,
-                         l_realtime_code_in)
+                         l_realtime_code_in, null)
               returning dss_xchg_set_code
                    into l_dss_xchg_set_code;
          exception
             when others then
-               cwms3.cwms_err.raise('ITEM_NOT_CREATED',
+               cwms_err.raise('ITEM_NOT_CREATED',
                                     'HEC-DSS exchange set',
                                     p_office_id || '/' || p_dss_xchg_set_id);
          end;
@@ -349,7 +349,7 @@ as
       p_dss_filemgr_url     in       varchar2,
       p_dss_file_name       in       varchar2,
       p_realtime            in       varchar2 default null,
-      p_fail_if_exists      in       number default false_num)
+      p_fail_if_exists      in       number default cwms_util.false_num)
    is
    begin
       p_dss_xchg_set_code :=
@@ -369,10 +369,10 @@ as
       p_dss_xchg_set_code   in   number)
    is
    begin
-      delete from cwms3.at_dss_ts_xchg_map
+      delete from at_dss_ts_xchg_map
             where dss_xchg_set_code = p_dss_xchg_set_code;
 
-      delete from cwms3.at_dss_xchg_set
+      delete from at_dss_xchg_set
             where dss_xchg_set_code = p_dss_xchg_set_code;
    end delete_dss_xchg_set;
 
@@ -397,7 +397,7 @@ as
       delete_dss_xchg_set(l_dss_xchg_set_code);
    exception
       when no_data_found then
-         cwms3.cwms_err.raise('INVALID_ITEM',
+         cwms_err.raise('INVALID_ITEM',
                               p_office_id || '/' || p_dss_xchg_set_id,
                               'HEC-DSS exchange set');
    end delete_dss_xchg_set;
@@ -419,28 +419,28 @@ as
          begin
             select dss_xchg_set_code
               into l_dss_xchg_set_code
-              from cwms3.at_dss_xchg_set
+              from at_dss_xchg_set
              where     office_code = l_office_code
                    and dss_xchg_set_id = p_dss_xchg_set_id;
          exception
             when no_data_found then
-               cwms3.cwms_err.raise('INVALID_ITEM',
+               cwms_err.raise('INVALID_ITEM',
                                     p_office_id || '/' || p_dss_xchg_set_id,
                                     'HEC-DSS exchange set');
          end;
 
          select dss_xchg_set_code
            into l_dss_xchg_set_code
-           from cwms3.at_dss_xchg_set
+           from at_dss_xchg_set
           where     office_code = l_office_code
                 and dss_xchg_set_id = p_new_dss_xchg_set_id;
 
-         cwms3.cwms_err.raise('ITEM_ALREADY_EXISTS',
+         cwms_err.raise('ITEM_ALREADY_EXISTS',
                               'HEC-DSS exchange set',
                               p_office_id || '/' || p_new_dss_xchg_set_id);
       exception
          when no_data_found then
-            update cwms3.at_dss_xchg_set
+            update at_dss_xchg_set
                set dss_xchg_set_id = p_new_dss_xchg_set_id
              where     office_code = l_office_code
                    and dss_xchg_set_id = p_dss_xchg_set_id;
@@ -477,26 +477,26 @@ as
           where     office_code = l_office_code
                 and dss_xchg_set_id = p_new_dss_xchg_set_id;
 
-         cwms3.cwms_err.raise('ITEM_ALREADY_EXISTS',
+         cwms_err.raise('ITEM_ALREADY_EXISTS',
                               'HEC-DSS exchange set',
                               p_office_id || '/' || p_new_dss_xchg_set_id);
       exception
          when no_data_found then
             begin
-               insert into cwms3.at_dss_xchg_set
+               insert into at_dss_xchg_set
                     values (cwms_seq.nextval, l_office_code, l_dss_file_code,
-                            p_new_dss_xchg_set_id, l_description, l_realtime)
+                            p_new_dss_xchg_set_id, l_description, l_realtime, null)
                  returning dss_xchg_set_code
                       into l_new_dss_xchg_set_code;
 
-               insert into cwms3.at_dss_ts_xchg_map
+               insert into at_dss_ts_xchg_map
                   select cwms_seq.nextval, l_new_dss_xchg_set_code,
                          dss_ts_xchg_code
-                    from cwms3.at_dss_ts_xchg_map
+                    from at_dss_ts_xchg_map
                    where dss_xchg_set_code = l_dss_xchg_set_code;
             exception
                when others then
-                  cwms3.cwms_err.raise('ITEM_NOT_CREATED',
+                  cwms_err.raise('ITEM_NOT_CREATED',
                                        'HEC-DSS exchange set',
                                           p_office_id
                                        || '/'
@@ -505,7 +505,7 @@ as
       end;
    exception
       when no_data_found then
-         cwms3.cwms_err.raise('INVALID_ITEM',
+         cwms_err.raise('INVALID_ITEM',
                               p_dss_xchg_set_id,
                               'HEC-DSS exchange set');
    end duplicate_dss_xchg_set;
@@ -520,24 +520,24 @@ as
       p_dss_filemgr_url      in   varchar2,
       p_dss_file_name        in   varchar2,
       p_realtime             in   varchar2,
-      p_update_description   in   number default true_num,
-      p_update_filemgr_url   in   number default true_num,
-      p_update_file_name     in   number default true_num,
-      p_update_realtime      in   number default true_num)
+      p_update_description   in   number default cwms_util.true_num,
+      p_update_filemgr_url   in   number default cwms_util.true_num,
+      p_update_file_name     in   number default cwms_util.true_num,
+      p_update_realtime      in   number default cwms_util.true_num)
       return number
    is
       update_description    boolean
-                          := nvl(p_update_description, false_num) !=
-                                                                    false_num;
+                          := nvl(p_update_description, cwms_util.false_num) !=
+                                                                    cwms_util.false_num;
       update_filemgr_url    boolean
-                          := nvl(p_update_filemgr_url, false_num) !=
-                                                                    false_num;
+                          := nvl(p_update_filemgr_url, cwms_util.false_num) !=
+                                                                    cwms_util.false_num;
       update_file_name      boolean
-                            := nvl(p_update_file_name, false_num) !=
-                                                                    false_num;
+                            := nvl(p_update_file_name, cwms_util.false_num) !=
+                                                                    cwms_util.false_num;
       update_realtime       boolean
-                             := nvl(p_update_realtime, false_num) !=
-                                                                    false_num;
+                             := nvl(p_update_realtime, cwms_util.false_num) !=
+                                                                    cwms_util.false_num;
       l_office_code         at_dss_xchg_set.office_code%type;
       l_dss_xchg_set_code   at_dss_xchg_set.dss_xchg_set_code%type;
       l_realtime_code       at_dss_xchg_set.realtime%type            := null;
@@ -559,7 +559,7 @@ as
                 and dss_xchg_set_id = p_dss_xchg_set_id;
       exception
          when no_data_found then
-            cwms3.cwms_err.raise('INVALID_ITEM',
+            cwms_err.raise('INVALID_ITEM',
                                  p_dss_xchg_set_id,
                                  'HEC-DSS exchange set');
       end;
@@ -572,11 +572,11 @@ as
          begin
             select dss_xchg_direction_code
               into l_realtime_code
-              from cwms3.cwms_dss_xchg_direction
+              from cwms_dss_xchg_direction
              where upper(dss_xchg_direction_id) = upper(p_realtime);
          exception
             when no_data_found then
-               cwms3.cwms_err.raise('INVALID_ITEM',
+               cwms_err.raise('INVALID_ITEM',
                                     p_realtime,
                                     'HEC-DSS exchange direction');
          end;
@@ -587,7 +587,7 @@ as
       ---------------------------
       if update_filemgr_url then
          if p_dss_filemgr_url is null then
-            cwms3.cwms_err.raise('INVALID_ITEM',
+            cwms_err.raise('INVALID_ITEM',
                                  'NULL',
                                  'HEC-DSS FileManager URL');
          end if;
@@ -597,7 +597,7 @@ as
 
       if update_file_name then
          if p_dss_file_name is null then
-            cwms3.cwms_err.raise('INVALID_ITEM', 'NULL', 'HEC-DSS file name');
+            cwms_err.raise('INVALID_ITEM', 'NULL', 'HEC-DSS file name');
          end if;
 
          l_dss_file_name := p_dss_file_name;
@@ -681,10 +681,10 @@ as
       p_dss_filemgr_url      in       varchar2,
       p_dss_file_name        in       varchar2,
       p_realtime             in       varchar2,
-      p_update_description   in       number default true_num,
-      p_update_filemgr_url   in       number default true_num,
-      p_update_file_name     in       number default true_num,
-      p_update_realtime      in       number default true_num)
+      p_update_description   in       number default cwms_util.true_num,
+      p_update_filemgr_url   in       number default cwms_util.true_num,
+      p_update_file_name     in       number default cwms_util.true_num,
+      p_update_realtime      in       number default cwms_util.true_num)
    is
    begin
       p_dss_xchg_set_code :=
@@ -710,9 +710,9 @@ as
       p_f_pathname_part      in   varchar2,
       p_dss_parameter_type   in   varchar2,
       p_units                in   varchar2,
-      p_timezone             in   varchar2,
+      p_time_zone             in   varchar2,
       p_tz_usage             in   varchar2,
-      p_fail_if_exists       in   number default false_num)
+      p_fail_if_exists       in   number default cwms_util.false_num)
       return number
    is
       l_a_pathname_part           varchar2(64)
@@ -725,11 +725,11 @@ as
                                          := upper(nvl(p_e_pathname_part, ''));
       l_f_pathname_part           varchar2(64)
                                          := upper(nvl(p_f_pathname_part, ''));
-      l_dss_ts_code               cwms3.at_dss_ts_spec.dss_ts_code%type;
-      l_dss_parameter_type_code   cwms3.cwms_dss_parameter_type.dss_parameter_type_code%type;
-      l_unit_code                 cwms3.cwms_unit.unit_code%type;
-      l_timezone_code             cwms3.cwms_time_zone.timezone_code%type;
-      l_tz_usage_code             cwms3.cwms_tz_usage.tz_usage_code%type;
+      l_dss_ts_code               at_dss_ts_spec.dss_ts_code%type;
+      l_dss_parameter_type_code   cwms_dss_parameter_type.dss_parameter_type_code%type;
+      l_unit_code                 cwms_unit.unit_code%type;
+      l_time_zone_code             cwms_time_zone.time_zone_code%type;
+      l_tz_usage_code             cwms_tz_usage.tz_usage_code%type;
       l_dss_ts_id                 varchar2(512);
    begin
       ---------------------------------
@@ -738,11 +738,11 @@ as
       begin
          select dss_parameter_type_code
            into l_dss_parameter_type_code
-           from cwms3.cwms_dss_parameter_type
+           from cwms_dss_parameter_type
           where dss_parameter_type_id = upper(p_dss_parameter_type);
       exception
          when no_data_found then
-            cwms3.cwms_err.raise('INVALID_ITEM',
+            cwms_err.raise('INVALID_ITEM',
                                  p_dss_parameter_type,
                                  'DSS parameter type');
       end;
@@ -757,20 +757,20 @@ as
           where unit_id = p_units;
       exception
          when no_data_found then
-            cwms3.cwms_err.raise('INVALID_ITEM', p_units, 'CWMS unit');
+            cwms_err.raise('INVALID_ITEM', p_units, 'CWMS unit');
       end;
 
       ---------------------------
-      -- get the timezone code --
+      -- get the time_zone code --
       ---------------------------
       begin
-         select timezone_code
-           into l_timezone_code
-           from cwms3.cwms_time_zone
-          where timezone_name = p_timezone;
+         select time_zone_code
+           into l_time_zone_code
+           from cwms_time_zone
+          where time_zone_name = p_time_zone;
       exception
          when no_data_found then
-            cwms3.cwms_err.raise('INVALID_TIMEZONE', p_timezone);
+            cwms_err.raise('INVALID_TIME_ZONE', p_time_zone);
       end;
 
       ---------------------------
@@ -779,11 +779,11 @@ as
       begin
          select tz_usage_code
            into l_tz_usage_code
-           from cwms3.cwms_tz_usage
+           from cwms_tz_usage
           where upper(tz_usage_id) = upper(p_tz_usage);
       exception
          when no_data_found then
-            cwms3.cwms_err.raise('INVALID_ITEM',
+            cwms_err.raise('INVALID_ITEM',
                                  p_tz_usage,
                                  'CWMS time zone usage');
       end;
@@ -791,7 +791,7 @@ as
       begin
          select dss_ts_code
            into l_dss_ts_code
-           from cwms3.at_dss_ts_spec
+           from at_dss_ts_spec
           where     a_pathname_part = l_a_pathname_part
                 and b_pathname_part = l_b_pathname_part
                 and c_pathname_part = l_c_pathname_part
@@ -799,10 +799,10 @@ as
                 and f_pathname_part = l_f_pathname_part
                 and dss_parameter_type_code = l_dss_parameter_type_code
                 and unit_code = l_unit_code
-                and timezone_code = l_timezone_code
+                and time_zone_code = l_time_zone_code
                 and tz_usage_code = l_tz_usage_code;
 
-         if p_fail_if_exists != false_num then
+         if p_fail_if_exists != cwms_util.false_num then
             l_dss_ts_id :=
                make_dss_ts_id(l_a_pathname_part,
                               l_b_pathname_part,
@@ -812,21 +812,21 @@ as
                               l_f_pathname_part,
                               p_dss_parameter_type,
                               p_units,
-                              p_timezone,
+                              p_time_zone,
                               p_tz_usage);
-            cwms3.cwms_err.raise('ITEM_ALREADY_EXISTS',
+            cwms_err.raise('ITEM_ALREADY_EXISTS',
                                  'HEC-DSS time series specification',
                                  l_dss_ts_id);
          end if;
       exception
          when no_data_found then
             begin
-               insert into cwms3.at_dss_ts_spec
+               insert into at_dss_ts_spec
                     values (cwms_seq.nextval, l_a_pathname_part,
                             l_b_pathname_part, l_c_pathname_part,
                             l_e_pathname_part, l_f_pathname_part,
                             l_dss_parameter_type_code, l_unit_code,
-                            l_timezone_code, l_tz_usage_code)
+                            l_time_zone_code, l_tz_usage_code)
                  returning dss_ts_code
                       into l_dss_ts_code;
             exception
@@ -840,9 +840,9 @@ as
                                     l_f_pathname_part,
                                     p_dss_parameter_type,
                                     p_units,
-                                    p_timezone,
+                                    p_time_zone,
                                     p_tz_usage);
-                  cwms3.cwms_err.raise('ITEM_NOT_CREATED',
+                  cwms_err.raise('ITEM_NOT_CREATED',
                                        'HEC-DSS time series specification',
                                        l_dss_ts_id);
             end;
@@ -860,9 +860,9 @@ as
       p_dss_pathname         in   varchar2,
       p_dss_parameter_type   in   varchar2 default null,
       p_units                in   varchar2 default null,
-      p_timezone             in   varchar2 default null,
+      p_time_zone             in   varchar2 default null,
       p_tz_usage             in   varchar2 default null,
-      p_fail_if_exists       in   number default false_num)
+      p_fail_if_exists       in   number default cwms_util.false_num)
       return number
    is
       l_a_pathname_part            varchar2(64);
@@ -879,13 +879,13 @@ as
       l_cwms_parameter_type_code   number;
       l_dss_parameter_type_code    number;
       l_unit_code                  number;
-      l_timezone_code              number;
+      l_time_zone_code              number;
       l_tz_usage_code              number;
       l_dss_ts_xchg_code           number;
       l_dss_ts_id                  varchar2(512);
       l_dss_parameter_type         varchar2(16);
       l_units                      varchar2(16);
-      l_timezone                   varchar2(28);
+      l_time_zone                   varchar2(28);
       l_tz_usage                   varchar2(16);
    begin
       parse_dss_pathname(l_a_pathname_part,
@@ -895,7 +895,7 @@ as
                          l_e_pathname_part,
                          l_f_pathname_part,
                          p_dss_pathname);
-      cwms3.cwms_ts.create_ts_code(l_cwms_ts_code,
+      cwms_ts.create_ts_code(l_cwms_ts_code,
                                    p_office_id,
                                    p_cwms_ts_id,
                                    null);
@@ -909,42 +909,42 @@ as
          ------------------------------------------------------------------
          select parameter_type_code
            into l_inst_code
-           from cwms3.cwms_parameter_type
+           from cwms_parameter_type
           where parameter_type_id = 'Inst';
 
          select parameter_code, parameter_type_code
            into l_cwms_parameter_code, l_cwms_parameter_type_code
-           from cwms3.at_cwms_ts_spec
+           from at_cwms_ts_spec
           where ts_code = l_cwms_ts_code;
 
          if l_cwms_parameter_type_code = l_inst_code then
-            select parameter_code
+            select base_parameter_code
               into l_precip_code
-              from cwms3.cwms_parameter
-             where parameter_id = 'Precip';
+              from cwms_base_parameter
+             where base_parameter_id = 'Precip';
 
             if l_cwms_parameter_code = l_precip_code then
                select dss_parameter_type_code
                  into l_dss_parameter_type_code
-                 from cwms3.cwms_dss_parameter_type
+                 from cwms_dss_parameter_type
                 where dss_parameter_type_id = 'INST-CUM';
             else
                select dss_parameter_type_code
                  into l_dss_parameter_type_code
-                 from cwms3.cwms_dss_parameter_type
+                 from cwms_dss_parameter_type
                 where dss_parameter_type_id = 'INST-VAL';
             end if;
          else
             begin
                select dss_parameter_type_code
                  into l_dss_parameter_type_code
-                 from cwms3.cwms_dss_parameter_type
+                 from cwms_dss_parameter_type
                 where parameter_type_code = l_cwms_parameter_type_code;
             exception
                when no_data_found then
                   select dss_parameter_type_code
                     into l_dss_parameter_type_code
-                    from cwms3.cwms_dss_parameter_type
+                    from cwms_dss_parameter_type
                    where dss_parameter_type_id = 'INST-VAL';
             end;
          end if;
@@ -955,11 +955,11 @@ as
          begin
             select dss_parameter_type_code
               into l_dss_parameter_type_code
-              from cwms3.cwms_dss_parameter_type
+              from cwms_dss_parameter_type
              where dss_parameter_type_id = upper(p_dss_parameter_type);
          exception
             when no_data_found then
-               cwms3.cwms_err.raise('INVALID_ITEM',
+               cwms_err.raise('INVALID_ITEM',
                                     p_dss_parameter_type,
                                     'HEC-DSS parameter type');
          end;
@@ -974,9 +974,9 @@ as
          --------------------------------------
          select cp.unit_code
            into l_unit_code
-           from cwms3.cwms_parameter cp, cwms3.at_cwms_ts_spec ts
+           from cwms_base_parameter cp, at_cwms_ts_spec ts
           where     ts.ts_code = l_cwms_ts_code
-                and cp.parameter_code = ts.parameter_code;
+                and cp.base_parameter_code = ts.parameter_code;
       else
          -----------------------------
          -- use the units passed in --
@@ -985,45 +985,45 @@ as
             select unit_code
               into l_unit_code
               from (select unit_code, unit_id
-                      from cwms3.cwms_unit
+                      from cwms_unit
                     union
                     select unit_code, alias_id as unit_id
-                      from cwms3.at_unit_alias)
+                      from at_unit_alias)
              where unit_id = p_units;
          exception
             when no_data_found then
-               cwms3.cwms_err.raise('INVALID_ITEM', p_units, 'unit');
+               cwms_err.raise('INVALID_ITEM', p_units, 'unit');
          end;
       end if;
 
       ------------------
-      -- DSS TIMEZONE --
+      -- DSS TIME_ZONE --
       ------------------
-      if p_timezone is null then
+      if p_time_zone is null then
          -------------
          -- use UTC --
          -------------
-         select timezone_code
-           into l_timezone_code
-           from cwms3.cwms_time_zone
-          where timezone_name = 'UTC';
+         select time_zone_code
+           into l_time_zone_code
+           from cwms_time_zone
+          where time_zone_name = 'UTC';
       else
          --------------------------------
-         -- use the timezone passed in --
+         -- use the time_zone passed in --
          --------------------------------
          begin
-            select timezone_code
-              into l_timezone_code
-              from cwms3.cwms_time_zone
-             where upper(timezone_name) = upper(p_timezone);
+            select time_zone_code
+              into l_time_zone_code
+              from cwms_time_zone
+             where upper(time_zone_name) = upper(p_time_zone);
          exception
             when no_data_found then
-               cwms3.cwms_err.raise('INVALID_ITEM', p_timezone, 'unit');
+               cwms_err.raise('INVALID_ITEM', p_time_zone, 'unit');
          end;
       end if;
 
       ------------------------
-      -- DSS TIMEZONE USAGE --
+      -- DSS TIME_ZONE USAGE --
       ------------------------
       if p_tz_usage is null then
          ------------------
@@ -1031,20 +1031,20 @@ as
          ------------------
          select tz_usage_code
            into l_tz_usage_code
-           from cwms3.cwms_tz_usage
+           from cwms_tz_usage
           where tz_usage_id = 'Standard';
       else
          --------------------------------
-         -- use the timezone passed in --
+         -- use the time_zone passed in --
          --------------------------------
          begin
             select tz_usage_code
               into l_tz_usage_code
-              from cwms3.cwms_tz_usage
+              from cwms_tz_usage
              where upper(tz_usage_id) = upper(p_tz_usage);
          exception
             when no_data_found then
-               cwms3.cwms_err.raise('INVALID_ITEM', p_timezone, 'unit');
+               cwms_err.raise('INVALID_ITEM', p_time_zone, 'unit');
          end;
       end if;
 
@@ -1053,22 +1053,22 @@ as
       ----------------------------------------------------------------------
       select dss_parameter_type_id
         into l_dss_parameter_type
-        from cwms3.cwms_dss_parameter_type
+        from cwms_dss_parameter_type
        where dss_parameter_type_code = l_dss_parameter_type_code;
 
       select unit_id
         into l_units
-        from cwms3.cwms_unit
+        from cwms_unit
        where unit_code = l_unit_code;
 
-      select timezone_name
-        into l_timezone
-        from cwms3.cwms_time_zone
-       where timezone_code = l_timezone_code;
+      select time_zone_name
+        into l_time_zone
+        from cwms_time_zone
+       where time_zone_code = l_time_zone_code;
 
       select tz_usage_id
         into l_tz_usage
-        from cwms3.cwms_tz_usage
+        from cwms_tz_usage
        where tz_usage_code = l_tz_usage_code;
 
       l_dss_ts_code :=
@@ -1079,17 +1079,17 @@ as
                             l_f_pathname_part,
                             l_dss_parameter_type,
                             l_units,
-                            l_timezone,
+                            l_time_zone,
                             l_tz_usage);
 
       begin
          select dss_ts_xchg_code
            into l_dss_ts_xchg_code
-           from cwms3.at_dss_ts_xchg_spec
+           from at_dss_ts_xchg_spec
           where     ts_code = l_cwms_ts_code
                 and dss_ts_code = l_dss_ts_code;
 
-         if p_fail_if_exists != false_num then
+         if p_fail_if_exists != cwms_util.false_num then
             l_dss_ts_id :=
                make_dss_ts_id(l_a_pathname_part,
                               l_b_pathname_part,
@@ -1099,9 +1099,9 @@ as
                               l_f_pathname_part,
                               l_dss_parameter_type,
                               l_units,
-                              l_timezone,
+                              l_time_zone,
                               l_tz_usage);
-            cwms3.cwms_err.raise
+            cwms_err.raise
                                 ('ITEM_ALREADY_EXISTS',
                                  'HEC-DSS time series exchange specification',
                                     p_office_id
@@ -1113,7 +1113,7 @@ as
       exception
          when no_data_found then
             begin
-               insert into cwms3.at_dss_ts_xchg_spec
+               insert into at_dss_ts_xchg_spec
                     values (cwms_seq.nextval, l_cwms_ts_code, l_dss_ts_code)
                  returning dss_ts_xchg_code
                       into l_dss_ts_xchg_code;
@@ -1128,9 +1128,9 @@ as
                                     l_f_pathname_part,
                                     l_dss_parameter_type,
                                     l_units,
-                                    l_timezone,
+                                    l_time_zone,
                                     l_tz_usage);
-                  cwms3.cwms_err.raise
+                  cwms_err.raise
                                 ('ITEM_NOT_CREATED',
                                  'HEC-DSS time series exchange specification',
                                     p_office_id
@@ -1154,7 +1154,7 @@ as
       p_dss_pathname         in   varchar2,
       p_dss_parameter_type   in   varchar2 default null,
       p_units                in   varchar2 default null,
-      p_timezone             in   varchar2 default null,
+      p_time_zone            in   varchar2 default null,
       p_tz_usage             in   varchar2 default null)
    is
       l_dss_ts_xchg_code       number;
@@ -1166,17 +1166,17 @@ as
                                  p_dss_pathname,
                                  p_dss_parameter_type,
                                  p_units,
-                                 p_timezone,
+                                 p_time_zone,
                                  p_tz_usage);
 
       select dss_ts_xchg_map_code
         into l_dss_ts_xchg_map_code
-        from cwms3.at_dss_ts_xchg_map
+        from at_dss_ts_xchg_map
        where     dss_xchg_set_code = p_dss_xchg_set_code
              and dss_ts_xchg_code = l_dss_ts_xchg_code;
    exception
       when no_data_found then
-         insert into cwms3.at_dss_ts_xchg_map
+         insert into at_dss_ts_xchg_map
               values (cwms_seq.nextval, p_dss_xchg_set_code,
                       l_dss_ts_xchg_code);
    end map_ts_in_xchg_set;
@@ -1188,7 +1188,7 @@ as
       p_dss_xchg_set_code   in   number)
    is
    begin
-      delete from cwms3.at_dss_ts_xchg_map
+      delete from at_dss_ts_xchg_map
             where dss_xchg_set_code = p_dss_xchg_set_code;
    end;
 
@@ -1198,9 +1198,9 @@ as
    procedure del_unused_dss_files
    is
    begin
-      delete from cwms3.at_dss_file
+      delete from at_dss_file
             where dss_file_code not in(select distinct dss_file_code
-                                                  from cwms3.at_dss_xchg_set);
+                                                  from at_dss_xchg_set);
    end del_unused_dss_files;
 
 --------------------------------------------------------------------------------
@@ -1209,9 +1209,9 @@ as
    procedure del_unused_dss_ts_xchg_specs
    is
    begin
-      delete from cwms3.at_dss_ts_xchg_spec
+      delete from at_dss_ts_xchg_spec
             where dss_ts_xchg_code not in(select distinct dss_ts_xchg_code
-                                                     from cwms3.at_dss_ts_xchg_map);
+                                                     from at_dss_ts_xchg_map);
    end del_unused_dss_ts_xchg_specs;
 
 --------------------------------------------------------------------------------
@@ -1220,9 +1220,9 @@ as
    procedure del_unused_dss_ts_specs
    is
    begin
-      delete from cwms3.at_dss_ts_spec
+      delete from at_dss_ts_spec
             where dss_ts_code not in(select distinct dss_ts_code
-                                                from cwms3.at_dss_ts_xchg_spec);
+                                                from at_dss_ts_xchg_spec);
    end del_unused_dss_ts_specs;
 
 --------------------------------------------------------------------------------

@@ -1,9 +1,6 @@
 /* Formatted on 2006/05/09 18:31 (Formatter Plus v4.8.7) */
 create or replace package cwms_dss authid current_user
 is
-   true_num    constant number := 1;
-   false_num   constant number := 0;
-
 --------------------------------------------------------------------------------
 --
 -- In the create_xxx functions and procedures below, the p_fail_if_exists input
@@ -21,7 +18,7 @@ is
       p_dss_filemgr_url   in   varchar2,
       p_dss_file_name     in   varchar2,
       p_realtime          in   varchar2 default null,
-      p_fail_if_exists    in   number default false_num)
+      p_fail_if_exists    in   number default cwms_util.false_num)
       return number;
 
 --------------------------------------------------------------------------------
@@ -35,7 +32,7 @@ is
       p_dss_filemgr_url     in       varchar2,
       p_dss_file_name       in       varchar2,
       p_realtime            in       varchar2 default null,
-      p_fail_if_exists      in       number default false_num);
+      p_fail_if_exists      in       number default cwms_util.false_num);
 
 -------------------------------------------------------------------------------
 -- procedure delete_dss_xchg_set(...)
@@ -70,10 +67,10 @@ is
       p_dss_filemgr_url      in   varchar2,
       p_dss_file_name        in   varchar2,
       p_realtime             in   varchar2,
-      p_update_description   in   number default true_num,
-      p_update_filemgr_url   in   number default true_num,
-      p_update_file_name     in   number default true_num,
-      p_update_realtime      in   number default true_num)
+      p_update_description   in   number default cwms_util.true_num,
+      p_update_filemgr_url   in   number default cwms_util.true_num,
+      p_update_file_name     in   number default cwms_util.true_num,
+      p_update_realtime      in   number default cwms_util.true_num)
       return number;
 
 --------------------------------------------------------------------------------
@@ -87,10 +84,10 @@ is
       p_dss_filemgr_url      in       varchar2,
       p_dss_file_name        in       varchar2,
       p_realtime             in       varchar2,
-      p_update_description   in       number default true_num,
-      p_update_filemgr_url   in       number default true_num,
-      p_update_file_name     in       number default true_num,
-      p_update_realtime      in       number default true_num);
+      p_update_description   in       number default cwms_util.true_num,
+      p_update_filemgr_url   in       number default cwms_util.true_num,
+      p_update_file_name     in       number default cwms_util.true_num,
+      p_update_realtime      in       number default cwms_util.true_num);
 
 --------------------------------------------------------------------------------
 -- procedure map_ts_in_xchg_set(...)
@@ -102,7 +99,7 @@ is
       p_dss_pathname         in   varchar2,
       p_dss_parameter_type   in   varchar2 default null,
       p_units                in   varchar2 default null,
-      p_timezone             in   varchar2 default null,
+      p_time_zone            in   varchar2 default null,
       p_tz_usage             in   varchar2 default null);
 
 --------------------------------------------------------------------------------
@@ -119,5 +116,4 @@ end cwms_dss;
 /
 
 show errors;
-grant execute on cwms_dss to wcviewer;
 commit ;

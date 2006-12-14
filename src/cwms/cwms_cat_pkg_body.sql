@@ -1783,7 +1783,7 @@ IS
               AND ptype.dss_parameter_type_code =
                                                  dspec.dss_parameter_type_code
               AND unit.unit_code = dspec.unit_code
-              AND tzone.time_zone_code = dspec.timezone_code
+              AND tzone.time_zone_code = dspec.time_zone_code
               AND tzuse.tz_usage_code = dspec.tz_usage_code
          ORDER BY cwms_ts_id;
    END cat_dss_xchg_ts_map;
