@@ -86,6 +86,8 @@ tableInfo = [
     {"ID" : "conversion",         "TABLE" : "CWMS_UNIT_CONVERSION",       "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "parameterType",      "TABLE" : "CWMS_PARAMETER_TYPE",        "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "parameter",          "TABLE" : "CWMS_BASE_PARAMETER",        "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
+#    {"ID" : "subParameter",       "TABLE" : "AT_PARAMETER",               "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
+#    {"ID" : "displayUnits",       "TABLE" : "AT_DISLAY_UNITS",            "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "qScreened",          "TABLE" : "CWMS_DATA_Q_SCREENED",       "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "qValidity",          "TABLE" : "CWMS_DATA_Q_VALIDITY",       "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "qRange",             "TABLE" : "CWMS_DATA_Q_RANGE",          "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
@@ -3713,8 +3715,9 @@ unitDefs = [
     ["Pressure",                         "psi",         "Pounds per square inch",        "Pressure of 1 pound per square inch"                               ],
     ["Temperature",                      "C",           "Centigrade",                    "Celsius Degree"                                                    ],
     ["Temperature",                      "F",           "Fahrenheit",                    "Fahrenheit Degree"                                                 ],
-    ["Turbidity",                        "jtu",         "Jackson Turbitiy Units",        "Jackson Turbidity Unit (approximates nephelometric turbidity unit)"],
-    ["Turbidity",                        "ntu",         "Nephelometric Turbidity Units", "Nephelometric Turbidity Units"                                     ],
+    ["Turbidity",                        "jtu",         "Jackson Turbitiy Unit",         "Jackson Turbidity Unit (approximates nephelometric turbidity unit)"],
+    ["Turbidity",                        "NTU",         "Nephelometric Turbidity Unit",  "Measure of scattered light (90+/-30 deg) from a white light (540+/-140nm)"],
+    ["Turbidity",                        "FNU",         "Formazin Nephelometric Unit",   "Measure of scattered light (90+/-2.5 deg) from monochrome light (860+/-60 nm)"],
     ["Volume Rate",                      "cfs",         "Cubic feet per second",         "Volume rate of 1 cubic foot per second"                            ],
     ["Volume Rate",                      "cms",         "Cubic meters per second",       "Volume rate of 1 cubic meter per second"                           ],
     ["Volume Rate",                      "gpm",         "Gallons per minute",            "Volume rate of 1 gallon per minute"                                ],
@@ -4202,7 +4205,8 @@ unitConversions = [
     ["Temperature",                      "F",           "C",           -17.777777777777777, 0.55555555555555555    ],
     ["Temperature",                      "F",           "F",           0.0,                 1.0                    ],
     ["Turbidity",                        "jtu",         "jtu",         0.0,                 1.0                    ],
-    ["Turbidity",                        "ntu",         "ntu",         0.0,                 1.0                    ],
+    ["Turbidity",                        "NTU",         "NTU",         0.0,                 1.0                    ],
+    ["Turbidity",                        "FNU",         "FNU",         0.0,                 1.0                    ],
     ["Volume Rate",                      "cfs",         "cfs",         0.0,                 1.0                    ],
     ["Volume Rate",                      "cfs",         "cms",         0.0,                 0.028316846592         ],
     ["Volume Rate",                      "cfs",         "gpm",         0.0,                 0.12467531666666666    ],
@@ -4483,8 +4487,9 @@ parameters = [
     [20,	"Pressure",                         "Pres",     "Pressure",           "kPa",     "Pressure (force per unit area)"                                             ],
     [25,	"Temperature",                      "Temp",     "Temperature",        "C",       "Hotness or coldness of a substance based on measuring expansion of mercury" ],
     [28,	"Turbidity",                        "Turb",     "Turbidity",          "jtu",     "Measurement of interference to the passage of light by matter in suspension"],
+    [38,	"Turbidity",                        "TurbF",    "Turbidity",          "FNU",     "Measurement of scattered light at an angle of 90+/-2.5 degrees to the incident light beam from a monochromatic light source (860+/-60 nm) (ISO 7027)"],
     [33,	"Turbidity",                        "TurbJ",    "Turbidity",          "jtu",     "Measurement of interference to the passage of light by matter in suspension"],
-    [34,	"Turbidity",                        "TurbN",    "Turbidity",          "ntu",     "Measurement of scatter of a focused light beam by matter in suspension"     ],
+    [34,	"Turbidity",                        "TurbN",    "Turbidity",          "NTU",     "Measurement of scattered light at an angle of 90+/-30 degrees to the incident light beam from a white light source (540+/-140 nm) (EPA method 180.1)"],
     [14,	"Volume Rate",                      "Flow",     "Flow Rate",          "cms",     "Volume rate of moving water"                                                ],
     [24,	"Volume",                           "Stor",     "Storage",            "m3",      "Volume of impounded water"                                                  ],
 ]
@@ -4495,7 +4500,72 @@ for paramCode, abstractParam, paramId, name, id, desc in parameters :
     cwmsUnitParamDefsById[abstractParam + '.' + id] = unitDefsById[abstractParam + '.' + id]["CODE"]
 cwmsUnitParamIds = cwmsUnitParamDefsById.keys()
 
-
+#---------------#
+# Display Units #
+#---------------#
+sys.stderr.write("Processing display units definitions.\n")
+displayUnits = [
+    
+#     -------------------------------------------------------------- Display Units --    
+#     --  DEFAULT Sub_Parameters -------------------------------
+#     Base        Sub            Abstract                           
+#     Param       Param          Param                               SI         EN
+    [ "%",        "",            "None",                             "%",       "%"],                                                    
+    [ "%",        "ofArea-Snow", "None",                             "%",       "%"],                                         
+    [ "%",        "Opening",     "None",                             "%",       "%"],                                             
+    [ "Area",     "",            "Area",                             "m2",      "ft2"],                                                
+    [ "Code",     "",            "None",                             "n/a",     "n/a"],                                               
+    [ "Conc",     "",            "Mass Concentration",               "mg/l",    "ppm"],                                
+    [ "Conc",     "Acidity",     "Mass Concentration",               "mg/l",    "ppm"],                          
+    [ "Conc",     "Alkalinity",  "Mass Concentration",               "mg/l",    "ppm"],                      
+    [ "Conc",     "DO",          "Mass Concentration",               "mg/l",    "ppm"],                              
+    [ "Conc",     "Iron",        "Mass Concentration",               "mg/l",    "ppm"],                            
+    [ "Conc",     "Sulfate",     "Mass Concentration",               "mg/l",    "ppm"],                         
+    [ "Conc",     "Salinity",    "Mass Concentration",               "g/l",     "g/l"],                         
+    [ "Cond",     "",            "Conductivity",                     "umho/cm", "umho/cm"],                                   
+    [ "Count",    "",            "Count",                            "unit",    "unit"],                                            
+    [ "Currency", "",            "Currency",                         "$",       "$"],                                         
+    [ "Depth",    "",            "Length",                           "mm",      "in"],                                             
+    [ "Depth",    "Snow",        "Length",                           "mm",      "in"],                                         
+    [ "Depth",    "SnowWE",      "Length",                           "mm",      "in"],                                       
+    [ "Dir",      "",            "Angle",                            "deg",     "deg"],                                               
+    [ "Dist",     "",            "Length",                           "km",      "mi"],                                              
+    [ "Elev",     "",            "Length",                           "m",       "ft"],                                               
+    [ "Energy",   "",            "Energy",                           "MWh",     "MWh"],                                           
+    [ "Evap",     "",            "Length",                           "mm",      "in"],                                              
+    [ "EvapRate", "",            "Linear Speed",                     "mm/day",  "in/day"],                                
+    [ "Fish",     "",            "Count",                            "unit",    "unit"],                                             
+    [ "Flow",     "",            "Volume Rate",                      "cms",     "cfs"],                                        
+    [ "Flow",     "In",          "Volume Rate",                      "cms",     "cfs"],                                      
+    [ "Flow",     "Out",         "Volume Rate",                      "cms",     "cfs"],                                     
+    [ "Flow",     "Reg",         "Volume Rate",                      "cms",     "cfs"],                                     
+    [ "Flow",     "Spill",       "Volume Rate",                      "cms",     "cfs"],                                   
+    [ "Flow",     "Unreg",       "Volume Rate",                      "cms",     "cfs"],                                   
+    [ "Frost",    "",            "Length",                           "cm",      "in"],                                             
+    [ "Irrad",    "",            "Irradiance",                       "W/m2",    "langley/min"],                                       
+    [ "Opening",  "",            "Length",                           "m",       "ft"],                                            
+    [ "pH",       "",            "Hydrogen Ion Concentration Index", "su",      "su"],                      
+    [ "Power",    "",            "Power",                            "MW",      "MW"],                                              
+    [ "Precip",   "",            "Length",                           "mm",      "in"],                                            
+    [ "Pres",     "",            "Pressure",                         "kPa",     "in-hg"],                                           
+    [ "Rad",      "",            "Irradiation",                      "J/m2",    "langley"],                                        
+    [ "Ratio",    "",            "None",                             "n/a",     "n/a"],                                              
+    [ "Speed",    "",            "Linear Speed",                     "kph",     "mph"],                                      
+    [ "SpinRate", "",            "Angular Speed",                    "rpm",     "rpm"],                                  
+    [ "Stage",    "",            "Length",                           "m",       "ft"],                                              
+    [ "Stor",     "",            "Volume",                           "m3",      "ac-ft"],                                              
+    [ "Temp",     "",            "Temperature",                      "C",       "F"],                                          
+    [ "Temp",     "Air",         "Temperature",                      "C",       "F"],                                       
+    [ "Temp",     "Water",       "Temperature",                      "C",       "F"],                                     
+    [ "Thick",    "",            "Length",                           "cm",      "in"],                                             
+    [ "Timing",   "",            "Elapsed Time",                     "sec",     "sec"],                                     
+    [ "Travel",   "",            "Length",                           "km",      "mi"],                                            
+    [ "Turb",     "",            "Turbidity",                        "jtu",     "jtu"],                                          
+    [ "TurbF",    "",            "Turbidity",                        "FNU",     "FNU"],                                         
+    [ "TurbJ",    "",            "Turbidity",                        "jtu",     "jtu"],                                         
+    [ "TurbN",    "",            "Turbidity",                        "NTU",     "NTU"],                                         
+    [ "Volt",     "",            "Electromotive Potential",          "volt",    "volt"],
+]
 
 #-----------------#
 # Parameter Types #
@@ -5796,6 +5866,138 @@ for i in range(len(parameters)) :
     parameterLoadTemplate +="\t'%s'\n" % description
     parameterLoadTemplate +=");\n"
 parameterLoadTemplate +="COMMIT;\n"
+
+#-------------------------------------------------------
+#-------------------------------------------------------
+sys.stderr.write("Building subParameterCreationTemplate\n")
+subParameterCreationTemplate = \
+'''
+-- ## TABLE ###############################################
+-- ## @TABLE
+-- ##
+
+CREATE TABLE @TABLE
+(
+  PARAMETER_CODE       NUMBER,
+  DB_OFFICE_CODE       NUMBER                     NOT NULL,
+  BASE_PARAMETER_CODE  NUMBER                     NOT NULL,
+  SUB_PARAMETER_ID     VARCHAR2(32 BYTE),
+  SUB_PARAMETER_DESC   VARCHAR2(80 BYTE)
+)
+TABLESPACE @DATASPACE
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+-----------------------------
+-- @TABLE indicies
+--
+CREATE UNIQUE INDEX @TABLE_PK ON @TABLE
+(PARAMETER_CODE)
+LOGGING
+TABLESPACE @DATASPACE
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+CREATE UNIQUE INDEX @TABLE_UK1 ON @TABLE
+(BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE)
+LOGGING
+TABLESPACE @DATASPACE
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+-----------------------------
+-- @TABLE constraints
+--
+ALTER TABLE @TABLE ADD (
+  CONSTRAINT @TABLE_PK
+ PRIMARY KEY
+ (PARAMETER_CODE)
+    USING INDEX 
+    TABLESPACE @DATASPACE
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+ALTER TABLE @TABLE ADD (
+  CONSTRAINT @TABLE_UK1
+ UNIQUE (BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE)
+    USING INDEX 
+    TABLESPACE @DATASPACE
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+ALTER TABLE @TABLE ADD (
+  CONSTRAINT @TABLE_FK1 
+ FOREIGN KEY (DB_OFFICE_CODE) 
+ REFERENCES CWMS_OFFICE (OFFICE_CODE))
+/
+
+ALTER TABLE @TABLE ADD (
+  CONSTRAINT @TABLE_FK2 
+ FOREIGN KEY (BASE_PARAMETER_CODE) 
+ REFERENCES CWMS_BASE_PARAMETER (BASE_PARAMETER_CODE))
+/
+
+ALTER TABLE @TABLE ADD (
+  CONSTRAINT @TABLE_CK_1 
+       CHECK (TRIM(SUB_PARAMETER_ID)=SUB_PARAMETER_ID))
+/
+SHOW ERRORS
+'''
+
+#-------------------------------------------------------
+#-------------------------------------------------------
 
 sys.stderr.write("Building ratingTsInterpTypeCreationTemplate\n")
 ratingTsInterpTypeCreationTemplate = \
