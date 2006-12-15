@@ -11,7 +11,6 @@ begin
    begin execute immediate 'drop table at_agency_name cascade constraints';            exception when others then null; end;
    begin execute immediate 'drop table at_alias_name cascade constraints';             exception when others then null; end;
    begin execute immediate 'drop table at_data_stream_id cascade constraints';         exception when others then null; end;
-   begin execute immediate 'drop table at_parameter cascade constraints';              exception when others then null; end;
    begin execute immediate 'drop table at_display_units cascade constraints';          exception when others then null; end;
    begin execute immediate 'drop table at_alarm_id cascade constraints';               exception when others then null; end;
    begin execute immediate 'drop table at_alarm_criteria cascade constraints';         exception when others then null; end;
