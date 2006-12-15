@@ -86,7 +86,7 @@ tableInfo = [
     {"ID" : "conversion",         "TABLE" : "CWMS_UNIT_CONVERSION",       "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "parameterType",      "TABLE" : "CWMS_PARAMETER_TYPE",        "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "parameter",          "TABLE" : "CWMS_BASE_PARAMETER",        "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-#    {"ID" : "subParameter",       "TABLE" : "AT_PARAMETER",               "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
+    {"ID" : "subParameter",       "TABLE" : "AT_PARAMETER",               "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
 #    {"ID" : "displayUnits",       "TABLE" : "AT_DISLAY_UNITS",            "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "qScreened",          "TABLE" : "CWMS_DATA_Q_SCREENED",       "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "qValidity",          "TABLE" : "CWMS_DATA_Q_VALIDITY",       "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
@@ -3715,7 +3715,7 @@ unitDefs = [
     ["Pressure",                         "psi",         "Pounds per square inch",        "Pressure of 1 pound per square inch"                               ],
     ["Temperature",                      "C",           "Centigrade",                    "Celsius Degree"                                                    ],
     ["Temperature",                      "F",           "Fahrenheit",                    "Fahrenheit Degree"                                                 ],
-    ["Turbidity",                        "jtu",         "Jackson Turbitiy Unit",         "Jackson Turbidity Unit (approximates nephelometric turbidity unit)"],
+    ["Turbidity",                        "JTU",         "Jackson Turbitiy Unit",         "Jackson Turbidity Unit (approximates nephelometric turbidity unit)"],
     ["Turbidity",                        "NTU",         "Nephelometric Turbidity Unit",  "Measure of scattered light (90+/-30 deg) from a white light (540+/-140nm)"],
     ["Turbidity",                        "FNU",         "Formazin Nephelometric Unit",   "Measure of scattered light (90+/-2.5 deg) from monochrome light (860+/-60 nm)"],
     ["Volume Rate",                      "cfs",         "Cubic feet per second",         "Volume rate of 1 cubic foot per second"                            ],
@@ -3835,8 +3835,8 @@ unitAliases = [
     ["Temperature",             "F",       "DegF"                  ],
     ["Temperature",             "F",       "degF"                  ],
     ["Temperature",             "F",       "Fahrenheit"            ],
-    ["Turbidity",               "jtu",     "JTU"                   ],
-    ["Turbidity",               "ntu",     "NTU"                   ],
+    ["Turbidity",               "JTU",     "jtu"                   ],
+    ["Turbidity",               "NTU",     "ntu"                   ],
     ["Volume Rate",             "cfs",     "CFS"                   ],
     ["Volume Rate",             "cfs",     "cu-ft/sec"             ],
     ["Volume Rate",             "cfs",     "cuft/sec"              ],
@@ -4204,7 +4204,7 @@ unitConversions = [
     ["Temperature",                      "C",           "F",           32.0,                1.8                    ],
     ["Temperature",                      "F",           "C",           -17.777777777777777, 0.55555555555555555    ],
     ["Temperature",                      "F",           "F",           0.0,                 1.0                    ],
-    ["Turbidity",                        "jtu",         "jtu",         0.0,                 1.0                    ],
+    ["Turbidity",                        "JTU",         "JTU",         0.0,                 1.0                    ],
     ["Turbidity",                        "NTU",         "NTU",         0.0,                 1.0                    ],
     ["Turbidity",                        "FNU",         "FNU",         0.0,                 1.0                    ],
     ["Volume Rate",                      "cfs",         "cfs",         0.0,                 1.0                    ],
@@ -4486,9 +4486,9 @@ parameters = [
     [18,	"Power",                            "Power",    "Power",              "MW",      "Energy rate, Radiant Flux"                                                  ],
     [20,	"Pressure",                         "Pres",     "Pressure",           "kPa",     "Pressure (force per unit area)"                                             ],
     [25,	"Temperature",                      "Temp",     "Temperature",        "C",       "Hotness or coldness of a substance based on measuring expansion of mercury" ],
-    [28,	"Turbidity",                        "Turb",     "Turbidity",          "jtu",     "Measurement of interference to the passage of light by matter in suspension"],
+    [28,	"Turbidity",                        "Turb",     "Turbidity",          "JTU",     "Measurement of interference to the passage of light by matter in suspension"],
     [38,	"Turbidity",                        "TurbF",    "Turbidity",          "FNU",     "Measurement of scattered light at an angle of 90+/-2.5 degrees to the incident light beam from a monochromatic light source (860+/-60 nm) (ISO 7027)"],
-    [33,	"Turbidity",                        "TurbJ",    "Turbidity",          "jtu",     "Measurement of interference to the passage of light by matter in suspension"],
+    [33,	"Turbidity",                        "TurbJ",    "Turbidity",          "JTU",     "Measurement of interference to the passage of light by matter in suspension"],
     [34,	"Turbidity",                        "TurbN",    "Turbidity",          "NTU",     "Measurement of scattered light at an angle of 90+/-30 degrees to the incident light beam from a white light source (540+/-140 nm) (EPA method 180.1)"],
     [14,	"Volume Rate",                      "Flow",     "Flow Rate",          "cms",     "Volume rate of moving water"                                                ],
     [24,	"Volume",                           "Stor",     "Storage",            "m3",      "Volume of impounded water"                                                  ],
@@ -4499,6 +4499,29 @@ for paramCode, abstractParam, paramId, name, id, desc in parameters :
 #    uid = abstractParam + '.' + id
     cwmsUnitParamDefsById[abstractParam + '.' + id] = unitDefsById[abstractParam + '.' + id]["CODE"]
 cwmsUnitParamIds = cwmsUnitParamDefsById.keys()
+
+#------------------------#
+# Default Sub-Parameters #
+#------------------------#
+sys.stderr.write("Processing default sub_parameter definitions.\n")
+subParameters = [
+    ["%",                "Opening",                   "Percent Open"                                              ],
+    ["%",                "ofArea-Snow",               "Percent of Area Covered by Snow"                           ],
+    ["Conc",             "Acidity",                   "Acidity"                                                   ],
+    ["Conc",             "Alkalinity",                "Alkalinity"                                                ],
+    ["Conc",             "DO",                        "Disolved Oxygen Concentration"                             ],
+    ["Conc",             "Iron",                      "Iron Concentration"                                        ],
+    ["Conc",             "Sulfate",                   "Sulfate Concentration"                                     ],
+    ["Depth",            "Snow",                      "Snow Depth"                                                ],
+    ["Depth",            "SnowWE",                    "Snow Water Equivalance"                                    ],
+    ["Flow",             "In",                        "Inflow"                                                    ],
+    ["Flow",             "Out",                       "Outflow"                                                   ],
+    ["Flow",             "Reg",                       "Regulated Flow"                                            ],
+    ["Flow",             "Spill",                     "Spillway Flow"                                             ],
+    ["Flow",             "Unreg",                     "Unregulated Flow"                                          ],
+    ["Temp",             "Air",                       "Air Temperature"                                           ],
+    ["Temp",             "Water",                     "Water Temperature"                                         ],
+]
 
 #---------------#
 # Display Units #
@@ -4560,9 +4583,9 @@ displayUnits = [
     [ "Thick",    "",            "Length",                           "cm",      "in"],                                             
     [ "Timing",   "",            "Elapsed Time",                     "sec",     "sec"],                                     
     [ "Travel",   "",            "Length",                           "km",      "mi"],                                            
-    [ "Turb",     "",            "Turbidity",                        "jtu",     "jtu"],                                          
+    [ "Turb",     "",            "Turbidity",                        "JTU",     "JTU"],                                          
     [ "TurbF",    "",            "Turbidity",                        "FNU",     "FNU"],                                         
-    [ "TurbJ",    "",            "Turbidity",                        "jtu",     "jtu"],                                         
+    [ "TurbJ",    "",            "Turbidity",                        "JTU",     "JTU"],                                         
     [ "TurbN",    "",            "Turbidity",                        "NTU",     "NTU"],                                         
     [ "Volt",     "",            "Electromotive Potential",          "volt",    "volt"],
 ]
@@ -5994,7 +6017,39 @@ ALTER TABLE @TABLE ADD (
        CHECK (TRIM(SUB_PARAMETER_ID)=SUB_PARAMETER_ID))
 /
 SHOW ERRORS
+
 '''
+
+
+sys.stderr.write("Building subParameterLoadTemplate\n")
+subParameterLoadTemplate = \
+'''
+INSERT INTO at_parameter
+   SELECT base_parameter_code, (SELECT office_code
+                                  FROM cwms_office
+                                 WHERE office_id = 'ALL'),
+          base_parameter_code, NULL, cbp.long_name
+     FROM cwms_base_parameter cbp
+/
+
+'''
+for i in range(len(subParameters)) :
+    code = 300 + i
+    baseParamId, subParamId, longName = subParameters[i]
+    subParameterLoadTemplate +="INSERT INTO @subParameterTableName (PARAMETER_CODE, BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE, SUB_PARAMETER_DESC) VALUES (\n"
+    subParameterLoadTemplate +="\t%d,\n" % code
+    subParameterLoadTemplate +="\t(\tSELECT BASE_PARAMETER_CODE\n"
+    subParameterLoadTemplate +="\t\tFROM   @parameterTableName \n"
+    subParameterLoadTemplate +="\t\tWHERE  BASE_PARAMETER_ID='%s'\n" % baseParamId
+    subParameterLoadTemplate +="\t),\n"
+    subParameterLoadTemplate +="\t'%s',\n" % subParamId
+    subParameterLoadTemplate +="\t(\tSELECT OFFICE_CODE\n"
+    subParameterLoadTemplate +="\t\tFROM @cwmsOfficeTableName U \n"
+    subParameterLoadTemplate +="\t\tWHERE OFFICE_ID='ALL'\n"
+    subParameterLoadTemplate +="\t),\n"
+    subParameterLoadTemplate +="\t'%s'\n" % longName
+    subParameterLoadTemplate +=");\n"
+subParameterLoadTemplate +="COMMIT;\n"
 
 #-------------------------------------------------------
 #-------------------------------------------------------
