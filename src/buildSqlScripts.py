@@ -4452,50 +4452,53 @@ q_protection = {
 #------------#
 sys.stderr.write("Processing parameter definitions.\n")
 parameters = [
-#    CODE	ABSTRACT PARAMETER                  ID          NAME                  UNIT ID    DESCRIPTION
-#    ------	----------------------------------- ----------- --------------------- ---------- -----------------------------------------------------------------------------
-    [3, 	"Angle",                            "Dir",      "Direction",          "deg",     "Map direction specified clockwise from North"                               ],
-    [31,	"Angular Speed",                    "SpinRate", "Spin Rate",          "rpm",     "Number of revolutions made about an axis per unit of time"                  ],
-    [2,		"Area",                             "Area",     "Surface Area",       "m2",      "Area of a surface"                                                          ],
-    [6,		"Conductivity",                     "Cond",     "Conductivity",       "umho/cm", "Ability of an aqueous solution to conduct electricity"                      ],
-    [7,		"Count",                            "Count",    "Count",              "unit",    "Progressive sum of items enumerated one by one or group by group."          ],
-    [35,	"Count",                            "Fish",     "Fish Count",         "unit",    "Fish Count."                                                                ],
-    [8,		"Currency",                         "Currency", "Currency",           "$",       "Economic value expressed as currency/money"                                 ],
-    [27,	"Elapsed Time",                     "Timing",   "Timing",             "sec",     "A duration of a phenomenon"                                                 ],
-    [29,	"Electromotive Potential",          "Volt",     "Voltage",            "volt",    "Electric Potential"                                                         ],
-    [11,	"Energy",                           "Energy",   "Energy",             "MWh",     "Energy, work, or quantity of heat"                                          ],
-    [17,	"Hydrogen Ion Concentration Index", "pH",       "pH",                 "su",      "Negative logarithm of hydrogen-ion concentration in a solution"             ],
-    [32,	"Irradiance",                       "Irrad",    "Irradiance",         "W/m2",    "Radiant Power on a unit area of irradiated surface."                        ],
-    [21,	"Irradiation",                      "Rad",      "Irradiation",        "J/m2",    "Radiant energy on a unit area of irradiated surface."                       ],
-    [9,		"Length",                           "Depth",    "Depth",              "mm",      "Depth of any form of water above the ground surface"                        ],
-    [36,	"Length",                           "Dist",     "Distance",           "km",      "Distance between two points."                                               ],
-    [10,	"Length",                           "Elev",     "Elevation",          "m",       "The height of a surface above a datum which approximates sea level"         ],
-    [12,	"Length",                           "Evap",     "Evaporation",        "mm",      "Liquid water lost to vapor measured as an equivalent depth of liquid water" ],
-    [15,	"Length",                           "Frost",    "Ground Frost",       "cm",      "Depth of frost penetration into the ground (non-permafrost)"                ],
-    [16,	"Length",                           "Opening",  "Opening Height",     "m",       "Height of opening controlling passage of water"                             ],
-    [19,	"Length",                           "Precip",   "Precipitation",      "mm",      "Deposit on the earth of hail, mist, rain, sleet, or snow"                   ],
-    [23,	"Length",                           "Stage",    "Stage",              "m",       "The height of a water surface above a designated datum other than sea level"],
-    [26,	"Length",                           "Thick",    "Thickness",          "cm",      "Thickness of sheet of substance"                                            ],
-    [30,	"Length",                           "Travel",   "Accumulated Travel", "km",      "Accumulated movement of a fluid past a point"                               ],
-    [13,	"Linear Speed",                     "EvapRate", "Evaporation Rate",   "mm/day",  "Rate of liquid water evaporation"                                           ],
-    [22,	"Linear Speed",                     "Speed",    "Speed",              "kph",     "Rate of moving substance or object irrespective of direction"               ],
-    [5,		"Mass Concentration",               "Conc",     "Concentration",      "mg/l",    "Relative content of a component dissolved or dispersed in a volume of water"],
-    [1,		"None",                             "%",        "Precent",            "%",       "Ratio expressed as hundredths"                                              ],
-    [4,		"None",                             "Code",     "Coded Information",  "n/a",     "Numeric code symbolically representing a phenomenon"                        ],
-    [37,	"None",                             "Ratio",    "Ratio",              "n/a",     "Quotient of two numbers having the same units"                              ],
-    [18,	"Power",                            "Power",    "Power",              "MW",      "Energy rate, Radiant Flux"                                                  ],
-    [20,	"Pressure",                         "Pres",     "Pressure",           "kPa",     "Pressure (force per unit area)"                                             ],
-    [25,	"Temperature",                      "Temp",     "Temperature",        "C",       "Hotness or coldness of a substance based on measuring expansion of mercury" ],
-    [28,	"Turbidity",                        "Turb",     "Turbidity",          "JTU",     "Measurement of interference to the passage of light by matter in suspension"],
-    [38,	"Turbidity",                        "TurbF",    "Turbidity",          "FNU",     "Measurement of scattered light at an angle of 90+/-2.5 degrees to the incident light beam from a monochromatic light source (860+/-60 nm) (ISO 7027)"],
-    [33,	"Turbidity",                        "TurbJ",    "Turbidity",          "JTU",     "Measurement of interference to the passage of light by matter in suspension"],
-    [34,	"Turbidity",                        "TurbN",    "Turbidity",          "NTU",     "Measurement of scattered light at an angle of 90+/-30 degrees to the incident light beam from a white light source (540+/-140 nm) (EPA method 180.1)"],
-    [14,	"Volume Rate",                      "Flow",     "Flow Rate",          "cms",     "Volume rate of moving water"                                                ],
-    [24,	"Volume",                           "Stor",     "Storage",            "m3",      "Volume of impounded water"                                                  ],
+#    ------	----------------------------------- ----------- --------------------- ---------- ---------- -------------- -----------------------------------------------------------------------------
+#                                                                                  db        -----    Default  ------
+#                                                                                 store      ------Display Units-----
+#    CODE	ABSTRACT PARAMETER                  ID          NAME                  UNIT ID      SI       Non-SI         DESCRIPTION
+#    ------	----------------------------------- ----------- --------------------- ---------- ---------- -------------- -----------------------------------------------------------------------------
+    [3, 	"Angle",                            "Dir",      "Direction",          "deg",     "deg",     "deg",         "Map direction specified clockwise from North"                               ],
+    [31,	"Angular Speed",                    "SpinRate", "Spin Rate",          "rpm",     "rpm",     "rpm",         "Number of revolutions made about an axis per unit of time"                  ],
+    [2,		"Area",                             "Area",     "Surface Area",       "m2",      "m2",      "ft2",         "Area of a surface"                                                          ],
+    [6,		"Conductivity",                     "Cond",     "Conductivity",       "umho/cm", "umho/cm", "umho/cm",     "Ability of an aqueous solution to conduct electricity"                      ],
+    [7,		"Count",                            "Count",    "Count",              "unit",    "unit",    "unit",        "Progressive sum of items enumerated one by one or group by group."          ],
+    [35,	"Count",                            "Fish",     "Fish Count",         "unit",    "unit",    "unit",        "Fish Count."                                                                ],
+    [8,		"Currency",                         "Currency", "Currency",           "$",       "$",       "$",           "Economic value expressed as currency/money"                                 ],
+    [27,	"Elapsed Time",                     "Timing",   "Timing",             "sec",     "sec",     "sec",         "A duration of a phenomenon"                                                 ],
+    [29,	"Electromotive Potential",          "Volt",     "Voltage",            "volt",    "volt",    "volt",        "Electric Potential"                                                         ],
+    [11,	"Energy",                           "Energy",   "Energy",             "MWh",     "MWh",     "MWh",         "Energy, work, or quantity of heat"                                          ],
+    [17,	"Hydrogen Ion Concentration Index", "pH",       "pH",                 "su",      "su",      "su",          "Negative logarithm of hydrogen-ion concentration in a solution"             ],
+    [32,	"Irradiance",                       "Irrad",    "Irradiance",         "W/m2",    "W/m2",    "langley/min", "Radiant Power on a unit area of irradiated surface."                        ],
+    [21,	"Irradiation",                      "Rad",      "Irradiation",        "J/m2",    "J/m2",    "langley",     "Radiant energy on a unit area of irradiated surface."                       ],
+    [9,		"Length",                           "Depth",    "Depth",              "mm",      "mm",      "in",          "Depth of any form of water above the ground surface"                        ],
+    [36,	"Length",                           "Dist",     "Distance",           "km",      "km",      "mi",          "Distance between two points."                                               ],
+    [10,	"Length",                           "Elev",     "Elevation",          "m",       "m",       "ft",          "The height of a surface above a datum which approximates sea level"         ],
+    [12,	"Length",                           "Evap",     "Evaporation",        "mm",      "mm",      "in",          "Liquid water lost to vapor measured as an equivalent depth of liquid water" ],
+    [15,	"Length",                           "Frost",    "Ground Frost",       "cm",      "cm",      "in",          "Depth of frost penetration into the ground (non-permafrost)"                ],
+    [16,	"Length",                           "Opening",  "Opening Height",     "m",       "m",       "ft",          "Height of opening controlling passage of water"                             ],
+    [19,	"Length",                           "Precip",   "Precipitation",      "mm",      "mm",      "in",          "Deposit on the earth of hail, mist, rain, sleet, or snow"                   ],
+    [23,	"Length",                           "Stage",    "Stage",              "m",       "m",       "ft",          "The height of a water surface above a designated datum other than sea level"],
+    [26,	"Length",                           "Thick",    "Thickness",          "cm",      "cm",      "in",          "Thickness of sheet of substance"                                            ],
+    [30,	"Length",                           "Travel",   "Accumulated Travel", "km",      "km",      "mi",          "Accumulated movement of a fluid past a point"                               ],
+    [13,	"Linear Speed",                     "EvapRate", "Evaporation Rate",   "mm/day",  "mm/day",  "in/day",      "Rate of liquid water evaporation"                                           ],
+    [22,	"Linear Speed",                     "Speed",    "Speed",              "kph",     "kph",     "mph",         "Rate of moving substance or object irrespective of direction"               ],
+    [5,		"Mass Concentration",               "Conc",     "Concentration",      "mg/l",    "mg/l",    "ppm",         "Relative content of a component dissolved or dispersed in a volume of water"],
+    [1,		"None",                             "%",        "Precent",            "%",       "%",       "%",           "Ratio expressed as hundredths"                                              ],
+    [4,		"None",                             "Code",     "Coded Information",  "n/a",     "n/a",     "n/a",         "Numeric code symbolically representing a phenomenon"                        ],
+    [37,	"None",                             "Ratio",    "Ratio",              "n/a",     "n/a",     "n/a",         "Quotient of two numbers having the same units"                              ],
+    [18,	"Power",                            "Power",    "Power",              "MW",      "MW",      "MW",          "Energy rate, Radiant Flux"                                                  ],
+    [20,	"Pressure",                         "Pres",     "Pressure",           "kPa",     "kPa",     "in-hg",       "Pressure (force per unit area)"                                             ],
+    [25,	"Temperature",                      "Temp",     "Temperature",        "C",       "C",       "F",           "Hotness or coldness of a substance based on measuring expansion of mercury" ],
+    [28,	"Turbidity",                        "Turb",     "Turbidity",          "JTU",     "JTU",     "JTU",         "Measurement of interference to the passage of light by matter in suspension"],
+    [38,	"Turbidity",                        "TurbF",    "Turbidity",          "FNU",     "FNU",     "FNU",         "Measurement of scattered light at an angle of 90+/-2.5 degrees to the incident light beam from a monochromatic light source (860+/-60 nm) (ISO 7027)"],
+    [33,	"Turbidity",                        "TurbJ",    "Turbidity",          "JTU",     "JTU",     "JTU",         "Measurement of interference to the passage of light by matter in suspension"],
+    [34,	"Turbidity",                        "TurbN",    "Turbidity",          "NTU",     "NTU",     "NTU",         "Measurement of scattered light at an angle of 90+/-30 degrees to the incident light beam from a white light source (540+/-140 nm) (EPA method 180.1)"],
+    [14,	"Volume Rate",                      "Flow",     "Flow Rate",          "cms",     "cms",     "cfs",         "Volume rate of moving water"                                                ],
+    [24,	"Volume",                           "Stor",     "Storage",            "m3",      "m3",      "ac-ft",       "Volume of impounded water"                                                  ],
 ]
 
 cwmsUnitParamDefsById = {}
-for paramCode, abstractParam, paramId, name, id, desc in parameters : 
+for paramCode, abstractParam, paramId, name, id, siId, enId, desc in parameters : 
 #    uid = abstractParam + '.' + id
     cwmsUnitParamDefsById[abstractParam + '.' + id] = unitDefsById[abstractParam + '.' + id]["CODE"]
 cwmsUnitParamIds = cwmsUnitParamDefsById.keys()
@@ -4505,89 +4508,27 @@ cwmsUnitParamIds = cwmsUnitParamDefsById.keys()
 #------------------------#
 sys.stderr.write("Processing default sub_parameter definitions.\n")
 subParameters = [
-    ["%",                "Opening",                   "Percent Open"                                              ],
-    ["%",                "ofArea-Snow",               "Percent of Area Covered by Snow"                           ],
-    ["Conc",             "Acidity",                   "Acidity"                                                   ],
-    ["Conc",             "Alkalinity",                "Alkalinity"                                                ],
-    ["Conc",             "DO",                        "Disolved Oxygen Concentration"                             ],
-    ["Conc",             "Iron",                      "Iron Concentration"                                        ],
-    ["Conc",             "Sulfate",                   "Sulfate Concentration"                                     ],
-    ["Depth",            "Snow",                      "Snow Depth"                                                ],
-    ["Depth",            "SnowWE",                    "Snow Water Equivalance"                                    ],
-    ["Flow",             "In",                        "Inflow"                                                    ],
-    ["Flow",             "Out",                       "Outflow"                                                   ],
-    ["Flow",             "Reg",                       "Regulated Flow"                                            ],
-    ["Flow",             "Spill",                     "Spillway Flow"                                             ],
-    ["Flow",             "Unreg",                     "Unregulated Flow"                                          ],
-    ["Temp",             "Air",                       "Air Temperature"                                           ],
-    ["Temp",             "Water",                     "Water Temperature"                                         ],
-]
-
-#---------------#
-# Display Units #
-#---------------#
-sys.stderr.write("Processing display units definitions.\n")
-displayUnits = [
-    
-#     -------------------------------------------------------------- Display Units --    
-#     --  DEFAULT Sub_Parameters -------------------------------
-#     Base        Sub            Abstract                           
-#     Param       Param          Param                               SI         EN
-    [ "%",        "",            "None",                             "%",       "%"],                                                    
-    [ "%",        "ofArea-Snow", "None",                             "%",       "%"],                                         
-    [ "%",        "Opening",     "None",                             "%",       "%"],                                             
-    [ "Area",     "",            "Area",                             "m2",      "ft2"],                                                
-    [ "Code",     "",            "None",                             "n/a",     "n/a"],                                               
-    [ "Conc",     "",            "Mass Concentration",               "mg/l",    "ppm"],                                
-    [ "Conc",     "Acidity",     "Mass Concentration",               "mg/l",    "ppm"],                          
-    [ "Conc",     "Alkalinity",  "Mass Concentration",               "mg/l",    "ppm"],                      
-    [ "Conc",     "DO",          "Mass Concentration",               "mg/l",    "ppm"],                              
-    [ "Conc",     "Iron",        "Mass Concentration",               "mg/l",    "ppm"],                            
-    [ "Conc",     "Sulfate",     "Mass Concentration",               "mg/l",    "ppm"],                         
-    [ "Conc",     "Salinity",    "Mass Concentration",               "g/l",     "g/l"],                         
-    [ "Cond",     "",            "Conductivity",                     "umho/cm", "umho/cm"],                                   
-    [ "Count",    "",            "Count",                            "unit",    "unit"],                                            
-    [ "Currency", "",            "Currency",                         "$",       "$"],                                         
-    [ "Depth",    "",            "Length",                           "mm",      "in"],                                             
-    [ "Depth",    "Snow",        "Length",                           "mm",      "in"],                                         
-    [ "Depth",    "SnowWE",      "Length",                           "mm",      "in"],                                       
-    [ "Dir",      "",            "Angle",                            "deg",     "deg"],                                               
-    [ "Dist",     "",            "Length",                           "km",      "mi"],                                              
-    [ "Elev",     "",            "Length",                           "m",       "ft"],                                               
-    [ "Energy",   "",            "Energy",                           "MWh",     "MWh"],                                           
-    [ "Evap",     "",            "Length",                           "mm",      "in"],                                              
-    [ "EvapRate", "",            "Linear Speed",                     "mm/day",  "in/day"],                                
-    [ "Fish",     "",            "Count",                            "unit",    "unit"],                                             
-    [ "Flow",     "",            "Volume Rate",                      "cms",     "cfs"],                                        
-    [ "Flow",     "In",          "Volume Rate",                      "cms",     "cfs"],                                      
-    [ "Flow",     "Out",         "Volume Rate",                      "cms",     "cfs"],                                     
-    [ "Flow",     "Reg",         "Volume Rate",                      "cms",     "cfs"],                                     
-    [ "Flow",     "Spill",       "Volume Rate",                      "cms",     "cfs"],                                   
-    [ "Flow",     "Unreg",       "Volume Rate",                      "cms",     "cfs"],                                   
-    [ "Frost",    "",            "Length",                           "cm",      "in"],                                             
-    [ "Irrad",    "",            "Irradiance",                       "W/m2",    "langley/min"],                                       
-    [ "Opening",  "",            "Length",                           "m",       "ft"],                                            
-    [ "pH",       "",            "Hydrogen Ion Concentration Index", "su",      "su"],                      
-    [ "Power",    "",            "Power",                            "MW",      "MW"],                                              
-    [ "Precip",   "",            "Length",                           "mm",      "in"],                                            
-    [ "Pres",     "",            "Pressure",                         "kPa",     "in-hg"],                                           
-    [ "Rad",      "",            "Irradiation",                      "J/m2",    "langley"],                                        
-    [ "Ratio",    "",            "None",                             "n/a",     "n/a"],                                              
-    [ "Speed",    "",            "Linear Speed",                     "kph",     "mph"],                                      
-    [ "SpinRate", "",            "Angular Speed",                    "rpm",     "rpm"],                                  
-    [ "Stage",    "",            "Length",                           "m",       "ft"],                                              
-    [ "Stor",     "",            "Volume",                           "m3",      "ac-ft"],                                              
-    [ "Temp",     "",            "Temperature",                      "C",       "F"],                                          
-    [ "Temp",     "Air",         "Temperature",                      "C",       "F"],                                       
-    [ "Temp",     "Water",       "Temperature",                      "C",       "F"],                                     
-    [ "Thick",    "",            "Length",                           "cm",      "in"],                                             
-    [ "Timing",   "",            "Elapsed Time",                     "sec",     "sec"],                                     
-    [ "Travel",   "",            "Length",                           "km",      "mi"],                                            
-    [ "Turb",     "",            "Turbidity",                        "JTU",     "JTU"],                                          
-    [ "TurbF",    "",            "Turbidity",                        "FNU",     "FNU"],                                         
-    [ "TurbJ",    "",            "Turbidity",                        "JTU",     "JTU"],                                         
-    [ "TurbN",    "",            "Turbidity",                        "NTU",     "NTU"],                                         
-    [ "Volt",     "",            "Electromotive Potential",          "volt",    "volt"],
+#     --  DEFAULT Sub_Parameters -------------------------------    -- Display Units --  
+#     Base        Sub                                       
+#     Param       Param          Sub-Parameter Descripiton           SI         Non-SI
+#     ----------- -------------- ---------------------------------- ---------- ---------
+    [ 301,  "%",        "ofArea-Snow", "Percent of Area Covered by Snow", "%",       "%"],                                         
+    [ 302,  "%",        "Opening",     "Percent Open",                    "%",       "%"],                                             
+    [ 303,  "Conc",     "Acidity",     "Acidity Concentration",           "mg/l",    "ppm"],                          
+    [ 304,  "Conc",     "Alkalinity",  "Alkalinity Concentration",        "mg/l",    "ppm"],                      
+    [ 305,  "Conc",     "DO",          "Disolved Oxygen Concentration",   "mg/l",    "ppm"],                              
+    [ 306,  "Conc",     "Iron",        "Iron Concentration",              "mg/l",    "ppm"],                            
+    [ 307,  "Conc",     "Sulfate",     "Sulfate Concentration",           "mg/l",    "ppm"],                         
+    [ 308,  "Conc",     "Salinity",    "Salinity Concentration",          "g/l",     "g/l"],                         
+    [ 309,  "Depth",    "Snow",        "Snow Depth",                      "mm",      "in"],                                         
+    [ 310,  "Depth",    "SnowWE",      "Snow Water Equivalance",          "mm",      "in"],                                       
+    [ 311,  "Flow",     "In",          "Inflow",                          "cms",     "cfs"],                                      
+    [ 312,  "Flow",     "Out",         "Outflow",                         "cms",     "cfs"],                                     
+    [ 313,  "Flow",     "Reg",         "Regulated Flow",                  "cms",     "cfs"],                                     
+    [ 314,  "Flow",     "Spill",       "Spillway Flow",                   "cms",     "cfs"],                                   
+    [ 315,  "Flow",     "Unreg",       "Unregulated Flow",                "cms",     "cfs"],                                   
+    [ 316,  "Temp",     "Air",         "Air Temperature",                 "C",       "F"],                                       
+    [ 317,  "Temp",     "Water",       "Water Temperature",               "C",       "F"],                                     
 ]
 
 #-----------------#
@@ -5744,10 +5685,12 @@ CREATE TABLE @TABLE
    (
        BASE_PARAMETER_CODE      NUMBER(10)         NOT NULL, 
        BASE_PARAMETER_ID        VARCHAR2(16 BYTE)  NOT NULL,
-       ABSTRACT_PARAM_CODE NUMBER(10)         NOT NULL,
-       UNIT_CODE           NUMBER(10)         NOT NULL,
-       LONG_NAME           VARCHAR2(80 BYTE),
-       DESCRIPTION         VARCHAR2(160 BYTE)
+       ABSTRACT_PARAM_CODE      NUMBER(10)         NOT NULL,
+       UNIT_CODE                NUMBER(10)         NOT NULL,
+       DISPLAY_UNIT_CODE_SI     NUMBER(10)         NOT NULL,
+       DISPLAY_UNIT_CODE_EN     NUMBER(10)         NOT NULL,
+       LONG_NAME                VARCHAR2(80 BYTE),
+       DESCRIPTION              VARCHAR2(160 BYTE)
    )
        PCTFREE 10
        PCTUSED 40
@@ -5795,6 +5738,8 @@ CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
 ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK   PRIMARY KEY (BASE_PARAMETER_CODE);
 ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (ABSTRACT_PARAM_CODE) REFERENCES @abstractParamTableName (ABSTRACT_PARAM_CODE);
 ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK3 FOREIGN KEY (DISPLAY_UNIT_CODE_SI) REFERENCES @unitTableName (UNIT_CODE);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK4 FOREIGN KEY (DISPLAY_UNIT_CODE_EN) REFERENCES @unitTableName (UNIT_CODE);
 
 -----------------------------
 -- @TABLE comments
@@ -5803,67 +5748,113 @@ COMMENT ON TABLE @TABLE IS 'List of parameters allowed in the CWMS database';
 COMMENT ON COLUMN @TABLE.BASE_PARAMETER_CODE IS 'Primary key used to relate parameters other entities';
 COMMENT ON COLUMN @TABLE.BASE_PARAMETER_ID IS 'Short identifier of parameter';
 COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_CODE IS 'Foreign key referencing @abstractParamTableName table';
-COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'Foreign key referencing @cwmsUnitTableName table';
+COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'This is the db storage unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
+COMMENT ON COLUMN @TABLE.DISPLAY_UNIT_CODE_SI IS 'This is the default SI display unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
+COMMENT ON COLUMN @TABLE.DISPLAY_UNIT_CODE_EN IS 'This is the default Non-SI display unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
 COMMENT ON COLUMN @TABLE.LONG_NAME IS 'Full name of parameter';
 COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description of parameter';
 
 -----------------------------
 -- @TABLE_UNIT trigger
 --
-CREATE OR REPLACE TRIGGER @TABLE_UNIT
-BEFORE INSERT OR UPDATE OF ABSTRACT_PARAM_CODE, UNIT_CODE
-ON @TABLE 
-REFERENCING NEW AS NEW OLD AS OLD
-FOR EACH ROW
+CREATE OR REPLACE TRIGGER cwms_base_parameter_unit
+   BEFORE INSERT OR UPDATE OF abstract_param_code, unit_code
+   ON cwms_base_parameter
+   REFERENCING NEW AS NEW OLD AS OLD
+   FOR EACH ROW
 DECLARE
    --
    -- This trigger ensures that the abstract parameter associated with the specified
    -- unit is the same as the abstract parameter associated with this parameter.
    --
-   UNIT_ABSTRACT_CODE          @abstractParamTableName.ABSTRACT_PARAM_CODE%TYPE;
-   UNIT_ABSTRACT_ID            @abstractParamTableName.ABSTRACT_PARAM_ID%TYPE;
-   UNIT_ID                     @unitTableName.UNIT_ID%TYPE;
-   PARAMETER_ABSTRACT_ID       @abstractParamTableName.ABSTRACT_PARAM_ID%TYPE;
-   INCONSISTENT_ABSTRACT_CODES EXCEPTION;
-   PRAGMA EXCEPTION_INIT(INCONSISTENT_ABSTRACT_CODES, -20000);
+   unit_abstract_code            cwms_abstract_parameter.abstract_param_code%TYPE;
+   unit_abstract_id              cwms_abstract_parameter.abstract_param_id%TYPE;
+   unit_id                       cwms_unit.unit_id%TYPE;
+   unit_type                     VARCHAR (20);
+   parameter_abstract_id         cwms_abstract_parameter.abstract_param_id%TYPE;
+   inconsistent_abstract_codes   EXCEPTION;
+   PRAGMA EXCEPTION_INIT (inconsistent_abstract_codes, -20000);
 BEGIN
-   SELECT U.ABSTRACT_PARAM_CODE
-      INTO   UNIT_ABSTRACT_CODE 
-      FROM   @unitTableName U
-      WHERE  U.UNIT_CODE = :NEW.UNIT_CODE;
-   IF :NEW.ABSTRACT_PARAM_CODE != UNIT_ABSTRACT_CODE 
+   SELECT u.abstract_param_code
+     INTO unit_abstract_code
+     FROM cwms_unit u
+    WHERE u.unit_code = :NEW.unit_code;
+
+   IF :NEW.abstract_param_code != unit_abstract_code
    THEN
-      RAISE INCONSISTENT_ABSTRACT_CODES;
+      SELECT u.unit_id
+        INTO unit_id
+        FROM cwms_unit u
+       WHERE u.unit_code = :NEW.unit_code;
+
+      unit_type := 'DB Storage Unit';
+      RAISE inconsistent_abstract_codes;
+   END IF;
+
+   --
+   SELECT u.abstract_param_code
+     INTO unit_abstract_code
+     FROM cwms_unit u
+    WHERE u.unit_code = :NEW.display_unit_code_si;
+
+   IF :NEW.abstract_param_code != unit_abstract_code
+   THEN
+      SELECT u.unit_id
+        INTO unit_id
+        FROM cwms_unit u
+       WHERE u.unit_code = :NEW.display_unit_code_si;
+
+      unit_type := 'SI Display Unit';
+      RAISE inconsistent_abstract_codes;
+   END IF;
+
+   --
+   SELECT u.abstract_param_code
+     INTO unit_abstract_code
+     FROM cwms_unit u
+    WHERE u.unit_code = :NEW.display_unit_code_en;
+
+   IF :NEW.abstract_param_code != unit_abstract_code
+   THEN
+      SELECT u.unit_id
+        INTO unit_id
+        FROM cwms_unit u
+       WHERE u.unit_code = :NEW.display_unit_code_en;
+
+      unit_type := 'Non-SI Display Unit';
+      RAISE inconsistent_abstract_codes;
    END IF;
 EXCEPTION
-   WHEN INCONSISTENT_ABSTRACT_CODES THEN
-      SELECT U.UNIT_ID
-         INTO   UNIT_ID
-         FROM   @unitTableName U
-         WHERE  U.UNIT_CODE = :NEW.UNIT_CODE;
-      SELECT ABSTRACT_PARAM_ID
-         INTO   UNIT_ABSTRACT_ID 
-         FROM   @abstractParamTableName
-         WHERE  ABSTRACT_PARAM_CODE=UNIT_ABSTRACT_CODE;
-      SELECT ABSTRACT_PARAM_ID
-         INTO   PARAMETER_ABSTRACT_ID 
-         FROM   @abstractParamTableName
-         WHERE  ABSTRACT_PARAM_CODE=:NEW.ABSTRACT_PARAM_CODE;
-      DBMS_OUTPUT.PUT_LINE(
-         'ERROR: Parameter "' 
-         || :NEW.BASE_PARAMETER_ID 
-         || '" has abstract parameter "' 
-         || PARAMETER_ABSTRACT_ID
-         || '" but unit "'
-         || UNIT_ID
-         || '" has abstract parameter "'
-         || UNIT_ABSTRACT_ID
-         || '".');
-      RAISE;                                    
-   WHEN OTHERS THEN
-      DBMS_OUTPUT.PUT_LINE(SQLERRM);
-      RAISE;                                    
-END R_PARAMETER_UNIT;
+   WHEN inconsistent_abstract_codes
+   THEN
+      SELECT abstract_param_id
+        INTO unit_abstract_id
+        FROM cwms_abstract_parameter
+       WHERE abstract_param_code = unit_abstract_code;
+
+      SELECT abstract_param_id
+        INTO parameter_abstract_id
+        FROM cwms_abstract_parameter
+       WHERE abstract_param_code = :NEW.abstract_param_code;
+
+      DBMS_OUTPUT.put_line (   'ERROR: Parameter "'
+                            || :NEW.base_parameter_id
+                            || '" has abstract parameter "'
+                            || parameter_abstract_id
+                            || '" but '
+                            || unit_type
+                            ||  ' "'
+                            || unit_id
+                            || '" has abstract parameter "'
+                            || unit_abstract_id
+                            || '".'
+                           );
+      RAISE;
+   WHEN OTHERS
+   THEN
+      DBMS_OUTPUT.put_line (SQLERRM);
+      RAISE;
+END r_parameter_unit;
 /
 SHOW ERRORS
 COMMIT;
@@ -5873,8 +5864,8 @@ COMMIT;
 sys.stderr.write("Building parameterLoadTemplate\n")
 parameterLoadTemplate = ''
 for i in range(len(parameters)) :
-    code, abstractParam, id, name, unitId, description = parameters[i]
-    parameterLoadTemplate +="INSERT INTO @parameterTableName (BASE_PARAMETER_CODE, BASE_PARAMETER_ID, ABSTRACT_PARAM_CODE, UNIT_CODE, LONG_NAME, DESCRIPTION) VALUES (\n"
+    code, abstractParam, id, name, unitId, siUnitId, enUnitId, description = parameters[i]
+    parameterLoadTemplate +="INSERT INTO @parameterTableName (BASE_PARAMETER_CODE, BASE_PARAMETER_ID, ABSTRACT_PARAM_CODE, UNIT_CODE, DISPLAY_UNIT_CODE_SI, DISPLAY_UNIT_CODE_EN, LONG_NAME, DESCRIPTION) VALUES (\n"
     parameterLoadTemplate +="\t%d,\n" % code
     parameterLoadTemplate +="\t'%s',\n" % id
     parameterLoadTemplate +="\t(\tSELECT ABSTRACT_PARAM_CODE\n"
@@ -5884,6 +5875,14 @@ for i in range(len(parameters)) :
     parameterLoadTemplate +="\t(\tSELECT U.UNIT_CODE\n"
     parameterLoadTemplate +="\t\tFROM @unitTableName U \n"
     parameterLoadTemplate +="\t\tWHERE U.UNIT_ID='%s'\n" % unitId
+    parameterLoadTemplate +="\t),\n"
+    parameterLoadTemplate +="\t(\tSELECT U.UNIT_CODE\n"
+    parameterLoadTemplate +="\t\tFROM @unitTableName U \n"
+    parameterLoadTemplate +="\t\tWHERE U.UNIT_ID='%s'\n" % siUnitId
+    parameterLoadTemplate +="\t),\n"
+    parameterLoadTemplate +="\t(\tSELECT U.UNIT_CODE\n"
+    parameterLoadTemplate +="\t\tFROM @unitTableName U \n"
+    parameterLoadTemplate +="\t\tWHERE U.UNIT_ID='%s'\n" % enUnitId
     parameterLoadTemplate +="\t),\n"
     parameterLoadTemplate +="\t'%s',\n" % name
     parameterLoadTemplate +="\t'%s'\n" % description
@@ -6034,10 +6033,9 @@ INSERT INTO at_parameter
 
 '''
 for i in range(len(subParameters)) :
-    code = 300 + i
-    baseParamId, subParamId, longName = subParameters[i]
+    baseCode, baseParamId, subParamId, longName, siUnitId, enUnitId = subParameters[i]
     subParameterLoadTemplate +="INSERT INTO @subParameterTableName (PARAMETER_CODE, BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE, SUB_PARAMETER_DESC) VALUES (\n"
-    subParameterLoadTemplate +="\t%d,\n" % code
+    subParameterLoadTemplate +="\t%d,\n" % baseCode
     subParameterLoadTemplate +="\t(\tSELECT BASE_PARAMETER_CODE\n"
     subParameterLoadTemplate +="\t\tFROM   @parameterTableName \n"
     subParameterLoadTemplate +="\t\tWHERE  BASE_PARAMETER_ID='%s'\n" % baseParamId
