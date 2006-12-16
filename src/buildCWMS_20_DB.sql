@@ -15,10 +15,10 @@ spool buildCWMS_20_DB.log
 -- log on as sysdba
 --
 connect sys/&sys_passwd@&inst as sysdba
-begin dbms_output.enable(20000); end;
-/
 select sysdate from dual;
 set serveroutput on
+begin dbms_output.enable(20000); end;
+/
 --
 -- create the cwms_dev role and the cwms_20 user
 --

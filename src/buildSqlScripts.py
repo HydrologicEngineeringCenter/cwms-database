@@ -7446,7 +7446,7 @@ for table1 in tables :
 #print "DROPUSER~SPOOL %s"  % logFileName["DROPUSER"]
 #print prefix[ALL] + "SELECT SYSDATE FROM DUAL;"
 #print prefix[ALL] + "SET ECHO ON"
-#print prefix[ALL] + "SET SERVEROUTPUT ON"
+print prefix[ALL] + "SET SERVEROUTPUT ON"
 #print prefix[ALL] + "BEGIN DBMS_OUTPUT.ENABLE(20000); END;"
 #print prefix[ALL] + "/"
 

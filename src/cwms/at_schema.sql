@@ -1,52 +1,84 @@
 /* CWMS Version 2.0
 This script should be run by the cwms schema owner.
-*/ 
+*/
+set serveroutput on 
 ----------------------------------------------------
 -- drop tables, mviews & mview logs if they exist --
 ----------------------------------------------------
-begin                    
-   begin execute immediate 'drop table at_ts_table_properties cascade constraints';    exception when others then null; end;
-   begin execute immediate 'drop table at_base_location cascade constraints';          exception when others then null; end;
-   begin execute immediate 'drop table at_physical_location cascade constraints';      exception when others then null; end;
-   begin execute immediate 'drop table at_agency_name cascade constraints';            exception when others then null; end;
-   begin execute immediate 'drop table at_alias_name cascade constraints';             exception when others then null; end;
-   begin execute immediate 'drop table at_data_stream_id cascade constraints';         exception when others then null; end;
-   begin execute immediate 'drop table at_display_units cascade constraints';          exception when others then null; end;
-   begin execute immediate 'drop table at_alarm_id cascade constraints';               exception when others then null; end;
-   begin execute immediate 'drop table at_alarm_criteria cascade constraints';         exception when others then null; end;
-   begin execute immediate 'drop table at_screening_id cascade constraints';           exception when others then null; end;
-   begin execute immediate 'drop table at_screening_criteria cascade constraints';     exception when others then null; end;
-   begin execute immediate 'drop table at_screening_dur_mag cascade constraints';      exception when others then null; end;
-   begin execute immediate 'drop table at_cwms_ts_spec cascade constraints';           exception when others then null; end;
-   begin execute immediate 'drop table at_shef_decode cascade constraints';            exception when others then null; end;
-   begin execute immediate 'drop table at_screening cascade constraints';              exception when others then null; end;
-   begin execute immediate 'drop table at_alarm cascade constraints';                  exception when others then null; end;
-   begin execute immediate 'drop table at_comp_vt cascade constraints';                exception when others then null; end;
-   begin execute immediate 'drop table at_transform_criteria cascade constraints';     exception when others then null; end;
-   begin execute immediate 'drop table at_unit_alias cascade constraints';             exception when others then null; end;
-   begin execute immediate 'drop table at_user_preferences cascade constraints';       exception when others then null; end;
-   begin execute immediate 'drop table at_office_settings cascade constraints';        exception when others then null; end;
-   begin execute immediate 'drop table at_properties cascade constraints';             exception when others then null; end;
-   begin execute immediate 'drop table at_dss_file cascade constraints';               exception when others then null; end;
-   begin execute immediate 'drop table at_dss_ts_spec cascade constraints';            exception when others then null; end;
-   begin execute immediate 'drop table at_dss_ts_xchg_spec cascade constraints';       exception when others then null; end;
-   begin execute immediate 'drop table at_dss_xchg_set cascade constraints';           exception when others then null; end;
-   begin execute immediate 'drop table at_dss_ts_xchg_map cascade constraints';        exception when others then null; end;
-   begin execute immediate 'drop table at_ts_msg_archive_1 cascade constraints';       exception when others then null; end;
-   begin execute immediate 'drop table at_ts_msg_archive_2 cascade constraints';       exception when others then null; end;
-   begin execute immediate 'drop table at_report_templates cascade constraints';       exception when others then null; end;
-   begin execute immediate 'drop table at_clob cascade constraints';                   exception when others then null; end;
-   begin execute immediate 'drop materialized view log on at_base_location';           exception when others then null; end;
-   begin execute immediate 'drop materialized view log on at_physical_location';       exception when others then null; end;
-   begin execute immediate 'drop materialized view log on at_cwms_ts_spec';            exception when others then null; end;
-   begin execute immediate 'drop materialized view log on cwms_office';                exception when others then null; end;
-   begin execute immediate 'drop materialized view log on cwms_parameter_type';        exception when others then null; end;
-   begin execute immediate 'drop materialized view log on cwms_base_parameter';        exception when others then null; end;
-   begin execute immediate 'drop materialized view log on at_parameter';               exception when others then null; end;
-   begin execute immediate 'drop materialized view log on cwms_interval';              exception when others then null; end;
-   begin execute immediate 'drop materialized view log on cwms_duration';              exception when others then null; end;
-   begin execute immediate 'drop materialized view log on cwms_unit';                  exception when others then null; end;
-   begin execute immediate 'drop materialized view mv_cwms_ts_id';                     exception when others then null; end;
+declare
+   type id_array_t is table of varchar2(32);
+   table_names id_array_t := id_array_t(
+      'at_ts_table_properties',
+      'at_base_location',
+      'at_physical_location',
+      'at_agency_name',
+      'at_alias_name',
+      'at_data_stream_id',
+      'at_display_units',
+      'at_alarm_id',
+      'at_alarm_criteria',
+      'at_screening_id',
+      'at_screening_criteria',
+      'at_screening_dur_mag',
+      'at_cwms_ts_spec',
+      'at_shef_decode',
+      'at_screening',
+      'at_alarm',
+      'at_comp_vt',
+      'at_transform_criteria',
+      'at_unit_alias',
+      'at_user_preferences',
+      'at_office_settings',
+      'at_properties',
+      'at_dss_file',
+      'at_dss_ts_spec',
+      'at_dss_ts_xchg_spec',
+      'at_dss_xchg_set',
+      'at_dss_ts_xchg_map',
+      'at_ts_msg_archive_1',
+      'at_ts_msg_archive_2',
+      'at_report_templates',
+      'at_clob');
+   mview_log_names id_array_t := id_array_t(
+      'at_base_location',
+      'at_physical_location',
+      'at_cwms_ts_spec',
+      'cwms_office',
+      'cwms_parameter_type',
+      'cwms_base_parameter',
+      'at_parameter',
+      'cwms_interval',
+      'cwms_duration',
+      'cwms_unit'
+   );
+   mview_names id_array_t := id_array_t(
+      'mv_cwms_ts_id'
+   );
+begin                
+   for i in table_names.first .. table_names.last loop
+      begin 
+         execute immediate 'drop table ' || table_names(i) || ' cascade constraints';
+         dbms_output.put_line('Dropped table ' || table_names(i));
+      exception 
+         when others then null;
+      end;
+   end loop;
+   for i in mview_log_names.first .. mview_log_names.last loop
+      begin 
+         execute immediate 'drop materialized view log on ' || mview_log_names(i);
+         dbms_output.put_line('Dropped materialized view log on ' || mview_log_names(i));
+      exception 
+         when others then null;
+      end;
+   end loop;
+   for i in mview_names.first .. mview_names.last loop
+      begin 
+         execute immediate 'drop materialized ' || mview_names(i);
+         dbms_output.put_line('Dropped materialized view log on ' || mview_names(i));
+      exception 
+         when others then null;
+      end;
+   end loop;
 end;
 /
 
