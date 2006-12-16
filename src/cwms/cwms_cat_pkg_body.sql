@@ -899,7 +899,7 @@ IS
    END cat_ts;
 
 -------------------------------------------------------------------------------
--- function cat_ts(...)
+-- function cat_ts_tab(...)
 --
 --
    FUNCTION cat_ts_tab (
@@ -997,7 +997,7 @@ IS
    END cat_ts_cwms_20;
 
 -------------------------------------------------------------------------------
--- function cat_ts_cwms_20(...)
+-- function cat_ts_cwms_20_tab(...)
 --
    FUNCTION cat_ts_cwms_20_tab (
       p_officeid              IN   VARCHAR2 DEFAULT NULL,
@@ -1091,7 +1091,7 @@ IS
    END cat_loc;
 
 -------------------------------------------------------------------------------
--- function cat_loc(...)
+-- function cat_loc_tab(...)
 --
 --
    FUNCTION cat_loc_tab (
@@ -1181,7 +1181,7 @@ IS
    END cat_loc_alias;
 
 -------------------------------------------------------------------------------
--- function cat_loc_alias(...)
+-- function cat_loc_alias_tab(...)
 --
 --
    FUNCTION cat_loc_alias_tab (
@@ -1226,7 +1226,7 @@ IS
    END cat_param;
 
 -------------------------------------------------------------------------------
--- function cat_param(...)
+-- function cat_param_tab(...)
 --
 --
    FUNCTION cat_param_tab
@@ -1266,7 +1266,7 @@ IS
    END cat_sub_param;
 
 -------------------------------------------------------------------------------
--- function cat_sub_param(...)
+-- function cat_sub_param_tab(...)
 --
 --
    FUNCTION cat_sub_param_tab
@@ -1323,7 +1323,7 @@ IS
    END cat_sub_loc;
 
 -------------------------------------------------------------------------------
--- function cat_sub_loc(...)
+-- function cat_sub_loc_tab(...)
 --
 --
    FUNCTION cat_sub_loc_tab (p_officeid IN VARCHAR2 DEFAULT NULL)
@@ -1365,7 +1365,7 @@ IS
    END cat_state;
 
 -------------------------------------------------------------------------------
--- function cat_state(...)
+-- function cat_state_tab(...)
 --
 --
    FUNCTION cat_state_tab
@@ -1423,7 +1423,7 @@ IS
    END cat_county;
 
 -------------------------------------------------------------------------------
--- function cat_state(...)
+-- function cat_county_tab(...)
 --
 --
    FUNCTION cat_county_tab (p_stateint IN VARCHAR2 DEFAULT NULL)
@@ -1461,7 +1461,7 @@ IS
    END cat_timezone;
 
 -------------------------------------------------------------------------------
--- function cat_timezone(...)
+-- function cat_timezone_tab(...)
 --
 --
    FUNCTION cat_timezone_tab
@@ -1543,7 +1543,7 @@ IS
    END cat_dss_file;
 
 -------------------------------------------------------------------------------
--- function cat_dss_file(...)
+-- function cat_dss_file_tab(...)
 --
 --
    FUNCTION cat_dss_file_tab (
@@ -1688,7 +1688,7 @@ IS
    END cat_dss_xchg_set;
 
 -------------------------------------------------------------------------------
--- function cat_dss_xchg_set(...)
+-- function cat_dss_xchg_set_tab(...)
 --
 --
    FUNCTION cat_dss_xchg_set_tab (
@@ -1792,7 +1792,7 @@ IS
    END cat_dss_xchg_ts_map;
 
 -------------------------------------------------------------------------------
--- function cat_dss_xchg_ts_map(...)
+-- function cat_dss_xchg_ts_map_tab(...)
 --
 --
    FUNCTION cat_dss_xchg_ts_map_tab (
@@ -1979,5 +1979,64 @@ IS
          END IF;
       END IF;
    END cat_loc_aliases;
+   
+-------------------------------------------------------------------------------
+-- function cat_property_tab(...)
+--
+    function cat_property_tab(
+       p_office_id       in   varchar2 default null,
+       p_prop_category   in   varchar2 default null,
+       p_prop_id         in   varchar2 default null)
+       return cat_property_tab_t pipelined
+    is
+       output_row     cat_property_rec_t;
+       query_cursor   sys_refcursor;
+    begin
+       cat_property(query_cursor, p_office_id, p_prop_category, p_prop_id);
+
+       loop
+          fetch query_cursor
+           into output_row;
+
+          exit when query_cursor%notfound;
+          pipe row(output_row);
+       end loop;
+
+       close query_cursor;
+
+       return;
+       end cat_property_tab;   
+-------------------------------------------------------------------------------
+-- procedure cat_property(...)
+--
+--
+    procedure cat_property(
+       p_cwms_cat        out      sys_refcursor,
+       p_office_id       in       varchar2 default null,
+       p_prop_category   in       varchar2 default null,
+       p_prop_id         in       varchar2 default null)
+    is
+       l_office_code     number(10)    := null;
+       l_office_id       varchar2(16);
+       l_prop_category   varchar2(256);
+       l_prop_id         varchar2(256);
+    begin
+       l_office_id := nvl(p_office_id, cwms_util.user_office_id);
+       l_prop_category :=
+            upper(replace(replace(nvl(p_prop_category, '%'), '*', '%'), '?', '_'));
+       l_prop_id :=
+            upper(replace(replace(nvl(p_prop_id, '%'), '*', '%'), '?', '_'));
+
+       open p_cwms_cat for
+          select   o.office_id, p.prop_category, p.prop_id, p.prop_value,
+                   p.prop_comment
+              from at_properties p, cwms_office o
+             where     o.office_id = l_office_id
+                   and p.office_code = o.office_code
+                   and upper(p.prop_category) like l_prop_category
+                   and upper(p.prop_id) like l_prop_id
+          order by o.office_id, upper(p.prop_category), upper(p.prop_id) asc;
+    end cat_property;
 END cwms_cat;
 /
+show errors;

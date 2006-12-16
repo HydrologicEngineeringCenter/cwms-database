@@ -136,6 +136,16 @@ IS
 
    TYPE cat_dss_xchg_ts_map_tab_t IS TABLE OF cat_dss_xchg_ts_map_rec_t;
 
+   TYPE cat_property_rec_t IS RECORD (
+      office_id      VARCHAR2(16),
+      prop_catergory VARCHAR2(256),
+      prop_id        VARCHAR2(256),
+      prop_value     VARCHAR2(256),
+      prop_comment   VARCHAR2(256)
+   );
+
+   TYPE cat_property_tab_t IS TABLE OF cat_property_rec_t;
+   
 -- cat_ts...
    FUNCTION cat_ts_rec2obj (r IN cat_ts_rec_t)
       RETURN cat_ts_obj_t;
@@ -331,15 +341,11 @@ IS
 -- match the cwms_ts_id field.  This parameter may use filename-type wildcards
 -- (*, ?) and/or SQL-type wildcards (%, _).
 --
--- If the p_case_sensitive value is null or zero, the matching peformed against
--- the p_ts_subselect_string will be case-insensitive, otherwise it will be
--- case-sensitive.
---
 -- The records are returned sorted first by office_id (ascending) and then by
 -- cwms_ts_id (ascending, non-case-sensitive).
 --
 -------------------------------------------------------------------------------
--- function cat_ts(...)
+-- function cat_ts_tab(...)
 --
    FUNCTION cat_ts_tab (
       p_officeid              IN   VARCHAR2 DEFAULT NULL,
@@ -358,7 +364,7 @@ IS
    );
 
 -------------------------------------------------------------------------------
--- function cat_ts_cwms_20(...)
+-- function cat_ts_cwms_20_tab(...)
 --
 --
    FUNCTION cat_ts_cwms_20_tab (
@@ -410,7 +416,7 @@ IS
 -- cwms_id (ascending).
 --
 -------------------------------------------------------------------------------
--- function cat_loc(...)
+-- function cat_loc_tab(...)
 --
 --
    FUNCTION cat_loc_tab (
@@ -495,7 +501,7 @@ IS
 -- The records are returned sorted by parameter_id (ascending).
 --
 -------------------------------------------------------------------------------
--- function cat_param(...)
+-- function cat_param_tab(...)
 --
 --
    FUNCTION cat_param_tab
@@ -526,7 +532,7 @@ IS
 -- subparameter_id (ascending).
 --
 -------------------------------------------------------------------------------
--- function cat_sub_param(...)
+-- function cat_sub_param_tab(...)
 --
 --
    FUNCTION cat_sub_param_tab
@@ -555,7 +561,7 @@ IS
 -- The records are returned sorted first by sublocation_id (ascending).
 --
 -------------------------------------------------------------------------------
--- function cat_sub_loc(...)
+-- function cat_sub_loc_tab(...)
 --
 --
    FUNCTION cat_sub_loc_tab (p_officeid IN VARCHAR2 DEFAULT NULL)
@@ -587,7 +593,7 @@ IS
 -- The records are returned sorted by state_initial (ascending).
 --
 -------------------------------------------------------------------------------
--- function cat_state(...)
+-- function cat_state_tab(...)
 --
 --
    FUNCTION cat_state_tab
@@ -621,7 +627,7 @@ IS
 -- county_id (ascending).
 --
 -------------------------------------------------------------------------------
--- function cat_county(...)
+-- function cat_county_tab(...)
 --
 --
    FUNCTION cat_county_tab (p_stateint IN VARCHAR2 DEFAULT NULL)
@@ -654,7 +660,7 @@ IS
 -- The records are returned sorted by timezone_name (ascending).
 --
 -------------------------------------------------------------------------------
--- function cat_timezone(...)
+-- function cat_timezone_tab(...)
 --
 --
    FUNCTION cat_timezone_tab
@@ -694,7 +700,7 @@ IS
 -- by dss_file_name (ascending).
 --
 -------------------------------------------------------------------------------
--- function cat_dss_file(...)
+-- function cat_dss_file_tab(...)
 --
 --
    FUNCTION cat_dss_file_tab (
@@ -748,7 +754,7 @@ IS
 -- The records are returned sorted by dss_xchg_set_id (ascending).
 --
 -------------------------------------------------------------------------------
--- function cat_dss_xchg_set(...)
+-- function cat_dss_xchg_set_tab(...)
 --
 --
    FUNCTION cat_dss_xchg_set_tab (
@@ -791,7 +797,7 @@ IS
 -- The records are returned sorted by cwms_ts_id (ascending).
 --
 -------------------------------------------------------------------------------
--- function cat_dss_xchg_ts_map(...)
+-- function cat_dss_xchg_ts_map_tab(...)
 --
 --
    FUNCTION cat_dss_xchg_ts_map_tab (
@@ -849,7 +855,7 @@ IS
 --
 --
 -------------------------------------------------------------------------------
--- function cat_loc(...)
+-- function cat_loc_alias_abrev_tab(...)
 --
 --
    FUNCTION cat_loc_alias_abrev_tab (
@@ -859,7 +865,7 @@ IS
    )
       RETURN cat_loc_alias_abrev_tab_t PIPELINED;
 
-   -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
 -- procedure cat_loc_aliases(...)
 --
 --
@@ -870,5 +876,61 @@ IS
       p_abreviated    IN       VARCHAR2 DEFAULT 'T',
       p_office_id     IN       VARCHAR2 DEFAULT NULL
    );
+
+-------------------------------------------------------------------------------
+-- CAT_PROPERTY
+--
+-- These procedures and functions catalog (Java-like) properties in the CWMS.
+-- database.
+--
+-- Function returns may be used as source of SELECT statements.
+--
+-- The returned records contain the following columns:
+--
+--    Name                      Datatype      Description
+--    ------------------------ ------------- ----------------------------
+--    office_id                varchar2(16)  Name of owning office
+--    prop_category            varchar2(256) Category or component to which 
+--                                           property applies
+--    prop_id                  varchar2(256) Property name
+--    prop_value               varchar2(256) Property value
+--    prop_comment             varchar2(256) Comment on property value or its use
+--
+-- If the office_id parameter is null, then records will be returned for every
+-- CWMS office.  Otherwise, only records for the specified office are returned.
+--
+-- If either of prop_category or prop_id is non-null, it is used as in a
+-- LIKE clause to filter the retuned values.  The returned values may be filtered
+-- by only one input parameter or by both of them.  If either is null, it matches
+-- everything.  These parameters are matched without regard to character case.
+--
+-- The prop_category or prop_id parameters may use filename-type wildcards
+-- (*, ?) and/or SQL-typewildcards (%, _).
+--
+-- The records are returned sorted by office_id, prop_category, and prop_id  
+-- (ascending, non-case-sensitive).
+--
+-------------------------------------------------------------------------------
+-- function cat_property_tab(...)
+--
+--
+   FUNCTION cat_property_tab (
+      p_office_id     IN  VARCHAR2 DEFAULT NULL,
+      p_prop_category IN  VARCHAR2 DEFAULT NULL,
+      p_prop_id       IN  VARCHAR2 DEFAULT NULL
+   )
+      RETURN cat_property_tab_t PIPELINED;
+   
+-------------------------------------------------------------------------------
+-- procedure cat_property(...)
+--
+--
+   PROCEDURE cat_property (
+      p_cwms_cat      OUT sys_refcursor,
+      p_office_id     IN  VARCHAR2 DEFAULT NULL,
+      p_prop_category IN  VARCHAR2 DEFAULT NULL,
+      p_prop_id       IN  VARCHAR2 DEFAULT NULL
+   );
+   
 END cwms_cat;
 /
