@@ -223,9 +223,9 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 -- GET_TS_NI_HASH -
 --
 	FUNCTION get_ts_ni_hash (
-	   p_parameter_code        IN   VARCHAR2,
-	   p_parameter_type_code   IN   VARCHAR2,
-	   p_duration_code         IN   VARCHAR2
+	   p_parameter_code        IN   NUMBER,
+	   p_parameter_type_code   IN   NUMBER,
+	   p_duration_code         IN   NUMBER
 	)
 	   RETURN VARCHAR2
 	IS
@@ -236,7 +236,72 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 	          || '-'
 	          || p_duration_code;
 	END get_ts_ni_hash;
+--
+    FUNCTION create_ts_ni_hash (
+       p_parameter_id        IN   VARCHAR2,
+       p_parameter_type_id   IN   VARCHAR2,
+       p_duration_id         IN   VARCHAR2,
+       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+    )
+       RETURN VARCHAR2
+    IS
+       l_parameter_code        NUMBER;
+       l_parameter_type_code   NUMBER;
+       l_duration_code         NUMBER;
+       l_base_parameter_id     VARCHAR2 (16);
+       l_sub_parameter_id      VARCHAR2 (32);
+       l_ts_ni_hash            VARCHAR2 (80);
+       l_office_id             VARCHAR2 (16);
+    BEGIN
+    
+      IF p_db_office_id IS NULL
+      THEN
+         l_office_id := cwms_util.user_office_id;
+      ELSE
+         l_office_id := UPPER (p_db_office_id);
+      END IF;
 
+       -- Determine the ts_ni_hash...
+       --
+       l_base_parameter_id := cwms_util.get_base_id (p_parameter_id);
+       l_sub_parameter_id := cwms_util.get_sub_id (p_parameter_id);
+       l_parameter_code :=
+          cwms_ts.get_parameter_code (p_base_parameter_id      => l_base_parameter_id,
+                                      p_sub_parameter_id       => l_sub_parameter_id,
+                                      p_office_id              => l_office_id,
+                                      p_create                 => 'T'
+                                     );
+
+       --
+       BEGIN
+          SELECT parameter_type_code
+            INTO l_parameter_type_code
+            FROM cwms_parameter_type
+           WHERE UPPER (parameter_type_id) = UPPER (p_parameter_type_id);
+       EXCEPTION
+          WHEN NO_DATA_FOUND
+          THEN
+             cwms_err.RAISE ('INVALID_PARAM_TYPE', p_parameter_type_id);
+       END;
+
+       --
+       BEGIN
+          SELECT duration_code
+            INTO l_duration_code
+            FROM cwms_duration
+           WHERE UPPER (duration_id) = UPPER (p_duration_id);
+       EXCEPTION
+          WHEN NO_DATA_FOUND
+          THEN
+             cwms_err.RAISE ('INVALID_DURATION_ID', p_duration_id);
+       END;
+
+       --
+       RETURN get_ts_ni_hash (l_parameter_code,
+                              l_parameter_type_code,
+                              l_duration_code
+                              );
+    END create_ts_ni_hash;
 --
 --*******************************************************************   --
 --*******************************************************************   --
@@ -2371,7 +2436,7 @@ END retrieve_ts_java;
 	          WHERE ts_code = p_ts_code_old;
 	
 	         --
-	         UPDATE at_validation
+	         UPDATE at_screening
 	            SET ts_code = p_ts_code_new
 	          WHERE ts_code = p_ts_code_old;
 	   END CASE;

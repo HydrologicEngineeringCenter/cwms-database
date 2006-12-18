@@ -1,4 +1,4 @@
-/* Formatted on 2006/12/01 12:22 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/12/14 06:01 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_ts AUTHID CURRENT_USER
 AS
    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
@@ -38,9 +38,17 @@ AS
       RETURN NUMBER;
 
    FUNCTION get_ts_ni_hash (
-      p_parameter_code        IN   VARCHAR2,
-      p_parameter_type_code   IN   VARCHAR2,
-      p_duration_code         IN   VARCHAR2
+      p_parameter_code        IN   NUMBER,
+      p_parameter_type_code   IN   NUMBER,
+      p_duration_code         IN   NUMBER
+   )
+      RETURN VARCHAR2;
+
+   FUNCTION create_ts_ni_hash (
+      p_parameter_id        IN   VARCHAR2,
+      p_parameter_type_id   IN   VARCHAR2,
+      p_duration_id         IN   VARCHAR2,
+      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    )
       RETURN VARCHAR2;
 
