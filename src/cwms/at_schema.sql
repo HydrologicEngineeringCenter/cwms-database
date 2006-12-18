@@ -2138,6 +2138,7 @@ AS
                AND aal.alarm_code = aali.alarm_code(+)
 /
 
+/* Formatted on 2006/12/18 13:15 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE VIEW av_screening_criteria (base_location_code,
                                               location_code,
                                               db_office_id,
@@ -2155,6 +2156,8 @@ CREATE OR REPLACE VIEW av_screening_criteria (base_location_code,
                                               screening_id,
                                               screening_id_desc,
                                               season_start_date,
+                                              season_start_day,
+                                              season_start_month,
                                               range_reject_lo,
                                               range_reject_hi,
                                               range_question_lo,
@@ -2185,8 +2188,13 @@ AS
                 THEN '---'
              ELSE mcti.duration_id
           END duration_id,
-          adu.unit_system, cuc.to_unit_id unit_id, avsi.screening_code, avsi.screening_id,
-          avsi.screening_id_desc, season_start_date,
+          adu.unit_system, cuc.to_unit_id unit_id, avsi.screening_code,
+          avsi.screening_id, avsi.screening_id_desc, season_start_date,
+          MOD (season_start_date, 30) season_start_day,
+              (season_start_date - MOD (season_start_date, 30)
+              )
+            / 30
+          + 1 season_start_month,
           avsc.range_reject_lo * cuc.factor + cuc.offset range_reject_lo,
           avsc.range_reject_hi * cuc.factor + cuc.offset range_reject_hi,
           avsc.range_question_lo * cuc.factor + cuc.offset range_question_lo,

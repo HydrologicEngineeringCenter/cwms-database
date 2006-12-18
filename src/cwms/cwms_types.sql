@@ -176,7 +176,8 @@ CREATE TYPE alias_array IS TABLE OF alias_type;
 /
 
 CREATE TYPE screen_crit_type AS OBJECT (
-   season_start_date                NUMBER,
+   season_start_day                 NUMBER,
+   season_start_month               NUMBER,
    range_reject_lo                  NUMBER,
    range_reject_hi                  NUMBER,
    range_question_lo                NUMBER,
@@ -185,7 +186,6 @@ CREATE TYPE screen_crit_type AS OBJECT (
    rate_change_reject_fall          NUMBER,
    rate_change_quest_rise           NUMBER,
    rate_change_quest_fall           NUMBER,
-   rate_change_disp_interval_id     VARCHAR2 (16),
    const_reject_duration_id         VARCHAR2 (16),
    const_reject_min                 NUMBER,
    const_reject_max                 NUMBER,
