@@ -1,4 +1,4 @@
-/* Formatted on 2006/12/01 12:31 (Formatter Plus v4.8.7) */
+/* Formatted on 2006/12/19 11:45 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --********************************************************************** -
@@ -48,7 +48,8 @@ AS
         INTO l_location_code
         FROM av_loc
        WHERE db_office_id = UPPER (p_office_id)
-         AND UPPER (location_id) = UPPER (p_location_id);
+         AND UPPER (location_id) = UPPER (p_location_id)
+         AND unit_system = 'SI';
 
       RETURN l_location_code;
    EXCEPTION
@@ -604,7 +605,9 @@ AS
 
       -- Retrieve the location's Location Code.
       --
+      DBMS_OUTPUT.put_line ('hello update_location');
       l_location_code := get_location_code (p_db_office_id, p_location_id);
+      DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
 
       --
       --  If get_location_code did not throw an exception, then a valid base_location_id &.
@@ -621,6 +624,8 @@ AS
              l_time_zone_code, l_county_code, l_active_flag
         FROM at_physical_location apl
        WHERE apl.location_code = l_location_code;
+
+      DBMS_OUTPUT.put_line ('l_elevation: ' || l_elevation);
 
 ----------------------------------------------------------
 ----------------------------------------------------------
@@ -2225,7 +2230,7 @@ AS
       SELECT al.location_id
         INTO p_location_id
         FROM av_loc al
-       WHERE al.location_code = l_location_code;
+       WHERE al.location_code = l_location_code AND unit_system = 'SI';
 
       --
       SELECT apl.location_type,
