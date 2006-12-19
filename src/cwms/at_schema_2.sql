@@ -54,6 +54,7 @@ AS
                          cwms_ts.get_parameter_code ('Elev', NULL, 'ALL', 'F')
       AND cuc.from_unit_id = 'm'
       AND cuc.to_unit_code = adu.display_unit_code
+      and adu.db_office_code = abl.db_office_code
 /
 SHOW ERRORS;
 COMMIT;
