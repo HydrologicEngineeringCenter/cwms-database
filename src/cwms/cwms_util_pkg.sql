@@ -47,9 +47,44 @@ AS
    type str_tab_t     is table of varchar2(32767); -- table row with string fields
    type str_tab_tab_t is table of str_tab_t;       -- table of rows with string fields
 
+--------------------------------------------------------------------------------
+-- Splits string into a table of strings using the specified delimiter.
+-- If no delmiter is specified, the string is split around whitespace.
+-- 
+-- Sequential delimiters in the source string result in null fields in the table,
+-- except that if no delimiter is supplied, sequential whitespace characters are
+-- treated as a single delimiter.
+--
+   FUNCTION split_text (
+      p_text      in varchar2,
+      p_separator in varchar2 default null)
+      return str_tab_t;
+      
+--------------------------------------------------------------------------------
+-- Joins a table of strings into a single string using the specified delimiter.
+-- If no delimiter is supplied, the table fields are simply concatenated together.
+--
+-- Null fields in the table result in sequential delimiters in the returned string.
+--
+   FUNCTION join_text(
+      p_text_tab  in str_tab_t,                      
+      p_separator in varchar2 default null) 
+      return varchar2;
+--------------------------------------------------------------------------------
+-- Parses a CLOB into a table of tables of strings.
+--
+-- Records are delimited by the record_separator character defined above.
+-- Fields are delmited by the field_separator character defined above.
+--
    FUNCTION parse_clob_recordset (p_clob IN  CLOB)
       return str_tab_tab_t;
 
+--------------------------------------------------------------------------------
+-- Parses a string into a table of tables of strings.
+--
+-- Records are delimited by the record_separator character defined above.
+-- Fields are delmited by the field_separator character defined above.
+--
    FUNCTION parse_string_recordset (p_string IN  VARCHAR2)
       return str_tab_tab_t;
 

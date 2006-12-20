@@ -2028,13 +2028,12 @@ IS
             upper(replace(replace(nvl(p_prop_id, '%'), '*', '%'), '?', '_'));
 
        open p_cwms_cat for
-          select   o.office_id, p.prop_category, p.prop_id, p.prop_value,
-                   p.prop_comment
+          select   o.office_id, p.prop_category, p.prop_id
               from at_properties p, cwms_office o
              where     o.office_id = l_office_id
                    and p.office_code = o.office_code
-                   and upper(p.prop_category) like l_prop_category
-                   and upper(p.prop_id) like l_prop_id
+                   and upper(p.prop_category) like l_prop_category escape '\'
+                   and upper(p.prop_id) like l_prop_id escape '\'
           order by o.office_id, upper(p.prop_category), upper(p.prop_id) asc;
     end cat_property;
 END cwms_cat;

@@ -88,6 +88,7 @@ AS
       l_updated         boolean;
       l_fetch_again     boolean;
       l_success_count   binary_integer := 0;
+      l_duplicate_count binary_integer := 0;
       cursor l_query is 
          select office_code, prop_category, prop_id, prop_value, prop_comment
          from   at_properties
@@ -98,7 +99,7 @@ AS
    begin
       if p_property_info is null then 
          return 0;
-      end if;
+      end if;        
       for i in p_property_info.first .. p_property_info.last loop 
          -- l_office_id := upper(nvl(p_property_info(i).office_id, cwms_util.user_office_id));
          l_office_id     := upper(p_property_info(i).office_id);
@@ -160,6 +161,8 @@ AS
                           dbms_output.put_line('   Comment   = ' || l_table_row.prop_comment);
                           dbms_output.put_line('   Error     : ' || sqlerrm);
                   end;
+               else
+                  l_duplicate_count := l_duplicate_count + 1;
                end if;
             exception
                when no_data_found then null;
@@ -168,6 +171,7 @@ AS
          close l_query;
       end loop;
       commit;
+      dbms_output.put_line(''||l_duplicate_count||' duplicates not modified.');
       return l_success_count;
    end set_properties;
    

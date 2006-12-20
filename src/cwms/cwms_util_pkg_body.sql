@@ -338,13 +338,73 @@ AS
    END create_view;
    
 -------------------------------------------------------------------------------
+-- function split_text(...)
+--
+--
+   FUNCTION split_text (
+      p_text      in varchar2,
+      p_separator in varchar2 default null)
+      return str_tab_t
+   is
+      l_str_tab str_tab_t := str_tab_t();
+      l_str varchar2(32767);
+      l_field varchar2(32767);
+      l_pos binary_integer;
+      l_sep varchar2(32767);
+      l_sep_len binary_integer;
+   begin
+      if p_separator is null then
+         l_str := regexp_replace(p_text, '\s+', ' ');
+         l_sep := ' ';
+      else
+         l_str := p_text;
+         l_sep := p_separator;
+      end if;
+      l_sep_len := length(l_sep);
+      loop
+         l_pos := nvl(instr(l_str, l_sep), 0);
+         if l_pos = 0 then
+            l_field := l_str;
+            l_str   := null;
+         else
+            l_field := substr(l_str, 1, l_pos - 1);
+            l_str := substr(l_str, l_pos + l_sep_len); -- null if > length(l_str)
+         end if;
+         l_str_tab.extend;
+         l_str_tab(l_str_tab.last) := l_field;
+         exit when l_pos = 0;
+      end loop;
+      return l_str_tab;
+   end split_text;
+
+-------------------------------------------------------------------------------
+-- function join_text(...)
+--
+--
+   FUNCTION join_text(
+      p_text_tab  in str_tab_t,                      
+      p_separator in varchar2 default null) 
+      return varchar2
+   is
+      l_text varchar2(32767) := null;
+   begin
+      for i in 1 .. p_text_tab.count loop
+         if i > 1 then
+            l_text := l_text || p_separator;
+         end if;
+         l_text := l_text || p_text_tab(i);
+      end loop;
+      return l_text;
+   end join_text;
+
+-------------------------------------------------------------------------------
 -- function parse_clob_recordset(...)
 --
 --
    FUNCTION parse_clob_recordset (p_clob IN  CLOB)
    return str_tab_tab_t
    is
-      l_row str_tab_t;
+      l_rows str_tab_t;
       l_tab str_tab_tab_t := str_tab_tab_t();
       l_buf varchar2(32767) := '';
       l_chunk varchar2(4000);
@@ -352,67 +412,35 @@ AS
       l_buf_offset binary_integer := 1;
       l_amount binary_integer;
       l_clob_len binary_integer;
+      l_last binary_integer;
+      l_done_reading boolean;
       chunk_size constant binary_integer := 4000;
-      
-      procedure process_record (p_record in varchar2)
-      is
-         l_record varchar2(32767);
-         l_record_offset binary_integer;
-         l_field varchar2(32767);
-         l_field_index binary_integer := 0;
-      begin
-         if p_record is null or length(p_record) = 0 then
-            return;
-         end if;
-         l_record := p_record;
-         l_row := str_tab_t();
-         loop
-            l_field_index := l_field_index + 1;
-            l_record_offset := nvl(instr(l_record, field_separator), 0);
-            if l_record_offset = 0 then
-               l_field := l_record;
-            elsif l_record_offset = 1 then
-               l_field := '';
-               l_record := substr(l_record, 2);
-            else
-               l_field := substr(l_record, 1, l_record_offset - 1);
-               l_record := substr(l_record, l_record_offset + 1);
-            end if;
-            if l_field_index > l_row.count then l_row.extend; end if;
-            if upper(l_field) = 'NULL' then
-               l_row(l_field_index) := null;
-            else
-               l_row(l_field_index) := l_field;
-            end if;
-            exit when l_record_offset = 0;
-         end loop;
-         l_tab.extend;
-         l_tab(l_tab.last) := l_row;
-      end;
-      
-   begin
+   begin  
       if p_clob is null then
          return null;
       end if;
       l_clob_len := dbms_lob.getlength(p_clob);
       l_amount := chunk_size;
       loop
-         exit when l_clob_offset > l_clob_len;
          dbms_lob.read(p_clob, l_amount, l_clob_offset, l_chunk);
          l_clob_offset := l_clob_offset + l_amount;
+         l_done_reading := l_clob_offset > l_clob_len;
          l_buf := l_buf || l_chunk;
-         loop
-            l_buf_offset := nvl(instr(l_buf, record_separator), 0);
-            exit when l_buf_offset = 0;
-            process_record(substr(l_buf, 1, l_buf_offset - 1));
-            if l_buf_offset = length(l_buf) then
-               l_buf := '';
+         if instr(l_buf, record_separator) > 0  or l_done_reading then
+            l_rows := split_text(l_buf, record_separator);
+            l_buf := l_rows(l_rows.count);
+            if l_done_reading then
+               l_last := l_rows.count;
             else
-               l_buf := substr(l_buf, l_buf_offset + 1);
+               l_last := l_rows.count - 1;
             end if;
-         end loop;
-      end loop;
-      process_record(l_buf);
+            for i in l_rows.first .. l_last loop
+               l_tab.extend;
+               l_tab(l_tab.last) := split_text(l_rows(i), field_separator);
+            end loop;
+         end if;
+         exit when l_done_reading;
+      end loop;    
       return l_tab;
    end parse_clob_recordset;
    
@@ -423,68 +451,17 @@ AS
    FUNCTION parse_string_recordset (p_string IN VARCHAR2)
    return str_tab_tab_t
    is
-      l_row str_tab_t;
+      l_rows str_tab_t;
       l_tab str_tab_tab_t := str_tab_tab_t();
-      l_buf varchar2(32767) := '';
-      l_chunk varchar2(4000);
-      l_clob_offset binary_integer := 1;
-      l_buf_offset binary_integer := 1;
-      l_amount binary_integer;
-      l_clob_len binary_integer;
-      chunk_size constant binary_integer := 4000;
-
-      procedure process_record (p_record in varchar2)
-      is
-         l_record varchar2(32767);
-         l_record_offset binary_integer;
-         l_field varchar2(32767);
-         l_field_index binary_integer := 0;
-      begin
-         if p_record is null or length(p_record) = 0 then
-            return;
-         end if;
-         l_record := p_record;
-         l_row := str_tab_t();
-         loop
-            l_field_index := l_field_index + 1;
-            l_record_offset := nvl(instr(l_record, field_separator), 0);
-            if l_record_offset = 0 then
-               l_field := l_record;
-            elsif l_record_offset = 1 then
-               l_field := '';
-               l_record := substr(l_record, 2);
-            else
-               l_field := substr(l_record, 1, l_record_offset - 1);
-               l_record := substr(l_record, l_record_offset + 1);
-            end if;
-            if l_field_index > l_row.count then l_row.extend; end if;
-            if upper(l_field) = 'NULL' then
-               l_row(l_field_index) := null;
-            else
-               l_row(l_field_index) := l_field;
-            end if;
-            exit when l_record_offset = 0;
-         end loop;
-         l_tab.extend;
-         l_tab(l_tab.last) := l_row;
-      end;
-
    begin
       if p_string is null then
          return null;
-      end if;    
-      l_buf := p_string;
-      loop
-         l_buf_offset := nvl(instr(l_buf, record_separator), 0);
-         exit when l_buf_offset = 0;
-         process_record(substr(l_buf, 1, l_buf_offset - 1));
-         if l_buf_offset = length(l_buf) then
-            l_buf := '';
-         else
-            l_buf := substr(l_buf, l_buf_offset + 1);
-         end if;
+      end if;
+      l_rows := split_text(p_string, record_separator);
+      for i in l_rows.first .. l_rows.last loop
+         l_tab.extend;
+         l_tab(i) := split_text(l_rows(i), field_separator);
       end loop;
-      process_record(l_buf);
       return l_tab;
    end parse_string_recordset;
    

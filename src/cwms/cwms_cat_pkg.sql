@@ -139,9 +139,7 @@ IS
    TYPE cat_property_rec_t IS RECORD (
       office_id      VARCHAR2(16),
       prop_catergory VARCHAR2(256),
-      prop_id        VARCHAR2(256),
-      prop_value     VARCHAR2(256),
-      prop_comment   VARCHAR2(256)
+      prop_id        VARCHAR2(256)
    );
 
    TYPE cat_property_tab_t IS TABLE OF cat_property_rec_t;
