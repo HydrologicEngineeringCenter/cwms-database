@@ -232,11 +232,41 @@ AS
    end get_properties;                                                         
    
 -------------------------------------------------------------------------------
+-- function get_property(...)
+--
+--
+   FUNCTION get_property (
+      p_office_id in varchar2,
+      p_category  in varchar2,
+      p_id        in varchar2)
+      return varchar2
+   is
+      l_office_id  varchar2(16);
+      l_prop_value varchar2(256) := null;
+   begin
+      begin
+         l_office_id := upper(p_office_id);
+         select prop_value
+           into l_prop_value
+           from at_properties p, cwms_office o
+          where o.office_id = l_office_id
+            and p.office_code = o.office_code
+            and upper(p.prop_category) = upper(p_category)
+            and upper(p.prop_id) = upper(p_id);
+      exception
+         when others then null;
+      end;
+      
+      return l_prop_value;
+           
+   end get_property;
+   
+-------------------------------------------------------------------------------
 -- function get_properties_xml(...)
 --
 --
    FUNCTION get_properties_xml (
-      p_property_info IN VARCHAR2)
+      p_property_info IN property_info_tab_t)
       return CLOB
    is
       l_xml clob;
@@ -362,9 +392,7 @@ AS
       write_clob(l_xml, '<cwms_properties>' || nl);
       l_level := 1;
       l_indent := spc;
-      get_properties(
-         l_properties, 
-         str_tab_tab2property_info_tab(cwms_util.parse_string_recordset(p_property_info)));
+      get_properties(l_properties, p_property_info);
       loop
          fetch l_properties into l_prop_row; 
          exit when l_properties%notfound; 
@@ -426,34 +454,30 @@ AS
    end get_properties_xml;
    
 -------------------------------------------------------------------------------
--- function get_property(...)
+-- function get_properties_xml(...)
 --
 --
-   FUNCTION get_property (
-      p_office_id in varchar2,
-      p_category  in varchar2,
-      p_id        in varchar2)
-      return varchar2
+   FUNCTION get_properties_xml (
+      p_property_info IN VARCHAR2)
+      return CLOB
    is
-      l_office_id  varchar2(16);
-      l_prop_value varchar2(256) := null;
    begin
-      begin
-         l_office_id := upper(p_office_id);
-         select prop_value
-           into l_prop_value
-           from at_properties p, cwms_office o
-          where o.office_id = l_office_id
-            and p.office_code = o.office_code
-            and upper(p.prop_category) = upper(p_category)
-            and upper(p.prop_id) = upper(p_id);
-      exception
-         when others then null;
-      end;
-      
-      return l_prop_value;
-           
-   end get_property;
+      return get_properties_xml(
+         str_tab_tab2property_info_tab(cwms_util.parse_string_recordset(p_property_info)));
+   end get_properties_xml;
+   
+-------------------------------------------------------------------------------
+-- function get_properties_xml(...)
+--
+--
+   FUNCTION get_properties_xml (
+      p_property_info IN CLOB)
+      return CLOB
+   is
+   begin
+      return get_properties_xml(
+         str_tab_tab2property_info_tab(cwms_util.parse_clob_recordset(p_property_info)));
+   end get_properties_xml;
    
 -------------------------------------------------------------------------------
 -- function set_properties(...)

@@ -25,30 +25,14 @@ AS
       p_cwms_cat      OUT sys_refcursor,
       p_property_info IN  VARCHAR2);
    
--------------------------------------------------------------------------------
--- procedure get_properties(...)
---
---
    PROCEDURE get_properties (
       p_cwms_cat      OUT sys_refcursor,
       p_property_info IN  CLOB);
    
--------------------------------------------------------------------------------
--- function get_properties_xml(...)
---
---
-   FUNCTION get_properties_xml (
-      p_property_info IN VARCHAR2)
-      return CLOB;
-   
--------------------------------------------------------------------------------
--- procedure get_properties(...)
---
---
    PROCEDURE get_properties (
       p_cwms_cat      OUT sys_refcursor,
       p_property_info IN  property_info_tab_t);
-      
+   
 -------------------------------------------------------------------------------
 -- function get_property(...)
 --
@@ -60,25 +44,34 @@ AS
       return varchar2;
    
 -------------------------------------------------------------------------------
+-- function get_properties_xml(...)
+--
+--
+   FUNCTION get_properties_xml (
+      p_property_info IN VARCHAR2)
+      return CLOB;
+      
+   FUNCTION get_properties_xml (
+      p_property_info IN CLOB)
+      return CLOB;
+
+   FUNCTION get_properties_xml (
+      p_property_info property_info_tab_t)
+      return CLOB;
+
+-------------------------------------------------------------------------------
 -- function set_properties(...)
 --
+-- returns the number successfully inserted/updated
 --
    FUNCTION set_properties (p_property_info IN VARCHAR2)
             return binary_integer;
   
--------------------------------------------------------------------------------
--- function set_properties(...)
---
---
    FUNCTION set_properties (p_property_info IN CLOB)
             return binary_integer;
   
--------------------------------------------------------------------------------
--- function set_properties(...)
---
---
    FUNCTION set_properties (p_property_info IN  property_info2_tab_t)
-   return binary_integer;
+            return binary_integer;
    
 -------------------------------------------------------------------------------
 -- procedure set_property(...)
