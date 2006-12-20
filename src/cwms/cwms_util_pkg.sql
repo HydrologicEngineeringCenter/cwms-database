@@ -40,7 +40,20 @@ AS
    db_office_code_all            CONSTANT NUMBER        := 53;
    --
    irregular_interval_code       CONSTANT NUMBER        := 29;
+   --
+   field_separator               CONSTANT VARCHAR2(1)   := CHR(29);
+   record_separator              CONSTANT VARCHAR2(1)   := CHR(30);
 
+   type str_tab_t     is table of varchar2(32767); -- table row with string fields
+   type str_tab_tab_t is table of str_tab_t;       -- table of rows with string fields
+
+   FUNCTION parse_clob_recordset (p_clob IN  CLOB)
+      return str_tab_tab_t;
+
+   FUNCTION parse_string_recordset (p_string IN  VARCHAR2)
+      return str_tab_tab_t;
+
+   
    TYPE ts_list IS TABLE OF VARCHAR2 (200)
       INDEX BY BINARY_INTEGER;
 

@@ -336,9 +336,162 @@ AS
          --dbms_output.put_line(SQLERRM);
          RAISE;
    END create_view;
+   
+-------------------------------------------------------------------------------
+-- function parse_clob_recordset(...)
+--
+--
+   FUNCTION parse_clob_recordset (p_clob IN  CLOB)
+   return str_tab_tab_t
+   is
+      l_row str_tab_t;
+      l_tab str_tab_tab_t := str_tab_tab_t();
+      l_buf varchar2(32767) := '';
+      l_chunk varchar2(4000);
+      l_clob_offset binary_integer := 1;
+      l_buf_offset binary_integer := 1;
+      l_amount binary_integer;
+      l_clob_len binary_integer;
+      chunk_size constant binary_integer := 4000;
+      
+      procedure process_record (p_record in varchar2)
+      is
+         l_record varchar2(32767);
+         l_record_offset binary_integer;
+         l_field varchar2(32767);
+         l_field_index binary_integer := 0;
+      begin
+         if p_record is null or length(p_record) = 0 then
+            return;
+         end if;
+         l_record := p_record;
+         l_row := str_tab_t();
+         loop
+            l_field_index := l_field_index + 1;
+            l_record_offset := nvl(instr(l_record, field_separator), 0);
+            if l_record_offset = 0 then
+               l_field := l_record;
+            elsif l_record_offset = 1 then
+               l_field := '';
+               l_record := substr(l_record, 2);
+            else
+               l_field := substr(l_record, 1, l_record_offset - 1);
+               l_record := substr(l_record, l_record_offset + 1);
+            end if;
+            if l_field_index > l_row.count then l_row.extend; end if;
+            if upper(l_field) = 'NULL' then
+               l_row(l_field_index) := null;
+            else
+               l_row(l_field_index) := l_field;
+            end if;
+            exit when l_record_offset = 0;
+         end loop;
+         l_tab.extend;
+         l_tab(l_tab.last) := l_row;
+      end;
+      
+   begin
+      if p_clob is null then
+         return null;
+      end if;
+      l_clob_len := dbms_lob.getlength(p_clob);
+      l_amount := chunk_size;
+      loop
+         exit when l_clob_offset > l_clob_len;
+         dbms_lob.read(p_clob, l_amount, l_clob_offset, l_chunk);
+         l_clob_offset := l_clob_offset + l_amount;
+         l_buf := l_buf || l_chunk;
+         loop
+            l_buf_offset := nvl(instr(l_buf, record_separator), 0);
+            exit when l_buf_offset = 0;
+            process_record(substr(l_buf, 1, l_buf_offset - 1));
+            if l_buf_offset = length(l_buf) then
+               l_buf := '';
+            else
+               l_buf := substr(l_buf, l_buf_offset + 1);
+            end if;
+         end loop;
+      end loop;
+      process_record(l_buf);
+      return l_tab;
+   end parse_clob_recordset;
+   
+-------------------------------------------------------------------------------
+-- function parse_string_recordset(...)
+--
+--
+   FUNCTION parse_string_recordset (p_string IN VARCHAR2)
+   return str_tab_tab_t
+   is
+      l_row str_tab_t;
+      l_tab str_tab_tab_t := str_tab_tab_t();
+      l_buf varchar2(32767) := '';
+      l_chunk varchar2(4000);
+      l_clob_offset binary_integer := 1;
+      l_buf_offset binary_integer := 1;
+      l_amount binary_integer;
+      l_clob_len binary_integer;
+      chunk_size constant binary_integer := 4000;
+
+      procedure process_record (p_record in varchar2)
+      is
+         l_record varchar2(32767);
+         l_record_offset binary_integer;
+         l_field varchar2(32767);
+         l_field_index binary_integer := 0;
+      begin
+         if p_record is null or length(p_record) = 0 then
+            return;
+         end if;
+         l_record := p_record;
+         l_row := str_tab_t();
+         loop
+            l_field_index := l_field_index + 1;
+            l_record_offset := nvl(instr(l_record, field_separator), 0);
+            if l_record_offset = 0 then
+               l_field := l_record;
+            elsif l_record_offset = 1 then
+               l_field := '';
+               l_record := substr(l_record, 2);
+            else
+               l_field := substr(l_record, 1, l_record_offset - 1);
+               l_record := substr(l_record, l_record_offset + 1);
+            end if;
+            if l_field_index > l_row.count then l_row.extend; end if;
+            if upper(l_field) = 'NULL' then
+               l_row(l_field_index) := null;
+            else
+               l_row(l_field_index) := l_field;
+            end if;
+            exit when l_record_offset = 0;
+         end loop;
+         l_tab.extend;
+         l_tab(l_tab.last) := l_row;
+      end;
+
+   begin
+      if p_string is null then
+         return null;
+      end if;    
+      l_buf := p_string;
+      loop
+         l_buf_offset := nvl(instr(l_buf, record_separator), 0);
+         exit when l_buf_offset = 0;
+         process_record(substr(l_buf, 1, l_buf_offset - 1));
+         if l_buf_offset = length(l_buf) then
+            l_buf := '';
+         else
+            l_buf := substr(l_buf, l_buf_offset + 1);
+         end if;
+      end loop;
+      process_record(l_buf);
+      return l_tab;
+   end parse_string_recordset;
+   
 ----------------------------------------------------------------------------
 BEGIN
    -- anything put here will be executed on every mod_plsql call
    NULL;
 END cwms_util;
 /
+show error;
