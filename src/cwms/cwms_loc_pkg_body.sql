@@ -1,4 +1,4 @@
-/* Formatted on 2006/12/19 11:45 (Formatter Plus v4.8.8) */
+/* Formatted on 2006/12/19 15:45 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --********************************************************************** -
@@ -44,14 +44,20 @@ AS
    IS
       l_location_code   NUMBER;
    BEGIN
-      SELECT location_code
+      --
+      SELECT apl.location_code
         INTO l_location_code
-        FROM av_loc
-       WHERE db_office_id = UPPER (p_office_id)
-         AND UPPER (location_id) = UPPER (p_location_id)
-         AND unit_system = 'SI';
-
+        FROM at_physical_location apl, at_base_location abl, cwms_office cu
+       WHERE apl.base_location_code = abl.base_location_code
+         AND abl.db_office_code = cu.office_code
+         AND UPPER (abl.base_location_id) =
+                                 UPPER (cwms_util.get_base_id (p_location_id))
+         AND NVL (UPPER (apl.sub_location_id), '.') =
+                       NVL (UPPER (cwms_util.get_sub_id (p_location_id)), '.')
+         AND UPPER (cu.office_id) = UPPER (p_office_id);
+      --
       RETURN l_location_code;
+      --
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
