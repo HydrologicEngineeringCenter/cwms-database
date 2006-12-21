@@ -4714,6 +4714,7 @@ errorCodes = [
     ['-20029', 'RENAME_LOC_BASE_2',     'Unable to rename. The new Location: "%1" already exists.' ],
     ['-20030', 'RENAME_LOC_BASE_3',     'Unable to rename. The new Location: "%1" matches the existing old location.' ],
     ['-20031', 'CAN_NOT_DELETE_LOC_1',  'Can not delete location: "%1" because Timeseries Identifiers exist.' ],
+    ['-20032', 'CANNOT_DELETE_UNIT_1',  'Cannot delete or rename unit alias "%1"; it is in use by %2.'],
     ['-20102', 'UNIT_CONV_NOT_FOUND',   'The units conversion for "%1" was not found'                 ],
     ['-20103', 'INVALID_TIMEZONE',      'The timezone "%1" is not a valid Oracle timezone region'     ],
     ['-20104', 'UNITS_NOT_SPECIFIED',   'You must specifiy the UNITS of your data'                    ],
