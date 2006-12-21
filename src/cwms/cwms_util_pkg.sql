@@ -151,6 +151,13 @@ AS
 --
    FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN NUMBER;
+      
+--------------------------------------------------------
+-- Return the db host office code for the specified office id,
+-- or the user's primary office if the office id is null
+--
+   function get_db_office_code (p_office_id in varchar2 default null)
+      return number;
 
    PROCEDURE TEST;
 

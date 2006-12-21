@@ -286,6 +286,25 @@ AS
          cwms_err.RAISE ('INVALID_OFFICE_ID', p_office_id);
    END get_office_code;
 
+--------------------------------------------------------
+-- Return the db host office code for the specified office id,
+-- or the user's primary office if the office id is null
+--
+   function get_db_office_code (p_office_id in varchar2 default null)
+      return number
+   is
+      l_db_office_code number := null;
+   begin
+      select db_host_office_code
+        into l_db_office_code
+        from cwms_office
+       where office_code = get_office_code(p_office_id);
+         
+      return l_db_office_code;
+   exception
+      when no_data_found then
+         cwms_err.raise('INVALID_OFFICE_ID', p_office_id);
+   end get_db_office_code;
    PROCEDURE TEST
    IS
    BEGIN
