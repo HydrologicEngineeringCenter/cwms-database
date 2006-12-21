@@ -8,6 +8,7 @@ set serveroutput on
 declare
    type id_array_t is table of varchar2(32);
    table_names id_array_t := id_array_t(
+      'at_sec_user_office',
       'at_ts_table_properties',
       'at_base_location',
       'at_physical_location',
@@ -86,6 +87,73 @@ end;
 -- CREATE TABLES --
 -------------------
 
+-------------------------
+-- AT_SEC_USER_OFFICE table
+-- 
+CREATE TABLE AT_SEC_USER_OFFICE
+(
+  USER_ID            VARCHAR2(32 BYTE)  NOT NULL,
+  PRIMARY_OFFICE_ID  VARCHAR2(16 BYTE)  NOT NULL
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL;
+-------------------------
+-- AT_SEC_USER_OFFICE comments
+-- 
+COMMENT ON TABLE AT_SEC_USER_OFFICE IS 'Primary office IDs for CWMS Users';
+COMMENT ON COLUMN AT_SEC_USER_OFFICE.USER_ID IS 'CWMS User ID';
+COMMENT ON COLUMN AT_SEC_USER_OFFICE.PRIMARY_OFFICE_ID IS 'Primary Office ID for CWMS User';
+-------------------------
+-- AT_SEC_USER_OFFICE inidicies
+-- 
+CREATE UNIQUE INDEX AT_SEC_USER_OFFICE_PK ON AT_SEC_USER_OFFICE (USER_ID, PRIMARY_OFFICE_ID)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL;
+-------------------------
+-- AT_SEC_USER_OFFICE constraints
+-- 
+ALTER TABLE AT_SEC_USER_OFFICE ADD CONSTRAINT AT_SEC_USER_OFFICE_FK1 FOREIGN KEY (PRIMARY_OFFICE_ID) REFERENCES CWMS_OFFICE (OFFICE_ID);
+-------------------------
+-- AT_SEC_USER_OFFICE trigger
+-- 
+create or replace trigger at_sec_user_office_constraint
+before insert or update of user_id, primary_office_id
+on at_sec_user_office
+referencing new as new old as old
+for each row
+declare
+begin
+   :new.user_id := upper(:new.user_id);
+   :new.primary_office_id := upper(:new.primary_office_id);
+end at_sec_user_office_constraint;
+
+show errors;
+commit;
 -------------------------
 -- AT_TS_TABLE_PROPERTIES table
 -- 
@@ -2303,19 +2371,17 @@ LOGGING
 NOCOMPRESS 
 NOCACHE
 NOPARALLEL
-MONITORING
-/
+MONITORING;
+-----------------------------
+-- AT_UNIT_ALIAS TABLE comments
+--
+COMMENT ON TABLE AT_UNIT_ALIAS IS 'Contains unitAlias names for all units';
+COMMENT ON COLUMN AT_UNIT_ALIAS.ALIAS_ID IS 'Alias name and primary key';
+COMMENT ON COLUMN AT_UNIT_ALIAS.UNIT_CODE IS 'Foreign key referencing CWMS_UNIT table by its primary key';
 
-COMMENT ON TABLE AT_UNIT_ALIAS IS 'Contains unitAlias names for all units'
-/
-
-COMMENT ON COLUMN AT_UNIT_ALIAS.ALIAS_ID IS 'Alias name and primary key'
-/
-
-COMMENT ON COLUMN AT_UNIT_ALIAS.UNIT_CODE IS 'Foreign key referencing CWMS_UNIT table by its primary key'
-/
-
-
+-----------------------------
+-- AT_UNIT_ALIAS TABLE indicies
+--
 CREATE UNIQUE INDEX AT_UNIT_ALIAS_PK ON AT_UNIT_ALIAS
 (ALIAS_ID, DB_OFFICE_CODE)
 LOGGING
@@ -2330,14 +2396,13 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-NOPARALLEL
-/
-
-
-ALTER TABLE AT_UNIT_ALIAS ADD (
-  CONSTRAINT AT_UNIT_ALIAS_PK
- PRIMARY KEY
- (ALIAS_ID, DB_OFFICE_CODE)
+NOPARALLEL;
+-----------------------------
+-- AT_UNIT_ALIAS TABLE constraints
+--
+ALTER TABLE AT_UNIT_ALIAS ADD CONSTRAINT AT_UNIT_ALIAS_R02 FOREIGN KEY (DB_OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
+ALTER TABLE AT_UNIT_ALIAS ADD CONSTRAINT FK_AT_UNIT_ALIAS  FOREIGN KEY (UNIT_CODE) REFERENCES CWMS_UNIT (UNIT_CODE);
+ALTER TABLE AT_UNIT_ALIAS ADD CONSTRAINT AT_UNIT_ALIAS_PK  PRIMARY KEY (ALIAS_ID, DB_OFFICE_CODE)
     USING INDEX 
     TABLESPACE CWMS_20DATA
     PCTFREE    10
@@ -2348,21 +2413,7 @@ ALTER TABLE AT_UNIT_ALIAS ADD (
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
-               ))
-/
-
-
-ALTER TABLE AT_UNIT_ALIAS ADD (
-  CONSTRAINT AT_UNIT_ALIAS_R02 
- FOREIGN KEY (DB_OFFICE_CODE) 
- REFERENCES CWMS_OFFICE (OFFICE_CODE))
-/
-
-ALTER TABLE AT_UNIT_ALIAS ADD (
-  CONSTRAINT FK_AT_UNIT_ALIAS 
- FOREIGN KEY (UNIT_CODE) 
- REFERENCES CWMS_UNIT (UNIT_CODE))
-/
+               );
 
 -----------------------------
 -- AT_USER_PREFERENCES TABLE.
@@ -4187,13 +4238,14 @@ COMMIT;
 CREATE TABLE AT_DSS_TS_SPEC
    (
        DSS_TS_CODE             NUMBER(10)   NOT NULL,
+       OFFICE_CODE             NUMBER(10)   NOT NULL,
        A_PATHNAME_PART         VARCHAR2(64),
        B_PATHNAME_PART         VARCHAR2(64) NOT NULL,
        C_PATHNAME_PART         VARCHAR2(64) NOT NULL,
        E_PATHNAME_PART         VARCHAR2(64) NOT NULL,
        F_PATHNAME_PART         VARCHAR2(64),
        DSS_PARAMETER_TYPE_CODE NUMBER(10)   NOT NULL,
-       UNIT_CODE               NUMBER(10)   NOT NULL,
+       UNIT_ID                 VARCHAR2(16) NOT NULL,
        TIME_ZONE_CODE          NUMBER(10)   NOT NULL,
        TZ_USAGE_CODE           NUMBER(10)   NOT NULL
    )
@@ -4218,19 +4270,21 @@ CREATE TABLE AT_DSS_TS_SPEC
 --
 COMMENT ON TABLE  AT_DSS_TS_SPEC                         IS 'Complete specification of time series data set in HEC-DSS file';
 COMMENT ON COLUMN AT_DSS_TS_SPEC.DSS_TS_CODE             IS 'Primary key used to relate specification to other entities';
+COMMENT ON COLUMN AT_DSS_TS_SPEC.OFFICE_CODE             IS 'Reference to owning office';
 COMMENT ON COLUMN AT_DSS_TS_SPEC.A_PATHNAME_PART         IS 'HEC-DSS pathname A-part (watershed)';
 COMMENT ON COLUMN AT_DSS_TS_SPEC.B_PATHNAME_PART         IS 'HEC-DSS pathname B-part (location)';
 COMMENT ON COLUMN AT_DSS_TS_SPEC.C_PATHNAME_PART         IS 'HEC-DSS pathname C-part (parameter)';
 COMMENT ON COLUMN AT_DSS_TS_SPEC.E_PATHNAME_PART         IS 'HEC-DSS pathname E-part (interval)';
 COMMENT ON COLUMN AT_DSS_TS_SPEC.F_PATHNAME_PART         IS 'HEC-DSS pathname F-part (version)';
 COMMENT ON COLUMN AT_DSS_TS_SPEC.DSS_PARAMETER_TYPE_CODE IS 'Reference to HEC-DSS parameter type';
+COMMENT ON COLUMN AT_DSS_TS_SPEC.UNIT_ID                 IS 'Units for HEC-DSS data set';
 COMMENT ON COLUMN AT_DSS_TS_SPEC.TIME_ZONE_CODE          IS 'Reference to time zone for HEC-DSS data set';
 COMMENT ON COLUMN AT_DSS_TS_SPEC.TZ_USAGE_CODE           IS 'Reference to time zone useage for HEC-DSS data set';
 -----------------------------
 -- AT_DSS_TS_SPEC constraints
 --
-ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_FK1  FOREIGN KEY (DSS_PARAMETER_TYPE_CODE) REFERENCES CWMS_DSS_PARAMETER_TYPE(DSS_PARAMETER_TYPE_CODE);
-ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_FK2  FOREIGN KEY (UNIT_CODE) REFERENCES CWMS_UNIT(UNIT_CODE);
+ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_FK1  FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE(OFFICE_CODE);
+ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_FK2  FOREIGN KEY (DSS_PARAMETER_TYPE_CODE) REFERENCES CWMS_DSS_PARAMETER_TYPE(DSS_PARAMETER_TYPE_CODE);
 ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_FK3  FOREIGN KEY (TIME_ZONE_CODE) REFERENCES CWMS_TIME_ZONE(TIME_ZONE_CODE);
 ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_FK4  FOREIGN KEY (TZ_USAGE_CODE) REFERENCES CWMS_TZ_USAGE(TZ_USAGE_CODE);
 ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_PK   PRIMARY KEY (DSS_TS_CODE)
@@ -4251,6 +4305,7 @@ ALTER TABLE AT_DSS_TS_SPEC ADD CONSTRAINT AT_DSS_TS_SPEC_PK   PRIMARY KEY (DSS_T
 --
 CREATE INDEX AT_DSS_TS_SPEC_PATHNAME ON AT_DSS_TS_SPEC
    (
+       OFFICE_CODE,
        UPPER(NVL(A_PATHNAME_PART, '@')),
        UPPER(B_PATHNAME_PART),
        UPPER(C_PATHNAME_PART),
@@ -4272,8 +4327,68 @@ CREATE INDEX AT_DSS_TS_SPEC_PATHNAME ON AT_DSS_TS_SPEC
           FREELIST GROUPS 1
           BUFFER_POOL DEFAULT
        );
-SHOW ERRORS;
-COMMIT;
+-----------------------------
+-- AT_DSS_TS_SPEC trigger
+--
+create or replace trigger at_dss_ts_spec_units
+before insert or update of unit_id
+on at_dss_ts_spec
+referencing new as new old as old
+for each row
+declare
+   l_count number;
+begin
+   select count(unit_id)
+     into l_count
+     from (
+            select unit_id from cwms_unit
+            union
+            select alias_id unit_id from at_unit_alias 
+             where db_office_code in (
+                                      cwms_util.get_office_code('ALL'), 
+                                      cwms_util.get_db_office_code
+                                     )
+          )
+    where unit_id = :new.unit_id;
+   
+   if l_count = 0 then
+      cwms_err.raise('INVALID_ITEM', :new.unit_id, 'unit');
+   end if;
+end at_dss_ts_spec_units;
+
+show errors;
+commit;
+-----------------------------
+-- AT_UNIT_ALIAS trigger (depends on AT_DSS_TS_SPEC)
+--
+create or replace trigger at_unit_alias_constraint
+before delete or update
+of alias_id
+on cwms_20.at_unit_alias 
+referencing new as new old as old
+for each row
+declare
+   l_count number;   
+begin
+   if deleting or (updating and :new.alias_id != :old.alias_id) then
+      select count(unit_id) 
+        into l_count 
+        from at_dss_ts_spec ts,
+             cwms_office o
+       where unit_id = :old.alias_id
+         and o.office_code = ts.office_code
+         and o.db_host_office_code = :old.db_office_code;
+      if l_count > 0 then
+         cwms_err.raise(
+            'CANNOT_DELETE_UNIT_1',
+            :old.alias_id,
+            ''|| l_count || 'DSS time series specification(s)');
+      end if;
+   end if;
+end at_unit_alias_constraint;
+
+show errors;
+commit;
 
 -----------------------------
 -- AT_DSS_TS_XCHG_SPEC table
