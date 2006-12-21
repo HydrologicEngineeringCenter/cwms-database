@@ -137,8 +137,13 @@ AS
 --------------------------------------------------------
 -- Return the current session user's primary office id
 --
-   FUNCTION user_office_id
-      RETURN VARCHAR2;
+   function user_office_id
+      return varchar2;
+--------------------------------------------------------
+-- return the current session user's primary office code
+--
+   function user_office_code
+      return number;
 
 --------------------------------------------------------
 -- Return the office code for the specified office id,

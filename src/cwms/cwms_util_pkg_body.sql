@@ -202,30 +202,64 @@ AS
       END IF;
    END;
 
-   --------------------------------------------------------
+--------------------------------------------------------
 -- Return the current session user's primary office id
 --
-   FUNCTION user_office_id
-      RETURN VARCHAR2
-   IS
-      l_office_id   VARCHAR2 (16) := NULL;
-   BEGIN
---   select office_id
---     into l_office_id
---     from cwms_office
---    where office_code =
---          (
---            select primary_office
---              from at_sec_user_office
---             where user_id = sys_context('userenv', 'session_user')
---          );
-      NULL;
-   EXCEPTION
-      WHEN OTHERS
-      THEN
-         NULL;
-         RETURN l_office_id;
-   END user_office_id;
+   function user_office_id
+      return varchar2
+   is
+      l_office_id  varchar2 (16) := null;
+      l_user_id    varchar2 (32);
+   begin
+      l_user_id := sys_context('userenv', 'session_user');
+      begin
+         select primary_office_id
+           into l_office_id
+           from at_sec_user_office
+          where user_id = l_user_id;
+      exception
+         when no_data_found then
+            begin
+               select office_id 
+                 into l_office_id 
+                 from cwms_office 
+                where eroc = upper(substr(l_user_id, 1, 2));
+            exception when no_data_found then null;
+            end;
+      end;
+      return l_office_id;
+   end user_office_id;
+
+--------------------------------------------------------
+-- Return the current session user's primary office code
+--
+   function user_office_code
+      return number
+   is
+      l_office_code number(10) := null;
+      l_user_id     varchar2(32);
+   begin
+      l_user_id := sys_context('userenv', 'session_user');
+      begin
+         select office_code
+           into l_office_code
+           from cwms_office
+          where office_id = 
+                (select primary_office_id
+                   from at_sec_user_office
+                  where user_id = l_user_id);
+      exception
+         when no_data_found then
+            begin
+               select office_code 
+                 into l_office_code 
+                 from cwms_office 
+                where eroc = upper(substr(l_user_id, 1, 2));
+            exception when no_data_found then null;
+            end;
+      end;
+      return l_office_code;
+   end user_office_code;
 
 --------------------------------------------------------
 -- Return the office code for the specified office id,
@@ -236,19 +270,15 @@ AS
    IS
       l_office_code   NUMBER := NULL;
    BEGIN
---       IF p_office_id IS NULL
---       THEN
---          SELECT primary_office
---            INTO l_office_code
---            FROM at_sec_user_office
---           WHERE user_id = SYS_CONTEXT ('userenv', 'session_user');
---       ELSE
-      SELECT office_code
-        INTO l_office_code
-        FROM cwms_office
-       WHERE office_id = p_office_id;
-
---    END IF;
+      IF p_office_id IS NULL
+      THEN
+         l_office_code := user_office_code;
+      ELSE
+         SELECT office_code
+           INTO l_office_code
+           FROM cwms_office
+          WHERE office_id = p_office_id;
+      END IF;
       RETURN l_office_code;
    EXCEPTION
       WHEN NO_DATA_FOUND
