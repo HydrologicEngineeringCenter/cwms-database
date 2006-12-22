@@ -1,4 +1,4 @@
-/* Formatted on 2006/12/21 15:40 (Formatter Plus v4.8.8) */
+/* Formatted on 2006/12/22 08:58 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util AUTHID CURRENT_USER
 AS
 /******************************************************************************
@@ -25,18 +25,16 @@ AS
    ---
    ---- DEPRICATED
    delete_key                    CONSTANT VARCHAR2 (16) := 'DELETE KEY';
+   delete_data                   CONSTANT VARCHAR2 (22) := 'DELETE DATA';
    delete_all                    CONSTANT VARCHAR2 (16) := 'DELETE ALL';
    ----DEPRICATED.
    ---
    --
    delete_ts_id                  CONSTANT VARCHAR2 (22) := 'DELETE TS ID';
-   delete_ts_ids                 CONSTANT VARCHAR2 (22) := 'DELETE TS IDS';
    delete_loc                    CONSTANT VARCHAR2 (22) := 'DELETE LOC';
-   delete_data                   CONSTANT VARCHAR2 (22) := 'DELETE DATA';
-   delete_ts_id_cascade          CONSTANT VARCHAR2 (22)
-                                                    := 'DELETE TS ID CASCADE';
-   delete_ts_ids_cascade         CONSTANT VARCHAR2 (22)
-                                                   := 'DELETE TS IDS CASCADE';
+   delete_ts_data                CONSTANT VARCHAR2 (22) := 'DELETE TS DATA';
+   delete_ts_cascade             CONSTANT VARCHAR2 (22)
+                                                       := 'DELETE TS CASCADE';
    delete_loc_cascade            CONSTANT VARCHAR2 (22)
                                                       := 'DELETE LOC CASCADE';
    --
@@ -157,13 +155,14 @@ AS
 --------------------------------------------------------
 -- Return the current session user's primary office id
 --
-   function user_office_id
-      return varchar2;
+   FUNCTION user_office_id
+      RETURN VARCHAR2;
+
 --------------------------------------------------------
 -- return the current session user's primary office code
 --
-   function user_office_code
-      return number;
+   FUNCTION user_office_code
+      RETURN NUMBER;
 
 --------------------------------------------------------
 -- Return the office code for the specified office id,
@@ -171,7 +170,6 @@ AS
 --
    FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN NUMBER;
-      
 --------------------------------------------------------------------------------
 -- function get_time_zone_code
 --
@@ -184,12 +182,13 @@ AS
    function get_tz_usage_code(p_tz_usage_id in varchar2)
       return number;
 
+
 --------------------------------------------------------
 -- Return the db host office code for the specified office id,
 -- or the user's primary office if the office id is null
 --
-   function get_db_office_code (p_office_id in varchar2 default null)
-      return number;
+   FUNCTION get_db_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN NUMBER;
 
    PROCEDURE TEST;
 

@@ -1526,23 +1526,24 @@ AS
 --
 -- NOTE: Deleting a Base Location will delete ALL associated Sub -
 -- Locations -
-    -- valid p_delete_actions:                                              --
-    --  delete_loc:      This action will delete the location_id only if there
-    --                   are no cwms_ts_id's associated with this location_id.
-    --                   If there are cwms_ts_id's assciated with the location_id,
-    --                   then an exception is thrown.
-    --  delete_data:     This action will delete all of the data associated
-    --                   with all of the cwms_ts_id's associated with this
-    --                   location_id. The location_id and the cwms_ts_id's
-    --                   themselves are not deleted.
-    --  delete_ts_ids:    This action will delete any cwms_ts_id that has
-    --                   no associated data. Only ts_id's that have data
-    --                   along with the location_id itself will remain.
-    --  delete_ts_ids_cascade:This action will delete all data and all cwms_ts_id's
-    --                   associazted with this location_id. It does not delete
-    --                   the location_id.
-    --  delete_loc_cascade:  This will delete all data, all cwms_ts_id's, as well
-    --                   as the location_id itself.
+    -- valid p_delete_actions:     
+    --                                         --
+    --  delete_loc:         This action will delete the location_id only if there
+    --                      are no cwms_ts_id's associated with this location_id.
+    --                      If there are cwms_ts_id's assciated with the location_id,
+    --                      then an exception is thrown.
+    --  delete_ts_data:     This action will delete all of the data associated
+    --                      with all of the cwms_ts_id's associated with this
+    --                      location_id. The location_id and the cwms_ts_id's
+    --                      themselves are not deleted.
+    --  delete_ts_id:       This action will delete any cwms_ts_id that has
+    --                      no associated data. Only ts_id's that have data
+    --                      along with the location_id itself will remain.
+    --  delete_ts_cascade:  This action will delete all data and all cwms_ts_id's
+    --                      associazted with this location_id. It does not delete
+    --                      the location_id.
+    --  delete_loc_cascade: This will delete all data, all cwms_ts_id's, as well
+    --                      as the location_id itself.
 
    --
 --*---------------------------------------------------------------------*-
@@ -1637,13 +1638,13 @@ AS
 
          CASE
             WHEN l_delete_action = cwms_util.delete_loc_cascade
-             OR l_delete_action = cwms_util.delete_ts_ids_cascade
+             OR l_delete_action = cwms_util.delete_ts_cascade
             THEN
                cwms_ts.delete_ts (l_cwms_ts_id,
-                                  cwms_util.delete_ts_id_cascade,
+                                  cwms_util.delete_ts_cascade,
                                   l_db_office_id
                                  );
-            WHEN l_delete_action = cwms_util.delete_ts_ids
+            WHEN l_delete_action = cwms_util.delete_ts_id
             THEN
                BEGIN
                   cwms_ts.delete_ts (l_cwms_ts_id,
@@ -1655,10 +1656,10 @@ AS
                   THEN
                      NULL;             -- exception thrown if ts_id has data.
                END;
-            WHEN l_delete_action = cwms_util.delete_data
+            WHEN l_delete_action = cwms_util.delete_ts_data
             THEN
                cwms_ts.delete_ts (l_cwms_ts_id,
-                                  cwms_util.delete_data,
+                                  cwms_util.delete_ts_data,
                                   l_db_office_id
                                  );
             ELSE

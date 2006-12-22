@@ -2415,11 +2415,11 @@ PROCEDURE delete_ts_cleanup (
 )
 IS
 BEGIN
-   IF p_delete_action = cwms_util.delete_all
+   IF p_delete_action = cwms_util.delete_ts_cascade
    THEN
       NULL;                -- NOTE TO GERHARD Need to think about cleaning up
                            -- all of the dependancies when deleting.
-   ELSIF p_delete_action = cwms_util.delete_data
+   ELSIF p_delete_action = cwms_util.delete_ts_data
    THEN
       UPDATE at_transform_criteria
          SET ts_code = p_ts_code_new
@@ -2449,14 +2449,14 @@ END delete_ts_cleanup;
     --
     ---------------------------------------------------------------------   --
     -- valid p_delete_actions:                                              --
-    --  delete_ts_id: This action will delete the cwms_ts_id only if there
-    --              is no actual data associated with this cwms_ts_id.
-    --              If there is data assciated with the cwms_ts_id, then
-    --              an exception is thrown.
-    --  delete_data: This action will delete all of the data associated
-    --               with the cwms_ts_id. The cwms_ts_id is not deleted.
-    --  delete_ts_id_cascade: This action will delete both the data and the
-    --              cwms_ts_id.
+    --  delete_ts_id:      This action will delete the cwms_ts_id only if there
+    --                     is no actual data associated with this cwms_ts_id.
+    --                     If there is data assciated with the cwms_ts_id, then
+    --                     an exception is thrown.
+    --  delete_ts_data:    This action will delete all of the data associated
+    --                     with the cwms_ts_id. The cwms_ts_id is not deleted.
+    --  delete_ts_cascade: This action will delete both the data and the
+    --                     cwms_ts_id.
     ----------------------------------------------------------------------  --
 /* Formatted on 2006/12/21 16:23 (Formatter Plus v4.8.8) */
 /* Formatted on 2006/12/21 16:33 (Formatter Plus v4.8.8) */
@@ -2471,7 +2471,7 @@ IS
    l_count           NUMBER;
    l_ts_code_new     NUMBER        := NULL;
    l_delete_action   VARCHAR2 (22)
-                       := UPPER (NVL (p_delete_action, cwms_util.delete_all));
+                       := UPPER (NVL (p_delete_action, cwms_util.delete_ts_id));
    l_delete_date     DATE          := SYSDATE;
    l_tmp_del_date    DATE          := l_delete_date + 1;
 --
@@ -2506,7 +2506,11 @@ BEGIN
 
    IF l_delete_action = cwms_util.delete_all
    THEN
-      l_delete_action := cwms_util.delete_ts_id_cascade;
+      l_delete_action := cwms_util.delete_ts_cascade;
+   END IF;
+   IF l_delete_action = cwms_util.delete_data
+   THEN
+      l_delete_action := cwms_util.delete_ts_data;
    END IF;
 
    IF l_delete_action = cwms_util.delete_ts_id
@@ -2532,13 +2536,13 @@ BEGIN
       END IF;
    --
    --
-   ELSIF    l_delete_action = cwms_util.delete_ts_id_cascade
-         OR l_delete_action = cwms_util.delete_data
+   ELSIF    l_delete_action = cwms_util.delete_ts_cascade
+         OR l_delete_action = cwms_util.delete_ts_data
    THEN
       -- If deleting the data only, then a new replacement ts_code must --
       -- be created --
       --
-      IF l_delete_action = cwms_util.delete_data
+      IF l_delete_action = cwms_util.delete_ts_data
       THEN
          -- Create replacement ts_id - temporarily disabled by setting a --
          -- delete date - need to do this so as not to violate unique    --
@@ -2564,7 +2568,7 @@ BEGIN
              delete_date = l_delete_date
        WHERE ts_code = l_ts_code;
 
-      IF l_delete_action = cwms_util.delete_data
+      IF l_delete_action = cwms_util.delete_ts_data
       THEN
          -- Activate the replacement ts_id by setting the delete_date to null --
          UPDATE at_cwms_ts_spec
