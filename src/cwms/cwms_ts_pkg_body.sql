@@ -216,6 +216,166 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 	
 	   RETURN l_parameter_code;
 	END get_parameter_code;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- GET_PARAMETER_CODE -
+--
+   FUNCTION get_parameter_code (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN NUMBER
+   IS
+      l_parameter_code number := null;
+   BEGIN
+      select parameter_code 
+        into l_parameter_code 
+        from at_cwms_ts_spec 
+       where ts_code = p_cwms_ts_code;
+
+      return l_parameter_code;
+      
+   EXCEPTION
+      WHEN no_data_found THEN
+         cwms_err.raise(
+            'INVALID_ITEM', 
+            ''||p_cwms_ts_code, 
+            'CWMS time series code.');
+         
+   END get_parameter_code;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- GET_PARAMETER_ID -
+--
+   FUNCTION get_parameter_id (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN VARCHAR2
+   IS
+      l_parameter_row at_parameter%rowtype;
+      l_parameter_id varchar2(49) := null;
+   BEGIN
+      select *
+        into l_parameter_row
+        from at_parameter 
+       where parameter_code = get_parameter_code(p_cwms_ts_code);
+
+      select base_parameter_id
+        into l_parameter_id
+        from cwms_base_parameter
+       where base_parameter_code = l_parameter_row.base_parameter_code;
+
+      if l_parameter_row.sub_parameter_id is not null then
+         l_parameter_id := l_parameter_id 
+            || '-' 
+            || l_parameter_row.sub_parameter_id;
+      end if;
+
+      return l_parameter_id;
+      
+   END get_parameter_id;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- GET_BASE_PARAMETER_CODE -
+--
+   FUNCTION get_base_parameter_code (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN NUMBER
+   IS
+      l_base_parameter_code number(10) := null;
+   BEGIN
+      select base_parameter_code
+        into l_base_parameter_code
+        from at_parameter
+       where parameter_code = get_parameter_code(p_cwms_ts_code);
+
+      return l_base_parameter_code;
+
+   END get_base_parameter_code;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- GET_BASE_PARAMETER_ID -
+--
+   FUNCTION get_base_parameter_id (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN VARCHAR2
+   IS
+      l_base_parameter_id varchar2(16) := null;
+   BEGIN
+      select base_parameter_id
+        into l_base_parameter_id
+        from cwms_base_parameter
+       where base_parameter_code = get_base_parameter_code(p_cwms_ts_code);
+
+      return l_base_parameter_id;
+
+   END get_base_parameter_id;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- GET_PARAMETER_TYPE_CODE -
+--
+   FUNCTION get_parameter_type_code (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN NUMBER
+   IS
+      l_parameter_type_code number := null;
+   BEGIN
+      select parameter_type_code 
+        into l_parameter_type_code 
+        from at_cwms_ts_spec 
+       where ts_code = p_cwms_ts_code;
+
+      return l_parameter_type_code;
+      
+   EXCEPTION
+      WHEN no_data_found THEN
+         cwms_err.raise(
+            'INVALID_ITEM', 
+            ''||p_cwms_ts_code, 
+            'CWMS time series code.');
+         
+   END get_parameter_type_code;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- GET_PARAMETER_TYPE_ID -
+--
+   FUNCTION get_parameter_type_id (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN VARCHAR2
+   IS
+      l_parameter_type_id varchar2(16) := null;
+   BEGIN
+      select parameter_type_id
+        into l_parameter_type_id
+        from cwms_parameter_type
+       where parameter_type_code = get_parameter_type_code(p_cwms_ts_code);
+
+      return l_parameter_type_id;
+      
+   END get_parameter_type_id;
+
+   
 --
 --*******************************************************************   --
 --*******************************************************************   --
@@ -2957,4 +3117,5 @@ END delete_ts;
 	
 END cwms_ts; --end package body
 /
-
+show errors;
+commit;

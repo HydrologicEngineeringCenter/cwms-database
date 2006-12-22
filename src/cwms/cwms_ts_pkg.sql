@@ -37,6 +37,36 @@ AS
    )
       RETURN NUMBER;
 
+   FUNCTION get_parameter_code (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN NUMBER;
+
+   FUNCTION get_base_parameter_code (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN NUMBER;
+
+   FUNCTION get_parameter_type_code (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN NUMBER;
+
+   FUNCTION get_parameter_id (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN VARCHAR2;
+
+   FUNCTION get_base_parameter_id (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN VARCHAR2;
+
+   FUNCTION get_parameter_type_id (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN VARCHAR2;
+
    FUNCTION get_ts_ni_hash (
       p_parameter_code        IN   NUMBER,
       p_parameter_type_code   IN   NUMBER,
