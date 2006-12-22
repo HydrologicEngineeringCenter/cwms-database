@@ -60,7 +60,7 @@ AS
 --
    PROCEDURE delete_ts (
       p_cwms_ts_id      IN   VARCHAR2,
-      p_delete_action   IN   VARCHAR2 DEFAULT cwms_util.delete_all,
+      p_delete_action   IN   VARCHAR2 DEFAULT cwms_util.delete_ts_id,
       p_office_id       IN   VARCHAR2 DEFAULT NULL
    );
 

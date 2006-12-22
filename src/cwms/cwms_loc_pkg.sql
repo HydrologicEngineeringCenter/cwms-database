@@ -202,8 +202,9 @@ AS
 ---
 --
    PROCEDURE delete_location (
-      p_location_id    IN   VARCHAR2,
-      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+      p_location_id     IN   VARCHAR2,
+      p_delete_action   IN   VARCHAR2 DEFAULT cwms_util.delete_loc,
+      p_db_office_id    IN   VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE delete_location_cascade (

@@ -1,4 +1,4 @@
-/* Formatted on 2006/12/19 15:45 (Formatter Plus v4.8.8) */
+/* Formatted on 2006/12/21 15:41 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --********************************************************************** -
@@ -55,9 +55,10 @@ AS
          AND NVL (UPPER (apl.sub_location_id), '.') =
                        NVL (UPPER (cwms_util.get_sub_id (p_location_id)), '.')
          AND UPPER (cu.office_id) = UPPER (p_office_id);
+
       --
       RETURN l_location_code;
-      --
+   --
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
@@ -611,7 +612,6 @@ AS
 
       -- Retrieve the location's Location Code.
       --
-      DBMS_OUTPUT.put_line ('hello update_location');
       l_location_code := get_location_code (p_db_office_id, p_location_id);
       DBMS_OUTPUT.put_line ('l_location_code: ' || l_location_code);
 
@@ -1274,9 +1274,12 @@ AS
 
       IF l_location_code_new IS NOT NULL
       THEN
-         -- If l_location_code_new is found then the new location --
-         -- already exists - so throw an exception...
-         cwms_err.RAISE ('RENAME_LOC_BASE_2', p_location_id_new);
+         IF UPPER (l_location_id_old) != UPPER (l_location_id_new)
+         THEN
+            -- If l_location_code_new is found then the new location --
+            -- already exists - so throw an exception...
+            cwms_err.RAISE ('RENAME_LOC_BASE_2', p_location_id_new);
+         END IF;
       END IF;
 
       ---------.
@@ -1523,11 +1526,30 @@ AS
 --
 -- NOTE: Deleting a Base Location will delete ALL associated Sub -
 -- Locations -
---
+    -- valid p_delete_actions:                                              --
+    --  delete_loc:      This action will delete the location_id only if there
+    --                   are no cwms_ts_id's associated with this location_id.
+    --                   If there are cwms_ts_id's assciated with the location_id,
+    --                   then an exception is thrown.
+    --  delete_data:     This action will delete all of the data associated
+    --                   with all of the cwms_ts_id's associated with this
+    --                   location_id. The location_id and the cwms_ts_id's
+    --                   themselves are not deleted.
+    --  delete_ts_ids:    This action will delete any cwms_ts_id that has
+    --                   no associated data. Only ts_id's that have data
+    --                   along with the location_id itself will remain.
+    --  delete_ts_ids_cascade:This action will delete all data and all cwms_ts_id's
+    --                   associazted with this location_id. It does not delete
+    --                   the location_id.
+    --  delete_loc_cascade:  This will delete all data, all cwms_ts_id's, as well
+    --                   as the location_id itself.
+
+   --
 --*---------------------------------------------------------------------*-
    PROCEDURE delete_location (
-      p_location_id    IN   VARCHAR2,
-      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+      p_location_id     IN   VARCHAR2,
+      p_delete_action   IN   VARCHAR2 DEFAULT cwms_util.delete_loc,
+      p_db_office_id    IN   VARCHAR2 DEFAULT NULL
    )
    IS
       l_count                NUMBER;
@@ -1540,11 +1562,19 @@ AS
       l_base_location_code   NUMBER;
       l_location_code        NUMBER;
       l_db_office_code       NUMBER;
+      l_db_office_id         VARCHAR2 (16);
+      l_delete_action        VARCHAR2 (22)
+                := NVL (UPPER (TRIM (p_delete_action)), cwms_util.delete_loc);
+      l_ts_ids_cur           sys_refcursor;
+      l_this_is_a_base_loc   BOOLEAN                                 := FALSE;
+      --
+      l_count_ts             NUMBER                                      := 0;
+      l_cwms_ts_id           VARCHAR2 (183);
+      l_ts_code              NUMBER;
+   --
    BEGIN
-      SELECT office_code
-        INTO l_db_office_code
-        FROM cwms_office
-       WHERE office_id = UPPER (p_db_office_id);
+      l_db_office_code := cwms_util.get_office_code (p_db_office_id);
+      l_db_office_id := UPPER (p_db_office_id);
 
        -- You can only delete a location if that location does not have
       -- any time series identifiers associated with it.
@@ -1560,34 +1590,94 @@ AS
             cwms_err.RAISE ('LOCATION_ID_NOT_FOUND', p_location_id);
       END;
 
-      IF l_sub_location_id IS NOT NULL
+      l_location_code := get_location_code (p_db_office_id, p_location_id);
+
+      --
+      IF l_sub_location_id IS NULL
       THEN
-         BEGIN
-            SELECT location_code
-              INTO l_location_code
-              FROM at_physical_location
-             WHERE base_location_code = l_base_location_code
-               AND UPPER (sub_location_id) = UPPER (l_sub_location_id);
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               cwms_err.RAISE ('LOCATION_ID_NOT_FOUND', p_location_id);
-         END;
+         l_this_is_a_base_loc := TRUE;
       END IF;
 
-      IF l_sub_location_id IS NULL
-      THEN                                         -- Deleting Base Location -
-         SELECT COUNT (*)
-           INTO l_count
-           FROM at_cwms_ts_spec
-          WHERE location_code IN (
-                               SELECT location_code
-                                 FROM at_physical_location
-                                WHERE base_location_code =
-                                                          l_base_location_code);
+      --
+      -- Process Depricated delete_actions -
+      IF l_delete_action = cwms_util.delete_key
+      THEN
+         l_delete_action := cwms_util.delete_loc;
+      END IF;
 
-         IF l_count = 0
+      --
+      -- Retrieve cwms_ts_ids for this location...
+      IF l_this_is_a_base_loc
+      THEN
+         OPEN l_ts_ids_cur FOR
+            SELECT cwms_ts_id
+              FROM mv_cwms_ts_id
+             WHERE location_code IN (
+                              SELECT location_code
+                                FROM at_physical_location
+                               WHERE base_location_code =
+                                                         l_base_location_code);
+      ELSE
+         OPEN l_ts_ids_cur FOR
+            SELECT cwms_ts_id
+              FROM mv_cwms_ts_id
+             WHERE location_code = l_location_code;
+      END IF;
+
+      LOOP
+         FETCH l_ts_ids_cur
+          INTO l_cwms_ts_id;
+
+         EXIT WHEN l_ts_ids_cur%NOTFOUND;
+
+         IF l_delete_action = cwms_util.delete_loc
          THEN
+            cwms_err.RAISE ('CAN_NOT_DELETE_LOC_1', p_location_id);
+         END IF;
+
+         CASE
+            WHEN l_delete_action = cwms_util.delete_loc_cascade
+             OR l_delete_action = cwms_util.delete_ts_ids_cascade
+            THEN
+               cwms_ts.delete_ts (l_cwms_ts_id,
+                                  cwms_util.delete_ts_id_cascade,
+                                  l_db_office_id
+                                 );
+            WHEN l_delete_action = cwms_util.delete_ts_ids
+            THEN
+               BEGIN
+                  cwms_ts.delete_ts (l_cwms_ts_id,
+                                     cwms_util.delete_ts_id,
+                                     l_db_office_id
+                                    );
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     NULL;             -- exception thrown if ts_id has data.
+               END;
+            WHEN l_delete_action = cwms_util.delete_data
+            THEN
+               cwms_ts.delete_ts (l_cwms_ts_id,
+                                  cwms_util.delete_data,
+                                  l_db_office_id
+                                 );
+            ELSE
+               cwms_err.RAISE ('INVALID_DELETE_ACTION', p_delete_action);
+         END CASE;
+
+         --
+         l_count_ts := l_count_ts + 1;
+      END LOOP;
+
+      --
+      CLOSE l_ts_ids_cur;
+
+      --
+      IF    l_delete_action = cwms_util.delete_loc_cascade
+         OR l_delete_action = cwms_util.delete_loc
+      THEN
+         IF l_this_is_a_base_loc
+         THEN                                     -- Deleting Base Location -
             DELETE FROM at_alias_name aan
                   WHERE aan.location_code IN (
                            SELECT location_code
@@ -1602,17 +1692,7 @@ AS
                   WHERE abl.base_location_code = l_base_location_code;
 
             COMMIT;
-         ELSE
-            cwms_err.RAISE ('CAN_NOT_DELETE_LOC_1', p_location_id);
-         END IF;
-      ELSE                                 -- Deleting a single Sub Location -
-         SELECT COUNT (*)
-           INTO l_count
-           FROM at_cwms_ts_spec
-          WHERE location_code = l_location_code;
-
-         IF l_count = 0
-         THEN
+         ELSE                              -- Deleting a single Sub Location -
             DELETE FROM at_alias_name aan
                   WHERE aan.location_code = l_location_code;
 
@@ -1620,8 +1700,6 @@ AS
                   WHERE apl.location_code = l_location_code;
 
             COMMIT;
-         ELSE
-            cwms_err.RAISE ('CAN_NOT_DELETE_LOC_1', p_location_id);
          END IF;
       END IF;
    --

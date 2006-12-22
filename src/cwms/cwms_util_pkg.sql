@@ -1,4 +1,4 @@
-/* Formatted on 2006/12/11 09:10 (Formatter Plus v4.8.8) */
+/* Formatted on 2006/12/21 15:40 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util AUTHID CURRENT_USER
 AS
 /******************************************************************************
@@ -22,9 +22,23 @@ AS
                                                 := 'REPLACE WITH NON MISSING';
    delete_insert                 CONSTANT VARCHAR2 (16) := 'DELETE INSERT';
    --
+   ---
+   ---- DEPRICATED
    delete_key                    CONSTANT VARCHAR2 (16) := 'DELETE KEY';
-   delete_data                   CONSTANT VARCHAR2 (16) := 'DELETE DATA';
    delete_all                    CONSTANT VARCHAR2 (16) := 'DELETE ALL';
+   ----DEPRICATED.
+   ---
+   --
+   delete_ts_id                  CONSTANT VARCHAR2 (22) := 'DELETE TS ID';
+   delete_ts_ids                 CONSTANT VARCHAR2 (22) := 'DELETE TS IDS';
+   delete_loc                    CONSTANT VARCHAR2 (22) := 'DELETE LOC';
+   delete_data                   CONSTANT VARCHAR2 (22) := 'DELETE DATA';
+   delete_ts_id_cascade          CONSTANT VARCHAR2 (22)
+                                                    := 'DELETE TS ID CASCADE';
+   delete_ts_ids_cascade         CONSTANT VARCHAR2 (22)
+                                                   := 'DELETE TS IDS CASCADE';
+   delete_loc_cascade            CONSTANT VARCHAR2 (22)
+                                                      := 'DELETE LOC CASCADE';
    --
    -- non_versioned is the default version_date for non-versioned timeseries
    non_versioned                 CONSTANT DATE          := DATE '1111-11-11';
@@ -41,43 +55,50 @@ AS
    --
    irregular_interval_code       CONSTANT NUMBER        := 29;
    --
-   field_separator               CONSTANT VARCHAR2(1)   := CHR(29);
-   record_separator              CONSTANT VARCHAR2(1)   := CHR(30);
+   field_separator               CONSTANT VARCHAR2 (1)  := CHR (29);
+   record_separator              CONSTANT VARCHAR2 (1)  := CHR (30);
 
-   type str_tab_t     is table of varchar2(32767); -- table row with string fields
-   type str_tab_tab_t is table of str_tab_t;       -- table of rows with string fields
+   TYPE str_tab_t IS TABLE OF VARCHAR2 (32767);
 
---------------------------------------------------------------------------------
+   -- table row with string fields
+   TYPE str_tab_tab_t IS TABLE OF str_tab_t;
+
+   -- table of rows with string fields
+
+   --------------------------------------------------------------------------------
 -- Splits string into a table of strings using the specified delimiter.
 -- If no delmiter is specified, the string is split around whitespace.
--- 
+--
 -- Sequential delimiters in the source string result in null fields in the table,
 -- except that if no delimiter is supplied, sequential whitespace characters are
 -- treated as a single delimiter.
 --
    FUNCTION split_text (
-      p_text      in varchar2,
-      p_separator in varchar2 default null)
-      return str_tab_t;
-      
+      p_text        IN   VARCHAR2,
+      p_separator   IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN str_tab_t;
+
 --------------------------------------------------------------------------------
 -- Joins a table of strings into a single string using the specified delimiter.
 -- If no delimiter is supplied, the table fields are simply concatenated together.
 --
 -- Null fields in the table result in sequential delimiters in the returned string.
 --
-   FUNCTION join_text(
-      p_text_tab  in str_tab_t,                      
-      p_separator in varchar2 default null) 
-      return varchar2;
+   FUNCTION join_text (
+      p_text_tab    IN   str_tab_t,
+      p_separator   IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN VARCHAR2;
+
 --------------------------------------------------------------------------------
 -- Parses a CLOB into a table of tables of strings.
 --
 -- Records are delimited by the record_separator character defined above.
 -- Fields are delmited by the field_separator character defined above.
 --
-   FUNCTION parse_clob_recordset (p_clob IN  CLOB)
-      return str_tab_tab_t;
+   FUNCTION parse_clob_recordset (p_clob IN CLOB)
+      RETURN str_tab_tab_t;
 
 --------------------------------------------------------------------------------
 -- Parses a string into a table of tables of strings.
@@ -85,10 +106,9 @@ AS
 -- Records are delimited by the record_separator character defined above.
 -- Fields are delmited by the field_separator character defined above.
 --
-   FUNCTION parse_string_recordset (p_string IN  VARCHAR2)
-      return str_tab_tab_t;
+   FUNCTION parse_string_recordset (p_string IN VARCHAR2)
+      RETURN str_tab_tab_t;
 
-   
    TYPE ts_list IS TABLE OF VARCHAR2 (200)
       INDEX BY BINARY_INTEGER;
 
