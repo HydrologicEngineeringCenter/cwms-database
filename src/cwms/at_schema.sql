@@ -45,6 +45,7 @@ declare
       'at_physical_location',
       'at_cwms_ts_spec',
       'cwms_office',
+      'cwms_abstract_parameter',
       'cwms_parameter_type',
       'cwms_base_parameter',
       'at_parameter',
@@ -74,8 +75,8 @@ begin
    end loop;
    for i in mview_names.first .. mview_names.last loop
       begin 
-         execute immediate 'drop materialized ' || mview_names(i);
-         dbms_output.put_line('Dropped materialized view log on ' || mview_names(i));
+         execute immediate 'drop materialized view ' || mview_names(i);
+         dbms_output.put_line('Dropped materialized view ' || mview_names(i));
       exception 
          when others then null;
       end;
@@ -151,9 +152,10 @@ begin
    :new.user_id := upper(:new.user_id);
    :new.primary_office_id := upper(:new.primary_office_id);
 end at_sec_user_office_constraint;
-
+/
 show errors;
 commit;
+
 -------------------------
 -- AT_TS_TABLE_PROPERTIES table
 -- 
@@ -195,8 +197,6 @@ commit;
 ---------------------------------
 -- AT_BASE_LOCATION table.
 -- 
-
-
 CREATE TABLE AT_BASE_LOCATION
 (
   BASE_LOCATION_CODE  NUMBER,
@@ -220,17 +220,11 @@ LOGGING
 NOCOMPRESS 
 NOCACHE
 NOPARALLEL
-MONITORING
-/
+MONITORING;
 
-COMMENT ON COLUMN AT_BASE_LOCATION.DB_OFFICE_CODE IS 'Refererences the office "owning" this location.  In the CWMS v2 schema, the office hosting the database "owns" all locations.'
-/
-
-COMMENT ON COLUMN AT_BASE_LOCATION.BASE_LOCATION_ID IS 'Text name of this Base Location'
-/
-
-COMMENT ON COLUMN AT_BASE_LOCATION.ACTIVE_FLAG IS 'T or F'
-/
+COMMENT ON COLUMN AT_BASE_LOCATION.DB_OFFICE_CODE IS 'Refererences the office "owning" this location.  In the CWMS v2 schema, the office hosting the database "owns" all locations.';
+COMMENT ON COLUMN AT_BASE_LOCATION.BASE_LOCATION_ID IS 'Text name of this Base Location';
+COMMENT ON COLUMN AT_BASE_LOCATION.ACTIVE_FLAG IS 'T or F';
 
 
 CREATE UNIQUE INDEX AT_BASE_LOCATION_PK ON AT_BASE_LOCATION
@@ -247,8 +241,7 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-NOPARALLEL
-/
+NOPARALLEL;
 
 
 CREATE UNIQUE INDEX AT_BASE_LOCATION_IDX1 ON AT_BASE_LOCATION
@@ -270,11 +263,9 @@ NOPARALLEL
 
 
 ALTER TABLE AT_BASE_LOCATION ADD (
-  CONSTRAINT AT_BASE_LOCATION_CK_1
- CHECK (TRIM("BASE_LOCATION_ID")="BASE_LOCATION_ID"))
+   CONSTRAINT AT_BASE_LOCATION_CK_1 
+   CHECK (TRIM("BASE_LOCATION_ID")="BASE_LOCATION_ID"))
 /
-
-
 
 --ALTER TABLE AT_BASE_LOCATION ADD (
 --  CONSTRAINT AT_BASE_LOCATION_CK_2
@@ -4328,37 +4319,6 @@ CREATE INDEX AT_DSS_TS_SPEC_PATHNAME ON AT_DSS_TS_SPEC
           BUFFER_POOL DEFAULT
        );
 -----------------------------
--- AT_DSS_TS_SPEC trigger
---
-create or replace trigger at_dss_ts_spec_units
-before insert or update of unit_id
-on at_dss_ts_spec
-referencing new as new old as old
-for each row
-declare
-   l_count number;
-begin
-   select count(unit_id)
-     into l_count
-     from (
-            select unit_id from cwms_unit
-            union
-            select alias_id unit_id from at_unit_alias 
-             where db_office_code in (
-                                      cwms_util.get_office_code('ALL'), 
-                                      cwms_util.get_db_office_code
-                                     )
-          )
-    where unit_id = :new.unit_id;
-   
-   if l_count = 0 then
-      cwms_err.raise('INVALID_ITEM', :new.unit_id, 'unit');
-   end if;
-end at_dss_ts_spec_units;
-
-show errors;
-commit;
------------------------------
 -- AT_UNIT_ALIAS trigger (depends on AT_DSS_TS_SPEC)
 --
 create or replace trigger at_unit_alias_constraint
@@ -4386,7 +4346,7 @@ begin
       end if;
    end if;
 end at_unit_alias_constraint;
-
+/
 show errors;
 commit;
 
