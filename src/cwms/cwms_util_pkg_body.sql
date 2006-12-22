@@ -318,6 +318,48 @@ AS
       RETURN p_base_id || SUBSTR ('-', 1, LENGTH (p_sub_id)) || p_sub_id;
    END;
 
+--------------------------------------------------------------------------------
+-- function get_time_zone_code
+--
+   function get_time_zone_code(
+      p_time_zone_name in varchar2)
+      return number
+   is
+      l_time_zone_code number(10);
+   begin
+      select time_zone_code
+        into l_time_zone_code
+        from cwms_time_zone
+       where upper(time_zone_name) = upper(p_time_zone_name);
+
+      return l_time_zone_code;
+   exception
+      when no_data_found then
+         cwms_err.raise('INVALID_TIME_ZONE', p_time_zone_name);
+         
+   end get_time_zone_code;
+
+--------------------------------------------------------------------------------
+-- function get_tz_usage_code
+--
+   function get_tz_usage_code(
+      p_tz_usage_id in varchar2)
+      return number
+   is
+      l_tz_usage_code number(10);
+   begin
+      select tz_usage_code
+        into l_tz_usage_code
+        from cwms_tz_usage
+       where upper(tz_usage_id) = upper(nvl(p_tz_usage_id, 'Standard'));
+
+      return l_tz_usage_code;
+   exception
+      when no_data_found then
+         cwms_err.raise('INVALID_ITEM',p_tz_usage_id,'CWMS time zone usage');
+         
+   end get_tz_usage_code;
+
 ----------------------------------------------------------------------------
    PROCEDURE DUMP (p_str IN VARCHAR2, p_len IN PLS_INTEGER DEFAULT 80)
    IS

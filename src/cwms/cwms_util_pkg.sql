@@ -172,6 +172,18 @@ AS
    FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN NUMBER;
       
+--------------------------------------------------------------------------------
+-- function get_time_zone_code
+--
+   function get_time_zone_code(p_time_zone_name in varchar2)
+      return number;
+
+--------------------------------------------------------------------------------
+-- function get_tz_usage_code
+--
+   function get_tz_usage_code(p_tz_usage_id in varchar2)
+      return number;
+
 --------------------------------------------------------
 -- Return the db host office code for the specified office id,
 -- or the user's primary office if the office id is null
