@@ -12,13 +12,13 @@ is
 -- function create_dss_xchg_set(...)
 --
    function create_dss_xchg_set(
-      p_office_id         in   varchar2,
       p_dss_xchg_set_id   in   varchar2,
       p_description       in   varchar2,
       p_dss_filemgr_url   in   varchar2,
       p_dss_file_name     in   varchar2,
       p_realtime          in   varchar2 default null,
-      p_fail_if_exists    in   number default cwms_util.false_num)
+      p_fail_if_exists    in   number default cwms_util.false_num,
+      p_office_id         in   varchar2 default null)
       return number;
 
 --------------------------------------------------------------------------------
@@ -26,42 +26,41 @@ is
 --
    procedure create_dss_xchg_set(
       p_dss_xchg_set_code   out      number,
-      p_office_id           in       varchar2,
       p_dss_xchg_set_id     in       varchar2,
       p_description         in       varchar2,
       p_dss_filemgr_url     in       varchar2,
       p_dss_file_name       in       varchar2,
       p_realtime            in       varchar2 default null,
-      p_fail_if_exists      in       number default cwms_util.false_num);
+      p_fail_if_exists      in       number default cwms_util.false_num,
+      p_office_id           in       varchar2 default null);
 
 -------------------------------------------------------------------------------
 -- procedure delete_dss_xchg_set(...)
 --
    procedure delete_dss_xchg_set(
-      p_office_id         in   varchar2,
-      p_dss_xchg_set_id   in   varchar2);
+      p_dss_xchg_set_id   in   varchar2,
+      p_office_id         in   varchar2 default null);
 
 -------------------------------------------------------------------------------
 -- procedure rename_dss_xchg_set(...)
 --
    procedure rename_dss_xchg_set(
-      p_office_id             in   varchar2,
       p_dss_xchg_set_id       in   varchar2,
-      p_new_dss_xchg_set_id   in   varchar2);
+      p_new_dss_xchg_set_id   in   varchar2,
+      p_office_id             in   varchar2 default null);
 
 -------------------------------------------------------------------------------
 -- procedure duplicate_dss_xchg_set(...)
 --
    procedure duplicate_dss_xchg_set(
-      p_office_id             in   varchar2,
       p_dss_xchg_set_id       in   varchar2,
-      p_new_dss_xchg_set_id   in   varchar2);
+      p_new_dss_xchg_set_id   in   varchar2,
+      p_office_id             in   varchar2 default null);
 
 --------------------------------------------------------------------------------
 -- function update_dss_xchg_set(...)
 --
    function update_dss_xchg_set(
-      p_office_id            in   varchar2,
       p_dss_xchg_set_id      in   varchar2,
       p_description          in   varchar2,
       p_dss_filemgr_url      in   varchar2,
@@ -72,7 +71,8 @@ is
       p_update_filemgr_url   in   number default cwms_util.true_num,
       p_update_file_name     in   number default cwms_util.true_num,
       p_update_realtime      in   number default cwms_util.true_num,
-      p_update_last_update   in   number default cwms_util.true_num)
+      p_update_last_update   in   number default cwms_util.true_num,
+      p_office_id            in   varchar2 default null)
       return number;
 
 --------------------------------------------------------------------------------
@@ -80,7 +80,6 @@ is
 --
    procedure update_dss_xchg_set(
       p_dss_xchg_set_code    out  number,
-      p_office_id            in   varchar2,
       p_dss_xchg_set_id      in   varchar2,
       p_description          in   varchar2,
       p_dss_filemgr_url      in   varchar2,
@@ -91,7 +90,8 @@ is
       p_update_filemgr_url   in   number default cwms_util.true_num,
       p_update_file_name     in   number default cwms_util.true_num,
       p_update_realtime      in   number default cwms_util.true_num,
-      p_update_last_update   in   number default cwms_util.true_num);
+      p_update_last_update   in   number default cwms_util.true_num,
+      p_office_id            in   varchar2 default null);
 
 --------------------------------------------------------------------------------
 -- procedure update_dss_xchg_set_time(...)
@@ -105,13 +105,13 @@ is
 --
    procedure map_ts_in_xchg_set(
       p_dss_xchg_set_code    in   number,
-      p_office_id            in   varchar2,
       p_cwms_ts_id           in   varchar2,
       p_dss_pathname         in   varchar2,
       p_dss_parameter_type   in   varchar2 default null,
       p_units                in   varchar2 default null,
       p_time_zone            in   varchar2 default null,
-      p_tz_usage             in   varchar2 default null);
+      p_tz_usage             in   varchar2 default null,
+      p_office_id            in   varchar2 default null);
 
 --------------------------------------------------------------------------------
 -- procedure unmap_all_ts_in_xchg_set(...)
@@ -122,7 +122,8 @@ is
 --------------------------------------------------------------------------------
 -- procedure del_unused_dss_xchg_info(...)
 --
-   procedure del_unused_dss_xchg_info;
+   procedure del_unused_dss_xchg_info(
+      p_office_id in varchar2 default null);
 end cwms_dss;
 /
 
