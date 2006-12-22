@@ -1765,7 +1765,7 @@ IS
                   || '/'
                   || NVL (f_pathname_part, '')
                   || '/',
-                  dss_parameter_type_id, unit.unit_id AS dss_unit_id,
+                  dss_parameter_type_id, dspec.unit_id,
                   time_zone_name AS dss_timezone_name,
                   tz_usage_id AS dss_tz_usage_id
              FROM at_dss_xchg_set xset,
@@ -1774,7 +1774,6 @@ IS
                   at_dss_ts_spec dspec,
                   mv_cwms_ts_id tspec,
                   cwms_dss_parameter_type ptype,
-                  cwms_unit unit,
                   cwms_time_zone tzone,
                   cwms_tz_usage tzuse
             WHERE xset.dss_xchg_set_code = l_dss_xchg_set_code
@@ -1785,7 +1784,6 @@ IS
               AND xspec.dss_ts_code = dspec.dss_ts_code
               AND ptype.dss_parameter_type_code =
                                                  dspec.dss_parameter_type_code
-              AND unit.unit_code = dspec.unit_code
               AND tzone.time_zone_code = dspec.time_zone_code
               AND tzuse.tz_usage_code = dspec.tz_usage_code
          ORDER BY cwms_ts_id;
