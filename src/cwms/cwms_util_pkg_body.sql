@@ -286,11 +286,11 @@ AS
        where mview_name = l_mview_name;     
        
       if l_count = 0 then
+         dbms_mview.refresh(l_mview_name, 'c');
          execute immediate 'alter materialized view '
             || l_mview_name
             || ' refresh on commit';
 
-         dbms_mview.refresh(l_mview_name, 'c');
          dbms_output.put_line('MVIEW '''
               || l_mview_name
               || ''' on-commit refresh resumed at '
@@ -353,11 +353,11 @@ AS
       begin
          loop
             exit when l_mview_name is null;
+            dbms_mview.refresh(l_mview_name, 'c');
             execute immediate 'alter materialized view '
                || l_mview_name
                || ' refresh on commit';
                
-            dbms_mview.refresh(l_mview_name, 'c');
             dbms_output.put_line('MVIEW '''
                  || l_mview_name
                  || ''' ABANDONDED on-commit refresh resumed at '
