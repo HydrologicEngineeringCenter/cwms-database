@@ -55,7 +55,10 @@ AS
    --
    field_separator               CONSTANT VARCHAR2 (1)  := CHR (29);
    record_separator              CONSTANT VARCHAR2 (1)  := CHR (30);
-
+   
+   mv_pause_timeout_interval     CONSTANT INTERVAL DAY TO SECOND := '0 0:30:0';
+   mv_pause_job_run_interval     CONSTANT NUMBER        := 60; -- minutes
+   
    TYPE str_tab_t IS TABLE OF VARCHAR2 (32767);
 
    -- table row with string fields
@@ -63,7 +66,7 @@ AS
 
    -- table of rows with string fields
 
-   --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- Splits string into a table of strings using the specified delimiter.
 -- If no delmiter is specified, the string is split around whitespace.
 --
@@ -173,15 +176,37 @@ AS
 --------------------------------------------------------------------------------
 -- function get_time_zone_code
 --
-   function get_time_zone_code(p_time_zone_name in varchar2)
-      return number;
+   FUNCTION get_time_zone_code(p_time_zone_name IN VARCHAR2)
+      RETURN NUMBER;
 
 --------------------------------------------------------------------------------
 -- function get_tz_usage_code
 --
-   function get_tz_usage_code(p_tz_usage_id in varchar2)
-      return number;
+   FUNCTION get_tz_usage_code(p_tz_usage_id IN VARCHAR2)
+      RETURN NUMBER;
 
+--------------------------------------------------------------------------------
+-- function pause_mv_refresh
+--
+   FUNCTION pause_mv_refresh(
+      p_mview_name IN VARCHAR2,
+      p_reason     IN VARCHAR2 DEFAULT NULL)
+      RETURN UROWID;
+
+--------------------------------------------------------------------------------
+-- procedure resume_mv_refresh
+--
+   PROCEDURE resume_mv_refresh(p_paused_handle IN UROWID);
+   
+--------------------------------------------------------------------------------
+-- procedure timeout_mv_refresh_paused
+--
+   PROCEDURE timeout_mv_refresh_paused;
+
+--------------------------------------------------------------------------------
+-- procedure start_timeout_mv_refresh_job
+--
+   PROCEDURE start_timeout_mv_refresh_job;
 
 --------------------------------------------------------
 -- Return the db host office code for the specified office id,

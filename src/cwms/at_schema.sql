@@ -38,6 +38,7 @@ declare
       'at_dss_ts_xchg_map',
       'at_ts_msg_archive_1',
       'at_ts_msg_archive_2',
+      'at_mview_refresh_paused',
       'at_report_templates',
       'at_clob');
    mview_log_names id_array_t := id_array_t(
@@ -5137,6 +5138,37 @@ begin
    dbms_aqadm.start_queue(queue_name => 'status');
 end;
 /
+
+show errors;
+commit;
+
+-----------------------------
+-- AT_MVIEW_REFRESH_PAUSED table
+--
+CREATE TABLE AT_MVIEW_REFRESH_PAUSED
+(
+  PAUSED_AT   TIMESTAMP(6)                      NOT NULL,
+  MVIEW_NAME  VARCHAR2(30 CHAR)                 NOT NULL,
+  USER_NAME   VARCHAR2(30 CHAR)                 NOT NULL,
+  REMARKS     VARCHAR2(80 CHAR)
+)
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+NOMONITORING;
+-----------------------------
+-- AT_MVIEW_REFRESH_PAUSED comments
+--
+COMMENT ON TABLE AT_MVIEW_REFRESH_PAUSED IS 'M-views temporarily switched from on commit refresh to on demand';
+COMMENT ON COLUMN AT_MVIEW_REFRESH_PAUSED.PAUSED_AT IS 'Timestamp of pause action';
+COMMENT ON COLUMN AT_MVIEW_REFRESH_PAUSED.MVIEW_NAME IS 'Name of paused m-view';
+COMMENT ON COLUMN AT_MVIEW_REFRESH_PAUSED.USER_NAME IS 'Name of user causing action';
+COMMENT ON COLUMN AT_MVIEW_REFRESH_PAUSED.REMARKS IS 'Comment on action';
+-----------------------------
+-- AT_MVIEW_REFRESH_PAUSED constraints
+--
+ALTER TABLE AT_MVIEW_REFRESH_PAUSED ADD CONSTRAINT AT_MVIEW_REFRESH_PAUSED_PK PRIMARY KEY(PAUSED_AT, MVIEW_NAME);
 
 show errors;
 commit;

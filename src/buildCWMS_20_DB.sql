@@ -7,6 +7,7 @@ whenever sqlerror exit sql.sqlcode
 prompt
 accept echo_state  char prompt 'Enter ON or OFF for echo       : '
 accept inst        char prompt 'Enter the database instance    : '
+accept eroc        char prompt 'Enter the EROC for this office : '
 accept sys_passwd  char prompt 'Enter the password for SYS     : '
 accept cwms_passwd char prompt 'Enter the password for CWMS_20 : '
 spool buildCWMS_20_DB.log
@@ -16,14 +17,17 @@ spool buildCWMS_20_DB.log
 connect sys/&sys_passwd@&inst as sysdba
 select sysdate from dual;
 set serveroutput on
-begin dbms_output.enable(20000); end;
+begin dbms_output.enable; end;
 /
 set echo &echo_state
 --
--- create the cwms_dev role and the cwms_20 user
+-- create user roles and users
 --
 @@cwms/User-Roles/cwms_dev_role
+@@cwms/User-Roles/cwms_user_role
 @@cwms/User-Roles/cwms_20_user
+@@cwms/User-Roles/cwmspd_user
+
 --
 -- log on as the CWMS_20 user
 --
@@ -79,6 +83,16 @@ prompt Remaining invalid objects...
      and status = 'INVALID'
 order by object_name, object_type asc;
 
+--
+-- re-log on as the CWMS_20 user and start jobs
+--
+connect cwms_20/&cwms_passwd@&inst
+set serveroutput on
+prompt Starting jobs...
+begin
+   cwms_util.start_timeout_mv_refresh_job;
+end;
+/
 --
 -- all done
 --

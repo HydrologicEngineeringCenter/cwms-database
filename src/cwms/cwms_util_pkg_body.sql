@@ -202,6 +202,260 @@ AS
       END IF;
    END;
 
+   
+--------------------------------------------------------------------------------
+-- function pause_mv_refresh
+--
+   FUNCTION pause_mv_refresh(
+      p_mview_name IN VARCHAR2,
+      p_reason     IN VARCHAR2 DEFAULT NULL)
+      RETURN UROWID
+   IS                               
+      l_mview_name varchar2(30) := upper(p_mview_name);
+      l_user_id    varchar2(30);
+      l_rowid      urowid := null;
+      l_tstamp     timestamp;
+   BEGIN
+      l_user_id := sys_context('userenv', 'session_user');
+      l_tstamp  := systimestamp;
+
+      savepoint pause_mv_refresh_start;
+       
+      lock table at_mview_refresh_paused in exclusive mode;
+
+      insert
+        into at_mview_refresh_paused
+      values (l_tstamp, l_mview_name, l_user_id, p_reason)
+   returning rowid,
+             paused_at
+        into l_rowid,
+             l_tstamp;
+      
+      execute immediate 'alter materialized view '
+         || p_mview_name
+         || ' refresh on demand';
+      
+      commit;
+      
+      dbms_output.put_line('MVIEW '''
+           || l_mview_name
+           || ''' on-commit refresh paused at '
+           || l_tstamp
+           || ' by '
+           || l_user_id
+           || ', reason: '
+           || p_reason);  
+
+      
+      return l_rowid;
+      
+   exception
+      when others then
+         rollback to pause_mv_refresh_start;
+         raise;
+         
+   END pause_mv_refresh;
+
+--------------------------------------------------------------------------------
+-- procedure resume_mv_refresh
+--
+   PROCEDURE resume_mv_refresh(p_paused_handle IN UROWID)
+   IS
+      l_mview_name varchar2(30);
+      l_count      binary_integer;
+      l_user_id    varchar2(30);
+   BEGIN
+      l_user_id := sys_context('userenv', 'session_user');
+      savepoint resume_mv_refresh_start;
+       
+      lock table at_mview_refresh_paused in exclusive mode;
+      
+      select mview_name 
+        into l_mview_name 
+        from at_mview_refresh_paused
+       where rowid = p_paused_handle;
+       
+      
+      delete
+        from at_mview_refresh_paused
+       where rowid = p_paused_handle;
+
+      select count(*)
+        into l_count
+        from at_mview_refresh_paused
+       where mview_name = l_mview_name;     
+       
+      if l_count = 0 then
+         execute immediate 'alter materialized view '
+            || l_mview_name
+            || ' refresh on commit';
+
+         dbms_mview.refresh(l_mview_name, 'c');
+         dbms_output.put_line('MVIEW '''
+              || l_mview_name
+              || ''' on-commit refresh resumed at '
+              || systimestamp
+              || ' by '
+              || l_user_id);  
+      else
+         dbms_output.put_line('MVIEW '''
+              || l_mview_name
+              || ''' on-commit refresh not resumed at '
+              || systimestamp
+              || ' by '
+              || l_user_id
+              || ', paused by '
+              || l_count
+              || ' other process(es)');  
+      end if;
+      
+      commit;
+
+   EXCEPTION
+      when no_data_found then 
+         commit;
+
+      when others then
+         rollback to resume_mv_refresh_start;
+         raise; 
+      
+   END resume_mv_refresh;
+   
+--------------------------------------------------------------------------------
+-- procedure timeout_mv_refresh_paused
+--
+   PROCEDURE timeout_mv_refresh_paused
+   IS
+      TYPE ts_by_mv_t 
+         IS TABLE OF at_mview_refresh_paused.paused_at%TYPE 
+         INDEX BY at_mview_refresh_paused.mview_name%TYPE;
+      l_abandonded_pauses ts_by_mv_t;
+      l_mview_name at_mview_refresh_paused.mview_name%TYPE;
+      l_now timestamp := systimestamp;
+   BEGIN
+      savepoint timeout_mv_rfrsh_paused_start;
+
+      lock table at_mview_refresh_paused in exclusive mode;
+      
+      for rec in (select * from at_mview_refresh_paused) loop
+         if l_now - rec.paused_at > mv_pause_timeout_interval then
+            if l_abandonded_pauses.exists(rec.mview_name) then
+               if rec.paused_at > l_abandonded_pauses(rec.mview_name) then
+                  l_abandonded_pauses(rec.mview_name) := rec.paused_at;
+               end if;
+            else
+               l_abandonded_pauses(rec.mview_name) := rec.paused_at;
+            end if;
+         end if;
+      end loop;
+            
+      l_mview_name := l_abandonded_pauses.first;
+      begin
+         loop
+            exit when l_mview_name is null;
+            execute immediate 'alter materialized view '
+               || l_mview_name
+               || ' refresh on commit';
+               
+            dbms_mview.refresh(l_mview_name, 'c');
+            dbms_output.put_line('MVIEW '''
+                 || l_mview_name
+                 || ''' ABANDONDED on-commit refresh resumed at '
+                 || systimestamp);  
+            delete
+              from at_mview_refresh_paused
+             where mview_name = l_mview_name
+               and paused_at <= l_abandonded_pauses(l_mview_name);
+            
+            l_mview_name := l_abandonded_pauses.next(l_mview_name);
+         end loop;
+      end;
+
+      commit;
+
+   EXCEPTION
+      WHEN no_data_found THEN
+         commit;
+
+      WHEN OTHERS THEN
+         rollback to timeout_mv_rfrsh_paused_start;
+         raise;
+      
+   END timeout_mv_refresh_paused;
+   
+
+--------------------------------------------------------------------------------
+-- procedure start_timeout_mv_refresh_job
+--
+   PROCEDURE start_timeout_mv_refresh_job
+   IS
+      l_count   binary_integer;
+      l_user_id varchar2(30);
+      l_job_id  varchar2(30) := 'TIMEOUT_MV_REFRESH_JOB';
+      
+      function job_count return binary_integer
+      is
+      begin
+         select count(*) into l_count from sys.dba_scheduler_jobs where job_name = l_job_id and owner = l_user_id;
+         return l_count;
+      end;
+   BEGIN
+      --------------------------------------
+      -- make sure we're the correct user --
+      --------------------------------------
+      l_user_id := sys_context('userenv', 'session_user');
+      if l_user_id != 'CWMS_20' then
+         raise_application_error(-20999, 'Must be CWMS_20 user to start job ' || l_job_id, true);
+      end if;
+      -------------------------------------------
+      -- drop the job if it is already running --
+      -------------------------------------------
+      if job_count > 0 then
+         dbms_output.put('Dropping existing job ' || l_job_id || '...');
+         dbms_scheduler.drop_job(l_job_id);
+         --------------------------------
+         -- verify that it was dropped --
+         --------------------------------
+         if job_count = 0 then
+            dbms_output.put_line('done.');
+         else
+            dbms_output.put_line('failed.');
+         end if;
+      end if;
+      if job_count = 0 then
+         begin
+            ---------------------
+            -- restart the job --
+            ---------------------
+            dbms_scheduler.create_job(
+               job_name        => l_job_id,
+               job_type        => 'stored_procedure',
+               job_action      => 'cwms_util.timeout_mv_refresh_paused',
+               start_date      => null,
+               repeat_interval => 'freq=minutely; interval='||mv_pause_job_run_interval,
+               end_date        => null,
+               job_class       => 'default_job_class',
+               enabled         => true,
+               auto_drop       => false,
+               comments        => 'Times out abandoned pauses to on-commit refreshes on mviews.');
+
+            if job_count = 1 then
+               dbms_output.put_line(
+                  'Job '
+                  || l_job_id 
+                  || ' successfully scheduled to execute every ' 
+                  || mv_pause_job_run_interval 
+                  || ' minutes.'); 
+            else
+               cwms_err.raise('ITEM_NOT_CREATED', 'job', l_job_id);
+            end if;
+         exception
+            when others then
+               cwms_err.raise('ITEM_NOT_CREATED', 'job', l_job_id || ':' || sqlerrm);
+         end;
+      end if;
+   END start_timeout_mv_refresh_job;
+   
 --------------------------------------------------------
 -- Return the current session user's primary office id
 --
@@ -562,4 +816,6 @@ BEGIN
    NULL;
 END cwms_util;
 /
-show error;
+show errors;
+
+
