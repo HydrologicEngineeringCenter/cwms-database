@@ -16,6 +16,7 @@ begin
    execute immediate 'grant execute any type to cwms_user';
    execute immediate 'grant execute any indextype to cwms_user';
    execute immediate 'grant select any sequence to cwms_user';
+   execute immediate 'grant select any dictionary to cwms_user';
    execute immediate 'grant alter any materialized view to cwms_user';
    execute immediate 'grant create session to cwms_user';
    execute immediate 'grant aq_user_role to cwms_user';
