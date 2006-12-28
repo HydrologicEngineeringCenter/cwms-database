@@ -9,7 +9,7 @@ is
 -- database.  The default is to return the code of the existing object.
 --
 --------------------------------------------------------------------------------
--- function create_dss_xchg_set(...)
+-- function create_dss_xchg_set
 --
    function create_dss_xchg_set(
       p_dss_xchg_set_id   in   varchar2,
@@ -22,7 +22,7 @@ is
       return number;
 
 --------------------------------------------------------------------------------
--- procedure create_dss_xchg_set(...)
+-- procedure create_dss_xchg_set
 --
    procedure create_dss_xchg_set(
       p_dss_xchg_set_code   out      number,
@@ -35,14 +35,14 @@ is
       p_office_id           in       varchar2 default null);
 
 -------------------------------------------------------------------------------
--- procedure delete_dss_xchg_set(...)
+-- procedure delete_dss_xchg_set
 --
    procedure delete_dss_xchg_set(
       p_dss_xchg_set_id   in   varchar2,
       p_office_id         in   varchar2 default null);
 
 -------------------------------------------------------------------------------
--- procedure rename_dss_xchg_set(...)
+-- procedure rename_dss_xchg_set
 --
    procedure rename_dss_xchg_set(
       p_dss_xchg_set_id       in   varchar2,
@@ -50,7 +50,7 @@ is
       p_office_id             in   varchar2 default null);
 
 -------------------------------------------------------------------------------
--- procedure duplicate_dss_xchg_set(...)
+-- procedure duplicate_dss_xchg_set
 --
    procedure duplicate_dss_xchg_set(
       p_dss_xchg_set_id       in   varchar2,
@@ -58,7 +58,7 @@ is
       p_office_id             in   varchar2 default null);
 
 --------------------------------------------------------------------------------
--- function update_dss_xchg_set(...)
+-- function update_dss_xchg_set
 --
    function update_dss_xchg_set(
       p_dss_xchg_set_id      in   varchar2,
@@ -76,7 +76,7 @@ is
       return number;
 
 --------------------------------------------------------------------------------
--- procedure update_dss_xchg_set(...)
+-- procedure update_dss_xchg_set
 --
    procedure update_dss_xchg_set(
       p_dss_xchg_set_code    out  number,
@@ -94,14 +94,14 @@ is
       p_office_id            in   varchar2 default null);
 
 --------------------------------------------------------------------------------
--- procedure update_dss_xchg_set_time(...)
+-- procedure update_dss_xchg_set_time
 --
    procedure update_dss_xchg_set_time(
       p_dss_xchg_set_code    in  number,
       p_last_update          in  timestamp);
 
 --------------------------------------------------------------------------------
--- procedure map_ts_in_xchg_set(...)
+-- procedure map_ts_in_xchg_set
 --
    procedure map_ts_in_xchg_set(
       p_dss_xchg_set_code    in   number,
@@ -114,13 +114,23 @@ is
       p_office_id            in   varchar2 default null);
 
 --------------------------------------------------------------------------------
--- procedure unmap_all_ts_in_xchg_set(...)
+-- function get_dss_xchg_sets
+--
+   function get_dss_xchg_sets(
+      p_dss_filemgr_url in varchar2 default null,
+      p_dss_file_name   in varchar2 default null,
+      p_dss_xchg_set_id in varchar2 default null,
+      p_office_id       in varchar2 default null)
+      return clob;
+   
+--------------------------------------------------------------------------------
+-- procedure unmap_all_ts_in_xchg_set
 --
    procedure unmap_all_ts_in_xchg_set(
       p_dss_xchg_set_code   in   number);
 
 --------------------------------------------------------------------------------
--- procedure del_unused_dss_xchg_info(...)
+-- procedure del_unused_dss_xchg_info
 --
    procedure del_unused_dss_xchg_info(
       p_office_id in varchar2 default null);

@@ -832,6 +832,8 @@ as
                p_time_zone,
                p_tz_usage));
       end if;
+      
+      return l_table_row.dss_ts_code;
 
    exception
       when no_data_found then
@@ -917,7 +919,8 @@ as
       p_fail_if_exists       in   number default cwms_util.false_num,
       p_office_id            in   varchar2 default null)
       return number
-   is
+   is                                  
+      l_office_id                  varchar2(16);
       l_cwms_ts_code               number;
       l_dss_ts_code                number;
       l_precip_code                number;
@@ -932,22 +935,52 @@ as
       l_unit_id                    varchar2(16);
       l_time_zone_id               varchar2(28);
       l_tz_usage_id                varchar2(16);
+      ts_already_exists            exception;
+      pragma exception_init(ts_already_exists, -20003);
    begin
+      dbms_output.put_line(''||systimestamp||' Creating savepoint in create_dss_ts_xchg_spec.');
       savepoint create_dss_ts_xchg_spec_start;
-
-      cwms_ts.create_ts_code(
-         l_cwms_ts_code,
-         p_cwms_ts_id,
-         null,
-         null,
-         null,
-         'F',
-         'T',
-         p_office_id);
+      dbms_output.put_line(''||systimestamp||' Getting office id for '||nvl(p_office_id, 'NULL')||' in create_dss_ts_xchg_spec.');
+      if p_office_id is null then
+         l_office_id := cwms_util.user_office_id;
+      else
+         l_office_id := p_office_id;
+      end if;
+      begin
+         dbms_output.put_line(''||systimestamp||' Looking up ts code in create_dss_ts_xchg_spec.');
+         select ts_code
+           into l_cwms_ts_code
+           from mv_cwms_ts_id
+          where office_id = l_office_id
+            and cwms_ts_id = p_cwms_ts_id; 
+      exception
+         when no_data_found then
+            begin
+               dbms_output.put_line(''||systimestamp||' Creating ts code in create_dss_ts_xchg_spec.');
+               cwms_ts.create_ts_code(
+                  l_cwms_ts_code,
+                  p_cwms_ts_id,
+                  null,
+                  null,
+                  null,
+                  'F',
+                  'T',
+                  p_office_id);
+            exception
+               when ts_already_exists then
+                  dbms_mview.refresh('mv_cwms_ts_id', 'c');
+                  select ts_code
+                    into l_cwms_ts_code
+                    from mv_cwms_ts_id
+                   where office_id = l_office_id
+                     and cwms_ts_id = p_cwms_ts_id; 
+            end;
+      end;
 
       ------------------------
       -- DSS PARAMETER TYPE --
       ------------------------
+      dbms_output.put_line(''||systimestamp||' Getting DSS parameter type in create_dss_ts_xchg_spec.');
       if p_dss_parameter_type is null then
          l_dss_parameter_type_code := get_dss_parameter_type_code(l_cwms_ts_code);
       else
@@ -956,6 +989,7 @@ as
       ---------------
       -- DSS UNITS --
       ---------------
+      dbms_output.put_line(''||systimestamp||' Getting DSS units in create_dss_ts_xchg_spec.');
       if p_units is null then
          l_unit_id := cwms_ts.get_db_unit_id(p_cwms_ts_id);
       else
@@ -964,6 +998,7 @@ as
       ------------------
       -- DSS TIME_ZONE --
       ------------------
+      dbms_output.put_line(''||systimestamp||' Getting DSS time zone in create_dss_ts_xchg_spec.');
       if p_time_zone is null then
          l_time_zone_code := cwms_util.get_time_zone_code('UTC');
       else
@@ -972,6 +1007,7 @@ as
       ------------------------
       -- DSS TIME_ZONE USAGE --
       ------------------------
+      dbms_output.put_line(''||systimestamp||' Getting DSS tz usage in create_dss_ts_xchg_spec.');
       if p_tz_usage is null then
          l_tz_usage_code := cwms_util.get_tz_usage_code('Standard');
       else
@@ -980,7 +1016,10 @@ as
       ----------------------------------------------------------------------
       -- get the text identifiers back regardless of how we got the codes --
       ----------------------------------------------------------------------
-      l_dss_parameter_type_id := get_dss_parameter_type_id(l_dss_parameter_type_code);
+      select dss_parameter_type_id
+        into l_dss_parameter_type_id
+        from cwms_dss_parameter_type
+       where dss_parameter_type_code= l_dss_parameter_type_code;
 
       select time_zone_name
         into l_time_zone_id
@@ -995,6 +1034,7 @@ as
       -------------------------------------------------------------------------------
       -- get the code for the existing DSS ts spec or create a new on if necessary --
       -------------------------------------------------------------------------------
+      dbms_output.put_line(''||systimestamp||' Getting/creating DSS ts code in create_dss_ts_xchg_spec.');
       l_dss_ts_code := create_dss_ts_spec(
          p_dss_pathname,
          l_dss_parameter_type_id,
@@ -1008,6 +1048,7 @@ as
          ---------------------------------------------
          -- see if the exchange spec already exists --
          ---------------------------------------------
+         dbms_output.put_line(''||systimestamp||' Looking up xchg spec in create_dss_ts_xchg_spec.');
          select dss_ts_xchg_code
            into l_dss_ts_xchg_code
            from at_dss_ts_xchg_spec
@@ -1039,6 +1080,7 @@ as
             --------------------------------
             -- create a new exchange spec --
             --------------------------------
+            dbms_output.put_line(''||systimestamp||' Creating new xchg spec in create_dss_ts_xchg_spec.');
             begin
                insert into at_dss_ts_xchg_spec
                     values (cwms_seq.nextval, l_cwms_ts_code, l_dss_ts_code)
@@ -1064,6 +1106,7 @@ as
       end;
       commit;
       
+      dbms_output.put_line(''||systimestamp||' Done in create_dss_ts_xchg_spec.');
       return l_dss_ts_xchg_code;
       
    end create_dss_ts_xchg_spec;
@@ -1084,6 +1127,7 @@ as
       l_dss_ts_xchg_code number;
       l_dss_ts_xchg_map  at_dss_ts_xchg_map%rowtype;
    begin
+      dbms_output.put_line(''||systimestamp||' Getting/creating ts xchg spec.');
       l_dss_ts_xchg_code := create_dss_ts_xchg_spec(
             p_cwms_ts_id,
             p_dss_pathname,
@@ -1094,19 +1138,260 @@ as
             cwms_util.false_num,
             p_office_id);
 
+      dbms_output.put_line(''||systimestamp||' Getting ts xchg spec map.');
       select *
         into l_dss_ts_xchg_map
         from at_dss_ts_xchg_map
        where dss_xchg_set_code = p_dss_xchg_set_code
          and dss_ts_xchg_code = l_dss_ts_xchg_code;
+      dbms_output.put_line(''||systimestamp||' Done getting ts xchg spec map.');
    exception
       when no_data_found then
+         dbms_output.put_line(''||systimestamp||' Creating ts xchg spec map.');
          select cwms_seq.nextval into l_dss_ts_xchg_map.dss_ts_xchg_map_code from dual;
+         l_dss_ts_xchg_map.dss_xchg_set_code := p_dss_xchg_set_code;
+         l_dss_ts_xchg_map.dss_ts_xchg_code  := l_dss_ts_xchg_code;
          insert 
            into at_dss_ts_xchg_map
          values l_dss_ts_xchg_map;
+         dbms_output.put_line(''||systimestamp||' Done creating ts xchg spec map.');
    end map_ts_in_xchg_set;
 
+--------------------------------------------------------------------------------
+-- function get_dss_xchg_sets
+--
+   function get_dss_xchg_sets(
+      p_dss_filemgr_url in varchar2 default null,
+      p_dss_file_name   in varchar2 default null,
+      p_dss_xchg_set_id in varchar2 default null,
+      p_office_id       in varchar2 default null)
+      return clob
+   is
+      l_dss_filemgr_url at_dss_file.dss_filemgr_url%type;
+      l_dss_file_name   at_dss_file.dss_file_name%type;
+      l_dss_xchg_set_id at_dss_xchg_set.dss_xchg_set_id%type;
+      l_office_code     cwms_office.office_code%type;
+      l_office_id       cwms_office.office_id%type;
+      l_office_name     cwms_office.long_name%type;
+      l_db_name         v$database.name%type;
+      l_dss_filemgr_id  varchar2(256);
+      l_oracle_id       varchar2(256);
+      l_xml             clob;
+      l_level           binary_integer := 0;
+      l_spc             varchar2(1) := ' ';
+      l_nl              varchar2(1) := chr(10);
+      l_indent_str      varchar2(256) := null;
+      
+      cursor xchg_set_cur is
+         select dss_filemgr_url,
+                dss_file_name,
+                f.dss_file_code,
+                dss_xchg_set_code,
+                dss_xchg_set_id,
+                description,
+                realtime,
+                last_update
+           from at_dss_file f,
+                at_dss_xchg_set xs
+          where xs.office_code = l_office_code
+            and upper(dss_xchg_set_id) like upper(l_dss_xchg_set_id) escape '\'
+            and f.dss_file_code = xs.dss_file_code
+            and dss_filemgr_url like l_dss_filemgr_url escape '\'
+            and dss_file_name like l_dss_file_name escape '\';
+
+      procedure write_xml(p_data varchar2) is begin
+         dbms_lob.writeappend(l_xml, length(p_data), p_data);
+      end;
+      
+      procedure writeln_xml(p_data varchar2) is begin
+         write_xml(l_indent_str || p_data || l_nl);
+      end;
+
+      procedure indent is begin
+         l_level := l_level + 1;
+         l_indent_str := l_indent_str || l_spc;
+      end;
+
+      procedure dedent is begin
+         l_level := l_level - 1;
+         l_indent_str := substr(l_indent_str, 1, l_level * length(l_spc));
+      end;
+
+      function dec2hex(dec in binary_integer) return varchar2 is 
+          l_number binary_integer := dec;
+          l_digit binary_integer;
+          l_hex varchar2(32) := null;
+          type char_tab_t is table of varchar2(1);
+          stack char_tab_t := char_tab_t(); 
+      begin
+         loop
+            exit when l_number = 0;
+            stack.extend;  
+            dbms_output.put_line(''||stack.last);
+            l_digit := mod(l_number, 16);
+            if l_digit > 9 then
+               stack(stack.last) := chr(ascii('a')+ l_digit - 10); 
+            else
+               stack(stack.last) := chr(ascii('0') + l_digit);
+            end if;
+            l_number := trunc(l_number / 16);
+         end loop;
+         for i in reverse 1.. stack.count loop l_hex := l_hex || stack(i); end loop;    
+         return l_hex;
+      end;
+   begin
+      l_dss_filemgr_url := replace(replace(nvl(p_dss_filemgr_url,  '%'), '*', '%'), '?', '_');
+      l_dss_file_name   := replace(replace(nvl(p_dss_file_name,    '%'), '*', '%'), '?', '_');
+      l_dss_xchg_set_id := replace(replace(nvl(p_dss_xchg_set_id,  '%'), '*', '%'), '?', '_');
+      l_office_code     := cwms_util.get_office_code(p_office_id);
+      
+      select office_id,
+             long_name
+        into l_office_id,
+             l_office_name
+        from cwms_office
+       where office_code = l_office_code;
+           
+      select name into l_db_name from v$database;
+      l_oracle_id := utl_inaddr.get_host_name || ':' || l_db_name;
+      
+      dbms_lob.createtemporary(l_xml, true);
+      dbms_lob.open(l_xml, dbms_lob.lob_readwrite);
+      writeln_xml('<?xml version="1.0" encoding="UTF-8"?>');
+      writeln_xml('<dataexchangeconfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">');
+      indent;
+
+      for set_info in xchg_set_cur loop
+         l_dss_filemgr_id := dec2hex(set_info.dss_file_code);
+         writeln_xml('<dataexchangeset>');
+         indent;
+         writeln_xml('<name>'||set_info.dss_xchg_set_id||'</name>');
+         writeln_xml('<description>'||set_info.description||'</description>');
+         for rec in (  
+            select distinct office_code
+              from at_dss_ts_xchg_map xm,
+                   at_dss_ts_xchg_spec xs,
+                   at_dss_ts_spec ts
+             where xm.dss_xchg_set_code = set_info.dss_xchg_set_code
+               and xs.dss_ts_xchg_code = xm.dss_ts_xchg_code
+               and ts.dss_ts_code = xs.dss_ts_code)
+         loop
+               select office_id,
+                      long_name
+                 into l_office_id,
+                      l_office_name
+                 from cwms_office o
+                where o.office_code = rec.office_code;
+               writeln_xml('<office id="'||l_office_id||'">');
+               indent;
+               writeln_xml('<name>'||l_office_name||'</name>');
+               dedent;
+               writeln_xml('</office>');
+         end loop;
+         writeln_xml('<dssfilemanager id="'||l_dss_filemgr_id||'">');
+         indent;
+         writeln_xml('<host>'||regexp_substr(set_info.dss_filemgr_url, '[^/:]+')||'</host>');
+         writeln_xml('<port>'||regexp_substr(set_info.dss_filemgr_url, '[^:]+$')||'</port>');
+         writeln_xml('<filepath>'||set_info.dss_file_name||'</filepath>');
+         dedent;
+         writeln_xml('</dssfilemanager>');
+         writeln_xml('<oracle id="'||l_oracle_id||'">');
+         indent;
+         writeln_xml('<host>'||utl_inaddr.get_host_address||'</host>');
+         writeln_xml('<sid>'||l_db_name||'</sid>');
+         dedent;
+         writeln_xml('</oracle>');
+         if set_info.realtime is not null then
+            if set_info.realtime = 1 then
+               writeln_xml(
+                  '<realtime source="'
+                  || l_dss_filemgr_id
+                  || '" destination="'
+                  || l_oracle_id
+                  || '"/>');
+            else
+               writeln_xml(
+                  '<realtime source="'
+                  || l_oracle_id
+                  || '" destination="'
+                  || l_dss_filemgr_id
+                  || '"/>');
+            end if;
+         end if;
+         writeln_xml('<mappingset>');
+         indent;
+         for map_info in ( 
+            select cwms_ts_id,
+                   db_office_id,
+                   o.office_id,
+                   a_pathname_part,
+                   b_pathname_part,
+                   c_pathname_part,
+                   e_pathname_part,
+                   f_pathname_part,
+                   dss_parameter_type_id,
+                   dts.unit_id,
+                   time_zone_name,
+                   tz_usage_id
+              from at_dss_ts_xchg_map xm,
+                   at_dss_ts_xchg_spec xs,
+                   mv_cwms_ts_id cts,
+                   at_dss_ts_spec dts,
+                   cwms_office o,
+                   cwms_dss_parameter_type dpt,
+                   cwms_time_zone tz,
+                   cwms_tz_usage tzu
+             where xm.dss_xchg_set_code = set_info.dss_xchg_set_code
+               and xs.dss_ts_xchg_code = xm.dss_ts_xchg_code
+               and cts.ts_code = xs.ts_code
+               and dts.dss_ts_code = xs.dss_ts_code
+               and o.office_code = dts.office_code
+               and dpt.dss_parameter_type_code = dts.dss_parameter_type_code
+               and tz.time_zone_code = dts.time_zone_code
+               and tzu.tz_usage_code = dts.tz_usage_code)
+         loop
+            writeln_xml('<mapping>');
+            indent;
+            writeln_xml(
+               '<cwmstimeseries refid="'
+               || l_oracle_id
+               || '" officeid="'
+               || map_info.db_office_id
+               || '">'
+               || map_info.cwms_ts_id
+               || '</cwmstimeseries>');
+            writeln_xml(
+               '<dsspathname refid="'
+               || l_dss_filemgr_id
+               || '" officeid="'
+               || map_info.office_id
+               || '" timezone="'
+               || map_info.time_zone_name
+               || '" units="'
+               || map_info.unit_id
+               || '" type="'
+               || map_info.dss_parameter_type_id
+               || '">/' 
+               || map_info.a_pathname_part || '/'
+               || map_info.b_pathname_part || '/'
+               || map_info.c_pathname_part || '//'
+               || map_info.e_pathname_part || '/'
+               || map_info.f_pathname_part || '/</dsspathname>');
+            dedent;
+            writeln_xml('</mapping>');
+         end loop;
+         dedent;
+         writeln_xml('</mappingset>');
+         dedent;
+         writeln_xml('</dataexchangeset>');
+      end loop;
+      
+      dedent;
+      writeln_xml('</dataexchangeconfiguration>');
+      dbms_lob.close(l_xml);
+      return l_xml;
+   end get_dss_xchg_sets;
+   
 --------------------------------------------------------------------------------
 -- procedure unmap_all_ts_in_xchg_set(...)
 --
