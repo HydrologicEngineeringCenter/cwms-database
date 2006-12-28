@@ -52,6 +52,11 @@ AS
    )
       RETURN NUMBER;
 
+   FUNCTION get_db_office_code (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN NUMBER;
+
    FUNCTION get_parameter_id (
       p_cwms_ts_code          IN   NUMBER
    )
@@ -63,6 +68,11 @@ AS
       RETURN VARCHAR2;
 
    FUNCTION get_parameter_type_id (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN VARCHAR2;
+
+   FUNCTION get_db_office_id (
       p_cwms_ts_code          IN   NUMBER
    )
       RETURN VARCHAR2;

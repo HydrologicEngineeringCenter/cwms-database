@@ -241,7 +241,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
       WHEN no_data_found THEN
          cwms_err.raise(
             'INVALID_ITEM', 
-            ''||p_cwms_ts_code, 
+            ''||nvl(p_cwms_ts_code, 'NULL'), 
             'CWMS time series code.');
          
    END get_parameter_code;
@@ -348,7 +348,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
       WHEN no_data_found THEN
          cwms_err.raise(
             'INVALID_ITEM', 
-            ''||p_cwms_ts_code, 
+            ''||nvl(p_cwms_ts_code, 'NULL'), 
             'CWMS time series code.');
          
    END get_parameter_type_code;
@@ -375,7 +375,60 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
       
    END get_parameter_type_id;
 
-   
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- GET_DB_OFFICE_CODE -
+--
+   FUNCTION get_db_office_code (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN NUMBER
+   IS
+      l_db_office_code at_base_location.db_office_code%type := null;
+   BEGIN
+      select db_office_code
+        into l_db_office_code
+        from at_base_location bl,
+             at_physical_location pl,
+             at_cwms_ts_spec ts
+       where ts.ts_code = p_cwms_ts_code
+         and pl.location_code = ts.location_code
+         and bl.base_location_code = pl.base_location_code;
+
+      return l_db_office_code;
+      
+   EXCEPTION
+      WHEN no_data_found THEN
+         cwms_err.raise(
+            'INVALID_ITEM', 
+            ''||nvl(p_cwms_ts_code, 'NULL'), 
+            'CWMS time series code.');
+         
+   END get_db_office_code;
+
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- GET_DB_OFFICE_ID -
+--
+   FUNCTION get_db_office_id (
+      p_cwms_ts_code          IN   NUMBER
+   )
+      RETURN VARCHAR2
+   IS
+      l_db_office_id cwms_office.office_id%type := null;
+   BEGIN
+      select office_id
+        into l_db_office_id
+        from cwms_office
+       where office_code = get_db_office_code(p_cwms_ts_code);
+
+      return l_db_office_id;
+      
+   END get_db_office_id;
+
 --
 --*******************************************************************   --
 --*******************************************************************   --
