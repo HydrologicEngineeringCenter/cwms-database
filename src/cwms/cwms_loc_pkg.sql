@@ -1,5 +1,5 @@
 /* Formatted on 2006/12/01 12:25 (Formatter Plus v4.8.7) */
-CREATE OR REPLACE PACKAGE cwms_loc AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE cwms_loc
 AS
 /******************************************************************************
    NAME:       CWMS_LOC

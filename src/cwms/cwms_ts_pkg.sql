@@ -1,5 +1,5 @@
 /* Formatted on 2006/12/14 06:01 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE PACKAGE cwms_ts AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE cwms_ts
 AS
    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
       RETURN VARCHAR2;

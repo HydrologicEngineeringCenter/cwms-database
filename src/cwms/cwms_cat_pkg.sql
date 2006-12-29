@@ -1,5 +1,5 @@
 /* Formatted on 2006/11/24 13:04 (Formatter Plus v4.8.7) */
-CREATE OR REPLACE PACKAGE cwms_cat AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE cwms_cat
 IS
    TYPE cat_ts_rec_t IS RECORD (
       office_id             VARCHAR2 (16),

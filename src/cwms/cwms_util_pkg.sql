@@ -1,5 +1,5 @@
 /* Formatted on 2006/12/22 08:58 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE PACKAGE cwms_util AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
 *   Name:       CWMS_UTL
