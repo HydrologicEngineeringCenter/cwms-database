@@ -873,18 +873,18 @@ IS
 -- only office specified --
 ---------------------------
          OPEN p_cwms_cat FOR
-            SELECT   office_id, cwms_ts_id, interval_utc_offset
+            SELECT   db_office_id, cwms_ts_id, interval_utc_offset
                 FROM mv_cwms_ts_id
-               WHERE office_id = UPPER (l_office_id)
+               WHERE db_office_id = UPPER (l_office_id)
             ORDER BY UPPER (cwms_ts_id) ASC;
       ELSE
 ---------------------------------------
 -- both office and pattern specified --
 ---------------------------------------
          OPEN p_cwms_cat FOR
-            SELECT   office_id, cwms_ts_id, interval_utc_offset
+            SELECT   db_office_id, cwms_ts_id, interval_utc_offset
                 FROM mv_cwms_ts_id
-               WHERE office_id = UPPER (l_office_id)
+               WHERE db_office_id = UPPER (l_office_id)
                  AND UPPER (cwms_ts_id) LIKE
                         UPPER (REPLACE (REPLACE (p_ts_subselect_string,
                                                  '*',
@@ -951,7 +951,7 @@ IS
 -- only office specified --
 ---------------------------
          OPEN p_cwms_cat FOR
-            SELECT   v.office_id, v.cwms_ts_id, v.interval_utc_offset, 255,
+            SELECT   v.db_office_id, v.cwms_ts_id, v.interval_utc_offset, 255,
                      
                      -- substitute actual user privilege
                      v.active_flag,
@@ -963,14 +963,14 @@ IS
                 FROM mv_cwms_ts_id v, at_cwms_ts_spec s, cwms_time_zone z
                WHERE s.ts_code = v.ts_code
                  AND z.time_zone_code = NVL (s.time_zone_code, 0)
-                 AND v.office_id = UPPER (l_office_id)
+                 AND v.db_office_id = UPPER (l_office_id)
             ORDER BY UPPER (v.cwms_ts_id) ASC;
       ELSE
 ---------------------------------------
 -- both office and pattern specified --
 ---------------------------------------
          OPEN p_cwms_cat FOR
-            SELECT   v.office_id, v.cwms_ts_id, v.interval_utc_offset, 255,
+            SELECT   v.db_office_id, v.cwms_ts_id, v.interval_utc_offset, 255,
                      
                      -- substitute actual user privilege
                      v.active_flag,
@@ -982,7 +982,7 @@ IS
                 FROM mv_cwms_ts_id v, at_cwms_ts_spec s, cwms_time_zone z
                WHERE s.ts_code = v.ts_code
                  AND z.time_zone_code = NVL (s.time_zone_code, 0)
-                 AND v.office_id = UPPER (l_office_id)
+                 AND v.db_office_id = UPPER (l_office_id)
                  AND UPPER (v.cwms_ts_id) LIKE
                         UPPER (REPLACE (REPLACE (p_ts_subselect_string,
                                                  '*',

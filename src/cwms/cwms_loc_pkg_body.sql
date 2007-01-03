@@ -16,7 +16,7 @@ AS
         INTO l_ts_code
         FROM mv_cwms_ts_id
        WHERE UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id)
-         AND UPPER (office_id) = UPPER (p_office_id);
+         AND UPPER (db_office_id) = UPPER (p_office_id);
 
       RETURN l_ts_code;
    EXCEPTION

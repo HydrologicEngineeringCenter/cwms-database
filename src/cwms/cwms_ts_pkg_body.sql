@@ -1055,7 +1055,7 @@ END retrieve_ts_java;
 		       l_ts_offset,
 		       l_versioned, l_ts_code
 		  FROM mv_cwms_ts_id
-		 WHERE office_id = UPPER (l_office_id)
+		 WHERE db_office_id = UPPER (l_office_id)
 		   AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
 	
 		IF l_ts_interval=0 
@@ -1619,7 +1619,7 @@ END retrieve_ts_java;
         into l_ts_code, existing_utc_offset
 	    from mv_CWMS_TS_ID m 
        where upper(m.CWMS_TS_ID) = upper(p_cwms_ts_id)
-	     and m.OFFICE_ID = upper(l_office_id);
+	     and m.db_OFFICE_ID = upper(l_office_id);
 		 
       dbms_application_info.set_action('TS_CODE was found - check its utc_offset against the dataset''s and/or set an undefined utc_offset');
 	  
@@ -2703,7 +2703,7 @@ BEGIN
         INTO l_ts_code
         FROM mv_cwms_ts_id mcts
        WHERE UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
-         AND UPPER (mcts.office_id) = UPPER (l_office_id);
+         AND UPPER (mcts.db_office_id) = UPPER (l_office_id);
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
