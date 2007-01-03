@@ -2049,7 +2049,7 @@ CREATE MATERIALIZED VIEW LOG ON cwms_duration        WITH ROWID;
 CREATE MATERIALIZED VIEW LOG ON cwms_unit            WITH ROWID;
 CREATE MATERIALIZED VIEW LOG ON cwms_abstract_parameter            WITH ROWID;
 
-/* Formatted on 2006/12/13 10:24 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/01/03 08:03 (Formatter Plus v4.8.8) */
 CREATE MATERIALIZED VIEW mv_cwms_ts_id
 TABLESPACE cwms_20at_data
 NOCACHE
@@ -2060,11 +2060,11 @@ BUILD IMMEDIATE
 REFRESH FAST ON COMMIT
 WITH PRIMARY KEY
 AS
-SELECT s.ts_code,
-       s.location_code,
+SELECT abl.db_office_code,
        abl.base_location_code,
+       s.location_code,
+       s.ts_code,
        o.office_id db_office_id,
-       oo.office_id,
        abl.base_location_id             || SUBSTR ('-', 1, LENGTH (l.sub_location_id))
        || l.sub_location_id       || '.'
        || base_parameter_id       || SUBSTR ('-', 1, LENGTH (ap.sub_parameter_id))
@@ -2091,7 +2091,6 @@ SELECT s.ts_code,
        s.version_flag,
       abl.ROWID "base_loc_rid",
        o.ROWID "cwms_office_rid",
-      oo.ROWID "cwms_office_rid2",
        l.ROWID "phys_loc_rid",
        s.ROWID "ts_spec_rid",
        p.ROWID "base_param_rid",
@@ -2102,7 +2101,6 @@ SELECT s.ts_code,
        u.ROWID "unit_rid",
        cap.ROWID "ab_param_rid"
   FROM cwms_office o,
-       cwms_office oo,
       at_base_location     abl,
        at_physical_location l,
        at_cwms_ts_spec      s,
@@ -2114,7 +2112,6 @@ SELECT s.ts_code,
        cwms_unit            u,
        cwms_abstract_parameter cap
  WHERE abl.db_office_code = o.office_code
-   AND s.office_code = oo.office_code
    AND l.location_code  = s.location_code
    AND ap.base_parameter_code = p.base_parameter_code
    AND s.parameter_code = ap.parameter_code
@@ -2126,20 +2123,18 @@ SELECT s.ts_code,
    AND l.base_location_code = abl.base_location_code
    AND s.delete_date IS NULL
 /
-
 CREATE UNIQUE INDEX mv_cwms_ts_id_pk ON mv_cwms_ts_id
-(office_id, cwms_ts_id)
+(db_office_id, cwms_ts_id)
 LOGGING
 TABLESPACE cwms_20at_data
 NOPARALLEL
 /
 CREATE UNIQUE INDEX mv_cwms_ts_id_uk1 ON mv_cwms_ts_id
-(UPPER("OFFICE_ID"), UPPER("CWMS_TS_ID"))
+(UPPER(db_office_id), UPPER(cwms_ts_id))
 LOGGING
 TABLESPACE cwms_20at_data
 NOPARALLEL
 /
-
 -------------------------
 -- AV_SCREEN_ALARM_ID view.
 -- 
