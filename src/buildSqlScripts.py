@@ -219,7 +219,7 @@ states = [
     ['87', 'NU',    'Nunavut'                   ],
     ['88', 'ON',    'Ontario'                   ],
     ['89', 'PE',    'Prince Edward Island'      ],
-    ['90', 'QC',    'Québec'                    ],
+    ['90', 'QC',    'Quebec'                    ],
     ['91', 'SK',    'Saskatchewan'              ],
     ['92', 'YT',    'Yukon'                     ],
 ]
