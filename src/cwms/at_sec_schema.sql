@@ -1,40 +1,40 @@
+/* Formatted on 2007/01/03 07:34 (Formatter Plus v4.8.8) */
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-CREATE TABLE AT_SEC_USERS
+
+CREATE TABLE cwms_privileges
 (
-  DB_OFFICE_CODE   NUMBER,
-  USERNAME         VARCHAR2(31 BYTE),
-  USER_GROUP_CODE  NUMBER
+  privilege_code  NUMBER,
+  privilege_id    VARCHAR2(16 BYTE)
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20at_data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
 
-
-CREATE UNIQUE INDEX AT_SEC_USERS_PK ON AT_SEC_USERS
-(DB_OFFICE_CODE, USERNAME, USER_GROUP_CODE)
+CREATE UNIQUE INDEX cwms_privileges_pk ON cwms_privileges
+(privilege_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20at_data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -43,69 +43,75 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_SEC_USERS ADD (
-  CONSTRAINT AT_SEC_USERS_PK
+ALTER TABLE cwms_privileges ADD (
+  CONSTRAINT cwms_privileges_pk
  PRIMARY KEY
- (DB_OFFICE_CODE, USERNAME, USER_GROUP_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (privilege_code)
+    USING INDEX
+    TABLESPACE cwms_20at_data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
-
-
-ALTER TABLE AT_SEC_USERS ADD (
-  CONSTRAINT AT_SEC_USERS_R01 
- FOREIGN KEY (DB_OFFICE_CODE, USER_GROUP_CODE) 
- REFERENCES AT_SEC_USER_GROUPS (DB_OFFICE_CODE,USER_GROUP_CODE) DISABLE)
-/
+SET DEFINE OFF;
+INSERT INTO cwms_privileges
+            (privilege_code, privilege_id
+            )
+     VALUES (2, 'Write'
+            );
+INSERT INTO cwms_privileges
+            (privilege_code, privilege_id
+            )
+     VALUES (4, 'Read'
+            );
+COMMIT ;
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
-CREATE TABLE AT_SEC_USER_GROUPS
+CREATE TABLE at_sec_user_office
 (
-  DB_OFFICE_CODE   NUMBER,
-  USER_GROUP_CODE  NUMBER,
-  USER_GROUP_ID    VARCHAR2(32 BYTE),
-  USER_GROUP_DESC  VARCHAR2(256 BYTE)
+  user_id            VARCHAR2(32 BYTE)          NOT NULL,
+  primary_office_id  VARCHAR2(16 BYTE)          NOT NULL
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-
-CREATE UNIQUE INDEX AT_SEC_USER_GROUPS_PK ON AT_SEC_USER_GROUPS
-(DB_OFFICE_CODE, USER_GROUP_CODE)
+COMMENT ON TABLE at_sec_user_office IS 'Primary office IDs for CWMS Users'
+/
+COMMENT ON COLUMN at_sec_user_office.user_id IS 'CWMS User ID'
+/
+COMMENT ON COLUMN at_sec_user_office.primary_office_id IS 'Primary Office ID for CWMS User'
+/
+CREATE UNIQUE INDEX at_sec_user_office_pk ON at_sec_user_office
+(user_id, primary_office_id)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -113,59 +119,62 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
-
-ALTER TABLE AT_SEC_USER_GROUPS ADD (
-  CONSTRAINT AT_SEC_USER_GROUPS_PK
- PRIMARY KEY
- (DB_OFFICE_CODE, USER_GROUP_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
+CREATE OR REPLACE TRIGGER at_sec_user_office_constraint
+   BEFORE INSERT OR UPDATE OF user_id, primary_office_id
+   ON at_sec_user_office
+   REFERENCING NEW AS NEW OLD AS OLD
+   FOR EACH ROW
+DECLARE
+BEGIN
+   :NEW.user_id := UPPER (:NEW.user_id);
+   :NEW.primary_office_id := UPPER (:NEW.primary_office_id);
+END at_sec_user_office_constraint;
 /
-CREATE TABLE AT_SEC_TS_GROUP_MASKS
+SHOW ERRORS;
+
+
+
+ALTER TABLE at_sec_user_office ADD (
+  CONSTRAINT at_sec_user_office_fk1
+ FOREIGN KEY (primary_office_id)
+ REFERENCES cwms_office (office_id))
+/
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CREATE TABLE at_sec_user_groups
 (
-  DB_OFFICE_CODE  NUMBER,
-  TS_GROUP_CODE   NUMBER,
-  TS_GROUP_MASK   VARCHAR2(183 BYTE)
+  db_office_code   NUMBER,
+  user_group_code  NUMBER,
+  user_group_id    VARCHAR2(32 BYTE),
+  user_group_desc  VARCHAR2(256 BYTE)
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-
-CREATE UNIQUE INDEX AT_SEC_TS_GROUP_MASKS_PK ON AT_SEC_TS_GROUP_MASKS
-(DB_OFFICE_CODE, TS_GROUP_CODE, TS_GROUP_MASK)
+CREATE UNIQUE INDEX at_sec_user_groups_pk ON at_sec_user_groups
+(db_office_code, user_group_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -173,89 +182,17 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
-
-ALTER TABLE AT_SEC_TS_GROUP_MASKS ADD (
-  CONSTRAINT AT_SEC_TS_GROUP_MASKS_PK
+ALTER TABLE at_sec_user_groups ADD (
+  CONSTRAINT at_sec_user_groups_pk
  PRIMARY KEY
- (DB_OFFICE_CODE, TS_GROUP_CODE, TS_GROUP_MASK)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (db_office_code, user_group_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-
-
-ALTER TABLE AT_SEC_TS_GROUP_MASKS ADD (
-  CONSTRAINT AT_SEC_TS_GROUP_MASKS_R01 
- FOREIGN KEY (TS_GROUP_CODE, DB_OFFICE_CODE) 
- REFERENCES AT_SEC_TS_GROUPS (TS_GROUP_CODE,DB_OFFICE_CODE))
-/
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-CREATE TABLE AT_SEC_TS_GROUPS
-(
-  DB_OFFICE_CODE  NUMBER,
-  TS_GROUP_CODE   NUMBER,
-  TS_GROUP_ID     VARCHAR2(32 BYTE),
-  TS_GROUP_DESC   VARCHAR2(256 BYTE)
-)
-TABLESPACE CWMS_20DATA
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-
-
-CREATE UNIQUE INDEX AT_SEC_TS_GROUPS_PK ON AT_SEC_TS_GROUPS
-(TS_GROUP_CODE, DB_OFFICE_CODE)
-LOGGING
-TABLESPACE CWMS_20DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
-
-ALTER TABLE AT_SEC_TS_GROUPS ADD (
-  CONSTRAINT AT_SEC_TS_GROUPS_PK
- PRIMARY KEY
- (TS_GROUP_CODE, DB_OFFICE_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
@@ -263,42 +200,39 @@ ALTER TABLE AT_SEC_TS_GROUPS ADD (
 /
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-CREATE TABLE AT_SEC_ALLOW
+CREATE TABLE at_sec_users
 (
-  DB_OFFICE_CODE   NUMBER,
-  TS_GROUP_CODE    NUMBER,
-  USER_GROUP_CODE  NUMBER,
-  PRIVILEGE_CODE   NUMBER
+  db_office_code   NUMBER,
+  user_id         VARCHAR2(31 BYTE),
+  user_group_code  NUMBER
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-
-CREATE UNIQUE INDEX AT_SEC_ALLOW_PK ON AT_SEC_ALLOW
-(DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_CODE)
+CREATE UNIQUE INDEX at_sec_users_pk ON at_sec_users
+(db_office_code, user_id, user_group_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -306,47 +240,227 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
-
-ALTER TABLE AT_SEC_ALLOW ADD (
-  CONSTRAINT AT_SEC_ALLOW_PK
+ALTER TABLE at_sec_users ADD (
+  CONSTRAINT at_sec_users_pk
  PRIMARY KEY
- (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (db_office_code, user_id, user_group_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
-
-
-ALTER TABLE AT_SEC_ALLOW ADD (
-  CONSTRAINT AT_SEC_ALLOW_R01 
- FOREIGN KEY (TS_GROUP_CODE, DB_OFFICE_CODE) 
- REFERENCES AT_SEC_TS_GROUPS (TS_GROUP_CODE,DB_OFFICE_CODE))
+ALTER TABLE at_sec_users ADD (
+  CONSTRAINT at_sec_users_r01
+ FOREIGN KEY (db_office_code, user_group_code)
+ REFERENCES at_sec_user_groups (db_office_code,user_group_code) DISABLE)
 /
-
-ALTER TABLE AT_SEC_ALLOW ADD (
-  CONSTRAINT AT_SEC_ALLOW_R02 
- FOREIGN KEY (DB_OFFICE_CODE, USER_GROUP_CODE) 
- REFERENCES AT_SEC_USER_GROUPS (DB_OFFICE_CODE,USER_GROUP_CODE))
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CREATE TABLE at_sec_ts_groups
+(
+  db_office_code  NUMBER,
+  ts_group_code   NUMBER,
+  ts_group_id     VARCHAR2(32 BYTE),
+  ts_group_desc   VARCHAR2(256 BYTE)
+)
+TABLESPACE cwms_20data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
 /
-
-ALTER TABLE AT_SEC_ALLOW ADD (
-  CONSTRAINT AT_SEC_ALLOW_R03 
- FOREIGN KEY (PRIVILEGE_CODE) 
- REFERENCES CWMS_PRIVILEGES (PRIVILEGE_CODE))
+CREATE UNIQUE INDEX at_sec_ts_groups_pk ON at_sec_ts_groups
+(ts_group_code, db_office_code)
+LOGGING
+TABLESPACE cwms_20data
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+ALTER TABLE at_sec_ts_groups ADD (
+  CONSTRAINT at_sec_ts_groups_pk
+ PRIMARY KEY
+ (ts_group_code, db_office_code)
+    USING INDEX
+    TABLESPACE cwms_20data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CREATE TABLE at_sec_ts_group_masks
+(
+  db_office_code  NUMBER,
+  ts_group_code   NUMBER,
+  ts_group_mask   VARCHAR2(183 BYTE)
+)
+TABLESPACE cwms_20data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+CREATE UNIQUE INDEX at_sec_ts_group_masks_pk ON at_sec_ts_group_masks
+(db_office_code, ts_group_code, ts_group_mask)
+LOGGING
+TABLESPACE cwms_20data
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+ALTER TABLE at_sec_ts_group_masks ADD (
+  CONSTRAINT at_sec_ts_group_masks_pk
+ PRIMARY KEY
+ (db_office_code, ts_group_code, ts_group_mask)
+    USING INDEX
+    TABLESPACE cwms_20data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+ALTER TABLE at_sec_ts_group_masks ADD (
+  CONSTRAINT at_sec_ts_group_masks_r01
+ FOREIGN KEY (ts_group_code, db_office_code)
+ REFERENCES at_sec_ts_groups (ts_group_code,db_office_code))
+/
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CREATE TABLE at_sec_allow
+(
+  db_office_code   NUMBER,
+  ts_group_code    NUMBER,
+  user_group_code  NUMBER,
+  privilege_code   NUMBER
+)
+TABLESPACE cwms_20data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+CREATE UNIQUE INDEX at_sec_allow_pk ON at_sec_allow
+(db_office_code, ts_group_code, user_group_code, privilege_code)
+LOGGING
+TABLESPACE cwms_20data
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+ALTER TABLE at_sec_allow ADD (
+  CONSTRAINT at_sec_allow_pk
+ PRIMARY KEY
+ (db_office_code, ts_group_code, user_group_code, privilege_code)
+    USING INDEX
+    TABLESPACE cwms_20data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+ALTER TABLE at_sec_allow ADD (
+  CONSTRAINT at_sec_allow_r01
+ FOREIGN KEY (ts_group_code, db_office_code)
+ REFERENCES at_sec_ts_groups (ts_group_code,db_office_code))
+/
+ALTER TABLE at_sec_allow ADD (
+  CONSTRAINT at_sec_allow_r02
+ FOREIGN KEY (db_office_code, user_group_code)
+ REFERENCES at_sec_user_groups (db_office_code,user_group_code))
+/
+ALTER TABLE at_sec_allow ADD (
+  CONSTRAINT at_sec_allow_r03
+ FOREIGN KEY (privilege_code)
+ REFERENCES cwms_privileges (privilege_code))
 /
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 CREATE MATERIALIZED VIEW LOG ON at_sec_users WITH SEQUENCE, ROWID
-(db_office_code, username, user_group_code)
+(db_office_code, user_id, user_group_code)
 INCLUDING NEW VALUES
 /
 --------------------------------------------------------------------------------
@@ -354,14 +468,14 @@ CREATE MATERIALIZED VIEW mv_sec_users
 PARALLEL
 BUILD IMMEDIATE
 REFRESH FAST ON COMMIT AS
-   SELECT   asu.db_office_code, asu.username,
+   SELECT   asu.db_office_code, asu.user_id,
             SUM (asu.user_group_code) net_user_group_code, COUNT(asu.user_group_code) count_user_group_code
        FROM at_sec_users asu
-   GROUP BY asu.db_office_code, asu.username
+   GROUP BY asu.db_office_code, asu.user_id
 /
 --------------------------------------------------------------------------------
 CREATE UNIQUE INDEX mv_sec_users_u01 ON mv_sec_users
-(db_office_code, username)
+(db_office_code, user_id)
 LOGGING
 TABLESPACE cwms_20data
 PCTFREE    10
@@ -437,14 +551,14 @@ REFRESH FAST ON COMMIT AS
 /
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW av_sec_ts_privileges (username,
+CREATE OR REPLACE VIEW av_sec_ts_privileges (user_id,
                                              db_office_code,
                                              ts_code,
                                              cwms_ts_id,
                                              net_privilege_code
                                             )
 AS
-   SELECT av_su.username, av_sts.db_office_code, av_sts.ts_code,
+   SELECT av_su.user_id, av_sts.db_office_code, av_sts.ts_code,
           av_sts.cwms_ts_id, av_sa.net_privilege_code
      FROM mv_sec_allow av_sa, mv_sec_ts_spec av_sts, mv_sec_users av_su
     WHERE av_sts.db_office_code = av_sa.db_office_code
