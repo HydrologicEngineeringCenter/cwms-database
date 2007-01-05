@@ -559,6 +559,21 @@ AS
       when no_data_found then
          cwms_err.raise('INVALID_OFFICE_ID', p_office_id);
    end get_db_office_code;
+   
+--------------------------------------------------------
+-- Replace filename wildcard chars (?,*) with SQL ones
+-- (_,%), except where escaped by the backslash char (\).
+-- Selects that use the results of this should contain
+-- an "ESCAPE '\'" clause.
+--
+   FUNCTION standardize_wildcards (p_string IN VARCHAR2)
+      RETURN VARCHAR2
+   is
+   begin
+      return regexp_replace(regexp_replace(nvl(p_string, '*'), '([^\])(\?)', '\1_'), '([^\])(\*)', '\1%');
+   end standardize_wildcards;
+      
+   
    PROCEDURE TEST
    IS
    BEGIN

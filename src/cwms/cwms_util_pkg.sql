@@ -215,6 +215,15 @@ AS
    FUNCTION get_db_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN NUMBER;
 
+--------------------------------------------------------
+-- Replace filename wildcard chars (?,*) with SQL ones
+-- (_,%), except where escaped by the backslash char (\).
+-- Selects that use the results of this should contain
+-- an "ESCAPE '\'" clause.
+--
+   FUNCTION standardize_wildcards (p_string IN VARCHAR2)
+      RETURN VARCHAR2;
+      
    PROCEDURE TEST;
 
    -- Dump (put_line) a character string p_str in chunks of length p_len
