@@ -570,7 +570,7 @@ AS
       RETURN VARCHAR2
    is
    begin
-      return regexp_replace(regexp_replace(nvl(p_string, '*'), '([^\])(\?)', '\1_'), '([^\])(\*)', '\1%');
+      return regexp_replace(regexp_replace(nvl(p_string, '%'), '([^\])(\?)', '\1_'), '([^\])(\*)', '\1%');
    end standardize_wildcards;
       
    
