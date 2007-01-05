@@ -950,8 +950,12 @@ as
          dbms_output.put_line(''||systimestamp||' Looking up ts code in create_dss_ts_xchg_spec.');
          select ts_code
            into l_cwms_ts_code
-           from mv_cwms_ts_id
-          where office_id = l_office_id
+           from mv_cwms_ts_id v,
+                cwms_office o1,
+                cwms_office o2
+          where v.db_office_id = o1.office_id
+            and o1.db_host_office_code = o2.office_code
+            and o2.office_id = l_office_id
             and cwms_ts_id = p_cwms_ts_id; 
       exception
          when no_data_found then
@@ -971,8 +975,12 @@ as
                   dbms_mview.refresh('mv_cwms_ts_id', 'c');
                   select ts_code
                     into l_cwms_ts_code
-                    from mv_cwms_ts_id
-                   where office_id = l_office_id
+                    from mv_cwms_ts_id v,
+                         cwms_office o1,
+                         cwms_office o2
+                   where v.db_office_id = o1.office_id
+                     and o1.db_host_office_code = o2.office_code
+                     and o2.office_id = l_office_id
                      and cwms_ts_id = p_cwms_ts_id; 
             end;
       end;
