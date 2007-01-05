@@ -562,16 +562,26 @@ AS
    
 --------------------------------------------------------
 -- Replace filename wildcard chars (?,*) with SQL ones
--- (_,%), except where escaped by the backslash char (\).
--- Selects that use the results of this should contain
--- an "ESCAPE '\'" clause.
+-- (_,%), using '\' as an escape character.
+-- 
+-- '?'  ==> '_' except when preceded by '\'
+-- '*'  ==> '%' except when preceded by '\'
+-- '\?' ==> '?'
+-- '\*' ==> '*'
+-- '\\' ==> '\'
 --
-   FUNCTION standardize_wildcards (p_string IN VARCHAR2)
+   FUNCTION normalize_wildcards (p_string IN VARCHAR2)
       RETURN VARCHAR2
    is
+      l_result varchar2(32767);
    begin
-      return regexp_replace(regexp_replace(nvl(p_string, '%'), '([^\])(\?)', '\1_'), '([^\])(\*)', '\1%');
-   end standardize_wildcards;
+      l_result := nvl(p_string, '*');
+      l_result := replace(l_result, '\\', chr(0));
+      l_result := regexp_replace(regexp_replace(l_result, '([^\])(\?)', '\1_'), '([^\])(\*)', '\1%');
+      l_result := regexp_replace(l_result, '\\([?*])', '\1');
+      l_result := replace(l_result, chr(0), '\');
+      return l_result;
+   end normalize_wildcards;
       
    
    PROCEDURE TEST

@@ -217,11 +217,15 @@ AS
 
 --------------------------------------------------------
 -- Replace filename wildcard chars (?,*) with SQL ones
--- (_,%), except where escaped by the backslash char (\).
--- Selects that use the results of this should contain
--- an "ESCAPE '\'" clause.
+-- (_,%), using '\' as an escape character.
+-- 
+-- '?'  ==> '_' except when preceded by '\'
+-- '*'  ==> '%' except when preceded by '\'
+-- '\?' ==> '?'
+-- '\*' ==> '*'
+-- '\\' ==> '\'
 --
-   FUNCTION standardize_wildcards (p_string IN VARCHAR2)
+   FUNCTION normalize_wildcards (p_string IN VARCHAR2)
       RETURN VARCHAR2;
       
    PROCEDURE TEST;
