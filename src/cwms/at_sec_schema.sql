@@ -1,4 +1,4 @@
-/* Formatted on 2007/01/03 07:34 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/01/08 12:46 (Formatter Plus v4.8.8) */
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
@@ -25,7 +25,6 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-
 CREATE UNIQUE INDEX cwms_privileges_pk ON cwms_privileges
 (privilege_code)
 LOGGING
@@ -42,7 +41,6 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
 ALTER TABLE cwms_privileges ADD (
   CONSTRAINT cwms_privileges_pk
  PRIMARY KEY
@@ -464,12 +462,20 @@ CREATE MATERIALIZED VIEW LOG ON at_sec_users WITH SEQUENCE, ROWID
 INCLUDING NEW VALUES
 /
 --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 CREATE MATERIALIZED VIEW mv_sec_users
 PARALLEL
 BUILD IMMEDIATE
 REFRESH FAST ON COMMIT AS
    SELECT   asu.db_office_code, asu.user_id,
-            SUM (asu.user_group_code) net_user_group_code, COUNT(asu.user_group_code) count_user_group_code
+            SUM (asu.user_group_code) net_user_group_code,
+            COUNT(asu.user_group_code) count_user_group_code,
+            COUNT(*) cnt
        FROM at_sec_users asu
    GROUP BY asu.db_office_code, asu.user_id
 /
@@ -491,6 +497,7 @@ STORAGE    (
 NOPARALLEL
 /
 --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 CREATE MATERIALIZED VIEW LOG ON at_sec_ts_group_masks WITH SEQUENCE, ROWID
 (db_office_code, ts_group_code, ts_group_mask)
 INCLUDING NEW VALUES
@@ -498,8 +505,15 @@ INCLUDING NEW VALUES
 --------------------------------------------------------------------------------
 CREATE MATERIALIZED VIEW LOG ON mv_cwms_ts_id
 WITH ROWID (db_office_code, db_office_id, ts_code, cwms_ts_id)
-INCLUDING NEW VALUES;
+INCLUDING NEW VALUES
 /
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 CREATE MATERIALIZED VIEW mv_sec_ts_spec
 PARALLEL
@@ -507,7 +521,7 @@ BUILD IMMEDIATE
 REFRESH FAST ON COMMIT AS
 SELECT   mcti.db_office_code, mcti.db_office_id, mcti.ts_code,
          mcti.cwms_ts_id, SUM (astgm.ts_group_code) net_ts_group_code,
-         COUNT (astgm.ts_group_code) count_ts_group_code
+         COUNT (astgm.ts_group_code) count_ts_group_code, COUNT(*) cnt
     FROM mv_cwms_ts_id mcti, at_sec_ts_group_masks astgm
    WHERE astgm.db_office_code = mcti.db_office_code
      AND UPPER (mcti.cwms_ts_id) LIKE UPPER (astgm.ts_group_mask)
@@ -531,6 +545,7 @@ STORAGE    (
 NOPARALLEL
 /
 --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 CREATE MATERIALIZED VIEW LOG ON at_sec_allow WITH SEQUENCE, ROWID
 (  db_office_code,
   ts_group_code,
@@ -539,13 +554,21 @@ CREATE MATERIALIZED VIEW LOG ON at_sec_allow WITH SEQUENCE, ROWID
 INCLUDING NEW VALUES
 /
 --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 CREATE MATERIALIZED VIEW mv_sec_allow
 PARALLEL
 BUILD IMMEDIATE
 REFRESH FAST ON COMMIT AS
 
    SELECT   asa.db_office_code, asa.ts_group_code, asa.user_group_code,
-            SUM (asa.privilege_code) net_privilege_code, COUNT (asa.privilege_code) count_privilege_code
+            SUM (asa.privilege_code) net_privilege_code, COUNT (asa.privilege_code) count_privilege_code, COUNT(*) cnt
        FROM at_sec_allow asa
    GROUP BY db_office_code, ts_group_code, user_group_code
 /
@@ -555,18 +578,121 @@ CREATE OR REPLACE VIEW av_sec_ts_privileges (user_id,
                                              db_office_code,
                                              ts_code,
                                              cwms_ts_id,
-                                             net_privilege_code
+                                             net_privilege_code,
+                                             read_privilege,
+                                             write_privilege,
+                                             count_privilege_code
                                             )
 AS
-   SELECT av_su.user_id, av_sts.db_office_code, av_sts.ts_code,
-          av_sts.cwms_ts_id, av_sa.net_privilege_code
-     FROM mv_sec_allow av_sa, mv_sec_ts_spec av_sts, mv_sec_users av_su
-    WHERE av_sts.db_office_code = av_sa.db_office_code
-      AND BITAND (av_sts.net_ts_group_code, av_sa.ts_group_code) =
-                                                           av_sa.ts_group_code
-      AND av_su.db_office_code = av_sa.db_office_code
-      AND BITAND (av_su.net_user_group_code, av_sa.user_group_code) =
-                                                         av_sa.user_group_code
+   SELECT   mv_su.user_id, mv_sts.db_office_code, mv_sts.ts_code,
+            mv_sts.cwms_ts_id,
+            MAX (mv_sa.net_privilege_code) net_privilege_code,
+            CASE
+               WHEN BITAND (MAX (mv_sa.net_privilege_code), 4) =
+                                                             4
+                  THEN 4
+               ELSE NULL
+            END read_privilege,
+            CASE
+               WHEN BITAND (MAX (mv_sa.net_privilege_code),
+                            2) = 2
+                  THEN 2
+               ELSE NULL
+            END write_privilege,
+            COUNT (mv_sa.net_privilege_code) count_privilege_code
+       FROM mv_sec_allow mv_sa, mv_sec_ts_spec mv_sts, mv_sec_users mv_su
+      WHERE mv_sts.db_office_code = mv_sa.db_office_code
+        AND BITAND (mv_sts.net_ts_group_code, mv_sa.ts_group_code) =
+                                                           mv_sa.ts_group_code
+        AND mv_su.db_office_code = mv_sa.db_office_code
+        AND BITAND (mv_su.net_user_group_code, mv_sa.user_group_code) =
+                                                         mv_sa.user_group_code
+   GROUP BY mv_su.user_id,
+            mv_sts.db_office_code,
+            mv_sts.cwms_ts_id,
+            mv_sts.ts_code
 /
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+CREATE MATERIALIZED VIEW LOG ON mv_sec_allow WITH SEQUENCE, ROWID
+(  db_office_code,
+  ts_group_code,
+  user_group_code,
+  net_privilege_code )
+INCLUDING NEW VALUES
+/
+--------------------------------------------------------------------------------
+CREATE MATERIALIZED VIEW LOG ON mv_sec_users WITH SEQUENCE, ROWID
+(db_office_code, user_id, net_user_group_code)
+INCLUDING NEW VALUES
+/
+
+--------------------------------------------------------------------------------
+CREATE MATERIALIZED VIEW LOG ON mv_sec_ts_spec WITH SEQUENCE, ROWID
+(db_office_code, 
+ ts_code, 
+ net_ts_group_code, 
+ count_ts_group_code, 
+ cnt, 
+ db_office_id, 
+ cwms_ts_id)
+INCLUDING NEW VALUES
+/
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+
+CREATE MATERIALIZED VIEW mv_sec_ts_priv
+PARALLEL
+BUILD IMMEDIATE
+REFRESH FAST ON COMMIT AS
+SELECT      mv_su.user_id,
+            mv_sts.db_office_code,
+            mv_sts.ts_code,
+            mv_sts.cwms_ts_id,
+            mv_sa.net_privilege_code,
+            mv_sa.rowid mv_sa_rowid,
+            mv_sts.rowid mv_sts_rowid,
+            mv_su.rowid mv_su_rowid
+       FROM mv_sec_allow mv_sa, mv_sec_ts_spec mv_sts, mv_sec_users mv_su
+      WHERE mv_sts.db_office_code = mv_sa.db_office_code
+        AND BITAND (mv_sts.net_ts_group_code, mv_sa.ts_group_code) =
+                                                           mv_sa.ts_group_code
+        AND mv_su.db_office_code = mv_sa.db_office_code
+        AND BITAND (mv_su.net_user_group_code, mv_sa.user_group_code) =
+                                                         mv_sa.user_group_code
+/
+--------------------------------------------------------------------------------
+
+CREATE MATERIALIZED VIEW LOG ON mv_sec_ts_priv WITH ROWID
+(user_id,
+ db_office_code,
+ ts_code,
+ cwms_ts_id,
+ net_privilege_code)
+INCLUDING NEW VALUES
+/
+--------------------------------------------------------------------------------
+
+/* Formatted on 2007/01/09 07:58 (Formatter Plus v4.8.8) */
+CREATE MATERIALIZED VIEW mv_sec_ts_privileges
+REFRESH FAST ON COMMIT
+WITH PRIMARY KEY
+AS
+SELECT   user_id, db_office_code, ts_code, cwms_ts_id,
+         MAX (net_privilege_code) net_privilege_code,
+         COUNT (net_privilege_code) count_privilege_code, COUNT (*) cnt
+    FROM mv_sec_ts_priv
+GROUP BY user_id, db_office_code, ts_code, cwms_ts_id
+/
+COMMENT ON MATERIALIZED VIEW MV_SEC_TS_PRIV1 IS 'snapshot table for snapshot CWMS_20.MV_SEC_TS_PRIVILEGES'
+/
+
+CREATE INDEX mv_sec_ts_privileges_i01 ON mv_sec_ts_privileges
+(user_id)
+LOGGING
+TABLESPACE cwms_20at_data
+NOPARALLEL
+/     
