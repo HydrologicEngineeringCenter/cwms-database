@@ -2062,7 +2062,7 @@ TABLESPACE cwms_20at_data
 NOPARALLEL
 /
 
-create or replace public synonym cwms_ts_id for cwms_20.mv_cwms_ts_id;
+create or replace public synonym cwms_v_ts_id for cwms_20.mv_cwms_ts_id;
 
 -------------------------
 -- AV_SCREEN_ALARM_ID view.
@@ -2118,7 +2118,7 @@ AS
                AND aal.alarm_code = aali.alarm_code(+)
 /
 
-create or replace public synonym cwms_screen_alarm_id for cwms_20.av_screen_alarm_id;
+create or replace public synonym cwms_v_screen_alarm_id for cwms_20.av_screen_alarm_id;
 
 /* Formatted on 2006/12/18 13:15 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE VIEW av_screening_criteria (base_location_code,
@@ -2236,7 +2236,7 @@ AS
       AND avsi.screening_code = avsc.screening_code
 /
 
-create or replace public synonym cwms_screening_criteria for cwms_20.av_screening_criteria;
+create or replace public synonym cwms_v_screening_criteria for cwms_20.av_screening_criteria;
 
 -------------------------
 -- AV_ALIASES view.
@@ -2267,7 +2267,7 @@ AS
       AND abl.db_office_code = co.office_code
 /
 
-create or replace public synonym cwms_aliases for cwms_20.av_aliases;
+create or replace public synonym cwms_v_aliases for cwms_20.av_aliases;
 
 -----------------------------
 -- AT_UNIT_ALIAS TABLE.

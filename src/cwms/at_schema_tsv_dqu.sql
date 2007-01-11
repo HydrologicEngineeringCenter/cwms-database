@@ -5,7 +5,7 @@ exec cwms_util.create_view
 /
 show errors;
 
-create or replace public synonym cwms_tsv for cwms_20.av_tsv;
+create or replace public synonym cwms_v_tsv for cwms_20.av_tsv;
 
 CREATE OR REPLACE VIEW AV_TSV_DQU
 (TS_CODE, VERSION_DATE, DATA_ENTRY_DATE, DATE_TIME, VALUE, 
@@ -31,5 +31,5 @@ from av_tsv               tsv,
  and ts.unit_id     = c.from_unit_id
 / 
 
-create or replace public synonym cwms_tsv_dqu for cwms_20.av_tsv_dqu;
+create or replace public synonym cwms_v_tsv_dqu for cwms_20.av_tsv_dqu;
 
