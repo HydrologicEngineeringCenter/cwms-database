@@ -577,7 +577,7 @@ AS
    begin
       l_result := nvl(p_string, '*');
       l_result := replace(l_result, '\\', chr(0));
-      l_result := regexp_replace(regexp_replace(l_result, '([^\])(\?)', '\1_'), '([^\])(\*)', '\1%');
+      l_result := regexp_replace(regexp_replace(l_result, '(^|[^\])(\?)', '\1_'), '(^|[^\])(\*)', '\1%');
       l_result := regexp_replace(l_result, '\\([?*])', '\1');
       l_result := replace(l_result, chr(0), '\');
       return l_result;
