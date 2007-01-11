@@ -1,15 +1,18 @@
 set echo off
 set time on
+set define &
+set concat .
 whenever sqlerror exit sql.sqlcode
 --
 -- prompt for info
 --
 prompt
-accept echo_state  char prompt 'Enter ON or OFF for echo       : '
-accept inst        char prompt 'Enter the database instance    : '
-accept eroc        char prompt 'Enter the EROC for this office : '
-accept sys_passwd  char prompt 'Enter the password for SYS     : '
-accept cwms_passwd char prompt 'Enter the password for CWMS_20 : '
+accept echo_state  char prompt 'Enter ON or OFF for echo        : '
+accept inst        char prompt 'Enter the database instance     : '
+accept eroc        char prompt 'Enter the EROC for this office  : '
+accept sys_passwd  char prompt 'Enter the password for SYS      : '
+accept cwms_passwd char prompt 'Enter the password for CWMS_20  : '
+accept pd_passwd   char prompt 'Enter the password for &eroc.cwmspd : '
 spool buildCWMS_20_DB.log
 --
 -- log on as sysdba
@@ -105,6 +108,7 @@ order by object_name, object_type asc;
 --
 -- re-log on as the CWMS_20 user and start jobs
 --
+set define on
 connect cwms_20/&cwms_passwd@&inst
 set serveroutput on
 prompt Starting jobs...
