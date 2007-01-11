@@ -802,8 +802,8 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
              SELECT ts_code
                INTO p_ts_code
                FROM at_cwms_ts_spec acts
-              WHERE office_code = l_office_code
-                AND acts.location_code = l_location_code
+              WHERE /*office_code = l_office_code
+                AND */acts.location_code = l_location_code
                 AND acts.parameter_code = l_parameter_code
                 AND acts.parameter_type_code = l_parameter_type_code
                 AND acts.interval_code = l_interval_code
@@ -832,13 +832,13 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
                 END IF;
 
                 INSERT INTO at_cwms_ts_spec t
-                            (ts_code, office_code, location_code,
+                            (ts_code, /*office_code,*/ location_code,
                              parameter_code, parameter_type_code,
                              interval_code, duration_code, VERSION,
                              ts_ni_hash,
                              interval_utc_offset, active_flag
                             )
-                     VALUES (cwms_seq.NEXTVAL, l_office_code, l_location_code,
+                     VALUES (cwms_seq.NEXTVAL, /*l_office_code,*/ l_location_code,
                              l_parameter_code, l_parameter_type_code,
                              l_interval_code, l_duration_code, l_version,
                              get_ts_ni_hash (l_parameter_code,
@@ -2765,7 +2765,7 @@ BEGIN
            FROM DUAL;
 
          INSERT INTO at_cwms_ts_spec
-            SELECT l_ts_code_new, office_code, location_code, parameter_code,
+            SELECT l_ts_code_new, /*office_code,*/ location_code, parameter_code,
                    parameter_type_code, interval_code, duration_code, VERSION,
                    ts_ni_hash, description, interval_utc_offset,
                    interval_forward, interval_backward, interval_offset_id,
