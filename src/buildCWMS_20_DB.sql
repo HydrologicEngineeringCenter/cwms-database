@@ -37,34 +37,53 @@ connect cwms_20/&cwms_passwd@&inst
 
 @@cwms/CWMS_ERR_PKG
 @@cwms/CWMS_ERR_PKG_BODY
+create or replace public synonym cwms_err for cwms_20.cwms_err;
+grant execute on cwms_20.cwms_err to cwms_user;
 
 @@cwms/at_schema
 @@cwms/at_schema_tsv
+@@cwms/at_sec_schema
 
 @@cwms/CWMS_UTIL_PKG
 @@cwms/CWMS_UTIL_PKG_BODY
+create or replace public synonym cwms_util for cwms_20.cwms_util;
+grant execute on cwms_20.cwms_util to cwms_user;
 
 @@cwms/at_schema_tsv_dqu
 
+@@cwms/CWMS_SEC_POLICY
+@@cwms/CWMS_SEC_POLICY_BODY
+create or replace public synonym cwms_sec_policy for cwms_20.cwms_sec_policy;
+grant execute on cwms_20.cwms_sec_policy to cwms_user;
+
 @@cwms/CWMS_TS_PKG
 @@cwms/CWMS_TS_PKG_BODY
+create or replace public synonym cwms_ts for cwms_20.cwms_ts;
+grant execute on cwms_20.cwms_ts to cwms_user;
 
 @@cwms/CWMS_DSS_PKG
 @@cwms/CWMS_DSS_PKG_BODY
+create or replace public synonym cwms_dss for cwms_20.cwms_dss;
+grant execute on cwms_20.cwms_dss to cwms_user;
 
 @@cwms/at_schema_2
 
 @@cwms/CWMS_CAT_PKG
 @@cwms/CWMS_CAT_PKG_BODY
+create or replace public synonym cwms_cat for cwms_20.cwms_cat;
+grant execute on cwms_20.cwms_cat to cwms_user;
 
 @@cwms/CWMS_LOC_PKG
 @@cwms/CWMS_LOC_PKG_BODY
+create or replace public synonym cwms_loc for cwms_20.cwms_loc;
+grant execute on cwms_20.cwms_loc to cwms_user;
 
 --
 -- re-log on as sysdba and compile all invalid objects
 --
 set echo off
 connect sys/&sys_passwd@&inst as sysdba
+
 prompt Invalid objects...
   select substr(object_name, 1, 31) "INVALID OBJECT", object_type 
     from dba_objects 

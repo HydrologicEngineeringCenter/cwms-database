@@ -57,7 +57,6 @@ ALTER TABLE cwms_privileges ADD (
                 PCTINCREASE      0
                ))
 /
-SET DEFINE OFF;
 INSERT INTO cwms_privileges
             (privilege_code, privilege_id
             )
@@ -565,7 +564,6 @@ CREATE MATERIALIZED VIEW mv_sec_allow
 PARALLEL
 BUILD IMMEDIATE
 REFRESH FAST ON COMMIT AS
-
    SELECT   asa.db_office_code, asa.ts_group_code, asa.user_group_code,
             SUM (asa.privilege_code) net_privilege_code, COUNT (asa.privilege_code) count_privilege_code, COUNT(*) cnt
        FROM at_sec_allow asa
@@ -679,8 +677,8 @@ SELECT   user_id, db_office_code, ts_code,
     FROM mv_sec_ts_priv
 GROUP BY user_id, db_office_code, ts_code
 /
-COMMENT ON MATERIALIZED VIEW MV_SEC_TS_PRIV1 IS 'snapshot table for snapshot CWMS_20.MV_SEC_TS_PRIVILEGES'
-/
+-- COMMENT ON MATERIALIZED VIEW MV_SEC_TS_PRIV1 IS 'snapshot table for snapshot CWMS_20.MV_SEC_TS_PRIVILEGES'
+-- /
 
 CREATE INDEX mv_sec_ts_privileges_i01 ON mv_sec_ts_privileges
 (user_id)

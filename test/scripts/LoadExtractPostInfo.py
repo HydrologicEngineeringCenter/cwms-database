@@ -16,7 +16,7 @@ FALSE = 0
 serverOutput = FALSE
 createXchgSetSql  = "begin :1 := cwms_dss.create_dss_xchg_set(:2,:3,:4,:5,:6,:7,:8); end;"
 mapTsInXchgSetSql = "begin cwms_dss.map_ts_in_xchg_set(:1,:2,:3,:4,:5,:6,:7,:8); end;" 
-getDssXchgSetsSql = "begin :1 := cwms_dss.get_dss_xchg_sets; end;" 
+getDssXchgSetsSql = "begin :1 := cwms_dss.get_dss_xchg_sets(:2,:3,:4,:5); end;" 
 
 lastConn = None
 getLinesSql  = "begin dbms_output.get_lines(:1,:2); end;"
@@ -29,7 +29,6 @@ def proxyForUser(orclConn, username) :
 	connProps = java.util.Properties()
 	connProps.setProperty("PROXY_USER_NAME", username)
 	orclConn.openProxySession(oracle.jdbc.OracleConnection.PROXYTYPE_USER_NAME, connProps)
-	orclConn.createStatement().execute("alter session set current_schema = cwms_20")
 	time2 = time.time()
 	print "proxyForUser : %f" % (time2 - time1)
 
@@ -75,7 +74,7 @@ def resumeMView(orclConn, pause_handle):
 #----------------#
 #connStr  = raw_input("\nEnter DB Connection String (user/pass@tnsName)\n-->")
 #fileName = raw_input("\nEnter name of data file\n-->")
-connStr  = "cwms_20[q0cwmspd]/thenewdb06@q0mdp"
+connStr  = "q0cwmspd[q0xxxyyy]/thenewdb06@q0mdp"
 fileName = "NWD-ExtractPostInfo.txt"
 # fileName = "HEC-ExtractPostInfo.txt"
 
@@ -111,6 +110,10 @@ actionCount = 0
 pause_handle = None
 try :
 	getDssXchgSetsStmt.registerOutParameter(1, oracle.jdbc.OracleTypes.CLOB)
+	getDssXchgSetsStmt.setString(2, "*")
+	getDssXchgSetsStmt.setString(3, "*")
+	getDssXchgSetsStmt.setString(4, "*")
+	getDssXchgSetsStmt.setString(5, "*")
 	t1 = time.time()
 	getDssXchgSetsStmt.execute()
 	clob = getDssXchgSetsStmt.getClob(1);

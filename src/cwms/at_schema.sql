@@ -8,7 +8,6 @@ set serveroutput on
 declare
    type id_array_t is table of varchar2(32);
    table_names id_array_t := id_array_t(
-      'at_sec_user_office',
       'at_ts_table_properties',
       'at_base_location',
       'at_physical_location',
@@ -89,73 +88,6 @@ end;
 -- CREATE TABLES --
 -------------------
 
--------------------------
--- AT_SEC_USER_OFFICE table
--- 
-CREATE TABLE AT_SEC_USER_OFFICE
-(
-  USER_ID            VARCHAR2(32 BYTE)  NOT NULL,
-  PRIMARY_OFFICE_ID  VARCHAR2(16 BYTE)  NOT NULL
-)
-TABLESPACE CWMS_20DATA
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL;
--------------------------
--- AT_SEC_USER_OFFICE comments
--- 
-COMMENT ON TABLE AT_SEC_USER_OFFICE IS 'Primary office IDs for CWMS Users';
-COMMENT ON COLUMN AT_SEC_USER_OFFICE.USER_ID IS 'CWMS User ID';
-COMMENT ON COLUMN AT_SEC_USER_OFFICE.PRIMARY_OFFICE_ID IS 'Primary Office ID for CWMS User';
--------------------------
--- AT_SEC_USER_OFFICE inidicies
--- 
-CREATE UNIQUE INDEX AT_SEC_USER_OFFICE_PK ON AT_SEC_USER_OFFICE (USER_ID, PRIMARY_OFFICE_ID)
-LOGGING
-TABLESPACE CWMS_20DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL;
--------------------------
--- AT_SEC_USER_OFFICE constraints
--- 
-ALTER TABLE AT_SEC_USER_OFFICE ADD CONSTRAINT AT_SEC_USER_OFFICE_FK1 FOREIGN KEY (PRIMARY_OFFICE_ID) REFERENCES CWMS_OFFICE (OFFICE_ID);
--------------------------
--- AT_SEC_USER_OFFICE trigger
--- 
-create or replace trigger at_sec_user_office_constraint
-before insert or update of user_id, primary_office_id
-on at_sec_user_office
-referencing new as new old as old
-for each row
-declare
-begin
-   :new.user_id := upper(:new.user_id);
-   :new.primary_office_id := upper(:new.primary_office_id);
-end at_sec_user_office_constraint;
-/
-show errors;
-commit;
 
 -------------------------
 -- AT_TS_TABLE_PROPERTIES table
@@ -2129,6 +2061,9 @@ LOGGING
 TABLESPACE cwms_20at_data
 NOPARALLEL
 /
+
+create or replace public synonym cwms_ts_id for cwms_20.mv_cwms_ts_id;
+
 -------------------------
 -- AV_SCREEN_ALARM_ID view.
 -- 
@@ -2182,6 +2117,8 @@ AS
                AND ascr.screening_code = asi.screening_code(+)
                AND aal.alarm_code = aali.alarm_code(+)
 /
+
+create or replace public synonym cwms_screen_alarm_id for cwms_20.av_screen_alarm_id;
 
 /* Formatted on 2006/12/18 13:15 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE VIEW av_screening_criteria (base_location_code,
@@ -2299,6 +2236,8 @@ AS
       AND avsi.screening_code = avsc.screening_code
 /
 
+create or replace public synonym cwms_screening_criteria for cwms_20.av_screening_criteria;
+
 -------------------------
 -- AV_ALIASES view.
 -- 
@@ -2327,6 +2266,9 @@ AS
       AND apl.base_location_code = abl.base_location_code
       AND abl.db_office_code = co.office_code
 /
+
+create or replace public synonym cwms_aliases for cwms_20.av_aliases;
+
 -----------------------------
 -- AT_UNIT_ALIAS TABLE.
 --
