@@ -1,4 +1,4 @@
-/* Formatted on 2006/12/22 08:58 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/01/04 11:14 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -14,51 +14,64 @@ AS
 ******************************************************************************/
 
    -- Constants for Storage Business Rules
-   replace_all                   CONSTANT VARCHAR2 (16) := 'REPLACE ALL';
-   do_not_replace                CONSTANT VARCHAR2 (16) := 'DO NOT REPLACE';
+   replace_all                   CONSTANT VARCHAR2 (16)      := 'REPLACE ALL';
+   do_not_replace                CONSTANT VARCHAR2 (16)   := 'DO NOT REPLACE';
    replace_missing_values_only   CONSTANT VARCHAR2 (32)
                                              := 'REPLACE MISSING VALUES ONLY';
    replace_with_non_missing      CONSTANT VARCHAR2 (32)
                                                 := 'REPLACE WITH NON MISSING';
-   delete_insert                 CONSTANT VARCHAR2 (16) := 'DELETE INSERT';
+   delete_insert                 CONSTANT VARCHAR2 (16)    := 'DELETE INSERT';
    --
    ---
    ---- DEPRICATED
-   delete_key                    CONSTANT VARCHAR2 (16) := 'DELETE KEY';
-   delete_data                   CONSTANT VARCHAR2 (22) := 'DELETE DATA';
-   delete_all                    CONSTANT VARCHAR2 (16) := 'DELETE ALL';
+   delete_key                    CONSTANT VARCHAR2 (16)       := 'DELETE KEY';
+   delete_data                   CONSTANT VARCHAR2 (22)      := 'DELETE DATA';
+   delete_all                    CONSTANT VARCHAR2 (16)       := 'DELETE ALL';
    ----DEPRICATED.
    ---
    --
-   delete_ts_id                  CONSTANT VARCHAR2 (22) := 'DELETE TS ID';
-   delete_loc                    CONSTANT VARCHAR2 (22) := 'DELETE LOC';
-   delete_ts_data                CONSTANT VARCHAR2 (22) := 'DELETE TS DATA';
+   delete_ts_id                  CONSTANT VARCHAR2 (22)     := 'DELETE TS ID';
+   delete_loc                    CONSTANT VARCHAR2 (22)       := 'DELETE LOC';
+   delete_ts_data                CONSTANT VARCHAR2 (22)   := 'DELETE TS DATA';
    delete_ts_cascade             CONSTANT VARCHAR2 (22)
                                                        := 'DELETE TS CASCADE';
    delete_loc_cascade            CONSTANT VARCHAR2 (22)
                                                       := 'DELETE LOC CASCADE';
    --
    -- non_versioned is the default version_date for non-versioned timeseries
-   non_versioned                 CONSTANT DATE          := DATE '1111-11-11';
-   utc_offset_irregular          CONSTANT NUMBER        := -2147483648;
-   utc_offset_undefined          CONSTANT NUMBER        := 2147483647;
-   true_num                      CONSTANT NUMBER        := 1;
-   false_num                     CONSTANT NUMBER        := 0;
-   max_base_id_length            CONSTANT NUMBER        := 16;
-   max_sub_id_length             CONSTANT NUMBER        := 32;
+   non_versioned                 CONSTANT DATE           := DATE '1111-11-11';
+   utc_offset_irregular          CONSTANT NUMBER               := -2147483648;
+   utc_offset_undefined          CONSTANT NUMBER                := 2147483647;
+   true_num                      CONSTANT NUMBER                 := 1;
+   false_num                     CONSTANT NUMBER                 := 0;
+   max_base_id_length            CONSTANT NUMBER                 := 16;
+   max_sub_id_length             CONSTANT NUMBER                 := 32;
    max_full_id_length            CONSTANT NUMBER
                                 := max_base_id_length + max_sub_id_length + 1;
    --
-   db_office_code_all            CONSTANT NUMBER        := 53;
+   db_office_code_all            CONSTANT NUMBER                 := 53;
    --
-   irregular_interval_code       CONSTANT NUMBER        := 29;
+   irregular_interval_code       CONSTANT NUMBER                 := 29;
    --
-   field_separator               CONSTANT VARCHAR2 (1)  := CHR (29);
-   record_separator              CONSTANT VARCHAR2 (1)  := CHR (30);
-   
-   mv_pause_timeout_interval     CONSTANT INTERVAL DAY TO SECOND := '0 0:30:0';
-   mv_pause_job_run_interval     CONSTANT NUMBER        := 60; -- minutes
-   
+   field_separator               CONSTANT VARCHAR2 (1)           := CHR (29);
+   record_separator              CONSTANT VARCHAR2 (1)           := CHR (30);
+   mv_pause_timeout_interval     CONSTANT INTERVAL DAY TO SECOND
+                                                                := '0 0:30:0';
+   mv_pause_job_run_interval     CONSTANT NUMBER                 := 60;
+                                                                   -- minutes
+   -- CWMS_PRIVILEGES...
+   read_privilege                CONSTANT NUMBER                 := 4;
+   write_privilege               CONSTANT NUMBER                 := 2;
+   --
+   -- CWMS SPECIAL USER GROUPS...
+   dba_users                     CONSTANT NUMBER                 := 1;
+   dbi_users                     CONSTANT NUMBER                 := 2;
+   data_exchange_mgr             CONSTANT NUMBER                 := 4;
+   data_acquisition_mgr          CONSTANT NUMBER                 := 8;
+   ts_creator                    CONSTANT NUMBER                 := 16;
+   vt_mgr                        CONSTANT NUMBER                 := 32;
+   all_users                     CONSTANT NUMBER                 := 64;
+
    TYPE str_tab_t IS TABLE OF VARCHAR2 (32767);
 
    -- table row with string fields
@@ -66,7 +79,7 @@ AS
 
    -- table of rows with string fields
 
---------------------------------------------------------------------------------
+   --------------------------------------------------------------------------------
 -- Splits string into a table of strings using the specified delimiter.
 -- If no delmiter is specified, the string is split around whitespace.
 --
@@ -173,31 +186,33 @@ AS
 --
    FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN NUMBER;
+
 --------------------------------------------------------------------------------
 -- function get_time_zone_code
 --
-   FUNCTION get_time_zone_code(p_time_zone_name IN VARCHAR2)
+   FUNCTION get_time_zone_code (p_time_zone_name IN VARCHAR2)
       RETURN NUMBER;
 
 --------------------------------------------------------------------------------
 -- function get_tz_usage_code
 --
-   FUNCTION get_tz_usage_code(p_tz_usage_id IN VARCHAR2)
+   FUNCTION get_tz_usage_code (p_tz_usage_id IN VARCHAR2)
       RETURN NUMBER;
 
 --------------------------------------------------------------------------------
 -- function pause_mv_refresh
 --
-   FUNCTION pause_mv_refresh(
-      p_mview_name IN VARCHAR2,
-      p_reason     IN VARCHAR2 DEFAULT NULL)
+   FUNCTION pause_mv_refresh (
+      p_mview_name   IN   VARCHAR2,
+      p_reason       IN   VARCHAR2 DEFAULT NULL
+   )
       RETURN UROWID;
 
 --------------------------------------------------------------------------------
 -- procedure resume_mv_refresh
 --
-   PROCEDURE resume_mv_refresh(p_paused_handle IN UROWID);
-   
+   PROCEDURE resume_mv_refresh (p_paused_handle IN UROWID);
+
 --------------------------------------------------------------------------------
 -- procedure timeout_mv_refresh_paused
 --
