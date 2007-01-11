@@ -1,5 +1,5 @@
 /* Formatted on 2006/05/09 18:31 (Formatter Plus v4.8.7) */
-create or replace package cwms_dss authid current_user
+create or replace package cwms_dss
 is
 --------------------------------------------------------------------------------
 --

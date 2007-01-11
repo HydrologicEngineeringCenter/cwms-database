@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE cwms_properties AUTHID CURRENT_USER
+CREATE OR REPLACE PACKAGE cwms_properties
 AS
    
    type property_info_t is record(
