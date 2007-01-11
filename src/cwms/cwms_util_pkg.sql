@@ -200,6 +200,14 @@ AS
       RETURN NUMBER;
 
 --------------------------------------------------------------------------------
+-- function get_real_name
+--
+   FUNCTION get_real_name (
+      p_synonym   IN   VARCHAR2
+   )
+      RETURN VARCHAR2;
+
+--------------------------------------------------------------------------------
 -- function pause_mv_refresh
 --
    FUNCTION pause_mv_refresh (

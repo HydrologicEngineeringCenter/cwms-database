@@ -204,6 +204,40 @@ AS
 
    
 --------------------------------------------------------------------------------
+-- function get_real_name
+--
+   FUNCTION get_real_name (
+      p_synonym   IN   VARCHAR2
+   )
+      RETURN VARCHAR2
+   IS
+      l_name varchar2(32) := upper(p_synonym);
+      invalid_sql_name exception;
+      pragma exception_init(invalid_sql_name, -44003);
+   BEGIN
+      begin
+         select dbms_assert.simple_sql_name(l_name)
+           into l_name
+           from dual;
+           
+         select table_name
+           into l_name 
+           from sys.all_synonyms 
+          where synonym_name = l_name
+            and owner = 'PUBLIC' 
+            and table_owner = 'CWMS_20';
+      exception
+         when invalid_sql_name then
+            cwms_err.raise('INVALID_ITEM', p_synonym, 'materialized view name');
+            
+         when no_data_found then null;
+      end;
+            
+      return l_name;
+         
+   END get_real_name;
+
+--------------------------------------------------------------------------------
 -- function pause_mv_refresh
 --
    FUNCTION pause_mv_refresh(
@@ -211,16 +245,17 @@ AS
       p_reason     IN VARCHAR2 DEFAULT NULL)
       RETURN UROWID
    IS                               
-      l_mview_name varchar2(30) := upper(p_mview_name);
-      l_user_id    varchar2(30);
+      l_mview_name varchar2(32);
+      l_user_id    varchar2(32);
       l_rowid      urowid := null;
       l_tstamp     timestamp;
    BEGIN
-      l_user_id := sys_context('userenv', 'session_user');
-      l_tstamp  := systimestamp;
-
       savepoint pause_mv_refresh_start;
        
+      l_user_id    := sys_context('userenv', 'session_user');
+      l_tstamp     := systimestamp;
+      l_mview_name := get_real_name(p_mview_name);
+      
       lock table at_mview_refresh_paused in exclusive mode;
 
       insert
@@ -232,7 +267,7 @@ AS
              l_tstamp;
       
       execute immediate 'alter materialized view '
-         || p_mview_name
+         || l_mview_name
          || ' refresh on demand';
       
       commit;
