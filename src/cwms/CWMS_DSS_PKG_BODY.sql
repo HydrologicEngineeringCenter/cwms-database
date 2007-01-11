@@ -1179,6 +1179,7 @@ as
       l_dss_file_name   at_dss_file.dss_file_name%type;
       l_dss_xchg_set_id at_dss_xchg_set.dss_xchg_set_id%type;
       l_office_code     cwms_office.office_code%type;
+      l_office_id_mask  cwms_office.office_id%type;
       l_office_id       cwms_office.office_id%type;
       l_office_name     cwms_office.long_name%type;
       l_db_name         v$database.name%type;
@@ -1186,24 +1187,35 @@ as
       l_oracle_id       varchar2(256);
       l_xml             clob;
       l_level           binary_integer := 0;
-      l_spc             varchar2(1) := ' ';
+      l_spc             varchar2(1) := chr(9);
       l_nl              varchar2(1) := chr(10);
       l_indent_str      varchar2(256) := null;
+      l_text            varchar2(32767) := null;
+      l_parts           cwms_util.str_tab_t;
+      type assoc_ary_t is table of boolean index by varchar2(32767);
+      l_offices         assoc_ary_t; 
+      l_filemgrs        assoc_ary_t; 
       
       cursor xchg_set_cur is
          select dss_filemgr_url,
                 dss_file_name,
                 f.dss_file_code,
+                office_id,
                 dss_xchg_set_code,
                 dss_xchg_set_id,
                 description,
                 realtime,
                 last_update
            from at_dss_file f,
-                at_dss_xchg_set xs
-          where xs.office_code = l_office_code
+                at_dss_xchg_set xs,
+                cwms_office o
+          where xs.office_code in (
+                select office_code
+                  from cwms_office
+                 where office_id like upper(l_office_id_mask) escape '\')
             and upper(dss_xchg_set_id) like upper(l_dss_xchg_set_id) escape '\'
             and f.dss_file_code = xs.dss_file_code
+            and o.office_code = f.office_code
             and dss_filemgr_url like l_dss_filemgr_url escape '\'
             and dss_file_name like l_dss_file_name escape '\';
 
@@ -1235,7 +1247,6 @@ as
          loop
             exit when l_number = 0;
             stack.extend;  
-            dbms_output.put_line(''||stack.last);
             l_digit := mod(l_number, 16);
             if l_digit > 9 then
                stack(stack.last) := chr(ascii('a')+ l_digit - 10); 
@@ -1244,22 +1255,24 @@ as
             end if;
             l_number := trunc(l_number / 16);
          end loop;
-         for i in reverse 1.. stack.count loop l_hex := l_hex || stack(i); end loop;    
+         for i in reverse 1..stack.count loop l_hex := l_hex || stack(i); end loop;    
          return l_hex;
       end;
    begin
-      l_dss_filemgr_url := replace(replace(nvl(p_dss_filemgr_url,  '%'), '*', '%'), '?', '_');
-      l_dss_file_name   := replace(replace(nvl(p_dss_file_name,    '%'), '*', '%'), '?', '_');
-      l_dss_xchg_set_id := replace(replace(nvl(p_dss_xchg_set_id,  '%'), '*', '%'), '?', '_');
-      l_office_code     := cwms_util.get_office_code(p_office_id);
+      l_dss_filemgr_url := cwms_util.normalize_wildcards(p_dss_filemgr_url);
+      l_dss_file_name   := cwms_util.normalize_wildcards(p_dss_file_name);
+      l_dss_xchg_set_id := cwms_util.normalize_wildcards(p_dss_xchg_set_id);
+      if p_office_id is null then
+         l_office_id_mask := cwms_util.get_office_code;
+      else
+         l_office_id_mask := cwms_util.normalize_wildcards(p_office_id);
+      end if;
       
-      select office_id,
-             long_name
-        into l_office_id,
-             l_office_name
-        from cwms_office
-       where office_code = l_office_code;
-           
+      dbms_output.put_line('l_dss_filemgr_url = ' || l_dss_filemgr_url);
+      dbms_output.put_line('l_dss_file_name   = ' || l_dss_file_name);
+      dbms_output.put_line('l_dss_xchg_set_id = ' || l_dss_xchg_set_id);
+      dbms_output.put_line('l_office_id_mask  = ' || l_office_id_mask);
+      
       select name into l_db_name from v$database;
       l_oracle_id := utl_inaddr.get_host_name || ':' || l_db_name;
       
@@ -1270,11 +1283,6 @@ as
       indent;
 
       for set_info in xchg_set_cur loop
-         l_dss_filemgr_id := dec2hex(set_info.dss_file_code);
-         writeln_xml('<dataexchangeset>');
-         indent;
-         writeln_xml('<name>'||set_info.dss_xchg_set_id||'</name>');
-         writeln_xml('<description>'||set_info.description||'</description>');
          for rec in (  
             select distinct office_code
               from at_dss_ts_xchg_map xm,
@@ -1290,25 +1298,73 @@ as
                       l_office_name
                  from cwms_office o
                 where o.office_code = rec.office_code;
-               writeln_xml('<office id="'||l_office_id||'">');
-               indent;
-               writeln_xml('<name>'||l_office_name||'</name>');
-               dedent;
-               writeln_xml('</office>');
+                l_text := l_office_id || cwms_util.field_separator || l_office_name;
+                if not l_offices.exists(l_text) then
+                  l_offices(l_text) := true;
+                end if;
          end loop;
-         writeln_xml('<dssfilemanager id="'||l_dss_filemgr_id||'">');
+         l_text := ''
+            || set_info.office_id
+            || cwms_util.field_separator
+            || set_info.dss_filemgr_url
+            || set_info.dss_file_name
+            || cwms_util.field_separator
+            || regexp_substr(set_info.dss_filemgr_url, '[^/:]+')
+            || cwms_util.field_separator
+            || regexp_substr(set_info.dss_filemgr_url, '[^:]+$')
+            || cwms_util.field_separator
+            || set_info.dss_file_name;
+         if not l_filemgrs.exists (l_text) then
+            l_filemgrs(l_text) := true;
+         end if;
+      end loop;
+      
+      l_text := l_offices.first;
+      loop
+         exit when l_text is null;
+         l_parts := cwms_util.split_text(l_text, cwms_util.field_separator);
+         writeln_xml('<office id="'||l_parts(1)||'">');
          indent;
-         writeln_xml('<host>'||regexp_substr(set_info.dss_filemgr_url, '[^/:]+')||'</host>');
-         writeln_xml('<port>'||regexp_substr(set_info.dss_filemgr_url, '[^:]+$')||'</port>');
-         writeln_xml('<filepath>'||set_info.dss_file_name||'</filepath>');
+         writeln_xml('<name>'||l_parts(2)||'</name>');
+         dedent;
+         writeln_xml('</office>');
+         l_text := l_offices.next(l_text);
+      end loop;
+      
+      l_text := l_filemgrs.first;
+      loop
+         exit when l_text is null;
+         l_parts := cwms_util.split_text(l_text, cwms_util.field_separator);
+         writeln_xml('<dssfilemanager id="'||l_parts(2)||'" officeid="'||l_parts(1)||'">');
+         indent;
+         writeln_xml('<host>'||l_parts(3)||'</host>');
+         writeln_xml('<port>'||l_parts(4)||'</port>');
+         writeln_xml('<filepath>'||l_parts(5)||'</filepath>');
          dedent;
          writeln_xml('</dssfilemanager>');
-         writeln_xml('<oracle id="'||l_oracle_id||'">');
+         l_text := l_filemgrs.next(l_text);
+      end loop;
+
+      writeln_xml('<oracle id="'||l_oracle_id||'">');
+      indent;
+      writeln_xml('<host>'||utl_inaddr.get_host_address||'</host>');
+      writeln_xml('<sid>'||l_db_name||'</sid>');
+      dedent;
+      writeln_xml('</oracle>');
+
+      for set_info in xchg_set_cur loop
+         l_dss_filemgr_id := set_info.dss_filemgr_url || set_info.dss_file_name;
+         writeln_xml(
+            '<dataexchangeset  officeid="'
+            || set_info.office_id
+            || '" dssfileid="'
+            || l_dss_filemgr_id
+            ||'" oracleid="'
+            || l_oracle_id
+            ||'">');
          indent;
-         writeln_xml('<host>'||utl_inaddr.get_host_address||'</host>');
-         writeln_xml('<sid>'||l_db_name||'</sid>');
-         dedent;
-         writeln_xml('</oracle>');
+         writeln_xml('<name>'||set_info.dss_xchg_set_id||'</name>');
+         writeln_xml('<description>'||set_info.description||'</description>');
          if set_info.realtime is not null then
             if set_info.realtime = 1 then
                writeln_xml(
@@ -1361,19 +1417,11 @@ as
             writeln_xml('<mapping>');
             indent;
             writeln_xml(
-               '<cwmstimeseries refid="'
-               || l_oracle_id
-               || '" officeid="'
-               || map_info.db_office_id
-               || '">'
+               '<cwmstimeseries>'
                || map_info.cwms_ts_id
                || '</cwmstimeseries>');
             writeln_xml(
-               '<dsspathname refid="'
-               || l_dss_filemgr_id
-               || '" officeid="'
-               || map_info.office_id
-               || '" timezone="'
+               '<dsspathname timezone="'
                || map_info.time_zone_name
                || '" units="'
                || map_info.unit_id
