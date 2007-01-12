@@ -22,8 +22,7 @@ create user &eroc.cwmsdbi
 grant create session to &eroc.cwmsdbi;
 
 create user &eroc.cwmspd
-   identified by &eroc.cwmspd
-   password expire
+   identified by values 'FEDCBA9876543210'
    default tablespace cwms_20data
    temporary tablespace temp
    profile default

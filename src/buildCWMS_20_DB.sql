@@ -1,7 +1,7 @@
 set echo off
 set time on
-set define &
-set concat .
+set define on
+set concat on
 set linesize 1024   
 whenever sqlerror exit sql.sqlcode
 --
