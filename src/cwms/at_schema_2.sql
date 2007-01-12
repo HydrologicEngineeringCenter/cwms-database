@@ -58,7 +58,6 @@ AS
       AND adu.db_office_code = abl.db_office_code;
 /
 SHOW ERRORS;
-create or replace public synonym cwms_v_loc for cwms_20.av_loc;
 COMMIT;
 -----------------------------
 -- AT_DSS_TS_SPEC trigger
