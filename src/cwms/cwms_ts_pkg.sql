@@ -147,6 +147,7 @@ AS
       p_interval_backward   IN       NUMBER DEFAULT NULL,
       p_versioned           IN       VARCHAR2 DEFAULT 'F',
       p_active_flag         IN       VARCHAR2 DEFAULT 'T',
+      p_fail_if_exists      IN       VARCHAR2 DEFAULT 'T',
       p_office_id           IN       VARCHAR2 DEFAULT NULL
    );
 

@@ -578,6 +578,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
        p_interval_backward   IN       NUMBER DEFAULT NULL,
        p_versioned           IN       VARCHAR2 DEFAULT 'F',
        p_active_flag         IN       VARCHAR2 DEFAULT 'T',
+       p_fail_if_exists      IN       VARCHAR2 DEFAULT 'T',
        p_office_id           IN       VARCHAR2 DEFAULT NULL
     )
     IS
@@ -862,7 +863,9 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
                                   );
        ELSIF l_ts_id_exists
        THEN
-          cwms_err.RAISE ('TS_ALREADY_EXISTS', p_cwms_ts_id);
+          IF upper(p_fail_if_exists) != 'F' THEN
+              cwms_err.RAISE ('TS_ALREADY_EXISTS', p_cwms_ts_id);
+          END IF;
        END IF;
 
        DBMS_APPLICATION_INFO.set_module (NULL, NULL);
