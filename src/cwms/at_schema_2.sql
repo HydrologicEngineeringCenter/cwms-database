@@ -77,8 +77,9 @@ begin
             union
             select alias_id unit_id from at_unit_alias 
              where db_office_code in (
-                                      cwms_util.get_office_code('ALL'), 
-                                      cwms_util.get_db_office_code
+                                      select db_office_code from cwms_office where office_code = 'ALL'
+                                      union
+                                      select db_office_code from cwms_office where office_code = :new.office_code
                                      )
           )
     where unit_id = :new.unit_id;
