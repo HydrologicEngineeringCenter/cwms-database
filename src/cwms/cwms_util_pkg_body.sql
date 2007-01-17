@@ -644,7 +644,7 @@ AS
       select time_zone_code
         into l_time_zone_code
         from cwms_time_zone
-       where upper(time_zone_name) = upper(p_time_zone_name);
+       where upper(time_zone_name) = upper(nvl(p_time_zone_name, 'UTC'));
 
       return l_time_zone_code;
    exception
