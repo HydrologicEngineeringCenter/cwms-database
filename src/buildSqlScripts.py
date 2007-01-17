@@ -4717,7 +4717,7 @@ errorCodes = [
     ['-20032', 'CANNOT_DELETE_UNIT_1',  'Cannot delete or rename unit alias "%1"; it is in use by %2.'],
     ['-20033', 'DUPLICATE_XCHG_MAP',    'Mapping of "%1" to "%2 already exists in exchage set "%3", but with different parameters.'],
     ['-20102', 'UNIT_CONV_NOT_FOUND',   'The units conversion for "%1" was not found'                 ],
-    ['-20103', 'INVALID_TIMEZONE',      'The timezone "%1" is not a valid Oracle timezone region'     ],
+    ['-20103', 'INVALID_TIME_ZONE',     'The time zone "%1" is not a valid Oracle time zone region'   ],
     ['-20104', 'UNITS_NOT_SPECIFIED',   'You must specifiy the UNITS of your data'                    ],
     ['-20998', 'ERROR',                 '%1'                                                          ],
     ['-20999', 'UNKNOWN_EXCEPTION',     'The requested exception is not in the CWMS_ERROR table: "%1"'],
