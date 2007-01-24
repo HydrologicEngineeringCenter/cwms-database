@@ -1,21 +1,20 @@
-@@CWMS_ERR_PKG
-@@CWMS_ERR_PKG_BODY
+@@cwms_err_pkg
+@@cwms_err_pkg_body
 
-@@CWMS_UTIL_PKG
-@@CWMS_UTIL_PKG_BODY
+@@cwms_util_pkg
+@@cwms_util_pkg_body
 
-@@CWMS_SEC_POLICY
-@@CWMS_SEC_POLICY_BODY
+@@cwms_sec_policy
+@@cwms_sec_policy_body
 
-@@CWMS_TS_PKG
-@@CWMS_TS_PKG_BODY
+@@cwms_ts_pkg
+@@cwms_ts_pkg_body
 
-@@CWMS_DSS_PKG
-@@CWMS_DSS_PKG_BODY
+@@cwms_dss_pkg
+@@cwms_dss_pkg_body
 
-@@CWMS_CAT_PKG
-@@CWMS_CAT_PKG_BODY
+@@cwms_cat_pkg
+@@cwms_cat_pkg_body
 
-@@CWMS_LOC_PKG
-@@CWMS_LOC_PKG_BODY
-
+@@cwms_loc_pkg
+@@cwms_loc_pkg_body
