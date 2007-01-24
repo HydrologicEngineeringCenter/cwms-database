@@ -114,6 +114,14 @@ is
       p_office_id            in   varchar2 default null);
 
 --------------------------------------------------------------------------------
+-- procedure unmap_ts_in_xchg_set(...)
+--
+   procedure unmap_ts_in_xchg_set(
+      p_dss_xchg_set_code    in   number,
+      p_cwms_ts_code         in   number,
+      p_office_id            in   varchar2 default null);
+   
+--------------------------------------------------------------------------------
 -- function get_dss_xchg_sets
 --
    function get_dss_xchg_sets(
@@ -123,6 +131,18 @@ is
       p_office_id       in varchar2 default null)
       return clob;
    
+--------------------------------------------------------------------------------
+-- procedure put_dss_xchg_sets
+--
+   procedure put_dss_xchg_sets(
+      p_sets_inserted     out number,
+      p_sets_updated      out number,
+      p_mappings_inserted out number,
+      p_mappings_updated  out number,
+      p_mappings_deleted  out number,
+      p_xml_clob          in out nocopy clob,
+      p_store_rule        in  varchar2 default 'MERGE');
+      
 --------------------------------------------------------------------------------
 -- procedure unmap_all_ts_in_xchg_set
 --
