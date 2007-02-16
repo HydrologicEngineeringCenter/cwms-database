@@ -56,7 +56,7 @@ def getServerOutput(orclConn) :
 def pauseMView(orclConn):
 	stmt = orclConn.prepareCall("begin :1 := cwms_util.pause_mv_refresh(:2, :3); end;")
 	stmt.registerOutParameter(1, oracle.jdbc.OracleTypes.ROWID)
-	stmt.setString(2, "mv_cwms_ts_id")
+	stmt.setString(2, "cwms_v_ts_id")
 	stmt.setString(3, "Inserting TSIDS from LoadExtractPostInfo.py")
 	stmt.execute()
 	pause_handle = stmt.getROWID(1);
@@ -74,9 +74,10 @@ def resumeMView(orclConn, pause_handle):
 #----------------#
 #connStr  = raw_input("\nEnter DB Connection String (user/pass@tnsName)\n-->")
 #fileName = raw_input("\nEnter name of data file\n-->")
-connStr  = "q0cwmspd[q0xxxyyy]/thenewdb06@q0mdp"
-fileName = "NWD-ExtractPostInfo.txt"
-# fileName = "HEC-ExtractPostInfo.txt"
+connStr  = "q0cwmsdbi[q0cwmspd]/thenewdb06@q0mdp2"
+# fileName = "Test-ExtractPostInfo.txt"
+# fileName = "NWD-ExtractPostInfo.txt"
+fileName = "HEC-ExtractPostInfo.txt"
 
 #-------------------------#		
 # Connect to the database #
@@ -108,7 +109,36 @@ getDssXchgSetsStmt = orclConn.prepareCall(getDssXchgSetsSql)
 lineNum = 0
 actionCount = 0
 pause_handle = None
+t1 = time.time()
+t2 = None
 try :
+	# serverOutput = FALSE
+	# if serverOutput : enableServerOutput(orclConn)
+	# pause_handle = pauseMView(orclConn)
+	# t1 = time.time()
+	# stmt = orclConn.prepareCall("begin cwms_dss.put_dss_xchg_sets(:1,:2,:3,:4,:5,:6,:7); end;")
+	# f = open("dataexchange.xml", "r")
+	# xmlData = f.read()
+	# print "%d bytes read from file." % len(xmlData)
+	# f.close()
+	# stmt.registerOutParameter(1, java.sql.Types.INTEGER) 
+	# stmt.registerOutParameter(2, java.sql.Types.INTEGER) 
+	# stmt.registerOutParameter(3, java.sql.Types.INTEGER) 
+	# stmt.registerOutParameter(4, java.sql.Types.INTEGER) 
+	# stmt.registerOutParameter(5, java.sql.Types.INTEGER) 
+	# stmt.setStringForClob(6, xmlData)
+	# stmt.setString(7, 'REPL')
+	# stmt.execute()
+	# for line in getServerOutput(orclConn) : print line
+	# print
+	# print "%4d sets inserted" % stmt.getInt(1);
+	# print "%4d sets updated" % stmt.getInt(2);
+	# print "%4d mappings inserted" % stmt.getInt(3);
+	# print "%4d mappings updated" % stmt.getInt(4);
+	# print "%4d mappings deleted" % stmt.getInt(5);
+	# print
+	# sys.exit()
+
 	getDssXchgSetsStmt.registerOutParameter(1, oracle.jdbc.OracleTypes.CLOB)
 	getDssXchgSetsStmt.setString(2, "*")
 	getDssXchgSetsStmt.setString(3, "*")
@@ -130,6 +160,7 @@ try :
 	pause_handle = pauseMView(orclConn)
 	office = ""
 	lastCwmsId = ""
+	t1 = time.time()
 	for line in lines :
 		line = line.strip()
 		lcLine = line.lower()
@@ -260,6 +291,9 @@ try :
 					for line in getServerOutput(orclConn) : print line
 				print e.getMessage()			        
 finally :
+	if t2 == None :
+		t2 = time.time()
+		print "Completed in %f seconds." % (t2 - t1)
 	if pause_handle : resumeMView(orclConn, pause_handle)
 	try    : 
 		orclConn.commit()
