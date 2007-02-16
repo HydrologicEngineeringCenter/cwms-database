@@ -124,6 +124,10 @@ is
 --------------------------------------------------------------------------------
 -- function get_dss_xchg_sets
 --
+-- Calling this function with no parameters will return all exchange sets for
+-- the calling user's office.   
+--
+--
    function get_dss_xchg_sets(
       p_dss_filemgr_url in varchar2 default null,
       p_dss_file_name   in varchar2 default null,
@@ -134,6 +138,54 @@ is
 --------------------------------------------------------------------------------
 -- procedure put_dss_xchg_sets
 --
+-- p_xml_clob must be a CLOB containing an XML instance of the same format as
+-- output by the get_dss_xchg_sets function (corresponds to the XML schema
+-- specified in dataexchangeschma.xsd).   
+--   
+-- p_store_rule must be one of - or an initial substring of - the following:
+--   
+--   INSERT  - For each existing data exchange set specfied in the input, add
+--             any mappings that don't already exist.  No existing mappings
+--             will be modified, even if they differ from the mappings
+--             specified in the input. New data exchange sets specified in
+--             the input will be created. No existing data exchange sets will
+--             be updated.   
+--   
+--   UPDATE  - For each existing data exchange set specified in the input,
+--             update all existing mappings that differ from the specified
+--             mappings. No mappings will be added to existing exchange sets.
+--             No new data exchange sets will be created.  Existing data
+--             exchange sets will be updated if necessary.   
+--   
+--   MERGE   - INSERT + UPDATE. For each exisint data exchange set specified
+--             in the input, update existing mappings that differ from the
+--             specified mappings and add specified mappings that don't already
+--             exist. New data exchange sets specified in the input will be 
+--             created and existing sets will be updated if necessary.
+--   
+--   REPLACE - For each existing data exchange set specified in the input,
+--             delete all existing mappings and replace them with the specified
+--             mappings. New data exchange sets specified in the input will be
+--             created. Existing data exchange sets will be updated if
+--             necessary.
+--   
+--   Under no circumstances will exsiting data exchange sets be deleted by this
+--   procedure.
+--   
+--   Existing data exchange sets are identified by the set id (name).  Items
+--   that can be updated are:
+--     Description
+--     Realtime exchange direction
+--     HEC-DSS filemanager URL
+--     HEC-DSS file name
+--   
+--   Existing mappings are identified by the combination of the CWMS timeseries
+--   identifier and the HEC-DSS pathname.  Items that can be updated are:
+--     HEC-DSS timeseries data type
+--     HEC-DSS data units
+--     HEC-DSS timezone
+--     HEC-DSS timezone-usage
+--   
    procedure put_dss_xchg_sets(
       p_sets_inserted     out number,
       p_sets_updated      out number,
