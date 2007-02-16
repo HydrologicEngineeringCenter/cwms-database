@@ -241,6 +241,8 @@ AS
 --------------------------------------------------------
 -- Replace filename wildcard chars (?,*) with SQL ones
 -- (_,%), using '\' as an escape character.
+--
+--  A null input generates a result of '%'.
 -- 
 -- '?'  ==> '_' except when preceded by '\'
 -- '*'  ==> '%' except when preceded by '\'
@@ -251,6 +253,13 @@ AS
    FUNCTION normalize_wildcards (p_string IN VARCHAR2)
       RETURN VARCHAR2;
       
+--------------------------------------------------------------------
+-- Return a string with all leading and trailing whitespace removed.
+--
+   FUNCTION strip (p_text IN VARCHAR2) 
+      RETURN VARCHAR2;
+   
+--------------------------------------------------------------------
    PROCEDURE TEST;
 
    -- Dump (put_line) a character string p_str in chunks of length p_len

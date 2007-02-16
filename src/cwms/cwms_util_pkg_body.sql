@@ -598,6 +598,8 @@ AS
 --------------------------------------------------------
 -- Replace filename wildcard chars (?,*) with SQL ones
 -- (_,%), using '\' as an escape character.
+--
+--  A null input generates a result of '%'.
 -- 
 -- '?'  ==> '_' except when preceded by '\'
 -- '*'  ==> '%' except when preceded by '\'
@@ -605,12 +607,12 @@ AS
 -- '\*' ==> '*'
 -- '\\' ==> '\'
 --
-   FUNCTION normalize_wildcards (p_string IN VARCHAR2)
-      RETURN VARCHAR2
+   function normalize_wildcards (p_string in varchar2)
+      return varchar2
    is
       l_result varchar2(32767);
    begin
-      l_result := nvl(p_string, '*');
+      l_result := nvl(p_string, '%');
       l_result := replace(l_result, '\\', chr(0));
       l_result := regexp_replace(regexp_replace(l_result, '(^|[^\])(\?)', '\1_'), '(^|[^\])(\*)', '\1%');
       l_result := regexp_replace(l_result, '\\([?*])', '\1');
@@ -618,7 +620,20 @@ AS
       return l_result;
    end normalize_wildcards;
       
+--------------------------------------------------------------------
+-- Return a string with all leading and trailing whitespace removed.
+--
+   function strip (
+      p_text in varchar2) 
+      return varchar2
+   is
+      l_text varchar2(32767);
+   begin
+      l_text := regexp_replace(p_text, '^[[:space:]]*(.*)[[:space:]]*$', '\1');
+      return l_text;
+   end strip;
    
+--------------------------------------------------------------------------------
    PROCEDURE TEST
    IS
    BEGIN
