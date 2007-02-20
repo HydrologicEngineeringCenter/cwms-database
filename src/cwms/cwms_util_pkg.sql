@@ -244,13 +244,28 @@ AS
 --
 --  A null input generates a result of '%'.
 -- 
--- '?'  ==> '_' except when preceded by '\'
--- '*'  ==> '%' except when preceded by '\'
--- '\?' ==> '?'
--- '\*' ==> '*'
--- '\\' ==> '\'
---
-   FUNCTION normalize_wildcards (p_string IN VARCHAR2)
+-- +--------------+-------------------------------------------------------------------------+
+-- |              |                             Output String                               |
+-- |              +------------------------------------------------------------+------------+
+-- |              |                            Recognize SQL                   |            |
+-- |              |                             Wildcards?                     |            |
+-- |              +------+---------------------------+-----+-------------------+            |
+-- | Input String | No   : comments                  | Yes : comments          | Different? |
+-- +--------------+------+---------------------------+-----+-------------------+------------+
+-- | %            | \%   : literal '%'               | %   : multi-wildcard    | Yes        |
+-- | _            | \_   : literal '_'               | _   : single-wildcard   | Yes        |
+-- | *            | %    : multi-wildcard            | %   : multi-wildcard    | No         |
+-- | ?            | _    : single-wildcard           | _   : single-wildcard   | No         |
+-- | \%           |      : not allowed               | \%  : literal '%'       | Yes        |
+-- | \_           |      : not allowed               | \_  : literal '_'       | Yes        |
+-- | \*           | *    : literal '*'               | *   : literal '*'       | No         |
+-- | \?           | ?    : literal '?'               | ?   : literal '?'       | No         |
+-- | \\%          | \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
+-- | \\_          | \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
+-- | \\*          | \\%  : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
+-- | \\?          | \\_  : literal '\' + swc         | \\_ : literal '\' + swc | No         |
+-- +--------------+------+---------------------------+-----+-------------------+------------+
+   FUNCTION normalize_wildcards (p_string IN VARCHAR2, p_recognize_sql boolean default false)
       RETURN VARCHAR2;
       
 --------------------------------------------------------------------

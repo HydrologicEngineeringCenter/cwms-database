@@ -601,22 +601,90 @@ AS
 --
 --  A null input generates a result of '%'.
 -- 
--- '?'  ==> '_' except when preceded by '\'
--- '*'  ==> '%' except when preceded by '\'
--- '\?' ==> '?'
--- '\*' ==> '*'
--- '\\' ==> '\'
---
-   function normalize_wildcards (p_string in varchar2)
+-- +--------------+-------------------------------------------------------------------------+
+-- |              |                             Output String                               |
+-- |              +------------------------------------------------------------+------------+
+-- |              |                            Recognize SQL                   |            |
+-- |              |                             Wildcards?                     |            |
+-- |              +------+---------------------------+-----+-------------------+            |
+-- | Input String | No   : comments                  | Yes : comments          | Different? |
+-- +--------------+------+---------------------------+-----+-------------------+------------+
+-- | %            | \%   : literal '%'               | %   : multi-wildcard    | Yes        |
+-- | _            | \_   : literal '_'               | _   : single-wildcard   | Yes        |
+-- | *            | %    : multi-wildcard            | %   : multi-wildcard    | No         |
+-- | ?            | _    : single-wildcard           | _   : single-wildcard   | No         |
+-- | \%           |      : not allowed               | \%  : literal '%'       | Yes        |
+-- | \_           |      : not allowed               | \_  : literal '_'       | Yes        |
+-- | \*           | *    : literal '*'               | *   : literal '*'       | No         |
+-- | \?           | ?    : literal '?'               | ?   : literal '?'       | No         |
+-- | \\%          | \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
+-- | \\_          | \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
+-- | \\*          | \\%  : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
+-- | \\?          | \\_  : literal '\' + swc         | \\_ : literal '\' + swc | No         |
+-- +--------------+------+---------------------------+-----+-------------------+------------+
+
+   function normalize_wildcards (
+      p_string        in varchar2, 
+      p_recognize_sql in boolean default false)
       return varchar2
    is
       l_result varchar2(32767);
+      l_char   varchar2(1);
+      l_skip  boolean := false;
    begin
-      l_result := nvl(p_string, '%');
-      l_result := replace(l_result, '\\', chr(0));
-      l_result := regexp_replace(regexp_replace(l_result, '(^|[^\])(\?)', '\1_'), '(^|[^\])(\*)', '\1%');
-      l_result := regexp_replace(l_result, '\\([?*])', '\1');
-      l_result := replace(l_result, chr(0), '\');
+      --------------------------------
+      -- default null string to '%' --
+      --------------------------------
+      if p_string is null then return '%'; end if;
+      l_result := null;
+      for i in 1..length(p_string) loop
+         if l_skip then
+            l_skip := false;
+         else
+            l_char := substr(p_string, i ,1);
+            case l_char
+               when '\' then
+                  if i = length(p_string) then cwms_err.raise('ERROR', 'Escape character ''\'' cannot end a match string.'); end if;
+                  l_skip := true;
+                  if regexp_instr(nvl(substr(p_string, i+1), ' '), '\\[*?%_]') = 1 then
+                     l_result := l_result || '\\';
+                  else
+                     l_char := substr(p_string, i+1, 1);
+                     if p_recognize_sql then
+                        case l_char
+                           when '\' then l_result := l_result || '\';
+                           when '*' then l_result := l_result || '*';
+                           when '?' then l_result := l_result || '?';
+                           when '%' then l_result := l_result || '\%';
+                           when '_' then l_result := l_result || '\_';
+                           else cwms_err.raise('INVALID_ITEM', p_string, 'match string');
+                        end case;
+                     else
+                        case l_char
+                           when '\' then l_result := l_result || '\';
+                           when '*' then l_result := l_result || '*';
+                           when '?' then l_result := l_result || '?';
+                           when '%' then cwms_err.raise('ERROR', 'Escape sequence ''\%'' is not valid when p_recognize_sql is FALSE.');
+                           when '_' then cwms_err.raise('ERROR', 'Escape sequence ''\_'' is not valid when p_recognize_sql is FALSE.');
+                           else cwms_err.raise('INVALID_ITEM', p_string, 'match string');
+                        end case;
+                     end if;
+                  end if;
+               when '*' then
+                  l_result := l_result || '%';
+               when '?' then
+                  l_result := l_result || '_';
+               when '%' then
+                  if not p_recognize_sql then l_result := l_result || '\'; end if;
+                  l_result := l_result || '%';
+               when '_' then
+                  if not p_recognize_sql then l_result := l_result || '\'; end if;
+                  l_result := l_result || '_';
+               else
+                  l_result := l_result || l_char;
+            end case;
+         end if;
+      end loop;
       return l_result;
    end normalize_wildcards;
       
