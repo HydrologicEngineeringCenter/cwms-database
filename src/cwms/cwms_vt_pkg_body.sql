@@ -65,7 +65,8 @@ AS
       l_ts_ni_hash :=
          cwms_ts.create_ts_ni_hash (p_parameter_id,
                                     p_parameter_type_id,
-                                    p_duration_id
+                                    p_duration_id,
+                                    p_db_office_id
                                    );
 
       --
