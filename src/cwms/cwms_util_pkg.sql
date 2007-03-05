@@ -1,4 +1,4 @@
-/* Formatted on 2007/01/04 11:14 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/03/05 06:45 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -202,9 +202,7 @@ AS
 --------------------------------------------------------------------------------
 -- function get_real_name
 --
-   FUNCTION get_real_name (
-      p_synonym   IN   VARCHAR2
-   )
+   FUNCTION get_real_name (p_synonym IN VARCHAR2)
       RETURN VARCHAR2;
 
 --------------------------------------------------------------------------------
@@ -243,7 +241,7 @@ AS
 -- (_,%), using '\' as an escape character.
 --
 --  A null input generates a result of '%'.
--- 
+--
 -- +--------------+-------------------------------------------------------------------------+
 -- |              |                             Output String                               |
 -- |              +------------------------------------------------------------+------------+
@@ -265,15 +263,28 @@ AS
 -- | \\*          | \\%  : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
 -- | \\?          | \\_  : literal '\' + swc         | \\_ : literal '\' + swc | No         |
 -- +--------------+------+---------------------------+-----+-------------------+------------+
-   FUNCTION normalize_wildcards (p_string IN VARCHAR2, p_recognize_sql boolean default false)
+   FUNCTION normalize_wildcards (
+      p_string          IN   VARCHAR2,
+      p_recognize_sql        BOOLEAN DEFAULT FALSE
+   )
       RETURN VARCHAR2;
-      
+
+--------------------------------------------------------------------
+-- Returns an AND/OR predicate string for a multi-element search set.
+--
+   FUNCTION parse_search_string (
+      p_search_patterns   IN   VARCHAR2,
+      p_search_column     IN   VARCHAR2,
+      p_use_upper         IN   BOOLEAN DEFAULT TRUE
+   )
+      RETURN VARCHAR2;
+
 --------------------------------------------------------------------
 -- Return a string with all leading and trailing whitespace removed.
 --
-   FUNCTION strip (p_text IN VARCHAR2) 
+   FUNCTION strip (p_text IN VARCHAR2)
       RETURN VARCHAR2;
-   
+
 --------------------------------------------------------------------
    PROCEDURE TEST;
 

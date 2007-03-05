@@ -1,4 +1,4 @@
-/* Formatted on 2006/12/11 09:09 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/03/05 08:02 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -202,353 +202,389 @@ AS
       END IF;
    END;
 
-   
 --------------------------------------------------------------------------------
 -- function get_real_name
 --
-   FUNCTION get_real_name (
-      p_synonym   IN   VARCHAR2
-   )
+   FUNCTION get_real_name (p_synonym IN VARCHAR2)
       RETURN VARCHAR2
    IS
-      l_name varchar2(32) := upper(p_synonym);
-      invalid_sql_name exception;
-      pragma exception_init(invalid_sql_name, -44003);
+      l_name             VARCHAR2 (32) := UPPER (p_synonym);
+      invalid_sql_name   EXCEPTION;
+      PRAGMA EXCEPTION_INIT (invalid_sql_name, -44003);
    BEGIN
-      begin
-         select dbms_assert.simple_sql_name(l_name)
-           into l_name
-           from dual;
-           
-         select table_name
-           into l_name 
-           from sys.all_synonyms 
-          where synonym_name = l_name
-            and owner = 'PUBLIC' 
-            and table_owner = 'CWMS_20';
-      exception
-         when invalid_sql_name then
-            cwms_err.raise('INVALID_ITEM', p_synonym, 'materialized view name');
-            
-         when no_data_found then null;
-      end;
-            
-      return l_name;
-         
+      BEGIN
+         SELECT dbms_assert.simple_sql_name (l_name)
+           INTO l_name
+           FROM DUAL;
+
+         SELECT table_name
+           INTO l_name
+           FROM SYS.all_synonyms
+          WHERE synonym_name = l_name
+            AND owner = 'PUBLIC'
+            AND table_owner = 'CWMS_20';
+      EXCEPTION
+         WHEN invalid_sql_name
+         THEN
+            cwms_err.RAISE ('INVALID_ITEM',
+                            p_synonym,
+                            'materialized view name'
+                           );
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
+
+      RETURN l_name;
    END get_real_name;
 
 --------------------------------------------------------------------------------
 -- function pause_mv_refresh
 --
-   FUNCTION pause_mv_refresh(
-      p_mview_name IN VARCHAR2,
-      p_reason     IN VARCHAR2 DEFAULT NULL)
+   FUNCTION pause_mv_refresh (
+      p_mview_name   IN   VARCHAR2,
+      p_reason       IN   VARCHAR2 DEFAULT NULL
+   )
       RETURN UROWID
-   IS                               
-      l_mview_name varchar2(32);
-      l_user_id    varchar2(32);
-      l_rowid      urowid := null;
-      l_tstamp     timestamp;
+   IS
+      l_mview_name   VARCHAR2 (32);
+      l_user_id      VARCHAR2 (32);
+      l_rowid        UROWID        := NULL;
+      l_tstamp       TIMESTAMP;
    BEGIN
-      savepoint pause_mv_refresh_start;
-       
-      l_user_id    := sys_context('userenv', 'session_user');
-      l_tstamp     := systimestamp;
-      l_mview_name := get_real_name(p_mview_name);
-      
-      lock table at_mview_refresh_paused in exclusive mode;
+      SAVEPOINT pause_mv_refresh_start;
+      l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+      l_tstamp := SYSTIMESTAMP;
+      l_mview_name := get_real_name (p_mview_name);
+      LOCK TABLE at_mview_refresh_paused IN EXCLUSIVE MODE;
 
-      insert
-        into at_mview_refresh_paused
-      values (l_tstamp, l_mview_name, l_user_id, p_reason)
-   returning rowid,
-             paused_at
-        into l_rowid,
-             l_tstamp;
-      
-      execute immediate 'alter materialized view '
-         || l_mview_name
-         || ' refresh on demand';
-      
-      commit;
-      
-      dbms_output.put_line('MVIEW '''
-           || l_mview_name
-           || ''' on-commit refresh paused at '
-           || l_tstamp
-           || ' by '
-           || l_user_id
-           || ', reason: '
-           || p_reason);  
+      INSERT INTO at_mview_refresh_paused
+           VALUES (l_tstamp, l_mview_name, l_user_id, p_reason)
+        RETURNING ROWID, paused_at
+             INTO l_rowid, l_tstamp;
 
-      
-      return l_rowid;
-      
-   exception
-      when others then
-         rollback to pause_mv_refresh_start;
-         raise;
-         
+      EXECUTE IMMEDIATE    'alter materialized view '
+                        || l_mview_name
+                        || ' refresh on demand';
+
+      COMMIT;
+      DBMS_OUTPUT.put_line (   'MVIEW '''
+                            || l_mview_name
+                            || ''' on-commit refresh paused at '
+                            || l_tstamp
+                            || ' by '
+                            || l_user_id
+                            || ', reason: '
+                            || p_reason
+                           );
+      RETURN l_rowid;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         ROLLBACK TO pause_mv_refresh_start;
+         RAISE;
    END pause_mv_refresh;
 
 --------------------------------------------------------------------------------
 -- procedure resume_mv_refresh
 --
-   PROCEDURE resume_mv_refresh(p_paused_handle IN UROWID)
+   PROCEDURE resume_mv_refresh (p_paused_handle IN UROWID)
    IS
-      l_mview_name varchar2(30);
-      l_count      binary_integer;
-      l_user_id    varchar2(30);
+      l_mview_name   VARCHAR2 (30);
+      l_count        BINARY_INTEGER;
+      l_user_id      VARCHAR2 (30);
    BEGIN
-      l_user_id := sys_context('userenv', 'session_user');
-      savepoint resume_mv_refresh_start;
-       
-      lock table at_mview_refresh_paused in exclusive mode;
-      
-      select mview_name 
-        into l_mview_name 
-        from at_mview_refresh_paused
-       where rowid = p_paused_handle;
-       
-      
-      delete
-        from at_mview_refresh_paused
-       where rowid = p_paused_handle;
+      l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+      SAVEPOINT resume_mv_refresh_start;
+      LOCK TABLE at_mview_refresh_paused IN EXCLUSIVE MODE;
 
-      select count(*)
-        into l_count
-        from at_mview_refresh_paused
-       where mview_name = l_mview_name;     
-       
-      if l_count = 0 then
-         dbms_mview.refresh(l_mview_name, 'c');
-         execute immediate 'alter materialized view '
-            || l_mview_name
-            || ' refresh on commit';
+      SELECT mview_name
+        INTO l_mview_name
+        FROM at_mview_refresh_paused
+       WHERE ROWID = p_paused_handle;
 
-         dbms_output.put_line('MVIEW '''
-              || l_mview_name
-              || ''' on-commit refresh resumed at '
-              || systimestamp
-              || ' by '
-              || l_user_id);  
-      else
-         dbms_output.put_line('MVIEW '''
-              || l_mview_name
-              || ''' on-commit refresh not resumed at '
-              || systimestamp
-              || ' by '
-              || l_user_id
-              || ', paused by '
-              || l_count
-              || ' other process(es)');  
-      end if;
-      
-      commit;
+      DELETE FROM at_mview_refresh_paused
+            WHERE ROWID = p_paused_handle;
 
+      SELECT COUNT (*)
+        INTO l_count
+        FROM at_mview_refresh_paused
+       WHERE mview_name = l_mview_name;
+
+      IF l_count = 0
+      THEN
+         dbms_mview.REFRESH (l_mview_name, 'c');
+
+         EXECUTE IMMEDIATE    'alter materialized view '
+                           || l_mview_name
+                           || ' refresh on commit';
+
+         DBMS_OUTPUT.put_line (   'MVIEW '''
+                               || l_mview_name
+                               || ''' on-commit refresh resumed at '
+                               || SYSTIMESTAMP
+                               || ' by '
+                               || l_user_id
+                              );
+      ELSE
+         DBMS_OUTPUT.put_line (   'MVIEW '''
+                               || l_mview_name
+                               || ''' on-commit refresh not resumed at '
+                               || SYSTIMESTAMP
+                               || ' by '
+                               || l_user_id
+                               || ', paused by '
+                               || l_count
+                               || ' other process(es)'
+                              );
+      END IF;
+
+      COMMIT;
    EXCEPTION
-      when no_data_found then 
-         commit;
-
-      when others then
-         rollback to resume_mv_refresh_start;
-         raise; 
-      
+      WHEN NO_DATA_FOUND
+      THEN
+         COMMIT;
+      WHEN OTHERS
+      THEN
+         ROLLBACK TO resume_mv_refresh_start;
+         RAISE;
    END resume_mv_refresh;
-   
+
 --------------------------------------------------------------------------------
 -- procedure timeout_mv_refresh_paused
 --
    PROCEDURE timeout_mv_refresh_paused
    IS
-      TYPE ts_by_mv_t 
-         IS TABLE OF at_mview_refresh_paused.paused_at%TYPE 
+      TYPE ts_by_mv_t IS TABLE OF at_mview_refresh_paused.paused_at%TYPE
          INDEX BY at_mview_refresh_paused.mview_name%TYPE;
-      l_abandonded_pauses ts_by_mv_t;
-      l_mview_name at_mview_refresh_paused.mview_name%TYPE;
-      l_now timestamp := systimestamp;
+
+      l_abandonded_pauses   ts_by_mv_t;
+      l_mview_name          at_mview_refresh_paused.mview_name%TYPE;
+      l_now                 TIMESTAMP                         := SYSTIMESTAMP;
    BEGIN
-      savepoint timeout_mv_rfrsh_paused_start;
+      SAVEPOINT timeout_mv_rfrsh_paused_start;
+      LOCK TABLE at_mview_refresh_paused IN EXCLUSIVE MODE;
 
-      lock table at_mview_refresh_paused in exclusive mode;
-      
-      for rec in (select * from at_mview_refresh_paused) loop
-         if l_now - rec.paused_at > mv_pause_timeout_interval then
-            if l_abandonded_pauses.exists(rec.mview_name) then
-               if rec.paused_at > l_abandonded_pauses(rec.mview_name) then
-                  l_abandonded_pauses(rec.mview_name) := rec.paused_at;
-               end if;
-            else
-               l_abandonded_pauses(rec.mview_name) := rec.paused_at;
-            end if;
-         end if;
-      end loop;
-            
-      l_mview_name := l_abandonded_pauses.first;
-      begin
-         loop
-            exit when l_mview_name is null;
-            dbms_mview.refresh(l_mview_name, 'c');
-            execute immediate 'alter materialized view '
-               || l_mview_name
-               || ' refresh on commit';
-               
-            dbms_output.put_line('MVIEW '''
-                 || l_mview_name
-                 || ''' ABANDONDED on-commit refresh resumed at '
-                 || systimestamp);  
-            delete
-              from at_mview_refresh_paused
-             where mview_name = l_mview_name
-               and paused_at <= l_abandonded_pauses(l_mview_name);
-            
-            l_mview_name := l_abandonded_pauses.next(l_mview_name);
-         end loop;
-      end;
+      FOR rec IN (SELECT *
+                    FROM at_mview_refresh_paused)
+      LOOP
+         IF l_now - rec.paused_at > mv_pause_timeout_interval
+         THEN
+            IF l_abandonded_pauses.EXISTS (rec.mview_name)
+            THEN
+               IF rec.paused_at > l_abandonded_pauses (rec.mview_name)
+               THEN
+                  l_abandonded_pauses (rec.mview_name) := rec.paused_at;
+               END IF;
+            ELSE
+               l_abandonded_pauses (rec.mview_name) := rec.paused_at;
+            END IF;
+         END IF;
+      END LOOP;
 
-      commit;
+      l_mview_name := l_abandonded_pauses.FIRST;
 
+      BEGIN
+         LOOP
+            EXIT WHEN l_mview_name IS NULL;
+            dbms_mview.REFRESH (l_mview_name, 'c');
+
+            EXECUTE IMMEDIATE    'alter materialized view '
+                              || l_mview_name
+                              || ' refresh on commit';
+
+            DBMS_OUTPUT.put_line
+                             (   'MVIEW '''
+                              || l_mview_name
+                              || ''' ABANDONDED on-commit refresh resumed at '
+                              || SYSTIMESTAMP
+                             );
+
+            DELETE FROM at_mview_refresh_paused
+                  WHERE mview_name = l_mview_name
+                    AND paused_at <= l_abandonded_pauses (l_mview_name);
+
+            l_mview_name := l_abandonded_pauses.NEXT (l_mview_name);
+         END LOOP;
+      END;
+
+      COMMIT;
    EXCEPTION
-      WHEN no_data_found THEN
-         commit;
-
-      WHEN OTHERS THEN
-         rollback to timeout_mv_rfrsh_paused_start;
-         raise;
-      
+      WHEN NO_DATA_FOUND
+      THEN
+         COMMIT;
+      WHEN OTHERS
+      THEN
+         ROLLBACK TO timeout_mv_rfrsh_paused_start;
+         RAISE;
    END timeout_mv_refresh_paused;
-   
 
 --------------------------------------------------------------------------------
 -- procedure start_timeout_mv_refresh_job
 --
    PROCEDURE start_timeout_mv_refresh_job
    IS
-      l_count   binary_integer;
-      l_user_id varchar2(30);
-      l_job_id  varchar2(30) := 'TIMEOUT_MV_REFRESH_JOB';
-      
-      function job_count return binary_integer
-      is
-      begin
-         select count(*) into l_count from sys.dba_scheduler_jobs where job_name = l_job_id and owner = l_user_id;
-         return l_count;
-      end;
-   BEGIN
-      --------------------------------------
-      -- make sure we're the correct user --
-      --------------------------------------
-      l_user_id := sys_context('userenv', 'session_user');
-      if l_user_id != 'CWMS_20' then
-         raise_application_error(-20999, 'Must be CWMS_20 user to start job ' || l_job_id, true);
-      end if;
-      -------------------------------------------
-      -- drop the job if it is already running --
-      -------------------------------------------
-      if job_count > 0 then
-         dbms_output.put('Dropping existing job ' || l_job_id || '...');
-         dbms_scheduler.drop_job(l_job_id);
-         --------------------------------
-         -- verify that it was dropped --
-         --------------------------------
-         if job_count = 0 then
-            dbms_output.put_line('done.');
-         else
-            dbms_output.put_line('failed.');
-         end if;
-      end if;
-      if job_count = 0 then
-         begin
-            ---------------------
-            -- restart the job --
-            ---------------------
-            dbms_scheduler.create_job(
-               job_name        => l_job_id,
-               job_type        => 'stored_procedure',
-               job_action      => 'cwms_util.timeout_mv_refresh_paused',
-               start_date      => null,
-               repeat_interval => 'freq=minutely; interval='||mv_pause_job_run_interval,
-               end_date        => null,
-               job_class       => 'default_job_class',
-               enabled         => true,
-               auto_drop       => false,
-               comments        => 'Times out abandoned pauses to on-commit refreshes on mviews.');
+      l_count     BINARY_INTEGER;
+      l_user_id   VARCHAR2 (30);
+      l_job_id    VARCHAR2 (30)  := 'TIMEOUT_MV_REFRESH_JOB';
 
-            if job_count = 1 then
-               dbms_output.put_line(
-                  'Job '
-                  || l_job_id 
-                  || ' successfully scheduled to execute every ' 
-                  || mv_pause_job_run_interval 
-                  || ' minutes.'); 
-            else
-               cwms_err.raise('ITEM_NOT_CREATED', 'job', l_job_id);
-            end if;
-         exception
-            when others then
-               cwms_err.raise('ITEM_NOT_CREATED', 'job', l_job_id || ':' || sqlerrm);
-         end;
-      end if;
+      FUNCTION job_count
+         RETURN BINARY_INTEGER
+      IS
+      BEGIN
+         SELECT COUNT (*)
+           INTO l_count
+           FROM SYS.dba_scheduler_jobs
+          WHERE job_name = l_job_id AND owner = l_user_id;
+
+         RETURN l_count;
+      END;
+   BEGIN
+--------------------------------------
+-- make sure we're the correct user --
+--------------------------------------
+      l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+
+      IF l_user_id != 'CWMS_20'
+      THEN
+         raise_application_error (-20999,
+                                     'Must be CWMS_20 user to start job '
+                                  || l_job_id,
+                                  TRUE
+                                 );
+      END IF;
+
+-------------------------------------------
+-- drop the job if it is already running --
+-------------------------------------------
+      IF job_count > 0
+      THEN
+         DBMS_OUTPUT.put ('Dropping existing job ' || l_job_id || '...');
+         DBMS_SCHEDULER.drop_job (l_job_id);
+
+--------------------------------
+-- verify that it was dropped --
+--------------------------------
+         IF job_count = 0
+         THEN
+            DBMS_OUTPUT.put_line ('done.');
+         ELSE
+            DBMS_OUTPUT.put_line ('failed.');
+         END IF;
+      END IF;
+
+      IF job_count = 0
+      THEN
+         BEGIN
+---------------------
+-- restart the job --
+---------------------
+            DBMS_SCHEDULER.create_job
+               (job_name             => l_job_id,
+                job_type             => 'stored_procedure',
+                job_action           => 'cwms_util.timeout_mv_refresh_paused',
+                start_date           => NULL,
+                repeat_interval      =>    'freq=minutely; interval='
+                                        || mv_pause_job_run_interval,
+                end_date             => NULL,
+                job_class            => 'default_job_class',
+                enabled              => TRUE,
+                auto_drop            => FALSE,
+                comments             => 'Times out abandoned pauses to on-commit refreshes on mviews.'
+               );
+
+            IF job_count = 1
+            THEN
+               DBMS_OUTPUT.put_line
+                              (   'Job '
+                               || l_job_id
+                               || ' successfully scheduled to execute every '
+                               || mv_pause_job_run_interval
+                               || ' minutes.'
+                              );
+            ELSE
+               cwms_err.RAISE ('ITEM_NOT_CREATED', 'job', l_job_id);
+            END IF;
+         EXCEPTION
+            WHEN OTHERS
+            THEN
+               cwms_err.RAISE ('ITEM_NOT_CREATED',
+                               'job',
+                               l_job_id || ':' || SQLERRM
+                              );
+         END;
+      END IF;
    END start_timeout_mv_refresh_job;
-   
+
 --------------------------------------------------------
 -- Return the current session user's primary office id
 --
-   function user_office_id
-      return varchar2
-   is
-      l_office_id  varchar2 (16) := null;
-      l_user_id    varchar2 (32);
-   begin
-      l_user_id := sys_context('userenv', 'session_user');
-      begin
-         select primary_office_id
-           into l_office_id
-           from at_sec_user_office
-          where user_id = l_user_id;
-      exception
-         when no_data_found then
-            begin
-               select office_id 
-                 into l_office_id 
-                 from cwms_office 
-                where eroc = upper(substr(l_user_id, 1, 2));
-            exception when no_data_found then null;
-            end;
-      end;
-      return l_office_id;
-   end user_office_id;
+   FUNCTION user_office_id
+      RETURN VARCHAR2
+   IS
+      l_office_id   VARCHAR2 (16) := NULL;
+      l_user_id     VARCHAR2 (32);
+   BEGIN
+      l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+
+      BEGIN
+         SELECT primary_office_id
+           INTO l_office_id
+           FROM at_sec_user_office
+          WHERE user_id = l_user_id;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            BEGIN
+               SELECT office_id
+                 INTO l_office_id
+                 FROM cwms_office
+                WHERE eroc = UPPER (SUBSTR (l_user_id, 1, 2));
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+               THEN
+                  NULL;
+            END;
+      END;
+
+      RETURN l_office_id;
+   END user_office_id;
 
 --------------------------------------------------------
 -- Return the current session user's primary office code
 --
-   function user_office_code
-      return number
-   is
-      l_office_code number(10) := null;
-      l_user_id     varchar2(32);
-   begin
-      l_user_id := sys_context('userenv', 'session_user');
-      begin
-         select office_code
-           into l_office_code
-           from cwms_office
-          where office_id = 
-                (select primary_office_id
-                   from at_sec_user_office
-                  where user_id = l_user_id);
-      exception
-         when no_data_found then
-            begin
-               select office_code 
-                 into l_office_code 
-                 from cwms_office 
-                where eroc = upper(substr(l_user_id, 1, 2));
-            exception when no_data_found then null;
-            end;
-      end;
-      return l_office_code;
-   end user_office_code;
+   FUNCTION user_office_code
+      RETURN NUMBER
+   IS
+      l_office_code   NUMBER (10)   := NULL;
+      l_user_id       VARCHAR2 (32);
+   BEGIN
+      l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+
+      BEGIN
+         SELECT office_code
+           INTO l_office_code
+           FROM cwms_office
+          WHERE office_id = (SELECT primary_office_id
+                               FROM at_sec_user_office
+                              WHERE user_id = l_user_id);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            BEGIN
+               SELECT office_code
+                 INTO l_office_code
+                 FROM cwms_office
+                WHERE eroc = UPPER (SUBSTR (l_user_id, 1, 2));
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+               THEN
+                  NULL;
+            END;
+      END;
+
+      RETURN l_office_code;
+   END user_office_code;
 
 --------------------------------------------------------
 -- Return the office code for the specified office id,
@@ -568,6 +604,7 @@ AS
            FROM cwms_office
           WHERE office_id = p_office_id;
       END IF;
+
       RETURN l_office_code;
    EXCEPTION
       WHEN NO_DATA_FOUND
@@ -579,28 +616,29 @@ AS
 -- Return the db host office code for the specified office id,
 -- or the user's primary office if the office id is null
 --
-   function get_db_office_code (p_office_id in varchar2 default null)
-      return number
-   is
-      l_db_office_code number := null;
-   begin
-      select db_host_office_code
-        into l_db_office_code
-        from cwms_office
-       where office_code = get_office_code(p_office_id);
-         
-      return l_db_office_code;
-   exception
-      when no_data_found then
-         cwms_err.raise('INVALID_OFFICE_ID', p_office_id);
-   end get_db_office_code;
-   
+   FUNCTION get_db_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN NUMBER
+   IS
+      l_db_office_code   NUMBER := NULL;
+   BEGIN
+      SELECT db_host_office_code
+        INTO l_db_office_code
+        FROM cwms_office
+       WHERE office_code = get_office_code (p_office_id);
+
+      RETURN l_db_office_code;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         cwms_err.RAISE ('INVALID_OFFICE_ID', p_office_id);
+   END get_db_office_code;
+
 --------------------------------------------------------
 -- Replace filename wildcard chars (?,*) with SQL ones
 -- (_,%), using '\' as an escape character.
 --
 --  A null input generates a result of '%'.
--- 
+--
 -- +--------------+-------------------------------------------------------------------------+
 -- |              |                             Output String                               |
 -- |              +------------------------------------------------------------+------------+
@@ -622,85 +660,402 @@ AS
 -- | \\*          | \\%  : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
 -- | \\?          | \\_  : literal '\' + swc         | \\_ : literal '\' + swc | No         |
 -- +--------------+------+---------------------------+-----+-------------------+------------+
+   FUNCTION normalize_wildcards (
+      p_string          IN   VARCHAR2,
+      p_recognize_sql   IN   BOOLEAN DEFAULT FALSE
+   )
+      RETURN VARCHAR2
+   IS
+      l_result   VARCHAR2 (32767);
+      l_char     VARCHAR2 (1);
+      l_skip     BOOLEAN          := FALSE;
+   BEGIN
+--------------------------------
+-- default null string to '%' --
+--------------------------------
+      IF p_string IS NULL
+      THEN
+         RETURN '%';
+      END IF;
 
-   function normalize_wildcards (
-      p_string        in varchar2, 
-      p_recognize_sql in boolean default false)
-      return varchar2
-   is
-      l_result varchar2(32767);
-      l_char   varchar2(1);
-      l_skip  boolean := false;
-   begin
-      --------------------------------
-      -- default null string to '%' --
-      --------------------------------
-      if p_string is null then return '%'; end if;
-      l_result := null;
-      for i in 1..length(p_string) loop
-         if l_skip then
-            l_skip := false;
-         else
-            l_char := substr(p_string, i ,1);
-            case l_char
-               when '\' then
-                  if i = length(p_string) then cwms_err.raise('ERROR', 'Escape character ''\'' cannot end a match string.'); end if;
-                  l_skip := true;
-                  if regexp_instr(nvl(substr(p_string, i+1), ' '), '\\[*?%_]') = 1 then
+      l_result := NULL;
+
+      FOR i IN 1 .. LENGTH (p_string)
+      LOOP
+         IF l_skip
+         THEN
+            l_skip := FALSE;
+         ELSE
+            l_char := SUBSTR (p_string, i, 1);
+
+            CASE l_char
+               WHEN '\'
+               THEN
+                  IF i = LENGTH (p_string)
+                  THEN
+                     cwms_err.RAISE
+                         ('ERROR',
+                          'Escape character ''\'' cannot end a match string.'
+                         );
+                  END IF;
+
+                  l_skip := TRUE;
+
+                  IF REGEXP_INSTR (NVL (SUBSTR (p_string, i + 1), ' '),
+                                   '\\[*?%_]'
+                                  ) = 1
+                  THEN
                      l_result := l_result || '\\';
-                  else
-                     l_char := substr(p_string, i+1, 1);
-                     if p_recognize_sql then
-                        case l_char
-                           when '\' then l_result := l_result || '\';
-                           when '*' then l_result := l_result || '*';
-                           when '?' then l_result := l_result || '?';
-                           when '%' then l_result := l_result || '\%';
-                           when '_' then l_result := l_result || '\_';
-                           else cwms_err.raise('INVALID_ITEM', p_string, 'match string');
-                        end case;
-                     else
-                        case l_char
-                           when '\' then l_result := l_result || '\';
-                           when '*' then l_result := l_result || '*';
-                           when '?' then l_result := l_result || '?';
-                           when '%' then cwms_err.raise('ERROR', 'Escape sequence ''\%'' is not valid when p_recognize_sql is FALSE.');
-                           when '_' then cwms_err.raise('ERROR', 'Escape sequence ''\_'' is not valid when p_recognize_sql is FALSE.');
-                           else cwms_err.raise('INVALID_ITEM', p_string, 'match string');
-                        end case;
-                     end if;
-                  end if;
-               when '*' then
+                  ELSE
+                     l_char := SUBSTR (p_string, i + 1, 1);
+
+                     IF p_recognize_sql
+                     THEN
+                        CASE l_char
+                           WHEN '\'
+                           THEN
+                              l_result := l_result || '\';
+                           WHEN '*'
+                           THEN
+                              l_result := l_result || '*';
+                           WHEN '?'
+                           THEN
+                              l_result := l_result || '?';
+                           WHEN '%'
+                           THEN
+                              l_result := l_result || '\%';
+                           WHEN '_'
+                           THEN
+                              l_result := l_result || '\_';
+                           ELSE
+                              cwms_err.RAISE ('INVALID_ITEM',
+                                              p_string,
+                                              'match string'
+                                             );
+                        END CASE;
+                     ELSE
+                        CASE l_char
+                           WHEN '\'
+                           THEN
+                              l_result := l_result || '\';
+                           WHEN '*'
+                           THEN
+                              l_result := l_result || '*';
+                           WHEN '?'
+                           THEN
+                              l_result := l_result || '?';
+                           WHEN '%'
+                           THEN
+                              cwms_err.RAISE
+                                 ('ERROR',
+                                  'Escape sequence ''\%'' is not valid when p_recognize_sql is FALSE.'
+                                 );
+                           WHEN '_'
+                           THEN
+                              cwms_err.RAISE
+                                 ('ERROR',
+                                  'Escape sequence ''\_'' is not valid when p_recognize_sql is FALSE.'
+                                 );
+                           ELSE
+                              cwms_err.RAISE ('INVALID_ITEM',
+                                              p_string,
+                                              'match string'
+                                             );
+                        END CASE;
+                     END IF;
+                  END IF;
+               WHEN '*'
+               THEN
                   l_result := l_result || '%';
-               when '?' then
+               WHEN '?'
+               THEN
                   l_result := l_result || '_';
-               when '%' then
-                  if not p_recognize_sql then l_result := l_result || '\'; end if;
+               WHEN '%'
+               THEN
+                  IF NOT p_recognize_sql
+                  THEN
+                     l_result := l_result || '\';
+                  END IF;
+
                   l_result := l_result || '%';
-               when '_' then
-                  if not p_recognize_sql then l_result := l_result || '\'; end if;
+               WHEN '_'
+               THEN
+                  IF NOT p_recognize_sql
+                  THEN
+                     l_result := l_result || '\';
+                  END IF;
+
                   l_result := l_result || '_';
-               else
+               ELSE
                   l_result := l_result || l_char;
-            end case;
-         end if;
-      end loop;
-      return l_result;
-   end normalize_wildcards;
-      
+            END CASE;
+         END IF;
+      END LOOP;
+
+      RETURN l_result;
+   END normalize_wildcards;
+
+--------------------------------------------------------------------------------
+-- Parses a search string into one or more AND/OR LIKE/NOT LIKE predicate lines.
+-- A search string contains one or more search patterns separated by a blank  -
+-- space. When constructing search patterns on can use AND, OR, and NOT between-
+-- search patterns. a blank space between two patterns is assumed to be an AND.
+-- Quotes can be used to aggregate search patterns that contain one or more    -
+-- blank spaces.
+--
+   FUNCTION parse_search_string (
+      p_search_patterns   IN   VARCHAR2,
+      p_search_column     IN   VARCHAR2,
+      p_use_upper         IN   BOOLEAN DEFAULT TRUE
+   )
+      RETURN VARCHAR2
+--------------------------------------------------------------------------------
+-- Usage:                                                                      -
+--         *   - wild card character matches zero or more occurences.          -
+--         ?   - wild card character matches zero or one occurence.            -
+--         and - AND or a blank space, e.g., abc* *123 is eqivalent to         -
+--                                           abc* AND *123                     -
+--         or  - OR  e.g., abc* OR *123                                        -
+--         not - NOT or a dash, e.g.,  'NOT abc*' is equivalent to '-abc*'     -
+--         " " - quotes are used to aggregate patters that have blank spaces   -
+--               e.g., "abc 123*"                                              -
+--
+--         One can use the backslash as an escape character for the following  -
+--         special characters:                                                 -
+--         \* used to make an asterisks a literal instead of a wild character  -                                                            -
+--         \? used to make a question mark a literal instead of a wild         -
+--            character                                                        - 
+--         \- used to start a new parse pattern with a dash instead of a NOT   -
+--         \" used to make a quote a literal part of the parse pattern.        -
+--
+-- Example:
+-- p_search_column:   COLUMN_OF_INTEREST                                       -
+-- p_search_patterns: cb* NOT cbt* OR NOT cbk*                                 -
+--       will return:                                                          -
+--                    AND UPPER(COLUMN_OF_INTEREST)  LIKE 'CB%'                -
+--                    AND UPPER(COLUMN_OF_INTEREST) NOT LIKE 'CBT%'            -
+--                    OR UPPER(COLUMN_OF_INTEREST) NOT LIKE 'CBK%'             -
+--
+--  if p_use_upper is set to false, the above will return:
+--
+--                     AND COLUMN_OF_INTEREST  LIKE 'cb%'                      -
+--                     AND COLUMN_OF_INTEREST NOT LIKE 'cbt%'                  -
+--                     OR COLUMN_OF_INTEREST NOT LIKE 'cbk%'                   -
+--
+--  A null p_search_patterns generates a result of '%'.
+--
+--                     AND COLUMN_OF_INTEREST  LIKE '%'                        -
+--------------------------------------------------------------------------------
+--
+   IS
+      l_string                VARCHAR2 (256)  := TRIM (p_search_patterns);
+      l_search_column         VARCHAR2 (30) := UPPER (TRIM (p_search_column));
+      l_use_upper             BOOLEAN         := NVL (p_use_upper, TRUE);
+      l_recognize_sql         BOOLEAN         := FALSE;
+      l_string_length         NUMBER          := NVL (LENGTH (l_string), 0);
+      l_skip                  BOOLEAN         := FALSE;
+      l_looking_first_quote   BOOLEAN         := TRUE;
+      l_sub_string_done       BOOLEAN         := FALSE;
+      l_first_char            BOOLEAN         := TRUE;
+      l_char                  VARCHAR2 (1);
+      l_sub_string            VARCHAR2 (64)   := NULL;
+      l_not                   VARCHAR2 (3)    := NULL;
+      l_and_or                VARCHAR2 (3)    := 'AND';
+      l_result                VARCHAR2 (1000) := NULL;
+      l_open_upper            VARCHAR2 (7);
+      l_close_upper           VARCHAR2 (2);
+   BEGIN
+      --
+      -- set the UPPER( ) wrapper...
+      IF l_use_upper
+      THEN
+         l_open_upper := ' UPPER(';
+         l_close_upper := ') ';
+      ELSE
+         l_open_upper := ' ';
+         l_close_upper := ' ';
+      END IF;
+
+      --
+      -- Make sure something was passed in.
+      IF l_string_length <= 0
+      THEN
+         l_result := ' AND UPPER(' || l_search_column || ') LIKE ''%'' ';
+      ELSE
+         FOR i IN 1 .. LENGTH (l_string)
+         LOOP
+            IF l_skip
+            THEN
+               l_skip := FALSE;
+            ELSE
+               l_char := SUBSTR (l_string, i, 1);
+
+               CASE l_char
+                  WHEN '\'
+                  THEN
+                     IF REGEXP_INSTR (NVL (SUBSTR (l_string, i + 1), ' '),
+                                      '["*?-]'
+                                     ) = 1
+                     THEN
+                        l_char := SUBSTR (l_string, i + 1, 1);
+
+                        CASE l_char
+                           WHEN '*'
+                           THEN
+                              l_sub_string := l_sub_string || '\';
+                           WHEN '?'
+                           THEN
+                              l_sub_string := l_sub_string || '\';
+                           WHEN '"'
+                           THEN
+                              l_sub_string := l_sub_string || '"';
+                              l_skip := TRUE;
+                           WHEN '-'
+                           THEN
+                              l_sub_string := l_sub_string || '-';
+                              l_skip := TRUE;
+                           ELSE
+                              l_skip := TRUE;
+                        END CASE;
+                     END IF;
+                  WHEN '-'
+                  THEN
+                     IF l_first_char
+                     THEN
+                        l_not := 'NOT';
+                     ELSE
+                        l_sub_string := l_sub_string || l_char;
+                     END IF;
+                  WHEN '"'
+                  THEN
+                     IF l_looking_first_quote
+                     THEN
+                        IF    INSTR (NVL (SUBSTR (l_string, i - 1, 2), ' "'),
+                                     ' "'
+                                    ) = 1
+                           OR i = 1
+                           OR (    i >= 2
+                               AND INSTR (SUBSTR (l_string, i - 2, 3), ' -"') =
+                                                                             1
+                              )
+                           OR (    i = 2
+                               AND INSTR (SUBSTR (l_string, i - 2, 2), '-"') =
+                                                                             1
+                              )
+                        THEN
+                           l_looking_first_quote := FALSE;
+                        ELSE
+                           l_sub_string := l_sub_string || l_char;
+                        END IF;
+                     ELSE                        -- looking for the end quote.
+                        /*
+                        An end quote must be followed by a space or end the string.
+                        */
+                        IF INSTR (NVL (SUBSTR (l_string, i + 1), ' '), ' ') =
+                                                                            1
+                        THEN
+                           l_skip := TRUE;
+                           l_sub_string_done := TRUE;
+                        ELSE
+                           l_sub_string := l_sub_string || l_char;
+                        END IF;
+                     END IF;
+                  WHEN ' '
+                  THEN
+                     IF l_looking_first_quote
+                     THEN
+                        l_sub_string_done := TRUE;
+                     ELSE
+                        l_sub_string := l_sub_string || l_char;
+                     END IF;
+                  ELSE
+                     l_sub_string := l_sub_string || l_char;
+               END CASE;
+            END IF;
+
+            IF l_sub_string_done OR i = l_string_length
+            THEN
+               IF LENGTH (l_sub_string) > 0
+               THEN
+                  IF i = l_string_length
+                  THEN
+                     l_sub_string_done := TRUE;
+                  END IF;
+
+                  IF l_looking_first_quote
+                  THEN
+                     CASE l_sub_string
+                        WHEN 'OR'
+                        THEN
+                           l_and_or := 'OR';
+                           l_sub_string_done := FALSE;
+                        WHEN 'AND'
+                        THEN
+                           l_and_or := 'AND';
+                           l_sub_string_done := FALSE;
+                        WHEN 'NOT'
+                        THEN
+                           l_not := 'NOT';
+                           l_sub_string_done := FALSE;
+                        ELSE
+                           NULL;
+                     END CASE;
+                  END IF;
+
+                  IF l_sub_string_done
+                  THEN
+                     l_sub_string :=
+                        cwms_util.normalize_wildcards
+                                          (p_string             => l_sub_string,
+                                           p_recognize_sql      => l_recognize_sql
+                                          );
+
+                     IF l_use_upper
+                     THEN
+                        l_sub_string := UPPER (l_sub_string);
+                     END IF;
+
+                     l_result :=
+                           l_result
+                        || ' '
+                        || l_and_or
+                        || l_open_upper
+                        || l_search_column
+                        || l_close_upper
+                        || l_not
+                        || ' LIKE '''
+                        || l_sub_string
+                        || ''' '
+                        || CHR (10);
+                     l_and_or := 'AND';
+                     l_not := NULL;
+                  END IF;
+               END IF;
+
+               l_first_char := TRUE;
+               l_sub_string := NULL;
+               l_sub_string_done := FALSE;
+               l_looking_first_quote := TRUE;
+            END IF;
+         END LOOP;
+      END IF;
+
+      RETURN l_result;
+   END parse_search_string;
+
 --------------------------------------------------------------------
 -- Return a string with all leading and trailing whitespace removed.
 --
-   function strip (
-      p_text in varchar2) 
-      return varchar2
-   is
-      l_text varchar2(32767);
-   begin
-      l_text := regexp_replace(p_text, '^[[:space:]]*(.*)[[:space:]]*$', '\1');
-      return l_text;
-   end strip;
-   
+   FUNCTION strip (p_text IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+      l_text   VARCHAR2 (32767);
+   BEGIN
+      l_text :=
+              REGEXP_REPLACE (p_text, '^[[:space:]]*(.*)[[:space:]]*$', '\1');
+      RETURN l_text;
+   END strip;
+
 --------------------------------------------------------------------------------
    PROCEDURE TEST
    IS
@@ -718,44 +1073,45 @@ AS
 --------------------------------------------------------------------------------
 -- function get_time_zone_code
 --
-   function get_time_zone_code(
-      p_time_zone_name in varchar2)
-      return number
-   is
-      l_time_zone_code number(10);
-   begin
-      select time_zone_code
-        into l_time_zone_code
-        from cwms_time_zone
-       where upper(time_zone_name) = upper(nvl(p_time_zone_name, 'UTC'));
+   FUNCTION get_time_zone_code (p_time_zone_name IN VARCHAR2)
+      RETURN NUMBER
+   IS
+      l_time_zone_code   NUMBER (10);
+   BEGIN
+      SELECT time_zone_code
+        INTO l_time_zone_code
+        FROM cwms_time_zone
+       WHERE UPPER (time_zone_name) = UPPER (NVL (p_time_zone_name, 'UTC'));
 
-      return l_time_zone_code;
-   exception
-      when no_data_found then
-         cwms_err.raise('INVALID_TIME_ZONE', p_time_zone_name);
-         
-   end get_time_zone_code;
+      RETURN l_time_zone_code;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         cwms_err.RAISE ('INVALID_TIME_ZONE', p_time_zone_name);
+   END get_time_zone_code;
 
 --------------------------------------------------------------------------------
 -- function get_tz_usage_code
 --
-   function get_tz_usage_code(
-      p_tz_usage_id in varchar2)
-      return number
-   is
-      l_tz_usage_code number(10);
-   begin
-      select tz_usage_code
-        into l_tz_usage_code
-        from cwms_tz_usage
-       where upper(tz_usage_id) = upper(nvl(p_tz_usage_id, 'Standard'));
+   FUNCTION get_tz_usage_code (p_tz_usage_id IN VARCHAR2)
+      RETURN NUMBER
+   IS
+      l_tz_usage_code   NUMBER (10);
+   BEGIN
+      SELECT tz_usage_code
+        INTO l_tz_usage_code
+        FROM cwms_tz_usage
+       WHERE UPPER (tz_usage_id) = UPPER (NVL (p_tz_usage_id, 'Standard'));
 
-      return l_tz_usage_code;
-   exception
-      when no_data_found then
-         cwms_err.raise('INVALID_ITEM',p_tz_usage_id,'CWMS time zone usage');
-         
-   end get_tz_usage_code;
+      RETURN l_tz_usage_code;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         cwms_err.RAISE ('INVALID_ITEM',
+                         p_tz_usage_id,
+                         'CWMS time zone usage'
+                        );
+   END get_tz_usage_code;
 
 ----------------------------------------------------------------------------
    PROCEDURE DUMP (p_str IN VARCHAR2, p_len IN PLS_INTEGER DEFAULT 80)
@@ -824,141 +1180,169 @@ AS
          --dbms_output.put_line(SQLERRM);
          RAISE;
    END create_view;
-   
+
 -------------------------------------------------------------------------------
 -- function split_text(...)
 --
 --
    FUNCTION split_text (
-      p_text      in varchar2,
-      p_separator in varchar2 default null)
-      return str_tab_t
-   is
-      l_str_tab str_tab_t := str_tab_t();
-      l_str varchar2(32767);
-      l_field varchar2(32767);
-      l_pos binary_integer;
-      l_sep varchar2(32767);
-      l_sep_len binary_integer;
-   begin
-      if p_separator is null then
-         l_str := regexp_replace(p_text, '\s+', ' ');
+      p_text        IN   VARCHAR2,
+      p_separator   IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN str_tab_t
+   IS
+      l_str_tab   str_tab_t        := str_tab_t ();
+      l_str       VARCHAR2 (32767);
+      l_field     VARCHAR2 (32767);
+      l_pos       BINARY_INTEGER;
+      l_sep       VARCHAR2 (32767);
+      l_sep_len   BINARY_INTEGER;
+   BEGIN
+      IF p_separator IS NULL
+      THEN
+         l_str := REGEXP_REPLACE (p_text, '\s+', ' ');
          l_sep := ' ';
-      else
+      ELSE
          l_str := p_text;
          l_sep := p_separator;
-      end if;
-      l_sep_len := length(l_sep);
-      loop
-         l_pos := nvl(instr(l_str, l_sep), 0);
-         if l_pos = 0 then
+      END IF;
+
+      l_sep_len := LENGTH (l_sep);
+
+      LOOP
+         l_pos := NVL (INSTR (l_str, l_sep), 0);
+
+         IF l_pos = 0
+         THEN
             l_field := l_str;
-            l_str   := null;
-         else
-            l_field := substr(l_str, 1, l_pos - 1);
-            l_str := substr(l_str, l_pos + l_sep_len); -- null if > length(l_str)
-         end if;
-         l_str_tab.extend;
-         l_str_tab(l_str_tab.last) := l_field;
-         exit when l_pos = 0;
-      end loop;
-      return l_str_tab;
-   end split_text;
+            l_str := NULL;
+         ELSE
+            l_field := SUBSTR (l_str, 1, l_pos - 1);
+            l_str := SUBSTR (l_str, l_pos + l_sep_len);
+         -- null if > length(l_str)
+         END IF;
+
+         l_str_tab.EXTEND;
+         l_str_tab (l_str_tab.LAST) := l_field;
+         EXIT WHEN l_pos = 0;
+      END LOOP;
+
+      RETURN l_str_tab;
+   END split_text;
 
 -------------------------------------------------------------------------------
 -- function join_text(...)
 --
 --
-   FUNCTION join_text(
-      p_text_tab  in str_tab_t,                      
-      p_separator in varchar2 default null) 
-      return varchar2
-   is
-      l_text varchar2(32767) := null;
-   begin
-      for i in 1 .. p_text_tab.count loop
-         if i > 1 then
+   FUNCTION join_text (
+      p_text_tab    IN   str_tab_t,
+      p_separator   IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN VARCHAR2
+   IS
+      l_text   VARCHAR2 (32767) := NULL;
+   BEGIN
+      FOR i IN 1 .. p_text_tab.COUNT
+      LOOP
+         IF i > 1
+         THEN
             l_text := l_text || p_separator;
-         end if;
-         l_text := l_text || p_text_tab(i);
-      end loop;
-      return l_text;
-   end join_text;
+         END IF;
+
+         l_text := l_text || p_text_tab (i);
+      END LOOP;
+
+      RETURN l_text;
+   END join_text;
 
 -------------------------------------------------------------------------------
 -- function parse_clob_recordset(...)
 --
 --
-   FUNCTION parse_clob_recordset (p_clob IN  CLOB)
-   return str_tab_tab_t
-   is
-      l_rows str_tab_t;
-      l_tab str_tab_tab_t := str_tab_tab_t();
-      l_buf varchar2(32767) := '';
-      l_chunk varchar2(4000);
-      l_clob_offset binary_integer := 1;
-      l_buf_offset binary_integer := 1;
-      l_amount binary_integer;
-      l_clob_len binary_integer;
-      l_last binary_integer;
-      l_done_reading boolean;
-      chunk_size constant binary_integer := 4000;
-   begin  
-      if p_clob is null then
-         return null;
-      end if;
-      l_clob_len := dbms_lob.getlength(p_clob);
+   FUNCTION parse_clob_recordset (p_clob IN CLOB)
+      RETURN str_tab_tab_t
+   IS
+      l_rows                str_tab_t;
+      l_tab                 str_tab_tab_t    := str_tab_tab_t ();
+      l_buf                 VARCHAR2 (32767) := '';
+      l_chunk               VARCHAR2 (4000);
+      l_clob_offset         BINARY_INTEGER   := 1;
+      l_buf_offset          BINARY_INTEGER   := 1;
+      l_amount              BINARY_INTEGER;
+      l_clob_len            BINARY_INTEGER;
+      l_last                BINARY_INTEGER;
+      l_done_reading        BOOLEAN;
+      chunk_size   CONSTANT BINARY_INTEGER   := 4000;
+   BEGIN
+      IF p_clob IS NULL
+      THEN
+         RETURN NULL;
+      END IF;
+
+      l_clob_len := DBMS_LOB.getlength (p_clob);
       l_amount := chunk_size;
-      loop
-         dbms_lob.read(p_clob, l_amount, l_clob_offset, l_chunk);
+
+      LOOP
+         DBMS_LOB.READ (p_clob, l_amount, l_clob_offset, l_chunk);
          l_clob_offset := l_clob_offset + l_amount;
          l_done_reading := l_clob_offset > l_clob_len;
          l_buf := l_buf || l_chunk;
-         if instr(l_buf, record_separator) > 0  or l_done_reading then
-            l_rows := split_text(l_buf, record_separator);
-            l_buf := l_rows(l_rows.count);
-            if l_done_reading then
-               l_last := l_rows.count;
-            else
-               l_last := l_rows.count - 1;
-            end if;
-            for i in l_rows.first .. l_last loop
-               l_tab.extend;
-               l_tab(l_tab.last) := split_text(l_rows(i), field_separator);
-            end loop;
-         end if;
-         exit when l_done_reading;
-      end loop;    
-      return l_tab;
-   end parse_clob_recordset;
-   
+
+         IF INSTR (l_buf, record_separator) > 0 OR l_done_reading
+         THEN
+            l_rows := split_text (l_buf, record_separator);
+            l_buf := l_rows (l_rows.COUNT);
+
+            IF l_done_reading
+            THEN
+               l_last := l_rows.COUNT;
+            ELSE
+               l_last := l_rows.COUNT - 1;
+            END IF;
+
+            FOR i IN l_rows.FIRST .. l_last
+            LOOP
+               l_tab.EXTEND;
+               l_tab (l_tab.LAST) := split_text (l_rows (i), field_separator);
+            END LOOP;
+         END IF;
+
+         EXIT WHEN l_done_reading;
+      END LOOP;
+
+      RETURN l_tab;
+   END parse_clob_recordset;
+
 -------------------------------------------------------------------------------
 -- function parse_string_recordset(...)
 --
 --
    FUNCTION parse_string_recordset (p_string IN VARCHAR2)
-   return str_tab_tab_t
-   is
-      l_rows str_tab_t;
-      l_tab str_tab_tab_t := str_tab_tab_t();
-   begin
-      if p_string is null then
-         return null;
-      end if;
-      l_rows := split_text(p_string, record_separator);
-      for i in l_rows.first .. l_rows.last loop
-         l_tab.extend;
-         l_tab(i) := split_text(l_rows(i), field_separator);
-      end loop;
-      return l_tab;
-   end parse_string_recordset;
-   
+      RETURN str_tab_tab_t
+   IS
+      l_rows   str_tab_t;
+      l_tab    str_tab_tab_t := str_tab_tab_t ();
+   BEGIN
+      IF p_string IS NULL
+      THEN
+         RETURN NULL;
+      END IF;
+
+      l_rows := split_text (p_string, record_separator);
+
+      FOR i IN l_rows.FIRST .. l_rows.LAST
+      LOOP
+         l_tab.EXTEND;
+         l_tab (i) := split_text (l_rows (i), field_separator);
+      END LOOP;
+
+      RETURN l_tab;
+   END parse_string_recordset;
 ----------------------------------------------------------------------------
 BEGIN
    -- anything put here will be executed on every mod_plsql call
    NULL;
 END cwms_util;
 /
-show errors;
 
-
+SHOW errors;
