@@ -1,4 +1,4 @@
-/* Formatted on 2006/12/01 12:25 (Formatter Plus v4.8.7) */
+/* Formatted on 2007/03/19 07:47 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_loc
 AS
 /******************************************************************************
@@ -283,6 +283,22 @@ AS
       p_active             OUT      VARCHAR2,
       p_alias_cursor       OUT      sys_refcursor,
       p_db_office_id       IN       VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE create_loc_group (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_group_name    IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE rename_loc_group (
+      p_loc_category_id    IN   VARCHAR2,
+      p_loc_group_id_old   IN   VARCHAR2,
+      p_loc_group_id_new   IN   VARCHAR2,
+      p_loc_group_name     IN   VARCHAR2 DEFAULT NULL,
+      p_ignore_null        IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
 END cwms_loc;
 /

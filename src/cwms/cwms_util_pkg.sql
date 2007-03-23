@@ -1,4 +1,4 @@
-/* Formatted on 2007/03/05 06:45 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/03/23 07:40 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -166,6 +166,18 @@ AS
       RETURN VARCHAR2;
 
    FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
+      RETURN VARCHAR2;
+
+   FUNCTION concat_ts_id (
+      p_base_location_id    IN   VARCHAR2,
+      p_sub_location_id     IN   VARCHAR2,
+      p_base_parameter_id   IN   VARCHAR2,
+      p_sub_parameter_id    IN   VARCHAR2,
+      p_parameter_type_id   IN   VARCHAR2,
+      p_interval_id         IN   VARCHAR2,
+      p_duration_id         IN   VARCHAR2,
+      p_version_id          IN   VARCHAR2
+   )
       RETURN VARCHAR2;
 
 --------------------------------------------------------

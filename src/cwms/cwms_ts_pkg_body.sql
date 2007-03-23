@@ -184,6 +184,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 	           INTO l_parameter_code
 	           FROM at_parameter ap
 	          WHERE base_parameter_code = p_base_parameter_code
+                and ap.sub_parameter_id is null
 	            AND db_office_code IN (cwms_util.db_office_code_all);
 	      END IF;
 	   EXCEPTION
@@ -833,19 +834,14 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
                 END IF;
 
                 INSERT INTO at_cwms_ts_spec t
-                            (ts_code, /*office_code,*/ location_code,
+                            (ts_code, location_code,
                              parameter_code, parameter_type_code,
                              interval_code, duration_code, VERSION,
-                             ts_ni_hash,
                              interval_utc_offset, active_flag
                             )
-                     VALUES (cwms_seq.NEXTVAL, /*l_office_code,*/ l_location_code,
+                     VALUES (cwms_seq.NEXTVAL, l_location_code,
                              l_parameter_code, l_parameter_type_code,
                              l_interval_code, l_duration_code, l_version,
-                             get_ts_ni_hash (l_parameter_code,
-                                             l_parameter_type_code,
-                                             l_duration_code
-                                            ),
                              l_utc_offset, l_active_flag
                             )
                   RETURNING ts_code
@@ -1487,6 +1483,7 @@ END retrieve_ts_java;
 	IS
 	   l_override_prot VARCHAR2(1);
 	BEGIN
+    dbms_output.put_line('tag wie gehts?');
 	   IF p_override_prot IS NULL OR p_override_prot = cwms_util.false_num
 		THEN
 			l_override_prot := 'F';
@@ -1496,14 +1493,14 @@ END retrieve_ts_java;
 		ELSE
 		   cwms_err.raise('INVALID_T_F_FLAG_OLD', p_override_prot);
 		END IF;
-		
+		dbms_output.put_line('tag wie gehts2?');
 	   store_ts (p_cwms_ts_id,
 	             p_units,
 	             p_timeseries_data,
 	             p_store_rule,
 	             l_override_prot,
 	             p_versiondate,
-					 p_office_id
+				 p_office_id
 	            );
 	END store_ts; -- v1.4 --
 --	
@@ -1518,7 +1515,7 @@ END retrieve_ts_java;
 	   p_units             IN   VARCHAR2,
 	   p_timeseries_data   IN   tsv_array,
 	   p_store_rule        IN   VARCHAR2 DEFAULT NULL,
-	   p_override_prot     IN   NUMBER DEFAULT cwms_util.false_num,
+	   p_override_prot     IN   VARCHAR2 DEFAULT 'F',
 	   p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,
 	   p_office_id         IN   VARCHAR2 DEFAULT NULL
 	)
@@ -1553,7 +1550,7 @@ END retrieve_ts_java;
 
     	l_version_date   := nvl(p_version_date, cwms_util.non_versioned);
 	
-	   if NVL(p_override_prot, cwms_util.false_num) = cwms_util.false_num 
+	   if NVL(p_override_prot, 'F') = 'F' 
 		then
 	   	l_override_prot := FALSE;
 		else
@@ -2747,7 +2744,7 @@ BEGIN
          cwms_err.RAISE ('GENERIC_ERROR',
                             'cwms_ts_id: '
                          || p_cwms_ts_id
-                         || ' contains data. Cannot use the DELETE KEY action'
+                         || ' contains data. Cannot use the DELETE TS ID action'
                         );
       END IF;
    --
@@ -2768,9 +2765,9 @@ BEGIN
            FROM DUAL;
 
          INSERT INTO at_cwms_ts_spec
-            SELECT l_ts_code_new, /*office_code,*/ location_code, parameter_code,
+            SELECT l_ts_code_new, location_code, parameter_code,
                    parameter_type_code, interval_code, duration_code, VERSION,
-                   ts_ni_hash, description, interval_utc_offset,
+                   description, interval_utc_offset,
                    interval_forward, interval_backward, interval_offset_id,
                    time_zone_code, version_flag, migrate_ver_flag,
                    active_flag, l_tmp_del_date, data_source
@@ -3114,11 +3111,6 @@ END delete_ts;
 	          s.interval_code = l_interval_code_new,
 	          s.duration_code = l_duration_code_new,
 	          s.VERSION = l_version_id_new,
-	          s.ts_ni_hash =
-	             get_ts_ni_hash (l_parameter_code_new,
-	                             l_parameter_type_code_new,
-	                             l_duration_code_new
-	                            ),
 	          s.interval_utc_offset = l_utc_offset_new
 	    WHERE s.ts_code = l_ts_code_old;
 	

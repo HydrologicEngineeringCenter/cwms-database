@@ -1,4 +1,4 @@
-/* Formatted on 2006/12/21 15:41 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/03/19 08:38 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --********************************************************************** -
@@ -1526,7 +1526,7 @@ AS
 --
 -- NOTE: Deleting a Base Location will delete ALL associated Sub -
 -- Locations -
-    -- valid p_delete_actions:     
+    -- valid p_delete_actions:
     --                                         --
     --  delete_loc:         This action will delete the location_id only if there
     --                      are no cwms_ts_id's associated with this location_id.
@@ -1679,8 +1679,8 @@ AS
       THEN
          IF l_this_is_a_base_loc
          THEN                                     -- Deleting Base Location -
-            DELETE FROM at_alias_name aan
-                  WHERE aan.location_code IN (
+            DELETE FROM at_loc_group_assignment atlga
+                  WHERE atlga.location_code IN (
                            SELECT location_code
                              FROM at_physical_location apl
                             WHERE apl.base_location_code =
@@ -1694,8 +1694,8 @@ AS
 
             COMMIT;
          ELSE                              -- Deleting a single Sub Location -
-            DELETE FROM at_alias_name aan
-                  WHERE aan.location_code = l_location_code;
+            DELETE FROM at_loc_group_assignment atlga
+                  WHERE atlga.location_code = l_location_code;
 
             DELETE FROM at_physical_location apl
                   WHERE apl.location_code = l_location_code;
@@ -1795,8 +1795,8 @@ AS
                NULL;
          END;
 
-         DELETE FROM at_alias_name aan
-               WHERE aan.location_code IN (
+         DELETE FROM at_loc_group_assignment atlga
+               WHERE atlga.location_code IN (
                            SELECT location_code
                              FROM at_physical_location apl
                             WHERE apl.base_location_code =
@@ -1826,8 +1826,8 @@ AS
                NULL;
          END;
 
-         DELETE FROM at_alias_name aan
-               WHERE aan.location_code = l_base_location_code;
+         DELETE FROM at_loc_group_assignment atlga
+               WHERE atlga.location_code = l_base_location_code;
 
          DELETE FROM at_physical_location apl
                WHERE apl.location_code = l_location_code;
@@ -1899,229 +1899,230 @@ AS
       l_ignorenulls         BOOLEAN
                             := cwms_util.return_true_or_false (p_ignorenulls);
    BEGIN
-      --
-      IF l_count = 0
-      THEN
-         cwms_err.RAISE
-                      ('GENERIC_ERROR',
-                       'No viable agency/alias data passed to store_aliases.'
-                      );
-      END IF;
+--      --
+--      IF l_count = 0
+--      THEN
+--         cwms_err.RAISE
+--                      ('GENERIC_ERROR',
+--                       'No viable agency/alias data passed to store_aliases.'
+--                      );
+--      END IF;
 
-------------------------------------------------------------------
--- Check that passed-in aliases are do not contain duplicates...
-------------------------------------------------------------------
-      SELECT COUNT (*)
-        INTO l_distinct
-        FROM (SELECT DISTINCT UPPER (t.agency_id)
-                         FROM TABLE (CAST (p_alias_array AS alias_array)) t);
+      --------------------------------------------------------------------
+---- Check that passed-in aliases are do not contain duplicates...
+--------------------------------------------------------------------
+--      SELECT COUNT (*)
+--        INTO l_distinct
+--        FROM (SELECT DISTINCT UPPER (t.agency_id)
+--                         FROM TABLE (CAST (p_alias_array AS alias_array)) t);
 
-      --
-      IF l_distinct != l_array_count
-      THEN
-         cwms_err.RAISE
-            ('GENERIC_ERROR',
-             'Duplicate Agency/Alias pairs are not permited. Only one Alias is permited per Agency (store_aliases).'
-            );
-      END IF;
+      --      --
+--      IF l_distinct != l_array_count
+--      THEN
+--         cwms_err.RAISE
+--            ('GENERIC_ERROR',
+--             'Duplicate Agency/Alias pairs are not permited. Only one Alias is permited per Agency (store_aliases).'
+--            );
+--      END IF;
 
-      --
-      -- Make sure none of the alias_id's are null
-      --
-      SELECT COUNT (*)
-        INTO l_distinct
-        FROM (SELECT t.alias_id
-                FROM TABLE (CAST (p_alias_array AS alias_array)) t
-               WHERE alias_id IS NULL);
+      --      --
+--      -- Make sure none of the alias_id's are null
+--      --
+--      SELECT COUNT (*)
+--        INTO l_distinct
+--        FROM (SELECT t.alias_id
+--                FROM TABLE (CAST (p_alias_array AS alias_array)) t
+--               WHERE alias_id IS NULL);
 
-      --
-      IF l_distinct != 0
-      THEN
-         cwms_err.RAISE
-            ('GENERIC_ERROR',
-             'A NULL alias_id was submitted. alias_id may not be NULL. (store_aliases).'
-            );
-      END IF;
+      --      --
+--      IF l_distinct != 0
+--      THEN
+--         cwms_err.RAISE
+--            ('GENERIC_ERROR',
+--             'A NULL alias_id was submitted. alias_id may not be NULL. (store_aliases).'
+--            );
+--      END IF;
 
-      --
-      IF p_db_office_id IS NULL
-      THEN
-         l_office_id := cwms_util.user_office_id;
-      ELSE
-         l_office_id := UPPER (p_db_office_id);
-      END IF;
+      --      --
+--      IF p_db_office_id IS NULL
+--      THEN
+--         l_office_id := cwms_util.user_office_id;
+--      ELSE
+--         l_office_id := UPPER (p_db_office_id);
+--      END IF;
 
-      --
-      l_office_code := get_office_code (l_office_id);
-      l_location_code := get_location_code (l_office_id, p_location_id);
+      --      --
+--      l_office_code := get_office_code (l_office_id);
+--      l_location_code := get_location_code (l_office_id, p_location_id);
 
-      --
-      IF p_store_rule IS NULL
-      THEN
-         l_store_rule := cwms_util.delete_all;
-      ELSIF UPPER (p_store_rule) = cwms_util.delete_all
-      THEN
-         l_store_rule := cwms_util.delete_all;
-      ELSIF UPPER (p_store_rule) = cwms_util.replace_all
-      THEN
-         l_store_rule := cwms_util.replace_all;
-      ELSE
-         cwms_err.RAISE ('GENERIC_ERROR',
-                            p_store_rule
-                         || ' is an invalid store rule. (store_aliases)'
-                        );
-      END IF;
+      --      --
+--      IF p_store_rule IS NULL
+--      THEN
+--         l_store_rule := cwms_util.delete_all;
+--      ELSIF UPPER (p_store_rule) = cwms_util.delete_all
+--      THEN
+--         l_store_rule := cwms_util.delete_all;
+--      ELSIF UPPER (p_store_rule) = cwms_util.replace_all
+--      THEN
+--         l_store_rule := cwms_util.replace_all;
+--      ELSE
+--         cwms_err.RAISE ('GENERIC_ERROR',
+--                            p_store_rule
+--                         || ' is an invalid store rule. (store_aliases)'
+--                        );
+--      END IF;
 
-      --
-      IF l_store_rule = cwms_util.delete_all
-      THEN
-         DELETE FROM at_alias_name
-               WHERE location_code = l_location_code;
+      --      --
+--      IF l_store_rule = cwms_util.delete_all
+--      THEN
+--         DELETE FROM at_loc_group_assignment atlga
+--                  WHERE atlga.location_code = l_location_code;
 
-         --
-         LOOP
-            EXIT WHEN l_count > l_array_count;
+      --         --
+--         LOOP
+--            EXIT WHEN l_count > l_array_count;
 
-            --
-            BEGIN
-               SELECT agency_code
-                 INTO l_agency_code
-                 FROM at_agency_name
-                WHERE UPPER (agency_id) =
-                                     UPPER (p_alias_array (l_count).agency_id)
-                  AND db_office_code IN
-                                (l_office_code, cwms_util.db_office_code_all);
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN
-                  --.
-                  INSERT INTO at_agency_name
-                              (agency_code,
-                               agency_id,
-                               agency_name,
-                               db_office_code
-                              )
-                       VALUES (cwms_seq.NEXTVAL,
-                               p_alias_array (l_count).agency_id,
-                               p_alias_array (l_count).agency_name,
-                               l_office_code
-                              )
-                    RETURNING agency_code
-                         INTO l_agency_code;
-            END;
+      --            --
+--            BEGIN
+--               SELECT agency_code
+--                 INTO l_agency_code
+--                 FROM at_agency_name
+--                WHERE UPPER (agency_id) =
+--                                     UPPER (p_alias_array (l_count).agency_id)
+--                  AND db_office_code IN
+--                                (l_office_code, cwms_util.db_office_code_all);
+--            EXCEPTION
+--               WHEN NO_DATA_FOUND
+--               THEN
+--                  --.
+--                  INSERT INTO at_agency_name
+--                              (agency_code,
+--                               agency_id,
+--                               agency_name,
+--                               db_office_code
+--                              )
+--                       VALUES (cwms_seq.NEXTVAL,
+--                               p_alias_array (l_count).agency_id,
+--                               p_alias_array (l_count).agency_name,
+--                               l_office_code
+--                              )
+--                    RETURNING agency_code
+--                         INTO l_agency_code;
+--            END;
 
-            --
-            INSERT INTO at_alias_name
-                        (location_code, agency_code,
-                         alias_id,
-                         alias_public_name,
-                         alias_long_name
-                        )
-                 VALUES (l_location_code, l_agency_code,
-                         p_alias_array (l_count).alias_id,
-                         p_alias_array (l_count).alias_public_name,
-                         p_alias_array (l_count).alias_long_name
-                        );
+      --            --
+--            INSERT INTO at_alias_name
+--                        (location_code, agency_code,
+--                         alias_id,
+--                         alias_public_name,
+--                         alias_long_name
+--                        )
+--                 VALUES (l_location_code, l_agency_code,
+--                         p_alias_array (l_count).alias_id,
+--                         p_alias_array (l_count).alias_public_name,
+--                         p_alias_array (l_count).alias_long_name
+--                        );
 
-            --
-            l_count := l_count + 1;
-         END LOOP;
-      ELSE           -- store_rule is REPLACE ALL                            -
-         LOOP
-            EXIT WHEN l_count > l_array_count;
+      --            --
+--            l_count := l_count + 1;
+--         END LOOP;
+--      ELSE           -- store_rule is REPLACE ALL                            -
+--         LOOP
+--            EXIT WHEN l_count > l_array_count;
 
-            --
-            -- retrieve agency_code...
-            BEGIN
-               SELECT agency_code
-                 INTO l_agency_code
-                 FROM at_agency_name
-                WHERE UPPER (agency_id) =
-                                     UPPER (p_alias_array (l_count).agency_id)
-                  AND db_office_code IN
-                                (l_office_code, cwms_util.db_office_code_all);
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN                  -- No agency_code found, so create one...
-                  --.
-                  INSERT INTO at_agency_name
-                              (agency_code,
-                               agency_id,
-                               agency_name,
-                               db_office_code
-                              )
-                       VALUES (cwms_seq.NEXTVAL,
-                               p_alias_array (l_count).agency_id,
-                               p_alias_array (l_count).agency_name,
-                               l_office_code
-                              )
-                    RETURNING agency_code
-                         INTO l_agency_code;
-            END;
+      --            --
+--            -- retrieve agency_code...
+--            BEGIN
+--               SELECT agency_code
+--                 INTO l_agency_code
+--                 FROM at_agency_name
+--                WHERE UPPER (agency_id) =
+--                                     UPPER (p_alias_array (l_count).agency_id)
+--                  AND db_office_code IN
+--                                (l_office_code, cwms_util.db_office_code_all);
+--            EXCEPTION
+--               WHEN NO_DATA_FOUND
+--               THEN                  -- No agency_code found, so create one...
+--                  --.
+--                  INSERT INTO at_agency_name
+--                              (agency_code,
+--                               agency_id,
+--                               agency_name,
+--                               db_office_code
+--                              )
+--                       VALUES (cwms_seq.NEXTVAL,
+--                               p_alias_array (l_count).agency_id,
+--                               p_alias_array (l_count).agency_name,
+--                               l_office_code
+--                              )
+--                    RETURNING agency_code
+--                         INTO l_agency_code;
+--            END;
 
-            --
-            --
-            -- retrieve existing alias information...
-            l_insert := FALSE;
+      --            --
+--            --
+--            -- retrieve existing alias information...
+--            l_insert := FALSE;
 
-            BEGIN
-               SELECT alias_id, alias_public_name, alias_long_name
-                 INTO l_alias_id, l_alias_public_name, l_alias_long_name
-                 FROM at_alias_name
-                WHERE location_code = l_location_code
-                  AND agency_code = l_agency_code;
+      --            BEGIN
+--               SELECT alias_id, alias_public_name, alias_long_name
+--                 INTO l_alias_id, l_alias_public_name, l_alias_long_name
+--                 FROM at_alias_name
+--                WHERE location_code = l_location_code
+--                  AND agency_code = l_agency_code;
 
-               --
-               IF     p_alias_array (l_count).alias_public_name IS NULL
-                  AND NOT l_ignorenulls
-               THEN
-                  l_alias_public_name := NULL;
-               END IF;
+      --               --
+--               IF     p_alias_array (l_count).alias_public_name IS NULL
+--                  AND NOT l_ignorenulls
+--               THEN
+--                  l_alias_public_name := NULL;
+--               END IF;
 
-               IF     p_alias_array (l_count).alias_long_name IS NULL
-                  AND NOT l_ignorenulls
-               THEN
-                  l_alias_long_name := NULL;
-               END IF;
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN
-                  l_insert := TRUE;
-            END;
+      --               IF     p_alias_array (l_count).alias_long_name IS NULL
+--                  AND NOT l_ignorenulls
+--               THEN
+--                  l_alias_long_name := NULL;
+--               END IF;
+--            EXCEPTION
+--               WHEN NO_DATA_FOUND
+--               THEN
+--                  l_insert := TRUE;
+--            END;
 
-            --
-            IF l_insert
-            THEN
-               --
-               INSERT INTO at_alias_name
-                           (location_code, agency_code,
-                            alias_id,
-                            alias_public_name,
-                            alias_long_name
-                           )
-                    VALUES (l_location_code, l_agency_code,
-                            p_alias_array (l_count).alias_id,
-                            p_alias_array (l_count).alias_public_name,
-                            p_alias_array (l_count).alias_long_name
-                           );
-            ELSE
-               UPDATE at_alias_name
-                  SET alias_id = p_alias_array (l_count).alias_id,
-                      alias_public_name = l_alias_public_name,
-                      alias_long_name = l_alias_long_name
-                WHERE location_code = l_location_code
-                  AND agency_code = l_agency_code;
-            --
-            END IF;
+      --            --
+--            IF l_insert
+--            THEN
+--               --
+--               INSERT INTO at_alias_name
+--                           (location_code, agency_code,
+--                            alias_id,
+--                            alias_public_name,
+--                            alias_long_name
+--                           )
+--                    VALUES (l_location_code, l_agency_code,
+--                            p_alias_array (l_count).alias_id,
+--                            p_alias_array (l_count).alias_public_name,
+--                            p_alias_array (l_count).alias_long_name
+--                           );
+--            ELSE
+--               UPDATE at_alias_name
+--                  SET alias_id = p_alias_array (l_count).alias_id,
+--                      alias_public_name = l_alias_public_name,
+--                      alias_long_name = l_alias_long_name
+--                WHERE location_code = l_location_code
+--                  AND agency_code = l_agency_code;
+--            --
+--            END IF;
 
-            --
-            l_count := l_count + 1;
-         END LOOP;
-      END IF;
+      --            --
+--            l_count := l_count + 1;
+--         END LOOP;
+--      END IF;
 
-      --
-      COMMIT;
---
+      --      --
+--      COMMIT;
+----
+      NULL;
    END store_aliases;
 
 --
@@ -2352,5 +2353,245 @@ AS
       --
    --
    END retrieve_location;
+
+   FUNCTION get_loc_category_code (
+      p_loc_category_id   IN   VARCHAR2,
+      p_db_office_code    IN   NUMBER
+   )
+      RETURN NUMBER
+   IS
+      l_loc_category_code   NUMBER;
+   BEGIN
+      BEGIN
+         SELECT atlc.loc_category_code
+           INTO l_loc_category_code
+           FROM at_loc_category atlc
+          WHERE atlc.db_office_code IN (53, p_db_office_code)
+            AND UPPER (atlc.loc_category_id) = UPPER (p_loc_category_id);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('ITEM_DOES_NOT__EXIST',
+                            'Category id: ',
+                            p_loc_category_id
+                           );
+      END;
+
+      RETURN l_loc_category_code;
+   END get_loc_category_code;
+
+   FUNCTION get_loc_group_code (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_db_office_code    IN   NUMBER
+   )
+      RETURN NUMBER
+   IS
+      l_loc_category_code   NUMBER;
+      l_loc_group_code      NUMBER;
+   BEGIN
+      l_loc_category_code :=
+                  get_loc_category_code (p_loc_category_id, p_db_office_code);
+
+      BEGIN
+         SELECT loc_group_code
+           INTO l_loc_group_code
+           FROM at_loc_group atlg
+          WHERE atlg.loc_category_code = l_loc_category_code
+            AND UPPER (atlg.loc_group_id) = UPPER (p_loc_group_id);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('ITEM_DOES_NOT__EXIST',
+                            'group id: ',
+                            p_loc_group_id
+                           );
+      END;
+
+      RETURN l_loc_group_code;
+   END get_loc_group_code;
+
+   PROCEDURE create_loc_group (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_group_name    IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_id           VARCHAR2 (16);
+      l_db_office_code         NUMBER;
+      l_loc_category_code      NUMBER;
+      l_loc_group_code         NUMBER;
+      l_group_already_exists   BOOLEAN       := FALSE;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      -- Does Category exist?.
+      --
+      BEGIN
+         l_loc_category_code :=
+            get_loc_category_code (p_loc_category_id      => p_loc_category_id,
+                                   p_db_office_code       => l_db_office_code
+                                  );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            -- need to add new category.
+            INSERT INTO at_loc_category
+                        (loc_category_code, loc_category_id,
+                         db_office_code, loc_category_name
+                        )
+                 VALUES (cwms_seq.NEXTVAL, p_loc_category_id,
+                         l_db_office_code, NULL
+                        )
+              RETURNING loc_category_code
+                   INTO l_loc_category_code;
+      END;
+
+      --
+      -- Does Group already exist?.
+      BEGIN
+         SELECT loc_group_code
+           INTO l_loc_group_code
+           FROM at_loc_group atlg
+          WHERE atlg.loc_category_code = l_loc_category_code
+            AND UPPER (atlg.loc_group_id) = UPPER (p_loc_group_id);
+
+         l_group_already_exists := TRUE;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            INSERT INTO at_loc_group
+                        (loc_group_code, loc_category_code,
+                         loc_group_id, loc_group_name
+                        )
+                 VALUES (cwms_seq.NEXTVAL, l_loc_category_code,
+                         p_loc_group_id, p_loc_group_name
+                        );
+      END;
+
+      IF l_group_already_exists
+      THEN
+         cwms_err.RAISE ('ITEM_ALREADY_EXISTS', 'Group id: ', p_loc_group_id);
+      END IF;
+   END create_loc_group;
+
+   PROCEDURE rename_loc_group (
+      p_loc_category_id    IN   VARCHAR2,
+      p_loc_group_id_old   IN   VARCHAR2,
+      p_loc_group_id_new   IN   VARCHAR2,
+      p_loc_group_name     IN   VARCHAR2 DEFAULT NULL,
+      p_ignore_null        IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_id           VARCHAR2 (16);
+      l_db_office_code         NUMBER;
+      l_loc_category_code      NUMBER;
+      l_loc_group_code         NUMBER;
+      l_loc_group_id_old       VARCHAR2 (32) := TRIM (p_loc_group_id_old);
+      l_loc_group_id_new       VARCHAR2 (32) := TRIM (p_loc_group_id_new);
+      l_group_already_exists   BOOLEAN       := FALSE;
+      l_ignore_null            BOOLEAN;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      IF NVL (p_ignore_null, 'T') = 'T'
+      THEN
+         l_ignore_null := TRUE;
+      ELSE
+         l_ignore_null := FALSE;
+      END IF;
+
+      -- Does Category exist?.
+      --
+      BEGIN
+         l_loc_category_code :=
+                  get_loc_category_code (p_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.RAISE
+               ('ITEM_DOES_NOT__EXIST',
+                'Category id must exist to rename group id - Category id that does not exist: ',
+                p_loc_category_id
+               );
+      END;
+
+      --
+      -- Does NEW Group id already exist?.
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id_new,
+                                l_db_office_code
+                               );
+         l_group_already_exists := TRUE;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            l_group_already_exists := FALSE;
+      END;
+
+      IF l_group_already_exists
+      THEN
+         IF UPPER (l_loc_group_id_old) != UPPER (l_loc_group_id_new)
+         THEN                               -- or there's not a case change...
+            cwms_err.RAISE
+                   ('ITEM_ALREADY_EXISTS',
+                    'p_loc_group_id_new already exists - can''t rename to: ',
+                    p_loc_group_id_new
+                   );
+         END IF;
+      END IF;
+
+      --
+      -- Does OLD Group id exist?.
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id_old,
+                                l_db_office_code
+                               );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.RAISE
+               ('ITEM_DOES_NOT_EXIST',
+                'p_loc_group_id_old does not exist - can''t perform rename of: ',
+                p_loc_group_id_old
+               );
+      END;
+
+      --
+      -- all checks passed, perform the rename...
+      IF p_loc_group_name IS NULL AND l_ignore_null
+      THEN
+         UPDATE at_loc_group
+            SET loc_group_id = l_loc_group_id_new
+          WHERE loc_group_code = l_loc_group_code;
+      ELSE
+         UPDATE at_loc_group
+            SET loc_group_id = l_loc_group_id_new,
+                loc_group_name = TRIM (p_loc_group_name)
+          WHERE loc_group_code = l_loc_group_code;
+      END IF;
+   --
+   --
+   END rename_loc_group;
 END cwms_loc;
 /

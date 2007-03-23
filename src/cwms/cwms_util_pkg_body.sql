@@ -1,4 +1,4 @@
-/* Formatted on 2007/03/05 08:02 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/03/23 07:57 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -602,7 +602,7 @@ AS
          SELECT office_code
            INTO l_office_code
            FROM cwms_office
-          WHERE office_id = p_office_id;
+          WHERE UPPER (office_id) = UPPER (p_office_id);
       END IF;
 
       RETURN l_office_code;
@@ -824,7 +824,7 @@ AS
 --         special characters:                                                 -
 --         \* used to make an asterisks a literal instead of a wild character  -                                                            -
 --         \? used to make a question mark a literal instead of a wild         -
---            character                                                        - 
+--            character                                                        -
 --         \- used to start a new parse pattern with a dash instead of a NOT   -
 --         \" used to make a quote a literal part of the parse pattern.        -
 --
@@ -853,7 +853,7 @@ AS
       l_use_upper             BOOLEAN         := NVL (p_use_upper, TRUE);
       l_recognize_sql         BOOLEAN         := FALSE;
       l_string_length         NUMBER          := NVL (LENGTH (l_string), 0);
-      l_skip                  BOOLEAN         := FALSE;
+      l_skip                  NUMBER          := 0;
       l_looking_first_quote   BOOLEAN         := TRUE;
       l_sub_string_done       BOOLEAN         := FALSE;
       l_first_char            BOOLEAN         := TRUE;
@@ -864,6 +864,15 @@ AS
       l_result                VARCHAR2 (1000) := NULL;
       l_open_upper            VARCHAR2 (7);
       l_close_upper           VARCHAR2 (2);
+      l_open_paran            VARCHAR2 (10)   := NULL;
+      l_close_paran           VARCHAR2 (10)   := NULL;
+      l_space                 VARCHAR2 (1)    := ' ';
+      l_num_open_paran        NUMBER          := 0;
+      l_char_position         NUMBER          := 0;
+      l_num_element           NUMBER          := 0;
+      l_t                     VARCHAR2 (1);
+      l_tmp_string            VARCHAR2 (100)  := NULL;
+      l_is_closing_quotes     BOOLEAN;
    BEGIN
       --
       -- set the UPPER( ) wrapper...
@@ -878,87 +887,152 @@ AS
 
       --
       -- Make sure something was passed in.
-      IF l_string_length <= 0
+      IF l_string_length > 0
       THEN
-         l_result := ' AND UPPER(' || l_search_column || ') LIKE ''%'' ';
-      ELSE
          FOR i IN 1 .. LENGTH (l_string)
          LOOP
-            IF l_skip
+--         IF l_looking_first_quote
+--         THEN
+--            l_t := 'T';
+--         ELSE
+--            l_t := 'F';
+--         END IF;
+
+            --         DBMS_OUTPUT.put_line (   l_t
+--                               || l_char_position
+--                               || '>'
+--                               || l_sub_string
+--                               || '< skip: '
+--                               || l_skip
+--                              );
+            IF l_skip > 0
             THEN
-               l_skip := FALSE;
+               l_skip := l_skip - 1;
             ELSE
                l_char := SUBSTR (l_string, i, 1);
 
+               --dbms_output.put_line('>>' || l_char || '<<');
                CASE l_char
                   WHEN '\'
                   THEN
-                     IF REGEXP_INSTR (NVL (SUBSTR (l_string, i + 1), ' '),
-                                      '["*?-]'
+                     IF REGEXP_INSTR (NVL (SUBSTR (l_string, i + 1, 1), ' '),
+                                      '["*?\(\)]'
                                      ) = 1
                      THEN
-                        l_char := SUBSTR (l_string, i + 1, 1);
-
-                        CASE l_char
-                           WHEN '*'
-                           THEN
-                              l_sub_string := l_sub_string || '\';
-                           WHEN '?'
-                           THEN
-                              l_sub_string := l_sub_string || '\';
-                           WHEN '"'
-                           THEN
-                              l_sub_string := l_sub_string || '"';
-                              l_skip := TRUE;
-                           WHEN '-'
-                           THEN
-                              l_sub_string := l_sub_string || '-';
-                              l_skip := TRUE;
-                           ELSE
-                              l_skip := TRUE;
-                        END CASE;
+                        l_sub_string :=
+                           l_sub_string || '\' || SUBSTR (l_string, i + 1, 1);
+                        l_char_position := l_char_position + 2;
+                     ELSE
+                        l_sub_string :=
+                                  l_sub_string || SUBSTR (l_string, i + 1, 1);
+                        l_char_position := l_char_position + 1;
                      END IF;
-                  WHEN '-'
+
+                     l_skip := l_skip + 1;
+                  WHEN '('
                   THEN
-                     IF l_first_char
+                     IF l_char_position = 0
                      THEN
-                        l_not := 'NOT';
+                        l_sub_string := l_sub_string || l_char;
                      ELSE
                         l_sub_string := l_sub_string || l_char;
+                        l_char_position := l_char_position + 1;
+                     END IF;
+                  WHEN ')'
+                  THEN
+                     l_tmp_string := NULL;
+
+                     FOR j IN i .. l_string_length
+                     LOOP
+                        l_tmp_string := l_tmp_string || ')';
+                        l_skip := l_skip + 1;
+
+                        --DBMS_OUTPUT.put_line (l_tmp_string);
+                        IF    j = l_string_length
+                           OR INSTR (NVL (SUBSTR (l_string, j + 1, 1), ' '),
+                                     ' '
+                                    ) = 1
+                        THEN
+                           l_is_closing_quotes := TRUE;
+                           EXIT;
+                        ELSIF INSTR (NVL (SUBSTR (l_string, j + 1, 1), ' '),
+                                     ')'
+                                    ) = 1
+                        THEN
+                           NULL;
+                        ELSE
+                           l_is_closing_quotes := FALSE;
+                           EXIT;
+                        END IF;
+                     END LOOP;
+
+                     IF l_is_closing_quotes
+                     THEN
+                        l_close_paran := l_tmp_string;
+                     ELSE
+                        l_sub_string := l_sub_string || l_tmp_string;
                      END IF;
                   WHEN '"'
                   THEN
                      IF l_looking_first_quote
                      THEN
-                        IF    INSTR (NVL (SUBSTR (l_string, i - 1, 2), ' "'),
-                                     ' "'
-                                    ) = 1
-                           OR i = 1
-                           OR (    i >= 2
-                               AND INSTR (SUBSTR (l_string, i - 2, 3), ' -"') =
-                                                                             1
-                              )
-                           OR (    i = 2
-                               AND INSTR (SUBSTR (l_string, i - 2, 2), '-"') =
-                                                                             1
-                              )
+                        IF l_char_position = 0
                         THEN
                            l_looking_first_quote := FALSE;
                         ELSE
                            l_sub_string := l_sub_string || l_char;
+                           l_char_position := l_char_position + 1;
                         END IF;
                      ELSE                        -- looking for the end quote.
-                        /*
-                        An end quote must be followed by a space or end the string.
-                        */
-                        IF INSTR (NVL (SUBSTR (l_string, i + 1), ' '), ' ') =
-                                                                            1
+                        --
+                        -- An end quote must be followed by a space or end the string.
+                        --
+                        l_tmp_string := NULL;
+
+                        FOR j IN i .. l_string_length
+                        LOOP
+                           -- l_tmp_string := l_tmp_string || ')';
+                           --l_skip := l_skip + 1;
+                           --DBMS_OUTPUT.put_line (l_tmp_string);
+                           IF    j = l_string_length
+                              OR INSTR (NVL (SUBSTR (l_string, j + 1, 1), ' '),
+                                        ' '
+                                       ) = 1
+                           THEN
+                              l_is_closing_quotes := TRUE;
+                              l_sub_string_done := TRUE;
+                              --dbms_output.put_line('string is done!');
+                              EXIT;
+                           ELSIF INSTR (NVL (SUBSTR (l_string, j + 1, 1), ' '),
+                                        ')'
+                                       ) = 1
+                           THEN
+                              l_tmp_string := l_tmp_string || ')';
+                              l_skip := l_skip + 1;
+                           ELSE
+                              l_is_closing_quotes := FALSE;
+                              EXIT;
+                           END IF;
+                        END LOOP;
+
+                        IF l_is_closing_quotes
                         THEN
-                           l_skip := TRUE;
-                           l_sub_string_done := TRUE;
+                           l_close_paran := l_tmp_string;
                         ELSE
-                           l_sub_string := l_sub_string || l_char;
+                           l_sub_string :=
+                                          '"' || l_sub_string || l_tmp_string;
                         END IF;
+-----------------
+--                     IF    INSTR (NVL (SUBSTR (l_string, i + 1), ' '), ' ') =
+--                                                                             1
+--                        OR i = l_string_length
+--                     THEN
+--                        l_skip := l_skip + 1;
+--                        l_sub_string_done := TRUE;
+--                     ELSE
+--                        l_sub_string := l_sub_string || l_char;
+--                        l_char_position := l_char_position + 1;
+--                     END IF;
                      END IF;
                   WHEN ' '
                   THEN
@@ -967,9 +1041,11 @@ AS
                         l_sub_string_done := TRUE;
                      ELSE
                         l_sub_string := l_sub_string || l_char;
+                        l_char_position := l_char_position + 1;
                      END IF;
                   ELSE
                      l_sub_string := l_sub_string || l_char;
+                     l_char_position := l_char_position + 1;
                END CASE;
             END IF;
 
@@ -1015,10 +1091,18 @@ AS
                         l_sub_string := UPPER (l_sub_string);
                      END IF;
 
+                     IF l_num_element = 0
+                     THEN
+                        l_and_or := ' ( ';
+                        l_num_element := 1;
+                     END IF;
+
                      l_result :=
                            l_result
                         || ' '
                         || l_and_or
+                        || l_space
+                        || l_open_paran
                         || l_open_upper
                         || l_search_column
                         || l_close_upper
@@ -1026,18 +1110,27 @@ AS
                         || ' LIKE '''
                         || l_sub_string
                         || ''' '
+                        || l_close_paran
+                        || l_space
                         || CHR (10);
                      l_and_or := 'AND';
                      l_not := NULL;
+                     l_open_paran := NULL;
+                     l_close_paran := NULL;
+                     l_looking_first_quote := TRUE;
                   END IF;
                END IF;
 
                l_first_char := TRUE;
                l_sub_string := NULL;
                l_sub_string_done := FALSE;
-               l_looking_first_quote := TRUE;
+               l_char_position := 0;
             END IF;
          END LOOP;
+
+         l_result := l_result || ' ) ';
+      ELSE
+         l_result := ' 1 = 1 ';
       END IF;
 
       RETURN l_result;
@@ -1068,6 +1161,64 @@ AS
    IS
    BEGIN
       RETURN p_base_id || SUBSTR ('-', 1, LENGTH (p_sub_id)) || p_sub_id;
+   END;
+
+   FUNCTION concat_ts_id (
+      p_base_location_id    IN   VARCHAR2,
+      p_sub_location_id     IN   VARCHAR2,
+      p_base_parameter_id   IN   VARCHAR2,
+      p_sub_parameter_id    IN   VARCHAR2,
+      p_parameter_type_id   IN   VARCHAR2,
+      p_interval_id         IN   VARCHAR2,
+      p_duration_id         IN   VARCHAR2,
+      p_version_id          IN   VARCHAR2
+   )
+      RETURN VARCHAR2
+   IS
+      l_base_location_id    VARCHAR2 (16) := TRIM (p_base_location_id);
+      l_sub_location_id     VARCHAR2 (32) := TRIM (p_sub_location_id);
+      l_base_parameter_id   VARCHAR2 (16) := TRIM (p_base_parameter_id);
+      l_sub_parameter_id    VARCHAR2 (32) := TRIM (p_sub_parameter_id);
+      l_parameter_type_id   VARCHAR2 (16) := TRIM (p_parameter_type_id);
+      l_interval_id         VARCHAR2 (16) := TRIM (p_interval_id);
+      l_duration_id         VARCHAR2 (16) := TRIM (p_duration_id);
+      l_version_id          VARCHAR2 (32) := TRIM (p_version_id);
+   BEGIN
+      SELECT cbp.base_parameter_id
+        INTO l_base_parameter_id
+        FROM cwms_base_parameter cbp
+       WHERE UPPER (cbp.base_parameter_id) = UPPER (l_base_parameter_id);
+
+      SELECT cpt.parameter_type_id
+        INTO l_parameter_type_id
+        FROM cwms_parameter_type cpt
+       WHERE UPPER (cpt.parameter_type_id) = UPPER (l_parameter_type_id);
+
+      SELECT interval_id
+        INTO l_interval_id
+        FROM cwms_interval ci
+       WHERE UPPER (ci.interval_id) = UPPER (l_interval_id);
+
+      SELECT duration_id
+        INTO l_duration_id
+        FROM cwms_duration cd
+       WHERE UPPER (cd.duration_id) = UPPER (l_duration_id);
+
+      RETURN    l_base_location_id
+             || SUBSTR ('-', 1, LENGTH (l_sub_location_id))
+             || l_sub_location_id
+             || '.'
+             || l_base_parameter_id
+             || SUBSTR ('-', 1, LENGTH (l_sub_parameter_id))
+             || l_sub_parameter_id
+             || '.'
+             || l_parameter_type_id
+             || '.'
+             || l_interval_id
+             || '.'
+             || l_duration_id
+             || '.'
+             || l_version_id;
    END;
 
 --------------------------------------------------------------------------------

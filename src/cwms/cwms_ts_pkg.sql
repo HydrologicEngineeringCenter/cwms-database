@@ -242,7 +242,7 @@ AS
       p_units             IN   VARCHAR2,
       p_timeseries_data   IN   tsv_array,
       p_store_rule        IN   VARCHAR2 DEFAULT NULL,
-      p_override_prot     IN   NUMBER DEFAULT cwms_util.false_num,
+      p_override_prot     IN   VARCHAR2 DEFAULT 'F',
       p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,
       p_office_id         IN   VARCHAR2 DEFAULT NULL
    );
