@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/03 04:38 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/03 09:04 (Formatter Plus v4.8.8) */
 -- Defines the CWMS date-time, value, and quality types. 
 SET serveroutput on
 
@@ -33,6 +33,8 @@ DECLARE
                      'loc_type',
                      'alias_type',
                      'alias_array',
+                     'screen_assign_array',
+                     'screen_assign_t',
                      'screen_dur_mag_array',
                      'screen_dur_mag_type',
                      'screen_crit_array',
@@ -413,6 +415,16 @@ CREATE TYPE cat_dss_xchg_ts_map_obj_t AS OBJECT (
 /
 
 CREATE TYPE cat_dss_xchg_ts_map_otab_t AS TABLE OF cat_dss_xchg_ts_map_obj_t;
+/
+
+CREATE OR REPLACE TYPE screen_assign_t AS OBJECT (
+   cwms_ts_id        VARCHAR2 (183),
+   active_flag       VARCHAR2 (1),
+   resultant_ts_id   VARCHAR2 (183)
+)
+/
+
+CREATE OR REPLACE TYPE screen_assign_array IS TABLE OF screen_assign_t
 /
 
 COMMIT ;

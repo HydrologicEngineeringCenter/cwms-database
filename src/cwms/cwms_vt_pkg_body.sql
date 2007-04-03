@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/02 15:35 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/03 09:01 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_vt
 AS
 /******************************************************************************
@@ -864,5 +864,151 @@ AS
    BEGIN
       NULL;
    END;
+
+   PROCEDURE assign_screening_id (
+      p_screening_id       IN   VARCHAR2,
+      p_scr_assign_array   IN   screen_assign_array,
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_id            VARCHAR2 (16);
+      l_db_office_code          NUMBER;
+      l_num                     NUMBER        := p_scr_assign_array.COUNT;
+      l_screening_code          NUMBER;
+      l_base_parameter_code     NUMBER        := NULL;
+      l_base_parameter_code_a   NUMBER        := NULL;
+      l_parameter_code          NUMBER        := NULL;
+      l_parameter_code_a        NUMBER        := NULL;
+      l_parameter_type_code     NUMBER        := NULL;
+      l_parameter_type_code_a   NUMBER        := NULL;
+      l_duration_code           NUMBER        := NULL;
+      l_duration_code_a         NUMBER        := NULL;
+      l_sub_parameter_id        VARCHAR2 (32) := NULL;
+      l_ts_code                 NUMBER;
+      --
+      l_params_match            BOOLEAN;
+      l_param_types_match       BOOLEAN;
+      l_duration_match          BOOLEAN;
+   BEGIN
+      DBMS_OUTPUT.put_line ('starting assign');
+
+      IF l_num < 1
+      THEN
+         cwms_err.RAISE
+                  ('GENERIC_ERROR',
+                   'No screening id assignments found in p_scr_assign_array.'
+                  );
+      END IF;
+
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+      l_screening_code :=
+                         get_screening_code (p_screening_id, l_db_office_code);
+
+      -- retrieve data for scrrening id...
+      SELECT base_parameter_code, parameter_code, parameter_type_code,
+             duration_code
+        INTO l_base_parameter_code, l_parameter_code, l_parameter_type_code,
+             l_duration_code
+        FROM at_screening_id
+       WHERE screening_code = l_screening_code;
+
+      SELECT sub_parameter_id
+        INTO l_sub_parameter_id
+        FROM at_parameter
+       WHERE parameter_code = l_parameter_code;
+
+      FOR i IN 1 .. l_num
+      LOOP
+         DBMS_OUTPUT.put_line (p_scr_assign_array (i).cwms_ts_id);
+
+         SELECT mvcti.ts_code, atp.base_parameter_code,
+                atcts.parameter_code, atcts.parameter_type_code,
+                atcts.duration_code
+           INTO l_ts_code, l_base_parameter_code_a,
+                l_parameter_code_a, l_parameter_type_code_a,
+                l_duration_code_a
+           FROM mv_cwms_ts_id mvcti, at_cwms_ts_spec atcts, at_parameter atp
+          WHERE mvcti.ts_code = atcts.ts_code
+            AND atcts.parameter_code = atp.parameter_code
+            AND UPPER (mvcti.cwms_ts_id) =
+                                     UPPER (p_scr_assign_array (i).cwms_ts_id);
+
+         l_params_match := FALSE;
+         l_param_types_match := FALSE;
+         l_duration_match := FALSE;
+
+         IF l_sub_parameter_id IS NULL
+         THEN
+            IF l_base_parameter_code = l_base_parameter_code_a
+            THEN
+               l_params_match := TRUE;
+            END IF;
+         ELSE
+            IF l_parameter_code = l_parameter_code_a
+            THEN
+               l_params_match := TRUE;
+            END IF;
+         END IF;
+
+         IF    l_parameter_type_code IS NULL
+            OR l_parameter_type_code = l_parameter_type_code_a
+         THEN
+            l_param_types_match := TRUE;
+         END IF;
+
+         IF l_duration_code IS NULL OR l_duration_code = l_duration_code_a
+         THEN
+            l_duration_match := TRUE;
+         END IF;
+
+         IF l_params_match AND l_param_types_match AND l_duration_match
+         THEN
+            NULL;
+         ELSE
+            cwms_err.RAISE ('GENERIC_ERROR',
+                               'The cwms_ts_id: '
+                            || p_scr_assign_array (i).cwms_ts_id
+                            || ' cannot be assigned to the '
+                            || p_screening_id
+                            || ' screening id.'
+                           );
+         END IF;
+      END LOOP;
+
+      MERGE INTO at_screening ats
+         USING (SELECT (SELECT mvcti.ts_code
+                          FROM mv_cwms_ts_id mvcti
+                         WHERE UPPER (cwms_ts_id) =
+                                                 UPPER (a.cwms_ts_id))
+                                                                      ts_code,
+                       CASE
+                          WHEN UPPER (a.active_flag) = 'T'
+                             THEN 'T'
+                          ELSE 'F'
+                       END active_flag,
+                       (SELECT mvcti.ts_code
+                          FROM mv_cwms_ts_id mvcti
+                         WHERE UPPER (cwms_ts_id) =
+                                  UPPER (a.resultant_ts_id))
+                                                            resultant_ts_code
+                  FROM TABLE (p_scr_assign_array) a) b
+         ON (ats.ts_code = b.ts_code)
+         WHEN MATCHED THEN
+            UPDATE
+               SET ats.screening_code = l_screening_code,
+                   ats.active_flag = b.active_flag,
+                   ats.resultant_ts_code = b.resultant_ts_code
+         WHEN NOT MATCHED THEN
+            INSERT (ts_code, screening_code, active_flag, resultant_ts_code)
+            VALUES (b.ts_code, l_screening_code, b.active_flag,
+                    b.resultant_ts_code);
+   END assign_screening_id;
 END cwms_vt;
 /
