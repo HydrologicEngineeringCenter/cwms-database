@@ -11,8 +11,9 @@ declare
       'at_ts_table_properties',
       'at_base_location',
       'at_physical_location',
-      'at_agency_name',
-      'at_alias_name',
+      'at_loc_category',
+      'at_loc_group',
+      'at_loc_group_assignment',
       'at_data_stream_id',
       'at_display_units',
       'at_alarm_id',
@@ -412,18 +413,18 @@ INSERT INTO at_physical_location
 /
 COMMIT
 /
----------------------------------
--- AT_AGENCY_NAME table.
--- 
 
-CREATE TABLE AT_AGENCY_NAME
+---------------
+------------------
+
+CREATE TABLE AT_LOC_CATEGORY
 (
-  AGENCY_CODE     NUMBER,
-  AGENCY_ID       VARCHAR2(16 BYTE)             NOT NULL,
-  DB_OFFICE_CODE  NUMBER                        NOT NULL,
-  AGENCY_NAME     VARCHAR2(80 BYTE)
+  LOC_CATEGORY_CODE  NUMBER,
+  LOC_CATEGORY_ID    VARCHAR2(32 BYTE)          NOT NULL,
+  DB_OFFICE_CODE     NUMBER                     NOT NULL,
+  LOC_CATEGORY_NAME  VARCHAR2(128 BYTE)
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -443,60 +444,10 @@ MONITORING
 /
 
 
-ALTER TABLE AT_AGENCY_NAME ADD (
-  CONSTRAINT AT_AGENCY_NAME_PK
- PRIMARY KEY
- (AGENCY_CODE))
-/
-
-ALTER TABLE AT_AGENCY_NAME ADD (
-  CONSTRAINT AT_AGENCY_NAME_UK1
- UNIQUE (AGENCY_ID, DB_OFFICE_CODE))
-/
-
-
-ALTER TABLE AT_AGENCY_NAME ADD (
-  CONSTRAINT AT_AGENCY_NAME_FK1 
- FOREIGN KEY (DB_OFFICE_CODE) 
- REFERENCES CWMS_OFFICE (OFFICE_CODE))
-/
-
----------------------------------
--- AT_ALIAS_NAME table
--- 
-
-CREATE TABLE AT_ALIAS_NAME
-(
-  LOCATION_CODE      NUMBER,
-  AGENCY_CODE        NUMBER,
-  ALIAS_ID           VARCHAR2(16 BYTE)          NOT NULL,
-  ALIAS_PUBLIC_NAME  VARCHAR2(32 BYTE),
-  ALIAS_LONG_NAME    VARCHAR2(80 BYTE)
-)
-TABLESPACE CWMS_20DATA
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-
-
-CREATE UNIQUE INDEX AT_ALIAS_NAME_PK ON AT_ALIAS_NAME
-(LOCATION_CODE, AGENCY_CODE)
+CREATE UNIQUE INDEX AT_LOC_CATEGORY_NAME_PK ON AT_LOC_CATEGORY
+(LOC_CATEGORY_CODE)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -511,12 +462,113 @@ NOPARALLEL
 /
 
 
-ALTER TABLE AT_ALIAS_NAME ADD (
-  CONSTRAINT AT_ALIAS_NAME_PK
+CREATE UNIQUE INDEX AT_LOC_CATEGORY_NAME_U1 ON AT_LOC_CATEGORY
+(UPPER("LOC_CATEGORY_ID"), DB_OFFICE_CODE)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+ALTER TABLE AT_LOC_CATEGORY ADD (
+  CONSTRAINT AT_LOC_CATEGORY_NAME_PK
  PRIMARY KEY
- (LOCATION_CODE, AGENCY_CODE)
+ (LOC_CATEGORY_CODE)
     USING INDEX 
-    TABLESPACE CWMS_20DATA
+    TABLESPACE CWMS_20AT_DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+--------
+--------
+
+CREATE TABLE AT_LOC_GROUP
+(
+  LOC_GROUP_CODE     NUMBER,
+  LOC_CATEGORY_CODE  NUMBER                     NOT NULL,
+  LOC_GROUP_ID       VARCHAR2(32 BYTE)          NOT NULL,
+  LOC_GROUP_NAME     VARCHAR2(128 BYTE)
+)
+TABLESPACE CWMS_20AT_DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+
+CREATE UNIQUE INDEX AT_LOC_GROUPS_PK ON AT_LOC_GROUP
+(LOC_GROUP_CODE)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+CREATE UNIQUE INDEX AT_LOC_GROUPS_U1 ON AT_LOC_GROUP
+(LOC_CATEGORY_CODE, UPPER("LOC_GROUP_ID"))
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+ALTER TABLE AT_LOC_GROUP ADD (
+  CONSTRAINT AT_LOC_GROUPS_PK
+ PRIMARY KEY
+ (LOC_GROUP_CODE)
+    USING INDEX 
+    TABLESPACE CWMS_20AT_DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -529,17 +581,127 @@ ALTER TABLE AT_ALIAS_NAME ADD (
 /
 
 
-ALTER TABLE AT_ALIAS_NAME ADD (
-  CONSTRAINT AT_ALIAS_NAME_FK2 
- FOREIGN KEY (AGENCY_CODE) 
- REFERENCES AT_AGENCY_NAME (AGENCY_CODE))
+ALTER TABLE AT_LOC_GROUP ADD (
+  CONSTRAINT AT_LOC_GROUPS_FK1 
+ FOREIGN KEY (LOC_CATEGORY_CODE) 
+ REFERENCES AT_LOC_CATEGORY (LOC_CATEGORY_CODE))
 /
 
-ALTER TABLE AT_ALIAS_NAME ADD (
-  CONSTRAINT AT_ALIAS_NAME_FK1 
+-----
+-----
+
+CREATE TABLE AT_LOC_GROUP_ASSIGNMENT
+(
+  LOCATION_CODE   NUMBER,
+  LOC_GROUP_CODE  NUMBER,
+  LOC_ALIAS_ID    VARCHAR2(32 BYTE)
+)
+TABLESPACE CWMS_20AT_DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+
+CREATE UNIQUE INDEX AT_LOC_GROUP_ASSIGNMENT_PK ON AT_LOC_GROUP_ASSIGNMENT
+(LOCATION_CODE, LOC_GROUP_CODE)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+ALTER TABLE AT_LOC_GROUP_ASSIGNMENT ADD (
+  CONSTRAINT AT_LOC_GROUP_ASSIGNMENT_PK
+ PRIMARY KEY
+ (LOCATION_CODE, LOC_GROUP_CODE)
+    USING INDEX 
+    TABLESPACE CWMS_20AT_DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+
+ALTER TABLE AT_LOC_GROUP_ASSIGNMENT ADD (
+  CONSTRAINT AT_LOC_GROUP_ASSIGNMENT_FK1 
  FOREIGN KEY (LOCATION_CODE) 
  REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE))
 /
+
+ALTER TABLE AT_LOC_GROUP_ASSIGNMENT ADD (
+  CONSTRAINT AT_LOC_GROUP_ASSIGNMENT_FK2 
+ FOREIGN KEY (LOC_GROUP_CODE) 
+ REFERENCES AT_LOC_GROUP (LOC_GROUP_CODE))
+/
+
+
+----------
+----------
+
+CREATE OR REPLACE VIEW av_loc_alias (category_id,
+                                     GROUP_ID,
+                                     location_code,
+                                     db_office_id,
+                                     base_location_id,
+                                     sub_location_id,
+                                     location_id,
+                                     alias_id
+                                    )
+AS
+   SELECT atlc.loc_category_id, atlg.loc_group_id, atlga.location_code,
+          co.office_id db_office_id, abl.base_location_id,
+          atpl.sub_location_id,
+             abl.base_location_id
+          || SUBSTR ('-', 1, LENGTH (atpl.sub_location_id))
+          || atpl.sub_location_id location_id,
+          atlga.loc_alias_id
+     FROM at_physical_location atpl,
+          at_base_location abl,
+          at_loc_group_assignment atlga,
+          at_loc_group atlg,
+          at_loc_category atlc,
+          cwms_office co
+    WHERE atlga.location_code = atpl.location_code
+      AND atpl.base_location_code = abl.base_location_code
+      AND atlga.loc_group_code = atlg.loc_group_code
+      AND atlg.loc_category_code = atlc.loc_category_code
+      AND abl.db_office_code = co.office_code
+/
+
+-----------
+-----------------
+----------------------
+--------------------------
 
 -------------------------
 -- AT_DATA_STREAM_ID table.
@@ -936,11 +1098,14 @@ ALTER TABLE AT_ALARM_CRITERIA ADD (
 -- 
 CREATE TABLE AT_SCREENING_ID
 (
-  SCREENING_CODE     NUMBER                     NOT NULL,
-  TS_NI_HASH         VARCHAR2(80 BYTE)          NOT NULL,
-  DB_OFFICE_CODE     NUMBER                     NOT NULL,
-  SCREENING_ID       VARCHAR2(16 BYTE)          NOT NULL,
-  SCREENING_ID_DESC  VARCHAR2(128 BYTE)
+  SCREENING_CODE       NUMBER                   NOT NULL,
+  DB_OFFICE_CODE       NUMBER                   NOT NULL,
+  SCREENING_ID         VARCHAR2(16 BYTE)        NOT NULL,
+  SCREENING_ID_DESC    VARCHAR2(128 BYTE),
+  BASE_PARAMETER_CODE  NUMBER                   NOT NULL,
+  PARAMETER_CODE       NUMBER                   NOT NULL,
+  PARAMETER_TYPE_CODE  NUMBER,
+  DURATION_CODE        NUMBER
 )
 TABLESPACE CWMS_20DATA
 PCTUSED    0
@@ -962,44 +1127,26 @@ MONITORING
 /
 
 
+CREATE UNIQUE INDEX AT_SCREENING_ID_UC01 ON AT_SCREENING_ID
+(DB_OFFICE_CODE, UPPER("SCREENING_ID"), BASE_PARAMETER_CODE)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
 CREATE UNIQUE INDEX AT_SCREENING_ID_PK ON AT_SCREENING_ID
 (SCREENING_CODE)
-LOGGING
-TABLESPACE CWMS_20DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
-
-CREATE UNIQUE INDEX AT_SCREENING_ID_U01 ON AT_SCREENING_ID
-(SCREENING_CODE, TS_NI_HASH)
-LOGGING
-TABLESPACE CWMS_20DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
-
-CREATE UNIQUE INDEX AT_SCREENING_ID_U02 ON AT_SCREENING_ID
-(TS_NI_HASH, DB_OFFICE_CODE, SCREENING_ID)
 LOGGING
 TABLESPACE CWMS_20DATA
 PCTFREE    10
@@ -1020,38 +1167,6 @@ ALTER TABLE AT_SCREENING_ID ADD (
   CONSTRAINT AT_SCREENING_ID_PK
  PRIMARY KEY
  (SCREENING_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-
-ALTER TABLE AT_SCREENING_ID ADD (
-  CONSTRAINT AT_SCREENING_ID_U02
- UNIQUE (TS_NI_HASH, DB_OFFICE_CODE, SCREENING_ID)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-
-ALTER TABLE AT_SCREENING_ID ADD (
-  CONSTRAINT AT_SCREENING_ID_U01
- UNIQUE (SCREENING_CODE, TS_NI_HASH)
     USING INDEX 
     TABLESPACE CWMS_20DATA
     PCTFREE    10
@@ -1088,8 +1203,7 @@ CREATE TABLE AT_SCREENING_CRITERIA
   CONST_QUEST_MIN                 NUMBER,
   CONST_QUEST_MAX                 NUMBER,
   CONST_QUEST_N_MISS              NUMBER,
-  ESTIMATE_EXPRESSION             VARCHAR2(32 BYTE),
-  DUR_MAG_TEST_FLAG               VARCHAR2(1 BYTE)
+  ESTIMATE_EXPRESSION             VARCHAR2(32 BYTE)
 )
 TABLESPACE CWMS_20DATA
 PCTUSED    0
@@ -1250,6 +1364,8 @@ ALTER TABLE AT_SCREENING_DUR_MAG ADD (
  FOREIGN KEY (SCREENING_CODE, SEASON_START_DATE) 
  REFERENCES AT_SCREENING_CRITERIA (SCREENING_CODE,SEASON_START_DATE))
 /
+
+
 ---------------------------------
 -- AT_CWMS_TS_SPEC table.
 -- 
@@ -1263,7 +1379,6 @@ CREATE TABLE AT_CWMS_TS_SPEC
   INTERVAL_CODE        NUMBER(10)               NOT NULL,
   DURATION_CODE        NUMBER(10)               NOT NULL,
   VERSION              VARCHAR2(32 BYTE)        NOT NULL,
-  TS_NI_HASH           VARCHAR2(80 BYTE)        NOT NULL,
   DESCRIPTION          VARCHAR2(80 BYTE),
   INTERVAL_UTC_OFFSET  NUMBER                   NOT NULL,
   INTERVAL_FORWARD     NUMBER,
@@ -1345,23 +1460,6 @@ NOPARALLEL
 /
 
 
-CREATE UNIQUE INDEX AT_CWMS_TS_SPEC_UI2 ON AT_CWMS_TS_SPEC
-(TS_CODE, TS_NI_HASH)
-LOGGING
-TABLESPACE CWMS_20DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
 
 CREATE UNIQUE INDEX AT_CWMS_TS_SPEC_PK ON AT_CWMS_TS_SPEC
 (TS_CODE)
@@ -1411,11 +1509,6 @@ ALTER TABLE AT_CWMS_TS_SPEC ADD (
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
-/
-
-ALTER TABLE AT_CWMS_TS_SPEC ADD (
-  CONSTRAINT AT_CWMS_TS_SPEC_U01
- UNIQUE (TS_CODE, TS_NI_HASH))
 /
 
 
@@ -1534,11 +1627,11 @@ ALTER TABLE AT_SHEF_DECODE ADD (
  REFERENCES CWMS_SHEF_DURATION (SHEF_DURATION_CODE))
 /
 
-ALTER TABLE AT_SHEF_DECODE ADD (
-  CONSTRAINT AT_SHEF_DECODE_R03 
- FOREIGN KEY (AGENCY_CODE) 
- REFERENCES AT_AGENCY_NAME (AGENCY_CODE))
-/
+--ALTER TABLE AT_SHEF_DECODE ADD (
+--  CONSTRAINT AT_SHEF_DECODE_R03 
+-- FOREIGN KEY (AGENCY_CODE) 
+-- REFERENCES AT_AGENCY_NAME (AGENCY_CODE))
+--/
 
 ALTER TABLE AT_SHEF_DECODE ADD (
   CONSTRAINT AT_SHEF_DECODE_R02 
@@ -1558,7 +1651,6 @@ ALTER TABLE AT_SHEF_DECODE ADD (
 CREATE TABLE AT_SCREENING
 (
   TS_CODE            NUMBER,
-  TS_NI_HASH         VARCHAR2(80 BYTE),
   SCREENING_CODE     NUMBER                     NOT NULL,
   ACTIVE_FLAG        VARCHAR2(1 BYTE),
   RESULTANT_TS_CODE  NUMBER
@@ -1626,18 +1718,6 @@ ALTER TABLE AT_SCREENING ADD (
   CONSTRAINT AT_SCREENING_FK02 
  FOREIGN KEY (RESULTANT_TS_CODE) 
  REFERENCES AT_CWMS_TS_SPEC (TS_CODE))
-/
-
-ALTER TABLE AT_SCREENING ADD (
-  CONSTRAINT AT_SCREENING_FK01 
- FOREIGN KEY (TS_CODE, TS_NI_HASH) 
- REFERENCES AT_CWMS_TS_SPEC (TS_CODE,TS_NI_HASH))
-/
-
-ALTER TABLE AT_SCREENING ADD (
-  CONSTRAINT AT_SCREENING_FK03 
- FOREIGN KEY (SCREENING_CODE, TS_NI_HASH) 
- REFERENCES AT_SCREENING_ID (SCREENING_CODE,TS_NI_HASH))
 /
 ---------------------------------
 -- AT_ALARM table.
@@ -1708,17 +1788,17 @@ ALTER TABLE AT_ALARM ADD (
 /
 
 
-ALTER TABLE AT_ALARM ADD (
-  CONSTRAINT AT_ALARM_R02 
- FOREIGN KEY (ALARM_CODE, TS_NI_HASH) 
- REFERENCES AT_ALARM_ID (ALARM_CODE,TS_NI_HASH))
-/
+--ALTER TABLE AT_ALARM ADD (
+--  CONSTRAINT AT_ALARM_R02 
+-- FOREIGN KEY (ALARM_CODE, TS_NI_HASH) 
+-- REFERENCES AT_ALARM_ID (ALARM_CODE,TS_NI_HASH))
+--/
 
-ALTER TABLE AT_ALARM ADD (
-  CONSTRAINT AT_ALARM_R01 
- FOREIGN KEY (TS_CODE, TS_NI_HASH) 
- REFERENCES AT_CWMS_TS_SPEC (TS_CODE,TS_NI_HASH))
-/
+--ALTER TABLE AT_ALARM ADD (
+--  CONSTRAINT AT_ALARM_R01 
+-- FOREIGN KEY (TS_CODE, TS_NI_HASH) 
+-- REFERENCES AT_CWMS_TS_SPEC (TS_CODE,TS_NI_HASH))
+--/
 ---------------------------------
 -- AT_COMP_VT table.
 -- 
@@ -2065,9 +2145,96 @@ NOPARALLEL
 -------------------------
 -- AV_SCREEN_ALARM_ID view.
 -- 
-CREATE OR REPLACE VIEW av_screen_alarm_id (base_location_code,
+--CREATE OR REPLACE VIEW av_screen_alarm_id (base_location_code,
+--                                           location_code,
+--                                           db_office_id,
+--                                           base_location_id,
+--                                           sub_location_id,
+--                                           location_id,
+--                                           base_parameter_id,
+--                                           sub_parameter_id,
+--                                           parameter_id,
+--                                           parameter_type_id,
+--                                           duration_id,
+--                                           public_name,
+--                                           row_hash,
+--                                           screening_code,
+--                                           screening_id,
+--                                           screening_id_desc,
+--                                           alarm_code,
+--                                           alarm_id,
+--                                           alarm_id_desc
+--                                          )
+--AS
+--   SELECT DISTINCT mcti.base_location_code, mcti.location_code,
+--                   mcti.db_office_id, mcti.base_location_id,
+--                   mcti.sub_location_id, mcti.location_id,
+--                   mcti.base_parameter_id, mcti.sub_parameter_id,
+--                   mcti.parameter_id, mcti.parameter_type_id,
+--                   CASE
+--                      WHEN mcti.duration_id = '0'
+--                         THEN '---'
+--                      ELSE mcti.duration_id
+--                   END duration_id,
+--                   apl.public_name,
+--                   ORA_HASH (mcti.location_code || acts.ts_ni_hash) row_hash,
+--                   asi.screening_code, asi.screening_id,
+--                   asi.screening_id_desc, aali.alarm_code, aali.alarm_id,
+--                   aali.alarm_id_desc
+--              FROM mv_cwms_ts_id mcti,
+--                   at_cwms_ts_spec acts,
+--                   at_screening ascr,
+--                   at_screening_id asi,
+--                   at_alarm aal,
+--                   at_alarm_id aali,
+--                   at_physical_location apl
+--             WHERE acts.ts_code = mcti.ts_code
+--               AND mcti.ts_code = ascr.ts_code(+)
+--               AND mcti.ts_code = aal.ts_code(+)
+--               AND acts.location_code = apl.location_code
+--               AND ascr.screening_code = asi.screening_code(+)
+--               AND aal.alarm_code = aali.alarm_code(+)
+--/
+CREATE OR REPLACE VIEW av_screening_id (screening_code,
+                                        db_office_id,
+                                        screening_id,
+                                        screening_id_desc,
+                                        base_parameter_id,
+                                        sub_parameter_id,
+                                        parameter_id,
+                                        parameter_type_id,
+                                        duration_id
+                                       )
+AS
+   SELECT atsi.screening_code, co.office_id db_office_id, atsi.screening_id,
+          atsi.screening_id_desc, cbp.base_parameter_id, atp.sub_parameter_id,
+             cbp.base_parameter_id
+          || SUBSTR ('-', 1, LENGTH (atp.sub_parameter_id))
+          || atp.sub_parameter_id parameter_id,
+          cpt.parameter_type_id, cd.duration_id
+     FROM at_screening_id atsi,
+          cwms_office co,
+          at_parameter atp,
+          cwms_base_parameter cbp,
+          cwms_parameter_type cpt,
+          cwms_duration cd
+    WHERE co.office_code = atsi.db_office_code
+      AND cbp.base_parameter_code = atsi.base_parameter_code
+      AND atp.parameter_code = atsi.parameter_code
+      AND atsi.parameter_type_code = cpt.parameter_type_code(+)
+      AND atsi.duration_code = cd.duration_code(+)
+/
+
+CREATE OR REPLACE VIEW av_screened_ts_ids (screening_code,
+                                           ts_code,
+                                           base_location_code,
                                            location_code,
                                            db_office_id,
+                                           screening_id,
+                                           active_flag,
+                                           resultant_ts_code,
+                                           screening_id_desc,
+                                           cwms_ts_id,
                                            base_location_id,
                                            sub_location_id,
                                            location_id,
@@ -2075,67 +2242,33 @@ CREATE OR REPLACE VIEW av_screen_alarm_id (base_location_code,
                                            sub_parameter_id,
                                            parameter_id,
                                            parameter_type_id,
-                                           duration_id,
-                                           public_name,
-                                           row_hash,
-                                           screening_code,
-                                           screening_id,
-                                           screening_id_desc,
-                                           alarm_code,
-                                           alarm_id,
-                                           alarm_id_desc
+                                           duration_id
                                           )
 AS
-   SELECT DISTINCT mcti.base_location_code, mcti.location_code,
-                   mcti.db_office_id, mcti.base_location_id,
-                   mcti.sub_location_id, mcti.location_id,
-                   mcti.base_parameter_id, mcti.sub_parameter_id,
-                   mcti.parameter_id, mcti.parameter_type_id,
-                   CASE
-                      WHEN mcti.duration_id = '0'
-                         THEN '---'
-                      ELSE mcti.duration_id
-                   END duration_id,
-                   apl.public_name,
-                   ORA_HASH (mcti.location_code || acts.ts_ni_hash) row_hash,
-                   asi.screening_code, asi.screening_id,
-                   asi.screening_id_desc, aali.alarm_code, aali.alarm_id,
-                   aali.alarm_id_desc
-              FROM mv_cwms_ts_id mcti,
-                   at_cwms_ts_spec acts,
-                   at_screening ascr,
-                   at_screening_id asi,
-                   at_alarm aal,
-                   at_alarm_id aali,
-                   at_physical_location apl
-             WHERE acts.ts_code = mcti.ts_code
-               AND mcti.ts_code = ascr.ts_code(+)
-               AND mcti.ts_code = aal.ts_code(+)
-               AND acts.location_code = apl.location_code
-               AND ascr.screening_code = asi.screening_code(+)
-               AND aal.alarm_code = aali.alarm_code(+)
+   SELECT atsi.screening_code, ats.ts_code, mcti.base_location_code,
+          mcti.location_code, mcti.db_office_id, atsi.screening_id,
+          ats.active_flag, ats.resultant_ts_code, atsi.screening_id_desc,
+          mcti.cwms_ts_id, mcti.base_location_id, mcti.sub_location_id,
+          mcti.location_id, mcti.base_parameter_id, mcti.sub_parameter_id,
+          mcti.parameter_id, mcti.parameter_type_id, mcti.duration_id
+     FROM mv_cwms_ts_id mcti, at_screening_id atsi, at_screening ats
+    WHERE ats.screening_code = atsi.screening_code
+      AND ats.ts_code = mcti.ts_code
 /
 
-/* Formatted on 2006/12/18 13:15 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE VIEW av_screening_criteria (base_location_code,
-                                              location_code,
+CREATE OR REPLACE VIEW av_screening_criteria (screening_code,
                                               db_office_id,
-                                              base_location_id,
-                                              sub_location_id,
-                                              location_id,
+                                              screening_id,
+                                              screening_id_desc,
                                               base_parameter_id,
                                               sub_parameter_id,
                                               parameter_id,
                                               parameter_type_id,
                                               duration_id,
-                                              unit_system,
-                                              unit_id,
-                                              screening_code,
-                                              screening_id,
-                                              screening_id_desc,
-                                              season_start_date,
                                               season_start_day,
                                               season_start_month,
+                                              unit_system,
+                                              unit_id,
                                               range_reject_lo,
                                               range_reject_hi,
                                               range_question_lo,
@@ -2153,26 +2286,21 @@ CREATE OR REPLACE VIEW av_screening_criteria (base_location_code,
                                               const_quest_min,
                                               const_quest_max,
                                               const_quest_n_miss,
-                                              estimate_expression,
-                                              duration_mag_test_flag
+                                              estimate_expression
                                              )
 AS
-   SELECT mcti.base_location_code, mcti.location_code, mcti.db_office_id,
-          mcti.base_location_id, mcti.sub_location_id, mcti.location_id,
-          mcti.base_parameter_id, mcti.sub_parameter_id, mcti.parameter_id,
-          mcti.parameter_type_id,
-          CASE
-             WHEN mcti.duration_id = '0'
-                THEN '---'
-             ELSE mcti.duration_id
-          END duration_id,
-          adu.unit_system, cuc.to_unit_id unit_id, avsi.screening_code,
-          avsi.screening_id, avsi.screening_id_desc, season_start_date,
-          MOD (season_start_date, 30) season_start_day,
-              (season_start_date - MOD (season_start_date, 30)
+   SELECT atsi.screening_code, co.office_id db_office_id, atsi.screening_id,
+          atsi.screening_id_desc, cbp.base_parameter_id, atp.sub_parameter_id,
+             cbp.base_parameter_id
+          || SUBSTR ('-', 1, LENGTH (atp.sub_parameter_id))
+          || atp.sub_parameter_id parameter_id,
+          cpt.parameter_type_id, cd.duration_id,
+          MOD (avsc.season_start_date, 30) season_start_day,
+              (avsc.season_start_date - MOD (avsc.season_start_date, 30)
               )
             / 30
           + 1 season_start_month,
+          adu.unit_system, cuc.to_unit_id unit_id,
           avsc.range_reject_lo * cuc.factor + cuc.offset range_reject_lo,
           avsc.range_reject_hi * cuc.factor + cuc.offset range_reject_hi,
           avsc.range_question_lo * cuc.factor + cuc.offset range_question_lo,
@@ -2214,52 +2342,91 @@ AS
           END const_quest_duration,
           avsc.const_quest_min * cuc.factor + cuc.offset const_quest_min,
           avsc.const_quest_max * cuc.factor + cuc.offset const_quest_max,
-          avsc.const_quest_n_miss, avsc.estimate_expression,
-          avsc.dur_mag_test_flag
-     FROM mv_cwms_ts_id mcti,
-          at_cwms_ts_spec acts,
-          at_screening av,
-          at_screening_id avsi,
+          avsc.const_quest_n_miss, avsc.estimate_expression
+     FROM at_screening_id atsi,
+          cwms_office co,
+          at_parameter atp,
+          cwms_base_parameter cbp,
+          cwms_parameter_type cpt,
+          cwms_duration cd,
           at_display_units adu,
           cwms_unit_conversion cuc,
           at_screening_criteria avsc
-    WHERE av.ts_code = mcti.ts_code
-      AND mcti.ts_code = acts.ts_code
-      AND av.screening_code = avsi.screening_code
-      AND acts.parameter_code = adu.parameter_code
+    WHERE co.office_code = atsi.db_office_code
+      AND cbp.base_parameter_code = atsi.base_parameter_code
+      AND atp.parameter_code = atsi.parameter_code
+      AND atsi.parameter_type_code = cpt.parameter_type_code(+)
+      AND atsi.duration_code = cd.duration_code(+)
+      AND atsi.screening_code = avsc.screening_code(+)
+      AND atsi.db_office_code = adu.db_office_code
+      AND cbp.unit_code = cuc.from_unit_code
       AND adu.display_unit_code = cuc.to_unit_code
-      AND mcti.unit_id = cuc.from_unit_id
-      AND avsi.screening_code = avsc.screening_code
+      AND atsi.parameter_code = adu.parameter_code
+/
+
+
+------
+------
+
+CREATE OR REPLACE VIEW av_screening_assignments (screening_code,
+                                                 ts_code,
+                                                 base_location_code,
+                                                 location_code,
+                                                 db_office_id,
+                                                 screening_id,
+                                                 active_flag,
+                                                 resultant_ts_code,
+                                                 screening_id_desc,
+                                                 cwms_ts_id,
+                                                 base_location_id,
+                                                 sub_location_id,
+                                                 location_id,
+                                                 base_parameter_id,
+                                                 sub_parameter_id,
+                                                 parameter_id,
+                                                 parameter_type_id,
+                                                 duration_id
+                                                )
+AS
+   SELECT atsi.screening_code, ats.ts_code, mcti.base_location_code,
+          mcti.location_code, mcti.db_office_id, atsi.screening_id,
+          ats.active_flag, ats.resultant_ts_code, atsi.screening_id_desc,
+          mcti.cwms_ts_id, mcti.base_location_id, mcti.sub_location_id,
+          mcti.location_id, mcti.base_parameter_id, mcti.sub_parameter_id,
+          mcti.parameter_id, mcti.parameter_type_id, mcti.duration_id
+     FROM mv_cwms_ts_id mcti, at_screening_id atsi, at_screening ats
+    WHERE ats.screening_code = atsi.screening_code
+      AND ats.ts_code = mcti.ts_code
 /
 
 -------------------------
 -- AV_ALIASES view.
 -- 
-CREATE OR REPLACE VIEW av_aliases (db_office_id,
-                                   location_id,
-                                   agency_id,
-                                   alias_id,
-                                   agency_name,
-                                   alias_public_name,
-                                   alias_long_name
-                                  )
-AS
-   SELECT co.office_id db_office_id,
-             abl.base_location_id
-          || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
-          || apl.sub_location_id location_id,
-          aagn.agency_id, aaln.alias_id, aagn.agency_name,
-          aaln.alias_public_name, aaln.alias_long_name
-     FROM at_agency_name aagn,
-          at_alias_name aaln,
-          at_base_location abl,
-          at_physical_location apl,
-          cwms_office co
-    WHERE aaln.agency_code = aagn.agency_code
-      AND aaln.location_code = apl.location_code
-      AND apl.base_location_code = abl.base_location_code
-      AND abl.db_office_code = co.office_code
-/
+--CREATE OR REPLACE VIEW av_aliases (db_office_id,
+--                                   location_id,
+--                                   agency_id,
+--                                   alias_id,
+--                                   agency_name,
+--                                   alias_public_name,
+--                                   alias_long_name
+--                                  )
+--AS
+--   SELECT co.office_id db_office_id,
+--             abl.base_location_id
+--          || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
+--          || apl.sub_location_id location_id,
+--          aagn.agency_id, aaln.alias_id, aagn.agency_name,
+--          aaln.alias_public_name, aaln.alias_long_name
+--     FROM at_agency_name aagn,
+--          at_alias_name aaln,
+--          at_base_location abl,
+--          at_physical_location apl,
+--          cwms_office co
+--    WHERE aaln.agency_code = aagn.agency_code
+--      AND aaln.location_code = apl.location_code
+--      AND apl.base_location_code = abl.base_location_code
+--      AND abl.db_office_code = co.office_code
+--/
 
 -----------------------------
 -- AT_UNIT_ALIAS TABLE.
@@ -2474,22 +2641,22 @@ ALTER TABLE AT_OFFICE_SETTINGS ADD (
 --
 -- INSERT AT_AGENCY_NAME --
 --
-INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
-	VALUES (1,'SHEF', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'), 'Standard Hydrometeorologic Exchange Format');
-INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
-	VALUES (2,'GOES', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'Geostationary Operational Environmental Satellite');
-INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
-	VALUES (3,'CBT', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'Columbia Basin Trust');
-INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
-	VALUES (4,'NWS_HB5', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'National Weather Service HandBook 5');
-INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
-	VALUES (5,'USGS', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'U.S. Geological Survey');
-INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
-	VALUES (6,'SnoTel', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'NRCS SNOwpack TELemetry');
-INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
-	VALUES (7,'USBR', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'U.S. Deptartment of the Interior, Bureau of Reclamation');
-INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
-	VALUES (8,'NRCS', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'Natural Resources Conservation Service ');
+--INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
+--	VALUES (1,'SHEF', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'), 'Standard Hydrometeorologic Exchange Format');
+--INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
+--	VALUES (2,'GOES', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'Geostationary Operational Environmental Satellite');
+--INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
+--	VALUES (3,'CBT', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'Columbia Basin Trust');
+--INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
+--	VALUES (4,'NWS_HB5', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'National Weather Service HandBook 5');
+--INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
+--	VALUES (5,'USGS', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'U.S. Geological Survey');
+--INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
+--	VALUES (6,'SnoTel', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'NRCS SNOwpack TELemetry');
+--INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
+--	VALUES (7,'USBR', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'U.S. Deptartment of the Interior, Bureau of Reclamation');
+--INSERT INTO AT_AGENCY_NAME (AGENCY_CODE, AGENCY_ID, DB_OFFICE_CODE, AGENCY_NAME)
+--	VALUES (8,'NRCS', (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'ALL'),'Natural Resources Conservation Service ');
 
 --------------------
 -- load table data --

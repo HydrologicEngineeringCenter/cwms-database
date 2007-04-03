@@ -1,4 +1,4 @@
-/* Formatted on 2007/03/23 07:40 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/03/28 06:46 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -55,6 +55,7 @@ AS
    --
    field_separator               CONSTANT VARCHAR2 (1)           := CHR (29);
    record_separator              CONSTANT VARCHAR2 (1)           := CHR (30);
+   escape_char                   CONSTANT VARCHAR2 (1)           := '\';
    mv_pause_timeout_interval     CONSTANT INTERVAL DAY TO SECOND
                                                                 := '0 0:30:0';
    mv_pause_job_run_interval     CONSTANT NUMBER                 := 60;
@@ -199,6 +200,8 @@ AS
    FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN NUMBER;
 
+   FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
+      RETURN VARCHAR2;
 --------------------------------------------------------------------------------
 -- function get_time_zone_code
 --
@@ -280,6 +283,18 @@ AS
       p_recognize_sql        BOOLEAN DEFAULT FALSE
    )
       RETURN VARCHAR2;
+
+   PROCEDURE parse_ts_id (
+      p_base_location_id    OUT      VARCHAR2,
+      p_sub_location_id     OUT      VARCHAR2,
+      p_base_parameter_id   OUT      VARCHAR2,
+      p_sub_parameter_id    OUT      VARCHAR2,
+      p_parameter_type_id   OUT      VARCHAR2,
+      p_interval_id         OUT      VARCHAR2,
+      p_duration_id         OUT      VARCHAR2,
+      p_version_id          OUT      VARCHAR2,
+      p_cwms_ts_id          IN       VARCHAR2
+   );
 
 --------------------------------------------------------------------
 -- Returns an AND/OR predicate string for a multi-element search set.

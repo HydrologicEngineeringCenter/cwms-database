@@ -1,4 +1,4 @@
-/* Formatted on 2007/03/23 07:57 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/02 15:27 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -633,6 +633,31 @@ AS
          cwms_err.RAISE ('INVALID_OFFICE_ID', p_office_id);
    END get_db_office_code;
 
+   FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
+      RETURN VARCHAR2
+   IS
+      l_parameter_id   VARCHAR2 (49);
+   BEGIN
+      BEGIN
+         SELECT    cbp.base_parameter_id
+                || SUBSTR ('-', 1, LENGTH (atp.sub_parameter_id))
+                || atp.sub_parameter_id
+           INTO l_parameter_id
+           FROM at_parameter atp, cwms_base_parameter cbp
+          WHERE atp.parameter_code = p_parameter_code
+            AND atp.base_parameter_code = cbp.base_parameter_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('GENERIC_ERROR',
+                               p_parameter_code
+                            || ' is not a valid parameter_code.'
+                           );
+      END;
+
+      RETURN l_parameter_id;
+   END get_parameter_id;
+
 --------------------------------------------------------
 -- Replace filename wildcard chars (?,*) with SQL ones
 -- (_,%), using '\' as an escape character.
@@ -794,6 +819,31 @@ AS
 
       RETURN l_result;
    END normalize_wildcards;
+
+   PROCEDURE parse_ts_id (
+      p_base_location_id    OUT      VARCHAR2,
+      p_sub_location_id     OUT      VARCHAR2,
+      p_base_parameter_id   OUT      VARCHAR2,
+      p_sub_parameter_id    OUT      VARCHAR2,
+      p_parameter_type_id   OUT      VARCHAR2,
+      p_interval_id         OUT      VARCHAR2,
+      p_duration_id         OUT      VARCHAR2,
+      p_version_id          OUT      VARCHAR2,
+      p_cwms_ts_id          IN       VARCHAR2
+   )
+   IS
+   BEGIN
+      cwms_ts.parse_ts (p_cwms_ts_id             => p_cwms_ts_id,
+                        p_base_location_id       => p_base_location_id,
+                        p_sub_location_id        => p_sub_location_id,
+                        p_base_parameter_id      => p_base_parameter_id,
+                        p_sub_parameter_id       => p_sub_parameter_id,
+                        p_parameter_type_id      => p_parameter_type_id,
+                        p_interval_id            => p_interval_id,
+                        p_duration_id            => p_duration_id,
+                        p_version_id             => p_version_id
+                       );
+   END;
 
 --------------------------------------------------------------------------------
 -- Parses a search string into one or more AND/OR LIKE/NOT LIKE predicate lines.
@@ -1160,7 +1210,9 @@ AS
       RETURN VARCHAR2
    IS
    BEGIN
-      RETURN p_base_id || SUBSTR ('-', 1, LENGTH (p_sub_id)) || p_sub_id;
+      RETURN    p_base_id
+             || SUBSTR ('-', 1, LENGTH (TRIM (p_sub_id)))
+             || TRIM (p_sub_id);
    END;
 
    FUNCTION concat_ts_id (
@@ -1203,6 +1255,24 @@ AS
         INTO l_duration_id
         FROM cwms_duration cd
        WHERE UPPER (cd.duration_id) = UPPER (l_duration_id);
+
+      IF l_parameter_type_id = 'Inst' AND l_duration_id != '0'
+      THEN
+         cwms_err.RAISE
+                       ('GENERIC_ERROR',
+                           'The Duration Id for an "Inst" record cannot be "'
+                        || l_duration_id
+                        || '". The Duration Id must be "0".'
+                       );
+      ELSIF     l_parameter_type_id IN ('Ave', 'Max', 'Min', 'Total')
+            AND l_duration_id = '0'
+      THEN
+         cwms_err.RAISE ('GENERIC_ERROR',
+                            'A Parameter Type of "'
+                         || l_parameter_type_id
+                         || '" cannot have a "0" Duration Id.'
+                        );
+      END IF;
 
       RETURN    l_base_location_id
              || SUBSTR ('-', 1, LENGTH (l_sub_location_id))

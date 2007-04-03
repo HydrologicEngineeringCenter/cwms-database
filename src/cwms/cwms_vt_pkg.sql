@@ -1,4 +1,4 @@
-/* Formatted on 2007/03/17 07:30 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/02 14:02 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_vt
 AS
 /******************************************************************************
@@ -14,9 +14,8 @@ AS
       RETURN NUMBER;
 
    FUNCTION get_screening_code (
-      p_screening_id          IN   VARCHAR2,
-      p_base_parameter_code   IN   NUMBER,
-      p_db_office_code        IN   NUMBER DEFAULT NULL
+      p_screening_id     IN   VARCHAR2,
+      p_db_office_code   IN   NUMBER DEFAULT NULL
    )
       RETURN NUMBER;
 
@@ -39,17 +38,26 @@ AS
       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    );
 
+   PROCEDURE copy_screening_id (
+      p_screening_id_old        IN   VARCHAR2,
+      p_screening_id_new        IN   VARCHAR2,
+      p_screening_id_desc_new   IN   VARCHAR2,
+      p_parameter_id_new        IN   VARCHAR2 DEFAULT NULL,
+      p_parameter_type_id_new   IN   VARCHAR2 DEFAULT NULL,
+      p_duration_id_new         IN   VARCHAR2 DEFAULT NULL,
+      p_param_check             IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id            IN   VARCHAR2 DEFAULT NULL
+   );
+
    PROCEDURE rename_screening_id (
       p_screening_id_old   IN   VARCHAR2,
       p_screening_id_new   IN   VARCHAR2,
-      p_parameter_id       IN   VARCHAR2,
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE update_screening_id_desc (
       p_screening_id        IN   VARCHAR2,
       p_screening_id_desc   IN   VARCHAR2,
-      p_parameter_id        IN   VARCHAR2,
       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    );
 
@@ -64,13 +72,19 @@ AS
 
    PROCEDURE store_screening_criteria (
       p_screening_id              IN   VARCHAR2,
-      p_parameter_id              IN   VARCHAR2,
       p_rate_change_interval_id   IN   VARCHAR2,
       p_unit_id                   IN   VARCHAR2,
       p_screen_crit_array         IN   screen_crit_array,
       p_store_rule                IN   VARCHAR2 DEFAULT 'DELETE INSERT',
       p_ignore_nulls              IN   VARCHAR2 DEFAULT 'T',
       p_db_office_id              IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE copy_screening_criteria (
+      p_screening_id_old   IN   VARCHAR2,
+      p_screening_id_new   IN   VARCHAR2,
+      p_param_check        IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE get_process_shefit_files (
@@ -81,5 +95,7 @@ AS
       p_data_stream     IN       VARCHAR2,
       p_db_office_id    IN       VARCHAR2 DEFAULT NULL
    );
+   
+  
 END cwms_vt;
 /

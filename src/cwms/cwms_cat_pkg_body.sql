@@ -1130,6 +1130,9 @@ IS
    IS
       l_office_id   VARCHAR2 (16);
    BEGIN
+   
+   null;
+   /*
       IF p_officeid IS NULL
       THEN
          l_office_id := cwms_util.user_office_id;
@@ -1178,6 +1181,7 @@ IS
                      aan.agency_id ASC,
                      sn.alias_id ASC;
       END IF;
+*/
    END cat_loc_alias;
 
 -------------------------------------------------------------------------------
@@ -1872,6 +1876,8 @@ IS
                := UPPER (REPLACE (REPLACE (p_agency_id, '*', '%'), '?', '_'));
 
    BEGIN
+   null;
+   /*
       --
       IF p_office_id IS NULL
       THEN
@@ -1976,6 +1982,7 @@ IS
                         UPPER (alias_id);
          END IF;
       END IF;
+   */
    END cat_loc_aliases;
    
 -------------------------------------------------------------------------------

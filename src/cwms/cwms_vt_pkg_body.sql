@@ -1,4 +1,4 @@
-/* Formatted on 2007/03/20 09:05 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/02 15:35 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_vt
 AS
 /******************************************************************************
@@ -25,46 +25,27 @@ AS
 
    FUNCTION get_screening_code (
       p_screening_id   IN   VARCHAR2,
-      p_parameter_id   IN   VARCHAR2,
       p_db_office_id   IN   VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER
    IS
-      l_screening_code        NUMBER;
-      l_db_office_code        NUMBER;
-      l_base_parameter_id     VARCHAR2 (16);
-      l_base_parameter_code   NUMBER;
+      l_screening_code   NUMBER;
+      l_db_office_code   NUMBER;
    BEGIN
             --
       -- Retrieve the db_office_code...
       l_db_office_code := cwms_util.get_office_code (p_db_office_id);
       --
-      -- Determine the parameter codes...
-      --
-      l_base_parameter_id := cwms_util.get_base_id (p_parameter_id);
-
-      --
-      -- GET the Base Parameter Code.
-      SELECT base_parameter_code
-        INTO l_base_parameter_code
-        FROM cwms_base_parameter cbp
-       WHERE UPPER (cbp.base_parameter_id) = UPPER (l_base_parameter_id);
-
-      --
       -- confirm that screening_id does NOT already exist    -
       --
       l_screening_code :=
-         get_screening_code (p_screening_id,
-                             l_base_parameter_code,
-                             l_db_office_code
-                            );
+                        get_screening_code (p_screening_id, l_db_office_code);
       RETURN l_screening_code;
    END;
 
    FUNCTION get_screening_code (
-      p_screening_id          IN   VARCHAR2,
-      p_base_parameter_code   IN   NUMBER,
-      p_db_office_code        IN   NUMBER DEFAULT NULL
+      p_screening_id     IN   VARCHAR2,
+      p_db_office_code   IN   NUMBER DEFAULT NULL
    )
       RETURN NUMBER
    IS
@@ -75,7 +56,6 @@ AS
            INTO l_screening_code
            FROM at_screening_id asi
           WHERE UPPER (asi.screening_id) = UPPER (p_screening_id)
-            AND asi.base_parameter_code = p_base_parameter_code
             AND asi.db_office_code = p_db_office_code;
 
          --
@@ -132,10 +112,7 @@ AS
       --
       BEGIN
          l_screening_code :=
-            get_screening_code (p_screening_id,
-                                l_base_parameter_code,
-                                l_db_office_code
-                               );
+                        get_screening_code (p_screening_id, l_db_office_code);
          --
          l_id_already_exists := TRUE;
       EXCEPTION
@@ -219,10 +196,122 @@ AS
                                );
    END create_screening_id;
 
+   PROCEDURE copy_screening_id (
+      p_screening_id_old        IN   VARCHAR2,
+      p_screening_id_new        IN   VARCHAR2,
+      p_screening_id_desc_new   IN   VARCHAR2,
+      p_parameter_id_new        IN   VARCHAR2 DEFAULT NULL,
+      p_parameter_type_id_new   IN   VARCHAR2 DEFAULT NULL,
+      p_duration_id_new         IN   VARCHAR2 DEFAULT NULL,
+      p_param_check             IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id            IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_param_check             BOOLEAN       := TRUE;
+      l_new_id_already_exists   BOOLEAN       := FALSE;
+      l_db_office_id            VARCHAR2 (16);
+      l_parameter_id_old        VARCHAR2 (49);
+      l_parameter_id_new        VARCHAR2 (49);
+      l_db_office_code          NUMBER;
+      l_screening_code_new      NUMBER;
+      l_screening_code_old      NUMBER;
+      l_parameter_code_new      NUMBER;
+      l_parameter_code_old      NUMBER;
+   BEGIN
+      IF NVL (UPPER (p_param_check), 'T') = 'F'
+      THEN
+         l_param_check := FALSE;
+      END IF;
+
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      --
+      -- Retrieve old screening id info...
+      BEGIN
+         l_screening_code_old :=
+                      get_screening_code (p_screening_id_old, l_db_office_id);
+
+         SELECT parameter_code
+           INTO l_parameter_code_old
+           FROM at_screening_id
+          WHERE screening_code = l_screening_code_old;
+
+         l_parameter_id_old :=
+                             cwms_util.get_parameter_id (l_parameter_code_old);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.RAISE ('GENERIC_ERROR',
+                               'Old Screening id: '
+                            || p_screening_id_old
+                            || ' not found. Cannot copy to '
+                            || p_screening_id_new
+                           );
+      END;
+
+      --
+      -- The new screening id should not already exist...
+      BEGIN
+         l_screening_code_new :=
+                      get_screening_code (p_screening_id_new, l_db_office_id);
+         l_new_id_already_exists := TRUE;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            -- expecting an exception - i.e., new screening id should not exist.
+            NULL;
+      END;
+
+      IF l_new_id_already_exists
+      THEN
+         cwms_err.RAISE ('GENERIC_ERROR',
+                            'New Screening id: '
+                         || p_screening_id_new
+                         || ' already exists.'
+                        );
+      END IF;
+
+      IF p_parameter_id_new IS NULL
+      THEN
+         l_parameter_id_new := l_parameter_id_old;
+      END IF;
+
+      IF l_param_check
+      THEN
+         IF l_parameter_id_new != l_parameter_id_old
+         THEN
+            cwms_err.RAISE
+               ('GENERIC_ERROR',
+                'The old and new paramaeter id''s do not match. Set the p_param_check to False to override this check.'
+               );
+         END IF;
+      END IF;
+
+      l_screening_code_new :=
+         create_screening_code (p_screening_id_new,
+                                p_screening_id_desc_new,
+                                l_parameter_id_new,
+                                p_parameter_type_id_new,
+                                p_duration_id_new,
+                                p_db_office_id
+                               );
+      copy_screening_criteria (p_screening_id_old,
+                               p_screening_id_new,
+                               p_param_check,
+                               p_db_office_id
+                              );
+   END;
+
    PROCEDURE rename_screening_id (
       p_screening_id_old   IN   VARCHAR2,
       p_screening_id_new   IN   VARCHAR2,
-      p_parameter_id       IN   VARCHAR2,
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    )
    IS
@@ -235,25 +324,15 @@ AS
       --
       -- Retrieve the db_office_code...
       l_db_office_code := cwms_util.get_office_code (p_db_office_id);
-      l_base_parameter_id := cwms_util.get_base_id (p_parameter_id);
-
-      --
-      -- Retrieve base_parameter_code.
-      SELECT cbp.base_parameter_code, cbp.base_parameter_id
-        INTO l_base_parameter_code, l_base_parameter_id
-        FROM cwms_base_parameter cbp
-       WHERE UPPER (cbp.base_parameter_id) = UPPER (l_base_parameter_id);
 
       --
       --
       -- Confirm the new screening_id does NOT exist...
       BEGIN
          l_screening_code :=
-            get_screening_code
-                             (p_screening_id             => p_screening_id_new,
-                              p_base_parameter_code      => l_base_parameter_code,
-                              p_db_office_code           => l_db_office_code
-                             );
+            get_screening_code (p_screening_id        => p_screening_id_new,
+                                p_db_office_code      => l_db_office_code
+                               );
          --
          l_id_already_exists := TRUE;
       EXCEPTION
@@ -286,10 +365,7 @@ AS
       -- Confirm the old screening_id exists...
       BEGIN
          l_screening_code :=
-            get_screening_code (p_screening_id_old,
-                                l_base_parameter_code,
-                                l_db_office_code
-                               );
+                    get_screening_code (p_screening_id_old, l_db_office_code);
       EXCEPTION
          WHEN OTHERS
          THEN
@@ -312,7 +388,6 @@ AS
    PROCEDURE update_screening_id_desc (
       p_screening_id        IN   VARCHAR2,
       p_screening_id_desc   IN   VARCHAR2,
-      p_parameter_id        IN   VARCHAR2,
       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    )
    IS
@@ -326,10 +401,7 @@ AS
       -- Confirm the screening_id exists...
       BEGIN
          l_screening_code :=
-            get_screening_code (p_screening_id,
-                                p_parameter_id,
-                                p_db_office_id
-                               );
+                          get_screening_code (p_screening_id, p_db_office_id);
       EXCEPTION
          WHEN OTHERS
          THEN
@@ -384,10 +456,7 @@ AS
       --
       BEGIN
          l_screening_code :=
-            get_screening_code (p_screening_id,
-                                p_parameter_id,
-                                p_db_office_id
-                               );
+                          get_screening_code (p_screening_id, p_db_office_id);
       EXCEPTION
          WHEN OTHERS
          THEN
@@ -401,7 +470,6 @@ AS
       THEN
          DELETE FROM at_screening
                WHERE screening_code = l_screening_code;
-
       ELSE
          SELECT COUNT (*)
            INTO l_count
@@ -455,9 +523,122 @@ AS
 --                   with a newly passed-in null value.                  -
 --*--------------------------------------------------------------------- -
 --
+   PROCEDURE copy_screening_criteria (
+      p_screening_id_old   IN   VARCHAR2,
+      p_screening_id_new   IN   VARCHAR2,
+      p_param_check        IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_param_check          BOOLEAN       := TRUE;
+      l_db_office_id         VARCHAR2 (16);
+      l_db_office_code       NUMBER;
+      l_screening_code_new   NUMBER;
+      l_screening_code_old   NUMBER;
+      l_parameter_code_new   NUMBER;
+      l_parameter_code_old   NUMBER;
+   BEGIN
+      IF NVL (UPPER (p_param_check), 'T') = 'F'
+      THEN
+         l_param_check := FALSE;
+      END IF;
+
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      --
+      -- Retrieve old screening id info...
+      BEGIN
+         l_screening_code_old :=
+                      get_screening_code (p_screening_id_old, l_db_office_id);
+
+         SELECT parameter_code
+           INTO l_parameter_code_old
+           FROM at_screening_id
+          WHERE screening_code = l_screening_code_old;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.RAISE ('GENERIC_ERROR',
+                               'Old Screening id: '
+                            || p_screening_id_old
+                            || ' not found. Cannot copy to '
+                            || p_screening_id_new
+                           );
+      END;
+
+      --
+      -- Retrieve new screening id info...
+      BEGIN
+         l_screening_code_new :=
+                      get_screening_code (p_screening_id_new, l_db_office_id);
+
+         SELECT parameter_code
+           INTO l_parameter_code_new
+           FROM at_screening_id
+          WHERE screening_code = l_screening_code_new;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.RAISE
+                     ('GENERIC_ERROR',
+                         'New Screening id: '
+                      || p_screening_id_new
+                      || ' not found. Cannot copy to non-existant screening id.'
+                     );
+      END;
+
+      --
+      -- check old/new parameter id if p_param_check is true...
+      IF l_param_check
+      THEN
+         IF l_parameter_code_old != l_parameter_code_new
+         THEN
+            cwms_err.RAISE
+               ('GENERIC_ERROR',
+                'The old and new paramaeter id''s do not match. Set the p_param_check to False to override this check.'
+               );
+         END IF;
+      END IF;
+
+      -- new and old check out, perform the copy...
+
+      -- Delete any screening entries in the new screening id...
+      DELETE FROM at_screening_dur_mag
+            WHERE screening_code = l_screening_code_new;
+
+      --
+      DELETE FROM at_screening_criteria
+            WHERE screening_code = l_screening_code_new;
+
+      -- Copy old screening criteria entries into the new screening criteria...
+      INSERT INTO at_screening_criteria
+         SELECT l_screening_code_new, season_start_date, range_reject_lo,
+                range_reject_hi, range_question_lo, range_question_hi,
+                rate_change_reject_rise, rate_change_reject_fall,
+                rate_change_quest_rise, rate_change_quest_fall,
+                rate_change_disp_interval_code, const_reject_duration_code,
+                const_reject_min, const_reject_max, const_reject_n_miss,
+                const_quest_duration_code, const_quest_min, const_quest_max,
+                const_quest_n_miss, estimate_expression
+           FROM at_screening_criteria
+          WHERE screening_code = l_screening_code_old;
+
+      INSERT INTO at_screening_dur_mag
+         SELECT l_screening_code_new, season_start_date, duration_code,
+                reject_lo, reject_hi, question_lo, question_hi
+           FROM at_screening_dur_mag
+          WHERE screening_code = l_screening_code_old;
+   END;
+
    PROCEDURE store_screening_criteria (
       p_screening_id              IN   VARCHAR2,
-      p_parameter_id              IN   VARCHAR2,
       p_rate_change_interval_id   IN   VARCHAR2,
       p_unit_id                   IN   VARCHAR2,
       p_screen_crit_array         IN   screen_crit_array,
@@ -504,10 +685,7 @@ AS
 
       BEGIN
          l_screening_code :=
-            get_screening_code (p_screening_id,
-                                p_parameter_id,
-                                l_db_office_id
-                               );
+                          get_screening_code (p_screening_id, l_db_office_id);
       EXCEPTION
          WHEN OTHERS
          THEN
@@ -543,13 +721,9 @@ AS
       SELECT cbp.unit_code, cbp.abstract_param_code
         INTO l_to_unit_code, l_abstract_param_code
         FROM cwms_base_parameter cbp, at_parameter ap
-       WHERE parameter_code =
-                cwms_ts.get_parameter_code
-                                       (cwms_util.get_base_id (p_parameter_id),
-                                        cwms_util.get_sub_id (p_parameter_id),
-                                        l_db_office_id,
-                                        'F'
-                                       )
+       WHERE parameter_code = (SELECT parameter_code
+                                 FROM at_screening_id
+                                WHERE screening_code = l_screening_code)
          AND cbp.base_parameter_code = ap.base_parameter_code;
 
       SELECT factor, offset
@@ -577,6 +751,7 @@ AS
                       rate_change_reject_fall,
                       rate_change_quest_rise,
                       rate_change_quest_fall,
+                      rate_change_disp_interval_code,
                       const_reject_duration_code,
                       const_reject_min,
                       const_reject_max,
@@ -598,8 +773,9 @@ AS
                       l_sc_rec.rate_change_reject_fall * l_factor + l_offset,
                       l_sc_rec.rate_change_quest_rise * l_factor + l_offset,
                       l_sc_rec.rate_change_quest_fall * l_factor + l_offset,
+                      l_rate_change_interval_code,
                       CASE
-                         WHEN l_sc_rec.const_reject_duration_id IS NULL
+                         WHEN l_sc_rec.const_reject_duration_id IS NOT NULL
                             THEN (SELECT duration_code
                                     FROM cwms_duration
                                    WHERE UPPER (duration_id) =
@@ -612,7 +788,7 @@ AS
                       l_sc_rec.const_reject_max * l_factor + l_offset,
                       l_sc_rec.const_reject_n_miss,
                       CASE
-                         WHEN l_sc_rec.const_quest_duration_id IS NULL
+                         WHEN l_sc_rec.const_quest_duration_id IS NOT NULL
                             THEN (SELECT duration_code
                                     FROM cwms_duration
                                    WHERE UPPER (duration_id) =
@@ -628,11 +804,17 @@ AS
                      );
 
          l_count := l_sc_rec.dur_mag_array.COUNT;
+         DBMS_OUTPUT.put_line ('number of dur mag elements: ' || l_count);
 
          IF l_count > 0
          THEN
             FOR i IN 1 .. l_count
             LOOP
+               DBMS_OUTPUT.put_line (   i
+                                     || ' '
+                                     || l_sc_rec.dur_mag_array (i).duration_id
+                                    );
+
                INSERT INTO at_screening_dur_mag
                            (screening_code,
                             season_start_date,
