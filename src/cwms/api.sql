@@ -21,3 +21,6 @@
 
 @@cwms_priv_pkg
 @@cwms_priv_pkg_body
+
+@@cwms_vt_pkg
+@@cwms_vt_pkg_body
