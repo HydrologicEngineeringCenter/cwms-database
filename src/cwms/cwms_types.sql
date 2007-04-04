@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/03 09:04 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/04 07:56 (Formatter Plus v4.8.8) */
 -- Defines the CWMS date-time, value, and quality types. 
 SET serveroutput on
 
@@ -33,6 +33,8 @@ DECLARE
                      'loc_type',
                      'alias_type',
                      'alias_array',
+                     'cwms_ts_id_array',
+                     'cwms_ts_id_t',
                      'screen_assign_array',
                      'screen_assign_t',
                      'screen_dur_mag_array',
@@ -258,6 +260,14 @@ CREATE OR REPLACE TYPE screen_crit_type AS OBJECT (
 /
 
 CREATE TYPE screen_crit_array IS TABLE OF screen_crit_type
+/
+
+CREATE OR REPLACE TYPE cwms_ts_id_t AS OBJECT (
+   cwms_ts_id   VARCHAR2 (183)
+);
+/
+
+CREATE OR REPLACE TYPE cwms_ts_id_array IS TABLE OF cwms_ts_id_t;
 /
 
 -------------------------------------------------

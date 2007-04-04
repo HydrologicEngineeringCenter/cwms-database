@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/03 09:01 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/03 09:54 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_vt
 AS
 /******************************************************************************
@@ -1010,5 +1010,55 @@ AS
             VALUES (b.ts_code, l_screening_code, b.active_flag,
                     b.resultant_ts_code);
    END assign_screening_id;
+
+   PROCEDURE unassign_screening_id (
+      p_screening_id       IN   VARCHAR2,
+      p_cwms_ts_id_array   IN   cwms_ts_id_array,
+      p_unassign_all       IN   VARCHAR2 DEFAULT 'F',
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_unassign_all     BOOLEAN       := FALSE;
+      l_db_office_id     VARCHAR2 (16);
+      l_db_office_code   NUMBER;
+      l_num              NUMBER        := p_cwms_ts_id_array.COUNT;
+      l_screening_code   NUMBER;
+   BEGIN
+      IF UPPER (NVL (p_unassign_all, 'F')) = 'T'
+      THEN
+         l_unassign_all := TRUE;
+      END IF;
+
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+      l_screening_code :=
+                         get_screening_code (p_screening_id, l_db_office_code);
+
+      IF l_unassign_all
+      THEN
+         DELETE FROM at_screening
+               WHERE screening_code = l_screening_code;
+      ELSIF l_num < 1
+      THEN
+         cwms_err.RAISE ('GENERIC_ERROR',
+                         'No cwms_ts_id''s passed-in to unassin.'
+                        );
+      ELSE
+         DELETE FROM at_screening
+               WHERE screening_code = l_screening_code
+                 AND ts_code IN (
+                         SELECT mvcti.ts_code
+                           FROM mv_cwms_ts_id mvcti,
+                                TABLE (p_cwms_ts_id_array) a
+                          WHERE UPPER (mvcti.cwms_ts_id) =
+                                                          UPPER (a.cwms_ts_id));
+      END IF;
+   END unassign_screening_id;
 END cwms_vt;
 /

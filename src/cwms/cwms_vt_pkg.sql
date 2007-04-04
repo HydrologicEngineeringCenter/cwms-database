@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/03 07:02 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/03 09:37 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_vt
 AS
 /******************************************************************************
@@ -99,6 +99,13 @@ AS
    PROCEDURE assign_screening_id (
       p_screening_id       IN   VARCHAR2,
       p_scr_assign_array   IN   screen_assign_array,
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE unassign_screening_id (
+      p_screening_id       IN   VARCHAR2,
+      p_cwms_ts_id_array   IN   cwms_ts_id_array,
+      p_unassign_all       IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
 END cwms_vt;
