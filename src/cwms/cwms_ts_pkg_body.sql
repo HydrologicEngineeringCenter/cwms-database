@@ -874,6 +874,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 /* Formatted on 2006/12/01 11:30 (Formatter Plus v4.8.7) */
 --   
 
+/* Formatted on 2007/04/09 10:29 (Formatter Plus v4.8.8) */
 PROCEDURE retrieve_ts_java (
    p_transaction_time   OUT      DATE,
    p_at_tsv_rc          OUT      sys_refcursor,
@@ -889,19 +890,20 @@ PROCEDURE retrieve_ts_java (
    p_office_id          IN       VARCHAR2 DEFAULT NULL
 )
 IS
+   l_at_tsv_rc   sys_refcursor;
 BEGIN
    p_transaction_time := CAST ((SYSTIMESTAMP AT TIME ZONE 'GMT') AS DATE);
+   --
+   p_cwms_ts_id := get_cwms_ts_id (p_cwms_ts_id, p_office_id);
 
-      --
-   p_cwms_ts_id := get_cwms_ts_id(p_cwms_ts_id, p_office_id);
-      --
+   --
    IF p_units IS NULL
    THEN
       p_units := get_db_unit_id (p_cwms_ts_id);
    END IF;
 
    --
-   retrieve_ts (p_at_tsv_rc,
+   retrieve_ts (l_at_tsv_rc,
                 p_units,
                 p_cwms_ts_id,
                 p_start_time,
@@ -913,6 +915,7 @@ BEGIN
                 p_max_version,
                 p_office_id
                );
+   p_at_tsv_rc := l_at_tsv_rc;
 END retrieve_ts_java;
 
 --
@@ -1010,6 +1013,11 @@ END retrieve_ts_java;
 		l_end_time_init DATE   := l_end_time;
 		
 		l_office_id     varchar2(16);
+        
+        ll_time timestamp with time zone;
+        ll_value binary_double;
+        ll_qual number;
+        
 	
 	BEGIN
 		--
@@ -1030,7 +1038,7 @@ END retrieve_ts_java;
 		  l_trim := cwms_util.return_true_or_false(p_trim);
 		end if;
 	
-		if NVL(p_max_version,  cwms_util.true_num) = cwms_util.false_num then
+		if NVL(p_max_version,  'T') = 'T' then
 		  l_max_version := FALSE;
 		else
 		  l_max_version := TRUE;
@@ -1186,7 +1194,7 @@ END retrieve_ts_java;
 				THEN    
 					-- nonl_versioned, irregular, noninclusive retrieval -
 					--
-					dbms_output.put_line('RETRIEVE_TS #5');
+					dbms_output.put_line('gkgk - RETRIEVE_TS #5');
 					--                         
 					open p_at_tsv_rc for
 					SELECT   FROM_TZ (CAST (date_time AS TIMESTAMP), 'GMT') AT TIME ZONE (p_time_zone),
@@ -1198,6 +1206,10 @@ END retrieve_ts_java;
 					     AND v.start_date <= l_end_time
 					     AND v.end_date > l_start_time
 					ORDER BY date_time ASC;
+                    
+                 
+
+
 	
 				ELSE  -- l_versioned IS NOT NULL -
 	   		   --
@@ -1459,6 +1471,8 @@ END retrieve_ts_java;
 	  		END IF;
 	 
 	 	END IF;
+        
+
 	 
 	 	dbms_application_info.set_module(null,null);
 		
