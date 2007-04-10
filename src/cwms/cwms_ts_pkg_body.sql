@@ -878,8 +878,10 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 PROCEDURE retrieve_ts_java (
    p_transaction_time   OUT      DATE,
    p_at_tsv_rc          OUT      sys_refcursor,
-   p_units              IN OUT   VARCHAR2,
-   p_cwms_ts_id         IN OUT   VARCHAR2,
+   p_units_out          OUT      VARCHAR2,
+   p_cwms_ts_id_out     OUT      VARCHAR2,
+   p_units_in           IN       VARCHAR2,
+   p_cwms_ts_id_in      IN       VARCHAR2,
    p_start_time         IN       DATE,
    p_end_time           IN       DATE,
    p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
@@ -894,18 +896,20 @@ IS
 BEGIN
    p_transaction_time := CAST ((SYSTIMESTAMP AT TIME ZONE 'GMT') AS DATE);
    --
-   p_cwms_ts_id := get_cwms_ts_id (p_cwms_ts_id, p_office_id);
+   p_cwms_ts_id_out := get_cwms_ts_id (p_cwms_ts_id_in, p_office_id);
 
    --
-   IF p_units IS NULL
+   IF p_units_in IS NULL
    THEN
-      p_units := get_db_unit_id (p_cwms_ts_id);
+      p_units_out := get_db_unit_id (p_cwms_ts_id_in);
+   ELSE
+      p_units_out := p_units_in;
    END IF;
 
    --
    retrieve_ts (l_at_tsv_rc,
-                p_units,
-                p_cwms_ts_id,
+                p_units_out,
+                p_cwms_ts_id_out,
                 p_start_time,
                 p_end_time,
                 p_time_zone,
@@ -916,6 +920,8 @@ BEGIN
                 p_office_id
                );
    p_at_tsv_rc := l_at_tsv_rc;
+
+   
 END retrieve_ts_java;
 
 --
@@ -1197,8 +1203,8 @@ END retrieve_ts_java;
 					dbms_output.put_line('gkgk - RETRIEVE_TS #5');
 					--                         
 					open p_at_tsv_rc for
-					SELECT   FROM_TZ (CAST (date_time AS TIMESTAMP), 'GMT') AT TIME ZONE (p_time_zone),
-					         value, quality_code
+					SELECT   FROM_TZ (CAST (date_time AS TIMESTAMP), 'GMT') AT TIME ZONE (p_time_zone) "DATE_TIME",
+					         value "VALUE", quality_code "QUALITY_CODE"
 					    FROM av_tsv_dqu v
 					   WHERE v.ts_code = l_ts_code
 					     AND v.date_time BETWEEN l_start_time AND l_end_time
@@ -1206,10 +1212,6 @@ END retrieve_ts_java;
 					     AND v.start_date <= l_end_time
 					     AND v.end_date > l_start_time
 					ORDER BY date_time ASC;
-                    
-                 
-
-
 	
 				ELSE  -- l_versioned IS NOT NULL -
 	   		   --

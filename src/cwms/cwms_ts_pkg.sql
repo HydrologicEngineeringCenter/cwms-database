@@ -198,20 +198,22 @@ AS
 --
 -- RETREIVE_TS_JAVA -
 --
-   PROCEDURE retrieve_ts_java (
-      p_transaction_time   OUT      DATE,
-      p_at_tsv_rc          OUT      sys_refcursor,
-      p_units              IN OUT   VARCHAR2,
-      p_cwms_ts_id         IN OUT   VARCHAR2,
-      p_start_time         IN       DATE,
-      p_end_time           IN       DATE,
-      p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
-      p_trim               IN       VARCHAR2 DEFAULT 'F',
-      p_inclusive          IN       NUMBER DEFAULT NULL,
-      p_version_date       IN       DATE DEFAULT NULL,
-      p_max_version        IN       VARCHAR2 DEFAULT 'T',
-      p_office_id          IN       VARCHAR2 DEFAULT NULL
-   );
+PROCEDURE retrieve_ts_java (
+   p_transaction_time   OUT      DATE,
+   p_at_tsv_rc          OUT      sys_refcursor,
+   p_units_out          OUT      VARCHAR2,
+   p_cwms_ts_id_out     OUT      VARCHAR2,
+   p_units_in           IN       VARCHAR2,
+   p_cwms_ts_id_in      IN       VARCHAR2,
+   p_start_time         IN       DATE,
+   p_end_time           IN       DATE,
+   p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
+   p_trim               IN       VARCHAR2 DEFAULT 'F',
+   p_inclusive          IN       NUMBER DEFAULT NULL,
+   p_version_date       IN       DATE DEFAULT NULL,
+   p_max_version        IN       VARCHAR2 DEFAULT 'T',
+   p_office_id          IN       VARCHAR2 DEFAULT NULL
+);
 
 --
 --*******************************************************************   --
