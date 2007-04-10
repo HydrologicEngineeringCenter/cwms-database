@@ -2364,6 +2364,17 @@ AS
       AND atsi.parameter_code = adu.parameter_code
 /
 
+------
+CREATE OR REPLACE VIEW av_loc_cat_grp (db_office_id,
+                                       loc_category_id,
+                                       loc_group_id
+                                      )
+AS
+   SELECT co.office_id db_office_id, loc_category_id, loc_group_id
+     FROM cwms_office co, at_loc_category atlc, at_loc_group atlg
+    WHERE atlc.db_office_code = co.office_code
+          AND atlc.loc_category_code = atlg.loc_category_code(+)
+/
 
 ------
 ------
