@@ -505,7 +505,8 @@ CREATE TABLE AT_LOC_GROUP
   LOC_GROUP_CODE     NUMBER,
   LOC_CATEGORY_CODE  NUMBER                     NOT NULL,
   LOC_GROUP_ID       VARCHAR2(32 BYTE)          NOT NULL,
-  LOC_GROUP_NAME     VARCHAR2(128 BYTE)
+  LOC_GROUP_NAME     VARCHAR2(128 BYTE),
+  DB_OFFICE_CODE     NUMBER
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -546,7 +547,7 @@ NOPARALLEL
 
 
 CREATE UNIQUE INDEX AT_LOC_GROUPS_U1 ON AT_LOC_GROUP
-(LOC_CATEGORY_CODE, UPPER("LOC_GROUP_ID"))
+(LOC_CATEGORY_CODE, UPPER("LOC_GROUP_ID"), DB_OFFICE_CODE)
 LOGGING
 TABLESPACE CWMS_20AT_DATA
 PCTFREE    10
@@ -582,11 +583,16 @@ ALTER TABLE AT_LOC_GROUP ADD (
 
 
 ALTER TABLE AT_LOC_GROUP ADD (
+  CONSTRAINT AT_LOC_GROUPS_FK2 
+ FOREIGN KEY (DB_OFFICE_CODE) 
+ REFERENCES CWMS_OFFICE (OFFICE_CODE))
+/
+
+ALTER TABLE AT_LOC_GROUP ADD (
   CONSTRAINT AT_LOC_GROUPS_FK1 
  FOREIGN KEY (LOC_CATEGORY_CODE) 
  REFERENCES AT_LOC_CATEGORY (LOC_CATEGORY_CODE))
 /
-
 -----
 -----
 
@@ -2367,13 +2373,19 @@ AS
 ------
 CREATE OR REPLACE VIEW av_loc_cat_grp (db_office_id,
                                        loc_category_id,
+                                       grp_db_office_id,
                                        loc_group_id
                                       )
 AS
-   SELECT co.office_id db_office_id, loc_category_id, loc_group_id
-     FROM cwms_office co, at_loc_category atlc, at_loc_group atlg
+   SELECT co.office_id db_office_id, loc_category_id,
+          coo.office_id grp_db_office_id, loc_group_id
+     FROM cwms_office co,
+          cwms_office coo,
+          at_loc_category atlc,
+          at_loc_group atlg
     WHERE atlc.db_office_code = co.office_code
-          AND atlc.loc_category_code = atlg.loc_category_code(+)
+      AND atlg.db_office_code = coo.office_code(+)
+      AND atlc.loc_category_code = atlg.loc_category_code(+)
 /
 
 ------
