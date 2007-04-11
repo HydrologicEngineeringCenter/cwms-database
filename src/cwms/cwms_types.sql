@@ -68,7 +68,9 @@ DECLARE
                      'cat_dss_xchg_set_obj_t',
                      'cat_dss_xchg_set_otab_t',
                      'cat_dss_xchg_ts_map_obj_t',
-                     'cat_dss_xchg_ts_map_otab_t'
+                     'cat_dss_xchg_ts_map_otab_t',
+                     'group_type',
+                     'group_array'
                     );
 BEGIN
    defined_count := type_names.COUNT;
@@ -447,6 +449,15 @@ CREATE OR REPLACE TYPE loc_alias_type AS OBJECT (
 /
 
 CREATE OR REPLACE TYPE loc_alias_array IS TABLE OF loc_alias_type;
+/
+
+CREATE OR REPLACE TYPE group_type AS OBJECT (
+   GROUP_ID     VARCHAR2 (32),
+   group_name   VARCHAR2 (128)
+)
+/
+
+CREATE OR REPLACE TYPE group_array IS TABLE OF group_type;
 /
 
 COMMIT ;
