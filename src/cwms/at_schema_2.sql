@@ -52,7 +52,7 @@ AS
       AND apl.base_location_code = abl.base_location_code
       AND apl.location_code != 0
       AND adu.parameter_code =
-                         cwms_ts.get_parameter_code ('Elev', NULL, 'ALL', 'F')
+                         cwms_ts.get_parameter_code ('Elev', NULL, 'CWMS', 'F')
       AND cuc.from_unit_id = 'm'
       AND cuc.to_unit_code = adu.display_unit_code
       AND adu.db_office_code = abl.db_office_code;
