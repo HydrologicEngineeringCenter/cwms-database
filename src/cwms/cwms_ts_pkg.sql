@@ -1,4 +1,4 @@
-/* Formatted on 2006/12/14 06:01 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/12 09:42 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_ts
 AS
    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
@@ -37,44 +37,28 @@ AS
    )
       RETURN NUMBER;
 
-   FUNCTION get_parameter_code (
-      p_cwms_ts_code          IN   NUMBER
-   )
+   FUNCTION get_parameter_code (p_cwms_ts_code IN NUMBER)
       RETURN NUMBER;
 
-   FUNCTION get_base_parameter_code (
-      p_cwms_ts_code          IN   NUMBER
-   )
+   FUNCTION get_base_parameter_code (p_cwms_ts_code IN NUMBER)
       RETURN NUMBER;
 
-   FUNCTION get_parameter_type_code (
-      p_cwms_ts_code          IN   NUMBER
-   )
+   FUNCTION get_parameter_type_code (p_cwms_ts_code IN NUMBER)
       RETURN NUMBER;
 
-   FUNCTION get_db_office_code (
-      p_cwms_ts_code          IN   NUMBER
-   )
+   FUNCTION get_db_office_code (p_cwms_ts_code IN NUMBER)
       RETURN NUMBER;
 
-   FUNCTION get_parameter_id (
-      p_cwms_ts_code          IN   NUMBER
-   )
+   FUNCTION get_parameter_id (p_cwms_ts_code IN NUMBER)
       RETURN VARCHAR2;
 
-   FUNCTION get_base_parameter_id (
-      p_cwms_ts_code          IN   NUMBER
-   )
+   FUNCTION get_base_parameter_id (p_cwms_ts_code IN NUMBER)
       RETURN VARCHAR2;
 
-   FUNCTION get_parameter_type_id (
-      p_cwms_ts_code          IN   NUMBER
-   )
+   FUNCTION get_parameter_type_id (p_cwms_ts_code IN NUMBER)
       RETURN VARCHAR2;
 
-   FUNCTION get_db_office_id (
-      p_cwms_ts_code          IN   NUMBER
-   )
+   FUNCTION get_db_office_id (p_cwms_ts_code IN NUMBER)
       RETURN VARCHAR2;
 
    FUNCTION get_ts_ni_hash (
@@ -198,22 +182,22 @@ AS
 --
 -- RETREIVE_TS_JAVA -
 --
-PROCEDURE retrieve_ts_java (
-   p_transaction_time   OUT      DATE,
-   p_at_tsv_rc          OUT      sys_refcursor,
-   p_units_out          OUT      VARCHAR2,
-   p_cwms_ts_id_out     OUT      VARCHAR2,
-   p_units_in           IN       VARCHAR2,
-   p_cwms_ts_id_in      IN       VARCHAR2,
-   p_start_time         IN       DATE,
-   p_end_time           IN       DATE,
-   p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
-   p_trim               IN       VARCHAR2 DEFAULT 'F',
-   p_inclusive          IN       NUMBER DEFAULT NULL,
-   p_version_date       IN       DATE DEFAULT NULL,
-   p_max_version        IN       VARCHAR2 DEFAULT 'T',
-   p_office_id          IN       VARCHAR2 DEFAULT NULL
-);
+   PROCEDURE retrieve_ts_java (
+      p_transaction_time   OUT      DATE,
+      p_at_tsv_rc          OUT      sys_refcursor,
+      p_units_out          OUT      VARCHAR2,
+      p_cwms_ts_id_out     OUT      VARCHAR2,
+      p_units_in           IN       VARCHAR2,
+      p_cwms_ts_id_in      IN       VARCHAR2,
+      p_start_time         IN       DATE,
+      p_end_time           IN       DATE,
+      p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
+      p_trim               IN       VARCHAR2 DEFAULT 'F',
+      p_inclusive          IN       NUMBER DEFAULT NULL,
+      p_version_date       IN       DATE DEFAULT NULL,
+      p_max_version        IN       VARCHAR2 DEFAULT 'T',
+      p_office_id          IN       VARCHAR2 DEFAULT NULL
+   );
 
 --
 --*******************************************************************   --
@@ -287,6 +271,36 @@ PROCEDURE retrieve_ts_java (
       p_interval_id         OUT      VARCHAR2,
       p_duration_id         OUT      VARCHAR2,
       p_version_id          OUT      VARCHAR2
+   );
+
+   PROCEDURE zretrieve_ts (
+      p_at_tsv_rc      IN OUT   sys_refcursor,
+      p_units          IN       VARCHAR2,
+      p_cwms_ts_id     IN       VARCHAR2,
+      p_start_time     IN       DATE,
+      p_end_time       IN       DATE,
+      p_trim           IN       VARCHAR2 DEFAULT 'F',
+      p_inclusive      IN       NUMBER DEFAULT NULL,
+      p_version_date   IN       DATE DEFAULT NULL,
+      p_max_version    IN       VARCHAR2 DEFAULT 'T',
+      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE zretrieve_ts_java (
+      p_transaction_time   OUT      DATE,
+      p_at_tsv_rc          OUT      sys_refcursor,
+      p_units_out          OUT      VARCHAR2,
+      p_cwms_ts_id_out     OUT      VARCHAR2,
+      p_units_in           IN       VARCHAR2,
+      p_cwms_ts_id_in      IN       VARCHAR2,
+      p_start_time         IN       DATE,
+      p_end_time           IN       DATE,
+      p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
+      p_trim               IN       VARCHAR2 DEFAULT 'F',
+      p_inclusive          IN       NUMBER DEFAULT NULL,
+      p_version_date       IN       DATE DEFAULT NULL,
+      p_max_version        IN       VARCHAR2 DEFAULT 'T',
+      p_db_office_id       IN       VARCHAR2 DEFAULT NULL
    );
 END;
 /
