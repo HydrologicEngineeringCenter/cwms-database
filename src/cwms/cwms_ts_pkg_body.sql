@@ -3713,7 +3713,6 @@ PROCEDURE zretrieve_ts_java (
    p_cwms_ts_id_in      IN       VARCHAR2,
    p_start_time         IN       DATE,
    p_end_time           IN       DATE,
-   p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
    p_trim               IN       VARCHAR2 DEFAULT 'F',
    p_inclusive          IN       NUMBER DEFAULT NULL,
    p_version_date       IN       DATE DEFAULT NULL,

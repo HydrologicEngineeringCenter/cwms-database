@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/12 09:42 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/12 12:11 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_ts
 AS
    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
@@ -295,7 +295,6 @@ AS
       p_cwms_ts_id_in      IN       VARCHAR2,
       p_start_time         IN       DATE,
       p_end_time           IN       DATE,
-      p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
       p_trim               IN       VARCHAR2 DEFAULT 'F',
       p_inclusive          IN       NUMBER DEFAULT NULL,
       p_version_date       IN       DATE DEFAULT NULL,
