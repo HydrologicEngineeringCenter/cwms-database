@@ -1331,7 +1331,7 @@ END retrieve_ts_java;
 			 
 			 	open p_at_tsv_rc for
 				select FROM_TZ (CAST (jdate_time AS TIMESTAMP), 'GMT') AT TIME ZONE (p_time_zone)
-						 																 	 			  	 "DATETIME", 
+						 																 	 			  	 "DATE_TIME", 
 		             value, 
 			          nvl(quality_code,0) quality_code
 	           from (select * 
@@ -3533,7 +3533,7 @@ BEGIN
          END IF;
 
          OPEN p_at_tsv_rc FOR
-            SELECT   jdate_time "DATETIME", VALUE,
+            SELECT   jdate_time "DATE_TIME", VALUE,
                      NVL (quality_code, 0) quality_code
                 FROM (SELECT *
                         FROM (SELECT *
