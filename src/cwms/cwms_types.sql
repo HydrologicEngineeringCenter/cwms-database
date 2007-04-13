@@ -443,8 +443,7 @@ CREATE OR REPLACE TYPE screen_assign_array IS TABLE OF screen_assign_t
 
 CREATE OR REPLACE TYPE loc_alias_type AS OBJECT (
    location_id      VARCHAR2 (49),
-   loc_alias_id     VARCHAR2 (16),
-   loc_alias_name   VARCHAR2 (80)
+   loc_alias_id     VARCHAR2 (128)
 )
 /
 
@@ -453,7 +452,7 @@ CREATE OR REPLACE TYPE loc_alias_array IS TABLE OF loc_alias_type;
 
 CREATE OR REPLACE TYPE group_type AS OBJECT (
    GROUP_ID     VARCHAR2 (32),
-   group_name   VARCHAR2 (128)
+   group_desc   VARCHAR2 (128)
 )
 /
 
