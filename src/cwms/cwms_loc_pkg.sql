@@ -1,4 +1,4 @@
-/* Formatted on 2007/03/19 07:47 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/11 09:40 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_loc
 AS
 /******************************************************************************
@@ -225,24 +225,24 @@ AS
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 
-   PROCEDURE store_aliases (
-      p_location_id    IN   VARCHAR2,
-      p_alias_array    IN   alias_array,
-      p_store_rule     IN   VARCHAR2 DEFAULT 'DELETE INSERT',
-      p_ignorenulls    IN   VARCHAR2 DEFAULT 'T',
-      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
-   );
+--   PROCEDURE store_aliases (
+--      p_location_id    IN   VARCHAR2,
+--      p_alias_array    IN   alias_array,
+--      p_store_rule     IN   VARCHAR2 DEFAULT 'DELETE INSERT',
+--      p_ignorenulls    IN   VARCHAR2 DEFAULT 'T',
+--      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+--   );
 
-   PROCEDURE store_alias (
-      p_location_id         IN   VARCHAR2,
-      p_agency_id           IN   VARCHAR2,
-      p_alias_id            IN   VARCHAR2,
-      p_agency_name         IN   VARCHAR2 DEFAULT NULL,
-      p_alias_public_name   IN   VARCHAR2 DEFAULT NULL,
-      p_alias_long_name     IN   VARCHAR2 DEFAULT NULL,
-      p_ignorenulls         IN   VARCHAR2 DEFAULT 'T',
-      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
-   );
+--   PROCEDURE store_alias (
+--      p_location_id         IN   VARCHAR2,
+--      p_agency_id           IN   VARCHAR2,
+--      p_alias_id            IN   VARCHAR2,
+--      p_agency_name         IN   VARCHAR2 DEFAULT NULL,
+--      p_alias_public_name   IN   VARCHAR2 DEFAULT NULL,
+--      p_alias_long_name     IN   VARCHAR2 DEFAULT NULL,
+--      p_ignorenulls         IN   VARCHAR2 DEFAULT 'T',
+--      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+--   );
 
    PROCEDURE store_location (
       p_location_id        IN   VARCHAR2,
@@ -288,7 +288,7 @@ AS
    PROCEDURE create_loc_group (
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_id      IN   VARCHAR2,
-      p_loc_group_name    IN   VARCHAR2 DEFAULT NULL,
+      p_loc_group_desc    IN   VARCHAR2 DEFAULT NULL,
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 
@@ -296,9 +296,65 @@ AS
       p_loc_category_id    IN   VARCHAR2,
       p_loc_group_id_old   IN   VARCHAR2,
       p_loc_group_id_new   IN   VARCHAR2,
-      p_loc_group_name     IN   VARCHAR2 DEFAULT NULL,
+      p_loc_group_desc     IN   VARCHAR2 DEFAULT NULL,
       p_ignore_null        IN   VARCHAR2 DEFAULT 'T',
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE create_loc_category (
+      p_loc_category_id     IN   VARCHAR2,
+      p_loc_category_desc   IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+   );
+
+   FUNCTION create_loc_category_f (
+      p_loc_category_id     IN   VARCHAR2,
+      p_loc_category_desc   IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER;
+
+--   PROCEDURE store_alias (
+--      p_location_id    IN   VARCHAR2,
+--      p_category_id    IN   VARCHAR2,
+--      p_group_id       IN   VARCHAR2,
+--      p_alias_id       IN   VARCHAR2,
+--      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+--   );
+
+   PROCEDURE assign_loc_group (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_location_id       IN   VARCHAR2,
+      p_loc_alias_id      IN   VARCHAR2 DEFAULT NULL,
+      p_loc_alias_desc    IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE assign_loc_groups (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_alias_array   IN   loc_alias_array,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE rename_loc_category (
+      p_loc_category_id_old   IN   VARCHAR2,
+      p_loc_category_id_new   IN   VARCHAR2,
+      p_loc_category_desc     IN   VARCHAR2 DEFAULT NULL,
+      p_ignore_null           IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id          IN   VARCHAR2 DEFAULT NULL
+   );
+      PROCEDURE assign_loc_grp_cat (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_group_desc    IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+      PROCEDURE assign_loc_grps_cat (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_array   IN   group_array,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 END cwms_loc;
 /

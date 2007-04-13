@@ -1,4 +1,4 @@
-/* Formatted on 2007/03/19 08:38 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/13 13:40 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --********************************************************************** -
@@ -1876,29 +1876,29 @@ AS
 --                   with a newly passed-in null value.                  -
 --*--------------------------------------------------------------------- -
 --
-   PROCEDURE store_aliases (
-      p_location_id    IN   VARCHAR2,
-      p_alias_array    IN   alias_array,
-      p_store_rule     IN   VARCHAR2 DEFAULT 'DELETE INSERT',
-      p_ignorenulls    IN   VARCHAR2 DEFAULT 'T',
-      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
-   )
-   IS
-      l_agency_code         NUMBER;
-      l_office_id           VARCHAR2 (16);
-      l_office_code         NUMBER;
-      l_location_code       NUMBER;
-      l_array_count         NUMBER        := p_alias_array.COUNT;
-      l_count               NUMBER        := 1;
-      l_distinct            NUMBER;
-      l_store_rule          VARCHAR2 (16);
-      l_alias_id            VARCHAR2 (16);
-      l_alias_public_name   VARCHAR2 (32);
-      l_alias_long_name     VARCHAR2 (80);
-      l_insert              BOOLEAN;
-      l_ignorenulls         BOOLEAN
-                            := cwms_util.return_true_or_false (p_ignorenulls);
-   BEGIN
+--   PROCEDURE store_aliases (
+--      p_location_id    IN   VARCHAR2,
+--      p_alias_array    IN   alias_array,
+--      p_store_rule     IN   VARCHAR2 DEFAULT 'DELETE INSERT',
+--      p_ignorenulls    IN   VARCHAR2 DEFAULT 'T',
+--      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+--   )
+--   IS
+--      l_agency_code         NUMBER;
+--      l_office_id           VARCHAR2 (16);
+--      l_office_code         NUMBER;
+--      l_location_code       NUMBER;
+--      l_array_count         NUMBER        := p_alias_array.COUNT;
+--      l_count               NUMBER        := 1;
+--      l_distinct            NUMBER;
+--      l_store_rule          VARCHAR2 (16);
+--      l_alias_id            VARCHAR2 (16);
+--      l_alias_public_name   VARCHAR2 (32);
+--      l_alias_long_name     VARCHAR2 (80);
+--      l_insert              BOOLEAN;
+--      l_ignorenulls         BOOLEAN
+--                            := cwms_util.return_true_or_false (p_ignorenulls);
+--   BEGIN
 --      --
 --      IF l_count = 0
 --      THEN
@@ -1908,7 +1908,7 @@ AS
 --                      );
 --      END IF;
 
-      --------------------------------------------------------------------
+   --------------------------------------------------------------------
 ---- Check that passed-in aliases are do not contain duplicates...
 --------------------------------------------------------------------
 --      SELECT COUNT (*)
@@ -1916,7 +1916,7 @@ AS
 --        FROM (SELECT DISTINCT UPPER (t.agency_id)
 --                         FROM TABLE (CAST (p_alias_array AS alias_array)) t);
 
-      --      --
+   --      --
 --      IF l_distinct != l_array_count
 --      THEN
 --         cwms_err.RAISE
@@ -1925,7 +1925,7 @@ AS
 --            );
 --      END IF;
 
-      --      --
+   --      --
 --      -- Make sure none of the alias_id's are null
 --      --
 --      SELECT COUNT (*)
@@ -1934,7 +1934,7 @@ AS
 --                FROM TABLE (CAST (p_alias_array AS alias_array)) t
 --               WHERE alias_id IS NULL);
 
-      --      --
+   --      --
 --      IF l_distinct != 0
 --      THEN
 --         cwms_err.RAISE
@@ -1943,7 +1943,7 @@ AS
 --            );
 --      END IF;
 
-      --      --
+   --      --
 --      IF p_db_office_id IS NULL
 --      THEN
 --         l_office_id := cwms_util.user_office_id;
@@ -1951,11 +1951,11 @@ AS
 --         l_office_id := UPPER (p_db_office_id);
 --      END IF;
 
-      --      --
+   --      --
 --      l_office_code := get_office_code (l_office_id);
 --      l_location_code := get_location_code (l_office_id, p_location_id);
 
-      --      --
+   --      --
 --      IF p_store_rule IS NULL
 --      THEN
 --         l_store_rule := cwms_util.delete_all;
@@ -1972,17 +1972,17 @@ AS
 --                        );
 --      END IF;
 
-      --      --
+   --      --
 --      IF l_store_rule = cwms_util.delete_all
 --      THEN
 --         DELETE FROM at_loc_group_assignment atlga
 --                  WHERE atlga.location_code = l_location_code;
 
-      --         --
+   --         --
 --         LOOP
 --            EXIT WHEN l_count > l_array_count;
 
-      --            --
+   --            --
 --            BEGIN
 --               SELECT agency_code
 --                 INTO l_agency_code
@@ -2010,7 +2010,7 @@ AS
 --                         INTO l_agency_code;
 --            END;
 
-      --            --
+   --            --
 --            INSERT INTO at_alias_name
 --                        (location_code, agency_code,
 --                         alias_id,
@@ -2023,14 +2023,14 @@ AS
 --                         p_alias_array (l_count).alias_long_name
 --                        );
 
-      --            --
+   --            --
 --            l_count := l_count + 1;
 --         END LOOP;
 --      ELSE           -- store_rule is REPLACE ALL                            -
 --         LOOP
 --            EXIT WHEN l_count > l_array_count;
 
-      --            --
+   --            --
 --            -- retrieve agency_code...
 --            BEGIN
 --               SELECT agency_code
@@ -2059,26 +2059,26 @@ AS
 --                         INTO l_agency_code;
 --            END;
 
-      --            --
+   --            --
 --            --
 --            -- retrieve existing alias information...
 --            l_insert := FALSE;
 
-      --            BEGIN
+   --            BEGIN
 --               SELECT alias_id, alias_public_name, alias_long_name
 --                 INTO l_alias_id, l_alias_public_name, l_alias_long_name
 --                 FROM at_alias_name
 --                WHERE location_code = l_location_code
 --                  AND agency_code = l_agency_code;
 
-      --               --
+   --               --
 --               IF     p_alias_array (l_count).alias_public_name IS NULL
 --                  AND NOT l_ignorenulls
 --               THEN
 --                  l_alias_public_name := NULL;
 --               END IF;
 
-      --               IF     p_alias_array (l_count).alias_long_name IS NULL
+   --               IF     p_alias_array (l_count).alias_long_name IS NULL
 --                  AND NOT l_ignorenulls
 --               THEN
 --                  l_alias_long_name := NULL;
@@ -2089,7 +2089,7 @@ AS
 --                  l_insert := TRUE;
 --            END;
 
-      --            --
+   --            --
 --            IF l_insert
 --            THEN
 --               --
@@ -2114,59 +2114,51 @@ AS
 --            --
 --            END IF;
 
-      --            --
+   --            --
 --            l_count := l_count + 1;
 --         END LOOP;
 --      END IF;
 
-      --      --
+   --      --
 --      COMMIT;
 ----
-      NULL;
-   END store_aliases;
+--      NULL;
+--   END store_aliases;
 
---
---********************************************************************** -
---********************************************************************** -
---
--- STORE_ALIAS                                                           -
---
---*---------------------------------------------------------------------*-
---
-   PROCEDURE store_alias (
-      p_location_id         IN   VARCHAR2,
-      p_agency_id           IN   VARCHAR2,
-      p_alias_id            IN   VARCHAR2,
-      p_agency_name         IN   VARCHAR2 DEFAULT NULL,
-      p_alias_public_name   IN   VARCHAR2 DEFAULT NULL,
-      p_alias_long_name     IN   VARCHAR2 DEFAULT NULL,
-      p_ignorenulls         IN   VARCHAR2 DEFAULT 'T',
-      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
-   )
-   IS
-      l_alias_array   alias_array   := alias_array ();
-      l_store_rule    VARCHAR2 (16) := 'REPLACE ALL';
-   BEGIN
-      --
-      l_alias_array.EXTEND;
-      --
-      l_alias_array (1) :=
-         alias_type (p_agency_id,
-                     p_alias_id,
-                     p_agency_name,
-                     p_alias_public_name,
-                     p_alias_long_name
-                    );
-      --
-      store_aliases (p_location_id,
-                     l_alias_array,
-                     l_store_rule,
-                     p_ignorenulls,
-                     p_db_office_id
-                    );
-   END store_alias;
+   --   PROCEDURE store_alias (
+--      p_location_id         IN   VARCHAR2,
+--      p_agency_id           IN   VARCHAR2,
+--      p_alias_id            IN   VARCHAR2,
+--      p_agency_name         IN   VARCHAR2 DEFAULT NULL,
+--      p_alias_public_name   IN   VARCHAR2 DEFAULT NULL,
+--      p_alias_long_name     IN   VARCHAR2 DEFAULT NULL,
+--      p_ignorenulls         IN   VARCHAR2 DEFAULT 'T',
+--      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+--   )
+--   IS
+--      l_alias_array   alias_array   := alias_array ();
+--      l_store_rule    VARCHAR2 (16) := 'REPLACE ALL';
+--   BEGIN
+--      --
+--      l_alias_array.EXTEND;
+--      --
+--      l_alias_array (1) :=
+--         alias_type (p_agency_id,
+--                     p_alias_id,
+--                     p_agency_name,
+--                     p_alias_public_name,
+--                     p_alias_long_name
+--                    );
+--      --
+--      store_aliases (p_location_id,
+--                     l_alias_array,
+--                     l_store_rule,
+--                     p_ignorenulls,
+--                     p_db_office_id
+--                    );
+--   END store_alias;
 
---********************************************************************** -
+   --********************************************************************** -
 --********************************************************************** -
 --
 -- STORE_LOC provides backward compatiblity for the dbi.  It will update a
@@ -2245,14 +2237,14 @@ AS
                              p_db_office_id
                             );
       END;
+   --
 
-      --
-      store_aliases (p_location_id,
-                     p_alias_array,
-                     'DELETE INSERT',
-                     p_ignorenulls,
-                     p_db_office_id
-                    );
+   --      store_aliases (p_location_id,
+--                     p_alias_array,
+--                     'DELETE INSERT',
+--                     p_ignorenulls,
+--                     p_db_office_id
+--                    );
    --
    EXCEPTION
       WHEN NO_DATA_FOUND
@@ -2367,7 +2359,8 @@ AS
            INTO l_loc_category_code
            FROM at_loc_category atlc
           WHERE atlc.db_office_code IN (53, p_db_office_code)
-            AND UPPER (atlc.loc_category_id) = UPPER (p_loc_category_id);
+            AND UPPER (atlc.loc_category_id) =
+                                              UPPER (TRIM (p_loc_category_id));
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -2398,7 +2391,8 @@ AS
            INTO l_loc_group_code
            FROM at_loc_group atlg
           WHERE atlg.loc_category_code = l_loc_category_code
-            AND UPPER (atlg.loc_group_id) = UPPER (p_loc_group_id);
+            AND UPPER (atlg.loc_group_id) = UPPER (p_loc_group_id)
+            AND db_office_code IN (53, p_db_office_code);
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -2411,10 +2405,97 @@ AS
       RETURN l_loc_group_code;
    END get_loc_group_code;
 
+   PROCEDURE create_loc_category (
+      p_loc_category_id     IN   VARCHAR2,
+      p_loc_category_desc   IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_tmp   NUMBER;
+   BEGIN
+      l_tmp :=
+         create_loc_category_f (p_loc_category_id        => p_loc_category_id,
+                                p_loc_category_desc      => p_loc_category_desc,
+                                p_db_office_id           => p_db_office_id
+                               );
+   END;
+
+   FUNCTION create_loc_category_f (
+      p_loc_category_id     IN   VARCHAR2,
+      p_loc_category_desc   IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER
+   IS
+      l_db_office_id        VARCHAR2 (16);
+      l_db_office_code      NUMBER;
+      l_cat_is_cwms_cat     BOOLEAN;
+      l_tmp                 NUMBER;
+      l_loc_category_id     VARCHAR2 (32)  := TRIM (p_loc_category_id);
+      l_loc_category_desc   VARCHAR2 (128) := TRIM (p_loc_category_desc);
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      -- Confirm that the new category is not a system/cwms category..
+      --
+      BEGIN
+         SELECT atlc.loc_category_code
+           INTO l_tmp
+           FROM at_loc_category atlc
+          WHERE UPPER (loc_category_id) = UPPER (l_loc_category_id)
+            AND db_office_code = (SELECT office_code
+                                    FROM cwms_office
+                                   WHERE office_id = 'CWMS');
+
+         l_cat_is_cwms_cat := TRUE;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            l_cat_is_cwms_cat := FALSE;
+      END;
+
+      IF l_cat_is_cwms_cat
+      THEN
+         cwms_err.RAISE
+                 ('ITEM_ALREADY_EXISTS',
+                     'Cannot create the '
+                  || l_loc_category_id
+                  || ' category because it already exists as a system category.'
+                 );
+      END IF;
+
+      BEGIN
+         INSERT INTO at_loc_category
+                     (loc_category_code, loc_category_id, db_office_code,
+                      loc_category_desc
+                     )
+              VALUES (cwms_seq.NEXTVAL, l_loc_category_id, l_db_office_code,
+                      p_loc_category_desc
+                     );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.RAISE ('ITEM_ALREADY_EXISTS',
+                               'Cannot create the '
+                            || l_loc_category_id
+                            || ' category as it already exists.'
+                           );
+      END;
+
+      RETURN l_tmp;
+   END;
+
    PROCEDURE create_loc_group (
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_id      IN   VARCHAR2,
-      p_loc_group_name    IN   VARCHAR2 DEFAULT NULL,
+      p_loc_group_desc    IN   VARCHAR2 DEFAULT NULL,
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
    IS
@@ -2423,6 +2504,8 @@ AS
       l_loc_category_code      NUMBER;
       l_loc_group_code         NUMBER;
       l_group_already_exists   BOOLEAN       := FALSE;
+      l_loc_category_id        VARCHAR2 (32) := TRIM (p_loc_category_id);
+      l_loc_group_id           VARCHAR2 (32) := TRIM (p_loc_group_id);
    BEGIN
       IF p_db_office_id IS NULL
       THEN
@@ -2444,15 +2527,11 @@ AS
          WHEN OTHERS
          THEN
             -- need to add new category.
-            INSERT INTO at_loc_category
-                        (loc_category_code, loc_category_id,
-                         db_office_code, loc_category_name
-                        )
-                 VALUES (cwms_seq.NEXTVAL, p_loc_category_id,
-                         l_db_office_code, NULL
-                        )
-              RETURNING loc_category_code
-                   INTO l_loc_category_code;
+            l_loc_category_code :=
+               create_loc_category_f (p_loc_category_id        => l_loc_category_id,
+                                      p_loc_category_desc      => NULL,
+                                      p_db_office_id           => l_db_office_id
+                                     );
       END;
 
       --
@@ -2470,10 +2549,10 @@ AS
          THEN
             INSERT INTO at_loc_group
                         (loc_group_code, loc_category_code,
-                         loc_group_id, loc_group_name
+                         loc_group_id, loc_group_desc
                         )
                  VALUES (cwms_seq.NEXTVAL, l_loc_category_code,
-                         p_loc_group_id, p_loc_group_name
+                         p_loc_group_id, p_loc_group_desc
                         );
       END;
 
@@ -2487,7 +2566,7 @@ AS
       p_loc_category_id    IN   VARCHAR2,
       p_loc_group_id_old   IN   VARCHAR2,
       p_loc_group_id_new   IN   VARCHAR2,
-      p_loc_group_name     IN   VARCHAR2 DEFAULT NULL,
+      p_loc_group_desc     IN   VARCHAR2 DEFAULT NULL,
       p_ignore_null        IN   VARCHAR2 DEFAULT 'T',
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    )
@@ -2526,7 +2605,7 @@ AS
          WHEN OTHERS
          THEN
             cwms_err.RAISE
-               ('ITEM_DOES_NOT__EXIST',
+               ('ITEM_DOES_NOT_EXIST',
                 'Category id must exist to rename group id - Category id that does not exist: ',
                 p_loc_category_id
                );
@@ -2550,7 +2629,7 @@ AS
       IF l_group_already_exists
       THEN
          IF UPPER (l_loc_group_id_old) != UPPER (l_loc_group_id_new)
-         THEN                               -- or there's not a case change...
+         THEN                              -- or there's not a case change...
             cwms_err.RAISE
                    ('ITEM_ALREADY_EXISTS',
                     'p_loc_group_id_new already exists - can''t rename to: ',
@@ -2579,7 +2658,7 @@ AS
 
       --
       -- all checks passed, perform the rename...
-      IF p_loc_group_name IS NULL AND l_ignore_null
+      IF p_loc_group_desc IS NULL AND l_ignore_null
       THEN
          UPDATE at_loc_group
             SET loc_group_id = l_loc_group_id_new
@@ -2587,11 +2666,536 @@ AS
       ELSE
          UPDATE at_loc_group
             SET loc_group_id = l_loc_group_id_new,
-                loc_group_name = TRIM (p_loc_group_name)
+                loc_group_desc = TRIM (p_loc_group_desc)
           WHERE loc_group_code = l_loc_group_code;
       END IF;
    --
    --
    END rename_loc_group;
+
+   --
+--********************************************************************** -
+--********************************************************************** -
+--
+-- STORE_ALIAS                                                           -
+--
+--*---------------------------------------------------------------------*-
+--
+--   PROCEDURE store_alias (
+--      p_location_id    IN   VARCHAR2,
+--      p_category_id    IN   VARCHAR2,
+--      p_group_id       IN   VARCHAR2,
+--      p_alias_id       IN   VARCHAR2,
+--      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+--   )
+--   IS
+--      l_loc_category_code   NUMBER;
+--      l_loc_group_code      NUMBER;
+--      l_location_code       NUMBER;
+--      l_db_office_id        VARCHAR2 (16);
+--      l_db_office_code      NUMBER;
+--      l_tmp                 VARCHAR2 (128);
+--   BEGIN
+--      IF p_db_office_id IS NULL
+--      THEN
+--         l_db_office_id := cwms_util.user_office_id;
+--      ELSE
+--         l_db_office_id := UPPER (p_db_office_id);
+--      END IF;
+
+   --      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+   --      BEGIN
+--         l_loc_category_code :=
+--                      get_loc_category_code (p_category_id, l_db_office_code);
+--      EXCEPTION
+--         WHEN NO_DATA_FOUND
+--         THEN
+--            cwms_err.RAISE ('GENERIC_ERROR',
+--                               'The category id: '
+--                            || p_category_id
+--                            || ' does not exist.'
+--                           );
+--      END;
+
+   --      DBMS_OUTPUT.put_line ('gk 1');
+
+   --      BEGIN
+--         l_loc_group_code :=
+--             get_loc_group_code (p_category_id, p_group_id, l_db_office_code);
+--      EXCEPTION
+--         WHEN NO_DATA_FOUND
+--         THEN
+--            cwms_err.RAISE ('GENERIC_ERROR',
+--                               'There is no group: '
+--                            || p_group_id
+--                            || ' in the '
+--                            || p_category_id
+--                            || ' category.'
+--                           );
+--      END;
+
+   --      DBMS_OUTPUT.put_line ('gk 2');
+
+   --      BEGIN
+--         l_location_code := get_location_code (p_db_office_id, p_location_id);
+--      EXCEPTION
+--         WHEN NO_DATA_FOUND
+--         THEN
+--            cwms_err.RAISE ('GENERIC_ERROR',
+--                               'The '
+--                            || p_location_id
+--                            || ' location id does not exist.'
+--                           );
+--      END;
+
+   --      DBMS_OUTPUT.put_line ('gk 3');
+
+   --      BEGIN
+--         SELECT loc_alias_id
+--           INTO l_tmp
+--           FROM at_loc_group_assignment
+--          WHERE location_code = l_location_code
+--            AND loc_group_code = l_loc_group_code;
+
+   --         UPDATE at_loc_group_assignment
+--            SET loc_alias_id = trim(p_alias_id)
+--          WHERE location_code = l_location_code
+--            AND loc_group_code = l_loc_group_code;
+--      EXCEPTION
+--         WHEN NO_DATA_FOUND
+--         THEN
+--            INSERT INTO at_loc_group_assignment
+--                        (loc_group_code, location_code, loc_alias_id
+--                        )
+--                 VALUES (l_loc_group_code, l_location_code, trim(p_alias_id)
+--                        );
+--      END;
+
+   ----      MERGE INTO at_loc_group_assignment a
+----         USING (SELECT loc_group_code, location_code, loc_alias_id
+----                  FROM at_loc_group_assignment
+----                 WHERE loc_group_code = l_loc_group_code
+----                   AND location_code = l_location_code) b
+----         ON (    a.loc_group_code = l_loc_group_code
+----             AND a.location_code = l_location_code)
+----         WHEN MATCHED THEN
+----            UPDATE
+----               SET a.loc_alias_id = p_alias_id
+----         WHEN NOT MATCHED THEN
+----            INSERT (loc_group_code, location_code, loc_alias_id)
+----            VALUES (cwms_seq.NEXTVAL, l_location_code, p_alias_id);
+--   END;
+
+   --
+--
+-- assign_groups is used to assign one or more location_id's --
+-- to a location group.
+--
+--   loc_alias_type AS OBJECT (
+--           location_id             VARCHAR2 (49),
+--           loc_alias_id            VARCHAR2 (16),
+--           loc_alias_     name     VARCHAR2 (80)
+--
+   PROCEDURE assign_loc_groups (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_alias_array   IN   loc_alias_array,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_id        VARCHAR2 (16);
+      l_db_office_code      NUMBER;
+      l_loc_category_code   NUMBER;
+      l_loc_group_code      NUMBER;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      BEGIN
+         l_loc_category_code :=
+                  get_loc_category_code (p_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('GENERIC_ERROR',
+                               'The category id: '
+                            || p_loc_category_id
+                            || ' does not exist.'
+                           );
+      END;
+
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id,
+                                l_db_office_code
+                               );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('GENERIC_ERROR',
+                               'There is no group: '
+                            || p_loc_group_id
+                            || ' in the '
+                            || p_loc_category_id
+                            || ' category.'
+                           );
+      END;
+
+      MERGE INTO at_loc_group_assignment a
+         USING (SELECT get_location_code (l_db_office_id,
+                                          plaa.location_id
+                                         ) location_code,
+                       plaa.loc_alias_id, plaa.loc_alias_desc
+                  FROM TABLE (p_loc_alias_array) plaa) b
+         ON (    a.loc_group_code = l_loc_group_code
+             AND a.location_code = b.location_code)
+         WHEN MATCHED THEN
+            UPDATE
+               SET a.loc_alias_id = b.loc_alias_id,
+                   a.loc_alias_desc = b.loc_alias_desc
+         WHEN NOT MATCHED THEN
+            INSERT (location_code, loc_group_code, loc_alias_id,
+                    loc_alias_desc)
+            VALUES (b.location_code, l_loc_group_code, b.loc_alias_id,
+                    b.loc_alias_desc);
+   END;
+
+-- creates it and will rename the aliases if they already exist.
+   PROCEDURE assign_loc_group (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_location_id       IN   VARCHAR2,
+      p_loc_alias_id      IN   VARCHAR2 DEFAULT NULL,
+      p_loc_alias_desc    IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_loc_alias_array   loc_alias_array
+         := loc_alias_array (loc_alias_type (p_location_id,
+                                             p_loc_alias_id,
+                                             p_loc_alias_desc
+                                            )
+                            );
+   BEGIN
+      assign_loc_groups (p_loc_category_id      => p_loc_category_id,
+                         p_loc_group_id         => p_loc_group_id,
+                         p_loc_alias_array      => l_loc_alias_array,
+                         p_db_office_id         => p_db_office_id
+                        );
+   END;
+
+   -- unassign only if alias is not used/referenced by shefdecoding.
+   PROCEDURE unassign_loc_group (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_location_id       IN   VARCHAR2,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      NULL;
+   END;
+
+   -- can only delete if there are no shef decoding references.
+   PROCEDURE delete_loc_group (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      NULL;
+   END;
+
+   PROCEDURE delete_loc_cat (
+      p_loc_category_id   IN   VARCHAR2,
+      p_cascade           IN   VARCHAR2 DEFAULT 'F',
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      NULL;
+   END;
+
+   PROCEDURE rename_loc_category (
+      p_loc_category_id_old   IN   VARCHAR2,
+      p_loc_category_id_new   IN   VARCHAR2,
+      p_loc_category_desc     IN   VARCHAR2 DEFAULT NULL,
+      p_ignore_null           IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id          IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_id              VARCHAR2 (16);
+      l_db_office_code            NUMBER;
+      l_loc_category_code_old     NUMBER;
+      l_loc_category_code_new     NUMBER;
+      l_loc_category_id_old       VARCHAR2 (32)
+                                              := TRIM (p_loc_category_id_old);
+      l_loc_category_id_new       VARCHAR2 (32)
+                                              := TRIM (p_loc_category_id_new);
+      l_category_already_exists   BOOLEAN       := FALSE;
+      l_ignore_null               BOOLEAN;
+      l_cat_owned_by_cwms         BOOLEAN;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      IF NVL (p_ignore_null, 'T') = 'T'
+      THEN
+         l_ignore_null := TRUE;
+      ELSE
+         l_ignore_null := FALSE;
+      END IF;
+
+      -- Is the p_loc_category_OLD owned by CWMS?...
+      ---
+      BEGIN
+         SELECT loc_category_code
+           INTO l_loc_category_code_old
+           FROM at_loc_category
+          WHERE UPPER (loc_category_id) = UPPER (l_loc_category_id_old)
+            AND db_office_code = (SELECT office_code
+                                    FROM cwms_office
+                                   WHERE office_id = 'CWMS');
+
+         l_cat_owned_by_cwms := TRUE;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            l_cat_owned_by_cwms := FALSE;
+      END;
+
+      IF l_cat_owned_by_cwms
+      THEN
+         cwms_err.RAISE
+            ('ITEM_ALREADY_EXISTS',
+                'The '
+             || l_loc_category_id_old
+             || ' category is owned by the system. You cannot rename this category.'
+            );
+      END IF;
+
+      -- Is the p_loc_category_NEW owned by CWMS?...
+      ---
+      BEGIN
+         SELECT loc_category_code
+           INTO l_loc_category_code_new
+           FROM at_loc_category
+          WHERE UPPER (loc_category_id) = UPPER (l_loc_category_id_new)
+            AND db_office_code = (SELECT office_code
+                                    FROM cwms_office
+                                   WHERE office_id = 'CWMS');
+
+         l_cat_owned_by_cwms := TRUE;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            l_cat_owned_by_cwms := FALSE;
+      END;
+
+      IF l_cat_owned_by_cwms
+      THEN
+         cwms_err.RAISE
+            ('ITEM_ALREADY_EXISTS',
+                'The '
+             || l_loc_category_id_new
+             || ' category is owned by the system. You cannot rename to this category.'
+            );
+      END IF;
+
+      -- Does Category exist?.
+      --
+      BEGIN
+         l_loc_category_code_old :=
+              get_loc_category_code (l_loc_category_id_old, l_db_office_code);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.RAISE
+               ('ITEM_DOES_NOT_EXIST',
+                'Category id must exist to rename it - Category id that does not exist: ',
+                l_loc_category_id_old
+               );
+      END;
+
+      --
+      -- Does NEW Category id already exist?.
+      BEGIN
+         l_loc_category_code_new :=
+              get_loc_category_code (l_loc_category_id_new, l_db_office_code);
+         l_category_already_exists := TRUE;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            l_category_already_exists := FALSE;
+      END;
+
+      IF l_category_already_exists
+      THEN
+         IF UPPER (l_loc_category_id_old) != UPPER (l_loc_category_id_new)
+         THEN                              -- or there's not a case change...
+            cwms_err.RAISE
+                ('ITEM_ALREADY_EXISTS',
+                 'p_loc_category_id_new already exists - can''t rename to: ',
+                 l_loc_category_id_old
+                );
+         END IF;
+      END IF;
+
+      --
+      -- all checks passed, perform the rename...
+      IF p_loc_category_desc IS NULL AND l_ignore_null
+      THEN
+         UPDATE at_loc_category
+            SET loc_category_id = l_loc_category_id_new
+          WHERE loc_category_code = l_loc_category_code_old;
+      ELSE
+         UPDATE at_loc_category
+            SET loc_category_id = l_loc_category_id_new,
+                loc_category_desc = TRIM (p_loc_category_desc)
+          WHERE loc_category_code = l_loc_category_code_old;
+      END IF;
+   --
+   --
+   END rename_loc_category;
+
+--
+-- used to assign one or more groups to an existing category.
+--
+   PROCEDURE assign_loc_grps_cat (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_array   IN   group_array,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_id        VARCHAR2 (16);
+      l_db_office_code      NUMBER;
+      l_loc_category_code   NUMBER;
+      l_loc_group_code      NUMBER;
+      l_loc_category_id     VARCHAR2 (32)  := TRIM (p_loc_category_id);
+      l_loc_group_id        VARCHAR2 (32);
+      l_loc_group_desc      VARCHAR2 (128);
+      l_tmp                 NUMBER;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      IF l_db_office_code = cwms_util.db_office_code_all
+      THEN
+         cwms_err.RAISE ('GENERIC_ERROR',
+                         'Cannot assign system office groups with this call.'
+                        );
+      END IF;
+
+      -- get the category_code...
+      BEGIN
+         l_loc_category_code :=
+                  get_loc_category_code (l_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
+
+      l_tmp := p_loc_group_array.COUNT;
+
+      IF l_tmp > 0
+      THEN
+         FOR i IN 1 .. l_tmp
+         LOOP
+            l_loc_group_id := TRIM (p_loc_group_array (i).GROUP_ID);
+            l_loc_group_desc := TRIM (p_loc_group_array (i).group_desc);
+
+            BEGIN
+               --
+               -- If the group_id already exists, then update -
+               -- the group_id and group_desc...
+               SELECT loc_group_code
+                 INTO l_loc_group_code
+                 FROM at_loc_group
+                WHERE UPPER (loc_group_id) = UPPER (l_loc_group_id)
+                  AND loc_category_code = l_loc_category_code
+                  AND db_office_code = l_db_office_code;
+
+               UPDATE at_loc_group
+                  SET loc_group_id = l_loc_group_id,
+                      loc_group_desc = l_loc_group_desc
+                WHERE loc_group_code = l_loc_group_code;
+
+               l_loc_group_code := NULL;
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+               THEN
+                  BEGIN
+                     --
+                     -- Check if the group_id is a CWMS owned -
+                     -- group_id, if it is, do nothing...
+                     SELECT loc_group_code
+                       INTO l_loc_group_code
+                       FROM at_loc_group
+                      WHERE UPPER (loc_group_id) = UPPER (l_loc_group_id)
+                        AND loc_category_code = l_loc_category_code
+                        AND db_office_code = cwms_util.db_office_code_all;
+                  EXCEPTION
+                     WHEN NO_DATA_FOUND
+                     THEN
+                        --
+                        -- Insert a new group_id...
+                        INSERT INTO at_loc_group
+                                    (loc_group_code, loc_category_code,
+                                     loc_group_id, loc_group_desc,
+                                     db_office_code
+                                    )
+                             VALUES (cwms_seq.NEXTVAL, l_loc_category_code,
+                                     l_loc_group_id, l_loc_group_desc,
+                                     l_db_office_code
+                                    );
+                  END;
+            END;
+         END LOOP;
+      END IF;
+   END;
+
+--
+-- used to assign a group to an existing category.
+--
+   PROCEDURE assign_loc_grp_cat (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_group_desc    IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_loc_group_array   group_array
+         := group_array (group_type (TRIM (p_loc_group_id),
+                                     TRIM (p_loc_group_desc)
+                                    )
+                        );
+   BEGIN
+      assign_loc_grps_cat (p_loc_category_id,
+                           l_loc_group_array,
+                           p_db_office_id
+                          );
+   END;
 END cwms_loc;
 /
