@@ -158,6 +158,10 @@ CREATE TYPE char_16_array_type IS TABLE OF VARCHAR2 (16);
 CREATE TYPE char_32_array_type IS TABLE OF VARCHAR2 (32);
 /
 
+-- 49 character id array.
+
+CREATE TYPE char_49_array_type IS TABLE OF VARCHAR2 (49);
+/
 -- the size of a time series id.
 
 CREATE TYPE char_183_array_type IS TABLE OF VARCHAR2 (183);
