@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/10 12:48 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/15 15:16 (Formatter Plus v4.8.8) */
 -- Defines the CWMS date-time, value, and quality types. 
 SET serveroutput on
 
@@ -70,7 +70,9 @@ DECLARE
                      'cat_dss_xchg_ts_map_obj_t',
                      'cat_dss_xchg_ts_map_otab_t',
                      'group_type',
-                     'group_array'
+                     'group_array',
+                     'group_cat_t',
+                     'group_cat_tab_t'
                     );
 BEGIN
    defined_count := type_names.COUNT;
@@ -162,6 +164,7 @@ CREATE TYPE char_32_array_type IS TABLE OF VARCHAR2 (32);
 
 CREATE TYPE char_49_array_type IS TABLE OF VARCHAR2 (49);
 /
+
 -- the size of a time series id.
 
 CREATE TYPE char_183_array_type IS TABLE OF VARCHAR2 (183);
@@ -446,8 +449,8 @@ CREATE OR REPLACE TYPE screen_assign_array IS TABLE OF screen_assign_t
 /
 
 CREATE OR REPLACE TYPE loc_alias_type AS OBJECT (
-   location_id      VARCHAR2 (49),
-   loc_alias_id     VARCHAR2 (128)
+   location_id    VARCHAR2 (49),
+   loc_alias_id   VARCHAR2 (128)
 )
 /
 
@@ -461,6 +464,15 @@ CREATE OR REPLACE TYPE group_type AS OBJECT (
 /
 
 CREATE OR REPLACE TYPE group_array IS TABLE OF group_type;
+/
+
+CREATE OR REPLACE TYPE group_cat_t AS OBJECT (
+   loc_category_id   VARCHAR2 (32),
+   loc_group_id      VARCHAR2 (32)
+)
+/
+
+CREATE OR REPLACE TYPE group_cat_tab_t IS TABLE OF group_cat_t
 /
 
 COMMIT ;

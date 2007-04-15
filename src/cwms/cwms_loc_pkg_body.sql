@@ -1,6 +1,45 @@
-/* Formatted on 2007/04/13 13:40 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/15 15:06 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
+--
+-- num_group_assigned_to_shef return the number of groups -
+-- currently assigned in the at_shef_decode table.
+   FUNCTION num_group_assigned_to_shef (
+      p_group_cat_array   IN   group_cat_tab_t,
+      db_office_id        IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER
+   IS
+      l_tmp              NUMBER;
+      l_db_office_code   NUMBER
+                               := cwms_util.get_db_office_code (db_office_id);
+   BEGIN
+      SELECT COUNT (*)
+        INTO l_tmp
+        FROM at_shef_decode
+       WHERE loc_group_code IN (
+                SELECT loc_group_code
+                  FROM (SELECT a.loc_category_code, b.loc_group_id
+                          FROM at_loc_category a,
+                               TABLE
+                                   (CAST (p_group_cat_array AS group_cat_tab_t)
+                                   ) b
+                         WHERE UPPER (a.loc_category_id) =
+                                              UPPER (TRIM (b.loc_category_id))
+                           AND a.db_office_code IN
+                                  (l_db_office_code,
+                                   cwms_util.db_office_code_all
+                                  )) c,
+                       at_loc_group d
+                 WHERE UPPER (d.loc_group_id) = UPPER (TRIM (c.loc_group_id))
+                   AND d.loc_category_code = c.loc_category_code
+                   AND d.db_office_code IN
+                             (l_db_office_code, cwms_util.db_office_code_all));
+
+      RETURN l_tmp;
+   END;
+
+--loc_cat_grp_rec_tab_t IS TABLE OF loc_cat_grp_rec_t
 --********************************************************************** -
 --********************************************************************** -
 --
@@ -2853,19 +2892,16 @@ AS
          USING (SELECT get_location_code (l_db_office_id,
                                           plaa.location_id
                                          ) location_code,
-                       plaa.loc_alias_id, plaa.loc_alias_desc
+                       plaa.loc_alias_id
                   FROM TABLE (p_loc_alias_array) plaa) b
          ON (    a.loc_group_code = l_loc_group_code
              AND a.location_code = b.location_code)
          WHEN MATCHED THEN
             UPDATE
-               SET a.loc_alias_id = b.loc_alias_id,
-                   a.loc_alias_desc = b.loc_alias_desc
+               SET a.loc_alias_id = b.loc_alias_id
          WHEN NOT MATCHED THEN
-            INSERT (location_code, loc_group_code, loc_alias_id,
-                    loc_alias_desc)
-            VALUES (b.location_code, l_loc_group_code, b.loc_alias_id,
-                    b.loc_alias_desc);
+            INSERT (location_code, loc_group_code, loc_alias_id)
+            VALUES (b.location_code, l_loc_group_code, b.loc_alias_id);
    END;
 
 -- creates it and will rename the aliases if they already exist.
@@ -2874,16 +2910,11 @@ AS
       p_loc_group_id      IN   VARCHAR2,
       p_location_id       IN   VARCHAR2,
       p_loc_alias_id      IN   VARCHAR2 DEFAULT NULL,
-      p_loc_alias_desc    IN   VARCHAR2 DEFAULT NULL,
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
    IS
       l_loc_alias_array   loc_alias_array
-         := loc_alias_array (loc_alias_type (p_location_id,
-                                             p_loc_alias_id,
-                                             p_loc_alias_desc
-                                            )
-                            );
+          := loc_alias_array (loc_alias_type (p_location_id, p_loc_alias_id));
    BEGIN
       assign_loc_groups (p_loc_category_id      => p_loc_category_id,
                          p_loc_group_id         => p_loc_group_id,
@@ -2893,6 +2924,28 @@ AS
    END;
 
    -- unassign only if alias is not used/referenced by shefdecoding.
+   PROCEDURE unassign_loc_groups (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_location_array    IN   char_49_array_type,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_id                VARCHAR2 (16);
+      l_db_office_code              NUMBER;
+      l_is_group_assigned_to_shef   BOOLEAN       := TRUE;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+   --is_group_assigned_to_shef ();
+   END;
+
    PROCEDURE unassign_loc_group (
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_id      IN   VARCHAR2,
@@ -2900,8 +2953,14 @@ AS
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
    IS
+      l_location_array   char_49_array_type
+                                 := char_49_array_type (TRIM (p_location_id));
    BEGIN
-      NULL;
+      unassign_loc_groups (p_loc_category_id      => p_loc_category_id,
+                           p_loc_group_id         => p_loc_group_id,
+                           p_location_array       => l_location_array,
+                           p_db_office_id         => p_db_office_id
+                          );
    END;
 
    -- can only delete if there are no shef decoding references.
