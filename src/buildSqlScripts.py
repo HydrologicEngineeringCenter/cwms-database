@@ -4716,9 +4716,12 @@ errorCodes = [
     ['-20031', 'CAN_NOT_DELETE_LOC_1',  'Can not delete location: "%1" because Timeseries Identifiers exist.' ],
     ['-20032', 'CANNOT_DELETE_UNIT_1',  'Cannot delete or rename unit alias "%1"; it is in use by %2.'],
     ['-20033', 'DUPLICATE_XCHG_MAP',    'Mapping of "%1" to "%2 already exists in exchage set "%3", but with different parameters.'],
+    ['-20034', 'ITEM_DOES_NOT_EXIST',   '%1 "%2" does not exist.'],
     ['-20102', 'UNIT_CONV_NOT_FOUND',   'The units conversion for "%1" was not found'                 ],
     ['-20103', 'INVALID_TIME_ZONE',     'The time zone "%1" is not a valid Oracle time zone region'   ],
     ['-20104', 'UNITS_NOT_SPECIFIED',   'You must specifiy the UNITS of your data'                    ],
+    ['-20234', 'ITEMS_ARE_IDENTICAL',   '%1'                                                          ],
+    ['-20997', 'GENERIC_ERROR',         '%1'                                                          ],
     ['-20998', 'ERROR',                 '%1'                                                          ],
     ['-20999', 'UNKNOWN_EXCEPTION',     'The requested exception is not in the CWMS_ERROR table: "%1"'],
 ]
