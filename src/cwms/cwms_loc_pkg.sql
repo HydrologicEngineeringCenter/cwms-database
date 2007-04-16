@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/15 15:07 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/15 15:30 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_loc
 AS
 /******************************************************************************
@@ -360,6 +360,7 @@ AS
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_id      IN   VARCHAR2,
       p_location_id       IN   VARCHAR2,
+      p_unassign_all      IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 
@@ -367,13 +368,16 @@ AS
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_id      IN   VARCHAR2,
       p_location_array    IN   char_49_array_type,
+      p_unassign_all      IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 
    FUNCTION num_group_assigned_to_shef (
       p_group_cat_array   IN   group_cat_tab_t,
-      db_office_id        IN   VARCHAR2 DEFAULT NULL
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER;
+
+
 END cwms_loc;
 /

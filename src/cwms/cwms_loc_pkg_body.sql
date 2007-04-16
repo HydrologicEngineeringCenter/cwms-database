@@ -1,18 +1,16 @@
-/* Formatted on 2007/04/15 15:06 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/16 05:44 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --
 -- num_group_assigned_to_shef return the number of groups -
 -- currently assigned in the at_shef_decode table.
-   FUNCTION num_group_assigned_to_shef (
+   FUNCTION znum_group_assigned_to_shef (
       p_group_cat_array   IN   group_cat_tab_t,
-      db_office_id        IN   VARCHAR2 DEFAULT NULL
+      p_db_office_code    IN   NUMBER
    )
       RETURN NUMBER
    IS
-      l_tmp              NUMBER;
-      l_db_office_code   NUMBER
-                               := cwms_util.get_db_office_code (db_office_id);
+      l_tmp   NUMBER;
    BEGIN
       SELECT COUNT (*)
         INTO l_tmp
@@ -27,16 +25,29 @@ AS
                          WHERE UPPER (a.loc_category_id) =
                                               UPPER (TRIM (b.loc_category_id))
                            AND a.db_office_code IN
-                                  (l_db_office_code,
+                                  (p_db_office_code,
                                    cwms_util.db_office_code_all
                                   )) c,
                        at_loc_group d
                  WHERE UPPER (d.loc_group_id) = UPPER (TRIM (c.loc_group_id))
                    AND d.loc_category_code = c.loc_category_code
                    AND d.db_office_code IN
-                             (l_db_office_code, cwms_util.db_office_code_all));
+                             (p_db_office_code, cwms_util.db_office_code_all));
 
       RETURN l_tmp;
+   END;
+
+   FUNCTION num_group_assigned_to_shef (
+      p_group_cat_array   IN   group_cat_tab_t,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER
+   IS
+      l_db_office_code   NUMBER
+                             := cwms_util.get_db_office_code (p_db_office_id);
+   BEGIN
+      RETURN znum_group_assigned_to_shef (p_group_cat_array,
+                                          l_db_office_code);
    END;
 
 --loc_cat_grp_rec_tab_t IS TABLE OF loc_cat_grp_rec_t
@@ -2922,34 +2933,89 @@ AS
                          p_db_office_id         => p_db_office_id
                         );
    END;
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- unassign_loc_groups and 
+-- unassign_loc_group
+--
+--These procedures unassign (delete) group/location pairs. The -
+--unassign_loc_groups procedure accepts an array of locations so that one or -
+--more group/location pairs can be unassigned. The unassign_loc_group procedure -
+--only accepts a single group location pair for unassignment.
+--
+--Both calls allow the possibility to unassign all group/location pairs by -
+--setting the p_unassign_all parameter to "T" for TURE. The default value for -
+--this parameter is "F" for FALSE.
+--
+--For the unassign_loc_groups call, the p_location_array uses the CWMS -
+--"char_49_array_type" table type, which is an array of table type varchar2(49).
 
-   -- unassign only if alias is not used/referenced by shefdecoding.
+--Note that you cannot unassign group/location pairs if a group/location pair -
+--is being referenced by a SHEF decode entry.
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
    PROCEDURE unassign_loc_groups (
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_id      IN   VARCHAR2,
       p_location_array    IN   char_49_array_type,
+      p_unassign_all      IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
    IS
-      l_db_office_id                VARCHAR2 (16);
-      l_db_office_code              NUMBER;
-      l_is_group_assigned_to_shef   BOOLEAN       := TRUE;
+      l_db_office_code   NUMBER := cwms_util.get_office_code (p_db_office_id);
+      l_loc_group_code   NUMBER
+         := get_loc_group_code (p_loc_category_id      => p_loc_category_id,
+                                p_loc_group_id         => p_loc_group_id,
+                                p_db_office_code       => l_db_office_code
+                               );
+      l_tmp              NUMBER;
+      l_unassign_all     BOOLEAN := FALSE;
    BEGIN
-      IF p_db_office_id IS NULL
+      IF UPPER (TRIM (p_unassign_all)) = 'T'
       THEN
-         l_db_office_id := cwms_util.user_office_id;
-      ELSE
-         l_db_office_id := UPPER (p_db_office_id);
+         l_unassign_all := TRUE;
       END IF;
 
-      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
-   --is_group_assigned_to_shef ();
+      BEGIN
+         IF l_unassign_all
+         THEN -- delete all group/location assignments...
+            DELETE FROM at_loc_group_assignment
+                  WHERE location_code = l_loc_group_code;
+         ELSE -- delete only group/location assignments for -
+              -- given locations...
+            DELETE FROM at_loc_group_assignment
+                  WHERE location_code = l_loc_group_code
+                    AND location_code IN (
+                           SELECT location_code
+                             FROM av_loc b,
+                                  TABLE
+                                     (CAST
+                                         (p_location_array AS char_49_array_type
+                                         )
+                                     ) c
+                            WHERE UPPER (b.location_code) =
+                                                 UPPER (TRIM (c.COLUMN_VALUE)));
+         END IF;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.RAISE
+               ('GENERIC_ERROR',
+                'Cannot unassign Location/Group pair(s). One or more group assignments are still assigned to SHEF Decoding.'
+               );
+      END;
    END;
-
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- unassign_loc_group --
+-- See description for unassign_loc_groups above.--
+-------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
    PROCEDURE unassign_loc_group (
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_id      IN   VARCHAR2,
       p_location_id       IN   VARCHAR2,
+      p_unassign_all      IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
    IS
@@ -2959,6 +3025,7 @@ AS
       unassign_loc_groups (p_loc_category_id      => p_loc_category_id,
                            p_loc_group_id         => p_loc_group_id,
                            p_location_array       => l_location_array,
+                           p_unassign_all         => p_unassign_all,
                            p_db_office_id         => p_db_office_id
                           );
    END;
