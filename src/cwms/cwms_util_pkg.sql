@@ -1,4 +1,4 @@
-/* Formatted on 2007/03/28 06:46 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/19 08:29 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -81,6 +81,11 @@ AS
    TYPE str_tab_tab_t IS TABLE OF str_tab_t;
 
    -- table of rows with string fields
+   TYPE cat_unit_rec_t IS RECORD (
+      unit_id   VARCHAR2 (16)
+   );
+
+   TYPE cat_unit_tab_t IS TABLE OF cat_unit_rec_t;
 
    --------------------------------------------------------------------------------
 -- Splits string into a table of strings using the specified delimiter.
@@ -168,6 +173,9 @@ AS
    FUNCTION get_sub_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2;
 
+   FUNCTION get_ts_code (p_cwms_ts_id IN VARCHAR2, p_db_office_code IN NUMBER)
+      RETURN NUMBER;
+
    FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
       RETURN VARCHAR2;
 
@@ -204,6 +212,7 @@ AS
 
    FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
       RETURN VARCHAR2;
+
 --------------------------------------------------------------------------------
 -- function get_time_zone_code
 --
@@ -340,6 +349,20 @@ AS
 
    -- Create the partitioned timeseries table view
    PROCEDURE create_view;
+
+   PROCEDURE get_valid_units (
+      p_valid_units    OUT      sys_refcursor,
+      p_parameter_id   IN       VARCHAR2 DEFAULT NULL
+   );
+
+   FUNCTION get_valid_units_tab (p_parameter_id IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_unit_tab_t PIPELINED;
+
+   FUNCTION get_unit_code (
+      p_unit_id             IN   VARCHAR2,
+      p_abstract_param_id   IN   VARCHAR2
+   )
+      RETURN NUMBER;
 END cwms_util;
 /
 show errors;

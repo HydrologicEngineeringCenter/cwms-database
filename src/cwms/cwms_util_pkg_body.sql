@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/02 15:27 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/19 08:29 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -133,6 +133,17 @@ AS
       ELSE
          RETURN SUBSTR (p_full_id, 1, l_num - 1);
       END IF;
+   END;
+
+   FUNCTION get_base_param_code (p_base_param_id IN VARCHAR2)
+      RETURN NUMBER
+   IS
+      l_base_param_code   NUMBER;
+   BEGIN
+      SELECT a.base_parameter_code
+        INTO l_base_param_code
+        FROM cwms_base_parameter a
+       WHERE UPPER (a.base_parameter_id) = UPPER (TRIM (p_base_param_id));
    END;
 
    FUNCTION get_sub_id (p_full_id IN VARCHAR2)
@@ -1611,6 +1622,123 @@ AS
    BEGIN
       return to_millis(sys_extract_utc(systimestamp));
    END current_millis;
+
+   FUNCTION get_ts_code (p_cwms_ts_id IN VARCHAR2, p_db_office_code IN NUMBER)
+      RETURN NUMBER
+   IS
+      l_cwms_ts_code   NUMBER;
+   BEGIN
+      BEGIN
+         SELECT a.ts_code
+           INTO l_cwms_ts_code
+           FROM mv_cwms_ts_id a
+          WHERE UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
+            AND a.db_office_code = p_db_office_code;
+
+         RETURN l_cwms_ts_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('TS_ID_NOT_FOUND', TRIM (p_cwms_ts_id));
+      END;
+   END get_ts_code;
+
+   PROCEDURE get_valid_units (
+      p_valid_units    OUT      sys_refcursor,
+      p_parameter_id   IN       VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      IF p_parameter_id IS NULL
+      THEN
+         OPEN p_valid_units FOR
+            SELECT a.unit_id
+              FROM cwms_unit a;
+      ELSE
+         OPEN p_valid_units FOR
+            SELECT a.unit_id
+              FROM cwms_unit a
+             WHERE abstract_param_code =
+                      (SELECT abstract_param_code
+                         FROM cwms_base_parameter
+                        WHERE base_parameter_id =
+                                                 get_base_id (p_parameter_id));
+      END IF;
+   END;
+
+   FUNCTION get_valid_units_tab (p_parameter_id IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_unit_tab_t PIPELINED
+   IS
+      l_query_cursor   sys_refcursor;
+      l_output_row     cat_unit_rec_t;
+   BEGIN
+      get_valid_units (l_query_cursor, p_parameter_id);
+
+      LOOP
+         FETCH l_query_cursor
+          INTO l_output_row;
+
+         EXIT WHEN l_query_cursor%NOTFOUND;
+         PIPE ROW (l_output_row);
+      END LOOP;
+
+      CLOSE l_query_cursor;
+   END;
+
+   FUNCTION get_unit_code (
+      p_unit_id             IN   VARCHAR2,
+      p_abstract_param_id   IN   VARCHAR2
+   )
+      RETURN NUMBER
+   IS
+      l_unit_code   NUMBER;
+   BEGIN
+      IF p_abstract_param_id IS NULL
+      THEN
+         BEGIN
+            SELECT unit_code
+              INTO l_unit_code
+              FROM cwms_unit
+             WHERE unit_id = TRIM (p_unit_id);
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.RAISE ('INVALID_ITEM',
+                               TRIM (p_unit_id),
+                               'unit. Note: Units are case sensitive'
+                              );
+            WHEN TOO_MANY_ROWS
+            THEN
+               cwms_err.RAISE
+                     ('ERROR',
+                         'More than one entry was found for the unit: "'
+                      || TRIM (p_unit_id)
+                      || '". Try specifying the p_abstract_param for this unit.'
+                     );
+         END;
+      ELSE
+         BEGIN
+            SELECT unit_code
+              INTO l_unit_code
+              FROM cwms_unit
+             WHERE unit_id = TRIM (p_unit_id)
+               AND abstract_param_code =
+                      (SELECT abstract_param_code
+                         FROM cwms_abstract_parameter
+                        WHERE abstract_param_id =
+                                            UPPER (TRIM (p_abstract_param_id)));
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.RAISE ('INVALID_ITEM',
+                               TRIM (p_unit_id),
+                               'unit. Note: Units are case sensitive'
+                              );
+         END;
+      END IF;
+
+      RETURN l_unit_code;
+   END;
 ----------------------------------------------------------------------------
 BEGIN
    -- anything put here will be executed on every mod_plsql call
