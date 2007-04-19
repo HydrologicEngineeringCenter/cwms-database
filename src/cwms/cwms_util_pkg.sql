@@ -72,6 +72,8 @@ AS
    ts_creator                    CONSTANT NUMBER                 := 16;
    vt_mgr                        CONSTANT NUMBER                 := 32;
    all_users                     CONSTANT NUMBER                 := 64;
+   
+   epoch                         CONSTANT TIMESTAMP              := standard.to_timestamp('1970/01/01/ 00:00:00', 'yyyy/mm/dd hh24:mi:ss');
 
    TYPE str_tab_t IS TABLE OF VARCHAR2 (32767);
 
@@ -313,6 +315,24 @@ AS
       RETURN VARCHAR2;
 
 --------------------------------------------------------------------
+-- Return UTC timestamp for specified Java milliseconds
+--
+   FUNCTION to_timestamp(p_millis IN NUMBER)
+      RETURN TIMESTAMP;
+      
+--------------------------------------------------------------------
+-- Return Java milliseconds for a specified UTC timestamp.
+--
+   FUNCTION to_millis(p_timestamp IN TIMESTAMP)
+      RETURN NUMBER;
+      
+--------------------------------------------------------------------
+-- Return Java milliseconds for current time.
+--
+   FUNCTION current_millis
+      RETURN NUMBER;
+      
+--------------------------------------------------------------------
    PROCEDURE TEST;
 
    -- Dump (put_line) a character string p_str in chunks of length p_len
@@ -322,3 +342,4 @@ AS
    PROCEDURE create_view;
 END cwms_util;
 /
+show errors;

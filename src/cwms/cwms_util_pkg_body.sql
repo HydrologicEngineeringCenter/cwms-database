@@ -1559,6 +1559,58 @@ AS
 
       RETURN l_tab;
    END parse_string_recordset;
+--------------------------------------------------------------------
+-- Return UTC timestamp for specified Java milliseconds
+--
+   FUNCTION to_timestamp(p_millis IN NUMBER)
+      RETURN TIMESTAMP
+   IS
+      l_millis number := p_millis;
+      l_day    number;
+      l_hour   number;
+      l_min    number;
+      l_sec    number;
+   BEGIN
+      l_day    := trunc(l_millis / 86400000);
+      l_millis := l_millis - (l_day * 86400000);
+      l_hour   := trunc(l_millis / 3600000);
+      l_millis := l_millis - (l_hour * 3600000);
+      l_min    := trunc(l_millis / 60000);
+      l_millis := l_millis - (l_min * 60000);
+      l_sec    := trunc(l_millis / 1000);
+      l_millis := l_millis - (l_sec * 1000);
+      
+      return epoch + to_dsinterval('' || l_day || ' '
+         || to_char(l_hour,    '00') || ':'
+         || to_char(l_min,     '00') || ':'
+         || to_char(l_sec,     '00') || '.'
+         || to_char(l_millis, '000'));
+   END to_timestamp;
+--------------------------------------------------------------------
+-- Return Java milliseconds for a specified UTC timestamp.
+--
+   FUNCTION to_millis(p_timestamp IN TIMESTAMP)
+      RETURN NUMBER
+   IS
+      l_intvl  interval day(5) to second(3);
+      l_millis number; 
+   BEGIN
+      l_intvl  := p_timestamp - epoch;
+      l_millis := trunc(extract(day    from l_intvl) * 86400000 +
+                        extract(hour   from l_intvl) *  3600000 + 
+                        extract(minute from l_intvl) *    60000 + 
+                        extract(second from l_intvl) *     1000);
+                      
+      return l_millis;
+   END to_millis;      
+--------------------------------------------------------------------
+-- Return Java milliseconds for current time.
+--
+   FUNCTION current_millis      RETURN NUMBER
+   IS
+   BEGIN
+      return to_millis(sys_extract_utc(systimestamp));
+   END current_millis;
 ----------------------------------------------------------------------------
 BEGIN
    -- anything put here will be executed on every mod_plsql call
