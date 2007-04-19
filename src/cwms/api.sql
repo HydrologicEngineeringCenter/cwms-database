@@ -24,3 +24,6 @@
 
 @@cwms_vt_pkg
 @@cwms_vt_pkg_body
+
+@@cwms_msg_pkg
+@@cwms_msg_pkg_body
