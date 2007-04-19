@@ -31,7 +31,7 @@ begin
    -- enqueue the message --
    -------------------------
    dbms_aq.enqueue(
-      p_msg_queue,
+      'CWMS_20.' || p_msg_queue,
       enqueue_options,
       message_properties,
       p_message,
@@ -56,8 +56,8 @@ is
    l_msg   sys.aq$_jms_text_message;
    l_nodes xmltype;
    l_node  xmltype;
-   l_name  varchar2(32);
-   l_type  varchar2(16);
+   l_name  varchar2(128);
+   l_type  varchar2(128);
    l_bool  boolean;
    i       pls_integer;
 begin
@@ -175,5 +175,6 @@ begin
 end publish_status_message;
 
 end cwms_msg;
+/
 show errors;
 

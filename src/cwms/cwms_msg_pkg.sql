@@ -80,6 +80,7 @@ procedure publish_status_message(
    p_properties in clob);
 
 end cwms_msg;
+/
 show errors;
 
 
