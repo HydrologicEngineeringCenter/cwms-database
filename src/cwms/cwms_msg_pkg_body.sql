@@ -11,25 +11,28 @@ is
 begin
    msg := sys.aq$_jms_text_message.construct();
    msg.set_string_property('type', p_type);
-   msg.set_long_property('millis', cwms_util.current_millis);
    
    return msg;
 end new_message;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_MESSAGE(...)
+-- FUNCTION PUBLISH_MESSAGE(...)
 --
-procedure publish_message(
-   p_message   in sys.aq$_jms_text_message,
+function publish_message(
+   p_message   in out nocopy sys.aq$_jms_text_message,
    p_msg_queue in varchar2)
+   return integer
 is
    message_properties dbms_aq.message_properties_t;
    enqueue_options    dbms_aq.enqueue_options_t;      
    msgid              raw(16);
+   now                integer := cwms_util.current_millis;
 begin
    -------------------------
    -- enqueue the message --
    -------------------------
+   p_message.set_long_property('millis', now);
+   
    dbms_aq.enqueue(
       'CWMS_20.' || p_msg_queue,
       enqueue_options,
@@ -38,20 +41,23 @@ begin
       msgid);
 
    commit;
+   return now;
 
 exception
    ---------------------------------------
    -- ignore the case of no subscribers --
    ---------------------------------------
    when exc_no_subscribers then null;
+   
 end publish_message;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_MESSAGE(...)
+-- FUNCTION PUBLISH_MESSAGE(...)
 --
-procedure publish_message(
+function publish_message(
    p_properties in xmltype,
    p_msg_queue  in varchar2)
+   return integer
 is
    l_msg   sys.aq$_jms_text_message;
    l_nodes xmltype;
@@ -119,59 +125,65 @@ begin
       l_msg.set_text(cwms_util.strip(l_node.extract('*/node()').getstringval()));
    end if;
 
-   publish_message(l_msg, p_msg_queue);
+   return publish_message(l_msg, p_msg_queue);
    
 end publish_message;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_MESSAGE(...)
+-- FUNCTION PUBLISH_MESSAGE(...)
 --
-procedure publish_message(
+function publish_message(
    p_properties in varchar2,
    p_msg_queue  in varchar2)
+   return integer
 is
 begin
-   publish_message(xmltype(p_properties), p_msg_queue);
+   return publish_message(xmltype(p_properties), p_msg_queue);
 end publish_message;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_MESSAGE(...)
+-- FUNCTION PUBLISH_MESSAGE(...)
 --
-procedure publish_message(
+function publish_message(
    p_properties in clob,
    p_msg_queue  in varchar2)
+   return integer
 is
 begin
-   publish_message(xmltype(p_properties), p_msg_queue);
+   return publish_message(xmltype(p_properties), p_msg_queue);
 end publish_message;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_STATUS_MESSAGE(...)
+-- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
-procedure publish_status_message(p_message in sys.aq$_jms_text_message)
+function publish_status_message(
+   p_message in out nocopy sys.aq$_jms_text_message) 
+   return integer
 is
 begin
-   publish_message(p_message, 'STATUS');
+   return publish_message(p_message, 'STATUS');
 end publish_status_message;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_STATUS_MESSAGE(...)
+-- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
-procedure publish_status_message(
+function publish_status_message(
    p_properties in varchar2)
+   return integer
 is
 begin
-   publish_message(xmltype(p_properties), 'STATUS');
+   return publish_message(xmltype(p_properties), 'STATUS');
 end publish_status_message;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_STATUS_MESSAGE(...)
+-- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
-procedure publish_status_message(
+function publish_status_message(
    p_properties in clob)
+   return integer
 is
 begin
-   publish_message(xmltype(p_properties), 'STATUS');
+   return publish_message(xmltype(p_properties), 'STATUS');
 end publish_status_message;
 
 end cwms_msg;

@@ -5,7 +5,7 @@ exc_no_subscribers exception; pragma exception_init(exc_no_subscribers, -24033);
 
 -------------------------------------------------------------------------------
 --
--- The publish_message and publish_status_message procedures that take a VARCHAR2
+-- The publish_message and publish_status_message functions that take a VARCHAR2
 -- or CLOB parameter named p_properties expect an XML instance of the following
 -- form:
 -- 
@@ -41,43 +41,49 @@ function new_message(
    return sys.aq$_jms_text_message;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_MESSAGE(...)
+-- FUNCTION PUBLISH_MESSAGE(...)
 --
-procedure publish_message(
-   p_message   in sys.aq$_jms_text_message,
-   p_msg_queue in varchar2);
+function publish_message(
+   p_message   in out nocopy sys.aq$_jms_text_message,
+   p_msg_queue in varchar2)
+   return integer;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_MESSAGE(...)
+-- FUNCTION PUBLISH_MESSAGE(...)
 --
-procedure publish_message(
+function publish_message(
    p_properties in varchar2,
-   p_msg_queue  in varchar2);
+   p_msg_queue  in varchar2)
+   return integer;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_MESSAGE(...)
+-- FUNCTION PUBLISH_MESSAGE(...)
 --
-procedure publish_message(
+function publish_message(
    p_properties clob,
-   p_msg_queue  in varchar2);
+   p_msg_queue  in varchar2)
+   return integer;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_STATUS_MESSAGE(...)
+-- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
-procedure publish_status_message(
-   p_message in sys.aq$_jms_text_message);
+function publish_status_message(
+   p_message in out nocopy sys.aq$_jms_text_message)
+   return integer;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_STATUS_MESSAGE(...)
+-- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
-procedure publish_status_message(
-   p_properties in varchar2);
+function publish_status_message(
+   p_properties in varchar2)
+   return integer;
 
 -------------------------------------------------------------------------------
--- PROCEDURE PUBLISH_STATUS_MESSAGE(...)
+-- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
-procedure publish_status_message(
-   p_properties in clob);
+function publish_status_message(
+   p_properties in clob)
+   return integer;
 
 end cwms_msg;
 /
