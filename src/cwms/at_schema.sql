@@ -5229,49 +5229,6 @@ noparallel;
 show errors;
 commit;
 
------------------------------------------
--- stop and delete any existing queues --
------------------------------------------
-begin
-   begin dbms_aqadm.stop_queue(queue_name  => 'realtime_ops');              exception  when others then null; end;
-   begin dbms_aqadm.drop_queue(queue_name  => 'realtime_ops');              exception  when others then null; end;
-   begin dbms_aqadm.drop_queue_table(queue_table  => 'realtime_ops_table'); exception  when others then null; end;
-   begin dbms_aqadm.stop_queue(queue_name  => 'status');                    exception  when others then null; end;
-   begin dbms_aqadm.drop_queue(queue_name  => 'status');                    exception  when others then null; end;
-   begin dbms_aqadm.drop_queue_table(queue_table  => 'status_table');       exception  when others then null; end;
-end;
-/
-
------------------------------
--- create and start queues --
------------------------------
-begin                 
-   dbms_aqadm.create_queue_table(
-      queue_table        => 'realtime_ops_table', 
-      queue_payload_type => 'sys.aq$_jms_text_message',
-      multiple_consumers => true);
-      
-   dbms_aqadm.create_queue(
-      queue_name  => 'realtime_ops',
-      queue_table => 'realtime_ops_table');
-      
-   dbms_aqadm.start_queue(queue_name => 'realtime_ops');
-   
-   dbms_aqadm.create_queue_table(
-      queue_table        => 'status_table', 
-      queue_payload_type => 'sys.aq$_jms_text_message',
-      multiple_consumers => true);
-      
-   dbms_aqadm.create_queue(
-      queue_name  => 'status',
-      queue_table => 'status_table');
-      
-   dbms_aqadm.start_queue(queue_name => 'status');
-end;
-/
-
-show errors;
-commit;
 
 -----------------------------
 -- AT_MVIEW_REFRESH_PAUSED table
