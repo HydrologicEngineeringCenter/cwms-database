@@ -31,9 +31,6 @@ create table at_rating
   rating_id         varchar2(16) not null,
   interpolate_code  number(4)    not null,
   indep_parm_count  number(4)    not null,
-  indep_unit_code_1 number(4),
-  indep_unit_code_2 number(4),
-  dep_unit_code     number(4),
   description       varchar2(160));
 
 alter table at_rating add constraint at_rating_pk primary key (rating_code);
@@ -65,12 +62,6 @@ comment on column at_rating.rating_id is 'Short name for the rating family ("STG
 comment on column at_rating.interpolate_code is 'Interpolation type ("LINEAR" or "LOGARITHMIC")';
 
 comment on column at_rating.indep_parm_count is 'Number of independent variables (1 or 2)';
-
-comment on column at_rating.indep_unit_code_1 is 'Default units used to convert the values of the 1st independent variable in the rating table to internal db units';
-
-comment on column at_rating.indep_unit_code_2 is 'Default units used to convert the values of the 2nd independent variable in the rating table to internal db units';
-
-comment on column at_rating.dep_unit_code is 'Default units used to convert the values of the dependent variable in the rating table to internal db units';
 
 
 drop sequence seq_rating;
@@ -171,7 +162,7 @@ create table at_rating_spec
   effective_date    date       not null,
   create_date       date       not null, 
   active_flag       varchar2(1),
-  usgs_rating_id    number(4),
+  version           varchar2(8),
   filename          varchar2(32),
   description       varchar2(160),
   constraint        at_rating_spec_pk 
@@ -179,7 +170,7 @@ create table at_rating_spec
 
 
 alter table at_rating_spec add constraint at_rating_spec_ck1
-check (active_flag is null or active_flag='Y');
+check (active_flag in ('T','F'));
 
 alter table at_rating_spec add constraint at_rating_spec_fk1 
 foreign key (rating_code) references at_rating;
@@ -198,9 +189,9 @@ comment on column at_rating_spec.effective_date is 'The date on/after which this
 
 comment on column at_rating_spec.create_date is 'The date the rating table was stored in the database';
 
-comment on column at_rating_spec.active_flag is '="Y" if the rating is to be used, else null';
+comment on column at_rating_spec.active_flag is '="T" if the rating is to be used, else "F"';
 
-comment on column at_rating_spec.usgs_rating_id is 'the base rating table "version" number from the USGS rdb file';
+comment on column at_rating_spec.version is 'the base rating table version; the RATING ID in the USGS rdb file " 9.0"';
 
 comment on column at_rating_spec.filename is 'rating table filename (do we also need file type, "RDB" ?)';
 
@@ -239,10 +230,10 @@ create table at_rating_shift_spec
 
 
 alter table at_rating_shift_spec add constraint at_rating_shift_spec_ck1
-check (active_flag is null or active_flag='Y');
+check (active_flag in ('T','F'));
 
 alter table at_rating_shift_spec add constraint at_rating_shift_spec_ck2
-check (transition_flag is null or transition_flag='Y');
+check (transition_flag in ('T','F'));
   
 alter table at_rating_shift_spec add constraint at_rating_shift_spec_fk1
 foreign key (rating_spec_code) references at_rating_spec;
@@ -260,9 +251,9 @@ comment on column at_rating_shift_spec.rating_spec_code is 'The base rating tabl
 
 comment on column at_rating_shift_spec.effective_date is 'The date on/after which this shift SHOULD be used';
 
-comment on column at_rating_shift_spec.active_flag is '="Y" if the shift is to be used, else null';
+comment on column at_rating_shift_spec.active_flag is '="T" if the shift is to be used, else "F"';
 
-comment on column at_rating_shift_spec.transition_flag is '="Y" if the shift is used to transition between official USGS ratings, else null';
+comment on column at_rating_shift_spec.transition_flag is '="T" if the shift is used to transition between official USGS ratings, else "F"';
 
 
 drop sequence seq_rating_shift;
@@ -371,7 +362,7 @@ create table at_rating_value
 organization index;
 
 alter table at_rating_value add constraint at_rating_value_ck1
-check (stor_flag is null or stor_flag='Y');
+check (stor_flag in ('T','F'));
 
 alter table at_rating_value add constraint at_rating_value_fk1
 foreign key (rating_curve_code) references at_rating_curve;
@@ -380,6 +371,6 @@ foreign key (rating_curve_code) references at_rating_curve;
 comment on table at_rating_value is 'Table of expanded rating table values';
 
 comment on column at_rating_value.stor_flag is 
-'="Y" if it is a USGS STOR point marked by an asterisk, else null';
+'="T" if it is a USGS STOR point marked by an asterisk, else "F"';
 
 
