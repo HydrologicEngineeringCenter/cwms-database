@@ -171,34 +171,11 @@ order by object_name, object_type asc;
 set define on
 connect cwms_20/&cwms_passwd@&inst
 set serveroutput on
------------------------------
--- create and start queues --
------------------------------
-begin                 
-   dbms_aqadm.create_queue_table(
-      queue_table        => 'realtime_ops_table', 
-      queue_payload_type => 'sys.aq$_jms_text_message',
-      multiple_consumers => true);
-      
-   dbms_aqadm.create_queue(
-      queue_name  => 'realtime_ops',
-      queue_table => 'realtime_ops_table');
-      
-   dbms_aqadm.start_queue(queue_name => 'realtime_ops');
-   
-   dbms_aqadm.create_queue_table(
-      queue_table        => 'status_table', 
-      queue_payload_type => 'sys.aq$_jms_text_message',
-      multiple_consumers => true);
-      
-   dbms_aqadm.create_queue(
-      queue_name  => 'status',
-      queue_table => 'status_table');
-      
-   dbms_aqadm.start_queue(queue_name => 'status');
-end;
-/
-commit;
+--------------------------------------
+-- create and start queues and jobs --
+--------------------------------------
+prompt Creating and starting queues...
+@queues
 prompt Starting jobs...
 exec cwms_util.start_timeout_mv_refresh_job;
 /

@@ -7561,3 +7561,73 @@ dropCwms.close()
 #dropUser.close()
 os.remove(tempFilename)
 
+#--------------------------------------------------------------------#
+# generate a script to create and start queues for specified offices #
+#--------------------------------------------------------------------#
+office_names = {}
+dbhost_offices = {}
+for office_id, office_name, report_to, dbhost, eroc in offices[1:-1] :
+	if not dbhost : dbhost = office_id
+	office_names[office_id] = office_name
+	if not dbhost_offices.has_key(dbhost) : dbhost_offices[dbhost] = []
+	dbhost_offices[dbhost].append(office_id);
+
+dbhosts = dbhost_offices.keys()
+dbhosts.sort()
+print
+for dbhost in dbhosts :
+	line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
+	for i in range(1, len(dbhost_offices[dbhost])) : 
+		line += ", %s" % office_names[dbhost_offices[dbhost][i]]
+	print line
+
+ok = False
+while not ok :
+	print
+	print 'Enter the office id(s) from the list that use this database as a primary'
+	print 'or backup. Enter "All" for a national COOP.'
+	line  = raw_input('>  ')
+	print
+	office_ids = line.upper().replace(',', ' ').replace(';', ' ').split()
+	if not office_ids :
+		print "You must enter at least one office."
+	else :
+		for office_id in office_ids :
+			if office_id == 'ALL' : 
+				office_ids = dbhosts[:]
+				office_ids.remove('LCRA')
+				ok = True
+				break
+			if office_id not in dbhosts :
+				print "Office %s does not host a database." % office_id
+				break
+		else :
+			ok = True
+			
+	if ok :
+		print "You have chosen the following office(s): %s" % ','.join(office_ids)
+		line = raw_input("Is this correct? (y/n) > ")
+		if not line or line[0].upper() != 'Y' :
+			ok = False
+queue_template = '''
+   dbms_aqadm.create_queue_table(
+      queue_table        => '%s_%s_table', 
+      queue_payload_type => 'sys.aq$_jms_text_message',
+      multiple_consumers => true);
+      
+   dbms_aqadm.create_queue(
+      queue_name  => '%s_%s',
+      queue_table => '%s_%s_table');
+      
+   dbms_aqadm.start_queue(queue_name => '%s_%s');
+'''
+sys.stderr.write("Creating queues.sql file\n")
+f = open("queues.sql", "w")
+f.write("set define off\nbegin")
+for office_id in office_ids :
+	id = office_id.lower()
+	for q in ("realtime_ops", "status") : 
+		f.write(queue_template % (id,q,id,q,id,q,id,q))
+f.write("end;\n/\ncommit;\n")
+f.close()
+
