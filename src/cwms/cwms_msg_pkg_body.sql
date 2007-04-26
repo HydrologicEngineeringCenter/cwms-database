@@ -1,5 +1,66 @@
 create or replace package body cwms_msg
 as
+
+function get_msg_id (p_millis in integer default null) return varchar2
+is
+   office_id varchar2(16);
+   l_millis  integer := p_millis;
+   seq       integer;
+begin
+   office_id := cwms_util.user_office_id;
+   if office_id is null then office_id := 'UNK'; end if;
+   if l_millis is null then l_millis := cwms_util.current_millis; end if;
+   select cwms_log_msg_seq.nextval into seq from dual;
+   return office_id || (l_millis * 1000 + seq);
+end;
+
+function get_queue_prefix return varchar2
+is
+   l_db_office_id   varchar2(16);
+begin
+   select co2.office_id
+     into l_db_office_id
+     from cwms_office co1,
+          cwms_office co2
+    where co1.office_code = 1 --cwms_util.user_office_code
+      and co2.office_code = co1.db_host_office_code;
+      
+   return l_db_office_id;       
+end get_queue_prefix;
+
+function get_queue_name (p_queuename in varchar2) return varchar2
+is
+   l_queuename varchar2(32) := p_queuename;
+   l_found     boolean      := false;
+begin
+
+   for i in 1..2 loop
+      if not l_found then
+         begin
+            select name
+              into l_queuename
+              from dba_queues
+             where name = upper(l_queuename)
+               and owner = 'CWMS_20'
+               and queue_type = 'NORMAL_QUEUE';
+            l_found := true;
+         exception
+            when no_data_found then 
+               l_queuename := get_queue_prefix || '_' || l_queuename;
+         end;
+      end if;
+   end loop;
+   
+   if not l_found then
+      l_queuename := null;
+   else
+      l_queuename := 'CWMS_20.' || l_queuename;
+   end if;
+   
+   return l_queuename;
+   
+end get_queue_name;
+
 -------------------------------------------------------------------------------
 -- FUNCTION NEW_MESSAGE(...)
 --
@@ -27,14 +88,19 @@ is
    enqueue_options    dbms_aq.enqueue_options_t;      
    msgid              raw(16);
    now                integer := cwms_util.current_millis;
+   l_queuename        varchar2(32);
 begin
+   l_queuename := get_queue_name(p_msg_queue);
+   if l_queuename is null then
+      cwms_err.raise('INVALID_ITEM', p_msg_queue, 'message queue name');
+   end if;
    -------------------------
    -- enqueue the message --
    -------------------------
    p_message.set_long_property('millis', now);
    
    dbms_aq.enqueue(
-      'CWMS_20.' || p_msg_queue,
+      l_queuename,
       enqueue_options,
       message_properties,
       p_message,
@@ -47,7 +113,8 @@ exception
    ---------------------------------------
    -- ignore the case of no subscribers --
    ---------------------------------------
-   when exc_no_subscribers then null;
+   when exc_no_subscribers then return now;
+   when others then raise;
    
 end publish_message;
 
@@ -186,7 +253,370 @@ begin
    return publish_message(xmltype(p_properties), 'STATUS');
 end publish_status_message;
 
+-------------------------------------------------------------------------------
+-- FUNCTION LOG_MESSAGE(...)
+--
+function log_message(
+   p_component in varchar2,
+   p_instance  in varchar2,
+   p_host      in varchar2,
+   p_port      in integer,
+   p_reported  in timestamp,
+   p_message   in varchar2)
+   return integer
+is
+   l_now       integer;
+   l_now_ts    timestamp;
+   l_msg_id    varchar2(32);
+   l_message   varchar2(4000);
+   l_document  xmltype;
+   l_nodes     xmltype;
+   l_node      xmltype;
+   l_name      varchar2(128);
+   l_type      varchar2(64);
+   l_text      varchar2(4000);
+   l_number    number;
+   l_prop_type integer;
+   l_extra     varchar2(4000);
+   l_pos       pls_integer;
+   l_typeid    integer;
+   i           pls_integer;
+   lf          constant varchar2(1) := chr(10);
+begin
+   -----------------------------------------
+   -- insert message data into the tables --
+   -----------------------------------------
+   l_now      := cwms_util.current_millis;
+   l_msg_id   := get_msg_id(l_now);
+   l_now_ts   := cwms_util.to_timestamp(l_now);
+   l_document := xmltype(p_message);
+   l_type     := l_document.extract('/cwms_message/@type').getstringval();
+   l_node     := l_document.extract('/cwms_message/text');
+   if l_node is not null then
+      l_message := cwms_util.strip(l_node.extract('*/node()').getstringval());
+   end if;
+
+   -------------------------------
+   -- first the message body... --
+   -------------------------------
+   begin
+      select message_type_code 
+        into l_typeid 
+        from cwms_log_message_types 
+       where message_type_id = l_type;
+   exception
+      when no_data_found then
+         cwms_err.raise('INVALID_ITEM', l_type, 'log message type');
+   end;       
+
+   insert
+     into at_log_message
+   values (
+             l_msg_id, 
+             l_now_ts, 
+             p_component, 
+             p_instance, 
+             p_host, 
+             p_port, 
+             p_reported, 
+             l_typeid, 
+             l_message
+          );   
+
+   -------------------------------------   
+   -- ... then the message properties --
+   -------------------------------------   
+   l_nodes := l_document.extract('/cwms_message/property');
+   if l_nodes is not null then
+      i := 0;
+      loop
+         i := i + 1;
+         l_node := l_nodes.extract('*['||i||']');
+         exit when l_node is null;
+         l_name  := l_node.extract('*/@name').getstringval();
+         l_type  := l_node.extract('*/@type').getstringval();
+         if l_type = 'boolean' or l_type = 'String' then
+            l_number := null;
+            l_text   := cwms_util.strip(l_node.extract('*/node()').getstringval());
+         else
+            l_number := l_node.extract('*/node()').getnumberval();
+            l_text   := null;
+         end if;
+
+         begin
+            select prop_type_code 
+              into l_prop_type 
+              from cwms_log_message_prop_types 
+             where prop_type_id = l_type;
+         exception
+            when no_data_found then
+               cwms_err.raise('INVALID_ITEM', l_type, 'log message property type');
+         end;
+                
+         insert 
+           into at_log_message_properties 
+         values (
+                  l_msg_id, 
+                  l_name, 
+                  l_prop_type, 
+                  l_number, 
+                  l_text
+                );
+      end loop;
+   end if;
+
+   -------------------------
+   -- publish the message --
+   -------------------------
+   l_extra := l_extra
+              || lf
+              || '  <property name="component" type="String">'
+              || p_component
+              || '</property>'
+              || lf;
+   if p_instance is not null then
+      l_extra := l_extra
+                 || '  <property name="instance" type="String">'
+                 || p_instance
+                 || '</property>'
+                 || lf;
+   end if;
+   if p_host is not null then
+      l_extra := l_extra
+                 || '  <property name="host" type="String">'
+                 || p_host
+                 || '</property>'
+                 || lf;
+   end if;
+   if p_port is not null then
+      l_extra := l_extra
+                 || '  <property name="port" type="int">'
+                 || p_port
+                 || '</property>'
+                 || lf;
+   end if;
+   if p_reported is not null then
+      l_extra := l_extra
+                 || '  <property name="report_timestamp" type="String">'
+                 || to_char(p_reported)
+                 || '</property>'
+                 || lf;
+   end if;
+   l_extra := l_extra
+              || '  <property name="log_timestamp" type="String">'
+              || to_char(l_now_ts)
+              || '</property>'
+              || lf;
+
+   l_pos := instr(p_message, '>');
+   return publish_status_message(substr(p_message, 1, l_pos) || l_extra || substr(p_message, l_pos+1));
+                                          
+   return 0; 
+end log_message;   
+
+-------------------------------------------------------------------------------
+-- FUNCTION LOG_MESSAGE_SERVER_MESSAGE(...)
+--
+function log_message_server_message(
+   p_message in varchar2)
+   return integer
+is
+   l_message     varchar2(4000) := p_message;
+   l_component   varchar2(64);
+   l_instance    varchar2(64);
+   l_host        varchar2(256);
+   l_port        integer;
+   l_report_time timestamp;
+   l_msg_type    varchar2(64);
+   l_msg_text    varchar2(32767);
+   l_prop_type   varchar2(8);
+   l_properties  cwms_util.str_tab_t;
+   l_parts       cwms_util.str_tab_t;
+   i             pls_integer;
+   lf            constant varchar2(1) := chr(10);
+begin
+   l_msg_text := '<cwms_message type="$msgtype">' || lf;
+   -----------------------------------------------------------------------
+   -- reverse the character replacement used in message server messages --
+   -----------------------------------------------------------------------
+   l_message := replace(l_message, '^LF', lf);
+   l_message := replace(l_message, '^HT', chr(9));
+   l_message := replace(l_message, '^BS', chr(8));
+   l_message := replace(l_message, '^CR', chr(13));
+   --------------------------------------------------------------
+   -- replace any illegal characters with character references --
+   --------------------------------------------------------------
+   l_message := utl_i18n.escape_reference(l_message, 'us7ascii');
+   -------------------------------------------------
+   -- split the message text into key=value pairs --
+   -------------------------------------------------
+   l_properties := cwms_util.split_text(cwms_util.strip(p_message), ';');
+   if l_properties.count = 1 then
+      ------------------------
+      -- heartbeat message? --
+      ------------------------
+      l_message := cwms_util.strip(p_message);
+      if instr(l_message, 'GMT >> Heartbeat') != 20 then
+         cwms_err.raise('ERROR', 'Unrecognized message server message: ' || l_message); 
+      end if;
+      --------------------------
+      -- set the message type --
+      --------------------------
+      l_msg_text := replace(l_msg_text, '$msgtype', 'MissedHeartBeat');
+      ---------------------------------------------
+      -- get component, host and port from value --
+      ---------------------------------------------
+      i := instr(l_message, 'overdue for ') + 12;
+      l_parts := cwms_util.split_text(cwms_util.split_text(substr(l_message, i))(1), '@', 1);
+      l_component := l_parts(1);
+      if l_parts.count > 1 then
+         l_parts := cwms_util.split_text(cwms_util.strip(l_parts(2)), ':', 1);
+         l_host := l_parts(1);
+         if l_parts.count > 1 then
+            begin
+               l_port := cast(l_parts(2) as integer);
+            exception
+               when others then
+                  l_host := cwms_util.join_text(l_parts, ':');
+            end;
+         end if;
+      end if;
+      ------------------------------------------------------------------
+      -- crack the instance (data stream) from ProcessSHEFIT messages --
+      ------------------------------------------------------------------
+      if substr(l_component, 1, 13) = 'ProcessSHEFIT' then
+         l_instance  := substr(l_component, 14);
+         l_component := 'ProcessSHEFIT';
+      end if;
+      -----------------------
+      -- get reported time --
+      -----------------------
+      l_report_time := to_timestamp(substr(l_message, 1, 18), 'ddmonyyyy hh24:mi:ss');
+      --------------------------------
+      -- construct the message text --
+      --------------------------------
+      l_msg_text := l_msg_text || '  <text>'  || lf || '    ';
+      l_parts := cwms_util.split_text(substr(l_message, 27));
+      l_parts.delete(6,7);
+      for i in l_parts.first..l_parts.last loop
+         if l_parts.exists(i) then 
+            l_msg_text := l_msg_text || l_parts(i) || ' '; 
+         end if;
+      end loop;
+      l_msg_text := l_msg_text || lf || '  </text>'  || lf;
+   else
+      --------------------------------------------------
+      -- normal message loop over each key/value pair --
+      --------------------------------------------------
+      for i in 1..l_properties.count loop
+         ----------------------------
+         -- split pair on '=' char --
+         ----------------------------
+         l_parts := cwms_util.split_text(cwms_util.strip(l_properties(i)), '=', 1);
+         if l_parts.count > 1 then
+            case l_parts(1)
+               when 'From' then
+                  ---------------------------------------------
+                  -- get component, host and port from value --
+                  ---------------------------------------------
+                  l_parts := cwms_util.split_text(cwms_util.strip(l_parts(2)), '@', 1);
+                  l_component := l_parts(1);
+                  if l_parts.count > 1 then
+                     l_parts := cwms_util.split_text(cwms_util.strip(l_parts(2)), ':', 1);
+                     l_host := l_parts(1);
+                     if l_parts.count > 1 then
+                        begin
+                           l_port := cast(l_parts(2) as integer);
+                        exception
+                           when others then
+                              l_host := cwms_util.join_text(l_parts, ':');
+                        end;
+                     end if;
+                  end if;
+                  ------------------------------------------------------------------
+                  -- crack the instance (data stream) from ProcessSHEFIT messages --
+                  ------------------------------------------------------------------
+                  if substr(l_component, 1, 13) = 'ProcessSHEFIT' then
+                     l_instance  := substr(l_component, 14);
+                     l_component := 'ProcessSHEFIT';
+                  end if;
+               when 'UTCTime' then
+                  ----------------------------------
+                  -- get reported time from value --
+                  ----------------------------------
+                  l_report_time := to_timestamp(replace(l_parts(2), ' GMT', ''), 'ddmonyyyy hh24:mi:ss');
+               when 'MessageType' then
+                  ---------------------------------
+                  -- get message type from value --
+                  ---------------------------------
+                  l_msg_text := replace(l_msg_text, '$msgtype', l_parts(2));
+               when 'Message' then
+                  ---------------------------------
+                  -- get message body from value --
+                  ---------------------------------
+                  l_msg_text := l_msg_text 
+                              || '  <text>'  || lf 
+                              || l_parts(2)  || lf 
+                              || '  </text>' || lf;
+               else
+                  ------------------------------------
+                  -- treat pair as a named property --
+                  ------------------------------------
+                  declare
+                     num number;
+                  begin
+                     num := cast(l_parts(2) as number);
+                     if num = cast(l_parts(2) as integer) then
+                        if num < -2147483648 or num > 2147483647 then
+                           l_prop_type := 'long';
+                        else
+                           l_prop_type := 'int';
+                        end if;
+                     else
+                        begin
+                           if cast(l_parts(2) as binary_float) = cast(l_parts(2) as binary_double) then
+                              l_prop_type := 'float';
+                           else
+                              l_prop_type := 'double';
+                           end if;
+                        exception
+                           when others then
+                              l_prop_type := 'double';
+                        end;
+                     end if;
+                  exception
+                     when others then 
+                        case cwms_util.strip(lower(l_parts(2)))
+                           when 'true'  then l_prop_type := 'boolean';
+                           when 't'     then l_prop_type := 'boolean';
+                           when 'yes'   then l_prop_type := 'boolean';
+                           when 'y'     then l_prop_type := 'boolean';
+                           when 'on'    then l_prop_type := 'boolean';
+                           when 'false' then l_prop_type := 'boolean';
+                           when 'f'     then l_prop_type := 'boolean';
+                           when 'no'    then l_prop_type := 'boolean';
+                           when 'n'     then l_prop_type := 'boolean';
+                           when 'off'   then l_prop_type := 'boolean';
+                           else              l_prop_type := 'String';
+                        end case;
+
+                  end;
+                  l_msg_text := l_msg_text 
+                             || '  <property name="'
+                             || cwms_util.strip(l_parts(1))
+                             || '" type="' 
+                             || l_prop_type || '">'
+                             || cwms_util.strip(l_parts(2)) 
+                             || '</property>' || lf;
+            end case;
+         end if;
+      end loop;
+   end if;
+   l_msg_text := l_msg_text || '</cwms_message>';
+   return log_message(l_component, l_instance, l_host, l_port, l_report_time, l_msg_text);
+end log_message_server_message;   
+
+
 end cwms_msg;
 /
 show errors;
-

@@ -85,6 +85,25 @@ function publish_status_message(
    p_properties in clob)
    return integer;
 
+-------------------------------------------------------------------------------
+-- FUNCTION LOG_MESSAGE(...)
+--
+function log_message(
+   p_component in varchar2,
+   p_instance  in varchar2,
+   p_host      in varchar2,
+   p_port      in integer,
+   p_reported  in timestamp,
+   p_message   in varchar2)
+   return integer;
+
+-------------------------------------------------------------------------------
+-- FUNCTION LOG_MESSAGE_SERVER_MESSAGE(...)
+--
+function log_message_server_message(
+   p_message in varchar2)
+   return integer;
+
 end cwms_msg;
 /
 show errors;
