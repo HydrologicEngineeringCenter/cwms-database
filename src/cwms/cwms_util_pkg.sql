@@ -97,7 +97,8 @@ AS
 --
    FUNCTION split_text (
       p_text        IN   VARCHAR2,
-      p_separator   IN   VARCHAR2 DEFAULT NULL
+      p_separator   IN   VARCHAR2 DEFAULT NULL,
+      p_max_split   IN   INTEGER  DEFAULT NULL
    )
       RETURN str_tab_t;
 

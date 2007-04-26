@@ -1419,17 +1419,25 @@ AS
 --
    FUNCTION split_text (
       p_text        IN   VARCHAR2,
-      p_separator   IN   VARCHAR2 DEFAULT NULL
+      p_separator   IN   VARCHAR2 DEFAULT NULL,
+      p_max_split   IN   INTEGER  DEFAULT NULL
    )
       RETURN str_tab_t
    IS
-      l_str_tab   str_tab_t        := str_tab_t ();
-      l_str       VARCHAR2 (32767);
-      l_field     VARCHAR2 (32767);
-      l_pos       BINARY_INTEGER;
-      l_sep       VARCHAR2 (32767);
-      l_sep_len   BINARY_INTEGER;
+      l_str_tab      str_tab_t        := str_tab_t ();
+      l_str          VARCHAR2 (32767);
+      l_field        VARCHAR2 (32767);
+      l_pos          PLS_INTEGER;
+      l_sep          VARCHAR2 (32767);
+      l_sep_len      PLS_INTEGER;
+      l_split_count  PLS_INTEGER := 0;
+      l_count_splits BOOLEAN;
    BEGIN
+      IF p_max_split IS NULL THEN
+         l_count_splits := FALSE;
+      ELSE
+         l_count_splits := TRUE;
+      END IF;
       IF p_separator IS NULL
       THEN
          l_str := REGEXP_REPLACE (p_text, '\s+', ' ');
@@ -1443,12 +1451,20 @@ AS
 
       LOOP
          l_pos := NVL (INSTR (l_str, l_sep), 0);
+         IF l_count_splits
+         THEN
+            IF l_split_count = p_max_split
+            THEN
+               l_pos := 0;
+            END IF;
+         END IF;
 
          IF l_pos = 0
          THEN
             l_field := l_str;
             l_str := NULL;
          ELSE
+            l_split_count := l_split_count + 1;
             l_field := SUBSTR (l_str, 1, l_pos - 1);
             l_str := SUBSTR (l_str, l_pos + l_sep_len);
          -- null if > length(l_str)
