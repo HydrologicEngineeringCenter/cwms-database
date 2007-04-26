@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/03 09:54 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/26 11:08 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_vt
 AS
 /******************************************************************************
@@ -852,13 +852,40 @@ AS
       CLOSE l_sc_cur;
    END store_screening_criteria;
 
+--------------------------------------------------------------------------------
+--
+-- get_process_shefit_files is normally called by processSHEFIT. The call lets 
+--         processSHEFIT know if it should use the criteria file and/or OTF 
+--         file passed back in place of any files found (and/or specified) on 
+--         the file system. If the call throws and exception (e.g., the 
+--         specified DataStream has not been defined in the database would 
+--         cause this procedure to throw an exception) then processSHEFIT will
+--         default to cirt and OTF files found on the file system.
+--
+-- Parameters:
+-- p_use_db_crit - OUT - returns a varchar2(1). The returned parameter will be
+--        "T" if processSHEFIT should use the DB's crit file. "F" indicates that
+--        processSHEFIT should use the crit file found on the file system.
+-- p_crit_file - OUT - returns a CLOB. This is the processSHEFIT criteria file
+--        provide by the database.
+-- p_use_db_otf - OUT - returns a varchar2(1). The returned parameter will be 
+--       "T" if processSHEFIT should use the DB's otf file. "F" indicates that
+--       processSHEFIT should use the otf file found on the file system.
+-- p_otf_file - OUT - returns a CLOB. This is the processSHEFIT otf file
+--       provide by the database.
+-- p_data_stream - IN - varchar2(16) - required parameter. This is the name of
+--       the datastream.
+-- p_db_office_id - in - varchar2(16) - optional parameter) is the database 
+--       office id that this data stream will be/is assigned too. Normally this
+--       is left null and the user's default database office id is used.
+--
    PROCEDURE get_process_shefit_files (
-      p_use_crit_clob   OUT      VARCHAR2,
-      p_crit_file       OUT      CLOB,
-      p_use_otf_clob    OUT      VARCHAR2,
-      p_otf_file        OUT      CLOB,
-      p_data_stream     IN       VARCHAR2,
-      p_db_office_id    IN       VARCHAR2 DEFAULT NULL
+      p_use_db_crit    OUT      VARCHAR2,
+      p_crit_file      OUT      CLOB,
+      p_use_db_otf     OUT      VARCHAR2,
+      p_otf_file       OUT      CLOB,
+      p_data_stream    IN       VARCHAR2,
+      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
    )
    IS
    BEGIN

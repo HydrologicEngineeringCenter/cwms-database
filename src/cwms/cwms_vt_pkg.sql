@@ -88,12 +88,12 @@ AS
    );
 
    PROCEDURE get_process_shefit_files (
-      p_use_crit_clob   OUT      VARCHAR2,
-      p_crit_file       OUT      CLOB,
-      p_use_otf_clob    OUT      VARCHAR2,
-      p_otf_file        OUT      CLOB,
-      p_data_stream     IN       VARCHAR2,
-      p_db_office_id    IN       VARCHAR2 DEFAULT NULL
+      p_use_db_crit    OUT      VARCHAR2,
+      p_crit_file      OUT      CLOB,
+      p_use_db_otf     OUT      VARCHAR2,
+      p_otf_file       OUT      CLOB,
+      p_data_stream    IN       VARCHAR2,
+      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE assign_screening_id (
