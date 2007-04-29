@@ -1,4 +1,4 @@
-/* Formatted on 2006/11/24 13:04 (Formatter Plus v4.8.7) */
+/* Formatted on 2007/04/29 13:37 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_cat
 IS
    TYPE cat_ts_rec_t IS RECORD (
@@ -20,13 +20,24 @@ IS
 
    TYPE cat_ts_cwms_20_tab_t IS TABLE OF cat_ts_cwms_20_rec_t;
 
+   TYPE cat_ts_id_rec_t IS RECORD (
+      db_office_id          VARCHAR2 (16),
+      cwms_ts_id            VARCHAR2 (183),
+      interval_utc_offset   NUMBER (10),
+      lrts_timezone         VARCHAR2 (28),
+      active_flag           VARCHAR2 (1),
+      user_privileges       NUMBER
+   );
+
+   TYPE cat_ts_id_tab_t IS TABLE OF cat_ts_id_rec_t;
+
    TYPE cat_loc_rec_t IS RECORD (
       office_id        VARCHAR2 (16),
       base_loc_id      VARCHAR2 (16),
       state_initial    VARCHAR2 (2),
       county_name      VARCHAR2 (40),
       timezone_name    VARCHAR2 (28),
-      location_type    VARCHAR2 (16),
+      location_type    VARCHAR2 (32),
       latitude         NUMBER,
       longitude        NUMBER,
       elevation        NUMBER,
@@ -38,6 +49,40 @@ IS
    );
 
    TYPE cat_loc_tab_t IS TABLE OF cat_loc_rec_t;
+
+   TYPE cat_location_rec_t IS RECORD (
+      db_office_id       VARCHAR2 (16),
+      location_id        VARCHAR2 (49),
+      base_location_id   VARCHAR2 (16),
+      sub_location_id    VARCHAR2 (32),
+      state_initial      VARCHAR2 (2),
+      county_name        VARCHAR2 (40),
+      timezone_name      VARCHAR2 (28),
+      location_type      VARCHAR2 (32),
+      latitude           NUMBER,
+      longitude          NUMBER,
+      horizontal_datum   VARCHAR2 (16),
+      elevation          NUMBER,
+      elev_unit_id       VARCHAR2 (16),
+      vertical_datum     VARCHAR2 (16),
+      public_name        VARCHAR2 (32),
+      long_name          VARCHAR2 (80),
+      description        VARCHAR2 (512),
+      active_flag        VARCHAR2 (1)
+   );
+
+   TYPE cat_location_tab_t IS TABLE OF cat_location_rec_t;
+
+   TYPE cat_loc_grp_rec_t IS RECORD (
+      cat_db_office_id    VARCHAR2 (16),
+      loc_category_id     VARCHAR2 (32),
+      loc_category_desc   VARCHAR2 (128),
+      grp_db_office_id    VARCHAR2 (16),
+      loc_group_id        VARCHAR2 (32),
+      loc_group_desc      VARCHAR2 (128)
+   );
+
+   TYPE cat_loc_grp_tab_t IS TABLE OF cat_loc_grp_rec_t;
 
    TYPE cat_loc_alias_rec_t IS RECORD (
       office_id   VARCHAR2 (16),
@@ -56,6 +101,30 @@ IS
    TYPE cat_loc_alias_abrev_tab_t IS TABLE OF cat_loc_alias_abrev_rec_t;
 
    TYPE cat_loc_alias_tab_t IS TABLE OF cat_loc_alias_rec_t;
+
+   TYPE cat_base_param_rec_t IS RECORD (
+      parameter_id        VARCHAR2 (16),
+      param_long_name     VARCHAR2 (80),
+      param_description   VARCHAR2 (160),
+      db_unit_id          VARCHAR2 (16),
+      unit_long_name      VARCHAR2 (80),
+      unit_description    VARCHAR2 (80)
+   );
+
+   TYPE cat_base_param_tab_t IS TABLE OF cat_base_param_rec_t;
+
+   TYPE cat_parameter_rec_t IS RECORD (
+      parameter_id         VARCHAR2 (49),
+      base_parameter_id    VARCHAR2 (16),
+      sub_parameter_id     VARCHAR2 (32),
+      sub_parameter_desc   VARCHAR2 (80),
+      db_office_id         VARCHAR2 (16),
+      db_unit_id           VARCHAR2 (16),
+      unit_long_name       VARCHAR2 (80),
+      unit_description     VARCHAR2 (80)
+   );
+
+   TYPE cat_parameter_tab_t IS TABLE OF cat_parameter_rec_t;
 
    TYPE cat_param_rec_t IS RECORD (
       parameter_id        VARCHAR2 (16),
@@ -120,7 +189,7 @@ IS
       dss_filemgr_url            VARCHAR2 (32),
       dss_file_name              VARCHAR2 (255),
       dss_xchg_direction_id      VARCHAR2 (16),
-      dss_xchg_last_update       TIMESTAMP(6)
+      dss_xchg_last_update       TIMESTAMP ( 6 )
    );
 
    TYPE cat_dss_xchg_set_tab_t IS TABLE OF cat_dss_xchg_set_rec_t;
@@ -137,13 +206,13 @@ IS
    TYPE cat_dss_xchg_ts_map_tab_t IS TABLE OF cat_dss_xchg_ts_map_rec_t;
 
    TYPE cat_property_rec_t IS RECORD (
-      office_id      VARCHAR2(16),
-      prop_catergory VARCHAR2(256),
-      prop_id        VARCHAR2(256)
+      office_id        VARCHAR2 (16),
+      prop_catergory   VARCHAR2 (256),
+      prop_id          VARCHAR2 (256)
    );
 
    TYPE cat_property_tab_t IS TABLE OF cat_property_rec_t;
-   
+
 -- cat_ts...
    FUNCTION cat_ts_rec2obj (r IN cat_ts_rec_t)
       RETURN cat_ts_obj_t;
@@ -381,6 +450,22 @@ IS
       p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL
    );
 
+   PROCEDURE cat_ts_id (
+      p_cwms_cat              OUT      sys_refcursor,
+      p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL,
+      p_loc_category_id       IN       VARCHAR2 DEFAULT NULL,
+      p_loc_group_id          IN       VARCHAR2 DEFAULT NULL,
+      p_db_office_id          IN       VARCHAR2 DEFAULT NULL
+   );
+
+   FUNCTION cat_ts_id_tab (
+      p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL,
+      p_loc_category_id       IN   VARCHAR2 DEFAULT NULL,
+      p_loc_group_id          IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id          IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN cat_ts_id_tab_t PIPELINED;
+
 -------------------------------------------------------------------------------
 -- CAT_LOC
 --
@@ -498,18 +583,28 @@ IS
 --
 -- The records are returned sorted by parameter_id (ascending).
 --
--------------------------------------------------------------------------------
--- function cat_param_tab(...)
---
---
+
+   -------------------------------------------------------------------------------
+-- DEPRICATED -
+-- DEPRICATED - procedure cat_param(...) - DEPRICATED -
+-- DEPRICATED -
+   PROCEDURE cat_param (p_cwms_cat OUT sys_refcursor);
+
    FUNCTION cat_param_tab
       RETURN cat_param_tab_t PIPELINED;
 
--------------------------------------------------------------------------------
--- procedure cat_param(...)
---
---
-   PROCEDURE cat_param (p_cwms_cat OUT sys_refcursor);
+   PROCEDURE cat_base_parameter (p_cwms_cat OUT sys_refcursor);
+
+   FUNCTION cat_base_parameter_tab
+      RETURN cat_base_param_tab_t PIPELINED;
+
+   FUNCTION cat_parameter_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_parameter_tab_t PIPELINED;
+
+   PROCEDURE cat_parameter (
+      p_cwms_cat       OUT      sys_refcursor,
+      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
+   );
 
 -------------------------------------------------------------------------------
 -- CAT_SUB_PARAM
@@ -888,7 +983,7 @@ IS
 --    Name                      Datatype      Description
 --    ------------------------ ------------- ----------------------------
 --    office_id                varchar2(16)  Name of owning office
---    prop_category            varchar2(256) Category or component to which 
+--    prop_category            varchar2(256) Category or component to which
 --                                           property applies
 --    prop_id                  varchar2(256) Property name
 --    prop_value               varchar2(256) Property value
@@ -905,7 +1000,7 @@ IS
 -- The prop_category or prop_id parameters may use filename-type wildcards
 -- (*, ?) and/or SQL-typewildcards (%, _).
 --
--- The records are returned sorted by office_id, prop_category, and prop_id  
+-- The records are returned sorted by office_id, prop_category, and prop_id
 -- (ascending, non-case-sensitive).
 --
 -------------------------------------------------------------------------------
@@ -913,22 +1008,47 @@ IS
 --
 --
    FUNCTION cat_property_tab (
-      p_office_id     IN  VARCHAR2 DEFAULT NULL,
-      p_prop_category IN  VARCHAR2 DEFAULT NULL,
-      p_prop_id       IN  VARCHAR2 DEFAULT NULL
+      p_office_id       IN   VARCHAR2 DEFAULT NULL,
+      p_prop_category   IN   VARCHAR2 DEFAULT NULL,
+      p_prop_id         IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_property_tab_t PIPELINED;
-   
+
 -------------------------------------------------------------------------------
 -- procedure cat_property(...)
 --
 --
    PROCEDURE cat_property (
-      p_cwms_cat      OUT sys_refcursor,
-      p_office_id     IN  VARCHAR2 DEFAULT NULL,
-      p_prop_category IN  VARCHAR2 DEFAULT NULL,
-      p_prop_id       IN  VARCHAR2 DEFAULT NULL
+      p_cwms_cat        OUT      sys_refcursor,
+      p_office_id       IN       VARCHAR2 DEFAULT NULL,
+      p_prop_category   IN       VARCHAR2 DEFAULT NULL,
+      p_prop_id         IN       VARCHAR2 DEFAULT NULL
    );
-   
+
+   PROCEDURE cat_location (
+      p_cwms_cat          OUT      sys_refcursor,
+      p_elevation_unit    IN       VARCHAR2 DEFAULT 'm',
+      p_base_loc_only     IN       VARCHAR2 DEFAULT 'F',
+      p_loc_category_id   IN       VARCHAR2 DEFAULT NULL,
+      p_loc_group_id      IN       VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN       VARCHAR2 DEFAULT NULL
+   );
+
+   FUNCTION cat_location_tab (
+      p_elevation_unit    IN   VARCHAR2 DEFAULT 'm',
+      p_base_loc_only     IN   VARCHAR2 DEFAULT 'F',
+      p_loc_category_id   IN   VARCHAR2 DEFAULT NULL,
+      p_loc_group_id      IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN cat_location_tab_t PIPELINED;
+
+   PROCEDURE cat_loc_group (
+      p_cwms_cat       OUT      sys_refcursor,
+      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
+   );
+
+   FUNCTION cat_loc_group_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_loc_grp_tab_t PIPELINED;
 END cwms_cat;
 /
