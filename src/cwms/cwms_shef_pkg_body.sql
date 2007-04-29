@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/18 08:52 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/19 07:15 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_shef
 AS
    FUNCTION get_data_stream_code (
@@ -57,29 +57,114 @@ AS
       p_db_office_id            IN   VARCHAR2 DEFAULT NULL
    )
    IS
-      l_db_office_code     NUMBER
+      l_db_office_code        NUMBER
                              := cwms_util.get_db_office_code (p_db_office_id);
-      l_cwms_ts_code       NUMBER
-               := cwms_util.get_cwms_ts_code (p_cwms_ts_id, l_db_office_code);
-      l_data_stream_code   NUMBER
+      l_ts_code               NUMBER
+                    := cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
+      l_data_stream_code      NUMBER
                  := get_data_stream_code (p_data_stream_id, l_db_office_code);
+      l_tmp                   NUMBER;
+      l_spec_exists           BOOLEAN;
+      l_shef_pe_code          VARCHAR2 (2);
+      l_shef_tse_code         VARCHAR2 (3);
+      l_shef_duration_code    VARCHAR2 (1);
+      l_shef_unit_code        NUMBER;
+      l_shef_time_zone_code   NUMBER;
+      l_dl_time               VARCHAR2 (1);
+      l_location_code         NUMBER;
+      l_loc_group_code        NUMBER;
    BEGIN
-      NULL;
+
+      -- shef pe code validation...
+      l_shef_pe_code := upper(trim(p_shef_pe_code));
+      -- shef tse code validation...
+      l_shef_tse_code := upper(trim(p_shef_tse_code ));
+      -- shef_unit_id validation...
+      -- just checks that the unit is a valid database unit...
+      l_shef_unit_code  
+      
+      -- store the shef spec...
+      SELECT COUNT (*)
+        INTO l_tmp
+        FROM at_shef_decode
+       WHERE ts_code = l_ts_code AND data_stream_code = l_data_stream_code;
+
+      IF l_tmp > 0
+      THEN
+         l_spec_exists := TRUE;
+      ELSE
+         l_spec_exists := FALSE;
+      END IF;
+
+      IF l_spec_exists
+      THEN
+         UPDATE at_shef_decode
+            SET shef_pe_code = l_shef_pe_code,
+                shef_tse_code = l_shef_tse_code,
+                shef_duration_code = l_shef_duration_code,
+                shef_unit_code = l_shef_unit_code,
+                shef_time_zone_code = l_shef_time_zone_code,
+                dl_time = l_dl_time,
+                location_code = l_location_code,
+                loc_group_code = l_loc_group_code
+          WHERE ts_code = l_ts_code AND data_stream_code = l_data_stream_code;
+      ELSE
+         INSERT INTO at_shef_decode
+                     (ts_code, data_stream_code, shef_pe_code,
+                      shef_tse_code, shef_duration_code,
+                      shef_unit_code, shef_time_zone_code, dl_time,
+                      location_code, loc_group_code
+                     )
+              VALUES (l_ts_code, l_data_stream_code, l_shef_pe_code,
+                      l_shef_tse_code, l_shef_duration_code,
+                      l_shef_unit_code, l_shef_time_zone_code, l_dl_time,
+                      l_location_code, l_loc_group_code
+                     );
+      END IF;
    END;
 
+-- ****************************************************************************
+-- cwms_shef.delete_shef_spec is used to delete an existing SHEF spec. SHEF
+-- specs are assigned to pairs of cwms_ts_id and data stream.
+--
+-- p_cwms_ts_id(varchar2(183) - required parameter) and
+-- p_data_stream_id (varchar2(16 - required parameter) -- is the cwms_ts_id
+--         data stream pair whose SHEF spec you wish to delete.
+--
+-- p_db_office_id (varchar2(16) - optional parameter) is the database office
+--         id that this data stream will be/is assigned too. Normally this is
+--         left null and the user's default database office id is used.
+--
    PROCEDURE delete_shef_spec (
       p_cwms_ts_id       IN   VARCHAR2,
       p_data_stream_id   IN   VARCHAR2,
       p_db_office_id     IN   VARCHAR2 DEFAULT NULL
    )
    IS
+      l_db_office_code     NUMBER
+                             := cwms_util.get_db_office_code (p_db_office_id);
+      l_cwms_ts_code       NUMBER
+                    := cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
+      l_data_stream_code   NUMBER;
    BEGIN
-      NULL;
+      -- Check if data_stream already exists...
+      BEGIN
+         l_data_stream_code :=
+            get_data_stream_code (p_data_stream_id      => p_data_stream_id,
+                                  p_db_office_code      => l_db_office_code
+                                 );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.RAISE ('DATA_STREAM_NOT_FOUND', TRIM (p_data_stream_id));
+      END;
+
+      DELETE      at_shef_decode
+            WHERE ts_code = l_cwms_ts_code
+              AND data_stream_code = l_data_stream_code;
    END;
 
--- left kernal must be unique.
-
-   -- -----------------------------------------------------------------------------
+-- ****************************************************************************
 -- cwms_shef.store_data_stream is used to:
 --    a) create a new data stream entry
 --    b) revise an existing data stream's description and/or active_flag.
@@ -178,7 +263,7 @@ AS
       END IF;
    END;
 
--- -----------------------------------------------------------------------------
+-- ****************************************************************************
 -- cwms_shef.rename_data_stream is used to rename an existing data stream id.
 --
 -- p_data_stream_id _old(varchar2(16) - required parameter)is the id of the
@@ -253,17 +338,18 @@ AS
          SET data_stream_id = TRIM (p_data_stream_id_new)
        WHERE data_stream_code = l_data_stream_code;
    END;
--- -----------------------------------------------------------------------------
+
+-- ****************************************************************************
 -- cwms_shef.delete_data_stream is used to delete an existing data stream id.
 --
 -- p_data_stream_id(varchar2(16) - required parameter)is the id of the
 --         existing data stream to be deleted.
 --
 -- p_cascade_all (optional parameter, can be either "T" or "F" with the default
---         being "F") -- A data stream can only be deleted if there are no 
---         SHEF specs assigned to it. You can force a deletion by setting 
+--         being "F") -- A data stream can only be deleted if there are no
+--         SHEF specs assigned to it. You can force a deletion by setting
 --         p_cascade_all to "T", which will delete all SHEF specs associated
---         with this data stream. WARNING - this is a very powerfull option - 
+--         with this data stream. WARNING - this is a very powerfull option -
 --         all SHEF specs are permanently deleted!!
 --
 -- p_db_office_id (varchar2(16) - optional parameter) is the database office
@@ -316,6 +402,44 @@ AS
                            );
       END;
    END;
+
+   PROCEDURE cat_shef_data_streams (
+      p_shef_data_streams   OUT      sys_refcursor,
+      p_db_office_id        IN       VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_code   NUMBER
+                             := cwms_util.get_db_office_code (p_db_office_id);
+   BEGIN
+      OPEN p_shef_data_streams FOR
+         SELECT   a.data_stream_code, a.data_stream_id, a.data_stream_desc,
+                  a.active_flag, b.office_id
+             FROM at_data_stream_id a, cwms_office b
+            WHERE a.db_office_code = b.office_code
+              AND a.db_office_code = l_db_office_code
+         ORDER BY a.data_stream_id;
+   END cat_shef_data_streams;
+
+   FUNCTION cat_shef_data_streams_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_data_stream_tab_t PIPELINED
+   IS
+      output_row     cat_data_stream_rec_t;
+      query_cursor   sys_refcursor;
+   BEGIN
+      cat_shef_data_streams (query_cursor, p_db_office_id);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END cat_shef_data_streams_tab;
 
    PROCEDURE cat_shef_time_zones (p_shef_time_zones OUT sys_refcursor)
    IS

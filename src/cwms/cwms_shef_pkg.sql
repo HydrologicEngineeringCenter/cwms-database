@@ -1,6 +1,16 @@
-/* Formatted on 2007/04/18 06:07 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/18 13:30 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_shef
 AS
+   TYPE cat_data_stream_rec_t IS RECORD (
+      data_stream_code   NUMBER,
+      data_stream_id     VARCHAR2 (16),
+      data_stream_desc   VARCHAR2 (128),
+      active_flag        VARCHAR2 (1),
+      office_id          VARCHAR2 (16)
+   );
+
+   TYPE cat_data_stream_tab_t IS TABLE OF cat_data_stream_rec_t;
+
    TYPE cat_shef_tz_rec_t IS RECORD (
       shef_time_zone_id     VARCHAR2 (16),
       shef_time_zone_desc   VARCHAR2 (64)
@@ -53,6 +63,14 @@ AS
       p_cascade_all      IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id     IN   VARCHAR2 DEFAULT NULL
    );
+
+   PROCEDURE cat_shef_data_streams (
+      p_shef_data_streams   OUT      sys_refcursor,
+      p_db_office_id        IN       VARCHAR2 DEFAULT NULL
+   );
+
+   FUNCTION cat_shef_data_streams_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_data_stream_tab_t PIPELINED;
 
    PROCEDURE cat_shef_time_zones (p_shef_time_zones OUT sys_refcursor);
 
