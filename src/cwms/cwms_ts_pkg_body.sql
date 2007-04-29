@@ -607,7 +607,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
        l_hashcode              NUMBER;
        l_str_error             VARCHAR2 (256);
        l_utc_offset            NUMBER;
-       l_all_office_code       NUMBER;
+       l_all_office_code       NUMBER := cwms_util.db_office_code_all;
        l_active_flag           VARCHAR2 (1)   := 'T';
        l_ts_id_exists          BOOLEAN        := FALSE;
     BEGIN
@@ -750,11 +750,6 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 
              raise_application_error (-20205, l_str_error, TRUE);
           END IF;
-
-          SELECT office_code
-            INTO l_all_office_code
-            FROM cwms_office
-           WHERE office_id = 'ALL';
 
           BEGIN
              IF l_sub_parameter_id IS NULL
@@ -2722,6 +2717,18 @@ BEGIN
         FROM mv_cwms_ts_id mcts
        WHERE UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
          AND UPPER (mcts.db_office_id) = UPPER (l_office_id);
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         cwms_err.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
+   END;
+
+   BEGIN
+      SELECT ts_code
+        INTO l_ts_code
+        FROM at_cwms_ts_spec a
+       WHERE a.TS_CODE = l_ts_code
+         AND a.DELETE_DATE is null;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
