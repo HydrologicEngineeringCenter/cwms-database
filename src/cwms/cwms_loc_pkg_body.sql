@@ -319,7 +319,7 @@ AS
 --********************************************************************** -
 --********************************************************************** -
 --
--- get_county_code returns zone_code
+-- get_unit_code returns zone_code
 --
 ------------------------------------------------------------------------------*/
    FUNCTION get_unit_code (unitname IN VARCHAR2, abstractparamname IN VARCHAR2)
@@ -327,7 +327,6 @@ AS
    IS
       l_unit_code   NUMBER;
    BEGIN
-      DBMS_OUTPUT.put_line ('function: get_county_code');
 
       SELECT unit_code
         INTO l_unit_code
