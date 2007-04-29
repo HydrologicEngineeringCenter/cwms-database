@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/19 08:29 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/28 15:00 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -632,16 +632,7 @@ AS
    IS
       l_db_office_code   NUMBER := NULL;
    BEGIN
-      SELECT db_host_office_code
-        INTO l_db_office_code
-        FROM cwms_office
-       WHERE office_code = get_office_code (p_office_id);
-
-      RETURN l_db_office_code;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         cwms_err.RAISE ('INVALID_OFFICE_ID', p_office_id);
+      RETURN get_office_code (p_office_id);
    END get_db_office_code;
 
    FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
@@ -1420,24 +1411,26 @@ AS
    FUNCTION split_text (
       p_text        IN   VARCHAR2,
       p_separator   IN   VARCHAR2 DEFAULT NULL,
-      p_max_split   IN   INTEGER  DEFAULT NULL
+      p_max_split   IN   INTEGER DEFAULT NULL
    )
       RETURN str_tab_t
    IS
-      l_str_tab      str_tab_t        := str_tab_t ();
-      l_str          VARCHAR2 (32767);
-      l_field        VARCHAR2 (32767);
-      l_pos          PLS_INTEGER;
-      l_sep          VARCHAR2 (32767);
-      l_sep_len      PLS_INTEGER;
-      l_split_count  PLS_INTEGER := 0;
-      l_count_splits BOOLEAN;
+      l_str_tab        str_tab_t        := str_tab_t ();
+      l_str            VARCHAR2 (32767);
+      l_field          VARCHAR2 (32767);
+      l_pos            PLS_INTEGER;
+      l_sep            VARCHAR2 (32767);
+      l_sep_len        PLS_INTEGER;
+      l_split_count    PLS_INTEGER      := 0;
+      l_count_splits   BOOLEAN;
    BEGIN
-      IF p_max_split IS NULL THEN
+      IF p_max_split IS NULL
+      THEN
          l_count_splits := FALSE;
       ELSE
          l_count_splits := TRUE;
       END IF;
+
       IF p_separator IS NULL
       THEN
          l_str := REGEXP_REPLACE (p_text, '\s+', ' ');
@@ -1451,6 +1444,7 @@ AS
 
       LOOP
          l_pos := NVL (INSTR (l_str, l_sep), 0);
+
          IF l_count_splits
          THEN
             IF l_split_count = p_max_split
@@ -1586,57 +1580,68 @@ AS
 
       RETURN l_tab;
    END parse_string_recordset;
+
 --------------------------------------------------------------------
 -- Return UTC timestamp for specified Java milliseconds
 --
-   FUNCTION to_timestamp(p_millis IN NUMBER)
+   FUNCTION TO_TIMESTAMP (p_millis IN NUMBER)
       RETURN TIMESTAMP
    IS
-      l_millis number := p_millis;
-      l_day    number;
-      l_hour   number;
-      l_min    number;
-      l_sec    number;
+      l_millis   NUMBER := p_millis;
+      l_day      NUMBER;
+      l_hour     NUMBER;
+      l_min      NUMBER;
+      l_sec      NUMBER;
    BEGIN
-      l_day    := trunc(l_millis / 86400000);
+      l_day := TRUNC (l_millis / 86400000);
       l_millis := l_millis - (l_day * 86400000);
-      l_hour   := trunc(l_millis / 3600000);
+      l_hour := TRUNC (l_millis / 3600000);
       l_millis := l_millis - (l_hour * 3600000);
-      l_min    := trunc(l_millis / 60000);
+      l_min := TRUNC (l_millis / 60000);
       l_millis := l_millis - (l_min * 60000);
-      l_sec    := trunc(l_millis / 1000);
+      l_sec := TRUNC (l_millis / 1000);
       l_millis := l_millis - (l_sec * 1000);
-      
-      return epoch + to_dsinterval('' || l_day || ' '
-         || to_char(l_hour,    '00') || ':'
-         || to_char(l_min,     '00') || ':'
-         || to_char(l_sec,     '00') || '.'
-         || to_char(l_millis, '000'));
-   END to_timestamp;
+      RETURN   epoch
+             + TO_DSINTERVAL (   ''
+                              || l_day
+                              || ' '
+                              || TO_CHAR (l_hour, '00')
+                              || ':'
+                              || TO_CHAR (l_min, '00')
+                              || ':'
+                              || TO_CHAR (l_sec, '00')
+                              || '.'
+                              || TO_CHAR (l_millis, '000')
+                             );
+   END TO_TIMESTAMP;
+
 --------------------------------------------------------------------
 -- Return Java milliseconds for a specified UTC timestamp.
 --
-   FUNCTION to_millis(p_timestamp IN TIMESTAMP)
+   FUNCTION to_millis (p_timestamp IN TIMESTAMP)
       RETURN NUMBER
    IS
-      l_intvl  interval day(5) to second(3);
-      l_millis number; 
+      l_intvl    INTERVAL DAY (5)TO SECOND (3);
+      l_millis   NUMBER;
    BEGIN
-      l_intvl  := p_timestamp - epoch;
-      l_millis := trunc(extract(day    from l_intvl) * 86400000 +
-                        extract(hour   from l_intvl) *  3600000 + 
-                        extract(minute from l_intvl) *    60000 + 
-                        extract(second from l_intvl) *     1000);
-                      
-      return l_millis;
-   END to_millis;      
+      l_intvl := p_timestamp - epoch;
+      l_millis :=
+         TRUNC (  EXTRACT (DAY FROM l_intvl) * 86400000
+                + EXTRACT (HOUR FROM l_intvl) * 3600000
+                + EXTRACT (MINUTE FROM l_intvl) * 60000
+                + EXTRACT (SECOND FROM l_intvl) * 1000
+               );
+      RETURN l_millis;
+   END to_millis;
+
 --------------------------------------------------------------------
 -- Return Java milliseconds for current time.
 --
-   FUNCTION current_millis      RETURN NUMBER
+   FUNCTION current_millis
+      RETURN NUMBER
    IS
    BEGIN
-      return to_millis(sys_extract_utc(systimestamp));
+      RETURN to_millis (SYS_EXTRACT_UTC (SYSTIMESTAMP));
    END current_millis;
 
    FUNCTION get_ts_code (p_cwms_ts_id IN VARCHAR2, p_db_office_code IN NUMBER)
@@ -1755,6 +1760,74 @@ AS
 
       RETURN l_unit_code;
    END;
+
+   FUNCTION get_loc_group_code (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_db_office_code    IN   NUMBER
+   )
+      RETURN NUMBER
+   IS
+      l_loc_group_code   NUMBER;
+   BEGIN
+      IF p_db_office_code IS NULL
+      THEN
+         cwms_err.RAISE ('ERROR', 'p_db_office_code cannot be null.');
+      END IF;
+
+      --
+      IF p_loc_category_id IS NOT NULL AND p_loc_group_id IS NOT NULL
+      THEN
+         BEGIN
+            SELECT loc_group_code
+              INTO l_loc_group_code
+              FROM at_loc_group a, at_loc_category b
+             WHERE a.loc_category_code = b.loc_category_code
+               AND UPPER (b.loc_category_id) =
+                                              UPPER (TRIM (p_loc_category_id))
+               AND b.db_office_code IN
+                             (p_db_office_code, cwms_util.db_office_code_all)
+               AND UPPER (a.loc_group_id) = UPPER (TRIM (p_loc_group_id))
+               AND a.db_office_code IN
+                             (p_db_office_code, cwms_util.db_office_code_all);
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.RAISE ('ERROR',
+                                  'Could not find '
+                               || TRIM (p_loc_category_id)
+                               || '-'
+                               || TRIM (p_loc_group_id)
+                               || ' category-group combination'
+                              );
+         END;
+      ELSIF    (p_loc_category_id IS NOT NULL AND p_loc_group_id IS NULL)
+            OR (p_loc_category_id IS NULL AND p_loc_group_id IS NOT NULL)
+      THEN
+         cwms_err.RAISE
+            ('ERROR',
+             'The loo_category_id and loc_group_id is not a valid combination'
+            );
+      END IF;
+
+      RETURN l_loc_group_code;
+   END get_loc_group_code;
+
+   FUNCTION get_loc_group_code (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_db_office_id      IN   VARCHAR2
+   )
+      RETURN NUMBER
+   IS
+   BEGIN
+      RETURN get_loc_group_code
+               (p_loc_category_id      => p_loc_category_id,
+                p_loc_group_id         => p_loc_group_id,
+                p_db_office_code       => cwms_util.get_db_office_code
+                                                               (p_db_office_id)
+               );
+   END get_loc_group_code;
 ----------------------------------------------------------------------------
 BEGIN
    -- anything put here will be executed on every mod_plsql call

@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/19 08:29 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/04/28 14:44 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -72,8 +72,10 @@ AS
    ts_creator                    CONSTANT NUMBER                 := 16;
    vt_mgr                        CONSTANT NUMBER                 := 32;
    all_users                     CONSTANT NUMBER                 := 64;
-   
-   epoch                         CONSTANT TIMESTAMP              := standard.to_timestamp('1970/01/01/ 00:00:00', 'yyyy/mm/dd hh24:mi:ss');
+   epoch                         CONSTANT TIMESTAMP
+      := STANDARD.TO_TIMESTAMP ('1970/01/01/ 00:00:00',
+                                'yyyy/mm/dd hh24:mi:ss'
+                               );
 
    TYPE str_tab_t IS TABLE OF VARCHAR2 (32767);
 
@@ -98,7 +100,7 @@ AS
    FUNCTION split_text (
       p_text        IN   VARCHAR2,
       p_separator   IN   VARCHAR2 DEFAULT NULL,
-      p_max_split   IN   INTEGER  DEFAULT NULL
+      p_max_split   IN   INTEGER DEFAULT NULL
    )
       RETURN str_tab_t;
 
@@ -327,21 +329,21 @@ AS
 --------------------------------------------------------------------
 -- Return UTC timestamp for specified Java milliseconds
 --
-   FUNCTION to_timestamp(p_millis IN NUMBER)
+   FUNCTION TO_TIMESTAMP (p_millis IN NUMBER)
       RETURN TIMESTAMP;
-      
+
 --------------------------------------------------------------------
 -- Return Java milliseconds for a specified UTC timestamp.
 --
-   FUNCTION to_millis(p_timestamp IN TIMESTAMP)
+   FUNCTION to_millis (p_timestamp IN TIMESTAMP)
       RETURN NUMBER;
-      
+
 --------------------------------------------------------------------
 -- Return Java milliseconds for current time.
 --
    FUNCTION current_millis
       RETURN NUMBER;
-      
+
 --------------------------------------------------------------------
    PROCEDURE TEST;
 
@@ -364,6 +366,21 @@ AS
       p_abstract_param_id   IN   VARCHAR2
    )
       RETURN NUMBER;
+
+   FUNCTION get_loc_group_code (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_db_office_code    IN   NUMBER
+   )
+      RETURN NUMBER;
+
+   FUNCTION get_loc_group_code (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_db_office_id      IN   VARCHAR2
+   )
+      RETURN NUMBER;
 END cwms_util;
 /
-show errors;
+
+SHOW errors;
