@@ -630,6 +630,26 @@ begin
 end log_message_server_message;   
 
 
+-------------------------------------------------------------------------------
+-- FUNCTION LOG_MESSAGE_SERVER_MESSAGE(...)
+--
+function log_message_server_message(
+   p_message in out nocopy clob)
+   return integer
+is
+   l_message varchar2(32767);
+   l_length  integer;
+begin
+   l_length := dbms_lob.getlength(p_message);
+   if l_length > 32767 then
+      cwms_err.raise('ERROR', 'CLOB length exceeds maximum string length of 32767');
+   end if;
+   dbms_lob.open(p_message, dbms_lob.lob_readonly);
+   dbms_lob.read(p_message, l_length, 1, l_message);
+   dbms_lob.close(p_message);
+   return log_message_server_message(l_message);
+end log_message_server_message;
+
 end cwms_msg;
 /
 show errors;

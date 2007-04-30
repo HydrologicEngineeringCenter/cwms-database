@@ -112,6 +112,13 @@ function log_message_server_message(
    p_message in varchar2)
    return integer;
 
+-------------------------------------------------------------------------------
+-- FUNCTION LOG_MESSAGE_SERVER_MESSAGE(...)
+--
+function log_message_server_message(
+   p_message in out nocopy clob)
+   return integer;
+
 end cwms_msg;
 /
 show errors;
