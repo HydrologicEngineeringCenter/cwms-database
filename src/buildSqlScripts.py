@@ -41,13 +41,14 @@ cwmsTableSpaceName = "%sDATA" % user
 #userSchema = "%sCWMSPD" % user
 
 cwmsSequences = [
-#    NAME       START  INCREMENT  MINIMUM  MAXIMUM  CYCLE  CACHE
-#    ["SEQ_RAT", 2,     2,         2,       1.0e38,  FALSE, 20   ],
-#    ["SEQ_DSS", 1,     1,         1,       1.0e38,  FALSE, 20   ],
-#    ["SEQ_LOCA",1,     1,         1,       1.0e38,  FALSE, 20   ],
-#    ["SEQ_TSS", 1,     1,         1,       1.0e38,  FALSE, 20   ],
-#    ["SEQ_XCHG",1,     1,         1,       1.0e38,  FALSE, 20   ],
-    ["CWMS_SEQ",64,     1000,     64,       1.0e38,  FALSE, 20   ],
+#    NAME             START  INCREMENT  MINIMUM  MAXIMUM  CYCLE  CACHE
+#    ["SEQ_RAT",          2,        2,         2,       1.0e38,  FALSE, 20],
+#    ["SEQ_DSS",          1,        1,         1,       1.0e38,  FALSE, 20],
+#    ["SEQ_LOCA",         1,        1,         1,       1.0e38,  FALSE, 20],
+#    ["SEQ_TSS",          1,        1,         1,       1.0e38,  FALSE, 20],
+#    ["SEQ_XCHG",         1,        1,         1,       1.0e38,  FALSE, 20],
+    ["CWMS_SEQ",         64,     1000,        64,       1.0e38,  FALSE, 20],
+    ["CWMS_LOG_MSG_SEQ",  0,        1,         0,          999,   TRUE, 20],
 
 ]
 
@@ -102,6 +103,8 @@ tableInfo = [
 #    {"ID" : "ratingType",         "TABLE" : "CWMS_RATING_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : FALSE},
     {"ID" : "dssParameterType",   "TABLE" : "CWMS_DSS_PARAMETER_TYPE",    "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "dssXchgDirection",   "TABLE" : "CWMS_DSS_XCHG_DIRECTION",    "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
+    {"ID" : "logMessageTypes",    "TABLE" : "CWMS_LOG_MESSAGE_TYPES",     "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
+    {"ID" : "logMessagePropTypes","TABLE" : "CWMS_LOG_MESSAGE_PROP_TYPES","SCHEMA" : "CWMS", "USERACCESS" : TRUE},
 ]
 
 tables = []
@@ -4733,6 +4736,50 @@ errorCodes = [
     ['-20999', 'UNKNOWN_EXCEPTION',     'The requested exception is not in the CWMS_ERROR table: "%1"'],
 ]
 
+#-------------------#
+# LOG MESSAGE TYPES #
+#-------------------#
+sys.stderr.write("Processing log message types \n")
+logMessageTypes = [
+#      CODE  ID
+#      ----  -----------------------
+	[ 1, 'StatusIntervalMinutes'],
+	[ 2, 'Status'               ],
+	[ 3, 'Alarm'                ],
+	[ 4, 'State'                ],
+	[ 5, 'Initiated'            ],
+	[ 6, 'MissedHeartBeat'      ],
+	[ 7, 'Terminated'           ],
+	[ 8, 'Shutting Down'        ],
+	[ 9, 'PreventAlarm'         ],
+	[10, 'Load Library Error'   ],
+	[11, 'Runtime Exec Error'   ],
+	[12, 'Initialization Error' ],
+	[13, 'Exception Thrown'     ],
+	[14, 'Fatal Error'          ],
+	[15, 'ControlMessage'       ],
+	[16, 'AcknowledgeAlarm'     ],
+	[17, 'DeactivateAlarm'      ],
+	[18, 'ResetAlarm'           ],
+]
+
+#----------------------------#
+# LOG MESSAGE PROPERTY TYPES #
+#----------------------------#
+sys.stderr.write("Processing log message property types \n")
+logMessagePropTypes = [
+#      CODE  ID
+#      ----  --------
+	[1, 'boolean'],
+	[2, 'byte'   ],
+	[3, 'short'  ],
+	[4, 'int'    ],
+	[5, 'long'   ],
+	[6, 'float'  ],
+	[7, 'double' ],
+	[8, 'String' ],
+]
+
 #---------------------------------------------------#
 # Table construction templates and loading commands #
 #---------------------------------------------------#
@@ -7421,6 +7468,102 @@ for s in range(len(q_screened["values"])) :
                                         qualityLoadTemplate += " '%s');\n" % q_protection["values"][p][1]         # protection code
     
 qualityLoadTemplate += "COMMIT;\n"
+
+sys.stderr.write("Building logMessageTypesCreationTemplate\n")
+logMessageTypesCreationTemplate = \
+'''
+-- ## TABLE ###############################################
+-- ## @TABLE
+-- ##
+CREATE TABLE @TABLE 
+   (
+       MESSAGE_TYPE_CODE NUMBER(2)    NOT NULL,
+       MESSAGE_TYPE_ID   VARCHAR2(32) NOT NULL
+   )
+       PCTFREE 10
+       PCTUSED 40
+       INITRANS 1
+       MAXTRANS 255
+       TABLESPACE @DATASPACE
+       STORAGE 
+   ( 
+          INITIAL 1K
+          NEXT 1K
+          MINEXTENTS 1
+          MAXEXTENTS 200
+          PCTINCREASE 25
+          FREELISTS 1
+          FREELIST GROUPS 1
+          BUFFER_POOL DEFAULT
+   );
+   
+-------------------------------
+-- @TABLE constraints  --
+--
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (MESSAGE_TYPE_CODE);
+
+---------------------------
+-- @TABLE comments --
+--
+COMMENT ON TABLE  @TABLE                   IS 'Contains valid values for the MSG_TYPE field of logged status messages';
+COMMENT ON COLUMN @TABLE.MESSAGE_TYPE_CODE IS 'Numeric code corresponding to the message type name';
+COMMENT ON COLUMN @TABLE.MESSAGE_TYPE_ID   IS 'The message type name';
+
+COMMIT;
+'''
+sys.stderr.write("Building logMessageTypesLoadTemplate\n")
+logMessageTypesLoadTemplate = ''
+for code, id in logMessageTypes :
+	logMessageTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
+logMessageTypesLoadTemplate += "COMMIT;\n"
+
+sys.stderr.write("Building logMessagePropTypesCreationTemplate\n")
+logMessagePropTypesCreationTemplate = \
+'''
+-- ## TABLE ###############################################
+-- ## @TABLE
+-- ##
+CREATE TABLE @TABLE 
+   (
+       PROP_TYPE_CODE NUMBER(1)   NOT NULL,
+       PROP_TYPE_ID   VARCHAR2(8) NOT NULL
+   )
+       PCTFREE 10
+       PCTUSED 40
+       INITRANS 1
+       MAXTRANS 255
+       TABLESPACE @DATASPACE
+       STORAGE 
+   ( 
+          INITIAL 1K
+          NEXT 1K
+          MINEXTENTS 1
+          MAXEXTENTS 200
+          PCTINCREASE 25
+          FREELISTS 1
+          FREELIST GROUPS 1
+          BUFFER_POOL DEFAULT
+   );
+   
+-------------------------------
+-- @TABLE constraints  --
+--
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (PROP_TYPE_CODE);
+
+---------------------------
+-- @TABLE comments --
+--
+COMMENT ON TABLE  @TABLE                IS 'Contains valid values for the PROP_TYPE field of logged status message properties';
+COMMENT ON COLUMN @TABLE.PROP_TYPE_CODE IS 'Numeric code corresponding to the property type name';
+COMMENT ON COLUMN @TABLE.PROP_TYPE_ID   IS 'The property type name';
+
+COMMIT;
+'''
+sys.stderr.write("Building logMessagePropTypesLoadTemplate\n")
+logMessagePropTypesLoadTemplate = ''
+for code, id in logMessagePropTypes :
+	logMessagePropTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
+logMessagePropTypesLoadTemplate += "COMMIT;\n"
 
 #-----------------------------------------------------------------#
 # output commands to drop and re-create, populate and test tables #

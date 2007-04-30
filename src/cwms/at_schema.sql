@@ -5229,6 +5229,121 @@ noparallel;
 show errors;
 commit;
 
+-----------------------------
+-- AT_LOG_MESSAGE table
+--
+create table at_log_message
+(
+   msg_id               varchar2(32)                not null,
+   log_timestamp_utc    timestamp                   not null,
+   component            varchar2(64)                not null,
+   instance             varchar2(64),
+   host                 varchar2(256),
+   port                 number(5),
+   report_timestamp_utc timestamp,
+   msg_type             number(2),
+   msg_text             varchar2(4000)
+)
+tablespace cwms_20at_data
+pctused    0
+pctfree    10
+initrans   1
+maxtrans   255
+storage    (
+            initial          5m
+            minextents       1
+            maxextents       2147483645
+            pctincrease      0
+            buffer_pool      default
+           )
+logging 
+nocompress 
+nocache
+noparallel
+monitoring;
+
+-----------------------------
+-- AT_LOG_MESSAGE comments
+--
+comment on table  at_log_message                      is 'CWMS log messages';
+comment on column at_log_message.msg_id               is 'Unique ID of message, includes office id, timestamp, and counter';
+comment on column at_log_message.log_timestamp_utc    is 'Timestamp of when the message was logged (set by database)';
+comment on column at_log_message.component            is 'Reporting component';
+comment on column at_log_message.instance             is 'Instance of reporting component, if applicable';
+comment on column at_log_message.host                 is 'Host on which reporting component is executing';
+comment on column at_log_message.port                 is 'Port at which reporting component is contacted, if applicable';
+comment on column at_log_message.report_timestamp_utc is 'Timestamp of when the message was reported (set by client)';
+comment on column at_log_message.msg_type             is 'Type of message from CWMS_LOG_MESSAGE table';
+comment on column at_log_message.msg_text             is 'Main text of message, possibly augmented by properties';
+
+-----------------------------
+-- AT_LOG_MESSAGE constraints
+--
+alter table at_log_message add constraint at_log_message_fk1 foreign key (msg_type) references cwms_log_message_types (message_type_code);
+alter table at_log_message add constraint at_log_message_pk  primary key (msg_id)
+    using index 
+    tablespace cwms_20at_data
+    pctfree    10
+    initrans   2
+    maxtrans   255
+    storage    (
+                initial          64k
+                minextents       1
+                maxextents       2147483645
+                pctincrease      0
+               );
+
+-----------------------------
+-- AT_LOG_MESSAGE_PROPERTIES table
+--
+create table at_log_message_properties
+(
+   msg_id            varchar2(32)    not null,
+   prop_name         varchar2(64)    not null,
+   prop_type         number(1)       not null,
+   prop_value        number,
+   prop_text         varchar2(4000)
+)
+storage    (
+            initial          5m
+            minextents       1
+            maxextents       2147483645
+            pctincrease      0
+            buffer_pool      default
+           )
+logging 
+nocompress 
+nocache
+noparallel
+monitoring;
+
+-----------------------------
+-- AT_LOG_MESSAGE_PROPERTIES comments
+--
+comment on table  at_log_message_properties            is 'Optional properties for CWMS log messages';
+comment on column at_log_message_properties.msg_id     is 'Unique ID of message from AT_LOG_MESSAGES';
+comment on column at_log_message_properties.prop_name  is 'Property name';
+comment on column at_log_message_properties.prop_type  is 'Property type from CWMS_LOG_MESSAGE_PROP_TYPES';
+comment on column at_log_message_properties.prop_value is 'Property value if property type is numeric';
+comment on column at_log_message_properties.prop_text  is 'Property value if property type is String or boolean';
+
+-----------------------------
+-- AT_LOG_MESSAGE_PROPERTIES constraints
+--
+alter table at_log_message_properties add constraint at_log_message_properties_fk1 foreign key (msg_id) references at_log_message (msg_id);
+alter table at_log_message_properties add constraint at_log_message_properties_fk2 foreign key (prop_type) references cwms_log_message_prop_types (prop_type_code);
+alter table at_log_message_properties add constraint at_log_message_properties_pk  primary key (msg_id, prop_name)
+    using index 
+    tablespace cwms_20at_data
+    pctfree    10
+    initrans   2
+    maxtrans   255
+    storage    (
+                initial          64k
+                minextents       1
+                maxextents       2147483645
+                pctincrease      0
+               );
 
 -----------------------------
 -- AT_MVIEW_REFRESH_PAUSED table
