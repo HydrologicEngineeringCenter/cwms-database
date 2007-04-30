@@ -33,6 +33,14 @@ exc_no_subscribers exception; pragma exception_init(exc_no_subscribers, -24033);
 -- Do not specify a property name "millis", as this property is set to the 
 -- creation time of the message.
 --
+
+-------------------------------------------------------------------------------
+-- FUNCTION GET_QUEUE_NAME(...)
+--
+function get_queue_name(
+   p_queuename in varchar2) 
+   return varchar2;
+
 -------------------------------------------------------------------------------
 -- FUNCTION NEW_MESSAGE(...)
 --
@@ -60,7 +68,7 @@ function publish_message(
 -- FUNCTION PUBLISH_MESSAGE(...)
 --
 function publish_message(
-   p_properties clob,
+   p_properties in out nocopy clob,
    p_msg_queue  in varchar2)
    return integer;
 
@@ -82,7 +90,7 @@ function publish_status_message(
 -- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
 function publish_status_message(
-   p_properties in clob)
+   p_properties in out nocopy clob)
    return integer;
 
 -------------------------------------------------------------------------------

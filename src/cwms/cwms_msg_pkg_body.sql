@@ -1,6 +1,9 @@
 create or replace package body cwms_msg
 as
 
+-------------------------------------------------------------------------------
+-- FUNCTION GET_MSG_ID(...)
+--
 function get_msg_id (p_millis in integer default null) return varchar2
 is
    office_id varchar2(16);
@@ -14,6 +17,9 @@ begin
    return office_id || (l_millis * 1000 + seq);
 end;
 
+-------------------------------------------------------------------------------
+-- FUNCTION GET_QUEUE_PREFIX(...)
+--
 function get_queue_prefix return varchar2
 is
    l_db_office_id   varchar2(16);
@@ -28,6 +34,9 @@ begin
    return l_db_office_id;       
 end get_queue_prefix;
 
+-------------------------------------------------------------------------------
+-- FUNCTION GET_QUEUE_NAME(...)
+--
 function get_queue_name (p_queuename in varchar2) return varchar2
 is
    l_queuename varchar2(32) := p_queuename;
@@ -122,7 +131,7 @@ end publish_message;
 -- FUNCTION PUBLISH_MESSAGE(...)
 --
 function publish_message(
-   p_properties in xmltype,
+   p_properties in out nocopy xmltype,
    p_msg_queue  in varchar2)
    return integer
 is
@@ -204,20 +213,22 @@ function publish_message(
    p_msg_queue  in varchar2)
    return integer
 is
+   l_properties xmltype := xmltype(p_properties);
 begin
-   return publish_message(xmltype(p_properties), p_msg_queue);
+   return publish_message(l_properties, p_msg_queue);
 end publish_message;
 
 -------------------------------------------------------------------------------
 -- FUNCTION PUBLISH_MESSAGE(...)
 --
 function publish_message(
-   p_properties in clob,
+   p_properties in out nocopy clob,
    p_msg_queue  in varchar2)
    return integer
 is
+   l_properties xmltype := xmltype(p_properties);
 begin
-   return publish_message(xmltype(p_properties), p_msg_queue);
+   return publish_message(l_properties, p_msg_queue);
 end publish_message;
 
 -------------------------------------------------------------------------------
@@ -238,19 +249,21 @@ function publish_status_message(
    p_properties in varchar2)
    return integer
 is
+   l_properties xmltype := xmltype(p_properties);
 begin
-   return publish_message(xmltype(p_properties), 'STATUS');
+   return publish_message(l_properties, 'STATUS');
 end publish_status_message;
 
 -------------------------------------------------------------------------------
 -- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
 function publish_status_message(
-   p_properties in clob)
+   p_properties in out nocopy clob)
    return integer
 is
+   l_properties xmltype := xmltype(p_properties);
 begin
-   return publish_message(xmltype(p_properties), 'STATUS');
+   return publish_message(l_properties, 'STATUS');
 end publish_status_message;
 
 -------------------------------------------------------------------------------
