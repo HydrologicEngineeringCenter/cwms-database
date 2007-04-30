@@ -64,20 +64,20 @@ comment on column at_rating.interpolate_code is 'Interpolation type ("LINEAR" or
 comment on column at_rating.indep_parm_count is 'Number of independent variables (1 or 2)';
 
 
-drop sequence seq_rating;
+-- drop sequence seq_rating;
 
-create sequence seq_rating nocache;
+-- create sequence seq_rating nocache;
 
-create or replace trigger at_rating_BIR
-before insert on at_rating
-for each row
-declare
-   l_nextval number;
-begin
-   select seq_rating.nextval into l_nextval from dual;
-   :new.rating_code:=l_nextval;
-end;
-/
+-- create or replace trigger at_rating_BIR
+-- before insert on at_rating
+-- for each row
+-- declare
+--    l_nextval number;
+-- begin
+--    select cwms_seq.nextval into l_nextval from dual;
+--    :new.rating_code:=l_nextval;
+-- end;
+-- /
 
 
 /* AT_RATING_PARMETERS */
@@ -110,20 +110,20 @@ create unique index at_rating_parms_ak1 on at_rating_parameters
 comment on table at_rating_parameters is 'Defines a specific set of parameters for a general rating family';
 
 
-drop sequence seq_rating_parms;
+-- drop sequence seq_rating_parms;
 
-create sequence seq_rating_parms nocache;
+-- create sequence seq_rating_parms nocache;
 
-create or replace trigger at_rating_parameters_BIR
-before insert on at_rating_parameters
-for each row
-declare
-   l_nextval number;
-begin
-   select seq_rating_parms.nextval into l_nextval from dual;
-   :new.rating_parms_code:=l_nextval;
-end;
-/
+-- create or replace trigger at_rating_parameters_BIR
+-- before insert on at_rating_parameters
+-- for each row
+-- declare
+--    l_nextval number;
+-- begin
+--    select cwms_seq.nextval into l_nextval from dual;
+--    :new.rating_parms_code:=l_nextval;
+-- end;
+-- /
 
 
 /* AT_RATING_VERSION */
@@ -196,20 +196,20 @@ comment on column at_rating_spec.version is 'the base rating table version; the 
 comment on column at_rating_spec.filename is 'rating table filename (do we also need file type, "RDB" ?)';
 
 
-drop sequence seq_rating_spec;
+-- drop sequence seq_rating_spec;
 
-create sequence seq_rating_spec nocache;
+-- create sequence seq_rating_spec nocache;
 
-create or replace trigger at_rating_spec_BIR
-before insert on at_rating_spec
-for each row
-declare
-   l_nextval number;
-begin
-   select seq_rating_spec.nextval into l_nextval from dual;
-   :new.rating_spec_code:=l_nextval;
-end;
-/
+-- create or replace trigger at_rating_spec_BIR
+-- before insert on at_rating_spec
+-- for each row
+-- declare
+--    l_nextval number;
+-- begin
+--    select seq_rating_spec.nextval into l_nextval from dual;
+--    :new.rating_spec_code:=l_nextval;
+-- end;
+-- /
 
 
 /* AT_RATING_SHIFT_SPEC */
@@ -256,20 +256,20 @@ comment on column at_rating_shift_spec.active_flag is '="T" if the shift is to b
 comment on column at_rating_shift_spec.transition_flag is '="T" if the shift is used to transition between official USGS ratings, else "F"';
 
 
-drop sequence seq_rating_shift;
+-- drop sequence seq_rating_shift;
 
-create sequence seq_rating_shift nocache;
+-- create sequence seq_rating_shift nocache;
 
-create or replace trigger at_rating_shift_spec_BIR
-before insert on at_rating_shift_spec
-for each row
-declare
-   l_nextval number;
-begin
-   select seq_rating_shift.nextval into l_nextval from dual;
-   :new.rating_shift_code:=l_nextval;
-end;
-/
+-- create or replace trigger at_rating_shift_spec_BIR
+-- before insert on at_rating_shift_spec
+-- for each row
+-- declare
+--    l_nextval number;
+-- begin
+--    select seq_rating_shift.nextval into l_nextval from dual;
+--    :new.rating_shift_code:=l_nextval;
+-- end;
+-- /
 
 
 /* AT_RATING_SHIFT_VALUES */
@@ -331,20 +331,20 @@ comment on column at_rating_curve.indep_parm_number is '=1..n, where n=the numbe
 comment on column at_rating_curve.indep_parm_value is 'The value of the second independent parameter for this curve, NULL if INDEP_PARM_NUMBER=1';
 
 
-drop sequence seq_rating_curve;
+-- drop sequence seq_rating_curve;
 
-create sequence seq_rating_curve nocache;
+-- create sequence seq_rating_curve nocache;
 
-create or replace trigger at_rating_curve_BIR
-before insert on at_rating_curve
-for each row
-declare
-   l_nextval number;
-begin
-   select seq_rating_curve.nextval into l_nextval from dual;
-   :new.rating_curve_code:=l_nextval;
-end;
-/
+-- create or replace trigger at_rating_curve_BIR
+-- before insert on at_rating_curve
+-- for each row
+-- declare
+--    l_nextval number;
+-- begin
+--    select seq_rating_curve.nextval into l_nextval from dual;
+--    :new.rating_curve_code:=l_nextval;
+-- end;
+-- /
 
 
 /* AT_RATING_VALUE */
@@ -372,5 +372,6 @@ comment on table at_rating_value is 'Table of expanded rating table values';
 
 comment on column at_rating_value.stor_flag is 
 '="T" if it is a USGS STOR point marked by an asterisk, else "F"';
+/
 
 
