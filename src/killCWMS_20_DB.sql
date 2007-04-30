@@ -6,7 +6,6 @@ set echo off
 prompt
 accept echo_state  char prompt 'Enter ON or OFF for echo       : '
 accept inst        char prompt 'Enter the database instance    : '
-accept eroc        char prompt 'Enter the EROC for this office : '
 accept sys_passwd  char prompt 'Enter the password for SYS     : '
 prompt '***************************************************************'
 prompt '***                                                         ***'
@@ -49,8 +48,26 @@ set echo &echo_state
 --
 drop role cwms_dev;
 drop role cwms_user;
-drop user &eroc.cwmsdbi;
-drop user &eroc.cwmspd;
+set echo off
+begin
+   for rec in (   
+      select username 
+        from all_users 
+       where username like '__CWMSDBI' 
+          or username like '__CWMSPD' 
+    order by username) 
+   loop
+      begin
+         dbms_output.put_line('drop user ' || rec.username);
+         execute immediate 'drop user ' || rec.username;
+      exception
+         when others then 
+            dbms_output.put_line('==> Cannot drop user ' || rec.username || ': ' || sqlerrm);
+      end;
+   end loop;
+end;
+/
+set echo &echo_state
 drop user cwms_20 cascade;
 exit
 

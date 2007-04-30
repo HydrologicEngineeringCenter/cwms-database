@@ -7716,7 +7716,9 @@ os.remove(tempFilename)
 #--------------------------------------------------------------------#
 office_names = {}
 dbhost_offices = {}
+office_erocs = {}
 for office_id, office_name, report_to, dbhost, eroc in offices[1:-1] :
+	office_erocs[office_id] = eroc
 	if not dbhost : dbhost = office_id
 	office_names[office_id] = office_name
 	if not dbhost_offices.has_key(dbhost) : dbhost_offices[dbhost] = []
@@ -7759,6 +7761,42 @@ while not ok :
 		line = raw_input("Is this correct? (y/n) > ")
 		if not line or line[0].upper() != 'Y' :
 			ok = False
+
+user_template = '''
+--
+-- ignore errors
+--
+whenever sqlerror continue
+
+drop user &eroc.cwmspd;
+drop user &eroc.cwmsdbi;
+
+--
+-- notice errors
+--
+whenever sqlerror exit sql.sqlcode
+
+create user &eroc.cwmsdbi
+   identified by &dbi_passwd
+   default tablespace cwms_20data
+   temporary tablespace temp
+   profile default
+   account unlock;
+
+grant create session to &eroc.cwmsdbi;
+
+create user &eroc.cwmspd
+   identified by values 'FEDCBA9876543210'
+   default tablespace cwms_20data
+   temporary tablespace temp
+   profile default
+   account unlock;
+
+grant cwms_user to &eroc.cwmspd;
+alter user &eroc.cwmspd default role cwms_user;
+alter user &eroc.cwmspd grant connect through &eroc.cwmsdbi with role cwms_user;
+'''
+
 queue_template = '''
    dbms_aqadm.create_queue_table(
       queue_table        => '%s_%s_table', 
@@ -7771,7 +7809,18 @@ queue_template = '''
       
    dbms_aqadm.start_queue(queue_name => '%s_%s');
 '''
-sys.stderr.write("Creating queues.sql file\n")
+sys.stderr.write("Creating erocusers.sql\n");
+f = open("erocusers.sql", "w")
+users_created = []
+for dbhost_id in office_ids :
+	for office_id in dbhost_offices[dbhost_id] :
+		eroc = office_erocs[office_id].lower()
+		if eroc not in users_created :
+			f.write(user_template.replace("&eroc.", eroc))
+			users_created.append(eroc)
+f.close()
+
+sys.stderr.write("Creating queues.sql\n")
 f = open("queues.sql", "w")
 f.write("set define off\nbegin")
 for office_id in office_ids :

@@ -1,37 +1,3 @@
---
--- ignore errors
---
-whenever sqlerror continue
-
-drop user cwms_20 cascade;
-drop user &eroc.cwmspd;
-drop user &eroc.cwmsdbi;
-
---
--- notice errors
---
-whenever sqlerror exit sql.sqlcode
-
-create user &eroc.cwmsdbi
-   identified by &dbi_passwd
-   default tablespace cwms_20data
-   temporary tablespace temp
-   profile default
-   account unlock;
-
-grant create session to &eroc.cwmsdbi;
-
-create user &eroc.cwmspd
-   identified by values 'FEDCBA9876543210'
-   default tablespace cwms_20data
-   temporary tablespace temp
-   profile default
-   account unlock;
-
-grant cwms_user to &eroc.cwmspd;
-alter user &eroc.cwmspd default role cwms_user;
-alter user &eroc.cwmspd grant connect through &eroc.cwmsdbi with role cwms_user;
-
 create user cwms_20
   identified by &cwms_passwd
   default tablespace cwms_20data
