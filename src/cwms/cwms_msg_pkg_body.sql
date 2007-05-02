@@ -475,7 +475,8 @@ begin
       --------------------------
       -- set the message type --
       --------------------------
-      l_msg_text := replace(l_msg_text, '$msgtype', 'MissedHeartBeat');
+      l_msg_type := 'MissedHeartBeat';
+      l_msg_text := replace(l_msg_text, '$msgtype', l_msg_type);
       ---------------------------------------------
       -- get component, host and port from value --
       ---------------------------------------------
@@ -527,13 +528,15 @@ begin
          ----------------------------
          l_parts := cwms_util.split_text(cwms_util.strip(l_properties(i)), '=', 1);
          if l_parts.count > 1 then
+            l_parts(1) := cwms_util.strip(l_parts(1));
+            l_parts(2) := cwms_util.strip(l_parts(2));
             case l_parts(1)
                when 'From' then
                   ---------------------------------------------
                   -- get component, host and port from value --
                   ---------------------------------------------
-                  l_parts := cwms_util.split_text(cwms_util.strip(l_parts(2)), '@', 1);
-                  l_component := l_parts(1);
+                  l_parts := cwms_util.split_text(l_parts(2), '@', 1);
+                  l_component := cwms_util.strip(l_parts(1));
                   if l_parts.count > 1 then
                      l_parts := cwms_util.split_text(cwms_util.strip(l_parts(2)), ':', 1);
                      l_host := l_parts(1);
@@ -562,15 +565,39 @@ begin
                   ---------------------------------
                   -- get message type from value --
                   ---------------------------------
-                  l_msg_text := replace(l_msg_text, '$msgtype', l_parts(2));
+                  l_msg_type := l_parts(2);
+                  declare
+                     l_typeid integer;
+                  begin
+                     select message_type_code 
+                       into l_typeid 
+                       from cwms_log_message_types 
+                      where message_type_id = l_parts(2);
+                     l_msg_text := replace(l_msg_text, '$msgtype', l_msg_type);
+                  exception
+                     when no_data_found then
+                        l_msg_type := 'Status';
+                        l_msg_text := replace(l_msg_text, '$msgtype', l_msg_type);
+                        l_msg_text := l_msg_text 
+                                   || '  <property name="subtype" type="String">'
+                                   || l_parts(2)
+                                   || '</property>' || lf;
+                  end;       
                when 'Message' then
                   ---------------------------------
                   -- get message body from value --
                   ---------------------------------
-                  l_msg_text := l_msg_text 
-                              || '  <text>'  || lf 
-                              || l_parts(2)  || lf 
-                              || '  </text>' || lf;
+                  if l_msg_type = 'State' and substr(l_parts(2), 1, 7) = 'Server=' then
+                     l_msg_text := l_msg_text 
+                                || '  <property name="state" type="String">'
+                                || substr(l_parts(2), 8)
+                                || '</property>' || lf;
+                  else
+                     l_msg_text := l_msg_text 
+                                 || '  <text>'  || lf 
+                                 || l_parts(2)  || lf 
+                                 || '  </text>' || lf;
+                  end if;
                else
                   ------------------------------------
                   -- treat pair as a named property --
@@ -599,7 +626,7 @@ begin
                      end if;
                   exception
                      when others then 
-                        case cwms_util.strip(lower(l_parts(2)))
+                        case lower(l_parts(2))
                            when 'true'  then l_prop_type := 'boolean';
                            when 't'     then l_prop_type := 'boolean';
                            when 'yes'   then l_prop_type := 'boolean';
@@ -616,10 +643,10 @@ begin
                   end;
                   l_msg_text := l_msg_text 
                              || '  <property name="'
-                             || cwms_util.strip(l_parts(1))
+                             || l_parts(1)
                              || '" type="' 
                              || l_prop_type || '">'
-                             || cwms_util.strip(l_parts(2)) 
+                             || l_parts(2)
                              || '</property>' || lf;
             end case;
          end if;
