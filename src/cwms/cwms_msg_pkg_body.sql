@@ -410,8 +410,8 @@ begin
    end if;
    if p_reported is not null then
       l_extra := l_extra
-                 || '  <property name="report_timestamp" type="String">'
-                 || to_char(p_reported)
+                 || '  <property name="reported" type="long">'
+                 || cwms_util.to_millis(p_reported)
                  || '</property>'
                  || lf;
    end if;

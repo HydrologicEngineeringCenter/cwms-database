@@ -35,6 +35,13 @@ exc_no_subscribers exception; pragma exception_init(exc_no_subscribers, -24033);
 --
 
 -------------------------------------------------------------------------------
+-- FUNCTION GET_MSG_ID(...)
+--
+function get_msg_id (
+   p_millis in integer default null) 
+   return varchar2;
+
+-------------------------------------------------------------------------------
 -- FUNCTION GET_QUEUE_NAME(...)
 --
 function get_queue_name(
