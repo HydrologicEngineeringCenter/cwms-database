@@ -11,7 +11,7 @@ except :
     
 
 tempFilename = os.tmpnam()
-sys.stdout = open(tempFilename, "w")
+# sys.stdout = open(tempFilename, "w")
 
 TRUE, FALSE = 1, 0
 
@@ -24,7 +24,7 @@ prefix = ["BUILDCWMS~", "BUILDUSER~", "BUILDCWMS,BUILDUSER~", "BUILDCWMS,BUILDUS
 CWMS, USER, BUILD, ALL = 0, 1, 2, 3
 
 sqlFileName              = {}
-sqlFileName["BUILDCWMS"] = "buildCwms.sql"
+sqlFileName["BUILDCWMS"] = "py_BuildCwms.sql"
 #sqlFileName["BUILDUSER"] = "buildCwmsPd.sql"
 sqlFileName["DROPCWMS"]  = "dropCwms.sql"
 #sqlFileName["DROPUSER"]  = "dropCwmsPd.sql"
@@ -42,24 +42,8 @@ cwmsTableSpaceName = "%sDATA" % user
 
 cwmsSequences = [
 #    NAME             START  INCREMENT  MINIMUM  MAXIMUM  CYCLE  CACHE
-#    ["SEQ_RAT",          2,        2,         2,       1.0e38,  FALSE, 20],
-#    ["SEQ_DSS",          1,        1,         1,       1.0e38,  FALSE, 20],
-#    ["SEQ_LOCA",         1,        1,         1,       1.0e38,  FALSE, 20],
-#    ["SEQ_TSS",          1,        1,         1,       1.0e38,  FALSE, 20],
-#    ["SEQ_XCHG",         1,        1,         1,       1.0e38,  FALSE, 20],
-    ["CWMS_SEQ",         64,     1000,        64,       1.0e38,  FALSE, 20],
     ["CWMS_LOG_MSG_SEQ",  0,        1,         0,          999,   TRUE, 20],
-
 ]
-
-#userSequences = [
-#    NAME       START  INCREMENT  MINIMUM  MAXIMUM  CYCLE  CACHE
-#    ["SEQ_DSS", 1,     1,         1,       1.0e38,  FALSE, 20   ],
-#    ["SEQ_CWMS",1,     1,         1,       1.0e38,  FALSE, 20   ],
-#    ["SEQ_LOCA",1,     1,         1,       1.0e38,  FALSE, 20   ],
-#    ["SEQ_TSS", 1,     1,         1,       1.0e38,  FALSE, 20   ],
-#]
-
 
 #------------------------------------------------------------------------------#
 # Table information.  Each table must have an entry in the tableInfo list, and #
@@ -3450,62 +3434,67 @@ subLocations = [
 #---------#
 sys.stderr.write("Processing offices.\n")
 offices = [
-#     ofc    longName                                        reportTo  dbHost  eroc
-#     ---    ----------------------------------------------  --------  ------  ----
-    ['UNK',  'Corps of Engineers Office Unknown',            '',       '',     '00',],
-    ['HQ',   'Headquarters, U.S. Army Corps of Engineers',   '',       '',     'Q0',],
-    ['LRD',  'Great Lakes and Ohio River Division',          'HQ',     'LRD',  'H0',],
-    ['LRDG', 'Great Lakes Region',                           'LRD',    'LRDG', 'H8',],
-    ['LRC',  'Chicago District',                             'LRDG',   'LRC',  'H6',],
-    ['LRE',  'Detroit District',                             'LRDG',   'LRE',  'H7',],
-    ['LRB',  'Buffalo District',                             'LRDG',   'LRB',  'H5',],
-    ['LRDO', 'Ohio River Region',                            'LRD',    'LRDO', 'H0',],
-    ['LRH',  'Huntington District',                          'LRDO',   'LRH',  'H1',],
-    ['LRL',  'Louisville District',                          'LRDO',   'LRL',  'H2',],
-    ['LRN',  'Nashville District',                           'LRDO',   'LRN',  'H3',],
-    ['LRP',  'Pittsburgh District',                          'LRDO',   'LRP',  'H4',],
-    ['MVD',  'Mississippi Valley Division',                  'HQ',     'MVD',  'B0',],
-    ['MVK',  'Vicksburg District',                           'MVD',    'MVK',  'B4',],
-    ['MVM',  'Memphis District',                             'MVD',    'MVM',  'B1',],
-    ['MVN',  'New Orleans District',                         'MVD',    'MVN',  'B2',],
-    ['MVP',  'St. Paul District',                            'MVD',    'MVP',  'B6',],
-    ['MVR',  'Rock Island District',                         'MVD',    'MVR',  'B5',],
-    ['MVS',  'St. Louis District',                           'MVD',    'MVS',  'B3',],
-    ['NAD',  'North Atlantic Division',                      'HQ',     'NAD',  'E0',],
-    ['NAB',  'Baltimore District',                           'NAD',    'NAB',  'E1',],
-    ['NAE',  'New England District',                         'NAD',    'NAE',  'E6',],
-    ['NAN',  'New York District',                            'NAD',    'NAN',  'E3',],
-    ['NAO',  'Norfolk District',                             'NAD',    'NAO',  'E4',],
-    ['NAP',  'Philadelphia District',                        'NAD',    'NAP',  'E5',],
-    ['NWD',  'Northwestern Division',                        'HQ',     'NWDP', 'G0',],
-    ['NWDP', 'Pacific Northwest Region',                     'NWD',    'NWDP', 'G0',],
-    ['NWP',  'Portland District',                            'NWDP',   'NWDP', 'G2',],
-    ['NWS',  'Seattle District',                             'NWDP',   'NWDP', 'G3',],
-    ['NWW',  'Walla Walla District',                         'NWDP',   'NWDP', 'G4',],
-    ['NWDM', 'Missouri River Region',                        'NWD',    'NWDM', 'G7',],
-    ['NWK',  'Kansas City District',                         'NWDM',   'NWK',  'G5',],
-    ['NWO',  'Omaha District',                               'NWDM',   'NWO',  'G6',],
-    ['POD',  'Pacific Ocean Division',                       'HQ',     'POD',  'J0',],
-    ['POA',  'Alaska District',                              'POD',    'POA',  'J4',],
-    ['POH',  'Hawaii District',                              'POD',    'POH',  'J3',],
-    ['SAD',  'South Atlantic Division',                      'HQ',     'SAD',  'K0',],
-    ['SAC',  'Charleston District',                          'SAD',    'SAC',  'K2',],
-    ['SAJ',  'Jacksonville District',                        'SAD',    'SAJ',  'K3',],
-    ['SAM',  'Mobile District',                              'SAD',    'SAM',  'K5',],
-    ['SAS',  'Savannah District',                            'SAD',    'SAS',  'K6',],
-    ['SAW',  'Wilmington District',                          'SAD',    'SAW',  'K7',],
-    ['SPD',  'South Pacific Division',                       'HQ',     'SPD',  'L0',],
-    ['SPA',  'Albuquerque District',                         'SPD',    'SPA',  'L4',],
-    ['SPK',  'Sacramento District',                          'SPD',    'SPK',  'L2',],
-    ['SPL',  'Los Angeles District',                         'SPD',    'SPL',  'L1',],
-    ['SPN',  'San Francisco District',                       'SPD',    'SPN',  'L3',],
-    ['SWD',  'Southwestern Division',                        'HQ',     'SWD',  'M0',],
-    ['SWF',  'Fort Worth District',                          'SWD',    'SWF',  'M2',],
-    ['SWG',  'Galveston District',                           'SWD',    'SWG',  'M3',],
-    ['SWL',  'Little Rock District',                         'SWD',    'SWL',  'M4',],
-    ['SWT',  'Tulsa District',                               'SWD',    'SWT',  'M5',],
-    ['LCRA', 'Lower Colorado River Authority',               '',       '',     'Z0',],
-    ['ALL',  'All Offices',                                  '',       '',     '01',],
+# **WARNING!! DO NOT CHANGE The "ofc code" number!! You can add a new office to the
+#                     bottom of the list, but it must have a new unique number.
+#                     The max ofc code is 999.
+#   **ofc**                                                                               
+#     code   ofc    longName                                        reportTo  dbHost  eroc 
+#     ----   ---    ----------------------------------------------  --------  ------  ---- 
+    [   0,  'UNK',  'Corps of Engineers Office Unknown',            '',       '',     '00'],
+    [   1,  'HQ',   'Headquarters, U.S. Army Corps of Engineers',   '',       'HQ',   'S0'],
+    [   2,  'LRD',  'Great Lakes and Ohio River Division',          'HQ',     'LRD',  'H0'],
+    [   3,  'LRDG', 'Great Lakes Region',                           'LRD',    'LRDG', 'H8'],
+    [   4,  'LRC',  'Chicago District',                             'LRDG',   'LRC',  'H6'],
+    [   5,  'LRE',  'Detroit District',                             'LRDG',   'LRE',  'H7'],
+    [   6,  'LRB',  'Buffalo District',                             'LRDG',   'LRB',  'H5'],
+    [   7,  'LRDO', 'Ohio River Region',                            'LRD',    'LRDO', 'H0'],
+    [   8,  'LRH',  'Huntington District',                          'LRDO',   'LRH',  'H1'],
+    [   9,  'LRL',  'Louisville District',                          'LRDO',   'LRL',  'H2'],
+    [  10,  'LRN',  'Nashville District',                           'LRDO',   'LRN',  'H3'],
+    [  11,  'LRP',  'Pittsburgh District',                          'LRDO',   'LRP',  'H4'],
+    [  12,  'MVD',  'Mississippi Valley Division',                  'HQ',     'MVD',  'B0'],
+    [  13,  'MVK',  'Vicksburg District',                           'MVD',    'MVK',  'B4'],
+    [  14,  'MVM',  'Memphis District',                             'MVD',    'MVM',  'B1'],
+    [  15,  'MVN',  'New Orleans District',                         'MVD',    'MVN',  'B2'],
+    [  16,  'MVP',  'St. Paul District',                            'MVD',    'MVP',  'B6'],
+    [  17,  'MVR',  'Rock Island District',                         'MVD',    'MVR',  'B5'],
+    [  18,  'MVS',  'St. Louis District',                           'MVD',    'MVS',  'B3'],
+    [  19,  'NAD',  'North Atlantic Division',                      'HQ',     'NAD',  'E0'],
+    [  20,  'NAB',  'Baltimore District',                           'NAD',    'NAB',  'E1'],
+    [  21,  'NAE',  'New England District',                         'NAD',    'NAE',  'E6'],
+    [  22,  'NAN',  'New York District',                            'NAD',    'NAN',  'E3'],
+    [  23,  'NAO',  'Norfolk District',                             'NAD',    'NAO',  'E4'],
+    [  24,  'NAP',  'Philadelphia District',                        'NAD',    'NAP',  'E5'],
+    [  25,  'NWD',  'Northwestern Division',                        'HQ',     'NWDP', 'G0'],
+    [  26,  'NWDP', 'Pacific Northwest Region',                     'NWD',    'NWDP', 'G0'],
+    [  27,  'NWP',  'Portland District',                            'NWDP',   'NWDP', 'G2'],
+    [  28,  'NWS',  'Seattle District',                             'NWDP',   'NWDP', 'G3'],
+    [  29,  'NWW',  'Walla Walla District',                         'NWDP',   'NWDP', 'G4'],
+    [  30,  'NWDM', 'Missouri River Region',                        'NWD',    'NWDM', 'G7'],
+    [  31,  'NWK',  'Kansas City District',                         'NWDM',   'NWK',  'G5'],
+    [  32,  'NWO',  'Omaha District',                               'NWDM',   'NWO',  'G6'],
+    [  33,  'POD',  'Pacific Ocean Division',                       'HQ',     'POD',  'J0'],
+    [  34,  'POA',  'Alaska District',                              'POD',    'POA',  'J4'],
+    [  35,  'POH',  'Hawaii District',                              'POD',    'POH',  'J3'],
+    [  36,  'SAD',  'South Atlantic Division',                      'HQ',     'SAD',  'K0'],
+    [  37,  'SAC',  'Charleston District',                          'SAD',    'SAC',  'K2'],
+    [  38,  'SAJ',  'Jacksonville District',                        'SAD',    'SAJ',  'K3'],
+    [  39,  'SAM',  'Mobile District',                              'SAD',    'SAM',  'K5'],
+    [  40,  'SAS',  'Savannah District',                            'SAD',    'SAS',  'K6'],
+    [  41,  'SAW',  'Wilmington District',                          'SAD',    'SAW',  'K7'],
+    [  42,  'SPD',  'South Pacific Division',                       'HQ',     'SPD',  'L0'],
+    [  43,  'SPA',  'Albuquerque District',                         'SPD',    'SPA',  'L4'],
+    [  44,  'SPK',  'Sacramento District',                          'SPD',    'SPK',  'L2'],
+    [  45,  'SPL',  'Los Angeles District',                         'SPD',    'SPL',  'L1'],
+    [  46,  'SPN',  'San Francisco District',                       'SPD',    'SPN',  'L3'],
+    [  47,  'SWD',  'Southwestern Division',                        'HQ',     'SWD',  'M0'],
+    [  48,  'SWF',  'Fort Worth District',                          'SWD',    'SWF',  'M2'],
+    [  49,  'SWG',  'Galveston District',                           'SWD',    'SWG',  'M3'],
+    [  50,  'SWL',  'Little Rock District',                         'SWD',    'SWL',  'M4'],
+    [  51,  'SWT',  'Tulsa District',                               'SWD',    'SWT',  'M5'],
+    [  52,  'LCRA', 'Lower Colorado River Authority',               '',       'LCRA', 'Z0'],
+    [  53,  'CWMS', 'All CWMS Offices',                             '',       '',     '01'],
+    [  54,  'CRREL', 'Cold Regions Research and Engineering Lab',   '',       'CRREL','U4'],
 ]
 
 #-----------#
@@ -4843,13 +4832,13 @@ COMMIT;
 sys.stderr.write("Building cwmsOfficeLoadTemplate\n")
 cwmsOfficeLoadTemplate = ''
 code = 0
-for ofc, longName, reportTo, dbHost, eroc in offices :
+for ofcCode, ofc, longName, reportTo, dbHost, eroc in offices :
     if reportTo :
         cwmsOfficeLoadTemplate +="INSERT INTO @TABLE (OFFICE_CODE, OFFICE_ID, LONG_NAME, REPORT_TO_OFFICE_CODE, DB_HOST_OFFICE_CODE, EROC)\n"
-        cwmsOfficeLoadTemplate +="\tSELECT %d, '%s', '%s', OFFICE_CODE, %d, '%s' FROM @TABLE WHERE OFFICE_ID='%s';\n" % (code, ofc, longName, code, eroc, reportTo)
+        cwmsOfficeLoadTemplate +="\tSELECT %d, '%s', '%s', OFFICE_CODE, %d, '%s' FROM @TABLE WHERE OFFICE_ID='%s';\n" % (ofcCode, ofc, longName, ofcCode, eroc, reportTo)
     else :
         cwmsOfficeLoadTemplate +="INSERT INTO @TABLE (OFFICE_CODE, OFFICE_ID, LONG_NAME, REPORT_TO_OFFICE_CODE, DB_HOST_OFFICE_CODE, EROC)\n"
-        cwmsOfficeLoadTemplate +="\tVALUES (%d, '%s', '%s', %d, %d, '%s');\n" % (code, ofc, longName, code, code, eroc)
+        cwmsOfficeLoadTemplate +="\tVALUES (%d, '%s', '%s', %d, %d, '%s');\n" % (ofcCode, ofc, longName, ofcCode, ofcCode, eroc)
     code += 1
     
 cwmsOfficeLoadTemplate +="UPDATE @TABLE SET DB_HOST_OFFICE_CODE=\n"
@@ -7597,6 +7586,208 @@ for table1 in tables :
         except : 
             pass
             
+#==
+#====
+#====== createQueues
+#--------------------------------------------------------------------#
+# generate a script to create and start queues for specified offices #
+#--------------------------------------------------------------------#
+office_names = {}
+dbhost_offices = {}
+office_erocs = {}
+db_office_code = {}
+for ofcCode, office_id, office_name, report_to, dbhost, eroc in offices :
+	if dbhost == '' : continue
+	office_erocs[office_id] = eroc
+	db_office_code[office_id] = ofcCode
+	if not dbhost : dbhost = office_id
+	office_names[office_id] = office_name
+	if not dbhost_offices.has_key(dbhost) : dbhost_offices[dbhost] = []
+	dbhost_offices[dbhost].append(office_id);
+
+dbhosts = dbhost_offices.keys()
+dbhosts.sort()
+print
+for dbhost in dbhosts :
+	line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
+	for i in range(1, len(dbhost_offices[dbhost])) : 
+		line += ", %s" % office_names[dbhost_offices[dbhost][i]]
+	print line
+
+#------------------------------------------------------------------------------
+# Ask for the db_office_id for this database, i.e., the primary office id
+# for this database.
+#------------------------------------------------------------------------------
+print
+print 'Enter the office id for this database. If your office is not listed'
+print 'or if your building a secondary COOP database for your office, then'
+print 'please contact HEC for a revised install script.'
+ok = False
+while not ok :
+	print
+	line = raw_input('Enter the primary office id for this database: ')
+	db_office_id = line.upper().replace(',', ' ').replace(';', ' ').split()
+	if not db_office_id :
+		print
+		print "ERROR! You must enter your office id."
+	else :
+		count = 0
+		for office_id in db_office_id :
+			if count == 1 : 
+				print
+				print "ERROR! You can only enter one office id for a database!"
+				break
+			if office_id not in dbhosts :
+				print
+				print "ERROR! Office %s does not host a database. Contact HEC if this" % office_id
+				print "is no longer the case."
+				break
+			count += 1
+		else :
+			ok = True
+
+	if ok :
+		print 'You have chosen the following office as the primary office for this'
+		print "database: %s" % db_office_id[0]
+		line = raw_input("Is this correct? (y/n) [n] > ")
+		if not line or line[0].upper() != 'Y' :
+			ok = False
+#------------------------------------------------------------------------------
+# Ask if any other offices will be sharing this database - need to know so that
+# queues can be set-up for them.
+#------------------------------------------------------------------------------
+print
+for dbhost in dbhosts :
+	if dbhost != db_office_id[0] :
+		line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
+		for i in range(1, len(dbhost_offices[dbhost])) : 
+			line += ", %s" % office_names[dbhost_offices[dbhost][i]]
+		print line
+print
+print 'Will other offices share this database as either their primary database'
+print 'or as a backup database? If so, enter the office id(s) from the above'
+print 'list. If this datbase will only be used by your office, then simply'
+print 'press Enter.'
+print 
+ok = False
+while not ok :
+	print
+	line  = raw_input('Enter office id(s) of offices sharing this database: ')
+	print
+	office_ids = line.upper().replace(',', ' ').replace(';', ' ').split()
+	if not office_ids :
+		ok = True
+	else :
+		for office_id in office_ids :
+			if office_id == db_office_id[0] :
+				office_ids.remove(office_id)
+			if office_id == 'CWMS' : 
+				office_ids = dbhosts[:]
+				office_ids.remove('LCRA')
+				ok = True
+				break
+			if office_id not in dbhosts :
+				print "Office %s does not host a database." % office_id
+				break
+		else :
+			ok = True
+			
+	if ok :
+		print 'You have made the follwing choices:'
+		print "Primary office for this database: %s" % db_office_id[0]
+		if not office_ids :
+			print "No other offices will share this database."
+		else:
+			print "Office(s) sharing this database: %s" % ','.join(office_ids)
+		line = raw_input("Is this correct? (y/n) [n] > ")
+		if not line or line[0].upper() != 'Y' :
+			ok = False
+
+#------------------------------------------------------------------------------
+# Consolidate db_office_id and shared office_ids
+#------------------------------------------------------------------------------
+if not office_ids :
+	office_ids = db_office_id
+else :
+	office_ids = db_office_id + office_ids[:]
+
+user_template = '''
+--
+-- ignore errors
+--
+whenever sqlerror continue
+
+drop user &eroc.cwmspd;
+drop user &eroc.cwmsdbi;
+
+--
+-- notice errors
+--
+whenever sqlerror exit sql.sqlcode
+
+create user &eroc.cwmsdbi
+   identified by &dbi_passwd
+   default tablespace cwms_20data
+   temporary tablespace temp
+   profile default
+   account unlock;
+
+grant create session to &eroc.cwmsdbi;
+
+create user &eroc.cwmspd
+   identified by values 'FEDCBA9876543210'
+   default tablespace cwms_20data
+   temporary tablespace temp
+   profile default
+   account unlock;
+
+grant cwms_user to &eroc.cwmspd;
+alter user &eroc.cwmspd default role cwms_user;
+alter user &eroc.cwmspd grant connect through &eroc.cwmsdbi with role cwms_user;
+'''
+
+queue_template = '''
+   dbms_aqadm.create_queue_table(
+      queue_table        => '%s_%s_table', 
+      queue_payload_type => 'sys.aq$_jms_text_message',
+      multiple_consumers => true);
+      
+   dbms_aqadm.create_queue(
+      queue_name  => '%s_%s',
+      queue_table => '%s_%s_table');
+      
+   dbms_aqadm.start_queue(queue_name => '%s_%s');
+'''
+sys.stderr.write("Creating py_ErocUsers.sql\n");
+f = open("py_ErocUsers.sql", "w")
+users_created = []
+for dbhost_id in office_ids :
+	for office_id in dbhost_offices[dbhost_id] :
+		eroc = office_erocs[office_id].lower()
+		if eroc not in users_created :
+			f.write(user_template.replace("&eroc.", eroc))
+			users_created.append(eroc)
+f.close()
+
+sys.stderr.write("Creating py_Queues.sql\n")
+f = open("py_Queues.sql", "w")
+f.write("set define off\nbegin")
+for office_id in office_ids :
+	id = office_id.lower()
+	for q in ("realtime_ops", "status") : 
+		f.write(queue_template % (id,q,id,q,id,q,id,q))
+f.write("end;\n/\ncommit;\n")
+f.close()
+
+#====== createQueues
+#====
+#==
+
+#------------------------------------------------------------------------------
+# Redirect stdout to the temp file
+#------------------------------------------------------------------------------
+sys.stdout = open(tempFilename, "w")
+
 #print prefix[ALL] + "SET TIME ON"
 #print "BUILDCWMS~SPOOL %s" % logFileName["BUILDCWMS"]
 #print "BUILDUSER~SPOOL %s" % logFileName["BUILDUSER"]
@@ -7643,6 +7834,23 @@ for table in tables_rev :
     print "%sDROP TABLE %s;" % (dropPrefix, tableName)
     print "%sCOMMIT;" % dropPrefix
 
+#==============================================================================
+# Create CWMS_SEQ for the specified db_office_id's offset...
+#==============================================================================
+dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
+print dropPrefix + "DROP SEQUENCE CWMS_SEQ;"
+print prefix[CWMS] + "CREATE SEQUENCE CWMS_SEQ"
+print prefix[CWMS] + "\tSTART WITH %s" % db_office_code[db_office_id[0]]
+print prefix[CWMS] + "\tINCREMENT BY 1000"
+print prefix[CWMS] + "\tMINVALUE %s" % db_office_code[db_office_id[0]]
+print prefix[CWMS] + "\tMAXVALUE 1.0e38"
+print prefix[CWMS] + "\tNOCYCLE"
+print prefix[CWMS] + "\tCACHE 20"
+print prefix[CWMS] + "\tORDER;"
+
+#==============================================================================
+# Create any other sequences...
+#==============================================================================
 cycleStr = ['NOCYCLE', 'CYCLE']
 if len(cwmsSequences) :
     dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
@@ -7656,8 +7864,9 @@ if len(cwmsSequences) :
         print prefix[CWMS] + "\t%s" % cycleStr[cycle]
         print prefix[CWMS] + "\tCACHE %s" % `cache`
         print prefix[CWMS] + "\tORDER;"
-    print dropPrefix + "COMMIT;"
-    print prefix[CWMS] + "COMMIT;"
+
+print dropPrefix + "COMMIT;"
+print prefix[CWMS] + "COMMIT;"
 
 dropPrefix = prefix[USER].replace('BUILD', 'DROP')
 for table in tables :
@@ -7713,122 +7922,4 @@ dropCwms.close()
 #dropUser.close()
 os.remove(tempFilename)
 
-#--------------------------------------------------------------------#
-# generate a script to create and start queues for specified offices #
-#--------------------------------------------------------------------#
-office_names = {}
-dbhost_offices = {}
-office_erocs = {}
-for office_id, office_name, report_to, dbhost, eroc in offices[1:-1] :
-	office_erocs[office_id] = eroc
-	if not dbhost : dbhost = office_id
-	office_names[office_id] = office_name
-	if not dbhost_offices.has_key(dbhost) : dbhost_offices[dbhost] = []
-	dbhost_offices[dbhost].append(office_id);
-
-dbhosts = dbhost_offices.keys()
-dbhosts.sort()
-print
-for dbhost in dbhosts :
-	line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
-	for i in range(1, len(dbhost_offices[dbhost])) : 
-		line += ", %s" % office_names[dbhost_offices[dbhost][i]]
-	print line
-
-ok = False
-while not ok :
-	print
-	print 'Enter the office id(s) from the list that use this database as a primary'
-	print 'or backup. Enter "All" for a national COOP.'
-	line  = raw_input('>  ')
-	print
-	office_ids = line.upper().replace(',', ' ').replace(';', ' ').split()
-	if not office_ids :
-		print "You must enter at least one office."
-	else :
-		for office_id in office_ids :
-			if office_id == 'ALL' : 
-				office_ids = dbhosts[:]
-				office_ids.remove('LCRA')
-				ok = True
-				break
-			if office_id not in dbhosts :
-				print "Office %s does not host a database." % office_id
-				break
-		else :
-			ok = True
-			
-	if ok :
-		print "You have chosen the following office(s): %s" % ','.join(office_ids)
-		line = raw_input("Is this correct? (y/n) > ")
-		if not line or line[0].upper() != 'Y' :
-			ok = False
-
-user_template = '''
---
--- ignore errors
---
-whenever sqlerror continue
-
-drop user &eroc.cwmspd;
-drop user &eroc.cwmsdbi;
-
---
--- notice errors
---
-whenever sqlerror exit sql.sqlcode
-
-create user &eroc.cwmsdbi
-   identified by &dbi_passwd
-   default tablespace cwms_20data
-   temporary tablespace temp
-   profile default
-   account unlock;
-
-grant create session to &eroc.cwmsdbi;
-
-create user &eroc.cwmspd
-   identified by values 'FEDCBA9876543210'
-   default tablespace cwms_20data
-   temporary tablespace temp
-   profile default
-   account unlock;
-
-grant cwms_user to &eroc.cwmspd;
-alter user &eroc.cwmspd default role cwms_user;
-alter user &eroc.cwmspd grant connect through &eroc.cwmsdbi with role cwms_user;
-'''
-
-queue_template = '''
-   dbms_aqadm.create_queue_table(
-      queue_table        => '%s_%s_table', 
-      queue_payload_type => 'sys.aq$_jms_text_message',
-      multiple_consumers => true);
-      
-   dbms_aqadm.create_queue(
-      queue_name  => '%s_%s',
-      queue_table => '%s_%s_table');
-      
-   dbms_aqadm.start_queue(queue_name => '%s_%s');
-'''
-sys.stderr.write("Creating erocusers.sql\n");
-f = open("erocusers.sql", "w")
-users_created = []
-for dbhost_id in office_ids :
-	for office_id in dbhost_offices[dbhost_id] :
-		eroc = office_erocs[office_id].lower()
-		if eroc not in users_created :
-			f.write(user_template.replace("&eroc.", eroc))
-			users_created.append(eroc)
-f.close()
-
-sys.stderr.write("Creating queues.sql\n")
-f = open("queues.sql", "w")
-f.write("set define off\nbegin")
-for office_id in office_ids :
-	id = office_id.lower()
-	for q in ("realtime_ops", "status") : 
-		f.write(queue_template % (id,q,id,q,id,q,id,q))
-f.write("end;\n/\ncommit;\n")
-f.close()
 

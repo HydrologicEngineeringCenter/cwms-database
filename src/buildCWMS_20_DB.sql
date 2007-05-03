@@ -28,7 +28,7 @@ set echo &echo_state
 --
 @@cwms/User-Roles/cwms_user_roles
 @@cwms/User-Roles/cwms_users
-@@erocusers
+@@py_ErocUsers
 
 --
 -- switch to CWMS_20 schema
@@ -39,7 +39,7 @@ alter session set current_schema = cwms_20;
 -- structure that can be built without the CWMS API,
 -- even if it results in invalid objects
 --
-@@buildCwms
+@@py_BuildCwms
 @@cwms/cwms_types
 @@cwms/at_schema
 @@cwms/at_schema_tsv
@@ -175,7 +175,7 @@ set serveroutput on
 -- create and start queues and jobs --
 --------------------------------------
 prompt Creating and starting queues...
-@queues
+@py_Queues
 prompt Starting jobs...
 exec cwms_util.start_timeout_mv_refresh_job;
 /
