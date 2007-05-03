@@ -5083,7 +5083,7 @@ COMMIT;
 --
 create table at_ts_msg_archive_1
 (
-   code            number(10)    not null,
+   msg_id          varchar2(32)  not null,
    ts_code         number(10)    not null,
    message_time    timestamp(6)  not null,
    first_data_time date          not null,
@@ -5111,7 +5111,7 @@ monitoring;
 -- AT_TS_MSG_ARCHIVE_1 comments
 --
 comment on table  at_ts_msg_archive_1                 is 'Archive of queued messages for incoming TS data - odd months';
-comment on column at_ts_msg_archive_1.code            is 'Primary Key';
+comment on column at_ts_msg_archive_1.msg_id          is 'Primary Key';
 comment on column at_ts_msg_archive_1.ts_code         is 'TS Code of data';
 comment on column at_ts_msg_archive_1.message_time    is 'Message creation time';
 comment on column at_ts_msg_archive_1.first_data_time is 'Start of time window of data stored';
@@ -5119,7 +5119,7 @@ comment on column at_ts_msg_archive_1.last_data_time  is 'End of time window of 
 -----------------------------
 -- AT_TS_MSG_ARCHIVE_1 constraints
 --
-alter table at_ts_msg_archive_1 add constraint at_ts_msg_archive_1_pk primary key (code)
+alter table at_ts_msg_archive_1 add constraint at_ts_msg_archive_1_pk primary key (msg_id)
     using index 
     tablespace cwms_20at_data
     pctfree    10
@@ -5131,11 +5131,14 @@ alter table at_ts_msg_archive_1 add constraint at_ts_msg_archive_1_pk primary ke
                 maxextents       2147483645
                 pctincrease      0
                );
+
+show errors;
+commit;
 -----------------------------
 -- AT_TS_MSG_ARCHIVE_1 indicies
 --
-create unique index at_ts_msg_archive_1_u1 on at_ts_msg_archive_1
-(ts_code, message_time)
+create index at_ts_msg_archive_1_ndx1 on at_ts_msg_archive_1
+(message_time, ts_code)
 logging
 tablespace cwms_20at_data
 pctfree    10
@@ -5149,8 +5152,6 @@ storage    (
             buffer_pool      default
            )
 noparallel;
-
-show errors;
 commit;
 
 -----------------------------
@@ -5158,7 +5159,7 @@ commit;
 --
 create table at_ts_msg_archive_2
 (
-   code            number(10)    not null,
+   msg_id          varchar2(32)  not null,
    ts_code         number(10)    not null,
    message_time    timestamp(6)  not null,
    first_data_time date          not null,
@@ -5185,8 +5186,8 @@ monitoring;
 -----------------------------
 -- AT_TS_MSG_ARCHIVE_2 comments
 --
-comment on table  at_ts_msg_archive_2                 is 'Archive of queued messages for incoming TS data - odd months';
-comment on column at_ts_msg_archive_2.code            is 'Primary Key';
+comment on table  at_ts_msg_archive_2                 is 'Archive of queued messages for incoming TS data - even months';
+comment on column at_ts_msg_archive_2.msg_id          is 'Primary Key';
 comment on column at_ts_msg_archive_2.ts_code         is 'TS Code of data';
 comment on column at_ts_msg_archive_2.message_time    is 'Message creation time';
 comment on column at_ts_msg_archive_2.first_data_time is 'Start of time window of data stored';
@@ -5194,7 +5195,7 @@ comment on column at_ts_msg_archive_2.last_data_time  is 'End of time window of 
 -----------------------------
 -- AT_TS_MSG_ARCHIVE_2 constraints
 --
-alter table at_ts_msg_archive_2 add constraint at_ts_msg_archive_2_pk primary key (code)
+alter table at_ts_msg_archive_2 add constraint at_ts_msg_archive_2_pk primary key (msg_id)
     using index 
     tablespace cwms_20at_data
     pctfree    10
@@ -5206,12 +5207,13 @@ alter table at_ts_msg_archive_2 add constraint at_ts_msg_archive_2_pk primary ke
                 maxextents       2147483645
                 pctincrease      0
                );
+
+show errors;
 -----------------------------
 -- AT_TS_MSG_ARCHIVE_2 indicies
 --
-
-create unique index at_ts_msg_archive_2_u1 on at_ts_msg_archive_2
-(ts_code, message_time)
+create index at_ts_msg_archive_2_ndx1 on at_ts_msg_archive_2
+(message_time, ts_code)
 logging
 tablespace cwms_20at_data
 pctfree    10
@@ -5225,8 +5227,6 @@ storage    (
             buffer_pool      default
            )
 noparallel;
-
-show errors;
 commit;
 
 -----------------------------
