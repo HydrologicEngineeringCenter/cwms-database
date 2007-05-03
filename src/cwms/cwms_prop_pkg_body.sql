@@ -240,12 +240,12 @@ AS
 --
 --
    FUNCTION get_property (
-      p_office_id in varchar2,
       p_category  in varchar2,
-      p_id        in varchar2)
+      p_id        in varchar2,
+      p_office_id in varchar2 default null)
       return varchar2
    is
-      l_office_id  varchar2(16);
+      l_office_id  varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
       l_prop_value varchar2(256) := null;
    begin
       begin
@@ -540,13 +540,13 @@ AS
 --
 --
    PROCEDURE set_property (
-      p_office_id in varchar2,
       p_category  in varchar2,
       p_id        in varchar2,
       p_value     in varchar2,
-      p_comment   in varchar2)
+      p_comment   in varchar2,
+      p_office_id in varchar2 default null)
    is
-      l_office_id  varchar2(16);
+      l_office_id  varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
       l_table_row  at_properties%rowtype;
       
       cursor l_query is 
