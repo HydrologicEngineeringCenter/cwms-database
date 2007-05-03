@@ -242,11 +242,12 @@ AS
    FUNCTION get_property (
       p_category  in varchar2,
       p_id        in varchar2,
+      p_default   in varchar2 default null,
       p_office_id in varchar2 default null)
       return varchar2
    is
       l_office_id  varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
-      l_prop_value varchar2(256) := null;
+      l_prop_value varchar2(256) := p_default;
    begin
       begin
          l_office_id := upper(p_office_id);
