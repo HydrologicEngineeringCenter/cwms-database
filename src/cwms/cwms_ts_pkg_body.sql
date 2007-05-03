@@ -2615,14 +2615,11 @@ END retrieve_ts_java;
   		-----------------------------------------------                                                                    
   		-- notify the real-time Oracle->DSS exchange --
   		-----------------------------------------------  
-		--   cwms_xchg.time_series_updated(
-		--     l_ts_code, 
-		--     l_office_id, 
-		--     p_cwms_ts_id,
-		--     p_store_rule, 
-		--     p_units,
-		--     l_override_prot, 
-		--     p_timeseries_data);
+      cwms_xchg.time_series_updated(
+         l_ts_code, 
+         p_cwms_ts_id,
+         p_timeseries_data(p_timeseries_data.first).date_time,
+         p_timeseries_data(p_timeseries_data.last).date_time);
     
   	 	dbms_application_info.set_module(null, null);
 
