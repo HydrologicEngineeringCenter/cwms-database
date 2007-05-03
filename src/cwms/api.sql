@@ -4,6 +4,9 @@
 @@cwms_util_pkg
 @@cwms_util_pkg_body
 
+@@cwms_prop_pkg
+@@cwms_prop_pkg_body
+
 @@cwms_sec_policy
 @@cwms_sec_policy_body
 
@@ -27,4 +30,7 @@
 
 @@cwms_msg_pkg
 @@cwms_msg_pkg_body
+
+@@cwms_xchg_pkg
+@@cwms_xchg_pkg_body
 
