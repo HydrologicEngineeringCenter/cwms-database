@@ -9,10 +9,10 @@ whenever sqlerror exit sql.sqlcode
 --
 prompt
 accept echo_state  char prompt 'Enter ON or OFF for echo         : '
-accept inst        char prompt 'Enter the database instance      : '
+--accept inst        char prompt 'Enter the database instance      : '
 accept sys_passwd  char prompt 'Enter the password for SYS       : '
-accept cwms_passwd char prompt 'Enter the password for CWMS_20   : '
-accept dbi_passwd  char prompt 'Enter the password for ??cwmsdbi : '
+--accept cwms_passwd char prompt 'Enter the password for CWMS_20   : '
+--accept dbi_passwd  char prompt 'Enter the password for ??cwmsdbi : '
 spool buildCWMS_20_DB.log
 --
 -- log on as sysdba
