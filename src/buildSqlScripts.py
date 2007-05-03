@@ -6077,7 +6077,7 @@ subParameterLoadTemplate = \
 INSERT INTO at_parameter
    SELECT base_parameter_code, (SELECT office_code
                                   FROM cwms_office
-                                 WHERE office_id = 'ALL'),
+                                 WHERE office_id = 'CWMS'),
           base_parameter_code, NULL, cbp.long_name
      FROM cwms_base_parameter cbp
 /
@@ -6094,7 +6094,7 @@ for i in range(len(subParameters)) :
     subParameterLoadTemplate +="\t'%s',\n" % subParamId
     subParameterLoadTemplate +="\t(\tSELECT OFFICE_CODE\n"
     subParameterLoadTemplate +="\t\tFROM @cwmsOfficeTableName U \n"
-    subParameterLoadTemplate +="\t\tWHERE OFFICE_ID='ALL'\n"
+    subParameterLoadTemplate +="\t\tWHERE OFFICE_ID='CWMS'\n"
     subParameterLoadTemplate +="\t),\n"
     subParameterLoadTemplate +="\t'%s'\n" % longName
     subParameterLoadTemplate +=");\n"
