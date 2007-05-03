@@ -456,6 +456,7 @@ as
          end;
       end if;
 
+      cwms_xchg.xchg_config_updated;
       return l_dss_xchg_set_code;
 
    end create_dss_xchg_set;
@@ -498,6 +499,8 @@ as
       delete
         from at_dss_xchg_set
        where dss_xchg_set_code = p_dss_xchg_set_code;
+       
+      cwms_xchg.xchg_config_updated;
    end delete_dss_xchg_set;
 
 -------------------------------------------------------------------------------
@@ -535,6 +538,8 @@ as
       update at_dss_xchg_set
          set dss_xchg_set_id = p_new_dss_xchg_set_id
        where dss_xchg_set_code = l_dss_xchg_set_code;
+       
+      cwms_xchg.xchg_config_updated;
    exception
       when already_exists then
          cwms_err.raise(
@@ -569,6 +574,7 @@ as
       l_table_row.dss_xchg_set_id   := p_new_dss_xchg_set_id;
 
       insert into at_dss_xchg_set values l_table_row;
+      cwms_xchg.xchg_config_updated;
    exception
       when no_data_found then
          cwms_err.raise(
@@ -685,6 +691,7 @@ as
           where dss_xchg_set_code = l_table_row.dss_xchg_set_code;
       end if;
 
+      cwms_xchg.xchg_config_updated;
       return l_table_row.dss_xchg_set_code;
 
    exception
@@ -1187,6 +1194,8 @@ as
         from at_dss_ts_xchg_map
        where dss_xchg_set_code = p_dss_xchg_set_code
          and dss_ts_xchg_code = l_dss_ts_xchg_code;
+         
+      cwms_xchg.xchg_config_updated;
       dbms_output.put_line(''||systimestamp||' Done getting ts xchg spec map.');
    exception
       when no_data_found then
@@ -1197,6 +1206,8 @@ as
          insert 
            into at_dss_ts_xchg_map
          values l_dss_ts_xchg_map;
+         
+         cwms_xchg.xchg_config_updated;
          dbms_output.put_line(''||systimestamp||' Done creating ts xchg spec map.');
    end map_ts_in_xchg_set;
 
@@ -1216,6 +1227,8 @@ as
              (select ts_code
                 from at_dss_ts_xchg_spec
                where ts_code = p_cwms_ts_code);
+               
+      cwms_xchg.xchg_config_updated;
    end unmap_ts_in_xchg_set;
    
 --------------------------------------------------------------------------------
