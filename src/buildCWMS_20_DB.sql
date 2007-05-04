@@ -43,7 +43,7 @@ alter session set current_schema = cwms_20;
 @@cwms/cwms_types
 @@cwms/at_schema
 @@cwms/at_schema_tsv
-@@cwms/at_sec_schema
+@@cwms/at_schema_sec
 
 --
 -- CWMS API
