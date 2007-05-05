@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/05 12:16 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/05 13:55 (Formatter Plus v4.8.8) */
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 --
@@ -28,7 +28,6 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-
 CREATE UNIQUE INDEX cwms_sec_privileges_pk ON cwms_sec_privileges
 (privilege_bit)
 LOGGING
@@ -45,7 +44,6 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
 ALTER TABLE cwms_sec_privileges ADD (
   CONSTRAINT cwms_sec_privileges_pk
  PRIMARY KEY
@@ -79,40 +77,38 @@ COMMIT ;
 --=============================================================================
 -- 
 
-CREATE TABLE AT_SEC_USER_OFFICE
+CREATE TABLE at_sec_user_office
 (
-  USER_ID              VARCHAR2(31 BYTE),
-  USER_DB_OFFICE_CODE  NUMBER                   NOT NULL
+  user_id              VARCHAR2(31 BYTE),
+  user_db_office_code  NUMBER                   NOT NULL
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-
-CREATE UNIQUE INDEX AT_SEC_USER_OFFICE_PK ON AT_SEC_USER_OFFICE
-(USER_ID)
+CREATE UNIQUE INDEX at_sec_user_office_pk ON at_sec_user_office
+(user_id)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -120,30 +116,26 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
-
-ALTER TABLE AT_SEC_USER_OFFICE ADD (
-  CONSTRAINT AT_SEC_USER_OFFICE_PK
+ALTER TABLE at_sec_user_office ADD (
+  CONSTRAINT at_sec_user_office_pk
  PRIMARY KEY
- (USER_ID)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (user_id)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
-
-
-ALTER TABLE AT_SEC_USER_OFFICE ADD (
-  CONSTRAINT AT_SEC_USER_OFFICE_R01 
- FOREIGN KEY (USER_DB_OFFICE_CODE) 
- REFERENCES CWMS_OFFICE (OFFICE_CODE))
+ALTER TABLE at_sec_user_office ADD (
+  CONSTRAINT at_sec_user_office_r01
+ FOREIGN KEY (user_db_office_code)
+ REFERENCES cwms_office (office_code))
 /
 --
 --=============================================================================
@@ -174,7 +166,6 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-
 CREATE UNIQUE INDEX at_sec_user_groups_pk ON at_sec_user_groups
 (db_office_code, user_group_code)
 LOGGING
@@ -191,7 +182,6 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
 ALTER TABLE at_sec_user_groups ADD (
   CONSTRAINT at_sec_user_groups_pk
  PRIMARY KEY
@@ -216,7 +206,7 @@ CREATE TABLE at_sec_users
 (
   db_office_code   NUMBER,
   user_group_code  NUMBER,
-    user_id          VARCHAR2(31 BYTE)
+  user_id          VARCHAR2(31 BYTE)
 
 )
 TABLESPACE cwms_20data
@@ -237,7 +227,6 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-
 CREATE UNIQUE INDEX at_sec_users_pk ON at_sec_users
 (db_office_code, user_group_code, user_id)
 LOGGING
@@ -254,7 +243,6 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
 ALTER TABLE at_sec_users ADD (
   CONSTRAINT at_sec_users_pk
  PRIMARY KEY
@@ -271,7 +259,6 @@ ALTER TABLE at_sec_users ADD (
                 PCTINCREASE      0
                ))
 /
-
 ALTER TABLE at_sec_users ADD (
   CONSTRAINT at_sec_users_r02
  FOREIGN KEY (user_id)
@@ -311,7 +298,6 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-
 CREATE UNIQUE INDEX at_sec_ts_groups_pk ON at_sec_ts_groups
 (db_office_code, ts_group_code)
 LOGGING
@@ -328,7 +314,6 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
 CREATE UNIQUE INDEX at_sec_ts_groups_u01 ON at_sec_ts_groups
 (db_office_code, UPPER("TS_GROUP_ID"))
 LOGGING
@@ -345,7 +330,6 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
 ALTER TABLE at_sec_ts_groups ADD (
   CONSTRAINT at_sec_ts_groups_pk
  PRIMARY KEY
@@ -390,7 +374,6 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-
 CREATE UNIQUE INDEX at_sec_ts_group_masks_pk ON at_sec_ts_group_masks
 (db_office_code, ts_group_code, ts_group_mask)
 LOGGING
@@ -407,7 +390,6 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
 CREATE OR REPLACE TRIGGER at_sec_ts_group_masks_trig
    BEFORE INSERT OR UPDATE OF ts_group_mask
    ON at_sec_ts_group_masks
@@ -438,7 +420,6 @@ ALTER TABLE at_sec_ts_group_masks ADD (
                 PCTINCREASE      0
                ))
 /
-
 ALTER TABLE at_sec_ts_group_masks ADD (
   CONSTRAINT at_sec_ts_group_masks_r01
  FOREIGN KEY (db_office_code, ts_group_code)
@@ -473,7 +454,6 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-
 CREATE UNIQUE INDEX at_sec_allow_pk ON at_sec_allow
 (db_office_code, ts_group_code, user_group_code, privilege_bit)
 LOGGING
@@ -490,7 +470,6 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
 ALTER TABLE at_sec_allow ADD (
   CONSTRAINT at_sec_allow_pk
  PRIMARY KEY
@@ -507,7 +486,6 @@ ALTER TABLE at_sec_allow ADD (
                 PCTINCREASE      0
                ))
 /
-
 ALTER TABLE at_sec_allow ADD (
   CONSTRAINT at_sec_allow_r01
  FOREIGN KEY (db_office_code, ts_group_code)
