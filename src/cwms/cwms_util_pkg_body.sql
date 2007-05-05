@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/28 15:00 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/05 11:20 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -539,10 +539,11 @@ AS
       l_user_id := SYS_CONTEXT ('userenv', 'session_user');
 
       BEGIN
-         SELECT primary_office_id
+         SELECT a.office_id
            INTO l_office_id
-           FROM at_sec_user_office
-          WHERE user_id = l_user_id;
+           FROM cwms_office a, at_sec_user_office b
+          WHERE b.user_id = l_user_id
+                AND a.office_code = b.user_db_office_code;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -573,12 +574,10 @@ AS
       l_user_id := SYS_CONTEXT ('userenv', 'session_user');
 
       BEGIN
-         SELECT office_code
+         SELECT user_db_office_code
            INTO l_office_code
-           FROM cwms_office
-          WHERE office_id = (SELECT primary_office_id
-                               FROM at_sec_user_office
-                              WHERE user_id = l_user_id);
+           FROM at_sec_user_office
+          WHERE user_id = l_user_id;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN

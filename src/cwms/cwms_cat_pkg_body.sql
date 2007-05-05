@@ -1088,7 +1088,7 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.active_flag, a.net_privilege_code user_privileges
+                        v.active_flag, a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,
@@ -1107,7 +1107,7 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.active_flag, a.net_privilege_code user_privileges
+                        v.active_flag, a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,
@@ -1134,7 +1134,7 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.active_flag, a.net_privilege_code user_privileges
+                        v.active_flag, a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,
@@ -1155,7 +1155,7 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.active_flag, a.net_privilege_code user_privileges
+                        v.active_flag, a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,

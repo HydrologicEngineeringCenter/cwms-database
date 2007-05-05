@@ -7727,7 +7727,7 @@ whenever sqlerror exit sql.sqlcode
 
 create user &eroc.cwmsdbi
    identified by &dbi_passwd
-   default tablespace cwms_20data
+   default tablespace users
    temporary tablespace temp
    profile default
    account unlock;
@@ -7758,16 +7758,32 @@ queue_template = '''
       
    dbms_aqadm.start_queue(queue_name => '%s_%s');
 '''
+
+userSecUserOffice_template = '''
+Insert into AT_SEC_USER_OFFICE
+   (USER_ID, USER_DB_OFFICE_CODE)
+ Values
+   ('%s', %s);
+'''
+
+#==============================================================================
+
 sys.stderr.write("Creating py_ErocUsers.sql\n");
-f = open("py_ErocUsers.sql", "w")
+f  = open("py_ErocUsers.sql", "w")
+f1 = open("py_SecUserOffice.sql", "w")
 users_created = []
 for dbhost_id in office_ids :
 	for office_id in dbhost_offices[dbhost_id] :
 		eroc = office_erocs[office_id].lower()
 		if eroc not in users_created :
 			f.write(user_template.replace("&eroc.", eroc))
+			f1.write(userSecUserOffice_template % (eroc+"cwmspd",dbhost_id))
 			users_created.append(eroc)
 f.close()
+f1.write("\ncommit;\n")
+f1.close()
+
+#==============================================================================
 
 sys.stderr.write("Creating py_Queues.sql\n")
 f = open("py_Queues.sql", "w")
@@ -7778,6 +7794,8 @@ for office_id in office_ids :
 		f.write(queue_template % (id,q,id,q,id,q,id,q))
 f.write("end;\n/\ncommit;\n")
 f.close()
+
+#==============================================================================
 
 #====== createQueues
 #====
