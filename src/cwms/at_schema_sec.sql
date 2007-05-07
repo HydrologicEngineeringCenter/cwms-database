@@ -207,7 +207,6 @@ CREATE TABLE at_sec_users
   db_office_code   NUMBER,
   user_group_code  NUMBER,
   user_id          VARCHAR2(31 BYTE)
-
 )
 TABLESPACE cwms_20data
 PCTUSED    0
