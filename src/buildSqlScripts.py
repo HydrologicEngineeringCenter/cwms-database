@@ -7702,7 +7702,23 @@ while not ok :
 		line = raw_input("Is this correct? (y/n) [n] > ")
 		if not line or line[0].upper() != 'Y' :
 			ok = False
-
+print
+print '-----------TEST ACCOUNT-----------'
+print
+line = raw_input('--Do you want to create at test account? [n]: ')
+print
+line = line.strip().upper()
+if line.startswith('Y') :
+	db_office_eroc = office_erocs[db_office_id[0]].lower()
+	test_user_id = db_office_eroc +"hectest"
+	print
+	print "                                               ---------"
+	print "-- The following test account will be created: %s" % test_user_id
+	print "                                               ---------"
+	print "-- This account will have write privileges on all -REV ts ids"
+	print "-- and read privileges on all -RAW ts ids for the %s " % db_office_id[0]
+	print "-- database."
+	print
 #------------------------------------------------------------------------------
 # Consolidate db_office_id and shared office_ids
 #------------------------------------------------------------------------------
@@ -7710,6 +7726,32 @@ if not office_ids :
 	office_ids = db_office_id
 else :
 	office_ids = db_office_id + office_ids[:]
+
+test_user_template = '''
+--
+-- ignore errors
+--
+whenever sqlerror continue
+
+drop user %s;
+
+--
+-- notice errors
+--
+whenever sqlerror exit sql.sqlcode
+
+create user %s
+   identified by &test_passwd
+   default tablespace cwms_20data
+   temporary tablespace temp
+   profile default
+   account unlock;
+
+grant cwms_user to %s;
+alter user %s default role cwms_user;
+alter user %s grant connect through %scwmsdbi with role cwms_user;
+
+'''
 
 user_template = '''
 --
@@ -7764,8 +7806,43 @@ Insert into AT_SEC_USER_OFFICE
    (USER_ID, USER_DB_OFFICE_CODE)
  Values
    ('%s', %s);
+Insert into AT_SEC_USERS
+   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_ID)
+ Values
+   (%s, 1, '%s');
 '''
 
+testuserSecUserOffice_template = '''
+Insert into AT_SEC_USER_OFFICE
+   (USER_ID, USER_DB_OFFICE_CODE)
+ Values
+   ('%s', %s);
+
+Insert into AT_SEC_USER_GROUPS
+   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_GROUP_ID, USER_GROUP_DESC)
+ Values
+   (%s, 10, 'Test Users', 'Test CWMS Users.');
+
+Insert into AT_SEC_USERS
+   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_ID)
+ Values
+   (%s, 10, '%s');
+
+Insert into AT_SEC_ALLOW
+   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
+ Values
+   (%s, 0, 10, 4);
+
+Insert into AT_SEC_ALLOW
+   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
+ Values
+   (%s, 2, 10, 2);
+
+Insert into AT_SEC_ALLOW
+   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
+ Values
+   (%s, 2, 10, 4);
+'''
 #==============================================================================
 
 sys.stderr.write("Creating py_ErocUsers.sql\n");
@@ -7777,8 +7854,18 @@ for dbhost_id in office_ids :
 		eroc = office_erocs[office_id].lower()
 		if eroc not in users_created :
 			f.write(user_template.replace("&eroc.", eroc))
-			f1.write(userSecUserOffice_template % (eroc+"cwmspd",dbhost_id))
+			user_id = eroc+"cwmspd"
+			f1.write(userSecUserOffice_template % (user_id,
+				db_office_code[dbhost_id], 
+				db_office_code[dbhost_id],user_id.upper()))
 			users_created.append(eroc)
+if test_user_id : 
+	db_ofc_code = db_office_code[db_office_id[0]]
+	db_ofc_eroc = office_erocs[db_office_id[0]]
+	f.write(test_user_template % (test_user_id, test_user_id, test_user_id, test_user_id,
+		test_user_id, db_ofc_eroc))
+	f1.write(testuserSecUserOffice_template %(test_user_id, db_ofc_code, db_ofc_code, 
+		db_ofc_code, test_user_id.upper(), db_ofc_code, db_ofc_code, db_ofc_code) )
 f.close()
 f1.write("\ncommit;\n")
 f1.close()
@@ -7795,6 +7882,25 @@ for office_id in office_ids :
 f.write("end;\n/\ncommit;\n")
 f.close()
 
+#==============================================================================
+
+prompt_template = '''
+prompt
+accept echo_state  char prompt 'Enter ON or OFF for echo         : '
+accept sys_passwd  char prompt 'Enter the password for SYS       : '
+accept cwms_passwd char prompt 'Enter the password for CWMS_20   : '
+accept dbi_passwd  char prompt 'Enter the password for %scwmsdbi : '
+'''
+
+prompt_test_line_template = '''
+accept test_passwd  char prompt 'Enter the password for %s : '
+'''
+
+sys.stderr.write("Creating py_prompt.sql\n")
+f = open("py_prompt.sql","w")
+f.write(prompt_template % (db_office_eroc))
+if test_user_id : f.write(prompt_test_line_template % (test_user_id))
+f.close()
 #==============================================================================
 
 #====== createQueues
