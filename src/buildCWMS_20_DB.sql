@@ -1,18 +1,30 @@
+--
+-- Determine SID
+--
+set head off
+set sqlp ""
+set termout off
+spool getSIDTemp.sql
+select 'DEFINE inst='||name from v$database;
+spool off
+@getSIDTemp.sql
+--!rm getSIDTemp.sql
+set sqlp "SQL> "
+set termout on
+--
+--
 set echo off
 set time on
 set define on
 set concat on
 set linesize 1024   
 whenever sqlerror exit sql.sqlcode
+
 --
 -- prompt for info
 --
-prompt
-accept echo_state  char prompt 'Enter ON or OFF for echo         : '
-accept inst        char prompt 'Enter the database instance      : '
-accept sys_passwd  char prompt 'Enter the password for SYS       : '
-accept cwms_passwd char prompt 'Enter the password for CWMS_20   : '
-accept dbi_passwd  char prompt 'Enter the password for ??cwmsdbi : '
+@@py_prompt
+ 
 spool buildCWMS_20_DB.log
 --
 -- log on as sysdba
@@ -45,6 +57,7 @@ alter session set current_schema = cwms_20;
 @@cwms/at_schema_tsv
 @@cwms/at_schema_sec
 
+@@py_SecUserOffice
 --
 -- CWMS API
 --
