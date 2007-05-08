@@ -116,6 +116,16 @@ STORAGE    (
            )
 NOPARALLEL
 /
+CREATE OR REPLACE TRIGGER at_sec_user_office_trig
+   BEFORE INSERT OR UPDATE OF user_id
+   ON at_sec_user_office
+   REFERENCING NEW AS NEW OLD AS OLD
+   FOR EACH ROW
+DECLARE
+BEGIN
+   :NEW.user_id := UPPER (:NEW.user_id);
+END;
+/
 ALTER TABLE at_sec_user_office ADD (
   CONSTRAINT at_sec_user_office_pk
  PRIMARY KEY
