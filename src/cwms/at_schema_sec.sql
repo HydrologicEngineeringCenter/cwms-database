@@ -582,7 +582,7 @@ INSERT INTO cwms_sec_user_groups
             (user_group_code, user_group_id,
              user_group_desc
             )
-     VALUES (1, 'CWMS System User',
+     VALUES (1, 'CWMS PD User',
              'Users that can write to all objects in the database.'
             );
 INSERT INTO cwms_sec_user_groups
