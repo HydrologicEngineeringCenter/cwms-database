@@ -7887,6 +7887,7 @@ f.close()
 prompt_template = '''
 prompt
 accept echo_state  char prompt 'Enter ON or OFF for echo         : '
+accept inst        char prompt 'Enter the database SID           : '
 accept sys_passwd  char prompt 'Enter the password for SYS       : '
 accept cwms_passwd char prompt 'Enter the password for CWMS_20   : '
 accept dbi_passwd  char prompt 'Enter the password for %scwmsdbi : '

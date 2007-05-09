@@ -1,18 +1,4 @@
 --
--- Determine SID
---
-set head off
-set sqlp ""
-set termout off
-spool getSIDTemp.sql
-select 'DEFINE inst='||name from v$database;
-spool off
-@getSIDTemp.sql
---!rm getSIDTemp.sql
-set sqlp "SQL> "
-set termout on
---
---
 set echo off
 set time on
 set define on
