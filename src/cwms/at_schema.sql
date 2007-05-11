@@ -15,7 +15,6 @@ declare
       'at_loc_group',
       'at_loc_group_assignment',
       'at_data_stream_id',
-      'at_display_units',
       'at_alarm_id',
       'at_alarm_criteria',
       'at_screening_id',
@@ -833,79 +832,6 @@ ALTER TABLE AT_DATA_STREAM_ID ADD (
  REFERENCES CWMS_OFFICE (OFFICE_CODE))
 /
 
----------------------------------
--- AT_DISPLAY_UNITS table
--- 
-CREATE TABLE AT_DISPLAY_UNITS
-(
-  PARAMETER_CODE     NUMBER                     NOT NULL,
-  UNIT_SYSTEM        VARCHAR2(2 BYTE)           NOT NULL,
-  DISPLAY_UNIT_CODE  NUMBER                     NOT NULL,
-  DB_OFFICE_CODE     NUMBER
-)
-TABLESPACE CWMS_20DATA
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING;
-
-
-CREATE UNIQUE INDEX AT_DISPLAY_UNITS_PK1 ON AT_DISPLAY_UNITS
-(PARAMETER_CODE, UNIT_SYSTEM, DB_OFFICE_CODE)
-LOGGING
-TABLESPACE CWMS_20DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL;
-
-
-ALTER TABLE AT_DISPLAY_UNITS ADD (
-  CONSTRAINT AT_DISPLAY_UNITS_PK1
- PRIMARY KEY
- (PARAMETER_CODE, UNIT_SYSTEM, DB_OFFICE_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ));
-
-
-ALTER TABLE AT_DISPLAY_UNITS ADD (
-  CONSTRAINT AT_DISPLAY_UNITS_FK02 
- FOREIGN KEY (DISPLAY_UNIT_CODE) 
- REFERENCES CWMS_UNIT (UNIT_CODE));
-
-ALTER TABLE AT_DISPLAY_UNITS ADD (
-  CONSTRAINT AT_DISPLAY_UNITS_FK01 
- FOREIGN KEY (PARAMETER_CODE) 
- REFERENCES AT_PARAMETER (PARAMETER_CODE));
- 
 ---------------------------------
 -- AT_ALARM_ID table.
 -- 
