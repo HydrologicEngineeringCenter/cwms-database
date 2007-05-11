@@ -72,7 +72,7 @@ tableInfo = [
     {"ID" : "parameterType",      "TABLE" : "CWMS_PARAMETER_TYPE",        "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "parameter",          "TABLE" : "CWMS_BASE_PARAMETER",        "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "subParameter",       "TABLE" : "AT_PARAMETER",               "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-#    {"ID" : "displayUnits",       "TABLE" : "AT_DISLAY_UNITS",            "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
+    {"ID" : "displayUnits",       "TABLE" : "AT_DISLAY_UNITS",            "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "qScreened",          "TABLE" : "CWMS_DATA_Q_SCREENED",       "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "qValidity",          "TABLE" : "CWMS_DATA_Q_VALIDITY",       "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
     {"ID" : "qRange",             "TABLE" : "CWMS_DATA_Q_RANGE",          "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
@@ -4500,10 +4500,10 @@ cwmsUnitParamIds = cwmsUnitParamDefsById.keys()
 #------------------------#
 sys.stderr.write("Processing default sub_parameter definitions.\n")
 subParameters = [
-#     --  DEFAULT Sub_Parameters -------------------------------    -- Display Units --  
-#     Base        Sub                                       
-#     Param       Param          Sub-Parameter Descripiton           SI         Non-SI
-#     ----------- -------------- ---------------------------------- ---------- ---------
+#           --  DEFAULT Sub_Parameters -------------------------------    -- Display Units --  
+#           Base        Sub                                       
+#           Param       Param          Sub-Parameter Descripiton           SI         Non-SI
+#     ----- ----------- -------------- ---------------------------------- ---------- ---------
     [ 301,  "%",        "ofArea-Snow", "Percent of Area Covered by Snow", "%",       "%"],                                         
     [ 302,  "%",        "Opening",     "Percent Open",                    "%",       "%"],                                             
     [ 303,  "Conc",     "Acidity",     "Acidity Concentration",           "mg/l",    "ppm"],                          
@@ -4771,6 +4771,331 @@ logMessagePropTypes = [
 	[8, 'String' ],
 ]
 
+
+#==
+#====
+#====== createQueues
+#--------------------------------------------------------------------#
+# generate a script to create and start queues for specified offices #
+#--------------------------------------------------------------------#
+office_names = {}
+dbhost_offices = {}
+office_erocs = {}
+db_office_code = {}
+for ofcCode, office_id, office_name, report_to, dbhost, eroc in offices :
+    if dbhost == '' : continue
+    office_erocs[office_id] = eroc
+    db_office_code[office_id] = ofcCode
+    if not dbhost : dbhost = office_id
+    office_names[office_id] = office_name
+    if not dbhost_offices.has_key(dbhost) : dbhost_offices[dbhost] = []
+    dbhost_offices[dbhost].append(office_id);
+
+dbhosts = dbhost_offices.keys()
+dbhosts.sort()
+print
+for dbhost in dbhosts :
+    line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
+    for i in range(1, len(dbhost_offices[dbhost])) : 
+        line += ", %s" % office_names[dbhost_offices[dbhost][i]]
+    print line
+
+#------------------------------------------------------------------------------
+# Ask for the db_office_id for this database, i.e., the primary office id
+# for this database.
+#------------------------------------------------------------------------------
+print
+print 'Enter the office id for this database. If your office is not listed'
+print 'or if your building a secondary COOP database for your office, then'
+print 'please contact HEC for a revised install script.'
+ok = False
+while not ok :
+    print
+    line = raw_input('Enter the primary office id for this database: ')
+    db_office_id = line.upper().replace(',', ' ').replace(';', ' ').split()
+    if not db_office_id :
+        print
+        print "ERROR! You must enter your office id."
+    else :
+        count = 0
+        for office_id in db_office_id :
+            if count == 1 : 
+                print
+                print "ERROR! You can only enter one office id for a database!"
+                break
+            if office_id not in dbhosts :
+                print
+                print "ERROR! Office %s does not host a database. Contact HEC if this" % office_id
+                print "is no longer the case."
+                break
+            count += 1
+        else :
+            ok = True
+
+    if ok :
+        print 'You have chosen the following office as the primary office for this'
+        print "database: %s" % db_office_id[0]
+        line = raw_input("Is this correct? (y/n) [n] > ")
+        if not line or line[0].upper() != 'Y' :
+            ok = False
+#------------------------------------------------------------------------------
+# Ask if any other offices will be sharing this database - need to know so that
+# queues can be set-up for them.
+#------------------------------------------------------------------------------
+print
+for dbhost in dbhosts :
+    if dbhost != db_office_id[0] :
+        line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
+        for i in range(1, len(dbhost_offices[dbhost])) : 
+            line += ", %s" % office_names[dbhost_offices[dbhost][i]]
+        print line
+print
+print 'Will other offices share this database as either their primary database'
+print 'or as a backup database? If so, enter the office id(s) from the above'
+print 'list. If this datbase will only be used by your office, then simply'
+print 'press Enter.'
+print 
+ok = False
+while not ok :
+    print
+    line  = raw_input('Enter office id(s) of offices sharing this database: ')
+    print
+    office_ids = line.upper().replace(',', ' ').replace(';', ' ').split()
+    if not office_ids :
+        ok = True
+    else :
+        for office_id in office_ids :
+            if office_id == db_office_id[0] :
+                office_ids.remove(office_id)
+            if office_id == 'CWMS' : 
+                office_ids = dbhosts[:]
+                office_ids.remove('LCRA')
+                ok = True
+                break
+            if office_id not in dbhosts :
+                print "Office %s does not host a database." % office_id
+                break
+        else :
+            ok = True
+            
+    if ok :
+        print 'You have made the follwing choices:'
+        print "Primary office for this database: %s" % db_office_id[0]
+        if not office_ids :
+            print "No other offices will share this database."
+        else:
+            print "Office(s) sharing this database: %s" % ','.join(office_ids)
+        line = raw_input("Is this correct? (y/n) [n] > ")
+        if not line or line[0].upper() != 'Y' :
+            ok = False
+print
+print '-----------TEST ACCOUNT-----------'
+print
+line = raw_input('--Do you want to create at test account? [n]: ')
+print
+line = line.strip().upper()
+if line.startswith('Y') :
+    db_office_eroc = office_erocs[db_office_id[0]].lower()
+    test_user_id = db_office_eroc +"hectest"
+    print
+    print "                                               ---------"
+    print "-- The following test account will be created: %s" % test_user_id
+    print "                                               ---------"
+    print "-- This account will have write privileges on all -REV ts ids"
+    print "-- and read privileges on all -RAW ts ids for the %s " % db_office_id[0]
+    print "-- database."
+    print
+#------------------------------------------------------------------------------
+# Consolidate db_office_id and shared office_ids
+#------------------------------------------------------------------------------
+if not office_ids :
+    office_ids = db_office_id
+else :
+    office_ids = db_office_id + office_ids[:]
+
+test_user_template = '''
+--
+-- ignore errors
+--
+whenever sqlerror continue
+
+drop user %s;
+
+--
+-- notice errors
+--
+whenever sqlerror exit sql.sqlcode
+
+create user %s
+   identified by &test_passwd
+   default tablespace cwms_20data
+   temporary tablespace temp
+   profile default
+   account unlock;
+
+grant cwms_user to %s;
+alter user %s default role cwms_user;
+alter user %s grant connect through %scwmsdbi with role cwms_user;
+
+'''
+
+user_template = '''
+--
+-- ignore errors
+--
+whenever sqlerror continue
+
+drop user &eroc.cwmspd;
+drop user &eroc.cwmsdbi;
+
+--
+-- notice errors
+--
+whenever sqlerror exit sql.sqlcode
+
+create user &eroc.cwmsdbi
+   identified by &dbi_passwd
+   default tablespace users
+   temporary tablespace temp
+   profile default
+   account unlock;
+
+grant create session to &eroc.cwmsdbi;
+
+create user &eroc.cwmspd
+   identified by values 'FEDCBA9876543210'
+   default tablespace cwms_20data
+   temporary tablespace temp
+   profile default
+   account unlock;
+
+grant cwms_user to &eroc.cwmspd;
+alter user &eroc.cwmspd default role cwms_user;
+alter user &eroc.cwmspd grant connect through &eroc.cwmsdbi with role cwms_user;
+'''
+
+queue_template = '''
+   dbms_aqadm.create_queue_table(
+      queue_table        => '%s_%s_table', 
+      queue_payload_type => 'sys.aq$_jms_text_message',
+      multiple_consumers => true);
+      
+   dbms_aqadm.create_queue(
+      queue_name  => '%s_%s',
+      queue_table => '%s_%s_table');
+      
+   dbms_aqadm.start_queue(queue_name => '%s_%s');
+'''
+
+userSecUserOffice_template = '''
+Insert into AT_SEC_USER_OFFICE
+   (USER_ID, USER_DB_OFFICE_CODE)
+ Values
+   ('%s', %s);
+Insert into AT_SEC_USERS
+   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_ID)
+ Values
+   (%s, 1, '%s');
+'''
+
+testuserSecUserOffice_template = '''
+Insert into AT_SEC_USER_OFFICE
+   (USER_ID, USER_DB_OFFICE_CODE)
+ Values
+   ('%s', %s);
+
+Insert into AT_SEC_USER_GROUPS
+   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_GROUP_ID, USER_GROUP_DESC)
+ Values
+   (%s, 10, 'Test Users', 'Test CWMS Users.');
+
+Insert into AT_SEC_USERS
+   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_ID)
+ Values
+   (%s, 10, '%s');
+
+Insert into AT_SEC_ALLOW
+   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
+ Values
+   (%s, 0, 10, 4);
+
+Insert into AT_SEC_ALLOW
+   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
+ Values
+   (%s, 2, 10, 2);
+
+Insert into AT_SEC_ALLOW
+   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
+ Values
+   (%s, 2, 10, 4);
+'''
+#==============================================================================
+
+sys.stderr.write("Creating py_ErocUsers.sql\n");
+f  = open("py_ErocUsers.sql", "w")
+f1 = open("py_SecUserOffice.sql", "w")
+users_created = []
+for dbhost_id in office_ids :
+    for office_id in dbhost_offices[dbhost_id] :
+        eroc = office_erocs[office_id].lower()
+        if eroc not in users_created :
+            f.write(user_template.replace("&eroc.", eroc))
+            user_id = eroc+"cwmspd"
+            f1.write(userSecUserOffice_template % (user_id,
+                db_office_code[dbhost_id], 
+                db_office_code[dbhost_id],user_id.upper()))
+            users_created.append(eroc)
+if test_user_id : 
+    db_ofc_code = db_office_code[db_office_id[0]]
+    db_ofc_eroc = office_erocs[db_office_id[0]]
+    f.write(test_user_template % (test_user_id, test_user_id, test_user_id, test_user_id,
+        test_user_id, db_ofc_eroc))
+    f1.write(testuserSecUserOffice_template %(test_user_id, db_ofc_code, db_ofc_code, 
+        db_ofc_code, test_user_id.upper(), db_ofc_code, db_ofc_code, db_ofc_code) )
+f.close()
+f1.write("\ncommit;\n")
+f1.close()
+
+#==============================================================================
+
+sys.stderr.write("Creating py_Queues.sql\n")
+f = open("py_Queues.sql", "w")
+f.write("set define off\nbegin")
+for office_id in office_ids :
+    id = office_id.lower()
+    for q in ("realtime_ops", "status") : 
+        f.write(queue_template % (id,q,id,q,id,q,id,q))
+f.write("end;\n/\ncommit;\n")
+f.close()
+
+#==============================================================================
+
+prompt_template = '''
+prompt
+accept echo_state  char prompt 'Enter ON or OFF for echo         : '
+accept inst        char prompt 'Enter the database SID           : '
+accept sys_passwd  char prompt 'Enter the password for SYS       : '
+accept cwms_passwd char prompt 'Enter the password for CWMS_20   : '
+accept dbi_passwd  char prompt 'Enter the password for %scwmsdbi : '
+'''
+
+prompt_test_line_template = '''
+accept test_passwd  char prompt 'Enter the password for %s : '
+'''
+
+sys.stderr.write("Creating py_prompt.sql\n")
+f = open("py_prompt.sql","w")
+f.write(prompt_template % (db_office_eroc))
+if test_user_id : f.write(prompt_test_line_template % (test_user_id))
+f.close()
+#==============================================================================
+#====== createQueues
+#====
+#==
+
+#==
+#====
+#======
 #---------------------------------------------------#
 # Table construction templates and loading commands #
 #---------------------------------------------------#
@@ -6099,6 +6424,7 @@ for i in range(len(subParameters)) :
     subParameterLoadTemplate +="\t'%s'\n" % longName
     subParameterLoadTemplate +=");\n"
 subParameterLoadTemplate +="COMMIT;\n"
+
 
 #-------------------------------------------------------
 #-------------------------------------------------------
@@ -7556,6 +7882,128 @@ for code, id in logMessagePropTypes :
 	logMessagePropTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
 logMessagePropTypesLoadTemplate += "COMMIT;\n"
 
+
+sys.stderr.write("Building displayUnitsCreationTemplate\n")
+displayUnitsCreationTemplate = \
+'''
+---------------------------------
+-- AT_DISPLAY_UNITS table
+-- 
+CREATE TABLE AT_DISPLAY_UNITS
+(
+  DB_OFFICE_CODE     NUMBER                     NOT NULL,
+  PARAMETER_CODE     NUMBER                     NOT NULL,
+  UNIT_SYSTEM        VARCHAR2(2 BYTE)           NOT NULL,
+  DISPLAY_UNIT_CODE  NUMBER                     NOT NULL
+)
+TABLESPACE @DATASPACE
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING;
+
+
+CREATE UNIQUE INDEX AT_DISPLAY_UNITS_PK1 ON AT_DISPLAY_UNITS
+(DB_OFFICE_CODE, PARAMETER_CODE, UNIT_SYSTEM)
+LOGGING
+TABLESPACE @DATASPACE
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL;
+
+
+ALTER TABLE AT_DISPLAY_UNITS ADD (
+  CONSTRAINT AT_DISPLAY_UNITS_PK1
+ PRIMARY KEY
+ (DB_OFFICE_CODE, PARAMETER_CODE, UNIT_SYSTEM)
+    USING INDEX 
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ));
+
+
+ALTER TABLE AT_DISPLAY_UNITS ADD (
+  CONSTRAINT AT_DISPLAY_UNITS_FK02 
+ FOREIGN KEY (DISPLAY_UNIT_CODE) 
+ REFERENCES CWMS_UNIT (UNIT_CODE));
+
+ALTER TABLE AT_DISPLAY_UNITS ADD (
+  CONSTRAINT AT_DISPLAY_UNITS_FK01 
+ FOREIGN KEY (PARAMETER_CODE) 
+ REFERENCES AT_PARAMETER (PARAMETER_CODE));
+'''
+
+sys.stderr.write("Building displayUnitsLoadTemplate\n")
+displayUnitsLoadTemplate = ''
+
+for k in range(len(office_ids)) :
+    dbOfcCode = db_office_code[office_ids[k]]
+    displayUnitsLoadTemplate +="DECLARE\n"
+    displayUnitsLoadTemplate +="BEGIN\n"
+    displayUnitsLoadTemplate +="   INSERT INTO at_display_units\n"
+    displayUnitsLoadTemplate +="      SELECT %s, a.parameter_code, 'EN', b.display_unit_code_en\n" % (dbOfcCode)
+    displayUnitsLoadTemplate +="        FROM at_parameter a, cwms_base_parameter b\n"
+    displayUnitsLoadTemplate +="       WHERE a.base_parameter_code = b.base_parameter_code\n"
+    displayUnitsLoadTemplate +="         AND a.sub_parameter_id IS NULL;\n"
+    displayUnitsLoadTemplate +="\n"
+    displayUnitsLoadTemplate +="   INSERT INTO at_display_units\n"
+    displayUnitsLoadTemplate +="      SELECT %s, a.parameter_code, 'SI', b.display_unit_code_si\n" % (dbOfcCode)
+    displayUnitsLoadTemplate +="        FROM at_parameter a, cwms_base_parameter b\n"
+    displayUnitsLoadTemplate +="       WHERE a.base_parameter_code = b.base_parameter_code\n"
+    displayUnitsLoadTemplate +="         AND a.sub_parameter_id IS NULL;\n"
+    displayUnitsLoadTemplate +="END;\n"
+    displayUnitsLoadTemplate +="/\n"
+    #
+    unitSys = ['SI', 'EN']
+    for i in range(len(subParameters)) :
+        baseCode, baseParamId, subParamId, longName, siUnitId, enUnitId = subParameters[i]
+        dispUnitId =[siUnitId, enUnitId]
+        for j in range(len(unitSys)) :
+            displayUnitsLoadTemplate +="INSERT INTO at_display_units\n"
+            displayUnitsLoadTemplate +="            (db_office_code, parameter_code, unit_system,\n"
+            displayUnitsLoadTemplate +="             display_unit_code\n"
+            displayUnitsLoadTemplate +="            )\n"
+            displayUnitsLoadTemplate +="     VALUES (%s, %s, '%s',\n" % (dbOfcCode, baseCode, unitSys[j])
+            displayUnitsLoadTemplate +="             (SELECT a.unit_code\n"
+            displayUnitsLoadTemplate +="                FROM cwms_unit a, at_parameter b, cwms_base_parameter c\n"
+            displayUnitsLoadTemplate +="               WHERE unit_id = '%s'\n" % dispUnitId[j]
+            displayUnitsLoadTemplate +="                 AND b.base_parameter_code = c.base_parameter_code\n"
+            displayUnitsLoadTemplate +="                 AND a.abstract_param_code = c.abstract_param_code\n"
+            displayUnitsLoadTemplate +="                 AND b.parameter_code = %s)\n" % (baseCode)
+            displayUnitsLoadTemplate +="            )\n"
+            displayUnitsLoadTemplate +="/\n"
+displayUnitsLoadTemplate +="COMMIT;\n"
+
+#==
+#====
+#======
 #-----------------------------------------------------------------#
 # output commands to drop and re-create, populate and test tables #
 #-----------------------------------------------------------------#
@@ -7586,327 +8034,12 @@ for table1 in tables :
         except : 
             pass
             
-#==
-#====
-#====== createQueues
-#--------------------------------------------------------------------#
-# generate a script to create and start queues for specified offices #
-#--------------------------------------------------------------------#
-office_names = {}
-dbhost_offices = {}
-office_erocs = {}
-db_office_code = {}
-for ofcCode, office_id, office_name, report_to, dbhost, eroc in offices :
-	if dbhost == '' : continue
-	office_erocs[office_id] = eroc
-	db_office_code[office_id] = ofcCode
-	if not dbhost : dbhost = office_id
-	office_names[office_id] = office_name
-	if not dbhost_offices.has_key(dbhost) : dbhost_offices[dbhost] = []
-	dbhost_offices[dbhost].append(office_id);
 
-dbhosts = dbhost_offices.keys()
-dbhosts.sort()
-print
-for dbhost in dbhosts :
-	line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
-	for i in range(1, len(dbhost_offices[dbhost])) : 
-		line += ", %s" % office_names[dbhost_offices[dbhost][i]]
-	print line
 
-#------------------------------------------------------------------------------
-# Ask for the db_office_id for this database, i.e., the primary office id
-# for this database.
-#------------------------------------------------------------------------------
-print
-print 'Enter the office id for this database. If your office is not listed'
-print 'or if your building a secondary COOP database for your office, then'
-print 'please contact HEC for a revised install script.'
-ok = False
-while not ok :
-	print
-	line = raw_input('Enter the primary office id for this database: ')
-	db_office_id = line.upper().replace(',', ' ').replace(';', ' ').split()
-	if not db_office_id :
-		print
-		print "ERROR! You must enter your office id."
-	else :
-		count = 0
-		for office_id in db_office_id :
-			if count == 1 : 
-				print
-				print "ERROR! You can only enter one office id for a database!"
-				break
-			if office_id not in dbhosts :
-				print
-				print "ERROR! Office %s does not host a database. Contact HEC if this" % office_id
-				print "is no longer the case."
-				break
-			count += 1
-		else :
-			ok = True
 
-	if ok :
-		print 'You have chosen the following office as the primary office for this'
-		print "database: %s" % db_office_id[0]
-		line = raw_input("Is this correct? (y/n) [n] > ")
-		if not line or line[0].upper() != 'Y' :
-			ok = False
-#------------------------------------------------------------------------------
-# Ask if any other offices will be sharing this database - need to know so that
-# queues can be set-up for them.
-#------------------------------------------------------------------------------
-print
-for dbhost in dbhosts :
-	if dbhost != db_office_id[0] :
-		line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
-		for i in range(1, len(dbhost_offices[dbhost])) : 
-			line += ", %s" % office_names[dbhost_offices[dbhost][i]]
-		print line
-print
-print 'Will other offices share this database as either their primary database'
-print 'or as a backup database? If so, enter the office id(s) from the above'
-print 'list. If this datbase will only be used by your office, then simply'
-print 'press Enter.'
-print 
-ok = False
-while not ok :
-	print
-	line  = raw_input('Enter office id(s) of offices sharing this database: ')
-	print
-	office_ids = line.upper().replace(',', ' ').replace(';', ' ').split()
-	if not office_ids :
-		ok = True
-	else :
-		for office_id in office_ids :
-			if office_id == db_office_id[0] :
-				office_ids.remove(office_id)
-			if office_id == 'CWMS' : 
-				office_ids = dbhosts[:]
-				office_ids.remove('LCRA')
-				ok = True
-				break
-			if office_id not in dbhosts :
-				print "Office %s does not host a database." % office_id
-				break
-		else :
-			ok = True
-			
-	if ok :
-		print 'You have made the follwing choices:'
-		print "Primary office for this database: %s" % db_office_id[0]
-		if not office_ids :
-			print "No other offices will share this database."
-		else:
-			print "Office(s) sharing this database: %s" % ','.join(office_ids)
-		line = raw_input("Is this correct? (y/n) [n] > ")
-		if not line or line[0].upper() != 'Y' :
-			ok = False
-print
-print '-----------TEST ACCOUNT-----------'
-print
-line = raw_input('--Do you want to create at test account? [n]: ')
-print
-line = line.strip().upper()
-if line.startswith('Y') :
-	db_office_eroc = office_erocs[db_office_id[0]].lower()
-	test_user_id = db_office_eroc +"hectest"
-	print
-	print "                                               ---------"
-	print "-- The following test account will be created: %s" % test_user_id
-	print "                                               ---------"
-	print "-- This account will have write privileges on all -REV ts ids"
-	print "-- and read privileges on all -RAW ts ids for the %s " % db_office_id[0]
-	print "-- database."
-	print
-#------------------------------------------------------------------------------
-# Consolidate db_office_id and shared office_ids
-#------------------------------------------------------------------------------
-if not office_ids :
-	office_ids = db_office_id
-else :
-	office_ids = db_office_id + office_ids[:]
 
-test_user_template = '''
---
--- ignore errors
---
-whenever sqlerror continue
 
-drop user %s;
 
---
--- notice errors
---
-whenever sqlerror exit sql.sqlcode
-
-create user %s
-   identified by &test_passwd
-   default tablespace cwms_20data
-   temporary tablespace temp
-   profile default
-   account unlock;
-
-grant cwms_user to %s;
-alter user %s default role cwms_user;
-alter user %s grant connect through %scwmsdbi with role cwms_user;
-
-'''
-
-user_template = '''
---
--- ignore errors
---
-whenever sqlerror continue
-
-drop user &eroc.cwmspd;
-drop user &eroc.cwmsdbi;
-
---
--- notice errors
---
-whenever sqlerror exit sql.sqlcode
-
-create user &eroc.cwmsdbi
-   identified by &dbi_passwd
-   default tablespace users
-   temporary tablespace temp
-   profile default
-   account unlock;
-
-grant create session to &eroc.cwmsdbi;
-
-create user &eroc.cwmspd
-   identified by values 'FEDCBA9876543210'
-   default tablespace cwms_20data
-   temporary tablespace temp
-   profile default
-   account unlock;
-
-grant cwms_user to &eroc.cwmspd;
-alter user &eroc.cwmspd default role cwms_user;
-alter user &eroc.cwmspd grant connect through &eroc.cwmsdbi with role cwms_user;
-'''
-
-queue_template = '''
-   dbms_aqadm.create_queue_table(
-      queue_table        => '%s_%s_table', 
-      queue_payload_type => 'sys.aq$_jms_text_message',
-      multiple_consumers => true);
-      
-   dbms_aqadm.create_queue(
-      queue_name  => '%s_%s',
-      queue_table => '%s_%s_table');
-      
-   dbms_aqadm.start_queue(queue_name => '%s_%s');
-'''
-
-userSecUserOffice_template = '''
-Insert into AT_SEC_USER_OFFICE
-   (USER_ID, USER_DB_OFFICE_CODE)
- Values
-   ('%s', %s);
-Insert into AT_SEC_USERS
-   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_ID)
- Values
-   (%s, 1, '%s');
-'''
-
-testuserSecUserOffice_template = '''
-Insert into AT_SEC_USER_OFFICE
-   (USER_ID, USER_DB_OFFICE_CODE)
- Values
-   ('%s', %s);
-
-Insert into AT_SEC_USER_GROUPS
-   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_GROUP_ID, USER_GROUP_DESC)
- Values
-   (%s, 10, 'Test Users', 'Test CWMS Users.');
-
-Insert into AT_SEC_USERS
-   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_ID)
- Values
-   (%s, 10, '%s');
-
-Insert into AT_SEC_ALLOW
-   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
- Values
-   (%s, 0, 10, 4);
-
-Insert into AT_SEC_ALLOW
-   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
- Values
-   (%s, 2, 10, 2);
-
-Insert into AT_SEC_ALLOW
-   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
- Values
-   (%s, 2, 10, 4);
-'''
-#==============================================================================
-
-sys.stderr.write("Creating py_ErocUsers.sql\n");
-f  = open("py_ErocUsers.sql", "w")
-f1 = open("py_SecUserOffice.sql", "w")
-users_created = []
-for dbhost_id in office_ids :
-	for office_id in dbhost_offices[dbhost_id] :
-		eroc = office_erocs[office_id].lower()
-		if eroc not in users_created :
-			f.write(user_template.replace("&eroc.", eroc))
-			user_id = eroc+"cwmspd"
-			f1.write(userSecUserOffice_template % (user_id,
-				db_office_code[dbhost_id], 
-				db_office_code[dbhost_id],user_id.upper()))
-			users_created.append(eroc)
-if test_user_id : 
-	db_ofc_code = db_office_code[db_office_id[0]]
-	db_ofc_eroc = office_erocs[db_office_id[0]]
-	f.write(test_user_template % (test_user_id, test_user_id, test_user_id, test_user_id,
-		test_user_id, db_ofc_eroc))
-	f1.write(testuserSecUserOffice_template %(test_user_id, db_ofc_code, db_ofc_code, 
-		db_ofc_code, test_user_id.upper(), db_ofc_code, db_ofc_code, db_ofc_code) )
-f.close()
-f1.write("\ncommit;\n")
-f1.close()
-
-#==============================================================================
-
-sys.stderr.write("Creating py_Queues.sql\n")
-f = open("py_Queues.sql", "w")
-f.write("set define off\nbegin")
-for office_id in office_ids :
-	id = office_id.lower()
-	for q in ("realtime_ops", "status") : 
-		f.write(queue_template % (id,q,id,q,id,q,id,q))
-f.write("end;\n/\ncommit;\n")
-f.close()
-
-#==============================================================================
-
-prompt_template = '''
-prompt
-accept echo_state  char prompt 'Enter ON or OFF for echo         : '
-accept inst        char prompt 'Enter the database SID           : '
-accept sys_passwd  char prompt 'Enter the password for SYS       : '
-accept cwms_passwd char prompt 'Enter the password for CWMS_20   : '
-accept dbi_passwd  char prompt 'Enter the password for %scwmsdbi : '
-'''
-
-prompt_test_line_template = '''
-accept test_passwd  char prompt 'Enter the password for %s : '
-'''
-
-sys.stderr.write("Creating py_prompt.sql\n")
-f = open("py_prompt.sql","w")
-f.write(prompt_template % (db_office_eroc))
-if test_user_id : f.write(prompt_test_line_template % (test_user_id))
-f.close()
-#==============================================================================
-
-#====== createQueues
-#====
-#==
 
 #------------------------------------------------------------------------------
 # Redirect stdout to the temp file
