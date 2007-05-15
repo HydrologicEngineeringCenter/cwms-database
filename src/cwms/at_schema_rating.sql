@@ -351,8 +351,8 @@ alter table at_rating_value add constraint at_rating_value_fk1
 foreign key (rating_curve_code) references at_rating_curve;
 
 alter table at_rating_value add constraint at_rating_value_ck1
-check (stor_flag in ('T','F'));
+check (stor_flag is null or stor_flag in ('*','E'));
 
 comment on table  at_rating_value           is 'Table of expanded (base) rating table values';
-comment on column at_rating_value.stor_flag is '="T" if it is a USGS STOR point marked by an asterisk, else "F"';
+comment on column at_rating_value.stor_flag is '"*"=USGS STOR point, "E"=user Extension, else NULL';
 /
