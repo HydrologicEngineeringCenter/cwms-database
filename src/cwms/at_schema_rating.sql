@@ -160,6 +160,14 @@ primary key (rating_loc_code);
 alter table at_rating_loc add constraint at_rating_loc_fk1
 foreign key (rating_code) references at_rating;
 
+--
+-- The following fk is for CWMS v1.x
+-- It needs to be changed for CWMS v2
+--
+
+alter table at_rating_loc add constraint at_rating_loc_fk2
+foreign key (location_code) references at_point_location;
+
 alter table at_rating_loc add constraint at_rating_loc_ck1
 check (auto_load_flag in ('T','F'));
 
@@ -208,7 +216,6 @@ drop table at_rating_spec;
 create table at_rating_spec
 ( rating_spec_code  number(10),
   rating_loc_code   number(10)  not null,
-  location_code     number(10)  not null,
   effective_date    date        not null,
   create_date       date        not null, 
   version           varchar2(8) not null,
@@ -219,14 +226,6 @@ primary key (rating_spec_code);
 
 alter table at_rating_spec add constraint at_rating_spec_fk1 
 foreign key (rating_loc_code) references at_rating_loc;
-
---
--- The following fk is for CWMS v1.x
--- It needs to be changed for CWMS v2
---
-
-alter table at_rating_spec add constraint at_rating_spec_fk2
-foreign key (location_code) references at_point_location;
 
 alter table at_rating_spec add constraint at_rating_spec_ck1
 check (active_flag in ('T','F'));
@@ -357,5 +356,3 @@ check (stor_flag in ('T','F'));
 comment on table  at_rating_value           is 'Table of expanded (base) rating table values';
 comment on column at_rating_value.stor_flag is '="T" if it is a USGS STOR point marked by an asterisk, else "F"';
 /
-
-
