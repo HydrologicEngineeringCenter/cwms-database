@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/12 12:11 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/16 08:28 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_ts
 AS
    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
@@ -85,7 +85,13 @@ AS
    PROCEDURE delete_ts (
       p_cwms_ts_id      IN   VARCHAR2,
       p_delete_action   IN   VARCHAR2 DEFAULT cwms_util.delete_ts_id,
-      p_office_id       IN   VARCHAR2 DEFAULT NULL
+      p_db_office_id    IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE delete_ts (
+      p_cwms_ts_id       IN   VARCHAR2,
+      p_delete_action    IN   VARCHAR2 DEFAULT cwms_util.delete_ts_id,
+      p_db_office_code   IN   NUMBER DEFAULT NULL
    );
 
 --

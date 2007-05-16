@@ -2686,10 +2686,23 @@ END delete_ts_cleanup;
 PROCEDURE delete_ts (
    p_cwms_ts_id      IN   VARCHAR2,
    p_delete_action   IN   VARCHAR2 DEFAULT cwms_util.delete_ts_id,
-   p_office_id       IN   VARCHAR2 DEFAULT NULL
+   p_db_office_id    IN   VARCHAR2 DEFAULT NULL
 )
 IS
-   l_office_id       VARCHAR2 (16);
+   l_db_office_code number := cwms_util.GET_OFFICE_CODE(p_db_office_id);
+BEGIN
+   delete_ts (p_cwms_ts_id       => p_cwms_ts_id,
+              p_delete_action    => p_delete_action,
+              p_db_office_code   => l_db_office_code);
+END;
+
+PROCEDURE delete_ts (
+   p_cwms_ts_id      IN   VARCHAR2,
+   p_delete_action   IN   VARCHAR2 DEFAULT cwms_util.delete_ts_id,
+   p_db_office_code  IN   NUMBER DEFAULT NULL
+)
+IS
+   l_db_office_code  NUMBER := p_db_office_code;
    l_ts_code         NUMBER;
    l_count           NUMBER;
    l_ts_code_new     NUMBER        := NULL;
@@ -2700,11 +2713,9 @@ IS
 --
 BEGIN
    --
-   IF p_office_id IS NULL
+   IF p_db_office_code IS NULL
    THEN
-      l_office_id := cwms_util.user_office_id;
-   ELSE
-      l_office_id := p_office_id;
+      l_db_office_code := cwms_util.GET_OFFICE_CODE(null);
    END IF;
 
    --
@@ -2713,7 +2724,7 @@ BEGIN
         INTO l_ts_code
         FROM mv_cwms_ts_id mcts
        WHERE UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
-         AND UPPER (mcts.db_office_id) = UPPER (l_office_id);
+         AND mcts.db_office_code = l_db_office_code;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
@@ -3728,7 +3739,8 @@ IS
 BEGIN
    p_transaction_time := CAST ((SYSTIMESTAMP AT TIME ZONE 'GMT') AS DATE);
    --
-   p_cwms_ts_id_out := get_cwms_ts_id (p_cwms_ts_id_in, p_db_office_id);
+   p_cwms_ts_id_out := get_cwms_ts_id (p_cwms_ts_id_in, 
+                                       cwms_util.GET_DB_OFFICE_ID(p_db_office_id));
 
    --
    IF p_units_in IS NULL
