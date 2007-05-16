@@ -129,6 +129,10 @@ begin
       dbms_output.put_line('-- ' || sql_statement);
       execute immediate sql_statement;
    end loop;
+   
+   execute immediate 'GRANT EXECUTE ON CWMS_20.TSV_ARRAY TO CWMS_USER';
+   execute immediate 'GRANT EXECUTE ON CWMS_20.TSV_TYPE TO CWMS_USER';
+   
    --
    -- grant select on collected packages to CWMS_DEV role
    --
