@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/28 14:44 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/16 13:49 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -212,6 +212,9 @@ AS
 --
    FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN NUMBER;
+
+   FUNCTION get_db_office_id (p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN VARCHAR2;
 
    FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
       RETURN VARCHAR2;

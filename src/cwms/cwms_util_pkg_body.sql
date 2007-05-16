@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/05 11:20 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/16 13:48 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -634,6 +634,36 @@ AS
       RETURN get_office_code (p_office_id);
    END get_db_office_code;
 
+--------------------------------------------------------
+--------------------------------------------------------
+   FUNCTION get_db_office_id (p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN VARCHAR2
+   IS
+      l_db_office_code   NUMBER        := NULL;
+      l_db_office_id     VARCHAR2 (16);
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         SELECT office_id
+           INTO l_db_office_id
+           FROM cwms_office
+          WHERE office_code = user_office_code;
+      ELSE
+         SELECT office_id
+           INTO l_db_office_id
+           FROM cwms_office
+          WHERE UPPER (office_id) = UPPER (p_db_office_id);
+      END IF;
+
+      RETURN l_db_office_id;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         cwms_err.RAISE ('INVALID_OFFICE_ID', p_db_office_id);
+   END get_db_office_id;
+
+--------------------------------------------------------
+--------------------------------------------------------
    FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
       RETURN VARCHAR2
    IS
