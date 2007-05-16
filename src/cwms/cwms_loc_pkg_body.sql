@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/16 05:44 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/16 07:56 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --
@@ -87,8 +87,22 @@ AS
 --
 ------------------------------------------------------------------------------*/
    FUNCTION get_location_code (
-      p_office_id     IN   VARCHAR2,
-      p_location_id   IN   VARCHAR2
+      p_db_office_id   IN   VARCHAR2,
+      p_location_id    IN   VARCHAR2
+   )
+      RETURN NUMBER
+   IS
+      l_db_office_code   NUMBER := cwms_util.get_office_code (p_db_office_id);
+   BEGIN
+      RETURN get_location_code (p_db_office_code      => l_db_office_code,
+                                p_location_id         => p_location_id
+                               );
+   END;
+
+--
+   FUNCTION get_location_code (
+      p_db_office_code   IN   NUMBER,
+      p_location_id      IN   VARCHAR2
    )
       RETURN NUMBER
    IS
@@ -97,14 +111,13 @@ AS
       --
       SELECT apl.location_code
         INTO l_location_code
-        FROM at_physical_location apl, at_base_location abl, cwms_office cu
+        FROM at_physical_location apl, at_base_location abl
        WHERE apl.base_location_code = abl.base_location_code
-         AND abl.db_office_code = cu.office_code
          AND UPPER (abl.base_location_id) =
                                  UPPER (cwms_util.get_base_id (p_location_id))
          AND NVL (UPPER (apl.sub_location_id), '.') =
                        NVL (UPPER (cwms_util.get_sub_id (p_location_id)), '.')
-         AND UPPER (cu.office_id) = UPPER (p_office_id);
+         AND abl.db_office_code = p_db_office_code;
 
       --
       RETURN l_location_code;
@@ -327,7 +340,6 @@ AS
    IS
       l_unit_code   NUMBER;
    BEGIN
-
       SELECT unit_code
         INTO l_unit_code
         FROM cwms_unit
@@ -1612,7 +1624,7 @@ AS
       l_base_location_code   NUMBER;
       l_location_code        NUMBER;
       l_db_office_code       NUMBER;
-      l_db_office_id         VARCHAR2 (16);
+      --l_db_office_id         VARCHAR2 (16);
       l_delete_action        VARCHAR2 (22)
                 := NVL (UPPER (TRIM (p_delete_action)), cwms_util.delete_loc);
       l_ts_ids_cur           sys_refcursor;
@@ -1624,7 +1636,6 @@ AS
    --
    BEGIN
       l_db_office_code := cwms_util.get_office_code (p_db_office_id);
-      l_db_office_id := UPPER (p_db_office_id);
 
        -- You can only delete a location if that location does not have
       -- any time series identifiers associated with it.
@@ -1691,14 +1702,14 @@ AS
             THEN
                cwms_ts.delete_ts (l_cwms_ts_id,
                                   cwms_util.delete_ts_cascade,
-                                  l_db_office_id
+                                  l_db_office_code
                                  );
             WHEN l_delete_action = cwms_util.delete_ts_id
             THEN
                BEGIN
                   cwms_ts.delete_ts (l_cwms_ts_id,
                                      cwms_util.delete_ts_id,
-                                     l_db_office_id
+                                     l_db_office_code
                                     );
                EXCEPTION
                   WHEN OTHERS
@@ -1709,7 +1720,7 @@ AS
             THEN
                cwms_ts.delete_ts (l_cwms_ts_id,
                                   cwms_util.delete_ts_data,
-                                  l_db_office_id
+                                  l_db_office_code
                                  );
             ELSE
                cwms_err.RAISE ('INVALID_DELETE_ACTION', p_delete_action);
@@ -2339,7 +2350,7 @@ AS
       l_office_code     NUMBER;
       l_location_code   NUMBER;
       --
-      l_alias_cursor    sys_refcursor;
+      -- l_alias_cursor    sys_refcursor;
    --
    BEGIN
       IF p_db_office_id IS NULL
@@ -2383,14 +2394,21 @@ AS
          AND apl.location_code = l_location_code;
 
       --
-      cwms_cat.cat_loc_aliases (l_alias_cursor,
-                                p_location_id,
-                                NULL,
-                                'F',
-                                l_office_id
+--      cwms_cat.cat_loc_aliases (l_alias_cursor,
+--                                p_location_id,
+--                                NULL,
+--                                'F',
+--                                l_office_id
+--                               );
+      cwms_cat.cat_loc_aliases (p_cwms_cat             => p_alias_cursor,
+                                p_location_id          => p_location_id,
+                                p_loc_category_id      => NULL,
+                                p_loc_group_id         => NULL,
+                                p_abreviated           => 'F',
+                                p_db_office_id         => l_office_id
                                );
       --
-      p_alias_cursor := l_alias_cursor;
+      -- p_alias_cursor := l_alias_cursor;
       --
    --
    END retrieve_location;
@@ -2932,9 +2950,10 @@ AS
                          p_db_office_id         => p_db_office_id
                         );
    END;
+
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
--- unassign_loc_groups and 
+-- unassign_loc_groups and
 -- unassign_loc_group
 --
 --These procedures unassign (delete) group/location pairs. The -
@@ -2949,7 +2968,7 @@ AS
 --For the unassign_loc_groups call, the p_location_array uses the CWMS -
 --"char_49_array_type" table type, which is an array of table type varchar2(49).
 
---Note that you cannot unassign group/location pairs if a group/location pair -
+   --Note that you cannot unassign group/location pairs if a group/location pair -
 --is being referenced by a SHEF decode entry.
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
@@ -2977,11 +2996,11 @@ AS
 
       BEGIN
          IF l_unassign_all
-         THEN -- delete all group/location assignments...
+         THEN                     -- delete all group/location assignments...
             DELETE FROM at_loc_group_assignment
                   WHERE location_code = l_loc_group_code;
-         ELSE -- delete only group/location assignments for -
-              -- given locations...
+         ELSE                  -- delete only group/location assignments for -
+                               -- given locations...
             DELETE FROM at_loc_group_assignment
                   WHERE location_code = l_loc_group_code
                     AND location_code IN (
@@ -3004,6 +3023,7 @@ AS
                );
       END;
    END;
+
 -------------------------------------------------------------------------------
 -------------------------------------------------------------------------------
 -- unassign_loc_group --

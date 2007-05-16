@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/15 15:30 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/16 07:56 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_loc
 AS
 /******************************************************************************
@@ -18,8 +18,14 @@ AS
       RETURN NUMBER;
 
    FUNCTION get_location_code (
-      p_office_id     IN   VARCHAR2,
-      p_location_id   IN   VARCHAR2
+      p_db_office_id   IN   VARCHAR2,
+      p_location_id    IN   VARCHAR2
+   )
+      RETURN NUMBER;
+
+   FUNCTION get_location_code (
+      p_db_office_code   IN   NUMBER,
+      p_location_id      IN   VARCHAR2
    )
       RETURN NUMBER;
 
@@ -377,7 +383,5 @@ AS
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER;
-
-
 END cwms_loc;
 /
