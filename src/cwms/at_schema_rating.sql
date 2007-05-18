@@ -342,7 +342,7 @@ create table at_rating_value
 ( rating_curve_code  number(10),
   x                  number,
   y                  number       not null,
-  stor_flag          char(1), 
+  stor               char(1), 
   constraint         at_rating_value_pk
   primary key       (rating_curve_code,x))
 organization index;
@@ -351,8 +351,143 @@ alter table at_rating_value add constraint at_rating_value_fk1
 foreign key (rating_curve_code) references at_rating_curve;
 
 alter table at_rating_value add constraint at_rating_value_ck1
-check (stor_flag is null or stor_flag in ('*','E'));
+check (stor is null or stor in ('*','E'));
 
 comment on table  at_rating_value           is 'Table of expanded (base) rating table values';
 comment on column at_rating_value.stor_flag is '"*"=USGS STOR point, "E"=user Extension, else NULL';
+
+
+/*** ET_RDB_COMMENT ***/
+
+
+drop table et_rdb_comment;
+
+create table et_rdb_comment
+( line varchar2(255) )
+organization external
+( type oracle_loader
+  default directory rdbfiles
+  access parameters
+    ( records delimited by newline
+      nologfile 
+      nobadfile
+      nodiscardfile 
+      load when (1:1)='#'
+      fields terminated by '\n' rtrim
+      missing field values are null
+    )
+  location ('WYNW.rdb')
+)
+reject limit unlimited;
+
+
+/*** ET_RDB_VALUE ***/
+
+
+drop table et_rdb_value;
+
+create table et_rdb_value
+( x      number,
+  shift  number,
+  y      number,
+  stor   varchar2(1) )
+organization external
+( type oracle_loader
+  default directory rdbfiles
+  access parameters
+    ( records delimited by newline
+      nobadfile nologfile nodiscardfile
+      fields terminated by '\t' rtrim
+      missing field values are null
+    )
+  location ('WYNW.rdb')
+)
+reject limit unlimited;
+
+
+/*** AV_RATING ***/
+
+
+create or replace view av_rating as
+select r.db_office_code,
+       r.rating_code,  
+       r.source, 
+       r.rating_type_code type_code, 
+       t.rating_type_id   type, 
+       t.long_name,
+       i.interpolate_id   interpolate, 
+       r.description      rating_desc, 
+       r.indep_parm_count parm_count,
+       p1.parameter_id    indep_parm_1, 
+       p2.parameter_id    indep_parm_2, 
+       p3.parameter_id    dep_parm, 
+       v.version, 
+p.description parm_desc
+from   at_rating               r,
+       cwms_rating_type        t,
+       cwms_rating_interpolate i,
+       cwms_parameter          p1,
+       cwms_parameter          p2,
+       cwms_parameter          p3,
+       at_rating_parameters    p,
+       at_rating_version       v
+where  t.rating_type_code  = r.rating_type_code
+   and i.interpolate_code  = r.interpolate_code
+   and p.rating_code(+)       = r.rating_code
+   and v.rating_parms_code(+) = p.rating_parms_code
+   and p1.parameter_code(+)   = p.indep_parm_code_1                
+   and p2.parameter_code(+)   = p.indep_parm_code_2                
+   and p3.parameter_code(+)   = p.dep_parm_code;
+
+
+/*** AV_CURVE ***/
+
+
+create or replace view      av_curve as
+select r.db_office_code,
+       r.rating_code,  
+       r.source, 
+       r.rating_type_code   type_code, 
+       t.rating_type_id     type, 
+       i.interpolate_id     interpolate, 
+       l.rating_loc_code    loc_code,
+       l.location_code, 
+       n.cwms_id, 
+       l.auto_load_flag     auto_load, 
+       l.auto_active_flag   auto_active, 
+       l.filename, 
+       l.description,
+       s.rating_spec_code   spec_code, 
+       s.effective_date     base_date,
+       s.create_date, 
+       s.version, 
+       s.active_flag        active, 
+       c.rating_curve_code
+       curve_code, 
+       c.indep_parm_number  parm_number, 
+       c.indep_parm_value
+       parm_value, 
+       ss.rating_shift_code shift_code, 
+       ss.effective_date
+       shift_date, 
+       ss.active_flag       shift_active, 
+       ss.transition_flag 
+       transition  
+from   at_rating               r,
+       cwms_rating_type        t,
+       cwms_rating_interpolate i,
+       at_rating_loc           l,
+       at_point_location       p,
+       at_cwms_name            n, 
+       at_rating_spec          s,
+       at_rating_curve         c,
+       at_rating_shift_spec    ss
+where  t.rating_type_code     = r.rating_type_code
+   and i.interpolate_code     = r.interpolate_code
+   and l.rating_code(+)       = r.rating_code
+   and p.location_code(+)     = l.location_code
+   and n.cwms_code(+)         = p.cwms_code 
+   and s.rating_loc_code(+)   = l.rating_loc_code
+   and c.rating_spec_code(+)  = s.rating_spec_code
+   and ss.rating_spec_code(+) = s.rating_spec_code;
 /
