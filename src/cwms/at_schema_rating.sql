@@ -45,8 +45,8 @@ create unique index cwms_rating_interp_ak1 on cwms_rating_interpolate (interpola
 comment on table  cwms_rating_interpolate                is 'Table of rating curve expansion functions';
 comment on column cwms_rating_interpolate.interpolate_id is 'USGS "RATING EXPANSION" ("LOGARITHMIC")';
 
-insert into cwms_rating_interpolate values (1,'LINEAR');
-insert into cwms_rating_interpolate values (2,'LOGARITHMIC');
+insert into cwms_rating_interpolate values (1,'Linear');
+insert into cwms_rating_interpolate values (2,'Logarithmic');
 
 
 /*** AT_RATING ***/
@@ -84,7 +84,7 @@ comment on table  at_rating                  is 'Defines a specific set of param
 comment on column at_rating.rating_code      is 'Synthetic key';
 comment on column at_rating.source           is 'Rating table source, office or agency name';
 comment on column at_rating.rating_type_code is 'Foreign key to the rating type ("STGQ", "ELST")';
-comment on column at_rating.interpolate_code is 'Foreign key to the interpolation type ("LOGARITHMIC")';
+comment on column at_rating.interpolate_code is 'Foreign key to the interpolation type ("Logarithmic")';
 comment on column at_rating.indep_parm_count is 'Number of independent variables (1 or 2)';
 
 
@@ -140,7 +140,7 @@ comment on column at_rating_version.version is 'Versions to rate for this parame
 /***  AT_RATING_LOC  ***/
 
 
-alter table at_rating_extension drop constraint at_rating_extension_fk1;
+alter table at_rating_extension_spec drop constraint at_rating_extension_spec_fk1;
 alter table at_rating_spec      drop constraint at_rating_spec_fk1;
 
 drop table at_rating_loc;
@@ -186,23 +186,56 @@ comment on column at_rating_loc.auto_active_flag is '="T" to automatically mark 
 comment on column at_rating_loc.filename         is 'rating table filename (do we also need file type, "RDB" ?)';
 
 
-/***  AT_RATING_EXTENSION  ***/
+/*** AT_RATING_EXTENSION_SPEC ***/
 
 
-drop table at_rating_extension;
+alter table at_rating_extension_value drop constraint at_rating_extension_value_fk1;
 
-create table at_rating_extension
-( rating_loc_code   number(10), 
-  x                 number      not null,
-  y                 number      not null);
+drop table at_rating_extension_spec;
 
-alter table at_rating_extension add constraint at_rating_extension_pk 
-primary key (rating_loc_code,x);
+create table at_rating_extension_spec
+( rating_extension_code  number(10),
+  rating_loc_code        number(10) not null,
+  effective_date         date       not null,
+  active_flag            char(1)    not null);
 
-alter table at_rating_extension add constraint at_rating_extension_fk1
+alter table at_rating_extension_spec add constraint at_rating_extension_spec_pk
+primary key (rating_extension_code);
+  
+alter table at_rating_extension_spec add constraint at_rating_extension_spec_fk1
 foreign key (rating_loc_code) references at_rating_loc;
 
-comment on table at_rating_extension is 'Extends the top or bottom of the rating curves for a rating family at a location';
+alter table at_rating_extension_spec add constraint at_rating_extension_spec_ck1
+check (active_flag in ('T','F'));
+
+create unique index at_rating_extension_spec_ak1 on at_rating_extension_spec
+( rating_loc_code,
+  effective_date);
+
+comment on table  at_rating_extension_spec                       is 'Associates extensions with a specific rating table';
+comment on column at_rating_extension_spec.rating_extension_code is 'Synthetic key';
+comment on column at_rating_extension_spec.rating_loc_code       is 'The location this extension applies to';
+comment on column at_rating_extension_spec.effective_date        is 'The date on/after which this extension should be used';
+comment on column at_rating_extension_spec.active_flag           is '="T" if the extension is to be used, else "F"';
+
+
+/***  AT_RATING_EXTENSION_VALUE  ***/
+
+
+drop table at_rating_extension_value;
+
+create table at_rating_extension_value
+( rating_extension_code   number(10), 
+  x                       number      not null,
+  y                       number      not null);
+
+alter table at_rating_extension_value add constraint at_rating_extension_value_pk 
+primary key (rating_extension_code,x);
+
+alter table at_rating_extension_value add constraint at_rating_extension_value_fk1
+foreign key (rating_extension_code) references at_rating_extension_spec;
+
+comment on table at_rating_extension_value is 'Extends the top or bottom of the rating curves for a rating family at a location';
 
 
 /***  AT_RATING_SPEC ***/
@@ -246,7 +279,7 @@ comment on column at_rating_spec.version          is 'The base rating table vers
 /*** AT_RATING_SHIFT_SPEC ***/
 
 
-alter table at_rating_shift_values drop constraint at_rating_shift_values_fk1;
+alter table at_rating_shift_value drop constraint at_rating_shift_value_fk1;
 
 drop table at_rating_shift_spec;
 
@@ -281,25 +314,25 @@ comment on column at_rating_shift_spec.active_flag       is '="T" if the shift i
 comment on column at_rating_shift_spec.transition_flag   is '="T" if the shift is used to transition between official USGS ratings, else "F"';
 
 
-/*** AT_RATING_SHIFT_VALUES ***/
+/*** AT_RATING_SHIFT_VALUE ***/
 
 
-drop table at_rating_shift_values;
+drop table at_rating_shift_value;
 
-create table at_rating_shift_values
+create table at_rating_shift_value
 ( rating_shift_code  number(10),
   stage              number,
   shift              number     not null,
-  constraint         at_rating_shift_values_pk 
+  constraint         at_rating_shift_value_pk 
   primary key       (rating_shift_code, stage))
 organization index;
 
-alter table at_rating_shift_values add constraint at_rating_shift_values_fk1
+alter table at_rating_shift_value add constraint at_rating_shift_value_fk1
 foreign key (rating_shift_code) references at_rating_shift_spec;
 
-comment on table  at_rating_shift_values       is 'Table of one or more shifts to be applied to a specific rating table';
-comment on column at_rating_shift_values.stage is 'The value of INDEP_PARM_1 where this shift begins';
-comment on column at_rating_shift_values.shift is 'The value to add to INDEP_PARM_1 before rating the value';
+comment on table  at_rating_shift_value       is 'Table of one or more shifts to be applied to a specific rating table';
+comment on column at_rating_shift_value.stage is 'The value of INDEP_PARM_1 where this shift begins';
+comment on column at_rating_shift_value.shift is 'The value to add to INDEP_PARM_1 before rating the value';
 
 
 /*** AT_RATING_CURVE ***/
@@ -353,8 +386,8 @@ foreign key (rating_curve_code) references at_rating_curve;
 alter table at_rating_value add constraint at_rating_value_ck1
 check (stor is null or stor in ('*','E'));
 
-comment on table  at_rating_value           is 'Table of expanded (base) rating table values';
-comment on column at_rating_value.stor_flag is '"*"=USGS STOR point, "E"=user Extension, else NULL';
+comment on table  at_rating_value      is 'Table of expanded (base) rating table values';
+comment on column at_rating_value.stor is '"*"=USGS STOR point, "E"=user Extension, else NULL';
 
 
 /*** ET_RDB_COMMENT ***/
