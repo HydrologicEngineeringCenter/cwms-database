@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/15 10:55 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/21 15:00 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_cat
 IS
 -------------------------------------------------------------------------------
@@ -1760,8 +1760,13 @@ IS
                   || SUBSTR ('-', 1, LENGTH (atp.sub_parameter_id))
                   || atp.sub_parameter_id parameter_id,
                   cp.base_parameter_id, atp.sub_parameter_id,
-                  atp.sub_parameter_desc, co.office_id db_office_id,
-                  cu.unit_id db_unit_id, cu.long_name unit_long_name,
+                  CASE
+                     WHEN atp.sub_parameter_desc IS NULL
+                        THEN cp.description
+                     ELSE atp.sub_parameter_desc
+                  END sub_parameter_desc,
+                  co.office_id db_office_id, cu.unit_id db_unit_id,
+                  cu.long_name unit_long_name,
                   cu.description unit_description
              FROM at_parameter atp,
                   cwms_base_parameter cp,
