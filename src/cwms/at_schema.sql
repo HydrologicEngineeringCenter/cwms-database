@@ -87,7 +87,92 @@ end;
 -------------------
 -- CREATE TABLES --
 -------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CREATE TABLE CWMS_SHEF_TIME_ZONE
+(
+  SHEF_TIME_ZONE_CODE  NUMBER,
+  SHEF_TIME_ZONE_ID    VARCHAR2(16 BYTE)        NOT NULL,
+  SHEF_TIME_ZONE_DESC  VARCHAR2(64 BYTE)
+)
+TABLESPACE CWMS_20AT_DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
 
+
+CREATE UNIQUE INDEX CWMS_SHEF_TIME_ZONE_PK ON CWMS_SHEF_TIME_ZONE
+(SHEF_TIME_ZONE_CODE)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+ALTER TABLE CWMS_SHEF_TIME_ZONE ADD (
+  CONSTRAINT CWMS_SHEF_TIME_ZONE_PK
+ PRIMARY KEY
+ (SHEF_TIME_ZONE_CODE)
+    USING INDEX 
+    TABLESPACE CWMS_20AT_DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+SET DEFINE OFF;
+Insert into CWMS_SHEF_TIME_ZONE
+   (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
+ Values
+   (2, 'PST', 'Pacific Standard Time');
+Insert into CWMS_SHEF_TIME_ZONE
+   (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
+ Values
+   (3, 'MST', 'Mountain Standard Time');
+Insert into CWMS_SHEF_TIME_ZONE
+   (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
+ Values
+   (4, 'CST', 'Central Standard Time');
+Insert into CWMS_SHEF_TIME_ZONE
+   (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
+ Values
+   (5, 'EST', 'Eastern Standard Time');
+Insert into CWMS_SHEF_TIME_ZONE
+   (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
+ Values
+   (1, 'UTC', 'Universal Coordinated Time');
+COMMIT;
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 -------------------------
 -- AT_TS_TABLE_PROPERTIES table
@@ -1503,18 +1588,18 @@ ALTER TABLE AT_CWMS_TS_SPEC ADD (
 
 CREATE TABLE AT_SHEF_DECODE
 (
-  TS_CODE             NUMBER,
-  DATA_STREAM_CODE    NUMBER,
-  SHEF_PE_CODE        VARCHAR2(2 BYTE)          NOT NULL,
-  SHEF_TSE_CODE       VARCHAR2(3 BYTE)          NOT NULL,
-  SHEF_DURATION_CODE  VARCHAR2(4 BYTE)          NOT NULL,
-  SHEF_UNIT_CODE      NUMBER                    NOT NULL,
-  TZ                  VARCHAR2(2 BYTE),
-  DL_TIME             VARCHAR2(1 BYTE),
-  USE_OTF             VARCHAR2(1 BYTE),
-  OTF_TEXT_AREA       VARCHAR2(1024 BYTE),
-  LOCATION_CODE       NUMBER                    NOT NULL,
-  LOC_GROUP_CODE      NUMBER                    NOT NULL
+  TS_CODE              NUMBER,
+  DATA_STREAM_CODE     NUMBER,
+  SHEF_PE_CODE         VARCHAR2(2 BYTE)         NOT NULL,
+  SHEF_TSE_CODE        VARCHAR2(3 BYTE)         NOT NULL,
+  SHEF_DURATION_CODE   VARCHAR2(4 BYTE)         NOT NULL,
+  SHEF_UNIT_CODE       NUMBER                   NOT NULL,
+  SHEF_TIME_ZONE_CODE  VARCHAR2(2 BYTE),
+  DL_TIME              VARCHAR2(1 BYTE),
+  USE_OTF              VARCHAR2(1 BYTE),
+  OTF_TEXT_AREA        VARCHAR2(1024 BYTE),
+  LOCATION_CODE        NUMBER                   NOT NULL,
+  LOC_GROUP_CODE       NUMBER                   NOT NULL
 )
 TABLESPACE CWMS_20DATA
 PCTUSED    0
@@ -1571,6 +1656,12 @@ ALTER TABLE AT_SHEF_DECODE ADD (
                ))
 /
 
+
+ALTER TABLE AT_SHEF_DECODE ADD (
+  CONSTRAINT AT_SHEF_DECODE_R05 
+ FOREIGN KEY (SHEF_TIME_ZONE_CODE) 
+ REFERENCES CWMS_TIME_ZONE (TIME_ZONE_NAME))
+/
 
 ALTER TABLE AT_SHEF_DECODE ADD (
   CONSTRAINT AT_SHEF_DECODE_R03 
@@ -5574,6 +5665,171 @@ insert into at_clob values
 
 commit;
 
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW av_loc_cat_grp (cat_db_office_id,
+                                       loc_category_id,
+                                       loc_category_desc,
+                                       grp_db_office_id,
+                                       loc_group_id,
+                                       loc_group_desc
+                                      )
+AS
+   SELECT co.office_id cat_db_office_id, loc_category_id, loc_category_desc,
+          coo.office_id grp_db_office_id, loc_group_id, loc_group_desc
+     FROM cwms_office co,
+          cwms_office coo,
+          at_loc_category atlc,
+          at_loc_group atlg
+    WHERE atlc.db_office_code = co.office_code
+      AND atlg.db_office_code = coo.office_code(+)
+      AND atlc.loc_category_code = atlg.loc_category_code(+)
+/
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW av_shef_decode_spec (ts_code,
+                                            cwms_ts_id,
+                                            data_stream_id,
+                                            db_office_id,
+                                            loc_group_id,
+                                            loc_category_id,
+                                            loc_alias_id,
+                                            shef_pe_code,
+                                            shef_tse_code,
+                                            shef_duration_code,
+                                            shef_time_zone_id,
+                                            dl_time,
+                                            unit_id,
+                                            interval_utc_offset,
+                                            interval_forward,
+                                            interval_backward,
+                                            active_flag
+                                           )
+AS
+   SELECT a.ts_code, b.cwms_ts_id, c.data_stream_id, b.db_office_id,
+          e.loc_group_id, f.loc_category_id,
+          CASE
+             WHEN d.loc_alias_id IS NULL
+                THEN b.location_id
+             ELSE d.loc_alias_id
+          END loc_alias_id,
+          a.shef_pe_code, a.shef_tse_code, a.shef_duration_code,
+          g.shef_time_zone_id, a.dl_time, i.unit_id,
+          CASE
+             WHEN h.interval_utc_offset = -2147483648
+                THEN 'N/A'
+             WHEN h.interval_utc_offset = 2147483647
+                THEN 'Undefined'
+             ELSE TO_CHAR (h.interval_utc_offset,
+                           '9999999999'
+                          )
+          END interval_utc_offset,
+          h.interval_forward, h.interval_backward, h.active_flag
+     FROM at_shef_decode a,
+          mv_cwms_ts_id b,
+          at_data_stream_id c,
+          at_loc_group_assignment d,
+          at_loc_group e,
+          at_loc_category f,
+          cwms_shef_time_zone g,
+          at_cwms_ts_spec h,
+          cwms_unit i
+    WHERE a.ts_code = b.ts_code
+      AND a.data_stream_code = c.data_stream_code
+      AND a.loc_group_code = d.loc_group_code
+      AND a.location_code = d.location_code
+      AND d.loc_group_code = e.loc_group_code
+      AND e.loc_category_code = f.loc_category_code
+      AND a.shef_time_zone_code = g.shef_time_zone_code
+      AND a.ts_code = h.ts_code
+      AND a.shef_unit_code = i.unit_code
+/
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CREATE TABLE CWMS_SHEF_TIME_ZONE
+(
+  SHEF_TIME_ZONE_CODE  NUMBER,
+  SHEF_TIME_ZONE_ID    VARCHAR2(16 BYTE)        NOT NULL,
+  SHEF_TIME_ZONE_DESC  VARCHAR2(64 BYTE)
+)
+TABLESPACE CWMS_20AT_DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+
+CREATE UNIQUE INDEX CWMS_SHEF_TIME_ZONE_PK ON CWMS_SHEF_TIME_ZONE
+(SHEF_TIME_ZONE_CODE)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+ALTER TABLE CWMS_SHEF_TIME_ZONE ADD (
+  CONSTRAINT CWMS_SHEF_TIME_ZONE_PK
+ PRIMARY KEY
+ (SHEF_TIME_ZONE_CODE)
+    USING INDEX 
+    TABLESPACE CWMS_20AT_DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+SET DEFINE OFF;
+Insert into CWMS_SHEF_TIME_ZONE
+   (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
+ Values
+   (2, 'PST', 'Pacific Standard Time');
+Insert into CWMS_SHEF_TIME_ZONE
+   (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
+ Values
+   (3, 'MST', 'Mountain Standard Time');
+Insert into CWMS_SHEF_TIME_ZONE
+   (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
+ Values
+   (4, 'CST', 'Central Standard Time');
+Insert into CWMS_SHEF_TIME_ZONE
+   (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
+ Values
+   (5, 'EST', 'Eastern Standard Time');
+Insert into CWMS_SHEF_TIME_ZONE
+   (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
+ Values
+   (1, 'UTC', 'Universal Coordinated Time');
+COMMIT;
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 SHOW ERRORS;
 COMMIT;
