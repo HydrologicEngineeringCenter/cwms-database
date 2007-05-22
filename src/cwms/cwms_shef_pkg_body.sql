@@ -1,5 +1,4 @@
-/* Formatted on 2007/04/19 07:15 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE PACKAGE BODY cwms_shef
+CREATE OR REPLACE PACKAGE BODY CWMS_20.cwms_shef
 AS
    FUNCTION get_data_stream_code (
       p_data_stream_id   IN   VARCHAR2,
@@ -57,44 +56,25 @@ AS
       p_db_office_id            IN   VARCHAR2 DEFAULT NULL
    )
    IS
-      l_db_office_code        NUMBER
+      l_db_office_code     NUMBER
                              := cwms_util.get_db_office_code (p_db_office_id);
-      l_ts_code               NUMBER
+      l_ts_code            NUMBER
                     := cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
-      l_data_stream_code      NUMBER
+      l_data_stream_code   NUMBER
                  := get_data_stream_code (p_data_stream_id, l_db_office_code);
-      l_tmp                   NUMBER;
-      l_spec_exists           BOOLEAN;
-      l_shef_pe_code          VARCHAR2 (2);
-      l_shef_tse_code         VARCHAR2 (3);
-      l_shef_duration_code    VARCHAR2 (1);
-      l_shef_unit_code        NUMBER;
-      l_shef_time_zone_code   NUMBER;
-      l_dl_time               VARCHAR2 (1);
-      l_location_code         NUMBER;
-      l_loc_group_code        NUMBER;
+      l_spec_exists        BOOLEAN;
+      l_shef_pe_code       VARCHAR2 (2);
+      l_shef_tse_code varchar2(3);
+      l_shef_duration_code varchar2(1);
+      l_shef_unit_code number;
+      l_shef_time_zone_code number;
+      l_dl_time varchar2(1);
+      l_location_code number;
+      l_loc_group_code number;
    BEGIN
-
-      -- shef pe code validation...
-      l_shef_pe_code := upper(trim(p_shef_pe_code));
-      -- shef tse code validation...
-      l_shef_tse_code := upper(trim(p_shef_tse_code ));
-      -- shef_unit_id validation...
-      -- just checks that the unit is a valid database unit...
-      l_shef_unit_code  
-      
-      -- store the shef spec...
-      SELECT COUNT (*)
-        INTO l_tmp
-        FROM at_shef_decode
-       WHERE ts_code = l_ts_code AND data_stream_code = l_data_stream_code;
-
-      IF l_tmp > 0
-      THEN
-         l_spec_exists := TRUE;
-      ELSE
-         l_spec_exists := FALSE;
-      END IF;
+      l_ts_code := cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
+      l_data_stream_code :=
+                    get_data_stream_code (p_data_stream_id, l_db_office_code);
 
       IF l_spec_exists
       THEN
@@ -108,18 +88,6 @@ AS
                 location_code = l_location_code,
                 loc_group_code = l_loc_group_code
           WHERE ts_code = l_ts_code AND data_stream_code = l_data_stream_code;
-      ELSE
-         INSERT INTO at_shef_decode
-                     (ts_code, data_stream_code, shef_pe_code,
-                      shef_tse_code, shef_duration_code,
-                      shef_unit_code, shef_time_zone_code, dl_time,
-                      location_code, loc_group_code
-                     )
-              VALUES (l_ts_code, l_data_stream_code, l_shef_pe_code,
-                      l_shef_tse_code, l_shef_duration_code,
-                      l_shef_unit_code, l_shef_time_zone_code, l_dl_time,
-                      l_location_code, l_loc_group_code
-                     );
       END IF;
    END;
 
