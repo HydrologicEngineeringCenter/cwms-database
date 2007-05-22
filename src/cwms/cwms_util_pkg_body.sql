@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/16 13:48 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/22 07:22 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -264,7 +264,7 @@ AS
       l_tstamp       TIMESTAMP;
    BEGIN
       SAVEPOINT pause_mv_refresh_start;
-      l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+      l_user_id := get_user_id;
       l_tstamp := SYSTIMESTAMP;
       l_mview_name := get_real_name (p_mview_name);
       LOCK TABLE at_mview_refresh_paused IN EXCLUSIVE MODE;
@@ -305,7 +305,7 @@ AS
       l_count        BINARY_INTEGER;
       l_user_id      VARCHAR2 (30);
    BEGIN
-      l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+      l_user_id := get_user_id;
       SAVEPOINT resume_mv_refresh_start;
       LOCK TABLE at_mview_refresh_paused IN EXCLUSIVE MODE;
 
@@ -454,7 +454,7 @@ AS
 --------------------------------------
 -- make sure we're the correct user --
 --------------------------------------
-      l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+      l_user_id := get_user_id;
 
       IF l_user_id != 'CWMS_20'
       THEN
@@ -536,7 +536,7 @@ AS
       l_office_id   VARCHAR2 (16) := NULL;
       l_user_id     VARCHAR2 (32);
    BEGIN
-      l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+      l_user_id := get_user_id;
 
       BEGIN
          SELECT a.office_id
@@ -571,7 +571,7 @@ AS
       l_office_code   NUMBER (10)   := NULL;
       l_user_id       VARCHAR2 (32);
    BEGIN
-      l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+      l_user_id := get_user_id;
 
       BEGIN
          SELECT user_db_office_code
@@ -1857,6 +1857,26 @@ AS
                                                                (p_db_office_id)
                );
    END get_loc_group_code;
+--------------------------------------------------------------------------------
+-- get_user_id uses either sys_context or the apex authenticated user id.      -
+--
+-- The "v" function is installed with apex - so apex needs to be installed     -
+-- for this package to compile.
+--------------------------------------------------------------------------------
+   FUNCTION get_user_id
+      RETURN VARCHAR2
+   IS
+      l_user_id   VARCHAR2 (31);
+   BEGIN
+      IF v ('APP_USER') != 'APEX_PUBLIC_USER' AND v ('APP_USER') IS NOT NULL
+      THEN
+         l_user_id := v ('APP_USER');
+      ELSE
+         l_user_id := SYS_CONTEXT ('userenv', 'session_user');
+      END IF;
+
+      RETURN UPPER (l_user_id);
+   END get_user_id;
 ----------------------------------------------------------------------------
 BEGIN
    -- anything put here will be executed on every mod_plsql call

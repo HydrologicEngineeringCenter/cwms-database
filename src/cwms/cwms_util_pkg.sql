@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/16 13:49 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/22 07:20 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -383,6 +383,9 @@ AS
       p_db_office_id      IN   VARCHAR2
    )
       RETURN NUMBER;
+
+   FUNCTION get_user_id
+      RETURN VARCHAR2;
 END cwms_util;
 /
 
