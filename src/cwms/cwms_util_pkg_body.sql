@@ -644,10 +644,7 @@ AS
    BEGIN
       IF p_db_office_id IS NULL
       THEN
-         SELECT office_id
-           INTO l_db_office_id
-           FROM cwms_office
-          WHERE office_code = user_office_code;
+         l_db_office_id := user_office_id;
       ELSE
          SELECT office_id
            INTO l_db_office_id
