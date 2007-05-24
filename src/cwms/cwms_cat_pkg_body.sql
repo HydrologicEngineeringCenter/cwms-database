@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/21 15:00 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/24 06:44 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_cat
 IS
 -------------------------------------------------------------------------------
@@ -1051,12 +1051,8 @@ IS
       l_ts_subselect_string   VARCHAR2 (512)
               := cwms_util.normalize_wildcards (TRIM (p_ts_subselect_string));
    BEGIN
-      l_db_office_code := cwms_util.get_db_office_code (p_db_office_id);
-
-      SELECT office_id
-        INTO l_db_office_id
-        FROM cwms_office
-       WHERE office_code = l_db_office_code;
+      l_db_office_id := cwms_util.get_db_office_id (p_db_office_id);
+      l_db_office_code := cwms_util.get_db_office_code (l_db_office_id);
 
 ---------------------------------------------------
 -- get the loc_group_code if cat/group passed in --
@@ -1082,7 +1078,8 @@ IS
          IF l_loc_group_code IS NULL
          THEN
             OPEN p_cwms_cat FOR
-               SELECT   v.db_office_id, v.cwms_ts_id, v.interval_utc_offset,
+               SELECT   v.db_office_id, v.base_location_id, v.cwms_ts_id,
+                        v.interval_utc_offset,
                         CASE z.time_zone_code
                            WHEN 0
                               THEN NULL
@@ -1097,11 +1094,12 @@ IS
                     AND a.ts_code = v.ts_code
                     AND z.time_zone_code = NVL (s.time_zone_code, 0)
                     AND v.db_office_code = l_db_office_code
-                    AND a.user_id = SYS_CONTEXT ('USERENV', 'SESSION_USER')
+                    AND a.user_id = cwms_util.get_user_id
                ORDER BY UPPER (v.cwms_ts_id) ASC;
          ELSE
             OPEN p_cwms_cat FOR
-               SELECT   v.db_office_id, v.cwms_ts_id, v.interval_utc_offset,
+               SELECT   v.db_office_id, v.base_location_id, v.cwms_ts_id,
+                        v.interval_utc_offset,
                         CASE z.time_zone_code
                            WHEN 0
                               THEN NULL
@@ -1118,7 +1116,7 @@ IS
                     AND a.ts_code = v.ts_code
                     AND z.time_zone_code = NVL (s.time_zone_code, 0)
                     AND v.db_office_code = l_db_office_code
-                    AND a.user_id = SYS_CONTEXT ('USERENV', 'SESSION_USER')
+                    AND a.user_id = cwms_util.get_user_id
                     ---
                     AND b.location_code = v.location_code                  ---
                     AND b.loc_group_code = l_loc_group_code                ---
@@ -1128,7 +1126,8 @@ IS
          IF l_loc_group_code IS NULL
          THEN
             OPEN p_cwms_cat FOR
-               SELECT   v.db_office_id, v.cwms_ts_id, v.interval_utc_offset,
+               SELECT   v.db_office_id, v.base_location_id, v.cwms_ts_id,
+                        v.interval_utc_offset,
                         CASE z.time_zone_code
                            WHEN 0
                               THEN NULL
@@ -1143,13 +1142,14 @@ IS
                     AND a.ts_code = v.ts_code
                     AND z.time_zone_code = NVL (s.time_zone_code, 0)
                     AND v.db_office_code = l_db_office_code
-                    AND a.user_id = SYS_CONTEXT ('USERENV', 'SESSION_USER')
+                    AND a.user_id = cwms_util.get_user_id
                     AND UPPER (v.cwms_ts_id) LIKE
                                                  UPPER (l_ts_subselect_string)
                ORDER BY UPPER (v.cwms_ts_id) ASC;
          ELSE
             OPEN p_cwms_cat FOR
-               SELECT   v.db_office_id, v.cwms_ts_id, v.interval_utc_offset,
+               SELECT   v.db_office_id, v.base_location_id, v.cwms_ts_id,
+                        v.interval_utc_offset,
                         CASE z.time_zone_code
                            WHEN 0
                               THEN NULL
@@ -1166,7 +1166,7 @@ IS
                     AND a.ts_code = v.ts_code
                     AND z.time_zone_code = NVL (s.time_zone_code, 0)
                     AND v.db_office_code = l_db_office_code
-                    AND a.user_id = SYS_CONTEXT ('USERENV', 'SESSION_USER')
+                    AND a.user_id = cwms_util.get_user_id
                     AND UPPER (v.cwms_ts_id) LIKE
                                                  UPPER (l_ts_subselect_string)
                     ---

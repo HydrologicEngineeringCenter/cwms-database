@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/16 15:08 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/24 06:03 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_cat
 IS
    TYPE cat_ts_rec_t IS RECORD (
@@ -22,6 +22,7 @@ IS
 
    TYPE cat_ts_id_rec_t IS RECORD (
       db_office_id          VARCHAR2 (16),
+      base_location_id      VARCHAR2 (16),
       cwms_ts_id            VARCHAR2 (183),
       interval_utc_offset   NUMBER (10),
       lrts_timezone         VARCHAR2 (28),
