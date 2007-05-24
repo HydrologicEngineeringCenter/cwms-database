@@ -1,4 +1,5 @@
-CREATE OR REPLACE PACKAGE BODY CWMS_20.cwms_shef
+/* Formatted on 2007/05/23 13:49 (Formatter Plus v4.8.8) */
+CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_shef
 AS
    FUNCTION get_data_stream_code (
       p_data_stream_id   IN   VARCHAR2,
@@ -56,21 +57,21 @@ AS
       p_db_office_id            IN   VARCHAR2 DEFAULT NULL
    )
    IS
-      l_db_office_code     NUMBER
+      l_db_office_code        NUMBER
                              := cwms_util.get_db_office_code (p_db_office_id);
-      l_ts_code            NUMBER
+      l_ts_code               NUMBER
                     := cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
-      l_data_stream_code   NUMBER
+      l_data_stream_code      NUMBER
                  := get_data_stream_code (p_data_stream_id, l_db_office_code);
-      l_spec_exists        BOOLEAN;
-      l_shef_pe_code       VARCHAR2 (2);
-      l_shef_tse_code varchar2(3);
-      l_shef_duration_code varchar2(1);
-      l_shef_unit_code number;
-      l_shef_time_zone_code number;
-      l_dl_time varchar2(1);
-      l_location_code number;
-      l_loc_group_code number;
+      l_spec_exists           BOOLEAN;
+      l_shef_pe_code          VARCHAR2 (2);
+      l_shef_tse_code         VARCHAR2 (3);
+      l_shef_duration_code    VARCHAR2 (1);
+      l_shef_unit_code        NUMBER;
+      l_shef_time_zone_code   NUMBER;
+      l_dl_time               VARCHAR2 (1);
+      l_location_code         NUMBER;
+      l_loc_group_code        NUMBER;
    BEGIN
       l_ts_code := cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
       l_data_stream_code :=
@@ -438,6 +439,226 @@ AS
 
       RETURN;
    END cat_shef_time_zones_tab;
+
 ----------------------------------
+   PROCEDURE parse_criteria_record (
+      p_shef_id              OUT      VARCHAR2,
+      p_shef_pe_code         OUT      VARCHAR2,
+      p_shef_tse_code        OUT      VARCHAR2,
+      p_shef_duration_code   OUT      VARCHAR2,
+      p_units                OUT      VARCHAR2,
+      p_unit_sys             OUT      VARCHAR2,
+      p_tz                   OUT      VARCHAR2,
+      p_dltime               OUT      VARCHAR2,
+      p_int_offset           OUT      VARCHAR2,
+      p_int_backward         OUT      VARCHAR2,
+      p_int_forward          OUT      VARCHAR2,
+      p_cwms_ts_id           OUT      VARCHAR2,
+      p_comment              OUT      VARCHAR2,
+      p_criteria_record      IN       VARCHAR2
+   )
+   IS
+      l_criteria_record      VARCHAR2 (600) := TRIM (p_criteria_record);
+      l_record_length        NUMBER         := LENGTH (l_criteria_record);
+      l_left_string          VARCHAR2 (50);
+      l_left_length          NUMBER;
+      l_right_string         VARCHAR2 (550);
+      l_right_length         NUMBER;
+      l_tmp                  NUMBER;
+      --
+      l_shef_id              VARCHAR2 (8);
+      l_shef_pe_code         VARCHAR2 (2);
+      l_shef_tse_code        VARCHAR2 (3);
+      l_shef_duration_code   VARCHAR2 (4);
+      l_cwms_ts_id           VARCHAR2 (183);
+      --
+      l_param_id             VARCHAR2 (32);
+      l_param                VARCHAR2 (32);
+      --
+      l_dltime               VARCHAR2 (32)  := NULL;
+      l_tz                   VARCHAR2 (32)  := NULL;
+      l_units                VARCHAR2 (32)  := NULL;
+      l_int_offset           VARCHAR2 (32)  := NULL;
+      l_int_backward         VARCHAR2 (32)  := NULL;
+      l_int_forward          VARCHAR2 (32)  := NULL;
+      l_unit_sys             VARCHAR2 (32)  := NULL;
+
+      --
+      TYPE list_of_num_t IS TABLE OF NUMBER;
+
+      l_pos                  list_of_num_t  := list_of_num_t ();
+      l_num                  NUMBER;
+      l_end                  NUMBER;
+   BEGIN
+      p_comment := NULL;
+
+      -- Check if the line is commented out, i.e., starts with a "#",
+      IF INSTR (l_criteria_record, '#') = 1
+      THEN
+         p_comment := 'This is a comment line';
+         -- THIS IS A COMMENT LINE - IGNORE.
+         GOTO fin;
+      END IF;
+
+      --
+      -- split the line into the right and left parts...
+      --
+      l_tmp := INSTR (l_criteria_record, '=');
+
+      IF l_tmp IN (0, 1, l_record_length)
+      THEN
+         p_comment := 'ERROR - Malformed criteria line';
+         -- malformed record...
+         GOTO fin;
+      END IF;
+
+      SELECT TRIM (SUBSTR (l_criteria_record, 1, l_tmp - 1)),
+             TRIM (SUBSTR (l_criteria_record,
+                           l_tmp + 1,
+                           l_record_length - l_tmp
+                          )
+                  )
+        INTO l_left_string,
+             l_right_string
+        FROM DUAL;
+
+      --
+      -- split the left side into its four components...
+      --
+      l_shef_id :=
+               TRIM (SUBSTR (l_left_string, 1, INSTR (l_left_string, '.') - 1));
+      l_shef_pe_code :=
+                       TRIM (SUBSTR (l_left_string, LENGTH (l_shef_id) + 2, 2));
+      l_shef_tse_code :=
+                       TRIM (SUBSTR (l_left_string, LENGTH (l_shef_id) + 5, 3));
+      l_shef_duration_code :=
+         TRIM (SUBSTR (l_left_string,
+                       INSTR (l_left_string, '.', -1) + 1,
+                       LENGTH (l_left_string) - INSTR (l_left_string, '.', -1)
+                      )
+              );
+      --
+      -- split the right side into its components...
+      --
+      ----
+      ---- right side is parsed with ';' - need to determine how many elements -
+      ---- there are...
+      ----
+      l_tmp := 1;
+      l_num := 1;
+      l_right_length := LENGTH (l_right_string);
+
+      WHILE l_tmp < l_right_length
+      LOOP
+         l_tmp := INSTR (l_right_string, ';', 1, l_num);
+         DBMS_OUTPUT.put_line (l_num || ' tmp: ' || l_tmp || CHR (10));
+
+         IF l_tmp = 0
+         THEN
+            l_tmp := l_right_length;
+         ELSE
+            l_pos.EXTEND;
+            l_pos (l_num) := l_tmp;
+            l_num := l_num + 1;
+         END IF;
+      END LOOP;
+
+      ----
+      ---- extract the ts_id from the right side...
+      ----
+      DBMS_OUTPUT.put_line ('lnum: ' || l_num);
+
+      IF l_num = 0
+      THEN
+         l_tmp := l_right_string;
+      ELSE
+         l_tmp := l_pos (1) - 1;
+      END IF;
+
+      l_cwms_ts_id := SUBSTR (l_right_string, 1, l_tmp);
+
+      ----
+      ---- extract any of the parameters that are set...
+      ----
+      IF l_num > 1
+      THEN
+         l_end := l_num - 1;
+
+         FOR i IN 1 .. l_end
+         LOOP
+            IF i = l_end
+            THEN
+               l_tmp := l_right_length;
+            ELSE
+               l_tmp := l_pos (i + 1) - 1;
+            END IF;
+
+            --
+            l_param_id :=
+               UPPER (SUBSTR (l_right_string,
+                              l_pos (i) + 1,
+                              INSTR (l_right_string, '=', 1, i) - l_pos (i)
+                              - 1
+                             )
+                     );
+            l_param :=
+               SUBSTR (l_right_string,
+                       INSTR (l_right_string, '=', 1, i) + 1,
+                       l_tmp - INSTR (l_right_string, '=', 1, i)
+                      );
+            DBMS_OUTPUT.put_line (   i
+                                  || 'l_pos: '
+                                  || l_pos (i)
+                                  || ' l_tmp: '
+                                  || l_tmp
+                                  || ' '
+                                  || l_param_id
+                                  || ' - '
+                                  || l_param
+                                 );
+
+            CASE l_param_id
+               WHEN 'DLTIME'
+               THEN
+                  l_dltime := l_param;
+               WHEN 'TZ'
+               THEN
+                  l_tz := l_param;
+               WHEN 'UNITS'
+               THEN
+                  l_units := l_param;
+               WHEN 'INTERVALOFFSET'
+               THEN
+                  l_int_offset := l_param;
+               WHEN 'INTERVALBACKWARD'
+               THEN
+                  l_int_backward := l_param;
+               WHEN 'INTERVALFORWARD'
+               THEN
+                  l_int_forward := l_param;
+               WHEN 'UNITSYS'
+               THEN
+                  l_unit_sys := l_param;
+            END CASE;
+         END LOOP;
+      END IF;
+
+      --
+      -- Prepare to return data...
+      --
+      <<fin>>
+      p_shef_id := l_shef_id;
+      p_shef_pe_code := l_shef_pe_code;
+      p_shef_tse_code := l_shef_tse_code;
+      p_shef_duration_code := l_shef_duration_code;
+      p_cwms_ts_id := l_cwms_ts_id;
+      p_dltime := l_dltime;
+      p_tz := l_tz;
+      p_units := l_units;
+      p_int_offset := l_int_offset;
+      p_int_backward := l_int_backward;
+      p_int_forward := l_int_forward;
+      p_unit_sys := l_unit_sys;
+   END;
 END cwms_shef;
 /

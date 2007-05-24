@@ -1,4 +1,5 @@
-CREATE OR REPLACE PACKAGE CWMS_20.cwms_shef
+/* Formatted on 2007/05/23 08:26 (Formatter Plus v4.8.8) */
+CREATE OR REPLACE PACKAGE cwms_20.cwms_shef
 AS
    TYPE cat_data_stream_rec_t IS RECORD (
       data_stream_code   NUMBER,
@@ -75,5 +76,22 @@ AS
 
    FUNCTION cat_shef_time_zones_tab
       RETURN cat_shef_tz_tab_t PIPELINED;
+
+   PROCEDURE parse_criteria_record (
+      p_shef_id              OUT      VARCHAR2,
+      p_shef_pe_code         OUT      VARCHAR2,
+      p_shef_tse_code        OUT      VARCHAR2,
+      p_shef_duration_code   OUT      VARCHAR2,
+      p_units                OUT      VARCHAR2,
+      p_unit_sys             OUT      VARCHAR2,
+      p_tz                   OUT      VARCHAR2,
+      p_dltime               OUT      VARCHAR2,
+      p_int_offset           OUT      VARCHAR2,
+      p_int_backward         OUT      VARCHAR2,
+      p_int_forward          OUT      VARCHAR2,
+      p_cwms_ts_id           OUT      VARCHAR2,
+      p_comment              OUT      VARCHAR2,
+      p_criteria_record      IN       VARCHAR2
+   );
 END cwms_shef;
 /
