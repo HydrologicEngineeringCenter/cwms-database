@@ -203,7 +203,8 @@ alter table at_rating_extension_spec add constraint at_rating_extension_spec_pk
 primary key (rating_extension_code);
   
 alter table at_rating_extension_spec add constraint at_rating_extension_spec_fk1
-foreign key (rating_loc_code) references at_rating_loc;
+foreign key (rating_loc_code) references at_rating_loc 
+on delete cascade;
 
 alter table at_rating_extension_spec add constraint at_rating_extension_spec_ck1
 check (active_flag in ('T','F'));
@@ -233,7 +234,8 @@ alter table at_rating_extension_value add constraint at_rating_extension_value_p
 primary key (rating_extension_code,x);
 
 alter table at_rating_extension_value add constraint at_rating_extension_value_fk1
-foreign key (rating_extension_code) references at_rating_extension_spec;
+foreign key (rating_extension_code) references at_rating_extension_spec
+on delete cascade;
 
 comment on table at_rating_extension_value is 'Extends the top or bottom of the rating curves for a rating family at a location';
 
@@ -258,7 +260,8 @@ alter table at_rating_spec add constraint at_rating_spec_pk
 primary key (rating_spec_code);
 
 alter table at_rating_spec add constraint at_rating_spec_fk1 
-foreign key (rating_loc_code) references at_rating_loc;
+foreign key (rating_loc_code) references at_rating_loc
+on delete cascade;
 
 alter table at_rating_spec add constraint at_rating_spec_ck1
 check (active_flag in ('T','F'));
@@ -294,7 +297,8 @@ alter table at_rating_shift_spec add constraint at_rating_shift_spec_pk
 primary key (rating_shift_code);
   
 alter table at_rating_shift_spec add constraint at_rating_shift_spec_fk1
-foreign key (rating_spec_code) references at_rating_spec;
+foreign key (rating_spec_code) references at_rating_spec 
+on delete cascade;
 
 alter table at_rating_shift_spec add constraint at_rating_shift_spec_ck1
 check (active_flag in ('T','F'));
@@ -328,7 +332,8 @@ create table at_rating_shift_value
 organization index;
 
 alter table at_rating_shift_value add constraint at_rating_shift_value_fk1
-foreign key (rating_shift_code) references at_rating_shift_spec;
+foreign key (rating_shift_code) references at_rating_shift_spec 
+on delete cascade;
 
 comment on table  at_rating_shift_value       is 'Table of one or more shifts to be applied to a specific rating table';
 comment on column at_rating_shift_value.stage is 'The value of INDEP_PARM_1 where this shift begins';
@@ -352,7 +357,8 @@ alter table at_rating_curve add constraint at_rating_curve_pk
 primary key (rating_curve_code);
 
 alter table at_rating_curve add constraint at_rating_curve_fk1
-foreign key (rating_spec_code) references at_rating_spec;
+foreign key (rating_spec_code) references at_rating_spec 
+on delete cascade;
 
 create unique index at_rating_curve_ak1 on at_rating_curve 
 ( rating_spec_code,
@@ -380,8 +386,12 @@ create table at_rating_value
   primary key       (rating_curve_code,x))
 organization index;
 
+
+-- alter table at_rating_value drop constraint at_rating_value_fk1;
+
 alter table at_rating_value add constraint at_rating_value_fk1
-foreign key (rating_curve_code) references at_rating_curve;
+foreign key (rating_curve_code) references at_rating_curve
+on delete cascade;
 
 alter table at_rating_value add constraint at_rating_value_ck1
 check (stor is null or stor in ('*','E'));
