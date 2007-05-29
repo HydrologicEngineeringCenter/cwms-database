@@ -1,3 +1,4 @@
+/*** CWMS v2.0 ***/
 
 
 /*** CWMS_RATING_TYPE ***/
@@ -109,6 +110,15 @@ primary key (rating_parms_code);
 
 alter table at_rating_parameters add constraint at_rating_parms_fk1 
 foreign key (rating_code) references at_rating;
+
+alter table at_rating_parameters add constraint at_rating_parms_fk2 
+foreign key (indep_parm_code_1) references at_parameter(parameter_code);
+
+alter table at_rating_parameters add constraint at_rating_parms_fk3 
+foreign key (indep_parm_code_2) references at_parameter(parameter_code);
+
+alter table at_rating_parameters add constraint at_rating_parms_fk4 
+foreign key (dep_parm_code) references at_parameter(parameter_code);
  
 create unique index at_rating_parms_ak1 on at_rating_parameters
 ( rating_code, 
@@ -146,13 +156,13 @@ alter table at_rating_spec      drop constraint at_rating_spec_fk1;
 drop table at_rating_loc;
 
 create table at_rating_loc
-( rating_loc_code   number(10), 
-  rating_code       number(10)  not null,
-  location_code     number(10)  not null,
-  auto_load_flag    char(1)     not null,
-  auto_active_flag  char(1)     not null,
-  filename          varchar2(32),
-  description       varchar2(160));
+( rating_loc_code    number(10), 
+  rating_code        number(10)  not null,
+  base_location_code number(10)  not null,
+  auto_load_flag     char(1)     not null,
+  auto_active_flag   char(1)     not null,
+  filename           varchar2(32),
+  description        varchar2(160));
 
 alter table at_rating_loc add constraint at_rating_loc_pk 
 primary key (rating_loc_code);
@@ -166,7 +176,7 @@ foreign key (rating_code) references at_rating;
 --
 
 alter table at_rating_loc add constraint at_rating_loc_fk2
-foreign key (location_code) references at_point_location;
+foreign key (base_location_code) references at_base_location;
 
 alter table at_rating_loc add constraint at_rating_loc_ck1
 check (auto_load_flag in ('T','F'));
@@ -176,14 +186,14 @@ check (auto_active_flag in ('T','F'));
 
 create unique index at_rating_loc_ak1 on at_rating_loc
 ( rating_code, 
-  location_code);
+  base_location_code);
 
-comment on table  at_rating_loc                  is 'Defines the metadata for a rating family at a location';
-comment on column at_rating_loc.rating_code      is 'Foreign key to rating family';
-comment on column at_rating_loc.location_code    is 'Foreign key to the cwms location to which this rating applies';
-comment on column at_rating_loc.auto_load_flag   is '="T" to automatically load new curves and shifts when they become available';
-comment on column at_rating_loc.auto_active_flag is '="T" to automatically mark newly loaded curves and shifts as active';
-comment on column at_rating_loc.filename         is 'rating table filename (do we also need file type, "RDB" ?)';
+comment on table  at_rating_loc                    is 'Defines the metadata for a rating family at a location';
+comment on column at_rating_loc.rating_code        is 'Foreign key to rating family';
+comment on column at_rating_loc.base_location_code is 'Foreign key to the cwms base location to which this rating applies';
+comment on column at_rating_loc.auto_load_flag     is '="T" to automatically load new curves and shifts when they become available';
+comment on column at_rating_loc.auto_active_flag   is '="T" to automatically mark newly loaded curves and shifts as active';
+comment on column at_rating_loc.filename           is 'rating table filename (do we also need file type, "RDB" ?)';
 
 
 /*** AT_RATING_EXTENSION_SPEC ***/
@@ -400,6 +410,14 @@ comment on table  at_rating_value      is 'Table of expanded (base) rating table
 comment on column at_rating_value.stor is '"*"=USGS STOR point, "E"=user Extension, else NULL';
 
 
+/*** DIRECTORY OBJECTS ***/
+
+
+create or replace directory rdbfiles   as '/usr1/dba/oracle/rdbfiles';
+
+create or replace directory rdbfilesxx as '/usr1/dba/oracle/rdbfilesxx';
+
+
 /*** ET_RDB_COMMENT ***/
 
 
@@ -450,6 +468,9 @@ reject limit unlimited;
 
 /*** AV_RATING ***/
 
+--- Note: This would be easier if 
+---       MV_CWMS_TS_ID contained the PARAMETER_CODE 
+
 
 create or replace view av_rating as
 select r.db_office_code,
@@ -462,26 +483,26 @@ select r.db_office_code,
        r.description       rating_desc, 
        p.rating_parms_code parms_code,
        r.indep_parm_count  parm_count,
-       p1.parameter_id     indep_parm_1, 
-       p2.parameter_id     indep_parm_2, 
-       p3.parameter_id     dep_parm, 
+       m1.parameter_id     indep_parm_1, 
+       m2.parameter_id     indep_parm_2, 
+       m3.parameter_id     dep_parm, 
        v.version, 
        p.description parm_desc
 from   at_rating               r,
        cwms_rating_type        t,
        cwms_rating_interpolate i,
-       cwms_parameter          p1,
-       cwms_parameter          p2,
-       cwms_parameter          p3,
        at_rating_parameters    p,
-       at_rating_version       v
+       at_rating_version       v,
+       mv_cwms_ts_id           m1,
+       mv_cwms_ts_id           m2,
+       mv_cwms_ts_id           m3
 where  t.rating_type_code  = r.rating_type_code
    and i.interpolate_code  = r.interpolate_code
    and p.rating_code(+)       = r.rating_code
    and v.rating_parms_code(+) = p.rating_parms_code
-   and p1.parameter_code(+)   = p.indep_parm_code_1                
-   and p2.parameter_code(+)   = p.indep_parm_code_2                
-   and p3.parameter_code(+)   = p.dep_parm_code;
+   and m1.parameter_code(+)   = p.indep_parm_code_1                
+   and m2.parameter_code(+)   = p.indep_parm_code_2                
+   and m3.parameter_code(+)   = p.dep_parm_code;
 
 
 /*** AV_CURVE ***/
@@ -495,8 +516,8 @@ select r.db_office_code,
        t.rating_type_id     type, 
        i.interpolate_id     interpolate, 
        l.rating_loc_code    loc_code,
-       l.location_code, 
-       n.cwms_id, 
+       l.base_location_code, 
+       m.location_id,       
        l.auto_load_flag     auto_load, 
        l.auto_active_flag   auto_active, 
        l.filename, 
@@ -517,21 +538,19 @@ select r.db_office_code,
        ss.active_flag       shift_active, 
        ss.transition_flag 
        transition  
-from   at_rating               r,
+from   mv_cwms_ts_id           m,
+       at_rating               r,
        cwms_rating_type        t,
        cwms_rating_interpolate i,
        at_rating_loc           l,
-       at_point_location       p,
-       at_cwms_name            n, 
        at_rating_spec          s,
-       at_rating_curve         c,
-       at_rating_shift_spec    ss
-where  t.rating_type_code     = r.rating_type_code
-   and i.interpolate_code     = r.interpolate_code
-   and l.rating_code(+)       = r.rating_code
-   and p.location_code(+)     = l.location_code
-   and n.cwms_code(+)         = p.cwms_code 
-   and s.rating_loc_code(+)   = l.rating_loc_code
-   and c.rating_spec_code(+)  = s.rating_spec_code
-   and ss.rating_spec_code(+) = s.rating_spec_code;
+       at_rating_shift_spec    ss,
+       at_rating_curve         c
+where  t.rating_type_code      = r.rating_type_code
+   and i.interpolate_code      = r.interpolate_code
+   and l.rating_code(+)        = r.rating_code
+   and m.base_location_code(+) = l.base_location_code
+   and s.rating_loc_code(+)    = l.rating_loc_code
+   and ss.rating_spec_code(+)  = s.rating_spec_code
+   and c.rating_spec_code(+)   = s.rating_spec_code;
 /
