@@ -52,6 +52,31 @@ CREATE OR REPLACE package body CWMS_20.cwms_rating as
    exception when others then return FALSE; 
    end;   
 
+   function check_T_or_F (p_flag varchar2, p_default varchar2) return varchar2 as
+
+      l_flag   varchar2(1);
+      l_msg    varchar2(256);
+
+   begin
+
+      -- Default null value, convert to upper case and validate  
+
+      l_msg := 'VALUE MUST BE "T" OR "F" ('||p_flag||')';
+
+      if length(p_flag) != 1 then
+         raise_application_error (-20999,l_msg,TRUE);      
+      end if; 
+   
+      l_flag := upper(nvl(p_flag,p_default));
+
+      if l_flag <> 'T' and l_flag <> 'F' then
+         raise_application_error (-20999,l_msg,TRUE);      
+      end if;
+
+      return l_flag;
+
+   end;
+
    function get_rating_code (
       p_source   in   varchar2,              -- rating source ("USGS") 
       p_type     in   varchar2,              -- rating type ("STGQ") 
@@ -71,7 +96,7 @@ CREATE OR REPLACE package body CWMS_20.cwms_rating as
 
       l_office_code := cwms_util.get_db_office_code(p_office); 
 
-dbms_output.put_line('db_office_code='||l_office_code);
+      dbms_output.put_line('db_office_code='||l_office_code);
 
       select rating_code into l_rating_code 
       from   at_rating inner join cwms_rating_type using (rating_type_code)
@@ -106,7 +131,8 @@ dbms_output.put_line('db_office_code='||l_office_code);
    function get_loc_code (
       p_source   in   varchar2,              -- rating source ("USGS") 
       p_type     in   varchar2,              -- rating type ("STGQ") 
-      p_loc      in   varchar2               -- cwms base location ("BON") 
+      p_loc      in   varchar2,              -- cwms base location ("BON") 
+      p_office   in   varchar2 default null  -- db office id       
       )  
       return integer is
       
@@ -117,13 +143,13 @@ dbms_output.put_line('db_office_code='||l_office_code);
    
       -- Get the RATING_LOC_CODE for the rating table family and location      
    
-      l_rating_code := get_rating_code (p_source,p_type);
+      l_rating_code := get_rating_code (p_source,p_type,p_office);
    
       select rating_loc_code into l_loc_code  
-      from   mv_cwms_ts_id     m, 
-             at_rating_loc     r
-      where  upper(m.location_id) = upper(p_loc)
-        and  r.base_location_code = m.base_location_code;    
+      from   at_rating_loc     r,
+             at_base_location  b
+      where  upper(b.base_location_id) = upper(p_loc)
+        and  r.base_location_code = b.base_location_code;    
     
       dbms_output.put_line('rating_loc_code='||to_char(l_loc_code));
 
@@ -270,18 +296,19 @@ begin
 
    -- Add a rating family 
 
-   -- handle NULL default parameter 
+   -- Handle NULL default parameters in the INSERT 
 
-   l_count       := nvl(p_count,1);
-   l_office_code := cwms_util.get_db_office_code(p_office); 
+   -- REMOVE THESE LINES 
+   --l_count       := nvl(p_count,1);
+   --l_office_code := cwms_util.get_db_office_code(p_office); 
       
    insert into at_rating 
    select cwms_seq.nextval,
-          l_office_code,
+          cwms_util.get_db_office_code(p_office),
           p_source,
           t.rating_type_code,
           i.interpolate_code,
-          l_count,
+          nvl(p_count,1),
           p_desc
    from   cwms_rating_type t,
           cwms_rating_interpolate i
@@ -441,20 +468,10 @@ begin
 
    -- Add a CWMS location to a rating family 
 
-   -- Handle NULL default parameter and case   
+   -- Check and condition T/F parameters    
    
-   l_load   := upper(nvl(p_load,'T'));
-   l_active := upper(nvl(p_active,'F'));
-
-   -- Check T/F parameters   
-
-   if (l_load<>'T' and l_load<>'F') or (l_active<>'T' and l_active<>'F') then
-      l_msg := 'cwms_rating.add_location: '
-               ||'Parameter p_load or p_active not "T", "F" or null: Source='
-               ||p_source||', Type='||p_type||', Location='||p_loc||', p_load='
-               ||p_load||', p_active='||p_active;      
-      raise_application_error (-20999,l_msg,TRUE);      
-   end if;
+   l_load   := check_T_or_F(p_load,'T');
+   l_active := check_T_or_F(p_active,'F');
 
    -- Does the rating family exist? 
 
@@ -519,11 +536,11 @@ begin
         ( select rating_loc_code       
           from   at_rating inner join cwms_rating_type  using (rating_type_code)
                            inner join at_rating_loc     using (rating_code)
-                           inner join mv_cwms_ts_id     using (base_location_code)
-          where  db_office_code = 1
-            and  source         = p_source 
-            and  rating_type_id = p_type 
-            and  upper(base_location_id) = upper(p_loc) );   
+                           inner join at_base_location  using (base_location_code)
+          where  db_office_code = cwms_util.get_db_office_code(p_office)
+            and  upper(source)           = upper(p_source) 
+            and  upper(rating_type_id)   = upper(p_type) 
+            and  upper(base_location_id) = upper(p_loc) );  
 
    dbms_output.put_line('cwms_rating.delete_location: Source='||p_source
       ||', Type='||p_type||', Location='||p_loc||', '||sql%rowcount||' row deleted');      
@@ -539,8 +556,8 @@ procedure extend_curve (
    p_y          in   number,                 -- Y value 
    p_x_units    in   varchar2 default null,  -- X value units ("ft"), default to db units  
    p_y_units    in   varchar2 default null,  -- Y value units ("cfm"), default to db units 
-   p_effective  in   timestamp with time zone 
-                    default systimestamp, 
+   p_effective  in   timestamp with time zone     -- defaults to the current day  
+                     default trunc(systimestamp),  
    p_active     in   char     default 'F',   -- active flag ("T" or F") 
    p_office     in   varchar2 default null   -- db office id                           
    ) is
@@ -557,40 +574,47 @@ begin
    -- 
    -- NOTE: Could make the x,y parameters an array  
 
-   -- handle NULL default parameter and case   
-
-   l_effective := nvl(p_effective,systimestamp);
-   l_active    := upper(nvl(p_active,'F'));
+   -- Handle NULL default parameter    
+   -- Check and condition T/F parameter     
    
-   -- get the rating_loc_code  
+   l_effective := nvl(p_effective,trunc(systimestamp));
+   l_active    := check_T_or_F(p_active,'F');
+     
+   -- Get the rating_loc_code  
   
-   l_loc_code := get_loc_code (p_source,p_type,p_loc);
+   l_loc_code := get_loc_code (p_source,p_type,p_loc,p_office);
 
-   -- add the rating curve extension spec  
- 
-   select cwms_seq.nextval into l_ext_code from dual;
-   
+   -- Does the rating table extension specification exist? 
+
    begin
+   
+      select rating_extension_code into l_ext_code
+      from   at_rating_extension_spec
+      where  rating_loc_code = l_loc_code
+        and  effective_date  = l_effective;
+
+   exception when no_data_found then
+   
+      -- No, add it  
+   
       insert into at_rating_extension_spec
       (rating_extension_code, rating_loc_code, effective_date, active_flag) 
-      values (l_ext_code, l_loc_code, l_effective, l_active); 
+      values (cwms_seq.nextval, l_loc_code, l_effective, l_active)
+      returning rating_extension_code into l_ext_code; 
 
       dbms_output.put_line(to_char(sql%rowcount)||' row inserted into at_rating_extension_spec');
 
-   exception when DUP_VAL_ON_INDEX then
-      -- ORA-00001: unique constraint violated  
-      l_msg := 'cwms_rating.extend_curve: '
-               ||'An extension set already exists: Source="'||p_source
-               ||'", Type="'||p_type||'", Location='||p_loc
-               ||'", Effective Date="'||l_effective||'"';         
-      raise_application_error (-20999,l_msg,TRUE);
    end;
 
-   -- add the x,y points 
+   dbms_output.put_line('rating_extension_code='||l_ext_code);
+
+
+   -- Add the x,y points 
 
    -- NOTE: Will need to do units conversion   
 
    begin
+   
       insert into at_rating_extension_value
       (rating_extension_code,x,y) values (l_ext_code,p_x,p_y);
 
@@ -599,11 +623,13 @@ begin
    exception when DUP_VAL_ON_INDEX then
       -- ORA-00001: unique constraint violated  
       l_msg := 'cwms_rating.extend_curve: '
-               ||'The point already exists: Source="'||p_source||'", Type='
-               ||p_type||'", Location="'||p_loc||'", Effective Date="'
-               ||l_effective||'", x='||p_x||', y='||p_y;         
-      raise_application_error (-20999,l_msg,TRUE);      
+               ||'The point already exists: Source='||p_source||', Type='
+               ||p_type||', Location='||p_loc||', Effective Date='
+               ||l_effective||', x='||p_x||', y='||p_y;         
+      raise_application_error (-20999,l_msg,TRUE);   
+         
    end; 
+
 
 exception when others then
    dbms_output.put_line(SQLERRM);
@@ -615,7 +641,8 @@ end extend_curve;
 procedure load_rdb_files ( 
 
    p_dir        in   varchar2,               -- a directory object name       
-   p_date       in   date                    -- load rdb files newer than p_date 
+   p_date       in   date,                   -- load rdb files newer than p_date 
+   p_office     in   varchar2 default null   -- db office id                             
    ) is
    
    type          vc132_nt is table of varchar2(132);
@@ -675,11 +702,12 @@ end load_rdb_files;
 procedure load_rdb_file ( 
    p_dir        in   varchar2,               -- directory object name  
    p_file       in   varchar2,               -- an rdb filename 
-   p_cwms_id    in   varchar2,               -- cwms_id associated w/the rating table  
+   p_loc        in   varchar2,               -- base location id associated w/the rating table  
    p_active     in   char     := null,       -- activate flag ("T","F" or null)  
    p_max_y_diff in   number   := 0.0001,     -- max acceptable y diff is y times this number 
-   p_max_y_errs in   integer  := 0           -- max y errors before aborting the load  
-   ) is
+   p_max_y_errs in   integer  := 0,          -- max y errors before aborting the load 
+   p_office     in   varchar2 default null   -- db office id                              
+   ) is   
 
    l_sql         varchar2(80);
    l_source      at_rating.source%type;
@@ -786,10 +814,10 @@ begin
 
    l_source := get_comment('STATION AGENCY');
    l_type   := get_comment('" TYPE');
-   l_loc    := p_cwms_id;
+   l_loc    := p_loc;
 
    begin
-      l_loc_code := get_loc_code (l_source,l_type,l_loc);
+      l_loc_code := get_loc_code (l_source,l_type,l_loc,p_office);
       
    exception when no_data_found then
       -- ORA-06503: PL/SQL: Function returned without value 

@@ -57,24 +57,26 @@ procedure extend_curve (
    p_y          in   number,                 -- Y value 
    p_x_units    in   varchar2 default null,  -- X value units ("ft"), default to db units 
    p_y_units    in   varchar2 default null,  -- Y value units ("cfm"), default to db units
-   p_effective  in   timestamp with time zone 
-                     default systimestamp, 
+   p_effective  in   timestamp with time zone     -- defaults to the current day  
+                     default trunc(systimestamp), 
    p_active     in   char     default 'F',   -- active flag ("T" or F")  
    p_office     in   varchar2 default null   -- db office id                          
    );
                 
 procedure load_rdb_files ( 
    p_dir        in   varchar2,               -- directory object name       
-   p_date       in   date                    -- load rdb files newer than p_date 
+   p_date       in   date,                   -- load rdb files newer than p_date 
+   p_office     in   varchar2 default null   -- db office id                             
    );
  
 procedure load_rdb_file ( 
    p_dir        in   varchar2,               -- directory object name   
    p_file       in   varchar2,               -- an rdb filename 
-   p_cwms_id    in   varchar2,               -- cwms_id associated w/the rating table   
+   p_loc        in   varchar2,               -- base location id associated w/the rating table   
    p_active     in   char     := null,       -- activate flag ("T","F" or null)    
    p_max_y_diff in   number   := 0.0001,     -- max acceptable y diff is y times this number  
-   p_max_y_errs in   integer  := 0           -- max y errors before aborting the load  
+   p_max_y_errs in   integer  := 0,          -- max y errors before aborting the load  
+   p_office     in   varchar2 default null   -- db office id                             
    );   
 
 end cwms_rating;
