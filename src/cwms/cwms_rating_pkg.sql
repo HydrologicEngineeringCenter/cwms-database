@@ -26,7 +26,8 @@ procedure add_parameters (
    p_indep_2    in   varchar2 default null,  -- 2nd independent parameter (optional)   
    p_dep        in   varchar2,               -- dependent parameter 
    p_version    in   varchar2,               -- cwms pathname version 
-   p_desc       in   varchar2 default null   -- description for this parameter set 
+   p_desc       in   varchar2 default null,  -- description for this parameter set 
+   p_office     in   varchar2 default null   -- db office id    
    );     
  
 function add_location (
@@ -36,13 +37,16 @@ function add_location (
    p_load       in   char     default 'T',   -- auto load flag ("T" or F")   
    p_active     in   char     default 'F',   -- auto active flag ("T" or F")   
    p_filename   in   varchar2 default null,  -- cwms pathname version 
-   p_desc       in   varchar2 default null   -- description for this parameter set 
+   p_desc       in   varchar2 default null,  -- description for this parameter set 
+   p_office     in   varchar2 default null   -- db office id    
+   
    ) return integer;                         -- return the rating_loc_code  
 
 procedure delete_location (
    p_source     in   varchar2,               -- rating source ("USGS") 
    p_type       in   varchar2,               -- rating type ("STGQ") 
-   p_loc        in   varchar2                -- cwms base location ("BON") 
+   p_loc        in   varchar2,               -- cwms base location ("BON") 
+   p_office     in   varchar2 default null   -- db office id       
    );  
 
 procedure extend_curve (
@@ -54,8 +58,9 @@ procedure extend_curve (
    p_x_units    in   varchar2 default null,  -- X value units ("ft"), default to db units 
    p_y_units    in   varchar2 default null,  -- Y value units ("cfm"), default to db units
    p_effective  in   timestamp with time zone 
-                    default systimestamp, 
-   p_active     in   char     default 'F'    -- active flag ("T" or F")                     
+                     default systimestamp, 
+   p_active     in   char     default 'F',   -- active flag ("T" or F")  
+   p_office     in   varchar2 default null   -- db office id                          
    );
                 
 procedure load_rdb_files ( 
