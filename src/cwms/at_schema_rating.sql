@@ -473,56 +473,50 @@ reject limit unlimited;
 
 
 create or replace view av_rating as
+with pc as 
+  ( select parameter_code, 
+           base_parameter_id||nvl2(sub_parameter_id,'.'
+           ||sub_parameter_id,null) parameter_id
+    from   at_parameter inner join cwms_base_parameter using (base_parameter_code) )
 select r.db_office_code,
-       r.rating_code,  
+       rating_code,  
        r.source, 
-       r.rating_type_code  type_code, 
+       rating_type_code    type_code, 
        t.rating_type_id    type, 
        t.long_name,
        i.interpolate_id    interpolate, 
        r.description       rating_desc, 
-       p.rating_parms_code parms_code,
+       rating_parms_code   parms_code,
        r.indep_parm_count  parm_count,
-       m1.parameter_id     indep_parm_1, 
-       m2.parameter_id     indep_parm_2, 
-       m3.parameter_id     dep_parm, 
+       (select parameter_id from pc where parameter_code = p.indep_parm_code_1) indep_parm_1, 
+       (select parameter_id from pc where parameter_code = p.indep_parm_code_2) indep_parm_2, 
+       (select parameter_id from pc where parameter_code = p.dep_parm_code)     dep_parm, 
        v.version, 
-       p.description parm_desc
-from   at_rating               r,
-       cwms_rating_type        t,
-       cwms_rating_interpolate i,
-       at_rating_parameters    p,
-       at_rating_version       v,
-       mv_cwms_ts_id           m1,
-       mv_cwms_ts_id           m2,
-       mv_cwms_ts_id           m3
-where  t.rating_type_code  = r.rating_type_code
-   and i.interpolate_code  = r.interpolate_code
-   and p.rating_code(+)       = r.rating_code
-   and v.rating_parms_code(+) = p.rating_parms_code
-   and m1.parameter_code(+)   = p.indep_parm_code_1                
-   and m2.parameter_code(+)   = p.indep_parm_code_2                
-   and m3.parameter_code(+)   = p.dep_parm_code;
+       p.description       parm_desc
+from   at_rating r inner join cwms_rating_type        t using (rating_type_code)
+                   inner join cwms_rating_interpolate i using (interpolate_code)
+                    left join at_rating_parameters    p using (rating_code) 
+                    left join at_rating_version       v using (rating_parms_code);
 
 
 /*** AV_CURVE ***/
 
 
-create or replace view      av_curve as
+create or replace view av_curve as
 select r.db_office_code,
-       r.rating_code,  
+       rating_code,  
        r.source, 
-       r.rating_type_code   type_code, 
+       rating_type_code     type_code, 
        t.rating_type_id     type, 
        i.interpolate_id     interpolate, 
-       l.rating_loc_code    loc_code,
-       l.base_location_code, 
-       m.location_id,       
+       rating_loc_code      loc_code,
+       base_location_code, 
+       b.base_location_id,       
        l.auto_load_flag     auto_load, 
        l.auto_active_flag   auto_active, 
        l.filename, 
        l.description,
-       s.rating_spec_code   spec_code, 
+       rating_spec_code     spec_code, 
        s.effective_date     base_date,
        s.create_date, 
        s.version, 
@@ -538,19 +532,11 @@ select r.db_office_code,
        ss.active_flag       shift_active, 
        ss.transition_flag 
        transition  
-from   mv_cwms_ts_id           m,
-       at_rating               r,
-       cwms_rating_type        t,
-       cwms_rating_interpolate i,
-       at_rating_loc           l,
-       at_rating_spec          s,
-       at_rating_shift_spec    ss,
-       at_rating_curve         c
-where  t.rating_type_code      = r.rating_type_code
-   and i.interpolate_code      = r.interpolate_code
-   and l.rating_code(+)        = r.rating_code
-   and m.base_location_code(+) = l.base_location_code
-   and s.rating_loc_code(+)    = l.rating_loc_code
-   and ss.rating_spec_code(+)  = s.rating_spec_code
-   and c.rating_spec_code(+)   = s.rating_spec_code;
+from   at_rating r inner join cwms_rating_type        t using (rating_type_code)
+                   inner join cwms_rating_interpolate i using (interpolate_code)
+                    left join at_rating_loc           l using (rating_code)
+                    left join at_base_location        b using (base_location_code)
+                    left join at_rating_spec          s using (rating_loc_code)
+                    left join at_rating_shift_spec   ss using (rating_spec_code)
+                    left join at_rating_curve         c using (rating_spec_code);
 /
