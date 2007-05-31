@@ -18,6 +18,40 @@ CREATE OR REPLACE package body CWMS_20.cwms_rating as
 
    -- package local functions      
 
+   function type_ok (p_type in varchar2) return boolean is
+      
+      l_type_code     number;
+      
+   begin
+   
+      -- Test for valid rating type 
+
+      select rating_type_code into l_type_code 
+      from   cwms_rating_type 
+      where  rating_type_id = p_type; 
+      
+      return sql%rowcount > 0;
+       
+   exception when others then return FALSE; 
+   end;   
+
+   function interp_ok (p_interp in varchar2) return boolean is
+      
+      l_interp_code   number;
+      
+   begin  
+   
+      -- Test for valid rating interpolation 
+
+      select interpolate_code into l_interp_code 
+      from   cwms_rating_interpolate 
+      where  interpolate_id = p_interp; 
+      
+      return sql%rowcount > 0;
+
+   exception when others then return FALSE; 
+   end;   
+
    function get_rating_code (
       p_source   in   varchar2,              -- rating source ("USGS") 
       p_type     in   varchar2,              -- rating type ("STGQ") 
@@ -25,6 +59,7 @@ CREATE OR REPLACE package body CWMS_20.cwms_rating as
       ) 
       return integer is
       
+      l_office_code   pls_integer;
       l_rating_code   pls_integer;
       l_msg           varchar2(256);
 
@@ -32,11 +67,17 @@ CREATE OR REPLACE package body CWMS_20.cwms_rating as
    
       -- Get the RATING_CODE for the rating table family     
 
+      -- handle NULL default parameter  
+
+      l_office_code := cwms_util.get_db_office_code(p_office); 
+
+dbms_output.put_line('db_office_code='||l_office_code);
+
       select rating_code into l_rating_code 
       from   at_rating inner join cwms_rating_type using (rating_type_code)
-      where  db_office_code = cwms_util.get_db_office_code(p_office)
-        and  source         = p_source
-        and  rating_type_id = p_type;   
+      where  db_office_code        = l_office_code 
+        and  source                = p_source
+        and  upper(rating_type_id) = upper(p_type);   
    
       dbms_output.put_line('rating_code='||to_char(l_rating_code));
 
@@ -44,8 +85,15 @@ CREATE OR REPLACE package body CWMS_20.cwms_rating as
 
    exception 
       when NO_DATA_FOUND then
-         l_msg := 'cwms_rating: The rating family doesn''t exist: Source="'||p_source  
-                  ||'", Type="'||p_type||'"';      
+      
+         l_msg := 'cwms_rating: ';
+      
+         if not type_ok(p_type) then l_msg:=l_msg||'Invalid Type: ';
+         else                        l_msg:=l_msg||'The rating family doesn''t exist: ';
+         end if;
+       
+         l_msg := l_msg||' Source='||p_source||', Type='||p_type||', Office='||p_office;      
+
          raise_application_error (-20999,l_msg,TRUE);
       
       when others then
@@ -128,10 +176,10 @@ CREATE OR REPLACE package body CWMS_20.cwms_rating as
       -- a quote appears after p_str, then the value is quoted, when in fact 
       -- the quote may be the delimiter for a subsequent string on the line.    
 
-      -- handle NULL default parameters   
+      -- handle NULL default parameters and case   
 
       l_pos  := nvl(p_pos,1);
-      l_line := nvl(p_line,'F');
+      l_line := upper(nvl(p_line,'F'));
          
       l_val := null;
       for i in g_lines.first..g_lines.last loop     -- scan all lines for p_str 
@@ -214,20 +262,22 @@ procedure add_rating (
     
    ) is 
 
-   l_count    integer;
-   l_msg      varchar2(256);
+   l_count         pls_integer;
+   l_office_code   pls_integer;
+   l_msg           varchar2(256);
    
 begin
 
    -- Add a rating family 
 
-   -- handle NULL default parameter  
+   -- handle NULL default parameter 
 
-   l_count := nvl(p_count,1);
-   
+   l_count       := nvl(p_count,1);
+   l_office_code := cwms_util.get_db_office_code(p_office); 
+      
    insert into at_rating 
    select cwms_seq.nextval,
-          cwms_util.get_db_office_code(p_office),
+          l_office_code,
           p_source,
           t.rating_type_code,
           i.interpolate_code,
@@ -235,19 +285,29 @@ begin
           p_desc
    from   cwms_rating_type t,
           cwms_rating_interpolate i
-   where  t.rating_type_id=upper(p_type)
-     and  i.interpolate_id=upper(p_interp);    
+   where  upper(t.rating_type_id)=upper(p_type)
+     and  upper(i.interpolate_id)=upper(p_interp);    
 
    dbms_output.put_line(to_char(sql%rowcount)||' row inserted into at_rating');
 
-   if sql%rowcount=0 then 
-      l_msg := 'cwms_rating.add_rating failed for Source="'||p_source 
-               ||'", Type="'||p_type||'", Interp="'||p_interp||'"'; 
+   if sql%rowcount=0 then
+   
+      l_msg := 'cwms_rating.add_rating failed: ';
+      
+      if    not type_ok  (p_type)   then l_msg:=l_msg||'Invalid Type: ';
+      elsif not interp_ok(p_interp) then l_msg:=l_msg||'Invalid Interpolation: ';
+      end if;
+       
+      l_msg := l_msg||' Source='||p_source||', Type='||p_type||', Interp='
+               ||p_interp||', Office='||p_office;
+                
       raise_application_error (-20999,l_msg,FALSE);
+      
     end if;  
 
 exception when others then
    -- ORA-00001: unique constraint (CWMS.AT_RATING_AK1) violated 
+   -- ORA-01403: no data found 
    dbms_output.put_line(SQLERRM);
    raise;
 
@@ -260,7 +320,8 @@ procedure add_parameters (
    p_indep_2    in   varchar2 default null,  -- 2nd independent parameter (optional)   
    p_dep        in   varchar2,               -- dependent parameter 
    p_version    in   varchar2,               -- cwms pathname version 
-   p_desc       in   varchar2 default null   -- description for this parameter set 
+   p_desc       in   varchar2 default null,  -- description for this parameter set 
+   p_office     in   varchar2 default null   -- db office id    
    ) is 
 
    l_rating_code   pls_integer;
@@ -272,11 +333,11 @@ begin
 
    -- Add a rating parameter and/or version 
 
-   -- does the rating family exist?  
+   -- Does the rating family exist?  
    
-   l_rating_code := get_rating_code (p_source,p_type);
+   l_rating_code := get_rating_code (p_source,p_type,p_office);
 
-   -- does the parameter set exist?   
+   -- Does the parameter set exist?   
 
    begin
       select parm_count, parms_code into l_parm_count, l_parms_code
@@ -293,14 +354,14 @@ begin
 
    dbms_output.put_line('rating_parms_code='||l_parms_code);
 
-   -- has the right number of independent parameters been provided?  
+   -- Has the right number of independent parameters been provided?  
 
    if l_parm_count=2 and p_indep_2 is null then
       l_msg := 'cwms_rating.add_parameters: Second independent parameter is missing';
       raise_application_error (-20999,l_msg,TRUE);
    end if;
 
-   -- if the parameter set doesn't exist, then add it   
+   -- If the parameter set doesn't exist, then add it   
   
    if l_parms_code is null then
       
@@ -317,11 +378,13 @@ begin
       insert into  at_rating_parameters
       select l_parms_code, 
              l_rating_code, 
-             (select parameter_code from mv_cwms_ts_id where parameter_id=p_indep_1),
-             (select parameter_code from mv_cwms_ts_id where parameter_id=p_indep_2),
-             (select parameter_code from mv_cwms_ts_id where parameter_id=p_dep),
+             (select parameter_code from mv_cwms_ts_id where upper(parameter_id)=upper(p_indep_1) and rownum=1),
+             (select parameter_code from mv_cwms_ts_id where upper(parameter_id)=upper(p_indep_2) and rownum=1),
+             (select parameter_code from mv_cwms_ts_id where upper(parameter_id)=upper(p_dep) and rownum=1),
              p_desc
       from   dual;                    
+
+      -- ORA-01400: cannot insert NULL into ("CWMS_20"."AT_RATING_PARAMETERS"."INDEP_PARM_CODE_1") 
 
       dbms_output.put_line(sql%rowcount||' row inserted into at_rating_parameters');
    
@@ -334,7 +397,7 @@ begin
       
    end if;
 
-   -- add the version 
+   -- Add the version 
  
    begin 
       insert into at_rating_version values (l_parms_code,p_version);
@@ -364,7 +427,8 @@ function add_location (
    p_load       in   char     default 'T',   -- auto load flag ("T" or F")   
    p_active     in   char     default 'F',   -- auto active flag ("T" or F")    
    p_filename   in   varchar2 default null,  -- cwms pathname version 
-   p_desc       in   varchar2 default null   -- description for this location 
+   p_desc       in   varchar2 default null,  -- description for this location 
+   p_office     in   varchar2 default null   -- db office id       
    ) return integer is
    
    l_rating_code     pls_integer;
@@ -377,9 +441,14 @@ begin
 
    -- Add a CWMS location to a rating family 
 
-   -- check parameter lengths and handle null optional parameters  
+   -- Handle NULL default parameter and case   
+   
+   l_load   := upper(nvl(p_load,'T'));
+   l_active := upper(nvl(p_active,'F'));
 
-   if length(p_load) > 1 or length(p_active) > 1 then
+   -- Check T/F parameters   
+
+   if (l_load<>'T' and l_load<>'F') or (l_active<>'T' and l_active<>'F') then
       l_msg := 'cwms_rating.add_location: '
                ||'Parameter p_load or p_active not "T", "F" or null: Source='
                ||p_source||', Type='||p_type||', Location='||p_loc||', p_load='
@@ -387,14 +456,11 @@ begin
       raise_application_error (-20999,l_msg,TRUE);      
    end if;
 
-   l_load   := nvl(p_load,'T');
-   l_active := nvl(p_active,'F');
+   -- Does the rating family exist? 
 
-   -- does the rating family exist? 
+   l_rating_code := get_rating_code (p_source,p_type,p_office);
 
-   l_rating_code := get_rating_code (p_source,p_type);
-
-   -- add the location 
+   -- Add the location 
  
    select cwms_seq.nextval into l_loc_code from dual;
 
@@ -404,12 +470,12 @@ begin
      auto_active_flag, filename, description )  
    select l_loc_code,
           l_rating_code, 
-          m.base_location_code,
+          bl.base_location_code,
           l_load,
           l_active,
           p_filename,
           p_desc
-   from   mv_cwms_ts_id m
+   from   at_base_location bl
    where  upper(base_location_id) = upper(p_loc); 
 
    dbms_output.put_line(to_char(sql%rowcount)||' row inserted into at_rating_loc');
@@ -440,7 +506,8 @@ end add_location;
 procedure delete_location (
    p_source     in   varchar2,               -- rating source ("USGS") 
    p_type       in   varchar2,               -- rating type ("STGQ") 
-   p_loc        in   varchar2                -- cwms base location ("BON") 
+   p_loc        in   varchar2,               -- cwms base location ("BON") 
+   p_office     in   varchar2 default null   -- db office id       
    ) is
 begin
 
@@ -474,7 +541,8 @@ procedure extend_curve (
    p_y_units    in   varchar2 default null,  -- Y value units ("cfm"), default to db units 
    p_effective  in   timestamp with time zone 
                     default systimestamp, 
-   p_active     in   char     default 'F'    -- active flag ("T" or F")                     
+   p_active     in   char     default 'F',   -- active flag ("T" or F") 
+   p_office     in   varchar2 default null   -- db office id                           
    ) is
    
    l_effective   timestamp with time zone;
@@ -489,10 +557,10 @@ begin
    -- 
    -- NOTE: Could make the x,y parameters an array  
 
-   -- handle NULL default parameter  
+   -- handle NULL default parameter and case   
 
    l_effective := nvl(p_effective,systimestamp);
-   l_active    := nvl(p_active,'F');
+   l_active    := upper(nvl(p_active,'F'));
    
    -- get the rating_loc_code  
   
@@ -783,7 +851,7 @@ begin
 
       -- get_loc_code doesn't return the auto_active_flag 
       
-      select nvl2(p_active,p_active,auto_active_flag) 
+      select upper(nvl(p_active,auto_active_flag)) 
       into   l_base_active
       from   at_rating_loc
       where  rating_loc_code = l_loc_code;      
