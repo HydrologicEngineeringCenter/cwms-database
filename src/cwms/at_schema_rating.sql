@@ -143,7 +143,8 @@ create table at_rating_versions
   constraint           at_rating_versions_pk primary key (rating_versions_code));
 
 alter table at_rating_versions add constraint at_rating_versions_fk1 
-foreign key (rating_parms_code) references at_rating_parameters;
+foreign key (rating_parms_code) references at_rating_parameters
+on delete cascade;
 
 create unique index at_rating_versions_ak1 on at_rating_versions
 ( rating_parms_code,
@@ -173,9 +174,6 @@ create table at_rating_loc
   auto_load_flag     char(1)     not null,
   auto_active_flag   char(1)     not null,
   filename           varchar2(32),
-  indep_rounding_1   varchar2(10),
-  indep_rounding_2   varchar2(10),
-  dep_rounding       varchar2(10),
   description        varchar2(160));
 
 alter table at_rating_loc add constraint at_rating_loc_pk 
@@ -273,7 +271,10 @@ create table at_rating_spec
   effective_date    date        not null,
   create_date       date        not null, 
   version           varchar2(8) not null,
-  active_flag       char(1)     not null);
+  active_flag       char(1)     not null,
+  indep_rounding_1   varchar2(10),
+  indep_rounding_2   varchar2(10),
+  dep_rounding       varchar2(10));
 
 alter table at_rating_spec add constraint at_rating_spec_pk 
 primary key (rating_spec_code);
@@ -296,6 +297,9 @@ comment on column at_rating_spec.effective_date   is 'The date on/after which th
 comment on column at_rating_spec.create_date      is 'The date the rating table was stored in the database';
 comment on column at_rating_spec.active_flag      is '="T" if the rating is to be used, else "F"';
 comment on column at_rating_spec.version          is 'The base rating table version; the RATING ID in the USGS rdb file " 9.0"';
+comment on column at_rating_spec.indep_rounding_1 is '10-digit USGS rounding code';
+comment on column at_rating_spec.indep_rounding_2 is '10-digit USGS rounding code';
+comment on column at_rating_spec.dep_rounding     is '10-digit USGS rounding code';
 
 
 /*** AT_RATING_SHIFT_SPEC ***/

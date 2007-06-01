@@ -101,7 +101,7 @@ CREATE OR REPLACE package body CWMS_20.cwms_rating as
       select rating_code into l_rating_code 
       from   at_rating inner join cwms_rating_type using (rating_type_code)
       where  db_office_code        = l_office_code 
-        and  source                = p_source
+        and  upper(source)         = upper(p_source)
         and  upper(rating_type_id) = upper(p_type);   
    
       dbms_output.put_line('rating_code='||to_char(l_rating_code));
@@ -149,7 +149,8 @@ CREATE OR REPLACE package body CWMS_20.cwms_rating as
       from   at_rating_loc  r,
              mv_cwms_ts_id  m
       where  upper(location_id) = upper(p_loc)
-        and  r.location_code = m.location_code;    
+        and  r.location_code = m.location_code
+        and  rownum=1;    
     
       dbms_output.put_line('rating_loc_code='||to_char(l_loc_code));
 
@@ -310,7 +311,7 @@ begin
           i.interpolate_code,
           nvl(p_count,1),
           p_desc
-   from   cwms_rating_type t,
+   from   cwms_rating_type        t,
           cwms_rating_interpolate i
    where  upper(t.rating_type_id)=upper(p_type)
      and  upper(i.interpolate_id)=upper(p_interp);    
@@ -356,6 +357,7 @@ procedure add_parameters (
    l_rating_code   pls_integer;
    l_parms_code    pls_integer;
    l_parm_count    pls_integer;
+   l_version_2     varchar2(32);
    l_msg           varchar2(256);
 
 begin
@@ -377,12 +379,12 @@ begin
         and  nvl(indep_parm_2,'X') = nvl(p_indep_2,'X')
         and  dep_parm              = p_dep
         and  rownum                < 2;
-        
+
+      dbms_output.put_line('rating_parms_code='||l_parms_code);
+
    exception
       when NO_DATA_FOUND then l_parms_code := null;       
    end;
-
-   dbms_output.put_line('rating_parms_code='||l_parms_code);
 
    -- Has the right number of independent parameters been provided?  
 
@@ -429,10 +431,17 @@ begin
 
    -- Add the versions 
  
-   begin 
+   begin
+      -- Set 2nd independent version  
+    
+      select decode(indep_parm_count,2,nvl(p_version_2,p_version_1),null)
+      into   l_version_2
+      from   at_rating
+      where  rating_code = l_rating_code;
+   
       insert into at_rating_versions 
-      values (cwms_seq.nextval,l_parms_code,p_version_1,
-              nvl(p_version_2,p_version_1),nvl(p_version_3,p_version_1));
+      values (cwms_seq.nextval,l_parms_code,p_version_1,l_version_2,
+              nvl(p_version_3,p_version_1));
       
       dbms_output.put_line(to_char(sql%rowcount)||' row inserted into at_rating_version');
             
@@ -503,7 +512,8 @@ begin
           p_filename,
           p_desc
    from   mv_cwms_ts_id
-   where  upper(location_id) = upper(p_loc); 
+   where  upper(location_id) = upper(p_loc)
+     and  rownum=1; 
 
    dbms_output.put_line(to_char(sql%rowcount)||' row inserted into at_rating_loc');
 
@@ -734,12 +744,14 @@ procedure load_rdb_file (
    l_rating_id   at_rating_spec.version%type;
    l_version     at_rating_spec.version%type;
    l_base_active at_rating_spec.active_flag%type;
+   l_round_1     at_rating_spec.indep_rounding_1%type;
+   l_round_2     at_rating_spec.indep_rounding_2%type;
+   l_dep_round   at_rating_spec.dep_rounding%type;
    l_curve_code  at_rating_curve.rating_curve_code%type;
    l_parm_num    at_rating_curve.indep_parm_number%type;
    l_parm_val    at_rating_curve.indep_parm_value%type;
    l_shift_code  at_rating_shift_spec.rating_shift_code%type;
    
-
    
    type         curve_type is table of at_rating_value%rowtype       index by pls_integer;
    type         rdb_type   is table of et_rdb_value%rowtype          index by pls_integer;
@@ -841,7 +853,7 @@ begin
       dbms_output.put_line(l_msg); 
       
       l_desc     := get_comment('STATION NAME')||' ('||get_comment('" NUMBER')||')'; 
-      l_loc_code := add_location (l_source,l_type,l_loc,null,null,p_file,l_desc); 
+      l_loc_code := add_location (l_source,l_type,l_loc,null,null,p_file,l_desc,p_office); 
         
    end; 
 
@@ -893,10 +905,16 @@ begin
       into   l_base_active
       from   at_rating_loc
       where  rating_loc_code = l_loc_code;      
+
+      l_round_1   := get_comment('INDEP ROUNDING');
+      l_round_2   := null;
+      l_dep_round := get_comment('DEP ROUNDING');
            
       insert into at_rating_spec 
-      (rating_spec_code, rating_loc_code, effective_date, create_date, version, active_flag) 
-      values (cwms_seq.nextval, l_loc_code, l_base_date, sysdate, l_rating_id, l_base_active)
+      (rating_spec_code, rating_loc_code, effective_date, create_date, version, active_flag,
+       indep_rounding_1, indep_rounding_2, dep_rounding) 
+      values (cwms_seq.nextval, l_loc_code, l_base_date, sysdate, l_rating_id, l_base_active,
+              l_round_1, l_round_2, l_dep_round)
       returning rating_spec_code, version into l_spec_code, l_version;
 
       dbms_output.put_line(to_char(sql%rowcount)||' row inserted into at_rating_spec');    
@@ -1019,8 +1037,10 @@ begin
                                             -- yes 
          l_x_diff := greatest(diff,abs(l_x_diff));  -- save max x diff    
          diff     := abs(rdb(i).y - curve(j).y);    -- get y diff  
-         l_y_diff := greatest(diff,l_y_diff);       -- save max y diff 
-         l_y_pct  := greatest(l_y_pct,100*diff/curve(j).y);
+         l_y_diff := greatest(l_y_diff,diff);       -- save max y diff 
+         if curve(j).y != 0 then
+            l_y_pct  := greatest(l_y_pct,100*diff/curve(j).y);
+         end if;
 
          if diff < l_max_y_diff * curve(j).y then   -- y diff within limit?   
             same   := same + 1;                     -- yes 
