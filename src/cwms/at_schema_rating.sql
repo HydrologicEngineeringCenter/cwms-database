@@ -30,7 +30,7 @@ insert into cwms_rating_type values (3,'ELSA','Elevation-Surface Area');
 /*** CWMS_RATING_INTERPOLATE ***/
 
 
-alter table at_rating drop constraint at_rating_fk2;
+alter table at_rating drop constraint at_rating_fk2;		
 
 drop table cwms_rating_interpolate;
 
@@ -92,7 +92,7 @@ comment on column at_rating.indep_parm_count is 'Number of independent variables
 /*** AT_RATING_PARMETERS ***/
 
 
-alter table at_rating_version drop constraint at_rating_version_fk1;
+alter table at_rating_versions drop constraint at_rating_versions_fk1;
 
 drop table at_rating_parameters;
 
@@ -129,22 +129,33 @@ create unique index at_rating_parms_ak1 on at_rating_parameters
 comment on table at_rating_parameters is 'Defines a set of parameters for a rating family';
 
 
-/*** AT_RATING_VERSION ***/
+/*** AT_RATING_VERSIONS ***/
 
 
-drop table at_rating_version;
+drop table at_rating_versions;
 
-create table at_rating_version
-( rating_parms_code  number(10),
-  version            varchar2(32),
-  constraint         at_rating_version_pk primary key (rating_parms_code, version))
-organization index;
+create table at_rating_versions
+( rating_versions_code number(10),
+  rating_parms_code    number(10)    not null,
+  indep_version_1      varchar2(32)  not null,
+  indep_version_2      varchar2(32),
+  dep_version          varchar2(32)  not null,
+  constraint           at_rating_versions_pk primary key (rating_versions_code));
 
-alter table at_rating_version add constraint at_rating_version_fk1 
+alter table at_rating_versions add constraint at_rating_versions_fk1 
 foreign key (rating_parms_code) references at_rating_parameters;
 
-comment on table  at_rating_version         is 'Defines a Version set for a specific parameter set for a rating family';
-comment on column at_rating_version.version is 'Versions to rate for this parameter set';
+create unique index at_rating_versions_ak1 on at_rating_versions
+( rating_parms_code,
+  indep_version_1,
+  indep_version_2,
+  dep_version);
+
+comment on table  at_rating_versions                   is 'Defines a Version set for a specific parameter set for a rating family';
+comment on column at_rating_versions.rating_parms_code is 'A specific parameter set for a general rating family';
+comment on column at_rating_versions.indep_version_1   is 'First independent parameter version for automatic association';
+comment on column at_rating_versions.indep_version_2   is 'Second independent parameter (use zero for null value)';
+comment on column at_rating_versions.dep_version       is 'Dependent parameter version for automatic association';
 
 
 /***  AT_RATING_LOC  ***/
@@ -158,10 +169,13 @@ drop table at_rating_loc;
 create table at_rating_loc
 ( rating_loc_code    number(10), 
   rating_code        number(10)  not null,
-  base_location_code number(10)  not null,
+  location_code      number(10)  not null,
   auto_load_flag     char(1)     not null,
   auto_active_flag   char(1)     not null,
   filename           varchar2(32),
+  indep_rounding_1   varchar2(10),
+  indep_rounding_2   varchar2(10),
+  dep_rounding       varchar2(10),
   description        varchar2(160));
 
 alter table at_rating_loc add constraint at_rating_loc_pk 
@@ -170,13 +184,8 @@ primary key (rating_loc_code);
 alter table at_rating_loc add constraint at_rating_loc_fk1
 foreign key (rating_code) references at_rating;
 
---
--- The following fk is for CWMS v1.x
--- It needs to be changed for CWMS v2
---
-
 alter table at_rating_loc add constraint at_rating_loc_fk2
-foreign key (base_location_code) references at_base_location;
+foreign key (location_code) references at_physical_location;
 
 alter table at_rating_loc add constraint at_rating_loc_ck1
 check (auto_load_flag in ('T','F'));
@@ -186,11 +195,11 @@ check (auto_active_flag in ('T','F'));
 
 create unique index at_rating_loc_ak1 on at_rating_loc
 ( rating_code, 
-  base_location_code);
+  location_code);
 
-comment on table  at_rating_loc                    is 'Defines the metadata for a rating family at a location';
-comment on column at_rating_loc.rating_code        is 'Foreign key to rating family';
-comment on column at_rating_loc.base_location_code is 'Foreign key to the cwms base location to which this rating applies';
+comment on table  at_rating_loc               is 'Defines the metadata for a rating family at a location';
+comment on column at_rating_loc.rating_code   is 'Foreign key to rating family';
+comment on column at_rating_loc.location_code is 'Foreign key to the cwms location to which this rating applies';
 comment on column at_rating_loc.auto_load_flag     is '="T" to automatically load new curves and shifts when they become available';
 comment on column at_rating_loc.auto_active_flag   is '="T" to automatically mark newly loaded curves and shifts as active';
 comment on column at_rating_loc.filename           is 'rating table filename (do we also need file type, "RDB" ?)';
@@ -475,8 +484,7 @@ reject limit unlimited;
 create or replace view av_rating as
 with pc as 
   ( select parameter_code, 
-           base_parameter_id||nvl2(sub_parameter_id,'.'
-           ||sub_parameter_id,null) parameter_id
+           base_parameter_id||nvl2(sub_parameter_id,'-'||sub_parameter_id,null) parameter_id
     from   at_parameter inner join cwms_base_parameter using (base_parameter_code) )
 select r.db_office_code,
        rating_code,  
@@ -491,18 +499,24 @@ select r.db_office_code,
        (select parameter_id from pc where parameter_code = p.indep_parm_code_1) indep_parm_1, 
        (select parameter_id from pc where parameter_code = p.indep_parm_code_2) indep_parm_2, 
        (select parameter_id from pc where parameter_code = p.dep_parm_code)     dep_parm, 
-       v.version, 
+       v.indep_version_1,
+       v.indep_version_2,
+       v.dep_version,
        p.description       parm_desc
 from   at_rating r inner join cwms_rating_type        t using (rating_type_code)
                    inner join cwms_rating_interpolate i using (interpolate_code)
                     left join at_rating_parameters    p using (rating_code) 
-                    left join at_rating_version       v using (rating_parms_code);
+                    left join at_rating_versions      v using (rating_parms_code);
 
 
 /*** AV_CURVE ***/
 
 
 create or replace view av_curve as
+with pl as 
+  ( select location_code, 
+           base_location_id||nvl2(sub_location_id,'-'||sub_location_id,null) location_id
+    from   at_base_location inner join at_physical_location using (base_location_code) )
 select r.db_office_code,
        rating_code,  
        r.source, 
@@ -510,8 +524,8 @@ select r.db_office_code,
        t.rating_type_id     type, 
        i.interpolate_id     interpolate, 
        rating_loc_code      loc_code,
-       base_location_code, 
-       b.base_location_id,       
+       l.location_code, 
+       (select location_id from pl where location_code=l.location_code) location_id, 
        l.auto_load_flag     auto_load, 
        l.auto_active_flag   auto_active, 
        l.filename, 
@@ -535,7 +549,6 @@ select r.db_office_code,
 from   at_rating r inner join cwms_rating_type        t using (rating_type_code)
                    inner join cwms_rating_interpolate i using (interpolate_code)
                     left join at_rating_loc           l using (rating_code)
-                    left join at_base_location        b using (base_location_code)
                     left join at_rating_spec          s using (rating_loc_code)
                     left join at_rating_shift_spec   ss using (rating_spec_code)
                     left join at_rating_curve         c using (rating_spec_code);

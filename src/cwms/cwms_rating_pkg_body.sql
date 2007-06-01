@@ -129,9 +129,9 @@ CREATE OR REPLACE package body CWMS_20.cwms_rating as
 
 
    function get_loc_code (
-      p_source   in   varchar2,              -- rating source ("USGS") 
+      p_source   in   varchar2,              -- rating source ("USGS")  
       p_type     in   varchar2,              -- rating type ("STGQ") 
-      p_loc      in   varchar2,              -- cwms base location ("BON") 
+      p_loc      in   varchar2,              -- cwms location ("BON-SB1")  
       p_office   in   varchar2 default null  -- db office id       
       )  
       return integer is
@@ -146,10 +146,10 @@ CREATE OR REPLACE package body CWMS_20.cwms_rating as
       l_rating_code := get_rating_code (p_source,p_type,p_office);
    
       select rating_loc_code into l_loc_code  
-      from   at_rating_loc     r,
-             at_base_location  b
-      where  upper(b.base_location_id) = upper(p_loc)
-        and  r.base_location_code = b.base_location_code;    
+      from   at_rating_loc  r,
+             mv_cwms_ts_id  m
+      where  upper(location_id) = upper(p_loc)
+        and  r.location_code = m.location_code;    
     
       dbms_output.put_line('rating_loc_code='||to_char(l_loc_code));
 
@@ -346,7 +346,9 @@ procedure add_parameters (
    p_indep_1    in   varchar2,               -- 1st independent parameter 
    p_indep_2    in   varchar2 default null,  -- 2nd independent parameter (optional)   
    p_dep        in   varchar2,               -- dependent parameter 
-   p_version    in   varchar2,               -- cwms pathname version 
+   p_version_1  in   varchar2,               -- version for the 1st indep parameter  
+   p_version_2  in   varchar2 default null,  -- version for the 2nd indep parameter   
+   p_version_3  in   varchar2 default null,  -- version for the dependent parameter   
    p_desc       in   varchar2 default null,  -- description for this parameter set 
    p_office     in   varchar2 default null   -- db office id    
    ) is 
@@ -359,6 +361,7 @@ procedure add_parameters (
 begin
 
    -- Add a rating parameter and/or version 
+   -- Version 2 and 3 default to version 1 
 
    -- Does the rating family exist?  
    
@@ -424,21 +427,28 @@ begin
       
    end if;
 
-   -- Add the version 
+   -- Add the versions 
  
    begin 
-      insert into at_rating_version values (l_parms_code,p_version);
+      insert into at_rating_versions 
+      values (cwms_seq.nextval,l_parms_code,p_version_1,
+              nvl(p_version_2,p_version_1),nvl(p_version_3,p_version_1));
       
       dbms_output.put_line(to_char(sql%rowcount)||' row inserted into at_rating_version');
             
    exception
-      when DUP_VAL_ON_INDEX then
-         -- ORA-00001: unique constraint (CWMS.AT_RATING_VERSION_PK) violated 
-         l_msg := 'cwms_rating.add_parameters: ' 
-                  ||'The version already exists: Source="'||p_source 
-                  ||'", Type="'||p_type||'", Indep_1="'||p_indep_1||'", Indep_2="' 
-                  ||p_indep_2||'", Dep="'||p_dep||'", Version="'||p_version||'"';            
-         dbms_output.put_line(l_msg);   
+--      when DUP_VAL_ON_INDEX then
+--         -- ORA-00001: unique constraint (CWMS.AT_RATING_VERSION_PK) violated 
+--         l_msg := 'cwms_rating.add_parameters: ' 
+--                  ||'The version already exists: Source="'||p_source 
+--                  ||'", Type="'||p_type||'", Indep_1="'||p_indep_1||'", Indep_2="' 
+--                  ||p_indep_2||'", Dep="'||p_dep||'", Version="'||p_version||'"';            
+--         dbms_output.put_line(l_msg);
+          
+   when others then
+      dbms_output.put_line(SQLERRM);
+      raise;
+                 
    end;
 
 exception when others then
@@ -450,7 +460,7 @@ end add_parameters;
 function add_location (
    p_source     in   varchar2,               -- rating source ("USGS")  
    p_type       in   varchar2,               -- rating type ("STGQ") 
-   p_loc        in   varchar2,               -- cwms base location ("BON") 
+   p_loc        in   varchar2,               -- cwms location ("BON-SB8") 
    p_load       in   char     default 'T',   -- auto load flag ("T" or F")   
    p_active     in   char     default 'F',   -- auto active flag ("T" or F")    
    p_filename   in   varchar2 default null,  -- cwms pathname version 
@@ -483,17 +493,17 @@ begin
 
    
    insert into at_rating_loc
-   ( rating_loc_code, rating_code, base_location_code, auto_load_flag,
+   ( rating_loc_code, rating_code, location_code, auto_load_flag,
      auto_active_flag, filename, description )  
    select l_loc_code,
           l_rating_code, 
-          bl.base_location_code,
+          location_code,
           l_load,
           l_active,
           p_filename,
           p_desc
-   from   at_base_location bl
-   where  upper(base_location_id) = upper(p_loc); 
+   from   mv_cwms_ts_id
+   where  upper(location_id) = upper(p_loc); 
 
    dbms_output.put_line(to_char(sql%rowcount)||' row inserted into at_rating_loc');
 
@@ -526,24 +536,24 @@ procedure delete_location (
    p_loc        in   varchar2,               -- cwms base location ("BON") 
    p_office     in   varchar2 default null   -- db office id       
    ) is
+   
+   l_loc_code        pls_integer;    
+   
 begin
-
+   
+   -- Get the rating_loc_code  
+  
+   l_loc_code := get_loc_code (p_source,p_type,p_loc,p_office);
+   
    -- Delete all the base curves, shifts and extension points for a location 
    -- in a rating family 
    
-   delete at_rating_loc
-   where  rating_loc_code=
-        ( select rating_loc_code       
-          from   at_rating inner join cwms_rating_type  using (rating_type_code)
-                           inner join at_rating_loc     using (rating_code)
-                           inner join at_base_location  using (base_location_code)
-          where  db_office_code = cwms_util.get_db_office_code(p_office)
-            and  upper(source)           = upper(p_source) 
-            and  upper(rating_type_id)   = upper(p_type) 
-            and  upper(base_location_id) = upper(p_loc) );  
+   delete at_rating_loc where rating_loc_code = l_loc_code;
 
    dbms_output.put_line('cwms_rating.delete_location: Source='||p_source
-      ||', Type='||p_type||', Location='||p_loc||', '||sql%rowcount||' row deleted');      
+      ||', Type='||p_type||', Location='||p_loc||', '||sql%rowcount||' row deleted'); 
+      
+exception when others then dbms_output.put_line(SQLERRM); raise;           
     
 end delete_location; 
 
@@ -1178,6 +1188,42 @@ exception when others then
    raise;
    
 end load_rdb_file;
+
+
+procedure rate_value ( 
+   p_loc_code   in   integer,                -- rating_loc_code for the rating family and location    
+   p_date_time  in   date,                   -- timestamp for value   
+   p_value      in   binary_double,          -- value to rate 
+   p_rated      out  binary_double           -- rated value     
+   ) is
+  
+begin
+
+   -- Get the base stage 
+/*
+      select max(shift) keep (dense_rank first order by stage) shift
+        into y  
+        from   at_rating_shift_value 
+       where  rating_shift_code=sn and stage >= val;
+
+
+      select * into xy from (   
+      select x,y,lead(x) over(order by x) x2, lead(y) over(order by x) y2 from (
+      select x, y from at_rating_value where rating_curve_code=cn 
+         and x>= (select max(x) from at_rating_value where rating_curve_code=cn and x < val)
+      ) where rownum<3
+      ) where rownum=1;
+
+*/
+
+   null; 
+
+exception when others then
+   dbms_output.put_line(SQLERRM);
+   raise;
+   
+end rate_value;  
+
 
 -- Package Initialization Follows 
 

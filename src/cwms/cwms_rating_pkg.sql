@@ -25,7 +25,9 @@ procedure add_parameters (
    p_indep_1    in   varchar2,               -- 1st independent parameter 
    p_indep_2    in   varchar2 default null,  -- 2nd independent parameter (optional)   
    p_dep        in   varchar2,               -- dependent parameter 
-   p_version    in   varchar2,               -- cwms pathname version 
+   p_version_1  in   varchar2,               -- version for the 1st indep parameter  
+   p_version_2  in   varchar2 default null,  -- version for the 2nd indep parameter   
+   p_version_3  in   varchar2 default null,  -- version for the dependent parameter  
    p_desc       in   varchar2 default null,  -- description for this parameter set 
    p_office     in   varchar2 default null   -- db office id    
    );     
@@ -77,6 +79,13 @@ procedure load_rdb_file (
    p_max_y_diff in   number   := 0.0001,     -- max acceptable y diff is y times this number  
    p_max_y_errs in   integer  := 0,          -- max y errors before aborting the load  
    p_office     in   varchar2 default null   -- db office id                             
+   );   
+
+procedure rate_value ( 
+   p_loc_code   in   integer,                -- rating_loc_code for the rating family and location    
+   p_date_time  in   date,                   -- timestamp for value   
+   p_value      in   binary_double,          -- value to rate 
+   p_rated      out  binary_double           -- rated value     
    );   
 
 end cwms_rating;
