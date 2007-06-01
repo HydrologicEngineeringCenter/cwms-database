@@ -428,8 +428,6 @@ comment on column at_rating_value.stor is '"*"=USGS STOR point, "E"=user Extensi
 
 create or replace directory rdbfiles   as '/usr1/dba/oracle/rdbfiles';
 
-create or replace directory rdbfilesxx as '/usr1/dba/oracle/rdbfilesxx';
-
 
 /*** ET_RDB_COMMENT ***/
 
