@@ -537,17 +537,13 @@ select r.db_office_code,
        s.create_date, 
        s.version, 
        s.active_flag        active, 
-       c.rating_curve_code
-       curve_code, 
+       c.rating_curve_code  curve_code, 
        c.indep_parm_number  parm_number, 
-       c.indep_parm_value
-       parm_value, 
+       c.indep_parm_value   parm_value, 
        ss.rating_shift_code shift_code, 
-       ss.effective_date
-       shift_date, 
+       ss.effective_date    shift_date, 
        ss.active_flag       shift_active, 
-       ss.transition_flag 
-       transition  
+       ss.transition_flag   transition  
 from   at_rating r inner join cwms_rating_type        t using (rating_type_code)
                    inner join cwms_rating_interpolate i using (interpolate_code)
                     left join at_rating_loc           l using (rating_code)
