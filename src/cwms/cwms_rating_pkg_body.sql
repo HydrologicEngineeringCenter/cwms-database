@@ -723,12 +723,14 @@ procedure load_rdb_file (
    p_dir        in   varchar2,               -- directory object name  
    p_file       in   varchar2,               -- an rdb filename 
    p_loc        in   varchar2,               -- base location id associated w/the rating table  
-   p_active     in   char     := null,       -- activate flag ("T","F" or null)  
-   p_max_y_diff in   number   := 0.0001,     -- max acceptable y diff is y times this number 
+   p_active     in   char     := 'F',        -- activate flag ("T","F" or null)  
+   p_max_y_diff in   number   := 0,          -- max acceptable y diff is y times this number 
    p_max_y_errs in   integer  := 0,          -- max y errors before aborting the load 
+   p_associate  in   char     := 'F',        -- automatically add ratings to the criteria table 
    p_office     in   varchar2 default null   -- db office id                              
    ) is   
 
+   l_associate   char(1);
    l_sql         varchar2(80);
    l_source      at_rating.source%type;
    l_type        cwms_rating_type.rating_type_id%type;
@@ -788,8 +790,9 @@ begin
    -- Handle NULL parameters 
 
 
-   l_max_y_diff := abs(nvl(p_max_y_diff,0.0001));
+   l_max_y_diff := abs(nvl(p_max_y_diff,0));
    l_max_y_errs := nvl(p_max_y_errs,0);
+   l_associate  := check_T_or_F(p_associate,'F');
 
 
    -- Point the external tables to p_file 
@@ -823,20 +826,21 @@ begin
    -- dbms_output.put_line('RATING_DATETIME BEGIN='||get_comment('RATING_DATETIME BEGIN',2,'T'));
 
 
-   -- Get the loc_rating_code 
-
-
    -- Note: The location name could come from 3 sources (I'm using #3)  
    --    1. a parameter 
    --    2. the usgs station number and the alias schema   
    --    3. the filename (that's what we do)  
 
-   -- Was doing #3 but changed to #1 
+   -- Was doing #3 but changed to #1 below  
    -- l_loc    := substr(p_file,1,instr(p_file,'.')-1); 
 
    l_source := get_comment('STATION AGENCY');
    l_type   := get_comment('" TYPE');
    l_loc    := p_loc;
+
+
+   -- Get the loc_rating_code 
+
 
    begin
       l_loc_code := get_loc_code (l_source,l_type,l_loc,p_office);
@@ -873,12 +877,16 @@ begin
    dbms_output.put_line('shift date='||to_char(l_shift_date,'dd-MON-yyyy hh24:mi:ss'));
 
    if l_base_date > l_shift_date then
-      dbms_output.put_line('cwms_rating.load_rdb_file: SHIFTED date is older '
-         ||'than the BEGIN date; File='||p_file);
+      l_msg := 'cwms_rating.load_rdb_file: SHIFTED date ('
+               ||to_char(l_shift_date,'dd-MON-yyyy hh24:mi:ss')
+               ||' UTC) is older than the base table BEGIN date ('
+               ||to_char(l_base_date,'dd-MON-yyyy hh24:mi:ss')
+               ||' UTC); File='||p_file;
+      raise_application_error (-20999,l_msg);
    end if;
       
 
-   -- Does the rating table specification exist?  
+   -- Does the base table specification exist?  
 
 
    begin
@@ -891,24 +899,28 @@ begin
    
    exception when no_data_found then
  
-      -- No, add it  
+      -- No, add the base table specification 
+      -- Optionally add a zero shift for the base table  
            
-      l_msg := 'cwms_rating.load_rdb_file: Adding rating table specification; ' 
+      l_msg := 'cwms_rating.load_rdb_file: Adding base rating table specification; ' 
                ||'Location='||l_loc||', Effective Date='
                ||to_char(l_base_date,'dd-Mon-yyyy hh24:mi:ss')||' UTC';
                
       dbms_output.put_line(l_msg);
 
-      -- get_loc_code doesn't return the auto_active_flag 
+
+      -- I need the auto_active_flag if p_active is null  
       
-      select upper(nvl(p_active,auto_active_flag)) 
+      
+      select nvl(p_active,auto_active_flag) 
       into   l_base_active
       from   at_rating_loc
       where  rating_loc_code = l_loc_code;      
 
-      l_round_1   := get_comment('INDEP ROUNDING');
-      l_round_2   := null;
-      l_dep_round := get_comment('DEP ROUNDING');
+      l_base_active := check_T_or_F(l_base_active,'F');
+      l_round_1     := get_comment('INDEP ROUNDING');
+      l_round_2     := null;
+      l_dep_round   := get_comment('_DEP ROUNDING');
            
       insert into at_rating_spec 
       (rating_spec_code, rating_loc_code, effective_date, create_date, version, active_flag,
@@ -919,18 +931,56 @@ begin
 
       dbms_output.put_line(to_char(sql%rowcount)||' row inserted into at_rating_spec');    
  
+
+      -- Add a zero shift if the base data is older than the shift date 
+
+
+      if l_base_date < l_shift_date then
+   
+         dbms_output.put_line('Adding a zero shift to the base table');
+
+         -- Add the zero shift specification 
+
+         insert into at_rating_shift_spec
+         values (cwms_seq.nextval, l_spec_code, l_base_date, l_base_active, 'F')
+         returning rating_shift_code into l_shift_code;      
+
+         dbms_output.put_line(sql%rowcount||' row inserted into at_rating_shift_spec');           
+         dbms_output.put_line('rating_shift_code ='||l_shift_code);
+
+         -- Add the zero shift   
+
+         shift_nt   := shift_nt_type();  -- initialize the nested table to empty   
+         shift_nt.extend;   
+         shift_nt(1).stage := 0;
+         shift_nt(1).shift := 0;
+         shift_nt(1).rating_shift_code := l_shift_code;
+               
+         --forall i in shift_nt.first..shift_nt.last
+         insert into at_rating_shift_value
+         values shift_nt(1);
+         --values shift_nt(i);
+
+         dbms_output.put_line(sql%rowcount||' rows inserted into at_rating_shift_value');      
+
+   end if;
+
+
+
+
+
+
+
+
    end;     
                    
    dbms_output.put_line('rating_spec_code ='||l_spec_code);
-
       
-   -- Note: It appears we need a way to get the meta-data out of the tables 
-   --       Perhaps a record or a cursor? 
-   --
+
    -- Note: Will also need to do unit conversion, but for now it will be easier 
    --       to test w/o it. 
    
-   
+     
    -- Does the rating curve exit? 
    
    
@@ -1216,27 +1266,38 @@ procedure rate_value (
    p_value      in   binary_double,          -- value to rate 
    p_rated      out  binary_double           -- rated value     
    ) is
+
+   l_base_x number;
   
 begin
 
-   -- Get the base stage 
-/*
-      select max(shift) keep (dense_rank first order by stage) shift
-        into y  
-        from   at_rating_shift_value 
-       where  rating_shift_code=sn and stage >= val;
+   -- Get the base stage for the measured stage   
+
+     
+-- 1. get the base curve code   
+-- 2. get the shift code 
+-- 3. get the shift 
+-- 4. get the stage before and after (or =) 
+-- 5. interpolate 
+
+-- av_curve might be easier to search if it had from-to dates rather than just effective dates
+-- may want materialized view
 
 
-      select * into xy from (   
-      select x,y,lead(x) over(order by x) x2, lead(y) over(order by x) y2 from (
-      select x, y from at_rating_value where rating_curve_code=cn 
-         and x>= (select max(x) from at_rating_value where rating_curve_code=cn and x < val)
-      ) where rownum<3
-      ) where rownum=1;
+--   select max(shift) keep (dense_rank first order by stage) 
+--   into   l_base_x  
+--   from   at_rating_spec s inner join at_rating_shift_value v using (rating_spec_code)
+--   where  rating_loc_code = p_loc_code and stage >= p_value;
 
-*/
 
-   null; 
+--      select * into xy from (   
+--      select x,y,lead(x) over(order by x) x2, lead(y) over(order by x) y2 from (
+--      select x, y from at_rating_value where rating_curve_code=cn 
+--         and x>= (select max(x) from at_rating_value where rating_curve_code=cn and x < val)
+--      ) where rownum<3
+--      ) where rownum=1;
+
+null;
 
 exception when others then
    dbms_output.put_line(SQLERRM);

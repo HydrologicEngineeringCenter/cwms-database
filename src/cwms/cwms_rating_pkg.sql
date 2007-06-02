@@ -72,13 +72,14 @@ procedure load_rdb_files (
    );
  
 procedure load_rdb_file ( 
-   p_dir        in   varchar2,               -- directory object name   
+   p_dir        in   varchar2,               -- directory object name  
    p_file       in   varchar2,               -- an rdb filename 
-   p_loc        in   varchar2,               -- base location id associated w/the rating table   
-   p_active     in   char     := null,       -- activate flag ("T","F" or null)    
-   p_max_y_diff in   number   := 0.0001,     -- max acceptable y diff is y times this number  
-   p_max_y_errs in   integer  := 0,          -- max y errors before aborting the load  
-   p_office     in   varchar2 default null   -- db office id                             
+   p_loc        in   varchar2,               -- base location id associated w/the rating table  
+   p_active     in   char     := 'F',        -- activate flag ("T","F" or null)  
+   p_max_y_diff in   number   := 0,          -- max acceptable y diff is y times this number 
+   p_max_y_errs in   integer  := 0,          -- max y errors before aborting the load 
+   p_associate  in   char     := 'F',        -- automatically add ratings to the criteria table 
+   p_office     in   varchar2 default null   -- db office id                            
    );   
 
 procedure rate_value ( 
