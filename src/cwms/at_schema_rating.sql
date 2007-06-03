@@ -515,10 +515,6 @@ from   at_rating r inner join cwms_rating_type        t using (rating_type_code)
 
 
 create or replace view av_curve as
-with pl as 
-  ( select location_code, 
-           base_location_id||nvl2(sub_location_id,'-'||sub_location_id,null) location_id
-    from   at_base_location inner join at_physical_location using (base_location_code) )
 select r.db_office_code,
        rating_code,  
        r.source, 
@@ -527,7 +523,9 @@ select r.db_office_code,
        i.interpolate_id     interpolate, 
        rating_loc_code      loc_code,
        l.location_code, 
-       (select location_id from pl where location_code=l.location_code) location_id, 
+       (select base_location_id||nvl2(sub_location_id,'-'||sub_location_id,null) 
+        from   at_base_location inner join at_physical_location using (base_location_code)
+        where  location_code = l.location_code) location_id, 
        l.auto_load_flag     auto_load, 
        l.auto_active_flag   auto_active, 
        l.filename, 
@@ -549,5 +547,42 @@ from   at_rating r inner join cwms_rating_type        t using (rating_type_code)
                     left join at_rating_loc           l using (rating_code)
                     left join at_rating_spec          s using (rating_loc_code)
                     left join at_rating_shift_spec   ss using (rating_spec_code)
-                    left join at_rating_curve         c using (rating_spec_code);
+                    left join at_rating_curve         c using (rating_spec_code)
+where indep_parm_number = 1                    
+order by source, type, location_id, base_date, shift_date;
+
+ 
+
+/*** MV_CURVE ***/
+
+
+
+create materialized view mv_curve 
+using no index
+refresh complete on demand
+enable query rewrite
+as 
+select rating_loc_code      loc_code,
+       s.effective_date     base_date,
+       ss.effective_date    shift_date, 
+       s.active_flag        active, 
+       ss.active_flag       shift_active, 
+       ss.transition_flag   transition,  
+       rating_code,
+       location_code,
+       s.version, 
+       rating_spec_code     spec_code, 
+       c.rating_curve_code  curve_code, 
+       ss.rating_shift_code shift_code, 
+       auto_load_flag       auto_load, 
+       auto_active_flag     auto_active 
+from   at_rating_loc l inner join at_rating_spec          s using (rating_loc_code)
+                        left join at_rating_shift_spec   ss using (rating_spec_code)
+                        left join at_rating_curve         c using (rating_spec_code)
+where indep_parm_number = 1                    
+order by loc_code, base_date, shift_date; 
+
+
+alter table mv_curve add constraint mv_curve_pk 
+primary key (loc_code, base_date, shift_date, spec_code, curve_code, shift_code);
 /

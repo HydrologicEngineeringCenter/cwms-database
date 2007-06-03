@@ -1267,7 +1267,15 @@ procedure rate_value (
    p_rated      out  binary_double           -- rated value     
    ) is
 
-   l_base_x number;
+   l_spec_code  pls_integer;
+   l_shift_code pls_integer;
+   l_curve_code pls_integer;
+   l_shift      number;         -- shift   
+   l_x          number;         -- base stage 
+   l_y          number;         -- rated flow  
+   
+   type xyRec is record (x1 number, y1 number, x2 number, y2 number);          
+   xy         xyRec;         
   
 begin
 
@@ -1284,20 +1292,66 @@ begin
 -- may want materialized view
 
 
---   select max(shift) keep (dense_rank first order by stage) 
---   into   l_base_x  
---   from   at_rating_spec s inner join at_rating_shift_value v using (rating_spec_code)
---   where  rating_loc_code = p_loc_code and stage >= p_value;
+   -- Get the shift and curve codes 
+
+   -- NOTE: The following sql should filter out inactive curves and shifts 
 
 
---      select * into xy from (   
---      select x,y,lead(x) over(order by x) x2, lead(y) over(order by x) y2 from (
---      select x, y from at_rating_value where rating_curve_code=cn 
---         and x>= (select max(x) from at_rating_value where rating_curve_code=cn and x < val)
---      ) where rownum<3
---      ) where rownum=1;
+   dbms_output.put_line('date='||to_char(p_date_time,'mm/dd/yyyy'));
 
-null;
+   select --max(shift_date) keep (dense_rank last order by loc_code, base_date, shift_date) bdate,  
+          max(spec_code)  keep (dense_rank last order by loc_code, base_date, shift_date) spec_code,
+          max(shift_code) keep (dense_rank last order by loc_code, base_date, shift_date) shift_code,
+          max(curve_code) keep (dense_rank last order by loc_code, base_date, shift_date) curve_code 
+   into   l_spec_code, l_shift_code, l_curve_code
+   from mv_curve
+   where loc_code    = p_loc_code 
+     and base_date  <= p_date_time
+     and shift_date <= p_date_time;
+
+
+   dbms_output.put_line('cwms_rating.rate_value: getting codes; sql%rowcount='||sql%rowcount);
+   dbms_output.put_line('cwms_rating.rate_value: loc_code='||p_loc_code
+      ||', spec_code='||l_spec_code||', shift_code='||l_shift_code||', curve_code='
+      ||l_curve_code);
+
+
+   -- Get the base stage 
+
+   select max(shift) keep (dense_rank first order by stage) 
+   into   l_shift 
+   from   at_rating_shift_value
+   where  rating_shift_code = l_shift_code 
+     and  stage >= p_value;
+
+   l_x := nvl(p_value+l_shift,0); 
+
+   dbms_output.put_line('cwms_rating.rate_value: getting base stage; sql%rowcount='||sql%rowcount);
+   dbms_output.put_line('cwms_rating.rate_value: shift='||l_shift||', base stage='||round(l_x,2));
+ 
+
+   -- Get the rated flow 
+
+
+   select * into xy from (   
+   select x,y,lead(x) over(order by x) x2, lead(y) over(order by x) y2 from (
+   select x, y from at_rating_value where rating_curve_code=l_curve_code 
+      and x>= (select max(x) from at_rating_value where rating_curve_code=l_curve_code and x < l_x)
+   ) where rownum<3
+   ) where rownum=1;
+
+   dbms_output.put_line('cwms_rating.rate_value: getting flow; sql%rowcount='||sql%rowcount);
+   dbms_output.put_line('cwms_rating.rate_value: base_stage='||xy.x1||', '||xy.y1||' '||xy.x2||' '||xy.y2);
+
+   -- Do the INTERPOLATION 
+   
+   -- Here's Linear 
+   
+   l_y := xy.y2 - (xy.y2 - xy.y1)*(xy.x2 - l_x)/(xy.x2 - xy.x1);
+
+   dbms_output.put_line('cwms_rating.rate_value: flow='||round(l_y));
+
+   p_rated := l_y;
 
 exception when others then
    dbms_output.put_line(SQLERRM);
