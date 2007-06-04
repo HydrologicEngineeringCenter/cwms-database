@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/16 08:28 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/27 10:56 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_ts
 AS
    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
@@ -237,6 +237,19 @@ AS
       p_override_prot     IN   VARCHAR2 DEFAULT 'F',
       p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,
       p_office_id         IN   VARCHAR2 DEFAULT NULL
+   );
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+   PROCEDURE update_ts (
+      p_ts_code                  IN   NUMBER,
+      p_interval_utc_offset      IN   NUMBER DEFAULT NULL,     -- in minutes.
+      p_snap_forward_minutes     IN   NUMBER DEFAULT NULL,
+      p_snap_backward_minutes    IN   NUMBER DEFAULT NULL,
+      p_local_reg_time_zone_id   IN   VARCHAR2 DEFAULT NULL,
+      p_ts_active_flag           IN   VARCHAR2 DEFAULT NULL
    );
 
 --

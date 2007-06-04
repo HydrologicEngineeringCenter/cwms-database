@@ -148,7 +148,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 	   --
 	   RETURN get_parameter_code (l_base_parameter_code,
 	                              p_sub_parameter_id,
-	                              cwms_loc.get_office_code (p_office_id),
+	                              cwms_util.get_db_office_code (p_office_id),
 	                              cwms_util.return_true_or_false (p_create)
 	                             );
 	END;
@@ -516,6 +516,153 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
                               l_duration_code
                               );
     END create_ts_ni_hash;
+/* Formatted on 2007/05/27 10:54 (Formatter Plus v4.8.8) */
+PROCEDURE update_ts (
+   p_ts_code                  IN   NUMBER,
+   p_interval_utc_offset      IN   NUMBER DEFAULT NULL,         -- in minutes.
+   p_snap_forward_minutes     IN   NUMBER DEFAULT NULL,
+   p_snap_backward_minutes    IN   NUMBER DEFAULT NULL,
+   p_local_reg_time_zone_id   IN   VARCHAR2 DEFAULT NULL,
+   p_ts_active_flag           IN   VARCHAR2 DEFAULT NULL
+)
+IS
+   l_cwms_ts_id                  VARCHAR2 (183);
+   l_ts_interval                 NUMBER;
+   l_interval_utc_offset_old     NUMBER;
+   l_interval_utc_offset_new     NUMBER;
+   l_snap_forward_minutes_new    NUMBER;
+   l_snap_forward_minutes_old    NUMBER;
+   l_snap_backward_minutes_new   NUMBER;
+   l_snap_backward_minutes_old   NUMBER;
+   l_time_zone_code_old          NUMBER;
+   l_time_zone_code_new          NUMBER;
+   l_ts_active_new               VARCHAR2 (1)   := p_ts_active_flag;
+   l_ts_active_old               VARCHAR2 (1);
+   l_tmp                         NUMBER         := NULL;
+BEGIN
+   --
+   --
+   BEGIN
+      SELECT a.interval_utc_offset, a.interval_backward,
+             a.interval_forward, a.active_flag,
+             a.time_zone_code, b.INTERVAL
+        INTO l_interval_utc_offset_old, l_snap_backward_minutes_old,
+             l_snap_forward_minutes_old, l_ts_active_old,
+             l_time_zone_code_old, l_ts_interval
+        FROM at_cwms_ts_spec a, cwms_interval b
+       WHERE a.interval_code = b.interval_code AND a.ts_code = p_ts_code;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         NULL;
+   END;
+
+   --
+   IF l_ts_active_new IS NULL
+   THEN
+      l_ts_active_new := l_ts_active_old;
+   ELSE
+      IF l_ts_active_new NOT IN ('T', 'F')
+      THEN
+         cwms_err.RAISE ('INVALID_T_F_FLAG', 'p_ts_active_flag');
+      END IF;
+   END IF;
+
+   --
+   IF p_interval_utc_offset IS NULL
+   THEN
+      l_interval_utc_offset_new := l_interval_utc_offset_old;
+   ELSE
+      --
+      -- Are interval utc offset set and if so is it a valid offset?.
+      --
+      IF l_ts_interval = 0
+      THEN
+         l_interval_utc_offset_new := cwms_util.utc_offset_irregular;
+      ELSE
+         IF p_interval_utc_offset = cwms_util.utc_offset_undefined
+         THEN
+            l_interval_utc_offset_new := cwms_util.utc_offset_undefined;
+         ELSE
+            IF p_interval_utc_offset < l_ts_interval
+            THEN
+               l_interval_utc_offset_new := p_interval_utc_offset;
+            ELSE
+               cwms_err.RAISE ('INVALID_UTC_OFFSET',
+                               p_interval_utc_offset,
+                               l_ts_interval
+                              );
+            END IF;
+         END IF;
+
+         --
+         -- check if the utc offset is being changed and can it be changed.
+         --
+         IF     l_interval_utc_offset_old != cwms_util.utc_offset_undefined
+            AND l_interval_utc_offset_old != l_interval_utc_offset_new
+         THEN  -- need to check if this ts_code already holds data, if it does
+               -- then can't change interval_utc_offset.
+            SELECT COUNT (*)
+              INTO l_tmp
+              FROM av_tsv
+             WHERE ts_code = p_ts_code;
+
+            IF l_tmp > 0
+            THEN
+               cwms_err.RAISE ('CANNOT_CHANGE_OFFSET', l_cwms_ts_id);
+            END IF;
+         END IF;
+      END IF;
+   END IF;
+
+   --
+   -- Set snap back/forward..
+   ----
+   ---- Confirm that snap back/forward times are valid....
+   ----
+   IF    l_interval_utc_offset_new != cwms_util.utc_offset_undefined
+      OR l_interval_utc_offset_new != cwms_util.utc_offset_irregular
+   THEN
+      IF    p_snap_forward_minutes IS NOT NULL
+         OR p_snap_backward_minutes IS NOT NULL
+      THEN
+         l_snap_forward_minutes_new := NVL (p_snap_forward_minutes, 0);
+         l_snap_backward_minutes_new := NVL (p_snap_backward_minutes, 0);
+
+         IF l_snap_forward_minutes_new + l_snap_backward_minutes_new >=
+                                                                l_ts_interval
+         THEN
+            cwms_err.RAISE ('INVALID_SNAP_WINDOW');
+         END IF;
+      ELSE
+         l_snap_forward_minutes_new := l_snap_forward_minutes_old;
+         l_snap_backward_minutes_new := l_snap_backward_minutes_old;
+      END IF;
+   ELSE
+      l_snap_forward_minutes_new := NULL;
+      l_snap_backward_minutes_new := NULL;
+   END IF;
+
+   --
+   IF p_local_reg_time_zone_id IS NULL
+   THEN
+      l_time_zone_code_new := l_time_zone_code_old;
+   ELSE
+      l_time_zone_code_new :=
+                      cwms_util.get_time_zone_code (p_local_reg_time_zone_id);
+   END IF;
+
+   --
+   UPDATE at_cwms_ts_spec a
+      SET a.interval_utc_offset = l_interval_utc_offset_new,
+          a.interval_forward = l_snap_forward_minutes_new,
+          a.interval_backward = l_snap_backward_minutes_new,
+          a.time_zone_code = l_time_zone_code_new,
+          a.active_flag = l_ts_active_new
+    WHERE a.ts_code = p_ts_code;
+--
+--
+END;
 --
 --*******************************************************************   --
 --*******************************************************************   --
