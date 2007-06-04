@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/22 07:20 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/06/01 08:01 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -177,6 +177,9 @@ AS
       RETURN VARCHAR2;
 
    FUNCTION get_ts_code (p_cwms_ts_id IN VARCHAR2, p_db_office_code IN NUMBER)
+      RETURN NUMBER;
+
+   FUNCTION get_ts_interval (p_cwms_ts_code IN NUMBER)
       RETURN NUMBER;
 
    FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
@@ -385,6 +388,9 @@ AS
       RETURN NUMBER;
 
    FUNCTION get_user_id
+      RETURN VARCHAR2;
+
+   FUNCTION get_interval_string (p_interval IN NUMBER)
       RETURN VARCHAR2;
 END cwms_util;
 /

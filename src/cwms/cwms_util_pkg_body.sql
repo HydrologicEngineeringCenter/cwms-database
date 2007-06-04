@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/22 07:22 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/06/01 08:01 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -1690,6 +1690,19 @@ AS
       END;
    END get_ts_code;
 
+   FUNCTION get_ts_interval (p_cwms_ts_code IN NUMBER)
+      RETURN NUMBER
+   IS
+      l_ts_interval   NUMBER;
+   BEGIN
+      SELECT a.INTERVAL
+        INTO l_ts_interval
+        FROM cwms_interval a, at_cwms_ts_spec b
+       WHERE b.interval_code = a.interval_code AND b.ts_code = p_cwms_ts_code;
+
+      RETURN l_ts_interval;
+   END get_ts_interval;
+
    PROCEDURE get_valid_units (
       p_valid_units    OUT      sys_refcursor,
       p_parameter_id   IN       VARCHAR2 DEFAULT NULL
@@ -1854,6 +1867,7 @@ AS
                                                                (p_db_office_id)
                );
    END get_loc_group_code;
+
 --------------------------------------------------------------------------------
 -- get_user_id uses either sys_context or the apex authenticated user id.      -
 --
@@ -1874,6 +1888,19 @@ AS
 
       RETURN UPPER (l_user_id);
    END get_user_id;
+
+   FUNCTION get_interval_string (p_interval IN NUMBER)
+      RETURN VARCHAR2
+   IS
+--       public static final String YEAR_TIME_INTERVAL  = "yr";
+--    public static final String MONTH_TIME_INTERVAL = "mo";
+--    public static final String WEEK_TIME_INTERVAL  = "wk";
+--    public static final String DAY_TIME_INTERVAL   = "dy";
+--    public static final String HOUR_TIME_INTERVAL  = "hr";
+--    public static final String MINUTE_TIME_INTERVAL = "mi";
+   BEGIN
+      RETURN '13mi';
+   END;
 ----------------------------------------------------------------------------
 BEGIN
    -- anything put here will be executed on every mod_plsql call
