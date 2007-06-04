@@ -1860,7 +1860,7 @@ IS
          l_office_id := UPPER (p_officeid);
       END IF;
 
-      l_office_code := cwms_loc.get_office_code (l_office_id);
+      l_office_code := cwms_util.get_db_office_code (l_office_id);
 
       OPEN p_cwms_cat FOR
          SELECT   sub_location_id, description
