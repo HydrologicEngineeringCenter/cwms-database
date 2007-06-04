@@ -2789,6 +2789,9 @@ BEGIN
    THEN
       NULL;                -- NOTE TO GERHARD Need to think about cleaning up
                            -- all of the dependancies when deleting.
+      delete from at_shef_decode
+      where ts_code = p_ts_code_old;
+      
    ELSIF p_delete_action = cwms_util.delete_ts_data
    THEN
       UPDATE at_transform_criteria
