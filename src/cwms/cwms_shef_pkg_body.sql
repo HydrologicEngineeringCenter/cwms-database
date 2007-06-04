@@ -1,6 +1,46 @@
-/* Formatted on 2007/05/23 13:49 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/06/01 15:49 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_shef
 AS
+   FUNCTION get_loc_category_code (
+      p_loc_category_id   IN   VARCHAR2,
+      p_db_office_code    IN   NUMBER
+   )
+      RETURN NUMBER
+   IS
+      l_loc_category_code   NUMBER;
+   BEGIN
+      SELECT a.loc_category_code
+        INTO l_loc_category_code
+        FROM at_loc_category a
+       WHERE UPPER (a.loc_category_id) = UPPER (TRIM (p_loc_category_id))
+         AND a.db_office_code IN
+                             (p_db_office_code, cwms_util.db_office_code_all);
+
+      RETURN l_loc_category_code;
+   END;
+
+   FUNCTION get_loc_group_code (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_db_office_code    IN   NUMBER
+   )
+      RETURN NUMBER
+   IS
+      l_loc_category_code   NUMBER
+               := get_loc_category_code (p_loc_category_id, p_db_office_code);
+      l_loc_group_code      NUMBER;
+   BEGIN
+      SELECT a.loc_group_code
+        INTO l_loc_group_code
+        FROM at_loc_group a
+       WHERE a.loc_category_code = l_loc_category_code
+         AND UPPER (a.loc_group_id) = UPPER (TRIM (p_loc_group_id))
+         AND a.db_office_code IN
+                             (p_db_office_code, cwms_util.db_office_code_all);
+
+      RETURN l_loc_group_code;
+   END;
+
    FUNCTION get_data_stream_code (
       p_data_stream_id   IN   VARCHAR2,
       p_db_office_code   IN   NUMBER
@@ -38,58 +78,294 @@ AS
                                   );
    END;
 
+   FUNCTION get_shef_duration_numeric (p_shef_duration_code IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+      l_shef_duration_code      VARCHAR2 (1);
+      l_shef_duration_numeric   VARCHAR2 (4);
+      l_tmp                     VARCHAR2 (5)
+                                       := UPPER (TRIM (p_shef_duration_code));
+      l_num                     NUMBER;
+   BEGIN
+      IF REGEXP_INSTR (SUBSTR (l_tmp, 1, 1), '[A-Z]') = 1
+      THEN
+         l_shef_duration_code :=
+                           UPPER (SUBSTR (TRIM (p_shef_duration_code), 1, 1));
+
+         IF l_shef_duration_code = 'V'
+         THEN
+            l_shef_duration_numeric :=
+                                   SUBSTR (TRIM (p_shef_duration_code), 2, 4);
+
+            IF    LENGTH (l_shef_duration_numeric) != 4
+               OR SUBSTR (l_shef_duration_numeric, 1, 1) != '5'
+            THEN
+               cwms_err.RAISE ('ERROR',
+                                  l_shef_duration_numeric
+                               || ' is not a valid SHEF Duration Numeric.'
+                              );
+            END IF;
+         ELSE
+            BEGIN
+               SELECT a.shef_duration_numeric
+                 INTO l_shef_duration_numeric
+                 FROM cwms_shef_duration a
+                WHERE a.shef_duration_code = l_shef_duration_code;
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+               THEN
+                  cwms_err.RAISE ('ERROR',
+                                     l_shef_duration_code
+                                  || ' is not a valid SHEF duration code.'
+                                 );
+            END;
+         END IF;
+      ELSE
+         l_shef_duration_numeric := l_tmp;
+      END IF;
+
+      RETURN l_shef_duration_numeric;
+   END;
+
    PROCEDURE store_shef_spec (
       p_cwms_ts_id              IN   VARCHAR2,
       p_data_stream_id          IN   VARCHAR2,
+      p_loc_group_id            IN   VARCHAR2,
+      p_shef_loc_id             IN   VARCHAR2 DEFAULT NULL,
+      -- normally use loc_group_id
       p_shef_pe_code            IN   VARCHAR2,
-      p_shef_duration_code      IN   VARCHAR2,
       p_shef_tse_code           IN   VARCHAR2,
+      p_shef_duration_code      IN   VARCHAR2,
+      -- e.g., V5002 or simply L     -
       p_shef_unit_id            IN   VARCHAR2,
       p_time_zone_id            IN   VARCHAR2,
       p_daylight_savings        IN   VARCHAR2 DEFAULT 'F',  -- psuedo boolean.
-      p_snap_forward_minutes    IN   NUMBER,
-      p_snap_backward_minutes   IN   NUMBER,
-      p_loc_category_id         IN   VARCHAR2,
-      p_loc_group_id            IN   VARCHAR2,
-      p_interval_utc_offset     IN   NUMBER,                    -- in minutes.
+      p_interval_utc_offset     IN   NUMBER DEFAULT NULL,       -- in minutes.
+      p_snap_forward_minutes    IN   NUMBER DEFAULT NULL,
+      p_snap_backward_minutes   IN   NUMBER DEFAULT NULL,
       p_ts_active_flag          IN   VARCHAR2 DEFAULT 'T',
-      p_permit_multiple_specs   IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id            IN   VARCHAR2 DEFAULT NULL
    )
    IS
-      l_db_office_code        NUMBER
-                             := cwms_util.get_db_office_code (p_db_office_id);
-      l_ts_code               NUMBER
-                    := cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
-      l_data_stream_code      NUMBER
-                 := get_data_stream_code (p_data_stream_id, l_db_office_code);
-      l_spec_exists           BOOLEAN;
-      l_shef_pe_code          VARCHAR2 (2);
-      l_shef_tse_code         VARCHAR2 (3);
-      l_shef_duration_code    VARCHAR2 (1);
-      l_shef_unit_code        NUMBER;
-      l_shef_time_zone_code   NUMBER;
-      l_dl_time               VARCHAR2 (1);
-      l_location_code         NUMBER;
-      l_loc_group_code        NUMBER;
+      l_db_office_id            VARCHAR2 (16)
+                               := cwms_util.get_db_office_id (p_db_office_id);
+      l_db_office_code          NUMBER
+                             := cwms_util.get_db_office_code (l_db_office_id);
+      l_ts_code                 NUMBER;
+      --
+      l_data_stream_code        NUMBER;
+      l_spec_exists             BOOLEAN;
+      l_shef_pe_code            VARCHAR2 (2)  := UPPER (p_shef_pe_code);
+      l_shef_tse_code           VARCHAR2 (3)  := UPPER (p_shef_tse_code);
+      l_shef_duration_code      VARCHAR2 (1);
+      l_shef_duration_numeric   VARCHAR2 (4);
+      l_shef_unit_code          NUMBER;
+      l_shef_time_zone_code     NUMBER;
+      l_dl_time                 VARCHAR2 (1)
+                                     := UPPER (NVL (p_daylight_savings, 'F'));
+      l_ts_active_flag          VARCHAR2 (1)
+                                       := UPPER (NVL (p_ts_active_flag, 'T'));
+      l_shef_loc_id             VARCHAR2 (8)  := UPPER (TRIM (p_shef_loc_id));
+      l_shef_id                 VARCHAR2 (8)  := NULL;
+      l_location_code           NUMBER;
+      l_loc_group_code          NUMBER;
+      l_tmp                     NUMBER;
    BEGIN
-      l_ts_code := cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
-      l_data_stream_code :=
-                    get_data_stream_code (p_data_stream_id, l_db_office_code);
+      cwms_apex.aa1 ('in store_shef_spec.');
 
-      IF l_spec_exists
+      --
+      IF l_dl_time NOT IN ('T', 'F')
       THEN
-         UPDATE at_shef_decode
-            SET shef_pe_code = l_shef_pe_code,
-                shef_tse_code = l_shef_tse_code,
-                shef_duration_code = l_shef_duration_code,
-                shef_unit_code = l_shef_unit_code,
-                shef_time_zone_code = l_shef_time_zone_code,
-                dl_time = l_dl_time,
-                location_code = l_location_code,
-                loc_group_code = l_loc_group_code
-          WHERE ts_code = l_ts_code AND data_stream_code = l_data_stream_code;
+         cwms_err.RAISE ('INVALID_T_F_FLAG', 'p_daylight_savings');
       END IF;
+
+      --
+      -- get the ts_code -
+      BEGIN
+         l_ts_code := cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_ts.create_ts_code (p_ts_code                => l_ts_code,
+                                    p_cwms_ts_id             => p_cwms_ts_id,
+                                    p_utc_offset             => NULL,
+                                    p_interval_forward       => NULL,
+                                    p_interval_backward      => NULL,
+                                    p_versioned              => 'F',
+                                    p_active_flag            => 'T',
+                                    p_fail_if_exists         => 'T',
+                                    p_office_id              => l_db_office_id
+                                   );
+      END;
+
+      cwms_apex.aa1 ('store_shef_spec - ts_code: ' || l_ts_code);
+      l_data_stream_code :=
+                     get_data_stream_code (p_data_stream_id, l_db_office_code);
+      l_loc_group_code :=
+         get_loc_group_code ('Agency Alias', p_loc_group_id, l_db_office_code);
+
+      SELECT a.location_code
+        INTO l_location_code
+        FROM at_cwms_ts_spec a
+       WHERE a.ts_code = l_ts_code;
+
+      cwms_apex.aa1 ('store_shef_spec - location code: ' || l_location_code);
+
+      --
+      -- confirm that an alias exists for the loc group code and/or matches  -
+      -- the shef_loc_id passed in...
+      ---
+      BEGIN
+         SELECT a.loc_alias_id
+           INTO l_shef_id
+           FROM at_loc_group_assignment a
+          WHERE a.loc_group_code = l_loc_group_code
+            AND a.location_code = l_location_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            -- if a loc_group assignment for this location/group has not already-
+            -- been made, then try and make the assignment.
+            l_shef_id := NULL;
+
+            --
+            IF l_shef_loc_id IS NOT NULL
+            THEN
+               INSERT INTO at_loc_group_assignment
+                           (location_code, loc_group_code, loc_alias_id
+                           )
+                    VALUES (l_location_code, l_loc_group_code, l_shef_loc_id
+                           );
+            ELSE
+               cwms_err.RAISE
+                  ('ERROR',
+                      'Unable to find a SHEF Location Id for this CWMS_TS_ID: '
+                   || p_cwms_ts_id
+                   || ' and this Location Group: '
+                   || p_loc_group_id
+                  );
+            END IF;
+      END;
+
+      cwms_apex.aa1 (   'store_shef_spec - shef id: '
+                     || l_shef_loc_id
+                     || ' - '
+                     || l_shef_id
+                    );
+
+      IF l_shef_id IS NOT NULL AND l_shef_loc_id IS NOT NULL
+      THEN
+         IF UPPER (l_shef_id) != UPPER (l_shef_loc_id)
+         THEN
+            cwms_err.RAISE ('ERROR',
+                               'The provided SHEF Loc Id: '
+                            || l_shef_loc_id
+                            || ' does not match an existing SHEF Loc Id: '
+                            || l_shef_id
+                            || ' set for this Location Group: '
+                            || p_loc_group_id
+                            || ' and CWMS_TS_ID: '
+                            || p_cwms_ts_id
+                           );
+         END IF;
+      ELSIF l_shef_id IS NULL
+      THEN
+         l_shef_id := l_shef_loc_id;
+      END IF;
+
+      l_tmp := LENGTH (TRIM (l_shef_id));
+
+      IF l_tmp = 0
+      THEN
+         cwms_err.RAISE
+            ('ERROR',
+                'Unable to set shef spec - No SHEF Id found for this cwms_ts_id and Agency: '
+             || p_loc_group_id
+            );
+      ELSIF l_tmp > 8
+      THEN
+         cwms_err.RAISE
+                    ('ERROR',
+                        'SHEF Id is longer than eight characters in length: '
+                     || l_shef_id
+                    );
+      END IF;
+
+      --
+      l_shef_duration_numeric :=
+                              get_shef_duration_numeric (p_shef_duration_code);
+
+      BEGIN
+         SELECT shef_duration_code
+           INTO l_shef_duration_code
+           FROM cwms_shef_duration
+          WHERE shef_duration_numeric = l_shef_duration_numeric;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            l_shef_duration_code := 'V';
+      END;
+
+      cwms_apex.aa1 (   'in store_shef_spec - duration: .'
+                     || l_shef_duration_numeric
+                     || ' - '
+                     || l_shef_duration_code
+                    );
+
+      SELECT a.unit_code
+        INTO l_shef_unit_code
+        FROM cwms_unit a
+       WHERE a.unit_id = p_shef_unit_id;
+
+      cwms_apex.aa1 ('store_shef_spec - shef_unit_coded: ' || l_shef_unit_code);
+
+      IF p_time_zone_id IS NOT NULL
+      THEN
+         SELECT shef_time_zone_code
+           INTO l_shef_time_zone_code
+           FROM cwms_shef_time_zone a
+          WHERE UPPER (a.shef_time_zone_id) = UPPER (p_time_zone_id);
+      END IF;
+
+      cwms_ts.update_ts (p_ts_code                     => l_ts_code,
+                         p_interval_utc_offset         => p_interval_utc_offset,
+                         -- in minutes.
+                         p_snap_forward_minutes        => p_snap_forward_minutes,
+                         p_snap_backward_minutes       => p_snap_backward_minutes,
+                         p_local_reg_time_zone_id      => NULL,
+                         p_ts_active_flag              => l_ts_active_flag
+                        );
+      --
+      --
+      MERGE INTO at_shef_decode a
+         USING (SELECT SYSDATE
+                  FROM DUAL) b
+--         USING (SELECT l_ts_code, l_data_stream_code, l_shef_id,
+--                       l_shef_pe_code, l_shef_tse_code,
+--                       l_shef_duration_numeric, l_shef_duration_code,
+--                       l_shef_unit_code, l_shef_time_zone_code, l_dl_time,
+--                       l_loc_group_code, l_location_code
+--                  FROM DUAL) b
+      ON (a.ts_code = l_ts_code AND a.data_stream_code = l_data_stream_code)
+         WHEN MATCHED THEN
+            UPDATE
+               SET shef_loc_id = l_shef_id, shef_pe_code = l_shef_pe_code,
+                   shef_tse_code = l_shef_tse_code,
+                   shef_duration_numeric = l_shef_duration_numeric,
+                   shef_unit_code = l_shef_unit_code,
+                   shef_time_zone_code = l_shef_time_zone_code,
+                   dl_time = l_dl_time, location_code = l_location_code,
+                   loc_group_code = l_loc_group_code,
+                   shef_duration_code = l_shef_duration_code
+         WHEN NOT MATCHED THEN
+            INSERT (ts_code, data_stream_code, shef_loc_id, shef_pe_code,
+                    shef_tse_code, shef_duration_numeric, shef_unit_code,
+                    shef_time_zone_code, dl_time, location_code,
+                    loc_group_code, shef_duration_code)
+            VALUES (l_ts_code, l_data_stream_code, l_shef_id, l_shef_pe_code,
+                    l_shef_tse_code, l_shef_duration_numeric,
+                    l_shef_unit_code, l_shef_time_zone_code, l_dl_time,
+                    l_location_code, l_loc_group_code, l_shef_duration_code);
    END;
 
 -- ****************************************************************************
@@ -410,6 +686,16 @@ AS
       RETURN;
    END cat_shef_data_streams_tab;
 
+   PROCEDURE cat_shef_durations (p_shef_durations OUT sys_refcursor)
+   IS
+   BEGIN
+      OPEN p_shef_durations FOR
+         SELECT   a.shef_duration_code, a.shef_duration_desc,
+                  a.shef_duration_numeric
+             FROM cwms_shef_duration a
+         ORDER BY TO_NUMBER (a.shef_duration_numeric);
+   END cat_shef_durations;
+
    PROCEDURE cat_shef_time_zones (p_shef_time_zones OUT sys_refcursor)
    IS
    BEGIN
@@ -418,6 +704,36 @@ AS
              FROM cwms_shef_time_zone
          ORDER BY shef_time_zone_id;
    END cat_shef_time_zones;
+
+   PROCEDURE cat_shef_units (p_shef_units OUT sys_refcursor)
+   IS
+   BEGIN
+      OPEN p_shef_units FOR
+         SELECT   unit_id shef_unit_id
+             FROM cwms_unit
+         ORDER BY abstract_param_code, unit_id;
+   END cat_shef_units;
+
+   FUNCTION cat_shef_durations_tab
+      RETURN cat_shef_dur_tab_t PIPELINED
+   IS
+      output_row     cat_shef_dur_rec_t;
+      query_cursor   sys_refcursor;
+   BEGIN
+      cat_shef_durations (query_cursor);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END cat_shef_durations_tab;
 
    FUNCTION cat_shef_time_zones_tab
       RETURN cat_shef_tz_tab_t PIPELINED
@@ -439,6 +755,27 @@ AS
 
       RETURN;
    END cat_shef_time_zones_tab;
+
+   FUNCTION cat_shef_units_tab
+      RETURN cat_shef_units_tab_t PIPELINED
+   IS
+      output_row     cat_shef_units_rec_t;
+      query_cursor   sys_refcursor;
+   BEGIN
+      cat_shef_units (query_cursor);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END cat_shef_units_tab;
 
 ----------------------------------
    PROCEDURE parse_criteria_record (
@@ -487,15 +824,18 @@ AS
       TYPE list_of_num_t IS TABLE OF NUMBER;
 
       l_pos                  list_of_num_t  := list_of_num_t ();
+      l_pos_r                list_of_num_t  := list_of_num_t ();
       l_num                  NUMBER;
       l_end                  NUMBER;
+      l_sub_length           NUMBER;
+      l_sub_string           VARCHAR2 (64);
    BEGIN
       p_comment := NULL;
 
       -- Check if the line is commented out, i.e., starts with a "#",
       IF INSTR (l_criteria_record, '#') = 1
       THEN
-         p_comment := 'This is a comment line';
+         p_comment := 'COMMENT - This is a comment line';
          -- THIS IS A COMMENT LINE - IGNORE.
          GOTO fin;
       END IF;
@@ -525,18 +865,77 @@ AS
       --
       -- split the left side into its four components...
       --
-      l_shef_id :=
-               TRIM (SUBSTR (l_left_string, 1, INSTR (l_left_string, '.') - 1));
-      l_shef_pe_code :=
-                       TRIM (SUBSTR (l_left_string, LENGTH (l_shef_id) + 2, 2));
-      l_shef_tse_code :=
-                       TRIM (SUBSTR (l_left_string, LENGTH (l_shef_id) + 5, 3));
-      l_shef_duration_code :=
-         TRIM (SUBSTR (l_left_string,
-                       INSTR (l_left_string, '.', -1) + 1,
-                       LENGTH (l_left_string) - INSTR (l_left_string, '.', -1)
-                      )
-              );
+      ---- Find the three expected period delimiters...
+      ----
+      FOR i IN 1 .. 3
+      LOOP
+         l_tmp := INSTR (l_left_string, '.', 1, i);
+
+         IF l_tmp = 0
+         THEN
+            p_comment := 'ERROR - Malformed SHEF signature';
+            -- malformed record...
+            GOTO fin;
+         ELSE
+            l_pos.EXTEND;
+            l_pos (i) := l_tmp;
+         END IF;
+      END LOOP;
+
+      ----
+      ---- SHEF Id...
+      l_sub_length := l_pos (1) - 1;
+
+      IF l_sub_length <= 0 OR l_sub_length > 8
+      THEN
+         p_comment := 'ERROR - SHEF Id is null or longer than 8 characters.';
+         -- malformed record...
+         GOTO fin;
+      ELSE
+         l_shef_id := TRIM (SUBSTR (l_left_string, 1, l_sub_length));
+      END IF;
+
+      ----
+      ---- SHEF PE Code...
+      l_sub_length := l_pos (2) - l_pos (1) - 1;
+
+      IF l_sub_length != 2
+      THEN
+         p_comment := 'ERROR - SHEF PE code must be 2 characters in length.';
+         -- malformed record...
+         GOTO fin;
+      ELSE
+         l_shef_pe_code := TRIM (SUBSTR (l_left_string, l_pos (1) + 1, 2));
+      END IF;
+
+      ----
+      ---- SHEF TSE Code...
+      l_sub_length := l_pos (3) - l_pos (2) - 1;
+
+      IF l_sub_length != 3
+      THEN
+         p_comment := 'ERROR - SHEF TSE code must be 3 characters in length.';
+         -- malformed record...
+         GOTO fin;
+      ELSE
+         l_shef_tse_code := TRIM (SUBSTR (l_left_string, l_pos (2) + 1, 3));
+      END IF;
+
+      ----
+      ---- SHEF Duration Code...
+      l_sub_length := LENGTH (l_left_string) - l_pos (3);
+
+      IF l_sub_length < 1 OR l_sub_length > 4
+      THEN
+         p_comment :=
+            'ERROR - SHEF Duration code must be between 1 adn 4 characters long.';
+         -- malformed record...
+         GOTO fin;
+      ELSE
+         l_shef_duration_code :=
+                    TRIM (SUBSTR (l_left_string, l_pos (3) + 1, l_sub_length));
+      END IF;
+
       --
       -- split the right side into its components...
       --
@@ -551,14 +950,13 @@ AS
       WHILE l_tmp < l_right_length
       LOOP
          l_tmp := INSTR (l_right_string, ';', 1, l_num);
-         DBMS_OUTPUT.put_line (l_num || ' tmp: ' || l_tmp || CHR (10));
 
          IF l_tmp = 0
          THEN
             l_tmp := l_right_length;
          ELSE
-            l_pos.EXTEND;
-            l_pos (l_num) := l_tmp;
+            l_pos_r.EXTEND;
+            l_pos_r (l_num) := l_tmp;
             l_num := l_num + 1;
          END IF;
       END LOOP;
@@ -566,13 +964,11 @@ AS
       ----
       ---- extract the ts_id from the right side...
       ----
-      DBMS_OUTPUT.put_line ('lnum: ' || l_num);
-
-      IF l_num = 0
+      IF l_num = 1
       THEN
-         l_tmp := l_right_string;
+         l_tmp := l_right_length;
       ELSE
-         l_tmp := l_pos (1) - 1;
+         l_tmp := l_pos_r (1) - 1;
       END IF;
 
       l_cwms_ts_id := SUBSTR (l_right_string, 1, l_tmp);
@@ -582,64 +978,71 @@ AS
       ----
       IF l_num > 1
       THEN
-         l_end := l_num - 1;
+         l_num := l_num - 1;
 
-         FOR i IN 1 .. l_end
+         FOR i IN 1 .. l_num
          LOOP
-            IF i = l_end
+            IF i = l_num
             THEN
                l_tmp := l_right_length;
             ELSE
-               l_tmp := l_pos (i + 1) - 1;
+               l_tmp := l_pos_r (i + 1) - 1;
             END IF;
 
             --
-            l_param_id :=
-               UPPER (SUBSTR (l_right_string,
-                              l_pos (i) + 1,
-                              INSTR (l_right_string, '=', 1, i) - l_pos (i)
-                              - 1
-                             )
-                     );
-            l_param :=
-               SUBSTR (l_right_string,
-                       INSTR (l_right_string, '=', 1, i) + 1,
-                       l_tmp - INSTR (l_right_string, '=', 1, i)
-                      );
-            DBMS_OUTPUT.put_line (   i
-                                  || 'l_pos: '
-                                  || l_pos (i)
-                                  || ' l_tmp: '
-                                  || l_tmp
-                                  || ' '
-                                  || l_param_id
-                                  || ' - '
-                                  || l_param
-                                 );
+            l_sub_length := l_tmp - l_pos_r (i);
 
-            CASE l_param_id
-               WHEN 'DLTIME'
-               THEN
-                  l_dltime := l_param;
-               WHEN 'TZ'
-               THEN
-                  l_tz := l_param;
-               WHEN 'UNITS'
-               THEN
-                  l_units := l_param;
-               WHEN 'INTERVALOFFSET'
-               THEN
-                  l_int_offset := l_param;
-               WHEN 'INTERVALBACKWARD'
-               THEN
-                  l_int_backward := l_param;
-               WHEN 'INTERVALFORWARD'
-               THEN
-                  l_int_forward := l_param;
-               WHEN 'UNITSYS'
-               THEN
-                  l_unit_sys := l_param;
-            END CASE;
+            IF l_sub_length > 0
+            THEN
+               l_sub_string :=
+                        SUBSTR (l_right_string, l_pos_r (i) + 1,
+                                l_sub_length);
+               --
+               l_param_id :=
+                  UPPER (SUBSTR (l_right_string,
+                                 l_pos_r (i) + 1,
+                                   INSTR (l_right_string, '=', 1, i)
+                                 - l_pos_r (i)
+                                 - 1
+                                )
+                        );
+               l_param :=
+                  SUBSTR (l_right_string,
+                          INSTR (l_right_string, '=', 1, i) + 1,
+                          l_tmp - INSTR (l_right_string, '=', 1, i)
+                         );
+
+               CASE l_param_id
+                  WHEN 'DLTIME'
+                  THEN
+                     l_dltime := l_param;
+                  WHEN 'TZ'
+                  THEN
+                     l_tz := l_param;
+                  WHEN 'UNITS'
+                  THEN
+                     l_units := l_param;
+                  WHEN 'INTERVALOFFSET'
+                  THEN
+                     l_int_offset := l_param;
+                  WHEN 'INTERVALBACKWARD'
+                  THEN
+                     l_int_backward := l_param;
+                  WHEN 'INTERVALFORWARD'
+                  THEN
+                     l_int_forward := l_param;
+                  WHEN 'UNITSYS'
+                  THEN
+                     l_unit_sys := l_param;
+                  ELSE
+                     p_comment :=
+                           'ERROR - "'
+                        || l_sub_string
+                        || '" does not contain a valid processSHEFIT parameter.';
+                     -- malformed record...
+                     GOTO fin;
+               END CASE;
+            END IF;
          END LOOP;
       END IF;
 
@@ -660,5 +1063,101 @@ AS
       p_int_forward := l_int_forward;
       p_unit_sys := l_unit_sys;
    END;
+
+   PROCEDURE cat_shef_crit_lines (
+      p_shef_crit_lines   OUT      sys_refcursor,
+      p_data_stream       IN       VARCHAR2,
+      p_db_office_id      IN       VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_code     NUMBER
+                             := cwms_util.get_db_office_code (p_db_office_id);
+      l_data_stream_code   NUMBER
+                    := get_data_stream_code (p_data_stream, l_db_office_code);
+   BEGIN
+      OPEN p_shef_crit_lines FOR
+         SELECT    a.shef_loc_id
+                || '.'
+                || a.shef_pe_code
+                || '.'
+                || a.shef_tse_code
+                || '.'
+                || a.shef_duration_numeric
+                || '='
+                || b.cwms_ts_id
+                || CASE
+                      WHEN a.shef_unit_code IS NOT NULL
+                         THEN ';Units=' || c.unit_id
+                   END
+                || CASE
+                      WHEN a.shef_time_zone_code IS NOT NULL
+                         THEN ';TZ=' || d.shef_time_zone_id
+                   END
+                || ';DLTime='
+                || CASE
+                      WHEN a.dl_time = 'T'
+                         THEN 'true'
+                      ELSE 'false'
+                   END
+                || CASE
+                      WHEN e.interval_offset_id NOT IN
+                             (cwms_util.utc_offset_irregular,
+                              cwms_util.utc_offset_undefined
+                             )
+                         THEN    ';IntervalOffset='
+                              || cwms_util.get_interval_string
+                                                        (e.interval_utc_offset)
+                              || CASE
+                                    WHEN e.interval_forward IS NOT NULL
+                                       THEN    ';IntervalForward='
+                                            || cwms_util.get_interval_string
+                                                           (e.interval_forward)
+                                 END
+                              || CASE
+                                    WHEN e.interval_backward IS NOT NULL
+                                       THEN    ';IntervalBackward='
+                                            || cwms_util.get_interval_string
+                                                          (e.interval_backward)
+                                 END
+                   END shef_crit_line
+           FROM at_shef_decode a,
+                mv_cwms_ts_id b,
+                cwms_unit c,
+                cwms_shef_time_zone d,
+                at_cwms_ts_spec e,
+                at_base_location f
+          WHERE a.ts_code = b.ts_code
+            AND a.shef_unit_code = c.unit_code
+            AND a.shef_time_zone_code = d.shef_time_zone_code
+            AND a.ts_code = e.ts_code
+            AND b.base_location_code = f.base_location_code
+           -- AND e.active_flag = 'T'
+            --AND f.active_flag = 'T'
+            AND a.data_stream_code = l_data_stream_code;
+   END cat_shef_crit_lines;
+
+   FUNCTION cat_shef_crit_lines_tab (
+      p_data_stream    IN   VARCHAR2,
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN cat_shef_crit_lines_tab_t PIPELINED
+   IS
+      output_row     cat_shef_crit_lines_rec_t;
+      query_cursor   sys_refcursor;
+   BEGIN
+      cat_shef_crit_lines (query_cursor, p_data_stream, p_db_office_id);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END cat_shef_crit_lines_tab;
 END cwms_shef;
 /

@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/23 08:26 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/06/01 08:46 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_shef
 AS
    TYPE cat_data_stream_rec_t IS RECORD (
@@ -18,22 +18,43 @@ AS
 
    TYPE cat_shef_tz_tab_t IS TABLE OF cat_shef_tz_rec_t;
 
+   TYPE cat_shef_dur_rec_t IS RECORD (
+      shef_duration_code      VARCHAR2 (1),
+      shef_duration_desc      VARCHAR2 (128),
+      shef_duration_numeric   VARCHAR2 (4)
+   );
+
+   TYPE cat_shef_dur_tab_t IS TABLE OF cat_shef_dur_rec_t;
+
+   TYPE cat_shef_units_rec_t IS RECORD (
+      shef_unit_id   VARCHAR2 (16)
+   );
+
+   TYPE cat_shef_units_tab_t IS TABLE OF cat_shef_units_rec_t;
+
+   TYPE cat_shef_crit_lines_rec_t IS RECORD (
+      shef_crit_line   VARCHAR2 (400)
+   );
+
+   TYPE cat_shef_crit_lines_tab_t IS TABLE OF cat_shef_crit_lines_rec_t;
+
    PROCEDURE store_shef_spec (
       p_cwms_ts_id              IN   VARCHAR2,
       p_data_stream_id          IN   VARCHAR2,
+      p_loc_group_id            IN   VARCHAR2,
+      p_shef_loc_id             IN   VARCHAR2 DEFAULT NULL,
+      -- normally use loc_group_id
       p_shef_pe_code            IN   VARCHAR2,
-      p_shef_duration_code      IN   VARCHAR2,
       p_shef_tse_code           IN   VARCHAR2,
+      p_shef_duration_code      IN   VARCHAR2,
+      -- e.g., V5002 or simply L     -
       p_shef_unit_id            IN   VARCHAR2,
       p_time_zone_id            IN   VARCHAR2,
       p_daylight_savings        IN   VARCHAR2 DEFAULT 'F',  -- psuedo boolean.
-      p_snap_forward_minutes    IN   NUMBER,
-      p_snap_backward_minutes   IN   NUMBER,
-      p_loc_category_id         IN   VARCHAR2,
-      p_loc_group_id            IN   VARCHAR2,
-      p_interval_utc_offset     IN   NUMBER,                    -- in minutes.
+      p_interval_utc_offset     IN   NUMBER DEFAULT NULL,       -- in minutes.
+      p_snap_forward_minutes    IN   NUMBER DEFAULT NULL,
+      p_snap_backward_minutes   IN   NUMBER DEFAULT NULL,
       p_ts_active_flag          IN   VARCHAR2 DEFAULT 'T',
-      p_permit_multiple_specs   IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id            IN   VARCHAR2 DEFAULT NULL
    );
 
@@ -77,6 +98,15 @@ AS
    FUNCTION cat_shef_time_zones_tab
       RETURN cat_shef_tz_tab_t PIPELINED;
 
+   FUNCTION cat_shef_durations_tab
+      RETURN cat_shef_dur_tab_t PIPELINED;
+
+   FUNCTION cat_shef_units_tab
+      RETURN cat_shef_units_tab_t PIPELINED;
+
+   FUNCTION get_shef_duration_numeric (p_shef_duration_code IN VARCHAR2)
+      RETURN VARCHAR2;
+
    PROCEDURE parse_criteria_record (
       p_shef_id              OUT      VARCHAR2,
       p_shef_pe_code         OUT      VARCHAR2,
@@ -93,5 +123,17 @@ AS
       p_comment              OUT      VARCHAR2,
       p_criteria_record      IN       VARCHAR2
    );
+
+   PROCEDURE cat_shef_crit_lines (
+      p_shef_crit_lines   OUT      sys_refcursor,
+      p_data_stream       IN       VARCHAR2,
+      p_db_office_id      IN       VARCHAR2 DEFAULT NULL
+   );
+
+   FUNCTION cat_shef_crit_lines_tab (
+      p_data_stream    IN   VARCHAR2,
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN cat_shef_crit_lines_tab_t PIPELINED;
 END cwms_shef;
 /
