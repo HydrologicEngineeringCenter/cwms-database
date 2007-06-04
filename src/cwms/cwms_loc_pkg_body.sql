@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/16 07:56 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/05/29 15:02 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --
@@ -130,32 +130,6 @@ AS
       THEN
          RAISE;
    END get_location_code;
-
---********************************************************************** -
---********************************************************************** -
---
--- get_county_code return office_code
---
-------------------------------------------------------------------------------*/
-   FUNCTION get_office_code (p_office_id IN VARCHAR2)
-      RETURN NUMBER
-   IS
-      l_office_code   NUMBER;
-   BEGIN
-      SELECT office_code
-        INTO l_office_code
-        FROM cwms_office
-       WHERE office_id = UPPER (p_office_id);
-
-      RETURN l_office_code;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         cwms_err.RAISE ('INVALID_OFFICE_ID', p_office_id);
-      WHEN OTHERS
-      THEN
-         RAISE;
-   END;
 
 --********************************************************************** -
 --********************************************************************** -
@@ -1285,8 +1259,8 @@ AS
       --
       l_sub_location_id_new      at_physical_location.sub_location_id%TYPE
                                   := cwms_util.get_sub_id (l_location_id_new);
-      --
-      l_db_office_code           cwms_office.office_code%TYPE;
+       --
+      -- l_db_office_code           cwms_office.office_code%TYPE;
       l_base_location_code_old   at_base_location.base_location_code%TYPE;
       l_base_location_code_new   at_base_location.base_location_code%TYPE;
       l_location_code_old        at_physical_location.location_code%TYPE;
@@ -1314,17 +1288,18 @@ AS
                                                                       := NULL;
       l_county_code              cwms_county.county_code%TYPE         := NULL;
       l_active_flag              at_physical_location.active_flag%TYPE;
-      l_office_id                VARCHAR2 (16)      := UPPER (p_db_office_id);
+      l_db_office_id             VARCHAR2 (16)
+                               := cwms_util.get_db_office_id (p_db_office_id);
+      l_db_office_code           cwms_office.office_code%TYPE
+                             := cwms_util.get_db_office_code (l_db_office_id);
    BEGIN
-      l_db_office_code := get_office_code (l_office_id);
-
       ---------.
       ---------.
       --.
       --  New location can not already exist...
       BEGIN
          l_location_code_new :=
-                           get_location_code (l_office_id, l_location_id_new);
+                        get_location_code (l_db_office_id, l_location_id_new);
       EXCEPTION
          WHEN OTHERS
          THEN
@@ -1352,7 +1327,8 @@ AS
          SELECT base_location_code, base_location_id
            INTO l_base_location_code_old, l_base_location_id_exist
            FROM at_base_location abl
-          WHERE UPPER (abl.base_location_id) = UPPER (l_base_location_id_old);
+          WHERE UPPER (abl.base_location_id) = UPPER (l_base_location_id_old)
+            AND abl.db_office_code = l_db_office_code;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -2279,6 +2255,7 @@ AS
             RAISE;
          WHEN OTHERS
          THEN                                   --l_cwms_code was not found...
+            DBMS_OUTPUT.put_line ('entering create_location');
             create_location (p_location_id,
                              p_location_type,
                              p_elevation,
@@ -2353,15 +2330,9 @@ AS
       -- l_alias_cursor    sys_refcursor;
    --
    BEGIN
-      IF p_db_office_id IS NULL
-      THEN
-         l_office_id := cwms_util.user_office_id;
-      ELSE
-         l_office_id := UPPER (p_db_office_id);
-      END IF;
-
+      l_office_id := cwms_util.get_db_office_id (p_db_office_id);
       --
-      l_office_code := get_office_code (l_office_id);
+      l_office_code := cwms_util.get_db_office_code (l_office_id);
       l_location_code := get_location_code (l_office_id, p_location_id);
 
       --

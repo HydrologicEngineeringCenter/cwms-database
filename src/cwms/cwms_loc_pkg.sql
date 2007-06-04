@@ -29,8 +29,7 @@ AS
    )
       RETURN NUMBER;
 
-   FUNCTION get_office_code (p_office_id IN VARCHAR2)
-      RETURN NUMBER;
+
 
    FUNCTION get_state_code (p_state_initial IN VARCHAR2 DEFAULT NULL)
       RETURN NUMBER;
