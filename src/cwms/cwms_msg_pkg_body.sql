@@ -424,9 +424,32 @@ begin
    l_pos := instr(p_message, '>');
    return publish_status_message(substr(p_message, 1, l_pos) || l_extra || substr(p_message, l_pos+1));
                                           
-   return 0; 
 end log_message;   
 
+-------------------------------------------------------------------------------
+-- PROCEDURE LOG_DB_MESSAGE(...)
+--
+procedure log_db_message(
+   p_procedure in varchar2,
+   p_message   in varchar2)
+is
+   i  integer;
+   lf constant varchar2(1) := chr(10);
+begin
+   i := log_message(
+      'CWMSDB',
+      null,
+      null,
+      null,
+      systimestamp,
+      '<cwms_message type="Status">' || lf
+      || '  <property name="procedure" type="String">' || p_procedure || '</property>' || lf
+      || '  <text>' || lf
+      || '  ' || p_message || lf
+      || '  </text>' || lf
+      || '</cwms_message>');
+      
+end log_db_message;    
 -------------------------------------------------------------------------------
 -- FUNCTION LOG_MESSAGE_SERVER_MESSAGE(...)
 --

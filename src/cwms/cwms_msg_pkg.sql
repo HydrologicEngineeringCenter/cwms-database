@@ -113,6 +113,13 @@ function log_message(
    return integer;
 
 -------------------------------------------------------------------------------
+-- PROCEDURE LOG_DB_MESSAGE(...)
+--
+procedure log_db_message(
+   p_procedure in varchar2,
+   p_message   in varchar2);
+    
+-------------------------------------------------------------------------------
 -- FUNCTION LOG_MESSAGE_SERVER_MESSAGE(...)
 --
 function log_message_server_message(
