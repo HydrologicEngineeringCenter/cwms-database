@@ -1,12 +1,54 @@
 /*** CWMS v2.0 ***/
 
 
+
+declare
+   type id_array_t is table of varchar2(32);
+   table_names id_array_t := id_array_t(
+      'cwms_rating_type',
+      'cwms_rating_interpolate',
+      'at_rating',
+      'at_rating_parameters',
+      'table at_rating_versions',
+      'at_rating_loc',
+      'at_rating_extension_spec',
+      'at_rating_extension_value',
+      'at_rating_spec',
+      'at_rating_shift_spec',
+      'at_rating_shift_value',
+      'at_rating_curve',
+      'at_rating_value',
+      'et_rdb_comment',
+      'et_rdb_value');
+   mview_names id_array_t := id_array_t(
+      'mv_curve');
+
+begin                
+   for i in table_names.first .. table_names.last loop
+      begin 
+         execute immediate 'drop table ' || table_names(i) || ' cascade constraints';
+         dbms_output.put_line('Dropped table ' || table_names(i));
+      exception 
+         when others then null;
+      end;
+   end loop;
+      for i in mview_names.first .. mview_names.last loop
+      begin 
+         execute immediate 'drop materialized view  ' || mview_names(i);
+         dbms_output.put_line('Dropped materialized view  ' || mview_names(i));
+      exception 
+         when others then null;
+      end;
+   end loop;
+end;
+/
+
 /*** CWMS_RATING_TYPE ***/
 
 
-alter table at_rating drop constraint at_rating_fk1;
+--alter table at_rating drop constraint at_rating_fk1;
 
-drop table cwms_rating_type;
+--drop table cwms_rating_type;
 
 create table cwms_rating_type
 ( rating_type_code  number(10),
@@ -30,9 +72,9 @@ insert into cwms_rating_type values (3,'ELSA','Elevation-Surface Area');
 /*** CWMS_RATING_INTERPOLATE ***/
 
 
-alter table at_rating drop constraint at_rating_fk2;		
+--alter table at_rating drop constraint at_rating_fk2;		
 
-drop table cwms_rating_interpolate;
+--drop table cwms_rating_interpolate;
 
 create table cwms_rating_interpolate
 ( interpolate_code  number(10),
@@ -53,10 +95,10 @@ insert into cwms_rating_interpolate values (2,'Logarithmic');
 /*** AT_RATING ***/
 
 
-alter table at_rating_parameters drop constraint at_rating_parms_fk1;
-alter table at_rating_loc        drop constraint at_rating_loc_fk1;
+--alter table at_rating_parameters drop constraint at_rating_parms_fk1;
+--alter table at_rating_loc        drop constraint at_rating_loc_fk1;
 
-drop table at_rating; 
+--drop table at_rating; 
 
 create table at_rating
 ( rating_code       number(10),
@@ -92,9 +134,9 @@ comment on column at_rating.indep_parm_count is 'Number of independent variables
 /*** AT_RATING_PARMETERS ***/
 
 
-alter table at_rating_versions drop constraint at_rating_versions_fk1;
+--alter table at_rating_versions drop constraint at_rating_versions_fk1;
 
-drop table at_rating_parameters;
+--drop table at_rating_parameters;
 
 
 create table at_rating_parameters
@@ -132,7 +174,7 @@ comment on table at_rating_parameters is 'Defines a set of parameters for a rati
 /*** AT_RATING_VERSIONS ***/
 
 
-drop table at_rating_versions;
+--drop table at_rating_versions;
 
 create table at_rating_versions
 ( rating_versions_code number(10),
@@ -162,10 +204,10 @@ comment on column at_rating_versions.dep_version       is 'Dependent parameter v
 /***  AT_RATING_LOC  ***/
 
 
-alter table at_rating_extension_spec drop constraint at_rating_extension_spec_fk1;
-alter table at_rating_spec      drop constraint at_rating_spec_fk1;
+--alter table at_rating_extension_spec drop constraint at_rating_extension_spec_fk1;
+--alter table at_rating_spec      drop constraint at_rating_spec_fk1;
 
-drop table at_rating_loc;
+--drop table at_rating_loc;
 
 create table at_rating_loc
 ( rating_loc_code    number(10), 
@@ -206,9 +248,9 @@ comment on column at_rating_loc.filename           is 'rating table filename (do
 /*** AT_RATING_EXTENSION_SPEC ***/
 
 
-alter table at_rating_extension_value drop constraint at_rating_extension_value_fk1;
+--alter table at_rating_extension_value drop constraint at_rating_extension_value_fk1;
 
-drop table at_rating_extension_spec;
+--drop table at_rating_extension_spec;
 
 create table at_rating_extension_spec
 ( rating_extension_code  number(10),
@@ -240,7 +282,7 @@ comment on column at_rating_extension_spec.active_flag           is '="T" if the
 /***  AT_RATING_EXTENSION_VALUE  ***/
 
 
-drop table at_rating_extension_value;
+--drop table at_rating_extension_value;
 
 create table at_rating_extension_value
 ( rating_extension_code   number(10), 
@@ -260,10 +302,10 @@ comment on table at_rating_extension_value is 'Extends the top or bottom of the 
 /***  AT_RATING_SPEC ***/
 
 
-alter table at_rating_shift_spec drop constraint at_rating_shift_spec_fk1;
-alter table at_rating_curve      drop constraint at_rating_curve_fk1;
+--alter table at_rating_shift_spec drop constraint at_rating_shift_spec_fk1;
+--alter table at_rating_curve      drop constraint at_rating_curve_fk1;
 
-drop table at_rating_spec;
+--drop table at_rating_spec;
 
 create table at_rating_spec
 ( rating_spec_code  number(10),
@@ -305,9 +347,9 @@ comment on column at_rating_spec.dep_rounding     is '10-digit USGS rounding cod
 /*** AT_RATING_SHIFT_SPEC ***/
 
 
-alter table at_rating_shift_value drop constraint at_rating_shift_value_fk1;
+--alter table at_rating_shift_value drop constraint at_rating_shift_value_fk1;
 
-drop table at_rating_shift_spec;
+--drop table at_rating_shift_spec;
 
 create table at_rating_shift_spec
 ( rating_shift_code  number(10),
@@ -344,7 +386,7 @@ comment on column at_rating_shift_spec.transition_flag   is '="T" if the shift i
 /*** AT_RATING_SHIFT_VALUE ***/
 
 
-drop table at_rating_shift_value;
+--drop table at_rating_shift_value;
 
 create table at_rating_shift_value
 ( rating_shift_code  number(10),
@@ -366,9 +408,9 @@ comment on column at_rating_shift_value.shift is 'The value to add to INDEP_PARM
 /*** AT_RATING_CURVE ***/
 
 
-alter table at_rating_value drop constraint at_rating_value_fk1;
+--alter table at_rating_value drop constraint at_rating_value_fk1;
 
-drop table at_rating_curve;
+--drop table at_rating_curve;
 
 create table at_rating_curve
 ( rating_curve_code  number(10),
@@ -398,7 +440,7 @@ comment on column at_rating_curve.indep_parm_value  is 'The value of the second 
 /*** AT_RATING_VALUE ***/
 
 
-drop table at_rating_value;
+--drop table at_rating_value;
 
 create table at_rating_value
 ( rating_curve_code  number(10),
@@ -432,7 +474,7 @@ create or replace directory rdbfiles   as '/usr1/dba/oracle/rdbfiles';
 /*** ET_RDB_COMMENT ***/
 
 
-drop table et_rdb_comment;
+--drop table et_rdb_comment;
 
 create table et_rdb_comment
 ( line varchar2(255) )
@@ -456,7 +498,7 @@ reject limit unlimited;
 /*** ET_RDB_VALUE ***/
 
 
-drop table et_rdb_value;
+--drop table et_rdb_value;
 
 create table et_rdb_value
 ( x      number,
