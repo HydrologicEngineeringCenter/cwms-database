@@ -12,6 +12,7 @@ alter user cwms_20 quota unlimited on cwms_20data;
 grant aq_administrator_role to cwms_20;
 grant aq_user_role to cwms_20;
 
+grant javauserpriv to cwms_20;
 grant alter any index to cwms_20;
 grant alter any indextype to cwms_20;
 grant alter any materialized view to cwms_20;
