@@ -1,5 +1,4 @@
-/* Formatted on 2007/05/24 06:44 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE PACKAGE BODY cwms_cat
+CREATE OR REPLACE PACKAGE BODY CWMS_20.cwms_cat
 IS
 -------------------------------------------------------------------------------
 -- CAT_TS record-to-object conversion function
@@ -964,7 +963,7 @@ IS
             SELECT   v.db_office_id, v.cwms_ts_id, v.interval_utc_offset,
                      255,
                          -- substitute actual user privilege
-                         v.active_flag,
+                         v.ts_active_flag,
                      CASE z.time_zone_code
                         WHEN 0
                            THEN NULL
@@ -983,7 +982,7 @@ IS
             SELECT   v.db_office_id, v.cwms_ts_id, v.interval_utc_offset,
                      255,
                          -- substitute actual user privilege
-                         v.active_flag,
+                         v.ts_active_flag,
                      CASE z.time_zone_code
                         WHEN 0
                            THEN NULL
@@ -1085,7 +1084,7 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.active_flag, a.net_privilege_bit user_privileges
+                        v.ts_active_flag, a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,
@@ -1105,7 +1104,7 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.active_flag, a.net_privilege_bit user_privileges
+                        v.ts_active_flag, a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,
@@ -1133,7 +1132,7 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.active_flag, a.net_privilege_bit user_privileges
+                        v.ts_active_flag, a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,
@@ -1155,7 +1154,7 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.active_flag, a.net_privilege_bit user_privileges
+                        v.ts_active_flag, a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,
@@ -2756,5 +2755,3 @@ IS
    END cat_loc_group_tab;
 END cwms_cat;
 /
-
-SHOW errors;

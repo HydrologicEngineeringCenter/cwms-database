@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/27 10:56 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/06/15 06:54 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_ts
 AS
    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
@@ -319,6 +319,22 @@ AS
       p_version_date       IN       DATE DEFAULT NULL,
       p_max_version        IN       VARCHAR2 DEFAULT 'T',
       p_db_office_id       IN       VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE create_parameter_id (
+      p_parameter_id   IN   VARCHAR2,
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE delete_parameter_id (
+      p_parameter_id   IN   VARCHAR2,
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE rename_parameter_id (
+      p_parameter_id_old   IN   VARCHAR2,
+      p_parameter_id_new   IN   VARCHAR2,
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
 END;
 /

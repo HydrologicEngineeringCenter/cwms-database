@@ -624,7 +624,12 @@ from   at_rating_loc l inner join at_rating_spec          s using (rating_loc_co
 where indep_parm_number = 1                    
 order by loc_code, base_date, shift_date; 
 
-
-alter table mv_curve add constraint mv_curve_pk 
-primary key (loc_code, base_date, shift_date, spec_code, curve_code, shift_code);
-/
+CREATE UNIQUE INDEX MV_CURVE_PK ON MV_CURVE
+(LOC_CODE, BASE_DATE, SHIFT_DATE, SPEC_CODE, CURVE_CODE, 
+SHIFT_CODE)
+LOGGING
+TABLESPACE CWMS_20DATA
+NOPARALLEL;
+--alter table mv_curve add constraint mv_curve_pk 
+--primary key (loc_code, base_date, shift_date, spec_code, curve_code, shift_code);
+--/

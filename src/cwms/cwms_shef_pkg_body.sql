@@ -1,4 +1,4 @@
-/* Formatted on 2007/06/01 15:49 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/06/12 13:43 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_shef
 AS
    FUNCTION get_loc_category_code (
@@ -161,6 +161,7 @@ AS
       l_shef_duration_numeric   VARCHAR2 (4);
       l_shef_unit_code          NUMBER;
       l_shef_time_zone_code     NUMBER;
+      l_time_zone_id            VARCHAR2 (16) := NVL (p_time_zone_id, 'UTC');
       l_dl_time                 VARCHAR2 (1)
                                      := UPPER (NVL (p_daylight_savings, 'F'));
       l_ts_active_flag          VARCHAR2 (1)
@@ -319,13 +320,10 @@ AS
 
       cwms_apex.aa1 ('store_shef_spec - shef_unit_coded: ' || l_shef_unit_code);
 
-      IF p_time_zone_id IS NOT NULL
-      THEN
-         SELECT shef_time_zone_code
-           INTO l_shef_time_zone_code
-           FROM cwms_shef_time_zone a
-          WHERE UPPER (a.shef_time_zone_id) = UPPER (p_time_zone_id);
-      END IF;
+      SELECT shef_time_zone_code
+        INTO l_shef_time_zone_code
+        FROM cwms_shef_time_zone a
+       WHERE UPPER (a.shef_time_zone_id) = UPPER (l_time_zone_id);
 
       cwms_ts.update_ts (p_ts_code                     => l_ts_code,
                          p_interval_utc_offset         => p_interval_utc_offset,
@@ -335,37 +333,88 @@ AS
                          p_local_reg_time_zone_id      => NULL,
                          p_ts_active_flag              => l_ts_active_flag
                         );
+
       --
       --
-      MERGE INTO at_shef_decode a
-         USING (SELECT SYSDATE
-                  FROM DUAL) b
---         USING (SELECT l_ts_code, l_data_stream_code, l_shef_id,
---                       l_shef_pe_code, l_shef_tse_code,
---                       l_shef_duration_numeric, l_shef_duration_code,
---                       l_shef_unit_code, l_shef_time_zone_code, l_dl_time,
---                       l_loc_group_code, l_location_code
+      BEGIN
+         cwms_apex.aa1
+                    ('store_shef_spec - trying to insert into at_shef_decode');
+
+         INSERT INTO at_shef_decode
+                     (ts_code, data_stream_code, shef_loc_id,
+                      shef_pe_code, shef_tse_code,
+                      shef_duration_numeric, shef_unit_code,
+                      shef_time_zone_code, dl_time, location_code,
+                      loc_group_code, shef_duration_code
+                     )
+              VALUES (l_ts_code, l_data_stream_code, l_shef_id,
+                      l_shef_pe_code, l_shef_tse_code,
+                      l_shef_duration_numeric, l_shef_unit_code,
+                      l_shef_time_zone_code, l_dl_time, l_location_code,
+                      l_loc_group_code, l_shef_duration_code
+                     );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            DECLARE
+               ERROR_CODE   NUMBER := SQLCODE;
+            BEGIN
+               IF ERROR_CODE = -1
+               THEN
+                  cwms_err.RAISE ('SHEF_DUP_TS_ID', p_cwms_ts_id);
+               ELSE
+                  cwms_apex.aa1
+                     ('store_shef_spec - trying to update into at_shef_decode'
+                     );
+                  cwms_apex.aa1 (   'store_shef_spec - tse code is:'
+                                 || l_shef_tse_code
+                                );
+
+                  UPDATE at_shef_decode
+                     SET shef_loc_id = l_shef_id,
+                         shef_pe_code = l_shef_pe_code,
+                         shef_tse_code = l_shef_tse_code,
+                         shef_duration_numeric = l_shef_duration_numeric,
+                         shef_unit_code = l_shef_unit_code,
+                         shef_time_zone_code = l_shef_time_zone_code,
+                         dl_time = l_dl_time,
+                         location_code = l_location_code,
+                         loc_group_code = l_loc_group_code,
+                         shef_duration_code = l_shef_duration_code
+                   WHERE ts_code = l_ts_code
+                     AND data_stream_code = l_data_stream_code;
+               END IF;
+            END;
+      END;
+--      MERGE INTO at_shef_decode a
+--         USING (SELECT SYSDATE
 --                  FROM DUAL) b
-      ON (a.ts_code = l_ts_code AND a.data_stream_code = l_data_stream_code)
-         WHEN MATCHED THEN
-            UPDATE
-               SET shef_loc_id = l_shef_id, shef_pe_code = l_shef_pe_code,
-                   shef_tse_code = l_shef_tse_code,
-                   shef_duration_numeric = l_shef_duration_numeric,
-                   shef_unit_code = l_shef_unit_code,
-                   shef_time_zone_code = l_shef_time_zone_code,
-                   dl_time = l_dl_time, location_code = l_location_code,
-                   loc_group_code = l_loc_group_code,
-                   shef_duration_code = l_shef_duration_code
-         WHEN NOT MATCHED THEN
-            INSERT (ts_code, data_stream_code, shef_loc_id, shef_pe_code,
-                    shef_tse_code, shef_duration_numeric, shef_unit_code,
-                    shef_time_zone_code, dl_time, location_code,
-                    loc_group_code, shef_duration_code)
-            VALUES (l_ts_code, l_data_stream_code, l_shef_id, l_shef_pe_code,
-                    l_shef_tse_code, l_shef_duration_numeric,
-                    l_shef_unit_code, l_shef_time_zone_code, l_dl_time,
-                    l_location_code, l_loc_group_code, l_shef_duration_code);
+----         USING (SELECT l_ts_code, l_data_stream_code, l_shef_id,
+----                       l_shef_pe_code, l_shef_tse_code,
+----                       l_shef_duration_numeric, l_shef_duration_code,
+----                       l_shef_unit_code, l_shef_time_zone_code, l_dl_time,
+----                       l_loc_group_code, l_location_code
+----                  FROM DUAL) b
+--      ON (a.ts_code = l_ts_code AND a.data_stream_code = l_data_stream_code)
+--         WHEN MATCHED THEN
+--            UPDATE
+--               SET shef_loc_id = l_shef_id, shef_pe_code = l_shef_pe_code,
+--                   shef_tse_code = l_shef_tse_code,
+--                   shef_duration_numeric = l_shef_duration_numeric,
+--                   shef_unit_code = l_shef_unit_code,
+--                   shef_time_zone_code = l_shef_time_zone_code,
+--                   dl_time = l_dl_time, location_code = l_location_code,
+--                   loc_group_code = l_loc_group_code,
+--                   shef_duration_code = l_shef_duration_code
+--         WHEN NOT MATCHED THEN
+--            INSERT (ts_code, data_stream_code, shef_loc_id, shef_pe_code,
+--                    shef_tse_code, shef_duration_numeric, shef_unit_code,
+--                    shef_time_zone_code, dl_time, location_code,
+--                    loc_group_code, shef_duration_code)
+--            VALUES (l_ts_code, l_data_stream_code, l_shef_id, l_shef_pe_code,
+--                    l_shef_tse_code, l_shef_duration_numeric,
+--                    l_shef_unit_code, l_shef_time_zone_code, l_dl_time,
+--                    l_location_code, l_loc_group_code, l_shef_duration_code);
    END;
 
 -- ****************************************************************************
@@ -1131,8 +1180,8 @@ AS
             AND a.shef_time_zone_code = d.shef_time_zone_code
             AND a.ts_code = e.ts_code
             AND b.base_location_code = f.base_location_code
-           -- AND e.active_flag = 'T'
-            --AND f.active_flag = 'T'
+            -- AND e.active_flag = 'T'
+             --AND f.active_flag = 'T'
             AND a.data_stream_code = l_data_stream_code;
    END cat_shef_crit_lines;
 

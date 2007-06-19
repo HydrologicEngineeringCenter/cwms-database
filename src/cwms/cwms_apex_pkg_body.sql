@@ -573,15 +573,22 @@ AS
               || l_shef_id
              );
          --
+         aa1 (   'l_int_offset = '
+           || l_int_offset
+           || ' l_int_forward '
+           || l_int_forward
+           || ' l_int_backward '
+           || l_int_backward
+          );
          cwms_shef.store_shef_spec
                         (p_cwms_ts_id                 => l_cwms_ts_id,
                          p_data_stream_id             => p_data_stream_id,
                          p_loc_group_id               => p_loc_group_id,
                          p_shef_loc_id                => l_shef_id,
                          -- normally use loc_group_id
-                         p_shef_duration_code         => l_shef_duration_code,
                          p_shef_pe_code               => l_pe_code,
                          p_shef_tse_code              => l_tse_code,
+                         p_shef_duration_code         => l_shef_duration_code,
                          p_shef_unit_id               => l_units,
                          p_time_zone_id               => l_tz,
                          p_daylight_savings           => l_dltime,

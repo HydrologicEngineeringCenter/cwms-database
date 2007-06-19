@@ -37,6 +37,9 @@
 @@cwms_shef_pkg
 @@cwms_shef_pkg_body
 
+@@cwms_rating_pkg
+@@cwms_rating_pkg_body
+
 @@cwms_apex_pkg
 @@cwms_apex_pkg_body
 

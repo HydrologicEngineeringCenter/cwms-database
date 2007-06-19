@@ -40,6 +40,15 @@ alter session set current_schema = cwms_20;
 @@py_BuildCwms
 @@cwms/cwms_types
 @@cwms/at_schema
+@@cwms/at_schema_shef
+@@cwms/at_schema_alarm
+@@cwms/at_schema_screening
+@@cwms/at_schema_dss_xchg
+@@cwms/at_schema_msg
+@@cwms/at_data
+@@cwms/at_schema_mv
+@@cwms/at_schema_av
+@@cwms/at_schema_rating
 @@cwms/at_schema_tsv
 @@cwms/at_schema_sec
 

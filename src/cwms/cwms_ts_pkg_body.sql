@@ -3915,6 +3915,236 @@ BEGIN
    p_at_tsv_rc := l_at_tsv_rc;
 END zretrieve_ts_java;
 
+-- p_fail_if_exists 'T' will throw an exception if the parameter_id already    -
+--                        exists.                                              -
+--                  'F' will simply return the parameter code of the already   -
+--                        existing parameter id.                               -
+PROCEDURE create_parameter_code (
+   p_base_parameter_code   OUT      NUMBER,
+   p_parameter_code        OUT      NUMBER,
+   p_base_parameter_id     IN       VARCHAR2,
+   p_sub_parameter_id      IN       VARCHAR2,
+   p_fail_if_exists        IN       VARCHAR2 DEFAULT 'T',
+   p_db_office_code        IN       NUMBER
+)
+IS
+   l_all_office_code       NUMBER  := cwms_util.db_office_code_all;
+   l_parameter_id_exists   BOOLEAN := FALSE;
+BEGIN
+   BEGIN
+      SELECT base_parameter_code
+        INTO p_base_parameter_code
+        FROM cwms_base_parameter
+       WHERE UPPER (base_parameter_id) = UPPER (p_base_parameter_id);
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         cwms_err.RAISE ('INVALID_PARAM_ID',
+                            p_base_parameter_id
+                         || SUBSTR ('-', 1, LENGTH (p_sub_parameter_id))
+                         || p_sub_parameter_id
+                        );
+   END;
+
+   BEGIN
+      IF p_sub_parameter_id IS NULL
+      THEN
+         SELECT parameter_code
+           INTO p_parameter_code
+           FROM at_parameter ap
+          WHERE base_parameter_code = p_base_parameter_code
+            AND sub_parameter_id IS NULL
+            AND db_office_code IN (p_db_office_code, l_all_office_code);
+      ELSE
+         SELECT parameter_code
+           INTO p_parameter_code
+           FROM at_parameter ap
+          WHERE base_parameter_code = p_base_parameter_code
+            AND UPPER (sub_parameter_id) = UPPER (p_sub_parameter_id)
+            AND db_office_code IN (p_db_office_code, l_all_office_code);
+      END IF;
+
+      l_parameter_id_exists := TRUE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         IF p_sub_parameter_id IS NULL
+         THEN
+            cwms_err.RAISE ('INVALID_PARAM_ID',
+                               p_base_parameter_id
+                            || SUBSTR ('-', 1, LENGTH (p_sub_parameter_id))
+                            || p_sub_parameter_id
+                           );
+         ELSE                                   -- Insert new sub_parameter...
+            INSERT INTO at_parameter
+                        (parameter_code, db_office_code,
+                         base_parameter_code, sub_parameter_id
+                        )
+                 VALUES (cwms_seq.NEXTVAL, p_db_office_code,
+                         p_base_parameter_code, p_sub_parameter_id
+                        )
+              RETURNING parameter_code
+                   INTO p_parameter_code;
+         END IF;
+   END;
+
+   IF UPPER (NVL (p_fail_if_exists, 'T')) = 'T' AND l_parameter_id_exists
+   THEN
+      cwms_err.RAISE ('ITEM_ALREADY_EXISTS',
+                         p_base_parameter_id
+                      || SUBSTR ('-', 1, LENGTH (p_sub_parameter_id))
+                      || p_sub_parameter_id,
+                      'Parameter Id'
+                     );
+   END IF;
+END create_parameter_code;
+
+/* Formatted on 2007/06/14 14:40 (Formatter Plus v4.8.8) */
+PROCEDURE create_parameter_id (
+   p_parameter_id   IN   VARCHAR2,
+   p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+)
+IS
+   l_db_office_code        NUMBER
+                             := cwms_util.get_db_office_code (p_db_office_id);
+   l_base_parameter_code   NUMBER;
+   l_parameter_code        NUMBER;
+BEGIN
+   create_parameter_code
+               (p_base_parameter_code      => l_base_parameter_code,
+                p_parameter_code           => l_parameter_code,
+                p_base_parameter_id        => cwms_util.get_base_id
+                                                               (p_parameter_id),
+                p_sub_parameter_id         => cwms_util.get_sub_id
+                                                               (p_parameter_id),
+                p_fail_if_exists           => 'F',
+                p_db_office_code           => l_db_office_code
+               );
+END;
+
+/* Formatted on 2007/06/14 15:35 (Formatter Plus v4.8.8) */
+PROCEDURE delete_parameter_id (
+   p_base_parameter_id   IN   VARCHAR2,
+   p_sub_parameter_id    IN   VARCHAR2,
+   p_db_office_code      IN   NUMBER
+)
+IS
+   l_base_parameter_code   NUMBER;
+   l_parameter_code        NUMBER;
+BEGIN
+   BEGIN
+      SELECT base_parameter_code
+        INTO l_base_parameter_code
+        FROM cwms_base_parameter
+       WHERE UPPER (base_parameter_id) = UPPER (p_base_parameter_id);
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         cwms_err.RAISE ('INVALID_PARAM_ID',
+                            p_base_parameter_id
+                         || SUBSTR ('-', 1, LENGTH (p_sub_parameter_id))
+                         || p_sub_parameter_id
+                        );
+   END;
+
+   DELETE FROM at_parameter
+         WHERE base_parameter_code = l_base_parameter_code
+           AND UPPER (sub_parameter_id) = UPPER (TRIM (p_sub_parameter_id))
+           AND db_office_code = p_db_office_code;
+END;
+/* Formatted on 2007/06/14 15:37 (Formatter Plus v4.8.8) */
+PROCEDURE delete_parameter_id (
+   p_parameter_id   IN   VARCHAR2,
+   p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+)
+IS
+BEGIN
+   delete_parameter_id
+            (p_base_parameter_id      => cwms_util.get_base_id (p_parameter_id),
+             p_sub_parameter_id       => cwms_util.get_sub_id (p_parameter_id),
+             p_db_office_code         => cwms_util.get_db_office_code
+                                                               (p_db_office_id)
+            );
+END;
+
+/* Formatted on 2007/06/15 08:00 (Formatter Plus v4.8.8) */
+PROCEDURE rename_parameter_id (
+   p_parameter_id_old   IN   VARCHAR2,
+   p_parameter_id_new   IN   VARCHAR2,
+   p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+)
+IS
+   l_db_office_code_all        NUMBER        := cwms_util.db_office_code_all;
+   l_db_office_code            NUMBER
+                             := cwms_util.get_db_office_code (p_db_office_id);
+   --
+   l_db_office_id_old          NUMBER;
+   l_base_parameter_code_old   NUMBER;
+   l_parameter_code_old        NUMBER;
+   l_sub_parameter_id_old      VARCHAR2 (32);
+   l_parameter_code_new        NUMBER;
+   l_base_parameter_code_new   NUMBER;
+   l_base_parameter_id_new     VARCHAR2 (16);
+   l_sub_parameter_id_new      VARCHAR2 (32);
+   --
+   l_new_parameter_id_exists   BOOLEAN       := FALSE;
+BEGIN
+   SELECT db_office_id, base_parameter_code, parameter_code,
+          sub_parameter_id
+     INTO l_db_office_id_old, l_base_parameter_code_old, l_parameter_code_old,
+          l_sub_parameter_id_old
+     FROM av_parameter
+    WHERE UPPER (parameter_id) = UPPER (TRIM (p_parameter_id_old))
+      AND db_office_code IN (l_db_office_code_all, l_db_office_code);
+
+   IF l_db_office_id_old = l_db_office_code_all
+   THEN
+      cwms_err.RAISE ('ITEM_OWNED_BY_CWMS',p_parameter_id_old );
+   END IF;
+   
+   BEGIN
+      SELECT base_parameter_code,
+             parameter_code, sub_parameter_id
+        INTO l_base_parameter_code_new,
+             l_parameter_code_new, l_sub_parameter_id_new
+        FROM av_parameter
+       WHERE UPPER (parameter_id) = UPPER (TRIM (p_parameter_id_new))
+         AND db_office_code IN (l_db_office_code_all, l_db_office_code);
+
+      l_new_parameter_id_exists := TRUE;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         l_base_parameter_id_new :=
+                                   cwms_util.get_base_id (p_parameter_id_new);
+         l_sub_parameter_id_new := cwms_util.get_sub_id (p_parameter_id_new);
+
+         SELECT base_parameter_code
+           INTO l_base_parameter_code_old
+           FROM cwms_base_parameter
+          WHERE UPPER (base_parameter_id) = UPPER (l_base_parameter_id_new);
+
+         l_parameter_code_new := 0;
+   END;
+
+
+   IF l_new_parameter_id_exists
+   THEN
+      IF     l_parameter_code_new = l_parameter_code_old
+         AND l_sub_parameter_id_old = l_sub_parameter_id_new
+      THEN
+         cwms_err.RAISE ('CANNOT_RENAME_3', p_parameter_id_new);
+      ELSE
+         cwms_err.RAISE ('CANNOT_RENAME_2', p_parameter_id_new);
+      END IF;
+   END IF;
+
+   UPDATE at_parameter
+      SET sub_parameter_id = l_sub_parameter_id_new
+    WHERE parameter_code = l_parameter_code_old;
+END;
+
+
 END cwms_ts; --end package body
 /
 show errors;
