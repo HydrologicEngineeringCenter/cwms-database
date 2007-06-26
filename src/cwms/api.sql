@@ -13,9 +13,6 @@
 @@cwms_ts_pkg
 @@cwms_ts_pkg_body
 
-@@cwms_dss_pkg
-@@cwms_dss_pkg_body
-
 @@cwms_cat_pkg
 @@cwms_cat_pkg_body
 
