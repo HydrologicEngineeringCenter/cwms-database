@@ -325,7 +325,7 @@ AS
         FROM cwms_shef_time_zone a
        WHERE UPPER (a.shef_time_zone_id) = UPPER (l_time_zone_id);
 
-      cwms_ts.update_ts (p_ts_code                     => l_ts_code,
+      cwms_ts.update_ts_id (p_ts_code                     => l_ts_code,
                          p_interval_utc_offset         => p_interval_utc_offset,
                          -- in minutes.
                          p_snap_forward_minutes        => p_snap_forward_minutes,
