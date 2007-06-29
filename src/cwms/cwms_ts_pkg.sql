@@ -1,4 +1,4 @@
-/* Formatted on 2007/06/25 13:56 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/06/29 09:43 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_ts
 AS
    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
@@ -74,6 +74,15 @@ AS
       p_duration_id         IN   VARCHAR2,
       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    )
+      RETURN VARCHAR2;
+
+   FUNCTION get_location_id (
+      p_cwms_ts_id     IN   VARCHAR2,
+      p_db_office_id   IN   VARCHAR2
+   )
+      RETURN VARCHAR2;
+
+   FUNCTION get_location_id (p_cwms_ts_code IN NUMBER)
       RETURN VARCHAR2;
 
 --

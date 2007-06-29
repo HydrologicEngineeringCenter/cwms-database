@@ -135,6 +135,34 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
      DBMS_APPLICATION_INFO.set_module (NULL, NULL);
 
    END get_Time_On_Before_Interval;
+   
+   
+    /* Formatted on 2007/06/29 09:39 (Formatter Plus v4.8.8) */
+    FUNCTION get_location_id (p_cwms_ts_id IN VARCHAR2, p_db_office_id IN VARCHAR2)
+       RETURN VARCHAR2
+    IS
+    BEGIN
+       RETURN get_location_id
+                (p_cwms_ts_code      => cwms_util.get_ts_code
+                                           (p_cwms_ts_id          => p_cwms_ts_id,
+                                            p_db_office_code      => cwms_util.get_db_office_code
+                                                                        (p_office_id      => p_db_office_id
+                                                                        )
+                                           )
+                );
+    END;
+
+    /* Formatted on 2007/06/29 09:41 (Formatter Plus v4.8.8) */
+    FUNCTION get_location_id (p_cwms_ts_code IN NUMBER)
+       RETURN VARCHAR2
+    IS
+       l_location_id   VARCHAR2 (49);
+    BEGIN
+       SELECT location_id
+         INTO l_location_id
+         FROM mv_cwms_ts_id
+        WHERE ts_code = p_cwms_ts_code;
+    END;
 --
 --*******************************************************************   --
 --*******************************************************************   --
