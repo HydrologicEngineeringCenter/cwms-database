@@ -1,4 +1,5 @@
-CREATE OR REPLACE PACKAGE BODY CWMS_20.cwms_cat
+/* Formatted on 2007/06/29 09:16 (Formatter Plus v4.8.8) */
+CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_cat
 IS
 -------------------------------------------------------------------------------
 -- CAT_TS record-to-object conversion function
@@ -1084,7 +1085,8 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.ts_active_flag, a.net_privilege_bit user_privileges
+                        v.ts_active_flag,
+                        a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,
@@ -1104,7 +1106,8 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.ts_active_flag, a.net_privilege_bit user_privileges
+                        v.ts_active_flag,
+                        a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,
@@ -1132,7 +1135,8 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.ts_active_flag, a.net_privilege_bit user_privileges
+                        v.ts_active_flag,
+                        a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,
@@ -1154,7 +1158,8 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.ts_active_flag, a.net_privilege_bit user_privileges
+                        v.ts_active_flag,
+                        a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
                         cwms_time_zone z,
@@ -1567,71 +1572,58 @@ IS
       RETURN;
    END cat_loc_tab;
 
--------------------------------------------------------------------------------
--- procedure cat_loc_alias(...)
---
---
-   PROCEDURE cat_loc_alias (
-      p_cwms_cat   OUT      sys_refcursor,
-      p_officeid   IN       VARCHAR2 DEFAULT NULL,
-      p_cwmsid     IN       VARCHAR2 DEFAULT NULL
-   )
-   IS
-      l_office_id   VARCHAR2 (16);
-   BEGIN
-      NULL;
-      /*
-         IF p_officeid IS NULL
-         THEN
-            l_office_id := cwms_util.user_office_id;
-         ELSE
-            l_office_id := p_officeid;
-         END IF;
+    -------------------------------------------------------------------------------
+    -- procedure cat_loc_alias(...)
+    --
+    --
+    PROCEDURE cat_loc_alias (
+       p_cwms_cat       OUT      sys_refcursor,
+       p_cwms_ts_id     IN       VARCHAR2 DEFAULT NULL,
+       p_db_office_id   IN       VARCHAR2 DEFAULT NULL
+    )
+    IS
+       l_db_office_id    VARCHAR2 (16)
+                                   := cwms_util.get_db_office_id (p_db_office_id);
+       l_location_code   NUMBER;
+    BEGIN
+       IF p_cwms_ts_id IS NULL
+       THEN
+    ---------------------------
+    -- only office specified --
+    ---------------------------
+          OPEN p_cwms_cat FOR
+             SELECT   a.db_office_id, a.location_id, a.GROUP_ID agency_id,
+                      a.alias_id
+                 FROM av_loc_alias a
+                WHERE category_id = 'Agency Alias'
+                  AND db_office_id = l_db_office_id
+             ORDER BY UPPER (a.location_id),
+                      UPPER (a.GROUP_ID),
+                      UPPER (a.alias_id);
+       ELSE
+    ----------------------------------------
+    -- both office and location specified --
+    ----------------------------------------
+          l_location_code :=
+             cwms_loc.get_location_code
+                (p_db_office_id      => l_db_office_id,
+                 p_location_id       => cwms_ts.get_location_id
+                                                 (p_cwms_ts_id        => p_cwms_ts_id,
+                                                  p_db_office_id      => l_db_office_id
+                                                 )
+                );
 
-         IF p_cwmsid IS NULL
-         THEN
-   ---------------------------
-   -- only office specified --
-   ---------------------------
-            OPEN p_cwms_cat FOR
-               SELECT   avl.db_office_id, avl.location_id, aan.agency_id,
-                        sn.alias_id
-                   FROM at_physical_location pl,
-                        at_alias_name sn,
-                        at_agency_name aan,
-                        av_loc avl
-                  WHERE pl.location_code = sn.location_code
-                    AND avl.location_code = pl.location_code
-                    AND aan.agency_code = sn.agency_code
-                    AND avl.db_office_id = UPPER (l_office_id)
-               ORDER BY avl.db_office_id ASC,
-                        avl.location_id ASC,
-                        aan.agency_id ASC,
-                        sn.alias_id ASC;
-         ELSE
-   ----------------------------------------
-   -- both office and location specified --
-   ----------------------------------------
-            OPEN p_cwms_cat FOR
-               SELECT   avl.db_office_id, avl.location_id, aan.agency_id,
-                        sn.alias_id
-                   FROM at_physical_location pl,
-                        at_alias_name sn,
-                        at_agency_name aan,
-                        av_loc avl
-                  WHERE pl.location_code = sn.location_code
-                    AND avl.location_code = pl.location_code
-                    AND aan.agency_code = sn.agency_code
-                    AND UPPER (avl.base_location_id) = UPPER (p_cwmsid)
-                    AND avl.db_office_id = UPPER (l_office_id)
-               ORDER BY avl.db_office_id ASC,
-                        avl.location_id ASC,
-                        aan.agency_id ASC,
-                        sn.alias_id ASC;
-         END IF;
-   */
-   END cat_loc_alias;
-
+          OPEN p_cwms_cat FOR
+             SELECT   a.db_office_id, a.location_id, a.GROUP_ID agency_id,
+                      a.alias_id
+                 FROM av_loc_alias a
+                WHERE category_id = 'Agency Alias'
+                  AND a.location_code = l_location_code
+             ORDER BY UPPER (a.location_id),
+                      UPPER (a.GROUP_ID),
+                      UPPER (a.alias_id);
+       END IF;
+    END cat_loc_alias;
 -------------------------------------------------------------------------------
 -- function cat_loc_alias_tab(...)
 --

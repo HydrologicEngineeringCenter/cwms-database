@@ -566,9 +566,9 @@ IS
 --
 --
    PROCEDURE cat_loc_alias (
-      p_cwms_cat   OUT      sys_refcursor,
-      p_officeid   IN       VARCHAR2 DEFAULT NULL,
-      p_cwmsid     IN       VARCHAR2 DEFAULT NULL
+      p_cwms_cat       OUT      sys_refcursor,
+      p_cwms_ts_id     IN       VARCHAR2 DEFAULT NULL,
+      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
    );
 
 -------------------------------------------------------------------------------
