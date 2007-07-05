@@ -86,7 +86,7 @@ def validateXML(xmlSpec) :
 	realtime_imports = {}
 	realtime_exports = {}
 	
-	is_cwms = xpath.evaluate("starts-with(local-name(/*[1]), 'cwms_')", inputSource, BOOLEAN)
+	is_cwms = xpath.evaluate("starts-with(local-name(/*[1]), 'cwms-')", inputSource, BOOLEAN)
 	
 	#-----------------------------------#
 	# collect the datastore types by id #
@@ -101,11 +101,11 @@ def validateXML(xmlSpec) :
 	#----------------------------#
 	# for each data exchange set #
 	#----------------------------#
-	xchg_sets = xpath.evaluate("/*/dataexchangeset", inputSource, NODESET)
+	xchg_sets = xpath.evaluate("/*/dataexchange-set", inputSource, NODESET)
 	for i in range(xchg_sets.getLength()) :
 		xchg_set = xchg_sets.item(i)
 		xchg_set_id = xpath.evaluate("@id", xchg_set, STRING)
-		realtime_sourceid = xpath.evaluate("@realtime_sourceid", xchg_set, STRING)
+		realtime_sourceid = xpath.evaluate("@realtime-source-id", xchg_set, STRING)
 
 		if is_cwms :
 			#-------------------------------------------------------------------------------#
@@ -113,12 +113,12 @@ def validateXML(xmlSpec) :
 			#-------------------------------------------------------------------------------#
 			set_datastore_types = []
 			for j in (1,2) :
-				datastore = xpath.evaluate("datastore_ref[%d]/@id" % j, xchg_set, STRING)
+				datastore = xpath.evaluate("datastore-ref[%d]/@id" % j, xchg_set, STRING)
 				set_datastore_types.append(datastore_types[datastore])
 
 			if not ("dssfilemanager" in set_datastore_types and "oracle" in set_datastore_types) :
 				errorHandlerInst.error(org.xml.sax.SAXParseException(
-					'dataexchangeset "%s" must use one oracle datastore and one dssfilemanager datastore.' % \
+					'dataexchange-set "%s" must use one oracle datastore and one dssfilemanager datastore.' % \
 					xchg_set_id, None))
 
 		#-------------------------------------------------------------------------------------------#
@@ -126,24 +126,24 @@ def validateXML(xmlSpec) :
 		#-------------------------------------------------------------------------------------------#
 		if realtime_sourceid :
 			export_ds = realtime_sourceid
-			datastore = xpath.evaluate("datastore_ref[1]/@id", xchg_set, STRING)
+			datastore = xpath.evaluate("datastore-ref[1]/@id", xchg_set, STRING)
 			if datastore == export_ds :
-				import_ds = xpath.evaluate("datastore_ref[2]/@id", xchg_set, STRING)
+				import_ds = xpath.evaluate("datastore-ref[2]/@id", xchg_set, STRING)
 			else :
 				import_ds = datastore
 			if not realtime_exports.has_key(export_ds) : realtime_exports[export_ds] = []
 			if not realtime_imports.has_key(import_ds) : realtime_imports[import_ds] = []
-			export_tsids = xpath.evaluate("tsmappingset/tsmapping/*[@datastoreid='%s']" % export_ds, xchg_set, NODESET)
+			export_tsids = xpath.evaluate("ts-mapping-set/ts-mapping/*[@datastore-id='%s']" % export_ds, xchg_set, NODESET)
 			for j in range(export_tsids.getLength()) :
-				tsid = xpath.evaluate(".", export_tsids.item(j), STRING)
+				tsid = xpath.evaluate(".", export_tsids.item(j), STRING).strip()
 				if tsid not in realtime_exports[export_ds] : realtime_exports[export_ds].append(tsid)
 				if realtime_imports.has_key(export_ds) and tsid in realtime_imports[export_ds] :
 					msg = 'Time series "%s" is specified as real time import and export for %s datastore "%s"' % \
 						(tsid, datastore_types[export_ds], export_ds)
 					errorHandlerInst.error(org.xml.sax.SAXParseException(msg, None))
-			import_tsids = xpath.evaluate("tsmappingset/tsmapping/*[@datastoreid='%s']" % import_ds, xchg_set, NODESET)
+			import_tsids = xpath.evaluate("ts-mapping-set/ts-mapping/*[@datastore-id='%s']" % import_ds, xchg_set, NODESET)
 			for j in range(import_tsids.getLength()) :
-				tsid = xpath.evaluate(".", import_tsids.item(j), STRING)
+				tsid = xpath.evaluate(".", import_tsids.item(j), STRING).strip()
 				if tsid not in realtime_imports[import_ds] : realtime_imports[import_ds].append(tsid)
 				if realtime_exports.has_key(import_ds) and tsid in realtime_exports[import_ds] :
 					msg = 'Time series "%s" is specified as real time import and export for %s datastore "%s"' % \
