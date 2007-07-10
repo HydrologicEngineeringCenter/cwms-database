@@ -330,3 +330,87 @@ ALTER TABLE AT_SHEF_DECODE ADD (
  FOREIGN KEY (TS_CODE) 
  REFERENCES AT_CWMS_TS_SPEC (TS_CODE))
 /
+
+
+--------------------------------------------------------------------------------
+CREATE TABLE AT_SHEF_CRIT_FILE
+(
+  DATA_STREAM_CODE  NUMBER,
+  CREATION_DATE     DATE,
+  SHEF_CRIT_FILE    CLOB
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+LOB (SHEF_CRIT_FILE) STORE AS 
+      ( TABLESPACE  CWMS_20DATA 
+        ENABLE      STORAGE IN ROW
+        CHUNK       8192
+        PCTVERSION  0
+        NOCACHE
+        STORAGE    (
+                    INITIAL          64K
+                    MINEXTENTS       1
+                    MAXEXTENTS       2147483645
+                    PCTINCREASE      0
+                    BUFFER_POOL      DEFAULT
+                   )
+      )
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+
+CREATE UNIQUE INDEX AT_SHEF_CRIT_FILE_PK ON AT_SHEF_CRIT_FILE
+(DATA_STREAM_CODE, CREATION_DATE)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+ALTER TABLE AT_SHEF_CRIT_FILE ADD (
+  CONSTRAINT AT_SHEF_CRIT_FILE_PK
+ PRIMARY KEY
+ (DATA_STREAM_CODE, CREATION_DATE)
+    USING INDEX 
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+
+ALTER TABLE AT_SHEF_CRIT_FILE ADD (
+  CONSTRAINT AT_SHEF_CRIT_FILE_R01 
+ FOREIGN KEY (DATA_STREAM_CODE) 
+ REFERENCES AT_DATA_STREAM_ID (DATA_STREAM_CODE))
+/

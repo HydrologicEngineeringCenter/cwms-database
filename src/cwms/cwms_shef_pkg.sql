@@ -1,6 +1,11 @@
-/* Formatted on 2007/06/01 08:46 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/07/03 11:05 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_shef
 AS
+-- PROCEDURE clean_at_shef_crit_file p_action constants.
+   ten_file_limit   CONSTANT VARCHAR2 (32) := 'TEN FILE LIMIT';
+   -- default value.
+   delete_all       CONSTANT VARCHAR2 (32) := 'DELETE ALL';
+
    TYPE cat_data_stream_rec_t IS RECORD (
       data_stream_code   NUMBER,
       data_stream_id     VARCHAR2 (16),
@@ -126,14 +131,31 @@ AS
 
    PROCEDURE cat_shef_crit_lines (
       p_shef_crit_lines   OUT      sys_refcursor,
-      p_data_stream       IN       VARCHAR2,
+      p_data_stream_id    IN       VARCHAR2,
       p_db_office_id      IN       VARCHAR2 DEFAULT NULL
    );
 
    FUNCTION cat_shef_crit_lines_tab (
-      p_data_stream    IN   VARCHAR2,
-      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+      p_data_stream_id   IN   VARCHAR2,
+      p_db_office_id     IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_shef_crit_lines_tab_t PIPELINED;
+
+   PROCEDURE store_shef_crit_file (
+      p_data_stream_id   IN   VARCHAR2,
+      p_db_office_id     IN   VARCHAR2 DEFAULT NULL
+   );
+
+   FUNCTION get_data_stream_code (
+      p_data_stream_id   IN   VARCHAR2,
+      p_db_office_id     IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER;
+
+   FUNCTION is_data_stream_active (
+      p_data_stream_id   IN   VARCHAR2,
+      p_db_office_id     IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN BOOLEAN;
 END cwms_shef;
 /

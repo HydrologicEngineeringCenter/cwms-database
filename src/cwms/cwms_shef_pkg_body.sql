@@ -1,6 +1,45 @@
-/* Formatted on 2007/06/12 13:43 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/07/03 11:11 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_shef
 AS
+   PROCEDURE clean_at_shef_crit_file (
+      p_data_stream_code   IN   NUMBER,
+      p_action             IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      NULL;
+   END;
+
+   FUNCTION is_data_stream_active (
+      p_data_stream_id   IN   VARCHAR2,
+      p_db_office_id     IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN BOOLEAN
+   IS
+      l_active_flag   VARCHAR2 (1);
+   BEGIN
+      BEGIN
+         SELECT active_flag
+           INTO l_active_flag
+           FROM at_data_stream_id
+          WHERE data_stream_code =
+                   cwms_shef.get_data_stream_code (p_data_stream_id,
+                                                   p_db_office_id
+                                                  );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            RETURN FALSE;
+      END;
+
+      IF l_active_flag = 'T'
+      THEN
+         RETURN TRUE;
+      ELSE
+         RETURN FALSE;
+      END IF;
+   END;
+
    FUNCTION get_loc_category_code (
       p_loc_category_id   IN   VARCHAR2,
       p_db_office_code    IN   NUMBER
@@ -325,14 +364,15 @@ AS
         FROM cwms_shef_time_zone a
        WHERE UPPER (a.shef_time_zone_id) = UPPER (l_time_zone_id);
 
-      cwms_ts.update_ts_id (p_ts_code                     => l_ts_code,
-                         p_interval_utc_offset         => p_interval_utc_offset,
-                         -- in minutes.
-                         p_snap_forward_minutes        => p_snap_forward_minutes,
-                         p_snap_backward_minutes       => p_snap_backward_minutes,
-                         p_local_reg_time_zone_id      => NULL,
-                         p_ts_active_flag              => l_ts_active_flag
-                        );
+      cwms_ts.update_ts_id
+                          (p_ts_code                     => l_ts_code,
+                           p_interval_utc_offset         => p_interval_utc_offset,
+                           -- in minutes.
+                           p_snap_forward_minutes        => p_snap_forward_minutes,
+                           p_snap_backward_minutes       => p_snap_backward_minutes,
+                           p_local_reg_time_zone_id      => NULL,
+                           p_ts_active_flag              => l_ts_active_flag
+                          );
 
       --
       --
@@ -1113,16 +1153,72 @@ AS
       p_unit_sys := l_unit_sys;
    END;
 
+   PROCEDURE store_shef_crit_file (
+      p_data_stream_id   IN   VARCHAR2,
+      p_db_office_id     IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      output_row             VARCHAR2 (400);
+      l_shef_crit_lines_rc   sys_refcursor;
+      l_crit_file_clob       CLOB;
+      amount                 BINARY_INTEGER := 0;
+      l_data_stream_code     NUMBER;
+      l_tmp                  NUMBER;
+   BEGIN
+      cat_shef_crit_lines (p_shef_crit_lines      => l_shef_crit_lines_rc,
+                           p_data_stream_id       => p_data_stream_id,
+                           p_db_office_id         => p_db_office_id
+                          );
+      DBMS_LOB.createtemporary (l_crit_file_clob, TRUE, DBMS_LOB.SESSION);
+      /* Opening the temporary LOB is optional: */
+      DBMS_LOB.OPEN (l_crit_file_clob, DBMS_LOB.lob_readwrite);
+
+      /* Append the data from the buffer to the end of the LOB: */
+      LOOP
+         FETCH l_shef_crit_lines_rc
+          INTO output_row;
+
+         EXIT WHEN l_shef_crit_lines_rc%NOTFOUND;
+         amount := LENGTH (output_row) + 1;
+         DBMS_LOB.writeappend (l_crit_file_clob,
+                               amount,
+                               output_row || CHR (10)
+                              );
+      END LOOP;
+
+      IF amount > 0
+      THEN
+         l_data_stream_code :=
+            get_data_stream_code (p_data_stream_id      => p_data_stream_id,
+                                  p_db_office_id        => p_db_office_id
+                                 );
+         clean_at_shef_crit_file (p_data_stream_code      => l_data_stream_code,
+                                  p_action                => cwms_shef.ten_file_limit
+                                 );
+
+         INSERT INTO at_shef_crit_file
+                     (data_stream_code, creation_date, shef_crit_file
+                     )
+              VALUES (l_data_stream_code, SYSDATE, l_crit_file_clob
+                     );
+      END IF;
+
+      DBMS_LOB.CLOSE (l_crit_file_clob);
+      DBMS_LOB.freetemporary (l_crit_file_clob);
+
+      CLOSE l_shef_crit_lines_rc;
+   END;
+
    PROCEDURE cat_shef_crit_lines (
       p_shef_crit_lines   OUT      sys_refcursor,
-      p_data_stream       IN       VARCHAR2,
+      p_data_stream_id    IN       VARCHAR2,
       p_db_office_id      IN       VARCHAR2 DEFAULT NULL
    )
    IS
       l_db_office_code     NUMBER
                              := cwms_util.get_db_office_code (p_db_office_id);
       l_data_stream_code   NUMBER
-                    := get_data_stream_code (p_data_stream, l_db_office_code);
+                 := get_data_stream_code (p_data_stream_id, l_db_office_code);
    BEGIN
       OPEN p_shef_crit_lines FOR
          SELECT    a.shef_loc_id
@@ -1186,15 +1282,15 @@ AS
    END cat_shef_crit_lines;
 
    FUNCTION cat_shef_crit_lines_tab (
-      p_data_stream    IN   VARCHAR2,
-      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+      p_data_stream_id   IN   VARCHAR2,
+      p_db_office_id     IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_shef_crit_lines_tab_t PIPELINED
    IS
       output_row     cat_shef_crit_lines_rec_t;
       query_cursor   sys_refcursor;
    BEGIN
-      cat_shef_crit_lines (query_cursor, p_data_stream, p_db_office_id);
+      cat_shef_crit_lines (query_cursor, p_data_stream_id, p_db_office_id);
 
       LOOP
          FETCH query_cursor
