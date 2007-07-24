@@ -1,4 +1,4 @@
-/* Formatted on 2007/06/29 09:43 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/07/24 12:33 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_ts
 AS
    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
@@ -8,16 +8,16 @@ AS
       RETURN VARCHAR2;
 
    FUNCTION get_time_on_after_interval (
-      p_unsnapped_datetime   IN   DATE,
-      p_ts_offset            IN   NUMBER,
-      p_ts_interval          IN   NUMBER
+      p_datetime      IN   DATE,
+      p_ts_offset     IN   NUMBER,
+      p_ts_interval   IN   NUMBER
    )
       RETURN DATE;
 
    FUNCTION get_time_on_before_interval (
-      p_unsnapped_datetime   IN   DATE,
-      p_ts_offset            IN   NUMBER,
-      p_ts_interval          IN   NUMBER
+      p_datetime      IN   DATE,
+      p_ts_offset     IN   NUMBER,
+      p_ts_interval   IN   NUMBER
    )
       RETURN DATE;
 
@@ -61,21 +61,20 @@ AS
    FUNCTION get_db_office_id (p_cwms_ts_code IN NUMBER)
       RETURN VARCHAR2;
 
-   FUNCTION get_ts_ni_hash (
-      p_parameter_code        IN   NUMBER,
-      p_parameter_type_code   IN   NUMBER,
-      p_duration_code         IN   NUMBER
-   )
-      RETURN VARCHAR2;
+--   FUNCTION get_ts_ni_hash (
+--      p_parameter_code        IN   NUMBER,
+--      p_parameter_type_code   IN   NUMBER,
+--      p_duration_code         IN   NUMBER
+--   )
+--      RETURN VARCHAR2;
 
-   FUNCTION create_ts_ni_hash (
-      p_parameter_id        IN   VARCHAR2,
-      p_parameter_type_id   IN   VARCHAR2,
-      p_duration_id         IN   VARCHAR2,
-      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
-   )
-      RETURN VARCHAR2;
-
+   --   FUNCTION create_ts_ni_hash (
+--      p_parameter_id        IN   VARCHAR2,
+--      p_parameter_type_id   IN   VARCHAR2,
+--      p_duration_id         IN   VARCHAR2,
+--      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+--   )
+--      RETURN VARCHAR2;
    FUNCTION get_location_id (
       p_cwms_ts_id     IN   VARCHAR2,
       p_db_office_id   IN   VARCHAR2

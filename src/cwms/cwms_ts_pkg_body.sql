@@ -74,67 +74,213 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 	   --
 	   RETURN l_db_unit_id;
 	END;
-	--
-	--*******************************************************************   --
-	--*******************************************************************   --
-	--
-	-- GET_TIME_ON_AFTER_INTERVAL -
-	--
-	--
-	FUNCTION get_Time_On_After_Interval (
-     p_unsnapped_datetime     IN   DATE,
-	  p_ts_offset              IN   NUMBER,
-	  p_ts_interval            IN   NUMBER
-   )
-      RETURN DATE
-   IS
-    l_datetime      DATE;
-	 l_datetime_orig DATE := p_unsnapped_datetime;
-   BEGIN   
-   
-     DBMS_APPLICATION_INFO.set_module ('create_ts',
-                                       'Function get_Time_On_After_Interval');
-	 
-	 if p_ts_interval <= 60 then
-	   l_datetime := trunc(p_unsnapped_datetime, 'HH24');
-	 elsif p_ts_interval <= 1440 then
-	   l_datetime := trunc(p_unsnapped_datetime);
-	 end if;  
-	 
-	 l_datetime := l_datetime + ((trunc((l_datetime_orig - l_datetime) * 1440 / p_ts_interval) * p_ts_interval) + p_ts_offset) / 1440;
+ --
+ --*******************************************************************   --
+ --*******************************************************************   --
+ --
+ -- GET_TIME_ON_AFTER_INTERVAL - if p_datetime is on the interval, than 
+ --      p_datetime is returned, if p_datetime is off of the interval, than
+ --      the first datetime after p_datetime is returned.
+ --
+ --      Function is usable down to 1 minute.
+ --
+ --      All offsets stored in the database are in minutes. --
+ --      p_ts_offset and p_ts_interval are passed in as minutes --
+ --      p_datetime is assumed to be in UTC --
+ --
+ --      Weekly intervals - the weekly interval starts with Sunday.
+ --
+ ----------------------------------------------------------------------------
+--
+    /* Formatted on 2007/07/24 16:01 (Formatter Plus v4.8.8) */
+    FUNCTION get_time_on_after_interval (
+       p_datetime      IN   DATE,
+       p_ts_offset     IN   NUMBER,                                 -- in minutes.
+       p_ts_interval   IN   NUMBER                                  -- in minutes.
+    )
+       RETURN DATE
+    IS
+       l_datetime_tmp          DATE;
+       l_normalized_datetime   DATE;
+       l_tmp                   NUMBER;
+       l_delta                 BINARY_INTEGER;
+       l_multiplier            BINARY_INTEGER;
+       l_mod                   BINARY_INTEGER;
+       l_ts_interval           BINARY_INTEGER := TRUNC (p_ts_interval, 0);
+    BEGIN
+       DBMS_APPLICATION_INFO.set_module ('create_ts',
+                                         'Function get_Time_On_After_Interval'
+                                        );
 
-	 if l_datetime < p_unsnapped_datetime then
-	   l_datetime := l_datetime + (p_ts_interval / 1440);
-     end if;
-	 
-	 RETURN l_datetime;								   
-									   
-     DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+       -- Basic checks - interval cannot be zero - irregular...
+       IF l_ts_interval <= 0
+       THEN
+          cwms_err.RAISE ('ERROR', 'Interval must be > zero.');
+       END IF;
 
-   END get_Time_On_After_Interval;
+       -- Basic checks - offset cannot ve >= to interval...
+       IF p_ts_offset >= l_ts_interval
+       THEN
+          cwms_err.RAISE ('ERROR', 'Offset cannot be >= to the Interval');
+       END IF;
 
-   
-   FUNCTION get_Time_On_Before_Interval (
-     p_unsnapped_datetime     IN   DATE,
-	  p_ts_offset              IN   NUMBER,
-	  p_ts_interval            IN   NUMBER
-   )
-      RETURN DATE
-   IS
-     l_datetime      DATE;
-	 l_datetime_orig DATE := p_unsnapped_datetime;
-   BEGIN   
-   
-     DBMS_APPLICATION_INFO.set_module ('create_ts',
-                                       'Function get_Time_On_Before_Interval');
-	 
- 
-	 
-	 RETURN p_unsnapped_datetime;								   
-									   
-     DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+       --
+       l_normalized_datetime := TRUNC (p_datetime, 'MI') - (p_ts_offset / 1440);
 
-   END get_Time_On_Before_Interval;
+       IF p_ts_interval = 1
+       THEN
+          NULL;                                               -- nothing to do...
+       ELSIF l_ts_interval < 10080                -- intervals less than a week...
+       THEN
+          l_delta := (l_normalized_datetime - cwms_util.l_epoch) * 1440;
+          l_mod := MOD (l_delta, l_ts_interval);
+
+          IF l_mod <= 0
+          THEN
+             l_normalized_datetime := l_normalized_datetime - (l_mod / 1440);
+          ELSE
+             l_normalized_datetime :=
+                            l_normalized_datetime
+                            + (l_ts_interval - l_mod) / 1440;
+          END IF;
+       ELSIF l_ts_interval = 10080                           -- weekly interval...
+       THEN
+          l_delta := (l_normalized_datetime - cwms_util.l_epoch_wk_dy_1) * 1440;
+          l_mod := MOD (l_delta, l_ts_interval);
+
+          IF l_mod <= 0
+          THEN
+             l_normalized_datetime := l_normalized_datetime - (l_mod / 1440);
+          ELSE
+             l_normalized_datetime :=
+                            l_normalized_datetime
+                            + (l_ts_interval - l_mod) / 1440;
+          END IF;
+       ELSIF l_ts_interval = 43200                          -- monthly interval...
+       THEN
+          l_datetime_tmp := TRUNC (l_normalized_datetime, 'Month');
+
+          IF l_datetime_tmp != l_normalized_datetime
+          THEN
+             l_normalized_datetime := ADD_MONTHS (l_datetime_tmp, 1);
+          END IF;
+       ELSIF l_ts_interval = 525600                          -- yearly interval...
+       THEN
+          l_datetime_tmp := TRUNC (l_normalized_datetime, 'YEAR');
+
+          IF l_datetime_tmp != l_normalized_datetime
+          THEN
+             l_normalized_datetime := ADD_MONTHS (l_datetime_tmp, 12);
+          END IF;
+       ELSIF l_ts_interval = 5256000                        -- decadal interval...
+       THEN
+          l_mod := MOD (TO_NUMBER (TO_CHAR (l_normalized_datetime, 'YYYY')), 10);
+          l_datetime_tmp :=
+                ADD_MONTHS (TRUNC (l_normalized_datetime, 'YEAR'),
+                            - (l_mod * 12));
+
+          IF l_datetime_tmp != l_normalized_datetime
+          THEN
+             l_normalized_datetime := ADD_MONTHS (l_datetime_tmp, 120);
+          END IF;
+       ELSE
+          cwms_err.RAISE ('ERROR',
+                             l_ts_interval
+                          || ' minutes is not a valid/supported CWMS interval'
+                         );
+       END IF;
+
+       RETURN l_normalized_datetime + (p_ts_offset / 1440);
+       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+    END get_time_on_after_interval;
+--
+--  See get_time_on_after_interval for description/comments/etc...
+--
+    FUNCTION get_time_on_before_interval (
+       p_datetime      IN   DATE,
+       p_ts_offset     IN   NUMBER,
+       p_ts_interval   IN   NUMBER
+    )
+       RETURN DATE
+    IS
+       l_datetime_tmp          DATE;
+       l_normalized_datetime   DATE;
+       l_tmp                   NUMBER;
+       l_delta                 BINARY_INTEGER;
+       l_multiplier            BINARY_INTEGER;
+       l_mod                   BINARY_INTEGER;
+       l_ts_interval           BINARY_INTEGER := TRUNC (p_ts_interval, 0);
+    BEGIN
+       DBMS_APPLICATION_INFO.set_module ('create_ts',
+                                         'Function get_Time_On_Before_Interval'
+                                        );
+
+       -- Basic checks - interval cannot be zero - irregular...
+       IF l_ts_interval <= 0
+       THEN
+          cwms_err.RAISE ('ERROR', 'Interval must be > zero.');
+       END IF;
+
+       -- Basic checks - offset cannot ve >= to interval...
+       IF p_ts_offset >= l_ts_interval
+       THEN
+          cwms_err.RAISE ('ERROR', 'Offset cannot be >= to the Interval');
+       END IF;
+
+       --
+       l_normalized_datetime := TRUNC (p_datetime, 'MI') - (p_ts_offset / 1440);
+
+       IF p_ts_interval = 1
+       THEN
+          NULL;                                               -- nothing to do...
+       ELSIF l_ts_interval < 10080                -- intervals less than a week...
+       THEN
+          l_delta := (l_normalized_datetime - cwms_util.l_epoch) * 1440;
+          l_mod := MOD (l_delta, l_ts_interval);
+
+          IF l_mod < 0
+          THEN
+             l_normalized_datetime :=
+                            l_normalized_datetime
+                            - (l_ts_interval + l_mod) / 1440;
+          ELSE
+             l_normalized_datetime := l_normalized_datetime - (l_mod / 1440);
+          END IF;
+       ELSIF l_ts_interval = 10080                           -- weekly interval...
+       THEN
+          l_delta := (l_normalized_datetime - cwms_util.l_epoch_wk_dy_1) * 1440;
+          l_mod := MOD (l_delta, l_ts_interval);
+
+          IF l_mod < 0
+          THEN
+             l_normalized_datetime :=
+                            l_normalized_datetime
+                            - (l_ts_interval + l_mod) / 1440;
+          ELSE
+             l_normalized_datetime := l_normalized_datetime - (l_mod / 1440);
+          END IF;
+       ELSIF l_ts_interval = 43200                          -- monthly interval...
+       THEN
+          l_normalized_datetime := TRUNC (l_normalized_datetime, 'Month');
+       ELSIF l_ts_interval = 525600                          -- yearly interval...
+       THEN
+          l_normalized_datetime := TRUNC (l_normalized_datetime, 'YEAR');
+       ELSIF l_ts_interval = 5256000                        -- decadal interval...
+       THEN
+          l_mod := MOD (TO_NUMBER (TO_CHAR (l_normalized_datetime, 'YYYY')), 10);
+          l_normalized_datetime :=
+                ADD_MONTHS (TRUNC (l_normalized_datetime, 'YEAR'),
+                            - (l_mod * 12));
+       ELSE
+          cwms_err.RAISE ('ERROR',
+                             l_ts_interval
+                          || ' minutes is not a valid/supported CWMS interval'
+                         );
+       END IF;
+
+       RETURN l_normalized_datetime + (p_ts_offset / 1440);
+       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+    END get_time_on_before_interval;
    
    
     /* Formatted on 2007/06/29 09:39 (Formatter Plus v4.8.8) */
@@ -470,92 +616,92 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
       
    END get_db_office_id;
 
---
---*******************************************************************   --
---*******************************************************************   --
---
--- GET_TS_NI_HASH -
---
-	FUNCTION get_ts_ni_hash (
-	   p_parameter_code        IN   NUMBER,
-	   p_parameter_type_code   IN   NUMBER,
-	   p_duration_code         IN   NUMBER
-	)
-	   RETURN VARCHAR2
-	IS
-	BEGIN
-	   RETURN    p_parameter_code
-	          || '-'
-	          || p_parameter_type_code
-	          || '-'
-	          || p_duration_code;
-	END get_ts_ni_hash;
---
-    FUNCTION create_ts_ni_hash (
-       p_parameter_id        IN   VARCHAR2,
-       p_parameter_type_id   IN   VARCHAR2,
-       p_duration_id         IN   VARCHAR2,
-       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
-    )
-       RETURN VARCHAR2
-    IS
-       l_parameter_code        NUMBER;
-       l_parameter_type_code   NUMBER;
-       l_duration_code         NUMBER;
-       l_base_parameter_id     VARCHAR2 (16);
-       l_sub_parameter_id      VARCHAR2 (32);
-       l_ts_ni_hash            VARCHAR2 (80);
-       l_office_id             VARCHAR2 (16);
-    BEGIN
-    
-      IF p_db_office_id IS NULL
-      THEN
-         l_office_id := cwms_util.user_office_id;
-      ELSE
-         l_office_id := UPPER (p_db_office_id);
-      END IF;
+----
+----*******************************************************************   --
+----*******************************************************************   --
+----
+---- GET_TS_NI_HASH -
+----
+--	FUNCTION get_ts_ni_hash (
+--	   p_parameter_code        IN   NUMBER,
+--	   p_parameter_type_code   IN   NUMBER,
+--	   p_duration_code         IN   NUMBER
+--	)
+--	   RETURN VARCHAR2
+--	IS
+--	BEGIN
+--	   RETURN    p_parameter_code
+--	          || '-'
+--	          || p_parameter_type_code
+--	          || '-'
+--	          || p_duration_code;
+--	END get_ts_ni_hash;
+----
+--    FUNCTION create_ts_ni_hash (
+--       p_parameter_id        IN   VARCHAR2,
+--       p_parameter_type_id   IN   VARCHAR2,
+--       p_duration_id         IN   VARCHAR2,
+--       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+--    )
+--       RETURN VARCHAR2
+--    IS
+--       l_parameter_code        NUMBER;
+--       l_parameter_type_code   NUMBER;
+--       l_duration_code         NUMBER;
+--       l_base_parameter_id     VARCHAR2 (16);
+--       l_sub_parameter_id      VARCHAR2 (32);
+--       l_ts_ni_hash            VARCHAR2 (80);
+--       l_office_id             VARCHAR2 (16);
+--    BEGIN
+--    
+--      IF p_db_office_id IS NULL
+--      THEN
+--         l_office_id := cwms_util.user_office_id;
+--      ELSE
+--         l_office_id := UPPER (p_db_office_id);
+--      END IF;
 
-       -- Determine the ts_ni_hash...
-       --
-       l_base_parameter_id := cwms_util.get_base_id (p_parameter_id);
-       l_sub_parameter_id := cwms_util.get_sub_id (p_parameter_id);
-       l_parameter_code :=
-          cwms_ts.get_parameter_code (p_base_parameter_id      => l_base_parameter_id,
-                                      p_sub_parameter_id       => l_sub_parameter_id,
-                                      p_office_id              => l_office_id,
-                                      p_create                 => 'T'
-                                     );
+--       -- Determine the ts_ni_hash...
+--       --
+--       l_base_parameter_id := cwms_util.get_base_id (p_parameter_id);
+--       l_sub_parameter_id := cwms_util.get_sub_id (p_parameter_id);
+--       l_parameter_code :=
+--          cwms_ts.get_parameter_code (p_base_parameter_id      => l_base_parameter_id,
+--                                      p_sub_parameter_id       => l_sub_parameter_id,
+--                                      p_office_id              => l_office_id,
+--                                      p_create                 => 'T'
+--                                     );
 
-       --
-       BEGIN
-          SELECT parameter_type_code
-            INTO l_parameter_type_code
-            FROM cwms_parameter_type
-           WHERE UPPER (parameter_type_id) = UPPER (p_parameter_type_id);
-       EXCEPTION
-          WHEN NO_DATA_FOUND
-          THEN
-             cwms_err.RAISE ('INVALID_PARAM_TYPE', p_parameter_type_id);
-       END;
+--       --
+--       BEGIN
+--          SELECT parameter_type_code
+--            INTO l_parameter_type_code
+--            FROM cwms_parameter_type
+--           WHERE UPPER (parameter_type_id) = UPPER (p_parameter_type_id);
+--       EXCEPTION
+--          WHEN NO_DATA_FOUND
+--          THEN
+--             cwms_err.RAISE ('INVALID_PARAM_TYPE', p_parameter_type_id);
+--       END;
 
-       --
-       BEGIN
-          SELECT duration_code
-            INTO l_duration_code
-            FROM cwms_duration
-           WHERE UPPER (duration_id) = UPPER (p_duration_id);
-       EXCEPTION
-          WHEN NO_DATA_FOUND
-          THEN
-             cwms_err.RAISE ('INVALID_DURATION_ID', p_duration_id);
-       END;
+--       --
+--       BEGIN
+--          SELECT duration_code
+--            INTO l_duration_code
+--            FROM cwms_duration
+--           WHERE UPPER (duration_id) = UPPER (p_duration_id);
+--       EXCEPTION
+--          WHEN NO_DATA_FOUND
+--          THEN
+--             cwms_err.RAISE ('INVALID_DURATION_ID', p_duration_id);
+--       END;
 
-       --
-       RETURN get_ts_ni_hash (l_parameter_code,
-                              l_parameter_type_code,
-                              l_duration_code
-                              );
-    END create_ts_ni_hash;
+--       --
+--       RETURN get_ts_ni_hash (l_parameter_code,
+--                              l_parameter_type_code,
+--                              l_duration_code
+--                              );
+--    END create_ts_ni_hash;
 
 
 PROCEDURE update_ts_id (
@@ -1775,7 +1921,7 @@ END retrieve_ts_java;
 	   l_ts_code             NUMBER;
 	   l_interval_id         VARCHAR2 (100);
 	   l_interval_value      NUMBER;
-	   utc_offset            NUMBER;
+	   l_utc_offset            NUMBER;
 	   existing_utc_offset   NUMBER;
 	   table_cnt             NUMBER;
 	   mindate               DATE;
@@ -1828,13 +1974,12 @@ END retrieve_ts_java;
             SELECT DISTINCT ROUND (MOD (  (  CAST (date_time AS DATE)
                                            - TRUNC (CAST (date_time AS DATE))
                                           )
-                                        * 1440
-                                        * 60,
-                                        l_interval_value * 60
+                                        * 1440,
+                                        l_interval_value 
                                        ),
                                    0
                                   )
-                       INTO utc_offset
+                       INTO l_utc_offset
                        FROM TABLE (p_timeseries_data);   -- where rownum < 20;
          EXCEPTION
 
@@ -1854,7 +1999,7 @@ END retrieve_ts_java;
 	
 	  dbms_application_info.set_action('Incoming data set is irregular');
 	  
-      utc_offset := cwms_util.UTC_OFFSET_IRREGULAR;
+      l_utc_offset := cwms_util.UTC_OFFSET_IRREGULAR;
 	
     end if;	
 	
@@ -1874,10 +2019,10 @@ END retrieve_ts_java;
 	    -- Existing TS_Code did not have a defined UTC_OFFSET, so set it equal to the offset of this data set.
 		
 	    update at_cwms_ts_spec acts
-		   set acts.INTERVAL_UTC_OFFSET = utc_offset
+		   set acts.INTERVAL_UTC_OFFSET = l_utc_offset
 		 where acts.TS_CODE = l_ts_code;
 		 
-      elsif existing_utc_offset != utc_offset then
+      elsif existing_utc_offset != l_utc_offset then
 	    -- Existing TS_Code's UTC_OFFSET does not match the offset of the data set - so storage of data set fails.
 		
         raise_application_error(-20101, 'Incoming Data Set''s UTC_OFFSET does not match UTC_OFFSET of previously stored data - data set was NOT stored', true);
@@ -1896,7 +2041,7 @@ END retrieve_ts_java;
       create_ts_code(p_ts_code=>l_ts_code, 
 		               p_office_id=>l_office_id, 
 							p_cwms_ts_id=>p_cwms_ts_id, 
-							p_utc_offset=>utc_offset);
+							p_utc_offset=> l_utc_offset);
  
     end; -- END - Find TS_CODE
 
@@ -3458,13 +3603,14 @@ IS
    l_max_version     BOOLEAN;
    l_trim            BOOLEAN;
    l_start_time      DATE          := p_start_time;
+   l_start_trim_time date;
    l_end_time        DATE          := p_end_time;
+   l_end_trim_time   date;
    l_end_time_init   DATE          := l_end_time;
    l_db_office_id    VARCHAR2 (16);
 BEGIN
    --
    DBMS_APPLICATION_INFO.set_module ('Cwms_ts_retrieve', 'Check Interval');
-
    --
     -- set default values, don't be fooled by NULL as an actual argument
    IF p_db_office_id IS NULL
@@ -3489,6 +3635,18 @@ BEGIN
    END IF;
 
    l_version_date := NVL (p_version_date, cwms_util.non_versioned);
+   
+   -- Make initial checks on start/end dates...
+   if p_start_time is null or p_end_time is null
+   then
+   cwms_err.raise('ERROR','No way Jose');
+   end if;
+   
+   if p_end_time < p_start_time
+   then
+   cwms_err.raise('ERROR','No way Jose');
+   end if;
+      
 
    --Get Time series parameters for retrieval load into record structure
    SELECT INTERVAL,
@@ -3497,7 +3655,7 @@ BEGIN
                 THEN NULL
              WHEN cwms_util.utc_offset_irregular
                 THEN NULL
-             ELSE (interval_utc_offset / 60)
+             ELSE (interval_utc_offset)
           END,
           version_flag, ts_code
      INTO l_ts_interval,
@@ -3765,56 +3923,54 @@ BEGIN
       IF l_versioned IS NULL
       THEN
          --
-         -- nonl_versioned, regular ts query
+         -- non_versioned, regular ts query
          --
          DBMS_OUTPUT.put_line
-                         ('RETRIEVE_TS #9 - nonl_versioned, regular ts query');
+                         ('RETRIEVE_TS #9 - non versioned, regular ts query');
          --
-         l_start_time :=
-            get_time_on_after_interval (l_start_time,
-                                        l_ts_offset,
-                                        l_ts_interval
-                                       );
-         l_end_time :=
-            get_time_on_after_interval (l_end_time, l_ts_offset,
-                                        l_ts_interval);
+         
+           IF l_trim
+           THEN
+              SELECT MAX (date_time), MIN (date_time)
+                INTO l_end_trim_time, l_start_trim_time
+                FROM av_tsv v
+               WHERE v.ts_code = l_ts_code
+                 AND v.date_time BETWEEN l_start_time AND l_end_time
+                 AND v.start_date <= l_end_time
+                 AND v.end_date > l_start_time;
+           ELSE
+              l_end_trim_time := l_end_time;
+              l_start_trim_time := l_start_time;
+           END IF;
 
-         IF l_end_time > l_end_time_init
-         THEN
-            l_end_time := l_end_time - (l_ts_interval / 1440);
-         END IF;
-
-         OPEN p_at_tsv_rc FOR
-            SELECT   jdate_time "DATE_TIME", VALUE,
-                     NVL (quality_code, 0) quality_code
-                FROM (SELECT *
-                        FROM (SELECT *
-                                FROM av_tsv_dqu v
-                               WHERE v.ts_code = l_ts_code
-                                 AND v.date_time BETWEEN l_start_time
-                                                     AND l_end_time
-                                 AND v.unit_id = p_units
-                                 AND v.start_date <= l_end_time
-                                 AND v.end_date > l_start_time) v
-                             RIGHT OUTER JOIN
-                             (SELECT       l_start_time
-                                         + (  (LEVEL - 1)
-                                            / (1440 / l_ts_interval)
-                                           ) jdate_time
-                                    FROM DUAL
-                              CONNECT BY 1 = 1
-                                     AND LEVEL <=
-                                              (  ROUND (  (  l_end_time
-                                                           - l_start_time
-                                                          )
-                                                        * 1440
-                                                       )
-                                               / l_ts_interval
-                                              )
-                                            + 1) t ON t.jdate_time =
-                                                                   v.date_time
-                             )
-            ORDER BY jdate_time;
+           OPEN p_at_tsv_rc FOR
+              SELECT   date_time "DATE_TIME", VALUE,
+                       NVL (quality_code, 0) quality_code
+                  FROM (SELECT date_time, v.VALUE, v.quality_code
+                          FROM (SELECT date_time, v.VALUE, v.quality_code
+                                  FROM av_tsv_dqu v
+                                 WHERE v.ts_code = l_ts_code
+                                   AND v.date_time BETWEEN l_start_time AND l_end_time
+                                   AND v.unit_id = p_units
+                                   AND v.start_date <= l_end_time
+                                   AND v.end_date > l_start_time) v
+                               RIGHT OUTER JOIN
+                               (SELECT       l_start_trim_time
+                                           + ((LEVEL - 1) / (1440 / (l_ts_interval))
+                                             ) date_time
+                                      FROM DUAL
+                                CONNECT BY 1 = 1
+                                       AND LEVEL <=
+                                                (  ROUND (  (  l_end_trim_time
+                                                             - l_start_trim_time
+                                                            )
+                                                          * 1440
+                                                         )
+                                                 / l_ts_interval
+                                                )
+                                              + 1) t USING (date_time)
+                               )
+              ORDER BY date_time;
       ELSE                                       --  l_versioned IS NOT NULL -
          IF p_version_date IS NULL
          THEN

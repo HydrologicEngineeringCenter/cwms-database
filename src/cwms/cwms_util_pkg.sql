@@ -15,6 +15,8 @@ AS
 
     l_epoch   CONSTANT DATE
                           := TO_DATE ('01Jan1970 00:00', 'ddmonyyyy hh24:mi');
+    l_epoch_wk_dy_1   CONSTANT DATE
+                          := TO_DATE ('04Jan1970 00:00', 'ddmonyyyy hh24:mi'); -- Sunday.
    
    -- Constants for Storage Business Rules
    replace_all                   CONSTANT VARCHAR2 (16)      := 'REPLACE ALL';
