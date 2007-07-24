@@ -13,6 +13,9 @@ AS
 *   1.0        8/29/2005   Portin      Original
 ******************************************************************************/
 
+    l_epoch   CONSTANT DATE
+                          := TO_DATE ('01Jan1970 00:00', 'ddmonyyyy hh24:mi');
+   
    -- Constants for Storage Business Rules
    replace_all                   CONSTANT VARCHAR2 (16)      := 'REPLACE ALL';
    do_not_replace                CONSTANT VARCHAR2 (16)   := 'DO NOT REPLACE';
