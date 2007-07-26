@@ -94,7 +94,7 @@ AS
 
    TYPE cat_unit_tab_t IS TABLE OF cat_unit_rec_t;
 
-   --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- Splits string into a table of strings using the specified delimiter.
 -- If no delmiter is specified, the string is split around whitespace.
 --
@@ -104,6 +104,21 @@ AS
 --
    FUNCTION split_text (
       p_text        IN   VARCHAR2,
+      p_separator   IN   VARCHAR2 DEFAULT NULL,
+      p_max_split   IN   INTEGER DEFAULT NULL
+   )
+      RETURN str_tab_t;
+
+--------------------------------------------------------------------------------
+-- Splits string into a table of strings using the specified delimiter.
+-- If no delmiter is specified, the string is split around whitespace.
+--
+-- Sequential delimiters in the source string result in null fields in the table,
+-- except that if no delimiter is supplied, sequential whitespace characters are
+-- treated as a single delimiter.
+--
+   FUNCTION split_text (
+      p_text        IN   CLOB,
       p_separator   IN   VARCHAR2 DEFAULT NULL,
       p_max_split   IN   INTEGER DEFAULT NULL
    )
@@ -121,6 +136,15 @@ AS
    )
       RETURN VARCHAR2;
 
+--------------------------------------------------------------------------------
+-- Formats the XML in the CLOB to have one element tag per line, indented by
+-- the specified string.
+--
+   PROCEDURE format_xml (
+      p_xml_clob IN OUT NOCOPY CLOB,
+      p_indent   IN VARCHAR2 DEFAULT CHR(9)
+   );
+   
 --------------------------------------------------------------------------------
 -- Parses a CLOB into a table of tables of strings.
 --
@@ -336,6 +360,12 @@ AS
 --
    FUNCTION strip (p_text IN VARCHAR2)
       RETURN VARCHAR2;
+
+--------------------------------------------------------------------
+-- Return UTC timestamp for specified ISO 8601 string
+--
+   FUNCTION TO_TIMESTAMP (p_iso_str in VARCHAR2)
+      RETURN TIMESTAMP;
 
 --------------------------------------------------------------------
 -- Return UTC timestamp for specified Java milliseconds

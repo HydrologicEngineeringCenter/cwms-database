@@ -109,7 +109,8 @@ function log_message(
    p_host      in varchar2,
    p_port      in integer,
    p_reported  in timestamp,
-   p_message   in varchar2)
+   p_message   in varchar2,
+   p_publish   in boolean default true)
    return integer;
 
 -------------------------------------------------------------------------------

@@ -275,9 +275,12 @@ function log_message(
    p_host      in varchar2,
    p_port      in integer,
    p_reported  in timestamp,
-   p_message   in varchar2)
+   p_message   in varchar2,
+   p_publish   in boolean)
    return integer
 is
+   pragma autonomous_transaction;
+   
    l_now       integer;
    l_now_ts    timestamp;
    l_msg_id    varchar2(32);
@@ -377,52 +380,57 @@ begin
                 );
       end loop;
    end if;
+   commit;
+   
+   if p_publish then
+      -------------------------
+      -- publish the message --
+      -------------------------
+      l_extra := l_extra
+                 || lf
+                 || '  <property name="component" type="String">'
+                 || p_component
+                 || '</property>'
+                 || lf;
+      if p_instance is not null then
+         l_extra := l_extra
+                    || '  <property name="instance" type="String">'
+                    || p_instance
+                    || '</property>'
+                    || lf;
+      end if;
+      if p_host is not null then
+         l_extra := l_extra
+                    || '  <property name="host" type="String">'
+                    || p_host
+                    || '</property>'
+                    || lf;
+      end if;
+      if p_port is not null then
+         l_extra := l_extra
+                    || '  <property name="port" type="int">'
+                    || p_port
+                    || '</property>'
+                    || lf;
+      end if;
+      if p_reported is not null then
+         l_extra := l_extra
+                    || '  <property name="reported" type="long">'
+                    || cwms_util.to_millis(p_reported)
+                    || '</property>'
+                    || lf;
+      end if;
+      l_extra := l_extra
+                 || '  <property name="log_timestamp" type="String">'
+                 || to_char(l_now_ts)
+                 || '</property>'
+                 || lf;
 
-   -------------------------
-   -- publish the message --
-   -------------------------
-   l_extra := l_extra
-              || lf
-              || '  <property name="component" type="String">'
-              || p_component
-              || '</property>'
-              || lf;
-   if p_instance is not null then
-      l_extra := l_extra
-                 || '  <property name="instance" type="String">'
-                 || p_instance
-                 || '</property>'
-                 || lf;
+      l_pos := instr(p_message, '>');
+      return publish_status_message(substr(p_message, 1, l_pos) || l_extra || substr(p_message, l_pos+1));
+   else
+      return 0;
    end if;
-   if p_host is not null then
-      l_extra := l_extra
-                 || '  <property name="host" type="String">'
-                 || p_host
-                 || '</property>'
-                 || lf;
-   end if;
-   if p_port is not null then
-      l_extra := l_extra
-                 || '  <property name="port" type="int">'
-                 || p_port
-                 || '</property>'
-                 || lf;
-   end if;
-   if p_reported is not null then
-      l_extra := l_extra
-                 || '  <property name="reported" type="long">'
-                 || cwms_util.to_millis(p_reported)
-                 || '</property>'
-                 || lf;
-   end if;
-   l_extra := l_extra
-              || '  <property name="log_timestamp" type="String">'
-              || to_char(l_now_ts)
-              || '</property>'
-              || lf;
-
-   l_pos := instr(p_message, '>');
-   return publish_status_message(substr(p_message, 1, l_pos) || l_extra || substr(p_message, l_pos+1));
                                           
 end log_message;   
 
@@ -447,7 +455,8 @@ begin
       || '  <text>' || lf
       || '  ' || p_message || lf
       || '  </text>' || lf
-      || '</cwms_message>');
+      || '</cwms_message>',
+      false);
       
 end log_db_message;    
 -------------------------------------------------------------------------------

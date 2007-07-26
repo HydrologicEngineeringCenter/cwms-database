@@ -2745,5 +2745,173 @@ IS
 
       RETURN;
    END cat_loc_group_tab;
+      
+   PROCEDURE cat_xchg_office (
+      p_offices OUT xchg_office_tab_t)
+   IS
+   BEGIN
+      p_offices := xchg_office_tab_t(); 
+      for rec in (select office_id, long_name, eroc
+                    from cwms_office
+                   where regexp_instr(eroc, '[A-Z][0-9]') = 1)
+      loop
+         p_offices.extend();
+         p_offices(p_offices.last) := new xchg_office_t(rec.office_id, rec.long_name);
+      end loop;
+   END cat_xchg_office;
+      
+   PROCEDURE cat_xchg_office (
+      p_clob IN OUT NOCOPY CLOB)
+   IS
+      l_offices xchg_office_tab_t;
+      l_text    varchar2(256);
+   BEGIN
+      cat_xchg_office(l_offices);
+      if p_clob is null then
+         dbms_lob.createtemporary(p_clob, true);
+      end if;
+      dbms_lob.open(p_clob, dbms_lob.lob_readwrite);
+      dbms_lob.trim(p_clob, 0);
+      for i in 1..l_offices.count loop
+         l_text := l_offices(i).get_xml().getstringval();
+         dbms_lob.writeappend(p_clob, length(l_text), l_text);
+      end loop;
+      dbms_lob.close(p_clob);
+      if dbms_lob.getlength(p_clob) > 0 then
+         cwms_util.format_xml(p_clob);
+      end if;
+   END cat_xchg_office;
+
+      
+   PROCEDURE cat_xchg_datastore(
+      p_datastores   OUT xchg_datastore_tab_t,
+      p_db_office_id IN  VARCHAR2 DEFAULT NULL)
+   IS
+      l_db_office_code NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+      l_host           VARCHAR2(256);
+      l_port           INTEGER;
+      l_db_name        VARCHAR2(16);
+      l_oracle_id      VARCHAR2(256);
+   BEGIN
+      p_datastores := xchg_datastore_tab_t();
+      for rec in (select dss_file_code, dss_filemgr_url, dss_file_name
+                    from at_dss_file
+                   where office_code = l_db_office_code)
+      loop
+         p_datastores.extend();
+         l_host := regexp_substr(rec.dss_filemgr_url, '[^/:]+');
+         l_port := regexp_substr(rec.dss_filemgr_url, '[^:]+$');
+         p_datastores(p_datastores.last) := new xchg_dssfilemanager_t(
+            'DSS-' || rec.dss_file_code, 
+            l_host, 
+            l_port, 
+            rec.dss_file_name);
+      end loop;
+      select name into l_db_name from v$database;
+      l_oracle_id := utl_inaddr.get_host_name || ':' || l_db_name;
+      l_oracle_id := substr(l_oracle_id, -(least(length(l_oracle_id), 16)));
+      l_oracle_id := substr(l_oracle_id, regexp_instr(l_oracle_id, '[a-zA-Z0-9]'));
+      p_datastores.extend();
+      p_datastores(p_datastores.last) := new xchg_oracle_t(
+         l_oracle_id,
+         utl_inaddr.get_host_address,
+         l_db_name);
+   END cat_xchg_datastore;
+            
+   PROCEDURE cat_xchg_datastore(
+      p_clob         IN OUT NOCOPY CLOB,
+      p_db_office_id IN  VARCHAR2 DEFAULT NULL)
+   IS
+      l_datastores xchg_datastore_tab_t;
+      l_text       varchar2(512);
+   BEGIN
+      cat_xchg_datastore(l_datastores, p_db_office_id);
+      if p_clob is null then
+         dbms_lob.createtemporary(p_clob, true);
+      end if;
+      dbms_lob.open(p_clob, dbms_lob.lob_readwrite);
+      dbms_lob.trim(p_clob, 0);
+      for i in 1..l_datastores.count loop
+         l_text := l_datastores(i).get_xml().getstringval();
+         dbms_lob.writeappend(p_clob, 11,'<datastore>');
+         dbms_lob.writeappend(p_clob, length(l_text), l_text);
+         dbms_lob.writeappend(p_clob, 12,'</datastore>');
+      end loop;
+      dbms_lob.close(p_clob);
+      if dbms_lob.getlength(p_clob) > 0 then
+         cwms_util.format_xml(p_clob);
+      end if;
+   END cat_xchg_datastore;      
+
+  PROCEDURE cat_xchg_set(
+      p_xchg_sets    OUT xchg_dataexchange_set_tab_t,
+      p_db_office_id IN  VARCHAR2 DEFAULT NULL)
+   IS
+      l_db_office_code NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+      l_xchg_sets      xchg_dataexchange_set_tab_t := xchg_dataexchange_set_tab_t();
+      l_db_name        VARCHAR2(16);
+      l_oracle_id      VARCHAR2(256);
+   BEGIN
+      select name into l_db_name from v$database;
+      l_oracle_id := utl_inaddr.get_host_name || ':' || l_db_name;
+      l_oracle_id := substr(l_oracle_id, -(least(length(l_oracle_id), 16)));
+      l_oracle_id := substr(l_oracle_id, regexp_instr(l_oracle_id, '[a-zA-Z0-9]'));
+      for rec in (
+         select dss_file_code,
+                dss_xchg_set_id,
+                description,
+                start_time,
+                end_time,
+                realtime
+           from at_dss_xchg_set
+          where office_code = l_db_office_code) 
+      loop
+         l_xchg_sets.extend();
+         l_xchg_sets(l_xchg_sets.last) := new xchg_dataexchange_set_t(
+            rec.dss_xchg_set_id,
+            'DSS-' ||rec.dss_file_code,
+            l_oracle_id,
+            null,
+            true,
+            rec.description,
+            case nvl(rec.realtime, -1)
+               when -1 then null
+               when  1    then 'DSS-' ||rec.dss_file_code
+               when  2    then l_oracle_id
+            end,
+            case nvl(rec.start_time, '@')
+               when '@' then null
+               else new xchg_timewindow_t(rec.start_time, rec.end_time)
+            end,
+            l_db_office_code);
+      end loop;
+      
+      p_xchg_sets := l_xchg_sets;
+   END cat_xchg_set;
+      
+   PROCEDURE cat_xchg_set(
+      p_clob         IN OUT NOCOPY CLOB,
+      p_db_office_id IN VARCHAR2 DEFAULT NULL)
+   IS
+      l_xchg_sets xchg_dataexchange_set_tab_t;
+      l_text      varchar2(512);
+   BEGIN
+      cat_xchg_set(l_xchg_sets, p_db_office_id);
+      if p_clob is null then
+         dbms_lob.createtemporary(p_clob, true);
+      end if;
+      dbms_lob.open(p_clob, dbms_lob.lob_readwrite);
+      dbms_lob.trim(p_clob, 0);
+      for i in 1..l_xchg_sets.count loop
+         l_text := l_xchg_sets(i).get_xml().getstringval();
+         dbms_lob.writeappend(p_clob, length(l_text), l_text);
+      end loop;
+      dbms_lob.close(p_clob);
+      if dbms_lob.getlength(p_clob) > 0 then
+         cwms_util.format_xml(p_clob);
+      end if;
+   END cat_xchg_set;
+      
 END cwms_cat;
 /
+show errors;

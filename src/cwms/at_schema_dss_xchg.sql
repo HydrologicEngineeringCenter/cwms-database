@@ -366,6 +366,8 @@ CREATE TABLE AT_DSS_XCHG_SET
        DSS_FILE_CODE     NUMBER(10)   NOT NULL,
        DSS_XCHG_SET_ID   VARCHAR2(32) NOT NULL,
        DESCRIPTION       VARCHAR2(80),
+       START_TIME        VARCHAR2(32),
+       END_TIME          VARCHAR2(32),
        REALTIME          NUMBER,
        LAST_UPDATE       TIMESTAMP(6)
    )
@@ -440,6 +442,70 @@ CREATE UNIQUE INDEX AT_DSS_XCHG_SET_UI ON AT_DSS_XCHG_SET
        );
 SHOW ERRORS;
 COMMIT;
+
+-----------------------------
+-- AT_DSS_XCHG_SET_RULES trigger
+--
+create or replace trigger at_dss_xchg_set_rules
+before insert or update
+of start_time
+  ,end_time
+on at_dss_xchg_set
+referencing new as new old as old
+for each row
+declare
+   l_iso_pattern     varchar2(80) := '-?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}([.]\d+)?)?([-+]\d{2}:\d{2}|Z)?';
+   l_lookback_text   varchar2(80) := '$lookback-time';
+   l_start_text      varchar2(80) := '$start-time';
+   l_forecast_text   varchar2(80) := '$forecast-time';
+   l_simulation_text varchar2(80) := '$simulation-time';
+   l_end_text        varchar2(80) := '$end-time';
+   l_explicit_start  boolean      := false;
+   l_explicit_end    boolean      := false;
+begin
+   if :new.start_time is not null then
+      if :new.end_time is null then
+         cwms_err.raise('ERROR', 'Incomplete time window specified (missing end time)');
+      end if;
+      for once in 1..1 loop
+         exit when :new.start_time = l_lookback_text;
+         exit when :new.start_time = l_start_text;
+         exit when :new.start_time = l_forecast_text;
+         exit when :new.start_time = l_simulation_text;
+         l_explicit_start := true;
+         exit when regexp_instr(:new.start_time, l_iso_pattern) = 1
+               and regexp_instr(:new.start_time, l_iso_pattern, 1, 1, 1) = length(:new.start_time) + 1;
+         cwms_err.raise('INVALID_ITEM', :new.start_time, 'time window start time.');
+      end loop;
+   end if;
+   if :new.end_time is not null then
+      if :new.start_time is null then
+         cwms_err.raise('ERROR', 'Incomplete time window specified (missing start time)');
+      end if;
+      for once in 1..1 loop
+         exit when :new.end_time = l_start_text;
+         exit when :new.end_time = l_forecast_text;
+         exit when :new.end_time = l_simulation_text;
+         exit when :new.end_time = l_end_text;
+         l_explicit_end := true;
+         exit when regexp_instr(:new.end_time, l_iso_pattern) = 1
+               and regexp_instr(:new.end_time, l_iso_pattern, 1, 1, 1) = length(:new.end_time) + 1;
+         cwms_err.raise('INVALID_ITEM', :new.start_time, 'time window start time.');
+      end loop;
+   end if;
+   if l_explicit_start and l_explicit_end then
+      if cwms_util.to_timestamp(:new.end_time) <= cwms_util.to_timestamp(:new.start_time) then
+         cwms_err.raise('ERROR', 'Time window end time (' || :new.end_time || ') is not later that start time (' || :new.start_time || ').');
+      end if;
+   elsif not l_explicit_start and not l_explicit_end then
+      if :new.start_time = l_start_text or :new.start_time = l_forecast_text or :new.start_time = l_simulation_text then
+         if :new.end_time = l_start_text or :new.end_time = l_forecast_text or :new.end_time = l_simulation_text then
+            cwms_err.raise('ERROR', 'Time window end time (' || :new.end_time || ') is not later that start time (' || :new.start_time || ').');
+         end if;
+      end if;
+   end if;
+end;
+/
 
 -----------------------------
 -- AT_DSS_TS_XCHG_MAP table

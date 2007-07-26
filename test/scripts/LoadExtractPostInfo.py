@@ -1,7 +1,7 @@
 #---------#
 # Imports #
 #---------# 
-import os, sys, java, time, string, traceback
+import os, sys, java, javax, thread, time, string, StringIO, traceback
 
 for item in os.environ["CLASSPATH"].split(os.pathsep) :
 	if item not in sys.path : sys.path.append(item)
@@ -14,9 +14,9 @@ import oracle
 TRUE  = 1
 FALSE = 0
 serverOutput = FALSE
-createXchgSetSql  = "begin :1 := cwms_dss.create_dss_xchg_set(:2,:3,:4,:5,:6,:7,:8); end;"
-mapTsInXchgSetSql = "begin cwms_dss.map_ts_in_xchg_set(:1,:2,:3,:4,:5,:6,:7,:8); end;" 
-getDssXchgSetsSql = "begin :1 := cwms_dss.get_dss_xchg_sets(:2,:3,:4,:5); end;" 
+createXchgSetSql  = "begin :1 := cwms_xchg.create_dss_xchg_set(:2,:3,:4,:5,:6,:7,:8); end;"
+mapTsInXchgSetSql = "begin cwms_xchg.map_ts_in_xchg_set(:1,:2,:3,:4,:5,:6,:7,:8); end;" 
+getDssXchgSetsSql = "begin cwms_xchg.retrieve_dataexchange_conf(:1,:2,:3,:4,:5); end;" 
 
 lastConn = None
 getLinesSql  = "begin dbms_output.get_lines(:1,:2); end;"
@@ -33,7 +33,7 @@ def proxyForUser(orclConn, username) :
 	print "proxyForUser : %f" % (time2 - time1)
 
 def enableServerOutput(orclConn) :
-	orclConn.createStatement().execute("begin dbms_output.enable; end;")
+	orclConn.createStatement().execute("begin dbms_output.enable(1000000); end;")
 	
 def disableServerOutput(orclConn) :
 	orclConn.createStatement().execute("begin dbms_output.disable; end;")
@@ -74,7 +74,7 @@ def resumeMView(orclConn, pause_handle):
 #----------------#
 #connStr  = raw_input("\nEnter DB Connection String (user/pass@tnsName)\n-->")
 #fileName = raw_input("\nEnter name of data file\n-->")
-connStr  = "q0cwmsdbi[q0cwmspd]/thenewdb06@q0mdp2"
+connStr  = "s0cwmsdbi[s0cwmspd]/thenewdb06@q0mdp2"
 # fileName = "Test-ExtractPostInfo.txt"
 # fileName = "NWD-ExtractPostInfo.txt"
 fileName = "HEC-ExtractPostInfo.txt"
@@ -89,6 +89,7 @@ try :
 except :
 	sessionuser = username
 dbUrl = "jdbc:oracle:oci:@%s" % tnsName 
+dbUrl = "jdbc:oracle:thin:@localhost:1521:%s" % tnsName 
 orclDS = oracle.jdbc.pool.OracleDataSource()
 orclDS.setURL(dbUrl);
 orclDS.setUser(username)
@@ -111,33 +112,34 @@ actionCount = 0
 pause_handle = None
 t1 = time.time()
 t2 = None
+okToQuit = [0]
 try :
-	# serverOutput = FALSE
-	# if serverOutput : enableServerOutput(orclConn)
+	serverOutput = TRUE
+	if serverOutput : enableServerOutput(orclConn)
 	# pause_handle = pauseMView(orclConn)
-	# t1 = time.time()
-	# stmt = orclConn.prepareCall("begin cwms_dss.put_dss_xchg_sets(:1,:2,:3,:4,:5,:6,:7); end;")
-	# f = open("dataexchange.xml", "r")
-	# xmlData = f.read()
-	# print "%d bytes read from file." % len(xmlData)
-	# f.close()
-	# stmt.registerOutParameter(1, java.sql.Types.INTEGER) 
-	# stmt.registerOutParameter(2, java.sql.Types.INTEGER) 
-	# stmt.registerOutParameter(3, java.sql.Types.INTEGER) 
-	# stmt.registerOutParameter(4, java.sql.Types.INTEGER) 
-	# stmt.registerOutParameter(5, java.sql.Types.INTEGER) 
-	# stmt.setStringForClob(6, xmlData)
-	# stmt.setString(7, 'REPL')
-	# stmt.execute()
-	# for line in getServerOutput(orclConn) : print line
-	# print
-	# print "%4d sets inserted" % stmt.getInt(1);
-	# print "%4d sets updated" % stmt.getInt(2);
-	# print "%4d mappings inserted" % stmt.getInt(3);
-	# print "%4d mappings updated" % stmt.getInt(4);
-	# print "%4d mappings deleted" % stmt.getInt(5);
-	# print
-	# sys.exit()
+	t1 = time.time()
+	stmt = orclConn.prepareCall("begin cwms_xchg.store_dataexchange_conf(:1,:2,:3,:4,:5,:6,:7); end;")
+	f = open("all_sets.xml", "r")
+	xmlData = f.read()
+	print "%d bytes read from file." % len(xmlData)
+	f.close()
+	stmt.registerOutParameter(1, java.sql.Types.INTEGER) 
+	stmt.registerOutParameter(2, java.sql.Types.INTEGER) 
+	stmt.registerOutParameter(3, java.sql.Types.INTEGER) 
+	stmt.registerOutParameter(4, java.sql.Types.INTEGER) 
+	stmt.registerOutParameter(5, java.sql.Types.INTEGER) 
+	stmt.setStringForClob(6, xmlData)
+	stmt.setString(7, 'REPL')
+	stmt.execute()
+	for line in getServerOutput(orclConn) : print line
+	print
+	print "%4d sets inserted" % stmt.getInt(1);
+	print "%4d sets updated" % stmt.getInt(2);
+	print "%4d mappings inserted" % stmt.getInt(3);
+	print "%4d mappings updated" % stmt.getInt(4);
+	print "%4d mappings deleted" % stmt.getInt(5);
+	print
+	sys.exit()
 
 	getDssXchgSetsStmt.registerOutParameter(1, oracle.jdbc.OracleTypes.CLOB)
 	getDssXchgSetsStmt.setString(2, "*")
@@ -149,8 +151,10 @@ try :
 	clob = getDssXchgSetsStmt.getClob(1);
 	t2 = time.time()
 	print "Retrieved %d bytes in %f seconds." % (clob.length(), (t2 - t1))
-	f = open("dataexchange.xml", "w");
-	f.write(clob.getSubString(1, clob.length()))
+	outFilename = "dataexchange4.xml"
+	str = clob.getSubString(1, clob.length())
+	f = open(outFilename, "w")
+	f.write(str)
 	f.close()
 	sys.exit()
 	

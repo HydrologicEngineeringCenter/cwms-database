@@ -6,9 +6,7 @@ IS
       cwms_ts_id            VARCHAR2 (183),
       interval_utc_offset   NUMBER
    );
-
    TYPE cat_ts_tab_t IS TABLE OF cat_ts_rec_t;
-
    TYPE cat_ts_cwms_20_rec_t IS RECORD (
       office_id             VARCHAR2 (16),
       cwms_ts_id            VARCHAR2 (183),
@@ -17,9 +15,7 @@ IS
       inactive              NUMBER,
       lrts_timezone         VARCHAR2 (28)
    );
-
    TYPE cat_ts_cwms_20_tab_t IS TABLE OF cat_ts_cwms_20_rec_t;
-
    TYPE cat_ts_id_rec_t IS RECORD (
       db_office_id          VARCHAR2 (16),
       base_location_id      VARCHAR2 (16),
@@ -29,9 +25,7 @@ IS
       active_flag           VARCHAR2 (1),
       user_privileges       NUMBER
    );
-
    TYPE cat_ts_id_tab_t IS TABLE OF cat_ts_id_rec_t;
-
    TYPE cat_loc_rec_t IS RECORD (
       office_id        VARCHAR2 (16),
       base_loc_id      VARCHAR2 (16),
@@ -48,9 +42,7 @@ IS
       long_name        VARCHAR2 (80),
       description      VARCHAR2 (512)
    );
-
    TYPE cat_loc_tab_t IS TABLE OF cat_loc_rec_t;
-
    TYPE cat_location_rec_t IS RECORD (
       db_office_id       VARCHAR2 (16),
       location_id        VARCHAR2 (49),
@@ -71,9 +63,7 @@ IS
       description        VARCHAR2 (512),
       active_flag        VARCHAR2 (1)
    );
-
    TYPE cat_location_tab_t IS TABLE OF cat_location_rec_t;
-
    TYPE cat_loc_grp_rec_t IS RECORD (
       cat_db_office_id    VARCHAR2 (16),
       loc_category_id     VARCHAR2 (32),
@@ -82,9 +72,7 @@ IS
       loc_group_id        VARCHAR2 (32),
       loc_group_desc      VARCHAR2 (128)
    );
-
    TYPE cat_loc_grp_tab_t IS TABLE OF cat_loc_grp_rec_t;
-
    TYPE cat_loc_alias_rec_t IS RECORD (
       db_office_id       VARCHAR2 (16),
       location_id        VARCHAR2 (49),
@@ -95,18 +83,14 @@ IS
       loc_group_desc     VARCHAR2 (128),
       loc_alias_id       VARCHAR2 (128)
    );
-
    TYPE cat_loc_alias_abrev_rec_t IS RECORD (
       office_id     VARCHAR2 (16),
       location_id   VARCHAR2 (49),
       agency_id     VARCHAR2 (16),
       alias_id      VARCHAR2 (16)
    );
-
    TYPE cat_loc_alias_abrev_tab_t IS TABLE OF cat_loc_alias_abrev_rec_t;
-
    TYPE cat_loc_alias_tab_t IS TABLE OF cat_loc_alias_rec_t;
-
    TYPE cat_base_param_rec_t IS RECORD (
       parameter_id        VARCHAR2 (16),
       param_long_name     VARCHAR2 (80),
@@ -115,9 +99,7 @@ IS
       unit_long_name      VARCHAR2 (80),
       unit_description    VARCHAR2 (80)
    );
-
    TYPE cat_base_param_tab_t IS TABLE OF cat_base_param_rec_t;
-
    TYPE cat_parameter_rec_t IS RECORD (
       parameter_id         VARCHAR2 (49),
       base_parameter_id    VARCHAR2 (16),
@@ -128,9 +110,7 @@ IS
       unit_long_name       VARCHAR2 (80),
       unit_description     VARCHAR2 (80)
    );
-
    TYPE cat_parameter_tab_t IS TABLE OF cat_parameter_rec_t;
-
    TYPE cat_param_rec_t IS RECORD (
       parameter_id        VARCHAR2 (16),
       param_long_name     VARCHAR2 (80),
@@ -139,54 +119,40 @@ IS
       unit_long_name      VARCHAR2 (80),
       unit_description    VARCHAR2 (80)
    );
-
    TYPE cat_param_tab_t IS TABLE OF cat_param_rec_t;
-
    TYPE cat_sub_param_rec_t IS RECORD (
       parameter_id      VARCHAR2 (16),
       subparameter_id   VARCHAR2 (32),
       description       VARCHAR2 (80)
    );
-
    TYPE cat_sub_param_tab_t IS TABLE OF cat_sub_param_rec_t;
-
    TYPE cat_sub_loc_rec_t IS RECORD (
       sublocation_id   VARCHAR2 (32),
       description      VARCHAR2 (80)
    );
-
    TYPE cat_sub_loc_tab_t IS TABLE OF cat_sub_loc_rec_t;
-
    TYPE cat_state_rec_t IS RECORD (
       state_initial   VARCHAR2 (2),
       state_name      VARCHAR2 (40)
    );
-
    TYPE cat_state_tab_t IS TABLE OF cat_state_rec_t;
-
    TYPE cat_county_rec_t IS RECORD (
       county_id       VARCHAR2 (3),
       county_name     VARCHAR2 (40),
       state_initial   VARCHAR2 (2)
    );
-
    TYPE cat_county_tab_t IS TABLE OF cat_county_rec_t;
-
    TYPE cat_timezone_rec_t IS RECORD (
       timezone_name   VARCHAR2 (28),
       utc_offset      INTERVAL DAY (2)TO SECOND (6),
       dst_offset      INTERVAL DAY (2)TO SECOND (6)
    );
-
    TYPE cat_timezone_tab_t IS TABLE OF cat_timezone_rec_t;
-
    TYPE cat_dss_file_rec_t IS RECORD (
       dss_filemgr_url   VARCHAR2 (32),
       dss_file_name     NUMBER (10)
    );
-
    TYPE cat_dss_file_tab_t IS TABLE OF cat_dss_file_rec_t;
-
    TYPE cat_dss_xchg_set_rec_t IS RECORD (
       office_id                  VARCHAR2 (16),
       dss_xchg_set_id            VARCHAR (32),
@@ -196,9 +162,7 @@ IS
       dss_xchg_direction_id      VARCHAR2 (16),
       dss_xchg_last_update       TIMESTAMP ( 6 )
    );
-
    TYPE cat_dss_xchg_set_tab_t IS TABLE OF cat_dss_xchg_set_rec_t;
-
    TYPE cat_dss_xchg_ts_map_rec_t IS RECORD (
       cwms_ts_id              VARCHAR2 (183),
       dss_pathname            VARCHAR2 (391),
@@ -207,186 +171,130 @@ IS
       dss_timezone_name       VARCHAR2 (28),
       dss_tz_usage_id         VARCHAR2 (8)
    );
-
    TYPE cat_dss_xchg_ts_map_tab_t IS TABLE OF cat_dss_xchg_ts_map_rec_t;
-
    TYPE cat_property_rec_t IS RECORD (
       office_id        VARCHAR2 (16),
       prop_catergory   VARCHAR2 (256),
       prop_id          VARCHAR2 (256)
    );
-
    TYPE cat_property_tab_t IS TABLE OF cat_property_rec_t;
-
 -- cat_ts...
    FUNCTION cat_ts_rec2obj (r IN cat_ts_rec_t)
       RETURN cat_ts_obj_t;
-
    FUNCTION cat_ts_tab2obj (t IN cat_ts_tab_t)
       RETURN cat_ts_otab_t;
-
    FUNCTION cat_ts_obj2rec (o IN cat_ts_obj_t)
       RETURN cat_ts_rec_t;
-
    FUNCTION cat_ts_obj2tab (o IN cat_ts_otab_t)
       RETURN cat_ts_tab_t;
-
 -- cat_ts_cwms_20...
    FUNCTION cat_ts_cwms_20_rec2obj (r IN cat_ts_cwms_20_rec_t)
       RETURN cat_ts_cwms_20_obj_t;
-
    FUNCTION cat_ts_cwms_20_tab2obj (t IN cat_ts_cwms_20_tab_t)
       RETURN cat_ts_cwms_20_otab_t;
-
    FUNCTION cat_ts_cwms_20_obj2rec (o IN cat_ts_cwms_20_obj_t)
       RETURN cat_ts_cwms_20_rec_t;
-
    FUNCTION cat_ts_cwms_20_obj2tab (o IN cat_ts_cwms_20_otab_t)
       RETURN cat_ts_cwms_20_tab_t;
-
 -- cat_loc...
    FUNCTION cat_loc_rec2obj (r IN cat_loc_rec_t)
       RETURN cat_loc_obj_t;
-
    FUNCTION cat_loc_tab2obj (t IN cat_loc_tab_t)
       RETURN cat_loc_otab_t;
-
    FUNCTION cat_loc_obj2rec (o IN cat_loc_obj_t)
       RETURN cat_loc_rec_t;
-
    FUNCTION cat_loc_obj2tab (o IN cat_loc_otab_t)
       RETURN cat_loc_tab_t;
-
 -- cat_loc_alias...
 --   FUNCTION cat_loc_alias_rec2obj (r IN cat_loc_alias_rec_t)
 --      RETURN cat_loc_alias_obj_t;
-
    --   FUNCTION cat_loc_alias_tab2obj (t IN cat_loc_alias_tab_t)
 --      RETURN cat_loc_alias_otab_t;
-
    --   FUNCTION cat_loc_alias_obj2rec (o IN cat_loc_alias_obj_t)
 --      RETURN cat_loc_alias_rec_t;
-
    --   FUNCTION cat_loc_alias_obj2tab (o IN cat_loc_alias_otab_t)
 --      RETURN cat_loc_alias_tab_t;
-
    -- cat_param...
    FUNCTION cat_param_rec2obj (r IN cat_param_rec_t)
       RETURN cat_param_obj_t;
-
    FUNCTION cat_param_tab2obj (t IN cat_param_tab_t)
       RETURN cat_param_otab_t;
-
    FUNCTION cat_param_obj2rec (o IN cat_param_obj_t)
       RETURN cat_param_rec_t;
-
    FUNCTION cat_param_obj2tab (o IN cat_param_otab_t)
       RETURN cat_param_tab_t;
-
 -- cat_sub_param.
    FUNCTION cat_sub_param_rec2obj (r IN cat_sub_param_rec_t)
       RETURN cat_sub_param_obj_t;
-
    FUNCTION cat_sub_param_tab2obj (t IN cat_sub_param_tab_t)
       RETURN cat_sub_param_otab_t;
-
    FUNCTION cat_sub_param_obj2rec (o IN cat_sub_param_obj_t)
       RETURN cat_sub_param_rec_t;
-
    FUNCTION cat_sub_param_obj2tab (o IN cat_sub_param_otab_t)
       RETURN cat_sub_param_tab_t;
-
 -- cat_sub_loc...
    FUNCTION cat_sub_loc_rec2obj (r IN cat_sub_loc_rec_t)
       RETURN cat_sub_loc_obj_t;
-
    FUNCTION cat_sub_loc_tab2obj (t IN cat_sub_loc_tab_t)
       RETURN cat_sub_loc_otab_t;
-
    FUNCTION cat_sub_loc_obj2rec (o IN cat_sub_loc_obj_t)
       RETURN cat_sub_loc_rec_t;
-
    FUNCTION cat_sub_loc_obj2tab (o IN cat_sub_loc_otab_t)
       RETURN cat_sub_loc_tab_t;
-
 -- cat_state.
    FUNCTION cat_state_rec2obj (r IN cat_state_rec_t)
       RETURN cat_state_obj_t;
-
    FUNCTION cat_state_tab2obj (t IN cat_state_tab_t)
       RETURN cat_state_otab_t;
-
    FUNCTION cat_state_obj2rec (o IN cat_state_obj_t)
       RETURN cat_state_rec_t;
-
    FUNCTION cat_state_obj2tab (o IN cat_state_otab_t)
       RETURN cat_state_tab_t;
-
 -- cat_county.
    FUNCTION cat_county_rec2obj (r IN cat_county_rec_t)
       RETURN cat_county_obj_t;
-
    FUNCTION cat_county_tab2obj (t IN cat_county_tab_t)
       RETURN cat_county_otab_t;
-
    FUNCTION cat_county_obj2rec (o IN cat_county_obj_t)
       RETURN cat_county_rec_t;
-
    FUNCTION cat_county_obj2tab (o IN cat_county_otab_t)
       RETURN cat_county_tab_t;
-
 -- cat_timezone.
    FUNCTION cat_timezone_rec2obj (r IN cat_timezone_rec_t)
       RETURN cat_timezone_obj_t;
-
    FUNCTION cat_timezone_tab2obj (t IN cat_timezone_tab_t)
       RETURN cat_timezone_otab_t;
-
    FUNCTION cat_timezone_obj2rec (o IN cat_timezone_obj_t)
       RETURN cat_timezone_rec_t;
-
    FUNCTION cat_timezone_obj2tab (o IN cat_timezone_otab_t)
       RETURN cat_timezone_tab_t;
-
 -- cat_dss_file.
    FUNCTION cat_dss_file_rec2obj (r IN cat_dss_file_rec_t)
       RETURN cat_dss_file_obj_t;
-
    FUNCTION cat_dss_file_tab2obj (t IN cat_dss_file_tab_t)
       RETURN cat_dss_file_otab_t;
-
    FUNCTION cat_dss_file_obj2rec (o IN cat_dss_file_obj_t)
       RETURN cat_dss_file_rec_t;
-
    FUNCTION cat_dss_file_obj2tab (o IN cat_dss_file_otab_t)
       RETURN cat_dss_file_tab_t;
-
 -- cat_dss_xchg_set.
    FUNCTION cat_dss_xchg_set_rec2obj (r IN cat_dss_xchg_set_rec_t)
       RETURN cat_dss_xchg_set_obj_t;
-
    FUNCTION cat_dss_xchg_set_tab2obj (t IN cat_dss_xchg_set_tab_t)
       RETURN cat_dss_xchg_set_otab_t;
-
    FUNCTION cat_dss_xchg_set_obj2rec (o IN cat_dss_xchg_set_obj_t)
       RETURN cat_dss_xchg_set_rec_t;
-
    FUNCTION cat_dss_xchg_set_obj2tab (o IN cat_dss_xchg_set_otab_t)
       RETURN cat_dss_xchg_set_tab_t;
-
 -- cat_dss_xchg_ts_map.
    FUNCTION cat_dss_xchg_ts_map_rec2obj (r IN cat_dss_xchg_ts_map_rec_t)
       RETURN cat_dss_xchg_ts_map_obj_t;
-
    FUNCTION cat_dss_xchg_ts_map_tab2obj (t IN cat_dss_xchg_ts_map_tab_t)
       RETURN cat_dss_xchg_ts_map_otab_t;
-
    FUNCTION cat_dss_xchg_ts_map_obj2rec (o IN cat_dss_xchg_ts_map_obj_t)
       RETURN cat_dss_xchg_ts_map_rec_t;
-
    FUNCTION cat_dss_xchg_ts_map_obj2tab (o IN cat_dss_xchg_ts_map_otab_t)
       RETURN cat_dss_xchg_ts_map_tab_t;
-
 -------------------------------------------------------------------------------
 -- CAT_TS
 --
@@ -424,7 +332,6 @@ IS
       p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_ts_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_ts(...)
 --
@@ -434,7 +341,6 @@ IS
       p_officeid              IN       VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL
    );
-
 -------------------------------------------------------------------------------
 -- function cat_ts_cwms_20_tab(...)
 --
@@ -444,7 +350,6 @@ IS
       p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_ts_cwms_20_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_ts_cwms_20(...)
 --
@@ -454,7 +359,6 @@ IS
       p_officeid              IN       VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL
    );
-
    PROCEDURE cat_ts_id (
       p_cwms_cat              OUT      sys_refcursor,
       p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL,
@@ -462,7 +366,6 @@ IS
       p_loc_group_id          IN       VARCHAR2 DEFAULT NULL,
       p_db_office_id          IN       VARCHAR2 DEFAULT NULL
    );
-
    FUNCTION cat_ts_id_tab (
       p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL,
       p_loc_category_id       IN   VARCHAR2 DEFAULT NULL,
@@ -470,7 +373,6 @@ IS
       p_db_office_id          IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_ts_id_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- CAT_LOC
 --
@@ -512,7 +414,6 @@ IS
       p_elevation_unit   IN   VARCHAR2 DEFAULT 'm'
    )
       RETURN cat_loc_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_loc(...)
 --
@@ -522,7 +423,6 @@ IS
       p_officeid         IN       VARCHAR2 DEFAULT NULL,
       p_elevation_unit   IN       VARCHAR2 DEFAULT 'm'
    );
-
 -------------------------------------------------------------------------------
 -- CAT_LOC_ALIAS
 --
@@ -560,7 +460,6 @@ IS
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_loc_alias_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_loc_alias(...)
 --
@@ -570,7 +469,6 @@ IS
       p_cwms_ts_id     IN       VARCHAR2 DEFAULT NULL,
       p_db_office_id   IN       VARCHAR2 DEFAULT NULL
    );
-
 -------------------------------------------------------------------------------
 -- CAT_PARAM
 --
@@ -591,29 +489,22 @@ IS
 --
 -- The records are returned sorted by parameter_id (ascending).
 --
-
    -------------------------------------------------------------------------------
 -- DEPRICATED -
 -- DEPRICATED - procedure cat_param(...) - DEPRICATED -
 -- DEPRICATED -
    PROCEDURE cat_param (p_cwms_cat OUT sys_refcursor);
-
    FUNCTION cat_param_tab
       RETURN cat_param_tab_t PIPELINED;
-
    PROCEDURE cat_base_parameter (p_cwms_cat OUT sys_refcursor);
-
    FUNCTION cat_base_parameter_tab
       RETURN cat_base_param_tab_t PIPELINED;
-
    FUNCTION cat_parameter_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_parameter_tab_t PIPELINED;
-
    PROCEDURE cat_parameter (
       p_cwms_cat       OUT      sys_refcursor,
       p_db_office_id   IN       VARCHAR2 DEFAULT NULL
    );
-
 -------------------------------------------------------------------------------
 -- CAT_SUB_PARAM
 --
@@ -638,13 +529,11 @@ IS
 --
    FUNCTION cat_sub_param_tab
       RETURN cat_sub_param_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_sub_param(...)
 --
 --
    PROCEDURE cat_sub_param (p_cwms_cat OUT sys_refcursor);
-
 -------------------------------------------------------------------------------
 -- CAT_SUB_LOC...
 --
@@ -667,7 +556,6 @@ IS
 --
    FUNCTION cat_sub_loc_tab (p_officeid IN VARCHAR2 DEFAULT NULL)
       RETURN cat_sub_loc_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_sub_loc(...)
 --
@@ -676,7 +564,6 @@ IS
       p_cwms_cat   OUT      sys_refcursor,
       p_officeid   IN       VARCHAR2 DEFAULT NULL
    );
-
 -------------------------------------------------------------------------------
 -- CAT_STATE
 --
@@ -699,13 +586,11 @@ IS
 --
    FUNCTION cat_state_tab
       RETURN cat_state_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_state(...)
 --
 --
    PROCEDURE cat_state (p_cwms_cat OUT sys_refcursor);
-
 -------------------------------------------------------------------------------
 -- CAT_COUNTY
 --
@@ -733,7 +618,6 @@ IS
 --
    FUNCTION cat_county_tab (p_stateint IN VARCHAR2 DEFAULT NULL)
       RETURN cat_county_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_county(...)
 --
@@ -742,7 +626,6 @@ IS
       p_cwms_cat   OUT      sys_refcursor,
       p_stateint   IN       VARCHAR2 DEFAULT NULL
    );
-
 -------------------------------------------------------------------------------
 -- CAT_TIMEZONE
 --
@@ -766,13 +649,11 @@ IS
 --
    FUNCTION cat_timezone_tab
       RETURN cat_timezone_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_timezone(...)
 --
 --
    PROCEDURE cat_timezone (p_cwms_cat OUT sys_refcursor);
-
 -------------------------------------------------------------------------------
 -- CAT_DSS_FILE
 --
@@ -809,7 +690,6 @@ IS
       p_file_name     IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_dss_file_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_dss_file(...)
 --
@@ -819,7 +699,6 @@ IS
       p_filemgr_url   IN       VARCHAR2 DEFAULT NULL,
       p_file_name     IN       VARCHAR2 DEFAULT NULL
    );
-
 -------------------------------------------------------------------------------
 -- CAT_DSS_XCHG_SET
 --
@@ -864,7 +743,6 @@ IS
       p_file_name     IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_dss_xchg_set_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_dss_xchg_set(...)
 --
@@ -875,7 +753,6 @@ IS
       p_filemgr_url   IN       VARCHAR2 DEFAULT NULL,
       p_file_name     IN       VARCHAR2 DEFAULT NULL
    );
-
 -------------------------------------------------------------------------------
 -- CAT_DSS_XCHG_TS_MAP
 --
@@ -906,7 +783,6 @@ IS
       p_dss_xchg_set_id   IN   VARCHAR2
    )
       RETURN cat_dss_xchg_ts_map_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_dss_xchg_ts_map(...)
 --
@@ -916,7 +792,6 @@ IS
       p_officeid          IN       VARCHAR2,
       p_dss_xchg_set_id   IN       VARCHAR2
    );
-
 -------------------------------------------------------------------------------
 -- CAT_LOC_ALIASES                                                           --
 --
@@ -957,7 +832,6 @@ IS
 --      p_office_id     IN   VARCHAR2 DEFAULT NULL
 --   )
 --      RETURN cat_loc_alias_abrev_tab_t PIPELINED;
-
    -------------------------------------------------------------------------------
 -- procedure cat_loc_aliases(...)
 --
@@ -970,7 +844,6 @@ IS
       p_abreviated        IN       VARCHAR2 DEFAULT 'T',
       p_db_office_id      IN       VARCHAR2 DEFAULT NULL
    );
-
 --
    PROCEDURE cat_loc_aliases_java (
       p_cwms_cat          OUT      sys_refcursor,
@@ -980,7 +853,6 @@ IS
       p_abreviated        IN       VARCHAR2 DEFAULT 'T',
       p_db_office_id      IN       VARCHAR2 DEFAULT NULL
    );
-
 -------------------------------------------------------------------------------
 -- CAT_PROPERTY
 --
@@ -1024,7 +896,6 @@ IS
       p_prop_id         IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_property_tab_t PIPELINED;
-
 -------------------------------------------------------------------------------
 -- procedure cat_property(...)
 --
@@ -1035,7 +906,6 @@ IS
       p_prop_category   IN       VARCHAR2 DEFAULT NULL,
       p_prop_id         IN       VARCHAR2 DEFAULT NULL
    );
-
    PROCEDURE cat_location (
       p_cwms_cat          OUT      sys_refcursor,
       p_elevation_unit    IN       VARCHAR2 DEFAULT 'm',
@@ -1044,7 +914,6 @@ IS
       p_loc_group_id      IN       VARCHAR2 DEFAULT NULL,
       p_db_office_id      IN       VARCHAR2 DEFAULT NULL
    );
-
    FUNCTION cat_location_tab (
       p_elevation_unit    IN   VARCHAR2 DEFAULT 'm',
       p_base_loc_only     IN   VARCHAR2 DEFAULT 'F',
@@ -1053,13 +922,35 @@ IS
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_location_tab_t PIPELINED;
-
    PROCEDURE cat_loc_group (
       p_cwms_cat       OUT      sys_refcursor,
       p_db_office_id   IN       VARCHAR2 DEFAULT NULL
    );
-
    FUNCTION cat_loc_group_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_loc_grp_tab_t PIPELINED;
+      
+   PROCEDURE cat_xchg_office (
+      p_offices OUT xchg_office_tab_t);
+      
+   PROCEDURE cat_xchg_office (
+      p_clob IN OUT NOCOPY CLOB);
+      
+   PROCEDURE cat_xchg_datastore(
+      p_datastores   OUT xchg_datastore_tab_t,
+      p_db_office_id IN  VARCHAR2 DEFAULT NULL);
+            
+   PROCEDURE cat_xchg_datastore(
+      p_clob         IN OUT NOCOPY CLOB,
+      p_db_office_id IN VARCHAR2 DEFAULT NULL);
+      
+  PROCEDURE cat_xchg_set(
+      p_xchg_sets    OUT xchg_dataexchange_set_tab_t,
+      p_db_office_id IN  VARCHAR2 DEFAULT NULL);
+      
+   PROCEDURE cat_xchg_set(
+      p_clob         IN OUT NOCOPY CLOB,
+      p_db_office_id IN VARCHAR2 DEFAULT NULL);
+      
 END cwms_cat;
 /
+show error;

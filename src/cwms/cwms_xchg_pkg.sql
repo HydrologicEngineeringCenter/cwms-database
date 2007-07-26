@@ -15,6 +15,8 @@ create or replace package cwms_xchg as
       p_description       in   varchar2,
       p_dss_filemgr_url   in   varchar2,
       p_dss_file_name     in   varchar2,
+      p_start_time        in   varchar2 default null,
+      p_end_time          in   varchar2 default null,
       p_realtime          in   varchar2 default null,
       p_fail_if_exists    in   number default cwms_util.false_num,
       p_office_id         in   varchar2 default null)
@@ -29,6 +31,8 @@ create or replace package cwms_xchg as
       p_description         in       varchar2,
       p_dss_filemgr_url     in       varchar2,
       p_dss_file_name       in       varchar2,
+      p_start_time          in       varchar2 default null,
+      p_end_time            in       varchar2 default null,
       p_realtime            in       varchar2 default null,
       p_fail_if_exists      in       number default cwms_util.false_num,
       p_office_id           in       varchar2 default null);
@@ -66,11 +70,7 @@ create or replace package cwms_xchg as
       p_dss_file_name        in   varchar2,
       p_realtime             in   varchar2,                        
       p_last_update          in   timestamp,
-      p_update_description   in   number default cwms_util.true_num,
-      p_update_filemgr_url   in   number default cwms_util.true_num,
-      p_update_file_name     in   number default cwms_util.true_num,
-      p_update_realtime      in   number default cwms_util.true_num,
-      p_update_last_update   in   number default cwms_util.true_num,
+      p_ignore_nulls         in   varchar2 default 'T',
       p_office_id            in   varchar2 default null)
       return number;
 
@@ -85,11 +85,7 @@ create or replace package cwms_xchg as
       p_dss_file_name        in   varchar2,
       p_realtime             in   varchar2,
       p_last_update          in   timestamp,
-      p_update_description   in   number default cwms_util.true_num,
-      p_update_filemgr_url   in   number default cwms_util.true_num,
-      p_update_file_name     in   number default cwms_util.true_num,
-      p_update_realtime      in   number default cwms_util.true_num,
-      p_update_last_update   in   number default cwms_util.true_num,
+      p_ignore_nulls         in   varchar2 default 'T',
       p_office_id            in   varchar2 default null);
 
 --------------------------------------------------------------------------------
@@ -133,7 +129,39 @@ create or replace package cwms_xchg as
       p_dss_xchg_set_id in varchar2 default null,
       p_office_id       in varchar2 default null)
       return clob;
+
+   procedure retrieve_dataexchange_conf(
+      p_dx_config       out xchg_dataexchange_conf_t,
+      p_dss_filemgr_url in  varchar2 default null,
+      p_dss_file_name   in  varchar2 default null,
+      p_dss_xchg_set_id in  varchar2 default null,
+      p_office_id       in  varchar2 default null);
+                                              
+   procedure retrieve_dataexchange_conf(
+      p_dx_config       in out nocopy clob,
+      p_dss_filemgr_url in varchar2 default null,
+      p_dss_file_name   in varchar2 default null,
+      p_dss_xchg_set_id in varchar2 default null,
+      p_office_id       in varchar2 default null);
+
+   procedure store_dataexchange_conf(
+      p_sets_inserted     out number,
+      p_sets_updated      out number,
+      p_mappings_inserted out number,
+      p_mappings_updated  out number,
+      p_mappings_deleted  out number,
+      p_dx_config         in  xchg_dataexchange_conf_t,
+      p_store_rule        in  varchar2 default 'MERGE');
    
+   procedure store_dataexchange_conf(
+      p_sets_inserted     out number,
+      p_sets_updated      out number,
+      p_mappings_inserted out number,
+      p_mappings_updated  out number,
+      p_mappings_deleted  out number,
+      p_dx_config         in  clob,
+      p_store_rule        in  varchar2 default 'MERGE');
+
 --------------------------------------------------------------------------------
 -- PROCEDURE PUT_DSS_XCHG_SETS(...)
 --
