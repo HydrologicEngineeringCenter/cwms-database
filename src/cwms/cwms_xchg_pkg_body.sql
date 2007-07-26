@@ -1242,6 +1242,8 @@ create or replace package body cwms_xchg as
                 dss_xchg_set_code,
                 dss_xchg_set_id,
                 description,
+                start_time,
+                end_time,
                 realtime,
                 last_update
            from at_dss_file f,
@@ -1403,35 +1405,25 @@ create or replace package body cwms_xchg as
 
       for set_info in xchg_set_cur loop
          l_dss_filemgr_id := set_info.dss_filemgr_url || set_info.dss_file_name;
-         if set_info.realtime is null then
-            writeln_xml(
-               '<dataexchange-set  id="'
-               || set_info.dss_xchg_set_id
-               || '" office-id="'
-               || set_info.office_id
-               ||'">');
-         else
-            if set_info.realtime = 1 then
-               writeln_xml(
-                  '<dataexchange-set  id="'
-                  || set_info.dss_xchg_set_id
-                  || '" office-id="'
-                  || set_info.office_id
-                  || '" realtime-source-id="'
-                  || l_filemgr_ids(l_dss_filemgr_id)
-                  || '">');
-            else
-               writeln_xml(
-                  '<dataexchange-set  id="'
-                  || set_info.dss_xchg_set_id
-                  || '" officeid="'
-                  || set_info.office_id
-                  || '" realtime-source-id="'
-                  || l_oracle_id
-                  || '">');
-            end if;
-         end if;
+         writeln_xml(
+            '<dataexchange-set  id="'
+            || set_info.dss_xchg_set_id
+            || '" office-id="' || set_info.office_id || '"'
+            || case nvl(set_info.realtime, -1)
+                  when -1 then null
+                  when  1 then ' realtime-source-id="' || l_filemgr_ids(l_dss_filemgr_id) || '"' 
+                  when  2 then ' realtime-source-id="' || l_filemgr_ids(l_oracle_id) || '"' 
+               end
+            || '>');
          indent;
+         if set_info.start_time is not null then
+            writeln_xml('<timewindow>');
+            indent;
+            writeln_xml('<start-time>' || set_info.start_time || '</start-time>');
+            writeln_xml('<end-time>' || set_info.end_time || '</end-time>');
+            dedent;
+            writeln_xml('</timewindow>');
+         end if;
          writeln_xml('<description>'||set_info.description||'</description>');
          writeln_xml('<datastore-ref id="'||l_oracle_id||'"/>');
          writeln_xml('<datastore-ref id="'||l_filemgr_ids(l_dss_filemgr_id)||'"/>');
@@ -1548,7 +1540,7 @@ create or replace package body cwms_xchg as
       l_mapping_set     xchg_ts_mapping_set_t;
       l_dss_ts          xchg_dss_timeseries_t;
       l_cwms_ts         xchg_cwms_timeseries_t;
-      l_timewindow      xchg_cwms_timewindow_t;
+      l_timewindow      xchg_timewindow_t;
       type vc32k_vc32k  is table of  varchar2(32767) index by varchar2(32767);
       l_offices_a       vc32k_vc32k;
       l_filemgrs_a      vc32k_vc32k; 
@@ -1809,28 +1801,12 @@ create or replace package body cwms_xchg as
       p_dss_xchg_set_id in varchar2 default null,
       p_office_id       in varchar2 default null)
    is
-      l_dx_config xchg_dataexchange_conf_t;
-      l_xml       xmltype;
-      l_clob      clob;
    begin
-      retrieve_dataexchange_conf(
-         l_dx_config,
+      p_dx_config := get_dss_xchg_sets(
          p_dss_filemgr_url,
          p_dss_file_name,
          p_dss_xchg_set_id,
          p_office_id);
-      
-      l_xml := l_dx_config.get_xml();
-      l_clob := l_xml.getclobval();
-      cwms_util.format_xml(l_clob, chr(9));      
-      dbms_lob.open(l_clob, dbms_lob.lob_readonly);
-      if p_dx_config is null then
-         dbms_lob.createtemporary(p_dx_config, true, dbms_lob.session);
-      end if;
-      dbms_lob.open(p_dx_config, dbms_lob.lob_readwrite);
-      dbms_lob.copy(p_dx_config, l_clob, dbms_lob.getlength(l_clob), 1, 1);
-      dbms_lob.close(p_dx_config);
-      dbms_lob.close(l_clob);
    end;
 
 --------------------------------------------------------------------------------
