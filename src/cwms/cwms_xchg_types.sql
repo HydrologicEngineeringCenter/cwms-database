@@ -490,6 +490,8 @@ as
       p_ts1 in xchg_timeseries_t,
       p_ts2 in xchg_timeseries_t)
    is
+      l_version cwms_util.str_tab_t := cwms_util.str_tab_t();
+      l_parts   cwms_util.str_tab_t;
    begin
       if p_ts1 is null or p_ts2 is null then
          cwms_err.raise('ERROR', 'NULL timeseries passed to timeseries mapping constructor');
@@ -497,6 +499,32 @@ as
       if p_ts1.get_datastore_id() = p_ts2.get_datastore_id() then
          cwms_err.raise('ERROR', 'Timeseries in mapping object cannot reference the same datastore.');
       end if;
+      l_version.extend(2);
+      if p_ts1.get_subtype() = 'xchg_cwms_timeseries_t' then
+        l_parts := cwms_util.split_text(p_ts1.get_timeseries(), '.');
+        l_version(1) := l_parts(l_parts.count); 
+      else
+        l_parts := cwms_util.split_text(p_ts1.get_timeseries(), '/');
+        l_version(1) := l_parts(l_parts.count-1); 
+      end if;
+      if regexp_instr(l_version(1), '%+') = 1 
+         and regexp_instr(l_version(1), '%+', 1, 1, 1) = length(l_version(1)) + 1 then
+         if p_ts2.get_subtype() = 'xchg_cwms_timeseries_t' then
+           l_parts := cwms_util.split_text(p_ts2.get_timeseries(), '.');
+           l_version(2) := l_parts(l_parts.count); 
+         else
+           l_parts := cwms_util.split_text(p_ts2.get_timeseries(), '/');
+           l_version(2) := l_parts(l_parts.count-1); 
+         end if;
+         if l_version(2) != l_version(1) then
+            cwms_err.raise(
+               'ERROR', 'Mis-matched parameterized versions ('
+               || p_ts1.get_timeseries()
+               || ', '
+               || p_ts2.get_timeseries()
+               || ')');
+         end if;
+      end if; 
       m_timeseries := new xchg_timeseries_tab_t();
       m_timeseries.extend(2);
       m_timeseries(1) := p_ts1;
@@ -885,6 +913,7 @@ as
       -- same patten as XML schema
       l_time_pattern varchar2(69) := '-?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}([.]\d+)?)?([-+]\d{2}:\d{2}|Z)?';
       l_time varchar(64);
+      l_explicit boolean;
    begin
       if p_starttime is null or cwms_util.strip(p_starttime) = '' then
          cwms_err.raise('ERROR', 'Time window start time cannot be NULL or empty.');
@@ -914,6 +943,28 @@ as
          else cwms_err.raise('INVALID_ITEM', l_time, 'Time window end time');
       end case;
       m_endtime := l_time;
+      if substr(m_starttime, 1, 1) = '$' then
+         l_explicit := false;
+      else
+         l_explicit := true;
+      end if;
+      if substr(m_endtime, 1, 1) = '$' then
+         if l_explicit then
+            cwms_err.raise('ERROR', 'Time window cannot mix explicit and parameterized times');
+         else
+            if m_starttime != '$lookback-time' and m_endtime != '$end-time' then
+               cwms_err.raise('ERROR', 'Parameterized time window is zero-length ('||m_starttime||'-->'||m_endtime||')');
+            end if;
+         end if;
+      else
+         if l_explicit then
+            if cwms_util.to_timestamp(m_endtime) <= cwms_util.to_timestamp(m_starttime) then
+               cwms_err.raise('ERROR', 'Explicit time window has non-positive length ('||m_starttime||'-->'||m_endtime||')');
+            end if;
+         else
+            cwms_err.raise('ERROR', 'Time window cannot mix explicit and parameterized times');
+         end if;
+      end if;
    end;
       
    member function get_xml return xmltype
@@ -1127,6 +1178,13 @@ as
    is
       l_datastore_1 varchar2(16);
       l_datastore_2 varchar2(16);
+      l_mappings    xchg_ts_mapping_tab_t;
+      l_ts1         xchg_timeseries_t;
+      l_ts2         xchg_timeseries_t;
+      l_version     varchar2(64);
+      l_forecast    boolean := false;
+      l_starttime   varchar2(32);
+      l_endtime     varchar2(32);
    begin
       m_id                 := p_id;
       m_datastore_1        := p_datastore_1;
@@ -1137,6 +1195,14 @@ as
       m_timewindow         := p_timewindow;
       m_office_id          := nvl(p_office_id, cwms_util.user_office_id);
       
+      if m_realtime_source_id is not null then
+         if m_realtime_source_id != m_datastore_1 and 
+            m_realtime_source_id != m_datastore_2
+         then
+            cwms_err.raise('ERROR', 'The realtime source does not match either datastore.');
+         end if;
+      end if;
+      
       if m_ts_mapping_set is not null then
          m_ts_mapping_set.get_datastore_ids(l_datastore_1, l_datastore_2);
          if m_datastore_1 = l_datastore_1 and m_datastore_2 = l_datastore_2 or
@@ -1146,7 +1212,34 @@ as
          else
             cwms_err.raise('ERROR', 'Data stores in mapping set don''t match those in data exchange set.');
          end if;
-      end if; 
+      end if;
+      
+      m_ts_mapping_set.get_mappings(l_mappings);
+      for i in 1..l_mappings.count loop
+         l_mappings(i).get_timeseries(l_ts1, l_ts2);
+         if l_ts1.get_subtype() = 'xchg_cwms_timeseries_t' then
+            l_version := cwms_util.split_text(l_ts1.get_timeseries(), '.')(6);
+         else
+            l_version := cwms_util.split_text(l_ts1.get_timeseries(), '/')(7);
+         end if;
+         if regexp_instr(l_version, '%+') = 1 and
+            regexp_instr(l_version, '%+', 1, 1, 1) = length(l_version) + 1
+         then
+            l_forecast := true;
+            exit;
+         end if;    
+      end loop;
+      
+      if l_forecast then
+         if m_timewindow is null then
+            cwms_err.raise('ERROR', 'Data exchange set ' || m_id || ' contains parameterized time series mappings but has no timewindow.');
+         else
+            m_timewindow.get_times(l_starttime, l_endtime);
+            if substr(l_starttime, 1, 1) != '$' then
+               cwms_err.raise('ERROR', 'Data exchange set ' || m_id || ' contains parameterized time series mappings but has explicit timewindow.');
+            end if;
+         end if;
+      end if;       
    end;
       
    member function get_id return varchar2
@@ -1594,7 +1687,7 @@ as
          /* ip v6 #8 */ '([a-fA-F0-9]{1,4}:){1,2}(:[a-fA-F0-9]{1,4}){1,5}',
          /* ip v6 #9 */ '([a-fA-F0-9]{1,4}:){1}(:[a-fA-F0-9]{1,4}){1,6}',
          /* DNS      */ '([a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z\-][a-zA-Z0-9\-]*[a-zA-Z0-9][.])*[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z\-][a-zA-Z0-9\-]*[a-zA-Z0-9]');
-      l_file_pattern varchar2(256) := '((\$[a-zA-Z0-9_.]+)?(/[][a-zA-Z0-9_.~!@#^&()=;:%-]+)+)|([a-zA-Z]:(\\[][a-zA-Z0-9_.~!@#&()=;-]+)+)';         
+      l_file_pattern varchar2(32) := '([$/]|[a-zA-Z]:/)[^/]+(/[^/]+)*';         
    begin
       if length(p_id) > 16 then
          cwms_err.raise('ERROR', 'DSS file manager datastore id must not exceed 16 characters.');
@@ -1957,12 +2050,13 @@ as
       p_dataexchange_sets in xchg_dataexchange_set_tab_t,
       p_is_cwms           in boolean)
    is
-      type b_vc16 is table of boolean index by varchar2(16);
-      l_datastores       b_vc16;
-      l_offices          b_vc16;
-      l_office           varchar2(16);
-      l_datastore_1      varchar2(16);
-      l_datastore_2      varchar2(16);
+      type b_vc64 is table of boolean index by varchar2(64);
+      l_datastores       b_vc64;
+      l_offices          b_vc64;
+      l_dx_sets          b_vc64;
+      l_office           varchar2(64);
+      l_datastore_1      varchar2(64);
+      l_datastore_2      varchar2(64);
       l_dataexchange_set xchg_dataexchange_set_t;
       l_mapping_set      xchg_ts_mapping_set_t;
       i                  pls_integer;
@@ -2005,6 +2099,10 @@ as
          if not l_offices.exists(l_dataexchange_set.get_office_id()) then
            cwms_err.raise('ERROR', 'Data exchange configuration is missing an office that is referenced by a data exchange set');
          end if;
+         if l_dx_sets.exists(l_dataexchange_set.get_office_id() || ',' || l_dataexchange_set.get_id()) then
+           cwms_err.raise('ERROR', 'Data exchange configuration contains duplicate data exchange sets (office-id, id)');
+         end if;
+         l_dx_sets(l_dataexchange_set.get_office_id() || ',' || l_dataexchange_set.get_id()) := true;
          l_dataexchange_set.get_datastores(l_datastore_1, l_datastore_2);
          if not (l_datastores.exists(l_datastore_1) and l_datastores.exists(l_datastore_2)) then
             cwms_err.raise('ERROR', 'Data exchange configuration is missing a datastore that is referenced by a data exchange set.');

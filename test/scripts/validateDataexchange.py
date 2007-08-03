@@ -49,6 +49,44 @@ def usage() :
 	Where : xmlspec is a file name (or mask) or URL.
 	"""  % (progName, progName)
 
+def dateTimeToMillis(dateTimeStr) :
+	mo, da = 1, 1
+	hr, mi, se = 0, 0, 0.0
+	tz = '+00:00'
+
+	str = dateTimeStr.replace('Z', '+00:00')
+	for once in (0,) :
+		parts = str.split('-', 1)
+		yr = int(parts[0])
+		if len(parts) == 1 : break
+		parts = parts[1].split('-', 1)
+		mo = int(parts[0])
+		if len(parts) == 1 : break
+		parts = parts[1].split('T', 1)
+		da = int(parts[0])
+		if len(parts) == 1 : break
+		parts = parts[1].split(':', 1)
+		hr = int(parts[0])
+		if len(parts) == 1 : break
+		parts = parts[1].split(':', 1)
+		mi = int(parts[0])
+		if len(parts) == 1 : break
+		if parts[1].find('+') > 0 :
+			parts = parts[1].split('+')
+			se = float(parts[0])
+			tz = parts[1]
+		elif parts[1].find('-') > 0 :
+			parts = parts[1].split('-')
+			se = float(parts[0])
+			tz = parts[1]
+		else :
+			sec = float(parts[1])
+
+		cal = java.util.GregorianCalendar(java.util.TimeZone.getTimeZone('GMT%s' % tz))
+		cal.clear()
+		cal.set(yr, mo, da, hr, mi, int(se+.5))
+		return cal.getTimeInMillis()
+
 def validateXML(xmlSpec) :
 	
 	global errorCount, warningCount, totalErrorCount, totalWarningCount, instanceCount
@@ -129,13 +167,43 @@ def validateXML(xmlSpec) :
 			set_datastore_types = []
 			for j in (1,2) :
 				datastore = xpath.evaluate("datastore-ref[%d]/@id" % j, xchg_set, STRING)
-				set_datastore_types.append(datastore_types[datastore])
+				if datastore_types.has_key(datastore) : 
+					set_datastore_types.append(datastore_types[datastore])
 
 			if not ("dssfilemanager" in set_datastore_types and "oracle" in set_datastore_types) :
 				errorHandlerInst.error(org.xml.sax.SAXParseException(
 					'dataexchange-set "%s" must use one oracle datastore and one dssfilemanager datastore.' % \
 					xchg_set_id, None))
 
+		#---------------------------------------------------------------------#
+		# verify that time windows don't mix parameterized and explicit times #
+		# and that the time windows span positive times                       #
+		#---------------------------------------------------------------------#
+		starttime = xpath.evaluate("timewindow/starttime/node()", xchg_set, STRING)
+		if starttime :
+			starttime = starttime.strip()
+			endtime = xpath.evaluate("timewindow/endtime/node()", xchg_set, STRING).strip()
+			if starttime[0] == '$' and endtime[0] != '$' or starttime[0] != '$' and endtime[0] == '$' :
+				errorHandlerInst.error(org.xml.sax.SAXParseException(
+					'dataexchange-set "%s" mixes parameterized and explicit times in timewindow' % \
+					xchg_set_id, None))
+			else :
+				if starttime[0] == '$' :
+					if starttime != '$lookback-time' and endtime != '$end-time' :
+						errorHandlerInst.error(org.xml.sax.SAXParseException(
+							'dataexchange-set "%s" has zero length parameterized time window (%s-->%s)' % \
+							(xchg_set_id, starttime, endtime), None))
+				else :
+					timeSpanInMillis = dateTimeToMillis(endtime) - dateTimeToMillis(starttime)
+					if timeSpanInMillis <= 0 :
+						if timeSpanInMillis == 0 :
+							error = 'zero-length'
+						else :
+							error = 'negative'
+						errorHandlerInst.error(org.xml.sax.SAXParseException(
+							'dataexchange-set "%s" has %s explicit time window (%s-->%s)' % \
+							(xchg_set_id, error, starttime, endtime), None))
+					
 		#---------------------------------------------------------------------#					
 		# verify that forecast mappings have matching parameterized versions  #
 		# and parameterized forecast time windows                             #
@@ -163,18 +231,19 @@ def validateXML(xmlSpec) :
 			tw_node = xpath.evaluate("../../timewindow", mapping, NODE)
 			if not tw_node :
 				errorHandlerInst.error(org.xml.sax.SAXParseException(
-					'dataexchange-set "%s" has forecast mapping without a forecast time window.' % \
+					'dataexchange-set "%s" has forecast mapping without a time window.' % \
 					xchg_set_id, None))
-			starttime = xpath.evaluate("normalize-space(starttime)", tw_node, STRING)
-			endtime = xpath.evaluate("normalize-space(endtime)", tw_node, STRING)
-			if iso_time_pattern.match(starttime) :
-				errorHandlerInst.error(org.xml.sax.SAXParseException(
-					'dataexchange-set "%s" has forecast time window with explicit start time.' % \
-					xchg_set_id, None))
-			if iso_time_pattern.match(endtime) :
-				errorHandlerInst.error(org.xml.sax.SAXParseException(
-					'dataexchange-set "%s" has forecast time window with explicit end time.' % \
-					xchg_set_id, None))
+			else :
+				starttime = xpath.evaluate("normalize-space(starttime)", tw_node, STRING)
+				endtime = xpath.evaluate("normalize-space(endtime)", tw_node, STRING)
+				if iso_time_pattern.match(starttime) :
+					errorHandlerInst.error(org.xml.sax.SAXParseException(
+						'dataexchange-set "%s" has forecast time window with explicit start time.' % \
+						xchg_set_id, None))
+				if iso_time_pattern.match(endtime) :
+					errorHandlerInst.error(org.xml.sax.SAXParseException(
+						'dataexchange-set "%s" has forecast time window with explicit end time.' % \
+						xchg_set_id, None))
 			
 				
 		#-------------------------------------------------------------------------------------------#
