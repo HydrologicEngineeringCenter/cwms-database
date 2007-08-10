@@ -444,9 +444,9 @@ SHOW ERRORS;
 COMMIT;
 
 -----------------------------
--- AT_DSS_XCHG_SET_RULES trigger
+-- AT_DSS_XCHG_SET_RULES_1 trigger
 --
-create or replace trigger at_dss_xchg_set_rules
+create or replace trigger at_dss_xchg_set_rules_1
 before insert or update
 of start_time
   ,end_time
@@ -454,6 +454,9 @@ on at_dss_xchg_set
 referencing new as new old as old
 for each row
 declare
+   --
+   -- this trigger ensures that ny timewindows specified are valid.
+   --
    l_iso_pattern     varchar2(80) := '-?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}([.]\d+)?)?([-+]\d{2}:\d{2}|Z)?';
    l_lookback_text   varchar2(80) := '$lookback-time';
    l_start_text      varchar2(80) := '$start-time';
@@ -462,6 +465,7 @@ declare
    l_end_text        varchar2(80) := '$end-time';
    l_explicit_start  boolean      := false;
    l_explicit_end    boolean      := false;
+
 begin
    if :new.start_time is not null then
       if :new.end_time is null then
@@ -506,6 +510,58 @@ begin
    end if;
 end;
 /
+show errors;
+commit;
+
+-----------------------------
+-- AT_DSS_XCHG_SET_RULES_2 trigger
+--
+create or replace trigger at_dss_xchg_set_rules_2
+before insert or update of realtime
+on at_dss_xchg_set
+referencing new as new old as old
+declare
+   --
+   -- this trigger ensures that, if individual data sets are included in
+   -- multiple real-time exchange sets, all sets exchange data in the
+   -- same direction
+   --
+   type cursor_rec is record(
+      ts_code   number(10),
+      ts_id     varchar2(183)
+   );
+
+   cursor l_conflicts_cur
+   is
+      select xspec1.ts_code       ts_code, 
+             set1.dss_xchg_set_id id_1, 
+             set2.dss_xchg_set_id id_2, 
+             v.cwms_ts_id         ts_id
+        from at_dss_xchg_set set1,
+             at_dss_xchg_set set2,
+             at_dss_ts_xchg_map map1,
+             at_dss_ts_xchg_map map2,
+             at_dss_ts_xchg_spec xspec1,
+             at_dss_ts_xchg_spec xspec2,
+             mv_cwms_ts_id v
+      where  xspec1.ts_code = xspec2.ts_code
+         and map1.dss_ts_xchg_code = xspec1.dss_ts_xchg_code
+         and map2.dss_ts_xchg_code = xspec2.dss_ts_xchg_code
+         and map1.dss_xchg_set_code = set1.dss_xchg_set_code
+         and map2.dss_xchg_set_code = set2.dss_xchg_set_code
+         and set1.realtime is not null
+         and set2.realtime is not null
+         and set1.realtime != set2.realtime
+         and v.ts_code = xspec1.ts_code;
+begin
+   for rec in l_conflicts_cur loop
+      cwms_err.raise('XCHG_TS_ERROR', rec.ts_id, rec.id_2, rec.id_1);
+   end loop;
+end;
+/
+show errors;
+commit;
+
 
 -----------------------------
 -- AT_DSS_TS_XCHG_MAP table
@@ -789,56 +845,6 @@ end at_dss_rating_xchg_map_rules;
 SHOW ERRORS;
 COMMIT;
 */
------------------------------
--- AT_DSS_XCHG_SET_RULES trigger
---
-create or replace trigger at_dss_xchg_set_rules
-   after insert or update of realtime
-   on at_dss_xchg_set
-declare
-   --
-   -- this trigger ensures that, if individual data sets are included in
-   -- multiple real-time exchange sets, all sets exchange data in the
-   -- same direction.
-   --
-
-   --
-   -- TO DO: ADD RATINGS CHECK TO THIS!!!
-   --
-   type cursor_rec is record(
-      ts_code   number(10),
-      ts_id     varchar2(183)
-   );
-
-   rec   cursor_rec;
-
-   cursor l_conflicts_cur
-   is
-      select xspec1.ts_code ts_code, v.cwms_ts_id ts_id
-        from at_dss_xchg_set set1,
-             at_dss_xchg_set set2,
-             at_dss_ts_xchg_map map1,
-             at_dss_ts_xchg_map map2,
-             at_dss_ts_xchg_spec xspec1,
-             at_dss_ts_xchg_spec xspec2,
-             mv_cwms_ts_id v
-       where     xspec1.ts_code = xspec2.ts_code
-             and map1.dss_ts_xchg_code = xspec1.dss_ts_xchg_code
-             and map2.dss_ts_xchg_code = xspec2.dss_ts_xchg_code
-             and map1.dss_xchg_set_code = set1.dss_xchg_set_code
-             and map2.dss_xchg_set_code = set2.dss_xchg_set_code
-             and set1.realtime is not null
-             and set2.realtime is not null
-             and set1.realtime != set2.realtime
-             and v.ts_code = xspec1.ts_code;
-begin
-   for rec in l_conflicts_cur loop
-      cwms_err.raise('XCHG_TS_ERROR', rec.ts_id);
-   end loop;
-end at_dss_xchg_set_rules;
-/
-SHOW ERRORS;
-COMMIT;
 
 -----------------------------
 -- END OF DSS XCHG SECTION --

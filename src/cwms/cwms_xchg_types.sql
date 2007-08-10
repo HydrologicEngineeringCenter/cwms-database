@@ -1655,7 +1655,7 @@ as
       if l_node is not null then
          l_description := cwms_util.strip(l_node.getstringval());
       end if;
-      l_node := p_node.extract('/*/@office_id');
+      l_node := p_node.extract('/*/@office-id');
       if l_node is not null then
          l_office_id := cwms_util.strip(l_node.getstringval());
       else
@@ -2051,16 +2051,26 @@ as
       p_is_cwms           in boolean)
    is
       type b_vc64 is table of boolean index by varchar2(64);
+      type b_vc64_vc16 is table of b_vc64 index by varchar2(16);
       l_datastores       b_vc64;
       l_offices          b_vc64;
       l_dx_sets          b_vc64;
+      l_realtime_exports b_vc64_vc16;
+      l_realtime_imports b_vc64_vc16;
       l_office           varchar2(64);
       l_datastore_1      varchar2(64);
       l_datastore_2      varchar2(64);
+      l_dx_set_id        varchar2(64);
+      l_export_ds        varchar2(64);
+      l_import_ds        varchar2(64);
       l_dataexchange_set xchg_dataexchange_set_t;
       l_mapping_set      xchg_ts_mapping_set_t;
+      l_mappings         xchg_ts_mapping_tab_t;
+      l_ts               xchg_timeseries_tab_t := xchg_timeseries_tab_t();
       i                  pls_integer;
+      j                  pls_integer;
    begin
+      l_ts.extend(2);
       if p_offices is null or p_offices.count < 1 then
          cwms_err.raise('ERROR', 'Data exchange configuration must have at least one office.');
       end if;
@@ -2083,7 +2093,11 @@ as
          end if;
          if p_datastores(i).get_subtype() = 'xchg_dssfilemanager_t' then
             if not l_offices.exists(treat(p_datastores(i) as xchg_dssfilemanager_t).get_office_id()) then
-              cwms_err.raise('ERROR', 'Data exchange configuration is missing an office that is referenced by a DSS file manager.');
+              cwms_err.raise(
+                 'ERROR', 
+                 'Data exchange configuration is missing an office ('
+                 || treat(p_datastores(i) as xchg_dssfilemanager_t).get_office_id()
+                 || ') that is referenced by a DSS file manager. ');
             end if;
          end if;
          l_datastores(p_datastores(i).get_id()) := true;
@@ -2106,6 +2120,48 @@ as
          l_dataexchange_set.get_datastores(l_datastore_1, l_datastore_2);
          if not (l_datastores.exists(l_datastore_1) and l_datastores.exists(l_datastore_2)) then
             cwms_err.raise('ERROR', 'Data exchange configuration is missing a datastore that is referenced by a data exchange set.');
+         end if;
+         if l_dataexchange_set.get_realtime_source_id() is not null then
+            l_dx_set_id := l_dataexchange_set.get_id();
+            if l_dataexchange_set.get_realtime_source_id() = l_datastore_1 then
+               l_export_ds := l_datastore_1;
+               l_import_ds := l_datastore_2;
+            else
+               l_export_ds := l_datastore_2;
+               l_import_ds := l_datastore_1;
+            end if;
+            if l_export_ds = l_datastore_1 then
+               l_import_ds := l_datastore_2;
+            else
+               l_import_ds := l_datastore_1;
+            end if;
+            l_dataexchange_set.get_ts_mapping_set(l_mapping_set);
+            if l_mapping_set is not null then
+               l_mapping_set.get_mappings(l_mappings);
+               j := l_mappings.first;
+               loop
+                  l_mappings(j).get_timeseries(l_ts(1), l_ts(2));
+                  for k in 1..2 loop
+                     if l_ts(k).get_datastore_id() = l_export_ds then
+                        if l_realtime_imports.exists(l_export_ds) and 
+                           l_realtime_imports(l_export_ds).exists(l_ts(k).get_timeseries()) 
+                        then
+                           cwms_err.raise('XCHG_TS_ERROR', l_ts(k).get_timeseries(), l_dx_set_id, '<set name not available>');
+                        end if;
+                        l_realtime_exports(l_export_ds)(l_ts(k).get_timeseries()) := true;
+                     elsif l_ts(k).get_datastore_id() = l_import_ds then
+                        if l_realtime_exports.exists(l_import_ds) and 
+                           l_realtime_exports(l_import_ds).exists(l_ts(k).get_timeseries()) 
+                        then
+                           cwms_err.raise('XCHG_TS_ERROR', l_ts(k).get_timeseries(), l_dx_set_id, '<set name not available>');
+                        end if;
+                        l_realtime_imports(l_import_ds)(l_ts(k).get_timeseries()) := true;
+                     end if;
+                  end loop;
+                  j := l_mappings.next(j);
+                  exit when j is null;
+               end loop;
+            end if;
          end if;
          if p_is_cwms then
             l_dataexchange_set.get_ts_mapping_set(l_mapping_set);

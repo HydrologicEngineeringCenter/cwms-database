@@ -2545,10 +2545,6 @@ create or replace package body cwms_xchg as
          p_mappings_updated,
          p_mappings_deleted,
          l_dx_config,
-         --case (instr(l_xml.getrootelement(), 'cwms-dataexchange-configuration') = 1)
-         --   when true  then new xchg_cwms_dataexchange_conf_t(l_xml, 'dummy')
-         --   when false then new xchg_dataexchange_conf_t(l_xml) 
-         --end,
          p_store_rule);
       
    end;
