@@ -896,13 +896,26 @@ as
       p_node in xmltype)
       return self as result
    is
+      l_node      xmltype;
+      l_starttime varchar2(32);
+      l_endtime   varchar2(32);
    begin
       if p_node.getrootelement() != 'timewindow' then
          cwms_err.raise('INVALID_ITEM', p_node.getrootelement(), 'timewindow node'); 
       end if;
-      init(
-         p_node.extract('/timewindow/starttime/node()').getstringval(),
-         p_node.extract('/timewindow/endtime/node()').getstringval());
+      l_node := p_node.extract('/timewindow/starttime/node()');
+      l_starttime := 
+         case (l_node is null)
+            when true  then null
+            when false then l_node.getstringval()
+         end; 
+      l_node := p_node.extract('/timewindow/endtime/node()');
+      l_endtime := 
+         case (l_node is null)
+            when true  then null
+            when false then l_node.getstringval()
+         end; 
+      init(l_starttime, l_endtime);
       return;
    end;
       

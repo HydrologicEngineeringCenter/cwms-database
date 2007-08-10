@@ -1705,80 +1705,83 @@ AS
    FUNCTION TO_TIMESTAMP (p_iso_str in VARCHAR2)
       RETURN TIMESTAMP
    IS
-      l_yr      varchar2(4);
-      l_mon     varchar2(2)  := '01';
-      l_day     varchar2(2)  := '01';
-      l_hr      varchar2(2)  := '00';
-      l_min     varchar2(2)  := '00';
-      l_sec     varchar2(2)  := '00';
-      l_frac    varchar2(6)  := '00';
-      l_tz      varchar2(6)  := '+00:00';
-      l_time    varchar2(32);
-      l_parts   str_tab_t;
-      l_ts      timestamp;
-      l_offset  interval day to second;
+      l_yr          varchar2(5);
+      l_mon         varchar2(2)  := '01';
+      l_day         varchar2(2)  := '01';
+      l_hr          varchar2(2)  := '00';
+      l_min         varchar2(2)  := '00';
+      l_sec         varchar2(8)  := '00.0';
+      l_tz          varchar2(32)  := '+00:00';
+      l_time        varchar2(32);
+      l_parts       str_tab_t;
+      l_ts          timestamp;
+      l_offset      interval day to second;
+      l_iso_pattern constant varchar2(71) := '-?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:(\d{2}([.]\d+)?))?([-+]\d{2}:\d{2}|Z)?';
+      l_str         varchar2(64) := strip(p_iso_str);
+      l_pos         binary_integer;
+      l_add_day     boolean := false;
    BEGIN
-      for once in 1..1 loop
-         l_parts := split_text(strip(p_iso_str), '-', 1);
-         l_yr    := l_parts(1); 
-         exit when l_parts.count = 1;
-         l_parts := split_text(l_parts(2), '-', 1);
-         l_mon   := l_parts(1); 
-         exit when l_parts.count = 1;
-         l_parts := split_text(l_parts(2), 'T', 1);
-         l_day   := l_parts(1); 
-         exit when l_parts.count = 1;
-         l_parts := split_text(l_parts(2), ':', 1);
-         l_hr    := l_parts(1); 
-         exit when l_parts.count = 1;
-         l_parts := split_text(l_parts(2), ':', 1);
-         l_min   := l_parts(1); 
-         exit when l_parts.count = 1;
-         if instr(l_parts(2), '.') > 0 then
-            l_parts := split_text(l_parts(2), '.', 1);
-            l_sec   := l_parts(1); 
-            exit when l_parts.count = 1;
-         else
-            l_parts(1) := substr(l_parts(2), 1, regexp_instr(l_parts(2), '^[0-9]*', 1, 1, 1) - 1);
-            l_parts(2) := l_frac || substr(l_parts(2), length(l_parts(1)) + 1);
-            l_sec      := nvl(l_parts(1), l_sec); 
-         end if;
-         l_parts(2) := replace(upper(l_parts(2)), 'Z', '+00:00');
-         if instr(l_parts(2), '+') > 0 then
-            l_parts := split_text(l_parts(2), '+');
-            l_frac  := l_parts(1);
-            l_tz    := '+' || l_parts(2);
-         elsif instr(l_parts(2), '-') > 0 then
-            l_parts := split_text(l_parts(2), '-');
-            l_frac  := l_parts(1);
-            l_tz    := '-' || l_parts(2);
-         else
-            l_frac := l_parts(2);
-         end if;
-      end loop;
+      if regexp_instr(l_str, l_iso_pattern) != 1 or
+         regexp_instr(l_str, l_iso_pattern, 1, 1, 1) != length(l_str) + 1
+      then
+         cwms_err.raise('INVALID_ITEM', l_str, 'dateTime-formatted string');
+      end if;
+      l_pos := regexp_instr(l_str, '-?\d{4}', 1, 1, 1);
+      l_yr  := substr(l_str, 1, l_pos-1);
+      l_str := substr(l_str, l_pos+1); 
+       
+      l_mon := substr(l_str, 1, 2);
+      l_str := substr(l_str, 4); 
+       
+      l_day := substr(l_str, 1, 2);
+      l_str := substr(l_str, 4); 
+       
+      l_hr  := substr(l_str, 1, 2);
+      l_str := substr(l_str, 4); 
+       
+      l_min := substr(l_str, 1, 2);
+      l_str := substr(l_str, 3);
+      
+      if substr(l_str, 1, 1) = ':' then
+         l_pos := regexp_instr(l_str, ':\d{2}([.]\d+)?', 1, 1, 1);
+         l_sec := substr(l_str, 2, l_pos-2);
+         l_str := substr(l_str, l_pos); 
+      end if;
+      
+      if length(l_str) > 0 then
+         l_tz := l_str;
+      end if; 
+
+      if l_hr = '24' then 
+         l_add_day := true;
+         l_hr := '00';
+      end if;
+            
       l_time := l_yr || '-' 
          || l_mon  || '-' 
          || l_day  || 'T' 
          || l_hr   || ':' 
          || l_min  || ':' 
-         || l_sec  || '.' 
-         || l_frac;
+         || l_sec;
          
       ----------------------------------------------------------------------
       -- use select to avoid namespace collision with CWMS_UTIL functions --
       ----------------------------------------------------------------------
-      dbms_output.put_line(l_time);
       select to_timestamp(l_time, 'YYYY-MM-DD"T"HH24:MI:SS.FF')
         into l_ts
         from dual;
+      if l_add_day then
+         l_ts := l_ts + interval '1 00:00:00' day to second;
+      end if;
       
       --------------------------------------------------------------  
       -- for some reason the TZH:TZM format only works on TO_CHAR --
-      --------------------------------------------------------------  
+      --------------------------------------------------------------
+      l_tz     := replace(l_tz, 'Z', '+00:00');  
       l_parts  := split_text(substr(l_tz, 2), ':');
       l_hr     := l_parts(1);
       l_min    := l_parts(2);
-      l_offset := to_dsinterval('0 ' || l_hr || ':' || l_min || ':00');  
+      l_offset := to_dsinterval('0 '|| l_hr || ':' || l_min || ':00'); 
       if substr(l_tz, 1, 1) = '-' then
          l_ts  := l_ts + l_offset;  
       else
