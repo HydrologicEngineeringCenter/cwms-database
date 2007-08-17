@@ -82,7 +82,7 @@ Insert into CWMS_SHEF_TIME_ZONE
 Insert into CWMS_SHEF_TIME_ZONE
    (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
  Values
-   (1, 'UTC', 'Universal Coordinated Time');
+   (1, 'UTC', 'Coordinated Universal Time');
 COMMIT;
 --------------------------------------------------------------------------------
 -------------------------
