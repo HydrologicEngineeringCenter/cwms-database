@@ -1,4 +1,4 @@
-/* Formatted on 2007/06/01 09:45 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/08/29 15:29 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_apex
 AS
 /******************************************************************************
@@ -31,6 +31,7 @@ AS
       p_columns_item            IN       VARCHAR2,
       p_ddl_item                IN       VARCHAR2,
       p_number_of_records       OUT      NUMBER,
+      p_is_csv                  IN       VARCHAR2 DEFAULT 'T',
       p_table_name              IN       VARCHAR2 DEFAULT NULL
    );
 
@@ -53,6 +54,7 @@ AS
       p_data_stream_id              IN   VARCHAR2,
       p_db_office_id                IN   VARCHAR2 DEFAULT NULL
    );
-      PROCEDURE aa1 (p_string IN VARCHAR2);
+
+   PROCEDURE aa1 (p_string IN VARCHAR2);
 END cwms_apex;
 /

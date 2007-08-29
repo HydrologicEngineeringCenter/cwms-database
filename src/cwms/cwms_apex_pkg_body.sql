@@ -1,4 +1,4 @@
-/* Formatted on 2007/06/01 12:34 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/08/29 15:28 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_apex
 AS
    TYPE varchar2_t IS TABLE OF VARCHAR2 (32767)
@@ -219,6 +219,7 @@ AS
       p_columns_item            IN       VARCHAR2,
       p_ddl_item                IN       VARCHAR2,
       p_number_of_records       OUT      NUMBER,
+      p_is_csv                  IN       VARCHAR2 DEFAULT 'T',
       p_table_name              IN       VARCHAR2 DEFAULT NULL
    )
    IS
@@ -231,10 +232,20 @@ AS
       l_seq_id         NUMBER;
       l_num_columns    INTEGER;
       l_ddl            VARCHAR2 (4000);
-      l_is_crit_file   BOOLEAN                 := TRUE;
+      l_is_csv         BOOLEAN;
+      l_is_crit_file   BOOLEAN;
       l_tmp            NUMBER;
       l_comment        VARCHAR2 (128)          := NULL;
    BEGIN
+      IF cwms_util.is_true (NVL ('T', p_is_csv))
+      THEN
+         l_is_csv := TRUE;
+         l_is_crit_file := FALSE;
+      ELSE
+         l_is_csv := FALSE;
+         l_is_crit_file := TRUE;
+      END IF;
+
       aa1 ('parse collection name: ' || p_collection_name);
 
       IF (p_table_name IS NOT NULL)
@@ -574,12 +585,12 @@ AS
              );
          --
          aa1 (   'l_int_offset = '
-           || l_int_offset
-           || ' l_int_forward '
-           || l_int_forward
-           || ' l_int_backward '
-           || l_int_backward
-          );
+              || l_int_offset
+              || ' l_int_forward '
+              || l_int_forward
+              || ' l_int_backward '
+              || l_int_backward
+             );
          cwms_shef.store_shef_spec
                         (p_cwms_ts_id                 => l_cwms_ts_id,
                          p_data_stream_id             => p_data_stream_id,
