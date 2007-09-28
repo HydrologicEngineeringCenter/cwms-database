@@ -265,7 +265,6 @@ AS
       p_state_initial      IN   VARCHAR2 DEFAULT NULL,
       p_active             IN   VARCHAR2 DEFAULT NULL,
       p_ignorenulls        IN   VARCHAR2 DEFAULT 'T',
-      p_alias_array        IN   alias_array,
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
 

@@ -1,4 +1,4 @@
-/* Formatted on 2007/05/29 15:02 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/09/28 12:25 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --
@@ -975,6 +975,7 @@ AS
       l_base_location_code   at_base_location.base_location_code%TYPE;
       l_location_code        at_physical_location.location_code%TYPE;
       l_base_loc_exists      BOOLEAN;
+      l_loc_exists           BOOLEAN                                 := FALSE;
       --
       l_location_type        at_physical_location.location_type%TYPE;
       l_elevation            at_physical_location.elevation%TYPE      := NULL;
@@ -1037,15 +1038,20 @@ AS
             l_location_code :=
                             get_location_code (l_db_office_id, p_location_id);
             --.
-            cwms_err.RAISE ('LOCATION_ID_ALREADY_EXISTS',
-                            'cwms_loc',
-                            p_location_id
-                           );
+            l_loc_exists := TRUE;
          EXCEPTION
             WHEN OTHERS         -- location_code does not exist so continue...
             THEN
                NULL;
          END;
+      END IF;
+
+      IF l_loc_exists
+      THEN
+         cwms_err.RAISE ('LOCATION_ID_ALREADY_EXISTS',
+                         'cwms_loc',
+                         p_location_id
+                        );
       END IF;
 
 ----------------------------------------------------------
@@ -2220,7 +2226,6 @@ AS
       p_state_initial      IN   VARCHAR2 DEFAULT NULL,
       p_active             IN   VARCHAR2 DEFAULT NULL,
       p_ignorenulls        IN   VARCHAR2 DEFAULT 'T',
-      p_alias_array        IN   alias_array,
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    )
    IS
