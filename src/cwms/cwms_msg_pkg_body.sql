@@ -24,13 +24,15 @@ function get_queue_prefix return varchar2
 is
    l_db_office_id   varchar2(16);
 begin
+   /*
    select co2.office_id
      into l_db_office_id
      from cwms_office co1,
           cwms_office co2
-    where co1.office_code = 1 --cwms_util.user_office_code
+    where co1.office_code = cwms_util.user_office_code
       and co2.office_code = co1.db_host_office_code;
-      
+   */
+   l_db_office_id := cwms_util.user_office_id;   
    return l_db_office_id;       
 end get_queue_prefix;
 
