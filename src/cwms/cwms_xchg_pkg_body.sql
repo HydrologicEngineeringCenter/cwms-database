@@ -3541,6 +3541,26 @@ begin
 end update_last_processed_time;   
    
 -------------------------------------------------------------------------------
+-- PROCEDURE UPDATE_LAST_PROCESSED_TIME(...)
+--
+procedure update_last_processed_time (
+   p_component       in varchar2,
+   p_host            in varchar2,
+   p_port            in integer,
+   p_dss_xchg_set_id in varchar2,
+   p_update_time     in integer,
+   p_office_id       in varchar2 default null)
+is
+begin
+   update_last_processed_time(
+      p_component,
+      p_host,
+      p_port,
+      get_dss_xchg_set_code(p_dss_xchg_set_id, p_office_id),
+      p_update_time);                              
+end update_last_processed_time;
+
+-------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION REPLAY_DATA_MESSAGES(...)
 --
 function replay_data_messages(
@@ -3635,6 +3655,25 @@ begin
 end replay_data_messages;   
 
 -------------------------------------------------------------------------------
+-- VARCHAR2 FUNCTION REPLAY_DATA_MESSAGES(...)
+--
+function replay_data_messages(
+   p_dss_xchg_set_id in varchar2,
+   p_start_time      in integer  default null,
+   p_end_time        in integer  default null,
+   p_request_id      in varchar2 default null,
+   p_office_id       in varchar2 default null)
+   return varchar2
+is
+begin
+   return replay_data_messages(
+      get_dss_xchg_set_code(p_dss_xchg_set_id, p_office_id),
+      p_start_time,
+      p_end_time,
+      p_request_id);                               
+end replay_data_messages;
+
+-------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION RESTART_REALTIME(...)
 --
 function restart_realtime(
@@ -3644,6 +3683,20 @@ is
 begin
    return replay_data_messages(p_xchg_code);
 end restart_realtime;
+
+-------------------------------------------------------------------------------
+-- VARCHAR2 FUNCTION RESTART_REALTIME(...)
+--
+function restart_realtime(
+   p_dss_xchg_set_id in varchar2,
+   p_office_id       in varchar2 default null)
+   return varchar2
+is
+begin
+   return restart_realtime(
+            get_dss_xchg_set_code(p_dss_xchg_set_id, p_office_id));                            
+end restart_realtime;
+         
 
 -------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION RESTART_REALTIME(...)

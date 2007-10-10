@@ -259,6 +259,17 @@ procedure update_last_processed_time (
    p_update_time in integer);
 
 -------------------------------------------------------------------------------
+-- PROCEDURE UPDATE_LAST_PROCESSED_TIME(...)
+--
+procedure update_last_processed_time (
+   p_component       in varchar2,
+   p_host            in varchar2,
+   p_port            in integer,
+   p_dss_xchg_set_id in varchar2,
+   p_update_time     in integer,
+   p_office_id       in varchar2 default null);
+
+-------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION REPLAY_DATA_MESSAGES(...)
 --
 function replay_data_messages(
@@ -269,10 +280,29 @@ function replay_data_messages(
    return varchar2;
 
 -------------------------------------------------------------------------------
+-- VARCHAR2 FUNCTION REPLAY_DATA_MESSAGES(...)
+--
+function replay_data_messages(
+   p_dss_xchg_set_id in varchar2,
+   p_start_time      in integer  default null,
+   p_end_time        in integer  default null,
+   p_request_id      in varchar2 default null,
+   p_office_id       in varchar2 default null)
+   return varchar2;
+
+-------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION RESTART_REALTIME(...)
 --
 function restart_realtime(
    p_xchg_code in integer)
+   return varchar2;
+
+-------------------------------------------------------------------------------
+-- VARCHAR2 FUNCTION RESTART_REALTIME(...)
+--
+function restart_realtime(
+   p_dss_xchg_set_id in varchar2,
+   p_office_id       in varchar2 default null)
    return varchar2;
 
 -------------------------------------------------------------------------------
