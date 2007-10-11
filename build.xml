@@ -12,9 +12,6 @@
 	<!-- the amount of memory to allocate to javac during compile -->
 	<property name="memMax" value="256m"/>
 
-	<!-- Controls the fail on error for the javac -->
-	<property name="javac.failOnError" value="true"/>
-
 	<!-- Perforce properties -->
 	<!-- Fail perforce operations on error -->
 	<property name="perforce.failOnError" value="true"/>
@@ -24,38 +21,14 @@
 	-->
 	<!-- property name="perforce.disabled" value="true"/ -->
 	<!-- The perforce depot name for this project -->
-	<property name="perforce.depot" value="//wcdba/dev/..."/>
+	<property name="perforce.depot" value="//wcdba/dev/oracle/dev/..."/>
 
 	<!-- set file locations for this build -->
 	<property name="root"  location="."/>
-	<property name="src" location="${root}/src"/>
 	<property name="build" location="${root}/build"/>
-	<property name="classes" location="${root}/build/java/classes"/>
-	<property name="dist"  location="${root}/dist"/>
+	<property name="src" location="${root}/src"/>
 	<property name="lib"  location="${root}/lib"/>
 	<property name="bin"  location="${root}/bin"/>
-
-	<path id="project.class.path">
-		<!--pathelement location="${src}"/-->
-		<!--pathelement path="${env.ORACLE_HOME}/jdbc/lib/ojdbc14.jar"/>
-		<pathelement path="${env.ORACLE_HOME}/sqlj/lib/runtime12.jar"/>
-		<pathelement path="${env.ORACLE_HOME}/sqlj/lib/translator.jar"/-->
-		<pathelement path="${lib}/xmlparserv2.jar"/>
-		<pathelement path="${lib}/ojdbc14.jar"/>
-		<pathelement path="${lib}/orai18n.jar"/>
-		<pathelement path="${lib}/translator.jar"/>
-		<pathelement path="${lib}/sqljruntime12.jar"/>
-        <pathelement path="${lib}/commons-lang-2.1.jar"/>
-        <pathelement path="${lib}/jdom.jar"/>
-      <pathelement path="${java.class.path}/"/>
-    </path>
-	
-	<property name="project.class.path.string" refid="project.class.path"/>
-	
-	<path id="build.class.path">
-		<path refid="project.class.path"/>
-		<pathelement location="${build}/java/classes"/>
-	</path>
 
 		<!-- Load in the ant-contrib jar to use the foreach external task -->	
 	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
@@ -64,29 +37,14 @@
 		</classpath>
 	</taskdef>	
 
-	<target name="initTargetVer">
-		<property name="target.version" value="1.4"/>
-	</target>
-	
-	<target name="initSourceVer">
-		<property name="source.version" value="1.4"/>
-	</target>
+	<import optional="true" file="${root}/${env.USERNAME}.xml"/>
 
-	<!-- maybe want to do this to check that its compatible at some time in the future? -->
-	<target name="source1.5">
-		<property name="source.version" value="1.5"/>
-	</target>
-	
 	<!-- Initialize the project for building. -->
-	<target name="init" depends="initTargetVer,initSourceVer">
+	<target name="init">
 		<!-- Create the time stamp -->
 		<tstamp/>
-		<mkdir dir="${dist}/java/lib"/>
-		<mkdir dir="${build}/java/src"/>
-		<mkdir dir="${build}/java/classes"/>
-		<mkdir dir="${build}/java/lib"/>
-		<mkdir dir="${build}/oracle/logs"/>
-		<mkdir dir="${build}/oracle/ncomp"/>
+		<mkdir dir="${build}/logs"/>
+		<mkdir dir="${build}/ncomp"/>
 		<property name="wcdba.build" value="WCDBA:Build:${DSTAMP}:${TSTAMP}"/>
 		<condition property="perforce.enabled">
 			<not>
@@ -96,27 +54,10 @@
 		<echo message="perforce.enabled = ${perforce.enabled}"/>
 	</target>
 
-	<!-- Initialize the clean directory if a property is not already defined. -->
-	<target name="initCleanDir" if="clean.dir">
-		<property name="clean.directory" value="${clean.dir}/**/*.class"/>
-	</target>
-
-	<!-- If the clean directory was not defined via a property define it to cover
-		all classes
-	-->
-	<target name="initCleanAll" unless="clean.dir">
-		<echo message="A specific directory can be set using the property 'clean.dir'."/>
-		<property name="clean.directory" value="**/*.class"/>
-	</target>
-
 	<!-- Cleans the project up removing the intermediate files from the build tree. -->
-	<target name="clean"
-			depends="initCleanDir, initCleanAll"
-			description="delete all of the intermediate files">
+	<target name="clean" description="delete all of the intermediate files">
 		<delete quiet="true" includeEmptyDirs="true">
-			<fileset dir="${build}" includes="${clean.directory}"/>
-			<fileset dir="${build}/java"/>
-			<fileset dir="${build}/oracle"/>
+			<fileset dir="${build}"/>
 		</delete>
 	</target>
 
@@ -166,15 +107,15 @@
 	</target>
 
 	<!-- The name of the CWMS Oracle user. This is fixed and cannot be changed. --> 
-	<target name="getCwmsUser" depends="getSid" unless="oracle.cwms.user">
-		<input message="CWMS User, ex: 'cwms'?" addproperty="oracle.cwms.user"/>
+	<target name="getCwmsUser" depends="getSid" unless="oracle.user">
+		<input message="CWMS User, ex: 'cwms'?" addproperty="oracle.user"/>
 	</target>
 	
 	<!-- Queries the user for the CWMS user password if it is not already defined. --> 
-	<target name="getCwmsPass" depends="getCwmsUser" unless="oracle.cwms.password">
+	<target name="getCwmsPass" depends="getCwmsUser" unless="oracle.password">
 		<input
-			message="${oracle.cwms.user}@${oracle.sid} password?"
-			addproperty="oracle.cwms.password"/>
+			message="${oracle.user}@${oracle.sid} password?"
+			addproperty="oracle.password"/>
 	</target>
 	
 	<!-- Database schema creation. -->
@@ -186,13 +127,13 @@
 		<!-- Run the python script to generate the sql. -->
 		<property name="python.script" value="buildSqlScripts.py"/>
 		<exec executable="python" 
-			dir="${build}/oracle"
-			output="${build}/oracle/logs/${python.script}.log">
-			<arg value="${src}/oracle/${python.script}"/>
-			<arg value="${oracle.cwms.user}"/>
+			dir="${build}"
+			output="${build}/logs/${python.script}.log">
+			<arg value="${src}/${python.script}"/>
+			<arg value="${oracle.user}"/>
 		</exec>
 		<concat>
-			<fileset dir="${build}" includes="oracle/logs/${python.script}.log"/>
+			<fileset dir="${build}" includes="logs/${python.script}.log"/>
 		</concat>
 	</target>
 	
@@ -201,9 +142,9 @@
 	-->
 	<target name="LoadCwmsSqlIter">
 		<echo message="Loading into Oracle: ${sql.iter}"/>
-		<exec executable="sqlplus" dir="${build}/oracle/logs">
+		<exec executable="sqlplus" dir="${build}/logs">
 			<arg value="-s"/>
-			<arg value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.sid}"/>
+			<arg value="${oracle.user}/${oracle.password}@${oracle.sid}"/>
 			<arg value="@${sql.iter}"/>
 		</exec>
 	</target>
@@ -216,10 +157,10 @@
 		<!-- Run the sql to build the cwms schemas. -->
 		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
 			<path id="cwms.loadsql.paths">
-				<filelist id="cwms.loadref.files" dir="${build}/oracle">
+				<filelist id="cwms.loadref.files" dir="${build}">
 					<file name="buildCwms.sql"/>
 				</filelist>
-				<filelist id="cwms.loadat.files" dir="${src}/oracle/cwms">
+				<filelist id="cwms.loadat.files" dir="${src}/cwms">
 					<file name="at_schema.sql"/>
 				</filelist>
 			</path>
@@ -238,14 +179,14 @@
 		</foreach-->
 		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
 			<path id="cwms.dropat.paths">
-				<filelist id="cwms.dropat.files" dir="${src}/oracle/cwms">
+				<filelist id="cwms.dropat.files" dir="${src}/cwms">
 					<file name="drop_at_schema.sql"/>
 				</filelist>
 			</path>
 		</foreach>
 		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
 			<path id="cwms.dropref.paths">
-				<filelist id="cwms.dropref.files" dir="${build}/oracle">
+				<filelist id="cwms.dropref.files" dir="${build}">
 					<file name="dropCwms.sql"/>
 				</filelist>
 			</path>
@@ -256,7 +197,7 @@
 		description="Loads the CWMS_ERR package">
 		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
 			<path id="cwmserr.sql.paths">
-				<filelist id="cwmserr.sql.files" dir="${src}/oracle">
+				<filelist id="cwmserr.sql.files" dir="${src}">
 					<file name="cwms/CWMS_ERR_PKG.SQL"/>
 					<file name="cwms/CWMS_ERR_PKG_BODY.SQL"/>
 				</filelist>
@@ -268,7 +209,7 @@
 		description="Loads the CWMS_UTL package">
 		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
 			<path id="cwmserr.sql.paths">
-				<filelist id="cwmserr.sql.files" dir="${src}/oracle">
+				<filelist id="cwmserr.sql.files" dir="${src}">
 					<file name="cwms/CWMS_UTL_PKG.SQL"/>
 					<file name="cwms/CWMS_UTL_PKG_BODY.SQL"/>
 				</filelist>
@@ -276,13 +217,22 @@
 		</foreach>
 	</target>
 	
-	<target name="CwmsTsPkgLoadSql" depends="init,getCwmsPass" 
+	<target name="CwmsTypesLoadSql" depends="init,getCwmsPass" 
+		description="Load CWMS Types">
+		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
+			<path id="cwmsts.sql.paths">
+				<filelist id="cwmsts.sql.files" dir="${src}">
+					<file name="cwms/cwms_types.sql"/>
+				</filelist>
+			</path>
+		</foreach>
+	</target>
+
+	<target name="CwmsTsPkgLoadSql" depends="init,getCwmsPass,CwmsTypesLoadSql" 
 		description="Loads the CWMS TS package">
 		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
 			<path id="cwmsts.sql.paths">
-				<filelist id="cwmsts.sql.files" dir="${src}/oracle">
-					<file name="cwms/at_schema_part_2.sql"/>
-					<file name="cwms/cwms_ts_types.sql"/>
+				<filelist id="cwmsts.sql.files" dir="${src}">
 					<file name="cwms/cwms_return_time_pipe.sql"/>
 					<file name="cwms/CWMS_TS_PKG.sql"/>
 					<file name="cwms/CWMS_TS_PKG_BODY.sql"/>
@@ -291,41 +241,22 @@
 		</foreach>
 	</target>
 	
-	<target name="CwmsTsPkgJPub" depends="init,getCwmsPass" description="jpub cwms_ts package">
-		<mkdir dir="${build}/java/src/cwmsdb"/>
-		<exec executable="${bin}/jpub" output="${build}/java/src/cwmsdb/jpub_cwms_ts_pkg.log">
-			<env key="CLASSPATH" path="${project.class.path.string}"/>
-			<arg value="-user=${oracle.cwms.user}/${oracle.cwms.password}@${oracle.sid}"/>
-			<arg value="-d=${build}/java/classes"/>
-			<arg value="-dir=${build}/java/src"/>
-			<arg value="-access=package"/>
-			<arg value="-mapping=jdbc"/>
-			<arg value="-numbertypes=oracle"/>
-			<arg value="-package=cwmsdb"/>
-			<arg value="-sql=CWMS_TS:CwmsTs"/>
-		</exec>
-		<concat>
-			<fileset dir="${build}" includes="java/src/cwmsdb/jpub_cwms_ts_pkg.log"/>
-		</concat>
-	</target>
-	
 	<target name="CwmsRatPkgLoadSql" depends="init,getCwmsPass" 
 		description="Loads the CWMS RAT package">
 		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
 			<path id="cwmsrat.sql.paths">
-				<filelist id="cwmsrat.sql.files" dir="${src}/oracle">
+				<filelist id="cwmsrat.sql.files" dir="${src}">
 					<file name="cwms/cwms_rat_pkg.sql"/>
 				</filelist>
 			</path>
 		</foreach>
 	</target>
 	
-	<target name="CwmsLocPkgLoadSql" depends="init,getCwmsPass" 
+	<target name="CwmsLocPkgLoadSql" depends="init,getCwmsPass,CwmsTypesLoadSql" 
 		description="Loads the CWMS_LOC package">
 		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
 			<path id="cwmsloc.sql.paths">
-				<filelist id="cwmsloc.sql.files" dir="${src}/oracle">
-					<file name="cwms/CWMS_TYPES.SQL"/>
+				<filelist id="cwmsloc.sql.files" dir="${src}">
 					<file name="cwms/CWMS_LOC_PKG.SQL"/>
 					<file name="cwms/CWMS_LOC_PKG_BODY.SQL"/>
 				</filelist>
@@ -333,31 +264,12 @@
 		</foreach>
 	</target>
 	
-	<target name="CwmsLocPkgJPub" depends="init,getCwmsPass" description="jpub cwms_loc package">
-		<mkdir dir="${build}/java/src/cwmsdb"/>
-		<exec executable="${bin}/jpub" output="${build}/java/src/cwmsdb/jpub_cwms_loc_pkg.log">
-			<env key="CLASSPATH" path="${project.class.path.string}"/>
-			<arg value="-user=${oracle.cwms.user}/${oracle.cwms.password}@${oracle.sid}"/>
-			<arg value="-access=package"/>
-			<arg value="-mapping=jdbc"/>
-			<arg value="-numbertypes=oracle"/>
-			<arg value="-sql=CWMS_LOC:CwmsLoc"/>
-			<arg value="-package=cwmsdb"/>
-			<arg value="-d=${build}/java/classes"/>
-			<arg value="-dir=${build}/java/src"/>
-			<!-- arg value="-url=127.0.0.1:1521:${oracle.sid}"/-->
-		</exec>
-		<concat>
-			<fileset dir="${build}" includes="java/src/cwmsdb/jpub_cwms_loc_pkg.log"/>
-		</concat>
-	</target>
-	
 	
 	<target name="CwmsCatPkgLoadSql" depends="init,getCwmsPass" 
 		description="Loads the CWMS_CAT package">
 		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
 			<path id="cwmscat.sql.paths">
-				<filelist id="cwmscat.sql.files" dir="${src}/oracle">
+				<filelist id="cwmscat.sql.files" dir="${src}">
 					<file name="cwms/CWMS_CAT_PKG.SQL"/>
 					<file name="cwms/CWMS_CAT_PKG_BODY.SQL"/>
 				</filelist>
@@ -365,78 +277,11 @@
 		</foreach>
 	</target>
 	
-	<target name="CwmsCatPkgJPub" depends="init,getCwmsPass" description="jpub cwms_cat package">
-		<mkdir dir="${build}/java/src/cwmsdb"/>
-		<exec executable="${bin}/jpub" output="${build}/java/src/cwmsdb/jpub_cwms_cat_pkg.log">
-			<env key="CLASSPATH" path="${project.class.path.string}"/>
-			<arg value="-user=${oracle.cwms.user}/${oracle.cwms.password}@${oracle.sid}"/>
-			<arg value="-access=package"/>
-			<arg value="-mapping=jdbc"/>
-			<arg value="-numbertypes=oracle"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_TS_REC_T:CatTsRecT:CWMS3.CAT_TS_OBJ_T:CWMS3.CWMS_CAT.CAT_TS_OBJ2REC:CWMS3.CWMS_CAT.CAT_TS_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_TS_LRTS_REC_T:CatTsLrtsRecT:CWMS3.CAT_TS_LRTS_OBJ_T:CWMS3.CWMS_CAT.CAT_TS_LRTS_OBJ2REC:CWMS3.CWMS_CAT.CAT_TS_LRTS_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_LOC_REC_T:CatLocRecT:CWMS3.CAT_LOC_OBJ_T:CWMS3.CWMS_CAT.CAT_LOC_OBJ2REC:CWMS3.CWMS_CAT.CAT_LOC_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_LOC_ALIAS_REC_T:CatLocAliasRecT:CWMS3.CAT_LOC_ALIAS_OBJ_T:CWMS3.CWMS_CAT.CAT_LOC_ALIAS_OBJ2REC:CWMS3.CWMS_CAT.CAT_LOC_ALIAS_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_PARAM_REC_T:CatParamRecT:CWMS3.CAT_PARAM_OBJ_T:CWMS3.CWMS_CAT.CAT_PARAM_OBJ2REC:CWMS3.CWMS_CAT.CAT_PARAM_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_SUB_PARAM_REC_T:CatSubParamRecT:CWMS3.CAT_SUB_PARAM_OBJ_T:CWMS3.CWMS_CAT.CAT_SUB_PARAM_OBJ2REC:CWMS3.CWMS_CAT.CAT_SUB_PARAM_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_STATE_REC_T:CatStateRecT:CWMS3.CAT_STATE_OBJ_T:CWMS3.CWMS_CAT.CAT_STATE_OBJ2REC:CWMS3.CWMS_CAT.CAT_STATE_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_COUNTY_REC_T:CatCountyRecT:CWMS3.CAT_COUNTY_OBJ_T:CWMS3.CWMS_CAT.CAT_COUNTY_OBJ2REC:CWMS3.CWMS_CAT.CAT_COUNTY_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_TIMEZONE_REC_T:CatTimezoneRecT:CWMS3.CAT_TIMEZONE_OBJ_T:CWMS3.CWMS_CAT.CAT_TIMEZONE_OBJ2REC:CWMS3.CWMS_CAT.CAT_TIMEZONE_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_DSS_FILE_REC_T:CatDssFileRecT:CWMS3.CAT_DSS_FILE_OBJ_T:CWMS3.CWMS_CAT.CAT_DSS_FILE_OBJ2REC:CWMS3.CWMS_CAT.CAT_DSS_FILE_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_DSS_XCHG_SET_REC_T:CatDssXchgSetRecT:CWMS3.CAT_DSS_XCHG_SET_OBJ_T:CWMS3.CWMS_CAT.CAT_DSS_XCHG_SET_OBJ2REC:CWMS3.CWMS_CAT.CAT_DSS_XCHG_SET_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_DSS_XCHG_TS_MAP_REC_T:CatDssXchgTsMapRecT:CWMS3.CAT_DSS_XCHG_TS_MAP_OBJ_T:CWMS3.CWMS_CAT.CAT_DSS_XCHG_TS_MAP_OBJ2REC:CWMS3.CWMS_CAT.CAT_DSS_XCHG_TS_MAP_REC2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_TS_TAB_T:CatTsTabT:CWMS3.CAT_TS_OTAB_T:CWMS3.CWMS_CAT.CAT_TS_OBJ2TAB:CWMS3.CWMS_CAT.CAT_TS_TAB2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_TS_LRTS_TAB_T:CatTsLrtsTabT:CWMS3.CAT_TS_LRTS_OTAB_T:CWMS3.CWMS_CAT.CAT_TS_LRTS_OBJ2TAB:CWMS3.CWMS_CAT.CAT_TS_LRTS_TAB2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_LOC_TAB_T:CatLocTabT:CWMS3.CAT_LOC_OTAB_T:CWMS3.CWMS_CAT.CAT_LOC_OBJ2TAB:CWMS3.CWMS_CAT.CAT_LOC_TAB2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_LOC_ALIAS_TAB_T:CatLocAliasTabT:CWMS3.CAT_LOC_ALIAS_OTAB_T:CWMS3.CWMS_CAT.CAT_LOC_ALIAS_OBJ2TAB:CWMS3.CWMS_CAT.CAT_LOC_ALIAS_TAB2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_PARAM_TAB_T:CatParamTabT:CWMS3.CAT_PARAM_OTAB_T:CWMS3.CWMS_CAT.CAT_PARAM_OBJ2TAB:CWMS3.CWMS_CAT.CAT_PARAM_TAB2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_SUB_PARAM_TAB_T:CatSubParamTabT:CWMS3.CAT_SUB_PARAM_OTAB_T:CWMS3.CWMS_CAT.CAT_SUB_PARAM_OBJ2TAB:CWMS3.CWMS_CAT.CAT_SUB_PARAM_TAB2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_STATE_TAB_T:CatStateTabT:CWMS3.CAT_STATE_OTAB_T:CWMS3.CWMS_CAT.CAT_STATE_OBJ2TAB:CWMS3.CWMS_CAT.CAT_STATE_TAB2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_COUNTY_TAB_T:CatCountyTabT:CWMS3.CAT_COUNTY_OTAB_T:CWMS3.CWMS_CAT.CAT_COUNTY_OBJ2TAB:CWMS3.CWMS_CAT.CAT_COUNTY_TAB2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_TIMEZONE_TAB_T:CatTimezoneTabT:CWMS3.CAT_TIMEZONE_OTAB_T:CWMS3.CWMS_CAT.CAT_TIMEZONE_OBJ2TAB:CWMS3.CWMS_CAT.CAT_TIMEZONE_TAB2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_DSS_FILE_TAB_T:CatDssFileTabT:CWMS3.CAT_DSS_FILE_OTAB_T:CWMS3.CWMS_CAT.CAT_DSS_FILE_OBJ2TAB:CWMS3.CWMS_CAT.CAT_DSS_FILE_TAB2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_DSS_XCHG_SET_TAB_T:CatDssXchgSetTabT:CWMS3.CAT_DSS_XCHG_SET_OTAB_T:CWMS3.CWMS_CAT.CAT_DSS_XCHG_SET_OBJ2TAB:CWMS3.CWMS_CAT.CAT_DSS_XCHG_SET_TAB2OBJ"/>
-			<arg value="-addtypemap=CWMS3.CWMS_CAT.CAT_DSS_XCHG_TS_MAP_TAB_T:CatDssXchgTsMapTabT:CWMS3.CAT_DSS_XCHG_TS_MAP_OTAB_T:CWMS3.CWMS_CAT.CAT_DSS_XCHG_TS_MAP_OBJ2TAB:CWMS3.CWMS_CAT.CAT_DSS_XCHG_TS_MAP_TAB2OBJ"/>
-			<arg value="-sql=CAT_TS_OBJ_T:CatTsRecT"/>
-			<arg value="-sql=CAT_TS_OTAB_T:CatTsTabT"/>
-			<arg value="-sql=CAT_TS_LRTS_OBJ_T:CatTsLrtsRecT"/>
-			<arg value="-sql=CAT_TS_LRTS_OTAB_T:CatTsLrtsTabT"/>
-			<arg value="-sql=CAT_LOC_OBJ_T:CatLocRecT"/>
-			<arg value="-sql=CAT_LOC_OTAB_T:CatLocTabT"/>
-			<arg value="-sql=CAT_LOC_ALIAS_OBJ_T:CatLocAliasRecT"/>
-			<arg value="-sql=CAT_LOC_ALIAS_OTAB_T:CatLocAliasTabT"/>
-			<arg value="-sql=CAT_PARAM_OBJ_T:CatParamRecT"/>
-			<arg value="-sql=CAT_PARAM_OTAB_T:CatParamTabT"/>
-			<arg value="-sql=CAT_SUB_PARAM_OBJ_T:CatSubParamRecT"/>
-			<arg value="-sql=CAT_SUB_PARAM_OTAB_T:CatSubParamTabT"/>
-			<arg value="-sql=CAT_STATE_OBJ_T:CatStateRecT"/>
-			<arg value="-sql=CAT_STATE_OTAB_T:CatStateTabT"/>
-			<arg value="-sql=CAT_COUNTY_OBJ_T:CatCountyRecT"/>
-			<arg value="-sql=CAT_COUNTY_OTAB_T:CatCountyTabT"/>
-			<arg value="-sql=CAT_TIMEZONE_OBJ_T:CatTimezoneRecT"/>
-			<arg value="-sql=CAT_TIMEZONE_OTAB_T:CatTimezoneTabT"/>
-			<arg value="-sql=CAT_DSS_FILE_OBJ_T:CatDssFileRecT"/>
-			<arg value="-sql=CAT_DSS_FILE_OTAB_T:CatDssFileTabT"/>
-			<arg value="-sql=CAT_DSS_XCHG_SET_OBJ_T:CatDssXchgSetRecT"/>
-			<arg value="-sql=CAT_DSS_XCHG_SET_OTAB_T:CatDssXchgSetTabT"/>
-			<arg value="-sql=CAT_DSS_XCHG_TS_MAP_OBJ_T:CatDssXchgTsMapRecT"/>
-			<arg value="-sql=CAT_DSS_XCHG_TS_MAP_OTAB_T:CatDssXchgTsMapTabT"/>
-			<arg value="-sql=CWMS_CAT:CwmsCat"/>
-			<arg value="-package=cwmsdb"/>
-			<arg value="-d=${build}/java/classes"/>
-			<arg value="-dir=${build}/java/src"/>
-			<!-- arg value="-url=127.0.0.1:1521:${oracle.sid}"/-->
-		</exec>
-		<concat>
-			<fileset dir="${build}" includes="java/src/cwmsdb/jpub_cwms_cat_pkg.log"/>
-		</concat>
-	</target>
-	
     <target name="CwmsXchgPkgLoadSql" depends="init,getCwmsPass" 
         description="Loads the CWMS_XCHG package">
         <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
             <path id="cwmscat.sql.paths">
-                <filelist id="cwmscat.sql.files" dir="${src}/oracle">
+                <filelist id="cwmscat.sql.files" dir="${src}">
                     <file name="cwms/CWMS_XCHG_PKG.SQL"/>
                     <file name="cwms/CWMS_XCHG_PKG_BODY.SQL"/>
                 </filelist>
@@ -444,30 +289,11 @@
         </foreach>
     </target>
 
-    <target name="CwmsXchgPkgJPub" depends="init,getCwmsPass" description="jpub cwms_xchg package">
-        <mkdir dir="${build}/java/src/cwmsdb"/>
-        <exec executable="${bin}/jpub" output="${build}/java/src/cwmsdb/jpub_cwms_xchg_pkg.log">
-            <env key="CLASSPATH" path="${project.class.path.string}"/>
-            <arg value="-user=${oracle.cwms.user}/${oracle.cwms.password}@${oracle.sid}"/>
-            <arg value="-access=package"/>
-            <arg value="-mapping=jdbc"/>
-            <arg value="-numbertypes=oracle"/>
-            <arg value="-sql=CWMS_XCHG:CwmsXchg"/>
-            <arg value="-package=cwmsdb"/>
-            <arg value="-d=${build}/java/classes"/>
-            <arg value="-dir=${build}/java/src"/>
-            <!-- arg value="-url=127.0.0.1:1521:${oracle.sid}"/-->
-        </exec>
-        <concat>
-            <fileset dir="${build}" includes="java/src/cwmsdb/jpub_cwms_xchg_pkg.log"/>
-        </concat>
-    </target>
-
     <target name="CwmsDssPkgLoadSql" depends="init,getCwmsPass" 
         description="Loads the CWMS_DSS package">
         <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
             <path id="cwmscat.sql.paths">
-                <filelist id="cwmscat.sql.files" dir="${src}/oracle">
+                <filelist id="cwmscat.sql.files" dir="${src}">
                     <file name="cwms/CWMS_DSS_PKG.SQL"/>
                     <file name="cwms/CWMS_DSS_PKG_BODY.SQL"/>
                 </filelist>
@@ -475,196 +301,75 @@
         </foreach>
     </target>
 
-    <target name="CwmsDssPkgJPub" depends="init,getCwmsPass" description="jpub cwms_dss package">
-        <mkdir dir="${build}/java/src/cwmsdb"/>
-        <exec executable="${bin}/jpub" output="${build}/java/src/cwmsdb/jpub_cwms_dss_pkg.log">
-            <env key="CLASSPATH" path="${project.class.path.string}"/>
-            <arg value="-user=${oracle.cwms.user}/${oracle.cwms.password}@${oracle.sid}"/>
-            <arg value="-access=package"/>
-            <arg value="-mapping=jdbc"/>
-            <arg value="-numbertypes=oracle"/>
-            <arg value="-sql=CWMS_DSS:CwmsDss"/>
-            <arg value="-package=cwmsdb"/>
-            <arg value="-d=${build}/java/classes"/>
-            <arg value="-dir=${build}/java/src"/>
-            <!-- arg value="-url=127.0.0.1:1521:${oracle.sid}"/-->
-        </exec>
-        <concat>
-            <fileset dir="${build}" includes="java/src/cwmsdb/jpub_cwms_dss_pkg.log"/>
-        </concat>
-    </target>
-
     <target name="CwmsRptPkgLoadSql" depends="init,getCwmsPass" 
         description="Loads the CWMS_RPT package">
         <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
             <path id="cwmscat.sql.paths">
-                <filelist id="cwmscat.sql.files" dir="${src}/oracle">
+                <filelist id="cwmscat.sql.files" dir="${src}">
                     <file name="cwms/CWMS_RPT_PKG.SQL"/>
                     <file name="cwms/CWMS_RPT_PKG_BODY.SQL"/>
                 </filelist>
             </path>
         </foreach>
     </target>
+	
+    <target name="CwmsVtPkgLoadSql" depends="init,getCwmsPass" 
+        description="Loads the CWMS_VT package">
+        <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
+            <path id="cwmsvt.sql.paths">
+                <filelist id="cwmsvt.sql.files" dir="${src}">
+                    <file name="cwms/CWMS_VT_PKG.SQL"/>
+                    <file name="cwms/CWMS_VT_PKG_BODY.SQL"/>
+                </filelist>
+            </path>
+        </foreach>
+    </target>
 
-    <target name="CwmsRptPkgJPub" depends="init,getCwmsPass" description="jpub cwms_rpt package">
-        <mkdir dir="${build}/java/src/cwmsdb"/>
-        <exec executable="${bin}/jpub" output="${build}/java/src/cwmsdb/jpub_cwms_rpt_pkg.log">
-            <env key="CLASSPATH" path="${project.class.path.string}"/>
-            <arg value="-user=${oracle.cwms.user}/${oracle.cwms.password}@${oracle.sid}"/>
-            <arg value="-access=package"/>
-            <arg value="-mapping=jdbc"/>
-            <arg value="-numbertypes=oracle"/>
-            <arg value="-sql=CWMS_RPT:CwmsRpt"/>
-            <arg value="-package=cwmsdb"/>
-            <arg value="-d=${build}/java/classes"/>
-            <arg value="-dir=${build}/java/src"/>
-            <!-- arg value="-url=127.0.0.1:1521:${oracle.sid}"/-->
-        </exec>
-        <concat>
-            <fileset dir="${build}" includes="java/src/cwmsdb/jpub_cwms_rpt_pkg.log"/>
-        </concat>
+    <target name="CwmsPrivPkgLoadSql" depends="init,getCwmsPass" 
+        description="Loads the CWMS_PRIV package">
+        <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
+            <path id="cwmspriv.sql.paths">
+                <filelist id="cwmspriv.sql.files" dir="${src}">
+                    <file name="cwms/CWMS_PRIV_PKG.SQL"/>
+                    <file name="cwms/CWMS_PRIV_PKG_BODY.SQL"/>
+                </filelist>
+            </path>
+        </foreach>
+    </target>
+
+    <target name="CwmsSecPkgLoadSql" depends="init,getCwmsPass" 
+        description="Loads the CWMS_SEC package">
+        <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
+            <path id="cwmssec.sql.paths">
+                <filelist id="cwmssec.sql.files" dir="${src}">
+                    <file name="cwms/CWMS_SEC_PKG.SQL"/>
+                    <file name="cwms/CWMS_SEC_PKG_BODY.SQL"/>
+                </filelist>
+            </path>
+        </foreach>
     </target>
 
     <target name="CwmsDbLoadSql" 
-        depends="CwmsTsPkgLoadSql,CwmsLocPkgLoadSql,CwmsCatPkgLoadSql,CwmsDssPkgLoadSql,CwmsRptPkgLoadSql" 
+	    depends="CwmsTsPkgLoadSql,CwmsLocPkgLoadSql,CwmsCatPkgLoadSql,CwmsDssPkgLoadSql,CwmsRptPkgLoadSql,CwmsPrivPkgLoadSql,CwmsVtPkgLoadSql" 
         description="Loads the cwmsdb sql source">
     </target>
     
-    <target name="CwmsDbJPub" 
-        depends="CwmsTsPkgJPub,CwmsLocPkgJPub,CwmsCatPkgJPub,CwmsDssPkgJPub,CwmsRptPkgJPub" 
-        description="Jpubs the cwmsdb sql source">
-    </target>
-
-	<target name="CwmsDbLoadSqlJPub" 
-        depends="CwmsDbLoadSql,CwmsDbJPub"
-		description="Loads and JPubs the cwmsdb sql source">
-	</target>
-	
-	<target name="build" depends="init" description="compile wcdbadev java sources">
-		<javac
-			source="${source.version}"
-			target="${target.version}"
-			destdir="${build}/java/classes"
-			debug="${debug}"
-			verbose="false"
-			failonerror="${javac.failOnError}"
-			memoryMaximumSize="${memMax}"
-			fork="true">
-			<src path="${build}/java/src/cwmsdb"/>
-			<src path="${src}/java/cwmsdb"/>
-			<src path="${src}/java/dataexchange"/>
-			<classpath refid="project.class.path"/>
-		</javac>
-	</target>
-	
-	<target name="jar" depends="build" description="jar the wcdba classes">
-		<!-- Need to do a perforce edit on the file before creating it -->
-		<p4edit view="//wcdba/dev/dist/java/lib/cwmsdb.jar"/>
-		<jar
-			destfile="${dist}/java/lib/cwmsdb.jar"
-			basedir="${classes}"
-			includes="cwmsdb/**/*.class,dataexchange/**/*.class"
-			index="true"
-		/>
-	</target>
-
-    <target name="CwmsDbJarLoadJava" depends="jar,getCwmsPass" description="load the cwmsdb jar into oracle">
-        <exec executable="${env.ORACLE_HOME}/bin/loadjava" 
-            output="${build}/oracle/logs/loadjava.log"
-        >
-            <arg line="-verbose -user ${oracle.cwms.user}/${oracle.cwms.password}@${oracle.sid} ${dist}/java/lib/cwmsdb.jar"/>
-        </exec>
-        <concat>
-            <fileset dir="${build}" includes="oracle/logs/loadjava.log"/>
-        </concat>
-    </target>
-
-    
-	<target name="CwmsTsPkgAll" depends="CwmsTsPkgLoadSql,CwmsTsPkgJPub,jar" 
-		description="does all of the cwms_ts package targets">
-	</target>
-	
-	<target name="integ" description="Integ the cwmsdb.jar into hecjavadev/apps/jar">
-		<p4change description="New version of the cwmsdb.jar"/>
-		<p4reopen view="//wcdba/dev/dist/java/lib/cwmsdb.jar" tochange="${p4.change}"/>
-		<p4submit change="${p4.change}"/>
-		<p4integrate enablebaselessmerges="true"
-			fromfile="//wcdba/dev/dist/java/lib/cwmsdb.jar"
-			tofile="//hecjavadev/dev/apps/jar/cwmsdb.jar"/>
-		<p4resolve view="//hecjavadev/dev/apps/jar/cwmsdb.jar"
-			resolvemode="theirs"/>
-		</target>
-	
-	<target name="CwmsTsPkgJavaDemo" 
-		depends="build,getCwmsPass,getHostPort,getSid,getOffice,getTimeSeriesId,getIntervalOffset,getTimeSeriesUnits" 
-		description="run cwms_ts Package">
-	<!-- Usage:   CwmsTsJdbc <host:port> <SID> <user> <pass> <office> <utc offset> <time series id> <units> -->	
-		<java classname="cwmsdb.CwmsTsJdbc" fork="true">
-			<arg value="${oracle.hostport}"/>
-			<arg value="${oracle.sid}"/>
-			<arg value="${oracle.cwms.user}"/>
-			<arg value="${oracle.cwms.password}"/>
-			<arg value="${cwms.office}"/>
-			<arg value="${timeseries.utcoffset}"/>
-			<arg value="${timeseries.desc}"/>
-			<arg value="${timeseries.units}"/>
-			<classpath refid="build.class.path"/>
-		</java>
-	</target>
-		
-    <target name="ValidateTestBuild" depends="init" description="compile ValidateTest java source">
-        <!-- Compile the java code from ${src} into ${build} -->
-        <javac
-			source="${source.version}"
-			target="${target.version}"
-            srcdir="${src}/java"
-            destdir="${build}/java/classes"
-            debug="${debug}"
-            verbose="false"
-            failonerror="${javac.failOnError}"
-            memoryMaximumSize="${memMax}"
-            fork="true"
-            includes="ValidateTest/**/*.java"
-        >
-            <classpath refid="project.class.path"/>
-        </javac>
-    </target>
-    
-    <target name="ValidateTestJavaDemo" depends="ValidateTestBuild" description="test the java ValidateTest">
-    <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-                                                                                              
-          For this to work, the xmlparsersv2.jar MUST PRECEDE xml-apis.jar in the classpath.  
-                                                                                              
-          I accomplished this by renaming xmlparsersv2.jar to ant-xmlparserv2.jar in the ant  
-          lib directory. Hopefully, this will also clear up the jpub error messages as well.  
-                                                                                              
-          MDP                                                                                 
-          17 Apr 2006                                                                         
-         - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-          The output of this target should look like:                                                  
-                                                                                                       
-          0 : VALID                                                                                    
-          1 : NOT VALID : Invalid text '' in element: 'activatedTime'                                  
-          2 : NOT VALID : ABCO2-0x.StreamRating.xml is not an existing file or valid URL.              
-          3 : VALID                                                                                    
-          4 : NOT VALID : Invalid text '' in element: 'activatedTime'                                  
-          5 : NOT VALID : \..\.\ABCO2-0x.StreamRating.xml (The system cannot find the file specified)  
-          6 : VALID                                                                                    
-          7 : NOT VALID : Invalid text '' in element: 'activatedTime'                                  
-          8 : NOT VALID : Empty XML Specification.                                                     
-          9 : NOT VALID : Start of root element expected.                                              
-         - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
-        <echo message="java.class.path = ${java.class.path}"/>
-        <java classname="ValidateTest" fork="true" dir="${src}/java/ValidateTest">
-            <classpath>
-                <pathelement location="${build}/java/classes"/>
-                <pathelement path="${java.class.path}"/>
-            </classpath>
-        </java>
-    </target>
-    
-	
-    <target name="all" description="empty for the moment">
+    <target name="all" depends="CwmsDbLoadSql" description="empty for the moment">
     </target>	
+
+<!--	
+    <target name="ParamTypeConflictPkgLoadSql" depends="init,getCwmsPass" 
+        description="Loads the param_type_conflict package">
+        <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
+            <path id="param_type_conflict.sql.paths">
+                <filelist id="param_type_conflict.sql.files" dir="${src}">
+                    <file name="cwms/param_type_conflict_pkg.sql"/>
+                    <file name="cwms/param_type_conflict_pkg_body.sql"/>
+                </filelist>
+            </path>
+        </foreach>
+    </target>
+-->
+	
 </project>
 
