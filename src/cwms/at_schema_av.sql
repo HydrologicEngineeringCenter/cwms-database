@@ -204,38 +204,38 @@ AS
       AND ats.ts_code = mcti.ts_code
 /
 --------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW av_screening_criteria (screening_code,
-                                              db_office_id,
-                                              screening_id,
-                                              screening_id_desc,
-                                              base_parameter_id,
-                                              sub_parameter_id,
-                                              parameter_id,
-                                              parameter_type_id,
-                                              duration_id,
-                                              season_start_day,
-                                              season_start_month,
-                                              unit_system,
-                                              unit_id,
-                                              range_reject_lo,
-                                              range_reject_hi,
-                                              range_question_lo,
-                                              range_question_hi,
-                                              rate_change_reject_rise,
-                                              rate_change_reject_fall,
-                                              rate_change_quest_rise,
-                                              rate_change_quest_fall,
-                                              rate_change_disp_interval,
-                                              const_reject_duration,
-                                              const_reject_min,
-                                              const_reject_max,
-                                              const_reject_n_miss,
-                                              const_quest_duration,
-                                              const_quest_min,
-                                              const_quest_max,
-                                              const_quest_n_miss,
-                                              estimate_expression
-                                             )
+CREATE OR REPLACE FORCE VIEW cwms_20.av_screening_criteria (screening_code,
+                                                            db_office_id,
+                                                            screening_id,
+                                                            screening_id_desc,
+                                                            base_parameter_id,
+                                                            sub_parameter_id,
+                                                            parameter_id,
+                                                            parameter_type_id,
+                                                            duration_id,
+                                                            season_start_day,
+                                                            season_start_month,
+                                                            unit_system,
+                                                            unit_id,
+                                                            range_reject_lo,
+                                                            range_reject_hi,
+                                                            range_question_lo,
+                                                            range_question_hi,
+                                                            rate_change_reject_rise,
+                                                            rate_change_reject_fall,
+                                                            rate_change_quest_rise,
+                                                            rate_change_quest_fall,
+                                                            rate_change_disp_interval,
+                                                            const_reject_duration,
+                                                            const_reject_min,
+                                                            const_reject_tolerance,
+                                                            const_reject_n_miss,
+                                                            const_quest_duration,
+                                                            const_quest_min,
+                                                            const_quest_tolerance,
+                                                            const_quest_n_miss,
+                                                            estimate_expression
+                                                           )
 AS
    SELECT atsi.screening_code, co.office_id db_office_id, atsi.screening_id,
           atsi.screening_id_desc, cbp.base_parameter_id, atp.sub_parameter_id,
@@ -278,7 +278,8 @@ AS
                              avsc.const_reject_duration_code)
           END const_reject_duration,
           avsc.const_reject_min * cuc.factor + cuc.offset const_reject_min,
-          avsc.const_reject_max * cuc.factor + cuc.offset const_reject_max,
+            avsc.const_reject_tolerance * cuc.factor
+          + cuc.offset const_reject_tolerance,
           avsc.const_reject_n_miss,
           CASE
              WHEN avsc.const_quest_duration_code IS NULL
@@ -289,7 +290,8 @@ AS
                              avsc.const_quest_duration_code)
           END const_quest_duration,
           avsc.const_quest_min * cuc.factor + cuc.offset const_quest_min,
-          avsc.const_quest_max * cuc.factor + cuc.offset const_quest_max,
+            avsc.const_quest_tolerance * cuc.factor
+          + cuc.offset const_quest_tolerance,
           avsc.const_quest_n_miss, avsc.estimate_expression
      FROM at_screening_id atsi,
           cwms_office co,
@@ -311,6 +313,7 @@ AS
       AND adu.display_unit_code = cuc.to_unit_code
       AND atsi.parameter_code = adu.parameter_code
 /
+
 --------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW av_screening_dur_mag (screening_code,
                                              db_office_id,

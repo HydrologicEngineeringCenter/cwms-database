@@ -624,8 +624,8 @@ AS
                 rate_change_reject_rise, rate_change_reject_fall,
                 rate_change_quest_rise, rate_change_quest_fall,
                 rate_change_disp_interval_code, const_reject_duration_code,
-                const_reject_min, const_reject_max, const_reject_n_miss,
-                const_quest_duration_code, const_quest_min, const_quest_max,
+                const_reject_min, const_reject_tolerance, const_reject_n_miss,
+                const_quest_duration_code, const_quest_min, const_quest_tolerance,
                 const_quest_n_miss, estimate_expression
            FROM at_screening_criteria
           WHERE screening_code = l_screening_code_old;
@@ -754,11 +754,11 @@ AS
                       rate_change_disp_interval_code,
                       const_reject_duration_code,
                       const_reject_min,
-                      const_reject_max,
+                      const_reject_tolerance,
                       const_reject_n_miss,
                       const_quest_duration_code,
                       const_quest_min,
-                      const_quest_max,
+                      const_quest_tolerance,
                       const_quest_n_miss,
                       estimate_expression
                      )
@@ -785,7 +785,7 @@ AS
                          ELSE NULL
                       END,
                       l_sc_rec.const_reject_min * l_factor + l_offset,
-                      l_sc_rec.const_reject_max * l_factor + l_offset,
+                      l_sc_rec.const_reject_tolerance * l_factor + l_offset,
                       l_sc_rec.const_reject_n_miss,
                       CASE
                          WHEN l_sc_rec.const_quest_duration_id IS NOT NULL
@@ -798,7 +798,7 @@ AS
                          ELSE NULL
                       END,
                       l_sc_rec.const_quest_min * l_factor + l_offset,
-                      l_sc_rec.const_quest_max * l_factor + l_offset,
+                      l_sc_rec.const_quest_tolerance * l_factor + l_offset,
                       l_sc_rec.const_quest_n_miss,
                       l_sc_rec.estimate_expression
                      );

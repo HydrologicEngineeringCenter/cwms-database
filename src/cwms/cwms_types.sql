@@ -259,11 +259,11 @@ CREATE OR REPLACE TYPE screen_crit_type AS OBJECT (
    rate_change_quest_fall     NUMBER,
    const_reject_duration_id   VARCHAR2 (16),
    const_reject_min           NUMBER,
-   const_reject_max           NUMBER,
+   const_reject_tolerance     NUMBER,
    const_reject_n_miss        NUMBER,
    const_quest_duration_id    VARCHAR2 (16),
    const_quest_min            NUMBER,
-   const_quest_max            NUMBER,
+   const_quest_tolerance      NUMBER,
    const_quest_n_miss         NUMBER,
    estimate_expression        VARCHAR2 (32 BYTE),
    dur_mag_array              screen_dur_mag_array
