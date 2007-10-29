@@ -234,7 +234,12 @@ CREATE OR REPLACE FORCE VIEW cwms_20.av_screening_criteria (screening_code,
                                                             const_quest_min,
                                                             const_quest_tolerance,
                                                             const_quest_n_miss,
-                                                            estimate_expression
+                                                            estimate_expression,
+                                                            range_acive_flag,
+                                                            rate_change_active_flag,
+                                                            const_active_flag,
+                                                            dur_mag_acitve_flag,
+                                                            rate_change_disp_interval_id
                                                            )
 AS
    SELECT atsi.screening_code, co.office_id db_office_id, atsi.screening_id,
@@ -262,12 +267,12 @@ AS
             avsc.rate_change_quest_fall * cuc.factor
           + cuc.offset rate_change_quest_fall,
           CASE
-             WHEN avsc.rate_change_disp_interval_code IS NULL
+             WHEN asctl.rate_change_disp_interval_code IS NULL
                 THEN 'Unknown'
              ELSE (SELECT interval_id
                      FROM cwms_interval
                     WHERE interval_code =
-                             avsc.rate_change_disp_interval_code)
+                             asctl.rate_change_disp_interval_code)
           END rate_change_disp_interval,
           CASE
              WHEN avsc.const_reject_duration_code IS NULL
@@ -292,16 +297,21 @@ AS
           avsc.const_quest_min * cuc.factor + cuc.offset const_quest_min,
             avsc.const_quest_tolerance * cuc.factor
           + cuc.offset const_quest_tolerance,
-          avsc.const_quest_n_miss, avsc.estimate_expression
+          avsc.const_quest_n_miss, avsc.estimate_expression,
+          asctl.range_acive_flag, asctl.rate_change_active_flag,
+          asctl.const_active_flag, asctl.dur_mag_acitve_flag,
+          ci.interval_id rate_change_disp_interval_id
      FROM at_screening_id atsi,
           cwms_office co,
           at_parameter atp,
           cwms_base_parameter cbp,
           cwms_parameter_type cpt,
           cwms_duration cd,
+          cwms_interval ci,
           at_display_units adu,
           cwms_unit_conversion cuc,
-          at_screening_criteria avsc
+          at_screening_criteria avsc,
+          at_screening_control asctl
     WHERE co.office_code = atsi.db_office_code
       AND cbp.base_parameter_code = atsi.base_parameter_code
       AND atp.parameter_code = atsi.parameter_code
@@ -312,7 +322,10 @@ AS
       AND cbp.unit_code = cuc.from_unit_code
       AND adu.display_unit_code = cuc.to_unit_code
       AND atsi.parameter_code = adu.parameter_code
+      AND avsc.screening_code = asctl.screening_code(+)
+      AND asctl.rate_change_disp_interval_code = ci.interval_code(+)
 /
+
 
 --------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW av_screening_dur_mag (screening_code,
