@@ -1,4 +1,4 @@
-/* Formatted on 2007/06/01 08:01 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/10/29 10:43 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -55,18 +55,16 @@ AS
       RETURN NUMBER
    IS
       l_sec_dms   NUMBER;
+      l_sec_60    NUMBER;
    BEGIN
       l_sec_dms :=
-         ROUND (  (  (  ABS (p_decimal_degrees - TRUNC (p_decimal_degrees))
-                      * 60.0
-                     )
-                   - min_dms (p_decimal_degrees)
-                  )
-                * 60.0,
-                2
-               );
+           (  (ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60.0)
+            - min_dms (p_decimal_degrees)
+           )
+         * 60.0;
+      l_sec_60 := ROUND (l_sec_dms, 2);
 
-      IF l_sec_dms = 60
+      IF l_sec_60 = 60
       THEN
          RETURN 0;
       ELSE
@@ -87,10 +85,7 @@ AS
       RETURN NUMBER
    IS
    BEGIN
-      RETURN ROUND ((ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60
-                    ),
-                    2
-                   );
+      RETURN (ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60);
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
@@ -258,8 +253,7 @@ AS
    )
       RETURN UROWID
    IS
-      pragma autonomous_transaction;
-      
+      PRAGMA AUTONOMOUS_TRANSACTION;
       l_mview_name   VARCHAR2 (32);
       l_user_id      VARCHAR2 (32);
       l_rowid        UROWID        := NULL;
@@ -302,8 +296,7 @@ AS
 --
    PROCEDURE resume_mv_refresh (p_paused_handle IN UROWID)
    IS
-      pragma autonomous_transaction;
-      
+      PRAGMA AUTONOMOUS_TRANSACTION;
       l_mview_name   VARCHAR2 (30);
       l_count        BINARY_INTEGER;
       l_user_id      VARCHAR2 (30);
@@ -1511,8 +1504,8 @@ AS
    )
       RETURN str_tab_t
    IS
-      l_clob                clob := p_text;
-      l_rows                str_tab_t := str_tab_t();
+      l_clob                CLOB             := p_text;
+      l_rows                str_tab_t        := str_tab_t ();
       l_new_rows            str_tab_t;
       l_buf                 VARCHAR2 (32767) := '';
       l_chunk               VARCHAR2 (4000);
@@ -1531,8 +1524,8 @@ AS
 
       l_clob_len := DBMS_LOB.getlength (l_clob);
       l_amount := chunk_size;
+      DBMS_LOB.OPEN (l_clob, DBMS_LOB.lob_readonly);
 
-      dbms_lob.open(l_clob, dbms_lob.lob_readonly);
       LOOP
          DBMS_LOB.READ (l_clob, l_amount, l_clob_offset, l_chunk);
          l_clob_offset := l_clob_offset + l_amount;
@@ -1542,26 +1535,29 @@ AS
          IF INSTR (l_buf, p_separator) > 0 OR l_done_reading
          THEN
             l_new_rows := split_text (l_buf, p_separator);
-            for i in 1..l_new_rows.count-1 loop
-               l_rows.extend;
-               l_rows(l_rows.last) := l_new_rows(i);
-            end loop;
+
+            FOR i IN 1 .. l_new_rows.COUNT - 1
+            LOOP
+               l_rows.EXTEND;
+               l_rows (l_rows.LAST) := l_new_rows (i);
+            END LOOP;
+
             l_buf := l_new_rows (l_new_rows.COUNT);
 
             IF l_done_reading
             THEN
-               l_rows.extend;
-               l_rows(l_rows.last) := l_buf;
+               l_rows.EXTEND;
+               l_rows (l_rows.LAST) := l_buf;
             END IF;
          END IF;
 
          EXIT WHEN l_done_reading;
       END LOOP;
-      dbms_lob.close(l_clob);
+
+      DBMS_LOB.CLOSE (l_clob);
       RETURN l_rows;
    END split_text;
-      
-      
+
 -------------------------------------------------------------------------------
 -- function join_text(...)
 --
@@ -1590,62 +1586,78 @@ AS
 --------------------------------------------------------------------------------
 -- procedure format_xml(...)
 --
-   PROCEDURE format_xml (
-      p_xml_clob IN OUT NOCOPY CLOB,
-      p_indent   IN VARCHAR2
-   )
+   PROCEDURE format_xml (p_xml_clob IN OUT NOCOPY CLOB, p_indent IN VARCHAR2)
    IS
-      l_lines    str_tab_t;
-      l_level    binary_integer := 0;
-      l_len      binary_integer := length(nvl(p_indent, ''));
-      l_newline  constant varchar2(1) := chr(10);
-      
-      procedure write_line (
-         p_line in varchar2
-       )
-       is
-       begin
-         if l_len > 0 then
-            for i in 1..l_level loop
-               dbms_lob.writeappend(p_xml_clob, l_len, p_indent);
-            end loop;
-         end if;
-         dbms_lob.writeappend(p_xml_clob, length(p_line) + 1, p_line || l_newline);
-       end;
+      l_lines              str_tab_t;
+      l_level              BINARY_INTEGER := 0;
+      l_len                BINARY_INTEGER := LENGTH (NVL (p_indent, ''));
+      l_newline   CONSTANT VARCHAR2 (1)   := CHR (10);
+
+      PROCEDURE write_line (p_line IN VARCHAR2)
+      IS
+      BEGIN
+         IF l_len > 0
+         THEN
+            FOR i IN 1 .. l_level
+            LOOP
+               DBMS_LOB.writeappend (p_xml_clob, l_len, p_indent);
+            END LOOP;
+         END IF;
+
+         DBMS_LOB.writeappend (p_xml_clob,
+                               LENGTH (p_line) + 1,
+                               p_line || l_newline
+                              );
+      END;
    BEGIN
-      if p_xml_clob is not null then
-         p_xml_clob := replace(p_xml_clob, '<', l_newline || '<');
-         p_xml_clob := replace(p_xml_clob, '>', '>' || l_newline);
-         p_xml_clob := replace(p_xml_clob, l_newline || l_newline, l_newline);
-         l_lines := split_text(p_xml_clob, l_newline);
-         dbms_lob.open(p_xml_clob, dbms_lob.lob_readwrite);
-         dbms_lob.trim(p_xml_clob, 0);
-         for i in l_lines.first..l_lines.last loop
-            for once in 1..1 loop
-               exit when l_lines(i) is null;
-               l_lines(i) := trim(l_lines(i));
-               exit when length(l_lines(i)) = 0;
-               if instr(l_lines(i), '<') = 1 then
-                  if instr(l_lines(i), '<!--') = 1 then
-                     write_line(l_lines(i));
-                  elsif instr(l_lines(i), '</') = 1 then
+      IF p_xml_clob IS NOT NULL
+      THEN
+         p_xml_clob := REPLACE (p_xml_clob, '<', l_newline || '<');
+         p_xml_clob := REPLACE (p_xml_clob, '>', '>' || l_newline);
+         p_xml_clob :=
+                      REPLACE (p_xml_clob, l_newline || l_newline, l_newline);
+         l_lines := split_text (p_xml_clob, l_newline);
+         DBMS_LOB.OPEN (p_xml_clob, DBMS_LOB.lob_readwrite);
+         DBMS_LOB.TRIM (p_xml_clob, 0);
+
+         FOR i IN l_lines.FIRST .. l_lines.LAST
+         LOOP
+            FOR once IN 1 .. 1
+            LOOP
+               EXIT WHEN l_lines (i) IS NULL;
+               l_lines (i) := TRIM (l_lines (i));
+               EXIT WHEN LENGTH (l_lines (i)) = 0;
+
+               IF INSTR (l_lines (i), '<') = 1
+               THEN
+                  IF INSTR (l_lines (i), '<!--') = 1
+                  THEN
+                     write_line (l_lines (i));
+                  ELSIF INSTR (l_lines (i), '</') = 1
+                  THEN
                      l_level := l_level - 1;
-                     write_line(l_lines(i));
-                  else
-                     write_line(l_lines(i));
-                     if instr(l_lines(i), '<xml?') != 1 and instr(l_lines(i), '/>', -1) != length(l_lines(i)) - 1 then
+                     write_line (l_lines (i));
+                  ELSE
+                     write_line (l_lines (i));
+
+                     IF     INSTR (l_lines (i), '<xml?') != 1
+                        AND INSTR (l_lines (i), '/>', -1) !=
+                                                       LENGTH (l_lines (i))
+                                                       - 1
+                     THEN
                         l_level := l_level + 1;
-                     end if;
-                  end if;
-               else
-                  write_line(l_lines(i));
-               end if;
-            end loop;
-         end loop;
-         dbms_lob.close(p_xml_clob);
-      end if;
+                     END IF;
+                  END IF;
+               ELSE
+                  write_line (l_lines (i));
+               END IF;
+            END LOOP;
+         END LOOP;
+
+         DBMS_LOB.CLOSE (p_xml_clob);
+      END IF;
    END format_xml;
-   
+
 -------------------------------------------------------------------------------
 -- function parse_clob_recordset(...)
 --
@@ -1653,21 +1665,21 @@ AS
    FUNCTION parse_clob_recordset (p_clob IN CLOB)
       RETURN str_tab_tab_t
    IS
-      l_rows                str_tab_t;
-      l_tab                 str_tab_tab_t    := str_tab_tab_t ();
+      l_rows   str_tab_t;
+      l_tab    str_tab_tab_t := str_tab_tab_t ();
    BEGIN
       IF p_clob IS NULL
       THEN
          RETURN NULL;
       END IF;
-      
-      l_rows := split_text(p_clob, record_separator);
+
+      l_rows := split_text (p_clob, record_separator);
+
       FOR i IN l_rows.FIRST .. l_rows.LAST
       LOOP
          l_tab.EXTEND;
          l_tab (l_tab.LAST) := split_text (l_rows (i), field_separator);
       END LOOP;
-
 
       RETURN l_tab;
    END parse_clob_recordset;
@@ -1698,99 +1710,109 @@ AS
       RETURN l_tab;
    END parse_string_recordset;
 
-
 --------------------------------------------------------------------
 -- Return UTC timestamp for specified ISO 8601 string
 --
-   FUNCTION TO_TIMESTAMP (p_iso_str in VARCHAR2)
+   FUNCTION TO_TIMESTAMP (p_iso_str IN VARCHAR2)
       RETURN TIMESTAMP
    IS
-      l_yr          varchar2(5);
-      l_mon         varchar2(2)  := '01';
-      l_day         varchar2(2)  := '01';
-      l_hr          varchar2(2)  := '00';
-      l_min         varchar2(2)  := '00';
-      l_sec         varchar2(8)  := '00.0';
-      l_tz          varchar2(32)  := '+00:00';
-      l_time        varchar2(32);
-      l_parts       str_tab_t;
-      l_ts          timestamp;
-      l_offset      interval day to second;
-      l_iso_pattern constant varchar2(71) := '-?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:(\d{2}([.]\d+)?))?([-+]\d{2}:\d{2}|Z)?';
-      l_str         varchar2(64) := strip(p_iso_str);
-      l_pos         binary_integer;
-      l_add_day     boolean := false;
+      l_yr                     VARCHAR2 (5);
+      l_mon                    VARCHAR2 (2)           := '01';
+      l_day                    VARCHAR2 (2)           := '01';
+      l_hr                     VARCHAR2 (2)           := '00';
+      l_min                    VARCHAR2 (2)           := '00';
+      l_sec                    VARCHAR2 (8)           := '00.0';
+      l_tz                     VARCHAR2 (32)          := '+00:00';
+      l_time                   VARCHAR2 (32);
+      l_parts                  str_tab_t;
+      l_ts                     TIMESTAMP;
+      l_offset                 INTERVAL DAY TO SECOND;
+      l_iso_pattern   CONSTANT VARCHAR2 (71)
+         := '-?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:(\d{2}([.]\d+)?))?([-+]\d{2}:\d{2}|Z)?';
+      l_str                    VARCHAR2 (64)          := strip (p_iso_str);
+      l_pos                    BINARY_INTEGER;
+      l_add_day                BOOLEAN                := FALSE;
    BEGIN
-      if regexp_instr(l_str, l_iso_pattern) != 1 or
-         regexp_instr(l_str, l_iso_pattern, 1, 1, 1) != length(l_str) + 1
-      then
-         cwms_err.raise('INVALID_ITEM', l_str, 'dateTime-formatted string');
-      end if;
-      l_pos := regexp_instr(l_str, '-?\d{4}', 1, 1, 1);
-      l_yr  := substr(l_str, 1, l_pos-1);
-      l_str := substr(l_str, l_pos+1); 
-       
-      l_mon := substr(l_str, 1, 2);
-      l_str := substr(l_str, 4); 
-       
-      l_day := substr(l_str, 1, 2);
-      l_str := substr(l_str, 4); 
-       
-      l_hr  := substr(l_str, 1, 2);
-      l_str := substr(l_str, 4); 
-       
-      l_min := substr(l_str, 1, 2);
-      l_str := substr(l_str, 3);
-      
-      if substr(l_str, 1, 1) = ':' then
-         l_pos := regexp_instr(l_str, ':\d{2}([.]\d+)?', 1, 1, 1);
-         l_sec := substr(l_str, 2, l_pos-2);
-         l_str := substr(l_str, l_pos); 
-      end if;
-      
-      if length(l_str) > 0 then
-         l_tz := l_str;
-      end if; 
+      IF    REGEXP_INSTR (l_str, l_iso_pattern) != 1
+         OR REGEXP_INSTR (l_str, l_iso_pattern, 1, 1, 1) != LENGTH (l_str) + 1
+      THEN
+         cwms_err.RAISE ('INVALID_ITEM', l_str, 'dateTime-formatted string');
+      END IF;
 
-      if l_hr = '24' then 
-         l_add_day := true;
+      l_pos := REGEXP_INSTR (l_str, '-?\d{4}', 1, 1, 1);
+      l_yr := SUBSTR (l_str, 1, l_pos - 1);
+      l_str := SUBSTR (l_str, l_pos + 1);
+      l_mon := SUBSTR (l_str, 1, 2);
+      l_str := SUBSTR (l_str, 4);
+      l_day := SUBSTR (l_str, 1, 2);
+      l_str := SUBSTR (l_str, 4);
+      l_hr := SUBSTR (l_str, 1, 2);
+      l_str := SUBSTR (l_str, 4);
+      l_min := SUBSTR (l_str, 1, 2);
+      l_str := SUBSTR (l_str, 3);
+
+      IF SUBSTR (l_str, 1, 1) = ':'
+      THEN
+         l_pos := REGEXP_INSTR (l_str, ':\d{2}([.]\d+)?', 1, 1, 1);
+         l_sec := SUBSTR (l_str, 2, l_pos - 2);
+         l_str := SUBSTR (l_str, l_pos);
+      END IF;
+
+      IF LENGTH (l_str) > 0
+      THEN
+         l_tz := l_str;
+      END IF;
+
+      IF l_hr = '24'
+      THEN
+         l_add_day := TRUE;
          l_hr := '00';
-      end if;
-            
-      l_time := l_yr || '-' 
-         || l_mon  || '-' 
-         || l_day  || 'T' 
-         || l_hr   || ':' 
-         || l_min  || ':' 
+      END IF;
+
+      l_time :=
+            l_yr
+         || '-'
+         || l_mon
+         || '-'
+         || l_day
+         || 'T'
+         || l_hr
+         || ':'
+         || l_min
+         || ':'
          || l_sec;
-         
-      ----------------------------------------------------------------------
-      -- use select to avoid namespace collision with CWMS_UTIL functions --
-      ----------------------------------------------------------------------
-      select to_timestamp(l_time, 'YYYY-MM-DD"T"HH24:MI:SS.FF')
-        into l_ts
-        from dual;
-      if l_add_day then
-         l_ts := l_ts + interval '1 00:00:00' day to second;
-      end if;
-      
-      --------------------------------------------------------------  
-      -- for some reason the TZH:TZM format only works on TO_CHAR --
-      --------------------------------------------------------------
-      l_tz     := replace(l_tz, 'Z', '+00:00');  
-      l_parts  := split_text(substr(l_tz, 2), ':');
-      l_hr     := l_parts(1);
-      l_min    := l_parts(2);
-      l_offset := to_dsinterval('0 '|| l_hr || ':' || l_min || ':00'); 
-      if substr(l_tz, 1, 1) = '-' then
-         l_ts  := l_ts + l_offset;  
-      else
-         l_ts  := l_ts - l_offset;  
-      end if;
-                     
-      return l_ts;
-      
+
+----------------------------------------------------------------------
+-- use select to avoid namespace collision with CWMS_UTIL functions --
+----------------------------------------------------------------------
+      SELECT TO_TIMESTAMP (l_time, 'YYYY-MM-DD"T"HH24:MI:SS.FF')
+        INTO l_ts
+        FROM DUAL;
+
+      IF l_add_day
+      THEN
+         l_ts := l_ts + INTERVAL '1 00:00:00' DAY TO SECOND;
+      END IF;
+
+--------------------------------------------------------------
+-- for some reason the TZH:TZM format only works on TO_CHAR --
+--------------------------------------------------------------
+      l_tz := REPLACE (l_tz, 'Z', '+00:00');
+      l_parts := split_text (SUBSTR (l_tz, 2), ':');
+      l_hr := l_parts (1);
+      l_min := l_parts (2);
+      l_offset := TO_DSINTERVAL ('0 ' || l_hr || ':' || l_min || ':00');
+
+      IF SUBSTR (l_tz, 1, 1) = '-'
+      THEN
+         l_ts := l_ts + l_offset;
+      ELSE
+         l_ts := l_ts - l_offset;
+      END IF;
+
+      RETURN l_ts;
    END TO_TIMESTAMP;
+
 --------------------------------------------------------------------
 -- Return UTC timestamp for specified Java milliseconds
 --
