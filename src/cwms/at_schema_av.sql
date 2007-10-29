@@ -235,10 +235,10 @@ CREATE OR REPLACE FORCE VIEW cwms_20.av_screening_criteria (screening_code,
                                                             const_quest_tolerance,
                                                             const_quest_n_miss,
                                                             estimate_expression,
-                                                            range_acive_flag,
+                                                            range_active_flag,
                                                             rate_change_active_flag,
                                                             const_active_flag,
-                                                            dur_mag_acitve_flag,
+                                                            dur_mag_active_flag,
                                                             rate_change_disp_interval_id
                                                            )
 AS
@@ -298,8 +298,8 @@ AS
             avsc.const_quest_tolerance * cuc.factor
           + cuc.offset const_quest_tolerance,
           avsc.const_quest_n_miss, avsc.estimate_expression,
-          asctl.range_acive_flag, asctl.rate_change_active_flag,
-          asctl.const_active_flag, asctl.dur_mag_acitve_flag,
+          asctl.range_active_flag, asctl.rate_change_active_flag,
+          asctl.const_active_flag, asctl.dur_mag_active_flag,
           ci.interval_id rate_change_disp_interval_id
      FROM at_screening_id atsi,
           cwms_office co,
@@ -326,6 +326,16 @@ AS
       AND asctl.rate_change_disp_interval_code = ci.interval_code(+)
 /
 
+
+DROP PUBLIC SYNONYM CWMS_V_SCREENING_CRITERIA
+/
+
+CREATE PUBLIC SYNONYM CWMS_V_SCREENING_CRITERIA FOR CWMS_20.AV_SCREENING_CRITERIA
+/
+
+
+GRANT SELECT ON CWMS_20.AV_SCREENING_CRITERIA TO CWMS_DEV
+/
 
 --------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW av_screening_dur_mag (screening_code,

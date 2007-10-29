@@ -1,4 +1,4 @@
-/* Formatted on 2007/04/15 15:16 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/10/29 14:13 (Formatter Plus v4.8.8) */
 -- Defines the CWMS date-time, value, and quality types. 
 SET serveroutput on
 
@@ -271,6 +271,14 @@ CREATE OR REPLACE TYPE screen_crit_type AS OBJECT (
 /
 
 CREATE TYPE screen_crit_array IS TABLE OF screen_crit_type
+/
+
+CREATE OR REPLACE TYPE screening_control_t AS OBJECT (
+   range_active_flag         VARCHAR2 (1),
+   rate_change_active_flag   VARCHAR2 (1),
+   const_active_flag         VARCHAR2 (1),
+   dur_mag_active_flag       VARCHAR2 (1)
+)
 /
 
 CREATE OR REPLACE TYPE cwms_ts_id_t AS OBJECT (

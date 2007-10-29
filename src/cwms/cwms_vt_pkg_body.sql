@@ -1,5 +1,5 @@
-/* Formatted on 2007/09/13 17:29 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE PACKAGE BODY cwms_vt
+/* Formatted on 2007/10/29 14:20 (Formatter Plus v4.8.8) */
+CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_vt
 AS
 /******************************************************************************
    NAME:       CWMS_VAL
@@ -168,6 +168,12 @@ AS
                   )
         RETURNING screening_code
              INTO l_screening_code;
+
+      INSERT INTO at_screening_control
+                  (screening_code
+                  )
+           VALUES (l_screening_code
+                  );
 
       COMMIT;
       --
@@ -494,6 +500,9 @@ AS
       DELETE FROM at_screening_criteria
             WHERE screening_code = l_screening_code;
 
+      DELETE FROM at_screening_control
+            WHERE screening_code = l_screening_code;
+
       DELETE FROM at_screening_id
             WHERE screening_code = l_screening_code;
 
@@ -623,10 +632,11 @@ AS
                 range_reject_hi, range_question_lo, range_question_hi,
                 rate_change_reject_rise, rate_change_reject_fall,
                 rate_change_quest_rise, rate_change_quest_fall,
-                rate_change_disp_interval_code, const_reject_duration_code,
-                const_reject_min, const_reject_tolerance, const_reject_n_miss,
-                const_quest_duration_code, const_quest_min, const_quest_tolerance,
-                const_quest_n_miss, estimate_expression
+                const_reject_duration_code, const_reject_min,
+                const_reject_tolerance, const_reject_n_miss,
+                const_quest_duration_code, const_quest_min,
+                const_quest_tolerance, const_quest_n_miss,
+                estimate_expression
            FROM at_screening_criteria
           WHERE screening_code = l_screening_code_old;
 
@@ -637,14 +647,85 @@ AS
           WHERE screening_code = l_screening_code_old;
    END;
 
+   PROCEDURE store_screening_control (
+      p_screening_code              IN   NUMBER,
+      p_rate_change_disp_int_code   IN   NUMBER,
+      p_range_active_flag           IN   VARCHAR2,
+      p_rate_change_active_flag     IN   VARCHAR2,
+      p_const_active_flag           IN   VARCHAR2,
+      p_dur_mag_active_flag         IN   VARCHAR2,
+      p_ignore_nulls                IN   VARCHAR2 DEFAULT 'T'
+   )
+   IS
+      l_rate_change_disp_int_code   NUMBER       := NULL;
+      l_range_active_flag           VARCHAR2 (1) := NULL;
+      l_rate_change_active_flag     VARCHAR2 (1) := NULL;
+      l_const_active_flag           VARCHAR2 (1) := NULL;
+      l_dur_mag_active_flag         VARCHAR2 (1) := NULL;
+      l_ignore_nulls                BOOLEAN
+                := cwms_util.return_true_or_false (NVL (p_ignore_nulls, 'T'));
+   BEGIN
+      SELECT rate_change_disp_interval_code, range_active_flag,
+             rate_change_active_flag, const_active_flag,
+             dur_mag_active_flag
+        INTO l_rate_change_disp_int_code, l_range_active_flag,
+             l_rate_change_active_flag, l_const_active_flag,
+             l_dur_mag_active_flag
+        FROM at_screening_control
+       WHERE screening_code = p_screening_code;
+
+      IF l_ignore_nulls
+      THEN
+         IF p_rate_change_disp_int_code IS NOT NULL
+         THEN
+            l_rate_change_disp_int_code := p_rate_change_disp_int_code;
+         END IF;
+
+         IF p_range_active_flag IS NOT NULL
+         THEN
+            l_range_active_flag := p_range_active_flag;
+         END IF;
+
+         IF p_rate_change_active_flag IS NOT NULL
+         THEN
+            l_rate_change_active_flag := p_rate_change_active_flag;
+         END IF;
+
+         IF p_const_active_flag IS NOT NULL
+         THEN
+            l_const_active_flag := p_const_active_flag;
+         END IF;
+
+         IF p_dur_mag_active_flag IS NOT NULL
+         THEN
+            l_dur_mag_active_flag := p_dur_mag_active_flag;
+         END IF;
+      ELSE
+         l_rate_change_disp_int_code := p_rate_change_disp_int_code;
+         l_range_active_flag := p_range_active_flag;
+         l_rate_change_active_flag := p_rate_change_active_flag;
+         l_const_active_flag := p_const_active_flag;
+         l_dur_mag_active_flag := p_dur_mag_active_flag;
+      END IF;
+
+      UPDATE at_screening_control
+         SET rate_change_disp_interval_code = l_rate_change_disp_int_code,
+             range_active_flag = l_range_active_flag,
+             rate_change_active_flag = l_rate_change_active_flag,
+             const_active_flag = l_const_active_flag,
+             dur_mag_active_flag = p_dur_mag_active_flag
+       WHERE screening_code = p_screening_code;
+   END;
+
    PROCEDURE store_screening_criteria (
-      p_screening_id              IN   VARCHAR2,
-      p_rate_change_interval_id   IN   VARCHAR2,
-      p_unit_id                   IN   VARCHAR2,
-      p_screen_crit_array         IN   screen_crit_array,
-      p_store_rule                IN   VARCHAR2 DEFAULT 'DELETE INSERT',
-      p_ignore_nulls              IN   VARCHAR2 DEFAULT 'T',
-      p_db_office_id              IN   VARCHAR2 DEFAULT NULL
+      p_screening_id                   IN   VARCHAR2,
+      p_unit_id                        IN   VARCHAR2,
+      p_screen_crit_array              IN   screen_crit_array,
+      p_rate_change_disp_interval_id   IN   VARCHAR2,
+      p_screening_control              IN   screening_control_t,
+      p_store_rule                     IN   VARCHAR2 DEFAULT 'DELETE INSERT',
+      p_ignore_nulls                   IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id                   IN   VARCHAR2 DEFAULT NULL
    )
    IS
       l_store_rule                  VARCHAR2 (16)
@@ -658,6 +739,15 @@ AS
       l_abstract_param_code         NUMBER;
       l_factor                      NUMBER;
       l_offset                      NUMBER;
+      --
+      l_range_active_flag           VARCHAR2 (1)
+                                     := p_screening_control.range_active_flag;
+      l_rate_change_active_flag     VARCHAR2 (1)
+                               := p_screening_control.rate_change_active_flag;
+      l_const_active_flag           VARCHAR2 (1)
+                                     := p_screening_control.const_active_flag;
+      l_dur_mag_active_flag         VARCHAR2 (1)
+                                   := p_screening_control.dur_mag_active_flag;
 
       CURSOR l_sc_cur
       IS
@@ -716,7 +806,7 @@ AS
       SELECT interval_code
         INTO l_rate_change_interval_code
         FROM cwms_interval
-       WHERE UPPER (interval_id) = UPPER (p_rate_change_interval_id);
+       WHERE UPPER (interval_id) = UPPER (p_rate_change_disp_interval_id);
 
       SELECT cbp.unit_code, cbp.abstract_param_code
         INTO l_to_unit_code, l_abstract_param_code
@@ -751,7 +841,6 @@ AS
                       rate_change_reject_fall,
                       rate_change_quest_rise,
                       rate_change_quest_fall,
-                      rate_change_disp_interval_code,
                       const_reject_duration_code,
                       const_reject_min,
                       const_reject_tolerance,
@@ -773,7 +862,6 @@ AS
                       l_sc_rec.rate_change_reject_fall * l_factor + l_offset,
                       l_sc_rec.rate_change_quest_rise * l_factor + l_offset,
                       l_sc_rec.rate_change_quest_fall * l_factor + l_offset,
-                      l_rate_change_interval_code,
                       CASE
                          WHEN l_sc_rec.const_reject_duration_id IS NOT NULL
                             THEN (SELECT duration_code
@@ -850,6 +938,17 @@ AS
       END LOOP;
 
       CLOSE l_sc_cur;
+
+      --
+      --
+      store_screening_control (l_screening_code,
+                               l_rate_change_interval_code,
+                               l_range_active_flag,
+                               l_rate_change_active_flag,
+                               l_const_active_flag,
+                               l_dur_mag_active_flag,
+                               p_ignore_nulls
+                              );
    END store_screening_criteria;
 
 --------------------------------------------------------------------------------
@@ -859,7 +958,7 @@ AS
 --         file passed back in place of any files found (and/or specified) on -
 --         the file system. If the specified DataStream has not been defined in -
 --         the database, then nulls are returned and the "use_db" psuedo-booleans -
---         return 'F'. processSHEFIT would then default to cirt and OTF files 
+--         return 'F'. processSHEFIT would then default to cirt and OTF files
 --         found on the file system.
 --
 -- Parameters:

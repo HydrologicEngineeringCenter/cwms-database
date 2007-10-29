@@ -1,5 +1,4 @@
-/* Formatted on 2007/07/03 11:12 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE PACKAGE cwms_vt
+CREATE OR REPLACE PACKAGE CWMS_20.cwms_vt
 AS
 /******************************************************************************
    NAME:       CWMS_VAL
@@ -71,13 +70,14 @@ AS
    );
 
    PROCEDURE store_screening_criteria (
-      p_screening_id              IN   VARCHAR2,
-      p_rate_change_interval_id   IN   VARCHAR2,
-      p_unit_id                   IN   VARCHAR2,
-      p_screen_crit_array         IN   screen_crit_array,
-      p_store_rule                IN   VARCHAR2 DEFAULT 'DELETE INSERT',
-      p_ignore_nulls              IN   VARCHAR2 DEFAULT 'T',
-      p_db_office_id              IN   VARCHAR2 DEFAULT NULL
+      p_screening_id                   IN   VARCHAR2,
+      p_unit_id                        IN   VARCHAR2,
+      p_screen_crit_array              IN   screen_crit_array,
+      p_rate_change_disp_interval_id   IN   VARCHAR2,
+      p_screening_control              IN   screening_control_t,
+      p_store_rule                     IN   VARCHAR2 DEFAULT 'DELETE INSERT',
+      p_ignore_nulls                   IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id                   IN   VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE copy_screening_criteria (

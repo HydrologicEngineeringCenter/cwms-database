@@ -1,4 +1,4 @@
-/* Formatted on 2007/08/29 15:28 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/10/29 13:38 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_apex
 AS
    TYPE varchar2_t IS TABLE OF VARCHAR2 (32767)
@@ -219,6 +219,7 @@ AS
       p_columns_item            IN       VARCHAR2,
       p_ddl_item                IN       VARCHAR2,
       p_number_of_records       OUT      NUMBER,
+        p_number_of_columns       OUT      number,
       p_is_csv                  IN       VARCHAR2 DEFAULT 'T',
       p_table_name              IN       VARCHAR2 DEFAULT NULL
    )
@@ -237,7 +238,7 @@ AS
       l_tmp            NUMBER;
       l_comment        VARCHAR2 (128)          := NULL;
    BEGIN
-      IF cwms_util.is_true (NVL ('T', p_is_csv))
+      IF cwms_util.is_true (NVL (p_is_csv, 'T'))
       THEN
          l_is_csv := TRUE;
          l_is_crit_file := FALSE;
@@ -298,10 +299,10 @@ AS
 
       get_records (l_blob, l_records);
 
-      IF (l_records.COUNT < 3)
+      IF (l_records.COUNT < 2)
       THEN
          raise_application_error (-20000,
-                                     'File must have at least 3 ROWS, id='
+                                     'File must have at least 2 ROWS, id='
                                   || p_file_name
                                  );
       END IF;
@@ -353,7 +354,9 @@ AS
                                   || p_file_name
                                  );
       END IF;
-
+      
+      p_number_of_columns := l_num_columns;
+      
       -- Get column headings and names
       FOR i IN 1 .. l_record.COUNT
       LOOP
@@ -614,6 +617,150 @@ AS
                          p_ts_active_flag             => NULL,
                          p_db_office_id               => p_db_office_id
                         );
+      END LOOP;
+   END;
+
+   PROCEDURE store_parsed_loc_short_file (
+      p_parsed_collection_name      IN   VARCHAR2,
+      p_store_err_collection_name   IN   VARCHAR2,
+      p_db_office_id                IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_location_id     VARCHAR2 (200);
+      l_public_name     VARCHAR2 (200);
+      l_county_name     VARCHAR2 (200);
+      l_state_initial   VARCHAR2 (20);
+      l_active          VARCHAR2 (10);
+      l_ignorenulls     VARCHAR2 (1);
+      l_parsed_rows     NUMBER;
+      l_line_no         VARCHAR2 (32);
+      l_min             NUMBER;
+      l_max             NUMBER;
+   BEGIN
+      aa1 (   'store_parsed_loc_short_file - collection name: '
+           || p_parsed_collection_name
+          );
+
+      SELECT COUNT (*), MIN (seq_id), MAX (seq_id)
+        INTO l_parsed_rows, l_min, l_max
+        FROM apex_collections
+       WHERE collection_name = p_parsed_collection_name;
+
+      aa1 (   'l_parsed_rows = '
+           || l_parsed_rows
+           || ' min '
+           || l_min
+           || ' max '
+           || l_max
+          );
+
+-- Start at 2 to skip first line of column titles
+      FOR i IN 2 .. l_parsed_rows
+      LOOP
+         aa1 ('looping: ' || i);
+
+         SELECT c001, c002, c003, c004,
+                c005, c006
+           INTO l_line_no, l_location_id, l_public_name, l_county_name,
+                l_state_initial, l_active
+           FROM apex_collections
+          WHERE collection_name = p_parsed_collection_name AND seq_id = i;
+
+         aa1 ('storing locs: ' || l_location_id);
+--
+         cwms_loc.update_location (p_location_id        => l_location_id,
+                                   p_public_name        => l_public_name,
+                                   p_county_name        => l_county_name,
+                                   p_state_initial      => l_state_initial,
+                                   p_active             => l_active,
+                                   p_ignorenulls        => 'T',
+                                   p_db_office_id       => p_db_office_id
+                                  );
+      END LOOP;
+   END;
+
+   PROCEDURE store_parsed_loc_full_file (
+      p_parsed_collection_name      IN   VARCHAR2,
+      p_store_err_collection_name   IN   VARCHAR2,
+      p_db_office_id                IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_location_id        VARCHAR2 (200);
+      l_location_type      VARCHAR2 (200);
+      l_elevation          NUMBER;
+      l_elev_unit_id       VARCHAR2 (200);
+      l_vertical_datum     VARCHAR2 (200);
+      l_latitude           NUMBER;
+      l_longitude          NUMBER;
+      l_horizontal_datum   VARCHAR2 (200);
+      l_public_name        VARCHAR2 (200);
+      l_long_name          VARCHAR2 (200);
+      l_description        VARCHAR2 (200);
+      l_time_zone_id       VARCHAR2 (200);
+      l_county_name        VARCHAR2 (200);
+      l_state_initial      VARCHAR2 (200);
+      l_active             VARCHAR2 (200);
+      l_ignorenulls        VARCHAR2 (1);
+      l_parsed_rows        NUMBER;
+      l_line_no            VARCHAR2 (32);
+      l_min                NUMBER;
+      l_max                NUMBER;
+   BEGIN
+      aa1 (   'store_parsed_loc_full_file - collection name: '
+           || p_parsed_collection_name
+          );
+
+      SELECT COUNT (*), MIN (seq_id), MAX (seq_id)
+        INTO l_parsed_rows, l_min, l_max
+        FROM apex_collections
+       WHERE collection_name = p_parsed_collection_name;
+
+      aa1 (   'l_parsed_rows = '
+           || l_parsed_rows
+           || ' min '
+           || l_min
+           || ' max '
+           || l_max
+          );
+
+--  Start at   2,   Skip first line in file to bypass column headings
+      FOR i IN 2 .. l_parsed_rows
+      LOOP
+         aa1 ('looping: ' || i);
+
+         SELECT c001, c002, c003, c004,
+                c005, c006, c007,
+                c008, c009, c010,
+                c011, c012, c013, c014,
+                c015, c016
+           INTO l_line_no, l_location_id, l_public_name, l_county_name,
+                l_state_initial, l_active, l_location_type,
+                l_vertical_datum, l_elevation, l_elev_unit_id,
+                l_horizontal_datum, l_latitude, l_longitude, l_time_zone_id,
+                l_long_name, l_description
+           FROM apex_collections
+          WHERE collection_name = p_parsed_collection_name AND seq_id = i;
+
+         aa1 ('storing locs: ' || l_location_id);
+         --
+         cwms_loc.update_location (l_location_id,
+                                   l_location_type,
+                                   l_elevation,
+                                   l_elev_unit_id,
+                                   l_vertical_datum,
+                                   l_latitude,
+                                   l_longitude,
+                                   l_horizontal_datum,
+                                   l_public_name,
+                                   l_long_name,
+                                   l_description,
+                                   l_time_zone_id,
+                                   l_county_name,
+                                   l_state_initial,
+                                   l_active,
+                                   'F',
+                                   p_db_office_id
+                                  );
       END LOOP;
    END;
 END cwms_apex;
