@@ -1,4 +1,4 @@
-/* Formatted on 2007/10/29 14:20 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/10/30 13:51 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_vt
 AS
 /******************************************************************************
@@ -1006,8 +1006,6 @@ AS
 
       IF l_is_data_stream_active
       THEN
-         p_use_db_crit := 'T';
-
          BEGIN
             SELECT shef_crit_file
               INTO p_crit_file
@@ -1017,10 +1015,13 @@ AS
                                                       p_db_office_id
                                                      )
                AND creation_date = SYSDATE;
+
+            p_use_db_crit := 'T';
          EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-               cwms_err.RAISE ('NO_CRIT_FILE_FOUND', p_data_stream_id);
+               p_use_db_crit := 'F';
+         --cwms_err.RAISE ('NO_CRIT_FILE_FOUND', p_data_stream_id);
          END;
       END IF;
    --
