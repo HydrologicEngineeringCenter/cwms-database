@@ -1,4 +1,4 @@
-/* Formatted on 2007/10/29 10:43 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/11/07 11:49 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -556,6 +556,37 @@ AS
 
       RETURN l_office_id;
    END user_office_id;
+
+   PROCEDURE get_user_office_data (
+      p_office_id          OUT   VARCHAR2,
+      p_office_long_name   OUT   VARCHAR2
+   )
+   IS
+      l_user_id   VARCHAR2 (32);
+   BEGIN
+      l_user_id := get_user_id;
+
+      BEGIN
+         SELECT a.office_id, a.long_name
+           INTO p_office_id, p_office_long_name
+           FROM cwms_office a, at_sec_user_office b
+          WHERE b.user_id = l_user_id
+                AND a.office_code = b.user_db_office_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            BEGIN
+               SELECT a.office_id, a.long_name
+                 INTO p_office_id, p_office_long_name
+                 FROM cwms_office a
+                WHERE eroc = UPPER (SUBSTR (l_user_id, 1, 2));
+            EXCEPTION
+               WHEN NO_DATA_FOUND
+               THEN
+                  NULL;
+            END;
+      END;
+   END;
 
 --------------------------------------------------------
 -- Return the current session user's primary office code

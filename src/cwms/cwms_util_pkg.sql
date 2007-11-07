@@ -1,4 +1,4 @@
-/* Formatted on 2007/06/01 08:01 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/11/07 11:45 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -12,12 +12,11 @@ AS
 *                                      changed to DATE datatype
 *   1.0        8/29/2005   Portin      Original
 ******************************************************************************/
-
-    l_epoch   CONSTANT DATE
+   l_epoch                       CONSTANT DATE
                           := TO_DATE ('01Jan1970 00:00', 'ddmonyyyy hh24:mi');
-    l_epoch_wk_dy_1   CONSTANT DATE
-                          := TO_DATE ('04Jan1970 00:00', 'ddmonyyyy hh24:mi'); -- Sunday.
-   
+   l_epoch_wk_dy_1               CONSTANT DATE
+                          := TO_DATE ('04Jan1970 00:00', 'ddmonyyyy hh24:mi');
+                                                                   -- Sunday.
    -- Constants for Storage Business Rules
    replace_all                   CONSTANT VARCHAR2 (16)      := 'REPLACE ALL';
    do_not_replace                CONSTANT VARCHAR2 (16)   := 'DO NOT REPLACE';
@@ -141,10 +140,10 @@ AS
 -- the specified string.
 --
    PROCEDURE format_xml (
-      p_xml_clob IN OUT NOCOPY CLOB,
-      p_indent   IN VARCHAR2 DEFAULT CHR(9)
+      p_xml_clob   IN OUT NOCOPY   CLOB,
+      p_indent     IN              VARCHAR2 DEFAULT CHR (9)
    );
-   
+
 --------------------------------------------------------------------------------
 -- Parses a CLOB into a table of tables of strings.
 --
@@ -364,7 +363,7 @@ AS
 --------------------------------------------------------------------
 -- Return UTC timestamp for specified ISO 8601 string
 --
-   FUNCTION TO_TIMESTAMP (p_iso_str in VARCHAR2)
+   FUNCTION TO_TIMESTAMP (p_iso_str IN VARCHAR2)
       RETURN TIMESTAMP;
 
 --------------------------------------------------------------------
@@ -393,6 +392,11 @@ AS
 
    -- Create the partitioned timeseries table view
    PROCEDURE create_view;
+
+   PROCEDURE get_user_office_data (
+      p_office_id          OUT   VARCHAR2,
+      p_office_long_name   OUT   VARCHAR2
+   );
 
    PROCEDURE get_valid_units (
       p_valid_units    OUT      sys_refcursor,
