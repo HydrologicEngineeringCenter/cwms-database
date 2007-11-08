@@ -1,6 +1,16 @@
-/* Formatted on 2007/08/30 15:38 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/11/08 07:33 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_sec
 AS
+
+   PROCEDURE get_user_office_data (
+      p_office_id          OUT   VARCHAR2,
+      p_office_long_name   OUT   VARCHAR2
+   )
+   IS
+   BEGIN
+      cwms_util.get_user_office_data (p_office_id, p_office_long_name);
+   END;
+
 --------------------------------------------------------------------------------
 --The get_user_priv_groups procedure returns a refcursor of:
 
@@ -19,6 +29,7 @@ AS
 --which will return the priv groups for all db_office_id's associated with
 --the username.
 --
+
    PROCEDURE get_user_priv_groups (
       p_priv_groups    OUT      sys_refcursor,
       p_username       IN       VARCHAR2 DEFAULT NULL,
