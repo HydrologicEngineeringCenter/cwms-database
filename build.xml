@@ -205,13 +205,13 @@
 		</foreach>
 	</target>
 	
-	<target name="CwmsUtlPkgLoadSql" depends="init,getCwmsPass" 
-		description="Loads the CWMS_UTL package">
+	<target name="CwmsUtilPkgLoadSql" depends="init,getCwmsPass" 
+		description="Loads the CWMS_UTIL package">
 		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
 			<path id="cwmserr.sql.paths">
 				<filelist id="cwmserr.sql.files" dir="${src}">
-					<file name="cwms/CWMS_UTL_PKG.SQL"/>
-					<file name="cwms/CWMS_UTL_PKG_BODY.SQL"/>
+					<file name="cwms/CWMS_UTIL_PKG.SQL"/>
+					<file name="cwms/CWMS_UTIL_PKG_BODY.SQL"/>
 				</filelist>
 			</path>
 		</foreach>
