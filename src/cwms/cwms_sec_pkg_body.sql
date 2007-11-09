@@ -71,3 +71,4 @@ AS
    END;
 END cwms_sec;
 /
+show errors;
