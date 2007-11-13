@@ -2059,20 +2059,24 @@ create or replace package body cwms_xchg as
             ------------------------
             -- check the set info --
             ------------------------
-            begin
-               select office_code
-                 into l_set_office_code
-                 from cwms_office
-                where office_id = l_set_office_id;
-            exception
-               when no_data_found then
-                  rollback;
-                  cwms_util.resume_mv_refresh(l_pause_handle);
-                  cwms_err.raise(
-                     'INVALID_ITEM',
-                     l_set_office_id,
-                     'CWMS office id');
-            end;
+            if l_set_office_code = '__LOCAL__' or l_set_office_code = '__local__' then
+               l_set_office_code := cwms_util.user_office_code;
+            else
+               begin
+                  select office_code
+                    into l_set_office_code
+                    from cwms_office
+                   where office_id = l_set_office_id;
+               exception
+                  when no_data_found then
+                     rollback;
+                     cwms_util.resume_mv_refresh(l_pause_handle);
+                     cwms_err.raise(
+                        'INVALID_ITEM',
+                        l_set_office_id,
+                        'CWMS office id');
+               end;
+            end if;
             begin
                select *
                  into l_xchg_set_rec
