@@ -1,35 +1,42 @@
+/* Formatted on 2007/11/13 15:21 (Formatter Plus v4.8.8) */
 /* CWMS Version 2.0 --
 This script should be run by the cwms schema owner.
 */
-set serveroutput on 
+SET serveroutput on
 ----------------------------------------------------
 -- drop tables, mviews & mview logs if they exist --
 ----------------------------------------------------
-declare
-   type id_array_t is table of varchar2(32);
-   view_names id_array_t := id_array_t(
-      'av_active_flag',
-      'av_loc',         -- av_loc is created in at_schema_2...
-      'av_loc_alias',
-      'av_loc_cat_grp',
-      'av_parameter',
-      'av_screened_ts_ids',
-      'av_screening_assignments',
-      'av_screening_criteria',
-      'av_screening_dur_mag',
-      'av_screening_id',
-      'av_shef_decode_spec');
 
-begin                
-   for i in view_names.first .. view_names.last loop
-      begin 
-         execute immediate 'drop view' || view_names(i);
-         dbms_output.put_line('Dropped view ' || view_names(i));
-      exception 
-         when others then null;
-      end;
-   end loop;
-end;
+DECLARE
+   TYPE id_array_t IS TABLE OF VARCHAR2 (32);
+
+   view_names   id_array_t
+      := id_array_t ('av_active_flag',
+                     'av_loc',          -- av_loc is created in at_schema_2...
+                     'av_loc_alias',
+                     'av_loc_cat_grp',
+                     'av_parameter',
+                     'av_screened_ts_ids',
+                     'av_screening_assignments',
+                     'av_screening_criteria',
+                     'av_screening_dur_mag',
+                     'av_screening_id',
+                     'av_shef_decode_spec'
+                    );
+BEGIN
+   FOR i IN view_names.FIRST .. view_names.LAST
+   LOOP
+      BEGIN
+         EXECUTE IMMEDIATE 'drop view' || view_names (i);
+
+         DBMS_OUTPUT.put_line ('Dropped view ' || view_names (i));
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            NULL;
+      END;
+   END LOOP;
+END;
 /
 
 --------------------------------------------------------------------------------
@@ -140,7 +147,6 @@ AS
     WHERE b.db_office_code = a.db_host_office_code
       AND b.base_parameter_code = c.base_parameter_code
 /
-
 --------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW av_screened_ts_ids (screening_code,
                                            ts_code,
@@ -204,7 +210,7 @@ AS
       AND ats.ts_code = mcti.ts_code
 /
 --------------------------------------------------------------------------------
-CREATE OR REPLACE FORCE VIEW cwms_20.av_screening_criteria (screening_code,
+CREATE OR REPLACE FORCE VIEW av_screening_criteria (screening_code,
                                                             db_office_id,
                                                             screening_id,
                                                             screening_id_desc,
@@ -326,17 +332,8 @@ AS
       AND asctl.rate_change_disp_interval_code = ci.interval_code(+)
 /
 
-
-DROP PUBLIC SYNONYM CWMS_V_SCREENING_CRITERIA
+GRANT SELECT ON av_screening_criteria TO cwms_dev
 /
-
-CREATE PUBLIC SYNONYM CWMS_V_SCREENING_CRITERIA FOR CWMS_20.AV_SCREENING_CRITERIA
-/
-
-
-GRANT SELECT ON CWMS_20.AV_SCREENING_CRITERIA TO CWMS_DEV
-/
-
 --------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW av_screening_dur_mag (screening_code,
                                              db_office_id,
