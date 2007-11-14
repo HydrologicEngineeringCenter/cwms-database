@@ -1,77 +1,95 @@
+/* Formatted on 2007/11/14 12:53 (Formatter Plus v4.8.8) */
 /* CWMS Version 2.0 --
 This script should be run by the cwms schema owner.
 */
-set serveroutput on 
+SET serveroutput on
 ----------------------------------------------------
 -- drop tables, mviews & mview logs if they exist --
 ----------------------------------------------------
-declare
-   type id_array_t is table of varchar2(32);
-   table_names id_array_t := id_array_t(
-      'at_ts_table_properties',
-      'at_base_location',
-      'at_physical_location',
-      'at_loc_category',
-      'at_loc_group',
-      'at_loc_group_assignment',
-      'at_data_stream_id',
-      'at_alarm_id',
-      'at_alarm_criteria',
-      'at_screening_id',
-      'at_screening_criteria',
-      'at_screening_dur_mag',
-      'at_cwms_ts_spec',
-      'at_shef_decode',
-      'at_screening',
-      'at_alarm',
-      'at_comp_vt',
-      'at_transform_criteria',
-      'at_unit_alias',
-      'at_user_preferences',
-      'at_office_settings',
-      'at_properties',
-      'at_dss_file',
-      'at_dss_ts_spec',
-      'at_dss_ts_xchg_spec',
-      'at_dss_xchg_set',
-      'at_dss_ts_xchg_map',
-      'at_ts_msg_archive_1',
-      'at_ts_msg_archive_2',
-      'at_mview_refresh_paused',
-      'at_report_templates',
-      'at_clob');
-   mview_log_names id_array_t := id_array_t(
-      'at_base_location',
-      'at_physical_location',
-      'at_cwms_ts_spec',
-      'cwms_office',
-      'cwms_abstract_parameter',
-      'cwms_parameter_type',
-      'cwms_base_parameter',
-      'at_parameter',
-      'cwms_interval',
-      'cwms_duration',
-      'cwms_unit'
-   );
 
-begin                
-   for i in table_names.first .. table_names.last loop
-      begin 
-         execute immediate 'drop table ' || table_names(i) || ' cascade constraints';
-         dbms_output.put_line('Dropped table ' || table_names(i));
-      exception 
-         when others then null;
-      end;
-   end loop;
-   for i in mview_log_names.first .. mview_log_names.last loop
-      begin 
-         execute immediate 'drop materialized view log on ' || mview_log_names(i);
-         dbms_output.put_line('Dropped materialized view log on ' || mview_log_names(i));
-      exception 
-         when others then null;
-      end;
-   end loop;
-end;
+DECLARE
+   TYPE id_array_t IS TABLE OF VARCHAR2 (32);
+
+   table_names       id_array_t
+      := id_array_t ('at_ts_table_properties',
+                     'at_base_location',
+                     'at_physical_location',
+                     'at_loc_category',
+                     'at_loc_group',
+                     'at_loc_group_assignment',
+                     'at_data_stream_id',
+                     'at_alarm_id',
+                     'at_alarm_criteria',
+                     'at_screening_id',
+                     'at_screening_control',
+                     'at_screening_criteria',
+                     'at_screening_dur_mag',
+                     'at_cwms_ts_spec',
+                     'at_shef_decode',
+                     'at_screening',
+                     'at_alarm',
+                     'at_comp_vt',
+                     'at_transform_criteria',
+                     'at_unit_alias',
+                     'at_user_preferences',
+                     'at_office_settings',
+                     'at_properties',
+                     'at_dss_file',
+                     'at_dss_ts_spec',
+                     'at_dss_ts_xchg_spec',
+                     'at_dss_xchg_set',
+                     'at_dss_ts_xchg_map',
+                     'at_ts_msg_archive_1',
+                     'at_ts_msg_archive_2',
+                     'at_mview_refresh_paused',
+                     'at_report_templates',
+                     'at_clob'
+                    );
+   mview_log_names   id_array_t
+      := id_array_t ('at_base_location',
+                     'at_physical_location',
+                     'at_cwms_ts_spec',
+                     'cwms_office',
+                     'cwms_abstract_parameter',
+                     'cwms_parameter_type',
+                     'cwms_base_parameter',
+                     'at_parameter',
+                     'cwms_interval',
+                     'cwms_duration',
+                     'cwms_unit'
+                    );
+BEGIN
+   FOR i IN table_names.FIRST .. table_names.LAST
+   LOOP
+      BEGIN
+         EXECUTE IMMEDIATE    'drop table '
+                           || table_names (i)
+                           || ' cascade constraints';
+
+         DBMS_OUTPUT.put_line ('Dropped table ' || table_names (i));
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            NULL;
+      END;
+   END LOOP;
+
+   FOR i IN mview_log_names.FIRST .. mview_log_names.LAST
+   LOOP
+      BEGIN
+         EXECUTE IMMEDIATE    'drop materialized view log on '
+                           || mview_log_names (i);
+
+         DBMS_OUTPUT.put_line (   'Dropped materialized view log on '
+                               || mview_log_names (i)
+                              );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            NULL;
+      END;
+   END LOOP;
+END;
 /
 
 -------------------
@@ -87,23 +105,23 @@ end;
 -- AT_TS_TABLE_PROPERTIES table
 -- 
 
-CREATE TABLE AT_TS_TABLE_PROPERTIES
+CREATE TABLE at_ts_table_properties
 (
-  START_DATE  DATE                              NOT NULL,
-  END_DATE    DATE                              NOT NULL,
-  TABLE_NAME  VARCHAR2(30 BYTE)                 NOT NULL, 
-  CONSTRAINT AT_TS_TABLE_PROPERTIES_PK
+  start_date  DATE                              NOT NULL,
+  end_date    DATE                              NOT NULL,
+  table_name  VARCHAR2(30 BYTE)                 NOT NULL,
+  CONSTRAINT at_ts_table_properties_pk
  PRIMARY KEY
- (START_DATE)
+ (start_date)
 )
 ORGANIZATION INDEX
 LOGGING
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -112,57 +130,64 @@ STORAGE    (
 NOPARALLEL
 MONITORING;
 
-insert into at_ts_table_properties values (DATE '1800-01-01',DATE '2002-01-01','AT_TSV_ARCHIVAL');
-insert into at_ts_table_properties values (DATE '2002-01-01',DATE '2003-01-01','AT_TSV_2002');
-insert into at_ts_table_properties values (DATE '2003-01-01',DATE '2004-01-01','AT_TSV_2003');
-insert into at_ts_table_properties values (DATE '2004-01-01',DATE '2005-01-01','AT_TSV_2004');
-insert into at_ts_table_properties values (DATE '2005-01-01',DATE '2006-01-01','AT_TSV_2005');
-insert into at_ts_table_properties values (DATE '2006-01-01',DATE '2007-01-01','AT_TSV_2006');
-insert into at_ts_table_properties values (DATE '2007-01-01',DATE '2008-01-01','AT_TSV_2007');
-commit;
+INSERT INTO at_ts_table_properties
+     VALUES (DATE '1800-01-01', DATE '2002-01-01', 'AT_TSV_ARCHIVAL');
+INSERT INTO at_ts_table_properties
+     VALUES (DATE '2002-01-01', DATE '2003-01-01', 'AT_TSV_2002');
+INSERT INTO at_ts_table_properties
+     VALUES (DATE '2003-01-01', DATE '2004-01-01', 'AT_TSV_2003');
+INSERT INTO at_ts_table_properties
+     VALUES (DATE '2004-01-01', DATE '2005-01-01', 'AT_TSV_2004');
+INSERT INTO at_ts_table_properties
+     VALUES (DATE '2005-01-01', DATE '2006-01-01', 'AT_TSV_2005');
+INSERT INTO at_ts_table_properties
+     VALUES (DATE '2006-01-01', DATE '2007-01-01', 'AT_TSV_2006');
+INSERT INTO at_ts_table_properties
+     VALUES (DATE '2007-01-01', DATE '2008-01-01', 'AT_TSV_2007');
+COMMIT ;
 
 ---------------------------------
 -- AT_BASE_LOCATION table.
 -- 
-CREATE TABLE AT_BASE_LOCATION
+CREATE TABLE at_base_location
 (
-  BASE_LOCATION_CODE  NUMBER,
-  DB_OFFICE_CODE      NUMBER                    NOT NULL,
-  BASE_LOCATION_ID    VARCHAR2(16 BYTE)         NOT NULL,
-  ACTIVE_FLAG         VARCHAR2(1 BYTE)
+  base_location_code  NUMBER,
+  db_office_code      NUMBER                    NOT NULL,
+  base_location_id    VARCHAR2(16 BYTE)         NOT NULL,
+  active_flag         VARCHAR2(1 BYTE)
 )
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING;
 
-COMMENT ON COLUMN AT_BASE_LOCATION.DB_OFFICE_CODE IS 'Refererences the office "owning" this location.  In the CWMS v2 schema, the office hosting the database "owns" all locations.';
-COMMENT ON COLUMN AT_BASE_LOCATION.BASE_LOCATION_ID IS 'Text name of this Base Location';
-COMMENT ON COLUMN AT_BASE_LOCATION.ACTIVE_FLAG IS 'T or F';
+COMMENT ON COLUMN at_base_location.db_office_code IS 'Refererences the office "owning" this location.  In the CWMS v2 schema, the office hosting the database "owns" all locations.';
+COMMENT ON COLUMN at_base_location.base_location_id IS 'Text name of this Base Location';
+COMMENT ON COLUMN at_base_location.active_flag IS 'T or F';
 
 
-CREATE UNIQUE INDEX AT_BASE_LOCATION_PK ON AT_BASE_LOCATION
-(BASE_LOCATION_CODE)
+CREATE UNIQUE INDEX at_base_location_pk ON at_base_location
+(base_location_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -171,15 +196,15 @@ STORAGE    (
 NOPARALLEL;
 
 
-CREATE UNIQUE INDEX AT_BASE_LOCATION_IDX1 ON AT_BASE_LOCATION
-(DB_OFFICE_CODE, UPPER("BASE_LOCATION_ID"))
+CREATE UNIQUE INDEX at_base_location_idx1 ON at_base_location
+(db_office_code, UPPER("BASE_LOCATION_ID"))
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -188,41 +213,37 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_BASE_LOCATION ADD (
-   CONSTRAINT AT_BASE_LOCATION_CK_1 
+ALTER TABLE at_base_location ADD (
+   CONSTRAINT at_base_location_ck_1
    CHECK (TRIM("BASE_LOCATION_ID")="BASE_LOCATION_ID"))
 /
-
 --ALTER TABLE AT_BASE_LOCATION ADD (
 --  CONSTRAINT AT_BASE_LOCATION_CK_2
 -- CHECK (NVL("ACTIVE_FLAG",'T')='T'))
 --/
 
-ALTER TABLE AT_BASE_LOCATION ADD (
-  CONSTRAINT AT_BASE_LOCATION_PK
+ALTER TABLE at_base_location ADD (
+  CONSTRAINT at_base_location_pk
  PRIMARY KEY
- (BASE_LOCATION_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (base_location_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
 
-
-ALTER TABLE AT_BASE_LOCATION ADD (
-  CONSTRAINT AT_BASE_LOCATION_FK1 
- FOREIGN KEY (DB_OFFICE_CODE) 
- REFERENCES CWMS_OFFICE (OFFICE_CODE))
+ALTER TABLE at_base_location ADD (
+  CONSTRAINT at_base_location_fk1
+ FOREIGN KEY (db_office_code)
+ REFERENCES cwms_office (office_code))
 /
-
 INSERT INTO at_base_location
             (base_location_code, db_office_code, base_location_id, active_flag
             )
@@ -233,98 +254,83 @@ INSERT INTO at_base_location
 /
 COMMIT
 /
-
 --------------------
 -- AT_PHYSICAL_LOCATION table
 -- 
 
 
-CREATE TABLE AT_PHYSICAL_LOCATION
+CREATE TABLE at_physical_location
 (
-  LOCATION_CODE       NUMBER(10)                NOT NULL,
-  BASE_LOCATION_CODE  NUMBER(10)                NOT NULL,
-  SUB_LOCATION_ID     VARCHAR2(32 BYTE),
-  TIME_ZONE_CODE      NUMBER(10),
-  COUNTY_CODE         NUMBER(10),
-  LOCATION_TYPE       VARCHAR2(32 BYTE),
-  ELEVATION           NUMBER,
-  VERTICAL_DATUM      VARCHAR2(16 BYTE),
-  LONGITUDE           NUMBER,
-  LATITUDE            NUMBER,
-  HORIZONTAL_DATUM    VARCHAR2(16 BYTE),
-  PUBLIC_NAME         VARCHAR2(32 BYTE),
-  LONG_NAME           VARCHAR2(80 BYTE),
-  DESCRIPTION         VARCHAR2(512 BYTE),
-  ACTIVE_FLAG         VARCHAR2(1 BYTE)
+  location_code       NUMBER(10)                NOT NULL,
+  base_location_code  NUMBER(10)                NOT NULL,
+  sub_location_id     VARCHAR2(32 BYTE),
+  time_zone_code      NUMBER(10),
+  county_code         NUMBER(10),
+  location_type       VARCHAR2(32 BYTE),
+  elevation           NUMBER,
+  vertical_datum      VARCHAR2(16 BYTE),
+  longitude           NUMBER,
+  latitude            NUMBER,
+  horizontal_datum    VARCHAR2(16 BYTE),
+  public_name         VARCHAR2(32 BYTE),
+  long_name           VARCHAR2(80 BYTE),
+  description         VARCHAR2(512 BYTE),
+  active_flag         VARCHAR2(1 BYTE)
 )
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          504K
+            INITIAL          504 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-COMMENT ON TABLE AT_PHYSICAL_LOCATION IS 'Defines unique locations'
+COMMENT ON TABLE at_physical_location IS 'Defines unique locations'
+/
+COMMENT ON COLUMN at_physical_location.location_code IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.'
+/
+COMMENT ON COLUMN at_physical_location.time_zone_code IS 'References the time zone associated with the geographic location.  Not necessarily the time zone of any data collected.'
+/
+COMMENT ON COLUMN at_physical_location.county_code IS 'References the county'
+/
+COMMENT ON COLUMN at_physical_location.location_type IS 'User-defined type (e.g. "Stream Gage", "Reservoir", etc...), up to 16 characters.'
+/
+COMMENT ON COLUMN at_physical_location.elevation IS 'Ground elevation at location.'
+/
+COMMENT ON COLUMN at_physical_location.vertical_datum IS 'Datum of elevation.'
+/
+COMMENT ON COLUMN at_physical_location.longitude IS 'Longitude of location.'
+/
+COMMENT ON COLUMN at_physical_location.latitude IS 'Latitude of location.'
+/
+COMMENT ON COLUMN at_physical_location.public_name IS 'User-defined public name, up to 32 characters.'
+/
+COMMENT ON COLUMN at_physical_location.long_name IS 'User-defined long name, up to 80 characters.'
+/
+COMMENT ON COLUMN at_physical_location.description IS 'User-defined description, up to 512 characters.'
+/
+COMMENT ON COLUMN at_physical_location.active_flag IS 'T or F'
 /
 
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LOCATION_CODE IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.'
-/
-
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.TIME_ZONE_CODE IS 'References the time zone associated with the geographic location.  Not necessarily the time zone of any data collected.'
-/
-
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.COUNTY_CODE IS 'References the county'
-/
-
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LOCATION_TYPE IS 'User-defined type (e.g. "Stream Gage", "Reservoir", etc...), up to 16 characters.'
-/
-
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.ELEVATION IS 'Ground elevation at location.'
-/
-
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.VERTICAL_DATUM IS 'Datum of elevation.'
-/
-
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LONGITUDE IS 'Longitude of location.'
-/
-
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LATITUDE IS 'Latitude of location.'
-/
-
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.PUBLIC_NAME IS 'User-defined public name, up to 32 characters.'
-/
-
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.LONG_NAME IS 'User-defined long name, up to 80 characters.'
-/
-
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.DESCRIPTION IS 'User-defined description, up to 512 characters.'
-/
-
-COMMENT ON COLUMN AT_PHYSICAL_LOCATION.ACTIVE_FLAG IS 'T or F'
-/
-
-
-CREATE UNIQUE INDEX AT_PHYSICAL_LOCATION_PK ON AT_PHYSICAL_LOCATION
-(LOCATION_CODE)
+CREATE UNIQUE INDEX at_physical_location_pk ON at_physical_location
+(location_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -333,16 +339,15 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-CREATE UNIQUE INDEX AT_PHYSICAL_LOCATION_UI1 ON AT_PHYSICAL_LOCATION
-(BASE_LOCATION_CODE, UPPER("SUB_LOCATION_ID"))
+CREATE UNIQUE INDEX at_physical_location_ui1 ON at_physical_location
+(base_location_code, UPPER("SUB_LOCATION_ID"))
 LOGGING
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          104K
+            INITIAL          104 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -351,53 +356,46 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_PHYSICAL_LOCATION ADD (
-  CONSTRAINT AT_PHYSICAL_LOCATION_CK_2
- CHECK (ACTIVE_FLAG ='T' or ACTIVE_FLAG = 'F'))
+ALTER TABLE at_physical_location ADD (
+  CONSTRAINT at_physical_location_ck_2
+ CHECK (active_flag ='T' OR active_flag = 'F'))
 /
-
-ALTER TABLE AT_PHYSICAL_LOCATION ADD (
-  CONSTRAINT AT_PHYSICAL_LOCATION_CK_3
+ALTER TABLE at_physical_location ADD (
+  CONSTRAINT at_physical_location_ck_3
  CHECK (TRIM("SUB_LOCATION_ID")="SUB_LOCATION_ID"))
 /
-
-ALTER TABLE AT_PHYSICAL_LOCATION ADD (
-  CONSTRAINT AT_PHYSICAL_LOCATION_PK
+ALTER TABLE at_physical_location ADD (
+  CONSTRAINT at_physical_location_pk
  PRIMARY KEY
- (LOCATION_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (location_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
 
-
-ALTER TABLE AT_PHYSICAL_LOCATION ADD (
-  CONSTRAINT AT_PHYSICAL_LOCATION_FK_1 
- FOREIGN KEY (BASE_LOCATION_CODE) 
- REFERENCES AT_BASE_LOCATION (BASE_LOCATION_CODE))
+ALTER TABLE at_physical_location ADD (
+  CONSTRAINT at_physical_location_fk_1
+ FOREIGN KEY (base_location_code)
+ REFERENCES at_base_location (base_location_code))
 /
-
-ALTER TABLE AT_PHYSICAL_LOCATION ADD (
-  CONSTRAINT AT_PHYSICAL_LOCATION_FK_2 
- FOREIGN KEY (COUNTY_CODE) 
- REFERENCES CWMS_COUNTY (COUNTY_CODE))
+ALTER TABLE at_physical_location ADD (
+  CONSTRAINT at_physical_location_fk_2
+ FOREIGN KEY (county_code)
+ REFERENCES cwms_county (county_code))
 /
-
-ALTER TABLE AT_PHYSICAL_LOCATION ADD (
-  CONSTRAINT AT_PHYSICAL_LOCATION_FK_3 
- FOREIGN KEY (TIME_ZONE_CODE) 
- REFERENCES CWMS_TIME_ZONE (TIME_ZONE_CODE))
+ALTER TABLE at_physical_location ADD (
+  CONSTRAINT at_physical_location_fk_3
+ FOREIGN KEY (time_zone_code)
+ REFERENCES cwms_time_zone (time_zone_code))
 /
-
 INSERT INTO at_physical_location
             (location_code, base_location_code, active_flag
             )
@@ -406,46 +404,44 @@ INSERT INTO at_physical_location
 /
 COMMIT
 /
-
 ---------------
 ------------------
 
-CREATE TABLE AT_LOC_CATEGORY
+CREATE TABLE at_loc_category
 (
-  LOC_CATEGORY_CODE  NUMBER,
-  LOC_CATEGORY_ID    VARCHAR2(32 BYTE)          NOT NULL,
-  DB_OFFICE_CODE     NUMBER                     NOT NULL,
-  LOC_CATEGORY_DESC  VARCHAR2(128 BYTE)
+  loc_category_code  NUMBER,
+  loc_category_id    VARCHAR2(32 BYTE)          NOT NULL,
+  db_office_code     NUMBER                     NOT NULL,
+  loc_category_desc  VARCHAR2(128 BYTE)
 )
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
 
-
-CREATE UNIQUE INDEX AT_LOC_CATEGORY_NAME_PK ON AT_LOC_CATEGORY
-(LOC_CATEGORY_CODE)
+CREATE UNIQUE INDEX at_loc_category_name_pk ON at_loc_category
+(loc_category_code)
 LOGGING
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -454,16 +450,15 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-CREATE UNIQUE INDEX AT_LOC_CATEGORY_NAME_U1 ON AT_LOC_CATEGORY
-(UPPER("LOC_CATEGORY_ID"), DB_OFFICE_CODE)
+CREATE UNIQUE INDEX at_loc_category_name_u1 ON at_loc_category
+(UPPER("LOC_CATEGORY_ID"), db_office_code)
 LOGGING
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -472,69 +467,70 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_LOC_CATEGORY ADD (
-  CONSTRAINT AT_LOC_CATEGORY_NAME_PK
+ALTER TABLE at_loc_category ADD (
+  CONSTRAINT at_loc_category_name_pk
  PRIMARY KEY
- (LOC_CATEGORY_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20AT_DATA
+ (loc_category_code)
+    USING INDEX
+    TABLESPACE cwms_20at_data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
 SET DEFINE OFF;
-Insert into AT_LOC_CATEGORY
-   (LOC_CATEGORY_CODE, LOC_CATEGORY_ID, DB_OFFICE_CODE, LOC_CATEGORY_DESC)
- Values
-   (0, 'Default', 53, 'Default');
+INSERT INTO at_loc_category
+            (loc_category_code, loc_category_id, db_office_code,
+             loc_category_desc
+            )
+     VALUES (0, 'Default', 53,
+             'Default'
+            );
 
 --------
 --------
 
-CREATE TABLE AT_LOC_GROUP
+CREATE TABLE at_loc_group
 (
-  LOC_GROUP_CODE     NUMBER,
-  LOC_CATEGORY_CODE  NUMBER                     NOT NULL,
-  LOC_GROUP_ID       VARCHAR2(32 BYTE)          NOT NULL,
-  LOC_GROUP_DESC     VARCHAR2(128 BYTE),
-  DB_OFFICE_CODE     NUMBER                     NOT NULL
+  loc_group_code     NUMBER,
+  loc_category_code  NUMBER                     NOT NULL,
+  loc_group_id       VARCHAR2(32 BYTE)          NOT NULL,
+  loc_group_desc     VARCHAR2(128 BYTE),
+  db_office_code     NUMBER                     NOT NULL
 )
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
 
-
-CREATE UNIQUE INDEX AT_LOC_GROUPS_PK ON AT_LOC_GROUP
-(LOC_GROUP_CODE)
+CREATE UNIQUE INDEX at_loc_groups_pk ON at_loc_group
+(loc_group_code)
 LOGGING
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -543,16 +539,15 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-CREATE UNIQUE INDEX AT_LOC_GROUPS_U1 ON AT_LOC_GROUP
-(LOC_CATEGORY_CODE, UPPER("LOC_GROUP_ID"))
+CREATE UNIQUE INDEX at_loc_groups_u1 ON at_loc_group
+(loc_category_code, UPPER("LOC_GROUP_ID"))
 LOGGING
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -561,80 +556,79 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_LOC_GROUP ADD (
-  CONSTRAINT AT_LOC_GROUPS_PK
+ALTER TABLE at_loc_group ADD (
+  CONSTRAINT at_loc_groups_pk
  PRIMARY KEY
- (LOC_GROUP_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20AT_DATA
+ (loc_group_code)
+    USING INDEX
+    TABLESPACE cwms_20at_data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
 
-
-ALTER TABLE AT_LOC_GROUP ADD (
-  CONSTRAINT AT_LOC_GROUPS_FK2 
- FOREIGN KEY (DB_OFFICE_CODE) 
- REFERENCES CWMS_OFFICE (OFFICE_CODE))
+ALTER TABLE at_loc_group ADD (
+  CONSTRAINT at_loc_groups_fk2
+ FOREIGN KEY (db_office_code)
+ REFERENCES cwms_office (office_code))
 /
-
-ALTER TABLE AT_LOC_GROUP ADD (
-  CONSTRAINT AT_LOC_GROUPS_FK1 
- FOREIGN KEY (LOC_CATEGORY_CODE) 
- REFERENCES AT_LOC_CATEGORY (LOC_CATEGORY_CODE))
+ALTER TABLE at_loc_group ADD (
+  CONSTRAINT at_loc_groups_fk1
+ FOREIGN KEY (loc_category_code)
+ REFERENCES at_loc_category (loc_category_code))
 /
 SET DEFINE OFF;
-Insert into AT_LOC_GROUP
-   (LOC_GROUP_CODE, LOC_CATEGORY_CODE, LOC_GROUP_ID, LOC_GROUP_DESC, DB_OFFICE_CODE)
- Values
-   (0, 0, 'Default', 'All Locations', 53);
-COMMIT;
+INSERT INTO at_loc_group
+            (loc_group_code, loc_category_code, loc_group_id, loc_group_desc,
+             db_office_code
+            )
+     VALUES (0, 0, 'Default', 'All Locations',
+             53
+            );
+COMMIT ;
 -----
 -----
 
-CREATE TABLE AT_LOC_GROUP_ASSIGNMENT
+CREATE TABLE at_loc_group_assignment
 (
-  LOCATION_CODE   NUMBER,
-  LOC_GROUP_CODE  NUMBER,
-  LOC_ALIAS_ID    VARCHAR2(128 BYTE)
+  location_code   NUMBER,
+  loc_group_code  NUMBER,
+  loc_alias_id    VARCHAR2(128 BYTE)
 )
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
 
-
-CREATE UNIQUE INDEX AT_LOC_GROUP_ASSIGNMENT_PK ON AT_LOC_GROUP_ASSIGNMENT
-(LOCATION_CODE, LOC_GROUP_CODE)
+CREATE UNIQUE INDEX at_loc_group_assignment_pk ON at_loc_group_assignment
+(location_code, loc_group_code)
 LOGGING
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -643,43 +637,41 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_LOC_GROUP_ASSIGNMENT ADD (
-  CONSTRAINT AT_LOC_GROUP_ASSIGNMENT_PK
+ALTER TABLE at_loc_group_assignment ADD (
+  CONSTRAINT at_loc_group_assignment_pk
  PRIMARY KEY
- (LOCATION_CODE, LOC_GROUP_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20AT_DATA
+ (location_code, loc_group_code)
+    USING INDEX
+    TABLESPACE cwms_20at_data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
 
-
-ALTER TABLE AT_LOC_GROUP_ASSIGNMENT ADD (
-  CONSTRAINT AT_LOC_GROUP_ASSIGNMENT_FK1 
- FOREIGN KEY (LOCATION_CODE) 
- REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE))
+ALTER TABLE at_loc_group_assignment ADD (
+  CONSTRAINT at_loc_group_assignment_fk1
+ FOREIGN KEY (location_code)
+ REFERENCES at_physical_location (location_code))
 /
-
-ALTER TABLE AT_LOC_GROUP_ASSIGNMENT ADD (
-  CONSTRAINT AT_LOC_GROUP_ASSIGNMENT_FK2 
- FOREIGN KEY (LOC_GROUP_CODE) 
- REFERENCES AT_LOC_GROUP (LOC_GROUP_CODE))
+ALTER TABLE at_loc_group_assignment ADD (
+  CONSTRAINT at_loc_group_assignment_fk2
+ FOREIGN KEY (loc_group_code)
+ REFERENCES at_loc_group (loc_group_code))
 /
 SET DEFINE OFF;
 
-Insert into AT_LOC_GROUP_ASSIGNMENT
-   (LOCATION_CODE, LOC_GROUP_CODE, LOC_ALIAS_ID)
- Values
-   (0, 0, NULL);
-COMMIT;
+INSERT INTO at_loc_group_assignment
+            (location_code, loc_group_code, loc_alias_id
+            )
+     VALUES (0, 0, NULL
+            );
+COMMIT ;
 ----------
 ----------
 -----------
@@ -689,92 +681,80 @@ COMMIT;
 
 
 
-
 ---------------------------------
 -- AT_CWMS_TS_SPEC table.
 -- 
 
-CREATE TABLE AT_CWMS_TS_SPEC
+CREATE TABLE at_cwms_ts_spec
 (
-  TS_CODE              NUMBER                   NOT NULL,
-  LOCATION_CODE        NUMBER                   NOT NULL,
-  PARAMETER_CODE       NUMBER                   NOT NULL,
-  PARAMETER_TYPE_CODE  NUMBER(10)               NOT NULL,
-  INTERVAL_CODE        NUMBER(10)               NOT NULL,
-  DURATION_CODE        NUMBER(10)               NOT NULL,
+  ts_code              NUMBER                   NOT NULL,
+  location_code        NUMBER                   NOT NULL,
+  parameter_code       NUMBER                   NOT NULL,
+  parameter_type_code  NUMBER(10)               NOT NULL,
+  interval_code        NUMBER(10)               NOT NULL,
+  duration_code        NUMBER(10)               NOT NULL,
   VERSION              VARCHAR2(32 BYTE)        NOT NULL,
-  DESCRIPTION          VARCHAR2(80 BYTE),
-  INTERVAL_UTC_OFFSET  NUMBER                   NOT NULL,
-  INTERVAL_FORWARD     NUMBER,
-  INTERVAL_BACKWARD    NUMBER,
-  INTERVAL_OFFSET_ID   VARCHAR2(16 BYTE),
-  TIME_ZONE_CODE       NUMBER(10),
-  VERSION_FLAG         VARCHAR2(1 BYTE),
-  MIGRATE_VER_FLAG     VARCHAR2(1 BYTE),
-  ACTIVE_FLAG          VARCHAR2(1 BYTE),
-  DELETE_DATE          DATE,
-  DATA_SOURCE          VARCHAR2(16 BYTE)
+  description          VARCHAR2(80 BYTE),
+  interval_utc_offset  NUMBER                   NOT NULL,
+  interval_forward     NUMBER,
+  interval_backward    NUMBER,
+  interval_offset_id   VARCHAR2(16 BYTE),
+  time_zone_code       NUMBER(10),
+  version_flag         VARCHAR2(1 BYTE),
+  migrate_ver_flag     VARCHAR2(1 BYTE),
+  active_flag          VARCHAR2(1 BYTE),
+  delete_date          DATE,
+  data_source          VARCHAR2(16 BYTE)
 )
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          5M
+            INITIAL          5 m
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-COMMENT ON TABLE AT_CWMS_TS_SPEC IS 'Defines time series based on CWMS requirements.  This table also serves as time series specification super type.'
+COMMENT ON TABLE at_cwms_ts_spec IS 'Defines time series based on CWMS requirements.  This table also serves as time series specification super type.'
+/
+COMMENT ON COLUMN at_cwms_ts_spec.description IS 'Additional information.'
+/
+COMMENT ON COLUMN at_cwms_ts_spec.version_flag IS 'Default is NULL, indicating versioning is off. If set to "Y" then versioning is on'
+/
+COMMENT ON COLUMN at_cwms_ts_spec.migrate_ver_flag IS 'Default is NULL, indicating versioned data is not migrated to historic tables.  If set to "Y", versioned data is archived.'
+/
+COMMENT ON COLUMN at_cwms_ts_spec.active_flag IS 'T or F'
+/
+COMMENT ON COLUMN at_cwms_ts_spec.delete_date IS 'Is the date that this ts_id was marked for deletion.'
+/
+COMMENT ON COLUMN at_cwms_ts_spec.ts_code IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.'
+/
+COMMENT ON COLUMN at_cwms_ts_spec.location_code IS 'Primary key of AT_PHYSICAL_LOCATION table.'
+/
+COMMENT ON COLUMN at_cwms_ts_spec.parameter_code IS 'Primary key of AT_PARAMETER table.  Must already exist in the AT_PARAMETER table.'
+/
+COMMENT ON COLUMN at_cwms_ts_spec.parameter_type_code IS 'Primary key of CWMS_PARAMETER_TYPE table.  Must already exist in the CWMS_PARAMETER_TYPE table.'
 /
 
-COMMENT ON COLUMN AT_CWMS_TS_SPEC.DESCRIPTION IS 'Additional information.'
-/
-
-COMMENT ON COLUMN AT_CWMS_TS_SPEC.VERSION_FLAG IS 'Default is NULL, indicating versioning is off. If set to "Y" then versioning is on'
-/
-
-COMMENT ON COLUMN AT_CWMS_TS_SPEC.MIGRATE_VER_FLAG IS 'Default is NULL, indicating versioned data is not migrated to historic tables.  If set to "Y", versioned data is archived.'
-/
-
-COMMENT ON COLUMN AT_CWMS_TS_SPEC.ACTIVE_FLAG IS 'T or F'
-/
-
-COMMENT ON COLUMN AT_CWMS_TS_SPEC.DELETE_DATE IS 'Is the date that this ts_id was marked for deletion.'
-/
-
-COMMENT ON COLUMN AT_CWMS_TS_SPEC.TS_CODE IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.'
-/
-
-COMMENT ON COLUMN AT_CWMS_TS_SPEC.LOCATION_CODE IS 'Primary key of AT_PHYSICAL_LOCATION table.'
-/
-
-COMMENT ON COLUMN AT_CWMS_TS_SPEC.PARAMETER_CODE IS 'Primary key of AT_PARAMETER table.  Must already exist in the AT_PARAMETER table.'
-/
-
-COMMENT ON COLUMN AT_CWMS_TS_SPEC.PARAMETER_TYPE_CODE IS 'Primary key of CWMS_PARAMETER_TYPE table.  Must already exist in the CWMS_PARAMETER_TYPE table.'
-/
-
-
-CREATE UNIQUE INDEX AT_CWMS_TS_SPEC_UI ON AT_CWMS_TS_SPEC
-(LOCATION_CODE, PARAMETER_TYPE_CODE, PARAMETER_CODE, INTERVAL_CODE, 
-DURATION_CODE, UPPER("VERSION"), DELETE_DATE)
+CREATE UNIQUE INDEX at_cwms_ts_spec_ui ON at_cwms_ts_spec
+(location_code, parameter_type_code, parameter_code, interval_code,
+duration_code, UPPER("VERSION"), delete_date)
 LOGGING
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          24K
+            INITIAL          24 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -784,16 +764,15 @@ NOPARALLEL
 /
 
 
-
-CREATE UNIQUE INDEX AT_CWMS_TS_SPEC_PK ON AT_CWMS_TS_SPEC
-(TS_CODE)
+CREATE UNIQUE INDEX at_cwms_ts_spec_pk ON at_cwms_ts_spec
+(ts_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -802,120 +781,107 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_CWMS_TS_SPEC ADD (
-  CONSTRAINT AT_CWMS_TS_SPEC_CK_3
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_ck_3
  CHECK (TRIM(VERSION)=VERSION))
 /
-
-ALTER TABLE AT_CWMS_TS_SPEC ADD (
-  CONSTRAINT AT_CWMS_TS_SPEC_CK_4
- CHECK (NVL(VERSION_FLAG,'T')='T'))
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_ck_4
+ CHECK (NVL(version_flag,'T')='T'))
 /
-
-ALTER TABLE AT_CWMS_TS_SPEC ADD (
-  CONSTRAINT AT_CWMS_TS_SPEC_CK_5
- CHECK (ACTIVE_FLAG ='T' or ACTIVE_FLAG = 'F'))
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_ck_5
+ CHECK (active_flag ='T' OR active_flag = 'F'))
 /
-
-ALTER TABLE AT_CWMS_TS_SPEC ADD (
-  CONSTRAINT AT_CWMS_TS_SPEC_PK
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_pk
  PRIMARY KEY
- (TS_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (ts_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
 
-
-ALTER TABLE AT_CWMS_TS_SPEC ADD (
-  CONSTRAINT AT_CWMS_TS_SPEC_FK_1 
- FOREIGN KEY (PARAMETER_TYPE_CODE) 
- REFERENCES CWMS_PARAMETER_TYPE (PARAMETER_TYPE_CODE))
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_fk_1
+ FOREIGN KEY (parameter_type_code)
+ REFERENCES cwms_parameter_type (parameter_type_code))
 /
-
-ALTER TABLE AT_CWMS_TS_SPEC ADD (
-  CONSTRAINT AT_CWMS_TS_SPEC_FK_2 
- FOREIGN KEY (PARAMETER_CODE) 
- REFERENCES AT_PARAMETER (PARAMETER_CODE))
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_fk_2
+ FOREIGN KEY (parameter_code)
+ REFERENCES at_parameter (parameter_code))
 /
-
-ALTER TABLE AT_CWMS_TS_SPEC ADD (
-  CONSTRAINT AT_CWMS_TS_SPEC_FK_3 
- FOREIGN KEY (INTERVAL_CODE) 
- REFERENCES CWMS_INTERVAL (INTERVAL_CODE))
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_fk_3
+ FOREIGN KEY (interval_code)
+ REFERENCES cwms_interval (interval_code))
 /
-
-ALTER TABLE AT_CWMS_TS_SPEC ADD (
-  CONSTRAINT AT_CWMS_TS_SPEC_FK_4 
- FOREIGN KEY (DURATION_CODE) 
- REFERENCES CWMS_DURATION (DURATION_CODE))
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_fk_4
+ FOREIGN KEY (duration_code)
+ REFERENCES cwms_duration (duration_code))
 /
-
-ALTER TABLE AT_CWMS_TS_SPEC ADD (
-  CONSTRAINT AT_CWMS_TS_SPEC_FK_5 
- FOREIGN KEY (LOCATION_CODE) 
- REFERENCES AT_PHYSICAL_LOCATION (LOCATION_CODE))
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_fk_5
+ FOREIGN KEY (location_code)
+ REFERENCES at_physical_location (location_code))
 /
-
-ALTER TABLE AT_CWMS_TS_SPEC ADD (
-  CONSTRAINT AT_CWMS_TS_SPEC_FK_6 
- FOREIGN KEY (TIME_ZONE_CODE) 
- REFERENCES CWMS_TIME_ZONE (TIME_ZONE_CODE))
+ALTER TABLE at_cwms_ts_spec ADD (
+  CONSTRAINT at_cwms_ts_spec_fk_6
+ FOREIGN KEY (time_zone_code)
+ REFERENCES cwms_time_zone (time_zone_code))
 /
-
 
 
 ---------------------------------
 -- AT_SCREENING table.
 -- 
-CREATE TABLE AT_SCREENING
+CREATE TABLE at_screening
 (
-  TS_CODE            NUMBER,
-  SCREENING_CODE     NUMBER                     NOT NULL,
-  ACTIVE_FLAG        VARCHAR2(1 BYTE),
-  RESULTANT_TS_CODE  NUMBER
+  ts_code            NUMBER,
+  screening_code     NUMBER                     NOT NULL,
+  active_flag        VARCHAR2(1 BYTE),
+  resultant_ts_code  NUMBER
 )
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-COMMENT ON COLUMN AT_SCREENING.ACTIVE_FLAG IS 'T of F'
+COMMENT ON COLUMN at_screening.active_flag IS 'T of F'
 /
 
-
-CREATE UNIQUE INDEX AT_SCREENING_PK ON AT_SCREENING
-(TS_CODE)
+CREATE UNIQUE INDEX at_screening_pk ON at_screening
+(ts_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -924,72 +890,146 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_SCREENING ADD (
-  CONSTRAINT AT_SCREENING_PK
+ALTER TABLE at_screening ADD (
+  CONSTRAINT at_screening_pk
  PRIMARY KEY
- (TS_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (ts_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
 
-
-ALTER TABLE AT_SCREENING ADD (
-  CONSTRAINT AT_SCREENING_FK02 
- FOREIGN KEY (RESULTANT_TS_CODE) 
- REFERENCES AT_CWMS_TS_SPEC (TS_CODE))
+ALTER TABLE at_screening ADD (
+  CONSTRAINT at_screening_fk02
+ FOREIGN KEY (resultant_ts_code)
+ REFERENCES at_cwms_ts_spec (ts_code))
 /
+---------------------------------
+-- AT_SCREENING_CONTROL table.
+-- 
+CREATE TABLE at_screening_control
+(
+  screening_code                  NUMBER,
+  rate_change_disp_interval_code  NUMBER,
+  range_active_flag               VARCHAR2(1 BYTE),
+  rate_change_active_flag         VARCHAR2(1 BYTE),
+  const_active_flag               VARCHAR2(1 BYTE),
+  dur_mag_active_flag             VARCHAR2(1 BYTE)
+)
+TABLESPACE cwms_20data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+COMMENT ON COLUMN at_screening_control.range_active_flag IS '"T" means the check is active, "F" means the check is inactive, NULL means the check is undefined and consequently not used.'
+/
+COMMENT ON COLUMN at_screening_control.rate_change_active_flag IS '"T" means the check is active, "F" means the check is inactive, NULL means the check is undefined and consequently not used.'
+/
+COMMENT ON COLUMN at_screening_control.const_active_flag IS '"T" means the check is active, "F" means the check is inactive, NULL means the check is undefined and consequently not used.'
+/
+COMMENT ON COLUMN at_screening_control.dur_mag_active_flag IS '"T" means the check is active, "F" means the check is inactive, NULL means the check is undefined and consequently not used.'
+/
+
+CREATE UNIQUE INDEX at_screening_control_pk ON cwms_20.at_screening_control
+(screening_code)
+LOGGING
+TABLESPACE cwms_20data
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+ALTER TABLE at_screening_control ADD (
+  CONSTRAINT at_screening_control_pk
+ PRIMARY KEY
+ (screening_code)
+    USING INDEX
+    TABLESPACE cwms_20data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+               ))
+/
+ALTER TABLE at_screening_control ADD (
+  FOREIGN KEY (screening_code)
+ REFERENCES at_screening_id (screening_code))
+/
+
+
 ---------------------------------
 -- AT_ALARM table.
 -- 
-CREATE TABLE AT_ALARM
+CREATE TABLE at_alarm
 (
-  TS_CODE      NUMBER,
-  TS_NI_HASH   VARCHAR2(80 BYTE)                NOT NULL,
-  ALARM_CODE   NUMBER                           NOT NULL,
-  ACTIVE_FLAG  VARCHAR2(1 BYTE)
+  ts_code      NUMBER,
+  ts_ni_hash   VARCHAR2(80 BYTE)                NOT NULL,
+  alarm_code   NUMBER                           NOT NULL,
+  active_flag  VARCHAR2(1 BYTE)
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-COMMENT ON COLUMN AT_ALARM.ACTIVE_FLAG IS 'T or F'
+COMMENT ON COLUMN at_alarm.active_flag IS 'T or F'
 /
 
-
-CREATE UNIQUE INDEX AT_ALARM_PK ON AT_ALARM
-(TS_CODE)
+CREATE UNIQUE INDEX at_alarm_pk ON at_alarm
+(ts_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -998,73 +1038,70 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_ALARM ADD (
-  CONSTRAINT AT_ALARM_PK
+ALTER TABLE at_alarm ADD (
+  CONSTRAINT at_alarm_pk
  PRIMARY KEY
- (TS_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (ts_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
-
 
 
 ---------------------------------
 -- AT_COMP_VT table.
 -- 
 
-CREATE TABLE AT_COMP_VT
+CREATE TABLE at_comp_vt
 (
-  COMP_VT_CODE           NUMBER,
-  COMP_VT_ID             VARCHAR2(16 BYTE),
-  DB_OFFICE_CODE         NUMBER,
-  FILENAME_DATCHK1       VARCHAR2(32 BYTE),
-  FILENAME_DATCHK2       VARCHAR2(32 BYTE),
-  FILENAME_TRN_IN        VARCHAR2(32 BYTE),
-  DEFAULT_TIME_WINDOW    VARCHAR2(32 BYTE),
-  CONTEXT_START_DATE     VARCHAR2(32 BYTE),
-  EXCHANGE_SET_EXTRACT   VARCHAR2(32 BYTE),
-  EXCHANGE_SET_POST_RAW  VARCHAR2(32 BYTE),
-  EXCHANGE_SET_POST_REV  VARCHAR2(32 BYTE)
+  comp_vt_code           NUMBER,
+  comp_vt_id             VARCHAR2(16 BYTE),
+  db_office_code         NUMBER,
+  filename_datchk1       VARCHAR2(32 BYTE),
+  filename_datchk2       VARCHAR2(32 BYTE),
+  filename_trn_in        VARCHAR2(32 BYTE),
+  default_time_window    VARCHAR2(32 BYTE),
+  context_start_date     VARCHAR2(32 BYTE),
+  exchange_set_extract   VARCHAR2(32 BYTE),
+  exchange_set_post_raw  VARCHAR2(32 BYTE),
+  exchange_set_post_rev  VARCHAR2(32 BYTE)
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
 
-
-CREATE UNIQUE INDEX AT_COMP_VT_PK ON AT_COMP_VT
-(COMP_VT_CODE)
+CREATE UNIQUE INDEX at_comp_vt_pk ON at_comp_vt
+(comp_vt_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -1073,16 +1110,15 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-CREATE UNIQUE INDEX AT_COMP_VT_U01 ON AT_COMP_VT
-(COMP_VT_ID, DB_OFFICE_CODE)
+CREATE UNIQUE INDEX at_comp_vt_u01 ON at_comp_vt
+(comp_vt_id, db_office_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -1091,95 +1127,90 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_COMP_VT ADD (
-  CONSTRAINT AT_COMP_VT_PK
+ALTER TABLE at_comp_vt ADD (
+  CONSTRAINT at_comp_vt_pk
  PRIMARY KEY
- (COMP_VT_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (comp_vt_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+ALTER TABLE at_comp_vt ADD (
+  CONSTRAINT at_comp_vt_u01
+ UNIQUE (comp_vt_id, db_office_code)
+    USING INDEX
+    TABLESPACE cwms_20data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
 
-ALTER TABLE AT_COMP_VT ADD (
-  CONSTRAINT AT_COMP_VT_U01
- UNIQUE (COMP_VT_ID, DB_OFFICE_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
+ALTER TABLE at_comp_vt ADD (
+  CONSTRAINT at_comp_vt_r01
+ FOREIGN KEY (db_office_code)
+ REFERENCES cwms_office (office_code))
 /
-
-
-ALTER TABLE AT_COMP_VT ADD (
-  CONSTRAINT AT_COMP_VT_R01 
- FOREIGN KEY (DB_OFFICE_CODE) 
- REFERENCES CWMS_OFFICE (OFFICE_CODE))
-/
-
 ---------------------------------
 -- AT_TRANSFORM_CRITERIA table.
 -- 
 
-CREATE TABLE AT_TRANSFORM_CRITERIA
+CREATE TABLE at_transform_criteria
 (
-  TS_CODE                       NUMBER,
-  DSSMATH_MACRO_CALL            VARCHAR2(128 BYTE),
-  DSSMATH_POST_RAW              VARCHAR2(1 BYTE),
-  COMP_VT_CODE                  NUMBER,
-  CALL_SEQ_TABLE_LOOKUP         NUMBER,
-  CALL_SEQ_SCALING              NUMBER,
-  SCALING_FACTOR                NUMBER,
-  SCALING_OFFSET                NUMBER,
-  CALL_SEQ_MASS_CURVE_TO_INC    NUMBER,
-  CALL_SEQ_INC_TO_MASS_CURVE    NUMBER,
-  CALL_SEQ_INTERVAL_CONVERSION  NUMBER,
-  RESULTANT_TS_CODE             NUMBER
+  ts_code                       NUMBER,
+  dssmath_macro_call            VARCHAR2(128 BYTE),
+  dssmath_post_raw              VARCHAR2(1 BYTE),
+  comp_vt_code                  NUMBER,
+  call_seq_table_lookup         NUMBER,
+  call_seq_scaling              NUMBER,
+  scaling_factor                NUMBER,
+  scaling_offset                NUMBER,
+  call_seq_mass_curve_to_inc    NUMBER,
+  call_seq_inc_to_mass_curve    NUMBER,
+  call_seq_interval_conversion  NUMBER,
+  resultant_ts_code             NUMBER
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
 
-
-CREATE UNIQUE INDEX AT_TRANSFORM_CRITERIA_PK ON AT_TRANSFORM_CRITERIA
-(TS_CODE)
+CREATE UNIQUE INDEX at_transform_criteria_pk ON at_transform_criteria
+(ts_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -1188,16 +1219,15 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-CREATE UNIQUE INDEX AT_TRANSFORM_CRITERIA_U02 ON AT_TRANSFORM_CRITERIA
-(RESULTANT_TS_CODE)
+CREATE UNIQUE INDEX at_transform_criteria_u02 ON at_transform_criteria
+(resultant_ts_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -1206,105 +1236,99 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_TRANSFORM_CRITERIA ADD (
-  CONSTRAINT AT_TRANSFORM_CRITERIA_PK
+ALTER TABLE at_transform_criteria ADD (
+  CONSTRAINT at_transform_criteria_pk
  PRIMARY KEY
- (TS_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (ts_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+ALTER TABLE at_transform_criteria ADD (
+  CONSTRAINT at_transform_criteria_u02
+ UNIQUE (resultant_ts_code)
+    USING INDEX
+    TABLESPACE cwms_20data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
 
-ALTER TABLE AT_TRANSFORM_CRITERIA ADD (
-  CONSTRAINT AT_TRANSFORM_CRITERIA_U02
- UNIQUE (RESULTANT_TS_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
+ALTER TABLE at_transform_criteria ADD (
+  CONSTRAINT at_transform_criteria_r02
+ FOREIGN KEY (resultant_ts_code)
+ REFERENCES at_cwms_ts_spec (ts_code))
 /
-
-
-ALTER TABLE AT_TRANSFORM_CRITERIA ADD (
-  CONSTRAINT AT_TRANSFORM_CRITERIA_R02 
- FOREIGN KEY (RESULTANT_TS_CODE) 
- REFERENCES AT_CWMS_TS_SPEC (TS_CODE))
+ALTER TABLE at_transform_criteria ADD (
+  CONSTRAINT at_transform_criteria_r01
+ FOREIGN KEY (ts_code)
+ REFERENCES at_cwms_ts_spec (ts_code))
 /
-
-ALTER TABLE AT_TRANSFORM_CRITERIA ADD (
-  CONSTRAINT AT_TRANSFORM_CRITERIA_R01 
- FOREIGN KEY (TS_CODE) 
- REFERENCES AT_CWMS_TS_SPEC (TS_CODE))
+ALTER TABLE at_transform_criteria ADD (
+  CONSTRAINT at_transform_criteria_r03
+ FOREIGN KEY (comp_vt_code)
+ REFERENCES at_comp_vt (comp_vt_code))
 /
-
-ALTER TABLE AT_TRANSFORM_CRITERIA ADD (
-  CONSTRAINT AT_TRANSFORM_CRITERIA_R03 
- FOREIGN KEY (COMP_VT_CODE) 
- REFERENCES AT_COMP_VT (COMP_VT_CODE))
-/
-
 
 -----------------------------
 -- AT_UNIT_ALIAS TABLE.
 --
-CREATE TABLE AT_UNIT_ALIAS
+CREATE TABLE at_unit_alias
 (
-  ALIAS_ID        VARCHAR2(32 BYTE)             NOT NULL,
-  DB_OFFICE_CODE  NUMBER	  					NOT NULL,
-  UNIT_CODE       NUMBER(10)                    NOT NULL
+  alias_id        VARCHAR2(32 BYTE)             NOT NULL,
+  db_office_code  NUMBER                  NOT NULL,
+  unit_code       NUMBER(10)                    NOT NULL
 )
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE cwms_20at_data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          200K
+            INITIAL          200 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING;
 -----------------------------
 -- AT_UNIT_ALIAS TABLE comments
 --
-COMMENT ON TABLE AT_UNIT_ALIAS IS 'Contains unitAlias names for all units';
-COMMENT ON COLUMN AT_UNIT_ALIAS.ALIAS_ID IS 'Alias name and primary key';
-COMMENT ON COLUMN AT_UNIT_ALIAS.UNIT_CODE IS 'Foreign key referencing CWMS_UNIT table by its primary key';
+COMMENT ON TABLE at_unit_alias IS 'Contains unitAlias names for all units';
+COMMENT ON COLUMN at_unit_alias.alias_id IS 'Alias name and primary key';
+COMMENT ON COLUMN at_unit_alias.unit_code IS 'Foreign key referencing CWMS_UNIT table by its primary key';
 
 -----------------------------
 -- AT_UNIT_ALIAS TABLE indicies
 --
-CREATE UNIQUE INDEX AT_UNIT_ALIAS_PK ON AT_UNIT_ALIAS
-(ALIAS_ID, DB_OFFICE_CODE)
+CREATE UNIQUE INDEX at_unit_alias_pk ON at_unit_alias
+(alias_id, db_office_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -1314,16 +1338,16 @@ NOPARALLEL;
 -----------------------------
 -- AT_UNIT_ALIAS TABLE constraints
 --
-ALTER TABLE AT_UNIT_ALIAS ADD CONSTRAINT AT_UNIT_ALIAS_R02 FOREIGN KEY (DB_OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
-ALTER TABLE AT_UNIT_ALIAS ADD CONSTRAINT FK_AT_UNIT_ALIAS  FOREIGN KEY (UNIT_CODE) REFERENCES CWMS_UNIT (UNIT_CODE);
-ALTER TABLE AT_UNIT_ALIAS ADD CONSTRAINT AT_UNIT_ALIAS_PK  PRIMARY KEY (ALIAS_ID, DB_OFFICE_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ALTER TABLE at_unit_alias ADD CONSTRAINT at_unit_alias_r02 FOREIGN KEY (db_office_code) REFERENCES cwms_office (office_code);
+ALTER TABLE at_unit_alias ADD CONSTRAINT fk_at_unit_alias  FOREIGN KEY (unit_code) REFERENCES cwms_unit (unit_code);
+ALTER TABLE at_unit_alias ADD CONSTRAINT at_unit_alias_pk  PRIMARY KEY (alias_id, db_office_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
@@ -1332,42 +1356,41 @@ ALTER TABLE AT_UNIT_ALIAS ADD CONSTRAINT AT_UNIT_ALIAS_PK  PRIMARY KEY (ALIAS_ID
 -----------------------------
 -- AT_USER_PREFERENCES TABLE.
 --
-CREATE TABLE AT_USER_PREFERENCES
+CREATE TABLE at_user_preferences
 (
-  DB_OFFICE_CODE           NUMBER,
-  USERNAME                 VARCHAR2(31 BYTE),
-  DISPLAY_FORMAT_LAT_LONG  VARCHAR2(3 BYTE),
-  DISPLAY_UNIT_SYSTEM      VARCHAR2(2 BYTE)
+  db_office_code           NUMBER,
+  username                 VARCHAR2(31 BYTE),
+  display_format_lat_long  VARCHAR2(3 BYTE),
+  display_unit_system      VARCHAR2(2 BYTE)
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
 
-
-CREATE UNIQUE INDEX AT_USER_PREFERENCES_PK ON AT_USER_PREFERENCES
-(DB_OFFICE_CODE, USERNAME)
+CREATE UNIQUE INDEX at_user_preferences_pk ON at_user_preferences
+(db_office_code, username)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -1376,69 +1399,66 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_USER_PREFERENCES ADD (
-  CONSTRAINT AT_USER_PREFERENCES_PK
+ALTER TABLE at_user_preferences ADD (
+  CONSTRAINT at_user_preferences_pk
  PRIMARY KEY
- (DB_OFFICE_CODE, USERNAME)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (db_office_code, username)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
-
 -----------------------------
 -- AT_OFFICE_SETTINGS TABLE.
 --
-CREATE TABLE AT_OFFICE_SETTINGS
+CREATE TABLE at_office_settings
 (
-  DB_OFFICE_CODE           NUMBER,
-  SCREENING_USE_OTF        VARCHAR2(1 BYTE),
-  SCREENING_USE_DATCHK     VARCHAR2(1 BYTE),
-  SCREENING_USE_CWMS       VARCHAR2(1 BYTE),
-  MAX_NORTHERN_LAT         NUMBER,
-  MAX_SOUTHERN_LAT         NUMBER,
-  MAX_WESTERN_LONG         NUMBER,
-  MAX_EASTERN_LONG         NUMBER,
-  DISPLAY_LAT_LONG_FORMAT  VARCHAR2(3 BYTE),
-  DISPLAY_UNIT_SYSTEM      VARCHAR2(2 BYTE)
+  db_office_code           NUMBER,
+  screening_use_otf        VARCHAR2(1 BYTE),
+  screening_use_datchk     VARCHAR2(1 BYTE),
+  screening_use_cwms       VARCHAR2(1 BYTE),
+  max_northern_lat         NUMBER,
+  max_southern_lat         NUMBER,
+  max_western_long         NUMBER,
+  max_eastern_long         NUMBER,
+  display_lat_long_format  VARCHAR2(3 BYTE),
+  display_unit_system      VARCHAR2(2 BYTE)
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
 
-
-CREATE UNIQUE INDEX AT_OFFICE_SETTINGS_PK ON AT_OFFICE_SETTINGS
-(DB_OFFICE_CODE)
+CREATE UNIQUE INDEX at_office_settings_pk ON at_office_settings
+(db_office_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       2147483645
             PCTINCREASE      0
@@ -1447,115 +1467,113 @@ STORAGE    (
 NOPARALLEL
 /
 
-
-ALTER TABLE AT_OFFICE_SETTINGS ADD (
-  CONSTRAINT AT_OFFICE_SETTINGS_PK
+ALTER TABLE at_office_settings ADD (
+  CONSTRAINT at_office_settings_pk
  PRIMARY KEY
- (DB_OFFICE_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (db_office_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
                ))
 /
-
 
 ---------------------------------
 -- AT_PROPERTIES table.
 -- 
-CREATE TABLE AT_PROPERTIES
+CREATE TABLE at_properties
     (
-        OFFICE_CODE    NUMBER(10),
-        PROP_CATEGORY  VARCHAR2(256) NOT NULL,
-        PROP_ID        VARCHAR2(256) NOT NULL,
-        PROP_VALUE     VARCHAR2(256),
-        PROP_COMMENT   VARCHAR2(256)
+        office_code    NUMBER(10),
+        prop_category  VARCHAR2(256) NOT NULL,
+        prop_id        VARCHAR2(256) NOT NULL,
+        prop_value     VARCHAR2(256),
+        prop_comment   VARCHAR2(256)
     )
-    LOGGING 
-    NOCOMPRESS 
+    LOGGING
+    NOCOMPRESS
     NOCACHE
     NOPARALLEL
     NOMONITORING;
-                                  
-COMMENT ON TABLE AT_PROPERTIES IS 'Generic properties, such as for Java application.';
-COMMENT ON COLUMN AT_PROPERTIES.OFFICE_CODE   IS 'References the office that "owns" this property.';
-COMMENT ON COLUMN AT_PROPERTIES.PROP_CATEGORY IS 'Major category or component to which property applies.';
-COMMENT ON COLUMN AT_PROPERTIES.PROP_ID       IS 'Property name.';
-COMMENT ON COLUMN AT_PROPERTIES.PROP_VALUE    IS 'Property value.';
-COMMENT ON COLUMN AT_PROPERTIES.PROP_COMMENT  IS 'Notes about property usage or value.';
+
+COMMENT ON TABLE at_properties IS 'Generic properties, such as for Java application.';
+COMMENT ON COLUMN at_properties.office_code   IS 'References the office that "owns" this property.';
+COMMENT ON COLUMN at_properties.prop_category IS 'Major category or component to which property applies.';
+COMMENT ON COLUMN at_properties.prop_id       IS 'Property name.';
+COMMENT ON COLUMN at_properties.prop_value    IS 'Property value.';
+COMMENT ON COLUMN at_properties.prop_comment  IS 'Notes about property usage or value.';
 ---------------------------------
 -- AT_PROPERTIES constraints.
 -- 
-ALTER TABLE AT_PROPERTIES ADD CONSTRAINT AT_PROPERTIES_FK FOREIGN KEY(OFFICE_CODE)REFERENCES CWMS_OFFICE (OFFICE_CODE);
-ALTER TABLE AT_PROPERTIES ADD CONSTRAINT AT_PROPERTIES_PK PRIMARY KEY(OFFICE_CODE, PROP_CATEGORY, PROP_ID);
-    
+ALTER TABLE at_properties ADD CONSTRAINT at_properties_fk FOREIGN KEY(office_code)REFERENCES cwms_office (office_code);
+ALTER TABLE at_properties ADD CONSTRAINT at_properties_pk PRIMARY KEY(office_code, prop_category, prop_id);
+
 ---------------------------------
 -- AT_PROPERTIES indicies.
 -- 
-CREATE UNIQUE INDEX at_properties_uk1 ON at_properties(OFFICE_CODE, UPPER("PROP_CATEGORY"), UPPER("PROP_ID"));
+CREATE UNIQUE INDEX at_properties_uk1 ON at_properties(office_code, UPPER("PROP_CATEGORY"), UPPER("PROP_ID"));
 
 
 
 -----------------------------
 -- AT_REPORT_TEMPLATES table
 --
-create table at_report_templates
+CREATE TABLE at_report_templates
 (
-  id               varchar2(256 byte),
-  description      varchar2(256 byte),
-  header_template  varchar2(4000 byte),
-  record_template  varchar2(4000 byte),
-  footer_template  varchar2(4000 byte)
+  ID               VARCHAR2(256 BYTE),
+  description      VARCHAR2(256 BYTE),
+  header_template  VARCHAR2(4000 BYTE),
+  record_template  VARCHAR2(4000 BYTE),
+  footer_template  VARCHAR2(4000 BYTE)
 )
-tablespace cwms_20at_data
-pctused    0
-pctfree    10
-initrans   1
-maxtrans   255
-storage    
+TABLESPACE cwms_20at_data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE
 (
-  initial          64k
-  minextents       1
-  maxextents       2147483645
-  pctincrease      0
-  buffer_pool      default
+  INITIAL          64 k
+  MINEXTENTS       1
+  MAXEXTENTS       2147483645
+  PCTINCREASE      0
+  BUFFER_POOL      DEFAULT
 )
-logging 
-nocompress 
-nocache
-noparallel
-monitoring;
-                                            
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING;
+
 -----------------------------
 -- AT_REPORT_TEMPLATES comments
 --
-comment on table  at_report_templates                 is 'Defines canned templates for use with CWMS_REPORT.TEXT_REPORT';
-comment on column at_report_templates.id              is 'Unique record identifier, using hierarchical /dir/subdir/.../file syntax';
-comment on column at_report_templates.description     is 'Description of this set of templates';
-comment on column at_report_templates.header_template is 'A template string for the portion of the report before the records';
-comment on column at_report_templates.record_template is 'A template string applied to each record in the report';
-comment on column at_report_templates.footer_template is 'A template string for the portion of the report after the records';
+COMMENT ON TABLE  at_report_templates                 IS 'Defines canned templates for use with CWMS_REPORT.TEXT_REPORT';
+COMMENT ON COLUMN at_report_templates.ID              IS 'Unique record identifier, using hierarchical /dir/subdir/.../file syntax';
+COMMENT ON COLUMN at_report_templates.description     IS 'Description of this set of templates';
+COMMENT ON COLUMN at_report_templates.header_template IS 'A template string for the portion of the report before the records';
+COMMENT ON COLUMN at_report_templates.record_template IS 'A template string applied to each record in the report';
+COMMENT ON COLUMN at_report_templates.footer_template IS 'A template string for the portion of the report after the records';
 
 -----------------------------
 -- AT_REPORT_TEMPLATES indicies
 --
-ALTER TABLE AT_REPORT_TEMPLATES ADD 
+ALTER TABLE at_report_templates ADD
 (
   PRIMARY KEY (ID)
-  USING INDEX 
+  USING INDEX
   TABLESPACE cwms_20at_data
   PCTFREE    10
   INITRANS   2
   MAXTRANS   255
-  STORAGE    
+  STORAGE
   (
-    INITIAL          64K
+    INITIAL          64 k
     MINEXTENTS       1
     MAXEXTENTS       2147483645
     PCTINCREASE      0
@@ -1565,20 +1583,15 @@ ALTER TABLE AT_REPORT_TEMPLATES ADD
 -----------------------------
 -- AT_REPORT_TEMPLATES default data
 --
-insert into at_report_templates values
-(
-'/cat_ts_table/xml',
-'Generates XML from cat_ts_table records',
-'<?xml version="1.0"?>\n<tsid_catalog>\n',
-'  <tsid office="$1" ts_code="$4" offset="$3">$2</tsid>\n',
-'</tsid_catalog>\n'
-);
+INSERT INTO at_report_templates
+     VALUES ('/cat_ts_table/xml', 'Generates XML from cat_ts_table records',
+             '<?xml version="1.0"?>\n<tsid_catalog>\n',
+             '  <tsid office="$1" ts_code="$4" offset="$3">$2</tsid>\n',
+             '</tsid_catalog>\n');
 
-insert into at_report_templates values
-(
-'/cat_ts_table/html',
-'Generates HTML from cat_ts_table records',
-'<html>
+INSERT INTO at_report_templates
+     VALUES ('/cat_ts_table/html', 'Generates HTML from cat_ts_table records',
+             '<html>
 <head>
   <title>Time Series IDs</title>
 </head>
@@ -1593,110 +1606,104 @@ insert into at_report_templates values
         <th>UTC Interval Offset</th>
       </tr>
 ',
-'      <tr>
+             '      <tr>
         <td>$2</td>
         <td>$4</td>
         <td>$3</td>
       </tr>
 ',
-'    </table>
+             '    </table>
   </center>
 </body>
 </html>
-'
-);
+'           );
 
-insert into at_report_templates values
-(
-   '/cat_ts_table/text',
-   'Generates text from cat_ts_table records',
-   '\nTIME SERIES CATALOG\nREPORT GENERATED BY $host AT $time\n\n',
-   '$1%-8.8s$4%-8d$3%12d$2\n',
-   '\n$count TOTAL RECORDS PROCESSED\n'
-);
+INSERT INTO at_report_templates
+     VALUES ('/cat_ts_table/text', 'Generates text from cat_ts_table records',
+             '\nTIME SERIES CATALOG\nREPORT GENERATED BY $host AT $time\n\n',
+             '$1%-8.8s$4%-8d$3%12d$2\n', '\n$count TOTAL RECORDS PROCESSED\n');
 
-commit;
+COMMIT ;
 
 -----------------------------
 -- AT_CLOB table
 --
-create table at_clob
+CREATE TABLE at_clob
 (
-  id           varchar2(256 byte) not null,
-  description  varchar2(256 byte),
-  value        clob
+  ID           VARCHAR2(256 BYTE) NOT NULL,
+  description  VARCHAR2(256 BYTE),
+  VALUE        CLOB
 )
-tablespace cwms_20at_data
-pctused    0
-pctfree    10
-initrans   1
-maxtrans   255
-storage    
+TABLESPACE cwms_20at_data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE
 (
-  initial          64k
-  minextents       1
-  maxextents       2147483645
-  pctincrease      0
-  buffer_pool      default
+  INITIAL          64 k
+  MINEXTENTS       1
+  MAXEXTENTS       2147483645
+  PCTINCREASE      0
+  BUFFER_POOL      DEFAULT
 )
-logging 
-nocompress 
-lob (value) store as 
-( 
-  tablespace  cwms_20at_data 
-  enable      storage in row
-  chunk       8192
-  pctversion  0
-  nocache
-  storage   
+LOGGING
+NOCOMPRESS
+LOB (VALUE) STORE AS
+(
+  TABLESPACE  cwms_20at_data
+  ENABLE      STORAGE IN ROW
+  CHUNK       8192
+  PCTVERSION  0
+  NOCACHE
+  STORAGE
   (
-    initial          64k
-    minextents       1
-    maxextents       2147483645
-    pctincrease      0
-    buffer_pool      default
+    INITIAL          64 k
+    MINEXTENTS       1
+    MAXEXTENTS       2147483645
+    PCTINCREASE      0
+    BUFFER_POOL      DEFAULT
   )
 )
-nocache
-noparallel
-monitoring;
+NOCACHE
+NOPARALLEL
+MONITORING;
 
 -----------------------------
 -- AT_CLOB comments
 --
-comment on table  at_clob             is 'Character Large OBject Storage for CWMS';
-comment on column at_clob.id          is 'Unique record identifier, using hierarchical /dir/subdir/.../file syntax';
-comment on column at_clob.description is 'Description of this CLOB';
-comment on column at_clob.value       is 'The CLOB data';
+COMMENT ON TABLE  at_clob             IS 'Character Large OBject Storage for CWMS';
+COMMENT ON COLUMN at_clob.ID          IS 'Unique record identifier, using hierarchical /dir/subdir/.../file syntax';
+COMMENT ON COLUMN at_clob.description IS 'Description of this CLOB';
+COMMENT ON COLUMN at_clob.VALUE       IS 'The CLOB data';
 
 -----------------------------
 -- AT_CLOB indicies
 --
-alter table at_clob add 
+ALTER TABLE at_clob ADD
 (
-  primary key (id)
-  using index 
-  tablespace cwms_20at_data
-  pctfree    10
-  initrans   2
-  maxtrans   255
-  storage    
+  PRIMARY KEY (ID)
+  USING INDEX
+  TABLESPACE cwms_20at_data
+  PCTFREE    10
+  INITRANS   2
+  MAXTRANS   255
+  STORAGE
   (
-    initial          64k
-    minextents       1
-    maxextents       2147483645
-    pctincrease      0
+    INITIAL          64 k
+    MINEXTENTS       1
+    MAXEXTENTS       2147483645
+    PCTINCREASE      0
   )
 );
 
 -----------------------------
 -- AT_CLOB default data
 --
-insert into at_clob values
-(      
-'/xslt/identity',
-'Transforms the input to an identical copy of itself',
-'<!-- The Identity Transformation -->
+INSERT INTO at_clob
+     VALUES ('/xslt/identity',
+             'Transforms the input to an identical copy of itself',
+             '<!-- The Identity Transformation -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <!-- Whenevery you match any node or any attribute -->
   <xsl:template match="node()|@*">
@@ -1707,14 +1714,12 @@ insert into at_clob values
     </xsl:copy>
   </xsl:template>
 </xsl:stylesheet>
-'
-);
+'           );
 
-insert into at_clob values
-(      
-'/xslt/cat_ts_xml/tabbed_text',
-'Transforms cat_ts_xml output to tab-separated text',
-'<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+INSERT INTO at_clob
+     VALUES ('/xslt/cat_ts_xml/tabbed_text',
+             'Transforms cat_ts_xml output to tab-separated text',
+             '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <xsl:template match="/tsid_catalog[1]">
     <xsl:text>Time Series IDs for Office "</xsl:text>
     <xsl:value-of select="/tsid_catalog[1]/@office"/>
@@ -1731,14 +1736,11 @@ insert into at_clob values
     </xsl:for-each>
   </xsl:template>
 </xsl:stylesheet>
-'
-);
+'           );
 
-insert into at_clob values
-(      
-'/xslt/cat_ts_xml/html',
-'Transforms cat_ts_xml output to html',
-'<html xsl:version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+INSERT INTO at_clob
+     VALUES ('/xslt/cat_ts_xml/html', 'Transforms cat_ts_xml output to html',
+             '<html xsl:version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <head>
   <title>Time Series IDs for Office "<xsl:value-of select="/tsid_catalog[1]/@office"/>" 
          Matching "<xsl:value-of select="/tsid_catalog[1]/@pattern"/>"
@@ -1769,12 +1771,10 @@ insert into at_clob values
   </center>
 </body>
 </html>
-'
-);
+'           );
 
-commit;
+COMMIT ;
 
 
 SHOW ERRORS;
-COMMIT;
-
+COMMIT ;
