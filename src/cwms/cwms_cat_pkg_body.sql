@@ -1,4 +1,4 @@
-/* Formatted on 2007/06/29 09:16 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/10/09 14:43 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_cat
 IS
 -------------------------------------------------------------------------------
@@ -1073,10 +1073,21 @@ IS
             );
       END IF;
 
+      DBMS_OUTPUT.put_line ('cat_ts_id is here!');
+
       IF p_ts_subselect_string IS NULL
       THEN
          IF l_loc_group_code IS NULL
          THEN
+            DBMS_OUTPUT.put_line (   'subselect & loc_group_code are null! '
+                                  || CHR (10)
+                                  || 'db_office_code = '
+                                  || l_db_office_code
+                                  || CHR (10)
+                                  || 'user_id = '
+                                  || cwms_util.get_user_id
+                                 );
+
             OPEN p_cwms_cat FOR
                SELECT   v.db_office_id, v.base_location_id, v.cwms_ts_id,
                         v.interval_utc_offset,
@@ -1085,12 +1096,10 @@ IS
                               THEN NULL
                            ELSE z.time_zone_name
                         END AS lrts_timezone,
-                        v.ts_active_flag,
-                        a.net_privilege_bit user_privileges
+                        v.ts_active_flag, a.net_privilege_bit user_privileges
                    FROM mv_cwms_ts_id v,
                         at_cwms_ts_spec s,
-                        cwms_time_zone z,
-                        mv_sec_ts_priv a
+                        cwms_time_zone z , mv_sec_ts_priv a
                   WHERE s.ts_code = v.ts_code
                     AND a.ts_code = v.ts_code
                     AND z.time_zone_code = NVL (s.time_zone_code, 0)
@@ -1572,58 +1581,59 @@ IS
       RETURN;
    END cat_loc_tab;
 
-    -------------------------------------------------------------------------------
-    -- procedure cat_loc_alias(...)
-    --
-    --
-    PROCEDURE cat_loc_alias (
-       p_cwms_cat       OUT      sys_refcursor,
-       p_cwms_ts_id     IN       VARCHAR2 DEFAULT NULL,
-       p_db_office_id   IN       VARCHAR2 DEFAULT NULL
-    )
-    IS
-       l_db_office_id    VARCHAR2 (16)
-                                   := cwms_util.get_db_office_id (p_db_office_id);
-       l_location_code   NUMBER;
-    BEGIN
-       IF p_cwms_ts_id IS NULL
-       THEN
-    ---------------------------
-    -- only office specified --
-    ---------------------------
-          OPEN p_cwms_cat FOR
-             SELECT   a.db_office_id, a.location_id, a.GROUP_ID agency_id,
-                      a.alias_id
-                 FROM av_loc_alias a
-                WHERE category_id = 'Agency Alias'
-                  AND db_office_id = l_db_office_id
-             ORDER BY UPPER (a.location_id),
-                      UPPER (a.GROUP_ID),
-                      UPPER (a.alias_id);
-       ELSE
-    ----------------------------------------
-    -- both office and location specified --
-    ----------------------------------------
-          l_location_code :=
-             cwms_loc.get_location_code
-                (p_db_office_id      => l_db_office_id,
-                 p_location_id       => cwms_ts.get_location_id
-                                                 (p_cwms_ts_id        => p_cwms_ts_id,
-                                                  p_db_office_id      => l_db_office_id
-                                                 )
-                );
+-------------------------------------------------------------------------------
+-- procedure cat_loc_alias(...)
+--
+--
+   PROCEDURE cat_loc_alias (
+      p_cwms_cat       OUT      sys_refcursor,
+      p_cwms_ts_id     IN       VARCHAR2 DEFAULT NULL,
+      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_id    VARCHAR2 (16)
+                               := cwms_util.get_db_office_id (p_db_office_id);
+      l_location_code   NUMBER;
+   BEGIN
+      IF p_cwms_ts_id IS NULL
+      THEN
+---------------------------
+-- only office specified --
+---------------------------
+         OPEN p_cwms_cat FOR
+            SELECT   a.db_office_id, a.location_id, a.GROUP_ID agency_id,
+                     a.alias_id
+                FROM av_loc_alias a
+               WHERE category_id = 'Agency Alias'
+                 AND db_office_id = l_db_office_id
+            ORDER BY UPPER (a.location_id),
+                     UPPER (a.GROUP_ID),
+                     UPPER (a.alias_id);
+      ELSE
+----------------------------------------
+-- both office and location specified --
+----------------------------------------
+         l_location_code :=
+            cwms_loc.get_location_code
+               (p_db_office_id      => l_db_office_id,
+                p_location_id       => cwms_ts.get_location_id
+                                             (p_cwms_ts_id        => p_cwms_ts_id,
+                                              p_db_office_id      => l_db_office_id
+                                             )
+               );
 
-          OPEN p_cwms_cat FOR
-             SELECT   a.db_office_id, a.location_id, a.GROUP_ID agency_id,
-                      a.alias_id
-                 FROM av_loc_alias a
-                WHERE category_id = 'Agency Alias'
-                  AND a.location_code = l_location_code
-             ORDER BY UPPER (a.location_id),
-                      UPPER (a.GROUP_ID),
-                      UPPER (a.alias_id);
-       END IF;
-    END cat_loc_alias;
+         OPEN p_cwms_cat FOR
+            SELECT   a.db_office_id, a.location_id, a.GROUP_ID agency_id,
+                     a.alias_id
+                FROM av_loc_alias a
+               WHERE category_id = 'Agency Alias'
+                 AND a.location_code = l_location_code
+            ORDER BY UPPER (a.location_id),
+                     UPPER (a.GROUP_ID),
+                     UPPER (a.alias_id);
+      END IF;
+   END cat_loc_alias;
+
 -------------------------------------------------------------------------------
 -- function cat_loc_alias_tab(...)
 --
@@ -2745,173 +2755,223 @@ IS
 
       RETURN;
    END cat_loc_group_tab;
-      
-   PROCEDURE cat_xchg_office (
-      p_offices OUT xchg_office_tab_t)
+
+   PROCEDURE cat_xchg_office (p_offices OUT xchg_office_tab_t)
    IS
    BEGIN
-      p_offices := xchg_office_tab_t(); 
-      for rec in (select office_id, long_name, eroc
-                    from cwms_office
-                   where regexp_instr(eroc, '[A-Z][0-9]') = 1)
-      loop
-         p_offices.extend();
-         p_offices(p_offices.last) := new xchg_office_t(rec.office_id, rec.long_name);
-      end loop;
-   END cat_xchg_office;
-      
-   PROCEDURE cat_xchg_office (
-      p_clob IN OUT NOCOPY CLOB)
-   IS
-      l_offices xchg_office_tab_t;
-      l_text    varchar2(256);
-   BEGIN
-      cat_xchg_office(l_offices);
-      if p_clob is null then
-         dbms_lob.createtemporary(p_clob, true);
-      end if;
-      dbms_lob.open(p_clob, dbms_lob.lob_readwrite);
-      dbms_lob.trim(p_clob, 0);
-      for i in 1..l_offices.count loop
-         l_text := l_offices(i).get_xml().getstringval();
-         dbms_lob.writeappend(p_clob, length(l_text), l_text);
-      end loop;
-      dbms_lob.close(p_clob);
-      if dbms_lob.getlength(p_clob) > 0 then
-         cwms_util.format_xml(p_clob);
-      end if;
+      p_offices := xchg_office_tab_t ();
+
+      FOR rec IN (SELECT office_id, long_name, eroc
+                    FROM cwms_office
+                   WHERE REGEXP_INSTR (eroc, '[A-Z][0-9]') = 1)
+      LOOP
+         p_offices.EXTEND ();
+         p_offices (p_offices.LAST) :=
+                             NEW xchg_office_t (rec.office_id, rec.long_name);
+      END LOOP;
    END cat_xchg_office;
 
-      
-   PROCEDURE cat_xchg_datastore(
-      p_datastores   OUT xchg_datastore_tab_t,
-      p_db_office_id IN  VARCHAR2 DEFAULT NULL)
+   PROCEDURE cat_xchg_office (p_clob IN OUT NOCOPY CLOB)
    IS
-      l_db_office_code NUMBER := cwms_util.get_db_office_code (p_db_office_id);
-      l_host           VARCHAR2(256);
-      l_port           INTEGER;
-      l_db_name        VARCHAR2(16);
-      l_oracle_id      VARCHAR2(256);
+      l_offices   xchg_office_tab_t;
+      l_text      VARCHAR2 (256);
    BEGIN
-      p_datastores := xchg_datastore_tab_t();
-      for rec in (select dss_file_code, dss_filemgr_url, dss_file_name
-                    from at_dss_file
-                   where office_code = l_db_office_code)
-      loop
-         p_datastores.extend();
-         l_host := regexp_substr(rec.dss_filemgr_url, '[^/:]+');
-         l_port := regexp_substr(rec.dss_filemgr_url, '[^:]+$');
-         p_datastores(p_datastores.last) := new xchg_dssfilemanager_t(
-            'DSS-' || rec.dss_file_code, 
-            l_host, 
-            l_port, 
-            rec.dss_file_name);
-      end loop;
-      select name into l_db_name from v$database;
-      l_oracle_id := utl_inaddr.get_host_name || ':' || l_db_name;
-      l_oracle_id := substr(l_oracle_id, -(least(length(l_oracle_id), 16)));
-      l_oracle_id := substr(l_oracle_id, regexp_instr(l_oracle_id, '[a-zA-Z0-9]'));
-      p_datastores.extend();
-      p_datastores(p_datastores.last) := new xchg_oracle_t(
-         l_oracle_id,
-         utl_inaddr.get_host_address,
-         l_db_name);
+      cat_xchg_office (l_offices);
+
+      IF p_clob IS NULL
+      THEN
+         DBMS_LOB.createtemporary (p_clob, TRUE);
+      END IF;
+
+      DBMS_LOB.OPEN (p_clob, DBMS_LOB.lob_readwrite);
+      DBMS_LOB.TRIM (p_clob, 0);
+
+      FOR i IN 1 .. l_offices.COUNT
+      LOOP
+         l_text := l_offices (i).get_xml ().getstringval ();
+         DBMS_LOB.writeappend (p_clob, LENGTH (l_text), l_text);
+      END LOOP;
+
+      DBMS_LOB.CLOSE (p_clob);
+
+      IF DBMS_LOB.getlength (p_clob) > 0
+      THEN
+         cwms_util.format_xml (p_clob);
+      END IF;
+   END cat_xchg_office;
+
+   PROCEDURE cat_xchg_datastore (
+      p_datastores     OUT      xchg_datastore_tab_t,
+      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_code   NUMBER
+                             := cwms_util.get_db_office_code (p_db_office_id);
+      l_host             VARCHAR2 (256);
+      l_port             INTEGER;
+      l_db_name          VARCHAR2 (16);
+      l_oracle_id        VARCHAR2 (256);
+   BEGIN
+      p_datastores := xchg_datastore_tab_t ();
+
+      FOR rec IN (SELECT dss_file_code, dss_filemgr_url, dss_file_name
+                    FROM at_dss_file
+                   WHERE office_code = l_db_office_code)
+      LOOP
+         p_datastores.EXTEND ();
+         l_host := REGEXP_SUBSTR (rec.dss_filemgr_url, '[^/:]+');
+         l_port := REGEXP_SUBSTR (rec.dss_filemgr_url, '[^:]+$');
+         p_datastores (p_datastores.LAST) :=
+            NEW xchg_dssfilemanager_t ('DSS-' || rec.dss_file_code,
+                                       l_host,
+                                       l_port,
+                                       rec.dss_file_name
+                                      );
+      END LOOP;
+
+      SELECT NAME
+        INTO l_db_name
+        FROM v$database;
+
+      l_oracle_id := UTL_INADDR.get_host_name || ':' || l_db_name;
+      l_oracle_id := SUBSTR (l_oracle_id,
+                             - (LEAST (LENGTH (l_oracle_id), 16)));
+      l_oracle_id :=
+               SUBSTR (l_oracle_id, REGEXP_INSTR (l_oracle_id, '[a-zA-Z0-9]'));
+      p_datastores.EXTEND ();
+      p_datastores (p_datastores.LAST) :=
+         NEW xchg_oracle_t (l_oracle_id,
+                            UTL_INADDR.get_host_address,
+                            l_db_name
+                           );
    END cat_xchg_datastore;
-            
-   PROCEDURE cat_xchg_datastore(
-      p_clob         IN OUT NOCOPY CLOB,
-      p_db_office_id IN  VARCHAR2 DEFAULT NULL)
-   IS
-      l_datastores xchg_datastore_tab_t;
-      l_text       varchar2(512);
-   BEGIN
-      cat_xchg_datastore(l_datastores, p_db_office_id);
-      if p_clob is null then
-         dbms_lob.createtemporary(p_clob, true);
-      end if;
-      dbms_lob.open(p_clob, dbms_lob.lob_readwrite);
-      dbms_lob.trim(p_clob, 0);
-      for i in 1..l_datastores.count loop
-         l_text := l_datastores(i).get_xml().getstringval();
-         dbms_lob.writeappend(p_clob, 11,'<datastore>');
-         dbms_lob.writeappend(p_clob, length(l_text), l_text);
-         dbms_lob.writeappend(p_clob, 12,'</datastore>');
-      end loop;
-      dbms_lob.close(p_clob);
-      if dbms_lob.getlength(p_clob) > 0 then
-         cwms_util.format_xml(p_clob);
-      end if;
-   END cat_xchg_datastore;      
 
-  PROCEDURE cat_xchg_set(
-      p_xchg_sets    OUT xchg_dataexchange_set_tab_t,
-      p_db_office_id IN  VARCHAR2 DEFAULT NULL)
+   PROCEDURE cat_xchg_datastore (
+      p_clob           IN OUT NOCOPY   CLOB,
+      p_db_office_id   IN              VARCHAR2 DEFAULT NULL
+   )
    IS
-      l_db_office_code NUMBER := cwms_util.get_db_office_code (p_db_office_id);
-      l_xchg_sets      xchg_dataexchange_set_tab_t := xchg_dataexchange_set_tab_t();
-      l_db_name        VARCHAR2(16);
-      l_oracle_id      VARCHAR2(256);
+      l_datastores   xchg_datastore_tab_t;
+      l_text         VARCHAR2 (512);
    BEGIN
-      select name into l_db_name from v$database;
-      l_oracle_id := utl_inaddr.get_host_name || ':' || l_db_name;
-      l_oracle_id := substr(l_oracle_id, -(least(length(l_oracle_id), 16)));
-      l_oracle_id := substr(l_oracle_id, regexp_instr(l_oracle_id, '[a-zA-Z0-9]'));
-      for rec in (
-         select dss_file_code,
-                dss_xchg_set_id,
-                description,
-                start_time,
-                end_time,
-                realtime
-           from at_dss_xchg_set
-          where office_code = l_db_office_code) 
-      loop
-         l_xchg_sets.extend();
-         l_xchg_sets(l_xchg_sets.last) := new xchg_dataexchange_set_t(
-            rec.dss_xchg_set_id,
-            'DSS-' ||rec.dss_file_code,
-            l_oracle_id,
-            null,
-            true,
-            rec.description,
-            case nvl(rec.realtime, -1)
-               when -1 then null
-               when  1    then 'DSS-' ||rec.dss_file_code
-               when  2    then l_oracle_id
-            end,
-            case nvl(rec.start_time, '@')
-               when '@' then null
-               else new xchg_timewindow_t(rec.start_time, rec.end_time)
-            end,
-            l_db_office_code);
-      end loop;
-      
+      cat_xchg_datastore (l_datastores, p_db_office_id);
+
+      IF p_clob IS NULL
+      THEN
+         DBMS_LOB.createtemporary (p_clob, TRUE);
+      END IF;
+
+      DBMS_LOB.OPEN (p_clob, DBMS_LOB.lob_readwrite);
+      DBMS_LOB.TRIM (p_clob, 0);
+
+      FOR i IN 1 .. l_datastores.COUNT
+      LOOP
+         l_text := l_datastores (i).get_xml ().getstringval ();
+         DBMS_LOB.writeappend (p_clob, 11, '<datastore>');
+         DBMS_LOB.writeappend (p_clob, LENGTH (l_text), l_text);
+         DBMS_LOB.writeappend (p_clob, 12, '</datastore>');
+      END LOOP;
+
+      DBMS_LOB.CLOSE (p_clob);
+
+      IF DBMS_LOB.getlength (p_clob) > 0
+      THEN
+         cwms_util.format_xml (p_clob);
+      END IF;
+   END cat_xchg_datastore;
+
+   PROCEDURE cat_xchg_set (
+      p_xchg_sets      OUT      xchg_dataexchange_set_tab_t,
+      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_code   NUMBER
+                             := cwms_util.get_db_office_code (p_db_office_id);
+      l_xchg_sets        xchg_dataexchange_set_tab_t
+                                            := xchg_dataexchange_set_tab_t
+                                                                          ();
+      l_db_name          VARCHAR2 (16);
+      l_oracle_id        VARCHAR2 (256);
+   BEGIN
+      SELECT NAME
+        INTO l_db_name
+        FROM v$database;
+
+      l_oracle_id := UTL_INADDR.get_host_name || ':' || l_db_name;
+      l_oracle_id := SUBSTR (l_oracle_id,
+                             - (LEAST (LENGTH (l_oracle_id), 16)));
+      l_oracle_id :=
+               SUBSTR (l_oracle_id, REGEXP_INSTR (l_oracle_id, '[a-zA-Z0-9]'));
+
+      FOR rec IN (SELECT dss_file_code, dss_xchg_set_id, description,
+                         start_time, end_time, realtime
+                    FROM at_dss_xchg_set
+                   WHERE office_code = l_db_office_code)
+      LOOP
+         l_xchg_sets.EXTEND ();
+         l_xchg_sets (l_xchg_sets.LAST) :=
+            NEW xchg_dataexchange_set_t
+                                     (rec.dss_xchg_set_id,
+                                      'DSS-' || rec.dss_file_code,
+                                      l_oracle_id,
+                                      NULL,
+                                      TRUE,
+                                      rec.description,
+                                      CASE NVL (rec.realtime, -1)
+                                         WHEN -1
+                                            THEN NULL
+                                         WHEN 1
+                                            THEN 'DSS-' || rec.dss_file_code
+                                         WHEN 2
+                                            THEN l_oracle_id
+                                      END,
+                                      CASE NVL (rec.start_time, '@')
+                                         WHEN '@'
+                                            THEN NULL
+                                         ELSE NEW xchg_timewindow_t
+                                                              (rec.start_time,
+                                                               rec.end_time
+                                                              )
+                                      END,
+                                      l_db_office_code
+                                     );
+      END LOOP;
+
       p_xchg_sets := l_xchg_sets;
    END cat_xchg_set;
-      
-   PROCEDURE cat_xchg_set(
-      p_clob         IN OUT NOCOPY CLOB,
-      p_db_office_id IN VARCHAR2 DEFAULT NULL)
+
+   PROCEDURE cat_xchg_set (
+      p_clob           IN OUT NOCOPY   CLOB,
+      p_db_office_id   IN              VARCHAR2 DEFAULT NULL
+   )
    IS
-      l_xchg_sets xchg_dataexchange_set_tab_t;
-      l_text      varchar2(512);
+      l_xchg_sets   xchg_dataexchange_set_tab_t;
+      l_text        VARCHAR2 (512);
    BEGIN
-      cat_xchg_set(l_xchg_sets, p_db_office_id);
-      if p_clob is null then
-         dbms_lob.createtemporary(p_clob, true);
-      end if;
-      dbms_lob.open(p_clob, dbms_lob.lob_readwrite);
-      dbms_lob.trim(p_clob, 0);
-      for i in 1..l_xchg_sets.count loop
-         l_text := l_xchg_sets(i).get_xml().getstringval();
-         dbms_lob.writeappend(p_clob, length(l_text), l_text);
-      end loop;
-      dbms_lob.close(p_clob);
-      if dbms_lob.getlength(p_clob) > 0 then
-         cwms_util.format_xml(p_clob);
-      end if;
+      cat_xchg_set (l_xchg_sets, p_db_office_id);
+
+      IF p_clob IS NULL
+      THEN
+         DBMS_LOB.createtemporary (p_clob, TRUE);
+      END IF;
+
+      DBMS_LOB.OPEN (p_clob, DBMS_LOB.lob_readwrite);
+      DBMS_LOB.TRIM (p_clob, 0);
+
+      FOR i IN 1 .. l_xchg_sets.COUNT
+      LOOP
+         l_text := l_xchg_sets (i).get_xml ().getstringval ();
+         DBMS_LOB.writeappend (p_clob, LENGTH (l_text), l_text);
+      END LOOP;
+
+      DBMS_LOB.CLOSE (p_clob);
+
+      IF DBMS_LOB.getlength (p_clob) > 0
+      THEN
+         cwms_util.format_xml (p_clob);
+      END IF;
    END cat_xchg_set;
-      
 END cwms_cat;
 /
-show errors;
+
+SHOW errors;

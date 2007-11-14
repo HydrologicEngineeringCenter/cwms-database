@@ -1,4 +1,4 @@
-/* Formatted on 2007/10/30 13:51 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/10/31 11:26 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_vt
 AS
 /******************************************************************************
@@ -10,6 +10,108 @@ AS
    ---------  ----------  ---------------  ------------------------------------
    1.0        12/11/2006             1. Created this package body.
 ******************************************************************************/
+   PROCEDURE store_screening_control (
+      p_screening_code              IN   NUMBER,
+      p_rate_change_disp_int_code   IN   NUMBER,
+      p_range_active_flag           IN   VARCHAR2,
+      p_rate_change_active_flag     IN   VARCHAR2,
+      p_const_active_flag           IN   VARCHAR2,
+      p_dur_mag_active_flag         IN   VARCHAR2,
+      p_ignore_nulls                IN   VARCHAR2 DEFAULT 'T'
+   )
+   IS
+      l_rate_change_disp_int_code   NUMBER       := NULL;
+      l_range_active_flag           VARCHAR2 (1) := NULL;
+      l_rate_change_active_flag     VARCHAR2 (1) := NULL;
+      l_const_active_flag           VARCHAR2 (1) := NULL;
+      l_dur_mag_active_flag         VARCHAR2 (1) := NULL;
+      l_ignore_nulls                BOOLEAN
+                := cwms_util.return_true_or_false (NVL (p_ignore_nulls, 'T'));
+   BEGIN
+      SELECT rate_change_disp_interval_code, range_active_flag,
+             rate_change_active_flag, const_active_flag,
+             dur_mag_active_flag
+        INTO l_rate_change_disp_int_code, l_range_active_flag,
+             l_rate_change_active_flag, l_const_active_flag,
+             l_dur_mag_active_flag
+        FROM at_screening_control
+       WHERE screening_code = p_screening_code;
+
+      IF l_ignore_nulls
+      THEN
+         IF p_rate_change_disp_int_code IS NOT NULL
+         THEN
+            l_rate_change_disp_int_code := p_rate_change_disp_int_code;
+         END IF;
+
+         IF p_range_active_flag IS NOT NULL
+         THEN
+            l_range_active_flag := p_range_active_flag;
+         END IF;
+
+         IF p_rate_change_active_flag IS NOT NULL
+         THEN
+            l_rate_change_active_flag := p_rate_change_active_flag;
+         END IF;
+
+         IF p_const_active_flag IS NOT NULL
+         THEN
+            l_const_active_flag := p_const_active_flag;
+         END IF;
+
+         IF p_dur_mag_active_flag IS NOT NULL
+         THEN
+            l_dur_mag_active_flag := p_dur_mag_active_flag;
+         END IF;
+      ELSE
+         l_rate_change_disp_int_code := p_rate_change_disp_int_code;
+         l_range_active_flag := p_range_active_flag;
+         l_rate_change_active_flag := p_rate_change_active_flag;
+         l_const_active_flag := p_const_active_flag;
+         l_dur_mag_active_flag := p_dur_mag_active_flag;
+      END IF;
+
+      UPDATE at_screening_control
+         SET rate_change_disp_interval_code = l_rate_change_disp_int_code,
+             range_active_flag = l_range_active_flag,
+             rate_change_active_flag = l_rate_change_active_flag,
+             const_active_flag = l_const_active_flag,
+             dur_mag_active_flag = p_dur_mag_active_flag
+       WHERE screening_code = p_screening_code;
+   END;
+
+   PROCEDURE copy_screening_control (
+      p_screening_code_old   IN   NUMBER,
+      p_screening_code_new   IN   NUMBER
+   )
+   IS
+      l_const_active_flag           VARCHAR2 (1);
+      l_dur_mag_active_flag         VARCHAR2 (1);
+      l_range_active_flag           VARCHAR2 (1);
+      l_rate_change_active_flag     VARCHAR2 (1);
+      l_rate_change_disp_int_code   NUMBER;
+   BEGIN
+      SELECT a.const_active_flag, a.dur_mag_active_flag,
+             a.range_active_flag, a.rate_change_active_flag,
+             a.rate_change_disp_interval_code
+        INTO l_const_active_flag, l_dur_mag_active_flag,
+             l_range_active_flag, l_rate_change_active_flag,
+             l_rate_change_disp_int_code
+        FROM at_screening_control a
+       WHERE screening_code = p_screening_code_old;
+
+      UPDATE at_screening_control
+         SET const_active_flag = l_const_active_flag,
+             dur_mag_active_flag = l_dur_mag_active_flag,
+             range_active_flag = l_range_active_flag,
+             rate_change_active_flag = l_rate_change_active_flag,
+             rate_change_disp_interval_code = l_rate_change_disp_int_code
+       WHERE screening_code = p_screening_code_new;
+   END;
+
+---- END of Private calls ----
+---
+--
    FUNCTION get_screening_code_ts_id_count (p_screening_code IN NUMBER)
       RETURN NUMBER
    IS
@@ -175,6 +277,14 @@ AS
            VALUES (l_screening_code
                   );
 
+      store_screening_control (p_screening_code                 => l_screening_code,
+                               p_rate_change_disp_int_code      => NULL,
+                               p_range_active_flag              => 'N',
+                               p_rate_change_active_flag        => 'N',
+                               p_const_active_flag              => 'N',
+                               p_dur_mag_active_flag            => 'N',
+                               p_ignore_nulls                   => 'T'
+                              );
       COMMIT;
       --
       RETURN l_screening_code;
@@ -313,6 +423,7 @@ AS
                                p_param_check,
                                p_db_office_id
                               );
+      copy_screening_control (l_screening_code_old, l_screening_code_new);
    END;
 
    PROCEDURE rename_screening_id (
@@ -647,76 +758,6 @@ AS
           WHERE screening_code = l_screening_code_old;
    END;
 
-   PROCEDURE store_screening_control (
-      p_screening_code              IN   NUMBER,
-      p_rate_change_disp_int_code   IN   NUMBER,
-      p_range_active_flag           IN   VARCHAR2,
-      p_rate_change_active_flag     IN   VARCHAR2,
-      p_const_active_flag           IN   VARCHAR2,
-      p_dur_mag_active_flag         IN   VARCHAR2,
-      p_ignore_nulls                IN   VARCHAR2 DEFAULT 'T'
-   )
-   IS
-      l_rate_change_disp_int_code   NUMBER       := NULL;
-      l_range_active_flag           VARCHAR2 (1) := NULL;
-      l_rate_change_active_flag     VARCHAR2 (1) := NULL;
-      l_const_active_flag           VARCHAR2 (1) := NULL;
-      l_dur_mag_active_flag         VARCHAR2 (1) := NULL;
-      l_ignore_nulls                BOOLEAN
-                := cwms_util.return_true_or_false (NVL (p_ignore_nulls, 'T'));
-   BEGIN
-      SELECT rate_change_disp_interval_code, range_active_flag,
-             rate_change_active_flag, const_active_flag,
-             dur_mag_active_flag
-        INTO l_rate_change_disp_int_code, l_range_active_flag,
-             l_rate_change_active_flag, l_const_active_flag,
-             l_dur_mag_active_flag
-        FROM at_screening_control
-       WHERE screening_code = p_screening_code;
-
-      IF l_ignore_nulls
-      THEN
-         IF p_rate_change_disp_int_code IS NOT NULL
-         THEN
-            l_rate_change_disp_int_code := p_rate_change_disp_int_code;
-         END IF;
-
-         IF p_range_active_flag IS NOT NULL
-         THEN
-            l_range_active_flag := p_range_active_flag;
-         END IF;
-
-         IF p_rate_change_active_flag IS NOT NULL
-         THEN
-            l_rate_change_active_flag := p_rate_change_active_flag;
-         END IF;
-
-         IF p_const_active_flag IS NOT NULL
-         THEN
-            l_const_active_flag := p_const_active_flag;
-         END IF;
-
-         IF p_dur_mag_active_flag IS NOT NULL
-         THEN
-            l_dur_mag_active_flag := p_dur_mag_active_flag;
-         END IF;
-      ELSE
-         l_rate_change_disp_int_code := p_rate_change_disp_int_code;
-         l_range_active_flag := p_range_active_flag;
-         l_rate_change_active_flag := p_rate_change_active_flag;
-         l_const_active_flag := p_const_active_flag;
-         l_dur_mag_active_flag := p_dur_mag_active_flag;
-      END IF;
-
-      UPDATE at_screening_control
-         SET rate_change_disp_interval_code = l_rate_change_disp_int_code,
-             range_active_flag = l_range_active_flag,
-             rate_change_active_flag = l_rate_change_active_flag,
-             const_active_flag = l_const_active_flag,
-             dur_mag_active_flag = p_dur_mag_active_flag
-       WHERE screening_code = p_screening_code;
-   END;
-
    PROCEDURE store_screening_criteria (
       p_screening_id                   IN   VARCHAR2,
       p_unit_id                        IN   VARCHAR2,
@@ -803,10 +844,13 @@ AS
                         );
       END IF;
 
-      SELECT interval_code
-        INTO l_rate_change_interval_code
-        FROM cwms_interval
-       WHERE UPPER (interval_id) = UPPER (p_rate_change_disp_interval_id);
+      IF l_rate_change_active_flag != 'N'
+      THEN
+         SELECT interval_code
+           INTO l_rate_change_interval_code
+           FROM cwms_interval
+          WHERE UPPER (interval_id) = UPPER (p_rate_change_disp_interval_id);
+      END IF;
 
       SELECT cbp.unit_code, cbp.abstract_param_code
         INTO l_to_unit_code, l_abstract_param_code
