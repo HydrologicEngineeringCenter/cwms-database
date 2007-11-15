@@ -1268,3 +1268,4 @@ AS
    END unassign_screening_id;
 END cwms_vt;
 /
+show errors;
