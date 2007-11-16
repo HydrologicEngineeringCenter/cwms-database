@@ -1,4 +1,4 @@
-/* Formatted on 2007/07/03 11:05 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/09/05 10:13 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_shef
 AS
 -- PROCEDURE clean_at_shef_crit_file p_action constants.
@@ -43,6 +43,26 @@ AS
 
    TYPE cat_shef_crit_lines_tab_t IS TABLE OF cat_shef_crit_lines_rec_t;
 
+   PROCEDURE update_shef_spec (
+      p_cwms_ts_id              IN   VARCHAR2,
+      p_data_stream_id          IN   VARCHAR2,
+      p_loc_group_id            IN   VARCHAR2,
+      p_shef_loc_id             IN   VARCHAR2 DEFAULT NULL,
+      -- normally use loc_group_id
+      p_shef_pe_code            IN   VARCHAR2,
+      p_shef_tse_code           IN   VARCHAR2,
+      p_shef_duration_code      IN   VARCHAR2,
+      -- e.g., V5002 or simply L     -
+      p_shef_unit_id            IN   VARCHAR2,
+      p_time_zone_id            IN   VARCHAR2,
+      p_daylight_savings        IN   VARCHAR2 DEFAULT 'F',  -- psuedo boolean.
+      p_interval_utc_offset     IN   NUMBER DEFAULT NULL,       -- in minutes.
+      p_snap_forward_minutes    IN   NUMBER DEFAULT NULL,
+      p_snap_backward_minutes   IN   NUMBER DEFAULT NULL,
+      p_ts_active_flag          IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id            IN   VARCHAR2 DEFAULT NULL
+   );
+
    PROCEDURE store_shef_spec (
       p_cwms_ts_id              IN   VARCHAR2,
       p_data_stream_id          IN   VARCHAR2,
@@ -60,6 +80,7 @@ AS
       p_snap_forward_minutes    IN   NUMBER DEFAULT NULL,
       p_snap_backward_minutes   IN   NUMBER DEFAULT NULL,
       p_ts_active_flag          IN   VARCHAR2 DEFAULT 'T',
+      p_update_allowed          IN   VARCHAR2 DEFAULT 'T',
       p_db_office_id            IN   VARCHAR2 DEFAULT NULL
    );
 

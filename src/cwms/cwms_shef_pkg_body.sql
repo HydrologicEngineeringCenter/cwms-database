@@ -165,6 +165,31 @@ AS
 
       RETURN l_shef_duration_numeric;
    END;
+   
+
+PROCEDURE update_shef_spec (
+   p_cwms_ts_id              IN   VARCHAR2,
+   p_data_stream_id          IN   VARCHAR2,
+   p_loc_group_id            IN   VARCHAR2,
+   p_shef_loc_id             IN   VARCHAR2 DEFAULT NULL,
+   -- normally use loc_group_id
+   p_shef_pe_code            IN   VARCHAR2,
+   p_shef_tse_code           IN   VARCHAR2,
+   p_shef_duration_code      IN   VARCHAR2,
+   -- e.g., V5002 or simply L     -
+   p_shef_unit_id            IN   VARCHAR2,
+   p_time_zone_id            IN   VARCHAR2,
+   p_daylight_savings        IN   VARCHAR2 DEFAULT 'F',     -- psuedo boolean.
+   p_interval_utc_offset     IN   NUMBER DEFAULT NULL,          -- in minutes.
+   p_snap_forward_minutes    IN   NUMBER DEFAULT NULL,
+   p_snap_backward_minutes   IN   NUMBER DEFAULT NULL,
+   p_ts_active_flag          IN   VARCHAR2 DEFAULT 'T',
+   p_db_office_id            IN   VARCHAR2 DEFAULT NULL
+)
+IS
+BEGIN
+   NULL;
+END;
 
    PROCEDURE store_shef_spec (
       p_cwms_ts_id              IN   VARCHAR2,
@@ -183,6 +208,7 @@ AS
       p_snap_forward_minutes    IN   NUMBER DEFAULT NULL,
       p_snap_backward_minutes   IN   NUMBER DEFAULT NULL,
       p_ts_active_flag          IN   VARCHAR2 DEFAULT 'T',
+      p_update_allowed          IN   VARCHAR2 DEFAULT 'T',
       p_db_office_id            IN   VARCHAR2 DEFAULT NULL
    )
    IS
