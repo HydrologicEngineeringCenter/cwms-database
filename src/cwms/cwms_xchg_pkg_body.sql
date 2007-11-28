@@ -2059,7 +2059,7 @@ create or replace package body cwms_xchg as
             ------------------------
             -- check the set info --
             ------------------------
-            if l_set_office_code = '__LOCAL__' or l_set_office_code = '__local__' then
+            if upper(l_set_office_id) = '__LOCAL__' then
                l_set_office_code := cwms_util.user_office_code;
             else
                begin
