@@ -1,4 +1,4 @@
-/* Formatted on 2007/10/29 13:38 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/11/28 14:56 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_apex
 AS
    TYPE varchar2_t IS TABLE OF VARCHAR2 (32767)
@@ -219,7 +219,7 @@ AS
       p_columns_item            IN       VARCHAR2,
       p_ddl_item                IN       VARCHAR2,
       p_number_of_records       OUT      NUMBER,
-        p_number_of_columns       OUT      number,
+      p_number_of_columns       OUT      NUMBER,
       p_is_csv                  IN       VARCHAR2 DEFAULT 'T',
       p_table_name              IN       VARCHAR2 DEFAULT NULL
    )
@@ -354,9 +354,9 @@ AS
                                   || p_file_name
                                  );
       END IF;
-      
+
       p_number_of_columns := l_num_columns;
-      
+
       -- Get column headings and names
       FOR i IN 1 .. l_record.COUNT
       LOOP
@@ -691,7 +691,11 @@ AS
       l_elev_unit_id       VARCHAR2 (200);
       l_vertical_datum     VARCHAR2 (200);
       l_latitude           NUMBER;
+      l_lat_mins           NUMBER;
+      l_lat_secs           NUMBER;
       l_longitude          NUMBER;
+      l_long_mins          NUMBER;
+      l_long_secs          NUMBER;
       l_horizontal_datum   VARCHAR2 (200);
       l_public_name        VARCHAR2 (200);
       l_long_name          VARCHAR2 (200);
@@ -705,6 +709,10 @@ AS
       l_line_no            VARCHAR2 (32);
       l_min                NUMBER;
       l_max                NUMBER;
+      l_loc_id             VARCHAR2 (32);
+      l_office_id_17       VARCHAR2 (32);
+      l_office_id_19       VARCHAR2 (32);
+      l_office_id_21       VARCHAR2 (32);
    BEGIN
       aa1 (   'store_parsed_loc_full_file - collection name: '
            || p_parsed_collection_name
@@ -714,6 +722,11 @@ AS
         INTO l_parsed_rows, l_min, l_max
         FROM apex_collections
        WHERE collection_name = p_parsed_collection_name;
+
+      SELECT c002, c017, c019, c021
+        INTO l_loc_id, l_office_id_17, l_office_id_19, l_office_id_21
+        FROM apex_collections
+       WHERE collection_name = p_parsed_collection_name AND seq_id = 1;
 
       aa1 (   'l_parsed_rows = '
            || l_parsed_rows
@@ -728,18 +741,86 @@ AS
       LOOP
          aa1 ('looping: ' || i);
 
-         SELECT c001, c002, c003, c004,
-                c005, c006, c007,
-                c008, c009, c010,
-                c011, c012, c013, c014,
-                c015, c016
-           INTO l_line_no, l_location_id, l_public_name, l_county_name,
-                l_state_initial, l_active, l_location_type,
-                l_vertical_datum, l_elevation, l_elev_unit_id,
-                l_horizontal_datum, l_latitude, l_longitude, l_time_zone_id,
-                l_long_name, l_description
-           FROM apex_collections
-          WHERE collection_name = p_parsed_collection_name AND seq_id = i;
+         IF (    TRIM (NVL (l_loc_id, 'XXX')) = 'Location ID'
+             AND TRIM (NVL (l_office_id_17, 'XXX')) = 'Office'
+            )
+         THEN
+            l_latitude := 0;
+            l_longitude := 0;
+            l_lat_mins := 0;
+            l_long_mins := 0;
+            l_lat_secs := 0;
+            l_long_secs := 0;
+
+            SELECT c001, c002, c003, c004,
+                   c005, c006, c007,
+                   c008, c009, c010,
+                   c011, c012, c013,
+                   c014, c015, c016
+              INTO l_line_no, l_location_id, l_public_name, l_county_name,
+                   l_state_initial, l_active, l_location_type,
+                   l_vertical_datum, l_elevation, l_elev_unit_id,
+                   l_horizontal_datum, l_latitude, l_longitude,
+                   l_time_zone_id, l_long_name, l_description
+              FROM apex_collections
+             WHERE collection_name = p_parsed_collection_name AND seq_id = i;
+         ELSIF (    TRIM (NVL (l_loc_id, 'XXX')) = 'Location ID'
+                AND TRIM (NVL (l_office_id_19, 'XXX')) = 'Office'
+               )
+         THEN
+            l_latitude := 0;
+            l_longitude := 0;
+            l_lat_mins := 0;
+            l_long_mins := 0;
+            l_lat_secs := 0;
+            l_long_secs := 0;
+
+            SELECT c001, c002, c003, c004,
+                   c005, c006, c007,
+                   c008, c009, c010,
+                   c011, c012, c013, c014,
+                   c015, c016, c017, c018
+              INTO l_line_no, l_location_id, l_public_name, l_county_name,
+                   l_state_initial, l_active, l_location_type,
+                   l_vertical_datum, l_elevation, l_elev_unit_id,
+                   l_horizontal_datum, l_latitude, l_lat_mins, l_longitude,
+                   l_long_mins, l_time_zone_id, l_long_name, l_description
+              FROM apex_collections
+             WHERE collection_name = p_parsed_collection_name AND seq_id = i;
+
+            l_latitude := l_latitude + l_lat_mins / 60;
+            l_longitude := l_longitude + l_long_mins / 60;
+         ELSIF (    TRIM (NVL (l_loc_id, 'XXX')) = 'Location ID'
+                AND TRIM (NVL (l_office_id_21, 'XXX')) = 'Office'
+               )
+         THEN
+            l_latitude := 0;
+            l_longitude := 0;
+            l_lat_mins := 0;
+            l_long_mins := 0;
+            l_lat_secs := 0;
+            l_long_secs := 0;
+
+            SELECT c001, c002, c003, c004,
+                   c005, c006, c007,
+                   c008, c009, c010,
+                   c011, c012, c013, c014,
+                   c015, c016, c017, c018,
+                   c019, c020
+              INTO l_line_no, l_location_id, l_public_name, l_county_name,
+                   l_state_initial, l_active, l_location_type,
+                   l_vertical_datum, l_elevation, l_elev_unit_id,
+                   l_horizontal_datum, l_latitude, l_lat_mins, l_lat_secs,
+                   l_longitude, l_long_mins, l_long_secs, l_time_zone_id,
+                   l_long_name, l_description
+              FROM apex_collections
+             WHERE collection_name = p_parsed_collection_name AND seq_id = i;
+
+            l_latitude := l_latitude + l_lat_mins / 60 + l_lat_secs / 3600;
+            l_longitude := l_longitude + l_long_mins / 60 + l_long_secs / 3600;
+         ELSE
+            cwms_err.RAISE('ERROR','Unable to parse data!');
+         END IF;
 
          aa1 ('storing locs: ' || l_location_id);
          --
