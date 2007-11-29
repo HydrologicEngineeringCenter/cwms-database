@@ -1,4 +1,4 @@
-/* Formatted on 2007/11/28 14:56 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/11/29 11:47 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_apex
 AS
    TYPE varchar2_t IS TABLE OF VARCHAR2 (32767)
@@ -740,18 +740,17 @@ AS
       FOR i IN 2 .. l_parsed_rows
       LOOP
          aa1 ('looping: ' || i);
+         l_latitude := 0;
+         l_longitude := 0;
+         l_lat_mins := 0;
+         l_long_mins := 0;
+         l_lat_secs := 0;
+         l_long_secs := 0;
 
          IF (    TRIM (NVL (l_loc_id, 'XXX')) = 'Location ID'
              AND TRIM (NVL (l_office_id_17, 'XXX')) = 'Office'
             )
          THEN
-            l_latitude := 0;
-            l_longitude := 0;
-            l_lat_mins := 0;
-            l_long_mins := 0;
-            l_lat_secs := 0;
-            l_long_secs := 0;
-
             SELECT c001, c002, c003, c004,
                    c005, c006, c007,
                    c008, c009, c010,
@@ -768,13 +767,6 @@ AS
                 AND TRIM (NVL (l_office_id_19, 'XXX')) = 'Office'
                )
          THEN
-            l_latitude := 0;
-            l_longitude := 0;
-            l_lat_mins := 0;
-            l_long_mins := 0;
-            l_lat_secs := 0;
-            l_long_secs := 0;
-
             SELECT c001, c002, c003, c004,
                    c005, c006, c007,
                    c008, c009, c010,
@@ -787,20 +779,10 @@ AS
                    l_long_mins, l_time_zone_id, l_long_name, l_description
               FROM apex_collections
              WHERE collection_name = p_parsed_collection_name AND seq_id = i;
-
-            l_latitude := l_latitude + l_lat_mins / 60;
-            l_longitude := l_longitude + l_long_mins / 60;
          ELSIF (    TRIM (NVL (l_loc_id, 'XXX')) = 'Location ID'
                 AND TRIM (NVL (l_office_id_21, 'XXX')) = 'Office'
                )
          THEN
-            l_latitude := 0;
-            l_longitude := 0;
-            l_lat_mins := 0;
-            l_long_mins := 0;
-            l_lat_secs := 0;
-            l_long_secs := 0;
-
             SELECT c001, c002, c003, c004,
                    c005, c006, c007,
                    c008, c009, c010,
@@ -815,13 +797,18 @@ AS
                    l_long_name, l_description
               FROM apex_collections
              WHERE collection_name = p_parsed_collection_name AND seq_id = i;
-
-            l_latitude := l_latitude + l_lat_mins / 60 + l_lat_secs / 3600;
-            l_longitude := l_longitude + l_long_mins / 60 + l_long_secs / 3600;
          ELSE
-            cwms_err.RAISE('ERROR','Unable to parse data!');
+            cwms_err.RAISE ('ERROR', 'Unable to parse data!');
          END IF;
 
+         l_latitude :=
+              (ABS (l_latitude) + l_lat_mins / 60 + l_lat_secs / 3600
+              )
+            * SIGN (l_latitude);
+         l_longitude :=
+              (ABS (l_longitude) + l_long_mins / 60 + l_long_secs / 3600
+              )
+            * SIGN (l_longitude);
          aa1 ('storing locs: ' || l_location_id);
          --
          cwms_loc.update_location (l_location_id,
