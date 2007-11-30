@@ -1134,6 +1134,7 @@ AS
       LOOP
          DBMS_OUTPUT.put_line (p_scr_assign_array (i).cwms_ts_id);
 
+-- cwms_err.RAISE ('GENERIC_ERROR', 'Got here: '||p_scr_assign_array (i).cwms_ts_id);
          SELECT mvcti.ts_code, atp.base_parameter_code,
                 atcts.parameter_code, atcts.parameter_type_code,
                 atcts.duration_code
@@ -1144,7 +1145,8 @@ AS
           WHERE mvcti.ts_code = atcts.ts_code
             AND atcts.parameter_code = atp.parameter_code
             AND UPPER (mvcti.cwms_ts_id) =
-                                     UPPER (p_scr_assign_array (i).cwms_ts_id);
+                                     UPPER (p_scr_assign_array (i).cwms_ts_id)
+            AND mvcti.db_office_code = l_db_office_code;
 
          l_params_match := FALSE;
          l_param_types_match := FALSE;
@@ -1192,7 +1194,8 @@ AS
          USING (SELECT (SELECT mvcti.ts_code
                           FROM mv_cwms_ts_id mvcti
                          WHERE UPPER (cwms_ts_id) =
-                                                 UPPER (a.cwms_ts_id))
+                                                 UPPER (a.cwms_ts_id)
+                           AND mvcti.db_office_code = l_db_office_code)
                                                                       ts_code,
                        CASE
                           WHEN UPPER (a.active_flag) = 'T'
