@@ -2034,7 +2034,7 @@ END retrieve_ts_java;
 	
 			MERGE INTO at_tsv t1
 			   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-			                 (t.VALUE / c.factor) - c.offset VALUE, t.quality_code
+			                 (t.value * c.factor + c.offset) VALUE, t.quality_code
 			            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
 			                 at_cwms_ts_spec s,
 								  at_parameter ap,
@@ -2044,8 +2044,8 @@ END retrieve_ts_java;
 			           WHERE s.ts_code = l_ts_code
 			             AND s.parameter_code = ap.parameter_code
 							 AND ap.base_parameter_code = p.base_parameter_code
-			             AND p.unit_code = c.from_unit_code
-			             AND c.to_unit_code = u.unit_code
+			             AND p.unit_code = c.to_unit_code
+			             AND c.from_unit_code = u.unit_code
 			             AND u.unit_id = p_units) t2
 			   ON (    t1.ts_code = l_ts_code
 			       AND t1.date_time = t2.date_time
@@ -2073,7 +2073,7 @@ END retrieve_ts_java;
 					l_sql_txt:=
 						' merge into '||x.table_name||' t1
             		using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					               (t.value/c.factor) - c.offset value, 
+					               (t.value * c.factor + c.offset) value, 
 								   t.quality_code 
 		                      from TABLE(cast(:p_timeseries_data as tsv_array)) t,
 							       at_cwms_ts_spec s, 
@@ -2083,9 +2083,9 @@ END retrieve_ts_java;
 								    cwms_unit u
                              where s.ts_code        =  :l_ts_code
                                and s.parameter_code =  ap.parameter_code
-										 AND ap.base_parameter_code = p.base_parameter_code
-                               and p.unit_code      =  c.from_unit_code
-                               and c.to_unit_code   =  u.unit_code
+							   and ap.base_parameter_code = p.base_parameter_code
+                               and p.unit_code      =  c.to_unit_code
+                               and c.from_unit_code   =  u.unit_code
                                and u.UNIT_ID        =  :p_units
                                and date_time        >= :start_date 
 							   and date_time        <  :end_date 
@@ -2134,7 +2134,7 @@ END retrieve_ts_java;
 
 				MERGE INTO at_tsv t1
 				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.VALUE / c.factor) - c.offset VALUE, t.quality_code
+				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
 				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
 				                 at_cwms_ts_spec s,
 									  at_parameter ap,
@@ -2144,8 +2144,8 @@ END retrieve_ts_java;
 				           WHERE s.ts_code = l_ts_code
 				             AND s.parameter_code = ap.parameter_code
 								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND p.unit_code = c.from_unit_code
-				             AND c.to_unit_code = u.unit_code
+				             AND p.unit_code = c.to_unit_code
+				             AND c.from_unit_code = u.unit_code
 				             AND u.unit_id = p_units) t2
 				   ON (    t1.ts_code = l_ts_code
 				       AND t1.date_time = t2.date_time
@@ -2181,7 +2181,7 @@ END retrieve_ts_java;
 					l_sql_txt:=
 						' merge into '||x.table_name||' t1 
                      using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					               (t.value/c.factor) - c.offset value, 
+					               (t.value * c.factor + c.offset) value, 
 								   t.quality_code 
 		                      from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
 							       at_cwms_ts_spec s, 
@@ -2192,8 +2192,8 @@ END retrieve_ts_java;
                              where s.ts_code        =  :l_ts_code
                                and s.parameter_code =  ap.parameter_code
 										 AND ap.base_parameter_code = p.base_parameter_code
-                                and p.unit_code      =  c.from_unit_code 
-                                and c.to_unit_code   =  u.unit_code 
+                                and p.unit_code      =  c.to_unit_code 
+                                and c.from_unit_code   =  u.unit_code 
                                 and u.UNIT_ID        =  :p_units 
                                 and date_time        >= :start_date 
 								and date_time        <  :end_date 
@@ -2250,7 +2250,7 @@ END retrieve_ts_java;
 			
 				MERGE INTO at_tsv t1
 				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.VALUE / c.factor) - c.offset VALUE, t.quality_code
+				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
 				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
 				                 at_cwms_ts_spec s,
 									  at_parameter ap,
@@ -2260,8 +2260,8 @@ END retrieve_ts_java;
 				           WHERE s.ts_code = l_ts_code
 				             AND s.parameter_code = ap.parameter_code
 								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND p.unit_code = c.from_unit_code
-				             AND c.to_unit_code = u.unit_code
+				             AND p.unit_code = c.to_unit_code
+				             AND c.from_unit_code = u.unit_code
 				             AND u.unit_id = p_units) t2
 				   ON (    t1.ts_code = l_ts_code
 				       AND t1.date_time = t2.date_time
@@ -2282,7 +2282,7 @@ END retrieve_ts_java;
 
             	l_sql_txt:='merge into '||x.table_name||' t1
                       using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					                (t.value/c.factor) - c.offset value, 
+					                (t.value * c.factor + c.offset) value, 
 									t.quality_code 
 		                       from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
 							       at_cwms_ts_spec s, 
@@ -2292,9 +2292,9 @@ END retrieve_ts_java;
 								    cwms_unit u
                              where s.ts_code        =  :l_ts_code
                                and s.parameter_code =  ap.parameter_code
-										 AND ap.base_parameter_code = p.base_parameter_code
-                                and p.unit_code      =  c.from_unit_code
-                                and c.to_unit_code   =  u.unit_code
+								and ap.base_parameter_code = p.base_parameter_code
+                                and p.unit_code      =  c.to_unit_code
+                                and c.from_unit_code   =  u.unit_code
                                 and u.UNIT_ID        =  :p_units
                                 and date_time        >= :start_date 
 								and date_time        <  :end_date 
@@ -2327,7 +2327,7 @@ END retrieve_ts_java;
 
 				MERGE INTO at_tsv t1
 				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.VALUE / c.factor) - c.offset VALUE, t.quality_code
+				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
 				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
 				                 at_cwms_ts_spec s,
 									  at_parameter ap,
@@ -2337,8 +2337,8 @@ END retrieve_ts_java;
 				           WHERE s.ts_code = l_ts_code
 				             AND s.parameter_code = ap.parameter_code
 								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND p.unit_code = c.from_unit_code
-				             AND c.to_unit_code = u.unit_code
+				             AND p.unit_code = c.to_unit_code
+				             AND c.from_unit_code = u.unit_code
 				             AND u.unit_id = p_units) t2
 				   ON (    t1.ts_code = l_ts_code
 				       AND t1.date_time = t2.date_time
@@ -2364,7 +2364,7 @@ END retrieve_ts_java;
         
             	l_sql_txt:='merge into '||x.table_name||' t1
                       using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					                (t.value/c.factor) - c.offset value, 
+					                (t.value * c.factor + c.offset) value, 
 									t.quality_code 
 		                       from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
 							       at_cwms_ts_spec s, 
@@ -2374,9 +2374,9 @@ END retrieve_ts_java;
 								    cwms_unit u
                              where s.ts_code        =  :l_ts_code
                                and s.parameter_code =  ap.parameter_code
-										 AND ap.base_parameter_code = p.base_parameter_code
-                                and p.unit_code      =  c.from_unit_code
-                                and c.to_unit_code   =  u.unit_code
+								and ap.base_parameter_code = p.base_parameter_code
+                                and p.unit_code      =  c.to_unit_code
+                                and c.from_unit_code   =  u.unit_code
                                 and u.UNIT_ID        =  :p_units
                                 and date_time        >= :start_date 
 								and date_time        <  :end_date
@@ -2416,7 +2416,7 @@ END retrieve_ts_java;
 			
 				MERGE INTO at_tsv t1
 				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.VALUE / c.factor) - c.offset VALUE, t.quality_code
+				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
 				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
 				                 at_cwms_ts_spec s,
 									  at_parameter ap,
@@ -2428,8 +2428,8 @@ END retrieve_ts_java;
 				             AND s.parameter_code = ap.parameter_code
 								 AND ap.base_parameter_code = p.base_parameter_code
 				             AND q.quality_code = t.quality_code
-				             AND p.unit_code = c.from_unit_code
-				             AND c.to_unit_code = u.unit_code
+				             AND p.unit_code = c.to_unit_code
+				             AND c.from_unit_code = u.unit_code
 				             AND u.unit_id = p_units) t2
 				   ON (    t1.ts_code = l_ts_code
 				       AND t1.date_time = t2.date_time
@@ -2455,7 +2455,7 @@ END retrieve_ts_java;
         
             	l_sql_txt:='merge into '||x.table_name||' t1
                       using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					                (t.value/c.factor) - c.offset value, 
+					                (t.value * c.factor + c.offset) value, 
 									t.quality_code 
 					           from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
 							        at_cwms_ts_spec s, 
@@ -2466,10 +2466,10 @@ END retrieve_ts_java;
 									cwms_data_quality q
                               where s.ts_code        =  :l_ts_code
                                 and s.parameter_code =  ap.parameter_code
-										  AND ap.base_parameter_code = p.base_parameter_code
+								and ap.base_parameter_code = p.base_parameter_code
                                 and q.quality_code   =  t.quality_code
-                                and p.unit_code      =  c.from_unit_code
-                                and c.to_unit_code   =  u.unit_code
+                                and p.unit_code      =  c.to_unit_code
+                                and c.from_unit_code   =  u.unit_code
                                 and u.UNIT_ID        =  :p_units
                                 and date_time        >= :start_date 
 						        and date_time        <  :end_date   
@@ -2509,7 +2509,7 @@ END retrieve_ts_java;
   
 				MERGE INTO at_tsv t1
 				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.VALUE / c.factor) - c.offset VALUE, t.quality_code
+				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
 				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
 				                 at_cwms_ts_spec s,
 									  at_parameter ap,
@@ -2521,8 +2521,8 @@ END retrieve_ts_java;
 				             AND s.parameter_code = ap.parameter_code
 								 AND ap.base_parameter_code = p.base_parameter_code
 				             AND q.quality_code = t.quality_code
-				             AND p.unit_code = c.from_unit_code
-				             AND c.to_unit_code = u.unit_code
+				             AND p.unit_code = c.to_unit_code
+				             AND c.from_unit_code = u.unit_code
 				             AND u.unit_id = p_units) t2
 				   ON (    t1.ts_code = l_ts_code
 				       AND t1.date_time = t2.date_time
@@ -2564,7 +2564,7 @@ END retrieve_ts_java;
         
 		  			l_sql_txt:='merge into '||x.table_name||' t1
                     using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					              (t.value/c.factor) - c.offset value, 
+					              (t.value * c.factor + c.offset) value, 
 								  t.quality_code 
 					         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
 							      at_cwms_ts_spec s, 
@@ -2575,10 +2575,10 @@ END retrieve_ts_java;
 								  cwms_data_quality q
                             where s.ts_code        =  :l_ts_code
                               and s.parameter_code =  p.parameter_code
-										AND ap.base_parameter_code = p.base_parameter_code
+							  and ap.base_parameter_code = p.base_parameter_code
                               and q.quality_code   =  t.quality_code
-                              and p.unit_code      =  c.from_unit_code
-                              and c.to_unit_code   =  u.unit_code
+                              and p.unit_code      =  c.to_unit_code
+                              and c.from_unit_code   =  u.unit_code
                               and u.UNIT_ID        =  :p_units
                               and date_time        >= :start_date 
 							  and date_time        <  :end_date     
@@ -2645,7 +2645,7 @@ END retrieve_ts_java;
 
 				MERGE INTO at_tsv t1
 				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.VALUE / c.factor) - c.offset VALUE, t.quality_code
+				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
 				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
 				                 at_cwms_ts_spec s,
 									  at_parameter ap,
@@ -2655,8 +2655,8 @@ END retrieve_ts_java;
 				           WHERE s.ts_code = l_ts_code
 				             AND s.parameter_code = ap.parameter_code
 								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND p.unit_code = c.from_unit_code
-				             AND c.to_unit_code = u.unit_code
+				             AND p.unit_code = c.to_unit_code
+				             AND c.from_unit_code = u.unit_code
 				             AND u.unit_id = p_units) t2
 				   ON (    t1.ts_code = l_ts_code
 				       AND t1.date_time = t2.date_time
@@ -2704,7 +2704,7 @@ END retrieve_ts_java;
 
 					l_sql_txt:='merge into '||x.table_name||' t1
                     using (select  CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time,
-					               (t.value/c.factor) - c.offset value, 
+					               (t.value * c.factor + c.offset) value, 
 								   t.quality_code 
 					         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
 							      at_cwms_ts_spec s,
@@ -2714,9 +2714,9 @@ END retrieve_ts_java;
 								  cwms_unit u
                             where s.ts_code        =  :l_ts_code
                               and s.parameter_code =  ap.parameter_code
-  									   AND ap.base_parameter_code = p.base_parameter_code
-                              and p.unit_code      =  c.from_unit_code
-                              and c.to_unit_code   =  u.unit_code
+  							  and ap.base_parameter_code = p.base_parameter_code
+                              and p.unit_code      =  c.to_unit_code
+                              and c.from_unit_code   =  u.unit_code
                               and u.UNIT_ID        =  :p_units
                               and date_time        >= :start_date 
 							  and date_time        <  :end_date   
@@ -2777,7 +2777,7 @@ END retrieve_ts_java;
 				
 				MERGE INTO at_tsv t1
 				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.VALUE / c.factor) - c.offset VALUE, t.quality_code
+				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
 				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
 				                 at_cwms_ts_spec s,
 									  at_parameter ap,
@@ -2787,8 +2787,8 @@ END retrieve_ts_java;
 				           WHERE s.ts_code = l_ts_code
 				             AND s.parameter_code = ap.parameter_code
 								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND p.unit_code = c.from_unit_code
-				             AND c.to_unit_code = u.unit_code
+				             AND p.unit_code = c.to_unit_code
+				             AND c.from_unit_code = u.unit_code
 				             AND u.unit_id = p_units) t2
 				   ON (    t1.ts_code = l_ts_code
 				       AND t1.date_time = t2.date_time
@@ -2824,7 +2824,7 @@ END retrieve_ts_java;
 		  
 		  			l_sql_txt:='merge into '||x.table_name||' t1
                     using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					              (t.value/c.factor) - c.offset value, 
+					              (t.value * c.factor + c.offset) value, 
 								  t.quality_code 
 					         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
 							      at_cwms_ts_spec s, 
@@ -2835,8 +2835,8 @@ END retrieve_ts_java;
                             where s.ts_code        =  :l_ts_code
                               and s.parameter_code =  ap.parameter_code
 										AND ap.base_parameter_code = p.base_parameter_code
-                              and p.unit_code      =  c.from_unit_code
-                              and c.to_unit_code   =  u.unit_code
+                              and p.unit_code      =  c.to_unit_code
+                              and c.from_unit_code   =  u.unit_code
                               and u.UNIT_ID        =  :p_units
                               and date_time        >= :start_date 
 							  and date_time        <  :end_date
