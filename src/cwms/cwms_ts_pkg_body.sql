@@ -616,93 +616,6 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
       
    END get_db_office_id;
 
-----
-----*******************************************************************   --
-----*******************************************************************   --
-----
----- GET_TS_NI_HASH -
-----
---	FUNCTION get_ts_ni_hash (
---	   p_parameter_code        IN   NUMBER,
---	   p_parameter_type_code   IN   NUMBER,
---	   p_duration_code         IN   NUMBER
---	)
---	   RETURN VARCHAR2
---	IS
---	BEGIN
---	   RETURN    p_parameter_code
---	          || '-'
---	          || p_parameter_type_code
---	          || '-'
---	          || p_duration_code;
---	END get_ts_ni_hash;
-----
---    FUNCTION create_ts_ni_hash (
---       p_parameter_id        IN   VARCHAR2,
---       p_parameter_type_id   IN   VARCHAR2,
---       p_duration_id         IN   VARCHAR2,
---       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
---    )
---       RETURN VARCHAR2
---    IS
---       l_parameter_code        NUMBER;
---       l_parameter_type_code   NUMBER;
---       l_duration_code         NUMBER;
---       l_base_parameter_id     VARCHAR2 (16);
---       l_sub_parameter_id      VARCHAR2 (32);
---       l_ts_ni_hash            VARCHAR2 (80);
---       l_office_id             VARCHAR2 (16);
---    BEGIN
---    
---      IF p_db_office_id IS NULL
---      THEN
---         l_office_id := cwms_util.user_office_id;
---      ELSE
---         l_office_id := UPPER (p_db_office_id);
---      END IF;
-
---       -- Determine the ts_ni_hash...
---       --
---       l_base_parameter_id := cwms_util.get_base_id (p_parameter_id);
---       l_sub_parameter_id := cwms_util.get_sub_id (p_parameter_id);
---       l_parameter_code :=
---          cwms_ts.get_parameter_code (p_base_parameter_id      => l_base_parameter_id,
---                                      p_sub_parameter_id       => l_sub_parameter_id,
---                                      p_office_id              => l_office_id,
---                                      p_create                 => 'T'
---                                     );
-
---       --
---       BEGIN
---          SELECT parameter_type_code
---            INTO l_parameter_type_code
---            FROM cwms_parameter_type
---           WHERE UPPER (parameter_type_id) = UPPER (p_parameter_type_id);
---       EXCEPTION
---          WHEN NO_DATA_FOUND
---          THEN
---             cwms_err.RAISE ('INVALID_PARAM_TYPE', p_parameter_type_id);
---       END;
-
---       --
---       BEGIN
---          SELECT duration_code
---            INTO l_duration_code
---            FROM cwms_duration
---           WHERE UPPER (duration_id) = UPPER (p_duration_id);
---       EXCEPTION
---          WHEN NO_DATA_FOUND
---          THEN
---             cwms_err.RAISE ('INVALID_DURATION_ID', p_duration_id);
---       END;
-
---       --
---       RETURN get_ts_ni_hash (l_parameter_code,
---                              l_parameter_type_code,
---                              l_duration_code
---                              );
---    END create_ts_ni_hash;
-
 
 PROCEDURE update_ts_id (
    p_ts_code                  IN   NUMBER,
@@ -1580,7 +1493,7 @@ END retrieve_ts_java;
 					dbms_output.put_line('gkgk - RETRIEVE_TS #5');
 					--                         
 					open p_at_tsv_rc for
-					SELECT   FROM_TZ (CAST (date_time AS TIMESTAMP), 'GMT') AT TIME ZONE (p_time_zone) "DATE_TIME",
+					SELECT   FROM_TZ (CAST (date_time AS TIMESTAMP), 'GMT') AT TIME ZONE p_time_zone "DATE_TIME",
 					         value "VALUE", quality_code "QUALITY_CODE"
 					    FROM av_tsv_dqu v
 					   WHERE v.ts_code = l_ts_code
@@ -1705,7 +1618,7 @@ END retrieve_ts_java;
 			 	END IF;
 			 
 			 	open p_at_tsv_rc for
-				select FROM_TZ (CAST (jdate_time AS TIMESTAMP), 'GMT') AT TIME ZONE (p_time_zone)
+				select FROM_TZ (CAST (jdate_time AS TIMESTAMP), 'GMT') AT TIME ZONE p_time_zone
 						 																 	 			  	 "DATE_TIME", 
 		             value, 
 			          nvl(quality_code,0) quality_code
@@ -2075,40 +1988,6 @@ END retrieve_ts_java;
 
     dbms_application_info.set_action('check for interval_utc_offset violation if regular ts');
 
---     if in_interval_value > 0 then
--- 
---       select count(*) 
---         into t1count 
---         from (select distinct round( mod((t.date_time - trunc(t.date_time))*1440,i.interval))  - (ts.INTERVAL_UTC_OFFSET/60) offset_diff
---             from TABLE(cast(p_timeseries_data as tsv_array)) t, at_cwms_ts_spec ts, cwms_interval i
---            where i.interval_code = ts.interval_code
---              and ts.ts_code = tcode
---              and i.interval>0
---              and ts.INTERVAL_UTC_OFFSET>0
---          );
--- 
---       if t1count > 1 then
---         raise_application_error(-20101, 'Date-Time value falls outside defined UTC_INTERVAL_OFFSET in regular time series', true);
---       end if;
--- 
---       dbms_application_info.set_action('check for interval violation if regular ts');
--- 
--- 
---       select count(*) 
---         into t2count 
--- 	    from (select distinct diff_interval 
--- 	            from (select  round(mod(1440*(lead(date_time, 1) over (order by date_time)-date_time), in_interval_value)) diff_interval, lead(date_time, 1) over (order by date_time) leaddate
---                         from TABLE(cast(p_timeseries_data as tsv_array)) 
---                        where in_interval_value>0
--- 		             )
---                where leaddate is not null
---              );
--- 
---       if t2count > 1 then
---         raise_application_error(-20102, 'Invalid interval in regular time series', true);
---       end if;
--- 
---     end if;
 
     select count(*) 
       into table_cnt
