@@ -2,18 +2,34 @@
 
 import sys, os
 
+testAccount  = None
+db_office_id = None
+office_ids   = []
+tempFilename = os.tmpnam()
+
+
+#-------------------------#
+# Handle the command line #
+#-------------------------#
 try :
     user = sys.argv[1].upper()
 except :
 	sys.stderr.write("Usage: python buildSqlScripts.py <schema name>\n")
 	sys.stderr.write("Ex:    python buildSqlScripts.py cwms\n")
 	sys.exit(-1)
-    
 
-tempFilename = os.tmpnam()
-# sys.stdout = open(tempFilename, "w")
 
-TRUE, FALSE = 1, 0
+args = sys.argv[2:]
+for arg in args :
+	arg = arg.upper()
+	if arg in ('/TESTACCOUNT', '-TESTACCOUNT') :
+		testAccount = True
+	elif arg in ('/NOTESTACCOUNT', '-NOTESTACCOUNT') :
+		testAccount = False
+	elif db_office_id == None :
+		db_office_id = arg
+	else :
+		office_ids.append(arg)
 
 #-----------------------------------------------------------------------------#
 # Prefixes are pre-pended to every line of the first-round output to identify #
@@ -42,7 +58,7 @@ cwmsTableSpaceName = "%sDATA" % user
 
 cwmsSequences = [
 #    NAME             START  INCREMENT  MINIMUM  MAXIMUM  CYCLE  CACHE
-    ["CWMS_LOG_MSG_SEQ",  0,        1,         0,          999,   TRUE, 20],
+    ["CWMS_LOG_MSG_SEQ",  0,        1,         0,          999,   True, 20],
 ]
 
 #------------------------------------------------------------------------------#
@@ -51,44 +67,44 @@ cwmsSequences = [
 # populate the table, if appropriate.                                          #
 #------------------------------------------------------------------------------#
 tableInfo = [
-    {"ID" : "states",             "TABLE" : "CWMS_STATE",                 "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "counties",           "TABLE" : "CWMS_COUNTY",                "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "cwmsOffice",         "TABLE" : "CWMS_OFFICE",                "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-#    {"ID" : "subLocation",        "TABLE" : "CWMS_SUBCWMS",               "SCHEMA" : "CWMS", "USERACCESS" : FALSE},
-    {"ID" : "intervalOffset",     "TABLE" : "CWMS_INTERVAL_OFFSET",       "SCHEMA" : "CWMS", "USERACCESS" : FALSE},
-#    {"ID" : "validValues",        "TABLE" : "CWMS_VALID_VALUES",          "SCHEMA" : "CWMS", "USERACCESS" : FALSE},
-#    {"ID" : "errorMessage",       "TABLE" : "CWMS_ERROR_MSG",             "SCHEMA" : "CWMS", "USERACCESS" : FALSE},
-    {"ID" : "errorMessageNew",    "TABLE" : "CWMS_ERROR",                 "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "timezone",           "TABLE" : "CWMS_TIME_ZONE",             "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "tzUsage",            "TABLE" : "CWMS_TZ_USAGE",              "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "interval",           "TABLE" : "CWMS_INTERVAL",              "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "duration",           "TABLE" : "CWMS_DURATION",              "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "shefDuration",       "TABLE" : "CWMS_SHEF_DURATION",         "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-#    {"ID" : "catalog",            "TABLE" : "CWMS_META_CATALOG",          "SCHEMA" : "CWMS", "USERACCESS" : FALSE},
-    {"ID" : "abstractParam",      "TABLE" : "CWMS_ABSTRACT_PARAMETER",    "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "unit",               "TABLE" : "CWMS_UNIT",                  "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-#    {"ID" : "cwmsUnit",           "TABLE" : "CWMS_DB_UNIT",               "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "conversion",         "TABLE" : "CWMS_UNIT_CONVERSION",       "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "parameterType",      "TABLE" : "CWMS_PARAMETER_TYPE",        "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "parameter",          "TABLE" : "CWMS_BASE_PARAMETER",        "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "subParameter",       "TABLE" : "AT_PARAMETER",               "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "displayUnits",       "TABLE" : "AT_DISLAY_UNITS",            "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "qScreened",          "TABLE" : "CWMS_DATA_Q_SCREENED",       "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "qValidity",          "TABLE" : "CWMS_DATA_Q_VALIDITY",       "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "qRange",             "TABLE" : "CWMS_DATA_Q_RANGE",          "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "qChanged",           "TABLE" : "CWMS_DATA_Q_CHANGED",        "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "qReplCause",         "TABLE" : "CWMS_DATA_Q_REPL_CAUSE",     "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "qReplMethod",        "TABLE" : "CWMS_DATA_Q_REPL_METHOD",    "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "qTestFailed",        "TABLE" : "CWMS_DATA_Q_TEST_FAILED",    "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "qProtection",        "TABLE" : "CWMS_DATA_Q_PROTECTION",     "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "quality",            "TABLE" : "CWMS_DATA_QUALITY",          "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-#    {"ID" : "ratingTsInterpType", "TABLE" : "CWMS_RATING_TS_INTERP_TYPE", "SCHEMA" : "CWMS", "USERACCESS" : FALSE},
-#    {"ID" : "ratingTsExtrapType", "TABLE" : "CWMS_RATING_TS_EXTRAP_TYPE", "SCHEMA" : "CWMS", "USERACCESS" : FALSE},
-#    {"ID" : "ratingType",         "TABLE" : "CWMS_RATING_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : FALSE},
-    {"ID" : "dssParameterType",   "TABLE" : "CWMS_DSS_PARAMETER_TYPE",    "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "dssXchgDirection",   "TABLE" : "CWMS_DSS_XCHG_DIRECTION",    "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "logMessageTypes",    "TABLE" : "CWMS_LOG_MESSAGE_TYPES",     "SCHEMA" : "CWMS", "USERACCESS" : TRUE},
-    {"ID" : "logMessagePropTypes","TABLE" : "CWMS_LOG_MESSAGE_PROP_TYPES","SCHEMA" : "CWMS", "USERACCESS" : TRUE},
+    {"ID" : "states",             "TABLE" : "CWMS_STATE",                 "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "counties",           "TABLE" : "CWMS_COUNTY",                "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "cwmsOffice",         "TABLE" : "CWMS_OFFICE",                "SCHEMA" : "CWMS", "USERACCESS" : True},
+#   {"ID" : "subLocation",        "TABLE" : "CWMS_SUBCWMS",               "SCHEMA" : "CWMS", "USERACCESS" : False},
+    {"ID" : "intervalOffset",     "TABLE" : "CWMS_INTERVAL_OFFSET",       "SCHEMA" : "CWMS", "USERACCESS" : False},
+#   {"ID" : "validValues",        "TABLE" : "CWMS_VALID_VALUES",          "SCHEMA" : "CWMS", "USERACCESS" : False},
+#   {"ID" : "errorMessage",       "TABLE" : "CWMS_ERROR_MSG",             "SCHEMA" : "CWMS", "USERACCESS" : False},
+    {"ID" : "errorMessageNew",    "TABLE" : "CWMS_ERROR",                 "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "timezone",           "TABLE" : "CWMS_TIME_ZONE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "tzUsage",            "TABLE" : "CWMS_TZ_USAGE",              "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "interval",           "TABLE" : "CWMS_INTERVAL",              "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "duration",           "TABLE" : "CWMS_DURATION",              "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "shefDuration",       "TABLE" : "CWMS_SHEF_DURATION",         "SCHEMA" : "CWMS", "USERACCESS" : True},
+#   {"ID" : "catalog",            "TABLE" : "CWMS_META_CATALOG",          "SCHEMA" : "CWMS", "USERACCESS" : False},
+    {"ID" : "abstractParam",      "TABLE" : "CWMS_ABSTRACT_PARAMETER",    "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "unit",               "TABLE" : "CWMS_UNIT",                  "SCHEMA" : "CWMS", "USERACCESS" : True},
+#   {"ID" : "cwmsUnit",           "TABLE" : "CWMS_DB_UNIT",               "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "conversion",         "TABLE" : "CWMS_UNIT_CONVERSION",       "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "parameterType",      "TABLE" : "CWMS_PARAMETER_TYPE",        "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "parameter",          "TABLE" : "CWMS_BASE_PARAMETER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "subParameter",       "TABLE" : "AT_PARAMETER",               "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "displayUnits",       "TABLE" : "AT_DISLAY_UNITS",            "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qScreened",          "TABLE" : "CWMS_DATA_Q_SCREENED",       "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qValidity",          "TABLE" : "CWMS_DATA_Q_VALIDITY",       "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qRange",             "TABLE" : "CWMS_DATA_Q_RANGE",          "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qChanged",           "TABLE" : "CWMS_DATA_Q_CHANGED",        "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qReplCause",         "TABLE" : "CWMS_DATA_Q_REPL_CAUSE",     "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qReplMethod",        "TABLE" : "CWMS_DATA_Q_REPL_METHOD",    "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qTestFailed",        "TABLE" : "CWMS_DATA_Q_TEST_FAILED",    "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "qProtection",        "TABLE" : "CWMS_DATA_Q_PROTECTION",     "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "quality",            "TABLE" : "CWMS_DATA_QUALITY",          "SCHEMA" : "CWMS", "USERACCESS" : True},
+#   {"ID" : "ratingTsInterpType", "TABLE" : "CWMS_RATING_TS_INTERP_TYPE", "SCHEMA" : "CWMS", "USERACCESS" : False},
+#   {"ID" : "ratingTsExtrapType", "TABLE" : "CWMS_RATING_TS_EXTRAP_TYPE", "SCHEMA" : "CWMS", "USERACCESS" : False},
+#   {"ID" : "ratingType",         "TABLE" : "CWMS_RATING_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : False},
+    {"ID" : "dssParameterType",   "TABLE" : "CWMS_DSS_PARAMETER_TYPE",    "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "dssXchgDirection",   "TABLE" : "CWMS_DSS_XCHG_DIRECTION",    "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "logMessageTypes",    "TABLE" : "CWMS_LOG_MESSAGE_TYPES",     "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "logMessagePropTypes","TABLE" : "CWMS_LOG_MESSAGE_PROP_TYPES","SCHEMA" : "CWMS", "USERACCESS" : True},
 ]
 
 tables = []
@@ -4776,13 +4792,9 @@ logMessagePropTypes = [
 	[8, 'String' ],
 ]
 
-
-#==
-#====
-#====== createQueues
-#--------------------------------------------------------------------#
-# generate a script to create and start queues for specified offices #
-#--------------------------------------------------------------------#
+#--------------------------------------------------#
+# parse the offices into dbhost_offices dictionary #
+#--------------------------------------------------#
 office_names = {}
 dbhost_offices = {}
 office_erocs = {}
@@ -4798,125 +4810,135 @@ for ofcCode, office_id, office_name, report_to, dbhost, eroc in offices :
 
 dbhosts = dbhost_offices.keys()
 dbhosts.sort()
-print
-for dbhost in dbhosts :
-    line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
-    for i in range(1, len(dbhost_offices[dbhost])) : 
-        line += ", %s" % office_names[dbhost_offices[dbhost][i]]
-    print line
 
-#------------------------------------------------------------------------------
-# Ask for the db_office_id for this database, i.e., the primary office id
-# for this database.
-#------------------------------------------------------------------------------
-print
-print 'Enter the office id for this database. If your office is not listed'
-print 'or if your building a secondary COOP database for your office, then'
-print 'please contact HEC for a revised install script.'
-ok = False
-while not ok :
+#-------------------------------------------------------------------------------#
+# make sure the user entered a schema before the office ids on the command line #
+#-------------------------------------------------------------------------------#
+if user in dbhosts :
+	sys.stderr.write("No schema name was entered before the office id(s)\n\n")
+	sys.stderr.write("Usage: python buildSqlScripts.py <schema name> [<host officeid> [<other officeid(s)>]] [/[no]testaccount]\n")
+	sys.stderr.write("Ex:    python buildSqlScripts.py cwms SWF SWG /testaccount\n")
+	sys.exit(-1)
+
+#----------------------------------------------------------------------------------------#	
+# prompt the user for the primary and sharing offices if not entered on the command line #
+#----------------------------------------------------------------------------------------#	
+if not db_office_id:
     print
-    line = raw_input('Enter the primary office id for this database: ')
-    db_office_id = line.upper().replace(',', ' ').replace(';', ' ').split()
-    if not db_office_id :
-        print
-        print "ERROR! You must enter your office id."
-    else :
-        count = 0
-        for office_id in db_office_id :
-            if count == 1 : 
-                print
-                print "ERROR! You can only enter one office id for a database!"
-                break
-            if office_id not in dbhosts :
-                print
-                print "ERROR! Office %s does not host a database. Contact HEC if this" % office_id
-                print "is no longer the case."
-                break
-            count += 1
-        else :
-            ok = True
-
-    if ok :
-        print 'You have chosen the following office as the primary office for this'
-        print "database: %s" % db_office_id[0]
-        line = raw_input("Is this correct? (y/n) [n] > ")
-        if not line or line[0].upper() != 'Y' :
-            ok = False
-#------------------------------------------------------------------------------
-# Ask if any other offices will be sharing this database - need to know so that
-# queues can be set-up for them.
-#------------------------------------------------------------------------------
-print
-for dbhost in dbhosts :
-    if dbhost != db_office_id[0] :
+    for dbhost in dbhosts :
         line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
         for i in range(1, len(dbhost_offices[dbhost])) : 
             line += ", %s" % office_names[dbhost_offices[dbhost][i]]
         print line
-print
-print 'Will other offices share this database as either their primary database'
-print 'or as a backup database? If so, enter the office id(s) from the above'
-print 'list. If this datbase will only be used by your office, then simply'
-print 'press Enter.'
-print 
-ok = False
-while not ok :
+
+    #------------------------------------------------------------------------------
+    # Ask for the db_office_id for this database, i.e., the primary office id
+    # for this database.
+    #------------------------------------------------------------------------------
     print
-    line  = raw_input('Enter office id(s) of offices sharing this database: ')
-    print
-    office_ids = line.upper().replace(',', ' ').replace(';', ' ').split()
-    if not office_ids :
-        ok = True
-    else :
-        for office_id in office_ids :
-            if office_id == db_office_id[0] :
-                office_ids.remove(office_id)
-            if office_id == 'CWMS' : 
-                office_ids = dbhosts[:]
-                office_ids.remove('LCRA')
-                ok = True
-                break
-            if office_id not in dbhosts :
-                print "Office %s does not host a database." % office_id
-                break
+    print 'Enter the office id for this database. If your office is not listed'
+    print 'or if your building a secondary COOP database for your office, then'
+    print 'please contact HEC for a revised install script.'
+    ok = False
+    while not ok :
+        print
+        db_office_id = raw_input('Enter the primary office id for this database: ')
+        if not db_office_id :
+            print
+            print "ERROR! You must enter your office id."
+    	    continue
         else :
-            ok = True
-            
-    if ok :
-        print 'You have made the follwing choices:'
-        print "Primary office for this database: %s" % db_office_id[0]
+            ok = db_office_id in dbhosts
+
+        if ok :
+            print 'You have chosen the following office as the primary office for this'
+            print "database: %s" % db_office_id
+            line = raw_input("Is this correct? (y/n) [n] > ")
+            if not line or line[0].upper() != 'Y' :
+                ok = False
+        else :
+            print
+            print "ERROR! Office %s does not host a database. Contact HEC if this" % office_id
+            print "is no longer the case."
+    	
+    #------------------------------------------------------------------------------
+    # Ask if any other offices will be sharing this database - need to know so that
+    # queues can be set-up for them.
+    #------------------------------------------------------------------------------
+    print
+    for dbhost in dbhosts :
+        if dbhost != db_office_id :
+            line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
+            for i in range(1, len(dbhost_offices[dbhost])) : 
+                line += ", %s" % office_names[dbhost_offices[dbhost][i]]
+            print line
+    print
+    print 'Will other offices share this database as either their primary database'
+    print 'or as a backup database? If so, enter the office id(s) from the above'
+    print 'list. If this datbase will only be used by your office, then simply'
+    print 'press Enter.'
+    print 
+    ok = False
+    while not ok :
+        print
+        line  = raw_input('Enter office id(s) of offices sharing this database: ')
+        print
+        office_ids = line.upper().replace(',', ' ').replace(';', ' ').split()
         if not office_ids :
-            print "No other offices will share this database."
-        else:
-            print "Office(s) sharing this database: %s" % ','.join(office_ids)
-        line = raw_input("Is this correct? (y/n) [n] > ")
-        if not line or line[0].upper() != 'Y' :
-            ok = False
-print
-print '-----------TEST ACCOUNT-----------'
-print
-line = raw_input('--Do you want to create at test account? [n]: ')
-print
-line = line.strip().upper()
-if line.startswith('Y') :
-    db_office_eroc = office_erocs[db_office_id[0]].lower()
+            ok = True
+        else :
+            for office_id in office_ids :
+                if office_id == db_office_id :
+                    office_ids.remove(office_id)
+                if office_id == 'CWMS' : 
+                    office_ids = dbhosts[:]
+                    office_ids.remove('LCRA')
+                    ok = True
+                    break
+                if office_id not in dbhosts :
+                    print "Office %s does not host a database." % office_id
+                    break
+            else :
+                ok = True
+                
+        if ok :
+            print 'You have made the follwing choices:'
+            print "Primary office for this database: %s" % db_office_id
+            if not office_ids :
+                print "No other offices will share this database."
+            else:
+                print "Office(s) sharing this database: %s" % ','.join(office_ids)
+            line = raw_input("Is this correct? (y/n) [n] > ")
+            if not line or line[0].upper() != 'Y' :
+                ok = False
+
+#----------------------------------------------------------------------------------#		
+# prompt the user about creating a test account if not entered on the command line #
+#----------------------------------------------------------------------------------#		
+if testAccount == None:
+    print
+    print '-----------TEST ACCOUNT-----------'
+    print
+    line = raw_input('--Do you want to create at test account? [n]: ')
+    testAccount = line.strip().upper().startswith('Y')
+    print
+
+if testAccount :
+    db_office_eroc = office_erocs[db_office_id].lower()
     test_user_id = db_office_eroc +"hectest"
     print
     print "                                               ---------"
     print "-- The following test account will be created: %s" % test_user_id
     print "                                               ---------"
     print "-- This account will have write privileges on all -REV ts ids"
-    print "-- and read privileges on all -RAW ts ids for the %s " % db_office_id[0]
+    print "-- and read privileges on all -RAW ts ids for the %s " % db_office_id
     print "-- database."
     print
+    
 #------------------------------------------------------------------------------
 # Consolidate db_office_id and shared office_ids
 #------------------------------------------------------------------------------
-if not office_ids :
-    office_ids = db_office_id
-else :
-    office_ids = db_office_id + office_ids[:]
+office_ids.insert(0, db_office_id)
 
 test_user_template = '''
 --
@@ -5051,8 +5073,8 @@ for dbhost_id in office_ids :
                 db_office_code[dbhost_id],user_id.upper()))
             users_created.append(eroc)
 if test_user_id : 
-    db_ofc_code = db_office_code[db_office_id[0]]
-    db_ofc_eroc = office_erocs[db_office_id[0]]
+    db_ofc_code = db_office_code[db_office_id]
+    db_ofc_eroc = office_erocs[db_office_id]
     f.write(test_user_template % (test_user_id, test_user_id, test_user_id, test_user_id,
         test_user_id, db_ofc_eroc))
     f1.write(testuserSecUserOffice_template %(test_user_id, db_ofc_code, db_ofc_code, 
@@ -5062,6 +5084,12 @@ f1.write("\ncommit;\n")
 f1.close()
 
 #==============================================================================
+#==
+#====
+#====== createQueues
+#--------------------------------------------------------------------#
+# generate a script to create and start queues for specified offices #
+#--------------------------------------------------------------------#
 
 sys.stderr.write("Creating py_Queues.sql\n")
 f = open("py_Queues.sql", "w")
@@ -8103,9 +8131,9 @@ for table in tables_rev :
 dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
 print dropPrefix + "DROP SEQUENCE CWMS_SEQ;"
 print prefix[CWMS] + "CREATE SEQUENCE CWMS_SEQ"
-print prefix[CWMS] + "\tSTART WITH %s" % db_office_code[db_office_id[0]]
+print prefix[CWMS] + "\tSTART WITH %s" % db_office_code[db_office_id]
 print prefix[CWMS] + "\tINCREMENT BY 1000"
-print prefix[CWMS] + "\tMINVALUE %s" % db_office_code[db_office_id[0]]
+print prefix[CWMS] + "\tMINVALUE %s" % db_office_code[db_office_id]
 print prefix[CWMS] + "\tMAXVALUE 1.0e38"
 print prefix[CWMS] + "\tNOCYCLE"
 print prefix[CWMS] + "\tCACHE 20"
