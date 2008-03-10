@@ -38,7 +38,12 @@ begin
          and table_owner = 'CWMS_20')               
    loop
       dbms_output.put_line('drop public synonym ' || rec.synonym_name);
-      execute immediate 'drop public synonym ' || rec.synonym_name;
+      begin
+         execute immediate 'drop public synonym ' || rec.synonym_name;
+      exception
+         when others then 
+            dbms_output.put_line('==> Cannot drop public synonym ' || rec.synonym_name || ': ' || sqlerrm);
+      end;
    end loop;
 end;
 /
@@ -46,8 +51,18 @@ set echo &echo_state
 --
 -- kill the cwms users and the roles
 --
-drop role cwms_dev;
-drop role cwms_user;
+begin
+   drop role cwms_dev;
+exception
+   when others then 
+      dbms_output.put_line('==> Cannot drop role cwms_dev : ' || sqlerrm);
+end;
+begin
+   drop role cwms_user;
+exception
+   when others then 
+      dbms_output.put_line('==> Cannot drop role cwms_user : ' || sqlerrm);
+end;
 set echo off
 begin
    for rec in (   
@@ -55,6 +70,7 @@ begin
         from all_users 
        where username like '__CWMSDBI' 
           or username like '__CWMSPD' 
+          or username like '__HECTEST' 
     order by username) 
    loop
       begin
