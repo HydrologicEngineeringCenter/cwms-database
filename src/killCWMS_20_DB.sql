@@ -47,23 +47,25 @@ begin
    end loop;
 end;
 /
-set echo &echo_state
 --
 -- kill the cwms users and the roles
 --
 begin
-   drop role cwms_dev;
+   dbms_output.put_line('drop role cwms_dev');
+   execute immediate 'drop role cwms_dev';
 exception
    when others then 
       dbms_output.put_line('==> Cannot drop role cwms_dev : ' || sqlerrm);
 end;
+/
 begin
-   drop role cwms_user;
+   dbms_output.put_line('drop role cwms_user');
+   execute immediate 'drop role cwms_user';
 exception
    when others then 
       dbms_output.put_line('==> Cannot drop role cwms_user : ' || sqlerrm);
 end;
-set echo off
+/
 begin
    for rec in (   
       select username 
