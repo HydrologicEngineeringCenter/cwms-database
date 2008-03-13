@@ -2,6 +2,73 @@ create or replace package body cwms_xchg as
 
    
 --------------------------------------------------------------------------------
+-- VARCHAR2 FUNCTION DB_DATASTORE_ID()
+--
+   function db_datastore_id
+      return varchar2
+   is
+      l_db_name      v$database.name%type;
+      l_datastore_id varchar2(16);
+   begin
+      select name into l_db_name from v$database;
+      l_datastore_id := utl_inaddr.get_host_name || ':' || l_db_name;
+      l_datastore_id := substr(l_datastore_id, -(least(length(l_datastore_id), 16)));
+      l_datastore_id := substr(l_datastore_id, regexp_instr(l_datastore_id, '[a-zA-Z0-9]'));
+      return l_datastore_id;
+   end db_datastore_id;
+   
+--------------------------------------------------------------------------------
+-- VARCHAR2 FUNCTION DSS_DATASTORE_ID(...)
+--
+   function dss_datastore_id(
+      p_dss_filemgr_url in varchar2,
+      p_dss_file_name   in varchar2)
+      return varchar2
+   is
+      l_url_part      varchar2(256) := lower(p_dss_filemgr_url);
+      l_filename_part varchar2(256) := p_dss_file_name;
+      l_datastore_id  varchar2(16);
+      l_pos           pls_integer;
+      l_dns_pattern   constant varchar2(256) := 
+         '([a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z\-][a-zA-Z0-9\-]*[a-zA-Z0-9][.])*[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z\-][a-zA-Z0-9\-]*[a-zA-Z0-9]';
+   begin
+      --
+      -- remove the characters [/.:] from the url
+      --
+      l_url_part := replace(replace(replace(l_url_part, '.', ''), ':', ''), '/', '');
+      --
+      -- if the url is in DNS format, just take the machine name
+      --
+      if regexp_instr(l_url_part, l_dns_pattern) = 1 and
+         regexp_instr(l_url_part, l_dns_pattern, 1, 1, 1) = length(l_url_part) + 1 
+      then
+         l_pos := instr(l_url_part, '.');
+         if l_pos > 0 then
+            l_url_part := substr(l_url_part, l_pos-1);
+         end if;
+      end if;
+      --
+      -- remove directory info and file extension from filename
+      --
+      l_filename_part := regexp_substr(l_filename_part, '[^/]+$');
+      l_pos := instr(l_filename_part, '.', -1);
+      if l_pos > 0 and length(l_filename_part) - l_pos < 4 then
+         l_filename_part := substr(l_filename_part, 1, l_pos - 1);
+      end if;
+      --
+      -- concatenate the url and filename parts, trimming at both ends if too long
+      --
+      l_datastore_id := l_url_part || ':' || l_filename_part;
+      while length(l_datastore_id) > 16 loop
+         l_datastore_id := substr(l_datastore_id, 2);
+         if length(l_datastore_id) = 16 then exit; end if;
+         l_datastore_id := substr(l_datastore_id, 1, length(l_datastore_id) - 1);
+      end loop;
+
+      return l_datastore_id;
+   end dss_datastore_id;
+   
+--------------------------------------------------------------------------------
 -- NUMBER FUNCTION GET_DSS_XCHG_SET_CODE(...)
 --
    function get_dss_xchg_set_code(
@@ -1212,10 +1279,10 @@ create or replace package body cwms_xchg as
    is
       l_spc             constant varchar2(1) := chr(9);
       l_nl              constant varchar2(1) := chr(10);
-      l_idlen           constant pls_integer := 16;
       
       l_dss_filemgr_url at_dss_file.dss_filemgr_url%type;
       l_dss_file_name   at_dss_file.dss_file_name%type;
+      l_filemgr_id      varchar2(16);
       l_dss_xchg_set_id at_dss_xchg_set.dss_xchg_set_id%type;
       l_office_code     cwms_office.office_code%type;
       l_office_id_mask  cwms_office.office_id%type;
@@ -1228,7 +1295,7 @@ create or replace package body cwms_xchg as
       l_level           binary_integer := 0;
       l_indent_str      varchar2(256) := null;
       l_text            varchar2(32767) := null;
-      l_parts           cwms_util.str_tab_t;
+      l_parts           cwms_util.str_tab_t := cwms_util.str_tab_t();
       type assoc_ary_t is table of  varchar2(32767) index by varchar2(32767);
       l_offices         assoc_ary_t; 
       l_filemgrs        assoc_ary_t; 
@@ -1289,9 +1356,7 @@ create or replace package body cwms_xchg as
       end if;
       
       select name into l_db_name from v$database;
-      l_oracle_id := utl_inaddr.get_host_name || ':' || l_db_name;
-      l_oracle_id := substr(l_oracle_id, -(least(length(l_oracle_id), l_idlen)));
-      l_oracle_id := substr(l_oracle_id, regexp_instr(l_oracle_id, '[a-zA-Z0-9]'));
+      l_oracle_id := db_datastore_id;
       
       dbms_lob.createtemporary(l_xml, true);
       dbms_lob.open(l_xml, dbms_lob.lob_readwrite);
@@ -1334,29 +1399,20 @@ create or replace package body cwms_xchg as
             || cwms_util.field_separator
             || set_info.dss_file_name;
          if not l_filemgrs.exists (set_info.dss_filemgr_url||set_info.dss_file_name) then
-            if l_parts is null then
-               l_parts := cwms_util.str_tab_t();
-            end if;
-            l_parts.extend(3);
-            l_parts(1) := regexp_substr(set_info.dss_file_name, '[^/]+$');
-            l_parts(1) := substr(l_parts(1), 1, length(l_parts(1)) - 4);
-            l_parts(1) := substr(l_parts(1), -(least(length(l_parts(1)), l_idlen / 2)));
-            l_parts(2) := replace(replace(regexp_substr(set_info.dss_filemgr_url, '[^/]+'), '.', ''), ':', '');
-            l_parts(2) := substr(l_parts(2), 1, length(l_parts(2)) - 3) || ':';
-            l_parts(2) := substr(l_parts(2), -(least(length(l_parts(2)), l_idlen - length(l_parts(1)))));
-            l_parts(3) := l_parts(2) || l_parts(1);
+            l_filemgr_id := dss_datastore_id(set_info.dss_filemgr_url, set_info.dss_file_name);
             declare
                i pls_integer := 1;
             begin
-               while l_filemgr_ids.exists(l_parts(3)) loop
+               l_parts.extend(1);
+               while l_filemgr_ids.exists(l_filemgr_id) loop
                   i := i + 1;
-                  l_parts(2) := to_char(i);
-                  l_parts(3) := substr(l_parts(3), 1, length(l_parts(3)) - length(l_parts(2))) || l_parts(2);
+                  l_parts(1) := to_char(i);
+                  l_filemgr_id := substr(l_filemgr_id, 1, length(l_filemgr_id) - length(l_parts(1))) || l_parts(1);
                end loop;
             end;
-            l_filemgr_ids(l_parts(3)) := '';
-            l_filemgrs(l_text) := l_parts(3);
-            l_parts.trim(3);
+            l_filemgr_ids(l_filemgr_id) := '';
+            l_filemgrs(l_text) := l_filemgr_id;
+            l_parts.trim(1);
          end if;
       end loop;
       
@@ -1519,11 +1575,11 @@ create or replace package body cwms_xchg as
       p_dss_xchg_set_id in  varchar2 default null,
       p_office_id       in  varchar2 default null)
    is
-      l_idlen           constant binary_integer := 16;
       
       i                 binary_integer;
       l_dss_filemgr_url at_dss_file.dss_filemgr_url%type;
       l_dss_file_name   at_dss_file.dss_file_name%type;
+      l_filemgr_id      varchar2(16);
       l_dss_xchg_set_id at_dss_xchg_set.dss_xchg_set_id%type;
       l_office_code     cwms_office.office_code%type;
       l_office_id_mask  cwms_office.office_id%type;
@@ -1583,9 +1639,7 @@ create or replace package body cwms_xchg as
       end if;
       
       select name into l_db_name from v$database;
-      l_oracle_id := utl_inaddr.get_host_name || ':' || l_db_name;
-      l_oracle_id := substr(l_oracle_id, -(least(length(l_oracle_id), l_idlen)));
-      l_oracle_id := substr(l_oracle_id, regexp_instr(l_oracle_id, '[a-zA-Z0-9]'));
+      l_oracle_id := db_datastore_id;
 
       ------------------------------------------------------------------------------------
       -- loop through matching data exchange sets collecting office and dssfilemanagers --
@@ -1629,29 +1683,20 @@ create or replace package body cwms_xchg as
             || cwms_util.field_separator
             || set_info.dss_file_name;
          if not l_filemgrs_a.exists (set_info.dss_filemgr_url||set_info.dss_file_name) then
-            if l_parts is null then
-               l_parts := cwms_util.str_tab_t();
-            end if;
-            l_parts.extend(3);
-            l_parts(1) := regexp_substr(set_info.dss_file_name, '[^/]+$');
-            l_parts(1) := substr(l_parts(1), 1, length(l_parts(1)) - 4);
-            l_parts(1) := substr(l_parts(1), -(least(length(l_parts(1)), l_idlen / 2)));
-            l_parts(2) := replace(replace(regexp_substr(set_info.dss_filemgr_url, '[^/]+'), '.', ''), ':', '');
-            l_parts(2) := substr(l_parts(2), 1, length(l_parts(2)) - 3) || ':';
-            l_parts(2) := substr(l_parts(2), -(least(length(l_parts(2)), l_idlen - length(l_parts(1)))));
-            l_parts(3) := l_parts(2) || l_parts(1);
+            l_filemgr_id := dss_datastore_id(set_info.dss_filemgr_url, set_info.dss_file_name);
             declare
                i pls_integer := 1;
             begin
-               while l_filemgr_ids_a.exists(l_parts(3)) loop
+               l_parts.extend(1);
+               while l_filemgr_ids_a.exists(l_filemgr_id) loop
                   i := i + 1;
-                  l_parts(2) := to_char(i);
-                  l_parts(3) := substr(l_parts(3), 1, length(l_parts(3)) - length(l_parts(2))) || l_parts(2);
+                  l_parts(1) := to_char(i);
+                  l_filemgr_id := substr(l_filemgr_id, 1, length(l_filemgr_id) - length(l_parts(1))) || l_parts(1);
                end loop;
             end;
-            l_filemgr_ids_a(l_parts(3)) := '';
-            l_filemgrs_a(l_text) := l_parts(3);
-            l_parts.trim(3);
+            l_filemgr_ids_a(l_filemgr_id) := '';
+            l_filemgrs_a(l_text) := l_filemgr_id;
+            l_parts.trim(1);
          end if;
       end loop;
 
@@ -3568,15 +3613,20 @@ end update_last_processed_time;
 -- VARCHAR2 FUNCTION REPLAY_DATA_MESSAGES(...)
 --
 function replay_data_messages(
-   p_xchg_code  in integer,
-   p_start_time in integer  default null,
-   p_end_time   in integer  default null,
-   p_request_id in varchar2 default null)
+   p_component       in varchar2,
+   p_host            in varchar2,
+   p_dss_xchg_set_id in varchar2,
+   p_start_time      in integer  default null,
+   p_end_time        in integer  default null,
+   p_request_id      in varchar2 default null,
+   p_office_id       in varchar2 default null)
    return varchar2
 is
    type assoc_bool_vc183 is table of boolean index by varchar2(183);
+   l_reported      timestamp := systimestamp;
    l_start_time    timestamp;
    l_end_time      timestamp;
+   l_log_msg       varchar2(4000);
    l_request_id    varchar2(32) := nvl(p_request_id, rawtohex(sys_guid()));
    l_message       sys.aq$_jms_text_message;
    l_message_count integer;
@@ -3584,6 +3634,8 @@ is
    l_earliest      date;
    l_latest        date;
    l_ts            integer;
+   l_xchg_code     integer := get_dss_xchg_set_code(p_dss_xchg_set_id, p_office_id);
+   i               integer;
 begin
    ---------------------------------
    -- get the start and end times --
@@ -3592,7 +3644,7 @@ begin
       select last_update
         into l_start_time
         from at_dss_xchg_set
-       where dss_xchg_set_code = p_xchg_code;
+       where dss_xchg_set_code = l_xchg_code;
    else
       l_start_time := cwms_util.to_timestamp(p_start_time);
    end if;
@@ -3601,6 +3653,24 @@ begin
    else
       l_end_time := cwms_util.to_timestamp(p_end_time);
    end if;
+   ----------------------------
+   -- log the replay request --
+   ----------------------------
+   l_log_msg := '<cwms_message type="RequestAction">'
+                || '<property type="String" name="subtype">ReplayRealtime</property>'
+                || '<property type="String" name="user">'
+                || cwms_util.get_user_id
+                || '</property><property type="String" name="set_id">'
+                || p_dss_xchg_set_id
+                || '</property><property type="String" name="request_id">'
+                || l_request_id
+                || '</property><property type="String" name="start_time">'
+                || l_start_time
+                || '</property><property type="String" name="end_time">'
+                || l_end_time
+                || '</property></cwms_message>';
+                
+   i := cwms_msg.log_message(p_component, null, p_host, null, l_reported, l_log_msg, false);
    -------------------------------------
    -- loop over the archived messages --
    -------------------------------------
@@ -3615,7 +3685,7 @@ begin
                   and msg.ts_code in (select ts_code
                                     from at_dss_ts_xchg_spec xspec,
                                          at_dss_ts_xchg_map  xmap
-                                   where xmap.dss_xchg_set_code = p_xchg_code
+                                   where xmap.dss_xchg_set_code = l_xchg_code
                                      and xspec.dss_ts_xchg_code = xmap.dss_ts_xchg_code
                                  )
              order by msg.message_time asc
@@ -3656,51 +3726,7 @@ begin
    l_message.set_long_property('last_time', cwms_util.to_millis(to_timestamp(l_latest)));
    l_ts := cwms_msg.publish_message(l_message, 'realtime_ops');
    return l_request_id;
-end replay_data_messages;   
-
--------------------------------------------------------------------------------
--- VARCHAR2 FUNCTION REPLAY_DATA_MESSAGES(...)
---
-function replay_data_messages(
-   p_dss_xchg_set_id in varchar2,
-   p_start_time      in integer  default null,
-   p_end_time        in integer  default null,
-   p_request_id      in varchar2 default null,
-   p_office_id       in varchar2 default null)
-   return varchar2
-is
-begin
-   return replay_data_messages(
-      get_dss_xchg_set_code(p_dss_xchg_set_id, p_office_id),
-      p_start_time,
-      p_end_time,
-      p_request_id);                               
 end replay_data_messages;
-
--------------------------------------------------------------------------------
--- VARCHAR2 FUNCTION RESTART_REALTIME(...)
---
-function restart_realtime(
-   p_xchg_code in integer)
-   return varchar2
-is
-begin
-   return replay_data_messages(p_xchg_code);
-end restart_realtime;
-
--------------------------------------------------------------------------------
--- VARCHAR2 FUNCTION RESTART_REALTIME(...)
---
-function restart_realtime(
-   p_dss_xchg_set_id in varchar2,
-   p_office_id       in varchar2 default null)
-   return varchar2
-is
-begin
-   return restart_realtime(
-            get_dss_xchg_set_code(p_dss_xchg_set_id, p_office_id));                            
-end restart_realtime;
-         
 
 -------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION RESTART_REALTIME(...)
@@ -3709,16 +3735,18 @@ function restart_realtime(
    p_engine_url in varchar2)
    return varchar2
 is
-   l_request_ids varchar2(4000);
+   l_request_ids varchar2(4000) := '';
+   l_host        varchar2(64)   := regexp_substr(p_engine_url, '[a-zA-Z0-9._]+');
 begin
-   for rec in (select dss_xchg_set_code
+   for rec in (select dss_xchg_set_id
                  from at_dss_xchg_set xset,
                       at_dss_file     dfile
                 where dfile.dss_filemgr_url = p_engine_url
+                  and dfile.office_code = cwms_util.user_office_code
                   and xset.dss_file_code = dfile.dss_file_code
                   and xset.realtime is not null)
    loop
-      l_request_ids := l_request_ids || ',' || restart_realtime(rec.dss_xchg_set_code);
+      l_request_ids := l_request_ids || ',' || replay_data_messages('DataExchange Engine', l_host, rec.dss_xchg_set_id);
    end loop;
    return substr(l_request_ids, 2);
 end restart_realtime;
@@ -3727,12 +3755,12 @@ end restart_realtime;
 -- VARCHAR2 FUNCTION REQUEST_BATCH_EXCHANGE(...)
 --
 function request_batch_exchange(
-   p_component  in varchar2,
-   p_host       in varchar2,
-   p_set_id     in varchar2,
-   p_to_dss     in varchar2,
-   p_start_time in integer,
-   p_end_time   in integer default null)
+   p_component        in varchar2,
+   p_host             in varchar2,
+   p_set_id           in varchar2,
+   p_dst_datastore_id in varchar2,
+   p_start_time       in integer,
+   p_end_time         in integer default null)
    return varchar2
 is
    l_job_id   varchar2(32) := rawtohex(sys_guid());
@@ -3741,17 +3769,42 @@ is
    l_to_dss   varchar2(8);
    l_parts    cwms_util.str_tab_t;
    l_reported timestamp := systimestamp;
+   l_rec      at_dss_file%rowtype;
    i          integer;
 begin
-   if cwms_util.return_true_or_false(p_to_dss) then
-      l_to_dss := 'true';
-   else
+   if p_dst_datastore_id = db_datastore_id then
       l_to_dss := 'false';
+   else
+      begin
+         select dss_file_code
+           into l_rec.dss_file_code
+           from at_dss_xchg_set
+          where dss_xchg_set_id = p_set_id;
+         
+         select *
+           into l_rec
+           from at_dss_file
+          where dss_file_code = l_rec.dss_file_code;
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'INVALID_ITEM',
+               p_set_id,
+               'data exchange set id');
+      end;
+      if p_dst_datastore_id = dss_datastore_id(l_rec.dss_filemgr_url, l_rec.dss_file_name) then
+         l_to_dss := 'true';
+      else
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_dst_datastore_id,
+            'datastore id for data exchange set ' || p_set_id);
+      end if;
    end if;
    l_log_msg := '<cwms_message type="RequestAction">'
                 || '<property type="String" name="subtype">BatchExchange</property>'
                 || '<property type="String" name="user">'
-                || sys_context ('userenv', 'session_user')
+                || cwms_util.get_user_id
                 || '</property><property type="String" name="set_id">'
                 || p_set_id
                 || '</property><property type="String" name="job_id">'
@@ -3760,6 +3813,8 @@ begin
                 || p_start_time
                 || '</property><property type="long" name="end_time">'
                 || nvl(p_end_time, cwms_util.current_millis)
+                || '</property><property type="String" name="destination_datastore_id">'
+                || p_dst_datastore_id
                 || '</property><property type="boolean" name="to_dss">'
                 || l_to_dss
                 || '</property></cwms_message>';

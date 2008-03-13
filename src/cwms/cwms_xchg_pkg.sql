@@ -7,6 +7,21 @@ create or replace package cwms_xchg as
 -- object or raise an exception if the object to create already exists in the
 -- database.  The default is to return the code of the existing object.
 --
+
+--------------------------------------------------------------------------------
+-- VARCHAR2 FUNCTION DB_DATASTORE_ID()
+--
+   function db_datastore_id
+      return varchar2;
+   
+--------------------------------------------------------------------------------
+-- VARCHAR2 FUNCTION DSS_DATASTORE_ID(...)
+--
+   function dss_datastore_id(
+      p_dss_filemgr_url in varchar2,
+      p_dss_file_name   in varchar2)
+      return varchar2;
+   
 --------------------------------------------------------------------------------
 -- NUMBER FUNCTION CREATE_DSS_XCHG_SET(...)
 --
@@ -273,35 +288,12 @@ procedure update_last_processed_time (
 -- VARCHAR2 FUNCTION REPLAY_DATA_MESSAGES(...)
 --
 function replay_data_messages(
-   p_xchg_code  in integer,
-   p_start_time in integer  default null,
-   p_end_time   in integer  default null,
-   p_request_id in varchar2 default null)
-   return varchar2;
-
--------------------------------------------------------------------------------
--- VARCHAR2 FUNCTION REPLAY_DATA_MESSAGES(...)
---
-function replay_data_messages(
+   p_component       in varchar2,
+   p_host            in varchar2,
    p_dss_xchg_set_id in varchar2,
    p_start_time      in integer  default null,
    p_end_time        in integer  default null,
    p_request_id      in varchar2 default null,
-   p_office_id       in varchar2 default null)
-   return varchar2;
-
--------------------------------------------------------------------------------
--- VARCHAR2 FUNCTION RESTART_REALTIME(...)
---
-function restart_realtime(
-   p_xchg_code in integer)
-   return varchar2;
-
--------------------------------------------------------------------------------
--- VARCHAR2 FUNCTION RESTART_REALTIME(...)
---
-function restart_realtime(
-   p_dss_xchg_set_id in varchar2,
    p_office_id       in varchar2 default null)
    return varchar2;
 
@@ -316,12 +308,12 @@ function restart_realtime(
 -- VARCHAR2 FUNCTION REQUEST_BATCH_EXCHANGE(...)
 --
 function request_batch_exchange(
-   p_component  in varchar2,
-   p_host       in varchar2,
-   p_set_id     in varchar2,
-   p_to_dss     in varchar2,
-   p_start_time in integer,
-   p_end_time   in integer default null)
+   p_component        in varchar2,
+   p_host             in varchar2,
+   p_set_id           in varchar2,
+   p_dst_datastore_id in varchar2,
+   p_start_time       in integer,
+   p_end_time         in integer default null)
    return varchar2;
 
 end cwms_xchg;
