@@ -91,7 +91,7 @@
 			<else>
 				<echo message="${build-sql-script-output}"/>
 				<fail message="buildsqlscripts.py is failing with the following error code: ${build-sql-script-error}"/>
-			</then>
+			</else>
 		</if>
 		
 		<echo message="Creating new CWMS20 Schema..."/>
