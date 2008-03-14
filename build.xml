@@ -83,16 +83,19 @@
 			<arg line="${buildSqlScript-arg-line}"/>
 		</exec>
 		
-		<if>
+		<!--if>
 			<equals arg1="${build-sql-script-error}" arg2="" />
 			<then>
 				<echo message="Finished building sql scripts"/>
 			</then>
 			<else>
 				<echo message="${build-sql-script-output}"/>
-				<fail message="buildsqlscripts.py is failing with the following error code: ${build-sql-script-error}"/>
+				<echo message="${build-sql-script-error}"/>
+				<fail/>
 			</else>
-		</if>
+		</if-->
+		
+		<echo message="Finished building sql scripts"/>
 		
 		<echo message="Creating new CWMS20 Schema..."/>
 
@@ -111,7 +114,8 @@ cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_p
 			</then>
 			<else>
 				<echo message="${auto-build-output}"/>
-				<fail message="autobuild.py is failing with the following error code: ${auto-build-error}"/>
+				<echo message="${auto-build-error}"/>
+				<fail/>
 			</else>
 		</if>
 
@@ -136,7 +140,8 @@ cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_p
 			</then>
 			<else>
 				<echo message="${auto-kill-output}"/>
-				<fail message="autokill.py is failing with the following error code: ${auto-kill-error}"/>
+				<echo message="${auto-kill-error}"/>
+				<fail/>
 			</else>
 		</if>
 	
