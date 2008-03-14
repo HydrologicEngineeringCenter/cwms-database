@@ -70,11 +70,11 @@
 		<if>
 			<equals arg1="${office.secondary.id}" arg2="" />
 			<then>
-				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms20.user} ${office.primary.id} ${test.account.create}"/>
+				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${office.primary.id} ${test.account.create}"/>
 				<echo message="${buildSqlScript-arg-line}"/>
 			</then>
 			<else>
-				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms20.user} ${office.primary.id} ${office.secondary.id} ${test.account.create}"/>
+				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${office.primary.id} ${office.secondary.id} ${test.account.create}"/>
 				<echo message="${buildSqlScript-arg-line}"/>
 			</else>
 		</if>
@@ -97,7 +97,7 @@
 		<echo message="Creating new CWMS20 Schema..."/>
 
 		<property name="autobuild-arg-line" value="/c python autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} 
-cwms_passwd=${oracle.cwms20.password} dbi_passwd=${oracle.cwmsdbi.password} test_passwd=${oracle.hectest.password}"/>
+cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_passwd=${oracle.hectest.password}"/>
 		<echo message="${autobuild-arg-line}"/>
 
 		<exec dir="${src}" executable="cmd" outputproperty="auto-build-output" errorproperty="auto-build-error">
