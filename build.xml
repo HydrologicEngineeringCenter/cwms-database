@@ -358,34 +358,62 @@
 		
 		<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${db_office_id} ${office_id_1} ${office_id_2} ${test_account_option}"/>
 		
-		<exec dir="${src}" executable="cmd" outputproperty="build-sql-script-output" errorproperty="build-sql-script-error" failonerror="true">
+		<echo message="Build sql scripts..."/>
+		
+		<exec dir="${src}" executable="cmd" outputproperty="build-sql-script-output" errorproperty="build-sql-script-error">
 			<arg line="${buildSqlScript-arg-line}"/>
 		</exec>
 		
-		<echo message="${build-sql-script-output}"/>
-		<echo message="${build-sql-script-error}"/>
+		<if>
+			<equals arg1="${build-sql-script-error}" arg2="" />
+			<then>
+				<echo message="${build-sql-script-output}"/>
+				<fail message="buildsqlscripts.py is failing with the following error code: ${build-sql-script-error}"/>
+			</then>
+		</if>
+		
+		<echo message="Finished building sql scripts"/>
 		
 		<property name="autobuild-arg-line" value="/c python autobuild.py echo=${autobuild-echo} inst=${autobuild-inst} sys_passwd=${autobuild-sys_passwd} 
 cwms_passwd=${autobuild-cwms_passwd} dbi_passwd=${autobuild-dbi_passwd} test_passwd=${autobuild-test_passwd}"/>
 
-		<exec dir="${src}" executable="cmd" outputproperty="auto-build-output" errorproperty="auto-build-error" failonerror="true">
+		<echo message="Creating new CWMS20 Schema..."/>
+
+		<exec dir="${src}" executable="cmd" outputproperty="auto-build-output" errorproperty="auto-build-error">
 			<arg line="${autobuild-arg-line}"/>
 		</exec>
 		
-		<echo message="${auto-build-output}"/>
-		<echo message="${auto-build-error}"/>
+		<if>
+			<equals arg1="${auto-build-error}" arg2="" />
+			<then>
+				<echo message="${auto-build-output}"/>
+				<fail message="autobuild.py is failing with the following error code: ${auto-build-error}"/>
+			</then>
+		</if>
+		
+		<echo message="Finished creating new CWMS20 Schema"/>
+		
     </target>
 	
 	<target name="drop-schema" description="Executes python script to destroy the CWMS_20 schema">
 		
 		<property name="autokill-arg-line" value="/c python autokill.py echo=${autokill-echo} inst=${autokill-inst} sys_passwd=${autokill-sys_passwd} ${autokill-force}"/>
 		
-		<exec dir="${src}" executable="cmd" outputproperty="auto-kill-output" errorproperty="auto-kill-error" failonerror="true">
+		<echo message="dropping existing CWMS20 Schema..."/>
+		
+		<exec dir="${src}" executable="cmd" outputproperty="auto-kill-output" errorproperty="auto-kill-error">
 			<arg line="${autokill-arg-line}"/>
 		</exec>	
 		
-		<echo message="${auto-kill-output}"/>
-		<echo message="${auto-kill-error}"/>
+		<if>
+			<equals arg1="${auto-kill-error}" arg2="" />
+			<then>
+				<echo message="${auto-kill-output}"/>
+				<fail message="autokill.py is failing with the following error code: ${auto-kill-error}"/>
+			</then>
+		</if>
+		
+		<echo message="Finished dropping existing CWMS20 Schema"/>
     </target>
 	
 	<target name="all-schema" depends="drop-schema,add-schema" description="destroy existing CWMS_20 schema then create a new CWMS_20 schema">
