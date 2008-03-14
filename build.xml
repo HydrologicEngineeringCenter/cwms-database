@@ -378,7 +378,7 @@ cwms_passwd=${autobuild-cwms_passwd} dbi_passwd=${autobuild-dbi_passwd} test_pas
 	
 	<target name="drop-schema" description="Executes python script to destroy the CWMS_20 schema">
 		
-		<property name="autokill-arg-line" value="/c python autokill.py echo=${autokill-echo} inst=${autokill-inst} sys_passwd=${autokill-sys_passwd}"/>
+		<property name="autokill-arg-line" value="/c python autokill.py echo=${autokill-echo} inst=${autokill-inst} sys_passwd=${autokill-sys_passwd} ${autokill-force}"/>
 		
 		<exec dir="${src}" executable="cmd" outputproperty="auto-kill-output" errorproperty="auto-kill-error" failonerror="true">
 			<arg line="${autokill-arg-line}"/>
