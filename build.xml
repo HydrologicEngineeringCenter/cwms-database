@@ -38,6 +38,7 @@
 	</taskdef>	
 
 	<import optional="true" file="${root}/${env.USERNAME}.xml"/>
+	<import optional="true" file="${builduser.overrides}"/>
 
 	<!-- Initialize the project for building. -->
 	<target name="init">
