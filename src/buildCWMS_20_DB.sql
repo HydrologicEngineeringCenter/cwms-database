@@ -1,4 +1,3 @@
---
 set echo off
 set time on
 set define on
@@ -21,6 +20,7 @@ set serveroutput on
 begin dbms_output.enable; end;
 /
 set echo &echo_state
+whenever sqlerror exit sql.sqlcode
 --
 -- create user roles and users
 --
@@ -177,7 +177,25 @@ prompt Remaining invalid objects...
      and status = 'INVALID'
 order by object_name, object_type asc;
 
+declare
+   obj_count integer;
+begin
+   select count(*)
+     into obj_count
+     from dba_objects
+    where owner = 'CWMS_20' 
+      and status = 'INVALID';
+   if obj_count > 0 then
+      dbms_output.put_line('' || obj_count || ' objects are still invalid.');
+      raise_application_error(-20999, 'Some objects are still invalid.');
+   else
+      dbms_output.put_line('All invalid objects successfully compiled.');
+   end if;
+end;
+/
 
+
+set echo off
 --
 -- log on as the CWMS_20 user and start queues and jobs
 --
@@ -195,5 +213,5 @@ exec cwms_util.start_timeout_mv_refresh_job;
 --
 -- all done
 --
-exit
+exit 0
 

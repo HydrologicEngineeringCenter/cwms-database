@@ -46,5 +46,12 @@ f.close()
 
 cmd = "sqlplus /nolog @%s" % auto_sqlfilename
 print cmd
-os.system(cmd)
+ec = os.system(cmd)
 os.remove(auto_sqlfilename)
+
+if ec :
+	print
+	print "SQL*Plus exited with code", ec 
+	print
+	
+sys.exit(ec)

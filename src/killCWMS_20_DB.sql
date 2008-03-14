@@ -25,11 +25,14 @@ spool killCWMS_20_DB.log
 --
 connect sys/&sys_passwd@&inst as sysdba
 select sysdate from dual;
+whenever sqlerror exit sql.sqlcode
+
 --
 -- kill the cwms public synonyms
 --
 set echo off
 set serveroutput on
+set echo off
 begin
    for rec in (
       select synonym_name
@@ -43,6 +46,7 @@ begin
       exception
          when others then 
             dbms_output.put_line('==> Cannot drop public synonym ' || rec.synonym_name || ': ' || sqlerrm);
+            raise;  
       end;
    end loop;
 end;
@@ -56,6 +60,7 @@ begin
 exception
    when others then 
       dbms_output.put_line('==> Cannot drop role cwms_dev : ' || sqlerrm);
+      raise;  
 end;
 /
 begin
@@ -64,6 +69,7 @@ begin
 exception
    when others then 
       dbms_output.put_line('==> Cannot drop role cwms_user : ' || sqlerrm);
+      raise;  
 end;
 /
 begin
@@ -81,11 +87,20 @@ begin
       exception
          when others then 
             dbms_output.put_line('==> Cannot drop user ' || rec.username || ': ' || sqlerrm);
+            raise;  
       end;
    end loop;
 end;
 /
+begin
+   dbms_output.put_line('drop user cwms_20 cascade');
+   execute immediate 'drop user cwms_20 cascade';
+exception
+   when others then 
+      dbms_output.put_line('==> Cannot drop role cwms_20 : ' || sqlerrm);
+      raise;  
+end;
+/
 set echo &echo_state
-drop user cwms_20 cascade;
-exit
+exit 0
 
