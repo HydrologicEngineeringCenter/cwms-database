@@ -1,6 +1,6 @@
 <project name="wcdba" default="all">
 	<description>
-		"Build file for the general of the WCDBA project."
+		"Build file for the oracle side of the WCDBA project."
 	</description>
 
 	<!-- read in the environment for use in properties -->
@@ -12,6 +12,16 @@
 	<!-- the amount of memory to allocate to javac during compile -->
 	<property name="memMax" value="256m"/>
 
+	<!-- flag to create the test account -->
+	<property name="test.account.create" value="-testaccount"/>
+
+	<!-- flags to control output of auto kill and auto build -->
+	<property name="autobuild.echo" value="OFF"/>
+	<property name="autokill.echo" value="OFF"/>
+
+	<!-- flags to force the kill script to ignore errors. -->
+	<property name="autokill.force" value="-force"/>
+	
 	<!-- Perforce properties -->
 	<!-- Fail perforce operations on error -->
 	<property name="perforce.failOnError" value="true"/>
@@ -25,12 +35,11 @@
 
 	<!-- set file locations for this build -->
 	<property name="root"  location="."/>
-	<property name="build" location="${root}/build"/>
 	<property name="src" location="${root}/src"/>
 	<property name="lib"  location="${root}/lib"/>
-	<property name="bin"  location="${root}/bin"/>
+	<property name="test"  location="${root}/test"/>
 
-		<!-- Load in the ant-contrib jar to use the foreach external task -->	
+	<!-- Load in the ant-contrib jar to use the foreach external task -->	
 	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
 		<classpath>
 			<pathelement location="${root}/lib/ant-contrib.jar"/>
@@ -44,8 +53,6 @@
 	<target name="init">
 		<!-- Create the time stamp -->
 		<tstamp/>
-		<mkdir dir="${build}/logs"/>
-		<mkdir dir="${build}/ncomp"/>
 		<property name="wcdba.build" value="WCDBA:Build:${DSTAMP}:${TSTAMP}"/>
 		<condition property="perforce.enabled">
 			<not>
@@ -54,312 +61,23 @@
 		</condition>
 		<echo message="perforce.enabled = ${perforce.enabled}"/>
 	</target>
-
-	<!-- Cleans the project up removing the intermediate files from the build tree. -->
-	<target name="clean" description="delete all of the intermediate files">
-		<delete quiet="true" includeEmptyDirs="true">
-			<fileset dir="${build}"/>
-		</delete>
-	</target>
-
-	<!-- Perforce sync to the project depot -->
-	<target name="p4sync" depends="init" if="perforce.enabled">
-		<echo message="Perforce synchronize on ${perforce.depot}"/>
-		<p4sync view="${perforce.depot}"
-			failonerror="${perforce.failOnError}"
-		/>
-	</target>
-
-	<!-- Queries the user for the Oracle TNS host:port if it is not already defined. -->
-	<target name="getHostPort" unless="oracle.hostport">
-		<input message="Oracle TNS host:port?" addproperty="oracle.hostport"/>
-	</target>
-
-	<!-- Assigns the Oracle SID from the environment to a property.--> 	
-	<target name="getEnvSid" if="env.ORACLE_SID" unless="oracle.sid">
-		<property name="oracle.sid" value="${env.ORACLE_SID}"/>
-	</target>
-
-	<!-- Queries the user to enter in the Oracle SID if it is not defined in the 
-		environment as a property. 
-	-->
-	<target name="getSid" depends="getEnvSid" unless="oracle.sid">
-		<input message="Oracle SID?" addproperty="oracle.sid"/>
-	</target>
-
-	<!-- Queries the user to enter in the cwms office if it is not defined.-->
-	<target name="getOffice" unless="cwms.office">
-		<input message="CWMS Office?" addproperty="cwms.office"/>
-	</target>
-
-	<!-- Queries the user to input a interval offset if it is not defined.-->
-	<target name="getIntervalOffset" unless="timeseries.utcoffset">
-		<input message="UTC Interval Offset?" addproperty="timeseries.utcoffset"/>
-	</target>
-
-	<!-- Queries the user to input a time series id property if it is not defined.-->
-	<target name="getTimeSeriesId" unless="timeseries.desc">
-		<input message="Time series id?" addproperty="timeseries.desc"/>
-	</target>
-
-	<!-- Queries the user to input a time series id property if it is not defined.-->
-	<target name="getTimeSeriesUnits" unless="timeseries.units">
-		<input message="Time series units" addproperty="timeseries.units"/>
-	</target>
-
-	<!-- The name of the CWMS Oracle user. This is fixed and cannot be changed. --> 
-	<target name="getCwmsUser" depends="getSid" unless="oracle.user">
-		<input message="CWMS User, ex: 'cwms'?" addproperty="oracle.user"/>
-	</target>
 	
-	<!-- Queries the user for the CWMS user password if it is not already defined. --> 
-	<target name="getCwmsPass" depends="getCwmsUser" unless="oracle.password">
-		<input
-			message="${oracle.user}@${oracle.sid} password?"
-			addproperty="oracle.password"/>
-	</target>
-	
-	<!-- Database schema creation. -->
-	
-	<!-- A target that runs the python build script to generate a 
-		sql file pair used to create or drop the CWMS schema.
-	-->
-	<target name="CreateSchemaSource" depends="init,getCwmsUser" description="Generate the schema build scripts">
-		<!-- Run the python script to generate the sql. -->
-		<property name="python.script" value="buildSqlScripts.py"/>
-		<exec executable="python" 
-			dir="${build}"
-			output="${build}/logs/${python.script}.log">
-			<arg value="${src}/${python.script}"/>
-			<arg value="${oracle.user}"/>
-		</exec>
-		<concat>
-			<fileset dir="${build}" includes="logs/${python.script}.log"/>
-		</concat>
-	</target>
-	
-	<!-- An iteration target that can be used to load a set of dependent sql files
-		 as the CWMS user.
-	-->
-	<target name="LoadCwmsSqlIter">
-		<echo message="Loading into Oracle: ${sql.iter}"/>
-		<exec executable="sqlplus" dir="${build}/logs">
-			<arg value="-s"/>
-			<arg value="${oracle.user}/${oracle.password}@${oracle.sid}"/>
-			<arg value="@${sql.iter}"/>
-		</exec>
-	</target>
-	
-	<target name="LoadSchema" depends="init,getCwmsPass,CreateSchemaSource,LoadCwmsSchema" 
-		description="Creates the CWMS Schemas">
-	</target>
-	
-	<target name="LoadCwmsSchema" depends="init,getCwmsPass" description="Creates the CWMS Schema">
-		<!-- Run the sql to build the cwms schemas. -->
-		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-			<path id="cwms.loadsql.paths">
-				<filelist id="cwms.loadref.files" dir="${build}">
-					<file name="buildCwms.sql"/>
-				</filelist>
-				<filelist id="cwms.loadat.files" dir="${src}/cwms">
-					<file name="at_schema.sql"/>
-				</filelist>
-			</path>
-		</foreach>
-	</target>
-	
-	
-	<target name="DropSchema" depends="init,getCwmsPass" 
-		description="Drops the CWMS schemas.">
-		<!--foreach target="LoadCwmsPdSqlIter" param="sql.iter" inheritall="true">
-			<path id="cwmspd.dropsql.paths">
-				<filelist id="cwmspd.dropsql.files" dir="${build}/oracle">
-					<file name="dropCwmsPd.sql"/>
-				</filelist>
-			</path>
-		</foreach-->
-		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-			<path id="cwms.dropat.paths">
-				<filelist id="cwms.dropat.files" dir="${src}/cwms">
-					<file name="drop_at_schema.sql"/>
-				</filelist>
-			</path>
-		</foreach>
-		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-			<path id="cwms.dropref.paths">
-				<filelist id="cwms.dropref.files" dir="${build}">
-					<file name="dropCwms.sql"/>
-				</filelist>
-			</path>
-		</foreach>
-	</target>
-	
-	<target name="CwmsErrPkgLoadSql" depends="init,getCwmsPass" 
-		description="Loads the CWMS_ERR package">
-		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-			<path id="cwmserr.sql.paths">
-				<filelist id="cwmserr.sql.files" dir="${src}">
-					<file name="cwms/CWMS_ERR_PKG.SQL"/>
-					<file name="cwms/CWMS_ERR_PKG_BODY.SQL"/>
-				</filelist>
-			</path>
-		</foreach>
-	</target>
-	
-	<target name="CwmsUtilPkgLoadSql" depends="init,getCwmsPass" 
-		description="Loads the CWMS_UTIL package">
-		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-			<path id="cwmserr.sql.paths">
-				<filelist id="cwmserr.sql.files" dir="${src}">
-					<file name="cwms/CWMS_UTIL_PKG.SQL"/>
-					<file name="cwms/CWMS_UTIL_PKG_BODY.SQL"/>
-				</filelist>
-			</path>
-		</foreach>
-	</target>
-	
-	<target name="CwmsTypesLoadSql" depends="init,getCwmsPass" 
-		description="Load CWMS Types">
-		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-			<path id="cwmsts.sql.paths">
-				<filelist id="cwmsts.sql.files" dir="${src}">
-					<file name="cwms/cwms_types.sql"/>
-				</filelist>
-			</path>
-		</foreach>
-	</target>
-
-	<target name="CwmsTsPkgLoadSql" depends="init,getCwmsPass,CwmsTypesLoadSql" 
-		description="Loads the CWMS TS package">
-		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-			<path id="cwmsts.sql.paths">
-				<filelist id="cwmsts.sql.files" dir="${src}">
-					<file name="cwms/cwms_return_time_pipe.sql"/>
-					<file name="cwms/CWMS_TS_PKG.sql"/>
-					<file name="cwms/CWMS_TS_PKG_BODY.sql"/>
-				</filelist>
-			</path>
-		</foreach>
-	</target>
-	
-	<target name="CwmsRatPkgLoadSql" depends="init,getCwmsPass" 
-		description="Loads the CWMS RAT package">
-		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-			<path id="cwmsrat.sql.paths">
-				<filelist id="cwmsrat.sql.files" dir="${src}">
-					<file name="cwms/cwms_rat_pkg.sql"/>
-				</filelist>
-			</path>
-		</foreach>
-	</target>
-	
-	<target name="CwmsLocPkgLoadSql" depends="init,getCwmsPass,CwmsTypesLoadSql" 
-		description="Loads the CWMS_LOC package">
-		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-			<path id="cwmsloc.sql.paths">
-				<filelist id="cwmsloc.sql.files" dir="${src}">
-					<file name="cwms/CWMS_LOC_PKG.SQL"/>
-					<file name="cwms/CWMS_LOC_PKG_BODY.SQL"/>
-				</filelist>
-			</path>
-		</foreach>
-	</target>
-	
-	
-	<target name="CwmsCatPkgLoadSql" depends="init,getCwmsPass" 
-		description="Loads the CWMS_CAT package">
-		<foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-			<path id="cwmscat.sql.paths">
-				<filelist id="cwmscat.sql.files" dir="${src}">
-					<file name="cwms/CWMS_CAT_PKG.SQL"/>
-					<file name="cwms/CWMS_CAT_PKG_BODY.SQL"/>
-				</filelist>
-			</path>
-		</foreach>
-	</target>
-	
-    <target name="CwmsXchgPkgLoadSql" depends="init,getCwmsPass" 
-        description="Loads the CWMS_XCHG package">
-        <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-            <path id="cwmscat.sql.paths">
-                <filelist id="cwmscat.sql.files" dir="${src}">
-                    <file name="cwms/CWMS_XCHG_PKG.SQL"/>
-                    <file name="cwms/CWMS_XCHG_PKG_BODY.SQL"/>
-                </filelist>
-            </path>
-        </foreach>
-    </target>
-
-    <target name="CwmsDssPkgLoadSql" depends="init,getCwmsPass" 
-        description="Loads the CWMS_DSS package">
-        <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-            <path id="cwmscat.sql.paths">
-                <filelist id="cwmscat.sql.files" dir="${src}">
-                    <file name="cwms/CWMS_DSS_PKG.SQL"/>
-                    <file name="cwms/CWMS_DSS_PKG_BODY.SQL"/>
-                </filelist>
-            </path>
-        </foreach>
-    </target>
-
-    <target name="CwmsRptPkgLoadSql" depends="init,getCwmsPass" 
-        description="Loads the CWMS_RPT package">
-        <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-            <path id="cwmscat.sql.paths">
-                <filelist id="cwmscat.sql.files" dir="${src}">
-                    <file name="cwms/CWMS_RPT_PKG.SQL"/>
-                    <file name="cwms/CWMS_RPT_PKG_BODY.SQL"/>
-                </filelist>
-            </path>
-        </foreach>
-    </target>
-	
-    <target name="CwmsVtPkgLoadSql" depends="init,getCwmsPass" 
-        description="Loads the CWMS_VT package">
-        <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-            <path id="cwmsvt.sql.paths">
-                <filelist id="cwmsvt.sql.files" dir="${src}">
-                    <file name="cwms/CWMS_VT_PKG.SQL"/>
-                    <file name="cwms/CWMS_VT_PKG_BODY.SQL"/>
-                </filelist>
-            </path>
-        </foreach>
-    </target>
-
-    <target name="CwmsPrivPkgLoadSql" depends="init,getCwmsPass" 
-        description="Loads the CWMS_PRIV package">
-        <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-            <path id="cwmspriv.sql.paths">
-                <filelist id="cwmspriv.sql.files" dir="${src}">
-                    <file name="cwms/CWMS_PRIV_PKG.SQL"/>
-                    <file name="cwms/CWMS_PRIV_PKG_BODY.SQL"/>
-                </filelist>
-            </path>
-        </foreach>
-    </target>
-
-    <target name="CwmsSecPkgLoadSql" depends="init,getCwmsPass" 
-        description="Loads the CWMS_SEC package">
-        <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-            <path id="cwmssec.sql.paths">
-                <filelist id="cwmssec.sql.files" dir="${src}">
-                    <file name="cwms/CWMS_SEC_PKG.SQL"/>
-                    <file name="cwms/CWMS_SEC_PKG_BODY.SQL"/>
-                </filelist>
-            </path>
-        </foreach>
-    </target>
-
-    <target name="CwmsDbLoadSql" 
-	    depends="CwmsTsPkgLoadSql,CwmsLocPkgLoadSql,CwmsCatPkgLoadSql,CwmsDssPkgLoadSql,CwmsRptPkgLoadSql,CwmsPrivPkgLoadSql,CwmsVtPkgLoadSql" 
-        description="Loads the cwmsdb sql source">
-    </target>
-	
-	<target name="add-schema" description="Executes python scripts to create the CWMS_20 schema">
-		
-		<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${db_office_id} ${office_id_1} ${office_id_2} ${test_account_option}"/>
+	<!-- Executes python scripts to build the CWMS_20 schema. -->
+	<target name="build" description="Executes python scripts to build the CWMS_20 schema">		
 		
 		<echo message="Build sql scripts..."/>
+		
+		<if>
+			<equals arg1="${office.secondary.id}" arg2="" />
+			<then>
+				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${office.primary.id} ${test.account.create}"/>
+				<echo message="${buildSqlScript-arg-line}"/>
+			</then>
+			<else>
+				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${office.primary.id} ${office.secondary.id} ${test.account.create}"/>
+				<echo message="${buildSqlScript-arg-line}"/>
+			</else>
+		</if>
 		
 		<exec dir="${src}" executable="cmd" outputproperty="build-sql-script-output" errorproperty="build-sql-script-error">
 			<arg line="${buildSqlScript-arg-line}"/>
@@ -368,17 +86,19 @@
 		<if>
 			<equals arg1="${build-sql-script-error}" arg2="" />
 			<then>
+				<echo message="Finished building sql scripts"/>
+			</then>
+			<else>
 				<echo message="${build-sql-script-output}"/>
 				<fail message="buildsqlscripts.py is failing with the following error code: ${build-sql-script-error}"/>
 			</then>
 		</if>
 		
-		<echo message="Finished building sql scripts"/>
-		
-		<property name="autobuild-arg-line" value="/c python autobuild.py echo=${autobuild-echo} inst=${autobuild-inst} sys_passwd=${autobuild-sys_passwd} 
-cwms_passwd=${autobuild-cwms_passwd} dbi_passwd=${autobuild-dbi_passwd} test_passwd=${autobuild-test_passwd}"/>
-
 		<echo message="Creating new CWMS20 Schema..."/>
+
+		<property name="autobuild-arg-line" value="/c python autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} 
+cwms_passwd=${oracle.cwms20.password} dbi_passwd=${oracle.cwmsdbi.password} test_passwd=${oracle.hectest.password}"/>
+		<echo message="${autobuild-arg-line}"/>
 
 		<exec dir="${src}" executable="cmd" outputproperty="auto-build-output" errorproperty="auto-build-error">
 			<arg line="${autobuild-arg-line}"/>
@@ -387,20 +107,23 @@ cwms_passwd=${autobuild-cwms_passwd} dbi_passwd=${autobuild-dbi_passwd} test_pas
 		<if>
 			<equals arg1="${auto-build-error}" arg2="" />
 			<then>
+				<echo message="Finished creating new CWMS20 Schema"/>
+			</then>
+			<else>
 				<echo message="${auto-build-output}"/>
 				<fail message="autobuild.py is failing with the following error code: ${auto-build-error}"/>
-			</then>
+			</else>
 		</if>
-		
-		<echo message="Finished creating new CWMS20 Schema"/>
-		
+
     </target>
 	
-	<target name="drop-schema" description="Executes python script to destroy the CWMS_20 schema">
-		
-		<property name="autokill-arg-line" value="/c python autokill.py echo=${autokill-echo} inst=${autokill-inst} sys_passwd=${autokill-sys_passwd} ${autokill-force}"/>
+	<!-- Executes python script to drop the CWMS_20 schema. -->
+	<target name="clean" description="Executes python script to drop the CWMS_20 schema">
 		
 		<echo message="dropping existing CWMS20 Schema..."/>
+		
+		<property name="autokill-arg-line" value="/c python autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} ${autokill.force}"/>
+		<echo message="${autokill-arg-line}"/>
 		
 		<exec dir="${src}" executable="cmd" outputproperty="auto-kill-output" errorproperty="auto-kill-error">
 			<arg line="${autokill-arg-line}"/>
@@ -409,33 +132,22 @@ cwms_passwd=${autobuild-cwms_passwd} dbi_passwd=${autobuild-dbi_passwd} test_pas
 		<if>
 			<equals arg1="${auto-kill-error}" arg2="" />
 			<then>
+				<echo message="Finished dropping existing CWMS20 Schema"/>
+			</then>
+			<else>
 				<echo message="${auto-kill-output}"/>
 				<fail message="autokill.py is failing with the following error code: ${auto-kill-error}"/>
-			</then>
+			</else>
 		</if>
-		
-		<echo message="Finished dropping existing CWMS20 Schema"/>
+	
     </target>
 	
-	<target name="all-schema" depends="drop-schema,add-schema" description="destroy existing CWMS_20 schema then create a new CWMS_20 schema">
+	<!-- Drop existing CWMS_20 schema then build a new CWMS_20 schema. -->
+	<target name="all-schema" depends="clean,build" description="drop existing CWMS_20 schema then build a new CWMS_20 schema">
     </target>
 	
-    <target name="all" depends="CwmsDbLoadSql" description="empty for the moment">
-    </target>	
-
-<!--	
-    <target name="ParamTypeConflictPkgLoadSql" depends="init,getCwmsPass" 
-        description="Loads the param_type_conflict package">
-        <foreach target="LoadCwmsSqlIter" param="sql.iter" inheritall="true">
-            <path id="param_type_conflict.sql.paths">
-                <filelist id="param_type_conflict.sql.files" dir="${src}">
-                    <file name="cwms/param_type_conflict_pkg.sql"/>
-                    <file name="cwms/param_type_conflict_pkg_body.sql"/>
-                </filelist>
-            </path>
-        </foreach>
+    <target name="all" depends="all-schema" description="empty for the moment">
     </target>
--->
 	
 </project>
 

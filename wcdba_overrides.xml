@@ -1,0 +1,41 @@
+<project name="wcdba oracle overrides">
+	<!-- properties for oracle cc build . -->
+	
+	<!-- the oracle hostport to install to. -->
+	<property name="oracle.cwms.hostport" value="216.100.254.220:1521"/>
+	
+	<!-- the oracle instance to install to. -->
+ 	<property name="oracle.cwms.instance" value="cwms20"/>
+ 	
+ 	<!-- the oracle user to install to the oracle instance. -->
+ 	<property name="oracle.cwms.user" value="cwms_20"/>
+
+	<!-- the office that owns the cwms database instance. -->
+	<property name="office.primary.id" value="NAB"/> 
+	<property name="office.primary.code" value="e1"/> 
+
+	<!-- the offices that also use this cwms database instance. -->
+	<!-- secondary is optional and the value can be 0 to many offices separated by a space. -->
+	<property name="office.secondary.id" value="NAD NAE NAN"/> 
+
+	<property name="oracle.sys.password" value="cwms20db"/>
+	<property name="oracle.cwms20.password" value="cwms20db"/>
+
+	<!-- the password for the ${office.primary.code}cwmsdbi account -->
+	<property name="oracle.cwmsdbi.password" value="cwms20db"/>
+
+	<!-- the password for the ${office.primary.code}hectest account -->
+	<property name="oracle.hectest.password" value="cwms20db"/>
+	
+	<!-- flag to create the test account -->
+	<property name="test.account.create" value="-testaccount"/>
+
+	<!-- flags to control output of auto kill and auto build -->
+	<property name="autobuild.echo" value="ON"/>
+	<property name="autokill.echo" value="ON"/>
+
+	<!-- flags to force the kill script to ignore errors. -->
+	<property name="autokill.force" value="-force"/>
+	
+	<!-- end of properties for oracle cc build. -->
+</project>
