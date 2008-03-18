@@ -267,9 +267,7 @@ procedure time_series_updated(
 -- PROCEDURE UPDATE_LAST_PROCESSED_TIME(...)
 --
 procedure update_last_processed_time (
-   p_component   in varchar2,
-   p_host        in varchar2,
-   p_port        in integer,
+   p_engine_url  in varchar2,
    p_xchg_code   in integer,
    p_update_time in integer);
 
@@ -277,9 +275,7 @@ procedure update_last_processed_time (
 -- PROCEDURE UPDATE_LAST_PROCESSED_TIME(...)
 --
 procedure update_last_processed_time (
-   p_component       in varchar2,
-   p_host            in varchar2,
-   p_port            in integer,
+   p_engine_url      in varchar2,
    p_dss_xchg_set_id in varchar2,
    p_update_time     in integer,
    p_office_id       in varchar2 default null);

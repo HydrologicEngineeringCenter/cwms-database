@@ -3465,29 +3465,15 @@ is
    l_host        varchar2(32)  := null;
    l_port        integer       := null;
    l_reported    timestamp     := systimestamp;
-   l_log_message varchar2(4000);
-   l_rt_message  varchar2(4000);
+   l_message     varchar2(4000);
    l_parts       cwms_util.str_tab_t;
    l_ts          integer;
 begin
-   l_log_message := '<cwms_message type="Status">'
-                    || '<property name="subtype" type="String">XchgConfigUpdated</property>'
-                    || '</cwms_message>';
+   l_message := '<cwms_message type="Status">'
+                || '<property name="subtype" type="String">XchgConfigUpdated</property>'
+                || '</cwms_message>';
    
-   l_parts := cwms_util.split_text(l_log_message, '>', 1);
-   
-   l_rt_message := l_parts(1) 
-                   || '><property name="component" type="String">'
-                   || l_component
-                   || '</property>'
-                   || '<property name="reported" type="long">'
-                   || cwms_util.to_millis(l_reported)
-                   || '</property>'
-                   || l_parts(2);
-
-   l_ts := cwms_msg.publish_message(l_rt_message, 'realtime_ops');
-   
-   l_ts := cwms_msg.log_message(l_component,l_instance,l_host,l_port,l_reported,l_log_message);                      
+   l_ts := cwms_msg.log_message(l_component,l_instance,l_host,l_port,l_reported,l_message, true);                      
 end xchg_config_updated;
 
 -------------------------------------------------------------------------------
@@ -3553,9 +3539,7 @@ end time_series_updated;
 -- PROCEDURE UPDATE_LAST_PROCESSED_TIME(...)
 --
 procedure update_last_processed_time (
-   p_component   in varchar2,
-   p_host        in varchar2,
-   p_port        in integer,
+   p_engine_url  in varchar2,
    p_xchg_code   in integer,
    p_update_time in integer)
 is
@@ -3585,7 +3569,7 @@ begin
                 || '</property>'
                 || '</cwms_message>';
                 
-   i := cwms_msg.log_message(p_component, null, p_host, p_port, systimestamp, l_log_msg);
+   i := cwms_msg.log_message('DataExchange Engine', p_engine_url, null, null, systimestamp, l_log_msg, true);
    
 end update_last_processed_time;   
    
@@ -3593,18 +3577,14 @@ end update_last_processed_time;
 -- PROCEDURE UPDATE_LAST_PROCESSED_TIME(...)
 --
 procedure update_last_processed_time (
-   p_component       in varchar2,
-   p_host            in varchar2,
-   p_port            in integer,
+   p_engine_url      in varchar2,
    p_dss_xchg_set_id in varchar2,
    p_update_time     in integer,
    p_office_id       in varchar2 default null)
 is
 begin
    update_last_processed_time(
-      p_component,
-      p_host,
-      p_port,
+      p_engine_url,
       get_dss_xchg_set_code(p_dss_xchg_set_id, p_office_id),
       p_update_time);                              
 end update_last_processed_time;
@@ -3821,17 +3801,7 @@ begin
                 
    l_parts := cwms_util.split_text(l_log_msg, '>', 1);
    
-   l_rt_msg := l_parts(1)
-               || '><property name="component" type="String">'
-               || p_component
-               || '</property><property name="host" type="String">'
-               || p_host
-               || '</property><property name="reported" type="long">'
-               || cwms_util.to_millis(l_reported)
-               || '</property>'
-               || l_parts(2);                
-                
-   i := cwms_msg.log_message(p_component, null, p_host, null, l_reported, l_log_msg);
+   i := cwms_msg.log_message(p_component, null, p_host, null, l_reported, l_log_msg, true);
    
    return l_job_id;
 end request_batch_exchange;
