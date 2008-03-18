@@ -309,7 +309,8 @@ function request_batch_exchange(
    p_set_id           in varchar2,
    p_dst_datastore_id in varchar2,
    p_start_time       in integer,
-   p_end_time         in integer default null)
+   p_end_time         in integer  default null,
+   p_office_id        in varchar2 default null)
    return varchar2;
 
 end cwms_xchg;

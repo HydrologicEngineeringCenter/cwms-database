@@ -3740,7 +3740,8 @@ function request_batch_exchange(
    p_set_id           in varchar2,
    p_dst_datastore_id in varchar2,
    p_start_time       in integer,
-   p_end_time         in integer default null)
+   p_end_time         in integer  default null,
+   p_office_id        in varchar2 default null)
    return varchar2
 is
    l_job_id   varchar2(32) := rawtohex(sys_guid());
@@ -3787,6 +3788,8 @@ begin
                 || cwms_util.get_user_id
                 || '</property><property type="String" name="set_id">'
                 || p_set_id
+                || '</property><property type="String" name="office_id">'
+                || nvl(p_office_id, cwms_util.user_office_id)
                 || '</property><property type="String" name="job_id">'
                 || l_job_id
                 || '</property><property type="long" name="start_time">'
