@@ -240,19 +240,21 @@ AS
 --
 --
    FUNCTION get_property (
-      p_category  in varchar2,
-      p_id        in varchar2,
-      p_default   in varchar2 default null,
-      p_office_id in varchar2 default null)
-      return varchar2
+      p_value     out varchar2,
+      p_comment   out varchar2,
+      p_category  in  varchar2,
+      p_id        in  varchar2,
+      p_default   in  varchar2 default null,
+      p_office_id in  varchar2 default null)
    is
-      l_office_id  varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
-      l_prop_value varchar2(256) := p_default;
+      l_office_id    varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
+      l_prop_value   at_properties.prop_value%type := p_default;
+      l_prop_comment at_properties.prop_comment%type;
    begin
       begin
          l_office_id := upper(p_office_id);
-         select prop_value
-           into l_prop_value
+         select prop_value, prop_comment
+           into l_prop_value, l_prop_comment
            from at_properties p, cwms_office o
           where o.office_id = l_office_id
             and p.office_code = o.office_code
@@ -262,7 +264,8 @@ AS
          when others then null;
       end;
       
-      return l_prop_value;
+      p_value   := l_prop_value;
+      p_comment := l_prop_comment;
            
    end get_property;
    

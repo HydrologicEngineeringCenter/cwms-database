@@ -37,12 +37,13 @@ AS
 -- function get_property(...)
 --
 --
-   FUNCTION get_property (
-      p_category  in varchar2,
-      p_id        in varchar2,
-      p_default   in varchar2 default null,
-      p_office_id in varchar2 default null)
-      return varchar2;
+   PROCEDURE get_property (
+      p_value     out varchar2,
+      p_comment   out varchar2,
+      p_category  in  varchar2,
+      p_id        in  varchar2,
+      p_default   in  varchar2 default null,
+      p_office_id in  varchar2 default null);
    
 -------------------------------------------------------------------------------
 -- function get_properties_xml(...)
