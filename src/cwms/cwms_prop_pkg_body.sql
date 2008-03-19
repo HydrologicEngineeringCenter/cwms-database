@@ -239,7 +239,7 @@ AS
 -- function get_property(...)
 --
 --
-   FUNCTION get_property (
+   PROCEDURE get_property (
       p_value     out varchar2,
       p_comment   out varchar2,
       p_category  in  varchar2,
