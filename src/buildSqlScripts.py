@@ -5004,7 +5004,7 @@ alter user &eroc.cwmspd grant connect through &eroc.cwmsdbi with role cwms_user;
 queue_template = '''
    dbms_aqadm.create_queue_table(
       queue_table        => '%s_%s_table', 
-      queue_payload_type => 'sys.aq$_jms_text_message',
+      queue_payload_type => 'sys.aq$_jms_map_message',
       multiple_consumers => true);
       
    dbms_aqadm.create_queue(

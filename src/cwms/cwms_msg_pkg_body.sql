@@ -75,31 +75,31 @@ end get_queue_name;
 -------------------------------------------------------------------------------
 -- FUNCTION NEW_MESSAGE(...)
 --
-function new_message(
-   p_type in varchar2)
-   return sys.aq$_jms_text_message
+procedure new_message(
+   p_msg   out sys.aq$_jms_map_message,
+   p_msgid out pls_integer,
+   p_type  in  varchar2)
 is
-   msg sys.aq$_jms_text_message;
 begin
-   msg := sys.aq$_jms_text_message.construct();
-   msg.set_string_property('type', p_type);
-   
-   return msg;
+   p_msg   := sys.aq$_jms_map_message.construct();
+   p_msgid := p_msg.prepare(null);
+   p_msg.set_string(p_msgid, 'type', p_type);
 end new_message;
 
 -------------------------------------------------------------------------------
 -- FUNCTION PUBLISH_MESSAGE(...)
 --
 function publish_message(
-   p_message   in out nocopy sys.aq$_jms_text_message,
+   p_message   in out nocopy sys.aq$_jms_map_message,
+   p_messageid in pls_integer,
    p_msg_queue in varchar2)
    return integer
 is
-   message_properties dbms_aq.message_properties_t;
-   enqueue_options    dbms_aq.enqueue_options_t;      
-   msgid              raw(16);
-   now                integer := cwms_util.current_millis;
-   l_queuename        varchar2(32);
+   l_message_properties dbms_aq.message_properties_t;
+   l_enqueue_options    dbms_aq.enqueue_options_t;      
+   l_msgid              raw(16);
+   l_queuename          varchar2(32);
+   l_now                integer := cwms_util.current_millis;           
 begin
    l_queuename := get_queue_name(p_msg_queue);
    if l_queuename is null then
@@ -108,23 +108,25 @@ begin
    -------------------------
    -- enqueue the message --
    -------------------------
-   p_message.set_long_property('millis', now);
-   
+   p_message.set_long(p_messageid, 'millis', l_now);
+   p_message.flush(p_messageid);
+   p_message.clean(p_messageid);
+    
    dbms_aq.enqueue(
       l_queuename,
-      enqueue_options,
-      message_properties,
+      l_enqueue_options,
+      l_message_properties,
       p_message,
-      msgid);
+      l_msgid);
 
    commit;
-   return now;
+   return l_now;
 
 exception
    ---------------------------------------
    -- ignore the case of no subscribers --
    ---------------------------------------
-   when exc_no_subscribers then return now;
+   when exc_no_subscribers then return l_now;
    when others then raise;
    
 end publish_message;
@@ -137,7 +139,8 @@ function publish_message(
    p_msg_queue  in varchar2)
    return integer
 is
-   l_msg   sys.aq$_jms_text_message;
+   l_msg   sys.aq$_jms_map_message;
+   l_msgid pls_integer;
    l_nodes xmltype;
    l_node  xmltype;
    l_name  varchar2(128);
@@ -147,7 +150,7 @@ is
 begin
    l_type  := p_properties.extract('/cwms_message/@type').getstringval();
    l_nodes := p_properties.extract('/cwms_message/property');
-   l_msg   := new_message(l_type);
+   new_message(l_msg, l_msgid, l_type);
    if l_nodes is not null then
       i := 0;
       loop
@@ -178,21 +181,21 @@ begin
                if l_bool is null then
                   cwms_err.raise('INVALID_ITEM', l_type, 'CWMS message boolean property value, use t[rue]/f[alse] y[es]/n[o] on/off 1/0');
                end if;
-               l_msg.set_boolean_property(l_name, l_bool);
+               l_msg.set_boolean(l_msgid, l_name, l_bool);
             when 'byte'    then
-               l_msg.set_byte_property(l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_byte(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
             when 'short'   then
-               l_msg.set_short_property(l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_short(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
             when 'int'     then
-               l_msg.set_int_property(l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_int(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
             when 'long'    then
-               l_msg.set_long_property(l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_long(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
             when 'float'   then
-               l_msg.set_float_property(l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_float(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
             when 'double'  then
-               l_msg.set_double_property(l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_double(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
             when 'String'  then
-               l_msg.set_string_property(l_name, cwms_util.strip(l_node.extract('*/node()').getstringval()));
+               l_msg.set_string(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getstringval()));
             else
                cwms_err.raise('INVALID_ITEM', l_type, 'CWMS message property type');
          end case;
@@ -200,10 +203,10 @@ begin
    end if;
    l_node := p_properties.extract('/cwms_message/text');
    if l_node is not null then
-      l_msg.set_text(cwms_util.strip(l_node.extract('*/node()').getstringval()));
+      l_msg.set_string(l_msgid, 'body', cwms_util.strip(l_node.extract('*/node()').getstringval()));
    end if;
 
-   return publish_message(l_msg, p_msg_queue);
+   return publish_message(l_msg, l_msgid, p_msg_queue);
    
 end publish_message;
 
@@ -237,11 +240,12 @@ end publish_message;
 -- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
 function publish_status_message(
-   p_message in out nocopy sys.aq$_jms_text_message) 
+   p_message   in out nocopy sys.aq$_jms_map_message,
+   p_messageid in     pls_integer) 
    return integer
 is
 begin
-   return publish_message(p_message, 'STATUS');
+   return publish_message(p_message, p_messageid, 'STATUS');
 end publish_status_message;
 
 -------------------------------------------------------------------------------

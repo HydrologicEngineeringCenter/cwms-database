@@ -49,17 +49,19 @@ function get_queue_name(
    return varchar2;
 
 -------------------------------------------------------------------------------
--- FUNCTION NEW_MESSAGE(...)
+-- PROCEDURE NEW_MESSAGE(...)
 --
-function new_message(
-   p_type in varchar2)
-   return sys.aq$_jms_text_message;
+procedure new_message(
+   p_msg   out sys.aq$_jms_map_message,
+   p_msgid out pls_integer,
+   p_type  in  varchar2);
 
 -------------------------------------------------------------------------------
 -- FUNCTION PUBLISH_MESSAGE(...)
 --
 function publish_message(
-   p_message   in out nocopy sys.aq$_jms_text_message,
+   p_message   in out nocopy sys.aq$_jms_map_message,
+   p_messageid in pls_integer,
    p_msg_queue in varchar2)
    return integer;
 
@@ -83,7 +85,8 @@ function publish_message(
 -- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
 function publish_status_message(
-   p_message in out nocopy sys.aq$_jms_text_message)
+   p_message   in out nocopy sys.aq$_jms_map_message,
+   p_messageid in     pls_integer)
    return integer;
 
 -------------------------------------------------------------------------------

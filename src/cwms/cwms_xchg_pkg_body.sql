@@ -3485,7 +3485,8 @@ procedure time_series_updated(
    p_first_time in timestamp with time zone,
    p_last_time  in timestamp with time zone)
 is
-   l_msg sys.aq$_jms_text_message;
+   l_msg        sys.aq$_jms_map_message;
+   l_msgid      pls_integer;
    l_first_time timestamp;
    l_last_time  timestamp;
    i     integer;
@@ -3526,11 +3527,11 @@ begin
       -------------------------
       -- publish the message --
       -------------------------
-      l_msg := cwms_msg.new_message('TSDataStored');
-      l_msg.set_string_property('ts_id', p_ts_id);
-      l_msg.set_long_property('start_time', cwms_util.to_millis(l_first_time));
-      l_msg.set_long_property('end_time', cwms_util.to_millis(l_last_time));
-      i := cwms_msg.publish_message(l_msg, 'realtime_ops');
+      cwms_msg.new_message(l_msg, l_msgid, 'TSDataStored');
+      l_msg.set_string(l_msgid, 'ts_id', p_ts_id);
+      l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(l_first_time));
+      l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(l_last_time));
+      i := cwms_msg.publish_message(l_msg, l_msgid, 'realtime_ops');
    end if;
 
 end time_series_updated;   
@@ -3608,7 +3609,8 @@ is
    l_end_time      timestamp;
    l_log_msg       varchar2(4000);
    l_request_id    varchar2(32) := nvl(p_request_id, rawtohex(sys_guid()));
-   l_message       sys.aq$_jms_text_message;
+   l_message       sys.aq$_jms_map_message;
+   l_messageid     pls_integer;
    l_message_count integer;
    l_tsids         assoc_bool_vc183;
    l_earliest      date;
@@ -3687,24 +3689,24 @@ begin
       --------------------------------
       -- publish the replay message --
       --------------------------------
-      l_message := cwms_msg.new_message('TSDataStored');
-      l_message.set_string_property('ts_id', rec.cwms_ts_id);
-      l_message.set_long_property('start_time', cwms_util.to_millis(to_timestamp(rec.first_data_time)));
-      l_message.set_long_property('end_time', cwms_util.to_millis(to_timestamp(rec.last_data_time)));
-      l_message.set_long_property('original_millis', cwms_util.to_millis(rec.message_time));
-      l_message.set_string_property('replay_id', l_request_id);
-      l_ts := cwms_msg.publish_message(l_message, 'realtime_ops');
+      cwms_msg.new_message(l_message, l_messageid, 'TSDataStored');
+      l_message.set_string(l_messageid, 'ts_id', rec.cwms_ts_id);
+      l_message.set_long(l_messageid, 'start_time', cwms_util.to_millis(to_timestamp(rec.first_data_time)));
+      l_message.set_long(l_messageid, 'end_time', cwms_util.to_millis(to_timestamp(rec.last_data_time)));
+      l_message.set_long(l_messageid, 'original_millis', cwms_util.to_millis(rec.message_time));
+      l_message.set_string(l_messageid, 'replay_id', l_request_id);
+      l_ts := cwms_msg.publish_message(l_message, l_messageid, 'realtime_ops');
    end loop;
    ------------------------------------------
    -- publish the replay completed message --
    ------------------------------------------
-   l_message := cwms_msg.new_message('TSReplayDone');
-   l_message.set_string_property('replay_id', l_request_id);
-   l_message.set_int_property('message_count', l_message_count);
-   l_message.set_int_property('ts_id_count', l_tsids.count);
-   l_message.set_long_property('first_time', cwms_util.to_millis(to_timestamp(l_earliest)));
-   l_message.set_long_property('last_time', cwms_util.to_millis(to_timestamp(l_latest)));
-   l_ts := cwms_msg.publish_message(l_message, 'realtime_ops');
+   cwms_msg.new_message(l_message, l_messageid, 'TSReplayDone');
+   l_message.set_string(l_messageid, 'replay_id', l_request_id);
+   l_message.set_int(l_messageid, 'message_count', l_message_count);
+   l_message.set_int(l_messageid, 'ts_id_count', l_tsids.count);
+   l_message.set_long(l_messageid, 'first_time', cwms_util.to_millis(to_timestamp(l_earliest)));
+   l_message.set_long(l_messageid, 'last_time', cwms_util.to_millis(to_timestamp(l_latest)));
+   l_ts := cwms_msg.publish_message(l_message, l_messageid, 'realtime_ops');
    return l_request_id;
 end replay_data_messages;
 
