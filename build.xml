@@ -6,6 +6,22 @@
 	<!-- read in the environment for use in properties -->
 	<property environment="env"/>
 
+	<!-- set file locations for this build -->
+	<property name="root"  location="."/>
+	<property name="src" location="${root}/src"/>
+	<property name="lib"  location="${root}/lib"/>
+	<property name="test"  location="${root}/test"/>
+
+	<!-- Load in the ant-contrib jar to use the foreach external task -->	
+	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
+		<classpath>
+			<pathelement location="${root}/lib/ant-contrib.jar"/>
+		</classpath>
+	</taskdef>	
+
+	<import optional="true" file="${root}/${env.USERNAME}.xml"/>
+	<import optional="true" file="${builduser.overrides}"/>
+	
 	<!-- whether or not this build is a debug build -->
 	<property name="debug"  value="true"/>
 
@@ -32,22 +48,6 @@
 	<!-- property name="perforce.disabled" value="true"/ -->
 	<!-- The perforce depot name for this project -->
 	<property name="perforce.depot" value="//wcdba/dev/oracle/dev/..."/>
-
-	<!-- set file locations for this build -->
-	<property name="root"  location="."/>
-	<property name="src" location="${root}/src"/>
-	<property name="lib"  location="${root}/lib"/>
-	<property name="test"  location="${root}/test"/>
-
-	<!-- Load in the ant-contrib jar to use the foreach external task -->	
-	<taskdef resource="net/sf/antcontrib/antcontrib.properties">
-		<classpath>
-			<pathelement location="${root}/lib/ant-contrib.jar"/>
-		</classpath>
-	</taskdef>	
-
-	<import optional="true" file="${root}/${env.USERNAME}.xml"/>
-	<import optional="true" file="${builduser.overrides}"/>
 
 	<!-- Initialize the project for building. -->
 	<target name="init">
