@@ -1867,7 +1867,8 @@ create or replace package body cwms_xchg as
       pragma autonomous_transaction;
       
       type assoc_bool_vc574 is table of boolean index by varchar2(574);      -- 574 = 183 (tsid) + 391 (pathname)
-      type assoc_vc288_vc16 is table of varchar2(287) index by varchar2(16); -- 287 = 32 (URL) + 255 (filename) 
+      type assoc_vc288_vc16 is table of varchar2(287) index by varchar2(16); -- 287 = 32 (URL) + 255 (filename)
+      type assoc_bool_vc32  is table of boolean index by varchar2(32);       -- 32 (URL) 
       
       c_dss_to_oracle           constant pls_integer := 1;
       c_oracle_to_dss           constant pls_integer := 2;
@@ -1905,6 +1906,7 @@ create or replace package body cwms_xchg as
       l_set_realtime_source_id  varchar2(16);         
       l_oracle_id               varchar2(16);
       l_dssfilemgr_id           varchar2(16);
+      l_set_url                 varchar2(32);
       l_set_filemgr             varchar2(512);
       l_text                    varchar2(32767);
       l_a_part                  varchar2(64);
@@ -1922,6 +1924,7 @@ create or replace package body cwms_xchg as
       l_dss_ts_xchg_spec_rec    at_dss_ts_xchg_spec%rowtype;
       l_dss_ts_spec_rec         at_dss_ts_spec%rowtype;
       l_specified_maps          assoc_bool_vc574;
+      l_urls_affected           assoc_bool_vc32; 
       l_dx_config               xchg_dataexchange_conf_t := p_dx_config;
       l_offices                 xchg_office_tab_t;
       l_datastores              xchg_datastore_tab_t;
@@ -2051,6 +2054,7 @@ create or replace package body cwms_xchg as
             -- identify the data stores --
             ------------------------------
             l_realtime_direction := null;
+            l_set_url            := null;
             l_set_filemgr        := null;
             l_oracle_id          := null;
                for j in l_datastores.first..l_datastores.last loop
@@ -2072,11 +2076,13 @@ create or replace package body cwms_xchg as
                         if l_datastores(j).get_subtype() = 'xchg_oracle_t' then
                            l_oracle_id := l_datastore_2;
                         elsif l_datastores(j).get_subtype() = 'xchg_dssfilemanager_t' then
-                           l_set_filemgr := 
+                           l_set_url := 
                               '//' 
                               || treat(l_datastores(j) as xchg_dssfilemanager_t).get_host() 
                               || ':' 
-                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_port() 
+                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_port(); 
+                           l_set_filemgr := 
+                              l_set_url
                               || treat(l_datastores(j) as xchg_dssfilemanager_t).get_filepath(); 
                         end if;
                      end if;
@@ -2105,23 +2111,22 @@ create or replace package body cwms_xchg as
             -- check the set info --
             ------------------------
             if upper(l_set_office_id) = '__LOCAL__' then
-               l_set_office_code := cwms_util.user_office_code;
-            else
-               begin
-                  select office_code
-                    into l_set_office_code
-                    from cwms_office
-                   where office_id = l_set_office_id;
-               exception
-                  when no_data_found then
-                     rollback;
-                     cwms_util.resume_mv_refresh(l_pause_handle);
-                     cwms_err.raise(
-                        'INVALID_ITEM',
-                        l_set_office_id,
-                        'CWMS office id');
-               end;
+               l_set_office_id := cwms_util.user_office_id;
             end if;
+            begin
+               select office_code
+                 into l_set_office_code
+                 from cwms_office
+                where office_id = l_set_office_id;
+            exception
+               when no_data_found then
+                  rollback;
+                  cwms_util.resume_mv_refresh(l_pause_handle);
+                  cwms_err.raise(
+                     'INVALID_ITEM',
+                     l_set_office_id,
+                     'CWMS office id');
+            end;
             begin
                select *
                  into l_xchg_set_rec
@@ -2138,6 +2143,12 @@ create or replace package body cwms_xchg as
             end;
             if l_can_update and not l_new_set then
                if l_xchg_set_rec.description != l_set_description then
+                  ----------------------------
+                  -- update l_urls_affected --
+                  ----------------------------
+                  if not l_urls_affected.exists(l_set_url) then
+                     l_urls_affected(l_set_url) := true;
+                  end if;
                   ----------------------------
                   -- update the description --
                   ----------------------------
@@ -2159,6 +2170,12 @@ create or replace package body cwms_xchg as
                if nvl(l_xchg_set_rec.start_time, 'NULL') != nvl(l_start_time, 'NULL')  or 
                   nvl(l_xchg_set_rec.end_time,   'NULL') != nvl(l_end_time,   'NULL')
                then
+                  ----------------------------
+                  -- update l_urls_affected --
+                  ----------------------------
+                  if not l_urls_affected.exists(l_set_url) then
+                     l_urls_affected(l_set_url) := true;
+                  end if;
                   ----------------------------
                   -- update the time window --
                   ----------------------------
@@ -2183,6 +2200,12 @@ create or replace package body cwms_xchg as
                   end if;
                end if;
                if nvl(l_xchg_set_rec.realtime, -1) != nvl(l_realtime_direction, -1) then
+                  ----------------------------
+                  -- update l_urls_affected --
+                  ----------------------------
+                  if not l_urls_affected.exists(l_set_url) then
+                     l_urls_affected(l_set_url) := true;
+                  end if;
                   -----------------------------------
                   -- update the realtime direction --
                   -----------------------------------
@@ -2214,6 +2237,12 @@ create or replace package body cwms_xchg as
                  from at_dss_file
                 where dss_file_code = l_xchg_set_rec.dss_file_code;
                if l_dssfilemgr_rec.dss_filemgr_url || l_dssfilemgr_rec.dss_file_name != l_set_filemgr then
+                  ----------------------------
+                  -- update l_urls_affected --
+                  ----------------------------
+                  if not l_urls_affected.exists(l_set_url) then
+                     l_urls_affected(l_set_url) := true;
+                  end if;
                   -------------------------
                   -- update the dss file --
                   -------------------------
@@ -2240,6 +2269,12 @@ create or replace package body cwms_xchg as
                end if;
                
             elsif l_can_insert and l_new_set then
+               ----------------------------
+               -- update l_urls_affected --
+               ----------------------------
+               if not l_urls_affected.exists(l_set_url) then
+                  l_urls_affected(l_set_url) := true;
+               end if;
                -------------------------------
                -- insert a new exchange set --
                -------------------------------
@@ -2416,23 +2451,29 @@ create or replace package body cwms_xchg as
                   begin
                      if l_new_map then
                         if l_can_insert then
-                              ------------------------
-                              -- insert the mapping --
-                              ------------------------
-                              l_time1 := systimestamp;
-                              map_ts_in_xchg_set(
-                                 l_xchg_set_rec.dss_xchg_set_code,
-                                 l_ts_id,
-                                 l_dss_pathname,
-                                 l_dss_parameter_type_id,
-                                 l_dss_units,
-                                 l_dss_time_zone_name,
-                                 l_dss_tz_usage_id,
-                                 l_set_office_id);
-                              l_time2 := systimestamp;
-                              l_elapsed  := l_time2 - l_time1;
-                              log('' || l_elapsed || ': inserted mapping ' || l_ts_id || ' == ' || l_dss_pathname);
-                              l_mappings_inserted := l_mappings_inserted + 1;
+                           ----------------------------
+                           -- update l_urls_affected --
+                           ----------------------------
+                           if not l_urls_affected.exists(l_set_url) then
+                              l_urls_affected(l_set_url) := true;
+                           end if;
+                           ------------------------
+                           -- insert the mapping --
+                           ------------------------
+                           l_time1 := systimestamp;
+                           map_ts_in_xchg_set(
+                              l_xchg_set_rec.dss_xchg_set_code,
+                              l_ts_id,
+                              l_dss_pathname,
+                              l_dss_parameter_type_id,
+                              l_dss_units,
+                              l_dss_time_zone_name,
+                              l_dss_tz_usage_id,
+                              l_set_office_id);
+                           l_time2 := systimestamp;
+                           l_elapsed  := l_time2 - l_time1;
+                           log('' || l_elapsed || ': inserted mapping ' || l_ts_id || ' == ' || l_dss_pathname);
+                           l_mappings_inserted := l_mappings_inserted + 1;
                         end if;
                      else
                         l_map_updated := false;
@@ -2462,6 +2503,12 @@ create or replace package body cwms_xchg as
                               l_map_updated := true;
                            end if;
                            if l_map_updated then
+                              ----------------------------
+                              -- update l_urls_affected --
+                              ----------------------------
+                              if not l_urls_affected.exists(l_set_url) then
+                                 l_urls_affected(l_set_url) := true;
+                              end if;
                               update at_dss_ts_spec
                                  set row = l_dss_ts_spec_rec
                                where dss_ts_code = l_dss_ts_spec_rec.dss_ts_code;
@@ -2503,6 +2550,12 @@ create or replace package body cwms_xchg as
                      || rec.e_pathname_part || '/'
                      || rec.f_pathname_part || '/';
                   if not l_specified_maps.exists(l_text) then
+                     ----------------------------
+                     -- update l_urls_affected --
+                     ----------------------------
+                     if not l_urls_affected.exists(l_set_url) then
+                        l_urls_affected(l_set_url) := true;
+                     end if;
                      delete
                        from at_dss_ts_xchg_map
                       where dss_ts_xchg_map_code = rec.dss_ts_xchg_map_code;
@@ -2529,7 +2582,19 @@ create or replace package body cwms_xchg as
       p_mappings_deleted  := l_mappings_deleted;
       
       commit;
-      xchg_config_updated;
+      -------------------------------------------------------------
+      -- notify listeners that the configuation has been updated --
+      -------------------------------------------------------------
+      if l_urls_affected.count > 0 then
+         l_text := '';
+         l_set_url := l_urls_affected.first;
+         while l_set_url is not null loop
+            l_text := l_text || ',' || l_set_url;
+            l_set_url := l_urls_affected.next(l_set_url);
+         end loop;
+         xchg_config_updated(substr(l_text, 1));
+      end if;
+      
    exception
       when others then
          rollback;
@@ -3458,7 +3523,8 @@ end get_table_name;
 -------------------------------------------------------------------------------
 -- PROCEDURE XCHG_CONFIG_UPDATED(...)
 --
-procedure xchg_config_updated
+procedure xchg_config_updated(
+   p_urls_affected in varchar2)
 is
    l_component   varchar2(32)  := 'DataExchangeConfigurationEditor';
    l_instance    varchar2(32)  := null;
@@ -3471,7 +3537,9 @@ is
 begin
    l_message := '<cwms_message type="Status">'
                 || '<property name="subtype" type="String">XchgConfigUpdated</property>'
-                || '</cwms_message>';
+                || '<property name="filemanagers" type="String">'
+                || p_urls_affected
+                || '</property></cwms_message>';
    
    l_ts := cwms_msg.log_message(l_component,l_instance,l_host,l_port,l_reported,l_message, true);                      
 end xchg_config_updated;

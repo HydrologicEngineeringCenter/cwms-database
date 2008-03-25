@@ -252,7 +252,8 @@ create or replace package cwms_xchg as
 -------------------------------------------------------------------------------
 -- PROCEDURE XCHG_CONFIG_UPDATED
 --
-procedure xchg_config_updated;
+procedure xchg_config_updated(
+   p_urls_affected in varchar2);
    
 -------------------------------------------------------------------------------
 -- PROCEDURE TIME_SERIES_UPDATED(...)
