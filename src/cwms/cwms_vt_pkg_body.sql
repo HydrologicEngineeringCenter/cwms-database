@@ -1,4 +1,4 @@
-/* Formatted on 2007/10/31 11:26 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/04/07 08:50 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_vt
 AS
 /******************************************************************************
@@ -1058,7 +1058,14 @@ AS
                       cwms_shef.get_data_stream_code (p_data_stream_id,
                                                       p_db_office_id
                                                      )
-               AND creation_date = SYSDATE;
+               AND creation_date =
+                      (SELECT MAX (creation_date)
+                         FROM at_shef_crit_file
+                        WHERE data_stream_code =
+                                 cwms_shef.get_data_stream_code
+                                                            (p_data_stream_id,
+                                                             p_db_office_id
+                                                            ));
 
             p_use_db_crit := 'T';
          EXCEPTION
@@ -1269,6 +1276,105 @@ AS
                                                           UPPER (a.cwms_ts_id));
       END IF;
    END unassign_screening_id;
+
+   PROCEDURE val_abs_mag (
+      p_timeseries_data   IN OUT   tsv_array,
+      p_min_reject        IN       BINARY_DOUBLE,
+      p_min_question      IN       BINARY_DOUBLE,
+      p_max_question      IN       BINARY_DOUBLE,
+      p_max_reject        IN       BINARY_DOUBLE
+   )
+   IS
+      l_screened_id             VARCHAR2 (16);
+      l_validity_id             VARCHAR2 (16);
+      l_range_id                VARCHAR2 (16);
+      l_changed_id              VARCHAR2 (16);
+      l_repl_cause_id           VARCHAR2 (16);
+      l_repl_method_id          VARCHAR2 (16);
+      l_test_failed_id          VARCHAR2 (16);
+      l_protection_id           VARCHAR2 (16);
+   BEGIN
+      FOR x IN p_timeseries_data.FIRST .. p_timeseries_data.LAST
+      LOOP
+         -- Retrieve existing data quality settings for data. If an undefined data quality code
+         -- is set, then reset to zero.
+         BEGIN
+            SELECT screened_id, validity_id, range_id, changed_id,
+                   repl_cause_id, repl_method_id, test_failed_id,
+                   protection_id
+              INTO l_screened_id, l_validity_id, l_range_id, l_changed_id,
+                   l_repl_cause_id, l_repl_method_id, l_test_failed_id,
+                   l_protection_id
+              FROM cwms_data_quality cdq
+             WHERE cdq.quality_code = p_timeseries_data (x).quality_code;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               IF p_timeseries_data (x).VALUE IS NOT NULL
+               THEN
+                  SELECT screened_id, validity_id, range_id,
+                         changed_id, repl_cause_id, repl_method_id,
+                         test_failed_id, protection_id
+                    INTO l_screened_id, l_validity_id, l_range_id,
+                         l_changed_id, l_repl_cause_id, l_repl_method_id,
+                         l_test_failed_id, l_protection_id
+                    FROM cwms_data_quality cdq
+                   WHERE cdq.quality_code = 0;
+               ELSE
+                  SELECT screened_id, validity_id, range_id,
+                         changed_id, repl_cause_id, repl_method_id,
+                         test_failed_id, protection_id
+                    INTO l_screened_id, l_validity_id, l_range_id,
+                         l_changed_id, l_repl_cause_id, l_repl_method_id,
+                         l_test_failed_id, l_protection_id
+                    FROM cwms_data_quality cdq
+                   WHERE cdq.quality_code = 5;
+               END IF;
+         END;
+
+         ----
+         -- validate data...
+         ----
+         IF l_validity_id != 'MISSING' OR l_protection_id = 'UNPROTECTED'
+         THEN
+            l_screened_id := 'SCREENED';
+            l_range_id := 'NO_RANGE';
+            l_changed_id := 'ORIGINAL';
+            l_repl_cause_id := 'NONE';
+            l_repl_method_id := 'NONE';
+            l_protection_id := 'UNPROTECTED';
+           -- l_screened := 1;
+
+            IF    p_timeseries_data (x).VALUE < p_min_reject
+               OR p_timeseries_data (x).VALUE > p_max_reject
+            THEN
+               l_validity_id := 'REJECTED';
+               l_test_failed_id := 'ABSOLUTE_VALUE';
+            ELSIF    p_timeseries_data (x).VALUE < p_min_question
+                  OR p_timeseries_data (x).VALUE > p_max_question
+            THEN
+               l_validity_id := 'QUESTIONABLE';
+               l_test_failed_id := 'ABSOLUTE_VALUE';
+            ELSE
+               l_validity_id := 'OKAY';
+               l_test_failed_id := 'NONE';
+            END IF;
+
+            SELECT quality_code
+              INTO p_timeseries_data (x).quality_code
+              FROM cwms_data_quality
+             WHERE screened_id = 'SCREENED'
+               AND range_id = 'NO_RANGE'
+               AND changed_id = 'ORIGINAL'
+               AND repl_cause_id = 'NONE'
+               AND repl_method_id = 'NONE'
+               AND protection_id = 'UNPROTECTED'
+               AND validity_id = l_validity_id
+               AND test_failed_id = l_test_failed_id;
+         END IF;
+      END LOOP;
+   END val_abs_mag;
 END cwms_vt;
 /
-show errors;
+
+SHOW errors;

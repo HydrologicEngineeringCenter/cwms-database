@@ -108,5 +108,13 @@ AS
       p_unassign_all       IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
+   
+   PROCEDURE val_abs_mag (
+      p_timeseries_data      IN OUT   tsv_array,
+      p_min_reject           IN       BINARY_DOUBLE,
+      p_min_question         IN       BINARY_DOUBLE,
+      p_max_question         IN       BINARY_DOUBLE,
+      p_max_reject           IN       BINARY_DOUBLE
+   );
 END cwms_vt;
 /
