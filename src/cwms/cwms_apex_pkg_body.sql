@@ -1,4 +1,4 @@
-/* Formatted on 2007/11/29 11:47 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/02/12 16:13 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_apex
 AS
    TYPE varchar2_t IS TABLE OF VARCHAR2 (32767)
@@ -7,12 +7,13 @@ AS
    PROCEDURE aa1 (p_string IN VARCHAR2)
    IS
    BEGIN
---      INSERT INTO aa1
---                  (stringstuff
---                  )
---           VALUES (p_string
---                  );
---                  commit;
+      INSERT INTO aa1
+                  (stringstuff
+                  )
+           VALUES (p_string
+                  );
+
+      COMMIT;
       NULL;
    END;
 
@@ -106,7 +107,9 @@ AS
    )
    IS
    BEGIN
-      cwms_shef.parse_criteria_record (p_shef_id                 => p_array
+      BEGIN
+         cwms_shef.parse_criteria_record
+                                      (p_shef_id                 => p_array
                                                                            (2),
                                        p_shef_pe_code            => p_array
                                                                            (3),
@@ -133,6 +136,12 @@ AS
                                        p_comment                 => p_comment,
                                        p_criteria_record         => p_criteria_record
                                       );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            p_comment :=
+                       'ERROR: Format not recognized, cannot parse this line';
+      END;
    END;
 
    --
@@ -220,8 +229,7 @@ AS
       p_ddl_item                IN       VARCHAR2,
       p_number_of_records       OUT      NUMBER,
       p_number_of_columns       OUT      NUMBER,
-      p_is_csv                  IN       VARCHAR2 DEFAULT 'T',
-      p_table_name              IN       VARCHAR2 DEFAULT NULL
+      p_is_csv                  IN       VARCHAR2 DEFAULT 'T'
    )
    IS
       l_blob           BLOB;
@@ -237,6 +245,17 @@ AS
       l_is_crit_file   BOOLEAN;
       l_tmp            NUMBER;
       l_comment        VARCHAR2 (128)          := NULL;
+      l_datastream     VARCHAR2 (16);
+      l_cwms_seq       NUMBER;
+      l_len            NUMBER;
+      --
+      l_rc             sys_refcursor;
+      l_cwms_id_dup    VARCHAR2 (183);
+      l_shef_id_dup    VARCHAR2 (183);
+      --
+      l_rc_rows        sys_refcursor;
+      l_row_num        NUMBER;
+      l_rows_msg       VARCHAR2 (1000);
    BEGIN
       IF cwms_util.is_true (NVL (p_is_csv, 'T'))
       THEN
@@ -249,41 +268,40 @@ AS
 
       aa1 ('parse collection name: ' || p_collection_name);
 
-      IF (p_table_name IS NOT NULL)
-      THEN
-         BEGIN
-            EXECUTE IMMEDIATE 'drop table ' || p_table_name;
-         EXCEPTION
-            WHEN OTHERS
-            THEN
-               NULL;
-         END;
+--      IF (p_table_name IS NOT NULL)
+--      THEN
+--         BEGIN
+--            EXECUTE IMMEDIATE 'drop table ' || p_table_name;
+--         EXCEPTION
+--            WHEN OTHERS
+--            THEN
+--               NULL;
+--         END;
 
-         l_ddl := 'create table ' || p_table_name || ' ' || v (p_ddl_item);
-         apex_util.set_session_state ('P149_DEBUG', l_ddl);
+      --         l_ddl := 'create table ' || p_table_name || ' ' || v (p_ddl_item);
+--         apex_util.set_session_state ('P149_DEBUG', l_ddl);
 
-         EXECUTE IMMEDIATE l_ddl;
+      --         EXECUTE IMMEDIATE l_ddl;
 
-         l_ddl :=
-               'insert into '
-            || p_table_name
-            || ' '
-            || 'select '
-            || v (p_columns_item)
-            || ' '
-            || 'from htmldb_collections '
-            || 'where seq_id > 1 and collection_name='''
-            || p_collection_name
-            || '''';
-         apex_util.set_session_state ('P149_DEBUG',
-                                      v ('P149_DEBUG') || '/' || l_ddl
-                                     );
+      --         l_ddl :=
+--               'insert into '
+--            || p_table_name
+--            || ' '
+--            || 'select '
+--            || v (p_columns_item)
+--            || ' '
+--            || 'from htmldb_collections '
+--            || 'where seq_id > 1 and collection_name='''
+--            || p_collection_name
+--            || '''';
+--         apex_util.set_session_state ('P149_DEBUG',
+--                                      v ('P149_DEBUG') || '/' || l_ddl
+--                                     );
 
-         EXECUTE IMMEDIATE l_ddl;
+      --         EXECUTE IMMEDIATE l_ddl;
 
-         RETURN;
-      END IF;
-
+      --         RETURN;
+--      END IF;
       BEGIN
          SELECT blob_content
            INTO l_blob
@@ -314,6 +332,7 @@ AS
       -- Get column headings and datatypes
       IF l_is_crit_file
       THEN
+         cwms_apex.aa1 ('Get column headings and datatypes');
          l_record (1) := 'Line No.';
          l_datatypes (1) := 'number';
          l_record (2) := 'cwms_ts_id';
@@ -382,6 +401,8 @@ AS
 
       FOR i IN 1 .. p_number_of_records
       LOOP
+         aa1 (l_records (i));
+
          IF l_is_crit_file
          THEN
             crit_to_array (l_records (i), l_comment, l_record);
@@ -436,7 +457,178 @@ AS
          END IF;
       END LOOP;
 
---      DELETE FROM wwv_flow_files
+      IF l_is_crit_file
+      THEN
+         BEGIN
+            OPEN l_rc FOR
+               SELECT cwms_id
+                 FROM (SELECT   UPPER (c002) cwms_id,
+                                COUNT (UPPER (c002)) count_id
+                           FROM apex_collections
+                          WHERE collection_name = UPPER (p_collection_name)
+                       GROUP BY UPPER (c002))
+                WHERE count_id > 1;
+         EXCEPTION
+            WHEN OTHERS
+            THEN
+               l_tmp := 3;
+         END;
+
+         IF l_tmp != 3
+         THEN
+            LOOP
+               FETCH l_rc
+                INTO l_cwms_id_dup;
+
+               EXIT WHEN l_rc%NOTFOUND;
+
+               OPEN l_rc_rows FOR
+                  SELECT c001
+                    FROM apex_collections
+                   WHERE collection_name = UPPER (p_collection_name)
+                     AND UPPER (c002) = l_cwms_id_dup;
+
+               l_rows_msg := NULL;
+               l_tmp := 0;
+
+               LOOP
+                  FETCH l_rc_rows
+                   INTO l_row_num;
+
+                  EXIT WHEN l_rc_rows%NOTFOUND;
+
+                  IF l_tmp = 1
+                  THEN
+                     l_rows_msg := l_rows_msg || ', ';
+                  END IF;
+
+                  l_rows_msg := l_rows_msg || TO_CHAR (l_row_num);
+                  l_tmp := 1;
+               END LOOP;
+
+               l_seq_id :=
+                  apex_collection.add_member (p_error_collection_name,
+                                              'dummy');
+               apex_collection.update_member_attribute
+                                (p_collection_name      => p_error_collection_name,
+                                 p_seq                  => l_seq_id,
+                                 p_attr_number          => 1,
+                                 p_attr_value           => l_rows_msg
+                                );
+               apex_collection.update_member_attribute
+                  (p_collection_name      => p_error_collection_name,
+                   p_seq                  => l_seq_id,
+                   p_attr_number          => 2,
+                   p_attr_value           => 'ERROR: cwms ts id is defined on multiple lines.'
+                  );
+               apex_collection.update_member_attribute
+                                (p_collection_name      => p_error_collection_name,
+                                 p_seq                  => l_seq_id,
+                                 p_attr_number          => 3,
+                                 p_attr_value           => l_cwms_id_dup
+                                );
+            END LOOP;
+
+            --
+            --
+            CLOSE l_rc;
+
+            CLOSE l_rc_rows;
+
+            OPEN l_rc FOR
+               SELECT shef_id
+                 FROM (SELECT   UPPER (   c003
+                                       || '.'
+                                       || c004
+                                       || '.'
+                                       || c005
+                                       || '.'
+                                       || c006
+                                      ) shef_id,
+                                COUNT (UPPER (   c003
+                                              || '.'
+                                              || c004
+                                              || '.'
+                                              || c005
+                                              || '.'
+                                              || c006
+                                             )
+                                      ) count_id
+                           FROM apex_collections
+                          WHERE collection_name = UPPER (p_collection_name)
+                       GROUP BY UPPER (   c003
+                                       || '.'
+                                       || c004
+                                       || '.'
+                                       || c005
+                                       || '.'
+                                       || c006
+                                      ))
+                WHERE count_id > 1;
+
+            LOOP
+               FETCH l_rc
+                INTO l_shef_id_dup;
+
+               EXIT WHEN l_rc%NOTFOUND;
+
+               OPEN l_rc_rows FOR
+                  SELECT c001
+                    FROM apex_collections
+                   WHERE collection_name = UPPER (p_collection_name)
+                     AND UPPER (c003 || '.' || c004 || '.' || c005 || '.'
+                                || c006
+                               ) = l_shef_id_dup;
+
+               l_rows_msg := NULL;
+               l_tmp := 0;
+
+               LOOP
+                  FETCH l_rc_rows
+                   INTO l_row_num;
+
+                  EXIT WHEN l_rc_rows%NOTFOUND;
+
+                  IF l_tmp = 1
+                  THEN
+                     l_rows_msg := l_rows_msg || ', ';
+                  END IF;
+
+                  l_rows_msg := l_rows_msg || l_row_num;
+                  l_tmp := 1;
+               END LOOP;
+
+               l_seq_id :=
+                  apex_collection.add_member (p_error_collection_name,
+                                              'dummy');
+               apex_collection.update_member_attribute
+                                (p_collection_name      => p_error_collection_name,
+                                 p_seq                  => l_seq_id,
+                                 p_attr_number          => 1,
+                                 p_attr_value           => l_rows_msg
+                                );
+               apex_collection.update_member_attribute
+                  (p_collection_name      => p_error_collection_name,
+                   p_seq                  => l_seq_id,
+                   p_attr_number          => 2,
+                   p_attr_value           => 'ERROR: SHEF id is defined on multiple lines.'
+                  );
+               apex_collection.update_member_attribute
+                                (p_collection_name      => p_error_collection_name,
+                                 p_seq                  => l_seq_id,
+                                 p_attr_number          => 3,
+                                 p_attr_value           => l_shef_id_dup
+                                );
+            END LOOP;
+         END IF;
+      END IF;
+
+--      IF l_is_crit_file
+--      THEN
+--         cwms_shef.delete_data_stream (l_datastream, 'T', 'CWMS');
+--      END IF;
+
+      --      DELETE FROM wwv_flow_files
 --            WHERE NAME = p_file_name;
       SELECT COUNT (*)
         INTO l_seq_id
@@ -594,6 +786,8 @@ AS
               || ' l_int_backward '
               || l_int_backward
              );
+         --
+                  aa1 ('Calling cwms_shef.store_shef_spec');
          cwms_shef.store_shef_spec
                         (p_cwms_ts_id                 => l_cwms_ts_id,
                          p_data_stream_id             => p_data_stream_id,
