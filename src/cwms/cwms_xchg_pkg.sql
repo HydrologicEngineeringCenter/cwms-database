@@ -23,6 +23,57 @@ create or replace package cwms_xchg as
       return varchar2;
    
 --------------------------------------------------------------------------------
+-- PROCEDURE PARSE_DSS_PATHNAME(...)
+--
+   procedure parse_dss_pathname(
+      p_a_pathname_part out varchar2,
+      p_b_pathname_part out varchar2,
+      p_c_pathname_part out varchar2,
+      p_d_pathname_part out varchar2,
+      p_e_pathname_part out varchar2,
+      p_f_pathname_part out varchar2,
+      p_pathname        in  varchar2);
+
+--------------------------------------------------------------------------------
+-- VARCHAR2 FUNCTION MAKE_DSS_PATHNAME(...)
+--
+   function make_dss_pathname(
+      p_a_pathname_part   in   varchar2,
+      p_b_pathname_part   in   varchar2,
+      p_c_pathname_part   in   varchar2,
+      p_d_pathname_part   in   varchar2,
+      p_e_pathname_part   in   varchar2,
+      p_f_pathname_part   in   varchar2)
+      return varchar2;
+
+--------------------------------------------------------------------------------
+-- VARCHAR2 FUNCTION MAKE_DSS_TS_ID(...)
+--
+   function make_dss_ts_id(
+      p_pathname          in   varchar2,
+      p_parameter_type    in   varchar2 default null,
+      p_units             in   varchar2 default null,
+      p_time_zone         in   varchar2 default null,
+      p_tz_usage          in   varchar2 default null)
+      return varchar2;
+
+--------------------------------------------------------------------------------
+-- VARCHAR2 FUNCTION MAKE_DSS_TS_ID(...)
+--
+   function make_dss_ts_id(
+      p_a_pathname_part   in   varchar2,
+      p_b_pathname_part   in   varchar2,
+      p_c_pathname_part   in   varchar2,
+      p_d_pathname_part   in   varchar2,
+      p_e_pathname_part   in   varchar2,
+      p_f_pathname_part   in   varchar2,
+      p_parameter_type    in   varchar2 default null,
+      p_units             in   varchar2 default null,
+      p_time_zone         in   varchar2 default null,
+      p_tz_usage          in   varchar2 default null)
+      return varchar2;
+   
+--------------------------------------------------------------------------------
 -- NUMBER FUNCTION CREATE_DSS_XCHG_SET(...)
 --
    function create_dss_xchg_set(

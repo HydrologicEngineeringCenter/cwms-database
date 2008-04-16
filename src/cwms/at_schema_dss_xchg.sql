@@ -136,7 +136,11 @@ CREATE UNIQUE INDEX AT_DSS_TS_SPEC_PATHNAME ON AT_DSS_TS_SPEC
        UPPER(B_PATHNAME_PART),
        UPPER(C_PATHNAME_PART),
        UPPER(E_PATHNAME_PART),
-       UPPER(NVL(F_PATHNAME_PART, '@'))
+       UPPER(NVL(F_PATHNAME_PART, '@')),
+       DSS_PARAMETER_TYPE_CODE,
+       UNIT_ID,
+       TIME_ZONE_CODE,
+       TZ_USAGE_CODE
    )
        PCTFREE 10
        INITRANS 2
@@ -614,6 +618,7 @@ ALTER TABLE AT_DSS_TS_XCHG_MAP ADD CONSTRAINT AT_DSS_TS_XCHG_MAP_PK   PRIMARY KE
                 PCTINCREASE      0
                 BUFFER_POOL      DEFAULT
                );
+
 -----------------------------
 -- AT_DSS_TS_XCHG_MAP_RULES trigger
 --
@@ -626,17 +631,35 @@ referencing new as new old as old
 for each row
 declare
    -- 
-   -- this trigger ensures that, if individual data sets are included in 
+   -- this trigger ensures 1), that if individual data sets are included in 
    -- multiple real-time exchange sets, all sets exchange data in the 
-   -- same direction. 
+   -- same direction, and 2), that all DSS pathnames assigned to the same
+   -- file have the same parameter type, units, time zone and tz usage 
    -- 
-   pkval                number;
-   l_ts_xchg_spec       at_dss_ts_xchg_spec%rowtype;
-   l_xchg_set           at_dss_xchg_set%rowtype;
-   l_ts_code            at_dss_ts_xchg_spec.ts_code%type;
-   l_realtime           at_dss_xchg_set.realtime%type;
-   l_set_id             at_dss_xchg_set.dss_xchg_set_id%type;
-   l_ts_id              mv_cwms_ts_id.cwms_ts_id%type;
+   pragma autonomous_transaction;
+   
+   pkval                     number;
+   l_ts_xchg_spec            at_dss_ts_xchg_spec%rowtype;
+   l_xchg_set                at_dss_xchg_set%rowtype;
+   l_dss_ts_spec             at_dss_ts_spec%rowtype;
+   l_ts_code                 at_dss_ts_xchg_spec.ts_code%type;
+   l_realtime                at_dss_xchg_set.realtime%type;
+   l_set_id                  at_dss_xchg_set.dss_xchg_set_id%type;
+   l_ts_id                   mv_cwms_ts_id.cwms_ts_id%type;
+   l_a_pathname_part         at_dss_ts_spec.a_pathname_part%type;
+   l_b_pathname_part         at_dss_ts_spec.b_pathname_part%type;
+   l_c_pathname_part         at_dss_ts_spec.c_pathname_part%type;
+   l_e_pathname_part         at_dss_ts_spec.e_pathname_part%type;
+   l_f_pathname_part         at_dss_ts_spec.f_pathname_part%type;
+   l_dss_parameter_type_code at_dss_ts_spec.dss_parameter_type_code%type;
+   l_unit_id                 at_dss_ts_spec.unit_id%type;
+   l_time_zone_code          at_dss_ts_spec.time_zone_code%type;
+   l_tz_usage_code           at_dss_ts_spec.tz_usage_code%type;
+   l_dss_parameter_type_id   cwms_dss_parameter_type.dss_parameter_type_id%type;
+   l_time_zone_id            cwms_time_zone.time_zone_name%type;
+   l_tz_usage_id             cwms_tz_usage.tz_usage_id%type;
+   l_empty_dss_ts            boolean := false;
+   l_empty_cwms_ts           boolean := false;
 
    --
    -- all at_dss_ts_xchg_set records that are mapped to at_dss_ts_xchg_spec
@@ -644,19 +667,162 @@ declare
    --
    cursor l_xchg_set_cur is
       select xset.*
-      from  at_dss_xchg_set xset, at_dss_ts_xchg_map xmap, at_dss_ts_xchg_spec xspec
-      where xspec.ts_code = l_ts_code
+        from at_dss_xchg_set xset, at_dss_ts_xchg_map xmap, at_dss_ts_xchg_spec xspec
+       where xspec.ts_code = l_ts_code
          and xmap.dss_ts_xchg_code = xspec.dss_ts_xchg_code
          and xset.dss_xchg_set_code = xmap.dss_xchg_set_code;
+         
+   --
+   -- all at_dss_ts_spec records that are mapped to the same at_dss_file as
+   -- the one specified in :new.dss_xchg_set_code and have the same pathname
+   --         
+   cursor l_dss_ts_spec_cur is
+      select *
+        from at_dss_ts_spec
+       where nvl(a_pathname_part, '@') = nvl(l_a_pathname_part, '@')
+         and b_pathname_part = l_b_pathname_part
+         and c_pathname_part = l_c_pathname_part
+         and e_pathname_part = l_e_pathname_part
+         and nvl(f_pathname_part, '@')  = nvl(l_f_pathname_part, '@')
+         and dss_ts_code in (
+               select dss_ts_code
+                 from at_dss_ts_xchg_spec
+                where dss_ts_xchg_code in (
+                        select dss_ts_xchg_code
+                          from at_dss_ts_xchg_map
+                         where dss_ts_xchg_map_code in (
+                                 select dss_ts_xchg_map_code
+                                   from at_dss_ts_xchg_map
+                                  where dss_xchg_set_code in (
+                                          select dss_xchg_set_code
+                                            from at_dss_xchg_set
+                                           where dss_file_code = (
+                                                   select dss_file_code
+                                                     from at_dss_xchg_set
+                                                    where dss_xchg_set_code = :new.dss_xchg_set_code)))));
+         
 begin
+   --
+   -- get the dss pathname and non-pathname parameters from the new dss ts xchg spec
+   --
+   commit;
+   begin
+      select *
+        into l_dss_ts_spec
+        from at_dss_ts_spec
+       where dss_ts_code = (
+               select dss_ts_code
+                 from at_dss_ts_xchg_spec
+                where dss_ts_xchg_code = :new.dss_ts_xchg_code);
+   exception
+      when no_data_found then
+         l_empty_dss_ts := true;
+   end;
+             
+   l_a_pathname_part         := l_dss_ts_spec.a_pathname_part;
+   l_b_pathname_part         := l_dss_ts_spec.b_pathname_part;
+   l_c_pathname_part         := l_dss_ts_spec.c_pathname_part;
+   l_e_pathname_part         := l_dss_ts_spec.e_pathname_part;
+   l_f_pathname_part         := l_dss_ts_spec.f_pathname_part;
+   l_dss_parameter_type_code := l_dss_ts_spec.dss_parameter_type_code;
+   l_unit_id                 := l_dss_ts_spec.unit_id;
+   l_time_zone_code          := l_dss_ts_spec.time_zone_code;
+   l_tz_usage_code           := l_dss_ts_spec.tz_usage_code;
+   
+   begin                      
+      select dss_parameter_type_id
+        into l_dss_parameter_type_id
+        from cwms_dss_parameter_type
+       where dss_parameter_type_code = l_dss_ts_spec.dss_parameter_type_code;
+             
+      select time_zone_name
+        into l_time_zone_id
+        from cwms_time_zone
+       where time_zone_code = l_dss_ts_spec.time_zone_code;
+                
+      select tz_usage_id
+        into l_tz_usage_id
+        from cwms_tz_usage
+       where tz_usage_code = l_dss_ts_spec.tz_usage_code;
+    exception
+      when others then
+         cwms_err.raise('ERROR', sqlerrm);
+    end;
+    
+   --
+   -- compare the non-pathname parameters against any other records with the
+   -- same pathname mapped to the same DSS file 
+   --
+   declare
+      l_errmsg varchar2(64) := null;
+      l_dss_file at_dss_file%rowtype;
+   begin
+      for l_dss_ts_spec in l_dss_ts_spec_cur loop
+         if l_dss_ts_spec.dss_parameter_type_code != l_dss_parameter_type_code then
+            select dss_parameter_type_id
+              into l_errmsg
+              from cwms_dss_parameter_type
+             where dss_parameter_type_code = l_dss_ts_spec.dss_parameter_type_code;
+            l_errmsg := 'parameter type ' || l_errmsg;
+            exit;
+         elsif l_dss_ts_spec.unit_id != l_unit_id then
+            l_errmsg := 'units ' || l_dss_ts_spec.unit_id;
+            exit;
+         elsif l_dss_ts_spec.time_zone_code != l_time_zone_code then
+            select time_zone_name
+              into l_errmsg
+              from cwms_time_zone
+             where time_zone_code = l_dss_ts_spec.time_zone_code;
+            l_errmsg := 'time zone ' || l_errmsg;
+            exit;
+         elsif l_dss_ts_spec.tz_usage_code != l_tz_usage_code then
+            select tz_usage_id
+              into l_errmsg
+              from cwms_tz_usage
+             where tz_usage_code = l_dss_ts_spec.tz_usage_code;
+            l_errmsg := 'tz usage ' || l_errmsg;
+            exit;
+         end if;
+      end loop;               
+      if l_errmsg is not null then
+         select *
+           into l_dss_file
+           from at_dss_file
+          where dss_file_code = (
+                  select dss_file_code
+                    from at_dss_xchg_set
+                   where dss_xchg_set_code = :new.dss_xchg_set_code);
+             
+         cwms_err.raise(
+            'ERROR',
+            'Cannot map HEC-DSS time series specification '
+            || cwms_xchg.make_dss_ts_id(
+                  l_dss_ts_spec.a_pathname_part,
+                  l_dss_ts_spec.b_pathname_part,
+                  l_dss_ts_spec.c_pathname_part,
+                  null,
+                  l_dss_ts_spec.e_pathname_part,
+                  l_dss_ts_spec.f_pathname_part,
+                  l_dss_parameter_type_id,
+                  l_dss_ts_spec.unit_id,
+                  l_time_zone_id,
+                  l_tz_usage_id)
+            || ' to file '
+            || l_dss_file.dss_filemgr_url
+            || l_dss_file.dss_file_name
+            || ': existing mapping has '
+            || l_errmsg); 
+      end if; 
+   end;
+
    -- 
    -- get the real-time and direction settings from the new exchange set 
    -- 
    select *
-      into  l_xchg_set
-      from  at_dss_xchg_set
-      where dss_xchg_set_code=:new.dss_xchg_set_code;
-
+     into l_xchg_set
+     from at_dss_xchg_set
+    where dss_xchg_set_code = :new.dss_xchg_set_code;
+      
    if l_xchg_set.realtime is not null then
       -- 
       -- a real-time set is specified, so we have to check everything out 
@@ -705,8 +871,8 @@ begin
    
 end at_dss_ts_xchg_map_rules;
 /
+show errors;
 
-SHOW ERRORS;
 COMMIT;
 
 /*

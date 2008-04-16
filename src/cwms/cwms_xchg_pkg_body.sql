@@ -1,6 +1,5 @@
 create or replace package body cwms_xchg as
 
-   
 --------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION DB_DATASTORE_ID()
 --
@@ -357,6 +356,7 @@ create or replace package body cwms_xchg as
                values (cwms_seq.nextval, l_office_code, p_dss_filemgr_url, p_dss_file_name)
              returning dss_file_code
                   into l_dss_file_code;
+               commit;                  
             exception
                when others then
                   cwms_err.raise(
@@ -518,7 +518,7 @@ create or replace package body cwms_xchg as
                     p_end_time, l_realtime_code_in, null)
          returning dss_xchg_set_code
               into l_dss_xchg_set_code;
-
+            commit;
          exception
             when others then
                cwms_err.raise(
@@ -647,6 +647,7 @@ create or replace package body cwms_xchg as
       l_table_row.dss_xchg_set_id   := p_new_dss_xchg_set_id;
 
       insert into at_dss_xchg_set values l_table_row;
+      commit;
    exception
       when no_data_found then
          cwms_err.raise(
@@ -722,6 +723,7 @@ create or replace package body cwms_xchg as
                select cwms_seq.nextval into l_dss_file_row.dss_file_code from dual;
                l_table_row.dss_file_code := l_dss_file_row.dss_file_code;
                insert into at_dss_file values l_dss_file_row;
+               commit;
             else
                --------------------------------------------
                -- modify the existing at_dss_file record --
@@ -761,14 +763,12 @@ create or replace package body cwms_xchg as
 
    exception
       when no_data_found then
-         rollback to update_dss_xchg_set_start;
          cwms_err.raise(
             'INVALID_ITEM',
             p_office_id || '/' || p_dss_xchg_set_id,
             'HEC-DSS exchange set');
 
       when others then
-         rollback to update_dss_xchg_set_start;
          raise;
    end update_dss_xchg_set;
 
@@ -855,6 +855,7 @@ create or replace package body cwms_xchg as
       return number
    is
       l_table_row at_dss_ts_spec%rowtype;
+      l_count pls_integer;
    begin
       l_table_row.office_code              := cwms_util.get_office_code(p_office_id);
       l_table_row.a_pathname_part          := upper(p_a_pathname_part);
@@ -883,7 +884,7 @@ create or replace package body cwms_xchg as
       if p_fail_if_exists != cwms_util.false_num then
          cwms_err.raise(
             'ITEM_ALREADY_EXISTS',
-            'HEC-DSS time series specification',
+            '(Fail-if-exists = ' || p_fail_if_exists || ') HEC-DSS time series specification',
             make_dss_ts_id(
                l_table_row.a_pathname_part,
                l_table_row.b_pathname_part,
@@ -904,6 +905,8 @@ create or replace package body cwms_xchg as
          begin
             select cwms_seq.nextval into l_table_row.dss_ts_code from dual;
             insert  into at_dss_ts_spec values l_table_row;
+            commit;
+            select * into l_table_row from at_dss_ts_spec where dss_ts_code = l_table_row.dss_ts_code;
             return l_table_row.dss_ts_code;
 
          exception
@@ -923,6 +926,9 @@ create or replace package body cwms_xchg as
                      p_time_zone,
                      p_tz_usage));
          end;
+         
+      when others then
+         cwms_err.raise('ERROR', sqlerrm);
 
    end create_dss_ts_spec;
 
@@ -984,6 +990,7 @@ create or replace package body cwms_xchg as
       p_office_id            in   varchar2 default null)
       return number
    is      
+      pragma autonomous_transaction;
       l_office_id                  varchar2(16);
       l_cwms_ts_code               number;
       l_dss_ts_code                number;
@@ -1095,7 +1102,6 @@ create or replace package body cwms_xchg as
          -- it exists, fail if we need to --
          -----------------------------------
          if p_fail_if_exists != cwms_util.false_num then
-            rollback;
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'HEC-DSS time series exchange specification',
@@ -1116,14 +1122,17 @@ create or replace package body cwms_xchg as
             --------------------------------
             -- create a new exchange spec --
             --------------------------------
+            declare
+               l_dss_ts_xchg_spec at_dss_ts_xchg_spec%rowtype;
             begin
-               insert into at_dss_ts_xchg_spec
-                    values (cwms_seq.nextval, l_cwms_ts_code, l_dss_ts_code)
-                 returning dss_ts_xchg_code
-                      into l_dss_ts_xchg_code;
+               select cwms_seq.nextval into l_dss_ts_xchg_spec.dss_ts_xchg_code from dual;
+               l_dss_ts_xchg_spec.ts_code := l_cwms_ts_code;
+               l_dss_ts_xchg_spec.dss_ts_code := l_dss_ts_code;
+               insert into at_dss_ts_xchg_spec values l_dss_ts_xchg_spec;
+               commit;
+               l_dss_ts_xchg_code := l_dss_ts_xchg_spec.dss_ts_xchg_code;
             exception
                when others then
-                  rollback;
                   cwms_err.raise(
                      'ITEM_NOT_CREATED',
                      'HEC-DSS time series exchange specification',
@@ -1162,6 +1171,7 @@ create or replace package body cwms_xchg as
       l_dss_ts_xchg_map  at_dss_ts_xchg_map%rowtype;
       l_dss_ts_spec      at_dss_ts_spec%rowtype;
       l_ts_code          number;
+      l_dss_ts_code      number;
       l_office_code      number;
       l_a_part           varchar2(64);
       l_b_part           varchar2(64);
@@ -1172,79 +1182,74 @@ create or replace package body cwms_xchg as
    begin
       l_office_code := cwms_util.get_office_code(p_office_id);
       parse_dss_pathname(l_a_part,l_b_part,l_c_part,l_d_part,l_e_part,l_f_part,p_dss_pathname);
+      --
+      -- get or create the CWMS and DSS TS CODES
+      --
       cwms_ts.create_ts_code(l_ts_code, p_cwms_ts_id, null, null, null, 'F', 'T', 'F', p_office_id);
+      l_dss_ts_code := create_dss_ts_spec(
+         p_dss_pathname,
+         p_dss_parameter_type,
+         p_units,
+         p_time_zone,
+         p_tz_usage,
+         cwms_util.false_num,
+         p_office_id);
+
+      --
+      -- By the time we get here, we have valid CWMS and DSS TS CODES
+      --
       begin
-         select *
-           into l_dss_ts_spec
-           from at_dss_ts_spec
-          where office_code = l_office_code
-            and nvl(a_pathname_part, '@') = nvl(l_a_part, '@')
-            and b_pathname_part = l_b_part
-            and c_pathname_part = l_c_part
-            and e_pathname_part = l_e_part
-            and nvl(f_pathname_part, '@') = nvl(l_f_part, '@')
-            and dss_ts_code in (select dss_ts_code
-                                  from at_dss_ts_xchg_spec xspec,
-                                       at_dss_ts_xchg_map xmap
-                                 where xmap.dss_xchg_set_code = p_dss_xchg_set_code
-                                   and xspec.dss_ts_xchg_code = xmap.dss_ts_xchg_code
-                                   and xspec.ts_code = l_ts_code);
-
-         if l_dss_ts_spec.dss_parameter_type_code != get_dss_parameter_type_code(p_dss_parameter_type)
-            or l_dss_ts_spec.unit_id != p_units
-            or l_dss_ts_spec.time_zone_code != cwms_util.get_time_zone_code(p_time_zone)
-            or l_dss_ts_spec.tz_usage_code != cwms_util.get_tz_usage_code(p_tz_usage) then
-
-            select dss_xchg_set_id 
-              into l_dss_xchg_set_id 
-              from at_dss_xchg_set
-             where dss_xchg_set_code = p_dss_xchg_set_code;
-            
-            cwms_err.raise(
-               'DUPLICATE_XCHG_MAP',
-               p_cwms_ts_id,
-               p_dss_pathname,
-               l_dss_xchg_set_id);
-         end if;
-         
-      exception
-         when no_data_found then null;
-         
-      end;
-
-      begin
+         --
+         -- See if we have an existing DSS_TS_XCHG_SPEC
+         --
          select dss_ts_xchg_code
            into l_dss_ts_xchg_code
            from at_dss_ts_xchg_spec
           where ts_code = l_ts_code
-            and dss_ts_code = l_dss_ts_spec.dss_ts_code;
+            and dss_ts_code = l_dss_ts_code;
       exception
+         --
+         -- DSS_TS_XCHG_SPEC does not exist, create it
+         --
          when no_data_found then
-            l_dss_ts_xchg_code := create_dss_ts_xchg_spec(
-                  p_cwms_ts_id,
-                  p_dss_pathname,
-                  p_dss_parameter_type,
-                  p_units,
-                  p_time_zone,
-                  p_tz_usage,
-                  cwms_util.false_num,
-                  p_office_id);
+            declare
+               l_dss_ts_xchg_spec at_dss_ts_xchg_spec%rowtype;
+            begin
+               select cwms_seq.nextval into l_dss_ts_xchg_spec.dss_ts_xchg_code from dual;
+               l_dss_ts_xchg_spec.ts_code := l_ts_code;
+               l_dss_ts_xchg_spec.dss_ts_code := l_dss_ts_code;
+               insert into at_dss_ts_xchg_spec values l_dss_ts_xchg_spec;
+               commit;
+               l_dss_ts_xchg_code := l_dss_ts_xchg_spec.dss_ts_xchg_code;
+            end;
       end;
 
-      select *
-        into l_dss_ts_xchg_map
-        from at_dss_ts_xchg_map
-       where dss_xchg_set_code = p_dss_xchg_set_code
-         and dss_ts_xchg_code = l_dss_ts_xchg_code;
+      --
+      -- By the time we get here, we have valid CWMS and DSS TS CODES and a valid DSS_TS_XCHG_SPEC
+      --
+      begin
+         --
+         -- See if the desired mapping already exists
+         --
+         select *
+           into l_dss_ts_xchg_map
+           from at_dss_ts_xchg_map
+          where dss_xchg_set_code = p_dss_xchg_set_code
+            and dss_ts_xchg_code = l_dss_ts_xchg_code;
          
-   exception
-      when no_data_found then
-         select cwms_seq.nextval into l_dss_ts_xchg_map.dss_ts_xchg_map_code from dual;
-         l_dss_ts_xchg_map.dss_xchg_set_code := p_dss_xchg_set_code;
-         l_dss_ts_xchg_map.dss_ts_xchg_code  := l_dss_ts_xchg_code;
-         insert 
-           into at_dss_ts_xchg_map
-         values l_dss_ts_xchg_map;
+         exception
+            --
+            -- Desired mapping does not exist, create it.
+            --
+            when no_data_found then
+               select cwms_seq.nextval into l_dss_ts_xchg_map.dss_ts_xchg_map_code from dual;
+               l_dss_ts_xchg_map.dss_xchg_set_code := p_dss_xchg_set_code;
+               l_dss_ts_xchg_map.dss_ts_xchg_code  := l_dss_ts_xchg_code;
+               insert 
+                 into at_dss_ts_xchg_map
+               values l_dss_ts_xchg_map;
+               commit;
+      end;
          
    end map_ts_in_xchg_set;
 
@@ -1916,9 +1921,6 @@ create or replace package body cwms_xchg as
       l_e_part                  varchar2(64);
       l_f_part                  varchar2(64);
       l_map_updated             boolean;
-      l_time1                   timestamp;
-      l_time2                   timestamp;
-      l_elapsed                 interval day to second;
       l_xchg_set_rec            at_dss_xchg_set%rowtype;
       l_dssfilemgr_rec          at_dss_file%rowtype;
       l_dss_ts_xchg_spec_rec    at_dss_ts_xchg_spec%rowtype;
@@ -1948,7 +1950,7 @@ create or replace package body cwms_xchg as
          l_log_output boolean := false;
       begin
          if l_log_table then
-            cwms_msg.log_db_message('CWMS_XCGH.STORE_DATAEXCHANGE_CONF', p_message);
+            cwms_msg.log_db_message('store_dataexchange_conf', p_message);
          end if;
          if l_log_output then
             dbms_output.put_line(p_message);
@@ -1994,14 +1996,12 @@ create or replace package body cwms_xchg as
          end;
    begin
       if p_dx_config is null then
-         rollback;
          cwms_err.raise(
             'INVALID_ITEM',
             'NULL',
             'HEC-DSS exchange set configuration');
       end if;
       if p_dx_config.get_subtype() != 'xchg_cwms_dataexchange_conf_t' then
-         rollback;
          cwms_err.raise('ERROR', 'Parameter is not an xchg_cwms_dataexchange_conf_t object.');
       end if;
       -----------------------------
@@ -2019,7 +2019,6 @@ create or replace package body cwms_xchg as
          l_can_update := true;
          l_can_delete := true;
       else
-         rollback;
          cwms_err.raise(
             'INVALID_ITEM', 
             l_store_rule, 
@@ -2035,7 +2034,6 @@ create or replace package body cwms_xchg as
       for i in l_dx_sets.first..l_dx_sets.last loop
          for set_once in 1..1 loop
             exit when l_dx_sets(i) is null;
-            log('Processing set '|| i || ' of ' || l_dx_sets.count);
             l_set_updated            := false;
             l_new_set                := false;
             l_set_name               := l_dx_sets(i).get_id();
@@ -2099,7 +2097,6 @@ create or replace package body cwms_xchg as
                   exit when l_oracle_id is not null and l_set_filemgr is not null;
                end loop;  
             if l_oracle_id is null or l_set_filemgr is null then
-               rollback;
                cwms_util.resume_mv_refresh(l_pause_handle);
                cwms_err.raise(
                   'ERROR',
@@ -2120,7 +2117,6 @@ create or replace package body cwms_xchg as
                 where office_id = l_set_office_id;
             exception
                when no_data_found then
-                  rollback;
                   cwms_util.resume_mv_refresh(l_pause_handle);
                   cwms_err.raise(
                      'INVALID_ITEM',
@@ -2152,13 +2148,6 @@ create or replace package body cwms_xchg as
                   ----------------------------
                   -- update the description --
                   ----------------------------
-                  log(
-                     'Changing description "'
-                     || l_xchg_set_rec.description
-                     || '" to "'
-                     || l_set_description
-                     || '" for set '
-                     || l_set_name);
                   update at_dss_xchg_set
                      set description = l_set_description
                    where dss_xchg_set_code = l_xchg_set_rec.dss_xchg_set_code;
@@ -2179,17 +2168,6 @@ create or replace package body cwms_xchg as
                   ----------------------------
                   -- update the time window --
                   ----------------------------
-                  log(
-                     'Changing time window ('
-                     || nvl(l_xchg_set_rec.start_time, 'NULL')
-                     || '..'
-                     || nvl(l_xchg_set_rec.end_time, 'NULL')
-                     || ') to ('
-                     || nvl(l_start_time, 'NULL')
-                     || '..'
-                     || nvl(l_end_time, 'NULL')
-                     || ') for set '
-                     || l_set_name);
                   update at_dss_xchg_set
                      set start_time = l_start_time,
                          end_time   = l_end_time
@@ -2209,21 +2187,6 @@ create or replace package body cwms_xchg as
                   -----------------------------------
                   -- update the realtime direction --
                   -----------------------------------
-                  log(
-                     'Changing realtime direction '
-                     || case l_xchg_set_rec.realtime
-                           when null then 'NULL'
-                           when c_oracle_to_dss then 'Oracle-to-DSS'
-                           when c_dss_to_oracle then 'DSS-to-Oracle'
-                        end
-                     || ' to '
-                     || case l_realtime_direction
-                           when null then 'NULL'
-                           when c_oracle_to_dss then 'Oracle-to-DSS'
-                           when c_dss_to_oracle then 'DSS-to-Oracle'
-                        end
-                     || ' for set '
-                     || l_set_name);
                   update at_dss_xchg_set
                      set realtime = l_realtime_direction
                    where dss_xchg_set_code = l_xchg_set_rec.dss_xchg_set_code;
@@ -2246,14 +2209,6 @@ create or replace package body cwms_xchg as
                   -------------------------
                   -- update the dss file --
                   -------------------------
-                  log(
-                     'Changing "'
-                     || l_dssfilemgr_rec.dss_filemgr_url 
-                     || l_dssfilemgr_rec.dss_file_name
-                     || '" to "'
-                     || l_set_filemgr
-                     || '" for set '
-                     || l_set_name);
                   declare
                      l_code at_dss_xchg_set.dss_file_code%type;
                   begin
@@ -2278,7 +2233,6 @@ create or replace package body cwms_xchg as
                -------------------------------
                -- insert a new exchange set --
                -------------------------------
-               log('Inserting set '|| l_set_name);
                declare
                   l_code at_dss_xchg_set.dss_file_code%type;
                begin
@@ -2313,6 +2267,7 @@ create or replace package body cwms_xchg as
                           realtime,
                           last_update
                      into l_xchg_set_rec;
+                     commit;
                end;
                l_sets_inserted := l_sets_inserted + 1;
             end if;
@@ -2321,17 +2276,14 @@ create or replace package body cwms_xchg as
             ----------------------
             l_dx_sets(i).get_ts_mapping_set(l_ts_mapping_set);
             if l_ts_mapping_set is null then
-               log('0 mappings');
                exit;
             end if;
             l_ts_mapping_set.get_mappings(l_ts_mappings);
             if l_ts_mappings is null or l_ts_mappings.count = 0 then
-               log('0 mappings');
                exit;
             end if;
             for j in 1..l_ts_mappings.count loop
                for map_once in 1..1 loop
-                  l_time1 := systimestamp;
                   l_new_map := false;
                   ------------------------------------------
                   -- get the CWMS and DSS timeseries info --
@@ -2349,13 +2301,9 @@ create or replace package body cwms_xchg as
                   if l_can_delete then
                      l_specified_maps(l_ts_id || l_dss_pathname) := true;
                   end if;
-                  l_time2 := systimestamp;
-                  l_elapsed  := l_time2 - l_time1;
-                  log('' || l_elapsed || ': retrieved object info');
                   --------------------------
                   -- get the CWMS TS Code --
                   --------------------------
-                  l_time1 := systimestamp;
                   l_ts_code := get_cwms_ts_code(l_ts_id, l_set_office_id, p_create_if_necessary => false);
                   if l_ts_code is null then
                      if l_can_insert then
@@ -2365,13 +2313,9 @@ create or replace package body cwms_xchg as
                         exit;
                      end if;
                   end if;
-                  l_time2 := systimestamp;
-                  l_elapsed  := l_time2 - l_time1;
-                  log('' || l_elapsed || ': retrieved TS code');
                   --------------------------
                   -- get the DSS TS Codes --
                   --------------------------
-                  l_time1 := systimestamp;
                   parse_dss_pathname(l_a_part,l_b_part,l_c_part,l_d_part,l_e_part,l_f_part,l_dss_pathname);
                   l_dss_time_zone_name    := l_dss_ts.get_timezone();
                   l_dss_tz_usage_id       := l_dss_ts.get_tz_usage(); 
@@ -2399,10 +2343,6 @@ create or replace package body cwms_xchg as
                         end if;
                         l_new_map := true;
                   end;
-                  l_time2 := systimestamp;
-                  l_elapsed  := l_time2 - l_time1;
-                  log('' || l_elapsed || ': queried for DSS TS code');
-                  l_time1 := systimestamp;
                   begin
                      select time_zone_code
                        into l_dss_time_zone_code
@@ -2410,7 +2350,6 @@ create or replace package body cwms_xchg as
                       where upper(time_zone_name) = upper(l_dss_time_zone_name);
                   exception
                      when no_data_found then
-                        rollback;
                         cwms_util.resume_mv_refresh(l_pause_handle);
                         cwms_err.raise(
                            'INVALID_ITEM',
@@ -2424,7 +2363,6 @@ create or replace package body cwms_xchg as
                       where upper(tz_usage_id) = upper(l_dss_tz_usage_id);
                   exception
                      when no_data_found then
-                        rollback;
                         cwms_util.resume_mv_refresh(l_pause_handle);
                         cwms_err.raise(
                            'INVALID_ITEM',
@@ -2438,16 +2376,12 @@ create or replace package body cwms_xchg as
                       where upper(dss_parameter_type_id) = upper(l_dss_parameter_type_id);
                   exception
                      when no_data_found then
-                        rollback;
                         cwms_util.resume_mv_refresh(l_pause_handle);
                         cwms_err.raise(
                            'INVALID_ITEM',
                            l_dss_parameter_type_id,
                            'HEC-DSS parameter type identifier');
                   end;
-                  l_time2 := systimestamp;
-                  l_elapsed  := l_time2 - l_time1;
-                  log('' || l_elapsed || ': retrieved other DSS info');
                   begin
                      if l_new_map then
                         if l_can_insert then
@@ -2460,7 +2394,6 @@ create or replace package body cwms_xchg as
                            ------------------------
                            -- insert the mapping --
                            ------------------------
-                           l_time1 := systimestamp;
                            map_ts_in_xchg_set(
                               l_xchg_set_rec.dss_xchg_set_code,
                               l_ts_id,
@@ -2470,9 +2403,6 @@ create or replace package body cwms_xchg as
                               l_dss_time_zone_name,
                               l_dss_tz_usage_id,
                               l_set_office_id);
-                           l_time2 := systimestamp;
-                           l_elapsed  := l_time2 - l_time1;
-                           log('' || l_elapsed || ': inserted mapping ' || l_ts_id || ' == ' || l_dss_pathname);
                            l_mappings_inserted := l_mappings_inserted + 1;
                         end if;
                      else
@@ -2481,7 +2411,6 @@ create or replace package body cwms_xchg as
                            -------------------------------------
                            -- update the mapping if necessary --
                            -------------------------------------
-                           l_time1 := systimestamp;
                            select *
                              into l_dss_ts_spec_rec
                              from at_dss_ts_spec
@@ -2513,9 +2442,6 @@ create or replace package body cwms_xchg as
                                  set row = l_dss_ts_spec_rec
                                where dss_ts_code = l_dss_ts_spec_rec.dss_ts_code;
                               l_mappings_updated := l_mappings_updated + 1;
-                              l_time2 := systimestamp;
-                              l_elapsed  := l_time2 - l_time1;
-                              log('' || l_elapsed || ': updated mapping ' || l_ts_id || ' == ' || l_dss_pathname);
                            end if;
                         end if;
                      end if;
@@ -2526,7 +2452,6 @@ create or replace package body cwms_xchg as
                -------------------------------------------------------
                -- delete mappings that are not specified in the XML --
                -------------------------------------------------------
-               log(''||l_specified_maps.count||' items');
                for rec in (select cwms_ts_id,
                                   a_pathname_part,
                                   b_pathname_part,
@@ -2581,7 +2506,6 @@ create or replace package body cwms_xchg as
       p_mappings_updated  := l_mappings_updated;
       p_mappings_deleted  := l_mappings_deleted;
       
-      commit;
       -------------------------------------------------------------
       -- notify listeners that the configuation has been updated --
       -------------------------------------------------------------
@@ -2597,7 +2521,6 @@ create or replace package body cwms_xchg as
       
    exception
       when others then
-         rollback;
          raise;
    end;
 
@@ -3142,6 +3065,7 @@ create or replace package body cwms_xchg as
                           realtime,
                           last_update
                      into l_xchg_set_rec;
+                  commit;                     
                end;
                if not l_set_updated then
                   l_set_updated := true;
@@ -3375,10 +3299,8 @@ create or replace package body cwms_xchg as
       p_mappings_updated  := l_mappings_updated;
       p_mappings_deleted  := l_mappings_deleted;
       
-      commit;
    exception
       when others then
-         rollback;
          raise;
          
    end put_dss_xchg_sets;
@@ -3579,6 +3501,7 @@ begin
                  systimestamp, 
                  cast(l_first_time as date), 
                  cast(l_last_time as date));
+         commit;                 
       else
          -----------------
          -- even months --
@@ -3590,6 +3513,7 @@ begin
                  systimestamp, 
                  cast(l_first_time as date), 
                  cast(l_last_time as date));
+         commit;                 
       end if;
 
       -------------------------
