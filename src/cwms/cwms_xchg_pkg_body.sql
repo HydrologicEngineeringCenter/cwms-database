@@ -1869,6 +1869,10 @@ create or replace package body cwms_xchg as
       p_dx_config         in  xchg_dataexchange_conf_t,
       p_store_rule        in  varchar2 default 'MERGE')
    is
+      --
+      -- This procedure must perform commits, so isolate them from any
+      -- outer-level transactions. 
+      --
       pragma autonomous_transaction;
       
       type assoc_bool_vc574 is table of boolean index by varchar2(574);      -- 574 = 183 (tsid) + 391 (pathname)
@@ -1909,6 +1913,7 @@ create or replace package body cwms_xchg as
       l_set_office_id           cwms_office.office_id%type;
       l_set_office_code         cwms_office.office_code%type;
       l_set_realtime_source_id  varchar2(16);         
+      l_office_id               cwms_office.office_id%type;
       l_oracle_id               varchar2(16);
       l_dssfilemgr_id           varchar2(16);
       l_set_url                 varchar2(32);
@@ -1995,6 +2000,7 @@ create or replace package body cwms_xchg as
             return l_ts_code;
          end;
    begin
+      l_office_id := cwms_util.user_office_id;
       if p_dx_config is null then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -2055,47 +2061,47 @@ create or replace package body cwms_xchg as
             l_set_url            := null;
             l_set_filemgr        := null;
             l_oracle_id          := null;
-               for j in l_datastores.first..l_datastores.last loop
-                  for datastore_once in 1..1 loop
-                     exit when l_datastores(j) is null;
-                     l_text := l_datastores(j).get_id();
-                     if l_text = l_datastore_1 then
-                        if l_datastores(j).get_subtype() = 'xchg_oracle_t' then
-                           l_oracle_id := l_datastore_1;
-                        elsif l_datastores(j).get_subtype() = 'xchg_dssfilemanager_t' then
-                           l_set_filemgr := 
-                              '//' 
-                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_host() 
-                              || ':' 
-                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_port() 
-                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_filepath(); 
-                        end if;
-                     elsif l_text = l_datastore_2 then
-                        if l_datastores(j).get_subtype() = 'xchg_oracle_t' then
-                           l_oracle_id := l_datastore_2;
-                        elsif l_datastores(j).get_subtype() = 'xchg_dssfilemanager_t' then
-                           l_set_url := 
-                              '//' 
-                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_host() 
-                              || ':' 
-                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_port(); 
-                           l_set_filemgr := 
-                              l_set_url
-                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_filepath(); 
-                        end if;
+            for j in l_datastores.first..l_datastores.last loop
+               for datastore_once in 1..1 loop
+                  exit when l_datastores(j) is null;
+                  l_text := l_datastores(j).get_id();
+                  if l_text = l_datastore_1 then
+                     if l_datastores(j).get_subtype() = 'xchg_oracle_t' then
+                        l_oracle_id := l_datastore_1;
+                     elsif l_datastores(j).get_subtype() = 'xchg_dssfilemanager_t' then
+                        l_set_filemgr := 
+                           '//' 
+                           || treat(l_datastores(j) as xchg_dssfilemanager_t).get_host() 
+                           || ':' 
+                           || treat(l_datastores(j) as xchg_dssfilemanager_t).get_port() 
+                           || treat(l_datastores(j) as xchg_dssfilemanager_t).get_filepath(); 
                      end if;
-                     if l_set_realtime_source_id is not null then
-                        if l_text = l_set_realtime_source_id then
-                           if l_datastores(j).get_subtype() = 'xchg_oracle_t' then
-                              l_realtime_direction := c_oracle_to_dss;
-                           else
-                              l_realtime_direction := c_dss_to_oracle;
-                           end if;
-                        end if; 
+                  elsif l_text = l_datastore_2 then
+                     if l_datastores(j).get_subtype() = 'xchg_oracle_t' then
+                        l_oracle_id := l_datastore_2;
+                     elsif l_datastores(j).get_subtype() = 'xchg_dssfilemanager_t' then
+                        l_set_url := 
+                           '//' 
+                           || treat(l_datastores(j) as xchg_dssfilemanager_t).get_host() 
+                           || ':' 
+                           || treat(l_datastores(j) as xchg_dssfilemanager_t).get_port(); 
+                        l_set_filemgr := 
+                           l_set_url
+                           || treat(l_datastores(j) as xchg_dssfilemanager_t).get_filepath(); 
+                     end if;
+                  end if;
+                  if l_set_realtime_source_id is not null then
+                     if l_text = l_set_realtime_source_id then
+                        if l_datastores(j).get_subtype() = 'xchg_oracle_t' then
+                           l_realtime_direction := c_oracle_to_dss;
+                        else
+                           l_realtime_direction := c_dss_to_oracle;
+                        end if;
                      end if; 
-                  end loop;
-                  exit when l_oracle_id is not null and l_set_filemgr is not null;
-               end loop;  
+                  end if; 
+               end loop;
+               exit when l_oracle_id is not null and l_set_filemgr is not null;
+            end loop;  
             if l_oracle_id is null or l_set_filemgr is null then
                cwms_util.resume_mv_refresh(l_pause_handle);
                cwms_err.raise(
@@ -2108,7 +2114,7 @@ create or replace package body cwms_xchg as
             -- check the set info --
             ------------------------
             if upper(l_set_office_id) = '__LOCAL__' then
-               l_set_office_id := cwms_util.user_office_id;
+               l_set_office_id := l_office_id;
             end if;
             begin
                select office_code
@@ -2123,6 +2129,15 @@ create or replace package body cwms_xchg as
                      l_set_office_id,
                      'CWMS office id');
             end;
+            if l_set_office_id != l_office_id then
+               cwms_err.raise(
+                  'ERROR',
+                  'Office '
+                  || l_office_id
+                  || ' cannot store data exchange set for office '
+                  || l_set_office_id
+                  || '.');
+            end if;
             begin
                select *
                  into l_xchg_set_rec
