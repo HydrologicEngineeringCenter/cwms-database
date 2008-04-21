@@ -765,7 +765,7 @@ begin
              where dss_parameter_type_code = l_dss_ts_spec.dss_parameter_type_code;
             l_errmsg := 'parameter type ' || l_errmsg;
             exit;
-         elsif l_dss_ts_spec.unit_id != l_unit_id then
+         elsif upper(l_dss_ts_spec.unit_id) != upper(l_unit_id) then
             l_errmsg := 'units ' || l_dss_ts_spec.unit_id;
             exit;
          elsif l_dss_ts_spec.time_zone_code != l_time_zone_code then
