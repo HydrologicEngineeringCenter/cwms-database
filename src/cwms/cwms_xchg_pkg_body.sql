@@ -7,7 +7,7 @@ create or replace package body cwms_xchg as
       return varchar2
    is
       l_db_name      v$database.name%type;
-      l_datastore_id varchar2(16);
+      l_datastore_id varchar2(64);
    begin
       select name into l_db_name from v$database;
       l_datastore_id := utl_inaddr.get_host_name || ':' || l_db_name;
@@ -26,7 +26,7 @@ create or replace package body cwms_xchg as
    is
       l_url_part      varchar2(256) := lower(p_dss_filemgr_url);
       l_filename_part varchar2(256) := p_dss_file_name;
-      l_datastore_id  varchar2(16);
+      l_datastore_id  varchar2(64   );
       l_pos           pls_integer;
       l_dns_pattern   constant varchar2(256) := 
          '([a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z\-][a-zA-Z0-9\-]*[a-zA-Z0-9][.])*[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z\-][a-zA-Z0-9\-]*[a-zA-Z0-9]';
@@ -330,6 +330,7 @@ create or replace package body cwms_xchg as
       p_office_id         in   varchar2 default null)
       return number
    is
+      pragma autonomous_transaction;
       l_dss_file_code  number(10);
       l_office_code    varchar2(16);
    begin
@@ -343,6 +344,7 @@ create or replace package body cwms_xchg as
             and dss_file_name = p_dss_file_name;
 
          if p_fail_if_exists != cwms_util.false_num then
+            rollback;
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'HEC-DSS file',
@@ -356,9 +358,9 @@ create or replace package body cwms_xchg as
                values (cwms_seq.nextval, l_office_code, p_dss_filemgr_url, p_dss_file_name)
              returning dss_file_code
                   into l_dss_file_code;
-               commit;                  
             exception
                when others then
+                  rollback;
                   cwms_err.raise(
                      'ITEM_NOT_CREATED',
                      'HEC-DSS file',
@@ -366,6 +368,7 @@ create or replace package body cwms_xchg as
             end;
       end;
 
+      commit;
       return l_dss_file_code;
    end create_dss_file;
 
@@ -422,6 +425,7 @@ create or replace package body cwms_xchg as
       p_office_id         in   varchar2 default null)
       return number
    is
+      pragma autonomous_transaction;
       l_office_code         number(10);
       l_dss_xchg_set_code   number(10)    := null;
       l_dss_file_code       number(10);
@@ -444,6 +448,7 @@ create or replace package body cwms_xchg as
              where upper(dss_xchg_direction_id) = upper(p_realtime);
          exception
             when no_data_found then
+               rollback;
                cwms_err.raise(
                   'INVALID_ITEM',
                   p_realtime,
@@ -469,7 +474,7 @@ create or replace package body cwms_xchg as
          if p_fail_if_exists != cwms_util.false_num
             or l_description != p_description
             or nvl(l_realtime_code, 0) != nvl(l_realtime_code_in, 0) then
-
+            rollback;
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'HEC-DSS exchange set',
@@ -492,6 +497,7 @@ create or replace package body cwms_xchg as
          if l_dss_filemgr_url != p_dss_filemgr_url
             or
             l_dss_file_name != p_dss_file_name then
+            rollback;
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'HEC-DSS exchange set',
@@ -518,9 +524,9 @@ create or replace package body cwms_xchg as
                     p_end_time, l_realtime_code_in, null)
          returning dss_xchg_set_code
               into l_dss_xchg_set_code;
-            commit;
          exception
             when others then
+               rollback;
                cwms_err.raise(
                   'ITEM_NOT_CREATED',
                   'HEC-DSS exchange set',
@@ -528,6 +534,8 @@ create or replace package body cwms_xchg as
          end;
       end if;
 
+      commit;
+      
       return l_dss_xchg_set_code;
 
    end create_dss_xchg_set;
@@ -629,6 +637,7 @@ create or replace package body cwms_xchg as
       p_new_dss_xchg_set_id   in   varchar2,
       p_office_id             in   varchar2 default null)
    is
+      pragma autonomous_transaction;
       l_dss_xchg_set_code number(10);
       l_table_row at_dss_xchg_set%rowtype;
       already_exists exception;
@@ -650,12 +659,14 @@ create or replace package body cwms_xchg as
       commit;
    exception
       when no_data_found then
+         rollback;
          cwms_err.raise(
             'INVALID_ITEM',
             p_office_id || '/' || p_new_dss_xchg_set_id,
             'HEC-DSS exchange set');
 
       when already_exists then
+         rollback;
          cwms_err.raise(
             'ITEM_ALREADY_EXISTS',
             'HEC-DSS exchange set',
@@ -676,6 +687,7 @@ create or replace package body cwms_xchg as
       p_office_id            in   varchar2 default null)
       return number
    is
+      pragma autonomous_transaction;
       l_update_description    boolean := upper(p_ignore_nulls) != 'T' or p_description     is not null;
       l_update_filemgr_url    boolean := upper(p_ignore_nulls) != 'T' or p_dss_filemgr_url is not null;
       l_update_file_name      boolean := upper(p_ignore_nulls) != 'T' or p_dss_file_name   is not null;
@@ -723,7 +735,6 @@ create or replace package body cwms_xchg as
                select cwms_seq.nextval into l_dss_file_row.dss_file_code from dual;
                l_table_row.dss_file_code := l_dss_file_row.dss_file_code;
                insert into at_dss_file values l_dss_file_row;
-               commit;
             else
                --------------------------------------------
                -- modify the existing at_dss_file record --
@@ -759,16 +770,19 @@ create or replace package body cwms_xchg as
           where dss_xchg_set_code = l_table_row.dss_xchg_set_code;
       end if;
 
+      commit;
       return l_table_row.dss_xchg_set_code;
 
    exception
       when no_data_found then
+         rollback;
          cwms_err.raise(
             'INVALID_ITEM',
             p_office_id || '/' || p_dss_xchg_set_id,
             'HEC-DSS exchange set');
 
       when others then
+         rollback;
          raise;
    end update_dss_xchg_set;
 
@@ -822,8 +836,8 @@ create or replace package body cwms_xchg as
             if l_last_update is not null and l_last_update >= p_last_update then
                cwms_err.raise(
                   'INVALID_ITEM',
-                  'Specified timestamp',
-                  'timestamp for this exhange set because it pre-dates the existing last update time.');
+                  to_char(p_last_update),
+                  'timestamp for this exhange set because it pre-dates the existing last update time');
             end if;
 
             update at_dss_xchg_set
@@ -854,6 +868,7 @@ create or replace package body cwms_xchg as
       p_office_id            in   varchar2 default null)
       return number
    is
+      pragma autonomous_transaction;
       l_table_row at_dss_ts_spec%rowtype;
       l_count pls_integer;
    begin
@@ -882,6 +897,7 @@ create or replace package body cwms_xchg as
          and tz_usage_code            = l_table_row.tz_usage_code;
 
       if p_fail_if_exists != cwms_util.false_num then
+         rollback;
          cwms_err.raise(
             'ITEM_ALREADY_EXISTS',
             '(Fail-if-exists = ' || p_fail_if_exists || ') HEC-DSS time series specification',
@@ -898,6 +914,7 @@ create or replace package body cwms_xchg as
                p_tz_usage));
       end if;
       
+      commit;
       return l_table_row.dss_ts_code;
 
    exception
@@ -905,12 +922,13 @@ create or replace package body cwms_xchg as
          begin
             select cwms_seq.nextval into l_table_row.dss_ts_code from dual;
             insert  into at_dss_ts_spec values l_table_row;
-            commit;
             select * into l_table_row from at_dss_ts_spec where dss_ts_code = l_table_row.dss_ts_code;
+            commit;
             return l_table_row.dss_ts_code;
 
          exception
             when others then
+               rollback;
                cwms_err.raise(
                   'ITEM_NOT_CREATED',
                   'HEC-DSS time series specification',
@@ -928,6 +946,7 @@ create or replace package body cwms_xchg as
          end;
          
       when others then
+         rollback;
          cwms_err.raise('ERROR', sqlerrm);
 
    end create_dss_ts_spec;
@@ -1102,6 +1121,7 @@ create or replace package body cwms_xchg as
          -- it exists, fail if we need to --
          -----------------------------------
          if p_fail_if_exists != cwms_util.false_num then
+            rollback;
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'HEC-DSS time series exchange specification',
@@ -1129,10 +1149,10 @@ create or replace package body cwms_xchg as
                l_dss_ts_xchg_spec.ts_code := l_cwms_ts_code;
                l_dss_ts_xchg_spec.dss_ts_code := l_dss_ts_code;
                insert into at_dss_ts_xchg_spec values l_dss_ts_xchg_spec;
-               commit;
                l_dss_ts_xchg_code := l_dss_ts_xchg_spec.dss_ts_xchg_code;
             exception
                when others then
+                  rollback;
                   cwms_err.raise(
                      'ITEM_NOT_CREATED',
                      'HEC-DSS time series exchange specification',
@@ -1149,6 +1169,7 @@ create or replace package body cwms_xchg as
             end;
       end;
       
+      commit;
       return l_dss_ts_xchg_code;
       
    end create_dss_ts_xchg_spec;
@@ -1166,6 +1187,7 @@ create or replace package body cwms_xchg as
       p_tz_usage             in   varchar2 default null,
       p_office_id            in   varchar2 default null)
    is
+      pragma autonomous_transaction;
       l_dss_xchg_set_id  at_dss_xchg_set.dss_xchg_set_id%type;
       l_dss_ts_xchg_code number;
       l_dss_ts_xchg_map  at_dss_ts_xchg_map%rowtype;
@@ -1219,7 +1241,6 @@ create or replace package body cwms_xchg as
                l_dss_ts_xchg_spec.ts_code := l_ts_code;
                l_dss_ts_xchg_spec.dss_ts_code := l_dss_ts_code;
                insert into at_dss_ts_xchg_spec values l_dss_ts_xchg_spec;
-               commit;
                l_dss_ts_xchg_code := l_dss_ts_xchg_spec.dss_ts_xchg_code;
             end;
       end;
@@ -1248,9 +1269,9 @@ create or replace package body cwms_xchg as
                insert 
                  into at_dss_ts_xchg_map
                values l_dss_ts_xchg_map;
-               commit;
       end;
-         
+
+   commit;         
    end map_ts_in_xchg_set;
 
 --------------------------------------------------------------------------------
@@ -2002,6 +2023,7 @@ create or replace package body cwms_xchg as
    begin
       l_office_id := cwms_util.user_office_id;
       if p_dx_config is null then
+         rollback;
          cwms_err.raise(
             'INVALID_ITEM',
             'NULL',
@@ -2025,6 +2047,7 @@ create or replace package body cwms_xchg as
          l_can_update := true;
          l_can_delete := true;
       else
+         rollback;
          cwms_err.raise(
             'INVALID_ITEM', 
             l_store_rule, 
@@ -2104,6 +2127,7 @@ create or replace package body cwms_xchg as
             end loop;  
             if l_oracle_id is null or l_set_filemgr is null then
                cwms_util.resume_mv_refresh(l_pause_handle);
+               rollback;
                cwms_err.raise(
                   'ERROR',
                   'Data exchange set ' 
@@ -2124,12 +2148,14 @@ create or replace package body cwms_xchg as
             exception
                when no_data_found then
                   cwms_util.resume_mv_refresh(l_pause_handle);
+                  rollback;
                   cwms_err.raise(
                      'INVALID_ITEM',
                      l_set_office_id,
                      'CWMS office id');
             end;
             if l_set_office_id != l_office_id then
+               rollback;
                cwms_err.raise(
                   'ERROR',
                   'Office '
@@ -2282,7 +2308,6 @@ create or replace package body cwms_xchg as
                           realtime,
                           last_update
                      into l_xchg_set_rec;
-                     commit;
                end;
                l_sets_inserted := l_sets_inserted + 1;
             end if;
@@ -2366,6 +2391,7 @@ create or replace package body cwms_xchg as
                   exception
                      when no_data_found then
                         cwms_util.resume_mv_refresh(l_pause_handle);
+                        rollback;
                         cwms_err.raise(
                            'INVALID_ITEM',
                            l_dss_time_zone_name,
@@ -2379,6 +2405,7 @@ create or replace package body cwms_xchg as
                   exception
                      when no_data_found then
                         cwms_util.resume_mv_refresh(l_pause_handle);
+                        rollback;
                         cwms_err.raise(
                            'INVALID_ITEM',
                            l_dss_tz_usage_id,
@@ -2392,6 +2419,7 @@ create or replace package body cwms_xchg as
                   exception
                      when no_data_found then
                         cwms_util.resume_mv_refresh(l_pause_handle);
+                        rollback;
                         cwms_err.raise(
                            'INVALID_ITEM',
                            l_dss_parameter_type_id,
@@ -2534,10 +2562,14 @@ create or replace package body cwms_xchg as
          xchg_config_updated(substr(l_text, 1));
       end if;
       
+      commit;
+      
    exception
       when others then
+         rollback;
          raise;
-   end;
+   
+   end store_dataexchange_conf;
 
 --------------------------------------------------------------------------------
    procedure store_dataexchange_conf(
@@ -2613,8 +2645,6 @@ create or replace package body cwms_xchg as
       p_xml_clob          in out nocopy clob,
       p_store_rule        in  varchar2 default 'MERGE')
    is
-      pragma autonomous_transaction;
-      
       type assoc_bool_vc574 is table of boolean index by varchar2(574);      -- 574 = 183 (tsid) + 391 (pathname)
       type assoc_vc288_vc16 is table of varchar2(287) index by varchar2(16); -- 287 = 32 (URL) + 255 (filename) 
       
@@ -3080,7 +3110,6 @@ create or replace package body cwms_xchg as
                           realtime,
                           last_update
                      into l_xchg_set_rec;
-                  commit;                     
                end;
                if not l_set_updated then
                   l_set_updated := true;
@@ -3490,6 +3519,7 @@ procedure time_series_updated(
    p_first_time in timestamp with time zone,
    p_last_time  in timestamp with time zone)
 is
+   pragma autonomous_transaction;
    l_msg        sys.aq$_jms_map_message;
    l_msgid      pls_integer;
    l_first_time timestamp;
@@ -3516,7 +3546,6 @@ begin
                  systimestamp, 
                  cast(l_first_time as date), 
                  cast(l_last_time as date));
-         commit;                 
       else
          -----------------
          -- even months --
@@ -3528,7 +3557,6 @@ begin
                  systimestamp, 
                  cast(l_first_time as date), 
                  cast(l_last_time as date));
-         commit;                 
       end if;
 
       -------------------------
@@ -3541,6 +3569,8 @@ begin
       i := cwms_msg.publish_message(l_msg, l_msgid, 'realtime_ops');
    end if;
 
+   commit;
+   
 end time_series_updated;   
 
 -------------------------------------------------------------------------------
@@ -3615,7 +3645,7 @@ is
    l_start_time    timestamp;
    l_end_time      timestamp;
    l_log_msg       varchar2(4000);
-   l_request_id    varchar2(32) := nvl(p_request_id, rawtohex(sys_guid()));
+   l_request_id    varchar2(64) := nvl(p_request_id, rawtohex(sys_guid()));
    l_message       sys.aq$_jms_map_message;
    l_messageid     pls_integer;
    l_message_count integer;

@@ -159,9 +159,13 @@ begin
          exit when l_node is null;
          l_name  := l_node.extract('*/@name').getstringval();
          l_type  := l_node.extract('*/@type').getstringval();
+         l_node  := l_node.extract('*/node()');
+         if l_node is null then
+            cwms_err.raise('INVALID_ITEM', 'NULL', 'CWMS message property value');
+         end if;
          case l_type
             when 'boolean' then
-               l_type := lower(cwms_util.strip(l_node.extract('*/node()').getstringval()));
+               l_type := lower(cwms_util.strip(l_node.getstringval()));
                l_bool := 
                   case l_type
                      when 't'     then true
@@ -183,19 +187,19 @@ begin
                end if;
                l_msg.set_boolean(l_msgid, l_name, l_bool);
             when 'byte'    then
-               l_msg.set_byte(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_byte(l_msgid, l_name, cwms_util.strip(l_node.getnumberval()));
             when 'short'   then
-               l_msg.set_short(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_short(l_msgid, l_name, cwms_util.strip(l_node.getnumberval()));
             when 'int'     then
-               l_msg.set_int(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_int(l_msgid, l_name, cwms_util.strip(l_node.getnumberval()));
             when 'long'    then
-               l_msg.set_long(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_long(l_msgid, l_name, cwms_util.strip(l_node.getnumberval()));
             when 'float'   then
-               l_msg.set_float(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_float(l_msgid, l_name, cwms_util.strip(l_node.getnumberval()));
             when 'double'  then
-               l_msg.set_double(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getnumberval()));
+               l_msg.set_double(l_msgid, l_name, cwms_util.strip(l_node.getnumberval()));
             when 'String'  then
-               l_msg.set_string(l_msgid, l_name, cwms_util.strip(l_node.extract('*/node()').getstringval()));
+               l_msg.set_string(l_msgid, l_name, cwms_util.strip(l_node.getstringval()));
             else
                cwms_err.raise('INVALID_ITEM', l_type, 'CWMS message property type');
          end case;
@@ -359,9 +363,18 @@ begin
          l_type  := l_node.extract('*/@type').getstringval();
          if l_type = 'boolean' or l_type = 'String' then
             l_number := null;
-            l_text   := cwms_util.strip(l_node.extract('*/node()').getstringval());
+            l_node   := l_node.extract('*/node()');
+            if l_node is null then
+               cwms_err.raise('INVALID_ITEM', 'NULL', 'CWMS message property value');
+            end if;
+            l_text := cwms_util.strip(l_node.getstringval());
          else
-            l_number := l_node.extract('*/node()').getnumberval();
+            l_node := l_node.extract('*/node()');
+            if l_node is null then
+               l_number := null;
+            else
+               l_text := l_node.getnumberval();
+            end if;
             l_text   := null;
          end if;
 
