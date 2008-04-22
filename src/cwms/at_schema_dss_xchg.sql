@@ -636,8 +636,6 @@ declare
    -- same direction, and 2), that all DSS pathnames assigned to the same
    -- file have the same parameter type, units, time zone and tz usage 
    -- 
-   pragma autonomous_transaction;
-   
    pkval                     number;
    l_ts_xchg_spec            at_dss_ts_xchg_spec%rowtype;
    l_xchg_set                at_dss_xchg_set%rowtype;
@@ -705,7 +703,6 @@ begin
    --
    -- get the dss pathname and non-pathname parameters from the new dss ts xchg spec
    --
-   commit;
    begin
       select *
         into l_dss_ts_spec
@@ -792,7 +789,7 @@ begin
                   select dss_file_code
                     from at_dss_xchg_set
                    where dss_xchg_set_code = :new.dss_xchg_set_code);
-             
+
          cwms_err.raise(
             'ERROR',
             'Cannot map HEC-DSS time series specification '
@@ -855,7 +852,7 @@ begin
                into   l_ts_id
                from   mv_cwms_ts_id 
                where  ts_code=l_ts_xchg_spec.ts_code;
-                   
+
                cwms_err.raise('XCHG_TS_ERROR', l_ts_id, l_set_id, l_xchg_set.dss_xchg_set_id);
             end if;
          exception
@@ -863,6 +860,7 @@ begin
                --
                -- unexpected error
                --
+               rollback;
                dbms_output.put_line(sqlerrm);
                raise;
          end;
