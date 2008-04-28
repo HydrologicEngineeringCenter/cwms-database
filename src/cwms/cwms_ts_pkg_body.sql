@@ -13,67 +13,67 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
         WHERE ts_code = p_ts_code;
     END;
  --******************************************************************************/   
-	--
-	--*******************************************************************   --
-	--*******************************************************************   --
-	--
-	-- GET_CWMS_TS_ID -
-	--
-	-- Simply returns the cwms_ts_id using the case stored in the database	--
-	--
-	FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
-	   RETURN VARCHAR2
-	IS
-	   l_cwms_ts_id   VARCHAR2 (183);
-	BEGIN
-	   SELECT cwms_ts_id
-	     INTO l_cwms_ts_id
-	     FROM mv_cwms_ts_id mcti
-	    WHERE UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
-	      AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
-	
-	   --
-	   RETURN l_cwms_ts_id;
-	END;
-	--*******************************************************************   --
-	--*******************************************************************   --
-	--
-	-- GET_DB_UNIT_ID -
-	--
-	FUNCTION get_db_unit_id (p_cwms_ts_id IN VARCHAR2)
-	   RETURN VARCHAR2
-	IS
-	   l_base_location_id    at_base_location.base_location_id%TYPE;
-	   l_sub_location_id     at_physical_location.sub_location_id%TYPE;
-	   l_base_parameter_id   cwms_base_parameter.base_parameter_id%TYPE;
-	   l_sub_parameter_id    at_parameter.sub_parameter_id%TYPE;
-	   l_parameter_type_id   cwms_parameter_type.parameter_type_id%TYPE;
-	   l_interval_id         cwms_interval.interval_id%TYPE;
-	   l_duration_id         cwms_duration.duration_id%TYPE;
-	   l_version_id          at_cwms_ts_spec.VERSION%TYPE;
-	   l_db_unit_id          cwms_unit.unit_id%TYPE;
-	BEGIN
-	   parse_ts (p_cwms_ts_id,
-	             l_base_location_id,
-	             l_sub_location_id,
-	             l_base_parameter_id,
-	             l_sub_parameter_id,
-	             l_parameter_type_id,
-	             l_interval_id,
-	             l_duration_id,
-	             l_version_id
-	            );
-	
-	   --
-	   SELECT unit_id
-	     INTO l_db_unit_id
-	     FROM cwms_unit cu, cwms_base_parameter cbp
-	    WHERE cu.unit_code = cbp.unit_code
-	      AND cbp.base_parameter_id = l_base_parameter_id;
-	
-	   --
-	   RETURN l_db_unit_id;
-	END;
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- GET_CWMS_TS_ID -
+   --
+   -- Simply returns the cwms_ts_id using the case stored in the database   --
+   --
+   FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+      l_cwms_ts_id   VARCHAR2 (183);
+   BEGIN
+      SELECT cwms_ts_id
+        INTO l_cwms_ts_id
+        FROM mv_cwms_ts_id mcti
+       WHERE UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
+         AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
+   
+      --
+      RETURN l_cwms_ts_id;
+   END;
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- GET_DB_UNIT_ID -
+   --
+   FUNCTION get_db_unit_id (p_cwms_ts_id IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+      l_base_location_id    at_base_location.base_location_id%TYPE;
+      l_sub_location_id     at_physical_location.sub_location_id%TYPE;
+      l_base_parameter_id   cwms_base_parameter.base_parameter_id%TYPE;
+      l_sub_parameter_id    at_parameter.sub_parameter_id%TYPE;
+      l_parameter_type_id   cwms_parameter_type.parameter_type_id%TYPE;
+      l_interval_id         cwms_interval.interval_id%TYPE;
+      l_duration_id         cwms_duration.duration_id%TYPE;
+      l_version_id          at_cwms_ts_spec.VERSION%TYPE;
+      l_db_unit_id          cwms_unit.unit_id%TYPE;
+   BEGIN
+      parse_ts (p_cwms_ts_id,
+                l_base_location_id,
+                l_sub_location_id,
+                l_base_parameter_id,
+                l_sub_parameter_id,
+                l_parameter_type_id,
+                l_interval_id,
+                l_duration_id,
+                l_version_id
+               );
+   
+      --
+      SELECT unit_id
+        INTO l_db_unit_id
+        FROM cwms_unit cu, cwms_base_parameter cbp
+       WHERE cu.unit_code = cbp.unit_code
+         AND cbp.base_parameter_id = l_base_parameter_id;
+   
+      --
+      RETURN l_db_unit_id;
+   END;
  --
  --*******************************************************************   --
  --*******************************************************************   --
@@ -315,94 +315,94 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 --
 -- GET_PARAMETER_CODE -
 --
-	FUNCTION get_parameter_code (
-	   p_base_parameter_id   IN   VARCHAR2,
-	   p_sub_parameter_id    IN   VARCHAR2,
-	   p_office_id           IN   VARCHAR2 DEFAULT NULL,
-	   p_create              IN   VARCHAR2 DEFAULT 'T'
-	)
-	   RETURN NUMBER
-	IS
-	   l_base_parameter_code   NUMBER;
-	BEGIN
-	   SELECT base_parameter_code
-	     INTO l_base_parameter_code
-	     FROM cwms_base_parameter
-	    WHERE UPPER (base_parameter_id) = UPPER (p_base_parameter_id);
-		 
-		dbms_output.put_line(l_base_parameter_code);
-	   --
-	   RETURN get_parameter_code (l_base_parameter_code,
-	                              p_sub_parameter_id,
-	                              cwms_util.get_db_office_code (p_office_id),
-	                              cwms_util.return_true_or_false (p_create)
-	                             );
-	END;
+   FUNCTION get_parameter_code (
+      p_base_parameter_id   IN   VARCHAR2,
+      p_sub_parameter_id    IN   VARCHAR2,
+      p_office_id           IN   VARCHAR2 DEFAULT NULL,
+      p_create              IN   VARCHAR2 DEFAULT 'T'
+   )
+      RETURN NUMBER
+   IS
+      l_base_parameter_code   NUMBER;
+   BEGIN
+      SELECT base_parameter_code
+        INTO l_base_parameter_code
+        FROM cwms_base_parameter
+       WHERE UPPER (base_parameter_id) = UPPER (p_base_parameter_id);
+       
+      dbms_output.put_line(l_base_parameter_code);
+      --
+      RETURN get_parameter_code (l_base_parameter_code,
+                                 p_sub_parameter_id,
+                                 cwms_util.get_db_office_code (p_office_id),
+                                 cwms_util.return_true_or_false (p_create)
+                                );
+   END;
 --
 --*******************************************************************   --
 --*******************************************************************   --
 --
 -- GET_PARAMETER_CODE -
 --
-	FUNCTION get_parameter_code (
-	   p_base_parameter_code   IN   NUMBER,
-	   p_sub_parameter_id      IN   VARCHAR2,
-	   p_office_code           IN   NUMBER,
-	   p_create                IN   BOOLEAN DEFAULT TRUE
-	)
-	   RETURN NUMBER
-	IS
-	   l_parameter_code      NUMBER;
-	   l_base_parameter_id   cwms_base_parameter.base_parameter_id%TYPE;
-	BEGIN
-	   BEGIN
-	      IF p_sub_parameter_id IS NOT NULL
-	      THEN
-	         SELECT parameter_code
-	           INTO l_parameter_code
-	           FROM at_parameter ap
-	          WHERE base_parameter_code = p_base_parameter_code
-	            AND db_office_code IN
-	                                (p_office_code, cwms_util.db_office_code_all)
-	            AND UPPER (sub_parameter_id) = UPPER (p_sub_parameter_id);
-	      ELSE
-	         SELECT parameter_code
-	           INTO l_parameter_code
-	           FROM at_parameter ap
-	          WHERE base_parameter_code = p_base_parameter_code
+   FUNCTION get_parameter_code (
+      p_base_parameter_code   IN   NUMBER,
+      p_sub_parameter_id      IN   VARCHAR2,
+      p_office_code           IN   NUMBER,
+      p_create                IN   BOOLEAN DEFAULT TRUE
+   )
+      RETURN NUMBER
+   IS
+      l_parameter_code      NUMBER;
+      l_base_parameter_id   cwms_base_parameter.base_parameter_id%TYPE;
+   BEGIN
+      BEGIN
+         IF p_sub_parameter_id IS NOT NULL
+         THEN
+            SELECT parameter_code
+              INTO l_parameter_code
+              FROM at_parameter ap
+             WHERE base_parameter_code = p_base_parameter_code
+               AND db_office_code IN
+                                   (p_office_code, cwms_util.db_office_code_all)
+               AND UPPER (sub_parameter_id) = UPPER (p_sub_parameter_id);
+         ELSE
+            SELECT parameter_code
+              INTO l_parameter_code
+              FROM at_parameter ap
+             WHERE base_parameter_code = p_base_parameter_code
                 and ap.sub_parameter_id is null
-	            AND db_office_code IN (cwms_util.db_office_code_all);
-	      END IF;
-	   EXCEPTION
-	      WHEN NO_DATA_FOUND
-	      THEN                                      -- Insert new sub_parameter...
-	         IF p_create OR p_create IS NULL
-	         THEN
-	            INSERT INTO at_parameter
-	                        (parameter_code, db_office_code,
-	                         base_parameter_code, sub_parameter_id
-	                        )
-	                 VALUES (cwms_seq.NEXTVAL, p_office_code,
-	                         p_base_parameter_code, p_sub_parameter_id
-	                        )
-	              RETURNING parameter_code
-	                   INTO l_parameter_code;
-	         ELSE
-	            SELECT base_parameter_id
-	              INTO l_base_parameter_id
-	              FROM cwms_base_parameter
-	             WHERE base_parameter_code = p_base_parameter_code;
-	
-	            cwms_err.RAISE ('INVALID_PARAM_ID',
-	                            cwms_util.concat_base_sub_id (l_base_parameter_id,
-	                                                          p_sub_parameter_id
-	                                                         )
-	                           );
-	         END IF;
-	   END;
-	
-	   RETURN l_parameter_code;
-	END get_parameter_code;
+               AND db_office_code IN (cwms_util.db_office_code_all);
+         END IF;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN                                      -- Insert new sub_parameter...
+            IF p_create OR p_create IS NULL
+            THEN
+               INSERT INTO at_parameter
+                           (parameter_code, db_office_code,
+                            base_parameter_code, sub_parameter_id
+                           )
+                    VALUES (cwms_seq.NEXTVAL, p_office_code,
+                            p_base_parameter_code, p_sub_parameter_id
+                           )
+                 RETURNING parameter_code
+                      INTO l_parameter_code;
+            ELSE
+               SELECT base_parameter_id
+                 INTO l_base_parameter_id
+                 FROM cwms_base_parameter
+                WHERE base_parameter_code = p_base_parameter_code;
+   
+               cwms_err.RAISE ('INVALID_PARAM_ID',
+                               cwms_util.concat_base_sub_id (l_base_parameter_id,
+                                                             p_sub_parameter_id
+                                                            )
+                              );
+            END IF;
+      END;
+   
+      RETURN l_parameter_code;
+   END get_parameter_code;
 
 --
 --*******************************************************************   --
@@ -810,43 +810,43 @@ END;
       p_cwms_ts_id   IN   VARCHAR2,
       p_utc_offset        IN   NUMBER DEFAULT NULL
    )
-	IS
-	   l_ts_code number;
-	BEGIN
+   IS
+      l_ts_code number;
+   BEGIN
    create_ts_code (l_ts_code,
                    p_cwms_ts_id,
                    p_utc_offset,
                    p_office_id
                   );
-	END create_ts;
+   END create_ts;
 --
 --*******************************************************************   --
 --*******************************************************************   --
 --
 -- CREATE_TS -
 --
-	PROCEDURE create_ts (
-	   p_cwms_ts_id     IN   VARCHAR2,
-	   p_utc_offset          IN   NUMBER DEFAULT NULL,
-	   p_interval_forward    IN   NUMBER DEFAULT NULL,
-	   p_interval_backward   IN   NUMBER DEFAULT NULL,
-	   p_versioned           IN   VARCHAR2 DEFAULT 'F',
-	   p_active_flag         IN   VARCHAR2 DEFAULT 'T',
-	   p_office_id           IN   VARCHAR2 DEFAULT NULL
-	)
-	IS
-	   l_ts_code   NUMBER;
-	BEGIN
-	   create_ts_code (l_ts_code,
-	                   p_cwms_ts_id,
-	                   p_utc_offset,
-	                   p_interval_forward,
-	                   p_interval_backward,
-	                   p_versioned,
-	                   p_active_flag,
-	                   p_office_id
-	                  );
-	END create_ts;
+   PROCEDURE create_ts (
+      p_cwms_ts_id     IN   VARCHAR2,
+      p_utc_offset          IN   NUMBER DEFAULT NULL,
+      p_interval_forward    IN   NUMBER DEFAULT NULL,
+      p_interval_backward   IN   NUMBER DEFAULT NULL,
+      p_versioned           IN   VARCHAR2 DEFAULT 'F',
+      p_active_flag         IN   VARCHAR2 DEFAULT 'T',
+      p_office_id           IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_ts_code   NUMBER;
+   BEGIN
+      create_ts_code (l_ts_code,
+                      p_cwms_ts_id,
+                      p_utc_offset,
+                      p_interval_forward,
+                      p_interval_backward,
+                      p_versioned,
+                      p_active_flag,
+                      p_office_id
+                     );
+   END create_ts;
     --
     --*******************************************************************   --
     --*******************************************************************   --
@@ -1221,58 +1221,58 @@ END retrieve_ts_java;
 -- RETREIVE_TS -
 --
 --v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
-	PROCEDURE retrieve_ts (
-	   p_at_tsv_rc         IN OUT   sys_refcursor,
-	   p_units             IN       VARCHAR2,
-	   p_officeid          IN       VARCHAR2,
-	   p_cwms_ts_id   	  IN       VARCHAR2,
-	   p_start_time        IN       DATE,
-	   p_end_time          IN       DATE,
-	   p_timezone      	  IN       VARCHAR2 DEFAULT 'GMT',
-	   p_trim              IN       NUMBER DEFAULT cwms_util.false_num,
-	   p_inclusive         IN       NUMBER DEFAULT NULL,
-	   p_versiondate       IN       DATE DEFAULT NULL,
-	   p_max_version       IN       NUMBER DEFAULT cwms_util.true_num
-	)
-	IS
-	   l_trim        VARCHAR2(1);
-		l_max_version VARCHAR2(1);
-	BEGIN
-	   --
-	   IF p_trim IS NULL OR p_trim = cwms_util.false_num
-	   THEN
-	      l_trim := 'F';
-	   ELSIF p_trim = cwms_util.true_num
-	   THEN
-	      l_trim := 'T';
-	   ELSE
-	      cwms_err.RAISE ('INVALID_T_F_FLAG_OLD', p_trim);
-	   END IF;
-	
-	   --
-	   IF p_max_version IS NULL OR p_max_version = cwms_util.true_num
-	   THEN
-	      l_max_version := 'T';
-	   ELSIF p_max_version = cwms_util.false_num
-	   THEN
-	      l_max_version := 'F';
-	   ELSE
-	      cwms_err.RAISE ('INVALID_T_F_FLAG_OLD', p_max_version);
-	   END IF;
-	   --
-	   retrieve_ts (p_at_tsv_rc,
-	                p_units,
-	                p_cwms_ts_id,
-	                p_start_time,
-	                p_end_time,
-	                p_timezone,
-	                l_trim,
-	                p_inclusive,
-	                p_versiondate,
-	                l_max_version,
-	                p_officeid
-	               );
-	END retrieve_ts;
+   PROCEDURE retrieve_ts (
+      p_at_tsv_rc         IN OUT   sys_refcursor,
+      p_units             IN       VARCHAR2,
+      p_officeid          IN       VARCHAR2,
+      p_cwms_ts_id        IN       VARCHAR2,
+      p_start_time        IN       DATE,
+      p_end_time          IN       DATE,
+      p_timezone           IN       VARCHAR2 DEFAULT 'GMT',
+      p_trim              IN       NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive         IN       NUMBER DEFAULT NULL,
+      p_versiondate       IN       DATE DEFAULT NULL,
+      p_max_version       IN       NUMBER DEFAULT cwms_util.true_num
+   )
+   IS
+      l_trim        VARCHAR2(1);
+      l_max_version VARCHAR2(1);
+   BEGIN
+      --
+      IF p_trim IS NULL OR p_trim = cwms_util.false_num
+      THEN
+         l_trim := 'F';
+      ELSIF p_trim = cwms_util.true_num
+      THEN
+         l_trim := 'T';
+      ELSE
+         cwms_err.RAISE ('INVALID_T_F_FLAG_OLD', p_trim);
+      END IF;
+   
+      --
+      IF p_max_version IS NULL OR p_max_version = cwms_util.true_num
+      THEN
+         l_max_version := 'T';
+      ELSIF p_max_version = cwms_util.false_num
+      THEN
+         l_max_version := 'F';
+      ELSE
+         cwms_err.RAISE ('INVALID_T_F_FLAG_OLD', p_max_version);
+      END IF;
+      --
+      retrieve_ts (p_at_tsv_rc,
+                   p_units,
+                   p_cwms_ts_id,
+                   p_start_time,
+                   p_end_time,
+                   p_timezone,
+                   l_trim,
+                   p_inclusive,
+                   p_versiondate,
+                   l_max_version,
+                   p_officeid
+                  );
+   END retrieve_ts;
 --
 --*******************************************************************   --
 --*******************************************************************   --
@@ -1282,7 +1282,7 @@ END retrieve_ts_java;
    PROCEDURE retrieve_ts (
       p_at_tsv_rc         IN OUT   sys_refcursor,
       p_units             IN       VARCHAR2,
-      p_cwms_ts_id   	  IN       VARCHAR2,
+      p_cwms_ts_id        IN       VARCHAR2,
       p_start_time        IN       DATE,
       p_end_time          IN       DATE,
       p_time_zone         IN       VARCHAR2 DEFAULT 'UTC',
@@ -1291,600 +1291,942 @@ END retrieve_ts_java;
       p_version_date      IN       DATE DEFAULT NULL,
       p_max_version       IN       VARCHAR2 DEFAULT 'T',
       p_office_id         IN       VARCHAR2 DEFAULT NULL
-		)
+      )
    IS
-	
-		l_whichRetrieve varchar2(10);
-		l_numVals       integer;
-		l_errNum        integer;
-		l_ts_interval   number;
-		l_ts_offset     number;
-		l_versioned     number;
-		l_ts_code       number;
-		l_version_date  DATE;
-		l_max_version   BOOLEAN;
-		l_trim          BOOLEAN;
-		l_start_time    DATE   := cwms_util.date_from_tz_to_utc(p_start_time, p_time_zone);
-		l_end_time      DATE   := cwms_util.date_from_tz_to_utc(p_end_time,   p_time_zone);
-		l_end_time_init DATE   := l_end_time;
-		
-		l_office_id     varchar2(16);
+   
+      l_whichRetrieve varchar2(10);
+      l_numVals       integer;
+      l_errNum        integer;
+      l_ts_interval   number;
+      l_ts_offset     number;
+      l_versioned     number;
+      l_ts_code       number;
+      l_version_date  DATE;
+      l_max_version   BOOLEAN;
+      l_trim          BOOLEAN;
+      l_start_time    DATE   := cwms_util.date_from_tz_to_utc(p_start_time, p_time_zone);
+      l_end_time      DATE   := cwms_util.date_from_tz_to_utc(p_end_time,   p_time_zone);
+      l_end_time_init DATE   := l_end_time;
+      
+      l_office_id     varchar2(16);
         
         ll_time timestamp with time zone;
         ll_value binary_double;
         ll_qual number;
         
-	
-	BEGIN
-		--
-		dbms_application_info.set_module ( 'Cwms_ts_retrieve','Check Interval');
-		--
-	    -- set default values, don't be fooled by NULL as an actual argument 
-		if p_office_id is null 
-		then
-		  l_office_id := cwms_util.user_office_id;
-		else                           
-		  l_office_id := p_office_id;
-		end if;
-	
-		if p_trim is null
-		then
-		  l_trim := FALSE;
-		else
-		  l_trim := cwms_util.return_true_or_false(p_trim);
-		end if;
-	
-		if NVL(p_max_version,  'T') = 'T' then
-		  l_max_version := FALSE;
-		else
-		  l_max_version := TRUE;
-		end if;
-	
-	    l_version_date := nvl(p_version_date, cwms_util.non_versioned);
-	
-	  	--Get Time series parameters for retrieval load into record structure
-	
-	
-		SELECT interval,
-		       CASE interval_utc_offset
-		          WHEN cwms_util.utc_offset_undefined
-		             THEN NULL
-		          WHEN cwms_util.utc_offset_irregular
-		             THEN NULL
-		          ELSE (interval_utc_offset / 60)
-		       END,
-		       version_flag, ts_code
-		  INTO l_ts_interval,
-		       l_ts_offset,
-		       l_versioned, l_ts_code
-		  FROM mv_cwms_ts_id
-		 WHERE db_office_id = UPPER (l_office_id)
-		   AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
-	
-		IF l_ts_interval=0 
-		THEN
-	      IF p_inclusive IS NOT NULL
-			THEN         
-	         IF l_versioned IS NULL
-				THEN -- l_versioned IS NULL -   
-					-- 
-					-- nonl_versioned, irregular, inclusive retrieval
-					-- 
-					dbms_output.put_line('RETRIEVE_TS #1');
-					--         
-					open p_at_tsv_rc for 
-					SELECT   date_time, VALUE, quality_code
-					    FROM (SELECT date_time, VALUE, quality_code,
-					                 LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
-					                                                                      lagdate,
-					                 LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
-					                                                                     leaddate
-					            FROM av_tsv_dqu v
-					           WHERE v.ts_code = l_ts_code
-					             AND v.unit_id = p_units
-					             AND v.start_date <= l_end_time
-					             AND v.end_date > l_start_time)
-					   WHERE leaddate >= l_start_time AND lagdate <= l_end_time
-					ORDER BY date_time ASC;
-	
-				ELSE  -- l_versioned IS NOT NULL - 
-				   --
-					-- l_versioned, irregular, inclusive retrieval - 
-					
-					IF p_version_date IS NULL
-					THEN -- p_version_date IS NULL -
-					
-						IF l_max_version 
-						THEN -- l_max_version is TRUE -
-						
-							--latest version_date query -
-							-- 
-							dbms_output.put_line('RETRIEVE_TS #2');
-							--         
-	
-							open p_at_tsv_rc for
-							SELECT   date_time, VALUE, quality_code
-							    FROM (SELECT date_time,
-							                 MAX (VALUE)KEEP (DENSE_RANK LAST ORDER BY version_date)
-							                                                                        VALUE,
-							                 MAX (quality_code)KEEP (DENSE_RANK LAST ORDER BY version_date)
-							                                                                 quality_code
-							            FROM (SELECT date_time, VALUE, quality_code, version_date,
-							                         LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
-							                                                                      lagdate,
-							                         LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
-							                                                                     leaddate
-							                    FROM av_tsv_dqu v
-							                   WHERE v.ts_code = l_ts_code
-							                     AND v.unit_id = p_units
-							                     AND v.start_date <= l_end_time
-							                     AND v.end_date > l_start_time)
-							           WHERE leaddate >= l_start_time AND lagdate <= l_end_time)
-							ORDER BY date_time ASC;
-	
-						ELSE --l_max_version is FALSE -
-						
-						   -- first version_date query -
-							-- 
-							dbms_output.put_line('RETRIEVE_TS #3');
-							--         
-							open p_at_tsv_rc for
-							SELECT   date_time, VALUE, quality_code
-							    FROM (SELECT date_time,
-							                 MAX (VALUE)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-							                                                                        VALUE,
-							                 MAX (quality_code)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-							                                                                 quality_code
-							            FROM (SELECT date_time, VALUE, quality_code, version_date,
-							                         LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
-							                                                                      lagdate,
-							                         LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
-							                                                                     leaddate
-							                    FROM av_tsv_dqu v
-							                   WHERE v.ts_code = l_ts_code
-							                     AND v.unit_id = p_units
-							                     AND v.start_date <= l_end_time
-							                     AND v.end_date > l_start_time)
-							           WHERE leaddate >= l_start_time AND lagdate <= l_end_time)
-							ORDER BY date_time ASC;
-							
-						END IF;  --l_max_version -
-						
-					ELSE --p_version_date IS NOT NULL - 
-					   --
-						--selected version_date query -
-						-- 
-						dbms_output.put_line('RETRIEVE_TS #4');
-						--         
-						open p_at_tsv_rc for 
-						SELECT   date_time, VALUE, quality_code
-						    FROM (SELECT date_time, VALUE, quality_code,
-						                 LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
-						                                                                      lagdate,
-						                 LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
-						                                                                     leaddate
-						            FROM av_tsv_dqu v
-						           WHERE v.ts_code = l_ts_code
-						             AND v.unit_id = p_units
-						             AND v.version_date = p_version_date
-						             AND v.start_date <= l_end_time
-						             AND v.end_date > l_start_time)
-						   WHERE leaddate >= l_start_time AND lagdate <= l_end_time
-						ORDER BY date_time ASC;
-	         
-					END IF;  --p_version_date -
-	
-				END IF;  -- l_versioned -
-	
-			ELSE -- p_inclusive IS NULL -
-			
-				dbms_application_info.set_action (   'return  irregular  ts '
-				                                  || l_ts_code
-															 || ' from '
-															 || to_char(l_start_time,'mm/dd/yyyy hh24:mi')
-															 || ' to '
-															 || to_char(l_end_time,'mm/dd/yyyy hh24:mi')
-															 || ' in units '
-															 || p_units);     
-				IF l_versioned IS NULL
-				THEN    
-					-- nonl_versioned, irregular, noninclusive retrieval -
-					--
-					dbms_output.put_line('gkgk - RETRIEVE_TS #5');
-					--                         
-					open p_at_tsv_rc for
-					SELECT   FROM_TZ (CAST (date_time AS TIMESTAMP), 'GMT') AT TIME ZONE p_time_zone "DATE_TIME",
-					         value "VALUE", quality_code "QUALITY_CODE"
-					    FROM av_tsv_dqu v
-					   WHERE v.ts_code = l_ts_code
-					     AND v.date_time BETWEEN l_start_time AND l_end_time
-					     AND v.unit_id = p_units
-					     AND v.start_date <= l_end_time
-					     AND v.end_date > l_start_time
-					ORDER BY date_time ASC;
-	
-				ELSE  -- l_versioned IS NOT NULL -
-	   		   --
-					-- l_versioned, irregular, noninclusive retrieval -
-					--
-					IF p_version_date IS NULL
-					THEN
-	            
-			         IF l_max_version
-						THEN    
-	
-							--latest version_date query          
-							--
-							dbms_output.put_line('RETRIEVE_TS #6');
-							--         
-							open p_at_tsv_rc for
-							SELECT   date_time, VALUE, quality_code
-							    FROM (SELECT   date_time,
-							                   MAX (VALUE)KEEP (DENSE_RANK LAST ORDER BY version_date)
-							                                                                        VALUE,
-							                   MAX (quality_code)KEEP (DENSE_RANK LAST ORDER BY version_date)
-							                                                                 quality_code
-							              FROM (SELECT date_time, VALUE, quality_code, version_date
-							                      FROM av_tsv_dqu v
-							                     WHERE v.ts_code = l_ts_code
-							                       AND v.date_time BETWEEN l_start_time AND l_end_time
-							                       AND v.unit_id = p_units
-							                       AND v.start_date <= l_end_time
-							                       AND v.end_date > l_start_time)
-							          GROUP BY date_time)
-							ORDER BY date_time ASC;
-	
-						ELSE  -- p_version_date IS NOT NULL -
-							-- 
-							dbms_output.put_line('RETRIEVE_TS #7');
-							--         
-							open p_at_tsv_rc for
-							SELECT   date_time, VALUE, quality_code
-							    FROM (SELECT   date_time,
-							                   MAX (VALUE)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-							                                                                        VALUE,
-							                   MAX (quality_code)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-							                                                                 quality_code
-							              FROM (SELECT date_time, VALUE, quality_code, version_date
-							                      FROM av_tsv_dqu v
-							                     WHERE v.ts_code = l_ts_code
-							                       AND v.date_time BETWEEN l_start_time AND l_end_time
-							                       AND v.unit_id = p_units
-							                       AND v.start_date <= l_end_time
-							                       AND v.end_date > l_start_time)
-							          GROUP BY date_time)
-							ORDER BY date_time ASC;
-	
-						END IF; -- p_version_date IS NOT NULL -
-	
-					ELSE -- l_max_version is FALSE -
-						-- 
-						dbms_output.put_line('RETRIEVE_TS #8');
-						--         
-						open p_at_tsv_rc for
-						/* Formatted on 2006/10/25 12:54 (Formatter Plus v4.8.7) */
-						SELECT   date_time, VALUE, quality_code
-						    FROM av_tsv_dqu v
-						   WHERE v.ts_code = l_ts_code
-						     AND v.date_time BETWEEN l_start_time AND l_end_time
-						     AND v.unit_id = p_units
-						     AND v.version_date = version_date
-						     AND v.start_date <= l_end_time
-						     AND v.end_date > l_start_time
-						ORDER BY date_time ASC;
-	
-					END IF;  -- l_max_version -
-	  
-				END IF;  -- l_versioned -
-	
-			END IF;  -- p_inclusive -
-	
-		ELSE  -- l_ts_interval <> 0 -
-	
-			dbms_application_info.set_action (   'return  regular  ts '
-														 || l_ts_code
-														 || ' from '
-														 || to_char(l_start_time,'mm/dd/yyyy hh24:mi')
-														 || ' to '
-														 || to_char(l_end_time,'mm/dd/yyyy hh24:mi')
-														 || ' in units '
-														 || p_units);
-	
-	     
-			-- Make sure start_time and end_time fall on a valid date/time for the regular -
-			--    time series given the interval and offset. -
-				
-		   l_start_time   := get_time_on_after_interval(l_start_time, l_ts_offset, l_ts_interval);
-	      l_end_time     := get_time_on_after_interval(l_end_time, l_ts_offset, l_ts_interval);
-			 
-			IF l_end_time > l_end_time_init
-			THEN
-			   l_end_time := l_end_time - (l_ts_interval / 1440);
-			END IF;
-	
-			IF l_versioned IS NULL 
-			THEN 
-				--
-				-- nonl_versioned, regular ts query
-	 		   -- 
-			   dbms_output.put_line('RETRIEVE_TS #9 - nonl_versioned, regular ts query');
-			   --         
-	  		   l_start_time   := get_time_on_after_interval(l_start_time, l_ts_offset, l_ts_interval);
-	         l_end_time     := get_time_on_after_interval(l_end_time, l_ts_offset, l_ts_interval);
-			 
-			 	IF l_end_time > l_end_time_init 
-				THEN
-			   	l_end_time := l_end_time - (l_ts_interval / 1440);
-			 	END IF;
-			 
-			 	open p_at_tsv_rc for
-				select FROM_TZ (CAST (jdate_time AS TIMESTAMP), 'GMT') AT TIME ZONE p_time_zone
-						 																 	 			  	 "DATE_TIME", 
-		             value, 
-			          nvl(quality_code,0) quality_code
-	           from (select * 
-		                from (select * 
-	                           from av_tsv_dqu v 
-	                          where  v.ts_code = l_ts_code 
-						             and v.date_time between l_start_time and l_end_time 
-	                            and v.unit_id = p_units
-	                            and v.start_date <= l_end_time 
-						             and v.end_date > l_start_time 
-						          ) v
-	        right outer join (select l_start_time +((level-1)/(1440/l_ts_interval )) jdate_time 
-	                            from  dual 
-								 connect by 1=1 
-								        and level<=(round((l_end_time - l_start_time )*1440)/l_ts_interval )+1
-									  ) t 
-					          on t.jdate_time = v.date_time 
-			          ) 
-		    order by jdate_time;
-	
-			ELSE --  l_versioned IS NOT NULL -
-	
-	    		IF p_version_date IS NULL
-				THEN
-	
-					IF l_max_version
-					THEN
-						-- 
-						dbms_output.put_line('RETRIEVE_TS #10');
-						--         
-						open p_at_tsv_rc for
-						/* Formatted on 2006/10/25 13:12 (Formatter Plus v4.8.7) */
-						SELECT   date_time, VALUE, quality_code
-						    FROM (SELECT   jdate_time date_time,
-						                   MAX (VALUE)KEEP (DENSE_RANK LAST ORDER BY version_date)
-						                                                                        VALUE,
-						                   MAX (quality_code)KEEP (DENSE_RANK LAST ORDER BY version_date)
-						                                                                 quality_code
-						              FROM (SELECT *
-						                      FROM (SELECT *
-						                              FROM av_tsv_dqu v
-						                             WHERE v.ts_code = l_ts_code
-						                               AND v.date_time BETWEEN l_start_time AND l_end_time
-						                               AND v.unit_id = p_units
-						                               AND v.start_date <= l_end_time
-						                               AND v.end_date > l_start_time) v
-						                           RIGHT OUTER JOIN
-						                           (SELECT       l_start_time
-						                                       + (  (LEVEL - 1)
-						                                          / (1440 / l_ts_interval)
-						                                         ) jdate_time
-						                                  FROM DUAL
-						                            CONNECT BY 1 = 1
-						                                   AND LEVEL <=
-						                                            (  ROUND (  (  l_end_time
-						                                                         - l_start_time
-						                                                        )
-						                                                      * 1440
-						                                                     )
-						                                             / l_ts_interval
-						                                            )
-						                                          + 1) t ON t.jdate_time = v.date_time
-						                           )
-						          ORDER BY jdate_time)
-						GROUP BY date_time;
-	
-					ELSE  -- l_max_version is FALSE -
-						-- 
-						dbms_output.put_line('RETRIEVE_TS #11');
-						--         
-						open p_at_tsv_rc for
-						/* Formatted on 2006/10/25 13:14 (Formatter Plus v4.8.7) */
-						SELECT   date_time, VALUE, quality_code
-						    FROM (SELECT   jdate_time date_time,
-						                   MAX (VALUE)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-						                                                                        VALUE,
-						                   MAX (quality_code)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-						                                                                 quality_code
-						              FROM (SELECT *
-						                      FROM (SELECT *
-						                              FROM av_tsv_dqu v
-						                             WHERE v.ts_code = l_ts_code
-						                               AND v.date_time BETWEEN l_start_time AND l_end_time
-						                               AND v.unit_id = p_units
-						                               AND v.start_date <= l_end_time
-						                               AND v.end_date > l_start_time) v
-						                           RIGHT OUTER JOIN
-						                           (SELECT       l_start_time
-						                                       + (  (LEVEL - 1)
-						                                          / (1440 / l_ts_interval)
-						                                         ) jdate_time
-						                                  FROM DUAL
-						                            CONNECT BY 1 = 1
-						                                   AND LEVEL <=
-						                                            (  ROUND (  (  l_end_time
-						                                                         - l_start_time
-						                                                        )
-						                                                      * 1440
-						                                                     )
-						                                             / l_ts_interval
-						                                            )
-						                                          + 1) t ON t.jdate_time = v.date_time
-						                           )
-						          ORDER BY jdate_time)
-						GROUP BY date_time;
-	
-					END IF;  -- l_max_version -
-	
-				ELSE  -- p_version_date IS NOT NULL -
-					-- 
-					dbms_output.put_line('RETRIEVE_TS #12');
-					--         
-					open p_at_tsv_rc for
-					/* Formatted on 2006/10/25 13:32 (Formatter Plus v4.8.7) */
-					SELECT   jdate_time date_time, VALUE, NVL (quality_code, 0) quality_code
-					    FROM (SELECT *
-					            FROM (SELECT *
-					                    FROM av_tsv_dqu v
-					                   WHERE v.ts_code = l_ts_code
-					                     AND v.date_time BETWEEN l_start_time AND l_end_time
-					                     AND v.unit_id = p_units
-					                     AND v.version_date = p_version_date
-					                     AND v.start_date <= l_end_time
-					                     AND v.end_date > l_start_time) v
-					                 RIGHT OUTER JOIN
-					                 (SELECT       l_start_time
-					                             + ((LEVEL - 1) / (1440 / l_ts_interval))
-					                                                                   jdate_time
-					                        FROM DUAL
-					                  CONNECT BY 1 = 1
-					                         AND LEVEL <=
-					                                  (  ROUND ((l_end_time - l_start_time) * 1440)
-					                                   / l_ts_interval
-					                                  )
-					                                + 1) t ON t.jdate_time = v.date_time
-					                 )
-					ORDER BY jdate_time;
-	
-				END IF;
-	  
-	  		END IF;
-	 
-	 	END IF;
+   
+   BEGIN
+      --
+      dbms_application_info.set_module ( 'Cwms_ts_retrieve','Check Interval');
+      --
+       -- set default values, don't be fooled by NULL as an actual argument 
+      if p_office_id is null 
+      then
+        l_office_id := cwms_util.user_office_id;
+      else                           
+        l_office_id := p_office_id;
+      end if;
+   
+      if p_trim is null
+      then
+        l_trim := FALSE;
+      else
+        l_trim := cwms_util.return_true_or_false(p_trim);
+      end if;
+   
+      if NVL(p_max_version,  'T') = 'T' then
+        l_max_version := FALSE;
+      else
+        l_max_version := TRUE;
+      end if;
+   
+       l_version_date := nvl(p_version_date, cwms_util.non_versioned);
+   
+        --Get Time series parameters for retrieval load into record structure
+   
+   
+      SELECT interval,
+             CASE interval_utc_offset
+                WHEN cwms_util.utc_offset_undefined
+                   THEN NULL
+                WHEN cwms_util.utc_offset_irregular
+                   THEN NULL
+                ELSE (interval_utc_offset / 60)
+             END,
+             version_flag, ts_code
+        INTO l_ts_interval,
+             l_ts_offset,
+             l_versioned, l_ts_code
+        FROM mv_cwms_ts_id
+       WHERE db_office_id = UPPER (l_office_id)
+         AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
+   
+      IF l_ts_interval=0 
+      THEN
+         IF p_inclusive IS NOT NULL
+         THEN         
+            IF l_versioned IS NULL
+            THEN -- l_versioned IS NULL -   
+               -- 
+               -- nonl_versioned, irregular, inclusive retrieval
+               -- 
+               dbms_output.put_line('RETRIEVE_TS #1');
+               --         
+               open p_at_tsv_rc for 
+               SELECT   date_time, VALUE, quality_code
+                   FROM (SELECT date_time, VALUE, quality_code,
+                                LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
+                                                                                     lagdate,
+                                LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
+                                                                                    leaddate
+                           FROM av_tsv_dqu v
+                          WHERE v.ts_code = l_ts_code
+                            AND v.unit_id = p_units
+                            AND v.start_date <= l_end_time
+                            AND v.end_date > l_start_time)
+                  WHERE leaddate >= l_start_time AND lagdate <= l_end_time
+               ORDER BY date_time ASC;
+   
+            ELSE  -- l_versioned IS NOT NULL - 
+               --
+               -- l_versioned, irregular, inclusive retrieval - 
+               
+               IF p_version_date IS NULL
+               THEN -- p_version_date IS NULL -
+               
+                  IF l_max_version 
+                  THEN -- l_max_version is TRUE -
+                  
+                     --latest version_date query -
+                     -- 
+                     dbms_output.put_line('RETRIEVE_TS #2');
+                     --         
+   
+                     open p_at_tsv_rc for
+                     SELECT   date_time, VALUE, quality_code
+                         FROM (SELECT date_time,
+                                      MAX (VALUE)KEEP (DENSE_RANK LAST ORDER BY version_date)
+                                                                                             VALUE,
+                                      MAX (quality_code)KEEP (DENSE_RANK LAST ORDER BY version_date)
+                                                                                      quality_code
+                                 FROM (SELECT date_time, VALUE, quality_code, version_date,
+                                              LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
+                                                                                           lagdate,
+                                              LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
+                                                                                          leaddate
+                                         FROM av_tsv_dqu v
+                                        WHERE v.ts_code = l_ts_code
+                                          AND v.unit_id = p_units
+                                          AND v.start_date <= l_end_time
+                                          AND v.end_date > l_start_time)
+                                WHERE leaddate >= l_start_time AND lagdate <= l_end_time)
+                     ORDER BY date_time ASC;
+   
+                  ELSE --l_max_version is FALSE -
+                  
+                     -- first version_date query -
+                     -- 
+                     dbms_output.put_line('RETRIEVE_TS #3');
+                     --         
+                     open p_at_tsv_rc for
+                     SELECT   date_time, VALUE, quality_code
+                         FROM (SELECT date_time,
+                                      MAX (VALUE)KEEP (DENSE_RANK FIRST ORDER BY version_date)
+                                                                                             VALUE,
+                                      MAX (quality_code)KEEP (DENSE_RANK FIRST ORDER BY version_date)
+                                                                                      quality_code
+                                 FROM (SELECT date_time, VALUE, quality_code, version_date,
+                                              LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
+                                                                                           lagdate,
+                                              LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
+                                                                                          leaddate
+                                         FROM av_tsv_dqu v
+                                        WHERE v.ts_code = l_ts_code
+                                          AND v.unit_id = p_units
+                                          AND v.start_date <= l_end_time
+                                          AND v.end_date > l_start_time)
+                                WHERE leaddate >= l_start_time AND lagdate <= l_end_time)
+                     ORDER BY date_time ASC;
+                     
+                  END IF;  --l_max_version -
+                  
+               ELSE --p_version_date IS NOT NULL - 
+                  --
+                  --selected version_date query -
+                  -- 
+                  dbms_output.put_line('RETRIEVE_TS #4');
+                  --         
+                  open p_at_tsv_rc for 
+                  SELECT   date_time, VALUE, quality_code
+                      FROM (SELECT date_time, VALUE, quality_code,
+                                   LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
+                                                                                        lagdate,
+                                   LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
+                                                                                       leaddate
+                              FROM av_tsv_dqu v
+                             WHERE v.ts_code = l_ts_code
+                               AND v.unit_id = p_units
+                               AND v.version_date = p_version_date
+                               AND v.start_date <= l_end_time
+                               AND v.end_date > l_start_time)
+                     WHERE leaddate >= l_start_time AND lagdate <= l_end_time
+                  ORDER BY date_time ASC;
+            
+               END IF;  --p_version_date -
+   
+            END IF;  -- l_versioned -
+   
+         ELSE -- p_inclusive IS NULL -
+         
+            dbms_application_info.set_action (   'return  irregular  ts '
+                                              || l_ts_code
+                                              || ' from '
+                                              || to_char(l_start_time,'mm/dd/yyyy hh24:mi')
+                                              || ' to '
+                                              || to_char(l_end_time,'mm/dd/yyyy hh24:mi')
+                                              || ' in units '
+                                              || p_units);     
+            IF l_versioned IS NULL
+            THEN    
+               -- nonl_versioned, irregular, noninclusive retrieval -
+               --
+               dbms_output.put_line('gkgk - RETRIEVE_TS #5');
+               --                         
+               open p_at_tsv_rc for
+               SELECT   FROM_TZ (CAST (date_time AS TIMESTAMP), 'GMT') AT TIME ZONE p_time_zone "DATE_TIME",
+                        value "VALUE", quality_code "QUALITY_CODE"
+                   FROM av_tsv_dqu v
+                  WHERE v.ts_code = l_ts_code
+                    AND v.date_time BETWEEN l_start_time AND l_end_time
+                    AND v.unit_id = p_units
+                    AND v.start_date <= l_end_time
+                    AND v.end_date > l_start_time
+               ORDER BY date_time ASC;
+   
+            ELSE  -- l_versioned IS NOT NULL -
+               --
+               -- l_versioned, irregular, noninclusive retrieval -
+               --
+               IF p_version_date IS NULL
+               THEN
+               
+                  IF l_max_version
+                  THEN    
+   
+                     --latest version_date query          
+                     --
+                     dbms_output.put_line('RETRIEVE_TS #6');
+                     --         
+                     open p_at_tsv_rc for
+                     SELECT   date_time, VALUE, quality_code
+                         FROM (SELECT   date_time,
+                                        MAX (VALUE)KEEP (DENSE_RANK LAST ORDER BY version_date)
+                                                                                             VALUE,
+                                        MAX (quality_code)KEEP (DENSE_RANK LAST ORDER BY version_date)
+                                                                                      quality_code
+                                   FROM (SELECT date_time, VALUE, quality_code, version_date
+                                           FROM av_tsv_dqu v
+                                          WHERE v.ts_code = l_ts_code
+                                            AND v.date_time BETWEEN l_start_time AND l_end_time
+                                            AND v.unit_id = p_units
+                                            AND v.start_date <= l_end_time
+                                            AND v.end_date > l_start_time)
+                               GROUP BY date_time)
+                     ORDER BY date_time ASC;
+   
+                  ELSE  -- p_version_date IS NOT NULL -
+                     -- 
+                     dbms_output.put_line('RETRIEVE_TS #7');
+                     --         
+                     open p_at_tsv_rc for
+                     SELECT   date_time, VALUE, quality_code
+                         FROM (SELECT   date_time,
+                                        MAX (VALUE)KEEP (DENSE_RANK FIRST ORDER BY version_date)
+                                                                                             VALUE,
+                                        MAX (quality_code)KEEP (DENSE_RANK FIRST ORDER BY version_date)
+                                                                                      quality_code
+                                   FROM (SELECT date_time, VALUE, quality_code, version_date
+                                           FROM av_tsv_dqu v
+                                          WHERE v.ts_code = l_ts_code
+                                            AND v.date_time BETWEEN l_start_time AND l_end_time
+                                            AND v.unit_id = p_units
+                                            AND v.start_date <= l_end_time
+                                            AND v.end_date > l_start_time)
+                               GROUP BY date_time)
+                     ORDER BY date_time ASC;
+   
+                  END IF; -- p_version_date IS NOT NULL -
+   
+               ELSE -- l_max_version is FALSE -
+                  -- 
+                  dbms_output.put_line('RETRIEVE_TS #8');
+                  --         
+                  open p_at_tsv_rc for
+                  /* Formatted on 2006/10/25 12:54 (Formatter Plus v4.8.7) */
+                  SELECT   date_time, VALUE, quality_code
+                      FROM av_tsv_dqu v
+                     WHERE v.ts_code = l_ts_code
+                       AND v.date_time BETWEEN l_start_time AND l_end_time
+                       AND v.unit_id = p_units
+                       AND v.version_date = version_date
+                       AND v.start_date <= l_end_time
+                       AND v.end_date > l_start_time
+                  ORDER BY date_time ASC;
+   
+               END IF;  -- l_max_version -
+     
+            END IF;  -- l_versioned -
+   
+         END IF;  -- p_inclusive -
+   
+      ELSE  -- l_ts_interval <> 0 -
+   
+         dbms_application_info.set_action (   'return  regular  ts '
+                                           || l_ts_code
+                                           || ' from '
+                                           || to_char(l_start_time,'mm/dd/yyyy hh24:mi')
+                                           || ' to '
+                                           || to_char(l_end_time,'mm/dd/yyyy hh24:mi')
+                                           || ' in units '
+                                           || p_units);
+   
+        
+         -- Make sure start_time and end_time fall on a valid date/time for the regular -
+         --    time series given the interval and offset. -
+            
+         l_start_time   := get_time_on_after_interval(l_start_time, l_ts_offset, l_ts_interval);
+         l_end_time     := get_time_on_after_interval(l_end_time, l_ts_offset, l_ts_interval);
+          
+         IF l_end_time > l_end_time_init
+         THEN
+            l_end_time := l_end_time - (l_ts_interval / 1440);
+         END IF;
+   
+         IF l_versioned IS NULL 
+         THEN 
+            --
+            -- nonl_versioned, regular ts query
+             -- 
+            dbms_output.put_line('RETRIEVE_TS #9 - nonl_versioned, regular ts query');
+            --         
+              l_start_time   := get_time_on_after_interval(l_start_time, l_ts_offset, l_ts_interval);
+            l_end_time     := get_time_on_after_interval(l_end_time, l_ts_offset, l_ts_interval);
+          
+             IF l_end_time > l_end_time_init 
+            THEN
+               l_end_time := l_end_time - (l_ts_interval / 1440);
+             END IF;
+          
+             open p_at_tsv_rc for
+            select FROM_TZ (CAST (jdate_time AS TIMESTAMP), 'GMT') AT TIME ZONE p_time_zone
+                                                                                       "DATE_TIME", 
+                   value, 
+                   nvl(quality_code,0) quality_code
+              from (select * 
+                      from (select * 
+                              from av_tsv_dqu v 
+                             where  v.ts_code = l_ts_code 
+                               and v.date_time between l_start_time and l_end_time 
+                               and v.unit_id = p_units
+                               and v.start_date <= l_end_time 
+                               and v.end_date > l_start_time 
+                            ) v
+           right outer join (select l_start_time +((level-1)/(1440/l_ts_interval )) jdate_time 
+                               from  dual 
+                         connect by 1=1 
+                                and level<=(round((l_end_time - l_start_time )*1440)/l_ts_interval )+1
+                             ) t 
+                         on t.jdate_time = v.date_time 
+                   ) 
+          order by jdate_time;
+   
+         ELSE --  l_versioned IS NOT NULL -
+   
+             IF p_version_date IS NULL
+            THEN
+   
+               IF l_max_version
+               THEN
+                  -- 
+                  dbms_output.put_line('RETRIEVE_TS #10');
+                  --         
+                  open p_at_tsv_rc for
+                  /* Formatted on 2006/10/25 13:12 (Formatter Plus v4.8.7) */
+                  SELECT   date_time, VALUE, quality_code
+                      FROM (SELECT   jdate_time date_time,
+                                     MAX (VALUE)KEEP (DENSE_RANK LAST ORDER BY version_date)
+                                                                                          VALUE,
+                                     MAX (quality_code)KEEP (DENSE_RANK LAST ORDER BY version_date)
+                                                                                   quality_code
+                                FROM (SELECT *
+                                        FROM (SELECT *
+                                                FROM av_tsv_dqu v
+                                               WHERE v.ts_code = l_ts_code
+                                                 AND v.date_time BETWEEN l_start_time AND l_end_time
+                                                 AND v.unit_id = p_units
+                                                 AND v.start_date <= l_end_time
+                                                 AND v.end_date > l_start_time) v
+                                             RIGHT OUTER JOIN
+                                             (SELECT       l_start_time
+                                                         + (  (LEVEL - 1)
+                                                            / (1440 / l_ts_interval)
+                                                           ) jdate_time
+                                                    FROM DUAL
+                                              CONNECT BY 1 = 1
+                                                     AND LEVEL <=
+                                                              (  ROUND (  (  l_end_time
+                                                                           - l_start_time
+                                                                          )
+                                                                        * 1440
+                                                                       )
+                                                               / l_ts_interval
+                                                              )
+                                                            + 1) t ON t.jdate_time = v.date_time
+                                             )
+                            ORDER BY jdate_time)
+                  GROUP BY date_time;
+   
+               ELSE  -- l_max_version is FALSE -
+                  -- 
+                  dbms_output.put_line('RETRIEVE_TS #11');
+                  --         
+                  open p_at_tsv_rc for
+                  /* Formatted on 2006/10/25 13:14 (Formatter Plus v4.8.7) */
+                  SELECT   date_time, VALUE, quality_code
+                      FROM (SELECT   jdate_time date_time,
+                                     MAX (VALUE)KEEP (DENSE_RANK FIRST ORDER BY version_date)
+                                                                                          VALUE,
+                                     MAX (quality_code)KEEP (DENSE_RANK FIRST ORDER BY version_date)
+                                                                                   quality_code
+                                FROM (SELECT *
+                                        FROM (SELECT *
+                                                FROM av_tsv_dqu v
+                                               WHERE v.ts_code = l_ts_code
+                                                 AND v.date_time BETWEEN l_start_time AND l_end_time
+                                                 AND v.unit_id = p_units
+                                                 AND v.start_date <= l_end_time
+                                                 AND v.end_date > l_start_time) v
+                                             RIGHT OUTER JOIN
+                                             (SELECT       l_start_time
+                                                         + (  (LEVEL - 1)
+                                                            / (1440 / l_ts_interval)
+                                                           ) jdate_time
+                                                    FROM DUAL
+                                              CONNECT BY 1 = 1
+                                                     AND LEVEL <=
+                                                              (  ROUND (  (  l_end_time
+                                                                           - l_start_time
+                                                                          )
+                                                                        * 1440
+                                                                       )
+                                                               / l_ts_interval
+                                                              )
+                                                            + 1) t ON t.jdate_time = v.date_time
+                                             )
+                            ORDER BY jdate_time)
+                  GROUP BY date_time;
+   
+               END IF;  -- l_max_version -
+   
+            ELSE  -- p_version_date IS NOT NULL -
+               -- 
+               dbms_output.put_line('RETRIEVE_TS #12');
+               --         
+               open p_at_tsv_rc for
+               /* Formatted on 2006/10/25 13:32 (Formatter Plus v4.8.7) */
+               SELECT   jdate_time date_time, VALUE, NVL (quality_code, 0) quality_code
+                   FROM (SELECT *
+                           FROM (SELECT *
+                                   FROM av_tsv_dqu v
+                                  WHERE v.ts_code = l_ts_code
+                                    AND v.date_time BETWEEN l_start_time AND l_end_time
+                                    AND v.unit_id = p_units
+                                    AND v.version_date = p_version_date
+                                    AND v.start_date <= l_end_time
+                                    AND v.end_date > l_start_time) v
+                                RIGHT OUTER JOIN
+                                (SELECT       l_start_time
+                                            + ((LEVEL - 1) / (1440 / l_ts_interval))
+                                                                                  jdate_time
+                                       FROM DUAL
+                                 CONNECT BY 1 = 1
+                                        AND LEVEL <=
+                                                 (  ROUND ((l_end_time - l_start_time) * 1440)
+                                                  / l_ts_interval
+                                                 )
+                                               + 1) t ON t.jdate_time = v.date_time
+                                )
+               ORDER BY jdate_time;
+   
+            END IF;
+     
+           END IF;
+    
+       END IF;
         
 
-	 
-	 	dbms_application_info.set_module(null,null);
-		
-	END retrieve_ts;
+    
+       dbms_application_info.set_module(null,null);
+      
+   END retrieve_ts;
+   
 --
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- ADJUST_TIME_WINDOW
+--
+procedure adjust_time_window(
+   p_start_time      in out date,
+   p_end_time        in out date,
+   p_ts_code         in     number,
+   p_start_inclusive in     boolean,
+   p_end_inclusive   in     boolean,
+   p_previous        in     boolean,
+   p_next            in     boolean,
+   p_trim            in     boolean)
+is
+   l_start_time date := p_start_time;
+   l_end_time   date := p_end_time;
+begin
+   --
+   -- first, handle inclusive/exclusive by adjusting start/end times inward
+   --
+   if not p_start_inclusive then
+      l_start_time := l_start_time + 1 / 86400;
+   end if;
+
+   if not p_end_inclusive then
+      l_end_time   := l_end_time   - 1 / 86400;
+   end if;
+   --
+   -- next, handle previous/next by adjusting start/end times outward
+   --
+   if p_previous then
+      select max(date_time)
+        into l_start_time
+        from av_tsv
+       where ts_code    =  p_ts_code
+         and date_time  <  l_start_time
+         and start_date <= l_end_time 
+         and end_date   >  l_start_time;
+   end if;       
+      
+   if p_next then
+      select min(date_time)
+        into l_end_time
+        from av_tsv
+       where ts_code    =  p_ts_code
+         and date_time  >  l_end_time
+         and start_date <= l_end_time 
+         and end_date   >  l_start_time;
+   end if;       
+   --
+   -- finally, handle trim by adjusting start/end times inward to first/last
+   -- non-missing values
+   --    
+   if p_trim then
+      select min(date_time), 
+             max(date_time)
+        into l_start_time,
+             l_end_time
+        from (
+             select date_time
+               from av_tsv v,
+                    cwms_data_quality q
+              where v.ts_code = p_ts_code
+                and v.date_time between l_start_time and l_end_time
+                and v.start_date <= l_end_time 
+                and v.end_date > l_start_time
+                and v.quality_code = q.quality_code
+                and q.validity_id != 'MISSING'
+                and v.value is not null
+             );
+   end if;
+   
+   p_start_time := l_start_time;
+   p_end_time   := l_end_time;
+   
+end;   
+      
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- RETREIVE_TS2 - v2.0 -
+--
+procedure retrieve_ts2 (
+   p_at_tsv_rc       in out sys_refcursor,
+   p_cwms_ts_id      in     varchar2,
+   p_units           in     varchar2,
+   p_start_time      in     date,
+   p_end_time        in     date,
+   p_trim            in     varchar2 default 'F',
+   p_start_inclusive in     varchar2 default 'T',
+   p_end_inclusive   in     varchar2 default 'T',
+   p_previous        in     varchar2 default 'F',
+   p_next            in     varchar2 default 'F',
+   p_office_id       in     varchar2 default null
+   )
+is
+   l_ts_code          number;
+   l_trim             boolean      := cwms_util.return_true_or_false(nvl(p_trim,      'F'));
+   l_start_inclusive  boolean      := cwms_util.return_true_or_false(nvl(p_start_inclusive, 'T'));
+   l_end_inclusive    boolean      := cwms_util.return_true_or_false(nvl(p_end_inclusive, 'T'));
+   l_previous         boolean      := cwms_util.return_true_or_false(nvl(p_previous,  'F'));
+   l_next             boolean      := cwms_util.return_true_or_false(nvl(p_next     , 'F'));
+   l_start_time       date         := p_start_time;
+   l_end_time         date         := p_end_time;
+   l_office_id        varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
+
+   procedure output(text in varchar2)
+   is
+   begin
+      dbms_application_info.set_action(text);
+      dbms_output.put_line(text);
+   end;   
+begin
+   dbms_application_info.set_module ('cwms_ts.retrieve_ts2','Get TS Code');
+   --
+   -- get ts code
+   --
+   select ts_code
+     into l_ts_code
+     from mv_cwms_ts_id
+    where db_office_id = upper(l_office_id)
+      and upper(cwms_ts_id) = upper(p_cwms_ts_id);
+      
+   output('Handle start and end times');
+   adjust_time_window(
+      l_start_time,
+      l_end_time,
+      l_ts_code,
+      l_start_inclusive,
+      l_end_inclusive,
+      l_previous,
+      l_next,
+      l_trim);      
+
+   --
+   -- open the cursor
+   --
+   output('Open cursor');
+   open p_at_tsv_rc for 
+      select date_time,
+             max(value) keep(dense_rank last order by version_date) "VALUE",
+             nvl(max(quality_code) keep(dense_rank last order by version_date), 0) "QUALITY_CODE"
+        from av_tsv_dqu
+       where ts_code    =  l_ts_code 
+         and date_time  >= l_start_time  
+         and date_time  <= l_end_time 
+         and unit_id    =  p_units
+         and start_date <= l_end_time 
+         and end_date   >  l_start_time
+    group by date_time
+    order by date_time asc;
+    
+   dbms_application_info.set_module(null,null);
+      
+end retrieve_ts2;
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- RETREIVE_TS3 - v2.0 -
+--
+procedure retrieve_ts3 (
+   p_at_tsv_rc       in out sys_refcursor,
+   p_cwms_ts_id      in     varchar2,
+   p_units           in     varchar2,
+   p_start_time      in     date,
+   p_end_time        in     date,
+   p_time_zone       in     varchar2 default 'UTC',
+   p_trim            in     varchar2 default 'F',
+   p_start_inclusive in     varchar2 default 'T',
+   p_end_inclusive   in     varchar2 default 'T',
+   p_previous        in     varchar2 default 'F',
+   p_next            in     varchar2 default 'F',
+   p_office_id       in     varchar2 default null
+   )
+is
+   l_ts_code          number;
+   l_time_zone        varchar2(28)    := nvl(p_time_zone, 'UTC');
+   l_trim             boolean         := cwms_util.return_true_or_false(nvl(p_trim,      'F'));
+   l_start_inclusive  boolean         := cwms_util.return_true_or_false(nvl(p_start_inclusive, 'T'));
+   l_end_inclusive    boolean         := cwms_util.return_true_or_false(nvl(p_end_inclusive, 'T'));
+   l_previous         boolean         := cwms_util.return_true_or_false(nvl(p_previous,  'F'));
+   l_next             boolean         := cwms_util.return_true_or_false(nvl(p_next     , 'F'));
+   l_start_time       date            := cwms_util.date_from_tz_to_utc(p_start_time, p_time_zone);
+   l_end_time         date            := cwms_util.date_from_tz_to_utc(p_end_time,   p_time_zone);
+   l_office_id        varchar2(16)    := nvl(p_office_id, cwms_util.user_office_id);
+   l_query_str        varchar2(1024);
+   l_start_str        varchar2(32);
+   l_end_str          varchar2(32);
+
+   procedure output(text in varchar2)
+   is
+   begin
+      dbms_application_info.set_action(text);
+      dbms_output.put_line(text);
+   end;   
+begin
+   dbms_application_info.set_module ('cwms_ts.retrieve_ts3','Get TS Code');
+   --
+   -- get ts code
+   --
+   select ts_code
+     into l_ts_code
+     from mv_cwms_ts_id
+    where db_office_id = upper(l_office_id)
+      and upper(cwms_ts_id) = upper(p_cwms_ts_id);
+
+   output('Handle start and end times');
+   adjust_time_window(
+      l_start_time,
+      l_end_time,
+      l_ts_code,
+      l_start_inclusive,
+      l_end_inclusive,
+      l_previous,
+      l_next,
+      l_trim);      
+   --
+   -- build the query string - for some reason the time zone must be a literal
+   -- and bind variables are problematic
+   --
+   l_start_str := to_char(l_start_time, 'yyyy/mm/dd-hh24.mi.ss');
+   l_end_str   := to_char(l_end_time,   'yyyy/mm/dd-hh24.mi.ss');
+   l_query_str := 
+      'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME(:tz)",
+              max(value) keep(dense_rank last order by version_date) "VALUE",
+              nvl(max(quality_code) keep(dense_rank last order by version_date), 0) "QUALITY_CODE"
+         from av_tsv_dqu
+        where ts_code    =  :ts_code 
+          and date_time  >= to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')  
+          and date_time  <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+          and unit_id    =  '':units''
+          and start_date <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+          and end_date   >  to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')
+     group by date_time
+     order by date_time asc';
+   
+   l_query_str := replace(l_query_str, ':tz',      l_time_zone);
+   l_query_str := replace(l_query_str, ':ts_code', l_ts_code);
+   l_query_str := replace(l_query_str, ':start',   l_start_str);
+   l_query_str := replace(l_query_str, ':end',     l_end_str);
+   l_query_str := replace(l_query_str, ':units',   p_units);
+   --
+   -- open the cursor
+   --
+   output('Open cursor');
+   open p_at_tsv_rc for l_query_str;
+    
+   dbms_application_info.set_module(null,null);
+      
+end retrieve_ts3;
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- RETREIVE_TS2_MULTI - v2.0 -
+--
+procedure retrieve_ts2_multi (
+   p_at_tsv_rc       in out sys_refcursor,
+   p_timeseries_info in     timeseries_req_array,
+   p_trim            in     varchar2 default 'F',
+   p_start_inclusive in     varchar2 default 'T',
+   p_end_inclusive   in     varchar2 default 'T',
+   p_previous        in     varchar2 default 'F',
+   p_next            in     varchar2 default 'F',
+   p_office_id       in     varchar2 default null
+   )
+is
+   l_req_info         ts_request_array := ts_request_array();
+   l_trim             boolean          := cwms_util.return_true_or_false(nvl(p_trim,      'F'));
+   l_start_inclusive  boolean          := cwms_util.return_true_or_false(nvl(p_start_inclusive, 'T'));
+   l_end_inclusive    boolean          := cwms_util.return_true_or_false(nvl(p_end_inclusive, 'T'));
+   l_previous         boolean          := cwms_util.return_true_or_false(nvl(p_previous,  'F'));
+   l_next             boolean          := cwms_util.return_true_or_false(nvl(p_next     , 'F'));
+   l_office_id        varchar2(16)     := nvl(p_office_id, cwms_util.user_office_id);
+   i                  pls_integer;
+
+begin
+
+   dbms_application_info.set_module ('cwms_ts.retrieve_ts2_multi','Preparation loop');
+   for i in 1..p_timeseries_info.count loop
+      l_req_info.extend;
+      l_req_info(i) := ts_request_type(
+         i,
+         p_timeseries_info(i).tsid,
+         null,
+         p_timeseries_info(i).unit,
+         p_timeseries_info(i).start_time,
+         p_timeseries_info(i).end_time,
+         p_timeseries_info(i).start_time,
+         p_timeseries_info(i).end_time);
+      --
+      -- get ts code
+      --
+      select ts_code
+        into l_req_info(i).ts_code
+        from mv_cwms_ts_id
+       where db_office_id = upper(l_office_id)
+         and upper(cwms_ts_id) = upper(l_req_info(i).tsid);
+
+      adjust_time_window(
+         l_req_info(i).start_time,
+         l_req_info(i).end_time,
+         l_req_info(i).ts_code,
+         l_start_inclusive,
+         l_end_inclusive,
+         l_previous,
+         l_next,
+         l_trim);      
+   end loop;
+   
+   dbms_application_info.set_action('open cursor');
+   
+   open p_at_tsv_rc for
+      select sequence, 
+             tsid, 
+             units,
+             specified_start_time "START_TIME",
+             specified_end_time   "END_TIME",
+             cursor (
+                    select date_time,
+                           max(value) keep(dense_rank last order by version_date) "VALUE",
+                           nvl(max(quality_code) keep(dense_rank last order by version_date), 0) "QUALITY_CODE"
+                      from av_tsv_dqu v
+                     where v.ts_code    =  r.ts_code 
+                       and v.date_time  >= r.start_time  
+                       and v.date_time  <= r.end_time 
+                       and v.unit_id    =  r.units
+                       and v.start_date <= r.end_time 
+                       and v.end_date   >  r.start_time
+                  group by v.date_time
+                  order by v.date_time asc
+                    )
+        from table(l_req_info) r
+    order by r.sequence asc;       
+    
+   dbms_application_info.set_module(null,null);
+   
+end retrieve_ts2_multi;
 --*******************************************************************   --
 --*******************************************************************   --
 --
 -- STORE_TS -
 --
 --v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
-	PROCEDURE store_ts (
-	   p_office_id         IN   VARCHAR2,
-	   p_cwms_ts_id   IN   VARCHAR2,
-	   p_units             IN   VARCHAR2,
-	   p_timeseries_data   IN   tsv_array,
-	   p_store_rule        IN   VARCHAR2 DEFAULT NULL,
-	   p_override_prot     IN   NUMBER DEFAULT cwms_util.false_num,
-	   p_versiondate       IN   DATE DEFAULT cwms_util.non_versioned
-	)
-	--^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^^^^ -
-	IS
-	   l_override_prot VARCHAR2(1);
-	BEGIN
+   PROCEDURE store_ts (
+      p_office_id         IN   VARCHAR2,
+      p_cwms_ts_id   IN   VARCHAR2,
+      p_units             IN   VARCHAR2,
+      p_timeseries_data   IN   tsv_array,
+      p_store_rule        IN   VARCHAR2 DEFAULT NULL,
+      p_override_prot     IN   NUMBER DEFAULT cwms_util.false_num,
+      p_versiondate       IN   DATE DEFAULT cwms_util.non_versioned
+   )
+   --^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^^^^ -
+   IS
+      l_override_prot VARCHAR2(1);
+   BEGIN
     cwms_apex.aa1(to_char(sysdate, 'YYYY-MM-DD HH24:MI') || 'store_ts(1.4): ' || p_cwms_ts_id);
-	   IF p_override_prot IS NULL OR p_override_prot = cwms_util.false_num
-		THEN
-			l_override_prot := 'F';
-		ELSIF p_override_prot = cwms_util.true_num
-		THEN
-			l_override_prot := 'T';
-		ELSE
-		   cwms_err.raise('INVALID_T_F_FLAG_OLD', p_override_prot);
-		END IF;
-		dbms_output.put_line('tag wie gehts2?');
-	   store_ts (p_cwms_ts_id,
-	             p_units,
-	             p_timeseries_data,
-	             p_store_rule,
-	             l_override_prot,
-	             p_versiondate,
-				 p_office_id
-	            );
-	END store_ts; -- v1.4 --
---	
+      IF p_override_prot IS NULL OR p_override_prot = cwms_util.false_num
+      THEN
+         l_override_prot := 'F';
+      ELSIF p_override_prot = cwms_util.true_num
+      THEN
+         l_override_prot := 'T';
+      ELSE
+         cwms_err.raise('INVALID_T_F_FLAG_OLD', p_override_prot);
+      END IF;
+      dbms_output.put_line('tag wie gehts2?');
+      store_ts (p_cwms_ts_id,
+                p_units,
+                p_timeseries_data,
+                p_store_rule,
+                l_override_prot,
+                p_versiondate,
+             p_office_id
+               );
+   END store_ts; -- v1.4 --
+--   
 --
 --*******************************************************************   --
 --*******************************************************************   --
 --
 -- STORE_TS -
---	
-	PROCEDURE store_ts (
-	   p_cwms_ts_id   IN   VARCHAR2,
-	   p_units             IN   VARCHAR2,
-	   p_timeseries_data   IN   tsv_array,
-	   p_store_rule        IN   VARCHAR2 DEFAULT NULL,
-	   p_override_prot     IN   VARCHAR2 DEFAULT 'F',
-	   p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,
-	   p_office_id         IN   VARCHAR2 DEFAULT NULL
-	)
-	IS
-	   l_office_id           VARCHAR2 (16);
-	   t1count               NUMBER;
-	   t2count               NUMBER;
-	   l_ucount                NUMBER;
-	   l_store_date             TIMESTAMP ( 3 )  DEFAULT SYSTIMESTAMP;
-	   l_ts_code             NUMBER;
-	   l_interval_id         VARCHAR2 (100);
-	   l_interval_value      NUMBER;
-	   l_utc_offset            NUMBER;
-	   existing_utc_offset   NUMBER;
-	   table_cnt             NUMBER;
-	   mindate               DATE;
-	   maxdate               DATE;
-	   l_sql_txt               VARCHAR2 (10000);
-	   l_override_prot       BOOLEAN;
-	   l_version_date         DATE;
-	BEGIN
-   	dbms_application_info.set_module('cwms_ts_store.store_ts','get tscode from ts_id');
+--   
+   PROCEDURE store_ts (
+      p_cwms_ts_id   IN   VARCHAR2,
+      p_units             IN   VARCHAR2,
+      p_timeseries_data   IN   tsv_array,
+      p_store_rule        IN   VARCHAR2 DEFAULT NULL,
+      p_override_prot     IN   VARCHAR2 DEFAULT 'F',
+      p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,
+      p_office_id         IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_office_id           VARCHAR2 (16);
+      t1count               NUMBER;
+      t2count               NUMBER;
+      l_ucount                NUMBER;
+      l_store_date             TIMESTAMP ( 3 )  DEFAULT SYSTIMESTAMP;
+      l_ts_code             NUMBER;
+      l_interval_id         VARCHAR2 (100);
+      l_interval_value      NUMBER;
+      l_utc_offset            NUMBER;
+      existing_utc_offset   NUMBER;
+      table_cnt             NUMBER;
+      mindate               DATE;
+      maxdate               DATE;
+      l_sql_txt               VARCHAR2 (10000);
+      l_override_prot       BOOLEAN;
+      l_version_date         DATE;
+   BEGIN
+      dbms_application_info.set_module('cwms_ts_store.store_ts','get tscode from ts_id');
     cwms_apex.aa1(to_char(sysdate, 'YYYY-MM-DD HH24:MI') || 'store_ts: ' || p_cwms_ts_id);
 
       -- set default values, don't be fooled by NULL as an actual argument
 
       if p_office_id is null 
-		then
-      	l_office_id := cwms_util.user_office_id;
-    	else                           
-      	l_office_id := p_office_id;
-    	end if;
+      then
+         l_office_id := cwms_util.user_office_id;
+       else                           
+         l_office_id := p_office_id;
+       end if;
 
-    	l_version_date   := nvl(p_version_date, cwms_util.non_versioned);
-	
-	   if NVL(p_override_prot, 'F') = 'F' 
-		then
-	   	l_override_prot := FALSE;
-		else
-	  		l_override_prot := TRUE;
-		end if;
-	
-		dbms_application_info.set_action('Determine utc_offset of incoming data set');
-	
-    	select regexp_substr(p_cwms_ts_id,'[^.]+',1,4) interval_id 
+       l_version_date   := nvl(p_version_date, cwms_util.non_versioned);
+   
+      if NVL(p_override_prot, 'F') = 'F' 
+      then
+         l_override_prot := FALSE;
+      else
+           l_override_prot := TRUE;
+      end if;
+   
+      dbms_application_info.set_action('Determine utc_offset of incoming data set');
+   
+       select regexp_substr(p_cwms_ts_id,'[^.]+',1,4) interval_id 
         into l_interval_id 
-	     from dual;
-	
-	begin
+        from dual;
+   
+   begin
       select i.interval 
         into l_interval_value 
-	    from cwms_interval i 
+       from cwms_interval i 
        where upper(i.interval_id) = upper(l_interval_id);
-	  exception
-	  when NO_DATA_FOUND then
-	    raise_application_error(-20110, 'ERROR: ' || l_interval_id || ' is not a valid time series interval', true);
-    end;	 
+     exception
+     when NO_DATA_FOUND then
+       raise_application_error(-20110, 'ERROR: ' || l_interval_id || ' is not a valid time series interval', true);
+    end;    
     
     if l_interval_value > 0 then 
-	  
+     
       dbms_application_info.set_action('Incoming data set has a regular interval, confirm data set matches interval_id');
       
-	           BEGIN
+              BEGIN
             SELECT DISTINCT ROUND (MOD (  (  CAST (date_time AS DATE)
                                            - TRUNC (CAST (date_time AS DATE))
                                           )
@@ -1897,65 +2239,65 @@ END retrieve_ts_java;
                        FROM TABLE (p_timeseries_data);   -- where rownum < 20;
          EXCEPTION
 
-	  
--- 	  begin
--- 	  
+     
+--      begin
+--      
 --         select distinct round(mod((date_time-trunc(date_time))*1440*60,in_interval_value*60),0) 
 --           into utc_offset  
 --           from table(p_timeseries_data) ; -- where rownum < 20;
--- 	    
+--        
 --       exception 
-	  when too_many_rows then
+     when too_many_rows then
         raise_application_error(-20110, 'ERROR: Incoming data set is contains irregular data. Unable to store data for '||p_cwms_ts_id, true);
       end;
-	
-	else
-	
-	  dbms_application_info.set_action('Incoming data set is irregular');
-	  
+   
+   else
+   
+     dbms_application_info.set_action('Incoming data set is irregular');
+     
       l_utc_offset := cwms_util.UTC_OFFSET_IRREGULAR;
-	
-    end if;	
-	
-	dbms_application_info.set_action('Find or create a TS_CODE for your TS Desc');
+   
+    end if;   
+   
+   dbms_application_info.set_action('Find or create a TS_CODE for your TS Desc');
   
     begin -- BEGIN - Find the TS_CODE 
       
       select ts_code, interval_utc_offset 
         into l_ts_code, existing_utc_offset
-	    from mv_CWMS_TS_ID m 
+       from mv_CWMS_TS_ID m 
        where upper(m.CWMS_TS_ID) = upper(p_cwms_ts_id)
-	     and m.db_OFFICE_ID = upper(l_office_id);
-		 
+        and m.db_OFFICE_ID = upper(l_office_id);
+       
       dbms_application_info.set_action('TS_CODE was found - check its utc_offset against the dataset''s and/or set an undefined utc_offset');
-	  
-	  if existing_utc_offset = cwms_util.UTC_OFFSET_UNDEFINED then
-	    -- Existing TS_Code did not have a defined UTC_OFFSET, so set it equal to the offset of this data set.
-		
-	    update at_cwms_ts_spec acts
-		   set acts.INTERVAL_UTC_OFFSET = l_utc_offset
-		 where acts.TS_CODE = l_ts_code;
-		 
+     
+     if existing_utc_offset = cwms_util.UTC_OFFSET_UNDEFINED then
+       -- Existing TS_Code did not have a defined UTC_OFFSET, so set it equal to the offset of this data set.
+      
+       update at_cwms_ts_spec acts
+         set acts.INTERVAL_UTC_OFFSET = l_utc_offset
+       where acts.TS_CODE = l_ts_code;
+       
       elsif existing_utc_offset != l_utc_offset then
-	    -- Existing TS_Code's UTC_OFFSET does not match the offset of the data set - so storage of data set fails.
-		
+       -- Existing TS_Code's UTC_OFFSET does not match the offset of the data set - so storage of data set fails.
+      
         raise_application_error(-20101, 'Incoming Data Set''s UTC_OFFSET does not match UTC_OFFSET of previously stored data - data set was NOT stored', true);
-		
-	  end if; 
+      
+     end if; 
     
     exception
     when no_data_found then
       /*
-	   Exception is thrown when the Time Series Description passed 
-	   does not exist in the database for the office_id. If this is
-	   the case a new TS_CODE will be created for the Time Series 
-	   Descriptor. 
-	  */
+      Exception is thrown when the Time Series Description passed 
+      does not exist in the database for the office_id. If this is
+      the case a new TS_CODE will be created for the Time Series 
+      Descriptor. 
+     */
       
       create_ts_code(p_ts_code=>l_ts_code, 
-		               p_office_id=>l_office_id, 
-							p_cwms_ts_id=>p_cwms_ts_id, 
-							p_utc_offset=> l_utc_offset);
+                     p_office_id=>l_office_id, 
+                     p_cwms_ts_id=>p_cwms_ts_id, 
+                     p_utc_offset=> l_utc_offset);
  
     end; -- END - Find TS_CODE
 
@@ -1966,25 +2308,25 @@ END retrieve_ts_java;
     dbms_application_info.set_action('check for unit conversion factors');
 
 
-		SELECT COUNT (*)
-		  INTO l_ucount
-		  FROM at_cwms_ts_spec s,
-		       at_parameter ap,
-		       cwms_unit_conversion c,
-		       cwms_base_parameter p,
-		       cwms_unit u
-		 WHERE s.ts_code = l_ts_code
-		   AND s.parameter_code = ap.parameter_code
-			AND ap.base_parameter_code =p.base_parameter_code
-		   AND p.unit_code = c.from_unit_code
-		   AND c.to_unit_code = u.unit_code
-		   AND u.unit_id = p_units;
+      SELECT COUNT (*)
+        INTO l_ucount
+        FROM at_cwms_ts_spec s,
+             at_parameter ap,
+             cwms_unit_conversion c,
+             cwms_base_parameter p,
+             cwms_unit u
+       WHERE s.ts_code = l_ts_code
+         AND s.parameter_code = ap.parameter_code
+         AND ap.base_parameter_code =p.base_parameter_code
+         AND p.unit_code = c.from_unit_code
+         AND c.to_unit_code = u.unit_code
+         AND u.unit_id = p_units;
 
 
-		if l_ucount <> 1 
-		then
-			raise_application_error(-20103, 'Requested unit conversion is not available', true);
-		end if;
+      if l_ucount <> 1 
+      then
+         raise_application_error(-20103, 'Requested unit conversion is not available', true);
+      end if;
 
     dbms_application_info.set_action('check for interval_utc_offset violation if regular ts');
 
@@ -1993,896 +2335,933 @@ END retrieve_ts_java;
       into table_cnt
       from at_ts_table_properties;
 
-	-- 
-	-- Determine the min and max date in the dataset, convert 
-	-- the min and max dates to GMT dates.
-	-- The min and max dates are used to determine which 
-	-- at_tsv tables need to be accessed during the store.
-	--
-	  	  
+   -- 
+   -- Determine the min and max date in the dataset, convert 
+   -- the min and max dates to GMT dates.
+   -- The min and max dates are used to determine which 
+   -- at_tsv tables need to be accessed during the store.
+   --
+          
     if table_cnt>1 then 
       select min(CAST((t.date_time AT TIME ZONE 'GMT') AS DATE)), 
-	         max(CAST((t.date_time AT TIME ZONE 'GMT') AS DATE))
+            max(CAST((t.date_time AT TIME ZONE 'GMT') AS DATE))
         into mindate, maxdate 
-	    from TABLE(cast(p_timeseries_data as tsv_array)) t;
+       from TABLE(cast(p_timeseries_data as tsv_array)) t;
     end if;
 
-	
-	dbms_output.put_line('*****************************'         || CHR(10) ||
-	                     'IN STORE_TS'                           || CHR(10) ||
-						 'TS Description: ' || p_cwms_ts_id || CHR(10) ||
-						 '       TS CODE: ' || l_ts_code           || CHR(10) ||
-						 '    Store Rule: ' || p_store_rule      || CHR(10) ||
-						 '      Override: ' || p_override_prot   || CHR(10) ||
-						 '*****************************');
+   
+   dbms_output.put_line('*****************************'         || CHR(10) ||
+                        'IN STORE_TS'                           || CHR(10) ||
+                   'TS Description: ' || p_cwms_ts_id || CHR(10) ||
+                   '       TS CODE: ' || l_ts_code           || CHR(10) ||
+                   '    Store Rule: ' || p_store_rule      || CHR(10) ||
+                   '      Override: ' || p_override_prot   || CHR(10) ||
+                   '*****************************');
 
    CASE
    WHEN l_override_prot and upper(p_store_rule) = cwms_util.replace_all 
-	THEN
+   THEN
       --
-		--**********************************
-	   -- CASE 1 - Store Rule: REPLACE ALL 
-		--          Override:   TRUE  
-	   --**********************************
-		--
-		dbms_application_info.set_action('merge into table, override, replace_all ');
-		dbms_output.put_line('CASE 1: store_all override: TRUE');
-		dbms_output.put_line('CASE 1: table_cnt = ' || table_cnt);
-	  
+      --**********************************
+      -- CASE 1 - Store Rule: REPLACE ALL 
+      --          Override:   TRUE  
+      --**********************************
+      --
+      dbms_application_info.set_action('merge into table, override, replace_all ');
+      dbms_output.put_line('CASE 1: store_all override: TRUE');
+      dbms_output.put_line('CASE 1: table_cnt = ' || table_cnt);
+     
       IF table_cnt=1
-		THEN
-	
-			MERGE INTO at_tsv t1
-			   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-			                 (t.value * c.factor + c.offset) VALUE, t.quality_code
-			            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
-			                 at_cwms_ts_spec s,
-								  at_parameter ap,
-			                 cwms_unit_conversion c,
-			                 cwms_base_parameter p,
-			                 cwms_unit u
-			           WHERE s.ts_code = l_ts_code
-			             AND s.parameter_code = ap.parameter_code
-							 AND ap.base_parameter_code = p.base_parameter_code
-			             AND p.unit_code = c.to_unit_code
-			             AND c.from_unit_code = u.unit_code
-			             AND u.unit_id = p_units) t2
-			   ON (    t1.ts_code = l_ts_code
-			       AND t1.date_time = t2.date_time
-			       AND t1.version_date = l_version_date)
-			   WHEN MATCHED THEN
-			      UPDATE
-			         SET t1.VALUE = t2.VALUE, t1.data_entry_date = l_store_date,
-			             t1.quality_code = t2.quality_code
-			   WHEN NOT MATCHED THEN
-			      INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code,
-			              version_date)
-			      VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code,
-			              l_version_date);
+      THEN
+   
+         MERGE INTO at_tsv t1
+            USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
+                          (t.value * c.factor + c.offset) VALUE, t.quality_code
+                     FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
+                          at_cwms_ts_spec s,
+                          at_parameter ap,
+                          cwms_unit_conversion c,
+                          cwms_base_parameter p,
+                          cwms_unit u
+                    WHERE s.ts_code = l_ts_code
+                      AND s.parameter_code = ap.parameter_code
+                      AND ap.base_parameter_code = p.base_parameter_code
+                      AND p.unit_code = c.to_unit_code
+                      AND c.from_unit_code = u.unit_code
+                      AND u.unit_id = p_units) t2
+            ON (    t1.ts_code = l_ts_code
+                AND t1.date_time = t2.date_time
+                AND t1.version_date = l_version_date)
+            WHEN MATCHED THEN
+               UPDATE
+                  SET t1.VALUE = t2.VALUE, t1.data_entry_date = l_store_date,
+                      t1.quality_code = t2.quality_code
+            WHEN NOT MATCHED THEN
+               INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code,
+                       version_date)
+               VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code,
+                       l_version_date);
 
-			ELSE
+         ELSE
  
-         	FOR x IN (select start_date, end_date, table_name 
-            	         from at_ts_table_properties 
-	  	          		  where start_date<=maxdate 
-		                   and end_date>mindate)
-        		LOOP
+            FOR x IN (select start_date, end_date, table_name 
+                        from at_ts_table_properties 
+                          where start_date<=maxdate 
+                         and end_date>mindate)
+              LOOP
 
-					dbms_output.put_line('CASE 1: multi-table storage: ' || x.table_name);
+               dbms_output.put_line('CASE 1: multi-table storage: ' || x.table_name);
 
-					l_sql_txt:=
-						' merge into '||x.table_name||' t1
-            		using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					               (t.value * c.factor + c.offset) value, 
-								   t.quality_code 
-		                      from TABLE(cast(:p_timeseries_data as tsv_array)) t,
-							       at_cwms_ts_spec s, 
-									 at_parameter ap,
-								    cwms_unit_conversion c, 
-								    cwms_base_parameter p, 
-								    cwms_unit u
+               l_sql_txt:=
+                  ' merge into '||x.table_name||' t1
+                  using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
+                              (t.value * c.factor + c.offset) value, 
+                           t.quality_code 
+                            from TABLE(cast(:p_timeseries_data as tsv_array)) t,
+                            at_cwms_ts_spec s, 
+                            at_parameter ap,
+                            cwms_unit_conversion c, 
+                            cwms_base_parameter p, 
+                            cwms_unit u
                              where s.ts_code        =  :l_ts_code
                                and s.parameter_code =  ap.parameter_code
-							   and ap.base_parameter_code = p.base_parameter_code
+                        and ap.base_parameter_code = p.base_parameter_code
                                and p.unit_code      =  c.to_unit_code
                                and c.from_unit_code   =  u.unit_code
                                and u.UNIT_ID        =  :p_units
                                and date_time        >= :start_date 
-							   and date_time        <  :end_date 
-			               ) t2
+                        and date_time        <  :end_date 
+                        ) t2
                         on (    t1.ts_code      = :l_ts_code 
-						    and t1.date_time    = t2.date_time 
-							and t1.version_date = :l_version_date )
+                      and t1.date_time    = t2.date_time 
+                     and t1.version_date = :l_version_date )
                       when matched then
-		                update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
+                      update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
                       when not matched then 
-		                insert (ts_code, date_time, data_entry_date, value, quality_code,version_date ) 
-						values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
+                      insert (ts_code, date_time, data_entry_date, value, quality_code,version_date ) 
+                  values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
 
-					dbms_output.put_line('CASE 1: exectuing dynamic merge statement');
-		  
-		  			execute immediate l_sql_txt using p_timeseries_data, 
-		                           l_ts_code, p_units, x.start_date, x.end_date, 
-										  	l_ts_code, l_version_date, 
-										  	l_store_date, 
-										  	l_ts_code, l_store_date, l_version_date;
+               dbms_output.put_line('CASE 1: exectuing dynamic merge statement');
+        
+                 execute immediate l_sql_txt using p_timeseries_data, 
+                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                   l_ts_code, l_version_date, 
+                                   l_store_date, 
+                                   l_ts_code, l_store_date, l_version_date;
           
-			 		dbms_output.put_line('CASE 1: merge stament completed');
+                dbms_output.put_line('CASE 1: merge stament completed');
         
-		  		END LOOP;
-		
-				dbms_output.put_line('CASE 1: multi table store completed');
-		
-			END IF;
+              END LOOP;
+      
+            dbms_output.put_line('CASE 1: multi table store completed');
+      
+         END IF;
  
-	 	WHEN NOT l_override_prot and upper(p_store_rule) = cwms_util.replace_all
-		THEN
-			--
-			--*************************************
-			-- CASE 2 - Store Rule: REPLACE ALL -
-			--         Override:   FALSE -
-			--*************************************
-			-- 
-			dbms_application_info.set_action('CASE 2: merge into  table, no override, replace_all ');
-			dbms_output.put_line('CASE 2: store_all override: FALSE');
-			dbms_output.put_line('CASE 2: table_cnt = ' || table_cnt);
-	  	  
-		  	IF table_cnt=1
-			THEN
-	  
-	  			dbms_output.put_line('CASE 2: single table');
+       WHEN NOT l_override_prot and upper(p_store_rule) = cwms_util.replace_all
+      THEN
+         --
+         --*************************************
+         -- CASE 2 - Store Rule: REPLACE ALL -
+         --         Override:   FALSE -
+         --*************************************
+         -- 
+         dbms_application_info.set_action('CASE 2: merge into  table, no override, replace_all ');
+         dbms_output.put_line('CASE 2: store_all override: FALSE');
+         dbms_output.put_line('CASE 2: table_cnt = ' || table_cnt);
+          
+           IF table_cnt=1
+         THEN
+     
+              dbms_output.put_line('CASE 2: single table');
 
-				MERGE INTO at_tsv t1
-				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
-				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
-				                 at_cwms_ts_spec s,
-									  at_parameter ap,
-				                 cwms_unit_conversion c,
-				                 cwms_base_parameter p,
-				                 cwms_unit u
-				           WHERE s.ts_code = l_ts_code
-				             AND s.parameter_code = ap.parameter_code
-								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND p.unit_code = c.to_unit_code
-				             AND c.from_unit_code = u.unit_code
-				             AND u.unit_id = p_units) t2
-				   ON (    t1.ts_code = l_ts_code
-				       AND t1.date_time = t2.date_time
-				       AND t1.version_date = l_version_date)
-				   WHEN MATCHED THEN
-				      UPDATE
-				         SET t1.VALUE = t2.VALUE, t1.data_entry_date = l_store_date,
-				             t1.quality_code = t2.quality_code
-				         WHERE    (t1.quality_code IN (SELECT quality_code
-				                                         FROM cwms_data_quality q
-				                                        WHERE q.protection_id = 'UNPROTECTED')
-				                  )
-				               OR (t2.quality_code IN (SELECT quality_code
-				                                         FROM cwms_data_quality q
-				                                        WHERE q.protection_id = 'PROTECTED'))
-				   WHEN NOT MATCHED THEN
-				      INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code,
-				              version_date)
-				      VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code,
-				              l_version_date);
-			ELSE
+            MERGE INTO at_tsv t1
+               USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
+                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                        FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
+                             at_cwms_ts_spec s,
+                             at_parameter ap,
+                             cwms_unit_conversion c,
+                             cwms_base_parameter p,
+                             cwms_unit u
+                       WHERE s.ts_code = l_ts_code
+                         AND s.parameter_code = ap.parameter_code
+                         AND ap.base_parameter_code = p.base_parameter_code
+                         AND p.unit_code = c.to_unit_code
+                         AND c.from_unit_code = u.unit_code
+                         AND u.unit_id = p_units) t2
+               ON (    t1.ts_code = l_ts_code
+                   AND t1.date_time = t2.date_time
+                   AND t1.version_date = l_version_date)
+               WHEN MATCHED THEN
+                  UPDATE
+                     SET t1.VALUE = t2.VALUE, t1.data_entry_date = l_store_date,
+                         t1.quality_code = t2.quality_code
+                     WHERE    (t1.quality_code IN (SELECT quality_code
+                                                     FROM cwms_data_quality q
+                                                    WHERE q.protection_id = 'UNPROTECTED')
+                              )
+                           OR (t2.quality_code IN (SELECT quality_code
+                                                     FROM cwms_data_quality q
+                                                    WHERE q.protection_id = 'PROTECTED'))
+               WHEN NOT MATCHED THEN
+                  INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code,
+                          version_date)
+                  VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code,
+                          l_version_date);
+         ELSE
         
-		  		dbms_output.put_line('CASE 2: number of at_tables in schema: ' || table_cnt);
-		
-				FOR x IN (select start_date, end_date, table_name 
-	                		from at_ts_table_properties 
-		           		  where start_date<=maxdate 
-		             	    and end_date>mindate)
-				LOOP
-		
-					dbms_output.put_line('CASE 2: begin storage loop, table_name: ' || x.table_name);
+              dbms_output.put_line('CASE 2: number of at_tables in schema: ' || table_cnt);
+      
+            FOR x IN (select start_date, end_date, table_name 
+                         from at_ts_table_properties 
+                         where start_date<=maxdate 
+                          and end_date>mindate)
+            LOOP
+      
+               dbms_output.put_line('CASE 2: begin storage loop, table_name: ' || x.table_name);
 
-					l_sql_txt:=
-						' merge into '||x.table_name||' t1 
+               l_sql_txt:=
+                  ' merge into '||x.table_name||' t1 
                      using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					               (t.value * c.factor + c.offset) value, 
-								   t.quality_code 
-		                      from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
-							       at_cwms_ts_spec s, 
-									 at_parameter ap,
-								    cwms_unit_conversion c, 
-								    cwms_base_parameter p, 
-								    cwms_unit u
+                              (t.value * c.factor + c.offset) value, 
+                           t.quality_code 
+                            from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
+                            at_cwms_ts_spec s, 
+                            at_parameter ap,
+                            cwms_unit_conversion c, 
+                            cwms_base_parameter p, 
+                            cwms_unit u
                              where s.ts_code        =  :l_ts_code
                                and s.parameter_code =  ap.parameter_code
-										 AND ap.base_parameter_code = p.base_parameter_code
+                               AND ap.base_parameter_code = p.base_parameter_code
                                 and p.unit_code      =  c.to_unit_code 
                                 and c.from_unit_code   =  u.unit_code 
                                 and u.UNIT_ID        =  :p_units 
                                 and date_time        >= :start_date 
-								and date_time        <  :end_date 
-			               ) t2
+                        and date_time        <  :end_date 
+                        ) t2
                         on (    t1.ts_code      = :l_ts_code 
-						    and t1.date_time    = t2.date_time 
-							and t1.version_date = :l_version_date )
+                      and t1.date_time    = t2.date_time 
+                     and t1.version_date = :l_version_date )
                       when matched then 
-		                update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
+                      update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
                          where (t1.quality_code in (select quality_code 
-	                                                  from cwms_data_quality q 
-		  		                                     where q.PROTECTION_ID=''UNPROTECTED''
-				                                    )
-							    )
-							 or (t2.quality_code in (select quality_code 
-	                                                   from cwms_data_quality q 
-		  		                                      where q.PROTECTION_ID=''PROTECTED''
-													)
-								)
+                                                     from cwms_data_quality q 
+                                                   where q.PROTECTION_ID=''UNPROTECTED''
+                                                )
+                         )
+                      or (t2.quality_code in (select quality_code 
+                                                      from cwms_data_quality q 
+                                                    where q.PROTECTION_ID=''PROTECTED''
+                                       )
+                        )
                       when not matched then 
-		                insert (ts_code, date_time, data_entry_date, value, quality_code,version_date ) 
-			            values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code,:l_version_date )
-	                 ';
-						
-					--dbms_output.put_line(l-sql_txt);			
+                      insert (ts_code, date_time, data_entry_date, value, quality_code,version_date ) 
+                     values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code,:l_version_date )
+                    ';
+                  
+               --dbms_output.put_line(l-sql_txt);         
 
-					dbms_output.put_line('CASE 2: Executing dynamic merge statment');
-		  
-		  			execute immediate l_sql_txt using p_timeseries_data, 
-		                           l_ts_code, p_units, x.start_date, x.end_date, 
-										   l_ts_code,l_version_date, 
-										   l_store_date,
-										   l_ts_code, l_store_date, l_version_date;
-		  
-		  			dbms_output.put_line('CASE 2: Merge statement completed');
-		  
-		  		END LOOP;
-		
-				dbms_output.put_line('CASE 2: done with loop');
-		
-			END IF;
-			
-		WHEN upper(p_store_rule) = cwms_util.do_not_replace
-		THEN
-			--
-			--*************************************
-			-- CASE 3 - Store Rule: DO NOT REPLACE
-			--*************************************
-			--  
-			dbms_application_info.set_action('merge into table, do_not_replace ');
-
-			IF table_cnt=1
-			THEN
-			
-				MERGE INTO at_tsv t1
-				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
-				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
-				                 at_cwms_ts_spec s,
-									  at_parameter ap,
-				                 cwms_unit_conversion c,
-				                 cwms_base_parameter p,
-				                 cwms_unit u
-				           WHERE s.ts_code = l_ts_code
-				             AND s.parameter_code = ap.parameter_code
-								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND p.unit_code = c.to_unit_code
-				             AND c.from_unit_code = u.unit_code
-				             AND u.unit_id = p_units) t2
-				   ON (    t1.ts_code = l_ts_code
-				       AND t1.date_time = t2.date_time
-				       AND t1.version_date = l_version_date)
-				   WHEN NOT MATCHED THEN
-				      INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code,
-				              version_date)
-				      VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code,
-				              l_version_date);
-
-			ELSE
-		
-				FOR x IN (select start_date, end_date, table_name 
-	                     from at_ts_table_properties 
-		                 where start_date<=maxdate 
-		                   and end_date>mindate)
-				LOOP
-
-            	l_sql_txt:='merge into '||x.table_name||' t1
-                      using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					                (t.value * c.factor + c.offset) value, 
-									t.quality_code 
-		                       from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
-							       at_cwms_ts_spec s, 
-									 at_parameter ap,
-								    cwms_unit_conversion c, 
-								    cwms_base_parameter p, 
-								    cwms_unit u
-                             where s.ts_code        =  :l_ts_code
-                               and s.parameter_code =  ap.parameter_code
-								and ap.base_parameter_code = p.base_parameter_code
-                                and p.unit_code      =  c.to_unit_code
-                                and c.from_unit_code   =  u.unit_code
-                                and u.UNIT_ID        =  :p_units
-                                and date_time        >= :start_date 
-								and date_time        <  :end_date 
-			                ) t2
-                         on (    t1.ts_code      = :l_ts_code 
-						     and t1.date_time    = t2.date_time 
-							 and t1.version_date = :l_version_date)
-                       when not matched then
-		                 insert (ts_code, date_time, data_entry_date, value, quality_code,version_date ) 
-			              values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
+               dbms_output.put_line('CASE 2: Executing dynamic merge statment');
+        
+                 execute immediate l_sql_txt using p_timeseries_data, 
+                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                 l_ts_code,l_version_date, 
+                                 l_store_date,
+                                 l_ts_code, l_store_date, l_version_date;
+        
+                 dbms_output.put_line('CASE 2: Merge statement completed');
+        
+              END LOOP;
+      
+            dbms_output.put_line('CASE 2: done with loop');
+      
+         END IF;
          
-					execute immediate l_sql_txt using p_timeseries_data, 
-			                        l_ts_code, p_units, x.start_date, x.end_date, 
-											l_ts_code, l_version_date,  
-											l_ts_code, l_store_date, l_version_date;
-				END LOOP;
-				
-			END IF;
-		WHEN upper(p_store_rule) = cwms_util.replace_missing_values_only
-		THEN
-			--
-			--***************************************************
-			-- CASE 4 - Store Rule: REPLACE MISSING VALUES ONLY -
-			--*************************************************
-			--
-			dbms_application_info.set_action('merge into table, replace_missing_values_only');
-   
-			IF table_cnt=1
-			THEN
+      WHEN upper(p_store_rule) = cwms_util.do_not_replace
+      THEN
+         --
+         --*************************************
+         -- CASE 3 - Store Rule: DO NOT REPLACE
+         --*************************************
+         --  
+         dbms_application_info.set_action('merge into table, do_not_replace ');
 
-				MERGE INTO at_tsv t1
-				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
-				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
-				                 at_cwms_ts_spec s,
-									  at_parameter ap,
-				                 cwms_unit_conversion c,
-				                 cwms_base_parameter p,
-				                 cwms_unit u
-				           WHERE s.ts_code = l_ts_code
-				             AND s.parameter_code = ap.parameter_code
-								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND p.unit_code = c.to_unit_code
-				             AND c.from_unit_code = u.unit_code
-				             AND u.unit_id = p_units) t2
-				   ON (    t1.ts_code = l_ts_code
-				       AND t1.date_time = t2.date_time
-				       AND t1.version_date = l_version_date)
-				   WHEN MATCHED THEN
-				      UPDATE
-				         SET t1.VALUE = t2.VALUE, t1.quality_code = t2.quality_code,
-				             t1.data_entry_date = l_store_date
-				         WHERE t1.quality_code IN (SELECT quality_code
-				                                     FROM cwms_data_quality q
-				                                    WHERE q.validity_id = 'MISSING')
-				   WHEN NOT MATCHED THEN
-				      INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code)
-				      VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code);
+         IF table_cnt=1
+         THEN
+         
+            MERGE INTO at_tsv t1
+               USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
+                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                        FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
+                             at_cwms_ts_spec s,
+                             at_parameter ap,
+                             cwms_unit_conversion c,
+                             cwms_base_parameter p,
+                             cwms_unit u
+                       WHERE s.ts_code = l_ts_code
+                         AND s.parameter_code = ap.parameter_code
+                         AND ap.base_parameter_code = p.base_parameter_code
+                         AND p.unit_code = c.to_unit_code
+                         AND c.from_unit_code = u.unit_code
+                         AND u.unit_id = p_units) t2
+               ON (    t1.ts_code = l_ts_code
+                   AND t1.date_time = t2.date_time
+                   AND t1.version_date = l_version_date)
+               WHEN NOT MATCHED THEN
+                  INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code,
+                          version_date)
+                  VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code,
+                          l_version_date);
 
-			ELSE
-		
-				FOR x IN (select start_date, end_date, table_name 
-	                     from at_ts_table_properties 
-		                 where start_date<=maxdate 
-		                  and end_date>mindate)
-				LOOP
-        
-            	l_sql_txt:='merge into '||x.table_name||' t1
+         ELSE
+      
+            FOR x IN (select start_date, end_date, table_name 
+                        from at_ts_table_properties 
+                       where start_date<=maxdate 
+                         and end_date>mindate)
+            LOOP
+
+               l_sql_txt:='merge into '||x.table_name||' t1
                       using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					                (t.value * c.factor + c.offset) value, 
-									t.quality_code 
-		                       from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
-							       at_cwms_ts_spec s, 
-									 at_parameter ap,
-								    cwms_unit_conversion c, 
-								    cwms_base_parameter p, 
-								    cwms_unit u
+                               (t.value * c.factor + c.offset) value, 
+                           t.quality_code 
+                             from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
+                            at_cwms_ts_spec s, 
+                            at_parameter ap,
+                            cwms_unit_conversion c, 
+                            cwms_base_parameter p, 
+                            cwms_unit u
                              where s.ts_code        =  :l_ts_code
                                and s.parameter_code =  ap.parameter_code
-								and ap.base_parameter_code = p.base_parameter_code
+                        and ap.base_parameter_code = p.base_parameter_code
                                 and p.unit_code      =  c.to_unit_code
                                 and c.from_unit_code   =  u.unit_code
                                 and u.UNIT_ID        =  :p_units
                                 and date_time        >= :start_date 
-								and date_time        <  :end_date
-			                ) t2
+                        and date_time        <  :end_date 
+                         ) t2
                          on (    t1.ts_code      = :l_ts_code 
-						     and t1.date_time    = t2.date_time 
-							 and t1.version_date = :l_version_date)
-                       when matched then 
-		                 update set t1.value = t2.value, t1.quality_code = t2.quality_code, t1.data_entry_date = :l_store_date 
-                          where t1.quality_code in (select quality_code 
-						                              from cwms_data_quality q 
-													 where q.VALIDITY_ID=''MISSING'')
-                       when not matched then 
-		                 insert (ts_code,  date_time,    data_entry_date, value,    quality_code,    version_date ) 
-		  	             values (:l_ts_code, t2.date_time, :l_store_date,      t2.value, t2.quality_code, :l_version_date )';
- 
- 					execute immediate l_sql_txt using p_timeseries_data, 
-			                        l_ts_code, p_units, x.start_date, x.end_date, 
-											l_ts_code, l_version_date, 
-											l_store_date, 
-											l_ts_code, l_store_date, l_version_date;
-				END LOOP;
-				
-			END IF;
-      WHEN l_override_prot AND upper(p_store_rule) = cwms_util.replace_with_non_missing
-		THEN
-			--
-			--*******************************************
-			-- CASE 5 - Store Rule: REPLACE W/NON-MISSING -
-			--         Override:   TRUE -
-			--*******************************************
-			--  
-			dbms_application_info.set_action('merge into table, override, replace_with_non_missing ');
-
-			IF table_cnt=1
-			THEN
-			
-				MERGE INTO at_tsv t1
-				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
-				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
-				                 at_cwms_ts_spec s,
-									  at_parameter ap,
-				                 cwms_unit_conversion c,
-				                 cwms_base_parameter p,
-				                 cwms_unit u,
-				                 cwms_data_quality q
-				           WHERE s.ts_code = l_ts_code
-				             AND s.parameter_code = ap.parameter_code
-								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND q.quality_code = t.quality_code
-				             AND p.unit_code = c.to_unit_code
-				             AND c.from_unit_code = u.unit_code
-				             AND u.unit_id = p_units) t2
-				   ON (    t1.ts_code = l_ts_code
-				       AND t1.date_time = t2.date_time
-				       AND t1.version_date = l_version_date)
-				   WHEN MATCHED THEN
-				      UPDATE
-				         SET t1.VALUE = t2.VALUE, t1.data_entry_date = l_store_date,
-				             t1.quality_code = t2.quality_code
-				         WHERE t2.quality_code NOT IN (SELECT quality_code
-				                                         FROM cwms_data_quality
-				                                        WHERE validity_id = 'MISSING')
-				   WHEN NOT MATCHED THEN
-				      INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code)
-				      VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code);
-
-			ELSE
+                       and t1.date_time    = t2.date_time 
+                      and t1.version_date = :l_version_date)
+                       when not matched then
+                       insert (ts_code, date_time, data_entry_date, value, quality_code,version_date ) 
+                       values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
+         
+               execute immediate l_sql_txt using p_timeseries_data, 
+                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                 l_ts_code, l_version_date,  
+                                 l_ts_code, l_store_date, l_version_date;
+            END LOOP;
+            
+         END IF;
+      WHEN upper(p_store_rule) = cwms_util.replace_missing_values_only
+      THEN
+         --
+         --***************************************************
+         -- CASE 4 - Store Rule: REPLACE MISSING VALUES ONLY -
+         --*************************************************
+         --
+         dbms_application_info.set_action('merge into table, replace_missing_values_only');
    
-				FOR x IN (select start_date, end_date, table_name 
-		                  from at_ts_table_properties 
-					        where start_date <= maxdate 
-					          and end_date   >  mindate)
-				LOOP
+         IF table_cnt=1
+         THEN
+
+            MERGE INTO at_tsv t1
+               USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
+                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                        FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
+                             at_cwms_ts_spec s,
+                             at_parameter ap,
+                             cwms_unit_conversion c,
+                             cwms_base_parameter p,
+                             cwms_unit u
+                       WHERE s.ts_code = l_ts_code
+                         AND s.parameter_code = ap.parameter_code
+                         AND ap.base_parameter_code = p.base_parameter_code
+                         AND p.unit_code = c.to_unit_code
+                         AND c.from_unit_code = u.unit_code
+                         AND u.unit_id = p_units) t2
+               ON (    t1.ts_code = l_ts_code
+                   AND t1.date_time = t2.date_time
+                   AND t1.version_date = l_version_date)
+               WHEN MATCHED THEN
+                  UPDATE
+                     SET t1.VALUE = t2.VALUE, t1.quality_code = t2.quality_code,
+                         t1.data_entry_date = l_store_date
+                     WHERE t1.quality_code IN (SELECT quality_code
+                                                 FROM cwms_data_quality q
+                                                WHERE q.validity_id = 'MISSING')
+               WHEN NOT MATCHED THEN
+                  INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code)
+                  VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code);
+
+         ELSE
+      
+            FOR x IN (select start_date, end_date, table_name 
+                        from at_ts_table_properties 
+                       where start_date<=maxdate 
+                        and end_date>mindate)
+            LOOP
         
-            	l_sql_txt:='merge into '||x.table_name||' t1
+               l_sql_txt:='merge into '||x.table_name||' t1
                       using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					                (t.value * c.factor + c.offset) value, 
-									t.quality_code 
-					           from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
-							        at_cwms_ts_spec s, 
-									  at_parameter ap,
-									cwms_unit_conversion c, 
-									cwms_base_parameter p, 
-									cwms_unit u, 
-									cwms_data_quality q
+                               (t.value * c.factor + c.offset) value, 
+                           t.quality_code 
+                             from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
+                            at_cwms_ts_spec s, 
+                            at_parameter ap,
+                            cwms_unit_conversion c, 
+                            cwms_base_parameter p, 
+                            cwms_unit u
+                             where s.ts_code        =  :l_ts_code
+                               and s.parameter_code =  ap.parameter_code
+                        and ap.base_parameter_code = p.base_parameter_code
+                                and p.unit_code      =  c.to_unit_code
+                                and c.from_unit_code   =  u.unit_code
+                                and u.UNIT_ID        =  :p_units
+                                and date_time        >= :start_date 
+                        and date_time        <  :end_date
+                         ) t2
+                         on (    t1.ts_code      = :l_ts_code 
+                       and t1.date_time    = t2.date_time 
+                      and t1.version_date = :l_version_date)
+                       when matched then 
+                       update set t1.value = t2.value, t1.quality_code = t2.quality_code, t1.data_entry_date = :l_store_date 
+                          where t1.quality_code in (select quality_code 
+                                                from cwms_data_quality q 
+                                        where q.VALIDITY_ID=''MISSING'')
+                       when not matched then 
+                       insert (ts_code,  date_time,    data_entry_date, value,    quality_code,    version_date ) 
+                        values (:l_ts_code, t2.date_time, :l_store_date,      t2.value, t2.quality_code, :l_version_date )';
+ 
+                execute immediate l_sql_txt using p_timeseries_data, 
+                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                 l_ts_code, l_version_date, 
+                                 l_store_date, 
+                                 l_ts_code, l_store_date, l_version_date;
+            END LOOP;
+            
+         END IF;
+      WHEN l_override_prot AND upper(p_store_rule) = cwms_util.replace_with_non_missing
+      THEN
+         --
+         --*******************************************
+         -- CASE 5 - Store Rule: REPLACE W/NON-MISSING -
+         --         Override:   TRUE -
+         --*******************************************
+         --  
+         dbms_application_info.set_action('merge into table, override, replace_with_non_missing ');
+
+         IF table_cnt=1
+         THEN
+         
+            MERGE INTO at_tsv t1
+               USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
+                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                        FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
+                             at_cwms_ts_spec s,
+                             at_parameter ap,
+                             cwms_unit_conversion c,
+                             cwms_base_parameter p,
+                             cwms_unit u,
+                             cwms_data_quality q
+                       WHERE s.ts_code = l_ts_code
+                         AND s.parameter_code = ap.parameter_code
+                         AND ap.base_parameter_code = p.base_parameter_code
+                         AND q.quality_code = t.quality_code
+                         AND p.unit_code = c.to_unit_code
+                         AND c.from_unit_code = u.unit_code
+                         AND u.unit_id = p_units) t2
+               ON (    t1.ts_code = l_ts_code
+                   AND t1.date_time = t2.date_time
+                   AND t1.version_date = l_version_date)
+               WHEN MATCHED THEN
+                  UPDATE
+                     SET t1.VALUE = t2.VALUE, t1.data_entry_date = l_store_date,
+                         t1.quality_code = t2.quality_code
+                     WHERE t2.quality_code NOT IN (SELECT quality_code
+                                                     FROM cwms_data_quality
+                                                    WHERE validity_id = 'MISSING')
+               WHEN NOT MATCHED THEN
+                  INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code)
+                  VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code);
+
+         ELSE
+   
+            FOR x IN (select start_date, end_date, table_name 
+                        from at_ts_table_properties 
+                       where start_date <= maxdate 
+                         and end_date   >  mindate)
+            LOOP
+        
+               l_sql_txt:='merge into '||x.table_name||' t1
+                      using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
+                               (t.value * c.factor + c.offset) value, 
+                           t.quality_code 
+                          from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
+                             at_cwms_ts_spec s, 
+                             at_parameter ap,
+                           cwms_unit_conversion c, 
+                           cwms_base_parameter p, 
+                           cwms_unit u, 
+                           cwms_data_quality q
                               where s.ts_code        =  :l_ts_code
                                 and s.parameter_code =  ap.parameter_code
-								and ap.base_parameter_code = p.base_parameter_code
+                        and ap.base_parameter_code = p.base_parameter_code
                                 and q.quality_code   =  t.quality_code
                                 and p.unit_code      =  c.to_unit_code
                                 and c.from_unit_code   =  u.unit_code
                                 and u.UNIT_ID        =  :p_units
                                 and date_time        >= :start_date 
-						        and date_time        <  :end_date   
-						    ) t2
+                          and date_time        <  :end_date   
+                      ) t2
                          on (    t1.ts_code      = :l_ts_code 
-						     and t1.date_time    = t2.date_time 
-							 and t1.version_date = :l_version_date)
+                       and t1.date_time    = t2.date_time 
+                      and t1.version_date = :l_version_date)
                        when matched then 
-					     update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
-						  where t2.quality_code not in (select quality_code
-						                                  from cwms_data_quality
-														 where validity_id = ''MISSING'')									 
+                    update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
+                    where t2.quality_code not in (select quality_code
+                                                    from cwms_data_quality
+                                           where validity_id = ''MISSING'')                            
                        when not matched then 
-					     insert (ts_code,  date_time,    data_entry_date, value,    quality_code,    version_date ) 
-						 values (:l_ts_code, t2.date_time, :l_store_date,      t2.value, t2.quality_code, :l_version_date )';  
+                    insert (ts_code,  date_time,    data_entry_date, value,    quality_code,    version_date ) 
+                   values (:l_ts_code, t2.date_time, :l_store_date,      t2.value, t2.quality_code, :l_version_date )';  
    
-            	execute immediate l_sql_txt using p_timeseries_data, 
-			                     l_ts_code, p_units, x.start_date, x.end_date, 
-										l_ts_code, l_version_date, 
-										l_store_date, 
-										l_ts_code, l_store_date, l_version_date;
-				END LOOP;
-			END IF;
+               execute immediate l_sql_txt using p_timeseries_data, 
+                              l_ts_code, p_units, x.start_date, x.end_date, 
+                              l_ts_code, l_version_date, 
+                              l_store_date, 
+                              l_ts_code, l_store_date, l_version_date;
+            END LOOP;
+         END IF;
 
-		WHEN NOT l_override_prot AND upper(p_store_rule) = cwms_util.replace_with_non_missing
-		THEN
-			--
-			--******************************************* 
-			-- Case 6 - Store Rule: Replace w/Non-Missing -
-			--         Override:   FALSE -
-			--*******************************************
-			--  
-			dbms_application_info.set_action('merge into table, no override, replace_with_non_missing ');
+      WHEN NOT l_override_prot AND upper(p_store_rule) = cwms_util.replace_with_non_missing
+      THEN
+         --
+         --******************************************* 
+         -- Case 6 - Store Rule: Replace w/Non-Missing -
+         --         Override:   FALSE -
+         --*******************************************
+         --  
+         dbms_application_info.set_action('merge into table, no override, replace_with_non_missing ');
 
-			IF table_cnt=1
-			THEN 
+         IF table_cnt=1
+         THEN 
   
-				MERGE INTO at_tsv t1
-				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
-				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
-				                 at_cwms_ts_spec s,
-									  at_parameter ap,
-				                 cwms_unit_conversion c,
-				                 cwms_base_parameter p,
-				                 cwms_unit u,
-				                 cwms_data_quality q
-				           WHERE s.ts_code = l_ts_code
-				             AND s.parameter_code = ap.parameter_code
-								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND q.quality_code = t.quality_code
-				             AND p.unit_code = c.to_unit_code
-				             AND c.from_unit_code = u.unit_code
-				             AND u.unit_id = p_units) t2
-				   ON (    t1.ts_code = l_ts_code
-				       AND t1.date_time = t2.date_time
-				       AND t1.version_date = l_version_date)
-				   WHEN MATCHED THEN
-				      UPDATE
-				         SET t1.VALUE = t2.VALUE, t1.data_entry_date = l_store_date,
-				             t1.quality_code = t2.quality_code
-				         WHERE     (   (t1.quality_code IN (
-				                                         SELECT quality_code
-				                                           FROM cwms_data_quality q
-				                                          WHERE q.protection_id =
-				                                                                 'UNPROTECTED')
-				                       )
-				                    OR (t2.quality_code IN (
-				                                           SELECT quality_code
-				                                             FROM cwms_data_quality q
-				                                            WHERE q.protection_id =
-				                                                                   'PROTECTED')
-				                       )
-				                   )
-				               AND (t2.quality_code NOT IN (SELECT quality_code
-				                                              FROM cwms_data_quality q
-				                                             WHERE q.validity_id = 'MISSING')
-				                   )
-				   WHEN NOT MATCHED THEN
-				      INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code,
-				              version_date)
-				      VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code,
-				              l_version_date);
+            MERGE INTO at_tsv t1
+               USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
+                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                        FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
+                             at_cwms_ts_spec s,
+                             at_parameter ap,
+                             cwms_unit_conversion c,
+                             cwms_base_parameter p,
+                             cwms_unit u,
+                             cwms_data_quality q
+                       WHERE s.ts_code = l_ts_code
+                         AND s.parameter_code = ap.parameter_code
+                         AND ap.base_parameter_code = p.base_parameter_code
+                         AND q.quality_code = t.quality_code
+                         AND p.unit_code = c.to_unit_code
+                         AND c.from_unit_code = u.unit_code
+                         AND u.unit_id = p_units) t2
+               ON (    t1.ts_code = l_ts_code
+                   AND t1.date_time = t2.date_time
+                   AND t1.version_date = l_version_date)
+               WHEN MATCHED THEN
+                  UPDATE
+                     SET t1.VALUE = t2.VALUE, t1.data_entry_date = l_store_date,
+                         t1.quality_code = t2.quality_code
+                     WHERE     (   (t1.quality_code IN (
+                                                     SELECT quality_code
+                                                       FROM cwms_data_quality q
+                                                      WHERE q.protection_id =
+                                                                             'UNPROTECTED')
+                                   )
+                                OR (t2.quality_code IN (
+                                                       SELECT quality_code
+                                                         FROM cwms_data_quality q
+                                                        WHERE q.protection_id =
+                                                                               'PROTECTED')
+                                   )
+                               )
+                           AND (t2.quality_code NOT IN (SELECT quality_code
+                                                          FROM cwms_data_quality q
+                                                         WHERE q.validity_id = 'MISSING')
+                               )
+               WHEN NOT MATCHED THEN
+                  INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code,
+                          version_date)
+                  VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code,
+                          l_version_date);
 
-			ELSE
+         ELSE
 
-				FOR x IN (select start_date, end_date, table_name 
-		                  from at_ts_table_properties 
-				           where start_date<=maxdate 
-				             and end_date>mindate)
-				LOOP
+            FOR x IN (select start_date, end_date, table_name 
+                        from at_ts_table_properties 
+                       where start_date<=maxdate 
+                         and end_date>mindate)
+            LOOP
         
-		  			l_sql_txt:='merge into '||x.table_name||' t1
+                 l_sql_txt:='merge into '||x.table_name||' t1
                     using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					              (t.value * c.factor + c.offset) value, 
-								  t.quality_code 
-					         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
-							      at_cwms_ts_spec s, 
-									at_parameter ap,
-								  cwms_unit_conversion c, 
-								  cwms_base_parameter p, 
-								  cwms_unit u,  
-								  cwms_data_quality q
+                             (t.value * c.factor + c.offset) value, 
+                          t.quality_code 
+                        from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
+                           at_cwms_ts_spec s, 
+                           at_parameter ap,
+                          cwms_unit_conversion c, 
+                          cwms_base_parameter p, 
+                          cwms_unit u,  
+                          cwms_data_quality q
                             where s.ts_code        =  :l_ts_code
                               and s.parameter_code =  p.parameter_code
-							  and ap.base_parameter_code = p.base_parameter_code
+                       and ap.base_parameter_code = p.base_parameter_code
                               and q.quality_code   =  t.quality_code
                               and p.unit_code      =  c.to_unit_code
                               and c.from_unit_code   =  u.unit_code
                               and u.UNIT_ID        =  :p_units
                               and date_time        >= :start_date 
-							  and date_time        <  :end_date     
-						  ) t2
+                       and date_time        <  :end_date     
+                    ) t2
                        on ( t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                      when matched then 
-					   update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
+                  update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
                         where (  (t1.quality_code in (select quality_code 
-						                            from cwms_data_quality q 
-												   where q.PROTECTION_ID=''UNPROTECTED''
-												  )
-							     )
-			                  or (t2.quality_code in (select quality_code 
-	                                                 from cwms_data_quality q 
-		  		                                    where q.PROTECTION_ID=''PROTECTED''
-									              )
-				                 )
-							  )
-						  and (t2.quality_code not in (select quality_code 
-	                                                     from cwms_data_quality q 
-		  		                                        where q.VALIDITY_ID=''MISSING''
-									                  )
-				              )
+                                              from cwms_data_quality q 
+                                       where q.PROTECTION_ID=''UNPROTECTED''
+                                      )
+                          )
+                           or (t2.quality_code in (select quality_code 
+                                                    from cwms_data_quality q 
+                                                  where q.PROTECTION_ID=''PROTECTED''
+                                         )
+                             )
+                       )
+                    and (t2.quality_code not in (select quality_code 
+                                                        from cwms_data_quality q 
+                                                      where q.VALIDITY_ID=''MISSING''
+                                             )
+                          )
                      when not matched then 
-					   insert (ts_code, date_time, data_entry_date, value, quality_code,version_date ) 
-					   values (:l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
+                  insert (ts_code, date_time, data_entry_date, value, quality_code,version_date ) 
+                  values (:l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
    
-					execute immediate l_sql_txt using p_timeseries_data, 
-		                           l_ts_code, p_units, x.start_date, x.end_date, 
-										   l_ts_code, l_version_date, 
-										   l_store_date, 
-										   l_ts_code, l_store_date, l_version_date;
-				END LOOP;
-				
-			END IF;
-		WHEN NOT l_override_prot AND upper(p_store_rule)=cwms_util.delete_insert
-		THEN
-			--
-			--*************************************
-			-- CASE 7 - Store Rule: DELETE - INSERT -
-			--         Override:   FALSE -
-			--*************************************
-			--  
-			dbms_application_info.set_action('delete/merge from table, no override, delete_insert ');
-			dbms_output.put_line('CASE 7: STORE_TS rule: delete-insert, FALSE');
-			dbms_output.put_line('CASE 7: table_cnt: ' || table_cnt);
+               execute immediate l_sql_txt using p_timeseries_data, 
+                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                 l_ts_code, l_version_date, 
+                                 l_store_date, 
+                                 l_ts_code, l_store_date, l_version_date;
+            END LOOP;
+            
+         END IF;
+      WHEN NOT l_override_prot AND upper(p_store_rule)=cwms_util.delete_insert
+      THEN
+         --
+         --*************************************
+         -- CASE 7 - Store Rule: DELETE - INSERT -
+         --         Override:   FALSE -
+         --*************************************
+         --  
+         dbms_application_info.set_action('delete/merge from table, no override, delete_insert ');
+         dbms_output.put_line('CASE 7: STORE_TS rule: delete-insert, FALSE');
+         dbms_output.put_line('CASE 7: table_cnt: ' || table_cnt);
 
-			IF table_cnt=1
-			THEN
-	  
-	  			dbms_output.put_line('CASE 7: Single Table Section');
+         IF table_cnt=1
+         THEN
+     
+              dbms_output.put_line('CASE 7: Single Table Section');
       
-				DELETE FROM at_tsv t1
-				      WHERE date_time
-				               BETWEEN (SELECT MIN (CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE))
-				                          FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t)
-				                   AND (SELECT MAX (CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE))
-				                          FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t)
-				        AND t1.ts_code = l_ts_code
-				        AND t1.version_date = l_version_date
-				        AND t1.quality_code IN (SELECT quality_code
-				                                  FROM cwms_data_quality q
-				                                 WHERE q.protection_id = 'UNPROTECTED');
+            DELETE FROM at_tsv t1
+                  WHERE date_time
+                           BETWEEN (SELECT MIN (CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE))
+                                      FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t)
+                               AND (SELECT MAX (CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE))
+                                      FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t)
+                    AND t1.ts_code = l_ts_code
+                    AND t1.version_date = l_version_date
+                    AND t1.quality_code IN (SELECT quality_code
+                                              FROM cwms_data_quality q
+                                             WHERE q.protection_id = 'UNPROTECTED');
 
-				MERGE INTO at_tsv t1
-				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
-				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
-				                 at_cwms_ts_spec s,
-									  at_parameter ap,
-				                 cwms_unit_conversion c,
-				                 cwms_base_parameter p,
-				                 cwms_unit u
-				           WHERE s.ts_code = l_ts_code
-				             AND s.parameter_code = ap.parameter_code
-								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND p.unit_code = c.to_unit_code
-				             AND c.from_unit_code = u.unit_code
-				             AND u.unit_id = p_units) t2
-				   ON (    t1.ts_code = l_ts_code
-				       AND t1.date_time = t2.date_time
-				       AND t1.version_date = l_version_date)
-				   WHEN NOT MATCHED THEN
-				      INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code)
-				      VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code)
-				   WHEN MATCHED THEN
-				      UPDATE
-				         SET t1.VALUE = t2.VALUE, t1.quality_code = t2.quality_code,
-				             t1.data_entry_date = l_store_date
-				         WHERE t2.quality_code IN (SELECT quality_code
-				                                     FROM cwms_data_quality q
-				                                    WHERE q.protection_id = 'PROTECTED');
-																
-			ELSE
-	  
-	  			dbms_output.put_line('CASE 7: Multiple Table Section');
+            MERGE INTO at_tsv t1
+               USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
+                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                        FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
+                             at_cwms_ts_spec s,
+                             at_parameter ap,
+                             cwms_unit_conversion c,
+                             cwms_base_parameter p,
+                             cwms_unit u
+                       WHERE s.ts_code = l_ts_code
+                         AND s.parameter_code = ap.parameter_code
+                         AND ap.base_parameter_code = p.base_parameter_code
+                         AND p.unit_code = c.to_unit_code
+                         AND c.from_unit_code = u.unit_code
+                         AND u.unit_id = p_units) t2
+               ON (    t1.ts_code = l_ts_code
+                   AND t1.date_time = t2.date_time
+                   AND t1.version_date = l_version_date)
+               WHEN NOT MATCHED THEN
+                  INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code)
+                  VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code)
+               WHEN MATCHED THEN
+                  UPDATE
+                     SET t1.VALUE = t2.VALUE, t1.quality_code = t2.quality_code,
+                         t1.data_entry_date = l_store_date
+                     WHERE t2.quality_code IN (SELECT quality_code
+                                                 FROM cwms_data_quality q
+                                                WHERE q.protection_id = 'PROTECTED');
+                                                
+         ELSE
+     
+              dbms_output.put_line('CASE 7: Multiple Table Section');
 
-				FOR x IN (select start_date, end_date, table_name 
-		                  from at_ts_table_properties 
-				           where start_date <= maxdate 
-				             and end_date   >  mindate)
-				LOOP
+            FOR x IN (select start_date, end_date, table_name 
+                        from at_ts_table_properties 
+                       where start_date <= maxdate 
+                         and end_date   >  mindate)
+            LOOP
         
-		  			dbms_output.put_line('CASE 7: preparing DELETE FROM dynamic sql for table: ' || x.table_name);
-		
-					l_sql_txt:=' delete from '||x.table_name||' t1
+                 dbms_output.put_line('CASE 7: preparing DELETE FROM dynamic sql for table: ' || x.table_name);
+      
+               l_sql_txt:=' delete from '||x.table_name||' t1
                       where date_time between (select min(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE)) 
-					                             from TABLE(cast(:p_timeseries_data as tsv_array)) t) 
-										  and (select max(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE)) 
-										         from TABLE(cast(:p_timeseries_data as tsv_array)) t)
+                                            from TABLE(cast(:p_timeseries_data as tsv_array)) t) 
+                                and (select max(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE)) 
+                                       from TABLE(cast(:p_timeseries_data as tsv_array)) t)
                         and t1.ts_code = :l_ts_code
                         and t1.version_date = :l_version_date
                         and t1.quality_code in (select quality_code 
-						                          from cwms_data_quality q 
-												 where q.PROTECTION_ID=''UNPROTECTED'')';
+                                            from cwms_data_quality q 
+                                     where q.PROTECTION_ID=''UNPROTECTED'')';
 
-					--dbms_output.put_line(l_sql_txt);		  
-					dbms_output.put_line('CASE 7: Executing DELETE FROM dynamic sql for table: ' || x.table_name);
+               --dbms_output.put_line(l_sql_txt);        
+               dbms_output.put_line('CASE 7: Executing DELETE FROM dynamic sql for table: ' || x.table_name);
 
-					execute immediate l_sql_txt using p_timeseries_data, p_timeseries_data, l_ts_code, l_version_date;
+               execute immediate l_sql_txt using p_timeseries_data, p_timeseries_data, l_ts_code, l_version_date;
 
-					dbms_output.put_line('CASE 7: preparing MERGE INTO dynamic sql for table: ' || x.table_name);
+               dbms_output.put_line('CASE 7: preparing MERGE INTO dynamic sql for table: ' || x.table_name);
 
-					l_sql_txt:='merge into '||x.table_name||' t1
+               l_sql_txt:='merge into '||x.table_name||' t1
                     using (select  CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time,
-					               (t.value * c.factor + c.offset) value, 
-								   t.quality_code 
-					         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
-							      at_cwms_ts_spec s,
-									at_parameter ap,
-								  cwms_unit_conversion c, 
-								  cwms_base_parameter p, 
-								  cwms_unit u
+                              (t.value * c.factor + c.offset) value, 
+                           t.quality_code 
+                        from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
+                           at_cwms_ts_spec s,
+                           at_parameter ap,
+                          cwms_unit_conversion c, 
+                          cwms_base_parameter p, 
+                          cwms_unit u
                             where s.ts_code        =  :l_ts_code
                               and s.parameter_code =  ap.parameter_code
-  							  and ap.base_parameter_code = p.base_parameter_code
+                         and ap.base_parameter_code = p.base_parameter_code
                               and p.unit_code      =  c.to_unit_code
                               and c.from_unit_code   =  u.unit_code
                               and u.UNIT_ID        =  :p_units
                               and date_time        >= :start_date 
-							  and date_time        <  :end_date   
-						  ) t2
+                       and date_time        <  :end_date   
+                    ) t2
                        on (    t1.ts_code      = :l_ts_code 
-					       and t1.date_time    =  t2.date_time 
-						   and t1.version_date = :l_version_date)
+                      and t1.date_time    =  t2.date_time 
+                     and t1.version_date = :l_version_date)
                      when not matched then
-					   insert (ts_code, date_time, data_entry_date, value, quality_code, version_date ) 
-					   values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )
+                  insert (ts_code, date_time, data_entry_date, value, quality_code, version_date ) 
+                  values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )
                    when matched then 
-					   update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
+                  update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
                         where t2.quality_code in (select quality_code from cwms_data_quality q where q.PROTECTION_ID=''PROTECTED'')
                  ';
-				 
-				 	dbms_output.put_line('CASE 7: Executing MERGE INTO dynamic sql for table: ' || x.table_name);
-				   --dbms_output.put_line(l_sql_txt);
-		  
-		  		   execute immediate l_sql_txt using p_timeseries_data, 
-		                           l_ts_code, p_units, x.start_date, x.end_date, 
-										   l_ts_code, l_version_date, 
-										   l_ts_code, l_store_date, l_version_date,
-										   l_store_date;
-		  
-		  			dbms_output.put_line('CASE 7: Merge completed.');
-		  
-		  		END LOOP;
-		
-				dbms_output.put_line('CASE 7: delete-insert FALSE Completed.');
-				
-			END IF;
- 
- 		WHEN l_override_prot AND upper(p_store_rule) = cwms_util.delete_insert
-		THEN
-			--
-			--************************************* 
-			--CASE 8 - Store Rule: DELETE - INSERT -
-			--         Override:   TRUE -
-			--*************************************
-			-- 
-		   dbms_application_info.set_action('delete/merge from  table, override, delete_insert ');
-			dbms_output.put_line('CASE 8: STORE_TS rule: delete-insert, TRUE');
-			dbms_output.put_line('CASE 8: table_cnt: ' || table_cnt);
-		
-      	IF table_cnt=1
-			THEN 
-
-         	dbms_output.put_line('CASE 8: Single Table Section');
-	  
-				DELETE FROM at_tsv t1
-				      WHERE date_time
-				               BETWEEN (SELECT MIN (CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE))
-				                          FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t)
-				                   AND (SELECT MAX (CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE))
-				                          FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t)
-				        AND t1.ts_code = l_ts_code
-				        AND t1.version_date = l_version_date;
-				
-				MERGE INTO at_tsv t1
-				   USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-				                 (t.value * c.factor + c.offset) VALUE, t.quality_code
-				            FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
-				                 at_cwms_ts_spec s,
-									  at_parameter ap,
-				                 cwms_unit_conversion c,
-				                 cwms_base_parameter p,
-				                 cwms_unit u
-				           WHERE s.ts_code = l_ts_code
-				             AND s.parameter_code = ap.parameter_code
-								 AND ap.base_parameter_code = p.base_parameter_code
-				             AND p.unit_code = c.to_unit_code
-				             AND c.from_unit_code = u.unit_code
-				             AND u.unit_id = p_units) t2
-				   ON (    t1.ts_code = l_ts_code
-				       AND t1.date_time = t2.date_time
-				       AND t1.version_date = l_version_date)
-				   WHEN NOT MATCHED THEN
-				      INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code)
-				      VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code);
-
-		   ELSE
-   
-				FOR x IN (select start_date, end_date, table_name 
-		                  from at_ts_table_properties 
-				           where start_date<=maxdate 
-				             and end_date>mindate)
-				LOOP
+             
+                dbms_output.put_line('CASE 7: Executing MERGE INTO dynamic sql for table: ' || x.table_name);
+               --dbms_output.put_line(l_sql_txt);
         
-		  			dbms_output.put_line('CASE 8: preparing DELETE FROM dynamic sql for av_tsv view');
+                 execute immediate l_sql_txt using p_timeseries_data, 
+                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                 l_ts_code, l_version_date, 
+                                 l_ts_code, l_store_date, l_version_date,
+                                 l_store_date;
+        
+                 dbms_output.put_line('CASE 7: Merge completed.');
+        
+              END LOOP;
+      
+            dbms_output.put_line('CASE 7: delete-insert FALSE Completed.');
+            
+         END IF;
+ 
+       WHEN l_override_prot AND upper(p_store_rule) = cwms_util.delete_insert
+      THEN
+         --
+         --************************************* 
+         --CASE 8 - Store Rule: DELETE - INSERT -
+         --         Override:   TRUE -
+         --*************************************
+         -- 
+         dbms_application_info.set_action('delete/merge from  table, override, delete_insert ');
+         dbms_output.put_line('CASE 8: STORE_TS rule: delete-insert, TRUE');
+         dbms_output.put_line('CASE 8: table_cnt: ' || table_cnt);
+      
+         IF table_cnt=1
+         THEN 
 
-					l_sql_txt:='delete from '||x.table_name||' t1
+            dbms_output.put_line('CASE 8: Single Table Section');
+     
+            DELETE FROM at_tsv t1
+                  WHERE date_time
+                           BETWEEN (SELECT MIN (CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE))
+                                      FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t)
+                               AND (SELECT MAX (CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE))
+                                      FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t)
+                    AND t1.ts_code = l_ts_code
+                    AND t1.version_date = l_version_date;
+            
+            MERGE INTO at_tsv t1
+               USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
+                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                        FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
+                             at_cwms_ts_spec s,
+                             at_parameter ap,
+                             cwms_unit_conversion c,
+                             cwms_base_parameter p,
+                             cwms_unit u
+                       WHERE s.ts_code = l_ts_code
+                         AND s.parameter_code = ap.parameter_code
+                         AND ap.base_parameter_code = p.base_parameter_code
+                         AND p.unit_code = c.to_unit_code
+                         AND c.from_unit_code = u.unit_code
+                         AND u.unit_id = p_units) t2
+               ON (    t1.ts_code = l_ts_code
+                   AND t1.date_time = t2.date_time
+                   AND t1.version_date = l_version_date)
+               WHEN NOT MATCHED THEN
+                  INSERT (ts_code, date_time, data_entry_date, VALUE, quality_code)
+                  VALUES (l_ts_code, t2.date_time, l_store_date, t2.VALUE, t2.quality_code);
+
+         ELSE
+   
+            FOR x IN (select start_date, end_date, table_name 
+                        from at_ts_table_properties 
+                       where start_date<=maxdate 
+                         and end_date>mindate)
+            LOOP
+        
+                 dbms_output.put_line('CASE 8: preparing DELETE FROM dynamic sql for av_tsv view');
+
+               l_sql_txt:='delete from '||x.table_name||' t1
                      where date_time between (select min(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE)) 
-					                            from TABLE(cast(:p_timeseries_data as tsv_array)) t) 
-								         and (select max(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE)) 
-										        from TABLE(cast(:p_timeseries_data as tsv_array)) t)
+                                           from TABLE(cast(:p_timeseries_data as tsv_array)) t) 
+                                 and (select max(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE)) 
+                                      from TABLE(cast(:p_timeseries_data as tsv_array)) t)
                        and t1.ts_code =: l_tcode
                        and t1.version_date = :l_version_date';
 
-       	  		--dbms_output.put_line(l_sql_txt);
-					dbms_output.put_line('CASE 8: executing DELETE FROM dynamic sql for av_tsv view');
+                  --dbms_output.put_line(l_sql_txt);
+               dbms_output.put_line('CASE 8: executing DELETE FROM dynamic sql for av_tsv view');
 
-          		execute immediate l_sql_txt using p_timeseries_data, p_timeseries_data, l_ts_code, l_version_date;
+                execute immediate l_sql_txt using p_timeseries_data, p_timeseries_data, l_ts_code, l_version_date;
 
-					dbms_output.put_line('CASE 8: preparing MERGE INTO dynamic sql for table: ' || x.table_name);
-		  
-		  			l_sql_txt:='merge into '||x.table_name||' t1
+               dbms_output.put_line('CASE 8: preparing MERGE INTO dynamic sql for table: ' || x.table_name);
+        
+                 l_sql_txt:='merge into '||x.table_name||' t1
                     using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
-					              (t.value * c.factor + c.offset) value, 
-								  t.quality_code 
-					         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
-							      at_cwms_ts_spec s, 
-									at_parameter ap,
-								  cwms_unit_conversion c, 
-								  cwms_base_parameter p, 
-								  cwms_unit u
+                             (t.value * c.factor + c.offset) value, 
+                          t.quality_code 
+                        from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
+                           at_cwms_ts_spec s, 
+                           at_parameter ap,
+                          cwms_unit_conversion c, 
+                          cwms_base_parameter p, 
+                          cwms_unit u
                             where s.ts_code        =  :l_ts_code
                               and s.parameter_code =  ap.parameter_code
-										AND ap.base_parameter_code = p.base_parameter_code
+                              AND ap.base_parameter_code = p.base_parameter_code
                               and p.unit_code      =  c.to_unit_code
                               and c.from_unit_code   =  u.unit_code
                               and u.UNIT_ID        =  :p_units
                               and date_time        >= :start_date 
-							  and date_time        <  :end_date
-						  ) t2
+                       and date_time        <  :end_date
+                    ) t2
                        on (    t1.ts_code      = :l_ts_code 
-					       and t1.date_time    = t2.date_time 
-						   and t1.version_date = :l_version_date)
+                      and t1.date_time    = t2.date_time 
+                     and t1.version_date = :l_version_date)
                      when not matched then
-					   insert (ts_code, date_time, data_entry_date, value, quality_code,version_date ) 
-					   values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
+                  insert (ts_code, date_time, data_entry_date, value, quality_code,version_date ) 
+                  values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
 
-					dbms_output.put_line('CASE 8: Executing MERGE INTO dynamic sql for table: ' || x.table_name);
+               dbms_output.put_line('CASE 8: Executing MERGE INTO dynamic sql for table: ' || x.table_name);
 
-					execute immediate l_sql_txt using p_timeseries_data, 
-		                           l_ts_code, p_units, x.start_date, x.end_date,
-										   l_ts_code, l_version_date, 
-										   l_ts_code, l_store_date, l_version_date;
-		  
-		  			dbms_output.put_line('CASE 8: Merge completed.');
-					
-				END LOOP;
-		
-				dbms_output.put_line('CASE 8: delete-insert TRUE Completed.');
-				
-			END IF;
-		
-		ELSE
-		
-			cwms_err.raise('INVALID_STORE_RULE',p_store_rule);
-		
-		END CASE;
+               execute immediate l_sql_txt using p_timeseries_data, 
+                                 l_ts_code, p_units, x.start_date, x.end_date,
+                                 l_ts_code, l_version_date, 
+                                 l_ts_code, l_store_date, l_version_date;
+        
+                 dbms_output.put_line('CASE 8: Merge completed.');
+               
+            END LOOP;
+      
+            dbms_output.put_line('CASE 8: delete-insert TRUE Completed.');
+            
+         END IF;
+      
+      ELSE
+      
+         cwms_err.raise('INVALID_STORE_RULE',p_store_rule);
+      
+      END CASE;
 
-		COMMIT;
+      COMMIT;
 
-  		-----------------------------------------------                                                                    
-  		-- notify the real-time Oracle->DSS exchange --
-  		-----------------------------------------------  
+        -----------------------------------------------                                                                    
+        -- notify the real-time Oracle->DSS exchange --
+        -----------------------------------------------  
       cwms_xchg.time_series_updated(
          l_ts_code, 
          p_cwms_ts_id,
          p_timeseries_data(p_timeseries_data.first).date_time,
          p_timeseries_data(p_timeseries_data.last).date_time);
     
-  	 	dbms_application_info.set_module(null, null);
+         dbms_application_info.set_module(null, null);
 
-	END store_ts;
+   END store_ts;
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- STORE_TS_MULTI -
+--
+PROCEDURE store_ts_multi (
+   p_timeseries_array  IN   timeseries_array,
+   p_store_rule        IN   VARCHAR2 DEFAULT NULL,
+   p_override_prot     IN   VARCHAR2 DEFAULT 'F',
+   p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,
+   p_office_id         IN   VARCHAR2 DEFAULT NULL
+)
+IS
+   l_timeseries timeseries_type;
+BEGIN
+   dbms_application_info.set_module(
+      'cwms_ts_store.store_ts_multi',
+      'selecting time series from input');
+   for l_timeseries in (select * from table(p_timeseries_array)) loop
+      dbms_application_info.set_module(
+         'cwms_ts_store.store_ts_multi',
+         'looping through time series');
+      store_ts(
+         l_timeseries.tsid, 
+         l_timeseries.unit, 
+         l_timeseries.data, 
+         p_store_rule,
+         p_override_prot, 
+         p_version_date, 
+         p_office_id);
+   end loop;
+   
+   dbms_application_info.set_module(null, null);
+   
+END store_ts_multi;
+
 --
 --*******************************************************************   --
 --** PRIVATE **** PRIVATE **** PRIVATE **** PRIVATE **** PRIVATE ****   --
@@ -3101,319 +3480,319 @@ END delete_ts;
 -- RENAME...
 --
 --v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
-	PROCEDURE rename_ts (
-	   p_office_id             IN   VARCHAR2,
-	   p_timeseries_desc_old   IN   VARCHAR2,
-	   p_timeseries_desc_new   IN   VARCHAR2
-	)
+   PROCEDURE rename_ts (
+      p_office_id             IN   VARCHAR2,
+      p_timeseries_desc_old   IN   VARCHAR2,
+      p_timeseries_desc_new   IN   VARCHAR2
+   )
 --^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^ 1.4 ^^^^^^^ -
-	IS
-	   l_utc_offset   NUMBER := NULL;
-	BEGIN
-	   rename_ts (p_timeseries_desc_old,
-	              p_timeseries_desc_new,
-	              l_utc_offset,
-	              p_office_id
-	             );
-	END;
-	--
-	---------------------------------------------------------------------
-	--
-	-- Rename a time series id.
-	-- If no data exists, then you can rename every part of a cwms_ts_id.
-	-- If data exists then you can rename everything except the interval.
-	--
-	---------------------------------------------------------------------
-	--
-	PROCEDURE rename_ts (
-	   p_cwms_ts_id_old   IN   VARCHAR2,
-	   p_cwms_ts_id_new   IN   VARCHAR2,
-	   p_utc_offset_new   IN   NUMBER DEFAULT NULL,
-	   p_office_id        IN   VARCHAR2 DEFAULT NULL
-	)
-	IS
-	   l_utc_offset_old            at_cwms_ts_spec.interval_utc_offset%TYPE;
-	   --
-	   l_location_code_old         at_cwms_ts_spec.location_code%TYPE;
-	   l_interval_code_old         cwms_interval.interval_code%TYPE;
-	   --
-	   l_base_location_id_new      at_base_location.base_location_id%TYPE;
-	   l_sub_location_id_new       at_physical_location.sub_location_id%TYPE;
-	   l_location_new              VARCHAR2 (49);
-	   l_base_parameter_id_new     cwms_base_parameter.base_parameter_id%TYPE;
-	   l_sub_parameter_id_new      at_parameter.sub_parameter_id%TYPE;
-	   l_parameter_type_id_new     cwms_parameter_type.parameter_type_id%TYPE;
-	   l_interval_id_new           cwms_interval.interval_id%TYPE;
-	   l_duration_id_new           cwms_duration.duration_id%TYPE;
-	   l_version_id_new            at_cwms_ts_spec.VERSION%TYPE;
-	   l_utc_offset_new            at_cwms_ts_spec.interval_utc_offset%TYPE;
-	   --
-	   l_location_code_new         at_cwms_ts_spec.location_code%TYPE;
-	   l_interval_dur_new          cwms_interval.INTERVAL%TYPE;
-	   l_interval_code_new         cwms_interval.interval_code%TYPE;
-	   l_base_parameter_code_new   cwms_base_parameter.base_parameter_code%TYPE;
-	   l_parameter_type_code_new   cwms_parameter_type.parameter_type_code%TYPE;
-	   l_parameter_code_new        at_parameter.parameter_code%TYPE;
-	   l_duration_code_new         cwms_duration.duration_code%TYPE;
-	   --
-	   l_office_code               NUMBER;
-	   l_ts_code_old               NUMBER;
-	   l_ts_code_new               NUMBER;
-	   l_office_id                 cwms_office.office_id%TYPE;
-	   l_has_data                  BOOLEAN;
-	   l_tmp                       NUMBER;
-	--
-	BEGIN
-	   DBMS_APPLICATION_INFO.set_module ('rename_ts_code',
-	                                     'get ts_code from materialized view'
-	                                    );
-	
-	--
-	--------------------------------------------------------
-	-- Set office_id...
-	--------------------------------------------------------
-	   IF p_office_id IS NULL
-	   THEN
-	      l_office_id := cwms_util.user_office_id;
-	   ELSE
-	      l_office_id := UPPER (p_office_id);
-	   END IF;
-	
-	   DBMS_APPLICATION_INFO.set_module ('rename_ts_code', 'get office code');
-	--------------------------------------------------------
-	-- Get the office_code...
-	--------------------------------------------------------
-	   l_office_code := cwms_util.get_office_code (l_office_id);
-	--------------------------------------------------------
-	-- Confirm old cwms_ts_id exists...
-	--------------------------------------------------------
-	   l_ts_code_old := cwms_loc.get_ts_code (l_office_id, p_cwms_ts_id_old);
-	
-	--
-	--------------------------------------------------------
-	-- Retrieve old codes for the old ts_code...
-	--------------------------------------------------------
-	--
-	   SELECT location_code, interval_code, acts.INTERVAL_UTC_OFFSET
-	     INTO l_location_code_old, l_interval_code_old, l_utc_offset_old
-	     FROM at_cwms_ts_spec acts
-	    WHERE ts_code = l_ts_code_old;
-	dbms_output.put_line('l_utc_offset_old-1: ' || l_utc_offset_old);
-	--------------------------------------------------------
-	-- Confirm new cwms_ts_id does not exist...
-	--------------------------------------------------------
-	   BEGIN
-	      --
-	      l_ts_code_new := cwms_loc.get_ts_code (l_office_id, p_cwms_ts_id_new);
-	   --
-	   EXCEPTION
-	-----------------------------------------------------------------
-	-- Exception means cwms_ts_id_new does not exist - a good thing!.
-	-----------------------------------------------------------------
-	      WHEN OTHERS
-	      THEN
-	         l_ts_code_new := NULL;
-	   END;
-	
-	   IF l_ts_code_new IS NOT NULL
-	   THEN
-	      cwms_err.RAISE ('TS_ALREADY_EXISTS',
-	                      l_office_id || '.' || p_cwms_ts_id_new
-	                     );
-	   END IF;
-	
-	------------------------------------------------------------------
-	-- Parse cwms_id_new --
-	------------------------------------------------------------------
-	   parse_ts (p_cwms_ts_id_new,
-	             l_base_location_id_new,
-	             l_sub_location_id_new,
-	             l_base_parameter_id_new,
-	             l_sub_parameter_id_new,
-	             l_parameter_type_id_new,
-	             l_interval_id_new,
-	             l_duration_id_new,
-	             l_version_id_new
-	            );
-	   --
-	   l_location_new :=
-	      cwms_util.concat_base_sub_id (l_base_location_id_new,
-	                                    l_sub_location_id_new
-	                                   );
-	
-	---------------------------
-	-- Validate the interval --
-	---------------------------
-	   BEGIN
-	      SELECT interval_code, INTERVAL, interval_id
-	        INTO l_interval_code_new, l_interval_dur_new, l_interval_id_new
-	        FROM cwms_interval ci
-	       WHERE UPPER (ci.interval_id) = UPPER (l_interval_id_new);
-	   EXCEPTION
-	      WHEN NO_DATA_FOUND
-	      THEN
-	         cwms_err.RAISE ('INVALID_INTERVAL_ID', l_interval_id_new);
-	      WHEN OTHERS
-	      THEN
-	         RAISE;
-	   END;
-	
-	----------------------------------
-	-- Validate the base parameter --
-	----------------------------------
-	   BEGIN
-	      SELECT base_parameter_code
-	        INTO l_base_parameter_code_new
-	        FROM cwms_base_parameter
-	       WHERE UPPER (base_parameter_id) = UPPER (l_base_parameter_id_new);
-	   EXCEPTION
-	      WHEN NO_DATA_FOUND
-	      THEN
-	         cwms_err.RAISE ('INVALID_PARAM_ID', l_base_parameter_id_new);
-	      WHEN OTHERS
-	      THEN
-	         RAISE;
-	   END;
-	
-	---------------------------------
-	-- Validate the parameter type --
-	---------------------------------
-	   BEGIN
-	      SELECT parameter_type_code
-	        INTO l_parameter_type_code_new
-	        FROM cwms_parameter_type
-	       WHERE UPPER (parameter_type_id) = UPPER (l_parameter_type_id_new);
-	   EXCEPTION
-	      WHEN NO_DATA_FOUND
-	      THEN
-	         cwms_err.RAISE ('INVALID_PARAM_TYPE', l_parameter_type_id_new);
-	      WHEN OTHERS
-	      THEN
-	         RAISE;
-	   END;
-	
-	---------------------------
-	-- Validate the duration --
-	---------------------------
-	   BEGIN
-	      SELECT duration_code
-	        INTO l_duration_code_new
-	        FROM cwms_duration
-	       WHERE UPPER (duration_id) = UPPER (l_duration_id_new);
-	   EXCEPTION
-	      WHEN NO_DATA_FOUND
-	      THEN
-	         cwms_err.RAISE ('INVALID_DURATION_ID', l_duration_id_new);
-	      WHEN OTHERS
-	      THEN
-	         RAISE;
-	   END;
-	
-	--------------------------------------------------------
-	-- Set default utc_offset if null was passed in as new...
-	--------------------------------------------------------
-	   IF p_utc_offset_new IS NULL
-	   THEN
-		   dbms_output.put_line('l_utc_offset_old-2: ' || l_utc_offset_old);
+   IS
+      l_utc_offset   NUMBER := NULL;
+   BEGIN
+      rename_ts (p_timeseries_desc_old,
+                 p_timeseries_desc_new,
+                 l_utc_offset,
+                 p_office_id
+                );
+   END;
+   --
+   ---------------------------------------------------------------------
+   --
+   -- Rename a time series id.
+   -- If no data exists, then you can rename every part of a cwms_ts_id.
+   -- If data exists then you can rename everything except the interval.
+   --
+   ---------------------------------------------------------------------
+   --
+   PROCEDURE rename_ts (
+      p_cwms_ts_id_old   IN   VARCHAR2,
+      p_cwms_ts_id_new   IN   VARCHAR2,
+      p_utc_offset_new   IN   NUMBER DEFAULT NULL,
+      p_office_id        IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_utc_offset_old            at_cwms_ts_spec.interval_utc_offset%TYPE;
+      --
+      l_location_code_old         at_cwms_ts_spec.location_code%TYPE;
+      l_interval_code_old         cwms_interval.interval_code%TYPE;
+      --
+      l_base_location_id_new      at_base_location.base_location_id%TYPE;
+      l_sub_location_id_new       at_physical_location.sub_location_id%TYPE;
+      l_location_new              VARCHAR2 (49);
+      l_base_parameter_id_new     cwms_base_parameter.base_parameter_id%TYPE;
+      l_sub_parameter_id_new      at_parameter.sub_parameter_id%TYPE;
+      l_parameter_type_id_new     cwms_parameter_type.parameter_type_id%TYPE;
+      l_interval_id_new           cwms_interval.interval_id%TYPE;
+      l_duration_id_new           cwms_duration.duration_id%TYPE;
+      l_version_id_new            at_cwms_ts_spec.VERSION%TYPE;
+      l_utc_offset_new            at_cwms_ts_spec.interval_utc_offset%TYPE;
+      --
+      l_location_code_new         at_cwms_ts_spec.location_code%TYPE;
+      l_interval_dur_new          cwms_interval.INTERVAL%TYPE;
+      l_interval_code_new         cwms_interval.interval_code%TYPE;
+      l_base_parameter_code_new   cwms_base_parameter.base_parameter_code%TYPE;
+      l_parameter_type_code_new   cwms_parameter_type.parameter_type_code%TYPE;
+      l_parameter_code_new        at_parameter.parameter_code%TYPE;
+      l_duration_code_new         cwms_duration.duration_code%TYPE;
+      --
+      l_office_code               NUMBER;
+      l_ts_code_old               NUMBER;
+      l_ts_code_new               NUMBER;
+      l_office_id                 cwms_office.office_id%TYPE;
+      l_has_data                  BOOLEAN;
+      l_tmp                       NUMBER;
+   --
+   BEGIN
+      DBMS_APPLICATION_INFO.set_module ('rename_ts_code',
+                                        'get ts_code from materialized view'
+                                       );
+   
+   --
+   --------------------------------------------------------
+   -- Set office_id...
+   --------------------------------------------------------
+      IF p_office_id IS NULL
+      THEN
+         l_office_id := cwms_util.user_office_id;
+      ELSE
+         l_office_id := UPPER (p_office_id);
+      END IF;
+   
+      DBMS_APPLICATION_INFO.set_module ('rename_ts_code', 'get office code');
+   --------------------------------------------------------
+   -- Get the office_code...
+   --------------------------------------------------------
+      l_office_code := cwms_util.get_office_code (l_office_id);
+   --------------------------------------------------------
+   -- Confirm old cwms_ts_id exists...
+   --------------------------------------------------------
+      l_ts_code_old := cwms_loc.get_ts_code (l_office_id, p_cwms_ts_id_old);
+   
+   --
+   --------------------------------------------------------
+   -- Retrieve old codes for the old ts_code...
+   --------------------------------------------------------
+   --
+      SELECT location_code, interval_code, acts.INTERVAL_UTC_OFFSET
+        INTO l_location_code_old, l_interval_code_old, l_utc_offset_old
+        FROM at_cwms_ts_spec acts
+       WHERE ts_code = l_ts_code_old;
+   dbms_output.put_line('l_utc_offset_old-1: ' || l_utc_offset_old);
+   --------------------------------------------------------
+   -- Confirm new cwms_ts_id does not exist...
+   --------------------------------------------------------
+      BEGIN
+         --
+         l_ts_code_new := cwms_loc.get_ts_code (l_office_id, p_cwms_ts_id_new);
+      --
+      EXCEPTION
+   -----------------------------------------------------------------
+   -- Exception means cwms_ts_id_new does not exist - a good thing!.
+   -----------------------------------------------------------------
+         WHEN OTHERS
+         THEN
+            l_ts_code_new := NULL;
+      END;
+   
+      IF l_ts_code_new IS NOT NULL
+      THEN
+         cwms_err.RAISE ('TS_ALREADY_EXISTS',
+                         l_office_id || '.' || p_cwms_ts_id_new
+                        );
+      END IF;
+   
+   ------------------------------------------------------------------
+   -- Parse cwms_id_new --
+   ------------------------------------------------------------------
+      parse_ts (p_cwms_ts_id_new,
+                l_base_location_id_new,
+                l_sub_location_id_new,
+                l_base_parameter_id_new,
+                l_sub_parameter_id_new,
+                l_parameter_type_id_new,
+                l_interval_id_new,
+                l_duration_id_new,
+                l_version_id_new
+               );
+      --
+      l_location_new :=
+         cwms_util.concat_base_sub_id (l_base_location_id_new,
+                                       l_sub_location_id_new
+                                      );
+   
+   ---------------------------
+   -- Validate the interval --
+   ---------------------------
+      BEGIN
+         SELECT interval_code, INTERVAL, interval_id
+           INTO l_interval_code_new, l_interval_dur_new, l_interval_id_new
+           FROM cwms_interval ci
+          WHERE UPPER (ci.interval_id) = UPPER (l_interval_id_new);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('INVALID_INTERVAL_ID', l_interval_id_new);
+         WHEN OTHERS
+         THEN
+            RAISE;
+      END;
+   
+   ----------------------------------
+   -- Validate the base parameter --
+   ----------------------------------
+      BEGIN
+         SELECT base_parameter_code
+           INTO l_base_parameter_code_new
+           FROM cwms_base_parameter
+          WHERE UPPER (base_parameter_id) = UPPER (l_base_parameter_id_new);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('INVALID_PARAM_ID', l_base_parameter_id_new);
+         WHEN OTHERS
+         THEN
+            RAISE;
+      END;
+   
+   ---------------------------------
+   -- Validate the parameter type --
+   ---------------------------------
+      BEGIN
+         SELECT parameter_type_code
+           INTO l_parameter_type_code_new
+           FROM cwms_parameter_type
+          WHERE UPPER (parameter_type_id) = UPPER (l_parameter_type_id_new);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('INVALID_PARAM_TYPE', l_parameter_type_id_new);
+         WHEN OTHERS
+         THEN
+            RAISE;
+      END;
+   
+   ---------------------------
+   -- Validate the duration --
+   ---------------------------
+      BEGIN
+         SELECT duration_code
+           INTO l_duration_code_new
+           FROM cwms_duration
+          WHERE UPPER (duration_id) = UPPER (l_duration_id_new);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('INVALID_DURATION_ID', l_duration_id_new);
+         WHEN OTHERS
+         THEN
+            RAISE;
+      END;
+   
+   --------------------------------------------------------
+   -- Set default utc_offset if null was passed in as new...
+   --------------------------------------------------------
+      IF p_utc_offset_new IS NULL
+      THEN
+         dbms_output.put_line('l_utc_offset_old-2: ' || l_utc_offset_old);
          l_utc_offset_new := l_utc_offset_old;
-	   ELSIF l_interval_code_new = cwms_util.irregular_interval_code
-		THEN
-			l_utc_offset_new := cwms_util.utc_offset_irregular;
-	   ELSIF l_utc_offset_new < 0 OR l_utc_offset_new >= l_interval_dur_new
-	   THEN
-	         cwms_err.RAISE ('INVALID_UTC_OFFSET',
-	                         l_utc_offset_new,
-	                         l_interval_dur_new
-	                        );
-	   ELSE
-		   l_utc_offset_new := p_utc_offset_new;
-		END IF;
-	   dbms_output.put_line('l_utc_offset_new: ' || l_utc_offset_new);
-	---------------------------------------------------
-	-- Check whether the ts_code has associated data --
-	---------------------------------------------------
-	   SELECT COUNT (*)
-	     INTO l_tmp
-	     FROM at_tsv
-	    WHERE ts_code = l_ts_code_old;
-	
-	   l_has_data := l_tmp > 0;
-	
-	------------------------------------------------------------------
-	-- Perform these checks only if the ts_code has associated data --
-	------------------------------------------------------------------
-	   IF l_has_data
-	   THEN
-	--------------------------------------------------------------
-	-- Do not allow the interval to change, except to irregular --
-	--------------------------------------------------------------
-	      IF     l_interval_code_old <> cwms_util.irregular_interval_code
-	         AND l_interval_code_new <> l_interval_code_old
-	      THEN
-	         cwms_err.RAISE
-	                  ('GENERIC_ERROR',
-	                   'Cannot change to a regular interval when data is present'
-	                  );
-	      END IF;
-	
-	----------------------------------------------------
-	-- Do not allow the interval UTC offset to change --
-	----------------------------------------------------
-	      IF l_utc_offset_new <> l_utc_offset_old
-	      THEN
-	         cwms_err.RAISE
-	                       ('GENERIC_ERROR',
-	                        'Cannot change interval offsets when data is present'
-	                       );
-	      END IF;
-	   END IF;
-	----------------------------------------------------
-	-- Determine the new location_code --
-	----------------------------------------------------
-	   BEGIN
-	      l_location_code_new :=
-	                     cwms_loc.get_location_code (l_office_id, l_location_new);
-	   EXCEPTION                                 -- New Location does not exist...
-	      WHEN OTHERS
-	      THEN
-	         cwms_loc.create_location (p_location_id => l_location_new, 
-				                          p_db_office_id   => l_office_id);
-				--
-	         l_location_code_new :=
-	                     cwms_loc.get_location_code (l_office_id, l_location_new);
-	   END;
-	
-	----------------------------------------------------
-	-- Determine the new parameter_code --
-	----------------------------------------------------
-	   l_parameter_code_new :=
-	      get_parameter_code (p_base_parameter_code      => l_base_parameter_code_new,
-	                          p_sub_parameter_id         => l_sub_parameter_id_new,
-	                          p_office_code              => l_office_code,
-	                          p_create                   => TRUE
-	                         );
-	
+      ELSIF l_interval_code_new = cwms_util.irregular_interval_code
+      THEN
+         l_utc_offset_new := cwms_util.utc_offset_irregular;
+      ELSIF l_utc_offset_new < 0 OR l_utc_offset_new >= l_interval_dur_new
+      THEN
+            cwms_err.RAISE ('INVALID_UTC_OFFSET',
+                            l_utc_offset_new,
+                            l_interval_dur_new
+                           );
+      ELSE
+         l_utc_offset_new := p_utc_offset_new;
+      END IF;
+      dbms_output.put_line('l_utc_offset_new: ' || l_utc_offset_new);
+   ---------------------------------------------------
+   -- Check whether the ts_code has associated data --
+   ---------------------------------------------------
+      SELECT COUNT (*)
+        INTO l_tmp
+        FROM at_tsv
+       WHERE ts_code = l_ts_code_old;
+   
+      l_has_data := l_tmp > 0;
+   
+   ------------------------------------------------------------------
+   -- Perform these checks only if the ts_code has associated data --
+   ------------------------------------------------------------------
+      IF l_has_data
+      THEN
+   --------------------------------------------------------------
+   -- Do not allow the interval to change, except to irregular --
+   --------------------------------------------------------------
+         IF     l_interval_code_old <> cwms_util.irregular_interval_code
+            AND l_interval_code_new <> l_interval_code_old
+         THEN
+            cwms_err.RAISE
+                     ('GENERIC_ERROR',
+                      'Cannot change to a regular interval when data is present'
+                     );
+         END IF;
+   
+   ----------------------------------------------------
+   -- Do not allow the interval UTC offset to change --
+   ----------------------------------------------------
+         IF l_utc_offset_new <> l_utc_offset_old
+         THEN
+            cwms_err.RAISE
+                          ('GENERIC_ERROR',
+                           'Cannot change interval offsets when data is present'
+                          );
+         END IF;
+      END IF;
+   ----------------------------------------------------
+   -- Determine the new location_code --
+   ----------------------------------------------------
+      BEGIN
+         l_location_code_new :=
+                        cwms_loc.get_location_code (l_office_id, l_location_new);
+      EXCEPTION                                 -- New Location does not exist...
+         WHEN OTHERS
+         THEN
+            cwms_loc.create_location (p_location_id => l_location_new, 
+                                      p_db_office_id   => l_office_id);
+            --
+            l_location_code_new :=
+                        cwms_loc.get_location_code (l_office_id, l_location_new);
+      END;
+   
+   ----------------------------------------------------
+   -- Determine the new parameter_code --
+   ----------------------------------------------------
+      l_parameter_code_new :=
+         get_parameter_code (p_base_parameter_code      => l_base_parameter_code_new,
+                             p_sub_parameter_id         => l_sub_parameter_id_new,
+                             p_office_code              => l_office_code,
+                             p_create                   => TRUE
+                            );
+   
 
-	--
-	----------------------------------------------------
-	-- Perform the Rename by updating at_cwms_ts_spec --
-	----------------------------------------------------
-	--
-	   UPDATE at_cwms_ts_spec s
-	      SET s.location_code = l_location_code_new,
-	          s.parameter_code = l_parameter_code_new,
-	          s.parameter_type_code = l_parameter_type_code_new,
-	          s.interval_code = l_interval_code_new,
-	          s.duration_code = l_duration_code_new,
-	          s.VERSION = l_version_id_new,
-	          s.interval_utc_offset = l_utc_offset_new
-	    WHERE s.ts_code = l_ts_code_old;
-	
-	   COMMIT;
-	   --
-	   DBMS_APPLICATION_INFO.set_module (NULL, NULL);
-	--
-	END rename_ts;
+   --
+   ----------------------------------------------------
+   -- Perform the Rename by updating at_cwms_ts_spec --
+   ----------------------------------------------------
+   --
+      UPDATE at_cwms_ts_spec s
+         SET s.location_code = l_location_code_new,
+             s.parameter_code = l_parameter_code_new,
+             s.parameter_type_code = l_parameter_type_code_new,
+             s.interval_code = l_interval_code_new,
+             s.duration_code = l_duration_code_new,
+             s.VERSION = l_version_id_new,
+             s.interval_utc_offset = l_utc_offset_new
+       WHERE s.ts_code = l_ts_code_old;
+   
+      COMMIT;
+      --
+      DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+   --
+   END rename_ts;
 
 --
 --*******************************************************************   --
@@ -3421,41 +3800,41 @@ END delete_ts;
 --
 -- PARSE_TS -
 --
-	PROCEDURE parse_ts (
-	      p_cwms_ts_id          IN       VARCHAR2,
-	      p_base_location_id    OUT      VARCHAR2,
-	      p_sub_location_id     OUT      VARCHAR2,
-	      p_base_parameter_id   OUT      VARCHAR2,
-	      p_sub_parameter_id    OUT      VARCHAR2,
-	      p_parameter_type_id   OUT      VARCHAR2,
-	      p_interval_id         OUT      VARCHAR2,
-	      p_duration_id         OUT      VARCHAR2,
-	      p_version_id          OUT      VARCHAR2
-	)
-	IS
-	BEGIN
-	   SELECT cwms_util.get_base_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 1))
-	                                                             base_location_id,
-	          cwms_util.get_sub_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 1))
-	                                                              sub_location_id,
-	          cwms_util.get_base_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 2))
-	                                                            base_parameter_id,
-	          cwms_util.get_sub_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 2))
-	                                                             sub_parameter_id,
-	          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 3) parameter_type_id,
-	          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 4) interval_id,
-	          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 5) duration_id,
-	          REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 6) VERSION
-	     INTO p_base_location_id,
-	          p_sub_location_id,
-	          p_base_parameter_id,
-	          p_sub_parameter_id,
-	          p_parameter_type_id,
-	          p_interval_id,
-	          p_duration_id,
-	          p_version_id
-	     FROM DUAL;
-	END parse_ts;
+   PROCEDURE parse_ts (
+         p_cwms_ts_id          IN       VARCHAR2,
+         p_base_location_id    OUT      VARCHAR2,
+         p_sub_location_id     OUT      VARCHAR2,
+         p_base_parameter_id   OUT      VARCHAR2,
+         p_sub_parameter_id    OUT      VARCHAR2,
+         p_parameter_type_id   OUT      VARCHAR2,
+         p_interval_id         OUT      VARCHAR2,
+         p_duration_id         OUT      VARCHAR2,
+         p_version_id          OUT      VARCHAR2
+   )
+   IS
+   BEGIN
+      SELECT cwms_util.get_base_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 1))
+                                                                base_location_id,
+             cwms_util.get_sub_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 1))
+                                                                 sub_location_id,
+             cwms_util.get_base_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 2))
+                                                               base_parameter_id,
+             cwms_util.get_sub_id (REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 2))
+                                                                sub_parameter_id,
+             REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 3) parameter_type_id,
+             REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 4) interval_id,
+             REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 5) duration_id,
+             REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 6) VERSION
+        INTO p_base_location_id,
+             p_sub_location_id,
+             p_base_parameter_id,
+             p_sub_parameter_id,
+             p_parameter_type_id,
+             p_interval_id,
+             p_duration_id,
+             p_version_id
+        FROM DUAL;
+   END parse_ts;
 
 /* Formatted on 2007/04/11 18:50 (Formatter Plus v4.8.8) */
 /* Formatted on 2007/04/11 20:03 (Formatter Plus v4.8.8) */
@@ -4270,5 +4649,6 @@ END;
 
 END cwms_ts; --end package body
 /
+
 show errors;
 commit;

@@ -194,6 +194,61 @@ AS
 --*******************************************************************   --
 --*******************************************************************   --
 --
+-- RETREIVE_TS2 - v2.0 -
+--
+procedure retrieve_ts2 (
+   p_at_tsv_rc       in out sys_refcursor,
+   p_cwms_ts_id      in     varchar2,
+   p_units           in     varchar2,
+   p_start_time      in     date,
+   p_end_time        in     date,
+   p_trim            in     varchar2 default 'F',
+   p_start_inclusive in     varchar2 default 'T',
+   p_end_inclusive   in     varchar2 default 'T',
+   p_previous        in     varchar2 default 'F',
+   p_next            in     varchar2 default 'F',
+   p_office_id       in     varchar2 default null
+   );
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- RETREIVE_TS3 - v2.0 -
+--
+procedure retrieve_ts3 (
+   p_at_tsv_rc       in out sys_refcursor,
+   p_cwms_ts_id      in     varchar2,
+   p_units           in     varchar2,
+   p_start_time      in     date,
+   p_end_time        in     date,
+   p_time_zone       in     varchar2 default 'UTC',
+   p_trim            in     varchar2 default 'F',
+   p_start_inclusive in     varchar2 default 'T',
+   p_end_inclusive   in     varchar2 default 'T',
+   p_previous        in     varchar2 default 'F',
+   p_next            in     varchar2 default 'F',
+   p_office_id       in     varchar2 default null
+   );
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- RETREIVE_TS2_MULTI - v2.0 -
+--
+procedure retrieve_ts2_multi (
+   p_at_tsv_rc       in out sys_refcursor,
+   p_timeseries_info in     timeseries_req_array,
+   p_trim            in     varchar2 default 'F',
+   p_start_inclusive in     varchar2 default 'T',
+   p_end_inclusive   in     varchar2 default 'T',
+   p_previous        in     varchar2 default 'F',
+   p_next            in     varchar2 default 'F',
+   p_office_id       in     varchar2 default null
+   );
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
 -- RETREIVE_TS_JAVA -
 --
    PROCEDURE retrieve_ts_java (
@@ -241,6 +296,20 @@ AS
       p_cwms_ts_id        IN   VARCHAR2,
       p_units             IN   VARCHAR2,
       p_timeseries_data   IN   tsv_array,
+      p_store_rule        IN   VARCHAR2 DEFAULT NULL,
+      p_override_prot     IN   VARCHAR2 DEFAULT 'F',
+      p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,
+      p_office_id         IN   VARCHAR2 DEFAULT NULL
+   );
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- STORE_TS_MULTI -
+--
+   PROCEDURE store_ts_multi (
+      p_timeseries_array  IN   timeseries_array,
       p_store_rule        IN   VARCHAR2 DEFAULT NULL,
       p_override_prot     IN   VARCHAR2 DEFAULT 'F',
       p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,

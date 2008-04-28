@@ -25,8 +25,15 @@ DECLARE
                      'at_tsv_array',
                      'char_16_array_type',
                      'char_32_array_type',
+                     'char_49_array_type',
                      'char_183_array_type',
                      'date_table_type',
+                     'timeseries_type',
+                     'timeseries_array',
+                     'timeseries_req_type',
+                     'timeseries_req_array',
+                     'ts_request_type',
+                     'ts_request_array',
                      'source_type',
                      'source_array',
                      'loc_type_ds',
@@ -171,6 +178,46 @@ CREATE TYPE char_183_array_type IS TABLE OF VARCHAR2 (183);
 /
 
 CREATE TYPE date_table_type AS TABLE OF DATE;
+/
+
+-- used for store_ts_multi
+
+CREATE TYPE timeseries_type AS OBJECT (
+   tsid  varchar2(183),
+   unit  varchar2(16),
+   data tsv_array
+);
+/
+
+CREATE TYPE timeseries_array IS TABLE OF timeseries_type;
+/
+
+-- used for retrieve_ts2_multi
+
+CREATE TYPE timeseries_req_type AS OBJECT (
+   tsid       varchar2(183),
+   unit       varchar2(16),
+   start_time date,
+   end_time   date
+);
+/
+
+CREATE TYPE timeseries_req_array IS TABLE OF timeseries_req_type;
+/
+
+CREATE TYPE ts_request_type AS OBJECT (
+   sequence             integer,
+   tsid                 varchar2(183),
+   ts_code              number,
+   units                varchar2(16),
+   start_time           date,
+   end_time             date,
+   specified_start_time date,
+   specified_end_time   date
+);
+/
+   
+CREATE TYPE ts_request_array IS TABLE OF ts_request_type;
 /
 
 -- CREATE TYPE TSVArray IS TABLE OF AT_TIME_SERIES_VALUE%ROWTYPE
