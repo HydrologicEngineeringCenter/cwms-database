@@ -1462,7 +1462,7 @@ create or replace package body cwms_xchg as
          l_filemgr_ids(l_parts(2)) := l_filemgrs(l_text);
          writeln_xml('<datastore>');
          indent;
-         writeln_xml('<dssfilemanager id="'||l_filemgrs(l_text)||'" officeid="'||l_parts(1)||'">');
+         writeln_xml('<dssfilemanager id="'||l_filemgrs(l_text)||'" office-id="'||l_parts(1)||'">');
          indent;
          writeln_xml('<host>'||l_parts(3)||'</host>');
          writeln_xml('<port>'||l_parts(4)||'</port>');
