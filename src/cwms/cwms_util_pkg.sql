@@ -1,4 +1,4 @@
-/* Formatted on 2007/11/07 11:45 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/04/30 16:18 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -197,6 +197,9 @@ AS
    -- Returns FALSE if p_true_false is F or False.
    FUNCTION return_true_or_false (p_true_false IN VARCHAR2)
       RETURN BOOLEAN;
+
+   FUNCTION return_t_or_f_flag (p_true_false IN VARCHAR2)
+      RETURN VARCHAR2;
 
    FUNCTION get_base_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2;

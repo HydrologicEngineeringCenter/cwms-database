@@ -1,4 +1,4 @@
-/* Formatted on 2007/11/07 11:49 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/04/30 16:19 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -203,6 +203,23 @@ AS
       ELSIF cwms_util.is_false (p_true_false)
       THEN
          RETURN FALSE;
+      ELSE
+         cwms_err.RAISE ('INVALID_T_F_FLAG', p_true_false);
+      END IF;
+   END;
+
+   -- Retruns 'T' if p_true_false is T or True
+   -- Returns 'F 'if p_true_false is F or False.
+   FUNCTION return_t_or_f_flag (p_true_false IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      IF cwms_util.is_true (p_true_false)
+      THEN
+         RETURN 'T';
+      ELSIF cwms_util.is_false (p_true_false)
+      THEN
+         RETURN 'F';
       ELSE
          cwms_err.RAISE ('INVALID_T_F_FLAG', p_true_false);
       END IF;
