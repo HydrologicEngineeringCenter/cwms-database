@@ -174,9 +174,9 @@ AS
 --*******************************************************************   --
 --*******************************************************************   --
 --
--- RETREIVE_TS -
+-- RETREIVE_TS_0LD -
 --
-   PROCEDURE retrieve_ts (
+   PROCEDURE retrieve_ts_old (
       p_at_tsv_rc      IN OUT   sys_refcursor,
       p_units          IN       VARCHAR2,
       p_cwms_ts_id     IN       VARCHAR2,
@@ -189,33 +189,13 @@ AS
       p_max_version    IN       VARCHAR2 DEFAULT 'T',
       p_office_id      IN       VARCHAR2 DEFAULT NULL
    );
-
 --
 --*******************************************************************   --
 --*******************************************************************   --
 --
--- RETREIVE_TS2 - v2.0 -
+-- RETREIVE_TS - v2.0 -
 --
-procedure retrieve_ts2 (
-   p_at_tsv_rc       in out sys_refcursor,
-   p_cwms_ts_id      in     varchar2,
-   p_units           in     varchar2,
-   p_start_time      in     date,
-   p_end_time        in     date,
-   p_trim            in     varchar2 default 'F',
-   p_start_inclusive in     varchar2 default 'T',
-   p_end_inclusive   in     varchar2 default 'T',
-   p_previous        in     varchar2 default 'F',
-   p_next            in     varchar2 default 'F',
-   p_office_id       in     varchar2 default null
-   );
---
---*******************************************************************   --
---*******************************************************************   --
---
--- RETREIVE_TS3 - v2.0 -
---
-procedure retrieve_ts3 (
+procedure retrieve_ts (
    p_at_tsv_rc       in out sys_refcursor,
    p_cwms_ts_id      in     varchar2,
    p_units           in     varchar2,
@@ -227,22 +207,27 @@ procedure retrieve_ts3 (
    p_end_inclusive   in     varchar2 default 'T',
    p_previous        in     varchar2 default 'F',
    p_next            in     varchar2 default 'F',
+   p_version_date    in     date     default null,
+   p_max_version     in     varchar2 default 'T',
    p_office_id       in     varchar2 default null
    );
 --
 --*******************************************************************   --
 --*******************************************************************   --
 --
--- RETREIVE_TS2_MULTI - v2.0 -
+-- RETREIVE_TS_MULTI - v2.0 -
 --
-procedure retrieve_ts2_multi (
+procedure retrieve_ts_multi (
    p_at_tsv_rc       in out sys_refcursor,
    p_timeseries_info in     timeseries_req_array,
+   p_time_zone       in     varchar2 default 'UTC',
    p_trim            in     varchar2 default 'F',
    p_start_inclusive in     varchar2 default 'T',
    p_end_inclusive   in     varchar2 default 'T',
    p_previous        in     varchar2 default 'F',
    p_next            in     varchar2 default 'F',
+   p_version_date    in     date     default null,
+   p_max_version     in     varchar2 default 'T',
    p_office_id       in     varchar2 default null
    );
 --

@@ -205,19 +205,17 @@ CREATE TYPE timeseries_req_type AS OBJECT (
 CREATE TYPE timeseries_req_array IS TABLE OF timeseries_req_type;
 /
 
-CREATE TYPE ts_request_type AS OBJECT (
-   sequence             integer,
-   tsid                 varchar2(183),
-   ts_code              number,
-   units                varchar2(16),
-   start_time           date,
-   end_time             date,
-   specified_start_time date,
-   specified_end_time   date
+CREATE TYPE nested_ts_type as object (
+   sequence    integer,
+   tsid        varchar2(183),
+   units       varchar2(16),
+   start_time  date,
+   end_time    date,
+   data        tsv_array
 );
 /
-   
-CREATE TYPE ts_request_array IS TABLE OF ts_request_type;
+
+CREATE TYPE nested_ts_table IS TABLE OF  nested_ts_type;
 /
 
 -- CREATE TYPE TSVArray IS TABLE OF AT_TIME_SERIES_VALUE%ROWTYPE

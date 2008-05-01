@@ -1277,9 +1277,9 @@ END retrieve_ts_java;
 --*******************************************************************   --
 --*******************************************************************   --
 --
--- RETREIVE_TS - v2.0 -
+-- RETREIVE_TS_OLD - v2.0 -
 --
-   PROCEDURE retrieve_ts (
+   PROCEDURE retrieve_ts_old (
       p_at_tsv_rc         IN OUT   sys_refcursor,
       p_units             IN       VARCHAR2,
       p_cwms_ts_id        IN       VARCHAR2,
@@ -1768,7 +1768,7 @@ END retrieve_ts_java;
     
        dbms_application_info.set_module(null,null);
       
-   END retrieve_ts;
+   END retrieve_ts_old;
    
 --
 --*******************************************************************   --
@@ -1779,18 +1779,23 @@ END retrieve_ts_java;
 procedure adjust_time_window(
    p_start_time      in out date,
    p_end_time        in out date,
+   p_reg_start_time  out    date,
+   p_reg_end_time    out    date,
    p_ts_code         in     number,
+   p_interval        in     number,
+   p_offset          in     number,
    p_start_inclusive in     boolean,
    p_end_inclusive   in     boolean,
    p_previous        in     boolean,
    p_next            in     boolean,
    p_trim            in     boolean)
 is
-   l_start_time date := p_start_time;
-   l_end_time   date := p_end_time;
+   l_start_time     date := p_start_time;
+   l_end_time       date := p_end_time;
+   l_temp_time      date;
 begin
    --
-   -- first, handle inclusive/exclusive by adjusting start/end times inward
+   -- handle inclusive/exclusive by adjusting start/end times inward
    --
    if not p_start_inclusive then
       l_start_time := l_start_time + 1 / 86400;
@@ -1800,29 +1805,45 @@ begin
       l_end_time   := l_end_time   - 1 / 86400;
    end if;
    --
-   -- next, handle previous/next by adjusting start/end times outward
+   -- handle previous/next by adjusting start/end times outward
    --
    if p_previous then
-      select max(date_time)
-        into l_start_time
-        from av_tsv
-       where ts_code    =  p_ts_code
-         and date_time  <  l_start_time
-         and start_date <= l_end_time 
-         and end_date   >  l_start_time;
+      if p_interval = 0 then
+         select max(date_time)
+           into l_temp_time
+           from av_tsv
+          where ts_code    =  p_ts_code
+            and date_time  <  l_start_time
+            and start_date <= l_end_time 
+            and end_date   >  l_start_time;
+
+         if l_temp_time is not null then
+            l_start_time := l_temp_time;
+         end if;
+      else
+         l_start_time := l_start_time - p_interval / 1440;
+      end if;         
    end if;       
       
    if p_next then
-      select min(date_time)
-        into l_end_time
-        from av_tsv
-       where ts_code    =  p_ts_code
-         and date_time  >  l_end_time
-         and start_date <= l_end_time 
-         and end_date   >  l_start_time;
+      if p_interval = 0 then
+         select min(date_time)
+           into l_temp_time
+           from av_tsv
+          where ts_code    =  p_ts_code
+            and date_time  >  l_end_time
+            and start_date <= l_end_time 
+            and end_date   >  l_start_time;
+
+         if l_temp_time is not null then
+            l_end_time := l_temp_time;
+         end if;
+      else
+         l_end_time := l_end_time + p_interval / 1440;
+      end if;
    end if;       
    --
-   -- finally, handle trim by adjusting start/end times inward to first/last
+   -- handle trim by adjusting start/end times inward to first/last
    -- non-missing values
    --    
    if p_trim then
@@ -1843,98 +1864,37 @@ begin
                 and v.value is not null
              );
    end if;
-   
+   --
+   -- set the out parameters
+   --
    p_start_time := l_start_time;
    p_end_time   := l_end_time;
+   if p_interval = 0 then
+      --
+      -- These parameters are used to generate a regular time series from which
+      -- to fill in the times of missing values.  In the case of irregular time
+      -- series, set them so that they will not generate a time series at all.
+      --
+      p_reg_start_time := null;
+      p_reg_end_time   := null;
+   else
+      if p_offset = cwms_util.utc_offset_undefined then
+         p_reg_start_time := get_time_on_after_interval(l_start_time, null, p_interval);
+         p_reg_end_time   := get_time_on_before_interval(l_end_time, null, p_interval);
+      else
+         p_reg_start_time := get_time_on_after_interval(l_start_time, p_offset, p_interval);
+         p_reg_end_time   := get_time_on_before_interval(l_end_time, p_offset, p_interval);
+     end if;        
+   end if;
    
-end;   
-      
+end adjust_time_window;   
 --
 --*******************************************************************   --
 --*******************************************************************   --
 --
--- RETREIVE_TS2 - v2.0 -
+-- RETREIVE_TS - v2.0 -
 --
-procedure retrieve_ts2 (
-   p_at_tsv_rc       in out sys_refcursor,
-   p_cwms_ts_id      in     varchar2,
-   p_units           in     varchar2,
-   p_start_time      in     date,
-   p_end_time        in     date,
-   p_trim            in     varchar2 default 'F',
-   p_start_inclusive in     varchar2 default 'T',
-   p_end_inclusive   in     varchar2 default 'T',
-   p_previous        in     varchar2 default 'F',
-   p_next            in     varchar2 default 'F',
-   p_office_id       in     varchar2 default null
-   )
-is
-   l_ts_code          number;
-   l_trim             boolean      := cwms_util.return_true_or_false(nvl(p_trim,      'F'));
-   l_start_inclusive  boolean      := cwms_util.return_true_or_false(nvl(p_start_inclusive, 'T'));
-   l_end_inclusive    boolean      := cwms_util.return_true_or_false(nvl(p_end_inclusive, 'T'));
-   l_previous         boolean      := cwms_util.return_true_or_false(nvl(p_previous,  'F'));
-   l_next             boolean      := cwms_util.return_true_or_false(nvl(p_next     , 'F'));
-   l_start_time       date         := p_start_time;
-   l_end_time         date         := p_end_time;
-   l_office_id        varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
-
-   procedure output(text in varchar2)
-   is
-   begin
-      dbms_application_info.set_action(text);
-      dbms_output.put_line(text);
-   end;   
-begin
-   dbms_application_info.set_module ('cwms_ts.retrieve_ts2','Get TS Code');
-   --
-   -- get ts code
-   --
-   select ts_code
-     into l_ts_code
-     from mv_cwms_ts_id
-    where db_office_id = upper(l_office_id)
-      and upper(cwms_ts_id) = upper(p_cwms_ts_id);
-      
-   output('Handle start and end times');
-   adjust_time_window(
-      l_start_time,
-      l_end_time,
-      l_ts_code,
-      l_start_inclusive,
-      l_end_inclusive,
-      l_previous,
-      l_next,
-      l_trim);      
-
-   --
-   -- open the cursor
-   --
-   output('Open cursor');
-   open p_at_tsv_rc for 
-      select date_time,
-             max(value) keep(dense_rank last order by version_date) "VALUE",
-             nvl(max(quality_code) keep(dense_rank last order by version_date), 0) "QUALITY_CODE"
-        from av_tsv_dqu
-       where ts_code    =  l_ts_code 
-         and date_time  >= l_start_time  
-         and date_time  <= l_end_time 
-         and unit_id    =  p_units
-         and start_date <= l_end_time 
-         and end_date   >  l_start_time
-    group by date_time
-    order by date_time asc;
-    
-   dbms_application_info.set_module(null,null);
-      
-end retrieve_ts2;
---
---*******************************************************************   --
---*******************************************************************   --
---
--- RETREIVE_TS3 - v2.0 -
---
-procedure retrieve_ts3 (
+procedure retrieve_ts (
    p_at_tsv_rc       in out sys_refcursor,
    p_cwms_ts_id      in     varchar2,
    p_units           in     varchar2,
@@ -1946,10 +1906,14 @@ procedure retrieve_ts3 (
    p_end_inclusive   in     varchar2 default 'T',
    p_previous        in     varchar2 default 'F',
    p_next            in     varchar2 default 'F',
+   p_version_date    in     date     default null,
+   p_max_version     in     varchar2 default 'T',
    p_office_id       in     varchar2 default null
    )
 is
    l_ts_code          number;
+   l_interval         number;
+   l_offset           number;
    l_time_zone        varchar2(28)    := nvl(p_time_zone, 'UTC');
    l_trim             boolean         := cwms_util.return_true_or_false(nvl(p_trim,      'F'));
    l_start_inclusive  boolean         := cwms_util.return_true_or_false(nvl(p_start_inclusive, 'T'));
@@ -1957,13 +1921,20 @@ is
    l_previous         boolean         := cwms_util.return_true_or_false(nvl(p_previous,  'F'));
    l_next             boolean         := cwms_util.return_true_or_false(nvl(p_next     , 'F'));
    l_start_time       date            := cwms_util.date_from_tz_to_utc(p_start_time, p_time_zone);
-   l_end_time         date            := cwms_util.date_from_tz_to_utc(p_end_time,   p_time_zone);
+   l_end_time         date            := cwms_util.date_from_tz_to_utc(p_end_time, p_time_zone);
+   l_version_date     date            := cwms_util.date_from_tz_to_utc(p_version_date, p_time_zone);
+   l_reg_start_time   date;
+   l_reg_end_time     date;
+   l_max_version      boolean         := cwms_util.return_true_or_false(nvl(p_max_version, 'F'));
    l_office_id        varchar2(16)    := nvl(p_office_id, cwms_util.user_office_id);
-   l_query_str        varchar2(1024);
+   l_query_str        varchar2(4000);
    l_start_str        varchar2(32);
    l_end_str          varchar2(32);
+   l_reg_start_str    varchar2(32);
+   l_reg_end_str      varchar2(32);
+   l_missing          number          := 5;  -- MISSING quality code
 
-   procedure output(text in varchar2)
+   procedure set_action(text in varchar2)
    is
    begin
       dbms_application_info.set_action(text);
@@ -1974,144 +1945,288 @@ begin
    --
    -- get ts code
    --
-   select ts_code
-     into l_ts_code
+   select ts_code,
+          interval,
+          interval_utc_offset
+     into l_ts_code,
+          l_interval,
+          l_offset
      from mv_cwms_ts_id
     where db_office_id = upper(l_office_id)
       and upper(cwms_ts_id) = upper(p_cwms_ts_id);
 
-   output('Handle start and end times');
+   set_action('Handle start and end times');
    adjust_time_window(
       l_start_time,
       l_end_time,
+      l_reg_start_time,
+      l_reg_end_time,
       l_ts_code,
+      l_interval,
+      l_offset,
       l_start_inclusive,
       l_end_inclusive,
       l_previous,
       l_next,
-      l_trim);      
+      l_trim);
    --
-   -- build the query string - for some reason the time zone must be a literal
-   -- and bind variables are problematic
+   -- change l_interval from minutes to days (minimum of 1 minute so no division by zero)
    --
-   l_start_str := to_char(l_start_time, 'yyyy/mm/dd-hh24.mi.ss');
-   l_end_str   := to_char(l_end_time,   'yyyy/mm/dd-hh24.mi.ss');
-   l_query_str := 
-      'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME(:tz)",
-              max(value) keep(dense_rank last order by version_date) "VALUE",
-              nvl(max(quality_code) keep(dense_rank last order by version_date), 0) "QUALITY_CODE"
-         from av_tsv_dqu
-        where ts_code    =  :ts_code 
-          and date_time  >= to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')  
-          and date_time  <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
-          and unit_id    =  '':units''
-          and start_date <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
-          and end_date   >  to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')
-     group by date_time
-     order by date_time asc';
+   if l_interval = 0 then l_interval := 1; end if;
+   l_interval := l_interval / 1440;       
+   --
+   -- build the query string - for some reason the time zone must be a
+   -- stromg literal and bind variables are problematic
+   --
+   l_start_str     := to_char(l_start_time,     'yyyy/mm/dd-hh24.mi.ss');
+   l_end_str       := to_char(l_end_time,       'yyyy/mm/dd-hh24.mi.ss');
+   l_reg_start_str := to_char(l_reg_start_time, 'yyyy/mm/dd-hh24.mi.ss');
+   l_reg_end_str   := to_char(l_reg_end_time,   'yyyy/mm/dd-hh24.mi.ss');
    
-   l_query_str := replace(l_query_str, ':tz',      l_time_zone);
-   l_query_str := replace(l_query_str, ':ts_code', l_ts_code);
-   l_query_str := replace(l_query_str, ':start',   l_start_str);
-   l_query_str := replace(l_query_str, ':end',     l_end_str);
-   l_query_str := replace(l_query_str, ':units',   p_units);
+   if l_version_date is null then
+      if l_max_version then
+         --
+         -- max version date
+         --
+         l_query_str := 
+            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME_:tz",
+                   value,
+                   nvl(quality_code, :missing)
+              from (
+                   select date_time,
+                          max(value) keep(dense_rank last order by version_date) "VALUE",
+                          max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
+                     from av_tsv_dqu
+                    where ts_code    =  :ts_code 
+                      and date_time  >= to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')  
+                      and date_time  <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                      and unit_id    =  '':units''
+                      and start_date <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                      and end_date   >  to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')
+                 group by date_time
+                   ) v
+                   right outer join
+                   (
+                   select distinct date_time
+                     from av_tsv
+                    where ts_code    =  :ts_code 
+                      and date_time  >= to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')  
+                      and date_time  <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                      and start_date <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                      and end_date   >  to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')
+                   union
+                   select to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'') + (level-1) * :interval date_time
+                     from dual
+                    where to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'') is not null
+               connect by level <= round((to_date('':reg_end'',   ''yyyy/mm/dd-hh24.mi.ss'')  - 
+                                          to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'')) / :interval + 1)
+                   ) t
+                   on v.date_time = t.date_time
+                   order by t.date_time asc';
+      else
+         --
+         -- min version date
+         --
+         l_query_str := 
+            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME_:tz",
+                   value,
+                   nvl(quality_code, :missing)
+              from (
+                   select date_time,
+                          max(value) keep(dense_rank first order by version_date) "VALUE",
+                          max(quality_code) keep(dense_rank first order by version_date) "QUALITY_CODE"
+                     from av_tsv_dqu
+                    where ts_code    =  :ts_code 
+                      and date_time  >= to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')  
+                      and date_time  <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                      and unit_id    =  '':units''
+                      and start_date <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                      and end_date   >  to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')
+                 group by date_time
+                   ) v
+                   right outer join
+                   (
+                   select distinct date_time
+                     from av_tsv
+                    where ts_code    =  :ts_code 
+                      and date_time  >= to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')  
+                      and date_time  <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                      and start_date <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                      and end_date   >  to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')
+                   union
+                   select to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'') + (level-1) * :interval date_time
+                     from dual
+                    where to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'') is not null
+               connect by level <= round((to_date('':reg_end'',   ''yyyy/mm/dd-hh24.mi.ss'')  - 
+                                          to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'')) / :interval + 1)
+                   ) t
+                   on v.date_time = t.date_time
+                   order by t.date_time asc';
+      end if;
+   else
+      --
+      -- specified version date
+      --
+      l_query_str := 
+         'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME_:tz",
+                value,
+                nvl(quality_code, :missing)
+           from (
+                select date_time,
+                       value,
+                       quality_code
+                  from av_tsv_dqu
+                 where ts_code      =  :ts_code 
+                   and date_time    >= to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')  
+                   and date_time    <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                   and unit_id      =  '':units''
+                   and start_date   <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                   and end_date     >  to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')
+                   and version_date =  :version
+              group by date_time
+                ) v
+                right outer join
+                (
+                select date_time
+                  from av_tsv
+                 where ts_code      =  :ts_code 
+                   and date_time    >= to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')  
+                   and date_time    <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                   and start_date   <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                   and end_date     >  to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')
+                   and version_date =  :version
+                union
+                select to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'') + (level-1) * :interval date_time
+                  from dual
+                 where to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'') is not null
+            connect by level <= round((to_date('':reg_end'',   ''yyyy/mm/dd-hh24.mi.ss'')  - 
+                                       to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'')) / :interval + 1)
+                ) t
+                on v.date_time = t.date_time
+                order by t.date_time asc';
+           
+      l_query_str := replace(l_query_str, ':version', to_char(l_version_date, 'yyyy/mm/dd-hh24.mi.ss'));
+   end if;
+   
+   l_query_str := replace(l_query_str, ':tz',        l_time_zone);
+   l_query_str := replace(l_query_str, ':missing',   l_missing);
+   l_query_str := replace(l_query_str, ':ts_code',   l_ts_code);
+   l_query_str := replace(l_query_str, ':start',     l_start_str);
+   l_query_str := replace(l_query_str, ':end',       l_end_str);
+   l_query_str := replace(l_query_str, ':reg_start', l_reg_start_str);
+   l_query_str := replace(l_query_str, ':reg_end',   l_reg_end_str);
+   l_query_str := replace(l_query_str, ':interval',  l_interval);
+   l_query_str := replace(l_query_str, ':units',     p_units);
    --
    -- open the cursor
    --
-   output('Open cursor');
+   set_action('Open cursor');
    open p_at_tsv_rc for l_query_str;
     
    dbms_application_info.set_module(null,null);
       
-end retrieve_ts3;
+end retrieve_ts;
 --
 --*******************************************************************   --
 --*******************************************************************   --
 --
--- RETREIVE_TS2_MULTI - v2.0 -
+-- RETREIVE_TS_MULTI - v2.0 -
 --
-procedure retrieve_ts2_multi (
+procedure retrieve_ts_multi (
    p_at_tsv_rc       in out sys_refcursor,
    p_timeseries_info in     timeseries_req_array,
+   p_time_zone       in     varchar2 default 'UTC',
    p_trim            in     varchar2 default 'F',
    p_start_inclusive in     varchar2 default 'T',
    p_end_inclusive   in     varchar2 default 'T',
    p_previous        in     varchar2 default 'F',
    p_next            in     varchar2 default 'F',
+   p_version_date    in     date     default null,
+   p_max_version     in     varchar2 default 'T',
    p_office_id       in     varchar2 default null
    )
 is
-   l_req_info         ts_request_array := ts_request_array();
-   l_trim             boolean          := cwms_util.return_true_or_false(nvl(p_trim,      'F'));
-   l_start_inclusive  boolean          := cwms_util.return_true_or_false(nvl(p_start_inclusive, 'T'));
-   l_end_inclusive    boolean          := cwms_util.return_true_or_false(nvl(p_end_inclusive, 'T'));
-   l_previous         boolean          := cwms_util.return_true_or_false(nvl(p_previous,  'F'));
-   l_next             boolean          := cwms_util.return_true_or_false(nvl(p_next     , 'F'));
-   l_office_id        varchar2(16)     := nvl(p_office_id, cwms_util.user_office_id);
-   i                  pls_integer;
-
+   type date_tab_t is table of date;
+   type val_tab_t  is table of binary_double;
+   type qual_tab_t is table of number;
+   
+   date_tab date_tab_t := date_tab_t();
+   val_tab  val_tab_t  := val_tab_t();
+   qual_tab qual_tab_t := qual_tab_t();
+   i        integer;
+   j        pls_integer;
+   t        nested_ts_table  := nested_ts_table();
+   rec      sys_refcursor;
+   
 begin
 
-   dbms_application_info.set_module ('cwms_ts.retrieve_ts2_multi','Preparation loop');
+   dbms_application_info.set_module ('cwms_ts.retrieve_ts_multi','Preparation loop');
+   --
+   -- This routine actually iterates all the results in order to pack them into
+   -- a collection that can be queried to generate the nested cursors.
+   --
+   -- I used this setup becuase I was not able to get the complex query used in 
+   --  retrieve_ts to work as a cursor expression.
+   --
+   -- MDP
+   -- 01 May 2008
+   -- 
    for i in 1..p_timeseries_info.count loop
-      l_req_info.extend;
-      l_req_info(i) := ts_request_type(
+      t.extend;
+      t(i) := nested_ts_type(
          i,
          p_timeseries_info(i).tsid,
-         null,
          p_timeseries_info(i).unit,
          p_timeseries_info(i).start_time,
          p_timeseries_info(i).end_time,
+         tsv_array());
+      retrieve_ts(
+         rec,
+         p_timeseries_info(i).tsid,
+         p_timeseries_info(i).unit,
          p_timeseries_info(i).start_time,
-         p_timeseries_info(i).end_time);
-      --
-      -- get ts code
-      --
-      select ts_code
-        into l_req_info(i).ts_code
-        from mv_cwms_ts_id
-       where db_office_id = upper(l_office_id)
-         and upper(cwms_ts_id) = upper(l_req_info(i).tsid);
-
-      adjust_time_window(
-         l_req_info(i).start_time,
-         l_req_info(i).end_time,
-         l_req_info(i).ts_code,
-         l_start_inclusive,
-         l_end_inclusive,
-         l_previous,
-         l_next,
-         l_trim);      
+         p_timeseries_info(i).end_time,
+         p_time_zone,
+         p_trim,
+         p_start_inclusive,
+         p_end_inclusive,
+         p_previous,
+         p_next,
+         p_version_date,
+         p_max_version,
+         p_office_id);
+         
+      date_tab.delete;
+      val_tab.delete;
+      qual_tab.delete;
+         
+      fetch rec bulk collect into date_tab, val_tab, qual_tab;
+      
+      t(i).data.extend(rec%rowcount);
+      for j in 1..rec%rowcount loop
+         t(i).data(j) := tsv_type(date_tab(j), val_tab(j), qual_tab(j));
+      end loop;
+      
    end loop;
-   
-   dbms_application_info.set_action('open cursor');
-   
-   open p_at_tsv_rc for
-      select sequence, 
-             tsid, 
+      
+   open p_at_tsv_rc for 
+      select sequence,
+             tsid,
              units,
-             specified_start_time "START_TIME",
-             specified_end_time   "END_TIME",
+             start_time,
+             end_time,
              cursor (
                     select date_time,
-                           max(value) keep(dense_rank last order by version_date) "VALUE",
-                           nvl(max(quality_code) keep(dense_rank last order by version_date), 0) "QUALITY_CODE"
-                      from av_tsv_dqu v
-                     where v.ts_code    =  r.ts_code 
-                       and v.date_time  >= r.start_time  
-                       and v.date_time  <= r.end_time 
-                       and v.unit_id    =  r.units
-                       and v.start_date <= r.end_time 
-                       and v.end_date   >  r.start_time
-                  group by v.date_time
-                  order by v.date_time asc
-                    )
-        from table(l_req_info) r
-    order by r.sequence asc;       
+                           value,
+                           quality_code
+                      from table(t1.data)
+                   order by date_time asc
+                    )  
+        from table(t) t1 order by sequence asc;
     
    dbms_application_info.set_module(null,null);
    
-end retrieve_ts2_multi;
+end retrieve_ts_multi;
 --*******************************************************************   --
 --*******************************************************************   --
 --
@@ -3207,16 +3322,17 @@ end retrieve_ts2_multi;
       
       ELSE
       
-         cwms_err.raise('INVALID_STORE_RULE',p_store_rule);
+         cwms_err.raise('INVALID_STORE_RULE',nvl(p_store_rule, '<NULL>'));
       
       END CASE;
 
       COMMIT;
 
-        -----------------------------------------------                                                                    
-        -- notify the real-time Oracle->DSS exchange --
-        -----------------------------------------------  
-      cwms_xchg.time_series_updated(
+   -----------------------------------------------                                                                    
+   -- notify the real-time Oracle->DSS exchange --
+   -----------------------------------------------  
+   dbms_application_info.set_action('queuing time_series_updated message');
+   cwms_xchg.time_series_updated(
          l_ts_code, 
          p_cwms_ts_id,
          p_timeseries_data(p_timeseries_data.first).date_time,
@@ -3247,7 +3363,7 @@ BEGIN
    for l_timeseries in (select * from table(p_timeseries_array)) loop
       dbms_application_info.set_module(
          'cwms_ts_store.store_ts_multi',
-         'looping through time series');
+         'calling store_ts');
       store_ts(
          l_timeseries.tsid, 
          l_timeseries.unit, 
