@@ -1,4 +1,4 @@
-/* Formatted on 2008/04/30 16:18 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/05/02 09:28 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 /******************************************************************************
@@ -433,6 +433,12 @@ AS
       RETURN VARCHAR2;
 
    FUNCTION get_interval_string (p_interval IN NUMBER)
+      RETURN VARCHAR2;
+
+   FUNCTION get_default_units (
+      p_parameter_id   IN   VARCHAR2,
+      p_unit_system    IN   VARCHAR2 DEFAULT 'SI'
+   )
       RETURN VARCHAR2;
 END cwms_util;
 /

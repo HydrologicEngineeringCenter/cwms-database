@@ -1,4 +1,4 @@
-/* Formatted on 2008/04/30 16:19 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/05/02 10:05 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 /******************************************************************************
@@ -139,6 +139,8 @@ AS
         INTO l_base_param_code
         FROM cwms_base_parameter a
        WHERE UPPER (a.base_parameter_id) = UPPER (TRIM (p_base_param_id));
+
+      RETURN l_base_param_code;
    END;
 
    FUNCTION get_sub_id (p_full_id IN VARCHAR2)
@@ -2155,7 +2157,42 @@ AS
    BEGIN
       RETURN '13mi';
    END;
+
 ----------------------------------------------------------------------------
+   FUNCTION get_default_units (
+      p_parameter_id   IN   VARCHAR2,
+      p_unit_system    IN   VARCHAR2 DEFAULT 'SI'
+   )
+      RETURN VARCHAR2
+   AS
+      l_default_units     VARCHAR2 (16);
+      l_base_param_code   NUMBER;
+   BEGIN
+      l_base_param_code := cwms_util.get_base_param_code (p_parameter_id);
+
+      IF UPPER (p_unit_system) = 'SI'
+      THEN
+         SELECT a.unit_id
+           INTO l_default_units
+           FROM cwms_unit a, cwms_base_parameter b
+          WHERE a.unit_code = b.display_unit_code_si
+            AND b.base_parameter_code = l_base_param_code;
+      ELSIF UPPER (p_unit_system) = 'EN'
+      THEN
+         SELECT a.unit_id
+           INTO l_default_units
+           FROM cwms_unit a, cwms_base_parameter b
+          WHERE a.unit_code = b.display_unit_code_en
+            AND b.base_parameter_code = l_base_param_code;
+      ELSE
+         cwms_err.RAISE ('INVALID_ITEM',
+                         p_unit_system,
+                         'Unit System. Use either SI or EN'
+                        );
+      END IF;
+
+      RETURN l_default_units;
+   END;
 BEGIN
    -- anything put here will be executed on every mod_plsql call
    NULL;
