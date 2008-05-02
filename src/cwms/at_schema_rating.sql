@@ -458,7 +458,7 @@ from   at_rating r inner join at_rating_parameters    p using (rating_parms_code
 where c.indep_parm_number = 1;       
 
  
-
+/*
 /*** MV_CURVE ***/
 
 
@@ -497,3 +497,4 @@ NOPARALLEL;
 --alter table mv_curve add constraint mv_curve_pk 
 --primary key (loc_code, base_date, shift_date, spec_code, curve_code, shift_code);
 --/
+*/
