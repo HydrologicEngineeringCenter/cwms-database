@@ -458,11 +458,11 @@ from   at_rating r inner join at_rating_parameters    p using (rating_parms_code
 where c.indep_parm_number = 1;       
 
  
-/*
+
 /*** MV_CURVE ***/
 
 
-
+/*
 create materialized view mv_curve 
 using no index
 refresh complete on demand
