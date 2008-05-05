@@ -79,21 +79,24 @@
 			</else>
 		</if>
 		
-		<exec dir="${src}" executable="cmd" outputproperty="build-sql-script-output" errorproperty="build-sql-script-error">
+		<exec dir="${src}" executable="cmd" outputproperty="build-sql-script-output" errorproperty="build-sql-script-error"
+		resultproperty="build-sql-script-result">
 			<arg line="${buildSqlScript-arg-line}"/>
 		</exec>
 		
-		<!--if>
-			<equals arg1="${build-sql-script-error}" arg2="" />
+		<if>
+			<equals arg1="${build-sql-script-result}" arg2="0" />
 			<then>
 				<echo message="Finished building sql scripts"/>
 			</then>
 			<else>
 				<echo message="${build-sql-script-output}"/>
 				<echo message="${build-sql-script-error}"/>
+				<echo message="${build-sql-script-result}"/>
+				
 				<fail/>
 			</else>
-		</if-->
+		</if>
 		
 		<echo message="Finished building sql scripts"/>
 		
@@ -103,18 +106,20 @@
 cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_passwd=${oracle.hectest.password}"/>
 		<echo message="${autobuild-arg-line}"/>
 
-		<exec dir="${src}" executable="cmd" outputproperty="auto-build-output" errorproperty="auto-build-error">
+		<exec dir="${src}" executable="cmd" outputproperty="auto-build-output" errorproperty="auto-build-error"
+		resultproperty="auto-build-result">
 			<arg line="${autobuild-arg-line}"/>
 		</exec>
 		
 		<if>
-			<equals arg1="${auto-build-error}" arg2="" />
+			<equals arg1="${auto-build-result}" arg2="0" />
 			<then>
 				<echo message="Finished creating new CWMS20 Schema"/>
 			</then>
 			<else>
 				<echo message="${auto-build-output}"/>
 				<echo message="${auto-build-error}"/>
+				<echo message="${auto-build-result}"/>
 				<fail/>
 			</else>
 		</if>
@@ -129,18 +134,20 @@ cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_p
 		<property name="autokill-arg-line" value="/c python autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} ${autokill.force}"/>
 		<echo message="${autokill-arg-line}"/>
 		
-		<exec dir="${src}" executable="cmd" outputproperty="auto-kill-output" errorproperty="auto-kill-error">
+		<exec dir="${src}" executable="cmd" outputproperty="auto-kill-output" errorproperty="auto-kill-error"
+		resultproperty="auto-kill-result">
 			<arg line="${autokill-arg-line}"/>
 		</exec>	
 		
 		<if>
-			<equals arg1="${auto-kill-error}" arg2="" />
+			<equals arg1="${auto-kill-result}" arg2="0" />
 			<then>
 				<echo message="Finished dropping existing CWMS20 Schema"/>
 			</then>
 			<else>
 				<echo message="${auto-kill-output}"/>
 				<echo message="${auto-kill-error}"/>
+				<echo message="${auto-kill-result}"/>
 				<fail/>
 			</else>
 		</if>
