@@ -99,7 +99,12 @@ grant select on  sys.v_$statname to cwms_20;
 grant select on  sys.v_$timer to cwms_20;
 grant update any table to cwms_20;
 
+declare
+   compatible_version v$parameter.value%type;
 begin
+   --
+   -- grant queue privileges
+   --
    sys.dbms_aqadm.grant_system_privilege (
       privilege    => 'enqueue_any',
       grantee      => 'cwms_20',
@@ -112,6 +117,45 @@ begin
       privilege    => 'manage_any',
       grantee      => 'cwms_20',
       admin_option => false);
+   
+   select value
+     into compatible_version
+     from v$parameter
+    where name = 'compatible';
+
+   if compatible_version > '11.0.0.0.0' then
+      --
+      -- grant network address resolve privileges (new in Oracle 11)
+      --
+      begin
+         dbms_network_acl_admin.create_acl(
+            acl         => 'resolve.xml',
+            description => 'resolve acl', 
+            principal   => 'CWMS_20', 
+            is_grant    => true, 
+            privilege   => 'resolve');
+         dbms_network_acl_admin.assign_acl(
+            acl         => 'resolve.xml', 
+            host        => '*');
+      exception
+         when others then
+            if sqlcode = 31003 then
+               --
+               -- acl already exists, re-assign to newly-created CWMS_20 user
+               --
+               dbms_network_acl_admin.add_privilege(
+                  acl         => 'resolve.xml',
+                  principal   => 'CWMS_20', 
+                  is_grant    => true, 
+                  privilege   => 'resolve');
+            end if;
+      end;
+   else
+      --
+      -- Not applicable for Oracle 10 database
+      --
+      dbms_output.put_line('Skipping Oracle 11 network acl setup.');
+   end if;
 end;
 /
 
