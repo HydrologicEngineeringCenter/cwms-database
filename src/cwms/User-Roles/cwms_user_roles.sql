@@ -24,11 +24,11 @@ grant cwms_user to cwms_dev;
 -- select on views granted later
 
 
-$if dbms_db_version.version > 10 $then
-   begin
+begin
    --
    -- grant network address resolve privileges (new in Oracle 11)
    --
+   $if dbms_db_version.version > 10 $then
       --
       -- compile only on Oracle 11 or above
       --
@@ -42,7 +42,9 @@ $if dbms_db_version.version > 10 $then
       dbms_network_acl_admin.assign_acl(
          acl         => 'resolve.xml', 
          host        => '*');
-   end;
-$end
+   $else
+      dbms_output.put_line('Skipping network acl setup on pre-11 database.');
+   $end
+end;
 /
 
