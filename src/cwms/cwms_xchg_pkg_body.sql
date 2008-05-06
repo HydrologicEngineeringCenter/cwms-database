@@ -1,6 +1,20 @@
 create or replace package body cwms_xchg as
 
 --------------------------------------------------------------------------------
+-- PROCEDURE GET_QUEUE_NAMES
+--
+   procedure get_queue_names(
+      p_status_queue_name   out varchar2,
+      p_realtime_queue_name out varchar2,
+      p_office_id           in  varchar2 default null)
+   is
+      l_office_id varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id);
+   begin
+      p_status_queue_name   := l_office_id || '_STATUS';
+      p_realtime_queue_name := l_office_id || '_REALTIME_OPS';
+   end get_queue_names;
+   
+--------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION DB_DATASTORE_ID()
 --
    function db_datastore_id
@@ -1443,10 +1457,10 @@ create or replace package body cwms_xchg as
       end loop;
       
       if l_offices.count = 0 then
-         l_text := cwms_util.user_office_id;
+         l_text := nvl(upper(p_office_id), cwms_util.user_office_id);
          writeln_xml('<office id="'||l_text||'">');
          indent;
-         select long_name into l_text from cwms_office where office_id = upper(l_text);
+         select long_name into l_text from cwms_office where office_id = l_text;
          writeln_xml('<name>'||l_text||'</name>');
          dedent;
          writeln_xml('</office>');

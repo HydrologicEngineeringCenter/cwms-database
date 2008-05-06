@@ -9,6 +9,14 @@ create or replace package cwms_xchg as
 --
 
 --------------------------------------------------------------------------------
+-- PROCEDURE GET_QUEUE_NAMES
+--
+   procedure get_queue_names(
+      p_status_queue_name   out varchar2,
+      p_realtime_queue_name out varchar2,
+      p_office_id           in  varchar2 default null);
+   
+--------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION DB_DATASTORE_ID()
 --
    function db_datastore_id
