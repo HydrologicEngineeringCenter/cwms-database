@@ -1442,17 +1442,27 @@ create or replace package body cwms_xchg as
          end if;
       end loop;
       
-      l_text := l_offices.first;
-      loop
-         exit when l_text is null;
-         l_parts := cwms_util.split_text(l_text, cwms_util.field_separator);
-         writeln_xml('<office id="'||l_parts(1)||'">');
+      if l_offices.count = 0 then
+         l_text := cwms_util.user_office_id;
+         writeln_xml('<office id="'||l_text||'">');
          indent;
-         writeln_xml('<name>'||l_parts(2)||'</name>');
+         select long_name into l_text from cwms_office where office_id = upper(l_text);
+         writeln_xml('<name>'||l_text||'</name>');
          dedent;
          writeln_xml('</office>');
-         l_text := l_offices.next(l_text);
-      end loop;
+      else
+         l_text := l_offices.first;
+         loop
+            exit when l_text is null;
+            l_parts := cwms_util.split_text(l_text, cwms_util.field_separator);
+            writeln_xml('<office id="'||l_parts(1)||'">');
+            indent;
+            writeln_xml('<name>'||l_parts(2)||'</name>');
+            dedent;
+            writeln_xml('</office>');
+            l_text := l_offices.next(l_text);
+         end loop;
+      end if;
       
       l_filemgr_ids.delete;
       l_text := l_filemgrs.first;
