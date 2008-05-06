@@ -132,7 +132,7 @@ begin
    exception
       when others then
          case sqlcode
-            when -31003 then
+            when 31003 then
                --
                -- acl already exists, re-assign to newly-created CWMS_20 user
                --
@@ -141,7 +141,7 @@ begin
                   principal   => 'CWMS_20', 
                   is_grant    => true, 
                   privilege   => 'resolve');
-            when -6550 then
+            else -- this should be more specific!
                --
                -- must be running pre-11 database
                --
