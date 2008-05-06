@@ -23,3 +23,26 @@ grant cwms_user to cwms_dev;
 
 -- select on views granted later
 
+
+begin
+   --
+   -- grant network address resolve privileges (new in Oracle 11)
+   --
+   $if dbms_db_version.version > 10 $then
+      --
+      -- compile only on Oracle 11 or above
+      --
+      dbms_network_acl_admin.drop_acl('resolve.xml');
+      dbms_network_acl_admin.create_acl(
+         acl         => 'resolve.xml',
+         description => 'resolve acl', 
+         principal   => 'CWMS_USER', 
+         is_grant    => true, 
+         privilege   => 'resolve');
+      dbms_network_acl_admin.assign_acl(
+         acl         => 'resolve.xml', 
+         host        => '*');
+   $end
+end;
+/
+

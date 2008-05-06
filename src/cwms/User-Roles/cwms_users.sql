@@ -116,38 +116,16 @@ begin
       grantee      => 'cwms_20',
       admin_option => false);
    
-   --
-   -- grant network address resolve privileges (new in Oracle 11)
-   --
-   begin
-      dbms_network_acl_admin.create_acl(
+   $if dbms_db_version.version > 10 $then
+      --
+      -- compile only on Oracle 11 or above
+      --
+      dbms_network_acl_admin.add_privilege(
          acl         => 'resolve.xml',
-         description => 'resolve acl', 
          principal   => 'CWMS_20', 
          is_grant    => true, 
          privilege   => 'resolve');
-      dbms_network_acl_admin.assign_acl(
-         acl         => 'resolve.xml', 
-         host        => '*');
-   exception
-      when others then
-         case sqlcode
-            when 31003 then
-               --
-               -- acl already exists, re-assign to newly-created CWMS_20 user
-               --
-               dbms_network_acl_admin.add_privilege(
-                  acl         => 'resolve.xml',
-                  principal   => 'CWMS_20', 
-                  is_grant    => true, 
-                  privilege   => 'resolve');
-            else -- this should be more specific!
-               --
-               -- must be running pre-11 database
-               --
-               null;
-         end case;
-   end;
+   $end
 end;
 /
 
