@@ -1320,14 +1320,14 @@ create or replace package body cwms_xchg as
       l_spc             constant varchar2(1) := chr(9);
       l_nl              constant varchar2(1) := chr(10);
       
-      l_dss_filemgr_url at_dss_file.dss_filemgr_url%type;
-      l_dss_file_name   at_dss_file.dss_file_name%type;
-      l_filemgr_id      varchar2(16);
-      l_dss_xchg_set_id at_dss_xchg_set.dss_xchg_set_id%type;
-      l_office_code     cwms_office.office_code%type;
-      l_office_id_mask  cwms_office.office_id%type;
-      l_office_id       cwms_office.office_id%type;
-      l_office_name     cwms_office.long_name%type;
+      l_dss_filemgr_url varchar2(256);
+      l_dss_file_name   varchar2(256);
+      l_filemgr_id      varchar2(256);
+      l_dss_xchg_set_id varchar2(256);
+      l_office_code     varchar2(256);
+      l_office_id_mask  varchar2(256);
+      l_office_id       varchar2(256);
+      l_office_name     varchar2(256);
       l_db_name         v$database.name%type;
       l_dss_filemgr_id  varchar2(256);
       l_oracle_id       varchar2(256);
