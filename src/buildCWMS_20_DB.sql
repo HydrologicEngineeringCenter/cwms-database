@@ -81,6 +81,7 @@ declare
    type str_tab_t is table of varchar2(32);
    package_names str_tab_t := str_tab_t();
    view_names str_tab_t := str_tab_t();
+   type_names str_tab_t := str_tab_t();
    sql_statement varchar2(128);
    view_synonym varchar2(32);
 begin
@@ -114,6 +115,19 @@ begin
       end if;
    end loop;
    --
+   -- collect CWMS_20 object types
+   --
+   for rec in (
+      select object_name 
+        from dba_objects 
+       where owner = 'CWMS_20'
+         and object_type = 'TYPE'
+         and object_name not like 'SYS_%')
+   loop
+      type_names.extend;
+      type_names(type_names.last) := rec.object_name;
+   end loop;
+   --
    -- create public synonyms for collected packages
    --
    for i in 1..package_names.count loop
@@ -139,10 +153,15 @@ begin
       dbms_output.put_line('-- ' || sql_statement);
       execute immediate sql_statement;
    end loop;
-   
-   execute immediate 'GRANT EXECUTE ON CWMS_20.TSV_ARRAY TO CWMS_USER';
-   execute immediate 'GRANT EXECUTE ON CWMS_20.TSV_TYPE TO CWMS_USER';
-   
+   --
+   -- grant execute on COLLECTED types to CWMS_USER role
+   --
+   dbms_output.put_line('--');
+   for i in 1..type_names.count loop
+      sql_statement := 'GRANT EXECUTE ON CWMS_20.'||type_names(i)||' TO CWMS_USER';
+      dbms_output.put_line('-- ' || sql_statement);
+      execute immediate sql_statement;
+   end loop;
    --
    -- grant select on collected packages to CWMS_DEV role
    --
