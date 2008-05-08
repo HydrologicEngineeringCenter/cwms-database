@@ -272,17 +272,58 @@ as
       p_node in xmltype)
       return self as result
    is
+      l_datastore_id_node xmltype;
+      l_pathname_node     xmltype;
+      l_datatype_node     xmltype;
+      l_units_node        xmltype;
+      l_timezone_node     xmltype;
+      l_tz_usage_node     xmltype;
+      l_datastore_id_text varchar2(512);
+      l_pathname_text     varchar2(512);
+      l_datatype_text     varchar2(512);
+      l_units_text        varchar2(512);
+      l_timezone_text     varchar2(512);
+      l_tz_usage_text     varchar2(512);
    begin
       if p_node.getrootelement() != 'dss-timeseries' then
          cwms_err.raise('INVALID_ITEM', p_node.getrootelement(), 'dss-timeseries node'); 
       end if;
+      l_datastore_id_node := p_node.extract('/dss-timeseries/@datastore-id');
+      l_pathname_node     := p_node.extract('/dss-timeseries/node()');
+      l_datatype_node     := p_node.extract('/dss-timeseries/@type');
+      l_units_node        := p_node.extract('/dss-timeseries/@units');
+      l_timezone_node     := p_node.extract('/dss-timeseries/@timezone');
+      l_tz_usage_node     := p_node.extract('/dss-timeseries/@tz-usage');
+      if l_datastore_id_node is null
+         or l_pathname_node is null
+         or l_datatype_node is null
+         or l_units_node is null
+      then
+         cwms_err.raise('INVALID_ITEM', p_node.getrootelement(), 'dss-timeseries node'); 
+      else
+         l_datastore_id_text := l_datastore_id_node.getstringval();
+         l_pathname_text     := l_pathname_node.getstringval();
+         l_datatype_text     := l_datatype_node.getstringval();
+         l_units_text        := l_units_node.getstringval();
+         if l_timezone_node is null then
+            l_timezone_text := null;
+         else
+            l_timezone_text := l_timezone_node.getstringval();
+         end if;
+         if l_tz_usage_node is null then
+            l_tz_usage_text := null;
+         else
+            l_tz_usage_text := l_tz_usage_node.getstringval();
+         end if;
+      end if;
+        
       init(
-         p_node.extract('/dss-timeseries/@datastore-id').getstringval(),
-         p_node.extract('/dss-timeseries/node()').getstringval(),
-         p_node.extract('/dss-timeseries/@type').getstringval(),
-         p_node.extract('/dss-timeseries/@units').getstringval(),
-         p_node.extract('/dss-timeseries/@timezone').getstringval(),
-         p_node.extract('/dss-timeseries/@tz-usage').getstringval());
+         l_datastore_id_text,
+         l_pathname_text,
+         l_datatype_text,
+         l_units_text,
+         l_timezone_text,
+         l_tz_usage_text);
       return;
    end;
    
