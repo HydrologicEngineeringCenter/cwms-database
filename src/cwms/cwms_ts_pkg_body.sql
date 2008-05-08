@@ -1892,10 +1892,12 @@ end adjust_time_window;
 --*******************************************************************   --
 --*******************************************************************   --
 --
--- RETREIVE_TS - v2.0 -
+-- RETREIVE_TS_OUT - v2.0 -
 --
-procedure retrieve_ts (
+procedure retrieve_ts_out (
    p_at_tsv_rc       out sys_refcursor,
+   p_cwms_ts_id_out  out varchar2,
+   p_units_out       out varchar2,
    p_cwms_ts_id      in  varchar2,
    p_units           in  varchar2,
    p_start_time      in  date,
@@ -1914,6 +1916,9 @@ is
    l_ts_code          number;
    l_interval         number;
    l_offset           number;
+   l_office_id        varchar2(16)    := nvl(p_office_id, cwms_util.user_office_id);
+   l_cwms_ts_id       varchar2(183)   := get_cwms_ts_id(p_cwms_ts_id, l_office_id);
+   l_units            varchar2(16)    := nvl(p_units, get_db_unit_id(l_cwms_ts_id));
    l_time_zone        varchar2(28)    := nvl(p_time_zone, 'UTC');
    l_trim             boolean         := cwms_util.return_true_or_false(nvl(p_trim,      'F'));
    l_start_inclusive  boolean         := cwms_util.return_true_or_false(nvl(p_start_inclusive, 'T'));
@@ -1926,7 +1931,6 @@ is
    l_reg_start_time   date;
    l_reg_end_time     date;
    l_max_version      boolean         := cwms_util.return_true_or_false(nvl(p_max_version, 'F'));
-   l_office_id        varchar2(16)    := nvl(p_office_id, cwms_util.user_office_id);
    l_query_str        varchar2(4000);
    l_start_str        varchar2(32);
    l_end_str          varchar2(32);
@@ -1941,10 +1945,15 @@ is
       dbms_output.put_line(text);
    end;   
 begin
-   dbms_application_info.set_module ('cwms_ts.retrieve_ts3','Get TS Code');
+   --
+   -- set the out parameters
+   --
+   p_cwms_ts_id_out := l_cwms_ts_id;
+   p_units_out := l_units;
    --
    -- get ts code
    --
+   dbms_application_info.set_module ('cwms_ts.retrieve_ts','Get TS Code');
    select ts_code,
           interval,
           interval_utc_offset
@@ -1991,7 +2000,7 @@ begin
          l_query_str := 
             'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME_:tz",
                    value,
-                   nvl(quality_code, :missing)
+                   nvl(quality_code, :missing) "QUALITY_CODE"
               from (
                    select date_time,
                           max(value) keep(dense_rank last order by version_date) "VALUE",
@@ -2030,7 +2039,7 @@ begin
          l_query_str := 
             'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME_:tz",
                    value,
-                   nvl(quality_code, :missing)
+                   nvl(quality_code, :missing) "QUALITY_CODE"
               from (
                    select date_time,
                           max(value) keep(dense_rank first order by version_date) "VALUE",
@@ -2070,7 +2079,7 @@ begin
       l_query_str := 
          'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME_:tz",
                 value,
-                nvl(quality_code, :missing)
+                nvl(quality_code, :missing) "QUALITY_CODE"
            from (
                 select date_time,
                        value,
@@ -2116,7 +2125,7 @@ begin
    l_query_str := replace(l_query_str, ':reg_start', l_reg_start_str);
    l_query_str := replace(l_query_str, ':reg_end',   l_reg_end_str);
    l_query_str := replace(l_query_str, ':interval',  l_interval);
-   l_query_str := replace(l_query_str, ':units',     p_units);
+   l_query_str := replace(l_query_str, ':units',     l_units);
    --
    -- open the cursor
    --
@@ -2125,7 +2134,54 @@ begin
     
    dbms_application_info.set_module(null,null);
       
-end retrieve_ts;
+end retrieve_ts_out;
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- RETREIVE_TS - v2.0 -
+--
+procedure retrieve_ts (
+   p_at_tsv_rc       out sys_refcursor,
+   p_cwms_ts_id      in  varchar2,
+   p_units           in  varchar2,
+   p_start_time      in  date,
+   p_end_time        in  date,
+   p_time_zone       in  varchar2 default 'UTC',
+   p_trim            in  varchar2 default 'F',
+   p_start_inclusive in  varchar2 default 'T',
+   p_end_inclusive   in  varchar2 default 'T',
+   p_previous        in  varchar2 default 'F',
+   p_next            in  varchar2 default 'F',
+   p_version_date    in  date     default null,
+   p_max_version     in  varchar2 default 'T',
+   p_office_id       in  varchar2 default null
+   )
+is
+   l_cwms_ts_id_out varchar2(183);
+   l_units_out      varchar2(16);
+   l_at_tsv_rc      sys_refcursor;
+begin
+   retrieve_ts_out (
+      l_at_tsv_rc,
+      l_cwms_ts_id_out,
+      l_units_out,
+      p_cwms_ts_id,
+      p_units,
+      p_start_time,
+      p_end_time,
+      p_time_zone,
+      p_trim,
+      p_start_inclusive,
+      p_end_inclusive,
+      p_previous,
+      p_next,
+      p_version_date,
+      p_max_version,
+      p_office_id
+      );
+   p_at_tsv_rc := l_at_tsv_rc;      
+end retrieve_ts;    
 --
 --*******************************************************************   --
 --*******************************************************************   --
@@ -2150,13 +2206,14 @@ is
    type val_tab_t  is table of binary_double;
    type qual_tab_t is table of number;
    
-   date_tab date_tab_t := date_tab_t();
-   val_tab  val_tab_t  := val_tab_t();
-   qual_tab qual_tab_t := qual_tab_t();
-   i        integer;
-   j        pls_integer;
-   t        nested_ts_table  := nested_ts_table();
-   rec      sys_refcursor;
+   date_tab    date_tab_t := date_tab_t();
+   val_tab     val_tab_t  := val_tab_t();
+   qual_tab    qual_tab_t := qual_tab_t();
+   i           integer;
+   j           pls_integer;
+   t           nested_ts_table  := nested_ts_table();
+   rec         sys_refcursor;
+   l_time_zone varchar2(28) := nvl(p_time_zone, 'UTC');
    
 begin
 
@@ -2180,8 +2237,10 @@ begin
          p_timeseries_info(i).start_time,
          p_timeseries_info(i).end_time,
          tsv_array());
-      retrieve_ts(
+      retrieve_ts_out(
          rec,
+         t(i).tsid,
+         t(i).units,
          p_timeseries_info(i).tsid,
          p_timeseries_info(i).unit,
          p_timeseries_info(i).start_time,
@@ -2209,19 +2268,21 @@ begin
       
    end loop;
       
+   l_time_zone := l_time_zone;
    open p_at_tsv_rc for 
       select sequence,
              tsid,
              units,
              start_time,
              end_time,
+             l_time_zone "TIME_ZONE",
              cursor (
                     select date_time,
                            value,
                            quality_code
                       from table(t1.data)
                    order by date_time asc
-                    )  
+                    ) "DATA" 
         from table(t) t1 order by sequence asc;
     
    dbms_application_info.set_module(null,null);

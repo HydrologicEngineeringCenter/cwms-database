@@ -193,6 +193,30 @@ AS
 --*******************************************************************   --
 --*******************************************************************   --
 --
+-- RETREIVE_TS_OUT - v2.0 -
+--
+procedure retrieve_ts_out (
+   p_at_tsv_rc       out sys_refcursor,
+   p_cwms_ts_id_out  out varchar2,
+   p_units_out       out varchar2,
+   p_cwms_ts_id      in  varchar2,
+   p_units           in  varchar2,
+   p_start_time      in  date,
+   p_end_time        in  date,
+   p_time_zone       in  varchar2 default 'UTC',
+   p_trim            in  varchar2 default 'F',
+   p_start_inclusive in  varchar2 default 'T',
+   p_end_inclusive   in  varchar2 default 'T',
+   p_previous        in  varchar2 default 'F',
+   p_next            in  varchar2 default 'F',
+   p_version_date    in  date     default null,
+   p_max_version     in  varchar2 default 'T',
+   p_office_id       in  varchar2 default null
+   );
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
 -- RETREIVE_TS - v2.0 -
 --
 procedure retrieve_ts (
