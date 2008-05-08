@@ -1390,7 +1390,7 @@ create or replace package body cwms_xchg as
       l_dss_file_name   := cwms_util.normalize_wildcards(p_dss_file_name);
       l_dss_xchg_set_id := cwms_util.normalize_wildcards(p_dss_xchg_set_id);
       if p_office_id is null then
-         l_office_id_mask := cwms_util.get_office_code;
+         l_office_id_mask := cwms_util.user_office_id;
       else
          l_office_id_mask := cwms_util.normalize_wildcards(p_office_id);
       end if;
@@ -1457,10 +1457,14 @@ create or replace package body cwms_xchg as
       end loop;
       
       if l_offices.count = 0 then
-         l_text := nvl(upper(p_office_id), cwms_util.user_office_id);
+         if instr(l_office_id_mask, '%') > 0 or instr(l_office_id_mask, '_') > 0 then
+            l_text := cwms_util.user_office_id;
+         else
+            l_text := l_office_id_mask;
+         end if;
          writeln_xml('<office id="'||l_text||'">');
          indent;
-         select long_name into l_text from cwms_office where office_id = l_text;
+         select long_name into l_text from cwms_office where office_id = upper(l_text);
          writeln_xml('<name>'||l_text||'</name>');
          dedent;
          writeln_xml('</office>');
