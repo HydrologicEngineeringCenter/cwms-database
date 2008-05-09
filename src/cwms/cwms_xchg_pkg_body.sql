@@ -38,7 +38,7 @@ create or replace package body cwms_xchg as
       p_dss_file_name   in varchar2)
       return varchar2
    is
-      l_url_part      varchar2(256) := lower(p_dss_filemgr_url);
+      l_url_part      varchar2(256) := regexp_replace(lower(p_dss_filemgr_url), '/dssfilemanager$', '');
       l_filename_part varchar2(256) := p_dss_file_name;
       l_datastore_id  varchar2(64   );
       l_pos           pls_integer;
@@ -345,8 +345,9 @@ create or replace package body cwms_xchg as
       return number
    is
       pragma autonomous_transaction;
-      l_dss_file_code  number(10);
-      l_office_code    varchar2(16);
+      l_dss_file_code   number(10);
+      l_office_code     varchar2(16);
+      l_dss_filemgr_url varchar2(256) := regexp_replace(p_dss_filemgr_url, '/DssFileManager$', '', 1, 1, 'i');
    begin
       l_office_code := cwms_util.get_office_code(p_office_id);
       begin
@@ -354,7 +355,7 @@ create or replace package body cwms_xchg as
            into l_dss_file_code
            from at_dss_file
           where office_code = l_office_code
-            and dss_filemgr_url = p_dss_filemgr_url
+            and dss_filemgr_url = l_dss_filemgr_url
             and dss_file_name = p_dss_file_name;
 
          if p_fail_if_exists != cwms_util.false_num then
@@ -362,14 +363,14 @@ create or replace package body cwms_xchg as
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'HEC-DSS file',
-               p_dss_filemgr_url || p_dss_file_name);
+               l_dss_filemgr_url || p_dss_file_name);
          end if;
       exception
          when no_data_found then
             begin
                insert
                  into at_dss_file
-               values (cwms_seq.nextval, l_office_code, p_dss_filemgr_url, p_dss_file_name)
+               values (cwms_seq.nextval, l_office_code, l_dss_filemgr_url, p_dss_file_name)
              returning dss_file_code
                   into l_dss_file_code;
             exception
@@ -378,7 +379,7 @@ create or replace package body cwms_xchg as
                   cwms_err.raise(
                      'ITEM_NOT_CREATED',
                      'HEC-DSS file',
-                     p_dss_filemgr_url || p_dss_file_name);
+                     l_dss_filemgr_url || p_dss_file_name);
             end;
       end;
 
@@ -407,12 +408,13 @@ create or replace package body cwms_xchg as
       p_office_id         in   varchar2 default null)
    is
       l_dss_file_code   number;
+      l_dss_filemgr_url varchar2(256) := regexp_replace(p_dss_filemgr_url, '/DssFileManager$', '', 1, 1, 'i');
    begin
       select dss_file_code
         into l_dss_file_code
         from at_dss_file
        where office_code = cwms_util.get_office_code(p_office_id)
-         and dss_filemgr_url = p_dss_filemgr_url
+         and dss_filemgr_url = l_dss_filemgr_url
          and dss_file_name = p_dss_file_name;
 
       delete_dss_file(l_dss_file_code);
@@ -420,7 +422,7 @@ create or replace package body cwms_xchg as
       when no_data_found then
          cwms_err.raise(
             'INVALID_ITEM',
-            p_dss_filemgr_url || p_dss_file_name,
+            l_dss_filemgr_url || p_dss_file_name,
             'HEC-DSS file');
    end delete_dss_file;
 
@@ -446,7 +448,8 @@ create or replace package body cwms_xchg as
       l_description         varchar2(80);
       l_realtime_code_in    number(10)    := null;
       l_realtime_code       number(10)    := null;
-      l_dss_filemgr_url     varchar2(32);
+      l_dss_filemgr_url     varchar2(256) := regexp_replace(p_dss_filemgr_url, '/DssFileManager$', '', 1, 1, 'i');
+      l_set_dss_filemgr_url varchar2(256);
       l_dss_file_name       varchar2(255);
    begin
       l_office_code := cwms_util.get_office_code(p_office_id);
@@ -504,11 +507,11 @@ create or replace package body cwms_xchg as
          -- continue check on matching fields --
          ---------------------------------------
          select dss_filemgr_url, dss_file_name
-           into l_dss_filemgr_url, l_dss_file_name
+           into l_set_dss_filemgr_url, l_dss_file_name
            from at_dss_file
           where dss_file_code = l_dss_file_code;
 
-         if l_dss_filemgr_url != p_dss_filemgr_url
+         if l_set_dss_filemgr_url != l_dss_filemgr_url
             or
             l_dss_file_name != p_dss_file_name then
             rollback;
@@ -522,7 +525,7 @@ create or replace package body cwms_xchg as
          -- create the item --
          ---------------------
          l_dss_file_code := create_dss_file(
-            p_dss_filemgr_url,
+            l_dss_filemgr_url,
             p_dss_file_name,
             cwms_util.false_num,
             p_office_id);
@@ -710,6 +713,7 @@ create or replace package body cwms_xchg as
       l_update                boolean := false;
       l_table_row             at_dss_xchg_set%rowtype;
       l_dss_xchg_set_code     number(10);
+      l_dss_filemgr_url       varchar2(256) := regexp_replace(p_dss_filemgr_url, '/DssFileManager', '', 1, 1, 'i');
    begin
       l_dss_xchg_set_code := get_dss_xchg_set_code(
                                     p_dss_xchg_set_id,
@@ -732,7 +736,7 @@ create or replace package body cwms_xchg as
               from at_dss_file
              where dss_file_code = l_table_row.dss_file_code;
             if l_update_filemgr_url then
-               l_dss_file_row.dss_filemgr_url := p_dss_filemgr_url;
+               l_dss_file_row.dss_filemgr_url := l_dss_filemgr_url;
             end if;
             if l_update_file_name then
                l_dss_file_row.dss_file_name := p_dss_file_name;
@@ -1386,7 +1390,7 @@ create or replace package body cwms_xchg as
       end;
 
    begin
-      l_dss_filemgr_url := cwms_util.normalize_wildcards(p_dss_filemgr_url);
+      l_dss_filemgr_url := cwms_util.normalize_wildcards(regexp_replace(p_dss_filemgr_url, '/DssFileManger$', '', 1, 1, 'i'));
       l_dss_file_name   := cwms_util.normalize_wildcards(p_dss_file_name);
       l_dss_xchg_set_id := cwms_util.normalize_wildcards(p_dss_xchg_set_id);
       if p_office_id is null then
@@ -1683,7 +1687,7 @@ create or replace package body cwms_xchg as
        order by office_id asc, dss_xchg_set_id asc;
 
    begin
-      l_dss_filemgr_url := cwms_util.normalize_wildcards(p_dss_filemgr_url);
+      l_dss_filemgr_url := cwms_util.normalize_wildcards(regexp_replace(p_dss_filemgr_url, '/DssFileManager$', '', 1, 1, 'i'));
       l_dss_file_name   := cwms_util.normalize_wildcards(p_dss_file_name);
       l_dss_xchg_set_id := cwms_util.normalize_wildcards(p_dss_xchg_set_id);
       if p_office_id is null then
@@ -1925,7 +1929,7 @@ create or replace package body cwms_xchg as
       pragma autonomous_transaction;
       
       type assoc_bool_vc574 is table of boolean index by varchar2(574);      -- 574 = 183 (tsid) + 391 (pathname)
-      type assoc_vc288_vc16 is table of varchar2(287) index by varchar2(16); -- 287 = 32 (URL) + 255 (filename)
+      type assoc_vc512_vc16 is table of varchar2(512) index by varchar2(16); -- 512 = 256 (URL) + 256 (filename)
       type assoc_bool_vc32  is table of boolean index by varchar2(32);       -- 32 (URL) 
       
       c_dss_to_oracle           constant pls_integer := 1;
@@ -2584,7 +2588,7 @@ create or replace package body cwms_xchg as
          l_text := '';
          l_set_url := l_urls_affected.first;
          while l_set_url is not null loop
-            l_text := l_text || ',' || l_set_url;
+            l_text := l_text || ',' || l_set_url || '/DssFileManager';
             l_set_url := l_urls_affected.next(l_set_url);
          end loop;
          xchg_config_updated(substr(l_text, 1));
@@ -2674,7 +2678,7 @@ create or replace package body cwms_xchg as
       p_store_rule        in  varchar2 default 'MERGE')
    is
       type assoc_bool_vc574 is table of boolean index by varchar2(574);      -- 574 = 183 (tsid) + 391 (pathname)
-      type assoc_vc288_vc16 is table of varchar2(287) index by varchar2(16); -- 287 = 32 (URL) + 255 (filename) 
+      type assoc_vc512_vc16 is table of varchar2(512) index by varchar2(16); -- 512 = 256 (URL) + 256 (filename) 
       
       c_dss_to_oracle           constant pls_integer := 1;
       c_oracle_to_dss           constant pls_integer := 2;
@@ -2735,7 +2739,7 @@ create or replace package body cwms_xchg as
       l_specified_maps          assoc_bool_vc574;
       l_offices                 assoc_bool_vc574;
       l_databases               assoc_bool_vc574;
-      l_dssfilemgrs             assoc_vc288_vc16;
+      l_dssfilemgrs             assoc_vc512_vc16;
       
       function get_dss_file_code (p_full_url in varchar2, p_office_id in varchar2) return number
       is
@@ -3783,12 +3787,13 @@ function restart_realtime(
    return varchar2
 is
    l_request_ids varchar2(4000) := '';
-   l_host        varchar2(64)   := regexp_substr(p_engine_url, '[a-zA-Z0-9._]+');
+   l_engine_url  varchar2(256)  := regexp_replace(p_engine_url, '/DssFileManager$', '', 1, 1, 'i');
+   l_host        varchar2(64)   := regexp_substr(l_engine_url, '[a-zA-Z0-9._]+');
 begin
    for rec in (select dss_xchg_set_id
                  from at_dss_xchg_set xset,
                       at_dss_file     dfile
-                where dfile.dss_filemgr_url = p_engine_url
+                where dfile.dss_filemgr_url = l_engine_url
                   and dfile.office_code = cwms_util.user_office_code
                   and xset.dss_file_code = dfile.dss_file_code
                   and xset.realtime is not null)
