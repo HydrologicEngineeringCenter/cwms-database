@@ -1945,14 +1945,6 @@ is
       dbms_output.put_line(text);
    end;   
 begin
-   cwms_msg.log_db_message(
-      'cwms_20.retrieve_ts_out', 
-      to_char(p_start_time, 'yyyy/mm/dd-hh24.mi.ss')
-      || p_time_zone 
-      || ' = ' 
-      || to_char(l_start_time, 'yyyy/mm/dd-hh24.mi.ss') 
-      || ' UTC');
-
    --
    -- set the out parameters
    --
@@ -2232,7 +2224,6 @@ is
    t           nested_ts_table  := nested_ts_table();
    rec         sys_refcursor;
    l_time_zone varchar2(28) := nvl(p_time_zone, 'UTC');
-   l_msg       varchar2(4000);
    
 begin
 
@@ -2279,9 +2270,6 @@ begin
       qual_tab.delete;
          
       fetch rec bulk collect into date_tab, val_tab, qual_tab;
-      
-      l_msg := t(i).tsid || ': ' || t(i).units || ': ' || p_timeseries_info(i).start_time || ' - ' || p_timeseries_info(i).end_time || ': ' || rec%rowcount || ' rows.';
-      cwms_msg.LOG_DB_MESSAGE('cwms_20.retrieve_ts_multi', l_msg);
       
       t(i).data.extend(rec%rowcount);
       for j in 1..rec%rowcount loop
