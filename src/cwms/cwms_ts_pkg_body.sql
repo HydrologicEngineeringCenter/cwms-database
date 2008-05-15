@@ -1925,9 +1925,9 @@ is
    l_end_inclusive    boolean         := cwms_util.return_true_or_false(nvl(p_end_inclusive, 'T'));
    l_previous         boolean         := cwms_util.return_true_or_false(nvl(p_previous,  'F'));
    l_next             boolean         := cwms_util.return_true_or_false(nvl(p_next     , 'F'));
-   l_start_time       date            := cwms_util.date_from_tz_to_utc(p_start_time, p_time_zone);
-   l_end_time         date            := cwms_util.date_from_tz_to_utc(p_end_time, p_time_zone);
-   l_version_date     date            := cwms_util.date_from_tz_to_utc(p_version_date, p_time_zone);
+   l_start_time       date            := cwms_util.date_from_tz_to_utc(p_start_time, l_time_zone);
+   l_end_time         date            := cwms_util.date_from_tz_to_utc(p_end_time, l_time_zone);
+   l_version_date     date            := cwms_util.date_from_tz_to_utc(p_version_date, l_time_zone);
    l_reg_start_time   date;
    l_reg_end_time     date;
    l_max_version      boolean         := cwms_util.return_true_or_false(nvl(p_max_version, 'F'));
@@ -1945,6 +1945,14 @@ is
       dbms_output.put_line(text);
    end;   
 begin
+   cwms_msg.log_db_message(
+      'cwms_20.retrieve_ts_out', 
+      to_char(p_start_time, 'yyyy/mm/dd-hh24.mi.ss')
+      || p_time_zone 
+      || ' = ' 
+      || to_char(l_start_time, 'yyyy/mm/dd-hh24.mi.ss') 
+      || ' UTC');
+
    --
    -- set the out parameters
    --
@@ -2126,6 +2134,16 @@ begin
    l_query_str := replace(l_query_str, ':reg_end',   l_reg_end_str);
    l_query_str := replace(l_query_str, ':interval',  l_interval);
    l_query_str := replace(l_query_str, ':units',     l_units);
+   
+   /*
+   declare
+      next_val integer;
+   begin
+      select cwms_seq.nextval into next_val from dual;
+      insert into at_clob values ('query-' || next_val, to_char(systimestamp), to_clob(l_query_str));
+      commit;
+   end;
+   */
    --
    -- open the cursor
    --
@@ -2214,6 +2232,7 @@ is
    t           nested_ts_table  := nested_ts_table();
    rec         sys_refcursor;
    l_time_zone varchar2(28) := nvl(p_time_zone, 'UTC');
+   l_msg       varchar2(4000);
    
 begin
 
@@ -2260,6 +2279,9 @@ begin
       qual_tab.delete;
          
       fetch rec bulk collect into date_tab, val_tab, qual_tab;
+      
+      l_msg := t(i).tsid || ': ' || t(i).units || ': ' || p_timeseries_info(i).start_time || ' - ' || p_timeseries_info(i).end_time || ': ' || rec%rowcount || ' rows.';
+      cwms_msg.LOG_DB_MESSAGE('cwms_20.retrieve_ts_multi', l_msg);
       
       t(i).data.extend(rec%rowcount);
       for j in 1..rec%rowcount loop
