@@ -32,7 +32,11 @@ begin
       --
       -- compile only on Oracle 11 or above
       --
-      dbms_network_acl_admin.drop_acl('resolve.xml');
+      begin
+         dbms_network_acl_admin.drop_acl('resolve.xml');
+      exception
+         when others then null;
+      end;
       dbms_network_acl_admin.create_acl(
          acl         => 'resolve.xml',
          description => 'resolve acl', 
