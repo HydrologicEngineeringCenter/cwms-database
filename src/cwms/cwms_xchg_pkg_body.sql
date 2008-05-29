@@ -1526,7 +1526,7 @@ create or replace package body cwms_xchg as
             || case nvl(set_info.realtime, -1)
                   when -1 then null
                   when  1 then ' realtime-source-id="' || l_filemgr_ids(l_dss_filemgr_id) || '"' 
-                  when  2 then ' realtime-source-id="' || l_filemgr_ids(l_oracle_id) || '"' 
+                  when  2 then ' realtime-source-id="' || l_oracle_id || '"' 
                end
             || '>');
          indent;
