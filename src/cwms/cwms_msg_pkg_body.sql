@@ -370,7 +370,7 @@ begin
                   'INVALID_ITEM', 
                   'NULL', 
                   'CWMS message property value (type='
-                  || l_msgtype,
+                  || l_msgtype
                   || ', property='
                   || l_name
                   || ')');
