@@ -365,7 +365,7 @@ begin
             l_number := null;
             l_node   := l_node.extract('*/node()');
             if l_node is null then
-               cwms_err.raise('INVALID_ITEM', 'NULL', 'CWMS message property value');
+               l_text := null;
             end if;
             l_text := cwms_util.strip(l_node.getstringval());
          else
@@ -373,7 +373,7 @@ begin
             if l_node is null then
                l_number := null;
             else
-               l_text := l_node.getnumberval();
+               l_number := l_node.getnumberval();
             end if;
             l_text   := null;
          end if;
