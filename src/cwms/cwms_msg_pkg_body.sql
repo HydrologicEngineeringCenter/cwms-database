@@ -299,6 +299,7 @@ is
    l_nodes     xmltype;
    l_node      xmltype;
    l_name      varchar2(128);
+   l_msgtype   varchar2(64);
    l_type      varchar2(64);
    l_text      varchar2(4000);
    l_number    number;
@@ -316,7 +317,7 @@ begin
    l_msg_id   := get_msg_id(l_now);
    l_now_ts   := cwms_util.to_timestamp(l_now);
    l_document := xmltype(p_message);
-   l_type     := l_document.extract('/cwms_message/@type').getstringval();
+   l_msgtype  := l_document.extract('/cwms_message/@type').getstringval();
    l_node     := l_document.extract('/cwms_message/text');
    if l_node is not null then
       l_message := cwms_util.strip(l_node.extract('*/node()').getstringval());
@@ -329,7 +330,7 @@ begin
       select message_type_code 
         into l_typeid 
         from cwms_log_message_types 
-       where message_type_id = l_type;
+       where message_type_id = l_msgtype;
    exception
       when no_data_found then
          cwms_err.raise('INVALID_ITEM', l_type, 'log message type');
@@ -365,7 +366,14 @@ begin
             l_number := null;
             l_node   := l_node.extract('*/node()');
             if l_node is null then
-               l_text := null;
+               cwms_err.raise(
+                  'INVALID_ITEM', 
+                  'NULL', 
+                  'CWMS message property value (type='
+                  || l_msgtype,
+                  || ', property='
+                  || l_name
+                  || ')');
             end if;
             l_text := cwms_util.strip(l_node.getstringval());
          else

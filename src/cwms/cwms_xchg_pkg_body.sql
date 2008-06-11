@@ -3696,6 +3696,9 @@ begin
         into l_start_time
         from at_dss_xchg_set
        where dss_xchg_set_code = l_xchg_code;
+      if l_start_time is null then
+         l_start_time := systimestamp;
+      end if;
    else
       l_start_time := cwms_util.to_timestamp(p_start_time);
    end if;
