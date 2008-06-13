@@ -1,4 +1,4 @@
-/* Formatted on 2007/09/28 12:25 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/06/13 13:59 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 --
@@ -2347,27 +2347,33 @@ AS
        WHERE al.location_code = l_location_code AND unit_system = 'SI';
 
       --
-      SELECT apl.location_type,
-             convert_from_to (apl.elevation, 'm', p_elev_unit_id, 'Length')
+      BEGIN
+         SELECT apl.location_type,
+                convert_from_to (apl.elevation, 'm', p_elev_unit_id, 'Length')
                                                                          elev,
-             apl.latitude, apl.longitude, apl.horizontal_datum,
-             apl.public_name, apl.long_name, apl.description,
-             ctz.time_zone_name, cc.county_name, cs.state_initial,
-             apl.active_flag
-        INTO p_location_type,
-             p_elevation,
-             p_latitude, p_longitude, p_horizontal_datum,
-             p_public_name, p_long_name, p_description,
-             p_time_zone_id, p_county_name, p_state_initial,
-             p_active
-        FROM at_physical_location apl,
-             cwms_county cc,
-             cwms_state cs,
-             cwms_time_zone ctz
-       WHERE apl.county_code = cc.county_code
-         AND cc.state_code = cs.state_code
-         AND apl.time_zone_code = ctz.time_zone_code
-         AND apl.location_code = l_location_code;
+                apl.latitude, apl.longitude, apl.horizontal_datum,
+                apl.public_name, apl.long_name, apl.description,
+                ctz.time_zone_name, cc.county_name, cs.state_initial,
+                apl.active_flag
+           INTO p_location_type,
+                p_elevation,
+                p_latitude, p_longitude, p_horizontal_datum,
+                p_public_name, p_long_name, p_description,
+                p_time_zone_id, p_county_name, p_state_initial,
+                p_active
+           FROM at_physical_location apl,
+                cwms_county cc,
+                cwms_state cs,
+                cwms_time_zone ctz
+          WHERE apl.county_code = cc.county_code
+            AND cc.state_code = cs.state_code
+            AND apl.time_zone_code = ctz.time_zone_code
+            AND apl.location_code = l_location_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
 
       --
 --      cwms_cat.cat_loc_aliases (l_alias_cursor,
