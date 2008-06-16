@@ -1,4 +1,4 @@
-/* Formatted on 2007/07/03 11:11 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/02/07 10:17 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_shef
 AS
    PROCEDURE clean_at_shef_crit_file (
@@ -165,31 +165,30 @@ AS
 
       RETURN l_shef_duration_numeric;
    END;
-   
 
-PROCEDURE update_shef_spec (
-   p_cwms_ts_id              IN   VARCHAR2,
-   p_data_stream_id          IN   VARCHAR2,
-   p_loc_group_id            IN   VARCHAR2,
-   p_shef_loc_id             IN   VARCHAR2 DEFAULT NULL,
-   -- normally use loc_group_id
-   p_shef_pe_code            IN   VARCHAR2,
-   p_shef_tse_code           IN   VARCHAR2,
-   p_shef_duration_code      IN   VARCHAR2,
-   -- e.g., V5002 or simply L     -
-   p_shef_unit_id            IN   VARCHAR2,
-   p_time_zone_id            IN   VARCHAR2,
-   p_daylight_savings        IN   VARCHAR2 DEFAULT 'F',     -- psuedo boolean.
-   p_interval_utc_offset     IN   NUMBER DEFAULT NULL,          -- in minutes.
-   p_snap_forward_minutes    IN   NUMBER DEFAULT NULL,
-   p_snap_backward_minutes   IN   NUMBER DEFAULT NULL,
-   p_ts_active_flag          IN   VARCHAR2 DEFAULT 'T',
-   p_db_office_id            IN   VARCHAR2 DEFAULT NULL
-)
-IS
-BEGIN
-   NULL;
-END;
+   PROCEDURE update_shef_spec (
+      p_cwms_ts_id              IN   VARCHAR2,
+      p_data_stream_id          IN   VARCHAR2,
+      p_loc_group_id            IN   VARCHAR2,
+      p_shef_loc_id             IN   VARCHAR2 DEFAULT NULL,
+      -- normally use loc_group_id
+      p_shef_pe_code            IN   VARCHAR2,
+      p_shef_tse_code           IN   VARCHAR2,
+      p_shef_duration_code      IN   VARCHAR2,
+      -- e.g., V5002 or simply L     -
+      p_shef_unit_id            IN   VARCHAR2,
+      p_time_zone_id            IN   VARCHAR2,
+      p_daylight_savings        IN   VARCHAR2 DEFAULT 'F',  -- psuedo boolean.
+      p_interval_utc_offset     IN   NUMBER DEFAULT NULL,       -- in minutes.
+      p_snap_forward_minutes    IN   NUMBER DEFAULT NULL,
+      p_snap_backward_minutes   IN   NUMBER DEFAULT NULL,
+      p_ts_active_flag          IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id            IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+   BEGIN
+      NULL;
+   END;
 
    PROCEDURE store_shef_spec (
       p_cwms_ts_id              IN   VARCHAR2,
@@ -698,6 +697,45 @@ END;
          SET data_stream_id = TRIM (p_data_stream_id_new)
        WHERE data_stream_code = l_data_stream_code;
    END;
+-- ****************************************************************************
+-- cwms_shef.delete_data_stream_entries is used to delete all data stream entries
+--         associated with the specified data_stream.
+--
+-- p_data_stream_id(varchar2(16) - required parameter)is the id of the
+--         existing data stream whose entries will be deleted. All entries
+--         for the p_data_stream_id in table at_shef_decode are deleted. This
+--         is the table that is used to build a data streams crit file that's
+--         used by processShefit.
+--
+-- p_db_office_id (varchar2(16) - optional parameter) is the database office
+--         id that this data stream will be/is assigned too. Normally this is
+--         left null and the user's default database office id is used.
+--
+
+   PROCEDURE delete_data_stream_shef_specs (
+      p_data_stream_id   IN   VARCHAR2,
+      p_db_office_id     IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_code     NUMBER
+                             := cwms_util.get_db_office_code (p_db_office_id);
+      l_data_stream_code   NUMBER;
+   BEGIN
+      -- Check if data_stream already exists...
+      BEGIN
+         l_data_stream_code :=
+            get_data_stream_code (p_data_stream_id      => p_data_stream_id,
+                                  p_db_office_code      => l_db_office_code
+                                 );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            cwms_err.RAISE ('DATA_STREAM_NOT_FOUND', TRIM (p_data_stream_id));
+      END;
+
+      DELETE FROM at_shef_decode
+            WHERE data_stream_code = l_data_stream_code;
+   END;
 
 -- ****************************************************************************
 -- cwms_shef.delete_data_stream is used to delete an existing data stream id.
@@ -962,7 +1000,7 @@ END;
 
       IF l_tmp IN (0, 1, l_record_length)
       THEN
-         p_comment := 'ERROR - Malformed criteria line';
+         p_comment := 'ERROR: Malformed criteria line';
          -- malformed record...
          GOTO fin;
       END IF;
@@ -988,7 +1026,7 @@ END;
 
          IF l_tmp = 0
          THEN
-            p_comment := 'ERROR - Malformed SHEF signature';
+            p_comment := 'ERROR: Malformed SHEF signature';
             -- malformed record...
             GOTO fin;
          ELSE
@@ -1003,7 +1041,7 @@ END;
 
       IF l_sub_length <= 0 OR l_sub_length > 8
       THEN
-         p_comment := 'ERROR - SHEF Id is null or longer than 8 characters.';
+         p_comment := 'ERROR: SHEF Id is null or longer than 8 characters.';
          -- malformed record...
          GOTO fin;
       ELSE
@@ -1016,7 +1054,7 @@ END;
 
       IF l_sub_length != 2
       THEN
-         p_comment := 'ERROR - SHEF PE code must be 2 characters in length.';
+         p_comment := 'ERROR: SHEF PE code must be 2 characters in length.';
          -- malformed record...
          GOTO fin;
       ELSE
@@ -1029,7 +1067,7 @@ END;
 
       IF l_sub_length != 3
       THEN
-         p_comment := 'ERROR - SHEF TSE code must be 3 characters in length.';
+         p_comment := 'ERROR: SHEF TSE code must be 3 characters in length.';
          -- malformed record...
          GOTO fin;
       ELSE
@@ -1043,7 +1081,7 @@ END;
       IF l_sub_length < 1 OR l_sub_length > 4
       THEN
          p_comment :=
-            'ERROR - SHEF Duration code must be between 1 adn 4 characters long.';
+            'ERROR: SHEF Duration code must be between 1 adn 4 characters long.';
          -- malformed record...
          GOTO fin;
       ELSE
@@ -1151,7 +1189,7 @@ END;
                      l_unit_sys := l_param;
                   ELSE
                      p_comment :=
-                           'ERROR - "'
+                           'ERROR: "'
                         || l_sub_string
                         || '" does not contain a valid processSHEFIT parameter.';
                      -- malformed record...

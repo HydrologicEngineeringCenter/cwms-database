@@ -1,4 +1,4 @@
-/* Formatted on 2007/09/05 10:13 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/02/07 10:21 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_shef
 AS
 -- PROCEDURE clean_at_shef_crit_file p_action constants.
@@ -103,6 +103,11 @@ AS
       p_data_stream_id_old   IN   VARCHAR2,
       p_data_stream_id_new   IN   VARCHAR2,
       p_db_office_id         IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE delete_data_stream_shef_specs (
+      p_data_stream_id   IN   VARCHAR2,
+      p_db_office_id     IN   VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE delete_data_stream (

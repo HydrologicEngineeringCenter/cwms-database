@@ -13,7 +13,7 @@ AS
 --           VALUES (p_string
 --                  );
 
-      COMMIT;
+--      COMMIT;
       NULL;
    END;
 

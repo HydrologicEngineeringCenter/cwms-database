@@ -1,4 +1,4 @@
-/* Formatted on 2008/04/07 08:50 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/06/11 15:32 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_vt
 AS
 /******************************************************************************
@@ -1285,14 +1285,14 @@ AS
       p_max_reject        IN       BINARY_DOUBLE
    )
    IS
-      l_screened_id             VARCHAR2 (16);
-      l_validity_id             VARCHAR2 (16);
-      l_range_id                VARCHAR2 (16);
-      l_changed_id              VARCHAR2 (16);
-      l_repl_cause_id           VARCHAR2 (16);
-      l_repl_method_id          VARCHAR2 (16);
-      l_test_failed_id          VARCHAR2 (16);
-      l_protection_id           VARCHAR2 (16);
+      l_screened_id      VARCHAR2 (16);
+      l_validity_id      VARCHAR2 (16);
+      l_range_id         VARCHAR2 (16);
+      l_changed_id       VARCHAR2 (16);
+      l_repl_cause_id    VARCHAR2 (16);
+      l_repl_method_id   VARCHAR2 (16);
+      l_test_failed_id   VARCHAR2 (16);
+      l_protection_id    VARCHAR2 (16);
    BEGIN
       FOR x IN p_timeseries_data.FIRST .. p_timeseries_data.LAST
       LOOP
@@ -1343,8 +1343,8 @@ AS
             l_repl_cause_id := 'NONE';
             l_repl_method_id := 'NONE';
             l_protection_id := 'UNPROTECTED';
-           -- l_screened := 1;
 
+            -- l_screened := 1;
             IF    p_timeseries_data (x).VALUE < p_min_reject
                OR p_timeseries_data (x).VALUE > p_max_reject
             THEN
@@ -1374,7 +1374,458 @@ AS
          END IF;
       END LOOP;
    END val_abs_mag;
+
+-------------------
+-------------------
+-------------------
+--
+-- intended to provide a listing of an office's templates.
+-- The cursor returns the following four columns:
+--      template_id            VARCHAR2 (32),
+--      description            VARCHAR2 (256),
+--      primary_ind_param_id   VARCHAR2 (16),
+--      dep_param_id           VARCHAR2 (16)
+   PROCEDURE cat_tr_templates (
+      p_query_cursor     OUT      sys_refcursor,
+      p_db_office_code   IN       NUMBER
+   )
+   AS
+   BEGIN
+      OPEN p_query_cursor FOR
+         SELECT a.template_id, a.description,
+                   d.base_parameter_id
+                || SUBSTR ('-', 1, LENGTH (b.sub_parameter_id))
+                || b.sub_parameter_id primary_ind_param_id,
+                   e.base_parameter_id
+                || SUBSTR ('-', 1, LENGTH (c.sub_parameter_id))
+                || c.sub_parameter_id dep_param_id
+           FROM at_tr_template_id a,
+                at_parameter b,
+                at_parameter c,
+                cwms_base_parameter d,
+                cwms_base_parameter e
+          WHERE a.db_office_code = p_db_office_code
+            AND a.primary_indep_param_code = b.parameter_code
+            AND a.dep_param_code = c.parameter_code
+            AND d.base_parameter_code = b.base_parameter_code
+            AND e.base_parameter_code = c.base_parameter_code;
+   END;
+
+--
+-- intended to provide a listing of an office's templates.
+--  as a pipelined function. See the cat_tr_template
+
+   --
+   FUNCTION cat_tr_templates_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_tr_templates_t PIPELINED
+   AS
+      query_cursor       sys_refcursor;
+      output_row         cat_tr_templates_rec_t;
+      l_db_office_code   NUMBER;
+   BEGIN
+      l_db_office_code := cwms_util.get_office_code (p_db_office_id);
+      cat_tr_templates (query_cursor, l_db_office_code);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END;
+
+   FUNCTION get_tr_template_code (
+      p_template_id      IN   VARCHAR2,
+      p_db_office_code   IN   NUMBER
+   )
+      RETURN NUMBER
+   AS
+      l_tr_template_code   NUMBER;
+   BEGIN
+      BEGIN
+         SELECT a.template_code
+           INTO l_tr_template_code
+           FROM at_tr_template_id a
+          WHERE UPPER (a.template_id) = UPPER (p_template_id)
+            AND a.db_office_code = p_db_office_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('ITEM_DOES_NOT_EXIST',
+                            'The Template named:',
+                            p_template_id
+                           );
+      END;
+
+      RETURN l_tr_template_code;
+   END;
+
+   PROCEDURE cat_tr_template_set_masks (
+      p_query_cursor   OUT      sys_refcursor,
+      p_template_id    IN       VARCHAR2,
+      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
+   )
+   AS
+      l_db_office_code     NUMBER;
+      l_tr_template_code   NUMBER;
+   BEGIN
+      l_db_office_code := cwms_util.get_office_code (p_db_office_id);
+      l_tr_template_code :=
+                       get_tr_template_code (p_template_id, l_db_office_code);
+
+      OPEN p_query_cursor FOR
+         SELECT   sequence_no, variable_name,
+                  CASE
+                     WHEN a.location_code IS NULL
+                        THEN NULL
+                     WHEN a.location_code = 0
+                        THEN '{location_id}'
+                     ELSE (SELECT location_id
+                             FROM av_loc
+                            WHERE unit_system = 'EN'
+                              AND location_code = a.location_code)
+                  END location_mask,
+                  
+                  --
+                  CASE
+                     WHEN a.parameter_code IS NULL
+                        THEN NULL
+                     WHEN a.parameter_code = 0
+                        THEN '{parameter_id}'
+                     ELSE (SELECT base_parameter_id
+                             FROM av_parameter
+                            WHERE parameter_code =
+                                         a.parameter_code)
+                  END base_parameter_mask,
+                  
+                  --
+                  CASE
+                     WHEN a.parameter_code IS NULL
+                        THEN NULL
+                     WHEN a.parameter_code = 0
+                        THEN NULL
+                     ELSE (SELECT sub_parameter_id
+                             FROM at_parameter
+                            WHERE parameter_code =
+                                          a.parameter_code)
+                  END sub_parameter_mask,
+                  
+                  --
+                  CASE
+                     WHEN a.parameter_type_code IS NULL
+                        THEN NULL
+                     WHEN a.parameter_type_code = 0
+                        THEN '{parameter_type_id}'
+                     ELSE (SELECT parameter_type_id
+                             FROM cwms_parameter_type
+                            WHERE parameter_type_code =
+                                     a.parameter_type_code)
+                  END parameter_type_mask,
+                  
+                  --
+                  CASE
+                     WHEN a.interval_code IS NULL
+                        THEN NULL
+                     WHEN a.interval_code = 0
+                        THEN '{interval_id}'
+                     ELSE (SELECT interval_id
+                             FROM cwms_interval
+                            WHERE interval_code =
+                                                a.interval_code)
+                  END interval_mask,
+                  
+                  --
+                  CASE
+                     WHEN a.duration_code IS NULL
+                        THEN NULL
+                     WHEN a.duration_code = 0
+                        THEN '{duration_id}'
+                     ELSE (SELECT duration_id
+                             FROM cwms_duration
+                            WHERE duration_code =
+                                                a.duration_code)
+                  END duration_mask,
+                  
+                  --
+                  version_mask
+             FROM (SELECT sequence_no, variable_name, location_code,
+                          parameter_code, parameter_type_code, interval_code,
+                          duration_code, version_mask
+                     FROM (SELECT sequence_no, 'independent_1' variable_name,
+                                  LAG (location_code, 1) OVER (ORDER BY sequence_no)
+                                                                location_code,
+                                  LAG (parameter_code, 1) OVER (ORDER BY sequence_no)
+                                                               parameter_code,
+                                  LAG
+                                     (parameter_type_code,
+                                      1
+                                     ) OVER (ORDER BY sequence_no)
+                                                          parameter_type_code,
+                                  LAG (interval_code, 1) OVER (ORDER BY sequence_no)
+                                                                interval_code,
+                                  LAG (duration_code, 1) OVER (ORDER BY sequence_no)
+                                                                duration_code,
+                                  LAG (version_mask, 1) OVER (ORDER BY sequence_no)
+                                                                 version_mask
+                             FROM at_tr_ts_mask
+                            WHERE variable_no = 1
+                              AND template_code = l_tr_template_code)
+                    WHERE sequence_no > 0
+                   UNION
+                   SELECT sequence_no,
+                          CASE
+                             WHEN variable_no = 1
+                                THEN 'dependent'
+                             ELSE 'independent_' || variable_no
+                          END variable_name,
+                          location_code, parameter_code, parameter_type_code,
+                          interval_code, duration_code, version_mask
+                     FROM at_tr_ts_mask
+                    WHERE sequence_no > 0
+                      AND template_code = l_tr_template_code) a
+         ORDER BY sequence_no, variable_name;
+   END;
+
+   FUNCTION cat_tr_template_set_masks_tab (
+      p_template_id    IN   VARCHAR2,
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN tr_template_set_masks_t PIPELINED
+   AS
+      query_cursor   sys_refcursor;
+      output_row     tr_template_set_masks_rec_t;
+   BEGIN
+      cat_tr_template_set_masks (query_cursor, p_template_id, p_db_office_id);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END;
+
+   PROCEDURE cat_tr_template_set (
+      p_query_cursor   OUT      sys_refcursor,
+      p_template_id    IN       VARCHAR2,
+      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
+   )
+   AS
+      l_db_office_code     NUMBER;
+      l_tr_template_code   NUMBER;
+   BEGIN
+      l_db_office_code := cwms_util.get_office_code (p_db_office_id);
+      l_tr_template_code :=
+                       get_tr_template_code (p_template_id, l_db_office_code);
+
+      OPEN p_query_cursor FOR
+         SELECT   a.sequence_no, a.transform_id, a.description,
+                  a.store_dep_flag, a.unit_system, a.lookup_agency_source,
+                  a.lookup_source_version, a.scaling_arg_a, a.scaling_arg_b,
+                  a.scaling_arg_c
+             FROM at_tr_template_set a
+            WHERE a.template_code = l_tr_template_code
+         ORDER BY a.sequence_no;
+   END;
+
+   FUNCTION cat_tr_template_set_tab (
+      p_template_id    IN   VARCHAR2,
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN tr_template_set_t PIPELINED
+   AS
+      query_cursor   sys_refcursor;
+      output_row     tr_template_set_rec_t;
+   BEGIN
+      cat_tr_template_set (query_cursor, p_template_id, p_db_office_id);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END;
+
+   FUNCTION cat_tr_transforms_tab
+      RETURN cat_tr_transforms_t PIPELINED
+   AS
+      query_cursor   sys_refcursor;
+      output_row     cat_tr_transforms_rec_t;
+   BEGIN
+      OPEN query_cursor FOR
+         SELECT transform_id, description
+           FROM cwms_tr_transformations;
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+   END;
+
+   PROCEDURE assign_tr_template (
+      p_template_id         IN   VARCHAR2,
+      p_cwms_ts_id          IN   VARCHAR2,
+      p_active_flag         IN   VARCHAR2 DEFAULT 'T',
+      p_event_trigger       IN   VARCHAR2,
+      p_reassign_existing   IN   VARCHAR2 DEFAULT 'F',
+      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+   )
+   AS
+      l_db_office_code   NUMBER;
+      l_cwms_ts_code     NUMBER;
+      l_template_code    NUMBER;
+      l_active_flag      VARCHAR2 (1);
+      l_event_trigger    VARCHAR2 (32);
+   BEGIN
+      --
+      l_active_flag := cwms_util.return_t_or_f_flag (p_active_flag);
+      l_db_office_code := cwms_util.get_office_code (p_db_office_id);
+      l_cwms_ts_code :=
+                       cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
+      l_template_code :=
+                       get_tr_template_code (p_template_id, l_db_office_code);
+
+      --
+      IF cwms_util.return_true_or_false (p_reassign_existing)
+      THEN
+         -- do a merge
+         NULL;
+      ELSE
+         -- do an insert
+         INSERT INTO at_tr_template
+                     (ts_code_indep_1, template_code, active_flag,
+                      event_trigger
+                     )
+              VALUES (l_cwms_ts_code, l_template_code, l_active_flag,
+                      l_event_trigger
+                     );
+      END IF;
+   --
+   END;
+
+   PROCEDURE unassign_tr_template (
+      p_template_id    IN   VARCHAR2,
+      p_cwms_ts_id     IN   VARCHAR2,
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+   )
+   AS
+   BEGIN
+      NULL;
+   END;
+
+   PROCEDURE delete_tr_template (
+      p_template_id               IN   VARCHAR2,
+      p_delete_template_cascade   IN   VARCHAR2 DEFAULT 'F',
+      p_db_office_id              IN   VARCHAR2 DEFAULT NULL
+   )
+   AS
+      l_template_code             NUMBER;
+      l_db_office_code            NUMBER;
+      l_delete_template_cascade   BOOLEAN;
+      l_num_assigned              NUMBER  := 0;
+   BEGIN
+      l_delete_template_cascade :=
+                   cwms_util.return_true_or_false (p_delete_template_cascade);
+      l_db_office_code := cwms_util.get_office_code (p_db_office_id);
+      l_template_code :=
+                       get_tr_template_code (p_template_id, l_db_office_code);
+
+      --
+      -- Determine how many ts_codes have been assigned to this template...
+      --
+      SELECT COUNT (*)
+        INTO l_num_assigned
+        FROM at_tr_template
+       WHERE template_code = l_template_code;
+
+      --
+      -- 
+      --
+      IF NOT l_delete_template_cascade
+      THEN
+         NULL;
+      END IF;
+
+      DELETE FROM at_tr_ts_mask a
+            WHERE a.template_code = l_template_code;
+
+      DELETE FROM at_tr_template_set a
+            WHERE a.template_code = l_template_code;
+
+      DELETE FROM at_tr_template_id a
+            WHERE a.template_code = l_template_code;
+   END;
+
+   PROCEDURE rename_tr_template (
+      p_template_id       IN   VARCHAR2,
+      p_template_id_new   IN   VARCHAR2,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   AS
+   BEGIN
+      NULL;
+   END;
+
+   PROCEDURE revise_tr_template_desc (
+      p_template_id     IN   VARCHAR2,
+      description_new   IN   VARCHAR2,
+      p_db_office_id    IN   VARCHAR2 DEFAULT NULL
+   )
+   AS
+   BEGIN
+      NULL;
+   END;
+
+   PROCEDURE store_tr_template (
+      p_template_id        IN   VARCHAR2,
+      p_description        IN   VARCHAR2,
+      p_template_set       IN   tr_template_set_array,
+      p_replace_existing   IN   VARCHAR2 DEFAULT 'F',
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+   )
+   AS
+   BEGIN
+      NULL;
+   END;
+
+   PROCEDURE create_tr_ts_mask (
+      p_location_id         IN   VARCHAR2,
+      p_parameter_id        IN   VARCHAR2,
+      p_parameter_type_id   IN   VARCHAR2,
+      p_interval_id         IN   VARCHAR2,
+      p_duration_id         IN   VARCHAR2,
+      p_version_id          IN   VARCHAR2
+   )
+   AS
+   BEGIN
+      NULL;
+   END;
 END cwms_vt;
 /
 
 SHOW errors;
+
+
+
+
