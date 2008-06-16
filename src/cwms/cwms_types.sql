@@ -19,7 +19,9 @@ DECLARE
    total_count        PLS_INTEGER := 0;
    pass_count         PLS_INTEGER := 0;
    type_names         id_array_t
-      := id_array_t ('tsv_type',
+      := id_array_t ('tr_template_set_type',
+                     'tr_template_set_array',
+                     'tsv_type',
                      'tsv_array',
                      'at_tsv_type',
                      'at_tsv_array',
@@ -129,6 +131,21 @@ BEGIN
                          || ' types dropped'
                         );
 END;
+/
+CREATE OR REPLACE TYPE tr_template_set_type AS OBJECT (
+   store_dep_flag          VARCHAR2 (1),
+   unit_system             VARCHAR2 (2),
+   trans_id                VARCHAR2 (32),
+   lookup_agency_source    VARCHAR2 (32),
+   lookup_source_version   VARCHAR2 (32),
+   scaling_arg_a           NUMBER,
+   scaling_arg_b           NUMBER,
+   scaling_arg_c           NUMBER,
+   array_of_masks          char_183_array_type
+);
+/
+
+CREATE OR REPLACE TYPE tr_template_set_array IS TABLE OF tr_template_set_type;
 /
 
 CREATE TYPE tsv_type AS OBJECT (
