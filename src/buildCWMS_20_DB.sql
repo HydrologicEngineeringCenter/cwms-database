@@ -51,6 +51,7 @@ alter session set current_schema = cwms_20;
 @@cwms/at_schema_av
 @@cwms/at_schema_rating
 @@cwms/at_schema_tsv
+@@cwms/at_schema_tr
 @@cwms/at_schema_sec
 
 @@py_SecUserOffice
