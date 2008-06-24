@@ -1025,5 +1025,61 @@ AS
                                   );
       END LOOP;
    END;
+
+     PROCEDURE store_parsed_loc_alias_file (
+        p_parsed_collection_name      IN   VARCHAR2,
+        p_store_err_collection_name   IN   VARCHAR2,
+        p_db_office_id                IN   VARCHAR2 DEFAULT NULL
+     )
+     IS
+        l_location_id     VARCHAR2 (200);
+        l_alias           VARCHAR2 (200);
+        l_group           VARCHAR2 (200);
+        l_ignorenulls     VARCHAR2 (1);
+        l_parsed_rows     NUMBER;
+        l_line_no         VARCHAR2 (32);
+        l_min             NUMBER;
+        l_max             NUMBER;
+     BEGIN
+        aa1 (   'store_parsed_loc_alias_file - collection name: '
+             || p_parsed_collection_name
+            );
+  
+        SELECT COUNT (*), MIN (seq_id), MAX (seq_id)
+          INTO l_parsed_rows, l_min, l_max
+          FROM apex_collections
+         WHERE collection_name = p_parsed_collection_name;
+  
+        aa1 (   'l_parsed_rows = '
+             || l_parsed_rows
+             || ' min '
+             || l_min
+             || ' max '
+             || l_max
+            );
+  
+  -- Start at 2 to skip first line of column titles
+        FOR i IN 2 .. l_parsed_rows
+        LOOP
+           aa1 ('looping: ' || i);
+  
+           SELECT c001, c002, c003, c004
+             INTO l_line_no, l_location_id, l_alias, l_group
+             FROM apex_collections
+            WHERE collection_name = p_parsed_collection_name AND seq_id = i;
+  
+           aa1 ('storing locaa: ' || l_location_id);
+  --
+           cwms_loc.assign_loc_group (p_loc_category_id        => 'Agency Alias',
+                                     p_loc_group_id        => l_group,
+                                     p_location_id        => l_location_id,
+                                     p_loc_alias_id      => l_alias,
+                                     p_db_office_id       => p_db_office_id
+                                    );
+  								  
+  
+        END LOOP;
+     END;
+  
 END cwms_apex;
 /

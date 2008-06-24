@@ -68,5 +68,12 @@ AS
       p_store_err_collection_name   IN   VARCHAR2,
       p_db_office_id                IN   VARCHAR2 DEFAULT NULL
    );
+
+     PROCEDURE store_parsed_loc_alias_file (
+        p_parsed_collection_name      IN   VARCHAR2,
+        p_store_err_collection_name   IN   VARCHAR2,
+        p_db_office_id                IN   VARCHAR2 DEFAULT NULL
+     );
+
 END cwms_apex;
 /
