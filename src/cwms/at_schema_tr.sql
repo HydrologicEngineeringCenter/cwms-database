@@ -1,41 +1,40 @@
+/* Formatted on 2008/06/24 04:39 (Formatter Plus v4.8.8) */
 --******************************
 --******************************
 --------------------------------
 
-CREATE TABLE CWMS_20.CWMS_TR_TRANSFORMATIONS
+CREATE TABLE cwms_20.cwms_tr_transformations
 (
-  TRANSFORM_ID  VARCHAR2(32 BYTE)               NOT NULL,
-  DESCRIPTION   VARCHAR2(256 BYTE)              NOT NULL
+  transform_id  VARCHAR2(32 BYTE)               NOT NULL,
+  description   VARCHAR2(256 BYTE)              NOT NULL
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-
-CREATE UNIQUE INDEX CWMS_20.CWMS_TR_TRANSFORMATIONS_PK ON CWMS_20.CWMS_TR_TRANSFORMATIONS
-(TRANSFORM_ID)
+CREATE UNIQUE INDEX cwms_20.cwms_tr_transformations_pk ON cwms_20.cwms_tr_transformations
+(transform_id)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
@@ -43,17 +42,15 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
-
-CREATE UNIQUE INDEX CWMS_20.CWMS_TR_TRANSFORMATIONS_UI01 ON CWMS_20.CWMS_TR_TRANSFORMATIONS
+CREATE UNIQUE INDEX cwms_20.cwms_tr_transformations_ui01 ON cwms_20.cwms_tr_transformations
 (UPPER("TRANSFORM_ID"))
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
@@ -61,40 +58,43 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
-
-ALTER TABLE CWMS_20.CWMS_TR_TRANSFORMATIONS ADD (
-  CONSTRAINT CWMS_TR_TRANSFORMATIONS_PK
+ALTER TABLE cwms_20.cwms_tr_transformations ADD (
+  CONSTRAINT cwms_tr_transformations_pk
  PRIMARY KEY
- (TRANSFORM_ID)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (transform_id)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       UNLIMITED
                 PCTINCREASE      0
                ))
 /
-
-
 SET DEFINE OFF;
-Insert into CWMS_20.CWMS_TR_TRANSFORMATIONS
-   (TRANSFORM_ID, DESCRIPTION)
- Values
-   ('Validation', 'Triggers a Validation, if validation criteria.');
-Insert into CWMS_20.CWMS_TR_TRANSFORMATIONS
-   (TRANSFORM_ID, DESCRIPTION)
- Values
-   ('Scaling', 'Applies scaling factors as reflected in y = (x + a) b + c');
-Insert into CWMS_20.CWMS_TR_TRANSFORMATIONS
-   (TRANSFORM_ID, DESCRIPTION)
- Values
-   ('Lookup Table', 'Applies a 1 or 2 parameter lookup table against a dependant variable. Lookup table can either be a single table or a set of tables over time, e.g., a set of stage/flow tables that change over time.');
-COMMIT;
+INSERT INTO cwms_20.cwms_tr_transformations
+            (transform_id, description
+            )
+     VALUES ('Validation', 'Triggers a Validation, if validation criteria.'
+            );
+INSERT INTO cwms_20.cwms_tr_transformations
+            (transform_id,
+             description
+            )
+     VALUES ('Scaling',
+             'Applies scaling factors as reflected in y = (x + a) b + c'
+            );
+INSERT INTO cwms_20.cwms_tr_transformations
+            (transform_id,
+             description
+            )
+     VALUES ('Lookup Table',
+             'Applies a 1 or 2 parameter lookup table against a dependant variable. Lookup table can either be a single table or a set of tables over time, e.g., a set of stage/flow tables that change over time.'
+            );
+COMMIT ;
 
 
 
@@ -103,45 +103,43 @@ COMMIT;
 ------------------
 
 
-CREATE TABLE CWMS_20.AT_TR_TEMPLATE_ID
+CREATE TABLE cwms_20.at_tr_template_id
 (
-  TEMPLATE_CODE             NUMBER,
-  TEMPLATE_ID               VARCHAR2(32 BYTE)   NOT NULL,
-  DB_OFFICE_CODE            NUMBER              NOT NULL,
-  PRIMARY_INDEP_PARAM_CODE  NUMBER,
-  DEP_PARAM_CODE            NUMBER,
-  DESCRIPTION               VARCHAR2(132 BYTE),
-  SEED_VERSION_SUFFIX       VARCHAR2(32 BYTE)
+  template_code             NUMBER,
+  template_id               VARCHAR2(32 BYTE)   NOT NULL,
+  db_office_code            NUMBER              NOT NULL,
+  primary_indep_param_code  NUMBER,
+  dep_param_code            NUMBER,
+  description               VARCHAR2(132 BYTE),
+  seed_version_suffix       VARCHAR2(32 BYTE)
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-
-CREATE UNIQUE INDEX CWMS_20.AT_TR_TEMPLATE_ID_PK ON CWMS_20.AT_TR_TEMPLATE_ID
-(TEMPLATE_CODE)
+CREATE UNIQUE INDEX cwms_20.at_tr_template_id_pk ON cwms_20.at_tr_template_id
+(template_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
@@ -149,17 +147,15 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
-
-CREATE UNIQUE INDEX CWMS_20.AT_TR_TEMPLATE_ID_UQ01 ON CWMS_20.AT_TR_TEMPLATE_ID
-(UPPER("TEMPLATE_ID"), DB_OFFICE_CODE)
+CREATE UNIQUE INDEX cwms_20.at_tr_template_id_uq01 ON cwms_20.at_tr_template_id
+(UPPER("TEMPLATE_ID"), db_office_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
@@ -167,35 +163,116 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
-
-ALTER TABLE CWMS_20.AT_TR_TEMPLATE_ID ADD (
-  CONSTRAINT AT_TR_TEMPLATE_ID_PK
+ALTER TABLE cwms_20.at_tr_template_id ADD (
+  CONSTRAINT at_tr_template_id_pk
  PRIMARY KEY
- (TEMPLATE_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (template_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       UNLIMITED
                 PCTINCREASE      0
                ))
 /
+ALTER TABLE cwms_20.at_tr_template_id ADD (
+  CONSTRAINT at_tr_template_id_r01
+ FOREIGN KEY (db_office_code)
+ REFERENCES cwms_20.cwms_office (office_code),
+  CONSTRAINT at_tr_template_id_r02
+ FOREIGN KEY (primary_indep_param_code)
+ REFERENCES cwms_20.at_parameter (parameter_code),
+  CONSTRAINT at_tr_template_id_r03
+ FOREIGN KEY (dep_param_code)
+ REFERENCES cwms_20.at_parameter (parameter_code))
+/
+--************************
+--------------------------
+--************************
 
-ALTER TABLE CWMS_20.AT_TR_TEMPLATE_ID ADD (
-  CONSTRAINT AT_TR_TEMPLATE_ID_R01 
- FOREIGN KEY (DB_OFFICE_CODE) 
- REFERENCES CWMS_20.CWMS_OFFICE (OFFICE_CODE),
-  CONSTRAINT AT_TR_TEMPLATE_ID_R02 
- FOREIGN KEY (PRIMARY_INDEP_PARAM_CODE) 
- REFERENCES CWMS_20.AT_PARAMETER (PARAMETER_CODE),
-  CONSTRAINT AT_TR_TEMPLATE_ID_R03 
- FOREIGN KEY (DEP_PARAM_CODE) 
- REFERENCES CWMS_20.AT_PARAMETER (PARAMETER_CODE))
+
+
+CREATE TABLE cwms_20.at_tr_template_set
+(
+  template_code          NUMBER,
+  sequence_no            NUMBER,
+  description            VARCHAR2(132 BYTE),
+  store_dep_flag         VARCHAR2(1 BYTE),
+  unit_system            VARCHAR2(2 BYTE),
+  transform_id           VARCHAR2(32 BYTE),
+  lookup_agency          VARCHAR2(32 BYTE),
+  lookup_rating_version  VARCHAR2(32 BYTE),
+  scaling_arg_a          NUMBER,
+  scaling_arg_b          NUMBER,
+  scaling_arg_c          NUMBER
+)
+TABLESPACE cwms_20data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+COMMENT ON COLUMN cwms_20.at_tr_template_set.description IS 'description is of AT_TR_TEMPLATE_SET'
+/
+COMMENT ON COLUMN cwms_20.at_tr_template_set.store_dep_flag IS 'If T, then dependent variable is store to database, else it''s simply available for the next transform.'
+/
+COMMENT ON COLUMN cwms_20.at_tr_template_set.unit_system IS 'Either SI or EN or null - null indicates that the computation is not system dependant (which means it will really be done in the SI system).'
+/
+CREATE UNIQUE INDEX cwms_20.at_tr_template_set_pk ON cwms_20.at_tr_template_set
+(template_code, sequence_no)
+LOGGING
+TABLESPACE cwms_20data
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+ALTER TABLE cwms_20.at_tr_template_set ADD (
+  CONSTRAINT at_tr_template_set_pk
+ PRIMARY KEY
+ (template_code, sequence_no)
+    USING INDEX
+    TABLESPACE cwms_20data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+               ))
+/
+ALTER TABLE cwms_20.at_tr_template_set ADD (
+  CONSTRAINT at_tr_template_set_r01
+ FOREIGN KEY (template_code)
+ REFERENCES cwms_20.at_tr_template_id (template_code),
+  CONSTRAINT at_tr_template_set_r02
+ FOREIGN KEY (transform_id)
+ REFERENCES cwms_20.cwms_tr_transformations (transform_id))
 /
 
 
@@ -204,59 +281,45 @@ ALTER TABLE CWMS_20.AT_TR_TEMPLATE_ID ADD (
 --************************
 
 
-
-CREATE TABLE CWMS_20.AT_TR_TEMPLATE_SET
+CREATE TABLE cwms_20.at_tr_ts_mask
 (
-  TEMPLATE_CODE          NUMBER,
-  SEQUENCE_NO            NUMBER,
-  DESCRIPTION            VARCHAR2(132 BYTE),
-  STORE_DEP_FLAG         VARCHAR2(1 BYTE),
-  UNIT_SYSTEM            VARCHAR2(2 BYTE),
-  TRANSFORM_ID           VARCHAR2(32 BYTE),
-  LOOKUP_AGENCY_SOURCE   VARCHAR2(32 BYTE),
-  LOOKUP_SOURCE_VERSION  VARCHAR2(32 BYTE),
-  SCALING_ARG_A          NUMBER,
-  SCALING_ARG_B          NUMBER,
-  SCALING_ARG_C          NUMBER
+  template_code        NUMBER,
+  sequence_no          NUMBER,
+  variable_no          NUMBER,
+  location_code        NUMBER,
+  parameter_code       NUMBER,
+  parameter_type_code  NUMBER,
+  interval_code        NUMBER,
+  duration_code        NUMBER,
+  version_mask         VARCHAR2(42 BYTE)
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-COMMENT ON COLUMN CWMS_20.AT_TR_TEMPLATE_SET.DESCRIPTION IS 'description is of AT_TR_TEMPLATE_SET'
-/
-
-COMMENT ON COLUMN CWMS_20.AT_TR_TEMPLATE_SET.STORE_DEP_FLAG IS 'If T, then dependent variable is store to database, else it''s simply available for the next transform.'
-/
-
-COMMENT ON COLUMN CWMS_20.AT_TR_TEMPLATE_SET.UNIT_SYSTEM IS 'Either SI or EN or null - null indicates that the computation is not system dependant (which means it will really be done in the SI system).'
-/
-
-
-CREATE UNIQUE INDEX CWMS_20.AT_TR_TEMPLATE_SET_PK ON CWMS_20.AT_TR_TEMPLATE_SET
-(TEMPLATE_CODE, SEQUENCE_NO)
+CREATE UNIQUE INDEX cwms_20.at_tr_ts_mask_pk ON cwms_20.at_tr_ts_mask
+(template_code, sequence_no, variable_no)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
@@ -264,83 +327,81 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
-
-ALTER TABLE CWMS_20.AT_TR_TEMPLATE_SET ADD (
-  CONSTRAINT AT_TR_TEMPLATE_SET_PK
+ALTER TABLE cwms_20.at_tr_ts_mask ADD (
+  CONSTRAINT at_tr_ts_mask_pk
  PRIMARY KEY
- (TEMPLATE_CODE, SEQUENCE_NO)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (template_code, sequence_no, variable_no)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       UNLIMITED
                 PCTINCREASE      0
                ))
 /
-
-ALTER TABLE CWMS_20.AT_TR_TEMPLATE_SET ADD (
-  CONSTRAINT AT_TR_TEMPLATE_SET_R01 
- FOREIGN KEY (TEMPLATE_CODE) 
- REFERENCES CWMS_20.AT_TR_TEMPLATE_ID (TEMPLATE_CODE),
-  CONSTRAINT AT_TR_TEMPLATE_SET_R02 
- FOREIGN KEY (TRANSFORM_ID) 
- REFERENCES CWMS_20.CWMS_TR_TRANSFORMATIONS (TRANSFORM_ID))
+ALTER TABLE cwms_20.at_tr_ts_mask ADD (
+  CONSTRAINT at_tr_ts_mask_r01
+ FOREIGN KEY (template_code, sequence_no)
+ REFERENCES cwms_20.at_tr_template_set (template_code,sequence_no),
+  CONSTRAINT at_tr_ts_mask1_r02
+ FOREIGN KEY (location_code)
+ REFERENCES cwms_20.at_physical_location (location_code),
+  CONSTRAINT at_tr_ts_mask1_r03
+ FOREIGN KEY (parameter_code)
+ REFERENCES cwms_20.at_parameter (parameter_code),
+  CONSTRAINT at_tr_ts_mask1_r04
+ FOREIGN KEY (parameter_type_code)
+ REFERENCES cwms_20.cwms_parameter_type (parameter_type_code),
+  CONSTRAINT at_tr_ts_mask1_r05
+ FOREIGN KEY (interval_code)
+ REFERENCES cwms_20.cwms_interval (interval_code),
+  CONSTRAINT at_tr_ts_mask1_r06
+ FOREIGN KEY (duration_code)
+ REFERENCES cwms_20.cwms_duration (duration_code))
 /
-
-
-
-
 --************************
 --------------------------
 --************************
 
 
-CREATE TABLE CWMS_20.AT_TR_TS_MASK
+CREATE TABLE cwms_20.at_tr_template
 (
-  TEMPLATE_CODE        NUMBER,
-  SEQUENCE_NO          NUMBER,
-  VARIABLE_NO          NUMBER,
-  LOCATION_CODE        NUMBER,
-  PARAMETER_CODE       NUMBER,
-  PARAMETER_TYPE_CODE  NUMBER,
-  INTERVAL_CODE        NUMBER,
-  DURATION_CODE        NUMBER,
-  VERSION_MASK         VARCHAR2(42 BYTE)
+  ts_code_indep_1  NUMBER,
+  template_code    NUMBER,
+  active_flag      VARCHAR2(1 BYTE)             NOT NULL,
+  event_trigger    VARCHAR2(32 BYTE)            NOT NULL
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-
-CREATE UNIQUE INDEX CWMS_20.AT_TR_TS_MASK_PK ON CWMS_20.AT_TR_TS_MASK
-(TEMPLATE_CODE, SEQUENCE_NO, VARIABLE_NO)
+CREATE UNIQUE INDEX cwms_20.at_tr_template_pk ON cwms_20.at_tr_template
+(ts_code_indep_1, template_code)
 LOGGING
-TABLESPACE CWMS_20DATA
+TABLESPACE cwms_20data
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
-            INITIAL          64K
+            INITIAL          64 k
             MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
@@ -348,120 +409,27 @@ STORAGE    (
            )
 NOPARALLEL
 /
-
-
-ALTER TABLE CWMS_20.AT_TR_TS_MASK ADD (
-  CONSTRAINT AT_TR_TS_MASK_PK
+ALTER TABLE cwms_20.at_tr_template ADD (
+  CONSTRAINT at_tr_template_pk
  PRIMARY KEY
- (TEMPLATE_CODE, SEQUENCE_NO, VARIABLE_NO)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
+ (ts_code_indep_1, template_code)
+    USING INDEX
+    TABLESPACE cwms_20data
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
     STORAGE    (
-                INITIAL          64K
+                INITIAL          64 k
                 MINEXTENTS       1
                 MAXEXTENTS       UNLIMITED
                 PCTINCREASE      0
                ))
 /
-
-ALTER TABLE CWMS_20.AT_TR_TS_MASK ADD (
-  CONSTRAINT AT_TR_TS_MASK_R01 
- FOREIGN KEY (TEMPLATE_CODE, SEQUENCE_NO) 
- REFERENCES CWMS_20.AT_TR_TEMPLATE_SET (TEMPLATE_CODE,SEQUENCE_NO),
-  CONSTRAINT AT_TR_TS_MASK1_R02 
- FOREIGN KEY (LOCATION_CODE) 
- REFERENCES CWMS_20.AT_PHYSICAL_LOCATION (LOCATION_CODE),
-  CONSTRAINT AT_TR_TS_MASK1_R03 
- FOREIGN KEY (PARAMETER_CODE) 
- REFERENCES CWMS_20.AT_PARAMETER (PARAMETER_CODE),
-  CONSTRAINT AT_TR_TS_MASK1_R04 
- FOREIGN KEY (PARAMETER_TYPE_CODE) 
- REFERENCES CWMS_20.CWMS_PARAMETER_TYPE (PARAMETER_TYPE_CODE),
-  CONSTRAINT AT_TR_TS_MASK1_R05 
- FOREIGN KEY (INTERVAL_CODE) 
- REFERENCES CWMS_20.CWMS_INTERVAL (INTERVAL_CODE),
-  CONSTRAINT AT_TR_TS_MASK1_R06 
- FOREIGN KEY (DURATION_CODE) 
- REFERENCES CWMS_20.CWMS_DURATION (DURATION_CODE))
+ALTER TABLE cwms_20.at_tr_template ADD (
+  CONSTRAINT at_tr_template_r01
+ FOREIGN KEY (template_code)
+ REFERENCES cwms_20.at_tr_template_id (template_code),
+  CONSTRAINT at_tr_template_r02
+ FOREIGN KEY (ts_code_indep_1)
+ REFERENCES cwms_20.at_cwms_ts_spec (ts_code))
 /
-
-
---************************
---------------------------
---************************
-
-
-CREATE TABLE CWMS_20.AT_TR_TEMPLATE
-(
-  TS_CODE_INDEP_1  NUMBER,
-  TEMPLATE_CODE    NUMBER,
-  ACTIVE_FLAG      VARCHAR2(1 BYTE)             NOT NULL,
-  EVENT_TRIGGER    VARCHAR2(32 BYTE)            NOT NULL
-)
-TABLESPACE CWMS_20DATA
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-
-
-CREATE UNIQUE INDEX CWMS_20.AT_TR_TEMPLATE_PK ON CWMS_20.AT_TR_TEMPLATE
-(TS_CODE_INDEP_1, TEMPLATE_CODE)
-LOGGING
-TABLESPACE CWMS_20DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
-
-ALTER TABLE CWMS_20.AT_TR_TEMPLATE ADD (
-  CONSTRAINT AT_TR_TEMPLATE_PK
- PRIMARY KEY
- (TS_CODE_INDEP_1, TEMPLATE_CODE)
-    USING INDEX 
-    TABLESPACE CWMS_20DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       UNLIMITED
-                PCTINCREASE      0
-               ))
-/
-
-ALTER TABLE CWMS_20.AT_TR_TEMPLATE ADD (
-  CONSTRAINT AT_TR_TEMPLATE_R01 
- FOREIGN KEY (TEMPLATE_CODE) 
- REFERENCES CWMS_20.AT_TR_TEMPLATE_ID (TEMPLATE_CODE),
-  CONSTRAINT AT_TR_TEMPLATE_R02 
- FOREIGN KEY (TS_CODE_INDEP_1) 
- REFERENCES CWMS_20.AT_CWMS_TS_SPEC (TS_CODE))
-/
-

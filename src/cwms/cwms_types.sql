@@ -1,4 +1,4 @@
-/* Formatted on 2007/10/29 14:13 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/06/24 04:37 (Formatter Plus v4.8.8) */
 -- Defines the CWMS date-time, value, and quality types. 
 SET serveroutput on
 
@@ -132,12 +132,13 @@ BEGIN
                         );
 END;
 /
+
 CREATE OR REPLACE TYPE tr_template_set_type AS OBJECT (
    store_dep_flag          VARCHAR2 (1),
    unit_system             VARCHAR2 (2),
    trans_id                VARCHAR2 (32),
-   lookup_agency_source    VARCHAR2 (32),
-   lookup_source_version   VARCHAR2 (32),
+   lookup_agency           VARCHAR2 (32),
+   lookup_rating_version   VARCHAR2 (32),
    scaling_arg_a           NUMBER,
    scaling_arg_b           NUMBER,
    scaling_arg_c           NUMBER,
@@ -200,9 +201,9 @@ CREATE TYPE date_table_type AS TABLE OF DATE;
 -- used for store_ts_multi
 
 CREATE TYPE timeseries_type AS OBJECT (
-   tsid  varchar2(183),
-   unit  varchar2(16),
-   data tsv_array
+   tsid   VARCHAR2 (183),
+   unit   VARCHAR2 (16),
+   DATA   tsv_array
 );
 /
 
@@ -212,27 +213,27 @@ CREATE TYPE timeseries_array IS TABLE OF timeseries_type;
 -- used for retrieve_ts2_multi
 
 CREATE TYPE timeseries_req_type AS OBJECT (
-   tsid       varchar2(183),
-   unit       varchar2(16),
-   start_time date,
-   end_time   date
+   tsid         VARCHAR2 (183),
+   unit         VARCHAR2 (16),
+   start_time   DATE,
+   end_time     DATE
 );
 /
 
 CREATE TYPE timeseries_req_array IS TABLE OF timeseries_req_type;
 /
 
-CREATE TYPE nested_ts_type as object (
-   sequence    integer,
-   tsid        varchar2(183),
-   units       varchar2(16),
-   start_time  date,
-   end_time    date,
-   data        tsv_array
+CREATE TYPE nested_ts_type AS OBJECT (
+   SEQUENCE     INTEGER,
+   tsid         VARCHAR2 (183),
+   units        VARCHAR2 (16),
+   start_time   DATE,
+   end_time     DATE,
+   DATA         tsv_array
 );
 /
 
-CREATE TYPE nested_ts_table IS TABLE OF  nested_ts_type;
+CREATE TYPE nested_ts_table IS TABLE OF nested_ts_type;
 /
 
 -- CREATE TYPE TSVArray IS TABLE OF AT_TIME_SERIES_VALUE%ROWTYPE
