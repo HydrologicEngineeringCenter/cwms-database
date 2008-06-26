@@ -1,3 +1,4 @@
+#!/bin/env python
 import os, sys
 
 manual_sqlfilename = "buildCWMS_20_DB.sql"
