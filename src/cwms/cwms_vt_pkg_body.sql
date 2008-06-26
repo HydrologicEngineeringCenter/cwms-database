@@ -1,4 +1,6 @@
-/* Formatted on 2008/06/11 15:32 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/06/26 15:28 (Formatter Plus v4.8.8) */
+/*<TOAD_FILE_CHUNK>*/
+
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_vt
 AS
 /******************************************************************************
@@ -1630,8 +1632,8 @@ AS
 
       OPEN p_query_cursor FOR
          SELECT   a.sequence_no, a.transform_id, a.description,
-                  a.store_dep_flag, a.unit_system, a.lookup_agency_source,
-                  a.lookup_source_version, a.scaling_arg_a, a.scaling_arg_b,
+                  a.store_dep_flag, a.unit_system, a.lookup_agency,
+                  a.lookup_rating_version, a.scaling_arg_a, a.scaling_arg_b,
                   a.scaling_arg_c
              FROM at_tr_template_set a
             WHERE a.template_code = l_tr_template_code
@@ -1760,7 +1762,7 @@ AS
        WHERE template_code = l_template_code;
 
       --
-      -- 
+      --
       --
       IF NOT l_delete_template_cascade
       THEN
@@ -1797,6 +1799,28 @@ AS
       NULL;
    END;
 
+   FUNCTION create_tr_template (
+      p_template_id      IN   VARCHAR2,
+      p_description      IN   VARCHAR2,
+      p_db_office_code   IN   NUMBER
+   )
+      RETURN NUMBER
+   AS
+      l_tr_template_code   NUMBER;
+   BEGIN
+      INSERT INTO at_tr_template_id
+                  (template_code, template_id, db_office_code,
+                   description
+                  )
+           VALUES (cwms_seq.NEXTVAL, TRIM (p_template_id), p_db_office_code,
+                   p_description
+                  )
+        RETURNING template_code
+             INTO l_tr_template_code;
+
+      RETURN l_tr_template_code;
+   END;
+
    PROCEDURE store_tr_template (
       p_template_id        IN   VARCHAR2,
       p_description        IN   VARCHAR2,
@@ -1805,8 +1829,123 @@ AS
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    )
    AS
+      l_db_office_code        NUMBER
+                             := cwms_util.get_db_office_code (p_db_office_id);
+      l_tr_template_code      NUMBER;
+      l_tr_template_exists    BOOLEAN       := FALSE;
+      l_replace_existing      BOOLEAN
+                       := cwms_util.return_true_or_false (p_replace_existing);
+      l_base_location_id      VARCHAR2 (16);
+      l_sub_location_id       VARCHAR2 (32);
+      l_base_parameter_id     VARCHAR2 (16);
+      l_sub_parameter_id      VARCHAR2 (32);
+      l_parameter_type_id     VARCHAR2 (16);
+      l_interval_id           VARCHAR2 (16);
+      l_duration_id           VARCHAR2 (16);
+      l_version_id            VARCHAR2 (32);
+      l_parameter_code        NUMBER;
+      l_parameter_type_code   NUMBER;
    BEGIN
-      NULL;
+      BEGIN
+         l_tr_template_code :=
+                       get_tr_template_code (p_template_id, l_db_office_code);
+         l_tr_template_exists := TRUE;
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            l_tr_template_code :=
+               create_tr_template (p_template_id,
+                                   p_description,
+                                   l_db_office_code
+                                  );
+      END;
+
+      IF l_tr_template_exists
+      THEN
+         IF NOT l_replace_existing
+         THEN
+            cwms_err.RAISE
+               ('GENERIC_ERROR',
+                   'ERROR: Unable to store template set. The '
+                || TRIM (p_template_id)
+                || ' already exists and the p_replace_existing parameter was set to "F"'
+               );
+         END IF;
+
+         --
+         -- telplate exists and will be replaced, so clean-out any pre-exisiting -
+         -- template entires.
+         --
+         DELETE FROM at_tr_ts_mask a
+               WHERE a.template_code = l_tr_template_code;
+
+         DELETE FROM at_tr_template_set a
+               WHERE a.template_code = l_tr_template_code;
+      END IF;
+
+      FOR i IN 1 .. p_template_set.COUNT
+      LOOP
+         INSERT INTO at_tr_template_set
+                     (template_code, sequence_no, description,
+                      store_dep_flag,
+                      unit_system,
+                      transform_id,
+                      lookup_agency,
+                      lookup_rating_version,
+                      scaling_arg_a,
+                      scaling_arg_b,
+                      scaling_arg_c
+                     )
+              VALUES (l_tr_template_code, i, p_template_set (i).description,
+                      p_template_set (i).store_dep_flag,
+                      p_template_set (i).unit_system,
+                      p_template_set (i).transform_id,
+                      p_template_set (i).lookup_agency,
+                      p_template_set (i).lookup_rating_version,
+                      p_template_set (i).scaling_arg_a,
+                      p_template_set (i).scaling_arg_b,
+                      p_template_set (i).scaling_arg_c
+                     );
+
+         FOR j IN 1 .. p_template_set (i).array_of_masks.COUNT
+         LOOP
+            cwms_ts.parse_ts (p_template_set (i).array_of_masks (j),
+                              l_base_location_id,
+                              l_sub_location_id,
+                              l_base_parameter_id,
+                              l_sub_parameter_id,
+                              l_parameter_type_id,
+                              l_interval_id,
+                              l_duration_id,
+                              l_version_id
+                             );
+            DBMS_OUTPUT.put_line (   'i:j '
+                                  || i
+                                  || ':'
+                                  || j
+                                  || ' '
+                                  || p_template_set (i).array_of_masks (j)
+                                 );
+            l_parameter_code :=
+               cwms_ts.get_parameter_code (l_base_parameter_id,
+                                           l_sub_parameter_id,
+                                           l_db_office_code,
+                                           FALSE
+                                          );
+
+            INSERT INTO at_tr_ts_mask
+                        (template_code, sequence_no, variable_no,
+                         location_code,
+                         parameter_code, parameter_type_code,
+                         interval_code, duration_code, version_mask
+                        )
+                 VALUES (l_tr_template_code, i, j - 1,
+                         l_base_location_id || '-' || l_sub_location_id,
+                         l_parameter_code, l_parameter_type_code,
+                         l_interval_id, l_duration_id, l_version_id
+                        );
+         END LOOP;
+      END LOOP;
    END;
 
    PROCEDURE create_tr_ts_mask (
@@ -1823,9 +1962,6 @@ AS
    END;
 END cwms_vt;
 /
+/*<TOAD_FILE_CHUNK>*/
 
 SHOW errors;
-
-
-
-

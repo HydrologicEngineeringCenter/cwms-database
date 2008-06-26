@@ -1,4 +1,4 @@
-/* Formatted on 2008/06/24 04:37 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/06/24 06:40 (Formatter Plus v4.8.8) */
 -- Defines the CWMS date-time, value, and quality types. 
 SET serveroutput on
 
@@ -134,9 +134,10 @@ END;
 /
 
 CREATE OR REPLACE TYPE tr_template_set_type AS OBJECT (
+   description             VARCHAR2 (132),
    store_dep_flag          VARCHAR2 (1),
    unit_system             VARCHAR2 (2),
-   trans_id                VARCHAR2 (32),
+   transform_id            VARCHAR2 (32),
    lookup_agency           VARCHAR2 (32),
    lookup_rating_version   VARCHAR2 (32),
    scaling_arg_a           NUMBER,
