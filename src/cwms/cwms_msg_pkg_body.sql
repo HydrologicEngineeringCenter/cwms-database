@@ -6,15 +6,12 @@ as
 --
 function get_msg_id (p_millis in integer default null) return varchar2
 is
-   office_id varchar2(16);
    l_millis  integer := p_millis;
    seq       integer;
 begin
-   office_id := cwms_util.user_office_id;
-   if office_id is null then office_id := 'UNK'; end if;
    if l_millis is null then l_millis := cwms_util.current_millis; end if;
    select cwms_log_msg_seq.nextval into seq from dual;
-   return office_id || (l_millis * 1000 + seq);
+   return '' || l_millis || '_' || seq;
 end;
 
 -------------------------------------------------------------------------------
@@ -286,130 +283,139 @@ function log_message(
    p_port      in integer,
    p_reported  in timestamp,
    p_message   in varchar2,
+   p_msg_level in integer,
    p_publish   in boolean)
    return integer
 is
    pragma autonomous_transaction;
    
-   l_now       integer;
-   l_now_ts    timestamp;
-   l_msg_id    varchar2(32);
-   l_message   varchar2(4000);
-   l_document  xmltype;
-   l_nodes     xmltype;
-   l_node      xmltype;
-   l_name      varchar2(128);
-   l_msgtype   varchar2(64);
-   l_type      varchar2(64);
-   l_text      varchar2(4000);
-   l_number    number;
-   l_prop_type integer;
-   l_extra     varchar2(4000);
-   l_pos       pls_integer;
-   l_typeid    integer;
-   i           pls_integer;
-   lf          constant varchar2(1) := chr(10);
+   l_now         integer;
+   l_now_ts      timestamp;
+   l_msg_id      varchar2(32);
+   l_office_code number(10);
+   l_message     varchar2(4000);
+   l_document    xmltype;
+   l_nodes       xmltype;
+   l_node        xmltype;
+   l_name        varchar2(128);
+   l_msgtype     varchar2(64);
+   l_type        varchar2(64);
+   l_text        varchar2(4000);
+   l_number      number;
+   l_prop_type   integer;
+   l_extra       varchar2(4000);
+   l_pos         pls_integer;
+   l_typeid      integer;
+   i             pls_integer;
+   lf            constant varchar2(1) := chr(10);
+   l_msg_level   integer := nvl(p_msg_level, msg_level_normal);
+   l_publish     boolean := nvl(p_publish, true);
 begin
-   -----------------------------------------
-   -- insert message data into the tables --
-   -----------------------------------------
-   l_now      := cwms_util.current_millis;
-   l_msg_id   := get_msg_id(l_now);
-   l_now_ts   := cwms_util.to_timestamp(l_now);
-   l_document := xmltype(p_message);
-   l_msgtype  := l_document.extract('/cwms_message/@type').getstringval();
-   l_node     := l_document.extract('/cwms_message/text');
-   if l_node is not null then
-      l_message := cwms_util.strip(l_node.extract('*/node()').getstringval());
-   end if;
+   if l_msg_level > msg_level_none then
+      -----------------------------------------
+      -- insert message data into the tables --
+      -----------------------------------------
+      l_now         := cwms_util.current_millis;
+      l_now_ts      := cwms_util.to_timestamp(l_now);
+      l_msg_id      := get_msg_id(l_now);
+      l_office_code := cwms_util.user_office_code;
+      l_document    := xmltype(p_message);
+      l_msgtype     := l_document.extract('/cwms_message/@type').getstringval();
+      l_node        := l_document.extract('/cwms_message/text');
+      if l_node is not null then
+         l_message := cwms_util.strip(l_node.extract('*/node()').getstringval());
+      end if;
 
-   -------------------------------
-   -- first the message body... --
-   -------------------------------
-   begin
-      select message_type_code 
-        into l_typeid 
-        from cwms_log_message_types 
-       where message_type_id = l_msgtype;
-   exception
-      when no_data_found then
-         cwms_err.raise('INVALID_ITEM', l_type, 'log message type');
-   end;       
+      -------------------------------
+      -- first the message body... --
+      -------------------------------
+      begin
+         select message_type_code 
+           into l_typeid 
+           from cwms_log_message_types 
+          where message_type_id = l_msgtype;
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_ITEM', l_type, 'log message type');
+      end;       
 
-   insert
-     into at_log_message
-   values (
-             l_msg_id, 
-             l_now_ts, 
-             p_component, 
-             p_instance, 
-             p_host, 
-             p_port, 
-             p_reported, 
-             l_typeid, 
-             l_message
-          );   
+      insert
+        into at_log_message
+      values (
+                l_msg_id,
+                l_office_code, 
+                l_now_ts,
+                l_msg_level, 
+                p_component, 
+                p_instance, 
+                p_host, 
+                p_port, 
+                p_reported, 
+                l_typeid, 
+                l_message
+             );   
 
-   -------------------------------------   
-   -- ... then the message properties --
-   -------------------------------------   
-   l_nodes := l_document.extract('/cwms_message/property');
-   if l_nodes is not null then
-      i := 0;
-      loop
-         i := i + 1;
-         l_node := l_nodes.extract('*['||i||']');
-         exit when l_node is null;
-         l_name  := l_node.extract('*/@name').getstringval();
-         l_type  := l_node.extract('*/@type').getstringval();
-         if l_type = 'boolean' or l_type = 'String' then
-            l_number := null;
-            l_node   := l_node.extract('*/node()');
-            if l_node is null then
-               cwms_err.raise(
-                  'INVALID_ITEM', 
-                  'NULL', 
-                  'CWMS message property value (type='
-                  || l_msgtype
-                  || ', property='
-                  || l_name
-                  || ')');
-            end if;
-            l_text := cwms_util.strip(l_node.getstringval());
-         else
-            l_node := l_node.extract('*/node()');
-            if l_node is null then
+      -------------------------------------   
+      -- ... then the message properties --
+      -------------------------------------   
+      l_nodes := l_document.extract('/cwms_message/property');
+      if l_nodes is not null then
+         i := 0;
+         loop
+            i := i + 1;
+            l_node := l_nodes.extract('*['||i||']');
+            exit when l_node is null;
+            l_name  := l_node.extract('*/@name').getstringval();
+            l_type  := l_node.extract('*/@type').getstringval();
+            if l_type = 'boolean' or l_type = 'String' then
                l_number := null;
+               l_node   := l_node.extract('*/node()');
+               if l_node is null then
+                  cwms_err.raise(
+                     'INVALID_ITEM', 
+                     'NULL', 
+                     'CWMS message property value (type='
+                     || l_msgtype
+                     || ', property='
+                     || l_name
+                     || ')');
+               end if;
+               l_text := cwms_util.strip(l_node.getstringval());
             else
-               l_number := l_node.getnumberval();
+               l_node := l_node.extract('*/node()');
+               if l_node is null then
+                  l_number := null;
+               else
+                  l_number := l_node.getnumberval();
+               end if;
+               l_text   := null;
             end if;
-            l_text   := null;
-         end if;
 
-         begin
-            select prop_type_code 
-              into l_prop_type 
-              from cwms_log_message_prop_types 
-             where prop_type_id = l_type;
-         exception
-            when no_data_found then
-               cwms_err.raise('INVALID_ITEM', l_type, 'log message property type');
-         end;
-                
-         insert 
-           into at_log_message_properties 
-         values (
-                  l_msg_id, 
-                  l_name, 
-                  l_prop_type, 
-                  l_number, 
-                  l_text
-                );
-      end loop;
+            begin
+               select prop_type_code 
+                 into l_prop_type 
+                 from cwms_log_message_prop_types 
+                where prop_type_id = l_type;
+            exception
+               when no_data_found then
+                  cwms_err.raise('INVALID_ITEM', l_type, 'log message property type');
+            end;
+                   
+            insert 
+              into at_log_message_properties 
+            values (
+                     l_msg_id, 
+                     l_name, 
+                     l_prop_type, 
+                     l_number, 
+                     l_text
+                   );
+         end loop;
+      end if;
    end if;
    commit;
    
-   if p_publish then
+   if l_publish then
       -------------------------
       -- publish the message --
       -------------------------
@@ -466,10 +472,12 @@ end log_message;
 --
 procedure log_db_message(
    p_procedure in varchar2,
+   p_msg_level in integer,
    p_message   in varchar2)
 is
    i  integer;
    lf constant varchar2(1) := chr(10);
+   l_msg_level integer := nvl(p_msg_level, msg_level_normal);
 begin
    i := log_message(
       'CWMSDB',
@@ -483,6 +491,7 @@ begin
       || '  ' || p_message || lf
       || '  </text>' || lf
       || '</cwms_message>',
+      l_msg_level,
       false);
       
 end log_db_message;    

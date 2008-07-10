@@ -2002,19 +2002,6 @@ create or replace package body cwms_xchg as
       l_dss_ts                  xchg_dss_timeseries_t;
       l_pause_handle            urowid;
       
-      procedure log(p_message in varchar2)
-      is
-         l_log_table  boolean := false;
-         l_log_output boolean := false;
-      begin
-         if l_log_table then
-            cwms_msg.log_db_message('store_dataexchange_conf', p_message);
-         end if;
-         if l_log_output then
-            dbms_output.put_line(p_message);
-         end if;
-      end;
-      
       function get_dss_file_code (p_full_url in varchar2, p_office_id in varchar2) return number
       is
          l_url  at_dss_file.dss_filemgr_url%type;
@@ -3539,7 +3526,16 @@ begin
                 || p_urls_affected
                 || '</property></cwms_message>';
    
-   l_ts := cwms_msg.log_message(l_component,l_instance,l_host,l_port,l_reported,l_message, true);                      
+   l_ts := cwms_msg.log_message(
+      l_component,
+      l_instance,
+      l_host,
+      l_port,
+      l_reported,
+      l_message, 
+      cwms_msg.msg_level_basic, 
+      true);
+                            
 end xchg_config_updated;
 
 -------------------------------------------------------------------------------
@@ -3639,7 +3635,15 @@ begin
                 || '</property>'
                 || '</cwms_message>';
                 
-   i := cwms_msg.log_message('DataExchange Engine', p_engine_url, null, null, systimestamp, l_log_msg, true);
+   i := cwms_msg.log_message(
+      'DataExchange Engine', 
+      p_engine_url, 
+      null, 
+      null, 
+      systimestamp, 
+      l_log_msg,
+      cwms_msg.msg_level_detailed, 
+      true);
    
 end update_last_processed_time;   
    
@@ -3724,7 +3728,15 @@ begin
                 || l_end_time
                 || '</property></cwms_message>';
                 
-   i := cwms_msg.log_message(p_component, null, p_host, null, l_reported, l_log_msg, false);
+   i := cwms_msg.log_message(
+      p_component, 
+      null, 
+      p_host, 
+      null, 
+      l_reported, 
+      l_log_msg,
+      cwms_msg.msg_level_basic, 
+      false);
    -------------------------------------
    -- loop over the archived messages --
    -------------------------------------
@@ -3879,7 +3891,15 @@ begin
                 
    l_parts := cwms_util.split_text(l_log_msg, '>', 1);
    
-   i := cwms_msg.log_message(p_component, null, p_host, null, l_reported, l_log_msg, true);
+   i := cwms_msg.log_message(
+      p_component, 
+      null, 
+      p_host, 
+      null, 
+      l_reported, 
+      l_log_msg,
+      cwms_msg.msg_level_basic, 
+      true);
    
    return l_job_id;
 end request_batch_exchange;

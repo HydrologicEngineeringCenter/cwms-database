@@ -3,6 +3,12 @@ as
 
 exc_no_subscribers exception; pragma exception_init(exc_no_subscribers, -24033);
 
+msg_level_none     constant integer :=  0;
+msg_level_basic    constant integer :=  1;
+msg_level_normal   constant integer :=  3;
+msg_level_detailed constant integer :=  5;
+msg_level_verbose  constant integer :=  7;
+
 -------------------------------------------------------------------------------
 --
 -- The publish_message and publish_status_message functions that take a VARCHAR2
@@ -113,6 +119,7 @@ function log_message(
    p_port      in integer,
    p_reported  in timestamp,
    p_message   in varchar2,
+   p_msg_level in integer default msg_level_normal,
    p_publish   in boolean default true)
    return integer;
 
@@ -121,6 +128,7 @@ function log_message(
 --
 procedure log_db_message(
    p_procedure in varchar2,
+   p_msg_level in integer default msg_level_normal,
    p_message   in varchar2);
     
 -------------------------------------------------------------------------------

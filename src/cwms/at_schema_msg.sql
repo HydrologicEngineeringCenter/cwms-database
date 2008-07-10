@@ -155,7 +155,9 @@ commit;
 create table at_log_message
 (
    msg_id               varchar2(32)                not null,
+   office_code          number(10)                  not null,
    log_timestamp_utc    timestamp                   not null,
+   msg_level            number(2)                   not null,
    component            varchar2(64)                not null,
    instance             varchar2(64),
    host                 varchar2(256),
@@ -186,7 +188,8 @@ monitoring;
 -- AT_LOG_MESSAGE comments
 --
 comment on table  at_log_message                      is 'CWMS log messages';
-comment on column at_log_message.msg_id               is 'Unique ID of message, includes office id, timestamp, and counter';
+comment on column at_log_message.msg_id               is 'Unique ID of message, includes timestamp and sequence';
+comment on column at_log_message.office_code          is 'Office code of user';
 comment on column at_log_message.log_timestamp_utc    is 'Timestamp of when the message was logged (set by database)';
 comment on column at_log_message.component            is 'Reporting component';
 comment on column at_log_message.instance             is 'Instance of reporting component, if applicable';
@@ -200,6 +203,7 @@ comment on column at_log_message.msg_text             is 'Main text of message, 
 -- AT_LOG_MESSAGE constraints
 --
 alter table at_log_message add constraint at_log_message_fk1 foreign key (msg_type) references cwms_log_message_types (message_type_code);
+alter table at_log_message add constraint at_log_message_fk2 foreign key (office_code) references cwms_office (office_code);
 alter table at_log_message add constraint at_log_message_pk  primary key (msg_id)
     using index 
     tablespace cwms_20at_data
