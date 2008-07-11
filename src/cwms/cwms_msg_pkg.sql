@@ -155,6 +155,11 @@ function log_message_server_message(
 --
 procedure trim_log;   
 
+--------------------------------------------------------------------------------
+-- procedure start_trim_log_job
+--
+procedure start_trim_log_job;
+   
 end cwms_msg;
 /
 show errors;

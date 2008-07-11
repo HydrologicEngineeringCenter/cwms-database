@@ -935,6 +935,105 @@ begin
       'Ending trimming of log entries');
 end trim_log;
    
+--------------------------------------------------------------------------------
+-- procedure start_trim_log_job
+--
+procedure start_trim_log_job
+is
+   l_count        binary_integer;
+   l_user_id      varchar2(30);
+   l_job_id       varchar2(30)  := 'TRIM_LOG_JOB';
+   l_run_interval varchar2(8);
+   l_comment      varchar2(256);
+
+   function job_count
+      return binary_integer
+   is
+   begin
+      select count (*)
+        into l_count
+        from sys.dba_scheduler_jobs
+       where job_name = l_job_id and owner = l_user_id;
+
+      return l_count;
+   end;
+begin
+   --------------------------------------
+   -- make sure we're the correct user --
+   --------------------------------------
+   l_user_id := cwms_util.get_user_id;
+
+   if l_user_id != 'CWMS_20'
+   then
+      raise_application_error (-20999,
+                                  'Must be CWMS_20 user to start job '
+                               || l_job_id,
+                               true
+                              );
+   end if;
+
+   -------------------------------------------
+   -- drop the job if it is already running --
+   -------------------------------------------
+   if job_count > 0
+   then
+      dbms_output.put ('Dropping existing job ' || l_job_id || '...');
+      dbms_scheduler.drop_job (l_job_id);
+
+      --------------------------------
+      -- verify that it was dropped --
+      --------------------------------
+      if job_count = 0
+      then
+         dbms_output.put_line ('done.');
+      else
+         dbms_output.put_line ('failed.');
+      end if;
+   end if;
+
+   if job_count = 0
+   then
+      begin
+         ---------------------
+         -- restart the job --
+         ---------------------
+         cwms_properties.get_property(l_run_interval, l_comment, 'CWMSDB', 'logging.auto_trim.interval', '120', 'UNK');
+         dbms_scheduler.create_job
+            (job_name             => l_job_id,
+             job_type             => 'stored_procedure',
+             job_action           => 'cwms_msg.trim_log',
+             start_date           => null,
+             repeat_interval      => 'freq=minutely; interval=' || l_run_interval,
+             end_date             => null,
+             job_class            => 'default_job_class',
+             enabled              => true,
+             auto_drop            => false,
+             comments             => 'Trims at_log_message to specified max entries and max age.'
+            );
+
+         if job_count = 1
+         then
+            dbms_output.put_line
+                           (   'Job '
+                            || l_job_id
+                            || ' successfully scheduled to execute every '
+                            || l_run_interval
+                            || ' minutes.'
+                           );
+         else
+            cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
+         end if;
+      exception
+         when others
+         then
+            cwms_err.raise ('ITEM_NOT_CREATED',
+                            'job',
+                            l_job_id || ':' || sqlerrm
+                           );
+      end;
+   end if;
+end start_trim_log_job;
+
 end cwms_msg;
 /
 show errors;

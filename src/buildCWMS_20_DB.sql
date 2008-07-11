@@ -230,6 +230,8 @@ prompt Creating and starting queues...
 prompt Starting jobs...
 exec cwms_util.start_timeout_mv_refresh_job;
 /
+exec cwms_msg.start_trim_log_job;
+/
 --
 -- all done
 --
