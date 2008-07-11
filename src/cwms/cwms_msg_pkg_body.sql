@@ -515,6 +515,7 @@ is
    l_parts       cwms_util.str_tab_t;
    i             pls_integer;
    lf            constant varchar2(1) := chr(10);
+   l_msg_level   integer;
 begin
    l_msg_text := '<cwms_message type="$msgtype">' || lf;
    -----------------------------------------------------------------------
@@ -543,8 +544,9 @@ begin
       --------------------------
       -- set the message type --
       --------------------------
-      l_msg_type := 'MissedHeartBeat';
-      l_msg_text := replace(l_msg_text, '$msgtype', l_msg_type);
+      l_msg_type  := 'MissedHeartBeat';
+      l_msg_text  := replace(l_msg_text, '$msgtype', l_msg_type);
+      l_msg_level := msg_level_normal;
       ---------------------------------------------
       -- get component, host and port from value --
       ---------------------------------------------
@@ -650,6 +652,18 @@ begin
                                    || '  <property name="subtype" type="String">'
                                    || l_parts(2)
                                    || '</property>' || lf;
+                  end;
+                  l_msg_level := case l_msg_type
+                     when 'Exception Thrown'      then msg_level_basic
+                     when 'Fatal Error'           then msg_level_basic
+                     when 'Initialization Error'  then msg_level_basic
+                     when 'Initiated'             then msg_level_detailed
+                     when 'Load Library Error'    then msg_level_basic
+                     when 'Runtime Exec Error'    then msg_level_basic
+                     when 'State'                 then msg_level_detailed
+                     when 'StatusIntervalMinutes' then msg_level_detailed
+                     when 'Terminated'            then msg_level_basic
+                     else                              msg_level_normal
                   end;       
                when 'Message' then
                   ---------------------------------
@@ -721,7 +735,7 @@ begin
       end loop;
    end if;
    l_msg_text := l_msg_text || '</cwms_message>';
-   return log_message(l_component, l_instance, l_host, l_port, l_report_time, l_msg_text);
+   return log_message(l_component, l_instance, l_host, l_port, l_report_time, l_msg_text, l_msg_level);
 end log_message_server_message;   
 
 
