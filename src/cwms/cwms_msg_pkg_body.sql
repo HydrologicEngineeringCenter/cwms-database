@@ -493,7 +493,6 @@ begin
       || '</cwms_message>',
       l_msg_level,
       false);
-      
 end log_db_message;    
 -------------------------------------------------------------------------------
 -- FUNCTION LOG_MESSAGE_SERVER_MESSAGE(...)
@@ -759,6 +758,183 @@ begin
    return log_message_server_message(l_message);
 end log_message_server_message;
 
+-------------------------------------------------------------------------------
+-- PROCEDURE TRIM_LOG
+--
+-- This procedure deletes log entries older than specified by the property
+-- CWMSDB/logging.entry.max_age and deletes any remaining oldest entries
+-- to keep the table down to the maximum number specified in CWMSDB/
+-- logging.table.max_entries
+--
+procedure trim_log
+is
+   type refcur is ref cursor;
+   type rec_t  is record (msg_id at_log_message.msg_id%type);
+   l_cur               refcur;
+   l_rec               rec_t;
+   l_property_value    varchar2(256);
+   l_property_comment  varchar2(256);
+   l_max_age_in_days   integer := -1;
+   l_max_table_entries integer := -1;
+   l_entry_count       integer;
+   l_oldest_timestamp  timestamp;
+   l_now               timestamp := systimestamp;
+   l_oldest_in_days    integer;
+   l_db_office_id      varchar2(16) := cwms_util.get_db_office_id; 
+   l_interval          interval day (5) to second;
+   l_sql_text          varchar2(4000) := 
+      'select msg_id from (
+         select msg_id, num, row_number() over (order by num desc) rn from (
+            select t1.msg_id, count(t2.msg_id) num 
+            from at_log_message t1, at_log_message t2
+            where t2.msg_id >= t1.msg_id
+            group by t1.msg_id)
+         where num <= :max_entries
+         order by num)
+      where rn = 1';
+begin
+   log_db_message(
+      'CWMS_MSG.TRIM_LOG', 
+      msg_level_basic, 
+      'Beginning trimming of log entries');
+   select count(*) into l_entry_count from at_log_message;
+   select min(log_timestamp_utc) into l_oldest_timestamp from at_log_message;
+   l_oldest_in_days := extract(day from (l_now - l_oldest_timestamp) day to second);
+   log_db_message(
+      'CWMS_MSG.TRIM_LOG', 
+      msg_level_verbose, 
+      'Log table has ' || l_entry_count || ' entries');
+   log_db_message(
+      'CWMS_MSG.TRIM_LOG', 
+      msg_level_verbose, 
+      'Oldest log entry is ' || l_oldest_timestamp || ' (' || l_oldest_in_days || ' days)');
+   --------------------------------------------------------------------------------
+   -- set l_max_table_entries from the CWMSDB/logging.table.max_entries property --
+   --------------------------------------------------------------------------------
+   cwms_properties.get_property(
+      l_property_value,
+      l_property_comment,
+      'CWMSDB',
+      'logging.table.max_entries',
+      null,
+      l_db_office_id);
+   if l_property_value is null then
+      log_db_message(
+         'CWMS_MSG.TRIM_LOG', 
+         msg_level_detailed, 
+         'Property CWMSDB/logging.table.max_entries is not set for user ' 
+         || l_db_office_id
+         || ', table will not be trimmed by entry count');
+   else
+      begin
+         l_max_table_entries := to_number(l_property_value);
+         log_db_message(
+            'CWMS_MSG.TRIM_LOG', 
+            msg_level_verbose,
+            l_db_office_id
+            || '/CWMSDB/logging.table.max_entries =  ' 
+            || l_max_table_entries);
+      exception
+         when others then
+            log_db_message(
+               'CWMS_MSG.TRIM_LOG', 
+               msg_level_basic,
+               l_db_office_id
+               || '/CWMSDB/logging.table.max_entries is not an integer value: ' 
+               || l_property_value
+               || ', table will not be trimmed by entry count');
+      end;
+   end if;
+   --------------------------------------------------------------------------
+   -- set l_max_age_in_days from the CWMSDB/logging.entry.max_age property --
+   --------------------------------------------------------------------------
+   cwms_properties.get_property(
+      l_property_value,
+      l_property_comment,
+      'CWMSDB',
+      'logging.entry.max_age',
+      null,
+      l_db_office_id);
+   if l_property_value is null then
+      log_db_message(
+         'CWMS_MSG.TRIM_LOG', 
+         msg_level_detailed, 
+         'Property CWMSDB/logging.entry.max_age is not set for user ' 
+         || l_db_office_id
+         || ', table will not be trimmed by entry age');
+   else
+      begin
+         l_max_age_in_days := to_number(l_property_value);
+         log_db_message(
+            'CWMS_MSG.TRIM_LOG', 
+            msg_level_verbose,
+            l_db_office_id
+            || '/CWMSDB/logging.entry.max_age =  ' 
+            || l_max_age_in_days);
+         l_interval := numtodsinterval(l_max_age_in_days, 'day');
+      exception
+         when others then
+            log_db_message(
+               'CWMS_MSG.TRIM_LOG', 
+               msg_level_basic,
+               l_db_office_id
+               || '/CWMSDB/logging.entry.max_age is not an integer value: ' 
+               || l_property_value
+               || ', table will not be trimmed by entry age');
+      end;
+   end if;
+   ---------------------------
+   -- trim the table by age --
+   ---------------------------
+   if l_max_age_in_days > 0 then
+      if l_oldest_in_days > l_max_age_in_days then
+         log_db_message(
+            'CWMS_MSG.TRIM_LOG', 
+            msg_level_detailed,
+            'Trimming table by entry age');
+         delete from at_log_message_properties
+               where msg_id in (select msg_id 
+                                  from at_log_message
+                                 where log_timestamp_utc < l_now - l_interval);
+         delete from at_log_message
+               where log_timestamp_utc < l_now - l_interval;
+         select count(*) into l_entry_count from at_log_message;
+         log_db_message(
+            'CWMS_MSG.TRIM_LOG', 
+            msg_level_verbose, 
+            'Log table now has ' || l_entry_count || ' entries');
+      end if;
+   end if;
+   -----------------------------------
+   -- trim the table by entry count --
+   -----------------------------------
+   if l_max_table_entries > 0 then
+      if l_entry_count > l_max_table_entries then
+         log_db_message(
+            'CWMS_MSG.TRIM_LOG', 
+            msg_level_detailed,
+            'Trimming table by entry count');
+         open l_cur for l_sql_text using l_max_table_entries;
+         fetch l_cur into l_rec;
+         close l_cur;
+         delete from at_log_message_properties
+               where msg_id in (select msg_id from at_log_message
+                                      where msg_id < l_rec.msg_id); 
+         delete from at_log_message
+               where msg_id < l_rec.msg_id;
+         select count(*) into l_entry_count from at_log_message;
+         log_db_message(
+            'CWMS_MSG.TRIM_LOG', 
+            msg_level_verbose, 
+            'Log table now has ' || l_entry_count || ' entries');
+      end if;
+   end if;
+   log_db_message(
+      'CWMS_MSG.TRIM_LOG', 
+      msg_level_basic, 
+      'Ending trimming of log entries');
+end trim_log;
+   
 end cwms_msg;
 /
 show errors;

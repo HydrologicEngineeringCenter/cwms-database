@@ -144,6 +144,16 @@ function log_message_server_message(
 function log_message_server_message(
    p_message in out nocopy clob)
    return integer;
+   
+-------------------------------------------------------------------------------
+-- PROCEDURE TRIM_LOG
+--
+-- This procedure deletes log entries older than specified by the property
+-- CWMSDB/logging.entry.max_age and deletes any remaining oldest entries
+-- to keep the table down to the maximum number specified in CWMSDB/
+-- loggin.table.max_entries
+--
+procedure trim_log;   
 
 end cwms_msg;
 /
