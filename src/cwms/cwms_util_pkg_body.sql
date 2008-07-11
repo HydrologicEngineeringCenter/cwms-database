@@ -547,7 +547,7 @@ AS
    FUNCTION user_office_id
       RETURN VARCHAR2
    IS
-      l_office_id   VARCHAR2 (16) := NULL;
+      l_office_id   VARCHAR2 (16) := 'UNK';
       l_user_id     VARCHAR2 (32);
    BEGIN
       l_user_id := get_user_id;
@@ -613,7 +613,7 @@ AS
    FUNCTION user_office_code
       RETURN NUMBER
    IS
-      l_office_code   NUMBER (10)   := NULL;
+      l_office_code   NUMBER (10)   := 0;
       l_user_id       VARCHAR2 (32);
    BEGIN
       l_user_id := get_user_id;
