@@ -3390,7 +3390,7 @@ end retrieve_ts_multi;
    -----------------------------------------------                                                                    
    -- notify the real-time Oracle->DSS exchange --
    ----------------------------------------------- 
-   if cwms_xchg.IS_REALTIME_EXPORT(l_ts_code) then 
+   if cwms_xchg.is_realtime_export(l_ts_code) then 
       dbms_application_info.set_action('queuing time_series_updated message');
       cwms_xchg.time_series_updated(
             l_ts_code, 
