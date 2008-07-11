@@ -1242,7 +1242,7 @@ COMMENT ON COLUMN at_unit_alias.alias_id IS 'Alias name and primary key';
 COMMENT ON COLUMN at_unit_alias.unit_code IS 'Foreign key referencing CWMS_UNIT table by its primary key';
 
 -----------------------------
--- AT_UNIT_ALIAS TABLE indicies
+-- AT_UNIT_ALIAS TABLE indices
 --
 CREATE UNIQUE INDEX at_unit_alias_pk ON at_unit_alias
 (alias_id, db_office_code)
@@ -1438,11 +1438,33 @@ ALTER TABLE at_properties ADD CONSTRAINT at_properties_fk FOREIGN KEY(office_cod
 ALTER TABLE at_properties ADD CONSTRAINT at_properties_pk PRIMARY KEY(office_code, prop_category, prop_id);
 
 ---------------------------------
--- AT_PROPERTIES indicies.
+-- AT_PROPERTIES indices.
 -- 
 CREATE UNIQUE INDEX at_properties_uk1 ON at_properties(office_code, UPPER("PROP_CATEGORY"), UPPER("PROP_ID"));
 
-
+---------------------------------
+-- AT_PROPERTIES default data.
+-- 
+INSERT INTO at_properties values(
+	0,
+	'CWMSDB',
+	'logging.table.max_entries',
+	'100000',
+	'Max number of rows to keep when trimming log.');
+	
+INSERT INTO at_properties values(
+	0,
+	'CWMSDB',
+	'logging.entry.max_age',
+	'120',
+	'Max entry age in days to keep when trimming log.');
+	
+INSERT INTO at_properties values(
+	0,
+	'CWMSDB',
+	'logging.auto_trim.interval',
+	'240',
+	'Interval in minutes for job TRIM_LOG_JOB to execute.');
 
 -----------------------------
 -- AT_REPORT_TEMPLATES table
@@ -1485,7 +1507,7 @@ COMMENT ON COLUMN at_report_templates.record_template IS 'A template string appl
 COMMENT ON COLUMN at_report_templates.footer_template IS 'A template string for the portion of the report after the records';
 
 -----------------------------
--- AT_REPORT_TEMPLATES indicies
+-- AT_REPORT_TEMPLATES indices
 --
 ALTER TABLE at_report_templates ADD
 (
@@ -1602,7 +1624,7 @@ COMMENT ON COLUMN at_clob.description IS 'Description of this CLOB';
 COMMENT ON COLUMN at_clob.VALUE       IS 'The CLOB data';
 
 -----------------------------
--- AT_CLOB indicies
+-- AT_CLOB indices
 --
 ALTER TABLE at_clob ADD
 (
