@@ -3447,9 +3447,9 @@ begin
      into l_count
      from dual
     where exists(select null
-                   from at_dss_xchg_set         xset,
-                        at_dss_ts_xchg_map      xmap,
-                        at_dss_ts_xchg_spec     xspec
+                   from at_dss_xchg_set     xset,
+                        at_dss_ts_xchg_map  xmap,
+                        at_dss_ts_xchg_spec xspec
                   where xspec.ts_code = p_ts_code
                     and xmap.dss_ts_xchg_code = xspec.dss_ts_xchg_code
                     and xset.dss_xchg_set_code = xmap.dss_xchg_set_code
@@ -3554,48 +3554,43 @@ is
    l_last_time  timestamp;
    i     integer;
 begin
-   --------------------------------------------------------------------------
-   -- determine if the ts_code participates in a realtime Oracle-->DSS set --
-   --------------------------------------------------------------------------
-   if is_realtime_export(p_ts_code) then
-      -------------------------------------------------------                     
-      -- insert the time series update info into the table --
-      -------------------------------------------------------
-      l_first_time := sys_extract_utc(p_first_time);
-      l_last_time  := sys_extract_utc(p_last_time);                     
-      if use_first_table then
-         ----------------
-         -- odd months --
-         ----------------
-         insert 
-           into at_ts_msg_archive_1 
-         values (cwms_msg.get_msg_id,
-                 p_ts_code, 
-                 systimestamp, 
-                 cast(l_first_time as date), 
-                 cast(l_last_time as date));
-      else
-         -----------------
-         -- even months --
-         -----------------
-         insert 
-           into at_ts_msg_archive_2
-         values (cwms_msg.get_msg_id,
-                 p_ts_code, 
-                 systimestamp, 
-                 cast(l_first_time as date), 
-                 cast(l_last_time as date));
-      end if;
-
-      -------------------------
-      -- publish the message --
-      -------------------------
-      cwms_msg.new_message(l_msg, l_msgid, 'TSDataStored');
-      l_msg.set_string(l_msgid, 'ts_id', p_ts_id);
-      l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(l_first_time));
-      l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(l_last_time));
-      i := cwms_msg.publish_message(l_msg, l_msgid, 'realtime_ops');
+   -------------------------------------------------------                     
+   -- insert the time series update info into the table --
+   -------------------------------------------------------
+   l_first_time := sys_extract_utc(p_first_time);
+   l_last_time  := sys_extract_utc(p_last_time);                     
+   if use_first_table then
+      ----------------
+      -- odd months --
+      ----------------
+      insert 
+        into at_ts_msg_archive_1 
+      values (cwms_msg.get_msg_id,
+              p_ts_code, 
+              systimestamp, 
+              cast(l_first_time as date), 
+              cast(l_last_time as date));
+   else
+      -----------------
+      -- even months --
+      -----------------
+      insert 
+        into at_ts_msg_archive_2
+      values (cwms_msg.get_msg_id,
+              p_ts_code, 
+              systimestamp, 
+              cast(l_first_time as date), 
+              cast(l_last_time as date));
    end if;
+
+   -------------------------
+   -- publish the message --
+   -------------------------
+   cwms_msg.new_message(l_msg, l_msgid, 'TSDataStored');
+   l_msg.set_string(l_msgid, 'ts_id', p_ts_id);
+   l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(l_first_time));
+   l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(l_last_time));
+   i := cwms_msg.publish_message(l_msg, l_msgid, 'realtime_ops');
 
    commit;
    

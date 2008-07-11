@@ -3389,15 +3389,17 @@ end retrieve_ts_multi;
 
    -----------------------------------------------                                                                    
    -- notify the real-time Oracle->DSS exchange --
-   -----------------------------------------------  
-   dbms_application_info.set_action('queuing time_series_updated message');
-   cwms_xchg.time_series_updated(
-         l_ts_code, 
-         p_cwms_ts_id,
-         p_timeseries_data(p_timeseries_data.first).date_time,
-         p_timeseries_data(p_timeseries_data.last).date_time);
-    
-         dbms_application_info.set_module(null, null);
+   ----------------------------------------------- 
+   if cwms_xchg.IS_REALTIME_EXPORT(l_ts_code) then 
+      dbms_application_info.set_action('queuing time_series_updated message');
+      cwms_xchg.time_series_updated(
+            l_ts_code, 
+            p_cwms_ts_id,
+            p_timeseries_data(p_timeseries_data.first).date_time,
+            p_timeseries_data(p_timeseries_data.last).date_time);
+   end if;
+       
+   dbms_application_info.set_module(null, null);
 
    END store_ts;
 --

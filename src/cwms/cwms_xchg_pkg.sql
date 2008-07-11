@@ -43,6 +43,13 @@ create or replace package cwms_xchg as
       p_pathname        in  varchar2);
 
 --------------------------------------------------------------------------------
+-- BOOLEAN FUNCTION IS_REALTIME_EXPORT(...)
+--
+function is_realtime_export(
+   p_ts_code in integer)
+   return boolean;
+   
+--------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION MAKE_DSS_PATHNAME(...)
 --
    function make_dss_pathname(
