@@ -1446,21 +1446,21 @@ CREATE UNIQUE INDEX at_properties_uk1 ON at_properties(office_code, UPPER("PROP_
 -- AT_PROPERTIES default data.
 -- 
 INSERT INTO at_properties values(
-	0,
+	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
 	'CWMSDB',
 	'logging.table.max_entries',
 	'100000',
 	'Max number of rows to keep when trimming log.');
 	
 INSERT INTO at_properties values(
-	0,
+	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
 	'CWMSDB',
 	'logging.entry.max_age',
 	'120',
 	'Max entry age in days to keep when trimming log.');
 	
 INSERT INTO at_properties values(
-	0,
+	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
 	'CWMSDB',
 	'logging.auto_trim.interval',
 	'240',
