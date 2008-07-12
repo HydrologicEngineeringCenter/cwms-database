@@ -569,7 +569,9 @@ AS
             EXCEPTION
                WHEN NO_DATA_FOUND
                THEN
-                  NULL;
+                  if l_user_id = 'CWMS_20' then
+                  	l_office_id := 'CWMS';
+						end if;
             END;
       END;
 
@@ -634,7 +636,12 @@ AS
             EXCEPTION
                WHEN NO_DATA_FOUND
                THEN
-                  NULL;
+                  if l_user_id = 'CWMS_20' then
+				         SELECT office_code
+				           INTO l_office_code
+				           FROM cwms_office
+				          WHERE office_id = 'CWMS';
+						end if;
             END;
       END;
 
