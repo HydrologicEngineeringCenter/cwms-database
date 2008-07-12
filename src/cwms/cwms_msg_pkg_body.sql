@@ -997,7 +997,13 @@ begin
          ---------------------
          -- restart the job --
          ---------------------
-         cwms_properties.get_property(l_run_interval, l_comment, 'CWMSDB', 'logging.auto_trim.interval', '120', 'UNK');
+         cwms_properties.get_property(
+				l_run_interval, 
+				l_comment, 
+				'CWMSDB', 
+				'logging.auto_trim.interval', 
+				'120', 
+				'CWMS');
          dbms_scheduler.create_job
             (job_name             => l_job_id,
              job_type             => 'stored_procedure',
