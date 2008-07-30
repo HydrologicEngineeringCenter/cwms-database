@@ -2598,10 +2598,10 @@ AS
          THEN
             INSERT INTO at_loc_group
                         (loc_group_code, loc_category_code,
-                         loc_group_id, loc_group_desc
+                         loc_group_id, loc_group_desc, db_office_code
                         )
                  VALUES (cwms_seq.NEXTVAL, l_loc_category_code,
-                         p_loc_group_id, p_loc_group_desc
+                         p_loc_group_id, p_loc_group_desc, l_db_office_code
                         );
       END;
 
