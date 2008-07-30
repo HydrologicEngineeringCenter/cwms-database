@@ -2401,11 +2401,11 @@ end retrieve_ts_multi;
       dbms_application_info.set_action('Incoming data set has a regular interval, confirm data set matches interval_id');
       
               BEGIN
-            SELECT DISTINCT ROUND (MOD (  (  CAST (date_time AS DATE)
-                                           - TRUNC (CAST (date_time AS DATE))
+            SELECT DISTINCT ROUND (MOD (  (  CAST ((date_time at time zone 'GMT') AS DATE)
+                                           - TRUNC (CAST ((date_time at time zone 'GMT') AS DATE))
                                           )
                                         * 1440,
-                                        l_interval_value 
+                                        l_interval_value
                                        ),
                                    0
                                   )
