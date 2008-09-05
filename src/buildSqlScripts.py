@@ -3735,6 +3735,7 @@ unitDefs = [
     ["Volume",                           "ac-ft",       "Acre-feet",                     "Volume equal to the area of 1 acre times the length of 1 foot"     ],
     ["Volume",                           "dsf",         "day-second-foot",               "Volume of water accumulated in one day by a flow of one cfs"       ],
     ["Volume",                           "gal",         "Gallons",                       "Volume of 1 United States Gallon"                                  ],
+    ["Volume",                           "ft3",         "Cubic feet",                    "Volume of 1 cubic foot"                                            ],
     ["Volume",                           "kaf",         "Kiloacre-feet",                 "Volume equal to the area of 1E+03 acres times the length of 1 foot"],
     ["Volume",                           "kgal",        "Kilogallons",                   "Volume of 1E+03 gallons"                                           ],
     ["Volume",                           "km3",         "Cubic kilometers",              "Volume of a cubic kilometer"                                       ],
