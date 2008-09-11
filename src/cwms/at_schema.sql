@@ -144,6 +144,8 @@ INSERT INTO at_ts_table_properties
      VALUES (DATE '2006-01-01', DATE '2007-01-01', 'AT_TSV_2006');
 INSERT INTO at_ts_table_properties
      VALUES (DATE '2007-01-01', DATE '2008-01-01', 'AT_TSV_2007');
+INSERT INTO at_ts_table_properties
+     VALUES (DATE '2008-01-01', DATE '2100-01-01', 'AT_TSV_2008');
 COMMIT ;
 
 ---------------------------------
