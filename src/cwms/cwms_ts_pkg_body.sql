@@ -3406,6 +3406,49 @@ end retrieve_ts_multi;
 --*******************************************************************   --
 --*******************************************************************   --
 --
+-- STORE_TS -
+--
+   PROCEDURE store_ts (
+      p_cwms_ts_id        IN   VARCHAR2,
+      p_units             IN   VARCHAR2,
+      p_times             IN   number_array,
+      p_values            IN   number_array,
+      p_qualities         IN   number_array,
+      p_store_rule        IN   VARCHAR2 DEFAULT NULL,
+      p_override_prot     IN   VARCHAR2 DEFAULT 'F',
+      p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,
+      p_office_id         IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_timeseries_data tsv_array := tsv_array();
+      i binary_integer;
+   BEGIN
+      if p_values.count != p_times.count then
+         cwms_err.raise('ERROR', 'Inconsistent number of times and values.');
+      end if;
+      if p_qualities.count != p_times.count then
+         cwms_err.raise('ERROR', 'Inconsistent number of times and qualities.');
+      end if;
+      l_timeseries_data.extend(p_times.count);
+      for i in 1..p_times.count loop
+         l_timeseries_data(i).date_time    := cwms_util.to_timestamp(p_times(i));
+         l_timeseries_data(i).value        := p_values(i);
+         l_timeseries_data(i).quality_code := p_qualities(i);
+      end loop;
+      store_ts(
+         p_cwms_ts_id,
+         p_units,
+         l_timeseries_data,
+         p_store_rule,
+         p_override_prot,
+         p_version_date,
+         p_office_id);
+   END store_ts;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
 -- STORE_TS_MULTI -
 --
 PROCEDURE store_ts_multi (
