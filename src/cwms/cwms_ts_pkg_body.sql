@@ -3431,9 +3431,10 @@ end retrieve_ts_multi;
       end if;
       l_timeseries_data.extend(p_times.count);
       for i in 1..p_times.count loop
-         l_timeseries_data(i).date_time    := cwms_util.to_timestamp(p_times(i));
-         l_timeseries_data(i).value        := p_values(i);
-         l_timeseries_data(i).quality_code := p_qualities(i);
+         l_timeseries_data(i) := tsv_type(
+            cwms_util.to_timestamp(p_times(i)),
+            p_values(i),
+            p_qualities(i));
       end loop;
       store_ts(
          p_cwms_ts_id,
