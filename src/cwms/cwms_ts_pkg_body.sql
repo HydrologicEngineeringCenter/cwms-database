@@ -1158,622 +1158,6 @@ END create_ts_code;
 --*******************************************************************   --
 --*******************************************************************   --
 --
--- RETREIVE_TS_JAVA -
-/* Formatted on 2006/12/01 11:30 (Formatter Plus v4.8.7) */
---   
-
-/* Formatted on 2007/04/09 10:29 (Formatter Plus v4.8.8) */
-PROCEDURE retrieve_ts_java (
-   p_transaction_time   OUT      DATE,
-   p_at_tsv_rc          OUT      sys_refcursor,
-   p_units_out          OUT      VARCHAR2,
-   p_cwms_ts_id_out     OUT      VARCHAR2,
-   p_units_in           IN       VARCHAR2,
-   p_cwms_ts_id_in      IN       VARCHAR2,
-   p_start_time         IN       DATE,
-   p_end_time           IN       DATE,
-   p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
-   p_trim               IN       VARCHAR2 DEFAULT 'F',
-   p_inclusive          IN       NUMBER DEFAULT NULL,
-   p_version_date       IN       DATE DEFAULT NULL,
-   p_max_version        IN       VARCHAR2 DEFAULT 'T',
-   p_office_id          IN       VARCHAR2 DEFAULT NULL
-)
-IS
-   l_at_tsv_rc   sys_refcursor;
-BEGIN
-   p_transaction_time := CAST ((SYSTIMESTAMP AT TIME ZONE 'GMT') AS DATE);
-
-   --
-   p_cwms_ts_id_out := get_cwms_ts_id (p_cwms_ts_id_in, p_office_id);
-
-
-   --
-   IF p_units_in IS NULL
-   THEN
-      p_units_out := get_db_unit_id (p_cwms_ts_id_in);
-   ELSE
-      p_units_out := p_units_in;
-   END IF;
-
-   --
-   retrieve_ts (l_at_tsv_rc,
-                p_units_out,
-                p_cwms_ts_id_out,
-                p_start_time,
-                p_end_time,
-                p_time_zone,
-                p_trim,
-                p_inclusive,
-                p_version_date,
-                p_max_version,
-                p_office_id
-               );
-   p_at_tsv_rc := l_at_tsv_rc;
-
-   
-END retrieve_ts_java;
-
---
---*******************************************************************   --
---*******************************************************************   --
---
--- RETREIVE_TS -
---
---v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
-   PROCEDURE retrieve_ts (
-      p_at_tsv_rc         IN OUT   sys_refcursor,
-      p_units             IN       VARCHAR2,
-      p_officeid          IN       VARCHAR2,
-      p_cwms_ts_id        IN       VARCHAR2,
-      p_start_time        IN       DATE,
-      p_end_time          IN       DATE,
-      p_timezone           IN       VARCHAR2 DEFAULT 'GMT',
-      p_trim              IN       NUMBER DEFAULT cwms_util.false_num,
-      p_inclusive         IN       NUMBER DEFAULT NULL,
-      p_versiondate       IN       DATE DEFAULT NULL,
-      p_max_version       IN       NUMBER DEFAULT cwms_util.true_num
-   )
-   IS
-      l_trim        VARCHAR2(1);
-      l_max_version VARCHAR2(1);
-   BEGIN
-      --
-      IF p_trim IS NULL OR p_trim = cwms_util.false_num
-      THEN
-         l_trim := 'F';
-      ELSIF p_trim = cwms_util.true_num
-      THEN
-         l_trim := 'T';
-      ELSE
-         cwms_err.RAISE ('INVALID_T_F_FLAG_OLD', p_trim);
-      END IF;
-   
-      --
-      IF p_max_version IS NULL OR p_max_version = cwms_util.true_num
-      THEN
-         l_max_version := 'T';
-      ELSIF p_max_version = cwms_util.false_num
-      THEN
-         l_max_version := 'F';
-      ELSE
-         cwms_err.RAISE ('INVALID_T_F_FLAG_OLD', p_max_version);
-      END IF;
-      --
-      retrieve_ts (p_at_tsv_rc,
-                   p_units,
-                   p_cwms_ts_id,
-                   p_start_time,
-                   p_end_time,
-                   p_timezone,
-                   l_trim,
-                   p_inclusive,
-                   p_versiondate,
-                   l_max_version,
-                   p_officeid
-                  );
-   END retrieve_ts;
---
---*******************************************************************   --
---*******************************************************************   --
---
--- RETREIVE_TS_OLD - v2.0 -
---
-   PROCEDURE retrieve_ts_old (
-      p_at_tsv_rc         IN OUT   sys_refcursor,
-      p_units             IN       VARCHAR2,
-      p_cwms_ts_id        IN       VARCHAR2,
-      p_start_time        IN       DATE,
-      p_end_time          IN       DATE,
-      p_time_zone         IN       VARCHAR2 DEFAULT 'UTC',
-      p_trim              IN       VARCHAR2 DEFAULT 'F',
-      p_inclusive         IN       NUMBER DEFAULT NULL,
-      p_version_date      IN       DATE DEFAULT NULL,
-      p_max_version       IN       VARCHAR2 DEFAULT 'T',
-      p_office_id         IN       VARCHAR2 DEFAULT NULL
-      )
-   IS
-   
-      l_whichRetrieve varchar2(10);
-      l_numVals       integer;
-      l_errNum        integer;
-      l_ts_interval   number;
-      l_ts_offset     number;
-      l_versioned     number;
-      l_ts_code       number;
-      l_version_date  DATE;
-      l_max_version   BOOLEAN;
-      l_trim          BOOLEAN;
-      l_start_time    DATE   := cwms_util.date_from_tz_to_utc(p_start_time, p_time_zone);
-      l_end_time      DATE   := cwms_util.date_from_tz_to_utc(p_end_time,   p_time_zone);
-      l_end_time_init DATE   := l_end_time;
-      
-      l_office_id     varchar2(16);
-        
-        ll_time timestamp with time zone;
-        ll_value binary_double;
-        ll_qual number;
-        
-   
-   BEGIN
-      --
-      dbms_application_info.set_module ( 'Cwms_ts_retrieve','Check Interval');
-      --
-       -- set default values, don't be fooled by NULL as an actual argument 
-      if p_office_id is null 
-      then
-        l_office_id := cwms_util.user_office_id;
-      else                           
-        l_office_id := p_office_id;
-      end if;
-   
-      if p_trim is null
-      then
-        l_trim := FALSE;
-      else
-        l_trim := cwms_util.return_true_or_false(p_trim);
-      end if;
-   
-      if NVL(p_max_version,  'T') = 'T' then
-        l_max_version := FALSE;
-      else
-        l_max_version := TRUE;
-      end if;
-   
-       l_version_date := nvl(p_version_date, cwms_util.non_versioned);
-   
-        --Get Time series parameters for retrieval load into record structure
-   
-   
-      SELECT interval,
-             CASE interval_utc_offset
-                WHEN cwms_util.utc_offset_undefined
-                   THEN NULL
-                WHEN cwms_util.utc_offset_irregular
-                   THEN NULL
-                ELSE (interval_utc_offset / 60)
-             END,
-             version_flag, ts_code
-        INTO l_ts_interval,
-             l_ts_offset,
-             l_versioned, l_ts_code
-        FROM mv_cwms_ts_id
-       WHERE db_office_id = UPPER (l_office_id)
-         AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
-   
-      IF l_ts_interval=0 
-      THEN
-         IF p_inclusive IS NOT NULL
-         THEN         
-            IF l_versioned IS NULL
-            THEN -- l_versioned IS NULL -   
-               -- 
-               -- nonl_versioned, irregular, inclusive retrieval
-               -- 
-               dbms_output.put_line('RETRIEVE_TS #1');
-               --         
-               open p_at_tsv_rc for 
-               SELECT   date_time, VALUE, quality_code
-                   FROM (SELECT date_time, VALUE, quality_code,
-                                LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
-                                                                                     lagdate,
-                                LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
-                                                                                    leaddate
-                           FROM av_tsv_dqu v
-                          WHERE v.ts_code = l_ts_code
-                            AND v.unit_id = p_units
-                            AND v.start_date <= l_end_time
-                            AND v.end_date > l_start_time)
-                  WHERE leaddate >= l_start_time AND lagdate <= l_end_time
-               ORDER BY date_time ASC;
-   
-            ELSE  -- l_versioned IS NOT NULL - 
-               --
-               -- l_versioned, irregular, inclusive retrieval - 
-               
-               IF p_version_date IS NULL
-               THEN -- p_version_date IS NULL -
-               
-                  IF l_max_version 
-                  THEN -- l_max_version is TRUE -
-                  
-                     --latest version_date query -
-                     -- 
-                     dbms_output.put_line('RETRIEVE_TS #2');
-                     --         
-   
-                     open p_at_tsv_rc for
-                     SELECT   date_time, VALUE, quality_code
-                         FROM (SELECT date_time,
-                                      MAX (VALUE)KEEP (DENSE_RANK LAST ORDER BY version_date)
-                                                                                             VALUE,
-                                      MAX (quality_code)KEEP (DENSE_RANK LAST ORDER BY version_date)
-                                                                                      quality_code
-                                 FROM (SELECT date_time, VALUE, quality_code, version_date,
-                                              LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
-                                                                                           lagdate,
-                                              LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
-                                                                                          leaddate
-                                         FROM av_tsv_dqu v
-                                        WHERE v.ts_code = l_ts_code
-                                          AND v.unit_id = p_units
-                                          AND v.start_date <= l_end_time
-                                          AND v.end_date > l_start_time)
-                                WHERE leaddate >= l_start_time AND lagdate <= l_end_time)
-                     ORDER BY date_time ASC;
-   
-                  ELSE --l_max_version is FALSE -
-                  
-                     -- first version_date query -
-                     -- 
-                     dbms_output.put_line('RETRIEVE_TS #3');
-                     --         
-                     open p_at_tsv_rc for
-                     SELECT   date_time, VALUE, quality_code
-                         FROM (SELECT date_time,
-                                      MAX (VALUE)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-                                                                                             VALUE,
-                                      MAX (quality_code)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-                                                                                      quality_code
-                                 FROM (SELECT date_time, VALUE, quality_code, version_date,
-                                              LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
-                                                                                           lagdate,
-                                              LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
-                                                                                          leaddate
-                                         FROM av_tsv_dqu v
-                                        WHERE v.ts_code = l_ts_code
-                                          AND v.unit_id = p_units
-                                          AND v.start_date <= l_end_time
-                                          AND v.end_date > l_start_time)
-                                WHERE leaddate >= l_start_time AND lagdate <= l_end_time)
-                     ORDER BY date_time ASC;
-                     
-                  END IF;  --l_max_version -
-                  
-               ELSE --p_version_date IS NOT NULL - 
-                  --
-                  --selected version_date query -
-                  -- 
-                  dbms_output.put_line('RETRIEVE_TS #4');
-                  --         
-                  open p_at_tsv_rc for 
-                  SELECT   date_time, VALUE, quality_code
-                      FROM (SELECT date_time, VALUE, quality_code,
-                                   LAG (date_time, 1, l_start_time) OVER (ORDER BY date_time)
-                                                                                        lagdate,
-                                   LEAD (date_time, 1, l_end_time) OVER (ORDER BY date_time)
-                                                                                       leaddate
-                              FROM av_tsv_dqu v
-                             WHERE v.ts_code = l_ts_code
-                               AND v.unit_id = p_units
-                               AND v.version_date = p_version_date
-                               AND v.start_date <= l_end_time
-                               AND v.end_date > l_start_time)
-                     WHERE leaddate >= l_start_time AND lagdate <= l_end_time
-                  ORDER BY date_time ASC;
-            
-               END IF;  --p_version_date -
-   
-            END IF;  -- l_versioned -
-   
-         ELSE -- p_inclusive IS NULL -
-         
-            dbms_application_info.set_action (   'return  irregular  ts '
-                                              || l_ts_code
-                                              || ' from '
-                                              || to_char(l_start_time,'mm/dd/yyyy hh24:mi')
-                                              || ' to '
-                                              || to_char(l_end_time,'mm/dd/yyyy hh24:mi')
-                                              || ' in units '
-                                              || p_units);     
-            IF l_versioned IS NULL
-            THEN    
-               -- nonl_versioned, irregular, noninclusive retrieval -
-               --
-               dbms_output.put_line('gkgk - RETRIEVE_TS #5');
-               --                         
-               open p_at_tsv_rc for
-               SELECT   FROM_TZ (CAST (date_time AS TIMESTAMP), 'GMT') AT TIME ZONE p_time_zone "DATE_TIME",
-                        value "VALUE", quality_code "QUALITY_CODE"
-                   FROM av_tsv_dqu v
-                  WHERE v.ts_code = l_ts_code
-                    AND v.date_time BETWEEN l_start_time AND l_end_time
-                    AND v.unit_id = p_units
-                    AND v.start_date <= l_end_time
-                    AND v.end_date > l_start_time
-               ORDER BY date_time ASC;
-   
-            ELSE  -- l_versioned IS NOT NULL -
-               --
-               -- l_versioned, irregular, noninclusive retrieval -
-               --
-               IF p_version_date IS NULL
-               THEN
-               
-                  IF l_max_version
-                  THEN    
-   
-                     --latest version_date query          
-                     --
-                     dbms_output.put_line('RETRIEVE_TS #6');
-                     --         
-                     open p_at_tsv_rc for
-                     SELECT   date_time, VALUE, quality_code
-                         FROM (SELECT   date_time,
-                                        MAX (VALUE)KEEP (DENSE_RANK LAST ORDER BY version_date)
-                                                                                             VALUE,
-                                        MAX (quality_code)KEEP (DENSE_RANK LAST ORDER BY version_date)
-                                                                                      quality_code
-                                   FROM (SELECT date_time, VALUE, quality_code, version_date
-                                           FROM av_tsv_dqu v
-                                          WHERE v.ts_code = l_ts_code
-                                            AND v.date_time BETWEEN l_start_time AND l_end_time
-                                            AND v.unit_id = p_units
-                                            AND v.start_date <= l_end_time
-                                            AND v.end_date > l_start_time)
-                               GROUP BY date_time)
-                     ORDER BY date_time ASC;
-   
-                  ELSE  -- p_version_date IS NOT NULL -
-                     -- 
-                     dbms_output.put_line('RETRIEVE_TS #7');
-                     --         
-                     open p_at_tsv_rc for
-                     SELECT   date_time, VALUE, quality_code
-                         FROM (SELECT   date_time,
-                                        MAX (VALUE)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-                                                                                             VALUE,
-                                        MAX (quality_code)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-                                                                                      quality_code
-                                   FROM (SELECT date_time, VALUE, quality_code, version_date
-                                           FROM av_tsv_dqu v
-                                          WHERE v.ts_code = l_ts_code
-                                            AND v.date_time BETWEEN l_start_time AND l_end_time
-                                            AND v.unit_id = p_units
-                                            AND v.start_date <= l_end_time
-                                            AND v.end_date > l_start_time)
-                               GROUP BY date_time)
-                     ORDER BY date_time ASC;
-   
-                  END IF; -- p_version_date IS NOT NULL -
-   
-               ELSE -- l_max_version is FALSE -
-                  -- 
-                  dbms_output.put_line('RETRIEVE_TS #8');
-                  --         
-                  open p_at_tsv_rc for
-                  /* Formatted on 2006/10/25 12:54 (Formatter Plus v4.8.7) */
-                  SELECT   date_time, VALUE, quality_code
-                      FROM av_tsv_dqu v
-                     WHERE v.ts_code = l_ts_code
-                       AND v.date_time BETWEEN l_start_time AND l_end_time
-                       AND v.unit_id = p_units
-                       AND v.version_date = version_date
-                       AND v.start_date <= l_end_time
-                       AND v.end_date > l_start_time
-                  ORDER BY date_time ASC;
-   
-               END IF;  -- l_max_version -
-     
-            END IF;  -- l_versioned -
-   
-         END IF;  -- p_inclusive -
-   
-      ELSE  -- l_ts_interval <> 0 -
-   
-         dbms_application_info.set_action (   'return  regular  ts '
-                                           || l_ts_code
-                                           || ' from '
-                                           || to_char(l_start_time,'mm/dd/yyyy hh24:mi')
-                                           || ' to '
-                                           || to_char(l_end_time,'mm/dd/yyyy hh24:mi')
-                                           || ' in units '
-                                           || p_units);
-   
-        
-         -- Make sure start_time and end_time fall on a valid date/time for the regular -
-         --    time series given the interval and offset. -
-            
-         l_start_time   := get_time_on_after_interval(l_start_time, l_ts_offset, l_ts_interval);
-         l_end_time     := get_time_on_after_interval(l_end_time, l_ts_offset, l_ts_interval);
-          
-         IF l_end_time > l_end_time_init
-         THEN
-            l_end_time := l_end_time - (l_ts_interval / 1440);
-         END IF;
-   
-         IF l_versioned IS NULL 
-         THEN 
-            --
-            -- nonl_versioned, regular ts query
-             -- 
-            dbms_output.put_line('RETRIEVE_TS #9 - nonl_versioned, regular ts query');
-            --         
-              l_start_time   := get_time_on_after_interval(l_start_time, l_ts_offset, l_ts_interval);
-            l_end_time     := get_time_on_after_interval(l_end_time, l_ts_offset, l_ts_interval);
-          
-             IF l_end_time > l_end_time_init 
-            THEN
-               l_end_time := l_end_time - (l_ts_interval / 1440);
-             END IF;
-          
-             open p_at_tsv_rc for
-            select FROM_TZ (CAST (jdate_time AS TIMESTAMP), 'GMT') AT TIME ZONE p_time_zone
-                                                                                       "DATE_TIME", 
-                   value, 
-                   nvl(quality_code,0) quality_code
-              from (select * 
-                      from (select * 
-                              from av_tsv_dqu v 
-                             where  v.ts_code = l_ts_code 
-                               and v.date_time between l_start_time and l_end_time 
-                               and v.unit_id = p_units
-                               and v.start_date <= l_end_time 
-                               and v.end_date > l_start_time 
-                            ) v
-           right outer join (select l_start_time +((level-1)/(1440/l_ts_interval )) jdate_time 
-                               from  dual 
-                         connect by 1=1 
-                                and level<=(round((l_end_time - l_start_time )*1440)/l_ts_interval )+1
-                             ) t 
-                         on t.jdate_time = v.date_time 
-                   ) 
-          order by jdate_time;
-   
-         ELSE --  l_versioned IS NOT NULL -
-   
-             IF p_version_date IS NULL
-            THEN
-   
-               IF l_max_version
-               THEN
-                  -- 
-                  dbms_output.put_line('RETRIEVE_TS #10');
-                  --         
-                  open p_at_tsv_rc for
-                  /* Formatted on 2006/10/25 13:12 (Formatter Plus v4.8.7) */
-                  SELECT   date_time, VALUE, quality_code
-                      FROM (SELECT   jdate_time date_time,
-                                     MAX (VALUE)KEEP (DENSE_RANK LAST ORDER BY version_date)
-                                                                                          VALUE,
-                                     MAX (quality_code)KEEP (DENSE_RANK LAST ORDER BY version_date)
-                                                                                   quality_code
-                                FROM (SELECT *
-                                        FROM (SELECT *
-                                                FROM av_tsv_dqu v
-                                               WHERE v.ts_code = l_ts_code
-                                                 AND v.date_time BETWEEN l_start_time AND l_end_time
-                                                 AND v.unit_id = p_units
-                                                 AND v.start_date <= l_end_time
-                                                 AND v.end_date > l_start_time) v
-                                             RIGHT OUTER JOIN
-                                             (SELECT       l_start_time
-                                                         + (  (LEVEL - 1)
-                                                            / (1440 / l_ts_interval)
-                                                           ) jdate_time
-                                                    FROM DUAL
-                                              CONNECT BY 1 = 1
-                                                     AND LEVEL <=
-                                                              (  ROUND (  (  l_end_time
-                                                                           - l_start_time
-                                                                          )
-                                                                        * 1440
-                                                                       )
-                                                               / l_ts_interval
-                                                              )
-                                                            + 1) t ON t.jdate_time = v.date_time
-                                             )
-                            ORDER BY jdate_time)
-                  GROUP BY date_time;
-   
-               ELSE  -- l_max_version is FALSE -
-                  -- 
-                  dbms_output.put_line('RETRIEVE_TS #11');
-                  --         
-                  open p_at_tsv_rc for
-                  /* Formatted on 2006/10/25 13:14 (Formatter Plus v4.8.7) */
-                  SELECT   date_time, VALUE, quality_code
-                      FROM (SELECT   jdate_time date_time,
-                                     MAX (VALUE)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-                                                                                          VALUE,
-                                     MAX (quality_code)KEEP (DENSE_RANK FIRST ORDER BY version_date)
-                                                                                   quality_code
-                                FROM (SELECT *
-                                        FROM (SELECT *
-                                                FROM av_tsv_dqu v
-                                               WHERE v.ts_code = l_ts_code
-                                                 AND v.date_time BETWEEN l_start_time AND l_end_time
-                                                 AND v.unit_id = p_units
-                                                 AND v.start_date <= l_end_time
-                                                 AND v.end_date > l_start_time) v
-                                             RIGHT OUTER JOIN
-                                             (SELECT       l_start_time
-                                                         + (  (LEVEL - 1)
-                                                            / (1440 / l_ts_interval)
-                                                           ) jdate_time
-                                                    FROM DUAL
-                                              CONNECT BY 1 = 1
-                                                     AND LEVEL <=
-                                                              (  ROUND (  (  l_end_time
-                                                                           - l_start_time
-                                                                          )
-                                                                        * 1440
-                                                                       )
-                                                               / l_ts_interval
-                                                              )
-                                                            + 1) t ON t.jdate_time = v.date_time
-                                             )
-                            ORDER BY jdate_time)
-                  GROUP BY date_time;
-   
-               END IF;  -- l_max_version -
-   
-            ELSE  -- p_version_date IS NOT NULL -
-               -- 
-               dbms_output.put_line('RETRIEVE_TS #12');
-               --         
-               open p_at_tsv_rc for
-               /* Formatted on 2006/10/25 13:32 (Formatter Plus v4.8.7) */
-               SELECT   jdate_time date_time, VALUE, NVL (quality_code, 0) quality_code
-                   FROM (SELECT *
-                           FROM (SELECT *
-                                   FROM av_tsv_dqu v
-                                  WHERE v.ts_code = l_ts_code
-                                    AND v.date_time BETWEEN l_start_time AND l_end_time
-                                    AND v.unit_id = p_units
-                                    AND v.version_date = p_version_date
-                                    AND v.start_date <= l_end_time
-                                    AND v.end_date > l_start_time) v
-                                RIGHT OUTER JOIN
-                                (SELECT       l_start_time
-                                            + ((LEVEL - 1) / (1440 / l_ts_interval))
-                                                                                  jdate_time
-                                       FROM DUAL
-                                 CONNECT BY 1 = 1
-                                        AND LEVEL <=
-                                                 (  ROUND ((l_end_time - l_start_time) * 1440)
-                                                  / l_ts_interval
-                                                 )
-                                               + 1) t ON t.jdate_time = v.date_time
-                                )
-               ORDER BY jdate_time;
-   
-            END IF;
-     
-           END IF;
-    
-       END IF;
-        
-
-    
-       dbms_application_info.set_module(null,null);
-      
-   END retrieve_ts_old;
-   
---
---*******************************************************************   --
---*******************************************************************   --
---
 -- setup_retrieve
 --
 procedure setup_retrieve(
@@ -1892,10 +1276,9 @@ end setup_retrieve;
 --*******************************************************************   --
 --*******************************************************************   --
 --
--- RETREIVE_TS_OUT - v2.0 -
+-- BUILD_RETRIEVE_TS_QUERY - v2.0 -
 --
-procedure retrieve_ts_out (
-   p_at_tsv_rc       out sys_refcursor,
+procedure build_retrieve_ts_query (
    p_cwms_ts_id_out  out varchar2,
    p_units_out       out varchar2,
    p_cwms_ts_id      in  varchar2,
@@ -1912,6 +1295,7 @@ procedure retrieve_ts_out (
    p_max_version     in  varchar2 default 'T',
    p_office_id       in  varchar2 default null
    )
+   return varchar2
 is
    l_ts_code          number;
    l_interval         number;
@@ -1954,7 +1338,7 @@ begin
    --
    -- get ts code
    --
-   dbms_application_info.set_module ('cwms_ts.retrieve_ts','Get TS Code');
+   dbms_application_info.set_module ('cwms_ts.build_retrieve_ts_query','Get TS Code');
    select ts_code,
           interval,
           interval_utc_offset
@@ -1996,7 +1380,7 @@ begin
          -- regular time series
          --
          l_query_str := 
-            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME_:tz",
+            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type "DATE_TIME_:tz",
                    value,
                    nvl(quality_code, :missing) "QUALITY_CODE"
               from (
@@ -2027,7 +1411,7 @@ begin
         -- irregular time series
         --
          l_query_str := 
-            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME_:tz",
+            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type "DATE_TIME_:tz",
                     max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
                     max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
                from av_tsv_dqu
@@ -2056,7 +1440,7 @@ begin
         -- regular time series
         --
          l_query_str := 
-            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME_:tz",
+            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type "DATE_TIME_:tz",
                    value,
                    nvl(quality_code, :missing) "QUALITY_CODE"
               from (
@@ -2087,7 +1471,7 @@ begin
         -- irregular time series
         --
          l_query_str := 
-            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as date) "DATE_TIME_:tz",
+            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type "DATE_TIME_:tz",
                     value,
                     quality_code
                from av_tsv_dqu
@@ -2126,6 +1510,72 @@ begin
    end if;
    
    --
+   -- Return the query string
+   --
+   set_action('Return query string');
+   dbms_application_info.set_module(null,null);
+   return l_query_str;
+    
+end build_retrieve_ts_query;
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- RETREIVE_TS_OUT - v2.0 -
+--
+procedure retrieve_ts_out (
+   p_at_tsv_rc       out sys_refcursor,
+   p_cwms_ts_id_out  out varchar2,
+   p_units_out       out varchar2,
+   p_cwms_ts_id      in  varchar2,
+   p_units           in  varchar2,
+   p_start_time      in  date,
+   p_end_time        in  date,
+   p_time_zone       in  varchar2 default 'UTC',
+   p_trim            in  varchar2 default 'F',
+   p_start_inclusive in  varchar2 default 'T',
+   p_end_inclusive   in  varchar2 default 'T',
+   p_previous        in  varchar2 default 'F',
+   p_next            in  varchar2 default 'F',
+   p_version_date    in  date     default null,
+   p_max_version     in  varchar2 default 'T',
+   p_office_id       in  varchar2 default null
+   )
+is
+   l_query_str varchar2(4000);
+
+   procedure set_action(text in varchar2)
+   is
+   begin
+      dbms_application_info.set_action(text);
+      dbms_output.put_line(text);
+   end;   
+begin
+   
+   --
+   -- Get the query string
+   --
+   dbms_application_info.set_module ('cwms_ts.retrieve_ts','Get query string');
+
+   l_query_str := build_retrieve_ts_query(
+      p_cwms_ts_id_out,
+      p_units_out,
+      p_cwms_ts_id,
+      p_units,
+      p_start_time,
+      p_end_time,
+      p_time_zone,
+      p_trim,
+      p_start_inclusive,
+      p_end_inclusive,
+      p_previous,
+      p_next,
+      p_version_date,
+      p_max_version,
+      p_office_id);
+
+   l_query_str := replace(l_query_str, ':date_time_type', 'date');
+   --
    -- open the cursor
    --
    set_action('Open cursor');
@@ -2134,6 +1584,90 @@ begin
    dbms_application_info.set_module(null,null);
       
 end retrieve_ts_out;
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- RETREIVE_TS_OUT - v1.4 -
+--
+procedure retrieve_ts (
+   p_at_tsv_rc         in out   sys_refcursor,
+   p_units             in       varchar2,
+   p_officeid          in       varchar2,
+   p_cwms_ts_id        in       varchar2,
+   p_start_time        in       date,
+   p_end_time          in       date,
+   p_timezone          in       varchar2 default 'GMT',
+   p_trim              in       number default cwms_util.false_num,
+   p_inclusive         in       number default null,
+   p_versiondate       in       date default null,
+   p_max_version       in       number default cwms_util.true_num
+)
+is
+   l_trim        varchar2(1);
+   l_max_version varchar2(1);
+   l_query_str   varchar2(4000);
+   l_tsid        varchar2(183);
+   l_unit        varchar2(16);
+   
+   procedure set_action(text in varchar2)
+   is
+   begin
+      dbms_application_info.set_action(text);
+      dbms_output.put_line(text);
+   end;   
+begin
+   --
+   -- handle input parameters
+   --
+   dbms_application_info.set_module ('cwms_ts.retrieve_ts','Handle input parameters');
+   if p_trim is null or p_trim = cwms_util.false_num then
+      l_trim := 'F';
+   elsif p_trim = cwms_util.true_num then
+      l_trim := 'T';
+   else
+      cwms_err.raise ('INVALID_T_F_FLAG_OLD', p_trim);
+   end if;
+
+   if p_max_version is null or p_max_version = cwms_util.true_num then
+      l_max_version := 'T';
+   elsif p_max_version = cwms_util.false_num then
+      l_max_version := 'F';
+   else
+      cwms_err.raise ('INVALID_T_F_FLAG_OLD', p_max_version);
+   end if;
+   --
+   -- Get the query string
+   --
+   dbms_application_info.set_module ('cwms_ts.retrieve_ts','Get query string');
+
+   l_query_str := build_retrieve_ts_query(
+      l_ts_id,        -- p_cwms_ts_id_out  
+      l_unit,         -- p_units_out       
+      p_cwms_ts_id,   -- p_cwms_ts_id      
+      p_units,        -- p_units           
+      p_start_time,   -- p_start_time      
+      p_end_time,     -- p_end_time        
+      p_time_zone,    -- p_time_zone       
+      l_trim,         -- p_trim            
+      'T',            -- p_start_inclusive 
+      'T',            -- p_end_inclusive   
+      'F',            -- p_previous        
+      'F',            -- p_next            
+      p_version_date, -- p_version_date    
+      l_max_version,  -- p_max_version     
+      p_office_id);   -- p_office_id       
+
+   l_query_str := replace(l_query_str, ':date_time_type', 'timestamp with time zone');
+   --
+   -- open the cursor
+   --
+   set_action('Open cursor');
+   open p_at_tsv_rc for l_query_str;
+
+   dbms_application_info.set_module(null,null);
+
+end retrieve_ts;
 --
 --*******************************************************************   --
 --*******************************************************************   --

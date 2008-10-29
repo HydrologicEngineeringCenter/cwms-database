@@ -151,47 +151,7 @@ AS
       p_office_id           IN       VARCHAR2 DEFAULT NULL
    );
 
---
---*******************************************************************   --
---*******************************************************************   --
---
--- RETREIVE_TS -
---
---v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
-   PROCEDURE retrieve_ts (
-      p_at_tsv_rc     IN OUT   sys_refcursor,
-      p_units         IN       VARCHAR2,
-      p_officeid      IN       VARCHAR2,
-      p_cwms_ts_id    IN       VARCHAR2,
-      p_start_time    IN       DATE,
-      p_end_time      IN       DATE,
-      p_timezone      IN       VARCHAR2 DEFAULT 'GMT',
-      p_trim          IN       NUMBER DEFAULT cwms_util.false_num,
-      p_inclusive     IN       NUMBER DEFAULT NULL,
-      p_versiondate   IN       DATE DEFAULT NULL,
-      p_max_version   IN       NUMBER DEFAULT cwms_util.true_num
-   );
-
---
---*******************************************************************   --
---*******************************************************************   --
---
--- RETREIVE_TS_0LD -
---
-   PROCEDURE retrieve_ts_old (
-      p_at_tsv_rc      IN OUT   sys_refcursor,
-      p_units          IN       VARCHAR2,
-      p_cwms_ts_id     IN       VARCHAR2,
-      p_start_time     IN       DATE,
-      p_end_time       IN       DATE,
-      p_time_zone      IN       VARCHAR2 DEFAULT 'UTC',
-      p_trim           IN       VARCHAR2 DEFAULT 'F',
-      p_inclusive      IN       NUMBER DEFAULT NULL,
-      p_version_date   IN       DATE DEFAULT NULL,
-      p_max_version    IN       VARCHAR2 DEFAULT 'T',
-      p_office_id      IN       VARCHAR2 DEFAULT NULL
-   );
---
+   --
 --*******************************************************************   --
 --*******************************************************************   --
 --
@@ -215,6 +175,27 @@ procedure retrieve_ts_out (
    p_max_version     in  varchar2 default 'T',
    p_office_id       in  varchar2 default null
    );
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- RETREIVE_TS - v1.4 -
+--
+   PROCEDURE retrieve_ts (
+      p_at_tsv_rc     IN OUT   sys_refcursor,
+      p_units         IN       VARCHAR2,
+      p_officeid      IN       VARCHAR2,
+      p_cwms_ts_id    IN       VARCHAR2,
+      p_start_time    IN       DATE,
+      p_end_time      IN       DATE,
+      p_timezone      IN       VARCHAR2 DEFAULT 'GMT',
+      p_trim          IN       NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive     IN       NUMBER DEFAULT NULL,
+      p_versiondate   IN       DATE DEFAULT NULL,
+      p_max_version   IN       NUMBER DEFAULT cwms_util.true_num
+   );
+
 --
 --*******************************************************************   --
 --*******************************************************************   --
@@ -256,29 +237,6 @@ procedure retrieve_ts_multi (
    p_max_version     in  varchar2 default 'T',
    p_office_id       in  varchar2 default null
    );
---
---*******************************************************************   --
---*******************************************************************   --
---
--- RETREIVE_TS_JAVA -
---
-   PROCEDURE retrieve_ts_java (
-      p_transaction_time   OUT      DATE,
-      p_at_tsv_rc          OUT      sys_refcursor,
-      p_units_out          OUT      VARCHAR2,
-      p_cwms_ts_id_out     OUT      VARCHAR2,
-      p_units_in           IN       VARCHAR2,
-      p_cwms_ts_id_in      IN       VARCHAR2,
-      p_start_time         IN       DATE,
-      p_end_time           IN       DATE,
-      p_time_zone          IN       VARCHAR2 DEFAULT 'UTC',
-      p_trim               IN       VARCHAR2 DEFAULT 'F',
-      p_inclusive          IN       NUMBER DEFAULT NULL,
-      p_version_date       IN       DATE DEFAULT NULL,
-      p_max_version        IN       VARCHAR2 DEFAULT 'T',
-      p_office_id          IN       VARCHAR2 DEFAULT NULL
-   );
-
 --
 --*******************************************************************   --
 --*******************************************************************   --
