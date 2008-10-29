@@ -1278,7 +1278,7 @@ end setup_retrieve;
 --
 -- BUILD_RETRIEVE_TS_QUERY - v2.0 -
 --
-procedure build_retrieve_ts_query (
+function build_retrieve_ts_query (
    p_cwms_ts_id_out  out varchar2,
    p_units_out       out varchar2,
    p_cwms_ts_id      in  varchar2,
@@ -1642,21 +1642,21 @@ begin
    dbms_application_info.set_module ('cwms_ts.retrieve_ts','Get query string');
 
    l_query_str := build_retrieve_ts_query(
-      l_ts_id,        -- p_cwms_ts_id_out  
+      l_tsid,         -- p_cwms_ts_id_out  
       l_unit,         -- p_units_out       
       p_cwms_ts_id,   -- p_cwms_ts_id      
       p_units,        -- p_units           
       p_start_time,   -- p_start_time      
       p_end_time,     -- p_end_time        
-      p_time_zone,    -- p_time_zone       
+      p_timezone,     -- p_time_zone       
       l_trim,         -- p_trim            
       'T',            -- p_start_inclusive 
       'T',            -- p_end_inclusive   
       'F',            -- p_previous        
       'F',            -- p_next            
-      p_version_date, -- p_version_date    
+      p_versiondate,  -- p_version_date    
       l_max_version,  -- p_max_version     
-      p_office_id);   -- p_office_id       
+      p_officeid);    -- p_office_id       
 
    l_query_str := replace(l_query_str, ':date_time_type', 'timestamp with time zone');
    --
