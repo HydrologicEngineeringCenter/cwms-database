@@ -1380,7 +1380,7 @@ begin
          -- regular time series
          --
          l_query_str := 
-            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type "DATE_TIME_:tz",
+            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
                    value,
                    nvl(quality_code, :missing) "QUALITY_CODE"
               from (
@@ -1411,7 +1411,7 @@ begin
         -- irregular time series
         --
          l_query_str := 
-            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type "DATE_TIME_:tz",
+            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
                     max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
                     max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
                from av_tsv_dqu
@@ -1440,7 +1440,7 @@ begin
         -- regular time series
         --
          l_query_str := 
-            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type "DATE_TIME_:tz",
+            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
                    value,
                    nvl(quality_code, :missing) "QUALITY_CODE"
               from (
@@ -1471,7 +1471,7 @@ begin
         -- irregular time series
         --
          l_query_str := 
-            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type "DATE_TIME_:tz",
+            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
                     value,
                     quality_code
                from av_tsv_dqu
@@ -1588,7 +1588,7 @@ end retrieve_ts_out;
 --*******************************************************************   --
 --*******************************************************************   --
 --
--- RETREIVE_TS_OUT - v1.4 -
+-- RETREIVE_TS - v1.4 -
 --
 procedure retrieve_ts (
    p_at_tsv_rc         in out   sys_refcursor,
@@ -1668,6 +1668,42 @@ begin
    dbms_application_info.set_module(null,null);
 
 end retrieve_ts;
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- RETREIVE_TS_2 - v1.4 -
+--
+procedure retrieve_ts_2 (
+   p_at_tsv_rc         out       sys_refcursor,
+   p_units             in       varchar2,
+   p_officeid          in       varchar2,
+   p_cwms_ts_id        in       varchar2,
+   p_start_time        in       date,
+   p_end_time          in       date,
+   p_timezone          in       varchar2 default 'GMT',
+   p_trim              in       number default cwms_util.false_num,
+   p_inclusive         in       number default null,
+   p_versiondate       in       date default null,
+   p_max_version       in       number default cwms_util.true_num
+)
+is
+   l_at_tsv_rc sys_refcursor;
+begin
+   retrieve_ts(
+      p_at_tsv_rc,
+      p_units,
+      p_officeid,
+      p_cwms_ts_id,
+      p_start_time,
+      p_end_time,
+      p_timezone,
+      p_trim,
+      p_inclusive,
+      p_versiondate,
+      p_max_version
+   );
+end retrieve_ts_2;
 --
 --*******************************************************************   --
 --*******************************************************************   --

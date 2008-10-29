@@ -200,6 +200,26 @@ procedure retrieve_ts_out (
 --*******************************************************************   --
 --*******************************************************************   --
 --
+-- RETREIVE_TS_2 - v1.4 -
+--
+   PROCEDURE retrieve_ts_2 (
+      p_at_tsv_rc     OUT      sys_refcursor,
+      p_units         IN       VARCHAR2,
+      p_officeid      IN       VARCHAR2,
+      p_cwms_ts_id    IN       VARCHAR2,
+      p_start_time    IN       DATE,
+      p_end_time      IN       DATE,
+      p_timezone      IN       VARCHAR2 DEFAULT 'GMT',
+      p_trim          IN       NUMBER DEFAULT cwms_util.false_num,
+      p_inclusive     IN       NUMBER DEFAULT NULL,
+      p_versiondate   IN       DATE DEFAULT NULL,
+      p_max_version   IN       NUMBER DEFAULT cwms_util.true_num
+   );
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
 -- RETREIVE_TS - v2.0 -
 --
 procedure retrieve_ts (
