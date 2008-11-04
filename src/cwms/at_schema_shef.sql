@@ -1,3 +1,37 @@
+SET serveroutput on
+----------------------------------------------------
+-- drop tables, mviews & mview logs if they exist --
+----------------------------------------------------
+
+DECLARE
+   TYPE id_array_t IS TABLE OF VARCHAR2 (32);
+
+   table_names       id_array_t
+      := id_array_t ('cwms_shef_time_zone',
+                     'CWMS_SHEF_PE_CODES',
+                     'AT_DATA_STREAM_ID',
+                     'AT_SHEF_DECODE',
+                     'AT_SHEF_CRIT_FILE',
+                     'AT_SHEF_PE_CODES'
+                    );
+BEGIN
+   FOR i IN table_names.FIRST .. table_names.LAST
+   LOOP
+      BEGIN
+         EXECUTE IMMEDIATE    'drop table '
+                           || table_names (i)
+                           || ' cascade constraints';
+
+         DBMS_OUTPUT.put_line ('Dropped table ' || table_names (i));
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            NULL;
+      END;
+   END LOOP;
+
+END;
+/
 
 
 
@@ -66,24 +100,97 @@ SET DEFINE OFF;
 Insert into CWMS_SHEF_TIME_ZONE
    (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
  Values
-   (2, 'PST', 'Pacific Standard Time');
+   (2, 'PST', 'Pacific Time');
 Insert into CWMS_SHEF_TIME_ZONE
    (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
  Values
-   (3, 'MST', 'Mountain Standard Time');
+   (3, 'MST', 'Mountain Time');
 Insert into CWMS_SHEF_TIME_ZONE
    (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
  Values
-   (4, 'CST', 'Central Standard Time');
+   (4, 'CST', 'Central Time');
 Insert into CWMS_SHEF_TIME_ZONE
    (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
  Values
-   (5, 'EST', 'Eastern Standard Time');
+   (5, 'EST', 'Eastern Time');
 Insert into CWMS_SHEF_TIME_ZONE
    (SHEF_TIME_ZONE_CODE, SHEF_TIME_ZONE_ID, SHEF_TIME_ZONE_DESC)
  Values
    (1, 'UTC', 'Coordinated Universal Time');
 COMMIT;
+
+--------------------------------------------------------------------------------
+CREATE TABLE CWMS_SHEF_PE_CODES
+(
+  SHEF_PE_CODE         VARCHAR2(2 BYTE),
+  SHEF_TSE_CODE        VARCHAR2(3 BYTE),
+  SHEF_DURATION_CODE   VARCHAR2(1 BYTE),
+  SHEF_REQ_SEND_CODE   VARCHAR2(7 BYTE),
+  UNIT_CODE_EN         NUMBER,
+  UNIT_CODE_SI         NUMBER,
+  PARAMETER_CODE       NUMBER,
+  PARAMETER_TYPE_CODE  NUMBER,
+  DESCRIPTION          VARCHAR2(256 BYTE),
+  NOTES                VARCHAR2(258 BYTE)
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+
+CREATE UNIQUE INDEX CWMS_20.CWMS_SHEF_PE_CODES_PK ON CWMS_20.CWMS_SHEF_PE_CODES
+(SHEF_PE_CODE)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+ALTER TABLE CWMS_20.CWMS_SHEF_PE_CODES ADD (
+  CONSTRAINT CWMS_SHEF_PE_CODES_PK
+ PRIMARY KEY
+ (SHEF_PE_CODE)
+    USING INDEX 
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+               ))
+/
+
+
+
+
 --------------------------------------------------------------------------------
 -------------------------
 -- AT_DATA_STREAM_ID table.
@@ -413,4 +520,176 @@ ALTER TABLE AT_SHEF_CRIT_FILE ADD (
   CONSTRAINT AT_SHEF_CRIT_FILE_R01 
  FOREIGN KEY (DATA_STREAM_CODE) 
  REFERENCES AT_DATA_STREAM_ID (DATA_STREAM_CODE))
+/
+
+--------------------------------------------------------------------------------
+CREATE TABLE AT_SHEF_PE_CODES
+(
+  DB_OFFICE_CODE       NUMBER                   NOT NULL,
+  SHEF_PE_CODE         VARCHAR2(2 BYTE)         NOT NULL,
+  ID_CODE              NUMBER                   NOT NULL,
+  SHEF_TSE_CODE        VARCHAR2(3 BYTE),
+  SHEF_DURATION_CODE   VARCHAR2(1 BYTE),
+  SHEF_REQ_SEND_CODE   VARCHAR2(7 BYTE),
+  UNIT_CODE_EN         NUMBER,
+  UNIT_CODE_SI         NUMBER,
+  PARAMETER_CODE       NUMBER,
+  PARAMETER_TYPE_CODE  NUMBER,
+  DESCRIPTION          VARCHAR2(256 BYTE),
+  NOTES                VARCHAR2(258 BYTE)
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+
+CREATE UNIQUE INDEX CWMS_20.AT_SHEF_PE_CODES_IDX02 ON CWMS_20.AT_SHEF_PE_CODES
+(ID_CODE)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+CREATE UNIQUE INDEX CWMS_20.AT_SHEF_PE_CODES_IDX03 ON CWMS_20.AT_SHEF_PE_CODES
+(DB_OFFICE_CODE, SHEF_PE_CODE, SHEF_TSE_CODE, SHEF_DURATION_CODE, SHEF_REQ_SEND_CODE, 
+UNIT_CODE_EN, UNIT_CODE_SI, PARAMETER_CODE, PARAMETER_TYPE_CODE)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+CREATE UNIQUE INDEX CWMS_20.AT_SHEF_PE_CODES_IDX1 ON CWMS_20.AT_SHEF_PE_CODES
+(DB_OFFICE_CODE, SHEF_PE_CODE, SHEF_TSE_CODE, SHEF_DURATION_CODE, SHEF_REQ_SEND_CODE, 
+UNIT_CODE_EN, UNIT_CODE_SI, PARAMETER_CODE, PARAMETER_TYPE_CODE, UPPER("DESCRIPTION"), 
+UPPER("NOTES"))
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+CREATE UNIQUE INDEX CWMS_20.AT_SHEF_PE_CODES_PK ON CWMS_20.AT_SHEF_PE_CODES
+(SHEF_PE_CODE, DB_OFFICE_CODE, ID_CODE)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+CREATE OR REPLACE TRIGGER CWMS_20.at_shef_pe_codes_trg01
+   BEFORE INSERT OR UPDATE OF shef_pe_code
+   ON CWMS_20.AT_SHEF_PE_CODES    REFERENCING NEW AS NEW OLD AS OLD
+   FOR EACH ROW
+DECLARE
+BEGIN
+   :NEW.shef_pe_code := UPPER (:NEW.shef_pe_code);
+END;
+/
+
+
+CREATE OR REPLACE TRIGGER CWMS_20.at_shef_pe_codes_trg03
+   BEFORE INSERT OR UPDATE OF shef_duration_code
+   ON CWMS_20.AT_SHEF_PE_CODES    REFERENCING NEW AS NEW OLD AS OLD
+   FOR EACH ROW
+DECLARE
+BEGIN
+   :NEW.shef_duration_code := UPPER (:NEW.shef_duration_code);
+END;
+/
+
+
+CREATE OR REPLACE TRIGGER CWMS_20.at_shef_pe_codes_trg04
+   BEFORE INSERT OR UPDATE OF shef_req_send_code
+   ON CWMS_20.AT_SHEF_PE_CODES    REFERENCING NEW AS NEW OLD AS OLD
+   FOR EACH ROW
+DECLARE
+BEGIN
+   :NEW.shef_req_send_code := UPPER (:NEW.shef_req_send_code);
+END;
+/
+
+
+CREATE OR REPLACE TRIGGER CWMS_20.at_shef_pe_codes_trg02
+   BEFORE INSERT OR UPDATE OF shef_tse_code
+   ON CWMS_20.AT_SHEF_PE_CODES    REFERENCING NEW AS NEW OLD AS OLD
+   FOR EACH ROW
+DECLARE
+BEGIN
+   :NEW.shef_tse_code := UPPER (:NEW.shef_tse_code);
+END;
+/
+
+
+ALTER TABLE CWMS_20.AT_SHEF_PE_CODES ADD (
+  CONSTRAINT AT_SHEF_PE_CODES_PK
+ PRIMARY KEY
+ (DB_OFFICE_CODE, SHEF_PE_CODE, ID_CODE)
+    USING INDEX 
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+               ))
 /
