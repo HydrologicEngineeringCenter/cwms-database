@@ -3560,7 +3560,7 @@ durations = [
 	[3,		'3Minutes',		3,	'Measurement applies over 3 minutes, time stamped at period end'],
 	[4,		'4Minutes',		4,	'Measurement applies over 4 minutes, time stamped at period end'],
 	[5,		'5Minutes',		5,	'Measurement applies over 5 minutes, time stamped at period end'],
-	[6,		'6Minutes',		1,	'Measurement applies over 6 minutes, time stamped at period end'],
+	[6,		'6Minutes',		6,	'Measurement applies over 6 minutes, time stamped at period end'],
 	[7,		'8Minutes',		8,	'Measurement applies over 8 minutes, time stamped at period end'],
 	[8,		'12Minutes',	12,	'Measurement applies over 12 minutes, time stamped at period end'],
 	[9,		'15Minutes',	15,	'Measurement applies over 15 minutes, time stamped at period end'],
