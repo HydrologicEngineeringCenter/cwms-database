@@ -1,4 +1,4 @@
-/* Formatted on 2008/03/12 11:00 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/11/07 07:27 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_cat
 IS
 -------------------------------------------------------------------------------
@@ -1902,7 +1902,46 @@ IS
       RETURN;
    END cat_sub_loc_tab;
 
-   -------------------------------------------------------------------------------
+-------------------------------------------------------------------------------
+-- procedure cat_parameter_type(...)
+--
+--
+   PROCEDURE cat_parameter_type (p_cwms_cat OUT sys_refcursor)
+   IS
+   BEGIN
+      OPEN p_cwms_cat FOR
+         SELECT   parameter_type_id, description
+             FROM cwms_parameter_type
+            WHERE parameter_type_code != 0
+         ORDER BY parameter_type_code ASC;
+   END cat_parameter_type;
+
+-------------------------------------------------------------------------------
+-- function cat_parameter_type_tab(...)
+--
+--
+   FUNCTION cat_parameter_type_tab
+      RETURN cat_parameter_type_tab_t PIPELINED
+   IS
+      query_cursor   sys_refcursor;
+      output_row     cat_parameter_type_rec_t;
+   BEGIN
+      cat_parameter_type (query_cursor);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END cat_parameter_type_tab;
+
+-------------------------------------------------------------------------------
 -- procedure cat_state(...)
 --
 --
