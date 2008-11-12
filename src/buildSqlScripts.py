@@ -125,13 +125,13 @@ for item in tableInfo :
 #---------#
 sys.stderr.write("Processing shef_durations.\n")
 shef_duration = [
-#    SHEF                                                                                                                             SHEF    CWMS 
-#    CODE  Description                                                                                                                Numeric CODE
-#    ----  -------------------------------------------------------------------------------------------------------------------------- ------ -----
-    ['I', 'Instantaneous',                                                                                                     '0000', 29],
-    ['U', '1 Minute',                                                                                                          '0001', 1],
-    ['C', '15 Minutes',                                                                                                        '0015', 9],
-    ['J', '30 Minutes',                                                                                                        '0030', 11],
+#    SHEF                                                                                                                      SHEF    CWMS 
+#    CODE  Description                                                                                                         Numeric CODE
+#    ----  ------------------------------------------------------------------------------------------------------------------- ------ -----
+    ['I', 'Instantaneous',                                                                                                     '0',    29],
+    ['U', '1 Minute',                                                                                                          '1',     1],
+    ['C', '15 Minutes',                                                                                                        '15',    9],
+    ['J', '30 Minutes',                                                                                                        '30',   11],
     ['H', '1 Hour',                                                                                                            '1001', 12],
     ['B', '2 Hour',                                                                                                            '1002', 13],
     ['T', '3 Hour',                                                                                                            '1003', 14],
@@ -3653,102 +3653,103 @@ abstractParams = [
 #-------#
 sys.stderr.write("Processing static unit definitions.\n")
 unitDefs = [
-#    ABSTRACT PARAMETER                  UNIT ID        NAME                             DESCRIPTION
-#    ----------------------------------- -------------- -------------------------------- --------------------------------------------------------------------
-    ["Angle",                            "deg",         "Degrees",                       "Angle of 1 degree"                                                 ],
-    ["Angular Speed",                    "rpm",         "Revolutions per minute",        "Angular speed of 1 revolution per minute"                          ],
-    ["Area",                             "1000 m2",     "Thousands of square meters",    "Area of 1E+03 square meters"                                       ],
-    ["Area",                             "acre",        "Acre",                          "Area of 1 acre"                                                    ],
-    ["Area",                             "ft2",         "Square feet",                   "Area of 1 square foot"                                             ],
-    ["Area",                             "ha",          "Hectares",                      "Area of 1 hectare"                                                 ],
-    ["Area",                             "km2",         "Square kilometers",             "Area of a square kilometer"                                        ],
-    ["Area",                             "m2",          "Square meters",                 "Area of 1 square meter"                                            ],
-    ["Area",                             "mile2",       "Square miles",                  "Area of 1 square mile"                                             ],
-    ["Areal Volume Rate",                "cfs/mi2",     "Cfs per square mile",           "Volume rate of 1 cfs per area of 1 square mile"                    ],
-    ["Areal Volume Rate",                "cms/km2",     "Cms per square kilometer",      "Volume rate of 1 cms per area of 1 square kilometer"               ],
-    ["Conductance",                      "mho",         "Mhos",                          "Conductance of 1 mho (1/ohm)"                                      ],
-    ["Conductance",                      "S",           "Siemens",                       "Conductance of 1 Siemens"                                          ],
-    ["Conductance",                      "umho",        "Micro-mhos",                    "Conductance of 1E-06 mhos"                                         ],
-    ["Conductance",                      "uS",          "Micro-Siemens",                 "Conductance of 1E-06 Siemens"                                      ],
-    ["Conductivity",                     "umho/cm",     "Micro-mhos per centimeter",     "Conductivity of 1 micro-mho per centimeter"                        ],
-    ["Count",                            "unit",        "Count",                         "Number of items counted"                                           ],
-    ["Currency",                         "$",           "Dollars",                       "Monetary value of 1 United States dollar"                          ],
-    ["Elapsed Time",                     "hr",          "Hours",                         "Time span of 1 hour"                                               ],
-    ["Elapsed Time",                     "min",         "Minutes",                       "Time span of 1 minute"                                             ],
-    ["Elapsed Time",                     "sec",         "Seconds",                       "Time span of 1 second"                                             ],
-    ["Electromotive Potential",          "volt",        "Volts",                         "Electromotive Potential of 1 volt"                                 ],
-    ["Energy",                           "GWh",         "Gigawatt-hours",                "Energy of 1E+09 watt-hours"                                        ],
-    ["Energy",                           "kWh",         "Kilowatt-hours",                "Energy of 1E+03 watt-hours"                                        ],
-    ["Energy",                           "MWh",         "Megawatt-hours",                "Energy of 1E+06 watt-hours"                                        ],
-    ["Energy",                           "TWh",         "Terawatt-hour",                 "Energy of 1E+12 watt-hours"                                        ],
-    ["Energy",                           "Wh",          "Watt-hours",                    "Energy of 3.6E+03 Kilogram-square meter per square second"         ],
-    ["Force",                            "lb",          "Pounds",                        "Force of 1 pound"                                                  ],
-    ["Hydrogen Ion Concentration Index", "su",          "Standard pH units",             "Potential of hydrogen (acidity/alkalinity)"                        ],
-    ["Irradiance",                       "langley/min", "Langley per minute",            "Radiant power of 1 langley per minute"                             ],
-    ["Irradiance",                       "W/m2",        "Watts per square meter",        "Radiant power of 1 watt per area of 1 square meter"                ],
-    ["Irradiation",                      "J/m2",        "Joules per square meters",      "Radiant energy 1 joule per area of 1 square meter"                 ],
-    ["Irradiation",                      "langley",     "Langley",                       "Radiant energy of 1 langley"                                       ],
-    ["Length",                           "cm",          "Centimeters",                   "Length of 1E-02 meter"                                             ],
-    ["Length",                           "ft",          "Feet",                          "Length of 1 foot"                                                  ],
-    ["Length",                           "in",          "Inches",                        "Length of 1 inch"                                                  ],
-    ["Length",                           "km",          "Kilometers",                    "Length of 1E+03 meters"                                            ],
-    ["Length",                           "m",           "Meters",                        "Length of 1 meter"                                                 ],
-    ["Length",                           "mi",          "Miles",                         "Length of 1 mile"                                                  ],
-    ["Length",                           "mm",          "Millimeters",                   "Length of 1 millimeter"                                            ],
-    ["Linear Speed",                     "ft/s",        "Feet per second",               "Velocity of 1 foot per second"                                     ],
-    ["Linear Speed",                     "in/day",      "Inches per day",                "Velocity of 1 inch per day"                                        ],
-    ["Linear Speed",                     "in/hr",       "Inches per hour",               "Velocity of 1 inch per hour"                                       ],
-    ["Linear Speed",                     "kph",         "Kilometers per hour",           "Velocity of 1 kilometer per Hour"                                  ],
-    ["Linear Speed",                     "m/s",         "Meters per second",             "Velocity of 1 meter per second"                                    ],
-    ["Linear Speed",                     "mm/day",      "Millimeters per day",           "Velocity of 1 millimeter per day"                                  ],
-    ["Linear Speed",                     "mm/hr",       "Millimeters per hour",          "Velocity of 1 millimeter per hour"                                 ],
-    ["Linear Speed",                     "mph",         "Miles per hour",                "Velocity of 1 mile per hour"                                       ],
-    ["Mass Concentration",               "g/l",         "Grams per liter",               "Mass concentration of 1 gram per liter"                            ],
-    ["Mass Concentration",               "gm/cm3",      "Grams per cubic centimeters",   "Mass concentration of 1 gram per cubic centimeter"                 ],
-    ["Mass Concentration",               "mg/l",        "Milligrams per liter",          "Mass concentration of 1E-03 gram per liter"                        ],
-    ["Mass Concentration",               "ppm",         "Parts per million",             "Mass concentration of 1 mg/l"                                      ],
-    ["None",                             "%",           "Percent",                       "Ratio of 1E-02"                                                    ],
-    ["None",                             "n/a",         "No unit applies",               "Unitless value such as a ratio or code"                            ],
-    ["Phase Change Rate Index",          "in/deg-day",  "Inches per degree-day",         "Phase change of 1 inch per day per Fahrenheit degree"              ],
-    ["Phase Change Rate Index",          "mm/deg-day",  "Millimeters per degree-day",    "Phase change of 1 millimeter per day per Celsius degree"           ],
-    ["Power",                            "GW",          "Gigawatts",                     "Power of 1E+09 watts"                                              ],
-    ["Power",                            "kW",          "Kilowatts",                     "Power of 1E+03 watts"                                              ],
-    ["Power",                            "MW",          "Megawatts",                     "Power of 1E+06 watts"                                              ],
-    ["Power",                            "TW",          "Terawatts",                     "Power of 1E+12 watts"                                              ],
-    ["Power",                            "W",           "Watts",                         "Power of 1 watt (kilogram-square meter per cubic second)"          ],
-    ["Pressure",                         "in-hg",       "Inches of mercury",             "Barometric pressure"                                               ],
-    ["Pressure",                         "kPa",         "Kilopascals",                   "Pressure of 1 kilonewton per square meter"                         ],
-    ["Pressure",                         "mb",          "Millibars",                     "Pressure of 1E-03 bar"                                             ],
-    ["Pressure",                         "mm-hg",       "Millimeters of mercury",        "Barometric pressure"                                               ],
-    ["Pressure",                         "psi",         "Pounds per square inch",        "Pressure of 1 pound per square inch"                               ],
-    ["Temperature",                      "C",           "Centigrade",                    "Celsius Degree"                                                    ],
-    ["Temperature",                      "F",           "Fahrenheit",                    "Fahrenheit Degree"                                                 ],
-    ["Turbidity",                        "JTU",         "Jackson Turbitiy Unit",         "Jackson Turbidity Unit (approximates nephelometric turbidity unit)"],
-    ["Turbidity",                        "NTU",         "Nephelometric Turbidity Unit",  "Measure of scattered light (90+/-30 deg) from a white light (540+/-140nm)"],
-    ["Turbidity",                        "FNU",         "Formazin Nephelometric Unit",   "Measure of scattered light (90+/-2.5 deg) from monochrome light (860+/-60 nm)"],
-    ["Volume Rate",                      "cfs",         "Cubic feet per second",         "Volume rate of 1 cubic foot per second"                            ],
-    ["Volume Rate",                      "cms",         "Cubic meters per second",       "Volume rate of 1 cubic meter per second"                           ],
-    ["Volume Rate",                      "gpm",         "Gallons per minute",            "Volume rate of 1 gallon per minute"                                ],
-    ["Volume Rate",                      "kcfs",        "Kilo-cubic feet per second",    "Volume rate of 1E+03 cfs"                                          ],
-    ["Volume Rate",                      "mgd",         "Millions of gallons per day",   "Volume rate of 1E+06 gallons per day"                              ],
-    ["Volume",                           "1000 m3",     "Thousands of cubic meters",     "Volume of 1E+03 cubic meters"                                      ],
-    ["Volume",                           "ac-ft",       "Acre-feet",                     "Volume equal to the area of 1 acre times the length of 1 foot"     ],
-    ["Volume",                           "dsf",         "day-second-foot",               "Volume of water accumulated in one day by a flow of one cfs"       ],
-    ["Volume",                           "gal",         "Gallons",                       "Volume of 1 United States Gallon"                                  ],
-    ["Volume",                           "ft3",         "Cubic feet",                    "Volume of 1 cubic foot"                                            ],
-    ["Volume",                           "kaf",         "Kiloacre-feet",                 "Volume equal to the area of 1E+03 acres times the length of 1 foot"],
-    ["Volume",                           "kgal",        "Kilogallons",                   "Volume of 1E+03 gallons"                                           ],
-    ["Volume",                           "km3",         "Cubic kilometers",              "Volume of a cubic kilometer"                                       ],
-    ["Volume",                           "m3",          "Cubic meters",                  "Volume of 1 cubic meter"                                           ],
-    ["Volume",                           "mgal",        "Millions of gallons",           "Volume of 1E+06 gallons"                                           ],
-    ["Volume",                           "mile3",       "Cubic miles",                   "Volume of 1 cubic mile"                                            ],
+#                                                       UNIT
+#    ABSTRACT PARAMETER                  UNIT ID        SYSTEM  NAME                             DESCRIPTION
+#    ----------------------------------- -------------- ------- -------------------------------- --------------------------------------------------------------------
+    ["Angle",                            "deg",         "NULL", "Degrees",                       "Angle of 1 degree"                                                 ],
+    ["Angular Speed",                    "rpm",         "NULL", "Revolutions per minute",        "Angular speed of 1 revolution per minute"                          ],
+    ["Area",                             "1000 m2",     "SI",   "Thousands of square meters",    "Area of 1E+03 square meters"                                       ],
+    ["Area",                             "acre",        "EN",   "Acre",                          "Area of 1 acre"                                                    ],
+    ["Area",                             "ft2",         "EN",   "Square feet",                   "Area of 1 square foot"                                             ],
+    ["Area",                             "ha",          "SI",   "Hectares",                      "Area of 1 hectare"                                                 ],
+    ["Area",                             "km2",         "SI",   "Square kilometers",             "Area of a square kilometer"                                        ],
+    ["Area",                             "m2",          "SI",   "Square meters",                 "Area of 1 square meter"                                            ],
+    ["Area",                             "mile2",       "EN",   "Square miles",                  "Area of 1 square mile"                                             ],
+    ["Areal Volume Rate",                "cfs/mi2",     "EN",   "Cfs per square mile",           "Volume rate of 1 cfs per area of 1 square mile"                    ],
+    ["Areal Volume Rate",                "cms/km2",     "SI",   "Cms per square kilometer",      "Volume rate of 1 cms per area of 1 square kilometer"               ],
+    ["Conductance",                      "mho",         "NULL", "Mhos",                          "Conductance of 1 mho (1/ohm)"                                      ],
+    ["Conductance",                      "S",           "NULL", "Siemens",                       "Conductance of 1 Siemens"                                          ],
+    ["Conductance",                      "umho",        "NULL", "Micro-mhos",                    "Conductance of 1E-06 mhos"                                         ],
+    ["Conductance",                      "uS",          "NULL", "Micro-Siemens",                 "Conductance of 1E-06 Siemens"                                      ],
+    ["Conductivity",                     "umho/cm",     "NULL", "Micro-mhos per centimeter",     "Conductivity of 1 micro-mho per centimeter"                        ],
+    ["Count",                            "unit",        "NULL", "Count",                         "Number of items counted"                                           ],
+    ["Currency",                         "$",           "NULL", "Dollars",                       "Monetary value of 1 United States dollar"                          ],
+    ["Elapsed Time",                     "hr",          "NULL", "Hours",                         "Time span of 1 hour"                                               ],
+    ["Elapsed Time",                     "min",         "NULL", "Minutes",                       "Time span of 1 minute"                                             ],
+    ["Elapsed Time",                     "sec",         "NULL", "Seconds",                       "Time span of 1 second"                                             ],
+    ["Electromotive Potential",          "volt",        "NULL", "Volts",                         "Electromotive Potential of 1 volt"                                 ],
+    ["Energy",                           "GWh",         "NULL", "Gigawatt-hours",                "Energy of 1E+09 watt-hours"                                        ],
+    ["Energy",                           "kWh",         "NULL", "Kilowatt-hours",                "Energy of 1E+03 watt-hours"                                        ],
+    ["Energy",                           "MWh",         "NULL", "Megawatt-hours",                "Energy of 1E+06 watt-hours"                                        ],
+    ["Energy",                           "TWh",         "NULL", "Terawatt-hour",                 "Energy of 1E+12 watt-hours"                                        ],
+    ["Energy",                           "Wh",          "NULL", "Watt-hours",                    "Energy of 3.6E+03 Kilogram-square meter per square second"         ],
+    ["Force",                            "lb",          "EN",   "Pounds",                        "Force of 1 pound"                                                  ],
+    ["Hydrogen Ion Concentration Index", "su",          "NULL", "Standard pH units",             "Potential of hydrogen (acidity/alkalinity)"                        ],
+    ["Irradiance",                       "langley/min", "NULL", "Langley per minute",            "Radiant power of 1 langley per minute"                             ],
+    ["Irradiance",                       "W/m2",        "NULL", "Watts per square meter",        "Radiant power of 1 watt per area of 1 square meter"                ],
+    ["Irradiation",                      "J/m2",        "NULL", "Joules per square meters",      "Radiant energy 1 joule per area of 1 square meter"                 ],
+    ["Irradiation",                      "langley",     "NULL", "Langley",                       "Radiant energy of 1 langley"                                       ],
+    ["Length",                           "cm",          "SI",   "Centimeters",                   "Length of 1E-02 meter"                                             ],
+    ["Length",                           "ft",          "EN",   "Feet",                          "Length of 1 foot"                                                  ],
+    ["Length",                           "in",          "EN",   "Inches",                        "Length of 1 inch"                                                  ],
+    ["Length",                           "km",          "SI",   "Kilometers",                    "Length of 1E+03 meters"                                            ],
+    ["Length",                           "m",           "SI",   "Meters",                        "Length of 1 meter"                                                 ],
+    ["Length",                           "mi",          "EN",   "Miles",                         "Length of 1 mile"                                                  ],
+    ["Length",                           "mm",          "SI",   "Millimeters",                   "Length of 1 millimeter"                                            ],
+    ["Linear Speed",                     "ft/s",        "EN",   "Feet per second",               "Velocity of 1 foot per second"                                     ],
+    ["Linear Speed",                     "in/day",      "EN",   "Inches per day",                "Velocity of 1 inch per day"                                        ],
+    ["Linear Speed",                     "in/hr",       "EN",   "Inches per hour",               "Velocity of 1 inch per hour"                                       ],
+    ["Linear Speed",                     "kph",         "SI",   "Kilometers per hour",           "Velocity of 1 kilometer per Hour"                                  ],
+    ["Linear Speed",                     "m/s",         "SI",   "Meters per second",             "Velocity of 1 meter per second"                                    ],
+    ["Linear Speed",                     "mm/day",      "SI",   "Millimeters per day",           "Velocity of 1 millimeter per day"                                  ],
+    ["Linear Speed",                     "mm/hr",       "SI",   "Millimeters per hour",          "Velocity of 1 millimeter per hour"                                 ],
+    ["Linear Speed",                     "mph",         "EN",   "Miles per hour",                "Velocity of 1 mile per hour"                                       ],
+    ["Mass Concentration",               "g/l",         "SI",   "Grams per liter",               "Mass concentration of 1 gram per liter"                            ],
+    ["Mass Concentration",               "gm/cm3",      "SI",   "Grams per cubic centimeters",   "Mass concentration of 1 gram per cubic centimeter"                 ],
+    ["Mass Concentration",               "mg/l",        "SI",   "Milligrams per liter",          "Mass concentration of 1E-03 gram per liter"                        ],
+    ["Mass Concentration",               "ppm",         "NULL", "Parts per million",             "Mass concentration of 1 mg/l"                                      ],
+    ["None",                             "%",           "NULL", "Percent",                       "Ratio of 1E-02"                                                    ],
+    ["None",                             "n/a",         "NULL", "No unit applies",               "Unitless value such as a ratio or code"                            ],
+    ["Phase Change Rate Index",          "in/deg-day",  "EN",   "Inches per degree-day",         "Phase change of 1 inch per day per Fahrenheit degree"              ],
+    ["Phase Change Rate Index",          "mm/deg-day",  "SI",   "Millimeters per degree-day",    "Phase change of 1 millimeter per day per Celsius degree"           ],
+    ["Power",                            "GW",          "NULL", "Gigawatts",                     "Power of 1E+09 watts"                                              ],
+    ["Power",                            "kW",          "NULL", "Kilowatts",                     "Power of 1E+03 watts"                                              ],
+    ["Power",                            "MW",          "NULL", "Megawatts",                     "Power of 1E+06 watts"                                              ],
+    ["Power",                            "TW",          "NULL", "Terawatts",                     "Power of 1E+12 watts"                                              ],
+    ["Power",                            "W",           "NULL", "Watts",                         "Power of 1 watt (kilogram-square meter per cubic second)"          ],
+    ["Pressure",                         "in-hg",       "EN",   "Inches of mercury",             "Barometric pressure"                                               ],
+    ["Pressure",                         "kPa",         "SI",   "Kilopascals",                   "Pressure of 1 kilonewton per square meter"                         ],
+    ["Pressure",                         "mb",          "SI",   "Millibars",                     "Pressure of 1E-03 bar"                                             ],
+    ["Pressure",                         "mm-hg",       "SI",   "Millimeters of mercury",        "Barometric pressure"                                               ],
+    ["Pressure",                         "psi",         "EN",   "Pounds per square inch",        "Pressure of 1 pound per square inch"                               ],
+    ["Temperature",                      "C",           "SI",   "Centigrade",                    "Celsius Degree"                                                    ],
+    ["Temperature",                      "F",           "EN",   "Fahrenheit",                    "Fahrenheit Degree"                                                 ],
+    ["Turbidity",                        "JTU",         "NULL", "Jackson Turbitiy Unit",         "Jackson Turbidity Unit (approximates nephelometric turbidity unit)"],
+    ["Turbidity",                        "NTU",         "NULL", "Nephelometric Turbidity Unit",  "Measure of scattered light (90+/-30 deg) from a white light (540+/-140nm)"],
+    ["Turbidity",                        "FNU",         "NULL", "Formazin Nephelometric Unit",   "Measure of scattered light (90+/-2.5 deg) from monochrome light (860+/-60 nm)"],
+    ["Volume Rate",                      "cfs",         "EN",   "Cubic feet per second",         "Volume rate of 1 cubic foot per second"                            ],
+    ["Volume Rate",                      "cms",         "SI",   "Cubic meters per second",       "Volume rate of 1 cubic meter per second"                           ],
+    ["Volume Rate",                      "gpm",         "EN",   "Gallons per minute",            "Volume rate of 1 gallon per minute"                                ],
+    ["Volume Rate",                      "kcfs",        "EN",   "Kilo-cubic feet per second",    "Volume rate of 1E+03 cfs"                                          ],
+    ["Volume Rate",                      "mgd",         "EN",   "Millions of gallons per day",   "Volume rate of 1E+06 gallons per day"                              ],
+    ["Volume",                           "1000 m3",     "SI",   "Thousands of cubic meters",     "Volume of 1E+03 cubic meters"                                      ],
+    ["Volume",                           "ac-ft",       "EN",   "Acre-feet",                     "Volume equal to the area of 1 acre times the length of 1 foot"     ],
+    ["Volume",                           "dsf",         "EN",   "day-second-foot",               "Volume of water accumulated in one day by a flow of one cfs"       ],
+    ["Volume",                           "gal",         "EN",   "Gallons",                       "Volume of 1 United States Gallon"                                  ],
+    ["Volume",                           "ft3",         "EN",   "Cubic feet",                    "Volume of 1 cubic foot"                                            ],
+    ["Volume",                           "kaf",         "EN",   "Kiloacre-feet",                 "Volume equal to the area of 1E+03 acres times the length of 1 foot"],
+    ["Volume",                           "kgal",        "EN",   "Kilogallons",                   "Volume of 1E+03 gallons"                                           ],
+    ["Volume",                           "km3",         "SI",   "Cubic kilometers",              "Volume of a cubic kilometer"                                       ],
+    ["Volume",                           "m3",          "SI",   "Cubic meters",                  "Volume of 1 cubic meter"                                           ],
+    ["Volume",                           "mgal",        "EN",   "Millions of gallons",           "Volume of 1E+06 gallons"                                           ],
+    ["Volume",                           "mile3",       "EN",   "Cubic miles",                   "Volume of 1 cubic mile"                                            ],
 ]
 
 unitDefsById = {}
 unitCode = 0
-for abstractParam, id, name, description in unitDefs : 
+for abstractParam, id, system, name, description in unitDefs : 
     unitCode = unitCode + 1
-    unitDefsById[abstractParam + "." + id] = {"CODE" : unitCode, "ID" : id, "NAME" : name, "ABSTRACT" : abstractParam, "DESCRIPTION" : description}
+    unitDefsById[abstractParam + "." + id] = {"CODE" : unitCode, "ID" : id, "SYSTEM" : system, "NAME" : name, "ABSTRACT" : abstractParam, "DESCRIPTION" : description}
 unitDefIds = unitDefsById.keys()
 unitDefIds.sort()
 
@@ -5894,6 +5895,7 @@ CREATE TABLE @TABLE
        UNIT_CODE           NUMBER(10)         NOT NULL,
        UNIT_ID             VARCHAR2(16 BYTE)  NOT NULL,
        ABSTRACT_PARAM_CODE NUMBER(10)         NOT NULL,
+       UNIT_SYSTEM         VARCHAR2(2 BYTE),
        LONG_NAME           VARCHAR2(80 BYTE),
        DESCRIPTION         VARCHAR2(80 BYTE)
    )
@@ -5928,6 +5930,7 @@ COMMENT ON TABLE @TABLE IS 'Contains all internal and external units used with C
 COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'Primary key used for relating units to other entities';
 COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_CODE IS 'Foreign key referencing @abstractParamTableName table';
 COMMENT ON COLUMN @TABLE.UNIT_ID IS 'Short text identifier of unit';
+COMMENT ON COLUMN @TABLE.UNIT_SYSTEM IS 'SI deonotes SI, EN denotes English, Null denotes both SI and EN';
 COMMENT ON COLUMN @TABLE.LONG_NAME IS 'Complete name of unit';
 COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description of unit';
 COMMIT;
@@ -5945,14 +5948,19 @@ for i in range(len(unitDefIds)) :
     description = unitDef["DESCRIPTION"]
     code = unitDef["CODE"]
     id = unitDef["ID"]
+    system = unitDef["SYSTEM"]
     abstractParam = unitDef["ABSTRACT"]
-    unitLoadTemplate +="INSERT INTO @unitTableName (UNIT_CODE, UNIT_ID, ABSTRACT_PARAM_CODE, LONG_NAME, DESCRIPTION) VALUES (\n" 
+    unitLoadTemplate +="INSERT INTO @unitTableName (UNIT_CODE, UNIT_ID, ABSTRACT_PARAM_CODE, UNIT_SYSTEM, LONG_NAME, DESCRIPTION) VALUES (\n" 
     unitLoadTemplate +="\t%d,\n" % code 
     unitLoadTemplate +="\t'%s',\n" % id
     unitLoadTemplate +="\t(\tSELECT ABSTRACT_PARAM_CODE\n"
     unitLoadTemplate +="\t\tFROM   @abstractParamTableName \n"
     unitLoadTemplate +="\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
     unitLoadTemplate +="\t),\n"
+    if system == "NULL" :
+      unitLoadTemplate +="\tNULL,\n"
+    else :
+      unitLoadTemplate +="\t'%s',\n" % system  
     unitLoadTemplate +="\t'%s',\n" % name
     unitLoadTemplate +="\t'%s'\n" % description
     unitLoadTemplate +=");\n"
