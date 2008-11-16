@@ -1,4 +1,4 @@
-/* Formatted on 2008/06/11 14:31 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/07/17 07:19 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_vt
 AS
 /******************************************************************************
@@ -216,11 +216,12 @@ AS
    );
 
    PROCEDURE store_tr_template (
-      p_template_id        IN   VARCHAR2,
-      p_description        IN   VARCHAR2,
-      p_template_set       IN   tr_template_set_array,
-      p_replace_existing   IN   VARCHAR2 DEFAULT 'F',
-      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+      p_template_id          IN   VARCHAR2,
+      p_description          IN   VARCHAR2,
+      p_primary_indep_mask   IN   VARCHAR2,
+      p_template_set         IN   tr_template_set_array,
+      p_replace_existing     IN   VARCHAR2 DEFAULT 'F',
+      p_db_office_id         IN   VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE create_tr_ts_mask (

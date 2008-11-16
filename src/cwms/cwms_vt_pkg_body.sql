@@ -1,4 +1,6 @@
 /* Formatted on 2008/06/26 15:28 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/07/14 11:42 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/07/17 07:58 (Formatter Plus v4.8.8) */
 /*<TOAD_FILE_CHUNK>*/
 
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_vt
@@ -1822,15 +1824,18 @@ AS
    END;
 
    PROCEDURE store_tr_template (
-      p_template_id        IN   VARCHAR2,
-      p_description        IN   VARCHAR2,
-      p_template_set       IN   tr_template_set_array,
-      p_replace_existing   IN   VARCHAR2 DEFAULT 'F',
-      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+      p_template_id          IN   VARCHAR2,
+      p_description          IN   VARCHAR2,
+      p_primary_indep_mask   IN   VARCHAR2,
+      p_template_set         IN   tr_template_set_array,
+      p_replace_existing     IN   VARCHAR2 DEFAULT 'F',
+      p_db_office_id         IN   VARCHAR2 DEFAULT NULL
    )
    AS
+      l_db_office_id          VARCHAR2 (16)
+                               := cwms_util.get_db_office_id (p_db_office_id);
       l_db_office_code        NUMBER
-                             := cwms_util.get_db_office_code (p_db_office_id);
+                             := cwms_util.get_db_office_code (l_db_office_id);
       l_tr_template_code      NUMBER;
       l_tr_template_exists    BOOLEAN       := FALSE;
       l_replace_existing      BOOLEAN
@@ -1843,8 +1848,14 @@ AS
       l_interval_id           VARCHAR2 (16);
       l_duration_id           VARCHAR2 (16);
       l_version_id            VARCHAR2 (32);
+      l_location_code         NUMBER;
       l_parameter_code        NUMBER;
       l_parameter_type_code   NUMBER;
+      l_interval_code         NUMBER;
+      l_duration_code         NUMBER;
+      --
+      l_param_primary_indep   NUMBER;
+      l_param_result_dep      NUMBER;
    BEGIN
       BEGIN
          l_tr_template_code :=
@@ -1883,8 +1894,18 @@ AS
                WHERE a.template_code = l_tr_template_code;
       END IF;
 
+      --
+      ---
+      ---- Extract VT data & masks from the p_template_set array.
+      ---
+      --
       FOR i IN 1 .. p_template_set.COUNT
       LOOP
+         --
+         --- The "i" loop extracts the VT data from the p_template_set array...
+         --
+         cwms_apex.aa1 ('i= ' || i);
+
          INSERT INTO at_tr_template_set
                      (template_code, sequence_no, description,
                       store_dep_flag,
@@ -1907,8 +1928,45 @@ AS
                       p_template_set (i).scaling_arg_c
                      );
 
+         IF i = 1
+         THEN
+            --
+            ---
+            ---- Set the primary independent varialble
+            ---- The primary indep's sequence number is "1" and its
+            ---- variable_no is "0".
+            ---
+            --
+            cwms_ts.parse_ts (p_primary_indep_mask,
+                              l_base_location_id,
+                              l_sub_location_id,
+                              l_base_parameter_id,
+                              l_sub_parameter_id,
+                              l_parameter_type_id,
+                              l_interval_id,
+                              l_duration_id,
+                              l_version_id
+                             );
+
+            INSERT INTO at_tr_ts_mask
+                        (template_code, sequence_no, variable_no,
+                         location_code, parameter_code,
+                         parameter_type_code, interval_code,
+                         duration_code, version_mask
+                        )
+                 VALUES (l_tr_template_code, 1, 0,
+                         l_location_code, l_parameter_code,
+                         l_parameter_type_code, l_interval_code,
+                         l_duration_code, l_version_id
+                        );
+         END IF;
+
          FOR j IN 1 .. p_template_set (i).array_of_masks.COUNT
          LOOP
+            --
+            --- The "j" loop extracts the ts masks from the imbedded array_of_masks...
+            --
+            cwms_apex.aa1 ('i= ' || i || ' j= ' || j);
             cwms_ts.parse_ts (p_template_set (i).array_of_masks (j),
                               l_base_location_id,
                               l_sub_location_id,
@@ -1919,33 +1977,45 @@ AS
                               l_duration_id,
                               l_version_id
                              );
-            DBMS_OUTPUT.put_line (   'i:j '
-                                  || i
-                                  || ':'
-                                  || j
-                                  || ' '
-                                  || p_template_set (i).array_of_masks (j)
+            cwms_apex.aa1 (   'base param: '
+                           || l_base_parameter_id
+                           || ' subparam: '
+                           || l_sub_parameter_id
+                          );
+
+            IF UPPER (l_base_parameter_id) = '{PARAMETER}'
+            THEN
+               l_parameter_code := 0;
+            ELSE
+               l_parameter_code :=
+                  cwms_ts.get_parameter_code
+                                 (p_base_parameter_id      => l_base_parameter_id,
+                                  p_sub_parameter_id       => l_sub_parameter_id,
+                                  p_office_id              => l_db_office_id,
+                                  p_create                 => 'F'
                                  );
-            l_parameter_code :=
-               cwms_ts.get_parameter_code (l_base_parameter_id,
-                                           l_sub_parameter_id,
-                                           l_db_office_code,
-                                           FALSE
-                                          );
+            END IF;
+
+            cwms_apex.aa1 ('param_code: ' || l_parameter_code);
 
             INSERT INTO at_tr_ts_mask
                         (template_code, sequence_no, variable_no,
-                         location_code,
-                         parameter_code, parameter_type_code,
-                         interval_code, duration_code, version_mask
+                         location_code, parameter_code,
+                         parameter_type_code, interval_code,
+                         duration_code, version_mask
                         )
-                 VALUES (l_tr_template_code, i, j - 1,
-                         l_base_location_id || '-' || l_sub_location_id,
-                         l_parameter_code, l_parameter_type_code,
-                         l_interval_id, l_duration_id, l_version_id
+                 VALUES (l_tr_template_code, i, j,
+                         l_location_code, l_parameter_code,
+                         l_parameter_type_code, l_interval_code,
+                         l_duration_code, l_version_id
                         );
          END LOOP;
       END LOOP;
+
+      UPDATE at_tr_template_id a
+         SET a.primary_indep_param_code = l_param_primary_indep,
+             a.dep_param_code = l_param_result_dep
+       WHERE a.template_code = l_tr_template_code;
    END;
 
    PROCEDURE create_tr_ts_mask (
