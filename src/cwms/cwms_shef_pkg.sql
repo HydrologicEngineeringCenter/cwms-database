@@ -1,4 +1,4 @@
-/* Formatted on 2008/02/07 10:21 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/11/12 15:02 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_shef
 AS
 -- PROCEDURE clean_at_shef_crit_file p_action constants.
@@ -26,7 +26,8 @@ AS
    TYPE cat_shef_dur_rec_t IS RECORD (
       shef_duration_code      VARCHAR2 (1),
       shef_duration_desc      VARCHAR2 (128),
-      shef_duration_numeric   VARCHAR2 (4)
+      shef_duration_numeric   VARCHAR2 (4),
+      cwms_duration_id        VARCHAR2 (16)
    );
 
    TYPE cat_shef_dur_tab_t IS TABLE OF cat_shef_dur_rec_t;
@@ -37,11 +38,64 @@ AS
 
    TYPE cat_shef_units_tab_t IS TABLE OF cat_shef_units_rec_t;
 
+   TYPE cat_shef_pe_codes_rec_t IS RECORD (
+      id_code                 NUMBER,
+      shef_pe_code            VARCHAR2 (16),
+      shef_tse_code           VARCHAR2 (3),
+      shef_req_send_code      VARCHAR2 (7),
+      shef_duration_code      VARCHAR2 (1),
+      shef_duration_numeric   VARCHAR2 (4),
+      unit_id_en              VARCHAR2 (16),
+      unit_id_si              VARCHAR2 (16),
+      abstract_param_id       VARCHAR2 (32),
+      base_parameter_id       VARCHAR2 (16),
+      sub_parameter_id        VARCHAR2 (32),
+      parameter_type_id       VARCHAR2 (16),
+      description             VARCHAR2 (256),
+      notes                   VARCHAR2 (256)
+   );
+
+   TYPE cat_shef_pe_codes_tab_t IS TABLE OF cat_shef_pe_codes_rec_t;
+
+   TYPE cat_shef_extremum_rec_t IS RECORD (
+      shef_e_code   VARCHAR2 (1),
+      description   VARCHAR2 (32),
+      duration_id   VARCHAR2 (16)
+   );
+
+   TYPE cat_shef_extremum_tab_t IS TABLE OF cat_shef_extremum_rec_t;
+
+   PROCEDURE cat_shef_extremum_codes (p_shef_extremum_codes OUT sys_refcursor);
+
+   PROCEDURE cat_shef_pe_codes (
+      p_shef_pe_codes   OUT      sys_refcursor,
+      p_db_office_id    IN       VARCHAR2 DEFAULT NULL
+   );
+
    TYPE cat_shef_crit_lines_rec_t IS RECORD (
       shef_crit_line   VARCHAR2 (400)
    );
 
    TYPE cat_shef_crit_lines_tab_t IS TABLE OF cat_shef_crit_lines_rec_t;
+
+   PROCEDURE delete_local_pe_code (
+      p_id_code        IN   NUMBER,
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE create_local_pe_code (
+      p_shef_pe_code            IN   VARCHAR2,
+      p_shef_tse_code           IN   VARCHAR2,
+      p_shef_duration_numeric   IN   VARCHAR2,
+      p_shef_req_send_code      IN   VARCHAR2 DEFAULT NULL,
+      p_parameter_id            IN   VARCHAR2,
+      p_parameter_type_id       IN   VARCHAR2,
+      p_unit_id_en              IN   VARCHAR2,
+      p_unit_id_si              IN   VARCHAR2,
+      p_description             IN   VARCHAR2 DEFAULT NULL,
+      p_notes                   IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id            IN   VARCHAR2 DEFAULT NULL
+   );
 
    PROCEDURE update_shef_spec (
       p_cwms_ts_id              IN   VARCHAR2,
@@ -134,6 +188,12 @@ AS
 
    FUNCTION cat_shef_units_tab
       RETURN cat_shef_units_tab_t PIPELINED;
+
+   FUNCTION cat_shef_extremum_tab
+      RETURN cat_shef_extremum_tab_t PIPELINED;
+
+   FUNCTION cat_shef_pe_codes_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_shef_pe_codes_tab_t PIPELINED;
 
    FUNCTION get_shef_duration_numeric (p_shef_duration_code IN VARCHAR2)
       RETURN VARCHAR2;

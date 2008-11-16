@@ -1,4 +1,4 @@
-/* Formatted on 2008/02/07 10:17 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/11/04 15:41 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_shef
 AS
    PROCEDURE clean_at_shef_crit_file (
@@ -697,6 +697,7 @@ AS
          SET data_stream_id = TRIM (p_data_stream_id_new)
        WHERE data_stream_code = l_data_stream_code;
    END;
+
 -- ****************************************************************************
 -- cwms_shef.delete_data_stream_entries is used to delete all data stream entries
 --         associated with the specified data_stream.
@@ -711,7 +712,6 @@ AS
 --         id that this data stream will be/is assigned too. Normally this is
 --         left null and the user's default database office id is used.
 --
-
    PROCEDURE delete_data_stream_shef_specs (
       p_data_stream_id   IN   VARCHAR2,
       p_db_office_id     IN   VARCHAR2 DEFAULT NULL
@@ -844,8 +844,9 @@ AS
    BEGIN
       OPEN p_shef_durations FOR
          SELECT   a.shef_duration_code, a.shef_duration_desc,
-                  a.shef_duration_numeric
-             FROM cwms_shef_duration a
+                  a.shef_duration_numeric, cd.duration_id
+             FROM cwms_shef_duration a, cwms_duration cd
+             where a.cwms_duration_code = CD.DURATION_CODE (+)
          ORDER BY TO_NUMBER (a.shef_duration_numeric);
    END cat_shef_durations;
 
@@ -867,6 +868,277 @@ AS
          ORDER BY abstract_param_code, unit_id;
    END cat_shef_units;
 
+   PROCEDURE delete_local_pe_code (
+      p_id_code        IN   NUMBER,
+      p_db_office_id   IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_code   NUMBER;
+   BEGIN
+      l_db_office_code := cwms_util.get_db_office_code (p_db_office_id);
+
+      --
+      DELETE FROM at_shef_pe_codes
+            WHERE id_code = p_id_code;
+   END;
+
+   PROCEDURE create_local_pe_code (
+      p_shef_pe_code            IN   VARCHAR2,
+      p_shef_tse_code           IN   VARCHAR2,
+      p_shef_duration_numeric   IN   VARCHAR2,
+      p_shef_req_send_code      IN   VARCHAR2 DEFAULT NULL,
+      p_parameter_id            IN   VARCHAR2,
+      p_parameter_type_id       IN   VARCHAR2,
+      p_unit_id_en              IN   VARCHAR2,
+      p_unit_id_si              IN   VARCHAR2,
+      p_description             IN   VARCHAR2 DEFAULT NULL,
+      p_notes                   IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id            IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_num                    NUMBER;
+      l_db_office_code         NUMBER;
+      l_db_office_id           VARCHAR2 (16);
+      l_shef_pe_code           VARCHAR2 (2);
+      l_shef_tse_code          VARCHAR2 (3);
+      l_shef_duration_code     VARCHAR2 (1);
+      l_parameter_code         NUMBER;
+      l_parameter_type_code    NUMBER;
+      l_unit_code_en           NUMBER;
+      l_unit_code_si           NUMBER;
+      l_abstract_param_id      VARCHAR2 (32);
+      l_abstract_param_id_en   VARCHAR2 (32);
+      l_abstract_param_id_si   VARCHAR2 (32);
+      l_shef_req_send_code     VARCHAR2 (7)  := NULL;
+   BEGIN
+      l_db_office_code := cwms_util.get_db_office_code (p_db_office_id);
+      l_db_office_id := cwms_util.get_db_office_id (p_db_office_id);
+      l_num := LENGTH (TRIM (p_shef_pe_code));
+
+      IF l_num != 2
+      THEN
+         cwms_err.RAISE
+            ('GENERIC',
+                'Invalid PE Code submitted. PE Code must be two characters in length. You submitted: '
+             || TRIM (p_shef_pe_code)
+            );
+      END IF;
+
+      l_shef_pe_code := TRIM (p_shef_pe_code);
+      l_num := LENGTH (TRIM (p_shef_tse_code));
+
+      IF l_num != 3
+      THEN
+         cwms_err.RAISE
+            ('GENERIC',
+                'Invalid TSE Code submitted. TSE Code must be three characters in length. You submitted: '
+             || TRIM (p_shef_tse_code)
+            );
+      END IF;
+
+      l_shef_tse_code := TRIM (p_shef_tse_code);
+
+      IF p_shef_req_send_code IS NOT NULL
+      THEN
+         l_num := LENGTH (TRIM (p_shef_req_send_code));
+
+         IF l_num != 7
+         THEN
+            cwms_err.RAISE
+               ('GENERIC',
+                   'Invalid Required Send Code submitted. Requires Send Code must be seven characters in length. You submitted: '
+                || TRIM (p_shef_req_send_code)
+               );
+         END IF;
+
+         l_shef_req_send_code := TRIM (p_shef_req_send_code);
+      END IF;
+
+      BEGIN
+         SELECT csd.shef_duration_code
+           INTO l_shef_duration_code
+           FROM cwms_shef_duration csd
+          WHERE csd.shef_duration_numeric = p_shef_duration_numeric;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE
+               ('GENERIC',
+                   'Invalid SHEF Duration Numeric submitted. You submitted: '
+                || TRIM (p_shef_duration_numeric)
+               );
+      END;
+
+      l_parameter_code :=
+         cwms_ts.get_parameter_code
+                (p_base_parameter_id      => cwms_util.get_base_id
+                                                               (p_parameter_id),
+                 p_sub_parameter_id       => cwms_util.get_sub_id
+                                                               (p_parameter_id),
+                 p_office_id              => l_db_office_id,
+                 p_create                 => 'T'
+                );
+
+      SELECT cap.abstract_param_id
+        INTO l_abstract_param_id
+        FROM at_parameter atp,
+             cwms_base_parameter cbp,
+             cwms_abstract_parameter cap
+       WHERE atp.base_parameter_code = cbp.base_parameter_code
+         AND cbp.abstract_param_code = cap.abstract_param_code
+         AND atp.parameter_code = l_parameter_code;
+
+      BEGIN
+         SELECT parameter_type_code
+           INTO l_parameter_type_code
+           FROM cwms_parameter_type
+          WHERE UPPER (parameter_type_id) = UPPER (TRIM (p_parameter_type_id));
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('GENERIC',
+                               'Invalid CWMS Parameter Type submitted: '
+                            || TRIM (p_parameter_type_id)
+                           );
+      END;
+
+      BEGIN
+         SELECT cu.unit_code, cap.abstract_param_id
+           INTO l_unit_code_en, l_abstract_param_id_en
+           FROM cwms_unit cu, cwms_abstract_parameter cap
+          WHERE cu.abstract_param_code = cap.abstract_param_code
+            AND cu.unit_id = TRIM (p_unit_id_en);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('GENERIC',
+                               TRIM (p_unit_id_en)
+                            || ' is not a recognized unit in the CWMS Database.'
+                           );
+      END;
+
+      BEGIN
+         SELECT cu.unit_code, cap.abstract_param_id
+           INTO l_unit_code_si, l_abstract_param_id_si
+           FROM cwms_unit cu, cwms_abstract_parameter cap
+          WHERE cu.abstract_param_code = cap.abstract_param_code
+            AND cu.unit_id = TRIM (p_unit_id_si);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('GENERIC',
+                               TRIM (p_unit_id_si)
+                            || ' is not a recognized unit in the CWMS Database.'
+                           );
+      END;
+
+      IF l_abstract_param_id_en != l_abstract_param_id_si
+      THEN
+         cwms_err.RAISE
+            ('GENERIC',
+                'The Abstract Parameter types for your English and SI units do not match. The Abstract Parameter Type of your English unit: '
+             || TRIM (p_unit_id_en)
+             || ' is: '
+             || l_abstract_param_id_en
+             || ' and the Abstract Parameter Type of your SI unit: '
+             || TRIM (p_unit_id_si)
+             || ' is: '
+             || l_abstract_param_id_si
+            );
+      END IF;
+
+      IF l_abstract_param_id_en != l_abstract_param_id
+      THEN
+         cwms_err.RAISE
+            ('GENERIC',
+                'The Abstract Parameter type for your Base Parameter: '
+             || cwms_util.get_base_id (p_parameter_id)
+             || ' is: '
+             || l_abstract_param_id
+             || ', which must match the Abstract Paramter Type of the units you are specifying, which are: '
+             || l_abstract_param_id_si
+            );
+      END IF;
+
+      INSERT INTO at_shef_pe_codes
+                  (db_office_code, shef_pe_code, id_code,
+                   shef_tse_code, shef_duration_code,
+                   shef_req_send_code, unit_code_en, unit_code_si,
+                   parameter_code, parameter_type_code,
+                   description, notes
+                  )
+           VALUES (l_db_office_code, l_shef_pe_code, cwms_seq.NEXTVAL,
+                   l_shef_tse_code, l_shef_duration_code,
+                   l_shef_req_send_code, l_unit_code_en, l_unit_code_si,
+                   l_parameter_code, l_parameter_type_code,
+                   TRIM (p_description), TRIM (p_notes)
+                  );
+   END;
+
+   PROCEDURE cat_shef_extremum_codes (p_shef_extremum_codes OUT sys_refcursor)
+   IS
+   BEGIN
+      OPEN p_shef_extremum_codes FOR
+         SELECT csec.shef_e_code, csec.description, cd.duration_id
+           FROM cwms_shef_extremum_codes csec, cwms_duration cd
+          WHERE csec.duration_code = cd.duration_code(+) order by sequence_no;
+   END;
+
+   PROCEDURE cat_shef_pe_codes (
+      p_shef_pe_codes   OUT      sys_refcursor,
+      p_db_office_id    IN       VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_code   NUMBER
+                             := cwms_util.get_db_office_code (p_db_office_id);
+   BEGIN
+      OPEN p_shef_pe_codes FOR
+         SELECT 53, shef_pe_code, shef_tse_code, shef_req_send_code,
+                cspec.shef_duration_code, csd.shef_duration_numeric,
+                cu1.unit_id unit_id_en, cu2.unit_id unit_id_si,
+                cap.abstract_param_id, cbp.base_parameter_id,
+                atp.sub_parameter_id, cpt.parameter_type_id,
+                cspec.description, cspec.notes
+           FROM cwms_shef_pe_codes cspec,
+                cwms_shef_duration csd,
+                cwms_unit cu1,
+                cwms_unit cu2,
+                cwms_abstract_parameter cap,
+                cwms_base_parameter cbp,
+                at_parameter atp,
+                cwms_parameter_type cpt
+          WHERE cspec.shef_duration_code = csd.shef_duration_code
+            AND cspec.unit_code_en = cu1.unit_code(+)
+            AND cspec.unit_code_si = cu2.unit_code(+)
+            AND cu1.abstract_param_code = cap.abstract_param_code(+)
+            AND cspec.parameter_code = atp.parameter_code
+            AND atp.base_parameter_code = cbp.base_parameter_code
+            AND cspec.parameter_type_code = cpt.parameter_type_code
+         UNION
+         SELECT id_code, shef_pe_code, shef_tse_code, shef_req_send_code,
+                cspec.shef_duration_code, csd.shef_duration_numeric,
+                cu1.unit_id unit_id_en, cu2.unit_id unit_id_si,
+                cap.abstract_param_id, cbp.base_parameter_id,
+                atp.sub_parameter_id, cpt.parameter_type_id,
+                cspec.description, cspec.notes
+           FROM at_shef_pe_codes cspec,
+                cwms_shef_duration csd,
+                cwms_unit cu1,
+                cwms_unit cu2,
+                cwms_abstract_parameter cap,
+                cwms_base_parameter cbp,
+                at_parameter atp,
+                cwms_parameter_type cpt
+          WHERE cspec.shef_duration_code = csd.shef_duration_code
+            AND cspec.unit_code_en = cu1.unit_code(+)
+            AND cspec.unit_code_si = cu2.unit_code(+)
+            AND cu1.abstract_param_code = cap.abstract_param_code(+)
+            AND cspec.parameter_code = atp.parameter_code
+            AND atp.base_parameter_code = cbp.base_parameter_code
+            AND cspec.parameter_type_code = cpt.parameter_type_code
+            AND cspec.db_office_code = l_db_office_code;
+   END cat_shef_pe_codes;
+
    FUNCTION cat_shef_durations_tab
       RETURN cat_shef_dur_tab_t PIPELINED
    IS
@@ -887,6 +1159,27 @@ AS
 
       RETURN;
    END cat_shef_durations_tab;
+
+   FUNCTION cat_shef_extremum_tab
+      RETURN cat_shef_extremum_tab_t PIPELINED
+   IS
+      output_row     cat_shef_extremum_rec_t;
+      query_cursor   sys_refcursor;
+   BEGIN
+      cat_shef_extremum_codes (query_cursor);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END cat_shef_extremum_tab;
 
    FUNCTION cat_shef_time_zones_tab
       RETURN cat_shef_tz_tab_t PIPELINED
@@ -929,6 +1222,27 @@ AS
 
       RETURN;
    END cat_shef_units_tab;
+
+   FUNCTION cat_shef_pe_codes_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_shef_pe_codes_tab_t PIPELINED
+   IS
+      output_row     cat_shef_pe_codes_rec_t;
+      query_cursor   sys_refcursor;
+   BEGIN
+      cat_shef_pe_codes (query_cursor, p_db_office_id);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END cat_shef_pe_codes_tab;
 
 ----------------------------------
    PROCEDURE parse_criteria_record (
