@@ -1,7 +1,6 @@
-/* Formatted on 2007/11/08 07:33 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/10/23 08:18 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_sec
 AS
-
    PROCEDURE get_user_office_data (
       p_office_id          OUT   VARCHAR2,
       p_office_long_name   OUT   VARCHAR2
@@ -29,7 +28,6 @@ AS
 --which will return the priv groups for all db_office_id's associated with
 --the username.
 --
-
    PROCEDURE get_user_priv_groups (
       p_priv_groups    OUT      sys_refcursor,
       p_username       IN       VARCHAR2 DEFAULT NULL,
@@ -69,6 +67,87 @@ AS
    BEGIN
       RETURN cwms_util.user_office_id;
    END;
+
+   PROCEDURE lock_db_account (p_username IN VARCHAR2)
+   IS
+   BEGIN
+      cwms_dba.cwms_user_admin.lock_db_account (p_username);
+   END;
+
+   PROCEDURE unlock_db_account (p_username IN VARCHAR2)
+   IS
+   BEGIN
+      cwms_dba.cwms_user_admin.unlock_db_account (p_username);
+   END;
+
+   FUNCTION is_a_user_admin (p_db_office_code IN NUMBER)
+      RETURN BOOLEAN
+   IS
+      l_count      INTEGER       := 0;
+      l_username   VARCHAR2 (31) := cwms_util.get_user_id;
+   BEGIN
+      --
+      -- Check if user's account is locked for the p_db_office_code
+      -- portion of the database...
+      --
+      SELECT atslu.is_locked
+        INTO l_count
+        FROM at_sec_locked_users atslu
+       WHERE atslu.db_office_code = p_db_office_code
+         AND atslu.username = UPPER (l_username);
+
+      IF l_count > 0
+      THEN
+         RETURN FALSE;
+      END IF;
+
+      l_count := 0;
+
+      --
+      -- Check if user's account has either "dba" or "CWMS User Admins"
+      -- privileges.
+      --
+      SELECT COUNT (*)
+        INTO l_count
+        FROM at_sec_users atsu
+       WHERE atsu.db_office_code = p_db_office_code
+         AND atsu.user_group_code IN (0, 7)
+         AND atsu.user_id = UPPER (l_username);
+
+      IF l_count > 0
+      THEN
+         RETURN TRUE;
+      ELSE
+         RETURN FALSE;
+      END IF;
+   END;
+
+   PROCEDURE create_cwms_db_account (
+      p_username       IN   VARCHAR2,
+      p_db_office_id   IN   VARCHAR2
+   )
+   IS
+      l_dbi_username     VARCHAR2 (31);
+      l_db_office_code   NUMBER;
+   BEGIN
+      l_db_office_code := cwms_util.get_db_office_code (p_db_office_id);
+
+      SELECT atsdu.dbi_username
+        INTO l_dbi_username
+        FROM at_sec_dbi_user atsdu
+       WHERE atsdu.db_office_code = l_db_office_code;
+
+      cwms_dba.cwms_user_admin.create_cwms_db_account (p_username,
+                                                       l_dbi_username
+                                                      );
+   END;
+
+   PROCEDURE delete_cwms_db_account (p_username IN VARCHAR2)
+   IS
+   BEGIN
+      NULL;
+   END;
 END cwms_sec;
 /
-show errors;
+
+SHOW errors;
