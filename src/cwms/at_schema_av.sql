@@ -13,6 +13,7 @@ DECLARE
    view_names   id_array_t
       := id_array_t ('av_active_flag',
                      'av_loc',          -- av_loc is created in at_schema_2...
+                     'av_cwms_ts_id',
                      'av_loc_alias',
                      'av_loc_cat_grp',
                      'av_parameter',
@@ -481,4 +482,41 @@ AS
       AND a.shef_time_zone_code = g.shef_time_zone_code
       AND a.ts_code = h.ts_code
       AND a.shef_unit_code = i.unit_code
+/
+--------------------------------------------------------------------------------
+CREATE OR REPLACE FORCE VIEW av_cwms_ts_id (db_office_id,
+                                                    cwms_ts_id,
+                                                    unit_id,
+                                                    abstract_param_id,
+                                                    base_location_id,
+                                                    sub_location_id,
+                                                    location_id,
+                                                    base_parameter_id,
+                                                    sub_parameter_id,
+                                                    parameter_id,
+                                                    parameter_type_id,
+                                                    interval_id,
+                                                    duration_id,
+                                                    version_id,
+                                                    INTERVAL,
+                                                    interval_utc_offset,
+                                                    loc_active_flag,
+                                                    ts_active_flag,
+                                                    net_ts_active_flag,
+                                                    version_flag,
+                                                    ts_code,
+                                                    db_office_code,
+                                                    base_location_code,
+                                                    location_code,
+                                                    parameter_code
+                                                   )
+AS
+   SELECT db_office_id, cwms_ts_id, unit_id, abstract_param_id,
+          base_location_id, sub_location_id, location_id, base_parameter_id,
+          sub_parameter_id, parameter_id, parameter_type_id, interval_id,
+          duration_id, version_id, INTERVAL, interval_utc_offset,
+          loc_active_flag, ts_active_flag, net_ts_active_flag, version_flag,
+          ts_code, db_office_code, base_location_code, location_code,
+          parameter_code
+     FROM mv_cwms_ts_id
 /
