@@ -23,6 +23,8 @@ DECLARE
                      'tr_template_set_array',
                      'tsv_type',
                      'tsv_array',
+                     'ztsv_type',
+                     'ztsv_array',
                      'at_tsv_type',
                      'at_tsv_array',
                      'char_16_array_type',
@@ -32,6 +34,8 @@ DECLARE
                      'date_table_type',
                      'timeseries_type',
                      'timeseries_array',
+                     'ztimeseries_type',
+                     'ztimeseries_array',
                      'timeseries_req_type',
                      'timeseries_req_array',
                      'ts_request_type',
@@ -160,6 +164,21 @@ CREATE TYPE tsv_type AS OBJECT (
 CREATE TYPE tsv_array IS TABLE OF tsv_type;
 /
 
+CREATE OR REPLACE TYPE ztsv_type
+AS
+   OBJECT (date_time DATE, VALUE BINARY_DOUBLE, quality_code NUMBER);
+/
+
+CREATE OR REPLACE TYPE ztsv_array IS TABLE OF ztsv_type;
+/
+
+CREATE OR REPLACE TYPE ztimeseries_type
+AS
+   OBJECT (tsid VARCHAR2 (183), unit VARCHAR2 (16), data ztsv_array);
+/
+
+CREATE OR REPLACE TYPE ztimeseries_array IS TABLE OF ztimeseries_type;
+/
 -- This type represents a row in the time series value table.
 -- BINARY_INTEGER or PLS_INTEGER should be used instead of NUMBER, which is better?
 -- Also creating a type using either of those datatypes issues an error...

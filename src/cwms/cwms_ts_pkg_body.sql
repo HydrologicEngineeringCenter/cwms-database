@@ -4437,7 +4437,83 @@ BEGIN
     WHERE parameter_code = l_parameter_code_old;
 END;
 
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- ZSTORE_TS -
+   --
+   PROCEDURE zstore_ts (p_cwms_ts_id      IN varchar2,
+                        p_units           IN varchar2,
+                        p_timeseries_data IN ztsv_array,
+                        p_store_rule      IN varchar2 DEFAULT NULL ,
+                        p_override_prot   IN varchar2 DEFAULT 'F' ,
+                        p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
+                        p_office_id       IN varchar2 DEFAULT NULL
+   )
+   IS
+      l_timeseries_data   tsv_array := tsv_array ();
+   BEGIN
+      l_timeseries_data.EXTEND (p_timeseries_data.COUNT);
 
+      FOR i IN 1 .. p_timeseries_data.COUNT
+      LOOP
+         l_timeseries_data (i)   :=
+            tsv_type (FROM_TZ (CAST (p_timeseries_data (i).date_time AS timestamp
+                               ),
+                               'GMT'
+                      ),
+                      p_timeseries_data (i).VALUE,
+                      p_timeseries_data (i).quality_code
+            );
+      --         DBMS_OUTPUT.put_line(   l_timeseries_data (i).date_time
+      --                              || ' '
+      --                              || l_timeseries_data (i).value
+      --                              || ' '
+      --                              || l_timeseries_data (i).quality_code);
+      END LOOP;
+
+      cwms_ts.store_ts (p_cwms_ts_id,
+                        p_units,
+                        l_timeseries_data,
+                        p_store_rule,
+                        p_override_prot,
+                        p_version_date,
+                        p_office_id
+      );
+   END zstore_ts;
+
+   PROCEDURE zstore_ts_multi (p_timeseries_array IN ztimeseries_array,
+                              p_store_rule       IN varchar2 DEFAULT NULL ,
+                              p_override_prot    IN varchar2 DEFAULT 'F' ,
+                              p_version_date     IN DATE     DEFAULT cwms_util.non_versioned,
+                              p_office_id        IN varchar2 DEFAULT NULL
+   )
+   IS
+      l_timeseries   ztimeseries_type;
+   BEGIN
+      DBMS_APPLICATION_INFO.set_module ('cwms_ts.zstore_ts_multi',
+                                        'selecting time series from input'
+      );
+
+      FOR l_timeseries IN (SELECT *
+                           FROM table (p_timeseries_array))
+      LOOP
+         DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.zstore_ts_multi',
+                                           'calling zstore_ts'
+         );
+         cwms_ts.zstore_ts (l_timeseries.tsid,
+                   l_timeseries.unit,
+                   l_timeseries.data,
+                   p_store_rule,
+                   p_override_prot,
+                   p_version_date,
+                   p_office_id
+         );
+      END LOOP;
+
+      DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+   END zstore_ts_multi;
 END cwms_ts; --end package body
 /
 
