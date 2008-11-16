@@ -1,4 +1,4 @@
-/* Formatted on 2008/11/07 08:33 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/11/07 08:47 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE cwms_cat
 IS
    TYPE cat_ts_rec_t IS RECORD (
@@ -171,6 +171,14 @@ IS
    );
 
    TYPE cat_interval_tab_t IS TABLE OF cat_interval_rec_t;
+
+   TYPE cat_duration_rec_t IS RECORD (
+      duration_id    VARCHAR2 (16),
+      duration_min   NUMBER,
+      description    VARCHAR2 (80)
+   );
+
+   TYPE cat_duration_tab_t IS TABLE OF cat_duration_rec_t;
 
    TYPE cat_state_rec_t IS RECORD (
       state_initial   VARCHAR2 (2),
@@ -696,6 +704,11 @@ IS
 
    FUNCTION cat_interval_tab
       RETURN cat_interval_tab_t PIPELINED;
+
+   PROCEDURE cat_duration (p_cwms_cat OUT sys_refcursor);
+
+   FUNCTION cat_duration_tab
+      RETURN cat_duration_tab_t PIPELINED;
 
 -------------------------------------------------------------------------------
 -- CAT_STATE

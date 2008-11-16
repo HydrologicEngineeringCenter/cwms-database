@@ -1,4 +1,4 @@
-/* Formatted on 2008/11/07 08:33 (Formatter Plus v4.8.8) */
+/* Formatted on 2008/11/07 08:49 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_cat
 IS
 -------------------------------------------------------------------------------
@@ -1979,6 +1979,45 @@ IS
 
       RETURN;
    END cat_interval_tab;
+
+-------------------------------------------------------------------------------
+-- procedure cat_duration(...)
+--
+--
+   PROCEDURE cat_duration (p_cwms_cat OUT sys_refcursor)
+   IS
+   BEGIN
+      OPEN p_cwms_cat FOR
+         SELECT   duration_id, DURATION, description
+             FROM cwms_duration 
+            WHERE duration_code != 0
+         ORDER BY DURATION, duration_id  ASC;
+   END cat_duration;
+
+-------------------------------------------------------------------------------
+-- function cat_duration_tab(...)
+--
+--
+   FUNCTION cat_duration_tab
+      RETURN cat_duration_tab_t PIPELINED
+   IS
+      query_cursor   sys_refcursor;
+      output_row     cat_duration_rec_t;
+   BEGIN
+      cat_duration (query_cursor);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END cat_duration_tab;
 
 -------------------------------------------------------------------------------
 -- procedure cat_state(...)
