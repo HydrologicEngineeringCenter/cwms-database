@@ -2982,7 +2982,7 @@ end retrieve_ts_multi;
       p_cwms_ts_id        IN   VARCHAR2,
       p_units             IN   VARCHAR2,
       p_times             IN   number_array,
-      p_values            IN   number_array,
+      p_values            IN   double_array,
       p_qualities         IN   number_array,
       p_store_rule        IN   VARCHAR2 DEFAULT NULL,
       p_override_prot     IN   VARCHAR2 DEFAULT 'F',

@@ -6,6 +6,11 @@ AS
       TABLE OF NUMBER
          INDEX BY BINARY_INTEGER;
 
+   TYPE double_array
+   IS
+      TABLE OF BINARY_DOUBLE
+         INDEX BY BINARY_INTEGER;
+
    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN varchar2, p_office_id IN varchar2
    )
       RETURN VARCHAR2;
@@ -292,7 +297,7 @@ AS
    PROCEDURE store_ts (p_cwms_ts_id IN varchar2,
                        p_units IN varchar2,
                        p_times IN number_array,
-                       p_values IN number_array,
+                       p_values IN double_array,
                        p_qualities IN number_array,
                        p_store_rule IN varchar2 DEFAULT NULL ,
                        p_override_prot IN varchar2 DEFAULT 'F' ,
