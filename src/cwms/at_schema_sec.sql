@@ -1,6 +1,136 @@
 /* Formatted on 2007/05/05 13:55 (Formatter Plus v4.8.8) */
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
+CREATE TABLE AT_SEC_LOCKED_USERS
+(
+  DB_OFFICE_CODE  NUMBER,
+  USERNAME        VARCHAR2(31 BYTE),
+  IS_LOCKED       VARCHAR2(1 BYTE)
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+
+CREATE UNIQUE INDEX AT_SEC_LOCKED_USERS_PK ON AT_SEC_LOCKED_USERS
+(DB_OFFICE_CODE, USERNAME, IS_LOCKED)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+ALTER TABLE AT_SEC_LOCKED_USERS ADD (
+  CONSTRAINT AT_SEC_LOCKED_USERS_PK
+ PRIMARY KEY
+ (DB_OFFICE_CODE, USERNAME, IS_LOCKED)
+    USING INDEX 
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+               ))
+/
+
+
+--------------------------------------------------------------------------------
+CREATE TABLE AT_SEC_DBI_USER
+(
+  DB_OFFICE_CODE  NUMBER,
+  DBI_USERNAME    VARCHAR2(31 BYTE)             NOT NULL
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+
+CREATE UNIQUE INDEX AT_DBI_USER_PK ON AT_SEC_DBI_USER
+(DB_OFFICE_CODE)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+ALTER TABLE AT_SEC_DBI_USER ADD (
+  CONSTRAINT AT_DBI_USER_PK
+ PRIMARY KEY
+ (DB_OFFICE_CODE)
+    USING INDEX 
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+               ))
+/
+
+ALTER TABLE AT_SEC_DBI_USER ADD (
+  CONSTRAINT AT_SEC_DBI_USER_R01 
+ FOREIGN KEY (DB_OFFICE_CODE) 
+ REFERENCES CWMS_OFFICE (OFFICE_CODE))
+/
+
+--------------------------------------------------------------------------------
 --
 --=============================================================================
 --=============================================================================

@@ -26,8 +26,18 @@ whenever sqlerror exit sql.sqlcode
 --
 @@cwms/User-Roles/cwms_user_roles
 @@cwms/User-Roles/cwms_users
+@@cwms/User-Roles/cwms_dba_user
 @@py_ErocUsers
 
+--
+-- switch to CWMS_DBA schema
+--
+alter session set current_schema = cwms_dba;
+--
+@@cwms_dba/cwms_user_admin_pkg
+@@cwms_dba/cwms_user_admin_pkg_body
+--
+grant execute on  cwms_dba.cwms_user_admin to cwms_20;
 --
 -- switch to CWMS_20 schema
 --

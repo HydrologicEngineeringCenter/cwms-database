@@ -693,3 +693,65 @@ ALTER TABLE CWMS_20.AT_SHEF_PE_CODES ADD (
                 PCTINCREASE      0
                ))
 /
+--------------------------------------------------------------------------------
+CREATE TABLE CWMS_SHEF_EXTREMUM_CODES
+(
+  SHEF_E_CODE    VARCHAR2(1 BYTE),
+  DESCRIPTION    VARCHAR2(32 BYTE),
+  DURATION_CODE  NUMBER,
+  SEQUENCE_NO    NUMBER
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+
+CREATE UNIQUE INDEX CWMS_EXTREMUM_CODES_PK ON CWMS_SHEF_EXTREMUM_CODES
+(SHEF_E_CODE)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+ALTER TABLE CWMS_SHEF_EXTREMUM_CODES ADD (
+  CONSTRAINT CWMS_EXTREMUM_CODES_PK
+ PRIMARY KEY
+ (SHEF_E_CODE)
+    USING INDEX 
+    TABLESPACE CWMS_20DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+               ))
+/
