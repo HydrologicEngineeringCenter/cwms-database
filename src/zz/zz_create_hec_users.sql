@@ -1,4 +1,4 @@
-/* Formatted on 11/19/2008 7:50:09 AM (QP5 v5.115.810.9015) */
+/* Formatted on 11/19/2008 8:15:45 AM (QP5 v5.115.810.9015) */
 DECLARE
    TYPE username_array_t IS TABLE OF VARCHAR2 (31);
 
@@ -34,6 +34,9 @@ DECLARE
    l_3         VARCHAR2 (1) := '3';
    l_4         VARCHAR2 (1) := '4';
    l_5         VARCHAR2 (1) := '5';
+   l_6         VARCHAR2 (1) := '+';
+   l_7         VARCHAR2 (1) := '+';
+   l_8         VARCHAR2 (1) := '+';
 BEGIN
    NULL;
 
@@ -95,11 +98,56 @@ BEGIN
             NULL;
       END;
 
+      BEGIN
+         INSERT INTO cwms_20.at_sec_user_office
+        (
+            user_id, user_db_office_code
+        )
+         VALUES (l_username (i), 8);
+
+         l_6   := 'p';
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         INSERT INTO cwms_20.at_sec_users
+        (
+            db_office_code, user_group_code, user_id
+        )
+         VALUES (8, 1, l_username (i));
+
+         l_7   := 'p';
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            NULL;
+      END;
+
+      BEGIN
+         INSERT INTO cwms_20.at_sec_users
+        (
+            db_office_code, user_group_code, user_id
+        )
+         VALUES (8, 10, l_username (i));
+
+         l_8   := 'p';
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            NULL;
+      END;
+
       DBMS_OUTPUT.put_line(   l_1
                            || l_2
                            || l_3
                            || l_4
                            || l_5
+                           || l_6
+                           || l_7
+                           || l_8
                            || ' '
                            || l_username (i));
    END LOOP;
