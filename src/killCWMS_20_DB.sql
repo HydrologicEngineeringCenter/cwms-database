@@ -101,6 +101,15 @@ exception
       raise;  
 end;
 /
+begin
+   dbms_output.put_line('drop user cwms_dba cascade');
+   execute immediate 'drop user cwms_dba cascade';
+exception
+   when others then 
+      dbms_output.put_line('==> Cannot drop role cwms_dba : ' || sqlerrm);
+      raise;  
+end;
+/
 set echo &echo_state
 exit 0
 
