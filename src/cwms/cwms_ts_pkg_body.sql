@@ -1966,34 +1966,27 @@ end retrieve_ts_multi;
        raise_application_error(-20110, 'ERROR: ' || l_interval_id || ' is not a valid time series interval', true);
     end;    
     
-    if l_interval_value > 0 then 
+    IF l_interval_value > 0 
+    THEN 
      
       dbms_application_info.set_action('Incoming data set has a regular interval, confirm data set matches interval_id');
       
               BEGIN
-            SELECT DISTINCT ROUND (MOD (  (  CAST ((date_time at time zone 'GMT') AS DATE)
-                                           - TRUNC (CAST ((date_time at time zone 'GMT') AS DATE))
-                                          )
-                                        * 1440,
-                                        l_interval_value
-                                       ),
-                                   0
-                                  )
+                SELECT DISTINCT MOD ( ROUND (
+                                             ( CAST ((date_time at time zone 'GMT') AS DATE)
+                                               - TRUNC (CAST ((date_time at time zone 'GMT') AS DATE))
+                                             ) * 1440, 
+                                             0
+                                           ),
+                                       l_interval_value
+                                     )
                        INTO l_utc_offset
-                       FROM TABLE (p_timeseries_data);   -- where rownum < 20;
-         EXCEPTION
-
-     
---      begin
---      
---         select distinct round(mod((date_time-trunc(date_time))*1440*60,in_interval_value*60),0) 
---           into utc_offset  
---           from table(p_timeseries_data) ; -- where rownum < 20;
---        
---       exception 
-     when too_many_rows then
-        raise_application_error(-20110, 'ERROR: Incoming data set is contains irregular data. Unable to store data for '||p_cwms_ts_id, true);
-      end;
+                       FROM TABLE (p_timeseries_data);
+              EXCEPTION
+                WHEN TOO_MANY_ROWS 
+                THEN
+                raise_application_error(-20110, 'ERROR: Incoming data set appears to contain irregular data. Unable to store data for '||p_cwms_ts_id, true);
+              END;
    
    else
    
@@ -2982,7 +2975,7 @@ end retrieve_ts_multi;
       p_cwms_ts_id        IN   VARCHAR2,
       p_units             IN   VARCHAR2,
       p_times             IN   number_array,
-      p_values            IN   double_array,
+      p_values            IN   number_array,
       p_qualities         IN   number_array,
       p_store_rule        IN   VARCHAR2 DEFAULT NULL,
       p_override_prot     IN   VARCHAR2 DEFAULT 'F',
