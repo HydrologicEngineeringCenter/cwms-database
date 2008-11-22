@@ -900,6 +900,7 @@ BEGIN
    ELSE
       l_office_id := UPPER (p_office_id);
    END IF;
+   
 
    DBMS_APPLICATION_INFO.set_module ('create_ts_code',
                                      'parse timeseries_desc using regexp'
@@ -928,6 +929,11 @@ BEGIN
       THEN
          cwms_err.RAISE ('INVALID_OFFICE_ID', l_office_id);
    END;
+   
+   if l_office_code = 0 
+   then
+      cwms_err.RAISE ('INVALID_OFFICE_ID', l_office_id);
+   end if;
 
    -- check for valid cwms_code based on id passed in, if not there then create, if create error then fail and return
    DBMS_APPLICATION_INFO.set_action
@@ -1915,19 +1921,19 @@ end retrieve_ts_multi;
       l_office_id           VARCHAR2 (16);
       t1count               NUMBER;
       t2count               NUMBER;
-      l_ucount                NUMBER;
-      l_store_date             TIMESTAMP ( 3 )  DEFAULT SYSTIMESTAMP;
+      l_ucount              NUMBER;
+      l_store_date          TIMESTAMP ( 3 )  DEFAULT SYSTIMESTAMP;
       l_ts_code             NUMBER;
       l_interval_id         VARCHAR2 (100);
       l_interval_value      NUMBER;
-      l_utc_offset            NUMBER;
+      l_utc_offset          NUMBER;
       existing_utc_offset   NUMBER;
       table_cnt             NUMBER;
       mindate               DATE;
       maxdate               DATE;
-      l_sql_txt               VARCHAR2 (10000);
+      l_sql_txt             VARCHAR2 (10000);
       l_override_prot       BOOLEAN;
-      l_version_date         DATE;
+      l_version_date        DATE;
    BEGIN
       dbms_application_info.set_module('cwms_ts_store.store_ts','get tscode from ts_id');
     cwms_apex.aa1(to_char(sysdate, 'YYYY-MM-DD HH24:MI') || 'store_ts: ' || p_cwms_ts_id);
@@ -1937,6 +1943,12 @@ end retrieve_ts_multi;
       if p_office_id is null 
       then
          l_office_id := cwms_util.user_office_id;
+         --
+         if l_office_id = 'UNK'
+         then
+           cwms_err.RAISE ('INVALID_OFFICE_ID', 'Unkown');
+         end if;
+         --
        else                           
          l_office_id := p_office_id;
        end if;
@@ -4217,6 +4229,12 @@ IS
    l_all_office_code       NUMBER  := cwms_util.db_office_code_all;
    l_parameter_id_exists   BOOLEAN := FALSE;
 BEGIN
+
+   IF p_db_office_code = 0
+   THEN
+     cwms_err.RAISE ('INVALID_OFFICE_ID', 'Unkown');
+   END IF;
+   
    BEGIN
       SELECT base_parameter_code
         INTO p_base_parameter_code
