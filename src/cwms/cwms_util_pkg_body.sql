@@ -276,6 +276,7 @@ AS
       l_mview_name   VARCHAR2 (32);
       l_user_id      VARCHAR2 (32);
       l_rowid        UROWID        := NULL;
+      l_log_msg      VARCHAR2 (256);
       l_tstamp       TIMESTAMP;
    BEGIN
       l_user_id := get_user_id;
@@ -293,15 +294,17 @@ AS
                         || ' refresh on demand';
 
       COMMIT;
-      DBMS_OUTPUT.put_line (   'MVIEW '''
-                            || l_mview_name
-                            || ''' on-commit refresh paused at '
-                            || l_tstamp
-                            || ' by '
-                            || l_user_id
-                            || ', reason: '
-                            || p_reason
-                           );
+      l_log_msg := 'MVIEW '''
+                   || l_mview_name
+                   || ''' on-commit refresh paused at '
+                   || l_tstamp
+                   || ' by '
+                   || l_user_id
+                   || ', reason: '
+                   || p_reason;
+                   
+      cwms_msg.log_db_message('PAUSE_MV_REFRESH', 4, l_log_msg);
+                         
       RETURN l_rowid;
    EXCEPTION
       WHEN OTHERS
@@ -319,6 +322,10 @@ AS
       l_mview_name   VARCHAR2 (30);
       l_count        BINARY_INTEGER;
       l_user_id      VARCHAR2 (30);
+      l_log_msg      VARCHAR2 (256);
+      l_start_time   TIMESTAMP;
+      l_end_time     TIMESTAMP;
+      l_elapsed_time INTERVAL DAY TO SECOND;
    BEGIN
       l_user_id := get_user_id;
       LOCK TABLE at_mview_refresh_paused IN EXCLUSIVE MODE;
@@ -338,32 +345,36 @@ AS
 
       IF l_count = 0
       THEN
+         l_start_time := systimestamp;
          dbms_mview.REFRESH (l_mview_name, 'c');
 
          EXECUTE IMMEDIATE    'alter materialized view '
                            || l_mview_name
                            || ' refresh on commit';
+                           
+         l_end_time := systimestamp;
+         l_elapsed_time := l_end_time - l_start_time;                           
 
-         DBMS_OUTPUT.put_line (   'MVIEW '''
-                               || l_mview_name
-                               || ''' on-commit refresh resumed at '
-                               || SYSTIMESTAMP
-                               || ' by '
-                               || l_user_id
-                              );
+         l_log_msg := 'MVIEW '''
+                   || l_mview_name
+                   || ''' on-commit refresh resumed at '
+                   || SYSTIMESTAMP
+                   || ' by '
+                   || l_user_id
+                   || ', elapsed_time = '
+                   || l_elapsed_time;
       ELSE
-         DBMS_OUTPUT.put_line (   'MVIEW '''
-                               || l_mview_name
-                               || ''' on-commit refresh not resumed at '
-                               || SYSTIMESTAMP
-                               || ' by '
-                               || l_user_id
-                               || ', paused by '
-                               || l_count
-                               || ' other process(es)'
-                              );
+         l_log_msg := 'MVIEW '''
+                   || l_mview_name
+                   || ''' on-commit refresh not resumed at '
+                   || SYSTIMESTAMP
+                   || ' by '
+                   || l_user_id
+                   || ', paused by '
+                   || l_count
+                   || ' other process(es)';
       END IF;
-
+      cwms_msg.log_db_message('resume_mv_refresh', 4, l_log_msg);
       COMMIT;
    EXCEPTION
       WHEN NO_DATA_FOUND
@@ -386,6 +397,10 @@ AS
       l_abandonded_pauses   ts_by_mv_t;
       l_mview_name          at_mview_refresh_paused.mview_name%TYPE;
       l_now                 TIMESTAMP                         := SYSTIMESTAMP;
+      l_start_time          TIMESTAMP;
+      l_end_time            TIMESTAMP;
+      l_elapsed_time        INTERVAL DAY TO SECOND;
+      l_log_msg             VARCHAR2 (256);
    BEGIN
       SAVEPOINT timeout_mv_rfrsh_paused_start;
       LOCK TABLE at_mview_refresh_paused IN EXCLUSIVE MODE;
@@ -412,19 +427,24 @@ AS
       BEGIN
          LOOP
             EXIT WHEN l_mview_name IS NULL;
+            l_start_time := systimestamp;
             dbms_mview.REFRESH (l_mview_name, 'c');
 
             EXECUTE IMMEDIATE    'alter materialized view '
                               || l_mview_name
                               || ' refresh on commit';
+                              
+            l_end_time := systimestamp;
+            l_elapsed_time := l_end_time - l_start_time;                           
 
-            DBMS_OUTPUT.put_line
-                             (   'MVIEW '''
-                              || l_mview_name
-                              || ''' ABANDONDED on-commit refresh resumed at '
-                              || SYSTIMESTAMP
-                             );
+            l_log_msg := 'MVIEW '''
+                      || l_mview_name
+                      || ''' on-commit refresh pause timed out at '
+                      || SYSTIMESTAMP
+                      || ', elapsed_time = '
+                      || l_elapsed_time;
 
+            cwms_msg.log_db_message('timeout_mv_refresh_paused', 4, l_log_msg);
             DELETE FROM at_mview_refresh_paused
                   WHERE mview_name = l_mview_name
                     AND paused_at <= l_abandonded_pauses (l_mview_name);
