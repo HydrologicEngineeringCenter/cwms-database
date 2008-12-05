@@ -2075,7 +2075,7 @@ create or replace package body cwms_xchg as
       -------------------------------
       -- process the exchange sets --
       -------------------------------
-      l_pause_handle := cwms_util.pause_mv_refresh('cwms_v_ts_id', 'Executing CWMS_XCHG.STORE_DATAEXCHANGE_CONF');
+      -- l_pause_handle := cwms_util.pause_mv_refresh('mv_cwms_ts_id', 'Executing CWMS_XCHG.STORE_DATAEXCHANGE_CONF');
       l_dx_config.get_offices(l_offices);
       l_dx_config.get_datastores(l_datastores);
       l_dx_config.get_dataexchange_sets(l_dx_sets);
@@ -2145,7 +2145,7 @@ create or replace package body cwms_xchg as
                exit when l_oracle_id is not null and l_set_filemgr is not null;
             end loop;  
             if l_oracle_id is null or l_set_filemgr is null then
-               cwms_util.resume_mv_refresh(l_pause_handle);
+               -- cwms_util.resume_mv_refresh(l_pause_handle);
                rollback;
                cwms_err.raise(
                   'ERROR',
@@ -2166,7 +2166,7 @@ create or replace package body cwms_xchg as
                 where office_id = l_set_office_id;
             exception
                when no_data_found then
-                  cwms_util.resume_mv_refresh(l_pause_handle);
+                  -- cwms_util.resume_mv_refresh(l_pause_handle);
                   rollback;
                   cwms_err.raise(
                      'INVALID_ITEM',
@@ -2409,7 +2409,7 @@ create or replace package body cwms_xchg as
                       where upper(time_zone_name) = upper(l_dss_time_zone_name);
                   exception
                      when no_data_found then
-                        cwms_util.resume_mv_refresh(l_pause_handle);
+                        -- cwms_util.resume_mv_refresh(l_pause_handle);
                         rollback;
                         cwms_err.raise(
                            'INVALID_ITEM',
@@ -2423,7 +2423,7 @@ create or replace package body cwms_xchg as
                       where upper(tz_usage_id) = upper(l_dss_tz_usage_id);
                   exception
                      when no_data_found then
-                        cwms_util.resume_mv_refresh(l_pause_handle);
+                        -- cwms_util.resume_mv_refresh(l_pause_handle);
                         rollback;
                         cwms_err.raise(
                            'INVALID_ITEM',
@@ -2437,7 +2437,7 @@ create or replace package body cwms_xchg as
                       where upper(dss_parameter_type_id) = upper(l_dss_parameter_type_id);
                   exception
                      when no_data_found then
-                        cwms_util.resume_mv_refresh(l_pause_handle);
+                        -- cwms_util.resume_mv_refresh(l_pause_handle);
                         rollback;
                         cwms_err.raise(
                            'INVALID_ITEM',
@@ -2553,7 +2553,7 @@ create or replace package body cwms_xchg as
             end if;
          end loop;
       end loop;
-      cwms_util.resume_mv_refresh(l_pause_handle);
+      -- cwms_util.resume_mv_refresh(l_pause_handle);
 
       -----------------------------------------------------------------
       -- clean up any unused data exchage info for specified offices --
