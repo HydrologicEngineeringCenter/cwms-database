@@ -105,6 +105,7 @@ tableInfo = [
     {"ID" : "dssXchgDirection",   "TABLE" : "CWMS_DSS_XCHG_DIRECTION",    "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "logMessageTypes",    "TABLE" : "CWMS_LOG_MESSAGE_TYPES",     "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "logMessagePropTypes","TABLE" : "CWMS_LOG_MESSAGE_PROP_TYPES","SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "interpolateUnits"   ,"TABLE" : "CWMS_INTERPOLATE_UNITS",     "SCHEMA" : "CWMS", "USERACCESS" : True},
 ]
 
 tables = []
@@ -4796,6 +4797,17 @@ logMessagePropTypes = [
 	[8, 'String' ],
 ]
 
+#-------------------#
+# INTERPOLATE UNITS #
+#-------------------#
+sys.stderr.write("Processing interpolate units \n")
+interpolateUnits = [
+#      CODE  ID
+#      ----  --------
+	[1, 'minutes'  ],
+	[2, 'intervals'],
+]
+
 #--------------------------------------------------#
 # parse the offices into dbhost_offices dictionary #
 #--------------------------------------------------#
@@ -7926,6 +7938,53 @@ for code, id in logMessagePropTypes :
 	logMessagePropTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
 logMessagePropTypesLoadTemplate += "COMMIT;\n"
 
+sys.stderr.write("Building intpolateUnitsCreationTemplate\n")
+interpolateUnitsCreationTemplate = \
+'''
+-- ## TABLE ###############################################
+-- ## @TABLE
+-- ##
+CREATE TABLE @TABLE 
+   (
+       INTERPOLATE_UNITS_CODE NUMBER(1)   NOT NULL,
+       INTERPOLATE_UNITS_ID   VARCHAR2(16) NOT NULL
+   )
+       PCTFREE 10
+       PCTUSED 40
+       INITRANS 1
+       MAXTRANS 255
+       TABLESPACE @DATASPACE
+       STORAGE 
+   ( 
+          INITIAL 1K
+          NEXT 1K
+          MINEXTENTS 1
+          MAXEXTENTS 200
+          PCTINCREASE 25
+          FREELISTS 1
+          FREELIST GROUPS 1
+          BUFFER_POOL DEFAULT
+   );
+   
+-------------------------------
+-- @TABLE constraints  --
+--
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (INTERPOLATE_UNITS_CODE);
+
+---------------------------
+-- @TABLE comments --
+--
+COMMENT ON TABLE  @TABLE                       IS 'Contains valid values for time series interpolation units';
+COMMENT ON COLUMN @TABLE.INTERPOLATE_UNITS_CODE IS 'Numeric code corresponding to the interpolation units';
+COMMENT ON COLUMN @TABLE.INTERPOLATE_UNITS_ID   IS 'The interpolation units';
+
+COMMIT;
+'''
+sys.stderr.write("Building interpolateUnitsLoadTemplate\n")
+interpolateUnitsLoadTemplate = ''
+for code, id in interpolateUnits :
+	interpolateUnitsLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
+interpolateUnitsLoadTemplate += "COMMIT;\n"
 
 sys.stderr.write("Building displayUnitsCreationTemplate\n")
 displayUnitsCreationTemplate = \

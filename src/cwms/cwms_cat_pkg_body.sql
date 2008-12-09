@@ -3020,9 +3020,12 @@ IS
                SUBSTR (l_oracle_id, REGEXP_INSTR (l_oracle_id, '[a-zA-Z0-9]'));
 
       FOR rec IN (SELECT dss_file_code, dss_xchg_set_id, description,
-                         start_time, end_time, realtime
-                    FROM at_dss_xchg_set
-                   WHERE office_code = l_db_office_code)
+                         start_time, end_time, interpolate_count, 
+                         interpolate_units_id, realtime
+                    FROM at_dss_xchg_set s,
+                         cwms_interpolate_units u
+                   WHERE office_code = l_db_office_code
+                     AND u.interpolate_units_code = s.interpolate_units)
       LOOP
          l_xchg_sets.EXTEND ();
          l_xchg_sets (l_xchg_sets.LAST) :=
@@ -3048,6 +3051,14 @@ IS
                                                               (rec.start_time,
                                                                rec.end_time
                                                               )
+                                      END,
+                                      CASE rec.interpolate_count
+                                         WHEN 0
+                                            THEN NULL
+                                         ELSE NEW xchg_max_interpolate_t
+                                                      (rec.interpolate_count, 
+                                                       rec.interpolate_units_id
+                                                      )
                                       END,
                                       l_db_office_code
                                      );

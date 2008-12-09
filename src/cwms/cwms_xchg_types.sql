@@ -21,6 +21,7 @@ declare
       'xchg_timeseries_t',
       'xchg_timeseries_tab_t',
       'xchg_timewindow_t',
+      'xchg_max_interpolate_t',
       'xchg_ts_mapping_set_t',
       'xchg_ts_mapping_t',
       'xchg_ts_mapping_tab_t');
@@ -1056,6 +1057,112 @@ end;
 /
 show errors;
 
+create type xchg_max_interpolate_t as object (
+   m_count integer,
+   m_unit  varchar2(16),
+   m_dummy varchar2(1), -- force default constructor to have a different signature
+                        -- than the specified constructor
+   
+   constructor function xchg_max_interpolate_t(
+      p_count integer,
+      p_unit  varchar2)
+      return self as result,
+      
+   constructor function xchg_max_interpolate_t(
+      p_node in xmltype)
+      return self as result,
+      
+   member procedure init(
+      p_count integer,
+      p_unit  varchar2),
+      
+   member function get_xml return xmltype,
+   
+   member function get_string return varchar2,
+   
+   member procedure get_values(
+      p_count out integer,
+      p_unit  out varchar2)       
+);
+/
+show errors;
+
+create type body xchg_max_interpolate_t 
+as
+   
+   constructor function xchg_max_interpolate_t(
+      p_count integer,
+      p_unit  varchar2)
+      return self as result
+   is
+   begin
+      init(p_count, p_unit);
+      return;
+   end;
+      
+   constructor function xchg_max_interpolate_t(
+      p_node in xmltype)
+      return self as result
+   is
+      l_node   xmltype;
+      l_count integer;
+      l_unit  varchar2(16);
+   begin
+      if p_node.getrootelement() != 'max_interpolate' then
+         cwms_err.raise('INVALID_ITEM', p_node.getrootelement(), 'max_interpolate node'); 
+      end if;
+      l_count := p_node.extract('/max_interpolate/node()').getnumberval();
+      l_unit  := p_node.extract('/max_interpolate/@units').getstringval();
+      init(l_count, l_unit);
+      return;
+   end;
+      
+   member procedure init(
+      p_count integer,
+      p_unit  varchar2)
+   is
+   begin
+      if p_count is null or p_count < 0 then
+         cwms_err.raise('ERROR', 'max-interpolate requires non-negative value');
+      end if;
+      case p_unit
+         when 'minutes'   then null;
+         when 'intervals' then null;
+         cwms_err.raise('ERROR', 'max-interpolate units must be "minutes" or "intervals"');
+      end case;
+      m_count := p_count;
+      m_unit  := p_unit;
+   end;
+      
+   member function get_xml return xmltype
+   is
+   begin
+      return xmltype(
+      '<max_interpolate units="'
+      || m_unit
+      || '">'
+      || m_count
+      || '</max_interpolate>');
+   end;
+   
+   member function get_string return varchar2
+   is
+   begin
+      return '' || m_count || ' ' || m_unit;
+   end;
+   
+   member procedure get_values(
+      p_count out integer,
+      p_unit  out varchar2)
+   is
+   begin
+      p_count := m_count;
+      p_unit  := m_unit;
+   end;       
+end;
+/
+show errors;
+
 create type xchg_dataexchange_set_t as object (
    m_id                 varchar2(32),
    m_datastore_1        varchar2(16),
@@ -1064,18 +1171,20 @@ create type xchg_dataexchange_set_t as object (
    m_description        varchar2(80),
    m_realtime_source_id varchar2(16),
    m_timewindow         xchg_timewindow_t,
+   m_max_interpolate    xchg_max_interpolate_t,
    m_office_id          varchar2(16),
    
    constructor function xchg_dataexchange_set_t(
       p_id                 in varchar2,
       p_datastore_1        in varchar2,
       p_datastore_2        in varchar2,
-      p_ts_mapping_set     in xchg_ts_mapping_set_t default null,
-      p_is_cwms            in boolean               default false,
-      p_description        in varchar2              default null,
-      p_realtime_source_id in varchar2              default null,
-      p_timewindow         in xchg_timewindow_t     default null,
-      p_office_id          in varchar2              default null)
+      p_ts_mapping_set     in xchg_ts_mapping_set_t  default null,
+      p_is_cwms            in boolean                default false,
+      p_description        in varchar2               default null,
+      p_realtime_source_id in varchar2               default null,
+      p_timewindow         in xchg_timewindow_t      default null,
+      p_max_interpolate    in xchg_max_interpolate_t default null,
+      p_office_id          in varchar2               default null)
       return self as result,
    
    constructor function xchg_dataexchange_set_t(
@@ -1091,6 +1200,7 @@ create type xchg_dataexchange_set_t as object (
       p_description        in varchar2,
       p_realtime_source_id in varchar2,
       p_timewindow         in xchg_timewindow_t,
+      p_max_interpolate    in xchg_max_interpolate_t,
       p_office_id          in varchar2),
       
    member function get_id return varchar2,
@@ -1107,7 +1217,10 @@ create type xchg_dataexchange_set_t as object (
       
    member procedure get_timewindow(
       p_timewindow out xchg_timewindow_t),
-      
+  
+   member procedure get_max_interpolate(
+      p_max_interpolate out xchg_max_interpolate_t),
+          
    member procedure get_ts_mapping_set(
       p_ts_mapping_set out xchg_ts_mapping_set_t),
       
@@ -1128,6 +1241,7 @@ as
       p_description        in varchar2,
       p_realtime_source_id in varchar2,
       p_timewindow         in xchg_timewindow_t,
+      p_max_interpolate    in xchg_max_interpolate_t,
       p_office_id          in varchar2)
       return self as result
    is
@@ -1145,6 +1259,7 @@ as
          p_description,
          p_realtime_source_id,
          p_timewindow,
+         p_max_interpolate,
          p_office_id);
       return;
    end;
@@ -1157,11 +1272,12 @@ as
       l_id                 varchar2(32);
       l_datastore_1        varchar2(16);
       l_datastore_2        varchar2(16);
-      l_ts_mapping_set     xchg_ts_mapping_set_t := null;
-      l_description        varchar2(80)          := null;
-      l_realtime_source_id varchar2(16)          := null;
-      l_timewindow         xchg_timewindow_t     := null;
-      l_office_id          varchar2(16)          := null;
+      l_ts_mapping_set     xchg_ts_mapping_set_t  := null;
+      l_description        varchar2(80)           := null;
+      l_realtime_source_id varchar2(16)           := null;
+      l_timewindow         xchg_timewindow_t      := null;
+      l_max_interpolate    xchg_max_interpolate_t := null;
+      l_office_id          varchar2(16)           := null;
       l_node               xmltype;
    begin
       if p_node.getrootelement() != 'dataexchange-set' then
@@ -1204,6 +1320,10 @@ as
       if l_node is not null then
          l_timewindow := new xchg_timewindow_t(l_node);
       end if;
+      l_node := p_node.extract('/*/max-interpolate');
+      if l_node is not null then
+         l_max_interpolate := new xchg_max_interpolate_t(l_node);
+      end if;
       l_node := p_node.extract('/*/@office-id');
       if l_node is not null then
          l_office_id := l_node.getstringval();
@@ -1216,6 +1336,7 @@ as
          l_description,
          l_realtime_source_id,
          l_timewindow,
+         l_max_interpolate,
          l_office_id);
       return;
    end;
@@ -1228,6 +1349,7 @@ as
       p_description        in varchar2,
       p_realtime_source_id in varchar2,
       p_timewindow         in xchg_timewindow_t,
+      p_max_interpolate    in xchg_max_interpolate_t,
       p_office_id          in varchar2)
    is
       l_datastore_1 varchar2(16);
@@ -1247,6 +1369,7 @@ as
       m_description        := p_description;
       m_realtime_source_id := p_realtime_source_id;
       m_timewindow         := p_timewindow;
+      m_max_interpolate    := p_max_interpolate;
       m_office_id          := nvl(p_office_id, cwms_util.user_office_id);
       
       if m_realtime_source_id is not null then
@@ -1336,6 +1459,13 @@ as
       p_timewindow := m_timewindow;
    end;
       
+   member procedure get_max_interpolate(
+      p_max_interpolate out xchg_max_interpolate_t)
+   is
+   begin
+      p_max_interpolate := m_max_interpolate;
+   end;
+   
    member procedure get_ts_mapping_set(
       p_ts_mapping_set out xchg_ts_mapping_set_t)
    is
@@ -1375,6 +1505,10 @@ as
          || case (m_timewindow is null)
                when true  then null
                when false then m_timewindow.get_xml().getstringval()
+            end
+         || case (m_max_interpolate is null)
+               when true  then null
+               when false then m_max_interpolate.get_xml().getstringval()
             end);
             
          if (m_ts_mapping_set is not null) then

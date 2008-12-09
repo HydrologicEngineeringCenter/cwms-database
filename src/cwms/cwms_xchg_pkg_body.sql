@@ -1655,6 +1655,7 @@ create or replace package body cwms_xchg as
       l_dss_ts          xchg_dss_timeseries_t;
       l_cwms_ts         xchg_cwms_timeseries_t;
       l_timewindow      xchg_timewindow_t;
+      l_max_interpolate xchg_max_interpolate_t;
       type vc32k_vc32k  is table of  varchar2(32767) index by varchar2(32767);
       l_offices_a       vc32k_vc32k;
       l_filemgrs_a      vc32k_vc32k; 
@@ -1670,11 +1671,14 @@ create or replace package body cwms_xchg as
                 description,
                 start_time,
                 end_time,
+                interpolate_count,
+                interpolate_units_id,
                 realtime,
                 last_update
            from at_dss_file f,
                 at_dss_xchg_set xs,
-                cwms_office o
+                cwms_office o,
+                cwms_interpolate_units u
           where xs.office_code in (
                 select office_code
                   from cwms_office
@@ -1682,6 +1686,7 @@ create or replace package body cwms_xchg as
             and upper(dss_xchg_set_id) like upper(l_dss_xchg_set_id) escape '\'
             and f.dss_file_code = xs.dss_file_code
             and o.office_code = f.office_code
+            and u.interpolate_units_code = xs.interpolate_units
             and dss_filemgr_url like l_dss_filemgr_url escape '\'
             and dss_file_name like l_dss_file_name escape '\'
        order by office_id asc, dss_xchg_set_id asc;
@@ -1868,6 +1873,13 @@ create or replace package body cwms_xchg as
          else
             l_timewindow := new xchg_timewindow_t(set_info.start_time, set_info.end_time);
          end if;
+         if set_info.interpolate_count = 0 then
+            l_max_interpolate := null;
+         else
+            l_max_interpolate := new xchg_max_interpolate_t(
+                                       set_info.interpolate_count, 
+                                       set_info.interpolate_units_id);
+         end if;
          l_dx_sets.extend();
          l_dx_sets(l_dx_sets.last) := new xchg_dataexchange_set_t(
             set_info.dss_xchg_set_id,
@@ -1882,6 +1894,7 @@ create or replace package body cwms_xchg as
                else null
             end,
             l_timewindow,
+            l_max_interpolate,
             set_info.office_id);
       end loop;
 
@@ -1932,75 +1945,79 @@ create or replace package body cwms_xchg as
       type assoc_vc512_vc16 is table of varchar2(512) index by varchar2(16); -- 512 = 256 (URL) + 256 (filename)
       type assoc_bool_vc32  is table of boolean index by varchar2(32);       -- 32 (URL) 
       
-      c_dss_to_oracle           constant pls_integer := 1;
-      c_oracle_to_dss           constant pls_integer := 2;
-      
-      l_realtime_direction      pls_integer;
-      l_sets_inserted           pls_integer := 0;
-      l_sets_updated            pls_integer := 0;
-      l_mappings_inserted       pls_integer := 0;
-      l_mappings_updated        pls_integer := 0;
-      l_mappings_deleted        pls_integer := 0;
-      l_store_rule              varchar2(16) := upper(nvl(p_store_rule, 'MERGE'));
-      l_can_insert              boolean := false;
-      l_can_update              boolean := false;
-      l_can_delete              boolean := false;
-      l_set_updated             boolean;
-      l_new_set                 boolean;
-      l_new_map                 boolean;
-      i                         pls_integer;
-      j                         pls_integer;
-      l_ts_id                   varchar2(183);
-      l_ts_code                 at_cwms_ts_spec.ts_code%type;
-      l_dss_ts_code             at_dss_ts_spec.dss_ts_code%type;
-      l_dss_pathname            varchar2(391);
-      l_dss_time_zone_name      cwms_time_zone.time_zone_name%type;
-      l_dss_time_zone_code      cwms_time_zone.time_zone_code%type;
-      l_dss_tz_usage_id         cwms_tz_usage.tz_usage_id%type;
-      l_dss_tz_usage_code       cwms_tz_usage.tz_usage_code%type;
-      l_dss_units               at_dss_ts_spec.unit_id%type;
-      l_dss_parameter_type_id   cwms_dss_parameter_type.dss_parameter_type_id%type;
-      l_dss_parameter_type_code cwms_dss_parameter_type.dss_parameter_type_code%type;
-      l_set_name                at_dss_xchg_set.dss_xchg_set_id%type;
-      l_set_description         at_dss_xchg_set.description%type;
-      l_set_office_id           cwms_office.office_id%type;
-      l_set_office_code         cwms_office.office_code%type;
-      l_set_realtime_source_id  varchar2(16);         
-      l_office_id               cwms_office.office_id%type;
-      l_oracle_id               varchar2(16);
-      l_dssfilemgr_id           varchar2(16);
-      l_set_url                 varchar2(32);
-      l_set_filemgr             varchar2(512);
-      l_text                    varchar2(32767);
-      l_a_part                  varchar2(64);
-      l_b_part                  varchar2(64);
-      l_c_part                  varchar2(64);
-      l_d_part                  varchar2(64);
-      l_e_part                  varchar2(64);
-      l_f_part                  varchar2(64);
-      l_map_updated             boolean;
-      l_xchg_set_rec            at_dss_xchg_set%rowtype;
-      l_dssfilemgr_rec          at_dss_file%rowtype;
-      l_dss_ts_xchg_spec_rec    at_dss_ts_xchg_spec%rowtype;
-      l_dss_ts_spec_rec         at_dss_ts_spec%rowtype;
-      l_specified_maps          assoc_bool_vc574;
-      l_urls_affected           assoc_bool_vc32; 
-      l_dx_config               xchg_dataexchange_conf_t := p_dx_config;
-      l_offices                 xchg_office_tab_t;
-      l_datastores              xchg_datastore_tab_t;
-      l_datastore_1             varchar2(16);
-      l_datastore_2             varchar2(16);
-      l_start_time              varchar2(32);
-      l_end_time                varchar2(32);
-      l_dx_sets                 xchg_dataexchange_set_tab_t;
-      l_ts_mapping_set          xchg_ts_mapping_set_t;
-      l_ts_mappings             xchg_ts_mapping_tab_t;
-      l_timewindow              xchg_timewindow_t;
-      l_ts1                     xchg_timeseries_t;
-      l_ts2                     xchg_timeseries_t;
-      l_cwms_ts                 xchg_cwms_timeseries_t;
-      l_dss_ts                  xchg_dss_timeseries_t;
-      l_pause_handle            urowid;
+      c_dss_to_oracle              constant pls_integer := 1;
+      c_oracle_to_dss              constant pls_integer := 2;
+
+      l_realtime_direction         pls_integer;
+      l_sets_inserted              pls_integer := 0;
+      l_sets_updated               pls_integer := 0;
+      l_mappings_inserted          pls_integer := 0;
+      l_mappings_updated           pls_integer := 0;
+      l_mappings_deleted           pls_integer := 0;
+      l_store_rule                 varchar2(16) := upper(nvl(p_store_rule, 'MERGE'));
+      l_can_insert                 boolean := false;
+      l_can_update                 boolean := false;
+      l_can_delete                 boolean := false;
+      l_set_updated                boolean;
+      l_new_set                    boolean;
+      l_new_map                    boolean;
+      i                            pls_integer;
+      j                            pls_integer;
+      l_ts_id                      varchar2(183);
+      l_ts_code                    at_cwms_ts_spec.ts_code%type;
+      l_dss_ts_code                at_dss_ts_spec.dss_ts_code%type;
+      l_dss_pathname               varchar2(391);
+      l_dss_time_zone_name         cwms_time_zone.time_zone_name%type;
+      l_dss_time_zone_code         cwms_time_zone.time_zone_code%type;
+      l_dss_tz_usage_id            cwms_tz_usage.tz_usage_id%type;
+      l_dss_tz_usage_code          cwms_tz_usage.tz_usage_code%type;
+      l_dss_units                  at_dss_ts_spec.unit_id%type;
+      l_dss_parameter_type_id      cwms_dss_parameter_type.dss_parameter_type_id%type;
+      l_dss_parameter_type_code    cwms_dss_parameter_type.dss_parameter_type_code%type;
+      l_set_name                   at_dss_xchg_set.dss_xchg_set_id%type;
+      l_set_description            at_dss_xchg_set.description%type;
+      l_set_office_id              cwms_office.office_id%type;
+      l_set_office_code            cwms_office.office_code%type;
+      l_set_realtime_source_id     varchar2(16);         
+      l_office_id                  cwms_office.office_id%type;
+      l_oracle_id                  varchar2(16);
+      l_dssfilemgr_id              varchar2(16);
+      l_set_url                    varchar2(32);
+      l_set_filemgr                varchar2(512);
+      l_text                       varchar2(32767);
+      l_a_part                     varchar2(64);
+      l_b_part                     varchar2(64);
+      l_c_part                     varchar2(64);
+      l_d_part                     varchar2(64);
+      l_e_part                     varchar2(64);
+      l_f_part                     varchar2(64);
+      l_map_updated                boolean;
+      l_xchg_set_rec               at_dss_xchg_set%rowtype;
+      l_dssfilemgr_rec             at_dss_file%rowtype;
+      l_dss_ts_xchg_spec_rec       at_dss_ts_xchg_spec%rowtype;
+      l_dss_ts_spec_rec            at_dss_ts_spec%rowtype;
+      l_specified_maps             assoc_bool_vc574;
+      l_urls_affected              assoc_bool_vc32; 
+      l_dx_config                  xchg_dataexchange_conf_t := p_dx_config;
+      l_offices                    xchg_office_tab_t;
+      l_datastores                 xchg_datastore_tab_t;
+      l_datastore_1                varchar2(16);
+      l_datastore_2                varchar2(16);
+      l_start_time                 varchar2(32);
+      l_end_time                   varchar2(32);
+      l_dx_sets                    xchg_dataexchange_set_tab_t;
+      l_ts_mapping_set             xchg_ts_mapping_set_t;
+      l_ts_mappings                xchg_ts_mapping_tab_t;
+      l_timewindow                 xchg_timewindow_t;
+      l_ts1                        xchg_timeseries_t;
+      l_ts2                        xchg_timeseries_t;
+      l_max_interpolate            xchg_max_interpolate_t;
+      l_max_interpolate_count      integer;
+      l_max_interpolate_units      varchar2(16);
+      l_max_interpolate_units_code number(1);
+      l_cwms_ts                    xchg_cwms_timeseries_t;
+      l_dss_ts                     xchg_dss_timeseries_t;
+      l_pause_handle               urowid;
       
       function get_dss_file_code (p_full_url in varchar2, p_office_id in varchar2) return number
       is
@@ -2096,6 +2113,17 @@ create or replace package body cwms_xchg as
             else
                l_timewindow.get_times(l_start_time, l_end_time);
             end if;
+            l_dx_sets(i).get_max_interpolate(l_max_interpolate);
+            if l_max_interpolate is null then
+               l_max_interpolate_count := 0;
+               l_max_interpolate_units := 'minutes';
+            else
+               l_max_interpolate.get_values(l_max_interpolate_count, l_max_interpolate_units);
+            end if;
+            select interpolate_units_code 
+              into l_max_interpolate_units_code
+              from cwms_interpolate_units
+             where interpolate_units_id = l_max_interpolate_units; 
             ------------------------------
             -- identify the data stores --
             ------------------------------
@@ -2306,6 +2334,8 @@ create or replace package body cwms_xchg as
                           description,
                           start_time,
                           end_time,
+                          interpolate_count,
+                          interpolate_units,
                           realtime,
                           last_update)                    
                   values (cwms_seq.nextval,
@@ -2315,6 +2345,8 @@ create or replace package body cwms_xchg as
                           l_set_description,
                           l_start_time,
                           l_end_time,
+                          l_max_interpolate_count,
+                          l_max_interpolate_units_code,
                           l_realtime_direction,
                           null)
                 returning dss_xchg_set_code,
@@ -2324,6 +2356,8 @@ create or replace package body cwms_xchg as
                           description,
                           start_time,
                           end_time,
+                          interpolate_count,
+                          interpolate_units,
                           realtime,
                           last_update
                      into l_xchg_set_rec;
@@ -3117,6 +3151,8 @@ create or replace package body cwms_xchg as
                           l_set_description,
                           null, 
                           null,
+                          null,
+                          null,
                           l_realtime_direction,
                           null)
                 returning dss_xchg_set_code,
@@ -3126,6 +3162,8 @@ create or replace package body cwms_xchg as
                           description,
                           start_time,
                           end_time,
+                          interpolate_count,
+                          interpolate_units,
                           realtime,
                           last_update
                      into l_xchg_set_rec;
