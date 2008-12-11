@@ -2258,6 +2258,9 @@ as
       i                  pls_integer;
       j                  pls_integer;
    begin
+      if p_dataexchange_sets is null then 
+         return; 
+      end if;
       l_ts.extend(2);
       if p_offices is null or p_offices.count < 1 then
          cwms_err.raise('ERROR', 'Data exchange configuration must have at least one office.');
@@ -2292,9 +2295,6 @@ as
          i := p_datastores.next(i);
          exit when i is null;
       end loop;
-      if p_dataexchange_sets is null or p_dataexchange_sets.count < 1 then
-         cwms_err.raise('ERROR', 'Data exchange configuration must have at least data exchange set.');
-      end if;
       i := p_dataexchange_sets.first;
       loop
          l_dataexchange_set := p_dataexchange_sets(i);
@@ -2522,44 +2522,47 @@ as
       end if;
       l_nodes := p_node.extract('/*/*[local-name()="office"]');
       if l_nodes is null then
-         cwms_err.raise('ERROR', 'cwms-dataexchange-configuration has no office nodes.'); 
+         l_offices := null; 
+      else
+         select count(*) into l_count from table(xmlsequence(l_nodes));
+         l_offices := xchg_office_tab_t();
+         l_offices.extend(l_count);
+         for i in 1..l_count loop
+            l_offices(i) := new xchg_office_t(l_nodes.extract('*['||i||']'));
+         end loop;
       end if;
-      select count(*) into l_count from table(xmlsequence(l_nodes));
-      l_offices := xchg_office_tab_t();
-      l_offices.extend(l_count);
-      for i in 1..l_count loop
-         l_offices(i) := new xchg_office_t(l_nodes.extract('*['||i||']'));
-      end loop;
       
       l_nodes := p_node.extract('/*/*[local-name()="datastore"]');
       if l_nodes is null then
-         cwms_err.raise('ERROR', 'cwms-dataexchange-configuration has no datastore nodes.'); 
+         l_datastores := null;
+      else 
+         select count(*) into l_count from table(xmlsequence(l_nodes));
+         l_datastores := xchg_datastore_tab_t();
+         l_datastores.extend(l_count);
+         for i in 1..l_count loop
+            l_node := xmltype(l_nodes.extract('*['||i||']/*[1]').getstringval()); -- to force non-fragment
+            case l_node.getrootelement()
+               when 'dssfilemanager' then 
+                  l_datastores(i) := new xchg_dssfilemanager_t(l_node);
+               when 'oracle' 
+                  then l_datastores(i) := new xchg_oracle_t(l_node);
+               else
+                  cwms_err.raise('INVALID_ITEM', l_node.getrootelement(), 'datastore subnode.'); 
+            end case;
+         end loop;
       end if;
-      select count(*) into l_count from table(xmlsequence(l_nodes));
-      l_datastores := xchg_datastore_tab_t();
-      l_datastores.extend(l_count);
-      for i in 1..l_count loop
-         l_node := xmltype(l_nodes.extract('*['||i||']/*[1]').getstringval()); -- to force non-fragment
-         case l_node.getrootelement()
-            when 'dssfilemanager' then 
-               l_datastores(i) := new xchg_dssfilemanager_t(l_node);
-            when 'oracle' 
-               then l_datastores(i) := new xchg_oracle_t(l_node);
-            else
-               cwms_err.raise('INVALID_ITEM', l_node.getrootelement(), 'datastore subnode.'); 
-         end case;
-      end loop;
       
       l_nodes := p_node.extract('/*/*[local-name()="dataexchange-set"]');
       if l_nodes is null then
-         cwms_err.raise('ERROR', 'cwms-dataexchange-configuration has no dataexchange-set nodes.'); 
+         l_dataexchange_sets := null;
+      else 
+         select count(*) into l_count from table(xmlsequence(l_nodes));
+         l_dataexchange_sets := xchg_dataexchange_set_tab_t();
+         l_dataexchange_sets.extend(l_count);
+         for i in 1..l_count loop
+            l_dataexchange_sets(i) := new xchg_dataexchange_set_t(l_nodes.extract('*['||i||']'));
+         end loop;
       end if;
-      select count(*) into l_count from table(xmlsequence(l_nodes));
-      l_dataexchange_sets := xchg_dataexchange_set_tab_t();
-      l_dataexchange_sets.extend(l_count);
-      for i in 1..l_count loop
-         l_dataexchange_sets(i) := new xchg_dataexchange_set_t(l_nodes.extract('*['||i||']'));
-      end loop;
       
       init(l_offices, l_datastores, l_dataexchange_sets);
       return;
