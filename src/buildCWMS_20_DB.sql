@@ -38,6 +38,7 @@ alter session set current_schema = cwms_dba;
 @@cwms_dba/cwms_user_admin_pkg_body
 --
 grant execute on  cwms_dba.cwms_user_admin to cwms_20;
+grant execute on  dbms_crypto to cwms_user;
 --
 -- switch to CWMS_20 schema
 --

@@ -81,6 +81,7 @@ grant execute any procedure to cwms_20 with admin option;
 grant execute any type to cwms_20;
 grant execute on  ctxsys.ctx_ddl to cwms_20;
 grant execute on  ctxsys.ctx_doc to cwms_20;
+grant execute on  dbms_crypto to cwms_20;
 grant execute on  sys.dbms_aq to cwms_20;
 grant execute on  sys.dbms_aq_bqview to cwms_20;
 grant execute on  sys.dbms_lock to cwms_20;
