@@ -39,45 +39,14 @@ create or replace package body cwms_xchg as
       return varchar2
    is
       l_url_part      varchar2(256) := regexp_replace(lower(p_dss_filemgr_url), '/dssfilemanager$', '');
-      l_filename_part varchar2(256) := p_dss_file_name;
-      l_datastore_id  varchar2(64   );
-      l_pos           pls_integer;
-      l_dns_pattern   constant varchar2(256) := 
-         '([a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z\-][a-zA-Z0-9\-]*[a-zA-Z0-9][.])*[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z\-][a-zA-Z0-9\-]*[a-zA-Z0-9]';
+      l_hash          raw(32);
+      l_datastore_id  varchar2(64);
    begin
-      --
-      -- remove the characters [/.:] from the url
-      --
-      l_url_part := replace(replace(replace(l_url_part, '.', ''), ':', ''), '/', '');
-      --
-      -- if the url is in DNS format, just take the machine name
-      --
-      if regexp_instr(l_url_part, l_dns_pattern) = 1 and
-         regexp_instr(l_url_part, l_dns_pattern, 1, 1, 1) = length(l_url_part) + 1 
-      then
-         l_pos := instr(l_url_part, '.');
-         if l_pos > 0 then
-            l_url_part := substr(l_url_part, l_pos-1);
-         end if;
-      end if;
-      --
-      -- remove directory info and file extension from filename
-      --
-      l_filename_part := regexp_substr(l_filename_part, '[^/]+$');
-      l_pos := instr(l_filename_part, '.', -1);
-      if l_pos > 0 and length(l_filename_part) - l_pos < 4 then
-         l_filename_part := substr(l_filename_part, 1, l_pos - 1);
-      end if;
-      --
-      -- concatenate the url and filename parts, trimming at both ends if too long
-      --
-      l_datastore_id := l_url_part || ':' || l_filename_part;
-      while length(l_datastore_id) > 16 loop
-         l_datastore_id := substr(l_datastore_id, 2);
-         if length(l_datastore_id) = 16 then exit; end if;
-         l_datastore_id := substr(l_datastore_id, 1, length(l_datastore_id) - 1);
-      end loop;
-
+      l_hash := dbms_crypto.hash(
+                  utl_raw.cast_to_raw(l_url_part || p_dss_file_name),
+                  dbms_crypto.hash_md5);
+      l_datastore_id := rawtohex(l_hash);
+      l_datastore_id := substr(l_datastore_id, length(l_datastore_id) - 15);
       return l_datastore_id;
    end dss_datastore_id;
    
@@ -344,7 +313,7 @@ create or replace package body cwms_xchg as
       p_office_id         in   varchar2 default null)
       return number
    is
-      pragma autonomous_transaction;
+      -- pragma autonomous_transaction;
       l_dss_file_code   number(10);
       l_office_code     varchar2(16);
       l_dss_filemgr_url varchar2(256) := regexp_replace(p_dss_filemgr_url, '/DssFileManager$', '', 1, 1, 'i');
@@ -441,7 +410,7 @@ create or replace package body cwms_xchg as
       p_office_id         in   varchar2 default null)
       return number
    is
-      pragma autonomous_transaction;
+      -- pragma autonomous_transaction;
       l_office_code         number(10);
       l_dss_xchg_set_code   number(10)    := null;
       l_dss_file_code       number(10);
@@ -629,7 +598,7 @@ create or replace package body cwms_xchg as
    is                    
       l_dss_xchg_set_code number(10);
       already_exists exception;
-      pragma exception_init(already_exists, -00001);
+      -- pragma exception_init(already_exists, -00001);
    begin  
       l_dss_xchg_set_code := get_dss_xchg_set_code(
          p_dss_xchg_set_id,
@@ -654,7 +623,7 @@ create or replace package body cwms_xchg as
       p_new_dss_xchg_set_id   in   varchar2,
       p_office_id             in   varchar2 default null)
    is
-      pragma autonomous_transaction;
+      -- pragma autonomous_transaction;
       l_dss_xchg_set_code number(10);
       l_table_row at_dss_xchg_set%rowtype;
       already_exists exception;
@@ -704,7 +673,7 @@ create or replace package body cwms_xchg as
       p_office_id            in   varchar2 default null)
       return number
    is
-      pragma autonomous_transaction;
+      -- pragma autonomous_transaction;
       l_update_description    boolean := upper(p_ignore_nulls) != 'T' or p_description     is not null;
       l_update_filemgr_url    boolean := upper(p_ignore_nulls) != 'T' or p_dss_filemgr_url is not null;
       l_update_file_name      boolean := upper(p_ignore_nulls) != 'T' or p_dss_file_name   is not null;
@@ -886,7 +855,7 @@ create or replace package body cwms_xchg as
       p_office_id            in   varchar2 default null)
       return number
    is
-      pragma autonomous_transaction;
+      -- pragma autonomous_transaction;
       l_table_row at_dss_ts_spec%rowtype;
       l_count pls_integer;
    begin
@@ -1027,7 +996,7 @@ create or replace package body cwms_xchg as
       p_office_id            in   varchar2 default null)
       return number
    is      
-      pragma autonomous_transaction;
+      -- pragma autonomous_transaction;
       l_office_id                  varchar2(16);
       l_cwms_ts_code               number;
       l_dss_ts_code                number;
@@ -1205,7 +1174,7 @@ create or replace package body cwms_xchg as
       p_tz_usage             in   varchar2 default null,
       p_office_id            in   varchar2 default null)
    is
-      pragma autonomous_transaction;
+      -- pragma autonomous_transaction;
       l_dss_xchg_set_id  at_dss_xchg_set.dss_xchg_set_id%type;
       l_dss_ts_xchg_code number;
       l_dss_ts_xchg_map  at_dss_ts_xchg_map%rowtype;
@@ -1289,7 +1258,7 @@ create or replace package body cwms_xchg as
                values l_dss_ts_xchg_map;
       end;
 
-   commit;         
+   -- commit;         
    end map_ts_in_xchg_set;
 
 --------------------------------------------------------------------------------
@@ -1444,19 +1413,8 @@ create or replace package body cwms_xchg as
             || set_info.dss_file_name;
          if not l_filemgrs.exists (set_info.dss_filemgr_url||set_info.dss_file_name) then
             l_filemgr_id := dss_datastore_id(set_info.dss_filemgr_url, set_info.dss_file_name);
-            declare
-               i pls_integer := 1;
-            begin
-               l_parts.extend(1);
-               while l_filemgr_ids.exists(l_filemgr_id) loop
-                  i := i + 1;
-                  l_parts(1) := to_char(i);
-                  l_filemgr_id := substr(l_filemgr_id, 1, length(l_filemgr_id) - length(l_parts(1))) || l_parts(1);
-               end loop;
-            end;
             l_filemgr_ids(l_filemgr_id) := '';
             l_filemgrs(l_text) := l_filemgr_id;
-            l_parts.trim(1);
          end if;
       end loop;
       
@@ -1939,7 +1897,7 @@ create or replace package body cwms_xchg as
       -- This procedure must perform commits, so isolate them from any
       -- outer-level transactions. 
       --
-      pragma autonomous_transaction;
+      -- pragma autonomous_transaction;
       
       type assoc_bool_vc574 is table of boolean index by varchar2(574);      -- 574 = 183 (tsid) + 391 (pathname)
       type assoc_vc512_vc16 is table of varchar2(512) index by varchar2(16); -- 512 = 256 (URL) + 256 (filename)
@@ -1991,7 +1949,6 @@ create or replace package body cwms_xchg as
       l_d_part                     varchar2(64);
       l_e_part                     varchar2(64);
       l_f_part                     varchar2(64);
-      l_map_updated                boolean;
       l_xchg_set_rec               at_dss_xchg_set%rowtype;
       l_dssfilemgr_rec             at_dss_file%rowtype;
       l_dss_ts_xchg_spec_rec       at_dss_ts_xchg_spec%rowtype;
@@ -2502,7 +2459,6 @@ create or replace package body cwms_xchg as
                            l_mappings_inserted := l_mappings_inserted + 1;
                         end if;
                      else
-                        l_map_updated := false;
                         if l_can_update then
                            -------------------------------------
                            -- update the mapping if necessary --
@@ -2511,33 +2467,27 @@ create or replace package body cwms_xchg as
                              into l_dss_ts_spec_rec
                              from at_dss_ts_spec
                             where dss_ts_code = l_dss_ts_code;
-                           if l_dss_ts_spec_rec.dss_parameter_type_code != l_dss_parameter_type_code then
-                              l_dss_ts_spec_rec.dss_parameter_type_code := l_dss_parameter_type_code;
-                              l_map_updated := true;
-                           end if;
-                           if l_dss_ts_spec_rec.unit_id != l_dss_units then
-                              l_dss_ts_spec_rec.unit_id := l_dss_units;
-                              l_map_updated := true;
-                           end if;
-                           if l_dss_ts_spec_rec.time_zone_code != l_dss_time_zone_code then
-                              l_dss_ts_spec_rec.time_zone_code := l_dss_time_zone_code;
-                              l_map_updated := true;
-                           end if;
-                           if l_dss_ts_spec_rec.tz_usage_code != l_dss_tz_usage_code then
-                              l_dss_ts_spec_rec.tz_usage_code := l_dss_tz_usage_code;
-                              l_map_updated := true;
-                           end if;
-                           if l_map_updated then
+                           if l_dss_ts_spec_rec.dss_parameter_type_code != l_dss_parameter_type_code or
+                              l_dss_ts_spec_rec.unit_id != l_dss_units or
+                              l_dss_ts_spec_rec.time_zone_code != l_dss_time_zone_code or
+                              l_dss_ts_spec_rec.tz_usage_code != l_dss_tz_usage_code
+                           then
+                              ------------------------
+                              -- update the mapping --
+                              ------------------------
+                              update at_dss_ts_spec
+                                 set dss_parameter_type_code = l_dss_parameter_type_code,
+                                     unit_id = l_dss_units,
+                                     time_zone_code = l_dss_time_zone_code,
+                                     tz_usage_code = l_dss_tz_usage_code
+                               where dss_ts_code = l_dss_ts_spec_rec.dss_ts_code;
+                              l_mappings_updated := l_mappings_updated + 1;
                               ----------------------------
                               -- update l_urls_affected --
                               ----------------------------
                               if not l_urls_affected.exists(l_set_url) then
                                  l_urls_affected(l_set_url) := true;
                               end if;
-                              update at_dss_ts_spec
-                                 set row = l_dss_ts_spec_rec
-                               where dss_ts_code = l_dss_ts_spec_rec.dss_ts_code;
-                              l_mappings_updated := l_mappings_updated + 1;
                            end if;
                         end if;
                      end if;
@@ -2616,12 +2566,12 @@ create or replace package body cwms_xchg as
       end if;
       
       commit;
-      
+
    exception
       when others then
          rollback;
          raise;
-   
+
    end store_dataexchange_conf;
 
 --------------------------------------------------------------------------------
@@ -3425,7 +3375,7 @@ create or replace package body cwms_xchg as
       p_office_id in varchar2 default null)
    is
    begin
-      delete 
+      delete
         from at_dss_file
        where office_code = cwms_util.get_office_code(p_office_id)
          and dss_file_code not in 
@@ -3438,7 +3388,7 @@ create or replace package body cwms_xchg as
    procedure del_unused_dss_ts_xchg_specs
    is
    begin
-      delete 
+      delete
         from at_dss_ts_xchg_spec
        where dss_ts_xchg_code not in 
                (select distinct dss_ts_xchg_code from at_dss_ts_xchg_map);
@@ -3451,10 +3401,11 @@ create or replace package body cwms_xchg as
       p_office_id in varchar2 default null)                                     
    is
    begin
-      delete 
-       from at_dss_ts_spec
-      where office_code = cwms_util.get_office_code(p_office_id)
-        and dss_ts_code not in (select distinct dss_ts_code from at_dss_ts_xchg_spec);
+      delete
+        from at_dss_ts_spec
+       where office_code = cwms_util.get_office_code(p_office_id)
+         and dss_ts_code not in 
+               (select distinct dss_ts_code from at_dss_ts_xchg_spec);
    end del_unused_dss_ts_specs;
 
 --------------------------------------------------------------------------------
@@ -3464,7 +3415,7 @@ create or replace package body cwms_xchg as
       p_office_id in varchar2 default null)                                     
    is
    begin
-      del_unused_dss_files;
+      del_unused_dss_files(p_office_id);
       del_unused_dss_ts_xchg_specs;
       del_unused_dss_ts_specs(p_office_id);
    end del_unused_dss_xchg_info;
@@ -3899,7 +3850,12 @@ begin
          cwms_err.raise(
             'INVALID_ITEM',
             p_dst_datastore_id,
-            'datastore id for data exchange set ' || p_set_id);
+            'datastore id for data exchange set ' 
+            || p_set_id 
+            || ', expected ' 
+            || db_datastore_id 
+            || ' or ' 
+            || dss_datastore_id(l_rec.dss_filemgr_url, l_rec.dss_file_name));
       end if;
    end if;
    l_log_msg := '<cwms_message type="RequestAction">'
