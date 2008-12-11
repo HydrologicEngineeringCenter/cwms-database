@@ -2103,11 +2103,13 @@ create or replace package body cwms_xchg as
                         if l_datastores(j).get_subtype() = 'xchg_oracle_t' then
                            l_oracle_id := l_datastore_1;
                         elsif l_datastores(j).get_subtype() = 'xchg_dssfilemanager_t' then
-                           l_set_filemgr := 
+                           l_set_url := 
                               '//' 
                               || treat(l_datastores(j) as xchg_dssfilemanager_t).get_host() 
                               || ':' 
-                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_port() 
+                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_port();
+                           l_set_filemgr :=
+                              l_set_url 
                               || treat(l_datastores(j) as xchg_dssfilemanager_t).get_filepath(); 
                         end if;
                      elsif l_text = l_datastore_2 then
