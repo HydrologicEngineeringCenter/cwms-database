@@ -80,7 +80,7 @@ AS
       cwms_dba.cwms_user_admin.unlock_db_account (p_username);
    END;
 
-   FUNCTION is_a_user_admin (p_db_office_code IN NUMBER)
+   FUNCTION is_user_admin (p_db_office_code IN NUMBER)
       RETURN BOOLEAN
    IS
       l_count      INTEGER       := 0;
