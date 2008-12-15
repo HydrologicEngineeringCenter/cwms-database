@@ -1800,7 +1800,13 @@ as
       return self as result
    is
    begin
-      init(p_id, p_host, p_port, p_filepath, p_description, nvl(p_office_id, cwms_util.user_office_id));
+      init(
+         p_id, 
+         p_host, 
+         p_port, 
+         p_filepath, 
+         p_description, 
+         nvl(p_office_id, cwms_util.user_office_id));
       return;
    end;
    
@@ -1809,7 +1815,7 @@ as
       return self as result
    is
       l_node        xmltype;
-      l_id          varchar2( 16);
+      l_id          varchar2(16);
       l_host        varchar2(255);
       l_port        integer;
       l_filepath    varchar2(255);
@@ -1833,7 +1839,7 @@ as
       if l_node is null then
          cwms_err.raise('ERROR', 'DSS file manager datastore node has missing port subnode');
       end if;
-      l_port := cwms_util.strip(l_node.getstringval());
+      l_port := l_node.getnumberval();
       l_node := p_node.extract('/*/filepath/node()');
       if l_node is null then
          cwms_err.raise('ERROR', 'DSS file manager datastore node has missing filepath subnode');
@@ -1907,10 +1913,10 @@ as
          cwms_err.raise('ERROR', 'DSS file manager datastore description must not exceed 256 characters.');
       end if;
       m_subtype     := 'xchg_dssfilemanager_t';
-      m_id          := p_id;
       m_host        := p_host;
       m_port        := p_port;
       m_filepath    := p_filepath;
+      m_id          := p_id;
       m_description := p_description;
       m_office_id   := p_office_id;
    end;

@@ -30,25 +30,6 @@ create or replace package body cwms_xchg as
       return l_datastore_id;
    end db_datastore_id;
    
---------------------------------------------------------------------------------
--- VARCHAR2 FUNCTION DSS_DATASTORE_ID(...)
---
-   function dss_datastore_id(
-      p_dss_filemgr_url in varchar2,
-      p_dss_file_name   in varchar2)
-      return varchar2
-   is
-      l_url_part      varchar2(256) := regexp_replace(lower(p_dss_filemgr_url), '/dssfilemanager$', '');
-      l_hash          raw(32);
-      l_datastore_id  varchar2(64);
-   begin
-      l_hash := dbms_crypto.hash(
-                  utl_raw.cast_to_raw(l_url_part || p_dss_file_name),
-                  dbms_crypto.hash_md5);
-      l_datastore_id := rawtohex(l_hash);
-      l_datastore_id := substr(l_datastore_id, length(l_datastore_id) - 15);
-      return l_datastore_id;
-   end dss_datastore_id;
    
 --------------------------------------------------------------------------------
 -- NUMBER FUNCTION GET_DSS_XCHG_SET_CODE(...)
@@ -309,6 +290,8 @@ create or replace package body cwms_xchg as
    function create_dss_file(
       p_dss_filemgr_url   in   varchar2,
       p_dss_file_name     in   varchar2,
+      p_dss_file_id       in   varchar2,
+      p_dss_file_desc     in   varchar2 default null,
       p_fail_if_exists    in   number default cwms_util.false_num,
       p_office_id         in   varchar2 default null)
       return number
@@ -318,6 +301,12 @@ create or replace package body cwms_xchg as
       l_office_code     varchar2(16);
       l_dss_filemgr_url varchar2(256) := regexp_replace(p_dss_filemgr_url, '/DssFileManager$', '', 1, 1, 'i');
    begin
+      if p_dss_filemgr_url is null or length(p_dss_filemgr_url) = 0 then
+         cwms_err.raise('ERROR', 'DSSFileManager URL must not be null or empty');
+      end if;
+      if p_dss_file_name is null or length(p_dss_file_name) = 0 then
+         cwms_err.raise('ERROR', 'DSS file name must not be null or empty.');
+      end if;
       l_office_code := cwms_util.get_office_code(p_office_id);
       begin
          select dss_file_code
@@ -336,12 +325,30 @@ create or replace package body cwms_xchg as
          end if;
       exception
          when no_data_found then
+            declare
+               l_dss_file_id varchar2(16) := p_dss_file_id;
             begin
+               if p_dss_file_id is null 
+               then
+                  l_dss_file_id := substr(rawtohex(
+                                    dbms_crypto.hash(
+                                       utl_raw.cast_to_raw(
+                                          l_dss_filemgr_url 
+                                          || p_dss_file_name), 
+                                       dbms_crypto.hash_md5)),-16);
+               else 
+                  l_dss_file_id := substr(p_dss_file_id, 1, 16);
+               end if;
                insert
                  into at_dss_file
-               values (cwms_seq.nextval, l_office_code, l_dss_filemgr_url, p_dss_file_name)
-             returning dss_file_code
-                  into l_dss_file_code;
+               values (cwms_seq.nextval,
+                       l_office_code,
+                       l_dss_file_id,
+                       l_dss_filemgr_url,
+                       p_dss_file_name,
+                       p_dss_file_desc)
+            returning dss_file_code
+                 into l_dss_file_code;
             exception
                when others then
                   rollback;
@@ -394,165 +401,6 @@ create or replace package body cwms_xchg as
             l_dss_filemgr_url || p_dss_file_name,
             'HEC-DSS file');
    end delete_dss_file;
-
---------------------------------------------------------------------------------
--- NUMBER FUNCTION CREATE_DSS_XCHG_SET(...)
---
-   function create_dss_xchg_set(
-      p_dss_xchg_set_id   in   varchar2,
-      p_description       in   varchar2,
-      p_dss_filemgr_url   in   varchar2,
-      p_dss_file_name     in   varchar2,
-      p_start_time        in   varchar2 default null,
-      p_end_time          in   varchar2 default null,
-      p_realtime          in   varchar2 default null,
-      p_fail_if_exists    in   number   default cwms_util.false_num,
-      p_office_id         in   varchar2 default null)
-      return number
-   is
-      -- pragma autonomous_transaction;
-      l_office_code         number(10);
-      l_dss_xchg_set_code   number(10)    := null;
-      l_dss_file_code       number(10);
-      l_description         varchar2(80);
-      l_realtime_code_in    number(10)    := null;
-      l_realtime_code       number(10)    := null;
-      l_dss_filemgr_url     varchar2(256) := regexp_replace(p_dss_filemgr_url, '/DssFileManager$', '', 1, 1, 'i');
-      l_set_dss_filemgr_url varchar2(256);
-      l_dss_file_name       varchar2(255);
-   begin
-      l_office_code := cwms_util.get_office_code(p_office_id);
-
-      ------------------------------------
-      -- verify the specified direction --
-      ------------------------------------
-      if p_realtime is not null then
-         begin
-            select dss_xchg_direction_code
-              into l_realtime_code_in
-              from cwms_dss_xchg_direction
-             where upper(dss_xchg_direction_id) = upper(p_realtime);
-         exception
-            when no_data_found then
-               rollback;
-               cwms_err.raise(
-                  'INVALID_ITEM',
-                  p_realtime,
-                  'HEC-DSS exchange direction');
-         end;
-      end if;
-
-      ----------------------------------------------------
-      -- determine if the specified item already exists --
-      --                                                --
-      -- if so, fail if p_fail_if_exists is TRUE or if  --
-      -- any of the other fields don't match.           --
-      ----------------------------------------------------
-      begin
-         select dss_xchg_set_code, dss_file_code, description,
-                realtime
-           into l_dss_xchg_set_code, l_dss_file_code, l_description,
-                l_realtime_code
-           from at_dss_xchg_set
-          where office_code = l_office_code
-            and dss_xchg_set_id = p_dss_xchg_set_id;
-
-         if p_fail_if_exists != cwms_util.false_num
-            or l_description != p_description
-            or nvl(l_realtime_code, 0) != nvl(l_realtime_code_in, 0) then
-            rollback;
-            cwms_err.raise(
-               'ITEM_ALREADY_EXISTS',
-               'HEC-DSS exchange set',
-               p_dss_xchg_set_id);
-         end if;
-      exception
-         when no_data_found then
-            null;
-      end;
-
-      if l_dss_xchg_set_code is not null then
-         ---------------------------------------
-         -- continue check on matching fields --
-         ---------------------------------------
-         select dss_filemgr_url, dss_file_name
-           into l_set_dss_filemgr_url, l_dss_file_name
-           from at_dss_file
-          where dss_file_code = l_dss_file_code;
-
-         if l_set_dss_filemgr_url != l_dss_filemgr_url
-            or
-            l_dss_file_name != p_dss_file_name then
-            rollback;
-            cwms_err.raise(
-               'ITEM_ALREADY_EXISTS',
-               'HEC-DSS exchange set',
-               p_office_id || '/' || p_dss_xchg_set_id);
-         end if;
-      else
-         ---------------------
-         -- create the item --
-         ---------------------
-         l_dss_file_code := create_dss_file(
-            l_dss_filemgr_url,
-            p_dss_file_name,
-            cwms_util.false_num,
-            p_office_id);
-
-         begin
-            insert
-              into at_dss_xchg_set
-                   (dss_xchg_set_code, office_code, dss_file_code,    
-                    dss_xchg_set_id, description,start_time,       
-                    end_time, realtime, last_update)      
-            values (cwms_seq.nextval, l_office_code, l_dss_file_code,
-                    p_dss_xchg_set_id, p_description, p_start_time,
-                    p_end_time, l_realtime_code_in, null)
-         returning dss_xchg_set_code
-              into l_dss_xchg_set_code;
-         exception
-            when others then
-               rollback;
-               cwms_err.raise(
-                  'ITEM_NOT_CREATED',
-                  'HEC-DSS exchange set',
-                  p_office_id || '/' || p_dss_xchg_set_id);
-         end;
-      end if;
-
-      commit;
-      
-      return l_dss_xchg_set_code;
-
-   end create_dss_xchg_set;
-
---------------------------------------------------------------------------------
--- PROCEDURE CREATE_DSS_XCHG_SET(...)
---
-   procedure create_dss_xchg_set(
-      p_dss_xchg_set_code   out      number,
-      p_dss_xchg_set_id     in       varchar2,
-      p_description         in       varchar2,
-      p_dss_filemgr_url     in       varchar2,
-      p_dss_file_name       in       varchar2,
-      p_start_time          in       varchar2,
-      p_end_time            in       varchar2,
-      p_realtime            in       varchar2 default null,
-      p_fail_if_exists      in       number default cwms_util.false_num,
-      p_office_id           in       varchar2 default null)
-   is
-   begin
-      p_dss_xchg_set_code := create_dss_xchg_set(
-         p_dss_xchg_set_id,
-         p_description,
-         p_dss_filemgr_url,
-         p_dss_file_name,
-         p_start_time,
-         p_end_time,
-         p_realtime,
-         p_fail_if_exists,
-         p_office_id);
-   end create_dss_xchg_set;
 
 ---------------------------------------------------------------------------------
 -- PROCEDURE DELETE_DSS_XCHG_SET(NUMBER)
@@ -1295,7 +1143,8 @@ create or replace package body cwms_xchg as
       
       l_dss_filemgr_url varchar2(256);
       l_dss_file_name   varchar2(256);
-      l_filemgr_id      varchar2(256);
+      l_filemgr_id      varchar2(16);
+      l_filemgr_desc    varchar2(256);
       l_dss_xchg_set_id varchar2(256);
       l_office_code     varchar2(256);
       l_office_id_mask  varchar2(256);
@@ -1317,6 +1166,8 @@ create or replace package body cwms_xchg as
       cursor xchg_set_cur is
          select dss_filemgr_url,
                 dss_file_name,
+                dss_file_id,
+                dss_file_description,
                 f.dss_file_code,
                 office_id,
                 dss_xchg_set_code,
@@ -1410,9 +1261,11 @@ create or replace package body cwms_xchg as
             || cwms_util.field_separator
             || regexp_substr(set_info.dss_filemgr_url, '[^:]+$')
             || cwms_util.field_separator
-            || set_info.dss_file_name;
+            || set_info.dss_file_name
+            || cwms_util.field_separator
+            || set_info.dss_file_description;
          if not l_filemgrs.exists (set_info.dss_filemgr_url||set_info.dss_file_name) then
-            l_filemgr_id := dss_datastore_id(set_info.dss_filemgr_url, set_info.dss_file_name);
+            l_filemgr_id := set_info.dss_file_id;
             l_filemgr_ids(l_filemgr_id) := '';
             l_filemgrs(l_text) := l_filemgr_id;
          end if;
@@ -1457,6 +1310,9 @@ create or replace package body cwms_xchg as
          writeln_xml('<host>'||l_parts(3)||'</host>');
          writeln_xml('<port>'||l_parts(4)||'</port>');
          writeln_xml('<filepath>'||l_parts(5)||'</filepath>');
+         if l_parts(6) is not null and length(l_parts(6)) > 0 then
+            writeln_xml('<description>'||l_parts(6)||'</description>');
+         end if;
          dedent;
          writeln_xml('</dssfilemanager>');
          dedent;
@@ -1622,6 +1478,8 @@ create or replace package body cwms_xchg as
       cursor xchg_set_cur is
          select dss_filemgr_url,
                 dss_file_name,
+                dss_file_id,
+                dss_file_description,
                 f.dss_file_code,
                 office_id,
                 dss_xchg_set_code,
@@ -1702,19 +1560,11 @@ create or replace package body cwms_xchg as
             || cwms_util.field_separator
             || regexp_substr(set_info.dss_filemgr_url, '[^:]+$')
             || cwms_util.field_separator
-            || set_info.dss_file_name;
+            || set_info.dss_file_name
+            || cwms_util.field_separator
+            || set_info.dss_file_description;
          if not l_filemgrs_a.exists (set_info.dss_filemgr_url||set_info.dss_file_name) then
-            l_filemgr_id := dss_datastore_id(set_info.dss_filemgr_url, set_info.dss_file_name);
-            declare
-               i pls_integer := 1;
-            begin
-               l_parts.extend(1);
-               while l_filemgr_ids_a.exists(l_filemgr_id) loop
-                  i := i + 1;
-                  l_parts(1) := to_char(i);
-                  l_filemgr_id := substr(l_filemgr_id, 1, length(l_filemgr_id) - length(l_parts(1))) || l_parts(1);
-               end loop;
-            end;
+            l_filemgr_id := set_info.dss_file_id;
             l_filemgr_ids_a(l_filemgr_id) := '';
             l_filemgrs_a(l_text) := l_filemgr_id;
             l_parts.trim(1);
@@ -1752,7 +1602,7 @@ create or replace package body cwms_xchg as
             l_parts(3),
             l_parts(4),
             l_parts(5),
-            null,
+            l_parts(6),
             l_parts(1));
          l_text := l_filemgrs_a.next(l_text);
       end loop;
@@ -1942,6 +1792,8 @@ create or replace package body cwms_xchg as
       l_dssfilemgr_id              varchar2(16);
       l_set_url                    varchar2(32);
       l_set_filemgr                varchar2(512);
+      l_set_filemgr_id             varchar2(16);
+      l_set_filemgr_desc           varchar2(255);
       l_text                       varchar2(32767);
       l_a_part                     varchar2(64);
       l_b_part                     varchar2(64);
@@ -1976,14 +1828,24 @@ create or replace package body cwms_xchg as
       l_dss_ts                     xchg_dss_timeseries_t;
       l_pause_handle               urowid;
       
-      function get_dss_file_code (p_full_url in varchar2, p_office_id in varchar2) return number
+      function get_dss_file_code (
+         p_full_url  in varchar2,
+         p_file_id   in varchar2,
+         p_file_desc in varchar2, 
+         p_office_id in varchar2) return number
       is
          l_url  at_dss_file.dss_filemgr_url%type;
          l_fn   at_dss_file.dss_file_name%type;
       begin
          l_url  := regexp_substr(l_set_filemgr, '^//[^/]+');
          l_fn   := substr(l_set_filemgr, length(l_url)+1);
-         return create_dss_file(l_url,l_fn,cwms_util.false_num,l_set_office_id); 
+         return create_dss_file(
+            l_url,
+            l_fn,
+            p_file_id,
+            p_file_desc,                  
+            cwms_util.false_num,
+            l_set_office_id); 
       end get_dss_file_code;
 
       function get_cwms_ts_code (p_ts_id in varchar2, p_office_id in varchar2, p_create_if_necessary in boolean) return number
@@ -2094,6 +1956,8 @@ create or replace package body cwms_xchg as
                l_realtime_direction := null;
                l_set_url            := null;
                l_set_filemgr        := null;
+               l_set_filemgr_id     := null;
+               l_set_filemgr_desc   := null;
                l_oracle_id          := null;
                for j in l_datastores.first..l_datastores.last loop
                   for datastore_once in 1..1 loop
@@ -2110,7 +1974,9 @@ create or replace package body cwms_xchg as
                               || treat(l_datastores(j) as xchg_dssfilemanager_t).get_port();
                            l_set_filemgr :=
                               l_set_url 
-                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_filepath(); 
+                              || treat(l_datastores(j) as xchg_dssfilemanager_t).get_filepath();
+                           l_set_filemgr_id := l_datastore_1;
+                           l_set_filemgr_desc := treat(l_datastores(j) as xchg_dssfilemanager_t).get_description();
                         end if;
                      elsif l_text = l_datastore_2 then
                         if l_datastores(j).get_subtype() = 'xchg_oracle_t' then
@@ -2124,6 +1990,8 @@ create or replace package body cwms_xchg as
                            l_set_filemgr := 
                               l_set_url
                               || treat(l_datastores(j) as xchg_dssfilemanager_t).get_filepath(); 
+                           l_set_filemgr_id := l_datastore_2;
+                           l_set_filemgr_desc := treat(l_datastores(j) as xchg_dssfilemanager_t).get_description();
                         end if;
                      end if;
                      if l_set_realtime_source_id is not null then
@@ -2253,7 +2121,8 @@ create or replace package body cwms_xchg as
                     into l_dssfilemgr_rec
                     from at_dss_file
                    where dss_file_code = l_xchg_set_rec.dss_file_code;
-                  if l_dssfilemgr_rec.dss_filemgr_url || l_dssfilemgr_rec.dss_file_name != l_set_filemgr then
+                  if l_dssfilemgr_rec.dss_filemgr_url || l_dssfilemgr_rec.dss_file_name != l_set_filemgr
+                  then
                      ----------------------------
                      -- update l_urls_affected --
                      ----------------------------
@@ -2266,15 +2135,41 @@ create or replace package body cwms_xchg as
                      declare
                         l_code at_dss_xchg_set.dss_file_code%type;
                      begin
-                        l_code := get_dss_file_code(l_set_filemgr, l_set_office_id);
+                        l_code := get_dss_file_code(
+                           l_set_filemgr,
+                           l_set_filemgr_id,
+                           l_set_filemgr_desc, 
+                           l_set_office_id);
                         update at_dss_xchg_set
                            set dss_file_code = l_code
                          where dss_xchg_set_code = l_xchg_set_rec.dss_xchg_set_code;
+                        select *
+                          into l_dssfilemgr_rec
+                          from at_dss_file
+                         where dss_file_code = l_code;
                      end;
                      if not l_set_updated then
                         l_set_updated := true;
                         l_sets_updated := l_sets_updated + 1;
                      end if;
+                  end if;
+                  if 
+                     l_dssfilemgr_rec.dss_file_id != l_set_filemgr_id or
+                     l_dssfilemgr_rec.dss_file_description != l_set_filemgr_desc
+                  then
+                     ----------------------------
+                     -- update l_urls_affected --
+                     ----------------------------
+                     if not l_urls_affected.exists(l_set_url) then
+                        l_urls_affected(l_set_url) := true;
+                     end if;
+                     -----------------------------------
+                     -- update the id and description --
+                     -----------------------------------
+                     update at_dss_file
+                        set dss_file_id = l_set_filemgr_id,
+                            dss_file_description = l_set_filemgr_desc
+                      where dss_file_code = l_xchg_set_rec.dss_file_code;
                   end if;
                   
                elsif l_can_insert and l_new_set then
@@ -2290,7 +2185,11 @@ create or replace package body cwms_xchg as
                   declare
                      l_code at_dss_xchg_set.dss_file_code%type;
                   begin
-                     l_code := get_dss_file_code(l_set_filemgr, l_set_office_id);
+                     l_code := get_dss_file_code(
+                        l_set_filemgr,
+                        l_set_filemgr_id,
+                        l_set_filemgr_desc, 
+                        l_set_office_id);
                      insert  
                        into at_dss_xchg_set
                             (dss_xchg_set_code,
@@ -2605,9 +2504,6 @@ create or replace package body cwms_xchg as
    begin
       l_xml := xmltype(p_dx_config);
       l_dx_config := new xchg_cwms_dataexchange_conf_t(l_xml, 'dummy');
-      l_dx_config.get_offices(l_offices);
-      l_dx_config.get_datastores(l_datastores);
-      l_dx_config.get_dataexchange_sets(l_dx_sets);
       
       p_sets_inserted     := -1;
       p_sets_updated      := -1;
@@ -3834,7 +3730,7 @@ begin
                p_set_id,
                'data exchange set id');
       end;
-      if p_dst_datastore_id = dss_datastore_id(l_rec.dss_filemgr_url, l_rec.dss_file_name) then
+      if p_dst_datastore_id = l_rec.dss_file_id then
          l_to_dss := 'true';
       else
          cwms_err.raise(
@@ -3845,7 +3741,7 @@ begin
             || ', expected ' 
             || db_datastore_id 
             || ' or ' 
-            || dss_datastore_id(l_rec.dss_filemgr_url, l_rec.dss_file_name));
+            || l_rec.dss_file_id);
       end if;
    end if;
    l_log_msg := '<cwms_message type="RequestAction">'

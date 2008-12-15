@@ -6,10 +6,12 @@
 --
 CREATE TABLE AT_DSS_FILE
    (
-       DSS_FILE_CODE    NUMBER(10)    NOT NULL,
-       OFFICE_CODE      NUMBER(10)    NOT NULL,
-       DSS_FILEMGR_URL  VARCHAR2(255) NOT NULL,
-       DSS_FILE_NAME    VARCHAR2(255) NOT NULL
+       DSS_FILE_CODE        NUMBER(10)    NOT NULL,
+       OFFICE_CODE          NUMBER(10)    NOT NULL,
+       DSS_FILE_ID          VARCHAR2(16)  NOT NULL,
+       DSS_FILEMGR_URL      VARCHAR2(255) NOT NULL,
+       DSS_FILE_NAME        VARCHAR2(255) NOT NULL,
+       DSS_FILE_DESCRIPTION VARCHAR2(255)
    )
        PCTFREE 10
        PCTUSED 40
@@ -31,16 +33,19 @@ CREATE TABLE AT_DSS_FILE
 -- AT_DSS_FILE comments
 --
 COMMENT ON TABLE AT_DSS_FILE IS 'Contains location information for HEC-DSS files';
-COMMENT ON COLUMN AT_DSS_FILE.DSS_FILE_CODE   IS 'Primary key used to relate file to other entities';
-COMMENT ON COLUMN AT_DSS_FILE.OFFICE_CODE     IS 'Reference to owning office';
-COMMENT ON COLUMN AT_DSS_FILE.DSS_FILEMGR_URL IS 'URL For DSSFileManager instance for HEC-DSS file';
-COMMENT ON COLUMN AT_DSS_FILE.DSS_FILE_NAME   IS 'Operating system path name for file';
+COMMENT ON COLUMN AT_DSS_FILE.DSS_FILE_CODE        IS 'Primary key used to relate file to other entities';
+COMMENT ON COLUMN AT_DSS_FILE.OFFICE_CODE          IS 'Reference to owning office';
+COMMENT ON COLUMN AT_DSS_FILE.DSS_FILE_ID          IS 'Identifier, unique within an office';
+COMMENT ON COLUMN AT_DSS_FILE.DSS_FILEMGR_URL      IS 'URL For DSSFileManager instance for HEC-DSS file';
+COMMENT ON COLUMN AT_DSS_FILE.DSS_FILE_NAME        IS 'Operating system path name for file';
+COMMENT ON COLUMN AT_DSS_FILE.DSS_FILE_DESCRIPTION IS 'Optional description';
 -----------------------------
 -- AT_DSS_FILE constraints
 --
-ALTER TABLE AT_DSS_FILE ADD CONSTRAINT AT_DSS_FILE_FK FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE(OFFICE_CODE);
-ALTER TABLE AT_DSS_FILE ADD CONSTRAINT AT_DSS_FILE_UK UNIQUE (DSS_FILE_CODE, DSS_FILEMGR_URL, DSS_FILE_NAME);
-ALTER TABLE AT_DSS_FILE ADD CONSTRAINT AT_DSS_FILE_PK PRIMARY KEY (DSS_FILE_CODE) 
+ALTER TABLE AT_DSS_FILE ADD CONSTRAINT AT_DSS_FILE_FK  FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE(OFFICE_CODE);
+ALTER TABLE AT_DSS_FILE ADD CONSTRAINT AT_DSS_FILE_UK1 UNIQUE (DSS_FILE_CODE, DSS_FILEMGR_URL, DSS_FILE_NAME);
+ALTER TABLE AT_DSS_FILE ADD CONSTRAINT AT_DSS_FILE_UK2 UNIQUE (OFFICE_CODE, DSS_FILE_ID);
+ALTER TABLE AT_DSS_FILE ADD CONSTRAINT AT_DSS_FILE_PK  PRIMARY KEY (DSS_FILE_CODE) 
     USING INDEX
     TABLESPACE CWMS_20DATA
     PCTFREE    10
@@ -465,7 +470,7 @@ referencing new as new old as old
 for each row
 declare
    --
-   -- this trigger ensures that ny timewindows specified are valid.
+   -- this trigger ensures that any timewindows specified are valid.
    --
    l_iso_pattern     varchar2(80) := '-?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}([.]\d+)?)?([-+]\d{2}:\d{2}|Z)?';
    l_lookback_text   varchar2(80) := '$lookback-time';

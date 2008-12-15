@@ -23,14 +23,6 @@ create or replace package cwms_xchg as
       return varchar2;
    
 --------------------------------------------------------------------------------
--- VARCHAR2 FUNCTION DSS_DATASTORE_ID(...)
---
-   function dss_datastore_id(
-      p_dss_filemgr_url in varchar2,
-      p_dss_file_name   in varchar2)
-      return varchar2;
-   
---------------------------------------------------------------------------------
 -- PROCEDURE PARSE_DSS_PATHNAME(...)
 --
    procedure parse_dss_pathname(
@@ -88,36 +80,6 @@ function is_realtime_export(
       p_tz_usage          in   varchar2 default null)
       return varchar2;
    
---------------------------------------------------------------------------------
--- NUMBER FUNCTION CREATE_DSS_XCHG_SET(...)
---
-   function create_dss_xchg_set(
-      p_dss_xchg_set_id   in   varchar2,
-      p_description       in   varchar2,
-      p_dss_filemgr_url   in   varchar2,
-      p_dss_file_name     in   varchar2,
-      p_start_time        in   varchar2 default null,
-      p_end_time          in   varchar2 default null,
-      p_realtime          in   varchar2 default null,
-      p_fail_if_exists    in   number default cwms_util.false_num,
-      p_office_id         in   varchar2 default null)
-      return number;
-
---------------------------------------------------------------------------------
--- PROCEDURE CREATE_DSS_XCHG_SET(...)
---
-   procedure create_dss_xchg_set(
-      p_dss_xchg_set_code   out      number,
-      p_dss_xchg_set_id     in       varchar2,
-      p_description         in       varchar2,
-      p_dss_filemgr_url     in       varchar2,
-      p_dss_file_name       in       varchar2,
-      p_start_time          in       varchar2 default null,
-      p_end_time            in       varchar2 default null,
-      p_realtime            in       varchar2 default null,
-      p_fail_if_exists      in       number default cwms_util.false_num,
-      p_office_id           in       varchar2 default null);
-
 -------------------------------------------------------------------------------
 -- PROCEDURE DELETE_DSS_XCHG_SET(...)
 --
