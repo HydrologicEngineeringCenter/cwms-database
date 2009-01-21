@@ -300,7 +300,7 @@ as
          or l_datatype_node is null
          or l_units_node is null
       then
-         cwms_err.raise('INVALID_ITEM', p_node.getrootelement(), 'dss-timeseries node'); 
+         cwms_err.raise('INVALID_ITEM', p_node.getstringval(), 'dss-timeseries node'); 
       else
          l_datastore_id_text := l_datastore_id_node.getstringval();
          l_pathname_text     := l_pathname_node.getstringval();
