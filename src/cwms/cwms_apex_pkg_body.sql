@@ -1,9 +1,8 @@
-/* Formatted on 2008/02/12 16:13 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_apex
+create or replace PACKAGE BODY         cwms_apex
 AS
    TYPE varchar2_t IS TABLE OF VARCHAR2 (32767)
       INDEX BY BINARY_INTEGER;
-
+ 
    PROCEDURE aa1 (p_string IN VARCHAR2)
    IS
    BEGIN
@@ -12,11 +11,11 @@ AS
 --                  )
 --           VALUES (p_string
 --                  );
-
+ 
 --      COMMIT;
       NULL;
    END;
-
+ 
    -- Private functions --{{{
    PROCEDURE delete_collection (                                         --{{{
                                 -- Delete the collection if it exists
@@ -28,7 +27,7 @@ AS
          apex_collection.delete_collection (p_collection_name);
       END IF;
    END delete_collection;                                                --}}}
-
+ 
    --
    --
    PROCEDURE csv_to_array (                                              --{{{
@@ -48,16 +47,16 @@ AS
       l_offset            PLS_INTEGER    := 1;
    BEGIN
       l_length := NVL (LENGTH (p_csv_string), 0);
-
+ 
       IF (l_length <= 0)
       THEN
          RETURN;
       END IF;
-
+ 
       LOOP
          l_idx := l_idx + 1;
          l_quote_enclosed := FALSE;
-
+ 
          IF SUBSTR (p_csv_string, l_start_separator + 1, 1) = '"'
          THEN
             l_quote_enclosed := TRUE;
@@ -73,12 +72,12 @@ AS
                       1
                      );
          END IF;
-
+ 
          IF l_stop_separator = 0
          THEN
             l_stop_separator := l_length + 1;
          END IF;
-
+ 
          p_array (l_idx) :=
             (SUBSTR (p_csv_string,
                      l_start_separator + l_offset,
@@ -87,16 +86,16 @@ AS
                     )
             );
          EXIT WHEN l_stop_separator >= l_length;
-
+ 
          IF l_quote_enclosed
          THEN
             l_stop_separator := l_stop_separator + 1;
          END IF;
-
+ 
          l_start_separator := l_stop_separator;
       END LOOP;
    END csv_to_array;                                                     --}}}
-
+ 
    ---
    PROCEDURE crit_to_array (                                             --{{{
       -- Utility to take a criteria file string, parse it into a PL/SQL table
@@ -143,7 +142,7 @@ AS
                        'ERROR: Format not recognized, cannot parse this line';
       END;
    END;
-
+ 
    --
    PROCEDURE get_records (p_blob IN BLOB, p_records OUT varchar2_t)      --{{{
    IS
@@ -167,9 +166,9 @@ AS
       THEN
          l_record_separator := CHR (10);
       END IF;
-
+ 
       l_last := 1;
-
+ 
       LOOP
          l_current :=
             DBMS_LOB.INSTR (p_blob,
@@ -187,7 +186,7 @@ AS
          l_last := l_current + LENGTH (l_record_separator);
       END LOOP;
    END get_records;                                                      --}}}
-
+ 
    --}}}
    -- Utility functions --{{{
    PROCEDURE parse_textarea (                                            --{{{
@@ -203,21 +202,21 @@ AS
    BEGIN
       l_string := l_string || '@';
       htmldb_collection.create_or_truncate_collection (p_collection_name);
-
+ 
       LOOP
          l_index := INSTR (l_string, '@');
          EXIT WHEN NVL (l_index, 0) = 0;
          l_element := SUBSTR (l_string, 1, l_index - 1);
-
+ 
          IF (TRIM (l_element) IS NOT NULL)
          THEN
             apex_collection.add_member (p_collection_name, l_element);
          END IF;
-
+ 
          l_string := SUBSTR (l_string, l_index + 1);
       END LOOP;
    END parse_textarea;                                                   --}}}
-
+ 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
    PROCEDURE parse_file (                                                --{{{
@@ -229,7 +228,9 @@ AS
       p_ddl_item                IN       VARCHAR2,
       p_number_of_records       OUT      NUMBER,
       p_number_of_columns       OUT      NUMBER,
-      p_is_csv                  IN       VARCHAR2 DEFAULT 'T'
+      p_is_csv                  IN       VARCHAR2 DEFAULT 'T',
+      p_db_office_id            IN       VARCHAR2,
+      p_process_id              IN       VARCHAR2
    )
    IS
       l_blob           BLOB;
@@ -256,6 +257,8 @@ AS
       l_rc_rows        sys_refcursor;
       l_row_num        NUMBER;
       l_rows_msg       VARCHAR2 (1000);
+      l_cmt            VARCHAR2(256);
+      l_steps_per_commit NUMBER;
    BEGIN
       IF cwms_util.is_true (NVL (p_is_csv, 'T'))
       THEN
@@ -265,9 +268,14 @@ AS
          l_is_csv := FALSE;
          l_is_crit_file := TRUE;
       END IF;
-
+ 
       aa1 ('parse collection name: ' || p_collection_name);
-
+      l_steps_per_commit := TO_NUMBER(SUBSTR(p_process_id, (INSTR(p_process_id, '.', 1, 5)+1)));
+      l_cmt := 'ST=' || localTimeStamp || ';FILE=' || p_file_name || ';STEPS=' || l_steps_per_commit || ';CT=';
+        cwms_properties.set_Property('PROCESS_STATUS',p_process_id,'Initiated',l_cmt||localTimeStamp, p_db_office_id);
+        if(l_steps_per_commit > 0) then
+          commit;
+        end if;
 --      IF (p_table_name IS NOT NULL)
 --      THEN
 --         BEGIN
@@ -277,12 +285,12 @@ AS
 --            THEN
 --               NULL;
 --         END;
-
+ 
       --         l_ddl := 'create table ' || p_table_name || ' ' || v (p_ddl_item);
 --         apex_util.set_session_state ('P149_DEBUG', l_ddl);
-
+ 
       --         EXECUTE IMMEDIATE l_ddl;
-
+ 
       --         l_ddl :=
 --               'insert into '
 --            || p_table_name
@@ -297,9 +305,9 @@ AS
 --         apex_util.set_session_state ('P149_DEBUG',
 --                                      v ('P149_DEBUG') || '/' || l_ddl
 --                                     );
-
+ 
       --         EXECUTE IMMEDIATE l_ddl;
-
+ 
       --         RETURN;
 --      END IF;
       BEGIN
@@ -314,9 +322,9 @@ AS
                                      'File not found, id=' || p_file_name
                                     );
       END;
-
+ 
       get_records (l_blob, l_records);
-
+ 
       IF (l_records.COUNT < 2)
       THEN
          raise_application_error (-20000,
@@ -324,11 +332,11 @@ AS
                                   || p_file_name
                                  );
       END IF;
-
+ 
       -- Initialize collection
       apex_collection.create_or_truncate_collection (p_collection_name);
       apex_collection.create_or_truncate_collection (p_error_collection_name);
-
+ 
       -- Get column headings and datatypes
       IF l_is_crit_file
       THEN
@@ -363,9 +371,9 @@ AS
          csv_to_array (l_records (1), l_record);
          csv_to_array (l_records (2), l_datatypes);
       END IF;
-
+ 
       l_num_columns := l_record.COUNT;
-
+ 
       IF (l_num_columns > 50)
       THEN
          raise_application_error (-20000,
@@ -373,43 +381,48 @@ AS
                                   || p_file_name
                                  );
       END IF;
-
+ 
       p_number_of_columns := l_num_columns;
-
+ 
       -- Get column headings and names
       FOR i IN 1 .. l_record.COUNT
       LOOP
          l_headings := l_headings || ':' || l_record (i);
          l_columns := l_columns || ',c' || LPAD (i, 3, '0');
       END LOOP;
-
+ 
       l_headings := LTRIM (l_headings, ':');
       l_columns := LTRIM (l_columns, ',');
       apex_util.set_session_state (p_headings_item, l_headings);
       apex_util.set_session_state (p_columns_item, l_columns);
-
+ 
       -- Get datatypes
       FOR i IN 1 .. l_record.COUNT
       LOOP
          l_ddl := l_ddl || ',' || l_record (i) || ' ' || l_datatypes (i);
       END LOOP;
-
+ 
       l_ddl := '(' || LTRIM (l_ddl, ',') || ')';
       apex_util.set_session_state (p_ddl_item, l_ddl);
       -- Save data into specified collection
       p_number_of_records := l_records.COUNT;
-
+ 
       FOR i IN 1 .. p_number_of_records
       LOOP
          aa1 (l_records (i));
-
+         if (l_steps_per_commit > 0) then
+           if(i-TRUNC(i/l_steps_per_commit)*l_steps_per_commit = 0) then
+             cwms_properties.set_Property('PROCESS_STATUS',p_process_id,'Processing: ' || i || ' of ' || p_number_of_records,l_cmt||localTimeStamp, p_db_office_id);
+             commit;
+           end if;
+         end if;
          IF l_is_crit_file
          THEN
             crit_to_array (l_records (i), l_comment, l_record);
          ELSE
             csv_to_array (l_records (i), l_record);
          END IF;
-
+ 
          IF INSTR (l_comment, 'ERROR') = 1
          THEN
             l_seq_id :=
@@ -444,7 +457,7 @@ AS
                                       p_attr_number          => 1,
                                       p_attr_value           => i
                                      );
-
+ 
             FOR j IN 1 .. l_record.COUNT
             LOOP
                apex_collection.update_member_attribute
@@ -456,7 +469,7 @@ AS
             END LOOP;
          END IF;
       END LOOP;
-
+ 
       IF l_is_crit_file
       THEN
          BEGIN
@@ -473,39 +486,39 @@ AS
             THEN
                l_tmp := 3;
          END;
-
+ 
          IF l_tmp != 3
          THEN
             LOOP
                FETCH l_rc
                 INTO l_cwms_id_dup;
-
+ 
                EXIT WHEN l_rc%NOTFOUND;
-
+ 
                OPEN l_rc_rows FOR
                   SELECT c001
                     FROM apex_collections
                    WHERE collection_name = UPPER (p_collection_name)
                      AND UPPER (c002) = l_cwms_id_dup;
-
+ 
                l_rows_msg := NULL;
                l_tmp := 0;
-
+ 
                LOOP
                   FETCH l_rc_rows
                    INTO l_row_num;
-
+ 
                   EXIT WHEN l_rc_rows%NOTFOUND;
-
+ 
                   IF l_tmp = 1
                   THEN
                      l_rows_msg := l_rows_msg || ', ';
                   END IF;
-
+ 
                   l_rows_msg := l_rows_msg || TO_CHAR (l_row_num);
                   l_tmp := 1;
                END LOOP;
-
+ 
                l_seq_id :=
                   apex_collection.add_member (p_error_collection_name,
                                               'dummy');
@@ -528,13 +541,13 @@ AS
                                  p_attr_value           => l_cwms_id_dup
                                 );
             END LOOP;
-
+ 
             --
             --
             CLOSE l_rc;
-
+ 
             CLOSE l_rc_rows;
-
+ 
             OPEN l_rc FOR
                SELECT shef_id
                  FROM (SELECT   UPPER (   c003
@@ -565,13 +578,13 @@ AS
                                        || c006
                                       ))
                 WHERE count_id > 1;
-
+ 
             LOOP
                FETCH l_rc
                 INTO l_shef_id_dup;
-
+ 
                EXIT WHEN l_rc%NOTFOUND;
-
+ 
                OPEN l_rc_rows FOR
                   SELECT c001
                     FROM apex_collections
@@ -579,25 +592,25 @@ AS
                      AND UPPER (c003 || '.' || c004 || '.' || c005 || '.'
                                 || c006
                                ) = l_shef_id_dup;
-
+ 
                l_rows_msg := NULL;
                l_tmp := 0;
-
+ 
                LOOP
                   FETCH l_rc_rows
                    INTO l_row_num;
-
+ 
                   EXIT WHEN l_rc_rows%NOTFOUND;
-
+ 
                   IF l_tmp = 1
                   THEN
                      l_rows_msg := l_rows_msg || ', ';
                   END IF;
-
+ 
                   l_rows_msg := l_rows_msg || l_row_num;
                   l_tmp := 1;
                END LOOP;
-
+ 
                l_seq_id :=
                   apex_collection.add_member (p_error_collection_name,
                                               'dummy');
@@ -622,26 +635,27 @@ AS
             END LOOP;
          END IF;
       END IF;
-
+ 
 --      IF l_is_crit_file
 --      THEN
 --         cwms_shef.delete_data_stream (l_datastream, 'T', 'CWMS');
 --      END IF;
-
+ 
       --      DELETE FROM wwv_flow_files
 --            WHERE NAME = p_file_name;
       SELECT COUNT (*)
         INTO l_seq_id
         FROM apex_collections
        WHERE collection_name = p_collection_name;
-
+         cwms_properties.set_Property('PROCESS_STATUS',p_process_id,'Completed '||p_number_of_records||' records',l_cmt||localTimeStamp, p_db_office_id);
+ 
       aa1 (   'parse collection name: '
            || p_collection_name
            || ' Row count: '
            || l_seq_id
           );
    END;
-
+ 
 --
 --  example:..
 --     desired result is either:
@@ -680,23 +694,24 @@ AS
       THEN
          l_return_predicate := ' ' || l_column_id || ' IS NULL ';
       END IF;
-
+ 
       RETURN l_return_predicate;
    END;
-
+ 
    FUNCTION get_primary_db_office_id
       RETURN VARCHAR2
    IS
    BEGIN
       RETURN cwms_util.user_office_id;
    END get_primary_db_office_id;
-
+ 
    PROCEDURE store_parsed_crit_file (
       p_parsed_collection_name      IN   VARCHAR2,
       p_store_err_collection_name   IN   VARCHAR2,
       p_loc_group_id                IN   VARCHAR2,
       p_data_stream_id              IN   VARCHAR2,
-      p_db_office_id                IN   VARCHAR2 DEFAULT NULL
+      p_db_office_id                IN   VARCHAR2 DEFAULT NULL,
+      p_unique_process_id           IN   VARCHAR2
    )
    IS
       l_parsed_rows          NUMBER;
@@ -716,16 +731,18 @@ AS
       l_int_forward          VARCHAR2 (32);
       l_min                  NUMBER;
       l_max                  NUMBER;
+      l_cmt                  VARCHAR2(256);
+      l_steps_per_commit     NUMBER;
    BEGIN
       aa1 (   'store_parsed_crit_file - collection name: '
            || p_parsed_collection_name
           );
-
+ 
       SELECT COUNT (*), MIN (seq_id), MAX (seq_id)
         INTO l_parsed_rows, l_min, l_max
         FROM apex_collections
        WHERE collection_name = p_parsed_collection_name;
-
+ 
       aa1 (   'l_parsed_rows = '
            || l_parsed_rows
            || ' min '
@@ -733,11 +750,25 @@ AS
            || ' max '
            || l_max
           );
-
+          
+                l_steps_per_commit := TO_NUMBER(SUBSTR(p_unique_process_id, (INSTR(p_unique_process_id, '.', 1, 5)+1)));
+                l_cmt := 'ST=' || localTimeStamp || ';STEPS=' || l_steps_per_commit || ';CT=';
+                  cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Initiated',l_cmt||localTimeStamp, p_db_office_id);
+                  if(l_steps_per_commit > 0) then
+                    commit;
+                  end if;
+          
       FOR i IN 1 .. l_parsed_rows
       LOOP
          aa1 ('looping: ' || i);
-
+                  if (l_steps_per_commit > 0) then
+                    if(i-TRUNC(i/l_steps_per_commit)*l_steps_per_commit = 0) then
+                      cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Processing: ' || i || ' of ' || l_parsed_rows,l_cmt||localTimeStamp, p_db_office_id);
+                      commit;
+                    end if;
+                  end if;
+         
+ 
          SELECT c001, c002, c003, c004, c005,
                 c006, c007, c008, c009, c010,
                 c011, c012, c013
@@ -746,7 +777,7 @@ AS
                 l_int_offset, l_int_backward, l_int_forward
            FROM apex_collections
           WHERE collection_name = p_parsed_collection_name AND seq_id = i;
-
+ 
          -- convert duration numeric to duration code
          BEGIN
             SELECT shef_duration_code || shef_duration_numeric
@@ -758,7 +789,7 @@ AS
             THEN
                l_shef_duration_code := 'V' || TRIM (l_dur_code);
          END;
-
+ 
          -- confert dltime to t or f
          IF l_dltime IS NOT NULL
          THEN
@@ -770,7 +801,7 @@ AS
                l_dltime := 'T';
             END IF;
          END IF;
-
+ 
          aa1 (   'storing spec: '
               || l_cwms_ts_id
               || ' --datastream->'
@@ -812,12 +843,15 @@ AS
                          p_db_office_id               => p_db_office_id
                         );
       END LOOP;
+               cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Completed '||l_parsed_rows||' records',l_cmt||localTimeStamp, p_db_office_id);
+       
    END;
-
+ 
    PROCEDURE store_parsed_loc_short_file (
       p_parsed_collection_name      IN   VARCHAR2,
       p_store_err_collection_name   IN   VARCHAR2,
-      p_db_office_id                IN   VARCHAR2 DEFAULT NULL
+      p_db_office_id                IN   VARCHAR2 DEFAULT NULL,
+      p_unique_process_id           IN   VARCHAR2
    )
    IS
       l_location_id     VARCHAR2 (200);
@@ -830,16 +864,26 @@ AS
       l_line_no         VARCHAR2 (32);
       l_min             NUMBER;
       l_max             NUMBER;
+            l_cmt                  VARCHAR2(256);
+            l_steps_per_commit     NUMBER;
+      
    BEGIN
       aa1 (   'store_parsed_loc_short_file - collection name: '
            || p_parsed_collection_name
           );
-
+       
+             l_steps_per_commit := TO_NUMBER(SUBSTR(p_unique_process_id, (INSTR(p_unique_process_id, '.', 1, 5)+1)));
+             l_cmt := 'ST=' || localTimeStamp || ';STEPS=' || l_steps_per_commit || ';CT=';
+               cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Initiated',l_cmt||localTimeStamp, p_db_office_id);
+               if(l_steps_per_commit > 0) then
+                 commit;
+               end if;
+               
       SELECT COUNT (*), MIN (seq_id), MAX (seq_id)
         INTO l_parsed_rows, l_min, l_max
         FROM apex_collections
        WHERE collection_name = p_parsed_collection_name;
-
+ 
       aa1 (   'l_parsed_rows = '
            || l_parsed_rows
            || ' min '
@@ -847,22 +891,30 @@ AS
            || ' max '
            || l_max
           );
-
+ 
 -- Start at 2 to skip first line of column titles
       FOR i IN 2 .. l_parsed_rows
       LOOP
          aa1 ('looping: ' || i);
-
+ 
+                if (l_steps_per_commit > 0) then
+                  if(i-TRUNC(i/l_steps_per_commit)*l_steps_per_commit = 0) then
+                    cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Processing: ' || i || ' of ' || l_parsed_rows,l_cmt||localTimeStamp, p_db_office_id);
+                    commit;
+                  end if;
+                end if;
+  
+ 
          SELECT c001, c002, c003, c004,
                 c005, c006
            INTO l_line_no, l_location_id, l_public_name, l_county_name,
                 l_state_initial, l_active
            FROM apex_collections
           WHERE collection_name = p_parsed_collection_name AND seq_id = i;
-
+ 
          aa1 ('storing locs: ' || l_location_id);
 --
-         cwms_loc.update_location (p_location_id        => l_location_id,
+         cwms_loc.store_location (p_location_id        => l_location_id,
                                    p_public_name        => l_public_name,
                                    p_county_name        => l_county_name,
                                    p_state_initial      => l_state_initial,
@@ -871,12 +923,16 @@ AS
                                    p_db_office_id       => p_db_office_id
                                   );
       END LOOP;
+                  cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Completed '||l_parsed_rows||' records',l_cmt||localTimeStamp, p_db_office_id);
+      
+      
    END;
-
+ 
    PROCEDURE store_parsed_loc_full_file (
       p_parsed_collection_name      IN   VARCHAR2,
       p_store_err_collection_name   IN   VARCHAR2,
-      p_db_office_id                IN   VARCHAR2 DEFAULT NULL
+      p_db_office_id                IN   VARCHAR2 DEFAULT NULL,
+      p_unique_process_id           IN   VARCHAR2
    )
    IS
       l_location_id        VARCHAR2 (200);
@@ -907,21 +963,32 @@ AS
       l_office_id_17       VARCHAR2 (32);
       l_office_id_19       VARCHAR2 (32);
       l_office_id_21       VARCHAR2 (32);
+                 l_cmt                  VARCHAR2(256);
+                 l_steps_per_commit     NUMBER;
+       
    BEGIN
       aa1 (   'store_parsed_loc_full_file - collection name: '
            || p_parsed_collection_name
           );
-
+ 
+             l_steps_per_commit := TO_NUMBER(SUBSTR(p_unique_process_id, (INSTR(p_unique_process_id, '.', 1, 5)+1)));
+             l_cmt := 'ST=' || localTimeStamp || ';STEPS=' || l_steps_per_commit || ';CT=';
+               cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Initiated',l_cmt||localTimeStamp, p_db_office_id);
+               if(l_steps_per_commit > 0) then
+                 commit;
+               end if;
+ 
+ 
       SELECT COUNT (*), MIN (seq_id), MAX (seq_id)
         INTO l_parsed_rows, l_min, l_max
         FROM apex_collections
        WHERE collection_name = p_parsed_collection_name;
-
+ 
       SELECT c002, c017, c019, c021
         INTO l_loc_id, l_office_id_17, l_office_id_19, l_office_id_21
         FROM apex_collections
        WHERE collection_name = p_parsed_collection_name AND seq_id = 1;
-
+ 
       aa1 (   'l_parsed_rows = '
            || l_parsed_rows
            || ' min '
@@ -929,18 +996,27 @@ AS
            || ' max '
            || l_max
           );
-
+ 
 --  Start at   2,   Skip first line in file to bypass column headings
       FOR i IN 2 .. l_parsed_rows
       LOOP
          aa1 ('looping: ' || i);
+         
+                        if (l_steps_per_commit > 0) then
+                          if(i-TRUNC(i/l_steps_per_commit)*l_steps_per_commit = 0) then
+                            cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Processing: ' || i || ' of ' || l_parsed_rows,l_cmt||localTimeStamp, p_db_office_id);
+                            commit;
+                          end if;
+                        end if;
+          
+         
          l_latitude := 0;
          l_longitude := 0;
          l_lat_mins := 0;
          l_long_mins := 0;
          l_lat_secs := 0;
          l_long_secs := 0;
-
+ 
          IF (    TRIM (NVL (l_loc_id, 'XXX')) = 'Location ID'
              AND TRIM (NVL (l_office_id_17, 'XXX')) = 'Office'
             )
@@ -994,7 +1070,7 @@ AS
          ELSE
             cwms_err.RAISE ('ERROR', 'Unable to parse data!');
          END IF;
-
+ 
          l_latitude :=
               (ABS (l_latitude) + l_lat_mins / 60 + l_lat_secs / 3600
               )
@@ -1024,12 +1100,17 @@ AS
                                    p_db_office_id
                                   );
       END LOOP;
+      
+                      cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Completed '||l_parsed_rows||' records',l_cmt||localTimeStamp, p_db_office_id);
+      
+      
    END;
-
+ 
      PROCEDURE store_parsed_loc_alias_file (
         p_parsed_collection_name      IN   VARCHAR2,
         p_store_err_collection_name   IN   VARCHAR2,
-        p_db_office_id                IN   VARCHAR2 DEFAULT NULL
+        p_db_office_id                IN   VARCHAR2 DEFAULT NULL,
+        p_unique_process_id           IN   VARCHAR2
      )
      IS
         l_location_id     VARCHAR2 (200);
@@ -1040,10 +1121,21 @@ AS
         l_line_no         VARCHAR2 (32);
         l_min             NUMBER;
         l_max             NUMBER;
+                   l_cmt                  VARCHAR2(256);
+                   l_steps_per_commit     NUMBER;
+         
      BEGIN
         aa1 (   'store_parsed_loc_alias_file - collection name: '
              || p_parsed_collection_name
             );
+  
+              l_steps_per_commit := TO_NUMBER(SUBSTR(p_unique_process_id, (INSTR(p_unique_process_id, '.', 1, 5)+1)));
+              l_cmt := 'ST=' || localTimeStamp || ';STEPS=' || l_steps_per_commit || ';CT=';
+                cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Initiated',l_cmt||localTimeStamp, p_db_office_id);
+                if(l_steps_per_commit > 0) then
+                  commit;
+                end if;
+  
   
         SELECT COUNT (*), MIN (seq_id), MAX (seq_id)
           INTO l_parsed_rows, l_min, l_max
@@ -1063,6 +1155,14 @@ AS
         LOOP
            aa1 ('looping: ' || i);
   
+                 if (l_steps_per_commit > 0) then
+                   if(i-TRUNC(i/l_steps_per_commit)*l_steps_per_commit = 0) then
+                     cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Processing: ' || i || ' of ' || l_parsed_rows,l_cmt||localTimeStamp, p_db_office_id);
+                     commit;
+                   end if;
+                 end if;
+   
+  
            SELECT c001, c002, c003, c004
              INTO l_line_no, l_location_id, l_alias, l_group
              FROM apex_collections
@@ -1079,7 +1179,9 @@ AS
   								  
   
         END LOOP;
+                cwms_properties.set_Property('PROCESS_STATUS',p_unique_process_id,'Completed '||l_parsed_rows||' records',l_cmt||localTimeStamp, p_db_office_id);
+        
+        
      END;
   
-END cwms_apex;
-/
+END cwms_apex; 
