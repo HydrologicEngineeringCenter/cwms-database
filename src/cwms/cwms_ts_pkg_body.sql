@@ -1385,33 +1385,77 @@ begin
          --
          -- regular time series
          --
-         l_query_str := 
-            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
-                   value,
-                   nvl(quality_code, :missing) "QUALITY_CODE"
-              from (
-                   select date_time,
-                          max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
-                          max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
-                     from av_tsv_dqu
-                    where ts_code    =  :ts_code 
-                      and date_time  >= to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')  
-                      and date_time  <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
-                      and unit_id    =  '':units''
-                      and start_date <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
-                      and end_date   >  to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')
-                 group by date_time
-                   ) v
-                   right outer join
-                   (
-                   select to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'') + (level-1) * :interval date_time
-                     from dual
-                    where to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'') is not null
-               connect by level <= round((to_date('':reg_end'',   ''yyyy/mm/dd-hh24.mi.ss'')  - 
-                                          to_date('':reg_start'', ''yyyy/mm/dd-hh24.mi.ss'')) / :interval + 1)
-                   ) t
-                   on v.date_time = t.date_time
-                   order by t.date_time asc';
+         if mod(l_interval, 30) = 0 or mod(l_interval, 365) = 0 then
+            ----------------------------
+            -- must use calendar math --
+            ----------------------------
+            -----------------------------------------
+            -- change interval from days to months --
+            -----------------------------------------
+            if mod(l_interval, 30) = 0 then
+               l_interval := l_interval / 30;
+            else
+               l_interval := l_interval / 365 * 12;
+            end if;
+            l_query_str := 
+               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
+                      value,
+                      nvl(quality_code, :missing) "QUALITY_CODE"
+                 from (
+                      select date_time,
+                             max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
+                             max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
+                        from av_tsv_dqu
+                       where ts_code    =  :ts_code 
+                         and date_time  >= to_date('':start'', '':datefmt'')  
+                         and date_time  <= to_date('':end'',   '':datefmt'') 
+                         and unit_id    =  '':units''
+                         and start_date <= to_date('':end'',   '':datefmt'') 
+                         and end_date   >  to_date('':start'', '':datefmt'')
+                    group by date_time
+                      ) v
+                      right outer join
+                      (
+                      select add_months(to_date('':reg_start'', '':datefmt''), (level-1) * :interval) date_time
+                        from dual
+                       where to_date('':reg_start'', '':datefmt'') is not null
+                  connect by level <= months_between(to_date('':reg_end'',   '':datefmt''),
+                                                     to_date('':reg_start'', '':datefmt'')) / :interval + 1
+                      ) t
+                      on v.date_time = t.date_time
+                      order by t.date_time asc';
+         else
+            -----------------------------
+            -- can use date arithmetic --
+            -----------------------------
+            l_query_str := 
+               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
+                      value,
+                      nvl(quality_code, :missing) "QUALITY_CODE"
+                 from (
+                      select date_time,
+                             max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
+                             max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
+                        from av_tsv_dqu
+                       where ts_code    =  :ts_code 
+                         and date_time  >= to_date('':start'', '':datefmt'')  
+                         and date_time  <= to_date('':end'',   '':datefmt'') 
+                         and unit_id    =  '':units''
+                         and start_date <= to_date('':end'',   '':datefmt'') 
+                         and end_date   >  to_date('':start'', '':datefmt'')
+                    group by date_time
+                      ) v
+                      right outer join
+                      (
+                      select to_date('':reg_start'', '':datefmt'') + (level-1) * :interval date_time
+                        from dual
+                       where to_date('':reg_start'', '':datefmt'') is not null
+                  connect by level <= round((to_date('':reg_end'',   '':datefmt'')  - 
+                                             to_date('':reg_start'', '':datefmt'')) / :interval + 1)
+                      ) t
+                      on v.date_time = t.date_time
+                      order by t.date_time asc';
+         end if;
       else
         --
         -- irregular time series
@@ -1422,11 +1466,11 @@ begin
                     max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
                from av_tsv_dqu
               where ts_code    =  :ts_code 
-                and date_time  >= to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')  
-                and date_time  <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
+                and date_time  >= to_date('':start'', '':datefmt'')  
+                and date_time  <= to_date('':end'',   '':datefmt'') 
                 and unit_id    =  '':units''
-                and start_date <= to_date('':end'',   ''yyyy/mm/dd-hh24.mi.ss'') 
-                and end_date   >  to_date('':start'', ''yyyy/mm/dd-hh24.mi.ss'')
+                and start_date <= to_date('':end'',   '':datefmt'') 
+                and end_date   >  to_date('':start'', '':datefmt'')
            group by date_time
            order by date_time asc';
       end if;
@@ -1442,36 +1486,79 @@ begin
       -- specified version date
       --
       if l_interval > 0 then
-        --
-        -- regular time series
-        --
-         l_query_str := 
-            'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
-                   value,
-                   nvl(quality_code, :missing) "QUALITY_CODE"
-              from (
-                   select date_time,
-                          value,
-                          quality_code
-                     from av_tsv_dqu
-                    where ts_code      =  :ts_code 
-                      and date_time    >= to_date('':start'',   '':datefmt'')  
-                      and date_time    <= to_date('':end'',     '':datefmt'') 
-                      and unit_id      =  '':units''
-                      and start_date   <= to_date('':end'',     '':datefmt'') 
-                      and end_date     >  to_date('':start'',   '':datefmt'')
-                      and version_date =  to_date('':version'', '':datefmt'')
-                   ) v
-                   right outer join
-                   (
-                   select to_date('':reg_start'', '':datefmt'') + (level-1) * :interval date_time
-                     from dual
-                    where to_date('':reg_start'', '':datefmt'') is not null
-               connect by level <= round((to_date('':reg_end'',   '':datefmt'')  - 
-                                          to_date('':reg_start'', '':datefmt'')) / :interval + 1)
-                   ) t
-                   on v.date_time = t.date_time
-                   order by t.date_time asc';
+         --
+         -- regular time series
+         --
+         if mod(l_interval, 30) = 0 or mod(l_interval, 365) = 0 then
+            --
+            -- must use calendar math
+            --
+            -- change interval from days to months
+            --
+            if mod(l_interval, 30) = 0 then
+               l_interval := l_interval / 30;
+            else
+               l_interval := l_interval / 365 * 12;
+            end if;
+            l_query_str := 
+               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
+                      value,
+                      nvl(quality_code, :missing) "QUALITY_CODE"
+                 from (
+                      select date_time,
+                             value,
+                             quality_code
+                        from av_tsv_dqu
+                       where ts_code      =  :ts_code 
+                         and date_time    >= to_date('':start'',   '':datefmt'')  
+                         and date_time    <= to_date('':end'',     '':datefmt'') 
+                         and unit_id      =  '':units''
+                         and start_date   <= to_date('':end'',     '':datefmt'') 
+                         and end_date     >  to_date('':start'',   '':datefmt'')
+                         and version_date =  to_date('':version'', '':datefmt'')
+                      ) v
+                      right outer join
+                      (
+                      select add_months(to_date('':reg_start'', ''datefmt''), (level-1) * :interval) date_time
+                        from dual
+                       where to_date('':reg_start'', ''datefmt'') is not null
+                  connect by level <= months_between(to_date('':reg_start'', ''datefmt''),
+                                                     to_date('':reg_end'',   ''datefmt'')) / :interval + 1)
+                      ) t
+                      on v.date_time = t.date_time
+                      order by t.date_time asc';
+         else
+            --
+            -- can use date arithmetic
+            --
+            l_query_str := 
+               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
+                      value,
+                      nvl(quality_code, :missing) "QUALITY_CODE"
+                 from (
+                      select date_time,
+                             value,
+                             quality_code
+                        from av_tsv_dqu
+                       where ts_code      =  :ts_code 
+                         and date_time    >= to_date('':start'',   '':datefmt'')  
+                         and date_time    <= to_date('':end'',     '':datefmt'') 
+                         and unit_id      =  '':units''
+                         and start_date   <= to_date('':end'',     '':datefmt'') 
+                         and end_date     >  to_date('':start'',   '':datefmt'')
+                         and version_date =  to_date('':version'', '':datefmt'')
+                      ) v
+                      right outer join
+                      (
+                      select to_date('':reg_start'', '':datefmt'') + (level-1) * :interval date_time
+                        from dual
+                       where to_date('':reg_start'', '':datefmt'') is not null
+                  connect by level <= months_between(to_date('':reg_end'',   '':datefmt''),
+                                                     to_date('':reg_start'', '':datefmt'')) / :interval + 1
+                      ) t
+                      on v.date_time = t.date_time
+                      order by t.date_time asc';
+         end if;
       else
         --
         -- irregular time series
@@ -4183,10 +4270,12 @@ PROCEDURE zretrieve_ts_java (
    p_db_office_id       IN       VARCHAR2 DEFAULT NULL
 )
 IS
-   l_at_tsv_rc   sys_refcursor;
+   /*l_at_tsv_rc   sys_refcursor;*/
+   l_inclusive varchar2(1);
 BEGIN
    p_transaction_time := CAST ((SYSTIMESTAMP AT TIME ZONE 'GMT') AS DATE);
    --
+   /*
    p_cwms_ts_id_out := get_cwms_ts_id (p_cwms_ts_id_in, 
                                        cwms_util.GET_DB_OFFICE_ID(p_db_office_id));
 
@@ -4197,7 +4286,6 @@ BEGIN
    ELSE
       p_units_out := p_units_in;
    END IF;
-
    --
    zretrieve_ts (p_at_tsv_rc         => l_at_tsv_rc,
                  p_units             => p_units_out,
@@ -4210,7 +4298,31 @@ BEGIN
                  p_max_version       => p_max_version,
                  p_db_office_id      => p_db_office_id
                 );
+
    p_at_tsv_rc := l_at_tsv_rc;
+   */
+   if  nvl(p_inclusive, 0) = 0 then
+      l_inclusive := 'F';
+   else
+      l_inclusive := 'T';
+   end if;
+   retrieve_ts_out(p_at_tsv_rc,
+                   p_cwms_ts_id_out,
+                   p_units_out,
+                   p_cwms_ts_id_in,
+                   p_units_in,
+                   p_start_time,
+                   p_end_time,
+                   'UTC',
+                   p_trim,
+                   l_inclusive,
+                   l_inclusive,
+                   'F',
+                   'F',
+                   p_version_date,
+                   p_max_version,
+                   p_db_office_id);
+                   
 END zretrieve_ts_java;
 
 -- p_fail_if_exists 'T' will throw an exception if the parameter_id already    -
