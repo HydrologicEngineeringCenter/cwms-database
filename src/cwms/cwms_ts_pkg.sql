@@ -112,6 +112,48 @@ AS
    --*******************************************************************   --
    --*******************************************************************   --
    --
+   -- SET_TS_TIME_ZONE -
+   --
+   PROCEDURE set_ts_time_zone (p_ts_code        IN NUMBER,
+                               p_time_zone_name IN VARCHAR2
+   );
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- SET_TS_TIME_ZONE -
+   --
+   PROCEDURE set_tsid_time_zone (p_ts_id          IN VARCHAR2,
+                                 p_time_zone_name IN VARCHAR2,
+                                 p_office_id      IN VARCHAR2 DEFAULT NULL
+   );
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- GET_TS_TIME_ZONE -
+   --
+   FUNCTION get_ts_time_zone (p_ts_code IN NUMBER
+   )
+   RETURN VARCHAR2;
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- GET_TS_TIME_ZONE -
+   --
+   FUNCTION get_tsid_time_zone (p_ts_id     IN VARCHAR2,
+                                p_office_id IN VARCHAR2 DEFAULT NULL
+   )
+   RETURN VARCHAR2;
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
    -- CREATE_TS -
    --
    --v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
@@ -139,6 +181,22 @@ AS
    --*******************************************************************   --
    --*******************************************************************   --
    --
+   -- CREATE_TS -
+   --
+   PROCEDURE create_ts_tz (p_cwms_ts_id IN varchar2,
+                           p_utc_offset IN number DEFAULT NULL ,
+                           p_interval_forward IN number DEFAULT NULL ,
+                           p_interval_backward IN number DEFAULT NULL ,
+                           p_versioned IN varchar2 DEFAULT 'F' ,
+                           p_active_flag IN varchar2 DEFAULT 'T' ,
+                           p_time_zone_name IN VARCHAR2 DEFAULT 'UTC',
+                           p_office_id IN varchar2 DEFAULT NULL
+   );
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
    -- CREATE_TS_CODE - v2.0 -
    --
    PROCEDURE create_ts_code (p_ts_code OUT number,
@@ -150,6 +208,24 @@ AS
                              p_active_flag IN varchar2 DEFAULT 'T' ,
                              p_fail_if_exists IN varchar2 DEFAULT 'T' ,
                              p_office_id IN varchar2 DEFAULT NULL
+   );
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- CREATE_TS_CODE - v2.0 -
+   --
+   PROCEDURE create_ts_code_tz (p_ts_code OUT number,
+                                p_cwms_ts_id IN varchar2,
+                                p_utc_offset IN number DEFAULT NULL ,
+                                p_interval_forward IN number DEFAULT NULL ,
+                                p_interval_backward IN number DEFAULT NULL ,
+                                p_versioned IN varchar2 DEFAULT 'F' ,
+                                p_active_flag IN varchar2 DEFAULT 'T' ,
+                                p_fail_if_exists IN varchar2 DEFAULT 'T' ,
+                                p_time_zone_name IN VARCHAR2 DEFAULT 'UTC',
+                                p_office_id IN varchar2 DEFAULT NULL
    );
 
    --
@@ -256,6 +332,16 @@ AS
                                 p_office_id IN varchar2 DEFAULT NULL
    );
 
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- shift_for_localtime
+   --
+   function shift_for_localtime(
+      p_date_time in date, 
+      p_tz_name   in varchar2)
+      return date;
    --
    --*******************************************************************   --
    --*******************************************************************   --
@@ -432,5 +518,8 @@ AS
                                   p_parameter_id_new IN varchar2,
                                   p_db_office_id IN varchar2 DEFAULT NULL
    );
+   
 END;
 /
+show errors;
+COMMIT;

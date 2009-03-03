@@ -802,6 +802,154 @@ END;
 --*******************************************************************   --
 --*******************************************************************   --
 --
+-- SET_TS_TIME_ZONE -
+--
+procedure set_ts_time_zone (p_ts_code        in number,
+                            p_time_zone_name in varchar2)
+is
+  l_time_zone_name varchar2(28) := nvl(p_time_zone_name, 'UTC');
+  l_time_zone_code number;
+  l_interval_val   number;
+  l_tz_offset      number;
+  l_office_id      varchar2(16);
+  l_tsid           varchar2(193);
+begin
+   if p_time_zone_name is null then
+      l_time_zone_code := null;
+   else
+      begin
+         select time_zone_code
+           into l_time_zone_code
+           from cwms_time_zone
+          where upper(time_zone_name) = upper(p_time_zone_name);
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_ITEM', p_time_zone_name, 'time zone name');
+      end;
+   end if;
+   select interval
+     into l_interval_val
+     from at_cwms_ts_spec ts,
+          cwms_interval   i
+    where ts.ts_code = p_ts_code
+      and i.interval_code = ts.interval_code;
+   if l_interval_val > 60 then
+      begin
+         execute immediate replace('
+            select distinct mod(round((cast((cast(date_time as timestamp) at time zone ''$tz'') as date)
+                               - trunc(cast((cast(date_time as timestamp) at time zone ''$tz'') as date)))
+                               * 1440, 0), :a)
+              from (select distinct date_time
+                      from av_tsv_dqu
+                     where ts_code = :b)', '$tz', l_time_zone_name)
+         into l_tz_offset using l_interval_val, p_ts_code;
+      exception
+         when too_many_rows then
+            select cwms_ts_id,
+                   db_office_id
+              into l_tsid,
+                   l_office_id
+              from mv_cwms_ts_id
+             where ts_code = p_ts_code;
+            cwms_err.raise(
+               'ERROR',
+               'Cannot set '
+               || l_office_id 
+               || '.' 
+               || l_tsid
+               || ' to time zone '
+               || nvl(p_time_zone_name, 'NULL')
+               || '.  Existing data does not conform to time zone.');
+      end;
+   end if;
+   update at_cwms_ts_spec
+      set time_zone_code = l_time_zone_code
+    where ts_code = p_ts_code;
+end set_ts_time_zone;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- set_tsid_time_zone -
+--
+procedure set_tsid_time_zone (p_ts_id          in varchar2,
+                              p_time_zone_name in varchar2,
+                              p_office_id      in varchar2 default null)
+is
+   l_ts_code   number;
+   l_office_id varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
+begin
+   begin
+      select ts_code
+        into l_ts_code
+        from mv_cwms_ts_id
+       where upper(cwms_ts_id) = upper(p_ts_id)
+         and upper(db_office_id) = upper(l_office_id);
+   exception
+      when no_data_found then
+         cwms_err.raise('INVALID_ITEM', p_ts_id, 'CWMS Timeseries Identifier');
+   end;
+   set_ts_time_zone(l_ts_code, p_time_zone_name);
+end set_tsid_time_zone;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- get_ts_time_zone -
+--
+function get_ts_time_zone (p_ts_code in number)
+return varchar2
+is
+   l_time_zone_code number;
+   l_time_zone_id   varchar2(28);
+begin
+   select time_zone_code
+     into l_time_zone_code
+     from at_cwms_ts_spec
+    where ts_code = p_ts_code;
+   if l_time_zone_code is null then
+      l_time_zone_id := null;
+   else
+      select time_zone_name
+        into l_time_zone_id
+        from cwms_time_zone
+       where time_zone_code = l_time_zone_code;
+   end if;
+   return l_time_zone_id;
+end get_ts_time_zone;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- GET_TSID_TIME_ZONE -
+--
+function get_tsid_time_zone (p_ts_id     in varchar2,
+                             p_office_id in varchar2 default null)
+return varchar2
+is
+   l_ts_code   number;
+   l_office_id varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
+begin
+   begin
+      select ts_code
+        into l_ts_code
+        from mv_cwms_ts_id
+       where upper(cwms_ts_id) = upper(p_ts_id)
+         and upper(db_office_id) = upper(l_office_id);
+   exception
+      when no_data_found then
+         cwms_err.raise('INVALID_ITEM', p_ts_id, 'CWMS Timeseries Identifier');
+   end;
+   return get_ts_time_zone(l_ts_code);
+end get_tsid_time_zone;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
 -- CREATE_TS -
 --
 --v 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvv 1.4 vvvvvv -
@@ -847,6 +995,36 @@ END;
                       p_office_id
                      );
    END create_ts;
+    --
+    --*******************************************************************   --
+    --*******************************************************************   --
+    --
+    -- CREATE_TS_TZ -
+    --
+    PROCEDURE create_ts_tz (p_cwms_ts_id IN varchar2,
+                         p_utc_offset IN number DEFAULT NULL ,
+                         p_interval_forward IN number DEFAULT NULL ,
+                         p_interval_backward IN number DEFAULT NULL ,
+                         p_versioned IN varchar2 DEFAULT 'F' ,
+                         p_active_flag IN varchar2 DEFAULT 'T' ,
+                         p_time_zone_name IN VARCHAR2 DEFAULT 'UTC',
+                         p_office_id IN varchar2 DEFAULT NULL
+    )
+   IS
+      l_ts_code   NUMBER;
+   BEGIN
+      create_ts_code (l_ts_code,
+                      p_cwms_ts_id,
+                      p_utc_offset,
+                      p_interval_forward,
+                      p_interval_backward,
+                      p_versioned,
+                      p_active_flag,
+                      p_time_zone_name,
+                      p_office_id
+                     );
+    END create_ts_tz;
+
     --
     --*******************************************************************   --
     --*******************************************************************   --
@@ -1164,6 +1342,89 @@ END create_ts_code;
 --*******************************************************************   --
 --*******************************************************************   --
 --
+-- CREATE_TS_CODE_TZ - v2.0 -
+--
+PROCEDURE create_ts_code_tz (
+   p_ts_code             OUT      NUMBER,
+   p_cwms_ts_id          IN       VARCHAR2,
+   p_utc_offset          IN       NUMBER DEFAULT NULL,
+   p_interval_forward    IN       NUMBER DEFAULT NULL,
+   p_interval_backward   IN       NUMBER DEFAULT NULL,
+   p_versioned           IN       VARCHAR2 DEFAULT 'F',
+   p_active_flag         IN       VARCHAR2 DEFAULT 'T',
+   p_fail_if_exists      IN       VARCHAR2 DEFAULT 'T',
+   p_time_zone_name      IN       VARCHAR2 DEFAULT 'UTC',
+   p_office_id           IN       VARCHAR2 DEFAULT NULL
+)
+IS
+   l_ts_code NUMBER;
+BEGIN
+   create_ts_code(
+      l_ts_code,
+      p_cwms_ts_id,
+      p_utc_offset,
+      p_interval_forward,
+      p_interval_backward,
+      p_versioned,
+      p_active_flag,
+      p_fail_if_exists,
+      p_office_id);
+   
+   set_ts_time_zone (l_ts_code, p_time_zone_name);
+   p_ts_code := l_ts_code;
+END create_ts_code_tz;
+   
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- tz_offset_at_gmt
+--
+function tz_offset_at_gmt(
+   p_date_time in date, 
+   p_tz_name   in varchar2)
+   return integer
+is
+   l_offset        integer := 0;
+   l_tz_offset_str varchar2(8) := rtrim(tz_offset(p_tz_name), chr(0));
+   l_ts_utc        timestamp;
+   l_ts_loc        timestamp;
+   l_hours         integer;
+   l_minutes       integer;
+   l_parts         cwms_util.str_tab_t;
+begin
+   if l_tz_offset_str != '+00:00' and l_tz_offset_str != '-00:00' then
+      l_parts   := cwms_util.split_text(l_tz_offset_str, ':');
+      l_hours   := to_number(l_parts(1));
+      l_minutes := to_number(l_parts(2));
+      if l_hours < 0 then
+         l_minutes := l_hours * 60 - l_minutes;
+      else
+        l_minutes := l_hours * 60 + l_minutes;
+      end if;
+      l_ts_utc := cast(p_date_time as timestamp);
+      l_ts_loc := from_tz(l_ts_utc, 'UTC') at time zone p_tz_name;
+      l_offset := l_minutes - round((cwms_util.to_millis(l_ts_loc) - cwms_util.to_millis(l_ts_utc)) / 60000);
+   end if;
+   return l_offset;
+end;
+
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- shift_for_localtime
+--
+function shift_for_localtime(
+   p_date_time in date, 
+   p_tz_name   in varchar2)
+   return date
+is
+begin
+   RETURN p_date_time + tz_offset_at_gmt(p_date_time, p_tz_name) / 1440;
+end shift_for_localtime;
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
 -- setup_retrieve
 --
 procedure setup_retrieve(
@@ -1386,19 +1647,18 @@ begin
          -- regular time series
          --
          if mod(l_interval, 30) = 0 or mod(l_interval, 365) = 0 then
-            ----------------------------
-            -- must use calendar math --
-            ----------------------------
-            -----------------------------------------
-            -- change interval from days to months --
-            -----------------------------------------
+            --
+            -- must use calendar math
+            --
+            -- change interval from days to months
+            --
             if mod(l_interval, 30) = 0 then
                l_interval := l_interval / 30;
             else
                l_interval := l_interval / 365 * 12;
             end if;
             l_query_str := 
-               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
+               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
                       value,
                       nvl(quality_code, :missing) "QUALITY_CODE"
                  from (
@@ -1416,7 +1676,7 @@ begin
                       ) v
                       right outer join
                       (
-                      select add_months(to_date('':reg_start'', '':datefmt''), (level-1) * :interval) date_time
+                      select cwms_ts.shift_for_localtime(add_months(to_date('':reg_start'', '':datefmt''), (level-1) * :interval), '':tz'') date_time
                         from dual
                        where to_date('':reg_start'', '':datefmt'') is not null
                   connect by level <= months_between(to_date('':reg_end'',   '':datefmt''),
@@ -1425,11 +1685,11 @@ begin
                       on v.date_time = t.date_time
                       order by t.date_time asc';
          else
-            -----------------------------
-            -- can use date arithmetic --
-            -----------------------------
+            --
+            -- can use date arithmetic
+            --
             l_query_str := 
-               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
+               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
                       value,
                       nvl(quality_code, :missing) "QUALITY_CODE"
                  from (
@@ -1447,7 +1707,7 @@ begin
                       ) v
                       right outer join
                       (
-                      select to_date('':reg_start'', '':datefmt'') + (level-1) * :interval date_time
+                      select cwms_ts.shift_for_localtime(to_date('':reg_start'', '':datefmt'') + (level-1) * :interval, '':tz'') date_time
                         from dual
                        where to_date('':reg_start'', '':datefmt'') is not null
                   connect by level <= round((to_date('':reg_end'',   '':datefmt'')  - 
@@ -1461,7 +1721,7 @@ begin
         -- irregular time series
         --
          l_query_str := 
-            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
+            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
                     max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
                     max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
                from av_tsv_dqu
@@ -1501,7 +1761,7 @@ begin
                l_interval := l_interval / 365 * 12;
             end if;
             l_query_str := 
-               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
+               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
                       value,
                       nvl(quality_code, :missing) "QUALITY_CODE"
                  from (
@@ -1519,7 +1779,7 @@ begin
                       ) v
                       right outer join
                       (
-                      select add_months(to_date('':reg_start'', ''datefmt''), (level-1) * :interval) date_time
+                      select cwms_ts.shift_for_localtime(add_months(to_date('':reg_start'', ''datefmt''), (level-1) * :interval), '':tz'') date_time
                         from dual
                        where to_date('':reg_start'', ''datefmt'') is not null
                   connect by level <= months_between(to_date('':reg_start'', ''datefmt''),
@@ -1532,7 +1792,7 @@ begin
             -- can use date arithmetic
             --
             l_query_str := 
-               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
+               'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
                       value,
                       nvl(quality_code, :missing) "QUALITY_CODE"
                  from (
@@ -1550,7 +1810,7 @@ begin
                       ) v
                       right outer join
                       (
-                      select to_date('':reg_start'', '':datefmt'') + (level-1) * :interval date_time
+                      select cwms_ts.shift_for_localtime(to_date('':reg_start'', '':datefmt'') + (level-1) * :interval, '':tz'') date_time
                         from dual
                        where to_date('':reg_start'', '':datefmt'') is not null
                   connect by level <= months_between(to_date('':reg_end'',   '':datefmt''),
@@ -1564,7 +1824,7 @@ begin
         -- irregular time series
         --
          l_query_str := 
-            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME_:tz",
+            'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
                     value,
                     quality_code
                from av_tsv_dqu
@@ -2013,6 +2273,8 @@ end retrieve_ts_multi;
       l_ts_code             NUMBER;
       l_interval_id         VARCHAR2 (100);
       l_interval_value      NUMBER;
+      l_local_tz_code       NUMBER;
+      l_tz_name             VARCHAR2 (28) := 'UTC';
       l_utc_offset          NUMBER;
       existing_utc_offset   NUMBER;
       table_cnt             NUMBER;
@@ -2064,36 +2326,6 @@ end retrieve_ts_multi;
      when NO_DATA_FOUND then
        raise_application_error(-20110, 'ERROR: ' || l_interval_id || ' is not a valid time series interval', true);
     end;    
-    
-    IF l_interval_value > 0 
-    THEN 
-     
-      dbms_application_info.set_action('Incoming data set has a regular interval, confirm data set matches interval_id');
-      
-              BEGIN
-                SELECT DISTINCT MOD ( ROUND (
-                                             ( CAST ((date_time at time zone 'GMT') AS DATE)
-                                               - TRUNC (CAST ((date_time at time zone 'GMT') AS DATE))
-                                             ) * 1440, 
-                                             0
-                                           ),
-                                       l_interval_value
-                                     )
-                       INTO l_utc_offset
-                       FROM TABLE (p_timeseries_data);
-              EXCEPTION
-                WHEN TOO_MANY_ROWS 
-                THEN
-                raise_application_error(-20110, 'ERROR: Incoming data set appears to contain irregular data. Unable to store data for '||p_cwms_ts_id, true);
-              END;
-   
-   else
-   
-     dbms_application_info.set_action('Incoming data set is irregular');
-     
-      l_utc_offset := cwms_util.UTC_OFFSET_IRREGULAR;
-   
-    end if;   
    
    dbms_application_info.set_action('Find or create a TS_CODE for your TS Desc');
   
@@ -2105,22 +2337,6 @@ end retrieve_ts_multi;
        where upper(m.CWMS_TS_ID) = upper(p_cwms_ts_id)
         and m.db_OFFICE_ID = upper(l_office_id);
        
-      dbms_application_info.set_action('TS_CODE was found - check its utc_offset against the dataset''s and/or set an undefined utc_offset');
-     
-     if existing_utc_offset = cwms_util.UTC_OFFSET_UNDEFINED then
-       -- Existing TS_Code did not have a defined UTC_OFFSET, so set it equal to the offset of this data set.
-      
-       update at_cwms_ts_spec acts
-         set acts.INTERVAL_UTC_OFFSET = l_utc_offset
-       where acts.TS_CODE = l_ts_code;
-       
-      elsif existing_utc_offset != l_utc_offset then
-       -- Existing TS_Code's UTC_OFFSET does not match the offset of the data set - so storage of data set fails.
-      
-        raise_application_error(-20101, 'Incoming Data Set''s UTC_OFFSET does not match UTC_OFFSET of previously stored data - data set was NOT stored', true);
-      
-     end if; 
-    
     exception
     when no_data_found then
       /*
@@ -2133,13 +2349,91 @@ end retrieve_ts_multi;
       create_ts_code(p_ts_code=>l_ts_code, 
                      p_office_id=>l_office_id, 
                      p_cwms_ts_id=>p_cwms_ts_id, 
-                     p_utc_offset=> l_utc_offset);
+                     p_utc_offset=> cwms_util.UTC_OFFSET_UNDEFINED);
+      
+      existing_utc_offset := cwms_util.UTC_OFFSET_UNDEFINED;
  
     end; -- END - Find TS_CODE
 
     if l_ts_code is null then
       raise_application_error(-20105, 'Unable to create or locate ts_code for '||p_cwms_ts_id, true);
     end if;
+    
+    IF l_interval_value > 0 
+    THEN 
+     
+      dbms_application_info.set_action('Incoming data set has a regular interval, confirm data set matches interval_id');
+      
+      SELECT time_zone_code 
+        INTO l_local_tz_code
+        FROM at_cwms_ts_spec
+       WHERE ts_code = l_ts_code;
+      IF l_local_tz_code IS NOT NULL THEN
+         SELECT time_zone_name
+           INTO l_tz_name
+           FROM cwms_time_zone
+          WHERE time_zone_code = l_local_tz_code;
+      END IF;
+      BEGIN
+         execute IMMEDIATE REPLACE('
+         SELECT DISTINCT MOD ( ROUND (
+                                     ( CAST ((date_time at time zone ''$TZ'') AS DATE)
+                                       - TRUNC (CAST ((date_time at time zone ''$TZ'') AS DATE))
+                                     ) * 1440, 
+                                     0
+                                   ),
+                               :a
+                             )
+               FROM TABLE (:b)', '$TZ', l_tz_name) INTO l_utc_offset using l_interval_value, p_timeseries_data;
+      EXCEPTION
+        WHEN TOO_MANY_ROWS 
+        THEN
+        raise_application_error(-20110, 'ERROR: Incoming data set appears to contain irregular data. Unable to store data for '||p_cwms_ts_id, true);
+      END;
+      
+      IF l_local_tz_code IS NOT NULL THEN
+         DECLARE
+            l_offset_str VARCHAR2(8);
+            l_parts      cwms_util.str_tab_t;
+            l_hours      INTEGER;
+            l_minutes    INTEGER;
+         BEGIN
+            l_offset_str := rtrim(tz_offset(l_tz_name), chr(0));
+            l_parts      := cwms_util.split_text(l_offset_str, ':');
+            l_hours      := to_number(l_parts(1));
+            l_minutes    := to_number(l_parts(2));
+            IF l_hours < 0 THEN
+               l_minutes := 60 * l_hours - l_minutes;
+            ELSE
+               l_minutes := 60 * l_hours + l_minutes;
+            END IF;
+            l_utc_offset := l_utc_offset - l_minutes;
+         END;
+      END IF;
+
+      dbms_application_info.set_action('Check utc_offset against the dataset''s and/or set an undefined utc_offset');
+
+      if existing_utc_offset = cwms_util.UTC_OFFSET_UNDEFINED then
+       -- Existing TS_Code did not have a defined UTC_OFFSET, so set it equal to the offset of this data set.
+
+       update at_cwms_ts_spec acts
+         set acts.INTERVAL_UTC_OFFSET = l_utc_offset
+       where acts.TS_CODE = l_ts_code;
+
+      elsif existing_utc_offset != l_utc_offset then
+       -- Existing TS_Code's UTC_OFFSET does not match the offset of the data set - so storage of data set fails.
+
+        raise_application_error(-20101, 'Incoming Data Set''s UTC_OFFSET does not match UTC_OFFSET of previously stored data - data set was NOT stored', true);
+
+      end if; 
+     
+   else
+   
+     dbms_application_info.set_action('Incoming data set is irregular');
+     
+      l_utc_offset := cwms_util.UTC_OFFSET_IRREGULAR;
+   
+    end if;   
 
     dbms_application_info.set_action('check for unit conversion factors');
 
@@ -4637,7 +4931,9 @@ END;
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    END zstore_ts_multi;
-END cwms_ts; --end package body
+
+
+   END cwms_ts; --end package body
 /
 
 show errors;
