@@ -844,6 +844,8 @@ begin
                      where ts_code = :b)', '$tz', l_time_zone_name)
          into l_tz_offset using l_interval_val, p_ts_code;
       exception
+         when no_data_found then
+            null;
          when too_many_rows then
             select cwms_ts_id,
                    db_office_id
