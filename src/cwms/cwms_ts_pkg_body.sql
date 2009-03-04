@@ -2370,7 +2370,7 @@ end retrieve_ts_multi;
         INTO l_local_tz_code
         FROM at_cwms_ts_spec
        WHERE ts_code = l_ts_code;
-      IF l_local_tz_code IS NOT NULL THEN
+      IF l_local_tz_code IS NOT NULL AND l_local_tz_code != 0 THEN
          SELECT time_zone_name
            INTO l_tz_name
            FROM cwms_time_zone
