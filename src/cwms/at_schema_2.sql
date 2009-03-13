@@ -59,35 +59,3 @@ AS
 /
 SHOW ERRORS;
 COMMIT;
------------------------------
--- AT_DSS_TS_SPEC trigger
---
-create or replace trigger at_dss_ts_spec_units
-before insert or update of unit_id
-on at_dss_ts_spec
-referencing new as new old as old
-for each row
-declare
-   l_count number;
-begin
-   select count(unit_id)
-     into l_count
-     from (
-            select unit_id from cwms_unit
-            union
-            select alias_id unit_id from at_unit_alias 
-             where db_office_code in (
-                                      select db_office_code from cwms_office where office_id = 'CWMS'
-                                      union
-                                      select db_office_code from cwms_office where office_code = :new.office_code
-                                     )
-          )
-    where unit_id = :new.unit_id;
-   
-   if l_count = 0 then
-      cwms_err.raise('INVALID_ITEM', :new.unit_id, 'unit');
-   end if;
-end at_dss_ts_spec_units;
-/
-show errors;
-commit;

@@ -1,5 +1,5 @@
 /* Formatted on 2008/06/24 06:40 (Formatter Plus v4.8.8) */
--- Defines the CWMS date-time, value, and quality types. 
+-- Defines the CWMS date-time, value, and quality types.
 SET serveroutput on
 
 ------------------------------
@@ -494,6 +494,7 @@ CREATE TYPE cat_timezone_otab_t AS TABLE OF cat_timezone_obj_t;
 /
 
 CREATE TYPE cat_dss_file_obj_t AS OBJECT (
+   office_id         VARCHAR2 (16),
    dss_filemgr_url   VARCHAR2 (32),
    dss_file_name     NUMBER (10)
 );
@@ -517,6 +518,7 @@ CREATE TYPE cat_dss_xchg_set_otab_t AS TABLE OF cat_dss_xchg_set_obj_t;
 /
 
 CREATE TYPE cat_dss_xchg_ts_map_obj_t AS OBJECT (
+   office_id               VARCHAR2 (16),
    cwms_ts_id              VARCHAR2 (183),
    dss_pathname            VARCHAR2 (391),
    dss_parameter_type_id   VARCHAR2 (8),

@@ -204,8 +204,9 @@ IS
    TYPE cat_timezone_tab_t IS TABLE OF cat_timezone_rec_t;
 
    TYPE cat_dss_file_rec_t IS RECORD (
-      dss_filemgr_url   VARCHAR2 (32),
-      dss_file_name     NUMBER (10)
+      office_id         VARCHAR2 (16),
+      dss_filemgr_url   VARCHAR2 (256),
+      dss_file_name     VARCHAR2 (256)
    );
 
    TYPE cat_dss_file_tab_t IS TABLE OF cat_dss_file_rec_t;
@@ -223,6 +224,7 @@ IS
    TYPE cat_dss_xchg_set_tab_t IS TABLE OF cat_dss_xchg_set_rec_t;
 
    TYPE cat_dss_xchg_ts_map_rec_t IS RECORD (
+      office_id               VARCHAR2 (16),
       cwms_ts_id              VARCHAR2 (183),
       dss_pathname            VARCHAR2 (391),
       dss_parameter_type_id   VARCHAR2 (8),
@@ -439,7 +441,7 @@ IS
 -- function cat_ts_tab(...)
 --
    FUNCTION cat_ts_tab (
-      p_officeid              IN   VARCHAR2 DEFAULT NULL,
+      p_office_id             IN   VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_ts_tab_t PIPELINED;
@@ -450,7 +452,7 @@ IS
 --
    PROCEDURE cat_ts (
       p_cwms_cat              OUT      sys_refcursor,
-      p_officeid              IN       VARCHAR2 DEFAULT NULL,
+      p_office_id             IN       VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL
    );
 
@@ -459,7 +461,7 @@ IS
 --
 --
    FUNCTION cat_ts_cwms_20_tab (
-      p_officeid              IN   VARCHAR2 DEFAULT NULL,
+      p_office_id             IN   VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_ts_cwms_20_tab_t PIPELINED;
@@ -470,7 +472,7 @@ IS
 --
    PROCEDURE cat_ts_cwms_20 (
       p_cwms_cat              OUT      sys_refcursor,
-      p_officeid              IN       VARCHAR2 DEFAULT NULL,
+      p_office_id             IN       VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL
    );
 
@@ -527,7 +529,7 @@ IS
 --
 --
    FUNCTION cat_loc_tab (
-      p_officeid         IN   VARCHAR2 DEFAULT NULL,
+      p_office_id        IN   VARCHAR2 DEFAULT NULL,
       p_elevation_unit   IN   VARCHAR2 DEFAULT 'm'
    )
       RETURN cat_loc_tab_t PIPELINED;
@@ -538,7 +540,7 @@ IS
 --
    PROCEDURE cat_loc (
       p_cwms_cat         OUT      sys_refcursor,
-      p_officeid         IN       VARCHAR2 DEFAULT NULL,
+      p_office_id        IN       VARCHAR2 DEFAULT NULL,
       p_elevation_unit   IN       VARCHAR2 DEFAULT 'm'
    );
 
@@ -683,7 +685,7 @@ IS
 -- function cat_sub_loc_tab(...)
 --
 --
-   FUNCTION cat_sub_loc_tab (p_officeid IN VARCHAR2 DEFAULT NULL)
+   FUNCTION cat_sub_loc_tab (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_sub_loc_tab_t PIPELINED;
 
 -------------------------------------------------------------------------------
@@ -692,7 +694,7 @@ IS
 --
    PROCEDURE cat_sub_loc (
       p_cwms_cat   OUT      sys_refcursor,
-      p_officeid   IN       VARCHAR2 DEFAULT NULL
+      p_office_id  IN       VARCHAR2 DEFAULT NULL
    );
 
    PROCEDURE cat_parameter_type (p_cwms_cat OUT sys_refcursor);
@@ -839,7 +841,8 @@ IS
 --
    FUNCTION cat_dss_file_tab (
       p_filemgr_url   IN   VARCHAR2 DEFAULT NULL,
-      p_file_name     IN   VARCHAR2 DEFAULT NULL
+      p_file_name     IN   VARCHAR2 DEFAULT NULL,
+      p_office_id     IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_dss_file_tab_t PIPELINED;
 
@@ -850,7 +853,8 @@ IS
    PROCEDURE cat_dss_file (
       p_cwms_cat      OUT      sys_refcursor,
       p_filemgr_url   IN       VARCHAR2 DEFAULT NULL,
-      p_file_name     IN       VARCHAR2 DEFAULT NULL
+      p_file_name     IN       VARCHAR2 DEFAULT NULL,
+      p_office_id     IN       VARCHAR2 DEFAULT NULL
    );
 
 -------------------------------------------------------------------------------
@@ -892,7 +896,7 @@ IS
 --
 --
    FUNCTION cat_dss_xchg_set_tab (
-      p_officeid      IN   VARCHAR2 DEFAULT NULL,
+      p_office_id     IN   VARCHAR2 DEFAULT NULL,
       p_filemgr_url   IN   VARCHAR2 DEFAULT NULL,
       p_file_name     IN   VARCHAR2 DEFAULT NULL
    )
@@ -904,7 +908,7 @@ IS
 --
    PROCEDURE cat_dss_xchg_set (
       p_cwms_cat      OUT      sys_refcursor,
-      p_officeid      IN       VARCHAR2 DEFAULT NULL,
+      p_office_id     IN       VARCHAR2 DEFAULT NULL,
       p_filemgr_url   IN       VARCHAR2 DEFAULT NULL,
       p_file_name     IN       VARCHAR2 DEFAULT NULL
    );
@@ -935,7 +939,7 @@ IS
 --
 --
    FUNCTION cat_dss_xchg_ts_map_tab (
-      p_officeid          IN   VARCHAR2,
+      p_office_id         IN   VARCHAR2,
       p_dss_xchg_set_id   IN   VARCHAR2
    )
       RETURN cat_dss_xchg_ts_map_tab_t PIPELINED;
@@ -945,9 +949,9 @@ IS
 --
 --
    PROCEDURE cat_dss_xchg_ts_map (
-      p_cwms_cat          OUT      sys_refcursor,
-      p_officeid          IN       VARCHAR2,
-      p_dss_xchg_set_id   IN       VARCHAR2
+      p_cwms_cat      OUT      sys_refcursor,
+      p_office_id     IN       VARCHAR2,
+      p_xchg_set_id   IN       VARCHAR2
    );
 
 -------------------------------------------------------------------------------
@@ -1094,29 +1098,6 @@ IS
    FUNCTION cat_loc_group_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_loc_grp_tab_t PIPELINED;
 
-   PROCEDURE cat_xchg_office (p_offices OUT xchg_office_tab_t);
-
-   PROCEDURE cat_xchg_office (p_clob IN OUT NOCOPY CLOB);
-
-   PROCEDURE cat_xchg_datastore (
-      p_datastores     OUT      xchg_datastore_tab_t,
-      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
-   );
-
-   PROCEDURE cat_xchg_datastore (
-      p_clob           IN OUT NOCOPY   CLOB,
-      p_db_office_id   IN              VARCHAR2 DEFAULT NULL
-   );
-
-   PROCEDURE cat_xchg_set (
-      p_xchg_sets      OUT      xchg_dataexchange_set_tab_t,
-      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
-   );
-
-   PROCEDURE cat_xchg_set (
-      p_clob           IN OUT NOCOPY   CLOB,
-      p_db_office_id   IN              VARCHAR2 DEFAULT NULL
-   );
 END cwms_cat;
 /
 

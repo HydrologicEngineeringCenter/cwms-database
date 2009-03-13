@@ -12,8 +12,8 @@ create or replace package cwms_xchg as
 -- PROCEDURE GET_QUEUE_NAMES
 --
    procedure get_queue_names(
-      p_status_queue_name   out varchar2,
-      p_realtime_queue_name out varchar2,
+      p_status_queue_name   out nocopy varchar2,
+      p_realtime_queue_name out nocopy varchar2,
       p_office_id           in  varchar2 default null);
    
 --------------------------------------------------------------------------------
@@ -26,12 +26,12 @@ create or replace package cwms_xchg as
 -- PROCEDURE PARSE_DSS_PATHNAME(...)
 --
    procedure parse_dss_pathname(
-      p_a_pathname_part out varchar2,
-      p_b_pathname_part out varchar2,
-      p_c_pathname_part out varchar2,
-      p_d_pathname_part out varchar2,
-      p_e_pathname_part out varchar2,
-      p_f_pathname_part out varchar2,
+      p_a_pathname_part out nocopy varchar2,
+      p_b_pathname_part out nocopy varchar2,
+      p_c_pathname_part out nocopy varchar2,
+      p_d_pathname_part out nocopy varchar2,
+      p_e_pathname_part out nocopy varchar2,
+      p_f_pathname_part out nocopy varchar2,
       p_pathname        in  varchar2);
 
 --------------------------------------------------------------------------------
@@ -91,74 +91,25 @@ function is_realtime_export(
 -- PROCEDURE RENAME_DSS_XCHG_SET
 --
    procedure rename_dss_xchg_set(
-      p_dss_xchg_set_id       in   varchar2,
-      p_new_dss_xchg_set_id   in   varchar2,
+      p_old_xchg_set_id       in   varchar2,
+      p_new_xchg_set_id   in   varchar2,
       p_office_id             in   varchar2 default null);
 
 -------------------------------------------------------------------------------
 -- PROCEDURE DUPLICATE_DSS_XCHG_SET(...)
 --
    procedure duplicate_dss_xchg_set(
-      p_dss_xchg_set_id       in   varchar2,
-      p_new_dss_xchg_set_id   in   varchar2,
-      p_office_id             in   varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION UPDATE_DSS_XCHG_SET(...)
---
-   function update_dss_xchg_set(
-      p_dss_xchg_set_id      in   varchar2,
-      p_description          in   varchar2,
-      p_dss_filemgr_url      in   varchar2,
-      p_dss_file_name        in   varchar2,
-      p_realtime             in   varchar2,                        
-      p_last_update          in   timestamp,
-      p_ignore_nulls         in   varchar2 default 'T',
-      p_office_id            in   varchar2 default null)
-      return number;
-
---------------------------------------------------------------------------------
--- PROCEDURE UPDATE_DSS_XCHG_SET(...)
---
-   procedure update_dss_xchg_set(
-      p_dss_xchg_set_code    out  number,
-      p_dss_xchg_set_id      in   varchar2,
-      p_description          in   varchar2,
-      p_dss_filemgr_url      in   varchar2,
-      p_dss_file_name        in   varchar2,
-      p_realtime             in   varchar2,
-      p_last_update          in   timestamp,
-      p_ignore_nulls         in   varchar2 default 'T',
-      p_office_id            in   varchar2 default null);
+      p_old_xchg_set_id   in   varchar2,
+      p_new_xchg_set_id   in   varchar2,
+      p_office_id         in   varchar2 default null);
 
 --------------------------------------------------------------------------------
 -- PROCEDURE UPDATE_DSS_XCHG_SET_TIME(...)
 --
    procedure update_dss_xchg_set_time(
-      p_dss_xchg_set_code    in  number,
+      p_xchg_set_code    in  number,
       p_last_update          in  timestamp);
 
---------------------------------------------------------------------------------
--- PROCEDURE MAP_TS_IN_XCHG_SET(...)
---
-   procedure map_ts_in_xchg_set(
-      p_dss_xchg_set_code    in   number,
-      p_cwms_ts_id           in   varchar2,
-      p_dss_pathname         in   varchar2,
-      p_dss_parameter_type   in   varchar2 default null,
-      p_units                in   varchar2 default null,
-      p_time_zone            in   varchar2 default null,
-      p_tz_usage             in   varchar2 default null,
-      p_office_id            in   varchar2 default null);
-
---------------------------------------------------------------------------------
--- PROCEDURE UNMAP_TS_IN_XCHG_SET(...) 
---
-   procedure unmap_ts_in_xchg_set(
-      p_dss_xchg_set_code    in   number,
-      p_cwms_ts_code         in   number,
-      p_office_id            in   varchar2 default null);
-   
 --------------------------------------------------------------------------------
 -- CLOB FUNCTION GET_DSS_XCHG_SETS(...)
 --
@@ -173,29 +124,6 @@ function is_realtime_export(
       p_office_id       in varchar2 default null)
       return clob;
 
-   procedure retrieve_dataexchange_conf(
-      p_dx_config       out xchg_dataexchange_conf_t,
-      p_dss_filemgr_url in  varchar2 default null,
-      p_dss_file_name   in  varchar2 default null,
-      p_dss_xchg_set_id in  varchar2 default null,
-      p_office_id       in  varchar2 default null);
-                                              
-   procedure retrieve_dataexchange_conf(
-      p_dx_config       in out nocopy clob,
-      p_dss_filemgr_url in varchar2 default null,
-      p_dss_file_name   in varchar2 default null,
-      p_dss_xchg_set_id in varchar2 default null,
-      p_office_id       in varchar2 default null);
-
-   procedure store_dataexchange_conf(
-      p_sets_inserted     out number,
-      p_sets_updated      out number,
-      p_mappings_inserted out number,
-      p_mappings_updated  out number,
-      p_mappings_deleted  out number,
-      p_dx_config         in  xchg_dataexchange_conf_t,
-      p_store_rule        in  varchar2 default 'MERGE');
-   
    procedure store_dataexchange_conf(
       p_sets_inserted     out number,
       p_sets_updated      out number,
@@ -204,72 +132,6 @@ function is_realtime_export(
       p_mappings_deleted  out number,
       p_dx_config         in  clob,
       p_store_rule        in  varchar2 default 'MERGE');
-
---------------------------------------------------------------------------------
--- PROCEDURE PUT_DSS_XCHG_SETS(...)
---
--- p_xml_clob must be a CLOB containing an XML instance of the same format as
--- output by the get_dss_xchg_sets function (corresponds to the XML schema
--- specified in dataexchangeschma.xsd).   
---   
--- p_store_rule must be one of - or an initial substring of - the following:
---   
---   INSERT  - For each existing data exchange set specfied in the input, add
---             any mappings that don't already exist.  No existing mappings
---             will be modified, even if they differ from the mappings
---             specified in the input. New data exchange sets specified in
---             the input will be created. No existing data exchange sets will
---             be updated.   
---   
---   UPDATE  - For each existing data exchange set specified in the input,
---             update all existing mappings that differ from the specified
---             mappings. No mappings will be added to existing exchange sets.
---             No new data exchange sets will be created.  Existing data
---             exchange sets will be updated if necessary.   
---   
---   MERGE   - INSERT + UPDATE. For each exisint data exchange set specified
---             in the input, update existing mappings that differ from the
---             specified mappings and add specified mappings that don't already
---             exist. New data exchange sets specified in the input will be 
---             created and existing sets will be updated if necessary.
---   
---   REPLACE - For each existing data exchange set specified in the input,
---             delete all existing mappings and replace them with the specified
---             mappings. New data exchange sets specified in the input will be
---             created. Existing data exchange sets will be updated if
---             necessary.
---   
---   Under no circumstances will exsiting data exchange sets be deleted by this
---   procedure.
---   
---   Existing data exchange sets are identified by the set id (name).  Items
---   that can be updated are:
---     Description
---     Realtime exchange direction
---     HEC-DSS filemanager URL
---     HEC-DSS file name
---   
---   Existing mappings are identified by the combination of the CWMS timeseries
---   identifier and the HEC-DSS pathname.  Items that can be updated are:
---     HEC-DSS timeseries data type
---     HEC-DSS data units
---     HEC-DSS timezone
---     HEC-DSS timezone-usage
---   
-   procedure put_dss_xchg_sets(
-      p_sets_inserted     out number,
-      p_sets_updated      out number,
-      p_mappings_inserted out number,
-      p_mappings_updated  out number,
-      p_mappings_deleted  out number,
-      p_xml_clob          in out nocopy clob,
-      p_store_rule        in  varchar2 default 'MERGE');
-      
---------------------------------------------------------------------------------
--- PROCEDURE UNMAP_ALL_TS_IN_XCHG_SET(...)
---
-   procedure unmap_all_ts_in_xchg_set(
-      p_dss_xchg_set_code   in   number);
 
 --------------------------------------------------------------------------------
 -- PROCEDURE DEL_UNUSED_DSS_XCHG_INFO(...)
@@ -304,22 +166,22 @@ procedure update_last_processed_time (
 -- PROCEDURE UPDATE_LAST_PROCESSED_TIME(...)
 --
 procedure update_last_processed_time (
-   p_engine_url      in varchar2,
-   p_dss_xchg_set_id in varchar2,
-   p_update_time     in integer,
-   p_office_id       in varchar2 default null);
+   p_engine_url   in varchar2,
+   p_xchg_set_id  in varchar2,
+   p_update_time  in integer,
+   p_office_id    in varchar2 default null);
 
 -------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION REPLAY_DATA_MESSAGES(...)
 --
 function replay_data_messages(
-   p_component       in varchar2,
-   p_host            in varchar2,
-   p_dss_xchg_set_id in varchar2,
-   p_start_time      in integer  default null,
-   p_end_time        in integer  default null,
-   p_request_id      in varchar2 default null,
-   p_office_id       in varchar2 default null)
+   p_component   in varchar2,
+   p_host        in varchar2,
+   p_xchg_set_id in varchar2,
+   p_start_time  in integer  default null,
+   p_end_time    in integer  default null,
+   p_request_id  in varchar2 default null,
+   p_office_id   in varchar2 default null)
    return varchar2;
 
 -------------------------------------------------------------------------------
@@ -342,8 +204,101 @@ function request_batch_exchange(
    p_office_id        in varchar2 default null)
    return varchar2;
 
+-------------------------------------------------------------------------------
+-- PROCEDURE RETRIEVE_DSS_DATASTORE(...)
+--
+procedure retrieve_dss_datastore(
+   p_datastore_code  out number,                            
+   p_dss_filemgr_url out nocopy varchar2,
+   p_dss_file_name   out nocopy varchar2,
+   p_description     out nocopy varchar2,
+   p_datastore_id    in  varchar2,                                
+   p_office_id       in  varchar2 default null);
+
+-------------------------------------------------------------------------------
+-- PROCEDURE STORE_DSS_DATASTORE(...)
+--
+procedure store_dss_datastore(
+   p_datastore_code  out number,                            
+   p_datastore_id    in  varchar2,                                
+   p_dss_filemgr_url in  varchar2,
+   p_dss_file_name   in  varchar2,
+   p_description     in  varchar2 default null,
+   p_fail_if_exists  in  varchar2 default 'T',
+   p_office_id       in  varchar2 default null);
+
+-------------------------------------------------------------------------------
+-- PROCEDURE RETRIEVE_XCHG_SET(...)
+--
+procedure retrieve_xchg_set(
+   p_xchg_set_code out number,
+   p_datastore_id  out nocopy varchar2,
+   p_description   out nocopy varchar2,
+   p_start_time    out nocopy varchar2,
+   p_end_time      out nocopy varchar2,
+   p_interp_count  out number,
+   p_interp_units  out nocopy varchar2,
+   p_realtime_dir  out nocopy varchar2,
+   p_last_update   out timestamp,
+   p_xchg_set_id   in  varchar2,
+   p_office_id     in  varchar2 default null);
+
+-------------------------------------------------------------------------------
+-- PROCEDURE STORE_XCHG_SET(...)
+--
+procedure store_xchg_set(
+   p_xchg_set_code  out number,
+   p_xchg_set_id    in  varchar2,
+   p_datastore_id   in  varchar2,
+   p_description    in  varchar2 default null,
+   p_start_time     in  varchar2 default null,
+   p_end_time       in  varchar2 default null,
+   p_interp_count   in  integer  default null,
+   p_interp_units   in  varchar2 default null, -- Intervals or Minutes
+   p_realtime_dir   in  varchar2 default null, -- DssToOracle or OracleToDss
+   p_fail_if_exists in  varchar2 default 'T',  -- T or F
+   p_office_id      in  varchar2 default null);
+
+-------------------------------------------------------------------------------
+-- PROCEDURE RETRIEVE_XCHG_DSS_TS_MAPPING(...)
+--
+procedure retrieve_xchg_dss_ts_mapping(
+   p_mapping_code    out number,
+   p_a_pathname_part out nocopy varchar2,
+   p_b_pathname_part out nocopy varchar2,
+   p_c_pathname_part out nocopy varchar2,
+   p_e_pathname_part out nocopy varchar2,
+   p_f_pathname_part out nocopy varchar2,
+   p_parameter_type  out nocopy varchar2,
+   p_units           out nocopy varchar2,
+   p_time_zone       out nocopy varchar2,
+   p_tz_usage        out nocopy varchar2,
+   p_xchg_set_code   in  number,
+   p_cwms_ts_code    in  number);
+
+-------------------------------------------------------------------------------
+-- PROCEDURE STORE_XCHG_DSS_TS_MAPPING(...)
+--
+procedure store_xchg_dss_ts_mapping(
+   p_mapping_code    out number,
+   p_xchg_set_code   in  number,
+   p_cwms_ts_code    in  number,
+   p_a_pathname_part in  varchar2,
+   p_b_pathname_part in  varchar2,
+   p_c_pathname_part in  varchar2,
+   p_e_pathname_part in  varchar2,
+   p_f_pathname_part in  varchar2,
+   p_parameter_type  in  varchar2,
+   p_units           in  varchar2,
+   p_time_zone       in  varchar2 default 'UTC',
+   p_tz_usage        in  varchar2 default 'Standard',
+   p_fail_if_exists  in  varchar2 default 'T');
+
 end cwms_xchg;
 /
 commit;
 show errors;
 
+create or replace type number_tab_t is table of number;
+/
+commit;

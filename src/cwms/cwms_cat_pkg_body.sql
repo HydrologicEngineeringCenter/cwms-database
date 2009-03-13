@@ -657,7 +657,7 @@ IS
       RETURN cat_dss_file_obj_t
    IS
    BEGIN
-      RETURN cat_dss_file_obj_t (r.dss_filemgr_url, r.dss_file_name);
+      RETURN cat_dss_file_obj_t (r.office_id,r.dss_filemgr_url, r.dss_file_name);
    END cat_dss_file_rec2obj;
 
 -------------------------------------------------------------------------------
@@ -686,6 +686,7 @@ IS
    BEGIN
       IF o IS NOT NULL
       THEN
+         r.office_id := o.office_id;
          r.dss_filemgr_url := o.dss_filemgr_url;
          r.dss_file_name := o.dss_file_name;
       END IF;
@@ -787,7 +788,8 @@ IS
       RETURN cat_dss_xchg_ts_map_obj_t
    IS
    BEGIN
-      RETURN cat_dss_xchg_ts_map_obj_t (r.cwms_ts_id,
+      RETURN cat_dss_xchg_ts_map_obj_t (r.office_id,
+                                        r.cwms_ts_id,
                                         r.dss_pathname,
                                         r.dss_parameter_type_id,
                                         r.dss_unit_id,
@@ -822,6 +824,7 @@ IS
    BEGIN
       IF o IS NOT NULL
       THEN
+         r.office_id := o.office_id;
          r.cwms_ts_id := o.cwms_ts_id;
          r.dss_pathname := o.dss_pathname;
          r.dss_parameter_type_id := o.dss_parameter_type_id;
@@ -855,7 +858,7 @@ IS
 -- DEPRICATED --
    PROCEDURE cat_ts (
       p_cwms_cat              OUT      sys_refcursor,
-      p_officeid              IN       VARCHAR2 DEFAULT NULL,
+      p_office_id             IN       VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL
    )
 -- DEPRICATED --
@@ -864,11 +867,11 @@ IS
    IS
       l_office_id   VARCHAR2 (16);
    BEGIN
-      IF p_officeid IS NULL
+      IF p_office_id IS NULL
       THEN
          l_office_id := cwms_util.user_office_id;
       ELSE
-         l_office_id := p_officeid;
+         l_office_id := p_office_id;
       END IF;
 
       IF p_ts_subselect_string IS NULL
@@ -907,7 +910,7 @@ IS
 -- DEPRICATED -- function cat_ts_tab(...)
 -- DEPRICATED --
    FUNCTION cat_ts_tab (
-      p_officeid              IN   VARCHAR2 DEFAULT NULL,
+      p_office_id             IN   VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_ts_tab_t PIPELINED
@@ -918,7 +921,7 @@ IS
       query_cursor   sys_refcursor;
       output_row     cat_ts_rec_t;
    BEGIN
-      cat_ts (query_cursor, p_officeid, p_ts_subselect_string);
+      cat_ts (query_cursor, p_office_id, p_ts_subselect_string);
 
       LOOP
          FETCH query_cursor
@@ -939,7 +942,7 @@ IS
 -- DEPRICATED --
    PROCEDURE cat_ts_cwms_20 (
       p_cwms_cat              OUT      sys_refcursor,
-      p_officeid              IN       VARCHAR2 DEFAULT NULL,
+      p_office_id             IN       VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL
    )
 -- DEPRICATED --
@@ -948,11 +951,11 @@ IS
    IS
       l_office_id   VARCHAR2 (16);
    BEGIN
-      IF p_officeid IS NULL
+      IF p_office_id IS NULL
       THEN
          l_office_id := cwms_util.user_office_id;
       ELSE
-         l_office_id := p_officeid;
+         l_office_id := p_office_id;
       END IF;
 
       IF p_ts_subselect_string IS NULL
@@ -1011,7 +1014,7 @@ IS
 -- DEPRICATED --function cat_ts_cwms_20_tab(...)
 -- DEPRICATED --
    FUNCTION cat_ts_cwms_20_tab (
-      p_officeid              IN   VARCHAR2 DEFAULT NULL,
+      p_office_id             IN   VARCHAR2 DEFAULT NULL,
       p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_ts_cwms_20_tab_t PIPELINED
@@ -1022,7 +1025,7 @@ IS
       query_cursor   sys_refcursor;
       output_row     cat_ts_cwms_20_rec_t;
    BEGIN
-      cat_ts_cwms_20 (query_cursor, p_officeid, p_ts_subselect_string);
+      cat_ts_cwms_20 (query_cursor, p_office_id, p_ts_subselect_string);
 
       LOOP
          FETCH query_cursor
@@ -1483,7 +1486,7 @@ IS
 -- DEPRICATED --
    PROCEDURE cat_loc (
       p_cwms_cat         OUT      sys_refcursor,
-      p_officeid         IN       VARCHAR2 DEFAULT NULL,
+      p_office_id        IN       VARCHAR2 DEFAULT NULL,
       p_elevation_unit   IN       VARCHAR2 DEFAULT 'm'
    )
 -- DEPRICATED --
@@ -1503,11 +1506,11 @@ IS
 -----------------------------------------------
 -- get the office id of the hosting database --
 -----------------------------------------------
-      IF p_officeid IS NULL
+      IF p_office_id IS NULL
       THEN
          l_office_id := cwms_util.user_office_id;
       ELSE
-         l_office_id := p_officeid;
+         l_office_id := p_office_id;
       END IF;
 
       SELECT o2.office_id
@@ -1553,7 +1556,7 @@ IS
 -- DEPRICATED --function cat_loc_tab USE cat_location_tab --
 -- DEPRICATED --
    FUNCTION cat_loc_tab (
-      p_officeid         IN   VARCHAR2 DEFAULT NULL,
+      p_office_id        IN   VARCHAR2 DEFAULT NULL,
       p_elevation_unit   IN   VARCHAR2 DEFAULT 'm'
    )
       RETURN cat_loc_tab_t PIPELINED
@@ -1565,7 +1568,7 @@ IS
       query_cursor   sys_refcursor;
       output_row     cat_loc_rec_t;
    BEGIN
-      cat_loc (query_cursor, p_officeid, p_elevation_unit);
+      cat_loc (query_cursor, p_office_id, p_elevation_unit);
 
       LOOP
          FETCH query_cursor
@@ -1847,17 +1850,17 @@ IS
 --
    PROCEDURE cat_sub_loc (
       p_cwms_cat   OUT      sys_refcursor,
-      p_officeid   IN       VARCHAR2 DEFAULT NULL
+      p_office_id  IN       VARCHAR2 DEFAULT NULL
    )
    IS
       l_office_id     VARCHAR2 (16);
       l_office_code   NUMBER;
    BEGIN
-      IF p_officeid IS NULL
+      IF p_office_id IS NULL
       THEN
          l_office_id := cwms_util.user_office_id;
       ELSE
-         l_office_id := UPPER (p_officeid);
+         l_office_id := UPPER (p_office_id);
       END IF;
 
       l_office_code := cwms_util.get_db_office_code (l_office_id);
@@ -1877,13 +1880,13 @@ IS
 -- function cat_sub_loc_tab(...)
 --
 --
-   FUNCTION cat_sub_loc_tab (p_officeid IN VARCHAR2 DEFAULT NULL)
+   FUNCTION cat_sub_loc_tab (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_sub_loc_tab_t PIPELINED
    IS
       query_cursor   sys_refcursor;
       output_row     cat_sub_loc_rec_t;
    BEGIN
-      cat_sub_loc (query_cursor, p_officeid);
+      cat_sub_loc (query_cursor, p_office_id);
 
 --
       LOOP
@@ -2160,54 +2163,25 @@ IS
    PROCEDURE cat_dss_file (
       p_cwms_cat      OUT      sys_refcursor,
       p_filemgr_url   IN       VARCHAR2 DEFAULT NULL,
-      p_file_name     IN       VARCHAR2 DEFAULT NULL
+      p_file_name     IN       VARCHAR2 DEFAULT NULL,
+      p_office_id     IN       VARCHAR2 DEFAULT NULL
    )
    IS
+      l_filemgr_url VARCHAR2(256) := cwms_util.normalize_wildcards(nvl(p_filemgr_url, '*'));
+      l_file_name   VARCHAR2(256) := cwms_util.normalize_wildcards(nvl(p_file_name, '*'));
+      l_office_id   VARCHAR2(16)  := cwms_util.normalize_wildcards(nvl(p_office_id, cwms_util.user_office_id));
    BEGIN
-      IF p_filemgr_url IS NULL AND p_file_name IS NULL
-      THEN
-----------------------------------------
--- neither url nor name are specified --
-----------------------------------------
-         OPEN p_cwms_cat FOR
-            SELECT   dss_filemgr_url, dss_file_name
-                FROM at_dss_file
-            ORDER BY dss_filemgr_url ASC, dss_file_name ASC;
-      ELSIF p_filemgr_url IS NULL
-      THEN
-----------------------------
--- only name is specified --
-----------------------------
-         OPEN p_cwms_cat FOR
-            SELECT   dss_filemgr_url, dss_file_name
-                FROM at_dss_file
-               WHERE dss_file_name LIKE
-                          REPLACE (REPLACE (p_file_name, '*', '%'), '?', '_')
-            ORDER BY dss_filemgr_url ASC, dss_file_name ASC;
-      ELSIF p_file_name IS NULL
-      THEN
----------------------------
--- only url is specified --
----------------------------
-         OPEN p_cwms_cat FOR
-            SELECT   dss_filemgr_url, dss_file_name
-                FROM at_dss_file
-               WHERE dss_filemgr_url LIKE
-                        REPLACE (REPLACE (p_filemgr_url, '*', '%'), '?', '_')
-            ORDER BY dss_filemgr_url ASC, dss_file_name ASC;
-      ELSE
--------------------------------------
--- both url and name are specified --
--------------------------------------
-         OPEN p_cwms_cat FOR
-            SELECT   dss_filemgr_url, dss_file_name
-                FROM at_dss_file
-               WHERE dss_filemgr_url LIKE
-                        REPLACE (REPLACE (p_filemgr_url, '*', '%'), '?', '_')
-                 AND dss_file_name LIKE
-                           REPLACE (REPLACE (p_file_name, '*', '%'), '?', '_')
-            ORDER BY dss_filemgr_url ASC, dss_file_name ASC;
-      END IF;
+      OPEN p_cwms_cat FOR
+         SELECT o.office_id,
+                x.dss_filemgr_url,
+                x.dss_file_name
+           FROM at_xchg_datastore_dss x,
+                cwms_office           o
+          WHERE x.dss_filemgr_url LIKE l_filemgr_url escape '\'
+            AND x.dss_file_name   LIKE l_file_name   escape '\'
+            AND x.office_code = o.office_code
+            AND o.office_id       LIKE l_office_id escape '\'
+       ORDER BY o.office_id, dss_filemgr_url, dss_file_name;
    END cat_dss_file;
 
 -------------------------------------------------------------------------------
@@ -2216,14 +2190,15 @@ IS
 --
    FUNCTION cat_dss_file_tab (
       p_filemgr_url   IN   VARCHAR2 DEFAULT NULL,
-      p_file_name     IN   VARCHAR2 DEFAULT NULL
+      p_file_name     IN   VARCHAR2 DEFAULT NULL,
+      p_office_id     IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_dss_file_tab_t PIPELINED
    IS
       query_cursor   sys_refcursor;
       output_row     cat_dss_file_rec_t;
    BEGIN
-      cat_dss_file (query_cursor, p_filemgr_url, p_file_name);
+      cat_dss_file (query_cursor, p_filemgr_url, p_file_name, p_office_id);
 
       LOOP
          FETCH query_cursor
@@ -2244,115 +2219,38 @@ IS
 --
    PROCEDURE cat_dss_xchg_set (
       p_cwms_cat      OUT      sys_refcursor,
-      p_officeid      IN       VARCHAR2 DEFAULT NULL,
+      p_office_id     IN       VARCHAR2 DEFAULT NULL,
       p_filemgr_url   IN       VARCHAR2 DEFAULT NULL,
       p_file_name     IN       VARCHAR2 DEFAULT NULL
    )
    IS
-      l_office_code   NUMBER (10)   := NULL;
-      l_office_id     VARCHAR2 (16);
+      l_office_id   VARCHAR2(16)  := cwms_util.normalize_wildcards(nvl(p_office_id, cwms_util.user_office_id));
+      l_filemgr_url VARCHAR2(256) := cwms_util.normalize_wildcards(nvl(p_filemgr_url, '*'));
+      l_file_name   VARCHAR2(256) := cwms_util.normalize_wildcards(nvl(p_file_name, '*'));
    BEGIN
-      IF p_officeid IS NULL
-      THEN
-         l_office_id := cwms_util.user_office_id;
-      ELSE
-         l_office_id := p_officeid;
-      END IF;
-
-      SELECT office_code
-        INTO l_office_code
-        FROM cwms_office
-       WHERE office_id = UPPER (l_office_id);
-
-      IF p_filemgr_url IS NULL AND p_file_name IS NULL
-      THEN
-----------------------------------------
--- neither url nor name are specified --
-----------------------------------------
-         OPEN p_cwms_cat FOR
-            SELECT   office_id, dss_xchg_set_id, description,
-                     dss_filemgr_url, dss_file_name,
-                     CASE NVL (realtime, -1)
-                        WHEN -1
-                           THEN NULL
-                        ELSE (SELECT dss_xchg_direction_id
-                                FROM cwms_dss_xchg_direction
-                               WHERE dss_xchg_direction_code = realtime)
-                     END
-                FROM at_dss_file f, at_dss_xchg_set s, cwms_office o
-               WHERE s.office_code = l_office_code
-                 AND s.dss_file_code = f.dss_file_code
-                 AND o.office_code = s.office_code
-            ORDER BY dss_xchg_set_id ASC;
-      ELSIF p_filemgr_url IS NULL
-      THEN
-----------------------------
--- only name is specified --
-----------------------------
-         OPEN p_cwms_cat FOR
-            SELECT   office_id, dss_xchg_set_id, description,
-                     dss_filemgr_url, dss_file_name,
-                     CASE NVL (realtime, -1)
-                        WHEN -1
-                           THEN NULL
-                        ELSE (SELECT dss_xchg_direction_id
-                                FROM cwms_dss_xchg_direction
-                               WHERE dss_xchg_direction_code = realtime)
-                     END
-                FROM at_dss_file f, at_dss_xchg_set s, cwms_office o
-               WHERE s.office_code = l_office_code
-                 AND s.dss_file_code = f.dss_file_code
-                 AND o.office_code = s.office_code
-                 AND dss_file_name LIKE
-                           REPLACE (REPLACE (p_file_name, '*', '%'), '?', '_')
-            ORDER BY dss_xchg_set_id ASC;
-      ELSIF p_file_name IS NULL
-      THEN
----------------------------
--- only url is specified --
----------------------------
-         OPEN p_cwms_cat FOR
-            SELECT   office_id, dss_xchg_set_id, description,
-                     dss_filemgr_url, dss_file_name,
-                     CASE NVL (realtime, -1)
-                        WHEN -1
-                           THEN NULL
-                        ELSE (SELECT dss_xchg_direction_id
-                                FROM cwms_dss_xchg_direction
-                               WHERE dss_xchg_direction_code = realtime)
-                     END
-                FROM at_dss_file f, at_dss_xchg_set s, cwms_office o
-               WHERE s.office_code = l_office_code
-                 AND s.dss_file_code = f.dss_file_code
-                 AND o.office_code = s.office_code
-                 AND dss_filemgr_url LIKE
-                         REPLACE (REPLACE (p_filemgr_url, '*', '%'), '?', '_')
-            ORDER BY dss_xchg_set_id ASC;
-      ELSE
--------------------------------------
--- both url and name are specified --
--------------------------------------
-         OPEN p_cwms_cat FOR
-            SELECT   office_id, dss_xchg_set_id, description,
-                     dss_filemgr_url, dss_file_name,
-                     CASE NVL (realtime, -1)
-                        WHEN -1
-                           THEN NULL
-                        ELSE (SELECT dss_xchg_direction_id
-                                FROM cwms_dss_xchg_direction
-                               WHERE dss_xchg_direction_code = realtime)
-                     END,
-                     last_update
-                FROM at_dss_file f, at_dss_xchg_set s, cwms_office o
-               WHERE s.office_code = l_office_code
-                 AND s.dss_file_code = f.dss_file_code
-                 AND o.office_code = s.office_code
-                 AND dss_filemgr_url LIKE
-                         REPLACE (REPLACE (p_filemgr_url, '*', '%'), '?', '_')
-                 AND dss_file_name LIKE
-                           REPLACE (REPLACE (p_file_name, '*', '%'), '?', '_')
-            ORDER BY dss_xchg_set_id ASC;
-      END IF;
+      OPEN p_cwms_cat FOR
+         SELECT o.office_id,
+                s.xchg_set_id,
+                s.description,
+                d.dss_filemgr_url,
+                d.dss_file_name,
+                CASE nvl(s.realtime, -1)
+                   WHEN -1 THEN
+                      NULL
+                   ELSE
+                      (SELECT dss_xchg_direction_id
+                         FROM cwms_dss_xchg_direction
+                        WHERE dss_xchg_direction_code = s.realtime)
+                END AS realtime
+           FROM at_xchg_set           s,
+                at_xchg_datastore_dss d,
+                cwms_office           o
+          WHERE d.dss_filemgr_url LIKE l_filemgr_url escape '\'
+            AND d.dss_file_name   LIKE l_file_name   escape '\'
+            AND d.office_code = o.office_code
+            AND o.office_id       LIKE l_office_id   escape '\'
+            AND s.datastore_code = d.datastore_code                         
+       ORDER BY o.office_id, s.xchg_set_id;
    END cat_dss_xchg_set;
 
 -------------------------------------------------------------------------------
@@ -2360,7 +2258,7 @@ IS
 --
 --
    FUNCTION cat_dss_xchg_set_tab (
-      p_officeid      IN   VARCHAR2 DEFAULT NULL,
+      p_office_id     IN   VARCHAR2 DEFAULT NULL,
       p_filemgr_url   IN   VARCHAR2 DEFAULT NULL,
       p_file_name     IN   VARCHAR2 DEFAULT NULL
    )
@@ -2369,7 +2267,7 @@ IS
       query_cursor   sys_refcursor;
       output_row     cat_dss_xchg_set_rec_t;
    BEGIN
-      cat_dss_xchg_set (query_cursor, p_officeid, p_filemgr_url, p_file_name);
+      cat_dss_xchg_set (query_cursor, p_office_id, p_filemgr_url, p_file_name);
 
       LOOP
          FETCH query_cursor
@@ -2389,72 +2287,48 @@ IS
 --
 --
    PROCEDURE cat_dss_xchg_ts_map (
-      p_cwms_cat          OUT      sys_refcursor,
-      p_officeid          IN       VARCHAR2,
-      p_dss_xchg_set_id   IN       VARCHAR2
+      p_cwms_cat      OUT      sys_refcursor,
+      p_office_id     IN       VARCHAR2,
+      p_xchg_set_id   IN       VARCHAR2
    )
    IS
-      l_dss_xchg_set_code   NUMBER (10);
-      l_office_id           VARCHAR2 (16);
+      l_office_id   VARCHAR2(16)  := cwms_util.normalize_wildcards(nvl(p_office_id, cwms_util.user_office_id));
+      l_xchg_set_id VARCHAR2(256) := cwms_util.normalize_wildcards(nvl(p_xchg_set_id, '*'));
    BEGIN
-      IF p_officeid IS NULL
-      THEN
-         l_office_id := cwms_util.user_office_id;
-      ELSE
-         l_office_id := p_officeid;
-      END IF;
-
-      BEGIN
-         SELECT dss_xchg_set_code
-           INTO l_dss_xchg_set_code
-           FROM cwms_office o, at_dss_xchg_set s
-          WHERE o.office_id = UPPER (l_office_id)
-            AND s.office_code = o.office_code
-            AND UPPER (s.dss_xchg_set_id) = UPPER (p_dss_xchg_set_id);
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            cwms_err.RAISE ('INVALID_ITEM',
-                            l_office_id || '/' || p_dss_xchg_set_id,
-                            'HEC-DSS exchange set'
-                           );
-      END;
-
       OPEN p_cwms_cat FOR
-         SELECT   cwms_ts_id,
+         SELECT   o.office_id,
+                  tspec.cwms_ts_id,
                      '/'
-                  || NVL (a_pathname_part, '')
+                  || NVL (xmap.a_pathname_part, '')
                   || '/'
-                  || NVL (b_pathname_part, '')
+                  || NVL (xmap.b_pathname_part, '')
                   || '/'
-                  || NVL (c_pathname_part, '')
+                  || NVL (xmap.c_pathname_part, '')
                   || '//'
-                  || NVL (e_pathname_part, '')
+                  || NVL (xmap.e_pathname_part, '')
                   || '/'
-                  || NVL (f_pathname_part, '')
+                  || NVL (xmap.f_pathname_part, '')
                   || '/',
-                  dss_parameter_type_id, dspec.unit_id,
-                  time_zone_name AS dss_timezone_name,
-                  tz_usage_id AS dss_tz_usage_id
-             FROM at_dss_xchg_set xset,
-                  at_dss_ts_xchg_map xmap,
-                  at_dss_ts_xchg_spec xspec,
-                  at_dss_ts_spec dspec,
-                  mv_cwms_ts_id tspec,
+                  ptype.dss_parameter_type_id, 
+                  xmap.unit_id,
+                  tzone.time_zone_name AS dss_timezone_name,
+                  tzuse.tz_usage_id    AS dss_tz_usage_id
+             FROM at_xchg_set             xset,
+                  at_xchg_dss_ts_mappings xmap,
+                  mv_cwms_ts_id           tspec,
+                  cwms_office             o,
                   cwms_dss_parameter_type ptype,
-                  cwms_time_zone tzone,
-                  cwms_tz_usage tzuse
-            WHERE xset.dss_xchg_set_code = l_dss_xchg_set_code
-              AND xset.dss_xchg_set_id = p_dss_xchg_set_id
-              AND xmap.dss_xchg_set_code = xset.dss_xchg_set_code
-              AND xmap.dss_ts_xchg_code = xspec.dss_ts_xchg_code
-              AND tspec.ts_code = xspec.ts_code
-              AND xspec.dss_ts_code = dspec.dss_ts_code
-              AND ptype.dss_parameter_type_code =
-                                                 dspec.dss_parameter_type_code
-              AND tzone.time_zone_code = dspec.time_zone_code
-              AND tzuse.tz_usage_code = dspec.tz_usage_code
-         ORDER BY cwms_ts_id;
+                  cwms_time_zone          tzone,
+                  cwms_tz_usage           tzuse
+            WHERE upper(o.office_id) LIKE upper(l_office_id) escape '\'
+              AND xset.office_code = o.office_code
+              AND upper(xset.xchg_set_id) LIKE upper(l_xchg_set_id) escape '\'
+              AND xmap.xchg_set_code = xset.xchg_set_code
+              AND tspec.ts_code = xmap.cwms_ts_code
+              AND ptype.dss_parameter_type_code = xmap.dss_parameter_type_code
+              AND tzone.time_zone_code = xmap.time_zone_code
+              AND tzuse.tz_usage_code = xmap.tz_usage_code
+         ORDER BY o.office_id, tspec.cwms_ts_id;
    END cat_dss_xchg_ts_map;
 
 -------------------------------------------------------------------------------
@@ -2462,7 +2336,7 @@ IS
 --
 --
    FUNCTION cat_dss_xchg_ts_map_tab (
-      p_officeid          IN   VARCHAR2,
+      p_office_id         IN   VARCHAR2,
       p_dss_xchg_set_id   IN   VARCHAR2
    )
       RETURN cat_dss_xchg_ts_map_tab_t PIPELINED
@@ -2470,7 +2344,7 @@ IS
       query_cursor   sys_refcursor;
       output_row     cat_dss_xchg_ts_map_rec_t;
    BEGIN
-      cat_dss_xchg_ts_map (query_cursor, p_officeid, p_dss_xchg_set_id);
+      cat_dss_xchg_ts_map (query_cursor, p_office_id, p_dss_xchg_set_id);
 
       LOOP
          FETCH query_cursor
@@ -2872,232 +2746,6 @@ IS
       RETURN;
    END cat_loc_group_tab;
 
-   PROCEDURE cat_xchg_office (p_offices OUT xchg_office_tab_t)
-   IS
-   BEGIN
-      p_offices := xchg_office_tab_t ();
-
-      FOR rec IN (SELECT office_id, long_name, eroc
-                    FROM cwms_office
-                   WHERE REGEXP_INSTR (eroc, '[A-Z][0-9]') = 1)
-      LOOP
-         p_offices.EXTEND ();
-         p_offices (p_offices.LAST) :=
-                             NEW xchg_office_t (rec.office_id, rec.long_name);
-      END LOOP;
-   END cat_xchg_office;
-
-   PROCEDURE cat_xchg_office (p_clob IN OUT NOCOPY CLOB)
-   IS
-      l_offices   xchg_office_tab_t;
-      l_text      VARCHAR2 (256);
-   BEGIN
-      cat_xchg_office (l_offices);
-
-      IF p_clob IS NULL
-      THEN
-         DBMS_LOB.createtemporary (p_clob, TRUE);
-      END IF;
-
-      DBMS_LOB.OPEN (p_clob, DBMS_LOB.lob_readwrite);
-      DBMS_LOB.TRIM (p_clob, 0);
-
-      FOR i IN 1 .. l_offices.COUNT
-      LOOP
-         l_text := l_offices (i).get_xml ().getstringval ();
-         DBMS_LOB.writeappend (p_clob, LENGTH (l_text), l_text);
-      END LOOP;
-
-      DBMS_LOB.CLOSE (p_clob);
-
-      IF DBMS_LOB.getlength (p_clob) > 0
-      THEN
-         cwms_util.format_xml (p_clob);
-      END IF;
-   END cat_xchg_office;
-
-   PROCEDURE cat_xchg_datastore (
-      p_datastores     OUT      xchg_datastore_tab_t,
-      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
-   )
-   IS
-      l_db_office_code   NUMBER
-                             := cwms_util.get_db_office_code (p_db_office_id);
-      l_host             VARCHAR2 (256);
-      l_port             INTEGER;
-      l_db_name          VARCHAR2 (16);
-      l_oracle_id        VARCHAR2 (256);
-   BEGIN
-      p_datastores := xchg_datastore_tab_t ();
-
-      FOR rec IN (SELECT dss_file_code, dss_filemgr_url, dss_file_name
-                    FROM at_dss_file
-                   WHERE office_code = l_db_office_code)
-      LOOP
-         p_datastores.EXTEND ();
-         l_host := REGEXP_SUBSTR (rec.dss_filemgr_url, '[^/:]+');
-         l_port := REGEXP_SUBSTR (rec.dss_filemgr_url, '[^:]+$');
-         p_datastores (p_datastores.LAST) :=
-            NEW xchg_dssfilemanager_t ('DSS-' || rec.dss_file_code,
-                                       l_host,
-                                       l_port,
-                                       rec.dss_file_name
-                                      );
-      END LOOP;
-
-      SELECT NAME
-        INTO l_db_name
-        FROM v$database;
-
-      l_oracle_id := UTL_INADDR.get_host_name || ':' || l_db_name;
-      l_oracle_id := SUBSTR (l_oracle_id,
-                             - (LEAST (LENGTH (l_oracle_id), 16)));
-      l_oracle_id :=
-               SUBSTR (l_oracle_id, REGEXP_INSTR (l_oracle_id, '[a-zA-Z0-9]'));
-      p_datastores.EXTEND ();
-      p_datastores (p_datastores.LAST) :=
-         NEW xchg_oracle_t (l_oracle_id,
-                            UTL_INADDR.get_host_address,
-                            l_db_name
-                           );
-   END cat_xchg_datastore;
-
-   PROCEDURE cat_xchg_datastore (
-      p_clob           IN OUT NOCOPY   CLOB,
-      p_db_office_id   IN              VARCHAR2 DEFAULT NULL
-   )
-   IS
-      l_datastores   xchg_datastore_tab_t;
-      l_text         VARCHAR2 (512);
-   BEGIN
-      cat_xchg_datastore (l_datastores, p_db_office_id);
-
-      IF p_clob IS NULL
-      THEN
-         DBMS_LOB.createtemporary (p_clob, TRUE);
-      END IF;
-
-      DBMS_LOB.OPEN (p_clob, DBMS_LOB.lob_readwrite);
-      DBMS_LOB.TRIM (p_clob, 0);
-
-      FOR i IN 1 .. l_datastores.COUNT
-      LOOP
-         l_text := l_datastores (i).get_xml ().getstringval ();
-         DBMS_LOB.writeappend (p_clob, 11, '<datastore>');
-         DBMS_LOB.writeappend (p_clob, LENGTH (l_text), l_text);
-         DBMS_LOB.writeappend (p_clob, 12, '</datastore>');
-      END LOOP;
-
-      DBMS_LOB.CLOSE (p_clob);
-
-      IF DBMS_LOB.getlength (p_clob) > 0
-      THEN
-         cwms_util.format_xml (p_clob);
-      END IF;
-   END cat_xchg_datastore;
-
-   PROCEDURE cat_xchg_set (
-      p_xchg_sets      OUT      xchg_dataexchange_set_tab_t,
-      p_db_office_id   IN       VARCHAR2 DEFAULT NULL
-   )
-   IS
-      l_db_office_code   NUMBER
-                             := cwms_util.get_db_office_code (p_db_office_id);
-      l_xchg_sets        xchg_dataexchange_set_tab_t
-                                            := xchg_dataexchange_set_tab_t
-                                                                          ();
-      l_db_name          VARCHAR2 (16);
-      l_oracle_id        VARCHAR2 (256);
-   BEGIN
-      SELECT NAME
-        INTO l_db_name
-        FROM v$database;
-
-      l_oracle_id := UTL_INADDR.get_host_name || ':' || l_db_name;
-      l_oracle_id := SUBSTR (l_oracle_id,
-                             - (LEAST (LENGTH (l_oracle_id), 16)));
-      l_oracle_id :=
-               SUBSTR (l_oracle_id, REGEXP_INSTR (l_oracle_id, '[a-zA-Z0-9]'));
-
-      FOR rec IN (SELECT dss_file_code, dss_xchg_set_id, description,
-                         start_time, end_time, interpolate_count, 
-                         interpolate_units_id, realtime
-                    FROM at_dss_xchg_set s,
-                         cwms_interpolate_units u
-                   WHERE office_code = l_db_office_code
-                     AND u.interpolate_units_code = s.interpolate_units)
-      LOOP
-         l_xchg_sets.EXTEND ();
-         l_xchg_sets (l_xchg_sets.LAST) :=
-            NEW xchg_dataexchange_set_t
-                                     (rec.dss_xchg_set_id,
-                                      'DSS-' || rec.dss_file_code,
-                                      l_oracle_id,
-                                      NULL,
-                                      TRUE,
-                                      rec.description,
-                                      CASE NVL (rec.realtime, -1)
-                                         WHEN -1
-                                            THEN NULL
-                                         WHEN 1
-                                            THEN 'DSS-' || rec.dss_file_code
-                                         WHEN 2
-                                            THEN l_oracle_id
-                                      END,
-                                      CASE NVL (rec.start_time, '@')
-                                         WHEN '@'
-                                            THEN NULL
-                                         ELSE NEW xchg_timewindow_t
-                                                              (rec.start_time,
-                                                               rec.end_time
-                                                              )
-                                      END,
-                                      CASE rec.interpolate_count
-                                         WHEN 0
-                                            THEN NULL
-                                         ELSE NEW xchg_max_interpolate_t
-                                                      (rec.interpolate_count, 
-                                                       rec.interpolate_units_id
-                                                      )
-                                      END,
-                                      l_db_office_code
-                                     );
-      END LOOP;
-
-      p_xchg_sets := l_xchg_sets;
-   END cat_xchg_set;
-
-   PROCEDURE cat_xchg_set (
-      p_clob           IN OUT NOCOPY   CLOB,
-      p_db_office_id   IN              VARCHAR2 DEFAULT NULL
-   )
-   IS
-      l_xchg_sets   xchg_dataexchange_set_tab_t;
-      l_text        VARCHAR2 (512);
-   BEGIN
-      cat_xchg_set (l_xchg_sets, p_db_office_id);
-
-      IF p_clob IS NULL
-      THEN
-         DBMS_LOB.createtemporary (p_clob, TRUE);
-      END IF;
-
-      DBMS_LOB.OPEN (p_clob, DBMS_LOB.lob_readwrite);
-      DBMS_LOB.TRIM (p_clob, 0);
-
-      FOR i IN 1 .. l_xchg_sets.COUNT
-      LOOP
-         l_text := l_xchg_sets (i).get_xml ().getstringval ();
-         DBMS_LOB.writeappend (p_clob, LENGTH (l_text), l_text);
-      END LOOP;
-
-      DBMS_LOB.CLOSE (p_clob);
-
-      IF DBMS_LOB.getlength (p_clob) > 0
-      THEN
-         cwms_util.format_xml (p_clob);
-      END IF;
-   END cat_xchg_set;
 END cwms_cat;
 /
 
