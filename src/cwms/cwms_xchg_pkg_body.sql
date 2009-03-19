@@ -538,13 +538,13 @@ CREATE OR REPLACE package body cwms_xchg as
          indent;
          writeln_xml('<dssfilemanager id="'||rec.datastore_id||'" office-id="'||l_office_ids(rec.office_code)||'">');
          indent;
+         l_pos := rinstr(rec.dss_filemgr_url, ':');
+         writeln_xml('<host>'||substr(rec.dss_filemgr_url, 3, l_pos-3)||'</host>');
+         writeln_xml('<port>'||substr(rec.dss_filemgr_url, l_pos+1)||'</port>');
          writeln_xml('<filepath>'||rec.dss_file_name||'</filepath>');
          if rec.description is not null then
             writeln_xml('<description>'||rec.description||'</description>');
          end if;
-         l_pos := rinstr(rec.dss_filemgr_url, ':');
-         writeln_xml('<host>'||substr(rec.dss_filemgr_url, 3, l_pos-3)||'</host>');
-         writeln_xml('<port>'||substr(rec.dss_filemgr_url, l_pos+1)||'</port>');
          dedent;
          writeln_xml('</dssfilemanager>');
          dedent;
