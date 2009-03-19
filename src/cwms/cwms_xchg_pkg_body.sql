@@ -1290,7 +1290,13 @@ CREATE OR REPLACE package body cwms_xchg as
             l_attributes := make_attributes(l_att_text);
             l_tsid       := cwms_util.split_text(l_mappings(i), 'cwms-timeseries')(2);
             l_tsid       := trim(cwms_util.split_text(cwms_util.split_text(l_tsid, '>')(2), '<')(1));
+            if not l_attributes.exists('type') then
+               cwms_err.raise('ERROR', 'No data type specified for pathname ' || l_pathname);
+            end if;
             l_map_1.param_type := l_attributes('type');
+            if not l_attributes.exists('units') then
+               cwms_err.raise('ERROR', 'No units specified for pathname ' || l_pathname);
+            end if;
             l_map_1.units := l_attributes('units');
             if l_attributes.exists('time-zone') then
                l_map_1.time_zone := l_attributes('time-zone');
