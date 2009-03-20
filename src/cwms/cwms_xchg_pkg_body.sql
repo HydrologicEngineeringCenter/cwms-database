@@ -1030,6 +1030,16 @@ CREATE OR REPLACE package body cwms_xchg as
       begin
          return ltrim(rtrim(p_str, whitespace), whitespace);
       end;
+      
+      function split(
+         p_str       in varchar2, 
+         p_delimiter in varchar2,
+         p_max_split in integer default null) 
+      return cwms_util.str_tab_t 
+      is
+      begin
+         return cwms_util.split_text(p_str, p_delimiter, p_max_split);
+      end;
 
       function make_attributes(p_att_str in varchar2) return str_by_str
       is
@@ -1067,13 +1077,13 @@ CREATE OR REPLACE package body cwms_xchg as
             'HEC-DSS exhange set store rule, should be [I]nsert, [U]pdate, [R]eplace, or [M]erge');
       end if;
       log_configuration_xml(p_dx_config, 'in');
-      l_mappings := cwms_util.split_text(p_dx_config, '<ts-mapping>');
+      l_mappings := split(p_dx_config, '<ts-mapping>');
       -------------------------
       -- process the offices --
       -------------------------
-      l_parts := cwms_util.split_text(l_mappings(1), '<office ');
+      l_parts := split(l_mappings(1), '<office ');
       for i in 2..l_parts.count loop
-         l_att_text := cwms_util.split_text(l_parts(i), '>')(1);
+         l_att_text := split(l_parts(i), '>')(1);
          l_attributes := make_attributes(l_att_text);
          l_offices(l_attributes('id')) := null;
          select office_code
@@ -1084,16 +1094,16 @@ CREATE OR REPLACE package body cwms_xchg as
       ----------------------------
       -- process the datastores --
       ----------------------------
-      l_parts := cwms_util.split_text(cwms_util.split_text(l_mappings(1), '<dataexchange-set ')(1), '<dssfilemanager ');
+      l_parts := split(split(l_mappings(1), '<dataexchange-set ')(1), '<dssfilemanager ');
       for i in 2..l_parts.count loop
-         l_att_text     := cwms_util.split_text(l_parts(i), '>')(1);
+         l_att_text     := split(l_parts(i), '>')(1);
          l_attributes   := make_attributes(l_att_text);
          l_datastore_id := l_attributes('id');
-         l_filename     := trim(cwms_util.split_text(cwms_util.split_text(l_parts(i), 'filepath>')(2), '<')(1));
-         l_host         := trim(cwms_util.split_text(cwms_util.split_text(l_parts(i), 'host>')(2), '<')(1));
-         l_port         := trim(cwms_util.split_text(cwms_util.split_text(l_parts(i), 'port>')(2), '<')(1));
+         l_filename     := trim(split(split(l_parts(i), 'filepath>')(2), '<')(1));
+         l_host         := trim(split(split(l_parts(i), 'host>')(2), '<')(1));
+         l_port         := trim(split(split(l_parts(i), 'port>')(2), '<')(1));
          if instr(l_parts(i), '<description>') > 0 then
-            l_description := trim(cwms_util.split_text(cwms_util.split_text(l_parts(i), 'description>')(2), '<')(1));
+            l_description := trim(split(split(l_parts(i), 'description>')(2), '<')(1));
          else
             l_description := null;
          end if;
@@ -1155,8 +1165,8 @@ CREATE OR REPLACE package body cwms_xchg as
             ---------------------------------------------------------------------
             -- process any dataexchange set we find when we split the mappings --
             ---------------------------------------------------------------------
-            l_xchg_set_text := cwms_util.split_text(l_mappings(i), '<dataexchange-set')(2);
-            l_att_text      := cwms_util.split_text(l_xchg_set_text, '>')(1);
+            l_xchg_set_text := split(l_mappings(i), '<dataexchange-set')(2);
+            l_att_text      := split(l_xchg_set_text, '>')(1);
             l_attributes    := make_attributes(l_att_text);
             l_set_id        := l_attributes('id');
             l_office_id     := l_attributes('office-id');
@@ -1169,14 +1179,14 @@ CREATE OR REPLACE package body cwms_xchg as
             else
                l_realtime_dir := null;
             end if;
-            l_att_text    := cwms_util.split_text(cwms_util.split_text(l_xchg_set_text, 'datastore-ref')(2), '/>')(1);
+            l_att_text    := split(split(l_xchg_set_text, 'datastore-ref')(2), '/>')(1);
             l_attributes  := make_attributes(l_att_text);
             l_id          := l_attributes('id');
             l_compound_id := l_id||'@'||l_office_id;
             if l_dss_filemgrs.exists(l_compound_id) then
                l_xchg_set_1.datastore_id := l_compound_id;
             else
-               l_att_text   := cwms_util.split_text(cwms_util.split_text(l_xchg_set_text, 'datastore-ref')(3), '/>')(1);
+               l_att_text   := split(split(l_xchg_set_text, 'datastore-ref')(3), '/>')(1);
                l_attributes := make_attributes(l_att_text);
                l_id := l_attributes('id');
                l_compound_id := l_id||'@'||l_office_id;
@@ -1193,20 +1203,22 @@ CREATE OR REPLACE package body cwms_xchg as
                end if;
             end if;
             if instr(l_xchg_set_text, '<description>') > 0  then
-               l_description := trim(cwms_util.split_text(cwms_util.split_text(l_xchg_set_text, '<description>')(2), '<')(1));
+               l_description := trim(split(split(l_xchg_set_text, '<description>')(2), '<')(1));
+            else
+               l_description := null;
             end if;
             if instr(l_xchg_set_text, '<starttime') > 0  then
-               l_start_time := trim(cwms_util.split_text(cwms_util.split_text(l_xchg_set_text, '<starttime>')(2), '<')(1));
-               l_end_time   := trim(cwms_util.split_text(cwms_util.split_text(l_xchg_set_text, '<endtime>')(2), '<')(1));
+               l_start_time := trim(split(split(l_xchg_set_text, '<starttime>')(2), '<')(1));
+               l_end_time   := trim(split(split(l_xchg_set_text, '<endtime>')(2), '<')(1));
             else
                l_start_time := null;
                l_end_time   := null;
             end if;
             if instr(l_xchg_set_text, '<max-interpolate') > 0  then
-               l_att_text := cwms_util.split_text(cwms_util.split_text(l_xchg_set_text, '<max-interpolate')(2), '<')(1);
+               l_att_text := split(split(l_xchg_set_text, '<max-interpolate')(2), '<')(1);
                l_attributes := make_attributes(l_att_text);
                l_interp_units := l_attributes('units');
-               l_interp_count := to_number(trim(cwms_util.split_text(cwms_util.split_text(l_xchg_set_text, '<max-interpolate')(2), '<')(1)));
+               l_interp_count := to_number(trim(split(split(l_xchg_set_text, '<max-interpolate')(2), '<')(1)));
             else
                l_interp_count := null;
                l_interp_units := null;
@@ -1238,7 +1250,7 @@ CREATE OR REPLACE package body cwms_xchg as
                   cwms_xchg.store_xchg_set(
                      l_xchg_set_1.code,
                      l_xchg_set_1.id,
-                     cwms_util.split_text(l_xchg_set_1.datastore_id, '@')(1),
+                     split(l_xchg_set_1.datastore_id, '@')(1),
                      l_xchg_set_1.description,
                      l_xchg_set_1.start_time,
                      l_xchg_set_1.end_time,
@@ -1283,13 +1295,13 @@ CREATE OR REPLACE package body cwms_xchg as
             -------------------------------------
             -- now back to the mapping at hand --
             -------------------------------------
-            l_pathname   := cwms_util.split_text(l_mappings(i), 'dss-timeseries')(2);
-            l_parts      := cwms_util.split_text(l_pathname, '>');
+            l_pathname   := split(l_mappings(i), 'dss-timeseries')(2);
+            l_parts      := split(l_pathname, '>');
             l_att_text   := l_parts(1);
-            l_pathname   := trim(cwms_util.split_text(l_parts(2), '<')(1));
+            l_pathname   := trim(split(l_parts(2), '<')(1));
             l_attributes := make_attributes(l_att_text);
-            l_tsid       := cwms_util.split_text(l_mappings(i), 'cwms-timeseries')(2);
-            l_tsid       := trim(cwms_util.split_text(cwms_util.split_text(l_tsid, '>')(2), '<')(1));
+            l_tsid       := split(l_mappings(i), 'cwms-timeseries')(2);
+            l_tsid       := trim(split(split(l_tsid, '>')(2), '<')(1));
             if not l_attributes.exists('type') then
                cwms_err.raise('ERROR', 'No data type specified for pathname ' || l_pathname);
             end if;
