@@ -707,6 +707,7 @@ CREATE OR REPLACE package body cwms_xchg as
             and v.ts_code = map1.cwms_ts_code;
    begin
       for rec in l_conflicts_cur loop
+         rollback;
          cwms_err.raise('XCHG_TS_ERROR', rec.ts_id, rec.id_2, rec.id_1);
       end loop;
    end validate_realtime_direction;
@@ -735,6 +736,7 @@ CREATE OR REPLACE package body cwms_xchg as
          l_invalid_units := l_invalid_units || ', ' || rec.unit_id;
       end loop;
       if length(l_invalid_units) > 0 then
+         rollback;
          cwms_err.raise('INVALID_ITEM', substr(l_invalid_units, 3), 'DSS units');
       end if;
    end validate_dss_units;
@@ -919,6 +921,7 @@ CREATE OR REPLACE package body cwms_xchg as
             end if;
             l_fqpathname := l_fqpathnames.next(l_fqpathname);
          end loop;
+         rollback;
          cwms_err.raise('ERROR', l_errormsg);
       end if;
    end validate_dss_consistency;
@@ -1033,12 +1036,22 @@ CREATE OR REPLACE package body cwms_xchg as
       
       function split(
          p_str       in varchar2, 
-         p_delimiter in varchar2,
-         p_max_split in integer default null) 
+         p_delimiter in varchar2 default null,
+         p_max_split in integer  default null) 
       return cwms_util.str_tab_t 
       is
       begin
          return cwms_util.split_text(p_str, p_delimiter, p_max_split);
+      end;
+
+      function split(
+         p_clob      in clob, 
+         p_delimiter in varchar2 default null,
+         p_max_split in integer  default null) 
+      return cwms_util.str_tab_t 
+      is
+      begin
+         return cwms_util.split_text(p_clob, p_delimiter, p_max_split);
       end;
 
       function make_attributes(p_att_str in varchar2) return str_by_str
@@ -1047,9 +1060,9 @@ CREATE OR REPLACE package body cwms_xchg as
          parts  cwms_util.str_tab_t;
          parts2 cwms_util.str_tab_t;
       begin
-         parts := cwms_util.split_text(trim(p_att_str));
+         parts := split(trim(p_att_str));
          for j in 1..parts.count loop
-            parts2 := cwms_util.split_text(parts(j), '=', 1);
+            parts2 := split(parts(j), '=', 1);
             l_attr(trim(parts2(1))) := unquote(trim(parts2(2)));
          end loop;
          return l_attr;
@@ -1071,12 +1084,19 @@ CREATE OR REPLACE package body cwms_xchg as
          l_can_update := true;
          l_can_delete := true;
       else
+         rollback;
          cwms_err.raise(
             'INVALID_ITEM',
             p_store_rule,
             'HEC-DSS exhange set store rule, should be [I]nsert, [U]pdate, [R]eplace, or [M]erge');
       end if;
+      -------------------------------------------------
+      -- log the incoming XML for debugging purposes --
+      -------------------------------------------------
       log_configuration_xml(p_dx_config, 'in');
+      ----------------------------------------------------------------------- 
+      -- split the incoming XML around the ts-mapping element opening tags --
+      ----------------------------------------------------------------------- 
       l_mappings := split(p_dx_config, '<ts-mapping>');
       -------------------------
       -- process the offices --
@@ -1111,6 +1131,7 @@ CREATE OR REPLACE package body cwms_xchg as
             l_office_id := l_attributes('office-id');
          else
             if l_offices.count > 1 then
+               rollback;
                cwms_err.raise('ERROR', 'dssfilemanagager with no office-id attribute is ambiguous');
             end if;
             l_office_id := l_offices.first;
@@ -1193,6 +1214,7 @@ CREATE OR REPLACE package body cwms_xchg as
                if l_dss_filemgrs.exists(l_compound_id) then
                   l_xchg_set_1.datastore_id := l_compound_id;
                else
+                  rollback;
                   cwms_err.raise(
                      'ERROR',
                      'dataexchange-set '
@@ -1303,10 +1325,12 @@ CREATE OR REPLACE package body cwms_xchg as
             l_tsid       := split(l_mappings(i), 'cwms-timeseries')(2);
             l_tsid       := trim(split(split(l_tsid, '>')(2), '<')(1));
             if not l_attributes.exists('type') then
+               rollback;
                cwms_err.raise('ERROR', 'No data type specified for pathname ' || l_pathname);
             end if;
             l_map_1.param_type := l_attributes('type');
             if not l_attributes.exists('units') then
+               rollback;
                cwms_err.raise('ERROR', 'No units specified for pathname ' || l_pathname);
             end if;
             l_map_1.units := l_attributes('units');
@@ -1367,24 +1391,28 @@ CREATE OR REPLACE package body cwms_xchg as
                   l_map_1.e_path_part != upper(l_map_2.e_path_part) or
                   nvl(l_map_1.f_path_part, '@') != upper(nvl(l_map_2.f_path_part, '@'))
                then
+                  select xchg_set_id
+                    into l_set_id
+                    from at_xchg_set
+                   where xchg_set_code = l_xchg_set_code;
+                  rollback; 
                   cwms_err.raise(
                      'ERROR',
-                     'MULTITPLE TIMESERIES MAPPING:'
+                     'MULTIPLE TIMESERIES MAPPING:'
                      || chr(10)
                      || 'CWMS timeseries '
+                     || chr(10) || chr(9)
                      || l_tsid
+                     || chr(10)
                      || ' cannot be mapped to '
-                     || chr(10)
-                     || chr(9)
+                     || chr(10) || chr(9)
                      || make_dss_pathname(l_map_2.a_path_part,l_map_2.b_path_part,l_map_2.c_path_part,null,l_map_2.e_path_part,l_map_2.f_path_part)
-                     || chr(10)
-                     || chr(9)
+                     || chr(10)|| chr(9)
                      || make_dss_pathname(l_map_1.a_path_part,l_map_1.b_path_part,l_map_1.c_path_part,null,l_map_1.e_path_part,l_map_1.f_path_part)
                      || chr(10)
-                     || 'in DSS file '
-                     || l_url
-                     || '/'
-                     || l_filename);
+                     || 'in data exchange set '
+                     || chr(10) || chr(9)
+                     || l_set_id);
                end if;
                if l_map_1.param_type != l_map_2.param_type or
                   l_map_1.units != l_map_2.units or
