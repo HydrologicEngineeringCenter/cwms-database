@@ -707,7 +707,6 @@ CREATE OR REPLACE package body cwms_xchg as
             and v.ts_code = map1.cwms_ts_code;
    begin
       for rec in l_conflicts_cur loop
-         rollback;
          cwms_err.raise('XCHG_TS_ERROR', rec.ts_id, rec.id_2, rec.id_1);
       end loop;
    end validate_realtime_direction;
@@ -736,7 +735,6 @@ CREATE OR REPLACE package body cwms_xchg as
          l_invalid_units := l_invalid_units || ', ' || rec.unit_id;
       end loop;
       if length(l_invalid_units) > 0 then
-         rollback;
          cwms_err.raise('INVALID_ITEM', substr(l_invalid_units, 3), 'DSS units');
       end if;
    end validate_dss_units;
@@ -921,7 +919,6 @@ CREATE OR REPLACE package body cwms_xchg as
             end if;
             l_fqpathname := l_fqpathnames.next(l_fqpathname);
          end loop;
-         rollback;
          cwms_err.raise('ERROR', l_errormsg);
       end if;
    end validate_dss_consistency;
@@ -1084,7 +1081,6 @@ CREATE OR REPLACE package body cwms_xchg as
          l_can_update := true;
          l_can_delete := true;
       else
-         rollback;
          cwms_err.raise(
             'INVALID_ITEM',
             p_store_rule,
@@ -1131,7 +1127,6 @@ CREATE OR REPLACE package body cwms_xchg as
             l_office_id := l_attributes('office-id');
          else
             if l_offices.count > 1 then
-               rollback;
                cwms_err.raise('ERROR', 'dssfilemanagager with no office-id attribute is ambiguous');
             end if;
             l_office_id := l_offices.first;
@@ -1214,7 +1209,6 @@ CREATE OR REPLACE package body cwms_xchg as
                if l_dss_filemgrs.exists(l_compound_id) then
                   l_xchg_set_1.datastore_id := l_compound_id;
                else
-                  rollback;
                   cwms_err.raise(
                      'ERROR',
                      'dataexchange-set '
@@ -1325,12 +1319,10 @@ CREATE OR REPLACE package body cwms_xchg as
             l_tsid       := split(l_mappings(i), 'cwms-timeseries')(2);
             l_tsid       := trim(split(split(l_tsid, '>')(2), '<')(1));
             if not l_attributes.exists('type') then
-               rollback;
                cwms_err.raise('ERROR', 'No data type specified for pathname ' || l_pathname);
             end if;
             l_map_1.param_type := l_attributes('type');
             if not l_attributes.exists('units') then
-               rollback;
                cwms_err.raise('ERROR', 'No units specified for pathname ' || l_pathname);
             end if;
             l_map_1.units := l_attributes('units');
@@ -1395,7 +1387,6 @@ CREATE OR REPLACE package body cwms_xchg as
                     into l_set_id
                     from at_xchg_set
                    where xchg_set_code = l_xchg_set_code;
-                  rollback; 
                   cwms_err.raise(
                      'ERROR',
                      'MULTIPLE TIMESERIES MAPPING:'
