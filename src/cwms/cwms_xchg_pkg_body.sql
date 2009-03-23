@@ -643,10 +643,16 @@ CREATE OR REPLACE package body cwms_xchg as
                and v.ts_code = m.cwms_ts_code
                and p.dss_parameter_type_code = m.dss_parameter_type_code
                and z.time_zone_code = m.time_zone_code
-               and u.tz_usage_code = m.tz_usage_code)
+               and u.tz_usage_code = m.tz_usage_code
+            order by v.cwms_ts_id)
          loop
             writeln_xml('<ts-mapping>');
             indent;
+            writeln_xml('<cwms-timeseries datastore-id="'
+                        ||l_oracle_id
+                        ||'">'
+                        ||rec2.cwms_ts_id
+                        ||'</cwms-timeseries>');
             writeln_xml('<dss-timeseries datastore-id="'
                         || l_datastore_id
                         || '" type="'
@@ -666,11 +672,6 @@ CREATE OR REPLACE package body cwms_xchg as
                               rec2.e_pathname_part,
                               rec2.f_pathname_part)
                         || '</dss-timeseries>');
-            writeln_xml('<cwms-timeseries datastore-id="'
-                        ||l_oracle_id
-                        ||'">'
-                        ||rec2.cwms_ts_id
-                        ||'</cwms-timeseries>');
             dedent;
             writeln_xml('</ts-mapping>');
          end loop;
