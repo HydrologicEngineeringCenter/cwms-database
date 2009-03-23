@@ -666,7 +666,11 @@ CREATE OR REPLACE package body cwms_xchg as
                               rec2.e_pathname_part,
                               rec2.f_pathname_part)
                         || '</dss-timeseries>');
-            writeln_xml('<cwms-timeseries>'||rec2.cwms_ts_id||'</cwms-timeseries>');
+            writeln_xml('<cwms-timeseries datastore-id="'
+                        ||l_oracle_id
+                        ||'">'
+                        ||rec2.cwms_ts_id
+                        ||'</cwms-timeseries>');
             dedent;
             writeln_xml('</ts-mapping>');
          end loop;
