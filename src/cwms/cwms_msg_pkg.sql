@@ -127,22 +127,23 @@ function log_message(
 -- FUNCTION LOG_LONG_MESSAGE(...)
 --
 function log_long_message(
-   p_component in varchar2,
-   p_instance  in varchar2,
-   p_host      in varchar2,
-   p_port      in integer,
-   p_reported  in timestamp,
-   p_short_msg in varchar2,
-   p_long_msg  in clob,
-   p_msg_level in integer default msg_level_normal,
-   p_publish   in boolean default true)
+   p_message_id out varchar2,
+   p_component  in  varchar2,
+   p_instance   in  varchar2,
+   p_host       in  varchar2,
+   p_port       in  integer,
+   p_reported   in  timestamp,
+   p_short_msg  in  varchar2,
+   p_long_msg   in  clob,
+   p_msg_level  in  integer default msg_level_normal,
+   p_publish    in  boolean default true)
    return integer;
 
 -------------------------------------------------------------------------------
 -- FUNCTION GET_MESSAGE_CLOB(...)
 --
 function get_message_clob(
-   p_message_id in integer)
+   p_message_id in varchar2)
    return clob;
 
 -------------------------------------------------------------------------------

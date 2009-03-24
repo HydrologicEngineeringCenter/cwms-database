@@ -287,6 +287,37 @@ function log_message(
    p_publish   in boolean)
    return integer
 is
+   l_message_id varchar2(32);
+begin
+   return log_long_message(
+      l_message_id,
+      p_component,
+      p_instance,
+      p_host,
+      p_port,
+      p_reported,
+      p_message,
+      null,
+      p_msg_level,
+      p_publish);
+end log_message;   
+
+-------------------------------------------------------------------------------
+-- FUNCTION LOG_LONG_MESSAGE(...)
+--
+function log_long_message(
+   p_message_id out varchar2,
+   p_component  in  varchar2,
+   p_instance   in  varchar2,
+   p_host       in  varchar2,
+   p_port       in  integer,
+   p_reported   in  timestamp,
+   p_short_msg  in  varchar2,
+   p_long_msg   in  clob,
+   p_msg_level  in  integer default msg_level_normal,
+   p_publish    in  boolean default true)
+   return integer
+is
    pragma autonomous_transaction;
    
    l_now         integer;
@@ -319,16 +350,16 @@ begin
       l_now_ts      := cwms_util.to_timestamp(l_now);
       l_msg_id      := get_msg_id(l_now);
       l_office_code := cwms_util.user_office_code;
-      l_document    := xmltype(p_message);
+      l_document    := xmltype(p_short_msg);
       l_msgtype     := l_document.extract('/cwms_message/@type').getstringval();
       l_node        := l_document.extract('/cwms_message/text');
       if l_node is not null then
          l_message := cwms_util.strip(l_node.extract('*/node()').getstringval());
       end if;
 
-      -------------------------------
-      -- first the message body... --
-      -------------------------------
+      --------------------------------
+      -- first the short message... --
+      --------------------------------
       begin
          select message_type_code 
            into l_typeid 
@@ -355,6 +386,14 @@ begin
                 l_message
              );   
 
+      -------------------------------   
+      -- ... next the long message --
+      -------------------------------
+      if p_long_msg is not null then
+         insert 
+           into at_clob
+         values ('/message_id/'||l_msg_id, to_char(l_now_ts), p_long_msg); 
+      end if;   
       -------------------------------------   
       -- ... then the message properties --
       -------------------------------------   
@@ -413,12 +452,19 @@ begin
          end loop;
       end if;
    end if;
+   p_message_id := l_msg_id;
    commit;
    
    if l_publish then
       -------------------------
       -- publish the message --
       -------------------------
+      l_extra := l_extra
+                 || lf
+                 || '  <property name="id" type="String">'
+                 || l_msg_id
+                 || '</property>'
+                 || lf;
       l_extra := l_extra
                  || lf
                  || '  <property name="component" type="String">'
@@ -459,49 +505,19 @@ begin
                  || '</property>'
                  || lf;
 
-      l_pos := instr(p_message, '>');
-      return publish_status_message(substr(p_message, 1, l_pos) || l_extra || substr(p_message, l_pos+1));
+      l_pos := instr(p_short_msg, '>');
+      return publish_status_message(substr(p_short_msg, 1, l_pos) || l_extra || substr(p_short_msg, l_pos+1));
    else
       return 0;
    end if;
                                           
-end log_message;   
-
--------------------------------------------------------------------------------
--- FUNCTION LOG_LONG_MESSAGE(...)
---
-function log_long_message(
-   p_component in varchar2,
-   p_instance  in varchar2,
-   p_host      in varchar2,
-   p_port      in integer,
-   p_reported  in timestamp,
-   p_short_msg in varchar2,
-   p_long_msg  in clob,
-   p_msg_level in integer default msg_level_normal,
-   p_publish   in boolean default true)
-   return integer
-is
-   message_id integer;
-begin
-   message_id := log_message(
-      p_component,
-      p_instance,
-      p_host,
-      p_port,
-      p_reported,
-      p_short_msg,
-      p_msg_level,
-      p_publish);
-   insert into at_clob values('/message_id/'||to_char(message_id), systimestamp, p_long_msg);
-   return message_id;
 end log_long_message;
 
 -------------------------------------------------------------------------------
 -- FUNCTION GET_MESSAGE_CLOB(...)
 --
 function get_message_clob(
-   p_message_id in integer)
+   p_message_id in varchar2)
    return clob
 is
    l_clob clob := null;
@@ -510,7 +526,7 @@ begin
       select value
         into l_clob
         from at_clob
-       where id = '/message_id/'||to_char(p_message_id);
+       where id = '/message_id/'||p_message_id;
    exception
       when no_data_found
          then null;
