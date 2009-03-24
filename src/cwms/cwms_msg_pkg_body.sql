@@ -468,6 +468,57 @@ begin
 end log_message;   
 
 -------------------------------------------------------------------------------
+-- FUNCTION LOG_LONG_MESSAGE(...)
+--
+function log_long_message(
+   p_component in varchar2,
+   p_instance  in varchar2,
+   p_host      in varchar2,
+   p_port      in integer,
+   p_reported  in timestamp,
+   p_short_msg in varchar2,
+   p_long_msg  in clob,
+   p_msg_level in integer default msg_level_normal,
+   p_publish   in boolean default true)
+   return integer
+is
+   message_id integer;
+begin
+   message_id := log_message(
+      p_component,
+      p_instance,
+      p_host,
+      p_port,
+      p_reported,
+      p_short_msg,
+      p_msg_level,
+      p_publish);
+   insert into at_clob values('/message_id/'||to_char(message_id), systimestamp, p_long_msg);
+   return message_id;
+end log_long_message;
+
+-------------------------------------------------------------------------------
+-- FUNCTION GET_MESSAGE_CLOB(...)
+--
+function get_message_clob(
+   p_message_id in integer)
+   return clob
+is
+   l_clob clob := null;
+begin
+   begin
+      select value
+        into l_clob
+        from at_clob
+       where id = '/message_id/'||to_char(p_message_id);
+   exception
+      when no_data_found
+         then null;
+   end;
+   return l_clob;
+end get_message_clob;   
+
+-------------------------------------------------------------------------------
 -- PROCEDURE LOG_DB_MESSAGE(...)
 --
 procedure log_db_message(
