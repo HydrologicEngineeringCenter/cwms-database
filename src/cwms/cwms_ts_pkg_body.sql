@@ -1,5 +1,13 @@
 CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 
+   function get_max_open_cursors return integer
+   is
+      l_max_open_cursors integer;
+   begin
+      select value into l_max_open_cursors from v$parameter where name = 'open_cursors';
+      return l_max_open_cursors;
+   end get_max_open_cursors;
+
  
     /* Formatted on 2007/06/25 10:58 (Formatter Plus v4.8.8) */
     FUNCTION get_ts_id (p_ts_code IN NUMBER)

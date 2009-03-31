@@ -11,6 +11,8 @@ AS
       TABLE OF BINARY_DOUBLE
          INDEX BY BINARY_INTEGER;
 
+   function get_max_open_cursors return integer;
+   
    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN varchar2, p_office_id IN varchar2
    )
       RETURN VARCHAR2;
