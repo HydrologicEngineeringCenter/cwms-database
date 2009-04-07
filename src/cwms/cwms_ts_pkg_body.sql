@@ -1133,11 +1133,10 @@ BEGIN
      FROM DUAL;
 
    l_ret :=
-      DBMS_LOCK.request (ID                     => l_hashcode,
-                         TIMEOUT                => 0,
-                         lockmode               => 5,
-                         release_on_commit      => TRUE
-                        );
+      DBMS_LOCK.request (id                => l_hashcode,
+                           timeout           => 0,
+                           lockmode          => DBMS_LOCK.x_mode,
+                           release_on_commit => TRUE);
 
    IF l_ret > 0
    THEN
