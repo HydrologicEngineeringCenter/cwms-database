@@ -391,6 +391,8 @@ AS
       p_active_flag          IN       VARCHAR2 DEFAULT 'T'
    )
    IS
+      pragma autonomous_transaction;
+      
       l_hashcode          NUMBER;
       l_ret               NUMBER;
       l_base_loc_exists   BOOLEAN := TRUE;
