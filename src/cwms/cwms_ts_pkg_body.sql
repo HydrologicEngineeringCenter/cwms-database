@@ -2391,9 +2391,10 @@ end retrieve_ts_multi;
                                      ) * 1440, 
                                      0
                                    ),
-                               :a
+                               :l_interval_value
                              )
-               FROM TABLE (:b)', '$TZ', l_tz_name) INTO l_utc_offset using l_interval_value, p_timeseries_data;
+               INTO :l_tz_name
+               FROM TABLE (:p_timeseries_data)', '$TZ', l_tz_name) INTO l_utc_offset using l_interval_value, p_timeseries_data;
       EXCEPTION
         WHEN TOO_MANY_ROWS 
         THEN
@@ -2407,6 +2408,7 @@ end retrieve_ts_multi;
             l_hours      INTEGER;
             l_minutes    INTEGER;
          BEGIN
+            dbms_application_info.set_action('Modify utc offset for LRTS.');
             l_offset_str := rtrim(tz_offset(l_tz_name), chr(0));
             l_parts      := cwms_util.split_text(l_offset_str, ':');
             l_hours      := to_number(l_parts(1));
@@ -2417,11 +2419,15 @@ end retrieve_ts_multi;
                l_minutes := 60 * l_hours + l_minutes;
             END IF;
             l_utc_offset := l_utc_offset - l_minutes;
+            if l_utc_offset < 0 then
+               l_utc_offset := l_utc_offset + l_interval_value;
+            end if;
          END;
       END IF;
 
-      dbms_application_info.set_action('Check utc_offset against the dataset''s and/or set an undefined utc_offset');
 
+      dbms_application_info.set_action('Check utc_offset against the dataset''s and/or set an undefined utc_offset');
+      
       if existing_utc_offset = cwms_util.UTC_OFFSET_UNDEFINED then
        -- Existing TS_Code did not have a defined UTC_OFFSET, so set it equal to the offset of this data set.
 
@@ -2466,9 +2472,6 @@ end retrieve_ts_multi;
       then
          raise_application_error(-20103, 'Requested unit conversion is not available', true);
       end if;
-
-    dbms_application_info.set_action('check for interval_utc_offset violation if regular ts');
-
 
     select count(*) 
       into table_cnt
