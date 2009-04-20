@@ -378,6 +378,39 @@ AS
 	FUNCTION current_millis
 		RETURN NUMBER;
 
+   --------------------------------------------------------------------
+   -- This procedure changes all the materialized views associated with
+   -- time series ids to be changed from REFRESH FAST ON COMMIT to
+   -- REFRESH ON DEMAND.  This allows for fast bulk creation of tsids.
+   --------------------------------------------------------------------
+	PROCEDURE pause_timeseries_mviews;
+
+   --------------------------------------------------------------------
+   -- This procedure changes all the materialized views associated with
+   -- time series ids to be changed from REFRESH ON DEMAND to REFRESH
+   -- FAST ON COMMIT.
+   -- 
+   -- This is actually quite a bit slower than simply dropping and 
+   -- rebuilding the materialzed vews (see REBUILD_TIMESERIES_MVIEWS),
+   -- but has the advantage of not invalidating running code in the 
+   -- process.
+   --------------------------------------------------------------------
+   PROCEDURE unpause_timeseries_mviews;
+
+   --------------------------------------------------------------------
+   -- This procedure drops and rebuilds all the materialized views
+   -- associated with time series ids.  Call this after calling 
+   -- PAUSE_TIMESERIES_MVIEWS and bulk creating time series ids.  This
+   -- is considerably faster than calling UNPAUSE_TIMESEIRES_MVIEWS,
+   -- but has the nasty side-effect of invalidating all objects that
+   -- depend on the views.
+   --
+   -- DO NOT CALL THIS PROCEDURE UNLESS YOU ARE RUNNING FROM A SCRIPT
+   -- FROM WHICH YOU CAN CALL UTL_RECOMP.RECOMP_SERIAL('CWMS_20') OR 
+   -- CAN MANUALLY RECOMPILE THE INVALIDATED OBJECTS (E.G. FROM TOAD).  
+   --------------------------------------------------------------------
+	PROCEDURE rebuild_timeseries_mviews;
+
 	--------------------------------------------------------------------
 	PROCEDURE test;
 

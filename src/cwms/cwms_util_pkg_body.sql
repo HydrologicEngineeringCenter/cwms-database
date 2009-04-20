@@ -2228,9 +2228,368 @@ AS
 
 		RETURN l_default_units;
 	END;
+	
+--------------------------------------------------------------------
+-- This procedure changes all the materialized views associated with
+-- time series ids to be changed from REFRESH FAST ON COMMIT to
+-- REFRESH ON DEMAND.  This allows for fast bulk creation of tsids.
+--------------------------------------------------------------------
+PROCEDURE pause_timeseries_mviews
+IS
+BEGIN
+	execute immediate 'alter materialized view mv_cwms_ts_id refresh on demand';
+	execute immediate 'alter materialized view mv_sec_ts_group_masks refresh on demand';
+	execute immediate 'alter materialized view mv_sec_ts_privileges refresh on demand';
+	execute immediate 'alter materialized view mv_sec_ts_priv refresh on demand';
+END pause_timeseries_mviews;
+
+--------------------------------------------------------------------
+-- This procedure changes all the materialized views associated with
+-- time series ids to be changed from REFRESH ON DEMAND to REFRESH
+-- FAST ON COMMIT.
+-- 
+-- This is actually quite a bit slower than simply dropping and 
+-- rebuilding the materialzed vews (see REBUILD_TIMESERIES_MVIEWS),
+-- but has the advantage of not invalidating running code in the 
+-- process.
+--------------------------------------------------------------------
+PROCEDURE unpause_timeseries_mviews
+IS
+BEGIN
+   dbms_mview.refresh('mv_cwms_tsids,mv_sec_ts_group_masks,mv_sec_ts_privileges,mv_sec_ts_priv', 'F');
+   execute immediate 'alter materialized view mv_cwms_ts_id refresh fast on commit';
+   execute immediate 'alter materialized view mv_sec_ts_group_masks refresh fast on commit';
+   execute immediate 'alter materialized view mv_sec_ts_privileges refresh fast on commit';
+   execute immediate 'alter materialized view mv_sec_ts_priv refresh fast on commit';
+END unpause_timeseries_mviews;
+
+--------------------------------------------------------------------
+-- This procedure drops and rebuilds all the materialized views
+-- associated with time series ids.  Call this after calling 
+-- PAUSE_TIMESERIES_MVIEWS and bulk creating time series ids.  This
+-- is considerably faster than calling UNPAUSE_TIMESEIRES_MVIEWS,
+-- but has the nasty side-effect of invalidating all objects that
+-- depend on the views.
+--
+-- DO NOT CALL THIS PROCEDURE UNLESS YOU ARE RUNNING FROM A SCRIPT
+-- FROM WHICH YOU CAN CALL UTL_RECOMP.RECOMP_SERIAL('CWMS_20') OR 
+-- CAN MANUALLY RECOMPILE THE INVALIDATED OBJECTS (E.G. FROM TOAD).  
+--------------------------------------------------------------------
+PROCEDURE rebuild_timeseries_mviews
+IS
+BEGIN
+	-----------------------------
+	-- DROP MATERIALIZED VIEWS --
+	-----------------------------
+	-- SECURITY VIEWS
+	execute immediate 'DROP INDEX mv_sec_ts_privileges_i01';
+	execute immediate 'DROP MATERIALIZED VIEW mv_sec_ts_privileges';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON mv_sec_ts_priv';
+	execute immediate 'DROP MATERIALIZED VIEW mv_sec_ts_priv';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON mv_sec_ts_group_masks';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON mv_sec_users';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON mv_sec_allow';
+	execute immediate 'DROP MATERIALIZED VIEW mv_sec_allow';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_sec_allow';
+	execute immediate 'DROP INDEX mv_sec_users_u01';
+	execute immediate 'DROP MATERIALIZED VIEW mv_sec_users';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_sec_users';
+	execute immediate 'DROP INDEX mv_sec_ts_group_masks_u01';
+	execute immediate 'DROP MATERIALIZED VIEW mv_sec_ts_group_masks';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_sec_ts_group_masks';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON mv_cwms_ts_id';
+
+	-- TIME SERIES VIEWS
+	execute immediate 'DROP INDEX CWMS_20.MV_CWMS_TS_ID_UK1';
+	execute immediate 'DROP INDEX CWMS_20.MV_CWMS_TS_ID_PK';
+	execute immediate 'DROP MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID'; 
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_abstract_parameter';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_unit';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_duration';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_interval';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_parameter';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_base_parameter';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_parameter_type';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_office';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_cwms_ts_spec';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_physical_location';
+	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_base_location';
+
+	----------------------------------
+	-- RE-CREATE MATERIALIZED VIEWS --
+	----------------------------------
+	
+	-- TIME SERIES VIEWS
+	execute immediate 'CREATE MATERIALIZED VIEW LOG ON at_base_location     WITH ROWID';
+	execute immediate 'CREATE MATERIALIZED VIEW LOG ON at_physical_location WITH ROWID';
+	execute immediate 'CREATE MATERIALIZED VIEW LOG ON at_cwms_ts_spec      WITH ROWID';
+	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_office          WITH ROWID';
+	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_parameter_type  WITH ROWID';
+	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_base_parameter  WITH ROWID';
+	execute immediate 'CREATE MATERIALIZED VIEW LOG ON at_parameter         WITH ROWID';
+	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_interval        WITH ROWID';
+	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_duration        WITH ROWID';
+	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_unit            WITH ROWID';
+	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_abstract_parameter            WITH ROWID';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID 
+		TABLESPACE CWMS_20AT_DATA
+		NOCACHE
+		LOGGING
+		NOCOMPRESS
+		NOPARALLEL
+		BUILD IMMEDIATE
+		REFRESH FAST ON COMMIT
+		WITH PRIMARY KEY
+		AS 
+		SELECT abl.db_office_code, abl.base_location_code,
+				 s.location_code,
+				 l.active_flag loc_active_flag,
+				 ap.parameter_code, s.ts_code, s.active_flag ts_active_flag,
+				 CASE
+					 WHEN l.active_flag = ''T''
+					 AND s.active_flag = ''T''
+						 THEN ''T''
+					 ELSE ''F''
+				 END net_ts_active_flag,
+				 o.office_id db_office_id,
+					 abl.base_location_id
+				 || SUBSTR (''-'', 1, LENGTH (l.sub_location_id))
+				 || l.sub_location_id
+				 || ''.''
+				 || base_parameter_id
+				 || SUBSTR (''-'', 1, LENGTH (ap.sub_parameter_id))
+				 || ap.sub_parameter_id
+				 || ''.''
+				 || parameter_type_id
+				 || ''.''
+				 || interval_id
+				 || ''.''
+				 || duration_id
+				 || ''.''
+				 || VERSION cwms_ts_id,
+				 u.unit_id, cap.abstract_param_id,  abl.base_location_id,
+				 l.sub_location_id,
+					 abl.base_location_id
+				 || SUBSTR (''-'', 1, LENGTH (l.sub_location_id))
+				 || l.sub_location_id location_id,
+				 base_parameter_id, ap.sub_parameter_id,
+					 base_parameter_id
+				 || SUBSTR (''-'', 1, LENGTH (ap.sub_parameter_id))
+				 || ap.sub_parameter_id parameter_id,
+				 parameter_type_id, interval_id, duration_id, VERSION version_id,
+				 i.INTERVAL, s.interval_utc_offset, s.version_flag,
+				 abl.ROWID "base_loc_rid", o.ROWID "cwms_office_rid",
+				 l.ROWID "phys_loc_rid", s.ROWID "ts_spec_rid",
+				 p.ROWID "base_param_rid", ap.ROWID "param_rid",
+				 t.ROWID "param_type_rid", i.ROWID "interval_rid",
+				 d.ROWID "duration_rid", u.ROWID "unit_rid", cap.ROWID "ab_param_rid"
+		  FROM cwms_office o,
+				 at_base_location abl,
+				 at_physical_location l,
+				 at_cwms_ts_spec s,
+				 at_parameter ap,
+				 cwms_base_parameter p,
+				 cwms_parameter_type t,
+				 cwms_interval i,
+				 cwms_duration d,
+				 cwms_unit u,
+				 cwms_abstract_parameter cap
+		 WHERE abl.db_office_code = o.office_code
+			AND l.location_code = s.location_code
+			AND ap.base_parameter_code = p.base_parameter_code
+			AND s.parameter_code = ap.parameter_code
+			AND s.parameter_type_code = t.parameter_type_code
+			AND s.interval_code = i.interval_code
+			AND s.duration_code = d.duration_code
+			AND u.unit_code = p.unit_code
+			AND u.abstract_param_code = cap.abstract_param_code
+			AND l.base_location_code = abl.base_location_code
+			AND s.delete_date IS NULL';
+
+   execute immediate 'COMMENT ON MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID IS ''snapshot table for snapshot CWMS_20.MV_CWMS_TS_ID''';
+
+	execute immediate
+	  'CREATE UNIQUE INDEX CWMS_20.MV_CWMS_TS_ID_UK1 ON CWMS_20.MV_CWMS_TS_ID
+		(UPPER("DB_OFFICE_ID"), UPPER("CWMS_TS_ID"))
+		LOGGING
+		TABLESPACE CWMS_20AT_DATA
+		NOPARALLEL';
+
+	execute immediate
+	  'CREATE UNIQUE INDEX CWMS_20.MV_CWMS_TS_ID_PK ON CWMS_20.MV_CWMS_TS_ID
+		(DB_OFFICE_ID, CWMS_TS_ID)
+		LOGGING
+		TABLESPACE CWMS_20AT_DATA
+		NOPARALLEL';
+
+	-- SECURITY VIEWS
+	execute immediate
+	  'CREATE MATERIALIZED VIEW LOG ON mv_cwms_ts_id
+		WITH SEQUENCE, ROWID (db_office_code, ts_code, cwms_ts_id)
+		INCLUDING NEW VALUES';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW LOG ON at_sec_ts_group_masks WITH SEQUENCE, ROWID
+		(db_office_code, ts_group_code, ts_group_mask)
+		INCLUDING NEW VALUES';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW mv_sec_ts_group_masks
+		PARALLEL
+		BUILD IMMEDIATE
+		REFRESH FAST ON COMMIT AS
+		SELECT   mcti.db_office_code, mcti.ts_code,
+					SUM (POWER (2, astg.ts_group_code)) net_ts_group_bit,
+					COUNT (astg.ts_group_code) count_ts_group_code, COUNT (*) cnt
+			 FROM mv_cwms_ts_id mcti, at_sec_ts_group_masks astg
+			WHERE astg.db_office_code = mcti.db_office_code
+			  AND UPPER (mcti.cwms_ts_id) LIKE UPPER (astg.ts_group_mask)
+		GROUP BY mcti.db_office_code, mcti.ts_code';
+
+	execute immediate
+	  'CREATE UNIQUE INDEX mv_sec_ts_group_masks_u01 ON mv_sec_ts_group_masks
+		(db_office_code, ts_code)
+		LOGGING
+		TABLESPACE cwms_20data
+		PCTFREE    10
+		INITRANS   2
+		MAXTRANS   255
+		STORAGE    (
+						INITIAL          64 k
+						MINEXTENTS       1
+						MAXEXTENTS       2147483645
+						PCTINCREASE      0
+						BUFFER_POOL      DEFAULT
+					  )
+		NOPARALLEL';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW LOG ON at_sec_users WITH SEQUENCE, ROWID
+	(db_office_code, user_id, user_group_code)
+	INCLUDING NEW VALUES';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW mv_sec_users
+		PARALLEL
+		BUILD IMMEDIATE
+		REFRESH FAST ON COMMIT AS
+			SELECT   asu.db_office_code, asu.user_id,
+						SUM (POWER(2,asu.user_group_code)) net_user_group_bit,
+						COUNT(asu.user_group_code) count_user_group_code,
+						COUNT(*) cnt
+				 FROM at_sec_users asu
+			GROUP BY asu.db_office_code, asu.user_id';
+
+	execute immediate
+	  'CREATE UNIQUE INDEX mv_sec_users_u01 ON mv_sec_users
+		(db_office_code, user_id)
+		LOGGING
+		TABLESPACE cwms_20data
+		PCTFREE    10
+		INITRANS   2
+		MAXTRANS   255
+		STORAGE    (
+						INITIAL          64 k
+						MINEXTENTS       1
+						MAXEXTENTS       2147483645
+						PCTINCREASE      0
+						BUFFER_POOL      DEFAULT
+					  )
+		NOPARALLEL';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW LOG ON at_sec_allow WITH SEQUENCE, ROWID
+		(  db_office_code,
+		  ts_group_code,
+		  user_group_code,
+		  privilege_bit )
+		INCLUDING NEW VALUES';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW mv_sec_allow
+		PARALLEL
+		BUILD IMMEDIATE
+		REFRESH FAST ON COMMIT AS
+			SELECT   asa.db_office_code, asa.ts_group_code, asa.user_group_code,
+						SUM (asa.privilege_bit) net_privilege_bit,
+						COUNT (asa.privilege_bit) count_privilege_bit, COUNT(*) cnt
+				 FROM at_sec_allow asa
+			GROUP BY db_office_code, ts_group_code, user_group_code';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW LOG ON mv_sec_allow WITH SEQUENCE, ROWID
+		(  db_office_code,
+		  ts_group_code,
+		  user_group_code,
+		  net_privilege_bit )
+		INCLUDING NEW VALUES';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW LOG ON mv_sec_users WITH SEQUENCE, ROWID
+	(db_office_code, user_id, net_user_group_bit)
+	INCLUDING NEW VALUES';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW LOG ON mv_sec_ts_group_masks WITH SEQUENCE, ROWID
+		(db_office_code,
+		 ts_code,
+		 net_ts_group_bit,
+		 count_ts_group_code,
+		 cnt)
+		INCLUDING NEW VALUES';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW mv_sec_ts_priv
+		PARALLEL
+		BUILD IMMEDIATE
+		REFRESH FAST ON COMMIT AS
+		SELECT mv_su.user_id, mv_sts.db_office_code, mv_sts.ts_code,
+				 mv_sa.net_privilege_bit, mv_sa.ROWID mv_sa_rowid,
+				 mv_sts.ROWID mv_sts_rowid, mv_su.ROWID mv_su_rowid
+		  FROM mv_sec_allow mv_sa, mv_sec_ts_group_masks mv_sts, mv_sec_users mv_su
+		 WHERE mv_sts.db_office_code = mv_sa.db_office_code
+			AND BITAND (mv_sts.net_ts_group_bit, POWER (2, mv_sa.ts_group_code)) =
+																		POWER (2, mv_sa.ts_group_code)
+			AND mv_su.db_office_code = mv_sa.db_office_code
+			AND BITAND (mv_su.net_user_group_bit, POWER (2, mv_sa.user_group_code)) =
+																	 POWER (2, mv_sa.user_group_code)';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW LOG ON mv_sec_ts_priv WITH ROWID
+		(user_id,
+		 db_office_code,
+		 ts_code,
+		 net_privilege_bit)
+		INCLUDING NEW VALUES';
+
+	execute immediate
+	  'CREATE MATERIALIZED VIEW mv_sec_ts_privileges
+		REFRESH FAST ON COMMIT
+		WITH PRIMARY KEY
+		AS
+		SELECT   user_id, db_office_code, ts_code,
+					MAX (net_privilege_bit) net_privilege_bit,
+					COUNT (net_privilege_bit) count_privilege_bit, COUNT (*) cnt
+			 FROM mv_sec_ts_priv
+		GROUP BY user_id, db_office_code, ts_code';
+
+	execute immediate
+	  'CREATE INDEX mv_sec_ts_privileges_i01 ON mv_sec_ts_privileges
+		(user_id)
+		LOGGING
+		TABLESPACE cwms_20at_data
+		NOPARALLEL';
+
+END rebuild_timeseries_mviews;
+
+/*
 BEGIN
 	-- anything put here will be executed on every mod_plsql call
 	NULL;
+*/
+	
 END cwms_util;
 /
 
