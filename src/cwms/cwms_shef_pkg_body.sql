@@ -190,6 +190,17 @@ AS
       NULL;
    END;
 
+procedure store_shef_spec(
+   p_shef_spec in shef_spec_array,
+   p_data_stream_id in varchar2,
+   
+   p_db_office_id in varchar2 default null
+   )
+   is
+   begin
+   null;
+   end;
+
    PROCEDURE store_shef_spec (
       p_cwms_ts_id              IN   VARCHAR2,
       p_data_stream_id          IN   VARCHAR2,
