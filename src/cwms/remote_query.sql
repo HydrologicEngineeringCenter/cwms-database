@@ -115,6 +115,7 @@ is
                    interval_id         varchar2(16),
                    duration_id         varchar2(16),
                    version             varchar2(48));
+   l_office_id   varchar2(16) := upper(p_office_id);                   
    l_dblink      varchar2(31);
    l_cwms_ver    varchar2(3);
    l_clob        clob;
@@ -186,22 +187,34 @@ begin
                     cwms.rt_parameter_type@:dblink pt,
                     cwms.rt_interval@:dblink i,
                     cwms.rt_duration@:dblink d
-              where o.office_id = '':office_id''
+              where o.office_id = :office_id
                 and n.office_code = o.office_code 
-                and (n.cwms_id_uc like '':location''
-                     or (n.cwms_id_uc || ''-'' || upper(ts.subcwms_id)) like '':location'')
-                and (p.parameter_id_uc like '':parameter''
-                     or (p.parameter_id_uc || ''-'' || upper(ts.subparameter_id)) like '':parameter'')
-                and pt.parameter_type_id_uc like '':param_type''
-                and upper(i.interval_id) like '':interval''
-                and upper(d.duration_id) like '':duration''
-                and ts.version_uc like '':version''
+                and (n.cwms_id_uc like :location
+                     or (n.cwms_id_uc || ''-'' || upper(ts.subcwms_id)) like :location)
+                and (p.parameter_id_uc like :parameter
+                     or (p.parameter_id_uc || ''-'' || upper(ts.subparameter_id)) like :parameter)
+                and pt.parameter_type_id_uc like :param_type
+                and upper(i.interval_id) like :interval
+                and upper(d.duration_id) like :duration
+                and ts.version_uc like :version
                 and l.location_code = ts.location_code
                 and n.cwms_code = l.cwms_code
                 and p.parameter_code = ts.parameter_code
                 and pt.parameter_type_code = ts.parameter_type_code
                 and i.interval_code = ts.interval_code
                 and d.duration_code = ts.duration_code';
+            l_query_str := replace(l_query_str, ':dblink', l_dblink); -- can't bind
+            open l_cursor
+             for l_query_str 
+           using l_office_id, 
+                 l_location, 
+                 l_location, 
+                 l_parameter, 
+                 l_parameter,
+                 l_param_type, 
+                 l_interval, 
+                 l_duration, 
+                 l_version;
          else
             --------------------
             -- CWMS 2.0 query --
@@ -218,23 +231,24 @@ begin
                        duration_id,
                        version_id version
                   from cwms_20.mv_cwms_ts_id@:dblink
-                 where db_office_id = '':office_id'' 
-                   and upper(location_id) like '':location''
-                   and upper(parameter_id) like '':parameter''
-                   and upper(parameter_type_id) like '':param_type''
-                   and upper(interval_id) like '':interval''
-                   and upper(duration_id) like '':duration''
-                   and upper(version_id) like '':version''';
+                 where db_office_id = :office_id 
+                   and upper(location_id) like :location
+                   and upper(parameter_id) like :parameter
+                   and upper(parameter_type_id) like :param_type
+                   and upper(interval_id) like :interval
+                   and upper(duration_id) like :duration
+                   and upper(version_id) like :version';
+            l_query_str := replace(l_query_str, ':dblink', l_dblink); -- can't bind
+            open l_cursor 
+             for l_query_str 
+           using l_office_id, 
+                 l_location, 
+                 l_parameter, 
+                 l_param_type, 
+                 l_interval, 
+                 l_duration, 
+                 l_version;
       end if;
-      l_query_str := replace(l_query_str, ':dblink',     l_dblink);
-      l_query_str := replace(l_query_str, ':office_id',  upper(p_office_id));
-      l_query_str := replace(l_query_str, ':location',   l_location);
-      l_query_str := replace(l_query_str, ':parameter',  l_parameter);
-      l_query_str := replace(l_query_str, ':param_type', l_param_type);
-      l_query_str := replace(l_query_str, ':interval',   l_interval);
-      l_query_str := replace(l_query_str, ':duration',   l_duration);
-      l_query_str := replace(l_query_str, ':version',    l_version);
-      open l_cursor for l_query_str;
       loop
          fetch l_cursor into l_rec;
          exit when l_cursor%notfound;
@@ -364,6 +378,7 @@ is
          state_initial  varchar2(2));
    location_already_exists exception;
    pragma exception_init (location_already_exists, -20026);
+   l_office_id     varchar2(16) := upper(p_office_id);
    l_dblink        varchar2(31);
    l_cwms_ver      varchar2(3);
    l_location      varchar2(49);
@@ -430,10 +445,11 @@ begin
          l_location := l_location || '-';
       end if;
       if not l_locations.exists(l_location) then
-         l_loc_str := l_loc_str || '''' || l_location || ''',';
+         l_loc_str := l_loc_str || l_location || ',';
          l_locations(l_location) := true;
       end if;
    end loop;
+   l_loc_str := substr(l_loc_str, 1, length(l_loc_str) - 1);
    -------------------------------------------------------------------------------------
    -- loop through locations in remote database and create location in local database --
    -------------------------------------------------------------------------------------
@@ -535,12 +551,10 @@ begin
            where c.county_code = :code
              and s.state_code = c.state_code';
    end if;
-   l_query_str := replace(l_query_str, ':locations', substr(l_loc_str, 1, length(l_loc_str) - 1));
-   l_query_str := replace(l_query_str, ':dblink', l_dblink);
-   l_query_str := replace(l_query_str, ':office', '''' || upper(p_office_id) || '''');
-   l_tz_query_str := replace(l_tz_query_str, ':dblink', l_dblink);
-   l_st_query_str := replace(l_st_query_str, ':dblink', l_dblink);
-   open l_loc_cur for l_query_str;
+   l_query_str    := replace(l_query_str,    ':dblink', l_dblink); -- can't bind
+   l_tz_query_str := replace(l_tz_query_str, ':dblink', l_dblink); -- can't bind
+   l_st_query_str := replace(l_st_query_str, ':dblink', l_dblink); -- can't bind
+   open l_loc_cur for l_query_str using l_office_id, l_loc_str;
    loop
       ---------------------------
       -- get the next location --
@@ -746,7 +760,8 @@ end set_office;
 --------------------------------------------------------------------------------
 -- BUILD_RETRIEVE_TS_QUERY
 --------------------------------------------------------------------------------
-function build_retrieve_ts_query (
+procedure build_retrieve_ts_query (
+   p_cursor          out sys_refcursor,
    p_cwms_ts_id      in  varchar2,
    p_ts_code         in  integer,
    p_offset          in  integer,
@@ -755,8 +770,8 @@ function build_retrieve_ts_query (
    p_cwms_ver        in  varchar2,
    p_dblink          in  varchar2
    )
-   return varchar2
 is
+   l_cursor           sys_refcursor;
    l_interval_id      varchar2(16);
    l_interval         number;
    l_offset           number          := p_offset / 60; -- convert to minutes
@@ -778,138 +793,164 @@ is
    l_date_format      varchar2(32)    := 'yyyy/mm/dd-hh24.mi.ss';
 
 begin
-   l_interval_id := cwms_util.split_text(p_cwms_ts_id,'.')(4);
-   select interval into l_interval from cwms_interval where interval_id = l_interval_id;
-   if l_interval = 0 then
-      l_reg_start_time := null;
-      l_reg_end_time   := null;
-   else
-      if p_offset = cwms_util.utc_offset_undefined then
-         l_reg_start_time := cwms_ts.get_time_on_after_interval(p_start_time, null, l_interval);
-         l_reg_end_time   := cwms_ts.get_time_on_before_interval(p_end_time, null, l_interval);
-      else
-         l_reg_start_time := cwms_ts.get_time_on_after_interval(p_start_time, l_offset, l_interval);
-         l_reg_end_time   := cwms_ts.get_time_on_before_interval(p_end_time, l_offset, l_interval);
-     end if;        
-   end if;
-   --
-   -- change interval from minutes to days
-   --
-   l_interval := l_interval / 1440;       
-   --
-   -- build the query string - for some reason the time zone must be a
-   -- string literal and bind variables are problematic
-   --
-   if l_interval > 0 then
-      --
-      -- regular time series
-      --
-      if mod(l_interval, 30) = 0 or mod(l_interval, 365) = 0 then
-         --
-         -- must use calendar math
-         --
-         -- change interval from days to months
-         --
-         if mod(l_interval, 30) = 0 then
-            l_interval := l_interval / 30;
-         else
-            l_interval := l_interval / 365 * 12;
-         end if;
-         l_query_str := 
-            'select v.date_time,
-                    value,
-                    nvl(quality_code, :missing) "QUALITY_CODE"
-              from (
-                   select date_time,
-                          max(value) keep(dense_rank last order by version_date) "VALUE",
-                          max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
-                     from cwms_20.av_tsv@:dblink
-                    where ts_code    =  :ts_code 
-                      and date_time  >= to_date('':start'', '':datefmt'')  
-                      and date_time  <= to_date('':end'',   '':datefmt'') 
-                      and start_date <= to_date('':end'',   '':datefmt'') 
-                      and end_date   >  to_date('':start'', '':datefmt'')
-                 group by date_time
-                   ) v
-                   right outer join
-                   (
-                   select add_months(to_date('':reg_start'', '':datefmt''), (level-1) * :interval) date_time
-                     from dual
-                    where to_date('':reg_start'', '':datefmt'') is not null
-               connect by level <= months_between(to_date('':reg_end'',   '':datefmt''),
-                                                  to_date('':reg_start'', '':datefmt'')) / :interval + 1
-                   ) t
-                   on v.date_time = t.date_time
-                   order by t.date_time asc';
-      else
-         --
-         -- can use date arithmetic
-         --
-         l_query_str := 
-            'select v.date_time,
-                     value,
-                     nvl(quality_code, :missing) "QUALITY_CODE"
-                from (
-                     select date_time,
-                            max(value) keep(dense_rank last order by version_date) "VALUE",
-                            max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
-                       from cwms_20.av_tsv@:dblink
-                      where ts_code    =  :ts_code 
-                        and date_time  >= to_date('':start'', '':datefmt'')  
-                        and date_time  <= to_date('':end'',   '':datefmt'') 
-                        and start_date <= to_date('':end'',   '':datefmt'') 
-                        and end_date   >  to_date('':start'', '':datefmt'')
-                   group by date_time
-                     ) v
-                     right outer join
-                     (
-                     select to_date('':reg_start'', '':datefmt'') + (level-1) * :interval date_time
-                       from dual
-                      where to_date('':reg_start'', '':datefmt'') is not null
-                 connect by level <= round((to_date('':reg_end'',   '':datefmt'')  - 
-                            to_date('':reg_start'', '':datefmt'')) / :interval + 1)
-                     ) t
-                     on v.date_time = t.date_time
-                     order by t.date_time asc';
-      end if;
-   else
-     --
-     -- irregular time series
-     --
-      l_query_str := 
+   if p_cwms_ver = '1.5' then
+      --------------
+      -- CWMS 1.5 --
+      --------------
+      l_query_str :=
          'select date_time,
-                 max(value) keep(dense_rank last order by version_date) "VALUE",
-                 max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
-            from cwms_20.av_tsv@:dblink
+                 value,
+                 quality "QUALITY_CODE"
+            from cwms.at_time_series_value@:dblink
            where ts_code    =  :ts_code 
-             and date_time  >= to_date('':start'', '':datefmt'')  
-             and date_time  <= to_date('':end'',   '':datefmt'') 
-             and start_date <= to_date('':end'',   '':datefmt'') 
-             and end_date   >  to_date('':start'', '':datefmt'')
-        group by date_time
+             and date_time  >= :start_time  
+             and date_time  <= :end_time 
         order by date_time asc';
+      l_query_str := replace(l_query_str, ':dblink',  p_dblink); -- can't bind
+      open l_cursor
+       for l_query_str
+     using p_ts_code,
+           p_start_time,
+           p_end_time;
+   else
+      --------------
+      -- CWMS 2.0 --
+      --------------
+      l_interval_id := cwms_util.split_text(p_cwms_ts_id,'.')(4);
+      select interval into l_interval from cwms_interval where interval_id = l_interval_id;
+      if l_interval = 0 then
+         l_reg_start_time := null;
+         l_reg_end_time   := null;
+      else
+         if p_offset = cwms_util.utc_offset_undefined then
+            l_reg_start_time := cwms_ts.get_time_on_after_interval(p_start_time, null, l_interval);
+            l_reg_end_time   := cwms_ts.get_time_on_before_interval(p_end_time, null, l_interval);
+         else
+            l_reg_start_time := cwms_ts.get_time_on_after_interval(p_start_time, l_offset, l_interval);
+            l_reg_end_time   := cwms_ts.get_time_on_before_interval(p_end_time, l_offset, l_interval);
+        end if;        
+      end if;
+      --
+      -- change interval from minutes to days
+      --
+      l_interval := l_interval / 1440;       
+      --
+      -- build the query string - for some reason the time zone must be a
+      -- string literal and bind variables are problematic
+      --
+      if l_interval > 0 then
+         --
+         -- regular time series
+         --
+         if mod(l_interval, 30) = 0 or mod(l_interval, 365) = 0 then
+            --
+            -- must use calendar math
+            --
+            -- change interval from days to months
+            --
+            if mod(l_interval, 30) = 0 then
+               l_interval := l_interval / 30;
+            else
+               l_interval := l_interval / 365 * 12;
+            end if;
+            l_query_str := 
+               'select v.date_time,
+                       value,
+                       nvl(quality_code, :missing) "QUALITY_CODE"
+                 from (
+                      select date_time,
+                             max(value) keep(dense_rank last order by version_date) "VALUE",
+                             max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
+                        from cwms_20.av_tsv@:dblink
+                       where ts_code    =  :ts_code 
+                         and date_time  >= :start_time  
+                         and date_time  <= :end_time 
+                         and start_date <= :end_time 
+                         and end_date   >  :start_time
+                    group by date_time
+                      ) v
+                      right outer join
+                      (
+                      select add_months(:reg_start, (level-1) * :interval) date_time
+                        from dual
+                       where :reg_start is not null
+                  connect by level <= months_between(:reg_end, :reg_start) / :interval + 1
+                      ) t
+                      on v.date_time = t.date_time
+                      order by t.date_time asc';
+         else
+            --
+            -- can use date arithmetic
+            --
+            l_query_str := 
+               'select v.date_time,
+                        value,
+                        nvl(quality_code, :missing) "QUALITY_CODE"
+                   from (
+                        select date_time,
+                               max(value) keep(dense_rank last order by version_date) "VALUE",
+                               max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
+                          from cwms_20.av_tsv@:dblink
+                         where ts_code    =  :ts_code 
+                           and date_time  >= :start_time  
+                           and date_time  <= :end_time 
+                           and start_date <= :end_time 
+                           and end_date   >  :start_time
+                      group by date_time
+                        ) v
+                        right outer join
+                        (
+                        select :reg_start + (level-1) * :interval date_time
+                          from dual
+                         where :reg_start is not null
+                    connect by level <= round(:reg_end - :reg_start) / :interval + 1)
+                        ) t
+                        on v.date_time = t.date_time
+                        order by t.date_time asc';
+         end if;
+         l_query_str := replace(l_query_str, ':dblink',  p_dblink); -- can't bind
+         open l_cursor
+          for l_query_str
+        using l_missing,
+              p_ts_code,
+              p_start_time,
+              p_end_time,
+              p_end_time,
+              p_start_time,
+              l_reg_start_time,
+              l_interval,
+              l_reg_start_time,
+              l_reg_end_time,
+              l_reg_start_time,
+              l_interval;
+      else
+        --
+        -- irregular time series
+        --
+         l_query_str := 
+            'select date_time,
+                    max(value) keep(dense_rank last order by version_date) "VALUE",
+                    max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
+               from cwms_20.av_tsv@:dblink
+              where ts_code    =  :ts_code 
+                and date_time  >= :start_time  
+                and date_time  <= :end_time 
+                and start_date <= :end_time 
+                and end_date   >  :start_time
+           group by date_time
+           order by date_time asc';
+            l_query_str := replace(l_query_str, ':dblink',  p_dblink); -- can't bind
+            open l_cursor
+             for l_query_str
+           using p_ts_code,
+                 p_start_time,
+                 p_end_time,
+                 p_end_time,
+                 p_start_time;
+      end if;
    end if;
-        
-   l_start_str := to_char(p_start_time, l_date_format);
-   l_end_str   := to_char(p_end_time,   l_date_format);
    
-   l_query_str := replace(l_query_str, ':missing', l_missing);
-   l_query_str := replace(l_query_str, ':ts_code', p_ts_code);
-   l_query_str := replace(l_query_str, ':start',   l_start_str);
-   l_query_str := replace(l_query_str, ':end',     l_end_str);
-   l_query_str := replace(l_query_str, ':datefmt', l_date_format);
-   l_query_str := replace(l_query_str, ':dblink',  p_dblink);
-   
-   if l_interval > 0 then
-      l_reg_start_str := to_char(l_reg_start_time, l_date_format);
-      l_reg_end_str   := to_char(l_reg_end_time,   l_date_format);
-      
-      l_query_str := replace(l_query_str, ':reg_start', l_reg_start_str);
-      l_query_str := replace(l_query_str, ':reg_end',   l_reg_end_str);
-      l_query_str := replace(l_query_str, ':interval',  l_interval);
-   end if;
-   
-   return l_query_str;
+   p_cursor := l_cursor;
     
 end build_retrieve_ts_query;
 
@@ -996,22 +1037,9 @@ begin
                cwms_msg.msg_level_detailed,
                'Retrieving timeseries data for '
                || tsid_rec.ts_id); 
-            if ofc_rec.cwms_ver = '1.5' then
-               l_query_str :=
-                  'select date_time,
-                          value,
-                          quality "QUALITY_CODE"
-                     from cwms.at_time_series_value@:dblink
-                    where ts_code    =  :ts_code 
-                      and date_time  >= to_date('':start'', ''yyyy/mm/dd-hh24:mi:ss'')  
-                      and date_time  <= to_date('':end'',   ''yyyy/mm/dd-hh24:mi:ss'') 
-                 order by date_time asc';
-               l_query_str := replace(l_query_str, ':dblink',  ofc_rec.dblink);
-               l_query_str := replace(l_query_str, ':ts_code', tsid_rec.ts_code);
-               l_query_str := replace(l_query_str, ':start',   to_char(p_start_time_utc, 'yyyy/mm/dd-hh24:mi:ss'));              
-               l_query_str := replace(l_query_str, ':end',     to_char(l_end_time_utc, 'yyyy/mm/dd-hh24:mi:ss'));              
-            else
-               l_query_str := build_retrieve_ts_query (
+            begin
+               build_retrieve_ts_query (
+                  l_ts_cur,
                   tsid_rec.ts_id,
                   tsid_rec.ts_code,
                   tsid_rec.interval_utc_offset,
@@ -1019,9 +1047,6 @@ begin
                   l_end_time_utc,
                   ofc_rec.cwms_ver,
                   ofc_rec.dblink);
-            end if;
-            begin
-               open l_ts_cur for l_query_str;
             exception
                when others then
                   cwms_msg.log_db_message(
