@@ -1,23 +1,23 @@
-/* Formatted on 3/30/2009 1:33:54 PM (QP5 v5.115.810.9015) */
+/* Formatted on 4/7/2009 10:29:27 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 	/******************************************************************************
-	  *	Name: 		CWMS_UTL
-	  *	Purpose: 	Miscellaneous CWMS Procedures
-	*
-		 *   Revisions:
-		*	 Ver			Date			Author		Descriptio
-		*	 ---------	----------	----------	----------------------------------------
-	  *	1.1		  9/07/2005   Portin 	  create_view: at_ts_table_properties start and end dates
-	  *												  changed to DATE datatype
-	 *   1.0 		 8/29/2005	 Portin		 Original
-	  ******************************************************************************/
+				*	 Name:		 CWMS_UTL
+				*	 Purpose:	 Miscellaneous CWMS Procedures
+		*
+				*	 Revisions:
+				*	 Ver			Date			Author		Descriptio
+					*	 ---------	----------	----------	----------------------------------------
+				*	 1.1			9/07/2005	Portin		create_view: at_ts_table_properties start and end dates
+			*													changed to DATE datatype
+				 *   1.0 		 8/29/2005	 Portin		 Original
+				******************************************************************************/
 	--
 	FUNCTION min_dms (p_decimal_degrees IN NUMBER)
 		RETURN NUMBER
 	IS
-		l_sec_dms	NUMBER;
-		l_min_dms	NUMBER;
+		l_sec_dms							NUMBER;
+		l_min_dms							NUMBER;
 	BEGIN
 		l_sec_dms :=
 			ROUND (
@@ -51,8 +51,8 @@ AS
 	FUNCTION sec_dms (p_decimal_degrees IN NUMBER)
 		RETURN NUMBER
 	IS
-		l_sec_dms	NUMBER;
-		l_sec_60 	NUMBER;
+		l_sec_dms							NUMBER;
+		l_sec_60 							NUMBER;
 	BEGIN
 		l_sec_dms :=
 			( (ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60.0)
@@ -104,9 +104,9 @@ AS
 	FUNCTION get_base_id (p_full_id IN VARCHAR2)
 		RETURN VARCHAR2
 	IS
-		l_num 			NUMBER := INSTR (p_full_id, '-', 1, 1);
-		l_length 		NUMBER := LENGTH (p_full_id);
-		l_sub_length	NUMBER := l_length - l_num;
+		l_num 								NUMBER := INSTR (p_full_id, '-', 1, 1);
+		l_length 							NUMBER := LENGTH (p_full_id);
+		l_sub_length						NUMBER := l_length - l_num;
 	BEGIN
 		IF 	INSTR (p_full_id, '.', 1, 1) > 0
 			OR l_num = l_length
@@ -129,7 +129,7 @@ AS
 	FUNCTION get_base_param_code (p_base_param_id IN VARCHAR2)
 		RETURN NUMBER
 	IS
-		l_base_param_code   NUMBER;
+		l_base_param_code 				NUMBER;
 	BEGIN
 		SELECT	a.base_parameter_code
 		  INTO	l_base_param_code
@@ -142,9 +142,9 @@ AS
 	FUNCTION get_sub_id (p_full_id IN VARCHAR2)
 		RETURN VARCHAR2
 	IS
-		l_num 			NUMBER := INSTR (p_full_id, '-', 1, 1);
-		l_length 		NUMBER := LENGTH (p_full_id);
-		l_sub_length	NUMBER := l_length - l_num;
+		l_num 								NUMBER := INSTR (p_full_id, '-', 1, 1);
+		l_length 							NUMBER := LENGTH (p_full_id);
+		l_sub_length						NUMBER := l_length - l_num;
 	BEGIN
 		IF 	INSTR (p_full_id, '.', 1, 1) > 0
 			OR l_num = l_length
@@ -229,7 +229,7 @@ AS
 	FUNCTION get_real_name (p_synonym IN VARCHAR2)
 		RETURN VARCHAR2
 	IS
-		l_name	VARCHAR2 (32) := UPPER (p_synonym);
+		l_name								VARCHAR2 (32) := UPPER (p_synonym);
 		invalid_sql_name exception;
 		PRAGMA EXCEPTION_INIT (invalid_sql_name, -44003);
 	BEGIN
@@ -268,11 +268,11 @@ AS
 		RETURN UROWID
 	IS
 		PRAGMA AUTONOMOUS_TRANSACTION;
-		l_mview_name	VARCHAR2 (32);
-		l_user_id		VARCHAR2 (32);
-		l_rowid			UROWID := NULL;
-		l_log_msg		VARCHAR2 (256);
-		l_tstamp 		timestamp;
+		l_mview_name						VARCHAR2 (32);
+		l_user_id							VARCHAR2 (32);
+		l_rowid								UROWID := NULL;
+		l_log_msg							VARCHAR2 (256);
+		l_tstamp 							timestamp;
 	BEGIN
 		l_user_id := get_user_id;
 		l_tstamp := SYSTIMESTAMP;
@@ -315,13 +315,13 @@ AS
 	PROCEDURE resume_mv_refresh (p_paused_handle IN UROWID)
 	IS
 		PRAGMA AUTONOMOUS_TRANSACTION;
-		l_mview_name	  VARCHAR2 (30);
-		l_count			  BINARY_INTEGER;
-		l_user_id		  VARCHAR2 (30);
-		l_log_msg		  VARCHAR2 (256);
-		l_start_time	  timestamp;
-		l_end_time		  timestamp;
-		l_elapsed_time   INTERVAL DAY TO SECOND;
+		l_mview_name						VARCHAR2 (30);
+		l_count								BINARY_INTEGER;
+		l_user_id							VARCHAR2 (30);
+		l_log_msg							VARCHAR2 (256);
+		l_start_time						timestamp;
+		l_end_time							timestamp;
+		l_elapsed_time 					INTERVAL DAY TO SECOND;
 	BEGIN
 		l_user_id := get_user_id;
 		LOCK TABLE at_mview_refresh_paused IN EXCLUSIVE MODE;
@@ -395,13 +395,13 @@ AS
 			TABLE OF at_mview_refresh_paused.paused_at%TYPE
 				INDEX BY at_mview_refresh_paused.mview_name%TYPE;
 
-		l_abandonded_pauses	 ts_by_mv_t;
-		l_mview_name			 at_mview_refresh_paused.mview_name%TYPE;
-		l_now 					 timestamp := SYSTIMESTAMP;
-		l_start_time			 timestamp;
-		l_end_time				 timestamp;
-		l_elapsed_time 		 INTERVAL DAY TO SECOND;
-		l_log_msg				 VARCHAR2 (256);
+		l_abandonded_pauses				ts_by_mv_t;
+		l_mview_name						at_mview_refresh_paused.mview_name%TYPE;
+		l_now 								timestamp := SYSTIMESTAMP;
+		l_start_time						timestamp;
+		l_end_time							timestamp;
+		l_elapsed_time 					INTERVAL DAY TO SECOND;
+		l_log_msg							VARCHAR2 (256);
 	BEGIN
 		SAVEPOINT timeout_mv_rfrsh_paused_start;
 		LOCK TABLE at_mview_refresh_paused IN EXCLUSIVE MODE;
@@ -475,9 +475,9 @@ AS
 	--
 	PROCEDURE start_timeout_mv_refresh_job
 	IS
-		l_count		BINARY_INTEGER;
-		l_user_id	VARCHAR2 (30);
-		l_job_id 	VARCHAR2 (30) := 'TIMEOUT_MV_REFRESH_JOB';
+		l_count								BINARY_INTEGER;
+		l_user_id							VARCHAR2 (30);
+		l_job_id 							VARCHAR2 (30) := 'TIMEOUT_MV_REFRESH_JOB';
 
 		FUNCTION job_count
 			RETURN BINARY_INTEGER
@@ -570,8 +570,8 @@ AS
 	FUNCTION user_office_id
 		RETURN VARCHAR2
 	IS
-		l_office_id   VARCHAR2 (16) := 'UNK';
-		l_user_id	  VARCHAR2 (32);
+		l_office_id 						VARCHAR2 (16) := 'UNK';
+		l_user_id							VARCHAR2 (32);
 	BEGIN
 		l_user_id := get_user_id;
 
@@ -602,11 +602,11 @@ AS
 		RETURN l_office_id;
 	END user_office_id;
 
-	PROCEDURE get_user_office_data (p_office_id	  OUT VARCHAR2,
-											  p_office_long_name OUT VARCHAR2
+	PROCEDURE get_user_office_data (p_office_id			  OUT VARCHAR2,
+											  p_office_long_name   OUT VARCHAR2
 											 )
 	IS
-		l_user_id	VARCHAR2 (32);
+		l_user_id							VARCHAR2 (32);
 	BEGIN
 		l_user_id := get_user_id;
 
@@ -638,8 +638,8 @@ AS
 	FUNCTION user_office_code
 		RETURN NUMBER
 	IS
-		l_office_code	 NUMBER (10) := 0;
-		l_user_id		 VARCHAR2 (32);
+		l_office_code						NUMBER (10) := 0;
+		l_user_id							VARCHAR2 (32);
 	BEGIN
 		l_user_id := get_user_id;
 
@@ -679,7 +679,7 @@ AS
 	FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL )
 		RETURN NUMBER
 	IS
-		l_office_code	 NUMBER := NULL;
+		l_office_code						NUMBER := NULL;
 	BEGIN
 		IF p_office_id IS NULL
 		THEN
@@ -705,7 +705,7 @@ AS
 	FUNCTION get_db_office_code (p_office_id IN VARCHAR2 DEFAULT NULL )
 		RETURN NUMBER
 	IS
-		l_db_office_code	 NUMBER := NULL;
+		l_db_office_code					NUMBER := NULL;
 	BEGIN
 		RETURN get_office_code (p_office_id);
 	END get_db_office_code;
@@ -715,8 +715,8 @@ AS
 	FUNCTION get_db_office_id (p_db_office_id IN VARCHAR2 DEFAULT NULL )
 		RETURN VARCHAR2
 	IS
-		l_db_office_code	 NUMBER := NULL;
-		l_db_office_id 	 VARCHAR2 (16);
+		l_db_office_code					NUMBER := NULL;
+		l_db_office_id 					VARCHAR2 (16);
 	BEGIN
 		IF p_db_office_id IS NULL
 		THEN
@@ -740,7 +740,7 @@ AS
 	FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
 		RETURN VARCHAR2
 	IS
-		l_parameter_id   VARCHAR2 (49);
+		l_parameter_id 					VARCHAR2 (49);
 	BEGIN
 		BEGIN
 			SELECT		cbp.base_parameter_id
@@ -769,34 +769,34 @@ AS
 	--  A null input generates a result of '%'.
 	--
 	-- +--------------+-------------------------------------------------------------------------+
-	-- |				 | 									 Output String 										|
-	-- |				 +------------------------------------------------------------+------------+
-	-- |				 | 									Recognize SQL						  |				|
-	-- |				 | 									 Wildcards? 						  |				|
-	-- |				 +------+---------------------------+-----+-------------------+				|
-	-- | Input String | No : comments						| Yes : comments			  | Different? |
+	-- |		|										Output String										  |
+	-- |		+------------------------------------------------------------+------------+
+	-- |		|									  Recognize SQL						 | 			  |
+	-- |		|										Wildcards?							 | 			  |
+	-- |		+------+---------------------------+-----+-------------------+ 			  |
+	-- | Input String | No : comments			  | Yes : comments			 | Different? |
 	-- +--------------+------+---------------------------+-----+-------------------+------------+
-	-- | %			 | \%   : literal '%'               | %   : multi-wildcard    | Yes        |
-	-- | _			 | \_   : literal '_'               | _   : single-wildcard   | Yes        |
-	-- | *			 | %	  : multi-wildcard				| %	: multi-wildcard	  | No			|
-	-- | ?			 | _	  : single-wildcard				| _	: single-wildcard   | No			|
-	-- | \%			 | 	  : not allowed					| \%	: literal '%'       | Yes        |
-	-- | \_			 | 	  : not allowed					| \_	: literal '_'       | Yes        |
-	-- | \*			 | *	  : literal '*'               | *   : literal '*'       | No         |
-	-- | \?			 | ?	  : literal '?'               | ?   : literal '?'       | No         |
-	-- | \\% 		 | \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
-	-- | \\_ 		 | \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
-	-- | \\* 		 | \\%  : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
-	-- | \\? 		 | \\_  : literal '\' + swc         | \\_ : literal '\' + swc | No         |
+	-- | %	| \%	 : literal '%'               | %   : multi-wildcard    | Yes        |
+	-- | _	| \_	 : literal '_'               | _   : single-wildcard   | Yes        |
+	-- | *	| %	 : multi-wildcard 			  | %   : multi-wildcard	 | No 		  |
+	-- | ?	| _	 : single-wildcard			  | _   : single-wildcard	 | No 		  |
+	-- | \%	|		 : not allowed 				  | \%  : literal '%'       | Yes        |
+	-- | \_	|		 : not allowed 				  | \_  : literal '_'       | Yes        |
+	-- | \*	| *	 : literal '*'               | *   : literal '*'       | No         |
+	-- | \?	| ?	 : literal '?'               | ?   : literal '?'       | No         |
+	-- | \\%   | \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
+	-- | \\_   | \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
+	-- | \\*   | \\% : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
+	-- | \\?   | \\_ : literal '\' + swc         | \\_ : literal '\' + swc | No         |
 	-- +--------------+------+---------------------------+-----+-------------------+------------+
-	FUNCTION normalize_wildcards (p_string 		IN VARCHAR2,
-											p_recognize_sql IN BOOLEAN DEFAULT FALSE
+	FUNCTION normalize_wildcards (p_string 			IN VARCHAR2,
+											p_recognize_sql	IN BOOLEAN DEFAULT FALSE
 										  )
 		RETURN VARCHAR2
 	IS
-		l_result   VARCHAR2 (32767);
-		l_char	  VARCHAR2 (1);
-		l_skip	  BOOLEAN := FALSE;
+		l_result 							VARCHAR2 (32767);
+		l_char								VARCHAR2 (1);
+		l_skip								BOOLEAN := FALSE;
 	BEGIN
 		--------------------------------
 		-- default null string to '%' --
@@ -923,15 +923,15 @@ AS
 		RETURN l_result;
 	END normalize_wildcards;
 
-	PROCEDURE parse_ts_id (p_base_location_id   OUT VARCHAR2,
-								  p_sub_location_id	 OUT VARCHAR2,
-								  p_base_parameter_id	OUT VARCHAR2,
-								  p_sub_parameter_id   OUT VARCHAR2,
-								  p_parameter_type_id	OUT VARCHAR2,
-								  p_interval_id	  OUT VARCHAR2,
-								  p_duration_id	  OUT VARCHAR2,
-								  p_version_id 	  OUT VARCHAR2,
-								  p_cwms_ts_id   IN		VARCHAR2
+	PROCEDURE parse_ts_id (p_base_location_id 		OUT VARCHAR2,
+								  p_sub_location_id			OUT VARCHAR2,
+								  p_base_parameter_id		OUT VARCHAR2,
+								  p_sub_parameter_id 		OUT VARCHAR2,
+								  p_parameter_type_id		OUT VARCHAR2,
+								  p_interval_id				OUT VARCHAR2,
+								  p_duration_id				OUT VARCHAR2,
+								  p_version_id 				OUT VARCHAR2,
+								  p_cwms_ts_id 			IN 	 VARCHAR2
 								 )
 	IS
 	BEGIN
@@ -955,75 +955,77 @@ AS
 	-- Quotes can be used to aggregate search patterns that contain one or more  -
 	-- blank spaces.
 	--
-	FUNCTION parse_search_string (p_search_patterns IN VARCHAR2,
-											p_search_column IN VARCHAR2,
-											p_use_upper 	IN BOOLEAN DEFAULT TRUE
+	FUNCTION parse_search_string (p_search_patterns   IN VARCHAR2,
+											p_search_column	  IN VARCHAR2,
+											p_use_upper 		  IN BOOLEAN DEFAULT TRUE
 										  )
 		RETURN VARCHAR2
 	--------------------------------------------------------------------------------
-	-- Usage:																						  -
-	-- 		*	 - wild card character matches zero or more occurences.			  -
-	-- 		?	 - wild card character matches zero or one occurence. 			  -
-	-- 		and - AND or a blank space, e.g., abc* *123 is eqivalent to 		  -
-	-- 													 abc* AND *123 						  -
-	-- 		or  - OR  e.g., abc* OR *123													  -
-	-- 		not - NOT or a dash, e.g.,  'NOT abc*' is equivalent to '-abc*'     -
-	-- 		" " - quotes are used to aggregate patters that have blank spaces   -
-	-- 				e.g., "abc 123*"                                              -
+	-- Usage:																				 -
+	--   *  - wild card character matches zero or more occurences. 		 -
+	--   ?  - wild card character matches zero or one occurence.			 -
+	--   and - AND or a blank space, e.g., abc* *123 is eqivalent to		 -
+	-- 											abc* AND *123							 -
+	--   or - OR  e.g., abc* OR *123 												 -
+	--   not - NOT or a dash, e.g., 'NOT abc*' is equivalent to '-abc*'     -
+	--   " " - quotes are used to aggregate patters that have blank spaces   -
+	-- 	  e.g., "abc 123*"                                              -
 	--
-	-- 		One can use the backslash as an escape character for the following  -
-	-- 		special characters:																  -
-	-- 		\* used to make an asterisks a literal instead of a wild character  -																				-
-	-- 		\? used to make a question mark a literal instead of a wild 		  -
-	-- 			character																		  -
-	-- 		\- used to start a new parse pattern with a dash instead of a NOT   -
-	-- 		\" used to make a quote a literal part of the parse pattern.        -
+	--   One can use the backslash as an escape character for the following  -
+	--   special characters:															 -
+	--   \* used to make an asterisks a literal instead of a wild character  - 																		  -
+	--   \? used to make a question mark a literal instead of a wild		 -
+	--   character 																		 -
+	--   \- used to start a new parse pattern with a dash instead of a NOT -
+	--   \" used to make a quote a literal part of the parse pattern.        -
 	--
 	-- Example:
-	-- p_search_column: COLUMN_OF_INTEREST 												  -
-	-- p_search_patterns: cb* NOT cbt* OR NOT cbk*										  -
-	-- 	 will return:																			  -
-	-- 					  AND UPPER(COLUMN_OF_INTEREST)	LIKE 'CB%'                -
-	-- 					  AND UPPER(COLUMN_OF_INTEREST) NOT LIKE 'CBT%'            -
-	-- 					  OR UPPER(COLUMN_OF_INTEREST) NOT LIKE 'CBK%'             -
+	-- p_search_column: COLUMN_OF_INTEREST 										 -
+	-- p_search_patterns: cb* NOT cbt* OR NOT cbk*								 -
+	--   will return: 																	 -
+	-- 			 AND UPPER(COLUMN_OF_INTEREST)  LIKE 'CB%'                -
+	-- 			 AND UPPER(COLUMN_OF_INTEREST) NOT LIKE 'CBT%'            -
+	-- 			 OR UPPER(COLUMN_OF_INTEREST) NOT LIKE 'CBK%'             -
 	--
 	--  if p_use_upper is set to false, the above will return:
 	--
-	-- 						AND COLUMN_OF_INTEREST	LIKE 'cb%'                      -
-	-- 						AND COLUMN_OF_INTEREST NOT LIKE 'cbt%'                  -
-	-- 						OR COLUMN_OF_INTEREST NOT LIKE 'cbk%'                   -
+	-- 			  AND COLUMN_OF_INTEREST  LIKE 'cb%'                      -
+	-- 			  AND COLUMN_OF_INTEREST NOT LIKE 'cbt%'                  -
+	-- 			  OR COLUMN_OF_INTEREST NOT LIKE 'cbk%'                   -
 	--
 	--  A null p_search_patterns generates a result of '%'.
 	--
-	-- 						AND COLUMN_OF_INTEREST	LIKE '%'                        -
+	-- 			  AND COLUMN_OF_INTEREST  LIKE '%'                        -
 	--------------------------------------------------------------------------------
 	--
 	IS
-		l_string 					VARCHAR2 (256) := TRIM (p_search_patterns);
-		l_search_column			VARCHAR2 (30) := UPPER (TRIM (p_search_column));
-		l_use_upper 				BOOLEAN := NVL (p_use_upper, TRUE);
-		l_recognize_sql			BOOLEAN := FALSE;
-		l_string_length			NUMBER := NVL (LENGTH (l_string), 0);
-		l_skip						NUMBER := 0;
-		l_looking_first_quote	BOOLEAN := TRUE;
-		l_sub_string_done 		BOOLEAN := FALSE;
-		l_first_char				BOOLEAN := TRUE;
-		l_char						VARCHAR2 (1);
-		l_sub_string				VARCHAR2 (64) := NULL;
-		l_not 						VARCHAR2 (3) := NULL;
-		l_and_or 					VARCHAR2 (3) := 'AND';
-		l_result 					VARCHAR2 (1000) := NULL;
-		l_open_upper				VARCHAR2 (7);
-		l_close_upper				VARCHAR2 (2);
-		l_open_paran				VARCHAR2 (10) := NULL;
-		l_close_paran				VARCHAR2 (10) := NULL;
-		l_space						VARCHAR2 (1) := ' ';
-		l_num_open_paran			NUMBER := 0;
-		l_char_position			NUMBER := 0;
-		l_num_element				NUMBER := 0;
-		l_t							VARCHAR2 (1);
-		l_tmp_string				VARCHAR2 (100) := NULL;
-		l_is_closing_quotes		BOOLEAN;
+		l_string 							VARCHAR2 (256)
+				:= TRIM (p_search_patterns) ;
+		l_search_column					VARCHAR2 (30)
+				:= UPPER (TRIM (p_search_column)) ;
+		l_use_upper 						BOOLEAN := NVL (p_use_upper, TRUE);
+		l_recognize_sql					BOOLEAN := FALSE;
+		l_string_length					NUMBER := NVL (LENGTH (l_string), 0);
+		l_skip								NUMBER := 0;
+		l_looking_first_quote			BOOLEAN := TRUE;
+		l_sub_string_done 				BOOLEAN := FALSE;
+		l_first_char						BOOLEAN := TRUE;
+		l_char								VARCHAR2 (1);
+		l_sub_string						VARCHAR2 (64) := NULL;
+		l_not 								VARCHAR2 (3) := NULL;
+		l_and_or 							VARCHAR2 (3) := 'AND';
+		l_result 							VARCHAR2 (1000) := NULL;
+		l_open_upper						VARCHAR2 (7);
+		l_close_upper						VARCHAR2 (2);
+		l_open_paran						VARCHAR2 (10) := NULL;
+		l_close_paran						VARCHAR2 (10) := NULL;
+		l_space								VARCHAR2 (1) := ' ';
+		l_num_open_paran					NUMBER := 0;
+		l_char_position					NUMBER := 0;
+		l_num_element						NUMBER := 0;
+		l_t									VARCHAR2 (1);
+		l_tmp_string						VARCHAR2 (100) := NULL;
+		l_is_closing_quotes				BOOLEAN;
 	BEGIN
 		--
 		-- set the UPPER( ) wrapper...
@@ -1042,20 +1044,20 @@ AS
 		THEN
 			FOR i IN 1 .. LENGTH (l_string)
 			LOOP
-				-- 		IF l_looking_first_quote
-				-- 		THEN
-				-- 			l_t := 'T';
-				-- 		ELSE
-				-- 			l_t := 'F';
-				-- 		END IF;
+				--   IF l_looking_first_quote
+				--   THEN
+				--   l_t := 'T';
+				--   ELSE
+				--   l_t := 'F';
+				--   END IF;
 
-				-- 		DBMS_OUTPUT.put_line (	 l_t
-				-- 									 || l_char_position
-				-- 									 || '>'
-				-- 									 || l_sub_string
-				-- 									 || '< skip: '
-				-- 									 || l_skip
-				-- 									);
+				--   DBMS_OUTPUT.put_line (  l_t
+				-- 							|| l_char_position
+				-- 							|| '>'
+				-- 							|| l_sub_string
+				-- 							|| '< skip: '
+				-- 							|| l_skip
+				-- 						  );
 				IF l_skip > 0
 				THEN
 					l_skip := l_skip - 1;
@@ -1170,16 +1172,16 @@ AS
 									l_sub_string := '"' || l_sub_string || l_tmp_string;
 								END IF;
 							-----------------
-							-- 						IF 	INSTR (NVL (SUBSTR (l_string, i + 1), ' '), ' ') =
-							-- 																								  1
-							-- 							OR i = l_string_length
-							-- 						THEN
-							-- 							l_skip := l_skip + 1;
-							-- 							l_sub_string_done := TRUE;
-							-- 						ELSE
-							-- 							l_sub_string := l_sub_string || l_char;
-							-- 							l_char_position := l_char_position + 1;
-							-- 						END IF;
+							-- 			  IF	  INSTR (NVL (SUBSTR (l_string, i + 1), ' '), ' ') =
+							-- 																						 1
+							-- 				  OR i = l_string_length
+							-- 			  THEN
+							-- 				  l_skip := l_skip + 1;
+							-- 				  l_sub_string_done := TRUE;
+							-- 			  ELSE
+							-- 				  l_sub_string := l_sub_string || l_char;
+							-- 				  l_char_position := l_char_position + 1;
+							-- 			  END IF;
 							END IF;
 						WHEN ' '
 						THEN
@@ -1289,7 +1291,7 @@ AS
 	FUNCTION strip (p_text IN VARCHAR2)
 		RETURN VARCHAR2
 	IS
-		l_text	VARCHAR2 (32767);
+		l_text								VARCHAR2 (32767);
 	BEGIN
 		l_text :=
 			REGEXP_REPLACE (p_text, '^[[:space:]]*(.*)[[:space:]]*$', '\1');
@@ -1312,25 +1314,29 @@ AS
 				 || TRIM (p_sub_id);
 	END;
 
-	FUNCTION concat_ts_id (p_base_location_id IN VARCHAR2,
-								  p_sub_location_id IN VARCHAR2,
-								  p_base_parameter_id IN VARCHAR2,
-								  p_sub_parameter_id IN VARCHAR2,
-								  p_parameter_type_id IN VARCHAR2,
-								  p_interval_id  IN VARCHAR2,
-								  p_duration_id  IN VARCHAR2,
-								  p_version_id   IN VARCHAR2
+	FUNCTION concat_ts_id (p_base_location_id 	IN VARCHAR2,
+								  p_sub_location_id		IN VARCHAR2,
+								  p_base_parameter_id	IN VARCHAR2,
+								  p_sub_parameter_id 	IN VARCHAR2,
+								  p_parameter_type_id	IN VARCHAR2,
+								  p_interval_id			IN VARCHAR2,
+								  p_duration_id			IN VARCHAR2,
+								  p_version_id 			IN VARCHAR2
 								 )
 		RETURN VARCHAR2
 	IS
-		l_base_location_id	 VARCHAR2 (16) := TRIM (p_base_location_id);
-		l_sub_location_id 	 VARCHAR2 (32) := TRIM (p_sub_location_id);
-		l_base_parameter_id	 VARCHAR2 (16) := TRIM (p_base_parameter_id);
-		l_sub_parameter_id	 VARCHAR2 (32) := TRIM (p_sub_parameter_id);
-		l_parameter_type_id	 VARCHAR2 (16) := TRIM (p_parameter_type_id);
-		l_interval_id			 VARCHAR2 (16) := TRIM (p_interval_id);
-		l_duration_id			 VARCHAR2 (16) := TRIM (p_duration_id);
-		l_version_id			 VARCHAR2 (32) := TRIM (p_version_id);
+		l_base_location_id				VARCHAR2 (16)
+				:= TRIM (p_base_location_id) ;
+		l_sub_location_id 				VARCHAR2 (32) := TRIM (p_sub_location_id);
+		l_base_parameter_id				VARCHAR2 (16)
+				:= TRIM (p_base_parameter_id) ;
+		l_sub_parameter_id				VARCHAR2 (32)
+				:= TRIM (p_sub_parameter_id) ;
+		l_parameter_type_id				VARCHAR2 (16)
+				:= TRIM (p_parameter_type_id) ;
+		l_interval_id						VARCHAR2 (16) := TRIM (p_interval_id);
+		l_duration_id						VARCHAR2 (16) := TRIM (p_duration_id);
+		l_version_id						VARCHAR2 (32) := TRIM (p_version_id);
 	BEGIN
 		SELECT	cbp.base_parameter_id
 		  INTO	l_base_parameter_id
@@ -1393,7 +1399,7 @@ AS
 	FUNCTION get_time_zone_code (p_time_zone_name IN VARCHAR2)
 		RETURN NUMBER
 	IS
-		l_time_zone_code	 NUMBER (10);
+		l_time_zone_code					NUMBER (10);
 	BEGIN
 		SELECT	time_zone_code
 		  INTO	l_time_zone_code
@@ -1413,7 +1419,7 @@ AS
 	FUNCTION get_tz_usage_code (p_tz_usage_id IN VARCHAR2)
 		RETURN NUMBER
 	IS
-		l_tz_usage_code	NUMBER (10);
+		l_tz_usage_code					NUMBER (10);
 	BEGIN
 		SELECT	tz_usage_code
 		  INTO	l_tz_usage_code
@@ -1433,7 +1439,7 @@ AS
 	----------------------------------------------------------------------------
 	PROCEDURE DUMP (p_str IN VARCHAR2, p_len IN PLS_INTEGER DEFAULT 80 )
 	IS
-		i	 PLS_INTEGER;
+		i										PLS_INTEGER;
 	BEGIN
 		-- Dump (put_line) a character string p_str in chunks of length p_len
 		i := 1;
@@ -1448,8 +1454,8 @@ AS
 	----------------------------------------------------------------------------
 	PROCEDURE create_view
 	IS
-		l_sel   VARCHAR2 (120);
-		l_sql   VARCHAR2 (4000);
+		l_sel 								VARCHAR2 (120);
+		l_sql 								VARCHAR2 (4000);
 
 		CURSOR c1
 		IS
@@ -1462,10 +1468,10 @@ AS
 
 		-- CREATE OR REPLACE FORCE VIEW AV_TSV AS
 		-- select ts_code, date_time, data_entry_date, value, quality,
-		-- 	  DATE '2000-01-01' start_date, DATE '2001-01-01' end_date from IOT_2000
+		--   DATE '2000-01-01' start_date, DATE '2001-01-01' end_date from IOT_2000
 		-- union all
 		-- select ts_code, date_time, data_entry_date, value, quality,
-		-- 	  DATE '2001-01-01' start_date, DATE '2002-01-01' end_date from IOT_2001
+		--   DATE '2001-01-01' start_date, DATE '2002-01-01' end_date from IOT_2001
 		l_sql := 'create or replace force view av_tsv as ';
 		l_sel :=
 			'select ts_code, date_time, version_date, data_entry_date, value, quality_code, DATE ''';
@@ -1502,20 +1508,20 @@ AS
 	-- function split_text(...)
 	--
 	--
-	FUNCTION split_text (p_text			IN VARCHAR2,
-								p_separator 	IN VARCHAR2 DEFAULT NULL ,
-								p_max_split 	IN INTEGER DEFAULT NULL
+	FUNCTION split_text (p_text		  IN VARCHAR2,
+								p_separator   IN VARCHAR2 DEFAULT NULL ,
+								p_max_split   IN INTEGER DEFAULT NULL
 							  )
 		RETURN str_tab_t
 	IS
-		l_str_tab		  str_tab_t := str_tab_t ();
-		l_str 			  VARCHAR2 (32767);
-		l_field			  VARCHAR2 (32767);
-		l_pos 			  PLS_INTEGER;
-		l_sep 			  VARCHAR2 (32767);
-		l_sep_len		  PLS_INTEGER;
-		l_split_count	  PLS_INTEGER := 0;
-		l_count_splits   BOOLEAN;
+		l_str_tab							str_tab_t := str_tab_t ();
+		l_str 								VARCHAR2 (32767);
+		l_field								VARCHAR2 (32767);
+		l_pos 								PLS_INTEGER;
+		l_sep 								VARCHAR2 (32767);
+		l_sep_len							PLS_INTEGER;
+		l_split_count						PLS_INTEGER := 0;
+		l_count_splits 					BOOLEAN;
 	BEGIN
 		IF p_max_split IS NULL
 		THEN
@@ -1569,24 +1575,24 @@ AS
 	-- function split_text(...)
 	--
 	--
-	FUNCTION split_text (p_text			IN CLOB,
-								p_separator 	IN VARCHAR2 DEFAULT NULL ,
-								p_max_split 	IN INTEGER DEFAULT NULL
+	FUNCTION split_text (p_text		  IN CLOB,
+								p_separator   IN VARCHAR2 DEFAULT NULL ,
+								p_max_split   IN INTEGER DEFAULT NULL
 							  )
 		RETURN str_tab_t
 	IS
-		l_clob					 CLOB := p_text;
-		l_rows					 str_tab_t := str_tab_t ();
-		l_new_rows				 str_tab_t;
-		l_buf 					 VARCHAR2 (32767) := '';
-		l_chunk					 VARCHAR2 (4000);
-		l_clob_offset			 BINARY_INTEGER := 1;
-		l_buf_offset			 BINARY_INTEGER := 1;
-		l_amount 				 BINARY_INTEGER;
-		l_clob_len				 BINARY_INTEGER;
-		l_last					 BINARY_INTEGER;
-		l_done_reading 		 BOOLEAN;
-		chunk_size CONSTANT	 BINARY_INTEGER := 4000;
+		l_clob								CLOB := p_text;
+		l_rows								str_tab_t := str_tab_t ();
+		l_new_rows							str_tab_t;
+		l_buf 								VARCHAR2 (32767) := '';
+		l_chunk								VARCHAR2 (4000);
+		l_clob_offset						BINARY_INTEGER := 1;
+		l_buf_offset						BINARY_INTEGER := 1;
+		l_amount 							BINARY_INTEGER;
+		l_clob_len							BINARY_INTEGER;
+		l_last								BINARY_INTEGER;
+		l_done_reading 					BOOLEAN;
+		chunk_size CONSTANT				BINARY_INTEGER := 4000;
 	BEGIN
 		IF p_text IS NULL
 		THEN
@@ -1633,12 +1639,12 @@ AS
 	-- function join_text(...)
 	--
 	--
-	FUNCTION join_text (p_text_tab	  IN str_tab_t,
-							  p_separator	  IN VARCHAR2 DEFAULT NULL
+	FUNCTION join_text (p_text_tab	 IN str_tab_t,
+							  p_separator	 IN VARCHAR2 DEFAULT NULL
 							 )
 		RETURN VARCHAR2
 	IS
-		l_text	VARCHAR2 (32767) := NULL;
+		l_text								VARCHAR2 (32767) := NULL;
 	BEGIN
 		FOR i IN 1 .. p_text_tab.COUNT
 		LOOP
@@ -1658,10 +1664,11 @@ AS
 	--
 	PROCEDURE format_xml (p_xml_clob IN OUT NOCOPY CLOB, p_indent IN VARCHAR2)
 	IS
-		l_lines					str_tab_t;
-		l_level					BINARY_INTEGER := 0;
-		l_len 					BINARY_INTEGER := LENGTH (NVL (p_indent, ''));
-		l_newline CONSTANT	VARCHAR2 (1) := CHR (10);
+		l_lines								str_tab_t;
+		l_level								BINARY_INTEGER := 0;
+		l_len 								BINARY_INTEGER
+				:= LENGTH (NVL (p_indent, '')) ;
+		l_newline CONSTANT				VARCHAR2 (1) := CHR (10);
 
 		PROCEDURE write_line (p_line IN VARCHAR2)
 		IS
@@ -1733,8 +1740,8 @@ AS
 	FUNCTION parse_clob_recordset (p_clob IN CLOB)
 		RETURN str_tab_tab_t
 	IS
-		l_rows	str_tab_t;
-		l_tab 	str_tab_tab_t := str_tab_tab_t ();
+		l_rows								str_tab_t;
+		l_tab 								str_tab_tab_t := str_tab_tab_t ();
 	BEGIN
 		IF p_clob IS NULL
 		THEN
@@ -1759,8 +1766,8 @@ AS
 	FUNCTION parse_string_recordset (p_string IN VARCHAR2)
 		RETURN str_tab_tab_t
 	IS
-		l_rows	str_tab_t;
-		l_tab 	str_tab_tab_t := str_tab_tab_t ();
+		l_rows								str_tab_t;
+		l_tab 								str_tab_tab_t := str_tab_tab_t ();
 	BEGIN
 		IF p_string IS NULL
 		THEN
@@ -1784,22 +1791,22 @@ AS
 	FUNCTION TO_TIMESTAMP (p_iso_str IN VARCHAR2)
 		RETURN timestamp
 	IS
-		l_yr			VARCHAR2 (5);
-		l_mon 		VARCHAR2 (2) := '01';
-		l_day 		VARCHAR2 (2) := '01';
-		l_hr			VARCHAR2 (2) := '00';
-		l_min 		VARCHAR2 (2) := '00';
-		l_sec 		VARCHAR2 (8) := '00.0';
-		l_tz			VARCHAR2 (32) := '+00:00';
-		l_time		VARCHAR2 (32);
-		l_parts		str_tab_t;
-		l_ts			timestamp;
-		l_offset 	INTERVAL DAY TO SECOND;
-		l_iso_pattern CONSTANT VARCHAR2 (71)
+		l_yr									VARCHAR2 (5);
+		l_mon 								VARCHAR2 (2) := '01';
+		l_day 								VARCHAR2 (2) := '01';
+		l_hr									VARCHAR2 (2) := '00';
+		l_min 								VARCHAR2 (2) := '00';
+		l_sec 								VARCHAR2 (8) := '00.0';
+		l_tz									VARCHAR2 (32) := '+00:00';
+		l_time								VARCHAR2 (32);
+		l_parts								str_tab_t;
+		l_ts									timestamp;
+		l_offset 							INTERVAL DAY TO SECOND;
+		l_iso_pattern CONSTANT			VARCHAR2 (71)
 				:= '-?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:(\d{2}([.]\d+)?))?([-+]\d{2}:\d{2}|Z)?' ;
-		l_str 		VARCHAR2 (64) := strip (p_iso_str);
-		l_pos 		BINARY_INTEGER;
-		l_add_day	BOOLEAN := FALSE;
+		l_str 								VARCHAR2 (64) := strip (p_iso_str);
+		l_pos 								BINARY_INTEGER;
+		l_add_day							BOOLEAN := FALSE;
 	BEGIN
 		IF REGEXP_INSTR (l_str, l_iso_pattern) != 1
 			OR REGEXP_INSTR (l_str, l_iso_pattern, 1, 1, 1) !=
@@ -1888,11 +1895,11 @@ AS
 	FUNCTION TO_TIMESTAMP (p_millis IN NUMBER)
 		RETURN timestamp
 	IS
-		l_millis   NUMBER := p_millis;
-		l_day 	  NUMBER;
-		l_hour	  NUMBER;
-		l_min 	  NUMBER;
-		l_sec 	  NUMBER;
+		l_millis 							NUMBER := p_millis;
+		l_day 								NUMBER;
+		l_hour								NUMBER;
+		l_min 								NUMBER;
+		l_sec 								NUMBER;
 	BEGIN
 		l_day := TRUNC (l_millis / 86400000);
 		l_millis := l_millis - (l_day * 86400000);
@@ -1921,8 +1928,8 @@ AS
 	FUNCTION to_millis (p_timestamp IN timestamp)
 		RETURN NUMBER
 	IS
-		l_intvl	  INTERVAL DAY (5) TO SECOND (3);
-		l_millis   NUMBER;
+		l_intvl								INTERVAL DAY (5) TO SECOND (3);
+		l_millis 							NUMBER;
 	BEGIN
 		l_intvl := p_timestamp - epoch;
 		l_millis :=
@@ -1943,12 +1950,12 @@ AS
 		RETURN to_millis (SYS_EXTRACT_UTC (SYSTIMESTAMP));
 	END current_millis;
 
-	FUNCTION get_ts_code (p_cwms_ts_id	 IN VARCHAR2,
-								 p_db_office_code IN NUMBER
+	FUNCTION get_ts_code (p_cwms_ts_id		  IN VARCHAR2,
+								 p_db_office_code   IN NUMBER
 								)
 		RETURN NUMBER
 	IS
-		l_cwms_ts_code   NUMBER;
+		l_cwms_ts_code 					NUMBER;
 	BEGIN
 		BEGIN
 			SELECT	a.ts_code
@@ -1968,7 +1975,7 @@ AS
 	FUNCTION get_ts_interval (p_cwms_ts_code IN NUMBER)
 		RETURN NUMBER
 	IS
-		l_ts_interval	 NUMBER;
+		l_ts_interval						NUMBER;
 	BEGIN
 		SELECT	a.interval
 		  INTO	l_ts_interval
@@ -1979,8 +1986,8 @@ AS
 		RETURN l_ts_interval;
 	END get_ts_interval;
 
-	PROCEDURE get_valid_units (p_valid_units		OUT sys_refcursor,
-										p_parameter_id IN 	 VARCHAR2 DEFAULT NULL
+	PROCEDURE get_valid_units (p_valid_units		  OUT sys_refcursor,
+										p_parameter_id   IN		VARCHAR2 DEFAULT NULL
 									  )
 	IS
 	BEGIN
@@ -2005,13 +2012,13 @@ AS
 		RETURN cat_unit_tab_t
 		PIPELINED
 	IS
-		l_query_cursor   sys_refcursor;
-		l_output_row	  cat_unit_rec_t;
+		l_query_cursor 					sys_refcursor;
+		l_output_row						cat_unit_rec_t;
 	BEGIN
 		get_valid_units (l_query_cursor, p_parameter_id);
 
 		LOOP
-			FETCH l_query_cursor INTO	 l_output_row;
+			FETCH l_query_cursor INTO									l_output_row;
 
 			EXIT WHEN l_query_cursor%NOTFOUND;
 			PIPE ROW (l_output_row);
@@ -2020,36 +2027,31 @@ AS
 		CLOSE l_query_cursor;
 	END;
 
-	FUNCTION get_unit_code (p_unit_id		IN VARCHAR2,
-									p_abstract_param_id IN VARCHAR2 DEFAULT NULL
+	FUNCTION get_unit_code (p_unit_id				 IN VARCHAR2,
+									p_abstract_param_id	 IN VARCHAR2 DEFAULT NULL ,
+									p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
 								  )
 		RETURN NUMBER
 	IS
-		l_unit_code   NUMBER;
+		l_unit_code 						NUMBER;
+		l_db_office_code					VARCHAR2 (16)
+				:= get_db_office_code (p_db_office_id) ;
 	BEGIN
 		IF p_abstract_param_id IS NULL
 		THEN
 			BEGIN
 				SELECT	unit_code
 				  INTO	l_unit_code
-				  FROM	cwms_unit
-				 WHERE	unit_id = TRIM( p_unit_id);
+				  FROM	av_unit
+				 WHERE	unit_id = TRIM (p_unit_id)
+							AND db_office_code IN (l_db_office_code, 53);
 			EXCEPTION
 				WHEN NO_DATA_FOUND
 				THEN
-					BEGIN
-						SELECT	unit_code
-						  INTO	l_unit_code
-						  FROM	at_unit_alias
-						 WHERE	alias_id = TRIM (p_unit_id);
-					EXCEPTION
-						WHEN NO_DATA_FOUND
-						THEN
-							cwms_err.raise ('INVALID_ITEM',
-												 TRIM (p_unit_id),
-												 'unit id. Note units are case senstive.'
-												);
-					END;
+					cwms_err.raise ('INVALID_ITEM',
+										 TRIM (p_unit_id),
+										 'unit id. Note units are case senstive.'
+										);
 				WHEN TOO_MANY_ROWS
 				THEN
 					cwms_err.raise (
@@ -2063,8 +2065,9 @@ AS
 			BEGIN
 				SELECT	unit_code
 				  INTO	l_unit_code
-				  FROM	cwms_unit
+				  FROM	av_unit
 				 WHERE	unit_id = TRIM (p_unit_id)
+							AND db_office_code IN (l_db_office_code, 53)
 							AND abstract_param_code =
 									(SELECT	 abstract_param_code
 										FROM	 cwms_abstract_parameter
@@ -2073,32 +2076,23 @@ AS
 			EXCEPTION
 				WHEN NO_DATA_FOUND
 				THEN
-					BEGIN
-						SELECT	unit_code
-						  INTO	l_unit_code
-						  FROM	at_unit_alias
-						 WHERE	alias_id = TRIM (p_unit_id);
-					EXCEPTION
-						WHEN NO_DATA_FOUND
-						THEN
-							cwms_err.raise ('INVALID_ITEM',
-												 TRIM (p_unit_id),
-												 'unit id. Note units are case senstive.'
-												);
-					END;
+					cwms_err.raise ('INVALID_ITEM',
+										 TRIM (p_unit_id),
+										 'unit id. Note units are case senstive.'
+										);
 			END;
 		END IF;
 
 		RETURN l_unit_code;
 	END;
 
-	FUNCTION get_loc_group_code (p_loc_category_id IN VARCHAR2,
-										  p_loc_group_id IN VARCHAR2,
-										  p_db_office_code IN NUMBER
+	FUNCTION get_loc_group_code (p_loc_category_id	 IN VARCHAR2,
+										  p_loc_group_id		 IN VARCHAR2,
+										  p_db_office_code	 IN NUMBER
 										 )
 		RETURN NUMBER
 	IS
-		l_loc_group_code	 NUMBER;
+		l_loc_group_code					NUMBER;
 	BEGIN
 		IF p_db_office_code IS NULL
 		THEN
@@ -2137,16 +2131,16 @@ AS
 		THEN
 			cwms_err.raise (
 				'ERROR',
-				'The loo_category_id and loc_group_id is not a valid combination'
+				'The loc_category_id and loc_group_id is not a valid combination'
 			);
 		END IF;
 
 		RETURN l_loc_group_code;
 	END get_loc_group_code;
 
-	FUNCTION get_loc_group_code (p_loc_category_id IN VARCHAR2,
-										  p_loc_group_id IN VARCHAR2,
-										  p_db_office_id IN VARCHAR2
+	FUNCTION get_loc_group_code (p_loc_category_id	 IN VARCHAR2,
+										  p_loc_group_id		 IN VARCHAR2,
+										  p_db_office_id		 IN VARCHAR2
 										 )
 		RETURN NUMBER
 	IS
@@ -2161,7 +2155,7 @@ AS
 	END get_loc_group_code;
 
 	--------------------------------------------------------------------------------
-	-- get_user_id uses either sys_context or the apex authenticated user id.	  -
+	-- get_user_id uses either sys_context or the apex authenticated user id. -
 	--
 	-- The "v" function is installed with apex - so apex needs to be installed     -
 	-- for this package to compile.
@@ -2169,7 +2163,7 @@ AS
 	FUNCTION get_user_id
 		RETURN VARCHAR2
 	IS
-		l_user_id	VARCHAR2 (31);
+		l_user_id							VARCHAR2 (31);
 	BEGIN
 		IF v ('APP_USER') != 'APEX_PUBLIC_USER' AND v ('APP_USER') IS NOT NULL
 		THEN
@@ -2184,10 +2178,10 @@ AS
 	FUNCTION get_interval_string (p_interval IN NUMBER)
 		RETURN VARCHAR2
 	IS
-	-- 	 public static final String YEAR_TIME_INTERVAL	= "yr";
+	--   public static final String YEAR_TIME_INTERVAL  = "yr";
 	--   public static final String MONTH_TIME_INTERVAL = "mo";
 	--   public static final String WEEK_TIME_INTERVAL  = "wk";
-	--   public static final String DAY_TIME_INTERVAL	= "dy";
+	--   public static final String DAY_TIME_INTERVAL = "dy";
 	--   public static final String HOUR_TIME_INTERVAL  = "hr";
 	--   public static final String MINUTE_TIME_INTERVAL = "mi";
 	BEGIN
@@ -2195,13 +2189,13 @@ AS
 	END;
 
 	----------------------------------------------------------------------------
-	FUNCTION get_default_units (p_parameter_id IN VARCHAR2,
-										 p_unit_system  IN VARCHAR2 DEFAULT 'SI'
+	FUNCTION get_default_units (p_parameter_id	IN VARCHAR2,
+										 p_unit_system 	IN VARCHAR2 DEFAULT 'SI'
 										)
 		RETURN VARCHAR2
 	AS
-		l_default_units	  VARCHAR2 (16);
-		l_base_param_code   NUMBER;
+		l_default_units					VARCHAR2 (16);
+		l_base_param_code 				NUMBER;
 	BEGIN
 		l_base_param_code := cwms_util.get_base_param_code (p_parameter_id);
 

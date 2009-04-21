@@ -432,9 +432,10 @@ AS
 		RETURN cat_unit_tab_t
 		PIPELINED;
 
-	FUNCTION get_unit_code (p_unit_id		IN VARCHAR2,
-									p_abstract_param_id IN VARCHAR2 DEFAULT NULL
-								  )
+    FUNCTION get_unit_code (p_unit_id                 IN VARCHAR2,
+                                    p_abstract_param_id     IN VARCHAR2 DEFAULT NULL ,
+                                    p_db_office_id          IN VARCHAR2 DEFAULT NULL
+                                  )
 		RETURN NUMBER;
 
 	FUNCTION get_loc_group_code (p_loc_category_id IN VARCHAR2,
