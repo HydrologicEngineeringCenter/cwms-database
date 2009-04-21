@@ -903,7 +903,7 @@ begin
                         select :reg_start + (level-1) * :interval date_time
                           from dual
                          where :reg_start is not null
-                    connect by level <= round(:reg_end - :reg_start) / :interval + 1)
+                    connect by level <= round((:reg_end - :reg_start) / :interval + 1)
                         ) t
                         on v.date_time = t.date_time
                         order by t.date_time asc';
