@@ -971,10 +971,10 @@ end get_tsid_time_zone;
    IS
       l_ts_code number;
    BEGIN
-   create_ts_code (l_ts_code,
-                   p_cwms_ts_id,
-                   p_utc_offset,
-                   p_office_id
+   create_ts_code (p_ts_code => l_ts_code,
+                   p_cwms_ts_id => p_cwms_ts_id,
+                   p_utc_offset => p_utc_offset,
+                   p_office_id => p_office_id
                   );
    END create_ts;
 --
@@ -995,15 +995,16 @@ end get_tsid_time_zone;
    IS
       l_ts_code   NUMBER;
    BEGIN
-      create_ts_code (l_ts_code,
-                      p_cwms_ts_id,
-                      p_utc_offset,
-                      p_interval_forward,
-                      p_interval_backward,
-                      p_versioned,
-                      p_active_flag,
-                      p_office_id
+      create_ts_code (p_ts_code           => l_ts_code,
+                      p_cwms_ts_id        => p_cwms_ts_id,
+                      p_utc_offset        => p_utc_offset,
+                      p_interval_forward  => p_interval_forward,
+                      p_interval_backward => p_interval_backward,
+                      p_versioned         => p_versioned,
+                      p_active_flag       => p_active_flag,
+                      p_office_id         => p_office_id
                      );
+                                    
    END create_ts;
     --
     --*******************************************************************   --
@@ -1023,16 +1024,19 @@ end get_tsid_time_zone;
    IS
       l_ts_code   NUMBER;
    BEGIN
-      create_ts_code (l_ts_code,
-                      p_cwms_ts_id,
-                      p_utc_offset,
-                      p_interval_forward,
-                      p_interval_backward,
-                      p_versioned,
-                      p_active_flag,
-                      p_time_zone_name,
-                      p_office_id
-                     );
+
+        -- 	  create_ts_code (p_ts_code			  => l_ts_code,
+        -- 							p_cwms_ts_id		  => p_cwms_ts_id,
+        -- 							p_utc_offset		  => p_utc_offset,
+        -- 							p_interval_forward  => p_interval_forward,
+        -- 							p_interval_backward => p_interval_backward,
+        -- 							p_versioned 		  => p_versioned,
+        -- 							p_active_flag		  => p_active_flag,
+        -- 							p_time_zone_name,
+        -- 							p_office_id 		  => p_office_id
+        -- 						  );
+        null;
+        cwms_err.RAISE ('ERROR', 'create_ts_tz is not compelete - see Gemini Issue: CWDB-1654');
     END create_ts_tz;
 
     --
@@ -1071,7 +1075,6 @@ IS
    l_duration_code         NUMBER;
    l_version               VARCHAR2 (50);
    l_office_code           NUMBER;
-   l_db_office_code        NUMBER;
    l_location_code         NUMBER;
    l_ts_code_nv            NUMBER;
    l_ret                   NUMBER;
