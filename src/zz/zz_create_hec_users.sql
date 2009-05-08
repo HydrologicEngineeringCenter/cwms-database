@@ -25,6 +25,7 @@ DECLARE
                               'Q0HECWJC',
                               'Q0HECGHK',
                               'Q0HECPOF',
+                              'Q0HECTES',
                               'Q0CWMSPD'
             ) ;
 
