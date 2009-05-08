@@ -1895,31 +1895,37 @@ AS
 	FUNCTION TO_TIMESTAMP (p_millis IN NUMBER)
 		RETURN timestamp
 	IS
-		l_millis 							NUMBER := p_millis;
-		l_day 								NUMBER;
-		l_hour								NUMBER;
-		l_min 								NUMBER;
-		l_sec 								NUMBER;
+		l_millis	NUMBER := abs(p_millis);
+		l_day		NUMBER;
+		l_hour	  NUMBER;
+		l_min		NUMBER;
+		l_sec		NUMBER;
+		l_negative BOOLEAN := p_millis < 0;
+		l_interval interval day (5) to second (3);
 	BEGIN
-		l_day := TRUNC (l_millis / 86400000);
-		l_millis := l_millis - (l_day * 86400000);
-		l_hour := TRUNC (l_millis / 3600000);
-		l_millis := l_millis - (l_hour * 3600000);
-		l_min := TRUNC (l_millis / 60000);
-		l_millis := l_millis - (l_min * 60000);
-		l_sec := TRUNC (l_millis / 1000);
-		l_millis := l_millis - (l_sec * 1000);
-		RETURN epoch
-				 + TO_DSINTERVAL(   ''
-									  || l_day
-									  || ' '
-									  || TO_CHAR (l_hour, '00')
-									  || ':'
-									  || TO_CHAR (l_min, '00')
-									  || ':'
-									  || TO_CHAR (l_sec, '00')
-									  || '.'
-									  || TO_CHAR (l_millis, '000'));
+		l_day			:= TRUNC (l_millis / 86400000);
+		l_millis		:= l_millis - (l_day * 86400000);
+		l_hour		:= TRUNC (l_millis / 3600000);
+		l_millis		:= l_millis - (l_hour * 3600000);
+		l_min			:= TRUNC (l_millis / 60000);
+		l_millis		:= l_millis - (l_min * 60000);
+		l_sec			:= TRUNC (l_millis / 1000);
+		l_millis		:= l_millis - (l_sec * 1000);
+		l_interval	:= TO_DSINTERVAL(	''
+			|| l_day
+			|| ' '
+			|| TO_CHAR (l_hour, '00')
+			|| ':'
+			|| TO_CHAR (l_min, '00')
+			|| ':'
+			|| TO_CHAR (l_sec, '00')
+			|| '.'
+			|| TO_CHAR (l_millis, '000'));
+		IF l_negative THEN
+			return epoch - l_interval;
+		ELSE
+			return epoch + l_interval;
+		END IF;			
 	END TO_TIMESTAMP;
 
 	--------------------------------------------------------------------
