@@ -486,13 +486,20 @@ ALTER TABLE at_loc_category ADD (
                ))
 /
 SET DEFINE OFF;
-INSERT INTO at_loc_category
-            (loc_category_code, loc_category_id, db_office_code,
-             loc_category_desc
-            )
-     VALUES (0, 'Default', 53,
-             'Default'
-            );
+
+INSERT 
+  INTO at_loc_category 
+VALUES (/* loc_category_code */ 0,
+        /* loc_category_id   */ 'Default',
+        /* db_office_code    */ 53,
+        /* loc_category_desc */ 'Default');
+
+INSERT 
+  INTO at_loc_category 
+VALUES (/* loc_category_code */ 1,                                      
+        /* loc_category_id   */ 'Agency Aliases',                       
+        /* db_office_code    */ 53,                                     
+        /* loc_category_desc */ 'Location aliases for other agencies'); 
 
 --------
 --------
@@ -586,14 +593,99 @@ ALTER TABLE at_loc_group ADD (
  REFERENCES at_loc_category (loc_category_code))
 /
 SET DEFINE OFF;
-INSERT INTO at_loc_group
-            (loc_group_code, loc_category_code, loc_group_id, loc_group_desc,
-             db_office_code
-            )
-     VALUES (0, 0, 'Default', 'All Locations',
-             53
-            );
+
+INSERT 
+  INTO at_loc_group
+VALUES (/* loc_group_code    */ 0, 
+        /* loc_category_code */ 0, 
+        /* loc_group_id      */ 'Default', 
+        /* loc_group_desc    */ 'All Locations',
+        /* db_office_code    */ 53);
 COMMIT ;
+
+INSERT 
+  INTO at_loc_group
+VALUES (/* loc_group_code    */ 1, 
+        /* loc_category_code */ 1, 
+        /* loc_group_id      */ 'USGS Station Name', 
+        /* loc_group_desc    */ 'US Geological Survey Station Name',
+        /* db_office_code    */ 53);
+COMMIT ;
+
+INSERT 
+  INTO at_loc_group
+VALUES (/* loc_group_code    */ 2, 
+        /* loc_category_code */ 1, 
+        /* loc_group_id      */ 'USGS Station Number', 
+        /* loc_group_desc    */ 'US Geological Survey Station Number',
+        /* db_office_code    */ 53);
+COMMIT ;
+
+INSERT 
+  INTO at_loc_group
+VALUES (/* loc_group_code    */ 3, 
+        /* loc_category_code */ 1, 
+        /* loc_group_id      */ 'NWS Handbook 5 ID', 
+        /* loc_group_desc    */ 'National Weather Service Handbook 5 ID',
+        /* db_office_code    */ 53);
+COMMIT ;
+
+INSERT 
+  INTO at_loc_group
+VALUES (/* loc_group_code    */ 4, 
+        /* loc_category_code */ 1, 
+        /* loc_group_id      */ 'DCP Platform ID', 
+        /* loc_group_desc    */ 'Data Collection Platform ID',
+        /* db_office_code    */ 53);
+COMMIT ;
+
+INSERT 
+  INTO at_loc_group
+VALUES (/* loc_group_code    */ 5, 
+        /* loc_category_code */ 1, 
+        /* loc_group_id      */ 'SHEF Location ID', 
+        /* loc_group_desc    */ 'Standard Hydrometeorological Exchange Format Location ID',
+        /* db_office_code    */ 53);
+COMMIT ;
+
+INSERT 
+  INTO at_loc_group
+VALUES (/* loc_group_code    */ 6, 
+        /* loc_category_code */ 1, 
+        /* loc_group_id      */ 'CBT Station ID', 
+        /* loc_group_desc    */ 'Columbia Basin Teletype Station ID',
+        /* db_office_code    */ 53);
+COMMIT ;
+
+INSERT 
+  INTO at_loc_group
+VALUES (/* loc_group_code    */ 7, 
+        /* loc_category_code */ 1, 
+        /* loc_group_id      */ 'USBR Station ID', 
+        /* loc_group_desc    */ 'US Bureau of Reclamation Station ID',
+        /* db_office_code    */ 53);
+COMMIT ;
+
+INSERT 
+  INTO at_loc_group
+VALUES (/* loc_group_code    */ 8, 
+        /* loc_category_code */ 1, 
+        /* loc_group_id      */ 'TVA Station ID', 
+        /* loc_group_desc    */ 'Tennessee Valley Authority Station ID',
+        /* db_office_code    */ 53);
+COMMIT ;
+
+INSERT 
+  INTO at_loc_group
+VALUES (/* loc_group_code    */ 9, 
+        /* loc_category_code */ 1, 
+        /* loc_group_id      */ 'NRCS Station ID', 
+        /* loc_group_desc    */ 'Natural Resources Conservation Service Station ID',
+        /* db_office_code    */ 53);
+COMMIT ;
+
+
+
 -----
 -----
 
