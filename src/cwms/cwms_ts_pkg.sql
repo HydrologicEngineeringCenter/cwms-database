@@ -380,13 +380,30 @@ AS
    --*******************************************************************   --
    --*******************************************************************   --
    --
-   -- STORE_TS -
+   -- STORE_TS - This version is for Python/CxOracle
    --
    PROCEDURE store_ts (p_cwms_ts_id IN varchar2,
                        p_units IN varchar2,
                        p_times IN number_array,
                        p_values IN double_array,
                        p_qualities IN number_array,
+                       p_store_rule IN varchar2 DEFAULT NULL ,
+                       p_override_prot IN varchar2 DEFAULT 'F' ,
+                       p_version_date IN date DEFAULT cwms_util.non_versioned ,
+                       p_office_id IN varchar2 DEFAULT NULL
+   );
+
+   --
+   --*******************************************************************   --
+   --*******************************************************************   --
+   --
+   -- STORE_TS - This version is for Java/Jython bypassing TIMESTAMPTZ type
+   --
+   PROCEDURE store_ts (p_cwms_ts_id IN varchar2,
+                       p_units IN varchar2,
+                       p_times IN number_tab_t,
+                       p_values IN number_tab_t,
+                       p_qualities IN number_tab_t,
                        p_store_rule IN varchar2 DEFAULT NULL ,
                        p_override_prot IN varchar2 DEFAULT 'F' ,
                        p_version_date IN date DEFAULT cwms_util.non_versioned ,

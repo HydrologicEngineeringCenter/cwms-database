@@ -2399,9 +2399,13 @@ end retrieve_ts_multi;
                INTO :l_tz_name
                FROM TABLE (:p_timeseries_data)', '$TZ', l_tz_name) INTO l_utc_offset using l_interval_value, p_timeseries_data;
       EXCEPTION
+        WHEN NO_DATA_FOUND
+          THEN 
+	       dbms_application_info.set_action('Returning due to no data provided');
+          RETURN; -- Have already created TS_CODE if it didn't exist
         WHEN TOO_MANY_ROWS 
-        THEN
-        raise_application_error(-20110, 'ERROR: Incoming data set appears to contain irregular data. Unable to store data for '||p_cwms_ts_id, true);
+          THEN
+          raise_application_error(-20110, 'ERROR: Incoming data set appears to contain irregular data. Unable to store data for '||p_cwms_ts_id, true);
       END;
       
       IF l_local_tz_code IS NOT NULL THEN
@@ -3377,7 +3381,7 @@ end retrieve_ts_multi;
 --*******************************************************************   --
 --*******************************************************************   --
 --
--- STORE_TS -
+-- STORE_TS - This version is for Python/CxOracle
 --
    PROCEDURE store_ts (
       p_cwms_ts_id        IN   VARCHAR2,
@@ -3389,6 +3393,49 @@ end retrieve_ts_multi;
       p_override_prot     IN   VARCHAR2 DEFAULT 'F',
       p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,
       p_office_id         IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_timeseries_data tsv_array := tsv_array();
+      i binary_integer;
+   BEGIN
+      if p_values.count != p_times.count then
+         cwms_err.raise('ERROR', 'Inconsistent number of times and values.');
+      end if;
+      if p_qualities.count != p_times.count then
+         cwms_err.raise('ERROR', 'Inconsistent number of times and qualities.');
+      end if;
+      l_timeseries_data.extend(p_times.count);
+      for i in 1..p_times.count loop
+         l_timeseries_data(i) := tsv_type(
+            cwms_util.to_timestamp(p_times(i)),
+            p_values(i),
+            p_qualities(i));
+      end loop;
+      store_ts(
+         p_cwms_ts_id,
+         p_units,
+         l_timeseries_data,
+         p_store_rule,
+         p_override_prot,
+         p_version_date,
+         p_office_id);
+   END store_ts;
+
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- STORE_TS - This version is for Java/Jython bypassing TIMESTAMPTZ type
+--
+   PROCEDURE store_ts (p_cwms_ts_id IN varchar2,
+                       p_units IN varchar2,
+                       p_times IN number_tab_t,
+                       p_values IN number_tab_t,
+                       p_qualities IN number_tab_t,
+                       p_store_rule IN varchar2 DEFAULT NULL ,
+                       p_override_prot IN varchar2 DEFAULT 'F' ,
+                       p_version_date IN date DEFAULT cwms_util.non_versioned ,
+                       p_office_id IN varchar2 DEFAULT NULL
    )
    IS
       l_timeseries_data tsv_array := tsv_array();

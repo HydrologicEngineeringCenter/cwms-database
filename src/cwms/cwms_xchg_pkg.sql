@@ -298,7 +298,3 @@ end cwms_xchg;
 /
 commit;
 show errors;
-
-create or replace type number_tab_t is table of number;
-/
-commit;

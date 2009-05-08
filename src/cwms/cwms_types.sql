@@ -568,4 +568,11 @@ CREATE OR REPLACE TYPE group_cat_t AS OBJECT (
 CREATE OR REPLACE TYPE group_cat_tab_t IS TABLE OF group_cat_t
 /
 
+create or replace type number_tab_t is table of number;
+/
+
+create or replace type double_tab_t is table of binary_double;
+/
+
 COMMIT ;
+
