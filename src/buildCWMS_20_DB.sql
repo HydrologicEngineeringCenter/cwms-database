@@ -65,6 +65,14 @@ alter session set current_schema = cwms_20;
 @@cwms/at_schema_sec
 @@cwms/at_schema_apex_debug
 
+--
+--  Load data into cwms tables...
+--
+@@data/cwms_shef_pe_codes
+--
+--
+--
+
 @@py_SecUserOffice
 --
 -- CWMS API
