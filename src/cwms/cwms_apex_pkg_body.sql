@@ -1,4 +1,4 @@
-/* Formatted on 4/7/2009 3:21:15 PM (QP5 v5.115.810.9015) */
+/* Formatted on 4/21/2009 11:15:31 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_apex
 AS
 	TYPE varchar2_t
@@ -262,8 +262,8 @@ AS
 		--   FROM at_shef_decodes_gtemp;
 
 		--   cwms_apex.aa1('>>check_parsed_crit_file<< at_shef_decodes_gtemp has '
-		-- 	|| l_count
-		-- 	|| ' rows.');
+		--   || l_count
+		--   || ' rows.');
 		cwms_apex.aa1 ('>>check_parsed_crit_file<< ending');
 	END;
 
@@ -750,7 +750,7 @@ AS
 	--  example:..
 	--   desired result is either:
 	--   if p_expr_value is equal to the p_expr_value_test  -
-	--   then the string:		-
+	--   then the string:	  -
 	--   ' 1 = 1 '   is returned                                       -
 	--   else the string returned is...
 	--   ' p_column_id = p_expr_string '                            -
@@ -1801,7 +1801,7 @@ AS
 		l_blob								BLOB;
 		l_records							varchar2_t;
 		l_record 							wwv_flow_global.vc_arr2;
-		l_idx 								NUMBER := 0;
+		l_idx 								NUMBER := 1;
 		l_datatypes 						wwv_flow_global.vc_arr2;
 		l_headings							VARCHAR2 (4000);
 		l_columns							VARCHAR2 (4000);
@@ -1947,7 +1947,7 @@ AS
 
 		aa1 ('>>parse_crit_file<< entering grand loop');
 
-		FOR i IN l_first_record .. p_number_of_records
+		FOR i IN 2 .. p_number_of_records
 		LOOP
 			aa1 ('>>parse_crit_file<< l_records: ' || l_records (i));
 			l_error_message := NULL;
@@ -2144,25 +2144,23 @@ AS
 							|| ' or '
 							|| l_unit_id_si
 							|| '.';
-                    elsif l_unit_code not in (l_unit_code_en, l_unit_code_si)
-                    then
-                    l_error_message :=
-                                l_error_message
-                            || ' **WARNING: The unit you specified: '
-                            || l_record (12)
-                            || ' is not a default unit for this SHEF PE Code, namely: '
-                            || l_unit_id_en
-                            || ' or '
-                            || l_unit_id_si
-                            || '. Please be sure your data is being recieved with this non-standard unit.';
+					ELSIF l_unit_code NOT IN (l_unit_code_en, l_unit_code_si)
+					THEN
+						l_error_message :=
+								l_error_message
+							|| ' **WARNING: The unit you specified: '
+							|| l_record (12)
+							|| ' is not a default unit for this SHEF PE Code, namely: '
+							|| l_unit_id_en
+							|| ' or '
+							|| l_unit_id_si
+							|| '. Please be sure your data is being recieved with this non-standard unit.';
 					END IF;
-                    
-                    
 				EXCEPTION
 					WHEN NO_DATA_FOUND
 					THEN
 						l_error_message :=
-							l_error_message
+								l_error_message
 							|| ' **ERROR: The SHEF PE Code:
 		'
 							|| l_record (4)
@@ -2224,7 +2222,7 @@ AS
 															  version,
 															  cwms_ts_id,
 															  cwms_ts_code,
-															  unit_system,
+															  --unit_system,
 															  units,
 															  unit_code,
 															  shef_tz,
@@ -2241,15 +2239,12 @@ AS
 										l_record (2),							-- shef_pe_code
 										l_record (3),						  -- shef_tse_code
 										l_record (4),					  -- shef_dur_numeric
-										UPPER(l_record (1)
-												|| '                                .
-		'
+										UPPER(	l_record (1)
+												|| '.'
 												|| l_record (2)
-												|| '                                .
-		'
+												|| '.'
 												|| l_record (3)
-												|| '                                .
-  '
+												|| '.'
 												|| l_record (4)), 				-- shef_spec
 										l_record (5),							 -- location_id
 										l_record (6),							-- parameter_id
@@ -2264,14 +2259,14 @@ AS
 										l_cwms_ts_id,							  -- cwms_ts_id
 										l_cwms_ts_code,						-- cwms_ts_code
 										l_record (11), 						 -- unit_system
-										l_record (12), 							  -- unit_id
 										l_unit_code,								-- unit_code
+										l_record (12), 							  -- unit_id
 										l_record (13), 							  -- shef_tz
 										l_record (14), 				  -- shef_dl_time T/F
 										l_record (15), 			  -- interval_utc_offset
 										l_record (16), 				  -- interval_forward
 										l_record (17), 				 -- interval_backward
-										l_record (18), 						 -- active_flag
+--										l_record (18), 						 -- active_flag
 										l_records (l_idx) 				  -- unparsed line
 								  );
 				EXCEPTION
@@ -2294,12 +2289,12 @@ AS
 																		 l_error_message
 									  );
 				--   INSERT INTO gt_parse_errors (
-				-- 									  line_number,
-				-- 									  error_msg,
-				-- 									  unparsed_line
-				-- 		 )
+				-- 									 line_number,
+				-- 									 error_msg,
+				-- 									 unparsed_line
+				-- 		)
 				--   VALUES   (l_idx, l_error_message, l_records (l_idx)
-				-- 		 );
+				-- 		);
 				END;
 			END IF;
 		END LOOP;
