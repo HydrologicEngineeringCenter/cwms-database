@@ -19,7 +19,9 @@ DECLARE
    total_count        PLS_INTEGER := 0;
    pass_count         PLS_INTEGER := 0;
    type_names         id_array_t
-      := id_array_t ('tr_template_set_type',
+      := id_array_t ('shef_spec_array',
+                     'shef_spec_type',
+                     'tr_template_set_type',
                      'tr_template_set_array',
                      'tsv_type',
                      'tsv_array',
@@ -135,6 +137,29 @@ BEGIN
                          || ' types dropped'
                         );
 END;
+/
+
+CREATE OR REPLACE
+TYPE SHEF_SPEC_TYPE
+AS
+   OBJECT (
+      cwms_ts_id VARCHAR2 (132),
+      shef_location_id VARCHAR2 (8),
+      shef_pe_code VARCHAR2 (2),
+      shef_tse_code VARCHAR2 (3),
+      shef_duration VARCHAR2 (4),
+      shef_incoming_units VARCHAR2 (16),
+      shef_time_zone_id VARCHAR2 (3),
+      daylight_savings VARCHAR2 (1),               -- T or F psuedo boolean.
+      interval_utc_offset NUMBER,                             -- in minutes.
+      snap_forward_minutes NUMBER,
+      snap_backward_minutes NUMBER,
+      ts_active_flag VARCHAR2 (1)                  -- T or F psuedo boolean.
+   ); 
+/
+
+CREATE OR REPLACE
+TYPE  SHEF_SPEC_ARRAY IS TABLE OF shef_spec_type; 
 /
 
 CREATE OR REPLACE TYPE tr_template_set_type AS OBJECT (
