@@ -40,6 +40,94 @@ BEGIN
    END LOOP;
 END;
 /
+--------------------------------------------------------------------------------
+
+CREATE OR REPLACE FORCE VIEW av_shef_decode_spec
+(
+    ts_code,
+    cwms_ts_id,
+    data_stream_id,
+    db_office_id,
+    loc_group_id,
+    loc_category_id,
+    loc_alias_id,
+    shef_loc_id,
+    shef_pe_code,
+    shef_tse_code,
+    shef_duration_code,
+    shef_duration_numeric,
+    shef_time_zone_id,
+    dl_time,
+    unit_id,
+    unit_system,
+    interval_utc_offset,
+    interval_forward,
+    interval_backward,
+    active_flag,
+    shef_spec,
+    location_id,
+    parameter_id,
+    parameter_type_id,
+    interval_id,
+    duration_id,
+    version_id
+)
+AS
+    SELECT    a.ts_code, b.cwms_ts_id, c.data_stream_id, b.db_office_id,
+                e.loc_group_id, f.loc_category_id,
+                CASE
+                    WHEN d.loc_alias_id IS NULL THEN b.location_id
+                    ELSE d.loc_alias_id
+                END
+                    loc_alias_id, a.shef_loc_id, a.shef_pe_code, a.shef_tse_code,
+                a.shef_duration_code, a.shef_duration_numeric,
+                g.shef_time_zone_id, a.dl_time, i.unit_id, i.unit_system,
+                CASE
+                    WHEN h.interval_utc_offset = -2147483648 THEN NULL
+                    WHEN h.interval_utc_offset = 2147483647 THEN NULL
+                    ELSE TO_CHAR (h.interval_utc_offset, '9999999999')
+                END
+                    interval_utc_offset, h.interval_forward, h.interval_backward,
+                h.active_flag,
+                    loc_alias_id
+                || '.'
+                || shef_pe_code
+                || '.'
+                || shef_tse_code
+                || '.'
+                || shef_duration_numeric
+                    shef_spec, b.location_id, b.parameter_id, b.parameter_type_id,
+                b.interval_id, b.duration_id, b.version_id
+      FROM    at_shef_decode a,
+                mv_cwms_ts_id b,
+                at_data_stream_id c,
+                at_loc_group_assignment d,
+                at_loc_group e,
+                at_loc_category f,
+                cwms_shef_time_zone g,
+                at_cwms_ts_spec h,
+                cwms_unit i
+     WHERE         a.ts_code = b.ts_code
+                AND a.data_stream_code = c.data_stream_code
+                AND a.loc_group_code = d.loc_group_code
+                AND a.location_code = d.location_code
+                AND d.loc_group_code = e.loc_group_code
+                AND e.loc_category_code = f.loc_category_code
+                AND a.shef_time_zone_code = g.shef_time_zone_code
+                AND a.ts_code = h.ts_code
+                AND a.shef_unit_code = i.unit_code
+/
+
+
+DROP PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC
+/
+
+CREATE PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC FOR AV_SHEF_DECODE_SPEC
+/
+
+
+GRANT SELECT ON AV_SHEF_DECODE_SPEC TO CWMS_USER
+/
 
 --------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW av_active_flag (data_stream_id,
@@ -425,64 +513,6 @@ AS
       AND atp.parameter_code = atsi.parameter_code
       AND atsi.parameter_type_code = cpt.parameter_type_code(+)
       AND atsi.duration_code = cd.duration_code(+)
-/
---------------------------------------------------------------------------------
-CREATE OR REPLACE VIEW av_shef_decode_spec (ts_code,
-                                            cwms_ts_id,
-                                            data_stream_id,
-                                            db_office_id,
-                                            loc_group_id,
-                                            loc_category_id,
-                                            loc_alias_id,
-                                            shef_pe_code,
-                                            shef_tse_code,
-                                            shef_duration_code,
-                                            shef_time_zone_id,
-                                            dl_time,
-                                            unit_id,
-                                            interval_utc_offset,
-                                            interval_forward,
-                                            interval_backward,
-                                            active_flag
-                                           )
-AS
-   SELECT a.ts_code, b.cwms_ts_id, c.data_stream_id, b.db_office_id,
-          e.loc_group_id, f.loc_category_id,
-          CASE
-             WHEN d.loc_alias_id IS NULL
-                THEN b.location_id
-             ELSE d.loc_alias_id
-          END loc_alias_id,
-          a.shef_pe_code, a.shef_tse_code, a.shef_duration_code,
-          g.shef_time_zone_id, a.dl_time, i.unit_id,
-          CASE
-             WHEN h.interval_utc_offset = -2147483648
-                THEN 'N/A'
-             WHEN h.interval_utc_offset = 2147483647
-                THEN 'Undefined'
-             ELSE TO_CHAR (h.interval_utc_offset,
-                           '9999999999'
-                          )
-          END interval_utc_offset,
-          h.interval_forward, h.interval_backward, h.active_flag
-     FROM at_shef_decode a,
-          mv_cwms_ts_id b,
-          at_data_stream_id c,
-          at_loc_group_assignment d,
-          at_loc_group e,
-          at_loc_category f,
-          cwms_shef_time_zone g,
-          at_cwms_ts_spec h,
-          cwms_unit i
-    WHERE a.ts_code = b.ts_code
-      AND a.data_stream_code = c.data_stream_code
-      AND a.loc_group_code = d.loc_group_code
-      AND a.location_code = d.location_code
-      AND d.loc_group_code = e.loc_group_code
-      AND e.loc_category_code = f.loc_category_code
-      AND a.shef_time_zone_code = g.shef_time_zone_code
-      AND a.ts_code = h.ts_code
-      AND a.shef_unit_code = i.unit_code
 /
 --------------------------------------------------------------------------------
 CREATE OR REPLACE FORCE VIEW av_cwms_ts_id (db_office_id,
