@@ -214,8 +214,11 @@ AS
                 AND a.shef_unit_code = i.unit_code
 /
 
-
-DROP PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC
+begin
+	execute immediate 'DROP PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC';
+exception
+	when others then null;
+end;		
 /
 
 CREATE PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC FOR AV_SHEF_DECODE_SPEC
