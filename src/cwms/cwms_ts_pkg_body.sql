@@ -2578,8 +2578,8 @@ end retrieve_ts_multi;
                                and p.unit_code      =  c.to_unit_code
                                and c.from_unit_code   =  u.unit_code
                                and u.UNIT_ID        =  :p_units
-                               and date_time        >= :start_date 
-                        and date_time        <  :end_date 
+                               and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
+                               and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'') 
                         ) t2
                         on (    t1.ts_code      = :l_ts_code 
                       and t1.date_time    = t2.date_time 
@@ -2686,8 +2686,8 @@ end retrieve_ts_multi;
                                 and p.unit_code      =  c.to_unit_code 
                                 and c.from_unit_code   =  u.unit_code 
                                 and u.UNIT_ID        =  :p_units 
-                                and date_time        >= :start_date 
-                        and date_time        <  :end_date 
+                                and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
+                                and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'') 
                         ) t2
                         on (    t1.ts_code      = :l_ts_code 
                       and t1.date_time    = t2.date_time 
@@ -2787,8 +2787,8 @@ end retrieve_ts_multi;
                                 and p.unit_code      =  c.to_unit_code
                                 and c.from_unit_code   =  u.unit_code
                                 and u.UNIT_ID        =  :p_units
-                                and date_time        >= :start_date 
-                        and date_time        <  :end_date 
+                                and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
+                                and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'') 
                          ) t2
                          on (    t1.ts_code      = :l_ts_code 
                        and t1.date_time    = t2.date_time 
@@ -2869,8 +2869,8 @@ end retrieve_ts_multi;
                                 and p.unit_code      =  c.to_unit_code
                                 and c.from_unit_code   =  u.unit_code
                                 and u.UNIT_ID        =  :p_units
-                                and date_time        >= :start_date 
-                        and date_time        <  :end_date
+                                and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
+                                and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')
                          ) t2
                          on (    t1.ts_code      = :l_ts_code 
                        and t1.date_time    = t2.date_time 
@@ -2962,8 +2962,8 @@ end retrieve_ts_multi;
                                 and p.unit_code      =  c.to_unit_code
                                 and c.from_unit_code   =  u.unit_code
                                 and u.UNIT_ID        =  :p_units
-                                and date_time        >= :start_date 
-                          and date_time        <  :end_date   
+                                and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
+                                and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')   
                       ) t2
                          on (    t1.ts_code      = :l_ts_code 
                        and t1.date_time    = t2.date_time 
@@ -3071,8 +3071,8 @@ end retrieve_ts_multi;
                               and p.unit_code      =  c.to_unit_code
                               and c.from_unit_code   =  u.unit_code
                               and u.UNIT_ID        =  :p_units
-                              and date_time        >= :start_date 
-                       and date_time        <  :end_date     
+                              and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
+                              and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')     
                     ) t2
                        on ( t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
                      when matched then 
@@ -3205,12 +3205,12 @@ end retrieve_ts_multi;
                           cwms_unit u
                             where s.ts_code        =  :l_ts_code
                               and s.parameter_code =  ap.parameter_code
-                         and ap.base_parameter_code = p.base_parameter_code
+                              and ap.base_parameter_code = p.base_parameter_code
                               and p.unit_code      =  c.to_unit_code
                               and c.from_unit_code   =  u.unit_code
                               and u.UNIT_ID        =  :p_units
-                              and date_time        >= :start_date 
-                       and date_time        <  :end_date   
+                              and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
+                              and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')   
                     ) t2
                        on (    t1.ts_code      = :l_ts_code 
                       and t1.date_time    =  t2.date_time 
@@ -3329,8 +3329,8 @@ end retrieve_ts_multi;
                               and p.unit_code      =  c.to_unit_code
                               and c.from_unit_code   =  u.unit_code
                               and u.UNIT_ID        =  :p_units
-                              and date_time        >= :start_date 
-                       and date_time        <  :end_date
+                              and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
+                              and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'') 
                     ) t2
                        on (    t1.ts_code      = :l_ts_code 
                       and t1.date_time    = t2.date_time 
@@ -3407,7 +3407,7 @@ end retrieve_ts_multi;
       l_timeseries_data.extend(p_times.count);
       for i in 1..p_times.count loop
          l_timeseries_data(i) := tsv_type(
-            cwms_util.to_timestamp(p_times(i)),
+            from_tz(cwms_util.to_timestamp(p_times(i)), 'UTC'),
             p_values(i),
             p_qualities(i));
       end loop;
@@ -3427,15 +3427,16 @@ end retrieve_ts_multi;
 --
 -- STORE_TS - This version is for Java/Jython bypassing TIMESTAMPTZ type
 --
-   PROCEDURE store_ts (p_cwms_ts_id IN varchar2,
-                       p_units IN varchar2,
-                       p_times IN number_tab_t,
-                       p_values IN number_tab_t,
-                       p_qualities IN number_tab_t,
-                       p_store_rule IN varchar2 DEFAULT NULL ,
-                       p_override_prot IN varchar2 DEFAULT 'F' ,
-                       p_version_date IN date DEFAULT cwms_util.non_versioned ,
-                       p_office_id IN varchar2 DEFAULT NULL
+   PROCEDURE store_ts (
+		p_cwms_ts_id IN varchar2,
+      p_units         IN varchar2,
+      p_times         IN number_tab_t,
+      p_values        IN number_tab_t,
+      p_qualities     IN number_tab_t,
+      p_store_rule    IN varchar2 DEFAULT NULL ,
+      p_override_prot IN varchar2 DEFAULT 'F' ,
+      p_version_date  IN date DEFAULT cwms_util.non_versioned ,
+      p_office_id     IN varchar2 DEFAULT NULL
    )
    IS
       l_timeseries_data tsv_array := tsv_array();
@@ -3450,7 +3451,7 @@ end retrieve_ts_multi;
       l_timeseries_data.extend(p_times.count);
       for i in 1..p_times.count loop
          l_timeseries_data(i) := tsv_type(
-            cwms_util.to_timestamp(p_times(i)),
+            from_tz(cwms_util.to_timestamp(p_times(i)), 'UTC'),
             p_values(i),
             p_qualities(i));
       end loop;
