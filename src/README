@@ -1,0 +1,36 @@
+As the Oracle user:
+
+Ensure your Oracle environment is set (ORACLE_BASE, ORACLE_HOME, ORACLE_SID)
+
+Manually edit the DATAFILE path in cwms_tablespaces.sql to reflect your ORACLE_BASE/ORADATA/INSTANCE path.
+
+Example for Corps install: $ORACLE_BASE/data/$ORACLE_SID
+                           /oraclebase/data/Q0CWMST1
+
+Example for default-ish install: $ORACLE_BASE/oradata/$ORACLE_SID
+                                 /orabase/oradata/Q0CWMST1
+
+Run "sqlplus /nolog" 
+SQL> conn / as sysdba;
+SQL>
+SQL> @cwms_tablespaces.sql
+SQL> exit
+
+Run the "buildSqlScripts.py" script. The schema name is "cwms_20"
+./buildSqlScripts.py cwms_20
+
+Follow the prompts to customize the database. Create a test account when prompted.
+
+Run "sqlplus /nolog"
+SQL> conn / as sysdba;
+SQL>
+SQL> @buildCWMS_20_DB.sql
+
+Follow the prompts:
+Enter ON or OFF for echo         : on
+Enter the database SID           : 
+Enter the password for SYS       : 
+Enter the password for CWMS_20   : 
+Enter the password for s0cwmsdbi : 
+Enter the password for s0hectest : 
+
