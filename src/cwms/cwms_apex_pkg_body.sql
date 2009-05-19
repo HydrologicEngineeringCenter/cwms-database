@@ -2557,3 +2557,4 @@ AS
 	END;
 END cwms_apex;
 /
+show errors;
