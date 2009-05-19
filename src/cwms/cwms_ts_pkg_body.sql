@@ -2197,7 +2197,7 @@ begin
       
       t(i).data.extend(rec%rowcount);
       for j in 1..rec%rowcount loop
-         t(i).data(j) := tsv_type(date_tab(j), val_tab(j), qual_tab(j));
+         t(i).data(j) := tsv_type(from_tz(cast(date_tab(j) as timestamp), 'UTC'), val_tab(j), qual_tab(j));
       end loop;
       
    end loop;
