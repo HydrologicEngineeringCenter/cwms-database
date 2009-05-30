@@ -748,6 +748,11 @@ INSERT INTO cwms_sec_user_groups
             )
      VALUES (6, 'All Users', ' General CWMS Users.'
             );
+INSERT INTO cwms_sec_user_groups
+            (user_group_code, user_group_id, user_group_desc
+            )
+     VALUES (7, 'CWMS User Admins', ' User who administrates CWMS Users.'
+            );
 COMMIT ;
 --
 --=============================================================================
