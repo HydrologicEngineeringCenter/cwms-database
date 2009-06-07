@@ -24,6 +24,7 @@ whenever sqlerror exit sql.sqlcode
 --
 -- create user roles and users
 --
+@@cwms/User-Roles/cwms_user_profile
 @@cwms/User-Roles/cwms_user_roles
 @@cwms/User-Roles/cwms_users
 @@cwms/User-Roles/cwms_dba_user
@@ -93,7 +94,7 @@ set echo off
 --
 -- create public synonyms for CWMS_20 packages and views
 -- grant execute on packages to CWMS_USER role
--- grant select on view to CWMS_DEV role
+-- grant select on view to CWMS_USER role
 --
 -- exclude any package or view named like %_SEC_%
 --
@@ -183,11 +184,11 @@ begin
       execute immediate sql_statement;
    end loop;
    --
-   -- grant select on collected packages to CWMS_DEV role
+   -- grant select on collected packages to CWMS_USER role
    --
    dbms_output.put_line('--');
    for i in 1..view_names.count loop
-      sql_statement := 'GRANT SELECT ON CWMS_20.'||view_names(i)||' TO CWMS_DEV';
+      sql_statement := 'GRANT SELECT ON CWMS_20.'||view_names(i)||' TO CWMS_USER';
       dbms_output.put_line('-- ' || sql_statement);
       execute immediate sql_statement;
    end loop;

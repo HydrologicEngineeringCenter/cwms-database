@@ -521,8 +521,7 @@ AS
       AND asctl.rate_change_disp_interval_code = ci.interval_code(+)
 /
 
-GRANT SELECT ON av_screening_criteria TO cwms_dev
-/
+
 --------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW av_screening_dur_mag (screening_code,
                                              db_office_id,

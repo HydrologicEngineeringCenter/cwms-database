@@ -2,7 +2,7 @@ create user cwms_20
   identified by &cwms_passwd
   default tablespace cwms_20data
   temporary tablespace temp
-  profile default
+  profile cwms_prof
   account unlock;
   
 alter user cwms_20 quota unlimited on cwms_20_tsv;

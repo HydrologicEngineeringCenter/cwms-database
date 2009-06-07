@@ -3511,7 +3511,20 @@ offices = [
     [  51,  'SWT',  'Tulsa District',                               'SWD',    'SWT',  'M5'],
     [  52,  'LCRA', 'Lower Colorado River Authority',               '',       'LCRA', 'Z0'],
     [  53,  'CWMS', 'All CWMS Offices',                             '',       '',     '01'],
-    [  54,  'CRREL', 'Cold Regions Research and Engineering Lab',   '',       'CRREL','U4'],
+    [  54,  'ERD-CRREL', 'Cold Regions Research and Engineering Lab',    'ERD', 'ERD-CRREL', 'U4'],
+    [  55,  'ERD',       'Engineer Research and Development Center',      'HQ', 'ERD',       'U4'],
+    [  56,  'ERD-CHL',   'Coastal and Hydraulics Laboratory',            'ERD', 'ERD-CHL',   'U4'],
+    [  57,  'ERD-CERL',  'Construction Engineering Research Laboratory', 'ERD', 'ERD-CERL',  'U4'],
+    [  58,  'ERD-EL',    'Environmental Laboratory',                     'ERD', 'ERD-EL',    'U4'],
+    [  59,  'ERD-GSL',   'Geotechnical and Structures Laboratory',       'ERD', 'ERD-GSL',   'U4'],
+    [  60,  'ERD-ITL',   'Information Technology Laboratory',            'ERD', 'ERD-ITL',   'U4'],
+    [  61,  'ERD-TEC',   'Topographic Engineering Center',               'ERD', 'ERD-TEC',   'U4'],
+    [  62,  'IWR',      'Institute for Water Resources',            'HQ', 'IWR',      'Q0'],
+    [  63,  'IWR-NDC',  'Navigation Data Center',                  'IWR', 'IWR-NDC',  'Q0'],
+    [  64,  'IWR-HEC',  'Hydrologic Engineering Cennter',          'IWR', 'IWR-HEC',  'Q0'],
+    [  65,  'IWR-WCSC', 'Waterborne Commerce Statistics Center',   'IWR', 'IWR-WCSC', 'Q0'],
+    [  66,  'CPC', 'Central Processing Center',   '', 'CPC', '02'],
+    [  67,  'WPC', 'Western Processing Center',   '', 'WPC', '03'],
 ]
 
 #-----------#
@@ -4973,7 +4986,7 @@ create user %s
    identified by &test_passwd
    default tablespace cwms_20data
    temporary tablespace temp
-   profile default
+   profile cwms_prof
    account unlock;
 
 grant cwms_user to %s;
@@ -5000,7 +5013,7 @@ create user &eroc.cwmsdbi
    identified by &dbi_passwd
    default tablespace users
    temporary tablespace temp
-   profile default
+   profile cwms_prof
    account unlock;
 
 grant create session to &eroc.cwmsdbi;
@@ -5009,7 +5022,7 @@ create user &eroc.cwmspd
    identified by values 'FEDCBA9876543210'
    default tablespace cwms_20data
    temporary tablespace temp
-   profile default
+   profile cwms_prof
    account unlock;
 
 grant cwms_user to &eroc.cwmspd;
