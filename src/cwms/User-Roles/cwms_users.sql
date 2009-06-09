@@ -86,6 +86,7 @@ grant execute on  sys.dbms_aq to cwms_20;
 grant execute on  sys.dbms_aq_bqview to cwms_20;
 grant execute on  sys.dbms_lock to cwms_20;
 grant execute on  sys.dbms_rls to cwms_20;
+grant execute on  utl_recomp to cwms_20;
 grant export full database to cwms_20;
 grant import full database to cwms_20;
 grant insert any table to cwms_20;
