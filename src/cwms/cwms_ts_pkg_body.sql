@@ -2613,7 +2613,7 @@ end retrieve_ts_multi;
    
          MERGE INTO at_tsv t1
             USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-                          (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code)
+                          (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code) quality_code
                      FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
                           at_cwms_ts_spec s,
                           at_parameter ap,
@@ -3224,7 +3224,7 @@ end retrieve_ts_multi;
 
             MERGE INTO at_tsv t1
                USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-                             (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code)
+                             (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code) quality_code
                         FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
                              at_cwms_ts_spec s,
                              at_parameter ap,
@@ -3356,7 +3356,7 @@ end retrieve_ts_multi;
             
             MERGE INTO at_tsv t1
                USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-                             (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code)
+                             (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code) quality_code
                         FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
                              at_cwms_ts_spec s,
                              at_parameter ap,
