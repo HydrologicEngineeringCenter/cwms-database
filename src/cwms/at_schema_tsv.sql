@@ -13,7 +13,7 @@ DECLARE
         VERSION_DATE     DATE                         NOT NULL,
         DATA_ENTRY_DATE  TIMESTAMP(6)                 NOT NULL,
         VALUE            BINARY_DOUBLE,
-        QUALITY_CODE     NUMBER, 
+        QUALITY_CODE     NUMBER(10), 
         CONSTRAINT AT_TSV$name_PK
        PRIMARY KEY
        (TS_CODE, DATE_TIME, VERSION_DATE)
@@ -37,9 +37,15 @@ DECLARE
       
    l_template_2 VARCHAR2(256) := '
     ALTER TABLE AT_TSV$name ADD (
-     CONSTRAINT AT_TSV$name_FK 
+     CONSTRAINT AT_TSV$name_FK1 
     FOREIGN KEY (TS_CODE) 
     REFERENCES AT_CWMS_TS_SPEC (TS_CODE))';
+      
+   l_template_3 VARCHAR2(256) := '
+    ALTER TABLE AT_TSV$name ADD (
+     CONSTRAINT AT_TSV$name_FK2 
+    FOREIGN KEY (QUALITY_CODE) 
+    REFERENCES CWMS_DATA_QUALITY (QUALITY_CODE))';
    
 BEGIN
    l_names.extend(2);
@@ -52,6 +58,7 @@ BEGIN
    FOR i IN 1..l_names.last LOOP
       execute IMMEDIATE REPLACE(l_template_1, '$name', l_names(i));
       execute IMMEDIATE REPLACE(l_template_2, '$name', l_names(i));
+      execute IMMEDIATE REPLACE(l_template_3, '$name', l_names(i));
       COMMIT;
    END LOOP;
 END;
