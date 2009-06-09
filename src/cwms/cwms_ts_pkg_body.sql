@@ -2221,6 +2221,94 @@ begin
    dbms_application_info.set_module(null,null);
    
 end retrieve_ts_multi;
+--   
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
+-- CLEAN_QUALITY_CODE -
+--  
+	function clean_quality_code (
+      p_quality_code in integer)
+      return integer result_cache
+   is
+      c_32bits          constant integer := 4294967295; -- 1111 1111 1111 1111 1111 1111 1111 1111
+      c_screened        constant integer :=          1; -- 0000 0000 0000 0000 0000 0000 0000 0001
+      c_ok              constant integer :=          2; -- 0000 0000 0000 0000 0000 0000 0000 0010
+      c_ok_mask         constant integer := 4294967267; -- 1111 1111 1111 1111 1111 1111 1110 0011 
+      c_missing         constant integer :=          4; -- 0000 0000 0000 0000 0000 0000 0000 0100
+      c_missing_mask    constant integer :=          5; -- 0000 0000 0000 0000 0000 0000 0000 0101 
+      c_questioned      constant integer :=          8; -- 0000 0000 0000 0000 0000 0000 0000 1000
+      c_questioned_mask constant integer := 4294967273; -- 1111 1111 1111 1111 1111 1111 1110 1001 
+      c_rejected        constant integer :=         16; -- 0000 0000 0000 0000 0000 0000 0001 0000
+      c_rejected_mask   constant integer := 4294967281; -- 1111 1111 1111 1111 1111 1111 1111 0001 
+      c_test_mask       constant integer :=   67076096; -- 0000 0011 1111 1111 1000 0000 0000 0000 
+      c_absmag          constant integer :=      32768; -- 0000 0000 0000 0000 1000 0000 0000 0000
+      c_absmag_mask     constant integer := 4227923967; -- 1111 1100 0000 0000 1111 1111 1111 1111 
+      c_constval        constant integer :=      65536; -- 0000 0000 0000 0001 0000 0000 0000 0000 
+      c_constval_mask   constant integer := 4227956735; -- 1111 1100 0000 0001 0111 1111 1111 1111 
+      c_roc             constant integer :=     131072; -- 0000 0000 0000 0010 0000 0000 0000 0000 
+      c_roc_mask        constant integer := 4228022271; -- 1111 1100 0000 0010 0111 1111 1111 1111 
+      c_relmag          constant integer :=     262144; -- 0000 0000 0000 0100 0000 0000 0000 0000 
+      c_relmag_mask     constant integer := 4228153343; -- 1111 1100 0000 0100 0111 1111 1111 1111 
+      c_durmag          constant integer :=     524288; -- 0000 0000 0000 1000 0000 0000 0000 0000 
+      c_durmag_mask     constant integer := 4228415487; -- 1111 1100 0000 1000 0111 1111 1111 1111 
+      c_negincr         constant integer :=    1048576; -- 0000 0000 0001 0000 0000 0000 0000 0000 
+      c_negincr_mask    constant integer := 4228939775; -- 1111 1100 0001 0000 0111 1111 1111 1111 
+      c_skiplist        constant integer :=    4194304; -- 0000 0000 0100 0000 0000 0000 0000 0000 
+      c_skiplist_mask   constant integer := 4232085503; -- 1111 1100 0100 0000 0111 1111 1111 1111 
+      c_userdef         constant integer :=   16777216; -- 0000 0001 0000 0000 0000 0000 0000 0000 
+      c_userdef_mask    constant integer := 4244668415; -- 1111 1101 0000 0000 0111 1111 1111 1111 
+      c_distr           constant integer :=   33554432; -- 0000 0010 0000 0000 0000 0000 0000 0000 
+      c_distr_mask      constant integer := 4261445631; -- 1111 1110 0000 0000 0111 1111 1111 1111
+      c_notest_mask     constant integer := 4227891199; -- 1111 1100 0000 0000 0111 1111 1111 1111 
+      l_quality_code    integer := p_quality_code;
+   begin
+      -----------------------------------------------------
+      -- ensure only 32-bits (counteract sign-extension) --
+      -----------------------------------------------------
+      l_quality_code := bitand(l_quality_code, c_32bits);
+      -----------------------------------------
+      -- ensure only one validity bit is set --
+      -----------------------------------------
+      if bitand(l_quality_code, c_missing) != 0 then
+         l_quality_code := bitand(l_quality_code, c_missing_mask); -- clears all upper bits!
+      elsif bitand(l_quality_code, c_rejected) != 0 then
+         l_quality_code := bitand(l_quality_code, c_rejected_mask);
+      elsif bitand(l_quality_code, c_questioned) != 0 then
+         l_quality_code := bitand(l_quality_code, c_questioned_mask);
+      elsif bitand(l_quality_code, c_ok) != 0 then
+         l_quality_code := bitand(l_quality_code, c_ok_mask);
+      end if;
+      --------------------------------------------
+      -- ensure only one test-failed bit is set --
+      --------------------------------------------
+      if bitand(l_quality_code, c_test_mask) != 0 then
+         if bitand(l_quality_code, c_absmag) != 0 then
+            l_quality_code := bitand(l_quality_code, c_absmag_mask);
+         elsif bitand(l_quality_code, c_constval) != 0 then
+            l_quality_code := bitand(l_quality_code, c_constval_mask);
+         elsif bitand(l_quality_code, c_roc) != 0 then
+            l_quality_code := bitand(l_quality_code, c_roc_mask);
+         elsif bitand(l_quality_code, c_relmag) != 0 then
+            l_quality_code := bitand(l_quality_code, c_relmag_mask);
+         elsif bitand(l_quality_code, c_durmag) != 0 then
+            l_quality_code := bitand(l_quality_code, c_durmag_mask);
+         elsif bitand(l_quality_code, c_negincr) != 0 then
+            l_quality_code := bitand(l_quality_code, c_negincr_mask);
+         elsif bitand(l_quality_code, c_skiplist) != 0 then
+            l_quality_code := bitand(l_quality_code, c_skiplist_mask);
+         elsif bitand(l_quality_code, c_userdef) != 0 then
+            l_quality_code := bitand(l_quality_code, c_userdef_mask);
+         elsif bitand(l_quality_code, c_distr) != 0 then
+            l_quality_code := bitand(l_quality_code, c_distr_mask);
+         else
+            l_quality_code := bitand(l_quality_code, c_notest_mask);
+         end if;
+      end if;
+      return l_quality_code;
+      
+   end clean_quality_code;       
 --*******************************************************************   --
 --*******************************************************************   --
 --
@@ -2525,7 +2613,7 @@ end retrieve_ts_multi;
    
          MERGE INTO at_tsv t1
             USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-                          (t.value * c.factor + c.offset) VALUE, t.quality_code
+                          (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code)
                      FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
                           at_cwms_ts_spec s,
                           at_parameter ap,
@@ -2565,7 +2653,7 @@ end retrieve_ts_multi;
                   ' merge into '||x.table_name||' t1
                   using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                               (t.value * c.factor + c.offset) value, 
-                           t.quality_code 
+                           clean_quality_code(t.quality_code) quality_code 
                             from TABLE(cast(:p_timeseries_data as tsv_array)) t,
                             at_cwms_ts_spec s, 
                             at_parameter ap,
@@ -2625,7 +2713,7 @@ end retrieve_ts_multi;
 
             MERGE INTO at_tsv t1
                USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                             (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code) quality_code
                         FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
                              at_cwms_ts_spec s,
                              at_parameter ap,
@@ -2673,7 +2761,7 @@ end retrieve_ts_multi;
                   ' merge into '||x.table_name||' t1 
                      using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                               (t.value * c.factor + c.offset) value, 
-                           t.quality_code 
+                           clean_quality_code(t.quality_code) quality_code 
                             from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                             at_cwms_ts_spec s, 
                             at_parameter ap,
@@ -2741,7 +2829,7 @@ end retrieve_ts_multi;
          
             MERGE INTO at_tsv t1
                USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                             (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code) quality_code
                         FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
                              at_cwms_ts_spec s,
                              at_parameter ap,
@@ -2774,7 +2862,7 @@ end retrieve_ts_multi;
                l_sql_txt:='merge into '||x.table_name||' t1
                       using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                                (t.value * c.factor + c.offset) value, 
-                           t.quality_code 
+                           clean_quality_code(t.quality_code) quality_code 
                              from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                             at_cwms_ts_spec s, 
                             at_parameter ap,
@@ -2818,7 +2906,7 @@ end retrieve_ts_multi;
 
             MERGE INTO at_tsv t1
                USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                             (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code) quality_code
                         FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
                              at_cwms_ts_spec s,
                              at_parameter ap,
@@ -2856,7 +2944,7 @@ end retrieve_ts_multi;
                l_sql_txt:='merge into '||x.table_name||' t1
                       using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                                (t.value * c.factor + c.offset) value, 
-                           t.quality_code 
+                           clean_quality_code(t.quality_code) quality_code 
                              from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                             at_cwms_ts_spec s, 
                             at_parameter ap,
@@ -2907,7 +2995,7 @@ end retrieve_ts_multi;
          
             MERGE INTO at_tsv t1
                USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                             (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code) quality_code
                         FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
                              at_cwms_ts_spec s,
                              at_parameter ap,
@@ -2947,7 +3035,7 @@ end retrieve_ts_multi;
                l_sql_txt:='merge into '||x.table_name||' t1
                       using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                                (t.value * c.factor + c.offset) value, 
-                           t.quality_code 
+                           clean_quality_code(t.quality_code) quality_code 
                           from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                              at_cwms_ts_spec s, 
                              at_parameter ap,
@@ -3000,7 +3088,7 @@ end retrieve_ts_multi;
   
             MERGE INTO at_tsv t1
                USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                             (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code) quality_code
                         FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
                              at_cwms_ts_spec s,
                              at_parameter ap,
@@ -3056,7 +3144,7 @@ end retrieve_ts_multi;
                  l_sql_txt:='merge into '||x.table_name||' t1
                     using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                              (t.value * c.factor + c.offset) value, 
-                          t.quality_code 
+                          clean_quality_code(t.quality_code) quality_code 
                         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                            at_cwms_ts_spec s, 
                            at_parameter ap,
@@ -3136,7 +3224,7 @@ end retrieve_ts_multi;
 
             MERGE INTO at_tsv t1
                USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                             (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code)
                         FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
                              at_cwms_ts_spec s,
                              at_parameter ap,
@@ -3196,7 +3284,7 @@ end retrieve_ts_multi;
                l_sql_txt:='merge into '||x.table_name||' t1
                     using (select  CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time,
                               (t.value * c.factor + c.offset) value, 
-                           t.quality_code 
+                           clean_quality_code(t.quality_code) quality_code 
                         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                            at_cwms_ts_spec s,
                            at_parameter ap,
@@ -3268,7 +3356,7 @@ end retrieve_ts_multi;
             
             MERGE INTO at_tsv t1
                USING (SELECT CAST ((t.date_time AT TIME ZONE 'GMT') AS DATE) date_time,
-                             (t.value * c.factor + c.offset) VALUE, t.quality_code
+                             (t.value * c.factor + c.offset) VALUE, clean_quality_code(t.quality_code)
                         FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t,
                              at_cwms_ts_spec s,
                              at_parameter ap,
@@ -3316,7 +3404,7 @@ end retrieve_ts_multi;
                  l_sql_txt:='merge into '||x.table_name||' t1
                     using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                              (t.value * c.factor + c.offset) value, 
-                          t.quality_code 
+                          clean_quality_code(t.quality_code) quality_code 
                         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                            at_cwms_ts_spec s, 
                            at_parameter ap,
