@@ -352,8 +352,8 @@ AS
 	-- CLEAN_QUALITY_CODE -
 	--  
 		function clean_quality_code (
-	      p_quality_code in integer)
-	      return integer result_cache;
+	      p_quality_code in number)
+	      return number result_cache;
 	      
    --
    --*******************************************************************   --

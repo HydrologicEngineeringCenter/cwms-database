@@ -2229,83 +2229,155 @@ end retrieve_ts_multi;
 -- CLEAN_QUALITY_CODE -
 --  
 	function clean_quality_code (
-      p_quality_code in integer)
-      return integer result_cache
+      p_quality_code in number)
+      return number result_cache
    is
-      c_32bits          constant integer := 4294967295; -- 1111 1111 1111 1111 1111 1111 1111 1111
-      c_screened        constant integer :=          1; -- 0000 0000 0000 0000 0000 0000 0000 0001
-      c_ok              constant integer :=          2; -- 0000 0000 0000 0000 0000 0000 0000 0010
-      c_ok_mask         constant integer := 4294967267; -- 1111 1111 1111 1111 1111 1111 1110 0011 
-      c_missing         constant integer :=          4; -- 0000 0000 0000 0000 0000 0000 0000 0100
-      c_missing_mask    constant integer :=          5; -- 0000 0000 0000 0000 0000 0000 0000 0101 
-      c_questioned      constant integer :=          8; -- 0000 0000 0000 0000 0000 0000 0000 1000
-      c_questioned_mask constant integer := 4294967273; -- 1111 1111 1111 1111 1111 1111 1110 1001 
-      c_rejected        constant integer :=         16; -- 0000 0000 0000 0000 0000 0000 0001 0000
-      c_rejected_mask   constant integer := 4294967281; -- 1111 1111 1111 1111 1111 1111 1111 0001 
-      c_test_mask       constant integer :=   67076096; -- 0000 0011 1111 1111 1000 0000 0000 0000 
-      c_absmag          constant integer :=      32768; -- 0000 0000 0000 0000 1000 0000 0000 0000
-      c_absmag_mask     constant integer := 4227923967; -- 1111 1100 0000 0000 1111 1111 1111 1111 
-      c_constval        constant integer :=      65536; -- 0000 0000 0000 0001 0000 0000 0000 0000 
-      c_constval_mask   constant integer := 4227956735; -- 1111 1100 0000 0001 0111 1111 1111 1111 
-      c_roc             constant integer :=     131072; -- 0000 0000 0000 0010 0000 0000 0000 0000 
-      c_roc_mask        constant integer := 4228022271; -- 1111 1100 0000 0010 0111 1111 1111 1111 
-      c_relmag          constant integer :=     262144; -- 0000 0000 0000 0100 0000 0000 0000 0000 
-      c_relmag_mask     constant integer := 4228153343; -- 1111 1100 0000 0100 0111 1111 1111 1111 
-      c_durmag          constant integer :=     524288; -- 0000 0000 0000 1000 0000 0000 0000 0000 
-      c_durmag_mask     constant integer := 4228415487; -- 1111 1100 0000 1000 0111 1111 1111 1111 
-      c_negincr         constant integer :=    1048576; -- 0000 0000 0001 0000 0000 0000 0000 0000 
-      c_negincr_mask    constant integer := 4228939775; -- 1111 1100 0001 0000 0111 1111 1111 1111 
-      c_skiplist        constant integer :=    4194304; -- 0000 0000 0100 0000 0000 0000 0000 0000 
-      c_skiplist_mask   constant integer := 4232085503; -- 1111 1100 0100 0000 0111 1111 1111 1111 
-      c_userdef         constant integer :=   16777216; -- 0000 0001 0000 0000 0000 0000 0000 0000 
-      c_userdef_mask    constant integer := 4244668415; -- 1111 1101 0000 0000 0111 1111 1111 1111 
-      c_distr           constant integer :=   33554432; -- 0000 0010 0000 0000 0000 0000 0000 0000 
-      c_distr_mask      constant integer := 4261445631; -- 1111 1110 0000 0000 0111 1111 1111 1111
-      c_notest_mask     constant integer := 4227891199; -- 1111 1100 0000 0000 0111 1111 1111 1111 
-      l_quality_code    integer := p_quality_code;
+   /*
+   Data Quality Rules :
+
+       1. Unless the Screened bit is set, no other bits can be set.
+          
+       2. Unused bits (22, 24, 27-31, 32+) must be reset (zero).       
+
+       3. The Okay, Missing, Questioned and Rejected bits are mutually 
+          exclusive.
+
+       4. No replacement cause or replacement method bits can be set unless
+          the changed (different) bit is also set, and if the changed (different)
+          bit is set, one of the cause bits and one of the replacement
+          method bits must be set.
+
+       5. Replacement Cause integer is in range 0..4.
+
+       6. Replacement Method integer is in range 0..4
+
+       7. The Test Failed bits are not mutually exclusive (multiple tests can be
+          marked as failed).
+
+   Bit Mappings :       
+       
+            3                   2                   1                     
+        2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 
+
+        P - - - - - T T - T - T T T T T T M M M M C C C D R R V V V V S 
+        |           <---------+---------> <--+--> <-+-> | <+> <--+--> |
+        |                     |              |      |   |  |     |    +------Screened T/F
+        |                     |              |      |   |  |     +-----------Validity Flags
+        |                     |              |      |   |  +--------------Value Range Integer
+        |                     |              |      |   +-------------------Different T/F
+        |                     |              |      +---------------Replacement Cause Integer
+        |                     |              +---------------------Replacement Method Integer
+        |                     +-------------------------------------------Test Failed Flags
+        +-------------------------------------------------------------------Protected T/F
+   */   
+      c_used_bits           constant integer := 2204106751; -- 1000 0011 0101 1111 1111 1111 1111 1111
+      c_screened            constant integer :=          1; -- 0000 0000 0000 0000 0000 0000 0000 0001
+      c_ok                  constant integer :=          2; -- 0000 0000 0000 0000 0000 0000 0000 0010
+      c_ok_mask             constant integer := 4294967267; -- 1111 1111 1111 1111 1111 1111 1110 0011 
+      c_missing             constant integer :=          4; -- 0000 0000 0000 0000 0000 0000 0000 0100
+      c_missing_mask        constant integer :=          5; -- 1111 1111 1111 1111 1111 1111 1110 0101 
+      c_questioned          constant integer :=          8; -- 0000 0000 0000 0000 0000 0000 0000 1000
+      c_questioned_mask     constant integer := 4294967273; -- 1111 1111 1111 1111 1111 1111 1110 1001 
+      c_rejected            constant integer :=         16; -- 0000 0000 0000 0000 0000 0000 0001 0000
+      c_rejected_mask       constant integer := 4294967281; -- 1111 1111 1111 1111 1111 1111 1111 0001 
+      c_different_mask      constant integer :=        128; -- 0000 0000 0000 0000 0000 0000 1000 0000
+      c_not_different_mask  constant integer :=        128; -- 1111 1111 1111 1111 1111 1111 0111 1111
+      c_repl_cause_mask     constant integer :=       1792; -- 0000 0000 0000 0000 0000 0111 0000 0000
+      c_no_repl_cause_mask  constant integer := 4294965503; -- 1111 1111 1111 1111 1111 1000 1111 1111
+      c_repl_method_mask    constant integer :=      30720; -- 0000 0000 0000 0000 0111 1000 0000 0000
+      c_no_repl_method_mask constant integer := 4294936575; -- 1111 1111 1111 1111 1000 0111 1111 1111
+      c_repl_cause_factor   constant integer :=        256; -- 2 ** 8 for shifting 8 bits
+      c_repl_method_factor  constant integer :=       2048; -- 2 ** 11 for shifting 11 bits
+      l_quality_code        integer := p_quality_code;
+      l_repl_cause          integer;
+      l_repl_method         integer;
+      l_different           boolean;
+      
+      function bitor(num1 in integer, num2 in integer) return integer
+      is
+      begin
+         return num1 + num2 - bitand(num1, num2);
+      end;
+      
    begin
-      -----------------------------------------------------
-      -- ensure only 32-bits (counteract sign-extension) --
-      -----------------------------------------------------
-      l_quality_code := bitand(l_quality_code, c_32bits);
-      -----------------------------------------
-      -- ensure only one validity bit is set --
-      -----------------------------------------
-      if bitand(l_quality_code, c_missing) != 0 then
-         l_quality_code := bitand(l_quality_code, c_missing_mask); -- clears all upper bits!
-      elsif bitand(l_quality_code, c_rejected) != 0 then
-         l_quality_code := bitand(l_quality_code, c_rejected_mask);
-      elsif bitand(l_quality_code, c_questioned) != 0 then
-         l_quality_code := bitand(l_quality_code, c_questioned_mask);
-      elsif bitand(l_quality_code, c_ok) != 0 then
-         l_quality_code := bitand(l_quality_code, c_ok_mask);
-      end if;
-      --------------------------------------------
-      -- ensure only one test-failed bit is set --
-      --------------------------------------------
-      if bitand(l_quality_code, c_test_mask) != 0 then
-         if bitand(l_quality_code, c_absmag) != 0 then
-            l_quality_code := bitand(l_quality_code, c_absmag_mask);
-         elsif bitand(l_quality_code, c_constval) != 0 then
-            l_quality_code := bitand(l_quality_code, c_constval_mask);
-         elsif bitand(l_quality_code, c_roc) != 0 then
-            l_quality_code := bitand(l_quality_code, c_roc_mask);
-         elsif bitand(l_quality_code, c_relmag) != 0 then
-            l_quality_code := bitand(l_quality_code, c_relmag_mask);
-         elsif bitand(l_quality_code, c_durmag) != 0 then
-            l_quality_code := bitand(l_quality_code, c_durmag_mask);
-         elsif bitand(l_quality_code, c_negincr) != 0 then
-            l_quality_code := bitand(l_quality_code, c_negincr_mask);
-         elsif bitand(l_quality_code, c_skiplist) != 0 then
-            l_quality_code := bitand(l_quality_code, c_skiplist_mask);
-         elsif bitand(l_quality_code, c_userdef) != 0 then
-            l_quality_code := bitand(l_quality_code, c_userdef_mask);
-         elsif bitand(l_quality_code, c_distr) != 0 then
-            l_quality_code := bitand(l_quality_code, c_distr_mask);
-         else
-            l_quality_code := bitand(l_quality_code, c_notest_mask);
-         end if;
-      end if;
+      begin
+         --------------------------------------------
+         -- first see if the code is already clean --
+         --------------------------------------------
+         select quality_code into l_quality_code from cwms_data_quality where quality_code = p_quality_code;
+      exception
+         when no_data_found then   
+            -----------------------------------------------
+            -- clear all bits if screened bit is not set --
+            -----------------------------------------------
+            if bitand(l_quality_code, c_screened) = 0 then
+               l_quality_code := 0;
+            else
+               ---------------------------------------------------------------------
+               -- ensure only used bits are set (also counteracts sign-extension) --
+               ---------------------------------------------------------------------
+               l_quality_code := bitand(l_quality_code, c_used_bits);
+               -----------------------------------------
+               -- ensure only one validity bit is set --
+               -----------------------------------------
+               if bitand(l_quality_code, c_missing) != 0 then
+                  l_quality_code := bitand(l_quality_code, c_missing_mask);
+               elsif bitand(l_quality_code, c_rejected) != 0 then
+                  l_quality_code := bitand(l_quality_code, c_rejected_mask);
+               elsif bitand(l_quality_code, c_questioned) != 0 then
+                  l_quality_code := bitand(l_quality_code, c_questioned_mask);
+               elsif bitand(l_quality_code, c_ok) != 0 then
+                  l_quality_code := bitand(l_quality_code, c_ok_mask);
+               end if;
+               --------------------------------------------------------
+               -- ensure the replacement cause is not greater than 4 --
+               --------------------------------------------------------
+               l_repl_cause := trunc(bitand(l_quality_code, c_repl_cause_mask) / c_repl_cause_factor);
+               if l_repl_cause > 4 then
+                  l_repl_cause := 4;
+                  l_quality_code := bitor(bitand(l_quality_code, c_no_repl_cause_mask), l_repl_cause * c_repl_cause_factor);
+               end if;
+               ---------------------------------------------------------
+               -- ensure the replacement method is not greater than 4 --
+               ---------------------------------------------------------
+               l_repl_method := trunc(bitand(l_quality_code, c_repl_method_mask) / c_repl_method_factor);
+               if l_repl_method > 4 then
+                  l_repl_method := 4;
+                  l_quality_code := bitor(bitand(l_quality_code, c_no_repl_method_mask), l_repl_method * c_repl_method_factor);
+               end if;
+               --------------------------------------------------------------------------------------------------------------
+               -- ensure that if 2 of replacement cause, replacement method, and different are 0, the remaining one is too --
+               --------------------------------------------------------------------------------------------------------------
+               l_different := bitand(l_quality_code, c_different_mask) != 0;
+               if l_repl_cause = 0 then
+                  if l_repl_method = 0 and l_different then
+                     l_quality_code := bitand(l_quality_code, c_not_different_mask);
+                     l_different := false;
+                  elsif (not l_different) and l_repl_method != 0 then
+                     l_repl_method := 0;
+                     l_quality_code := bitand(l_quality_code, c_no_repl_method_mask);
+                  end if;
+               elsif l_repl_method = 0 and not l_different then
+                  l_repl_cause := 0;
+                  l_quality_code := bitand(l_quality_code, c_no_repl_cause_mask);
+               end if;
+               ------------------------------------------------------------------------------------------------------------------------------
+               -- ensure that if 2 of replacement cause, replacement method, and different are NOT 0, the remaining one is set accordingly --
+               ------------------------------------------------------------------------------------------------------------------------------
+               if l_repl_cause != 0 then
+                  if l_repl_method != 0 and not l_different then
+                     l_quality_code := bitor(l_quality_code, c_different_mask);
+                     l_different := true;
+                  elsif l_different and l_repl_method = 0 then
+                     l_repl_method := 2; -- EXPLICIT
+                     l_quality_code := bitor(l_quality_code, l_repl_method * c_repl_method_factor);
+                  end if;
+               elsif l_repl_method != 0 and l_different then
+                  l_repl_cause := 3; -- MANUAL
+                  l_quality_code := bitor(l_quality_code, l_repl_cause * c_repl_cause_factor);
+               end if;
+            end if;
+      end;
       return l_quality_code;
       
    end clean_quality_code;       
@@ -2366,12 +2438,20 @@ end retrieve_ts_multi;
    )
    IS
       l_office_id           VARCHAR2 (16);
+      l_office_code         NUMBER;
       t1count               NUMBER;
       t2count               NUMBER;
       l_ucount              NUMBER;
       l_store_date          TIMESTAMP ( 3 )  DEFAULT SYSTIMESTAMP;
       l_ts_code             NUMBER;
-      l_interval_id         VARCHAR2 (100);
+      l_base_location_id    at_base_location.base_location_id%type;
+      l_sub_location_id     at_physical_location.sub_location_id%type;
+      l_base_parameter_id   cwms_base_parameter.base_parameter_id%type;
+      l_sub_parameter_id    at_parameter.sub_parameter_id%type;
+      l_parameter_type_id   cwms_parameter_type.parameter_type_id%type;
+      l_interval_id         cwms_interval.interval_id%type;
+      l_duration_id         cwms_duration.duration_id%type;
+      l_version_id          at_cwms_ts_spec.version%type;
       l_interval_value      NUMBER;
       l_local_tz_code       NUMBER;
       l_tz_name             VARCHAR2 (28) := 'UTC';
@@ -2401,6 +2481,7 @@ end retrieve_ts_multi;
        else                           
          l_office_id := p_office_id;
        end if;
+       l_office_code := CWMS_UTIL.GET_OFFICE_CODE(l_office_id);
 
        l_version_date   := nvl(p_version_date, cwms_util.non_versioned);
    
@@ -2431,11 +2512,58 @@ end retrieve_ts_multi;
   
     begin -- BEGIN - Find the TS_CODE 
       
+      /*    
       select ts_code, interval_utc_offset 
         into l_ts_code, existing_utc_offset
        from mv_CWMS_TS_ID m 
        where upper(m.CWMS_TS_ID) = upper(p_cwms_ts_id)
         and m.db_OFFICE_ID = upper(l_office_id);
+      */
+      --
+      -- Bypass the materialized view so we can pause it while we load the first
+      -- chunk of data after the database is built.  Otherwise the view refreshes
+      -- every time a UTC_INTERVAL_OFFSET is updated, slowing the loading to
+      -- unacceptable levels.
+      --
+      parse_ts(
+         p_cwms_ts_id,
+         l_base_location_id,
+         l_sub_location_id,
+         l_base_parameter_id,
+         l_sub_parameter_id,
+         l_parameter_type_id,
+         l_interval_id,
+         l_duration_id,
+         l_version_id);
+         
+      select ts_code, 
+             interval_utc_offset
+        into l_ts_code,
+             existing_utc_offset
+        from at_cwms_ts_spec ts,
+             at_base_location bl,
+             at_physical_location pl,
+             cwms_base_parameter bp,
+             at_parameter ap,
+             cwms_parameter_type pt,
+             cwms_interval i,
+             cwms_duration d
+       where upper(bl.base_location_id) = upper(l_base_location_id)
+         and bl.db_office_code = l_office_code
+         and upper(nvl(pl.sub_location_id, '.')) = upper(nvl(l_sub_location_id, '.'))
+         and pl.base_location_code = bl.base_location_code
+         and ts.location_code = pl.location_code
+         and upper(bp.base_parameter_id) = upper(l_base_parameter_id)
+         and upper(nvl(ap.sub_parameter_id, '.')) = upper(nvl(l_sub_parameter_id, '.'))
+         and ap.base_parameter_code = bp.base_parameter_code
+         and ts.parameter_code = ap.parameter_code
+         and upper(pt.parameter_type_id) = upper(l_parameter_type_id)
+         and ts.parameter_type_code = pt.parameter_type_code
+         and upper(i.interval_id) = upper(l_interval_id)
+         and ts.interval_code = i.interval_code
+         and upper(d.duration_id) = upper(l_duration_id)
+         and ts.duration_code = d.duration_code
+         and upper(nvl(ts.version, '.')) = upper(nvl(l_version_id, '.'));
        
     exception
     when no_data_found then
@@ -2444,8 +2572,7 @@ end retrieve_ts_multi;
       does not exist in the database for the office_id. If this is
       the case a new TS_CODE will be created for the Time Series 
       Descriptor. 
-     */
-      
+      */
       create_ts_code(p_ts_code=>l_ts_code, 
                      p_office_id=>l_office_id, 
                      p_cwms_ts_id=>p_cwms_ts_id, 
@@ -2653,7 +2780,7 @@ end retrieve_ts_multi;
                   ' merge into '||x.table_name||' t1
                   using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                               (t.value * c.factor + c.offset) value, 
-                           clean_quality_code(t.quality_code) quality_code 
+                           cwms_ts.clean_quality_code(t.quality_code) quality_code 
                             from TABLE(cast(:p_timeseries_data as tsv_array)) t,
                             at_cwms_ts_spec s, 
                             at_parameter ap,
@@ -2761,7 +2888,7 @@ end retrieve_ts_multi;
                   ' merge into '||x.table_name||' t1 
                      using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                               (t.value * c.factor + c.offset) value, 
-                           clean_quality_code(t.quality_code) quality_code 
+                           cwms_ts.clean_quality_code(t.quality_code) quality_code 
                             from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                             at_cwms_ts_spec s, 
                             at_parameter ap,
@@ -2862,7 +2989,7 @@ end retrieve_ts_multi;
                l_sql_txt:='merge into '||x.table_name||' t1
                       using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                                (t.value * c.factor + c.offset) value, 
-                           clean_quality_code(t.quality_code) quality_code 
+                           cwms_ts.clean_quality_code(t.quality_code) quality_code 
                              from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                             at_cwms_ts_spec s, 
                             at_parameter ap,
@@ -2944,7 +3071,7 @@ end retrieve_ts_multi;
                l_sql_txt:='merge into '||x.table_name||' t1
                       using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                                (t.value * c.factor + c.offset) value, 
-                           clean_quality_code(t.quality_code) quality_code 
+                           cwms_ts.clean_quality_code(t.quality_code) quality_code 
                              from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                             at_cwms_ts_spec s, 
                             at_parameter ap,
@@ -3035,7 +3162,7 @@ end retrieve_ts_multi;
                l_sql_txt:='merge into '||x.table_name||' t1
                       using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                                (t.value * c.factor + c.offset) value, 
-                           clean_quality_code(t.quality_code) quality_code 
+                           cwms_ts.clean_quality_code(t.quality_code) quality_code 
                           from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                              at_cwms_ts_spec s, 
                              at_parameter ap,
@@ -3144,7 +3271,7 @@ end retrieve_ts_multi;
                  l_sql_txt:='merge into '||x.table_name||' t1
                     using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                              (t.value * c.factor + c.offset) value, 
-                          clean_quality_code(t.quality_code) quality_code 
+                          cwms_ts.clean_quality_code(t.quality_code) quality_code 
                         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                            at_cwms_ts_spec s, 
                            at_parameter ap,
@@ -3284,7 +3411,7 @@ end retrieve_ts_multi;
                l_sql_txt:='merge into '||x.table_name||' t1
                     using (select  CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time,
                               (t.value * c.factor + c.offset) value, 
-                           clean_quality_code(t.quality_code) quality_code 
+                           cwms_ts.clean_quality_code(t.quality_code) quality_code 
                         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                            at_cwms_ts_spec s,
                            at_parameter ap,
@@ -3404,7 +3531,7 @@ end retrieve_ts_multi;
                  l_sql_txt:='merge into '||x.table_name||' t1
                     using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time, 
                              (t.value * c.factor + c.offset) value, 
-                          clean_quality_code(t.quality_code) quality_code 
+                          cwms_ts.clean_quality_code(t.quality_code) quality_code 
                         from TABLE(cast(:p_timeseries_data as tsv_array)) t, 
                            at_cwms_ts_spec s, 
                            at_parameter ap,
