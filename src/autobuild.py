@@ -1,6 +1,10 @@
 #!/bin/env python
-import os, sys
+import fnmatch, os, sys
 
+#--------------------------------------------------------#
+# create an automatic version of the buildCWMS_20_DB.sql #
+# script that has the prmopts replaced by defines        #
+#--------------------------------------------------------#
 manual_sqlfilename = "buildCWMS_20_DB.sql"
 auto_sqlfilename   = "autobuild.sql"
 
@@ -44,15 +48,30 @@ f.close()
 f = open(auto_sqlfilename, "w")
 f.write(sql_script.replace(prompt_block, auto_block))
 f.close()
-
+#---------------------------------------------#
+# execute the automatic version of the script #
+#---------------------------------------------#
 cmd = "sqlplus /nolog @%s" % auto_sqlfilename
 print cmd
 ec = os.system(cmd)
 os.remove(auto_sqlfilename)
-
 if ec :
 	print
 	print "SQL*Plus exited with code", ec 
 	print
+	sys.exit(ec)
 	
-sys.exit(ec)
+#----------------------------------------------------#
+# use SQL*Loader to load any control files generated #
+# by buildSqlScripts.py                              #
+#----------------------------------------------------#
+loaderCmdTemplate = "sqlldr cwms_20/%s@%s control=%s"
+for loaderFilename in [fn for fn in os.listdir(".") if fnmatch.fnmatch(fn, "*Loader.ctl")] :
+	loaderCmd = loaderCmdTemplate % (cwms_passwd, inst, loaderFilename)
+	ec = os.system(loaderCmd)
+	if ec :
+		print
+		print "SQL*Loader exited with code", ec 
+		print
+		sys.exit(ec)
+		
