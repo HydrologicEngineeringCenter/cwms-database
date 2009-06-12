@@ -318,11 +318,12 @@ CREATE OR REPLACE package body cwms_xchg as
         from at_xchg_set
        where xchg_set_code = p_xchg_set_code;
 
-      if l_last_update is not null and l_last_update >= p_last_update then
+      if l_last_update is not null and l_last_update > p_last_update then
          cwms_err.raise(
             'INVALID_ITEM',
             to_char(p_last_update),
-            'timestamp for this exhange set because it pre-dates the existing last update time');
+            'timestamp for this exhange set because it pre-dates the existing last update time of '
+            || to_char(l_last_update));
       end if;
 
       update at_xchg_set
