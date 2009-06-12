@@ -4928,7 +4928,7 @@ if not db_office_id:
                 ok = False
         else :
             print
-            print "ERROR! Office %s does not host a database. Contact HEC if this" % office_id
+            print "ERROR! Office %s does not host a database. Contact HEC if this" % db_office_id
             print "is no longer the case."
     	
     #------------------------------------------------------------------------------
