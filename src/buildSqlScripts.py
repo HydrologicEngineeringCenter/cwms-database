@@ -2,6 +2,28 @@
 
 import sys, os
 
+def uniqueCombinationsGenerator(items, n):
+    '''
+    Generator which yields the combinations of a list of items taken n at a time
+    '''
+    if n==0: 
+        yield []
+    else:
+        for i in xrange(len(items)):
+            for comb in uniqueCombinationsGenerator(items[i+1:],n-1):
+                yield [items[i]] + comb
+
+def uniqueCombinations(items):
+    '''
+    Function returning all possible combinations of a list of items
+    '''    
+    count = len(items)
+    results = []
+    for i in xrange(count) :
+        for comb in uniqueCombinationsGenerator(items, i) :
+            results.append(comb)
+    return results
+                
 testAccount  = None
 db_office_id = None
 office_ids   = []
@@ -4366,61 +4388,62 @@ for abstractParam, fromUnit, toUnit, offset, factor in unitConversions :
 # Data quality #
 #--------------#
 '''
-Data Quality Assumptions :
+Data Quality Rules :
 
     1. Unless the Screened bit is set, no other bits can be set.
+       
+    2. Unused bits (22, 24, 27-31, 32+) must be reset (zero).       
 
-    2. The Okay, Missing, Questionable and Rejected bits are mutually 
+    3. The Okay, Missing, Questioned and Rejected bits are mutually 
        exclusive.
 
-    3. If the Missing bit is set, the only other bit that can be set
-       is the Screened bit.
-       
     4. No replacement cause or replacement method bits can be set unless
        the changed (different) bit is also set, and if the changed (different)
        bit is set, one of the cause bits and one of the replacement
        method bits must be set.
-    
-    5. No test_failed bits can be set if the Okay bit is set.
 
-    6. The test_failed bits are mutually exclusive (specifies first 
-       test failed).
+    5. Replacement Cause integer is in range 0..4.
+
+    6. Replacement Method integer is in range 0..4
+
+    7. The Test Failed bits are not mutually exclusive (multiple tests can be
+       marked as failed).
 
 Bit Mappings :       
     
-       3                   2                   1                     
+         3                   2                   1                     
      2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 
 
      P - - - - - T T - T - T T T T T T M M M M C C C D R R V V V V S 
      |           <---------+---------> <--+--> <-+-> | <+> <--+--> |
      |                     |              |      |   |  |     |    +------Screened T/F
-     |                     |              |      |   |  |     +-----------Validity Mutually-Exclusive Flags
+     |                     |              |      |   |  |     +-----------Validity Flags
      |                     |              |      |   |  +--------------Value Range Integer
      |                     |              |      |   +-------------------Different T/F
      |                     |              |      +---------------Replacement Cause Integer
      |                     |              +---------------------Replacement Method Integer
-     |                     +-------------------------------------------Test Failed Mutually-Exclusive Flags
+     |                     +-------------------------------------------Test Failed Flags
      +-------------------------------------------------------------------Protected T/F
                                                               
 '''
 
 q_screened = {
-    "shift" : 0,
+    "shift"  : 0,
     "values" : [
         (0,    "UNSCREENED",     "The value has not been screened"),
         (1,    "SCREENED",       "The value has been screened"    )]}
 
 q_validity = {
-    "shift" : 1,
+    "shift"  : 1,
     "values" : [      
-        (0,    "UNKNOWN",        "The validity of the value has not been assessed"),  #
-        (1,    "OKAY",           "The value is accepted as valid"                 ),  #
-        (2,    "MISSING",        "The value has not been reported or computed"    ),  # Assumption 2
-        (4,    "QUESTIONABLE",   "The validity of the value doubtful"             ),  #
-        (8,    "REJECTED",       "The value is rejected as invalid"               )]} #
+        (0,    "UNKNOWN",        "The validity of the value has not been assessed"),
+        (1,    "OKAY",           "The value is accepted as valid"                 ),
+        (2,    "MISSING",        "The value has not been reported or computed"    ),
+        (4,    "QUESTIONABLE",   "The validity of the value doubtful"             ),
+        (8,    "REJECTED",       "The value is rejected as invalid"               )]}
 
 q_value_range = {
-    "shift" : 5,
+    "shift"  : 5,
     "values" : [
         (0,    "NO_RANGE",       "The value is not greater than the 1st range limit or limits were not tested"),
         (1,    "RANGE_1",        "The value is greater than the 1st, but not the 2nd range limit"             ),
@@ -4428,13 +4451,13 @@ q_value_range = {
         (3,    "RANGE_3",        "The value is greater than the 3rd range limit"                              )]}
 
 q_different = {
-    "shift" : 7,
+    "shift"  : 7,
     "values" : [
         (0,    "ORIGINAL",       "The value has not been changed from the original report or computation"),
         (1,    "MODIFIED",       "The value has been changed from the original report or computation")]}
 
 q_replacement_cause = {
-    "shift" : 8,
+    "shift"  : 8,
     "values" : [
         (0,    "NONE",           "The value was not replaced"                                          ),
         (1,    "AUTOMATIC",      "The value was automatically replaced by a pre-set software condition"), # e.g. Interpolated by DATCHK
@@ -4443,7 +4466,7 @@ q_replacement_cause = {
         (4,    "RESTORED",       "The value was restored to the original report or computation"        )]}
 
 q_replacement_method = {
-    "shift" : 11,
+    "shift"  : 11,
     "values" : [
         (0,    "NONE",           "The value was not replaced"                    ),
         (1,    "LIN_INTERP",     "The value was replaced by linear interpolation"),
@@ -4452,21 +4475,39 @@ q_replacement_method = {
         (4,    "GRAPHICAL",      "The value was replaced graphically"            )]}
 
 q_test_failed = {
-    "shift" : 15,
+    "shift"  : 15,
     "values" : [
-        (0,    "NONE",           "The value passed all specified tests"              ),  #
-        (1,    "ABSOLUTE_VALUE", "The value failed an absolute magnitude test"       ),  #
-        (2,    "CONSTANT_VALUE", "The value failed a constant value test"            ),  #
-        (4,    "RATE_OF_CHANGE", "The value failed a rate of change test"            ),  #
-        (8,    "RELATIVE_VALUE", "The value failed a relative magnitude test"        ),  # Assumption 6
-        (16,   "DURATION_VALUE", "The value failed a duration-magnitude test"        ),  #
-        (32,   "NEG_INCREMENT",  "The value failed a negative incremental value test"),  #
-        (128,  "SKIP_LIST",      "The value was specifically excluded from testing"  ),  #
-        (512,  "USER_DEFINED",   "The value failed a user-defined test"              ),  #
-        (1024, "DISTRIBUTION",   "The value failed a distribution test"              )]} #
+        (0,    "NONE",           "The value passed all specified tests"              ),
+        (1,    "ABSOLUTE_VALUE", "The value failed an absolute magnitude test"       ),
+        (2,    "CONSTANT_VALUE", "The value failed a constant value test"            ),
+        (4,    "RATE_OF_CHANGE", "The value failed a rate of change test"            ),
+        (8,    "RELATIVE_VALUE", "The value failed a relative magnitude test"        ),
+        (16,   "DURATION_VALUE", "The value failed a duration-magnitude test"        ),
+        (32,   "NEG_INCREMENT",  "The value failed a negative incremental value test"),
+        (128,  "SKIP_LIST",      "The value was specifically excluded from testing"  ),
+        (512,  "USER_DEFINED",   "The value failed a user-defined test"              ),
+        (1024, "DISTRIBUTION",   "The value failed a distribution test"              )]}
+#
+# rebuild q_test_failed["values"] to include all combinations of values listed
+#
+testFailedCombinations = uniqueCombinations(q_test_failed["values"][1:])
+q_test_failed["values"] = q_test_failed["values"][:1] 
+for items in testFailedCombinations :
+    if len(items) == 0 :
+        continue
+    if len(items) == 1 :
+        value = items[0][0]
+        id    = items[0][1]
+        desc  = items[0][2]
+    else :
+        values, ids, descriptions = zip(*items)
+        value = sum(values)
+        id    = "+".join(ids)
+        desc  = "The value failed %d tests" % len(items)
+    q_test_failed["values"].append((value, id, desc))        
 
 q_protection = {
-    "shift" : 31,
+    "shift"  : 31,
     "values" : [
         (0,    "UNPROTECTED",    "The value is not protected"),
         (1,    "PROTECTED",      "The value is protected"    )]}
@@ -7626,7 +7667,7 @@ qTestFailedCreationTemplate = \
 -- ##
 CREATE TABLE @TABLE 
    (
-       TEST_FAILED_ID   VARCHAR2(16)  NOT NULL,
+       TEST_FAILED_ID   VARCHAR2(114)  NOT NULL,
        DESCRIPTION      VARCHAR2(80)
    )
        PCTFREE 10
@@ -7660,6 +7701,7 @@ COMMENT ON COLUMN @TABLE.DESCRIPTION      IS 'Text description of test failed co
 
 COMMIT;
 '''
+
 sys.stderr.write("Building qTestFailedLoadTemplate\n")
 qTestFailedLoadTemplate = ''
 for code, id, description in q_test_failed["values"] :
@@ -7722,15 +7764,15 @@ qualityCreationTemplate = \
 -- ##
 CREATE TABLE @TABLE 
    (
-       QUALITY_CODE   NUMBER(10)   NOT NULL,
-       SCREENED_ID    VARCHAR2(16) NOT NULL,
-       VALIDITY_ID    VARCHAR2(16) NOT NULL,
-       RANGE_ID       VARCHAR2(16) NOT NULL,
-       CHANGED_ID     VARCHAR2(16) NOT NULL,
-       REPL_CAUSE_ID  VARCHAR2(16) NOT NULL,
-       REPL_METHOD_ID VARCHAR2(16) NOT NULL,
-       TEST_FAILED_ID VARCHAR2(16) NOT NULL,
-       PROTECTION_ID  VARCHAR2(16) NOT NULL
+       QUALITY_CODE   NUMBER(10)    NOT NULL,
+       SCREENED_ID    VARCHAR2(16)  NOT NULL,
+       VALIDITY_ID    VARCHAR2(16)  NOT NULL,
+       RANGE_ID       VARCHAR2(16)  NOT NULL,
+       CHANGED_ID     VARCHAR2(16)  NOT NULL,
+       REPL_CAUSE_ID  VARCHAR2(16)  NOT NULL,
+       REPL_METHOD_ID VARCHAR2(16)  NOT NULL,
+       TEST_FAILED_ID VARCHAR2(114) NOT NULL,
+       PROTECTION_ID  VARCHAR2(16)  NOT NULL
    )
        PCTFREE 10
        PCTUSED 40
@@ -7777,83 +7819,58 @@ COMMENT ON COLUMN @TABLE.TEST_FAILED_ID IS 'Foreign key referencing @qTestFailed
 COMMENT ON COLUMN @TABLE.PROTECTION_ID  IS 'Foreign key referencing @qProtectionTableName table by its primary key';
 COMMIT;
 '''
-sys.stderr.write("Building qualityLoadTemplate\n")
-qualityLoadTemplate = ''
-for s in range(len(q_screened["values"])) :
-    if s == 0 :
-        #
-        # Assumption 1
-        #
-        qualityLoadTemplate += "INSERT INTO @TABLE VALUES ("
-        qualityLoadTemplate += " 0,"                                              # unsigned value
-        qualityLoadTemplate += " '%s',"    % q_screened["values"][0][1]           # screened code
-        qualityLoadTemplate += " '%s',"    % q_validity["values"][0][1]           # validity code
-        qualityLoadTemplate += " '%s',"    % q_value_range["values"][0][1]        # range code
-        qualityLoadTemplate += " '%s',"    % q_different["values"][0][1]          # changed code
-        qualityLoadTemplate += " '%s',"    % q_replacement_cause["values"][0][1]  # replacement cause code
-        qualityLoadTemplate += " '%s',"    % q_replacement_method["values"][0][1] # replacement method code
-        qualityLoadTemplate += " '%s',"    % q_test_failed["values"][0][1]        # test failed code
-        qualityLoadTemplate += " '%s');\n" % q_protection["values"][0][1]         # protection code
-    else :                                  
-        for v in range(1, len(q_validity["values"])) :
-            if v == 2 :
-                #
-                # Assumption 3
-                #
-                value = 0L \
-                    | (q_screened["values"][s][0] << q_screened["shift"]) \
-                    | (q_validity["values"][v][0] << q_validity["shift"])        
-                qualityLoadTemplate += "INSERT INTO @TABLE VALUES ("
-                qualityLoadTemplate += " %lu,"      % value                               # unsigned value
-                qualityLoadTemplate += " '%s',"    % q_screened["values"][s][1]           # screened code
-                qualityLoadTemplate += " '%s',"    % q_validity["values"][v][1]           # validity code
-                qualityLoadTemplate += " '%s',"    % q_value_range["values"][0][1]        # range code
-                qualityLoadTemplate += " '%s',"    % q_different["values"][0][1]          # changed code
-                qualityLoadTemplate += " '%s',"    % q_replacement_cause["values"][0][1]  # replacement cause code
-                qualityLoadTemplate += " '%s',"    % q_replacement_method["values"][0][1] # replacement method code
-                qualityLoadTemplate += " '%s',"    % q_test_failed["values"][0][1]        # test failed code
-                qualityLoadTemplate += " '%s');\n" % q_protection["values"][0][1]         # protection code
-            else :
-                for r in range(len(q_value_range["values"])) :
-                    for d in range(len(q_different["values"])) :
-                        for c in range(len(q_replacement_cause["values"])) :
-                            if d == 0 :                #
-                                if c > 0 : continue    # Assumption 4
-                            else :                     #
-                                if c == 0 : continue   #
-                            for m in range(len(q_replacement_method["values"])) :
-                                if d == 0 :                #             
-                                    if m > 0 : continue    # Assumption 4
-                                else :                     #             
-                                    if m == 0 : continue   #             
-                                for t in range(len(q_test_failed["values"])) :
-                                    if v == 1 and t > 0 : 
-                                        #
-                                        # Assumption 5
-                                        #
-                                        continue
-                                    for p in range(len(q_protection["values"])) :
-                                        value = 0L \
-                                            | (q_screened["values"][s][0] << q_screened["shift"]) \
-                                            | (q_validity["values"][v][0] << q_validity["shift"]) \
-                                            | (q_value_range["values"][r][0] << q_value_range["shift"]) \
-                                            | (q_different["values"][d][0] << q_different["shift"]) \
-                                            | (q_replacement_cause["values"][c][0] << q_replacement_cause["shift"]) \
-                                            | (q_replacement_method["values"][m][0] << q_replacement_method["shift"]) \
-                                            | (q_test_failed["values"][t][0] << q_test_failed["shift"]) \
-                                            | (q_protection["values"][p][0] << q_protection["shift"])
-                                        qualityLoadTemplate += "INSERT INTO @TABLE VALUES ("
-                                        qualityLoadTemplate += " %lu,"     % value                                # unsigned value
-                                        qualityLoadTemplate += " '%s',"    % q_screened["values"][s][1]           # screened code
-                                        qualityLoadTemplate += " '%s',"    % q_validity["values"][v][1]           # validity code
-                                        qualityLoadTemplate += " '%s',"    % q_value_range["values"][r][1]        # range code
-                                        qualityLoadTemplate += " '%s',"    % q_different["values"][d][1]          # changed code
-                                        qualityLoadTemplate += " '%s',"    % q_replacement_cause["values"][c][1]  # replacement cause code
-                                        qualityLoadTemplate += " '%s',"    % q_replacement_method["values"][m][1] # replacement method code
-                                        qualityLoadTemplate += " '%s',"    % q_test_failed["values"][t][1]        # test failed code
-                                        qualityLoadTemplate += " '%s');\n" % q_protection["values"][p][1]         # protection code
+sys.stderr.write("Building qualityLoadFile\n")
+qualityLoadFilename = "qualityLoader.ctl"
+qualityLoadFile = open(qualityLoadFilename, "w")
+qualityLoadFile.write('''load data
+  infile *
+  into table cwms_data_quality
+  fields terminated by ","
+  (QUALITY_CODE,SCREENED_ID,VALIDITY_ID,RANGE_ID,CHANGED_ID,REPL_CAUSE_ID,REPL_METHOD_ID,TEST_FAILED_ID,PROTECTION_ID)
+begindata
+''')
+
+qualityLoadFile.write("%lu,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
+    0,                                    # unsigned value
+    q_screened["values"][0][1],           # screened code
+    q_validity["values"][0][1],           # validity code
+    q_value_range["values"][0][1],        # range code
+    q_different["values"][0][1],          # changed code
+    q_replacement_cause["values"][0][1],  # replacement cause code
+    q_replacement_method["values"][0][1], # replacement method code
+    q_test_failed["values"][0][1],        # test failed code
+    q_protection["values"][0][1]))        # protection code
     
-qualityLoadTemplate += "COMMIT;\n"
+for v in range(len(q_validity["values"])) :
+    for r in range(len(q_value_range["values"])) :
+        for d in range(len(q_different["values"])) :
+            for c in range(len(q_replacement_cause["values"])) :
+                if (d > 0) != (c > 0) : continue
+                for m in range(len(q_replacement_method["values"])) :
+                    if (d > 0) != (m > 0) : continue
+                    for t in range(len(q_test_failed["values"])) :
+                        for p in range(len(q_protection["values"])) :
+                            value = 0L \
+                                | (q_screened["values"][1][0] << q_screened["shift"]) \
+                                | (q_validity["values"][v][0] << q_validity["shift"]) \
+                                | (q_value_range["values"][r][0] << q_value_range["shift"]) \
+                                | (q_different["values"][d][0] << q_different["shift"]) \
+                                | (q_replacement_cause["values"][c][0] << q_replacement_cause["shift"]) \
+                                | (q_replacement_method["values"][m][0] << q_replacement_method["shift"]) \
+                                | (q_test_failed["values"][t][0] << q_test_failed["shift"]) \
+                                | (q_protection["values"][p][0] << q_protection["shift"])
+                            qualityLoadFile.write("%lu,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
+                                value,                                # unsigned value
+                                q_screened["values"][1][1],           # screened code
+                                q_validity["values"][v][1],           # validity code
+                                q_value_range["values"][r][1],        # range code
+                                q_different["values"][d][1],          # changed code
+                                q_replacement_cause["values"][c][1],  # replacement cause code
+                                q_replacement_method["values"][m][1], # replacement method code
+                                q_test_failed["values"][t][1],        # test failed code
+                                q_protection["values"][p][1]))        # protection code
+	    
+qualityLoadFile.close()
 
 sys.stderr.write("Building logMessageTypesCreationTemplate\n")
 logMessageTypesCreationTemplate = \
@@ -8141,8 +8158,11 @@ for table1 in tables :
             cmdStr = "%sLoadTemplate  = %sLoadTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
             #sys.stderr.write("%s\n" % cmdStr);
             exec(cmdStr)
-        except : 
-            pass
+        except :
+            try :
+            	pass
+	    except : 
+                pass
         try : 
             cmdStr = "%sTestTemplate  = %sTestTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
             #sys.stderr.write("%s\n" % cmdStr);
