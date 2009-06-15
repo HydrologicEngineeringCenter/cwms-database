@@ -1,5 +1,5 @@
 #!/bin/env python
-
+# -*- coding: utf-8 -*-
 import sys, os
 
 def uniqueCombinationsGenerator(items, n):
@@ -128,6 +128,11 @@ tableInfo = [
     {"ID" : "logMessageTypes",    "TABLE" : "CWMS_LOG_MESSAGE_TYPES",     "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "logMessagePropTypes","TABLE" : "CWMS_LOG_MESSAGE_PROP_TYPES","SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "interpolateUnits"   ,"TABLE" : "CWMS_INTERPOLATE_UNITS",     "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "locationCategory",   "TABLE" : "CWMS_LOCATION_CATEGORY",     "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "gageMethod",         "TABLE" : "CWMS_GAGE_METHOD",           "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "gageType",           "TABLE" : "CWMS_GAGE_TYPE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "nation",             "TABLE" : "CWMS_NATION",                "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "streamType",         "TABLE" : "CWMS_STREAM_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : True},
 ]
 
 tables = []
@@ -143,9 +148,9 @@ for item in tableInfo :
 
 
 
-#---------#
+#---------------#
 # SHEF_Duration #
-#---------#
+#---------------#
 sys.stderr.write("Processing shef_durations.\n")
 shef_duration = [
 #    SHEF                                                                                                                      SHEF    CWMS 
@@ -4862,6 +4867,319 @@ interpolateUnits = [
 	[2, 'intervals'],
 ]
 
+#---------------------#
+# LOCATION CATEGORIES #
+#---------------------#
+sys.stderr.write("Processing location categories \n")
+locationCategories = [
+# 	CODE  ID        DESCRIPTION
+#	----  --------  -----------------------------------------------------------------------------
+	[1,   'POINT',  'Location that can be represented by a single set of geospatial coordinates.'],
+	[2,   'STREAM', 'A named stream, the lat/lon represent the downstream-most point.'           ],
+	[3,   'BASIN',  'A named basin, the lat/lon represent the geospatial centroid.'              ],
+]
+
+#--------------#
+# GAGE METHODS #
+#--------------#
+sys.stderr.write("Processing gage methods \n")
+gageMethods = [
+# 	CODE  ID             DESCRIPTION
+#	----  -----------    ---------------------------------------
+	[1,   'MANUAL',      'No communication method'             ],
+	[2,   'GOES',        'Gage communicates via GOES satellite'],
+	[3,   'LOS',         'Line-of-site radio'                  ],
+	[4,   'METEORBURST', 'Gage communicates via meteorburst'   ],
+	[5,   'PHONE',       'Gage communicates via telephone'     ],
+	[6,   'INTERNET',    'Gage communicates via internet'      ],
+]
+
+#------------#
+# GAGE TYPES #
+#------------#
+sys.stderr.write("Processing gage types \n")
+gageTypes = [
+# 	CODE  ID         MANNUALLY_READ   INQUIRY_METHOD TX_METHOD    DESCRIPTION
+#	----  ---------- ---------------  -------------- ------------ ------------------------
+	[1,   'GOES_T',  'F',             'NULL',        'GOES',      'GOES TX-only'],
+	[2,   'GOES_TI', 'F',             'GOES',        'GOES',      'GOES TX+INQ'],
+	[3,   'LOS_T',   'F',             'NULL',        'LOS',       'LOS TX-only'],
+	[4,   'LOS_TI',  'F',             'LOS',         'LOS',       'LOS TX+INQ'],
+	[5,   'INET_T',  'F',             'NULL',        'INETERNET', 'INTERNET TX-only'],
+	[6,   'INET_TI', 'F',             'INTERNET',    'INETERNET', 'INTERNET TX+INQ'],
+]
+
+#---------#
+# NATIONS #
+#---------#
+nations = [
+#	 CODE   ID
+#        ----   -------------	
+	["AF",  "AFGHANISTAN"],
+	["AX",  "ÅLAND ISLANDS"],
+	["AL",  "ALBANIA"],
+	["DZ",  "ALGERIA"],
+	["AS",  "AMERICAN SAMOA"],
+	["AD",  "ANDORRA"],
+	["AO",  "ANGOLA"],
+	["AI",  "ANGUILLA"],
+	["AQ",  "ANTARCTICA"],
+	["AG",  "ANTIGUA AND BARBUDA"],
+	["AR",  "ARGENTINA"],
+	["AM",  "ARMENIA"],
+	["AW",  "ARUBA"],
+	["AU",  "AUSTRALIA"],
+	["AT",  "AUSTRIA"],
+	["AZ",  "AZERBAIJAN"],
+	["BS",  "BAHAMAS"],
+	["BH",  "BAHRAIN"],
+	["BD",  "BANGLADESH"],
+	["BB",  "BARBADOS"],
+	["BY",  "BELARUS"],
+	["BE",  "BELGIUM"],
+	["BZ",  "BELIZE"],
+	["BJ",  "BENIN"],
+	["BM",  "BERMUDA"],
+	["BT",  "BHUTAN"],
+	["BO",  "BOLIVIA"],
+	["BA",  "BOSNIA AND HERZEGOVINA"],
+	["BW",  "BOTSWANA"],
+	["BV",  "BOUVET ISLAND"],
+	["BR",  "BRAZIL"],
+	["IO",  "BRITISH INDIAN OCEAN TERRITORY"],
+	["BN",  "BRUNEI DARUSSALAM"],
+	["BG",  "BULGARIA"],
+	["BF",  "BURKINA FASO"],
+	["BI",  "BURUNDI"],
+	["KH",  "CAMBODIA"],
+	["CM",  "CAMEROON"],
+	["CA",  "CANADA"],
+	["CV",  "CAPE VERDE"],
+	["KY",  "CAYMAN ISLANDS"],
+	["CF",  "CENTRAL AFRICAN REPUBLIC"],
+	["TD",  "CHAD"],
+	["CL",  "CHILE"],
+	["CN",  "CHINA"],
+	["CX",  "CHRISTMAS ISLAND"],
+	["CC",  "COCOS (KEELING) ISLANDS"],
+	["CO",  "COLOMBIA"],
+	["KM",  "COMOROS"],
+	["CG",  "CONGO"],
+	["CD",  "CONGO, THE DEMOCRATIC REPUBLIC OF THE"],
+	["CK",  "COOK ISLANDS"],
+	["CR",  "COSTA RICA"],
+	["CI",  "CÔTE D'IVOIRE"],
+	["HR",  "CROATIA"],
+	["CU",  "CUBA"],
+	["CY",  "CYPRUS"],
+	["CZ",  "CZECH REPUBLIC"],
+	["DK",  "DENMARK"],
+	["DJ",  "DJIBOUTI"],
+	["DM",  "DOMINICA"],
+	["DO",  "DOMINICAN REPUBLIC"],
+	["EC",  "ECUADOR"],
+	["EG",  "EGYPT"],
+	["SV",  "EL SALVADOR"],
+	["GQ",  "EQUATORIAL GUINEA"],
+	["ER",  "ERITREA"],
+	["EE",  "ESTONIA"],
+	["ET",  "ETHIOPIA"],
+	["FK",  "FALKLAND ISLANDS (MALVINAS)"],
+	["FO",  "FAROE ISLANDS"],
+	["FJ",  "FIJI"],
+	["FI",  "FINLAND"],
+	["FR",  "FRANCE"],
+	["GF",  "FRENCH GUIANA"],
+	["PF",  "FRENCH POLYNESIA"],
+	["TF",  "FRENCH SOUTHERN TERRITORIES"],
+	["GA",  "GABON"],
+	["GM",  "GAMBIA"],
+	["GE",  "GEORGIA"],
+	["DE",  "GERMANY"],
+	["GH",  "GHANA"],
+	["GI",  "GIBRALTAR"],
+	["GR",  "GREECE"],
+	["GL",  "GREENLAND"],
+	["GD",  "GRENADA"],
+	["GP",  "GUADELOUPE"],
+	["GU",  "GUAM"],
+	["GT",  "GUATEMALA"],
+	["GG",  "GUERNSEY"],
+	["GN",  "GUINEA"],
+	["GW",  "GUINEA-BISSAU"],
+	["GY",  "GUYANA"],
+	["HT",  "HAITI"],
+	["HM",  "HEARD ISLAND AND MCDONALD ISLANDS"],
+	["VA",  "HOLY SEE (VATICAN CITY STATE)"],
+	["HN",  "HONDURAS"],
+	["HK",  "HONG KONG"],
+	["HU",  "HUNGARY"],
+	["IS",  "ICELAND"],
+	["IN",  "INDIA"],
+	["ID",  "INDONESIA"],
+	["IR",  "IRAN, ISLAMIC REPUBLIC OF"],
+	["IQ",  "IRAQ"],
+	["IE",  "IRELAND"],
+	["IM",  "ISLE OF MAN"],
+	["IL",  "ISRAEL"],
+	["IT",  "ITALY"],
+	["JM",  "JAMAICA"],
+	["JP",  "JAPAN"],
+	["JE",  "JERSEY"],
+	["JO",  "JORDAN"],
+	["KZ",  "KAZAKHSTAN"],
+	["KE",  "KENYA"],
+	["KI",  "KIRIBATI"],
+	["KP",  "KOREA, DEMOCRATIC PEOPLE'S REPUBLIC OF"],
+	["KR",  "KOREA, REPUBLIC OF"],
+	["KW",  "KUWAIT"],
+	["KG",  "KYRGYZSTAN"],
+	["LA",  "LAO PEOPLE'S DEMOCRATIC REPUBLIC"],
+	["LV",  "LATVIA"],
+	["LB",  "LEBANON"],
+	["LS",  "LESOTHO"],
+	["LR",  "LIBERIA"],
+	["LY",  "LIBYAN ARAB JAMAHIRIYA"],
+	["LI",  "LIECHTENSTEIN"],
+	["LT",  "LITHUANIA"],
+	["LU",  "LUXEMBOURG"],
+	["MO",  "MACAO"],
+	["MK",  "MACEDONIA, THE FORMER YUGOSLAV REPUBLIC OF"],
+	["MG",  "MADAGASCAR"],
+	["MW",  "MALAWI"],
+	["MY",  "MALAYSIA"],
+	["MV",  "MALDIVES"],
+	["ML",  "MALI"],
+	["MT",  "MALTA"],
+	["MH",  "MARSHALL ISLANDS"],
+	["MQ",  "MARTINIQUE"],
+	["MR",  "MAURITANIA"],
+	["MU",  "MAURITIUS"],
+	["YT",  "MAYOTTE"],
+	["MX",  "MEXICO"],
+	["FM",  "MICRONESIA, FEDERATED STATES OF"],
+	["MD",  "MOLDOVA, REPUBLIC OF"],
+	["MC",  "MONACO"],
+	["MN",  "MONGOLIA"],
+	["ME",  "MONTENEGRO"],
+	["MS",  "MONTSERRAT"],
+	["MA",  "MOROCCO"],
+	["MZ",  "MOZAMBIQUE"],
+	["MM",  "MYANMAR"],
+	["NA",  "NAMIBIA"],
+	["NR",  "NAURU"],
+	["NP",  "NEPAL"],
+	["NL",  "NETHERLANDS"],
+	["AN",  "NETHERLANDS ANTILLES"],
+	["NC",  "NEW CALEDONIA"],
+	["NZ",  "NEW ZEALAND"],
+	["NI",  "NICARAGUA"],
+	["NE",  "NIGER"],
+	["NG",  "NIGERIA"],
+	["NU",  "NIUE"],
+	["NF",  "NORFOLK ISLAND"],
+	["MP",  "NORTHERN MARIANA ISLANDS"],
+	["NO",  "NORWAY"],
+	["OM",  "OMAN"],
+	["PK",  "PAKISTAN"],
+	["PW",  "PALAU"],
+	["PS",  "PALESTINIAN TERRITORY, OCCUPIED"],
+	["PA",  "PANAMA"],
+	["PG",  "PAPUA NEW GUINEA"],
+	["PY",  "PARAGUAY"],
+	["PE",  "PERU"],
+	["PH",  "PHILIPPINES"],
+	["PN",  "PITCAIRN"],
+	["PL",  "POLAND"],
+	["PT",  "PORTUGAL"],
+	["PR",  "PUERTO RICO"],
+	["QA",  "QATAR"],
+	["RE",  "RÉUNION"],
+	["RO",  "ROMANIA"],
+	["RU",  "RUSSIAN FEDERATION"],
+	["RW",  "RWANDA"],
+	["BL",  "SAINT BARTHÉLEMY"],
+	["SH",  "SAINT HELENA"],
+	["KN",  "SAINT KITTS AND NEVIS"],
+	["LC",  "SAINT LUCIA"],
+	["MF",  "SAINT MARTIN"],
+	["PM",  "SAINT PIERRE AND MIQUELON"],
+	["VC",  "SAINT VINCENT AND THE GRENADINES"],
+	["WS",  "SAMOA"],
+	["SM",  "SAN MARINO"],
+	["ST",  "SAO TOME AND PRINCIPE"],
+	["SA",  "SAUDI ARABIA"],
+	["SN",  "SENEGAL"],
+	["RS",  "SERBIA"],
+	["SC",  "SEYCHELLES"],
+	["SL",  "SIERRA LEONE"],
+	["SG",  "SINGAPORE"],
+	["SK",  "SLOVAKIA"],
+	["SI",  "SLOVENIA"],
+	["SB",  "SOLOMON ISLANDS"],
+	["SO",  "SOMALIA"],
+	["ZA",  "SOUTH AFRICA"],
+	["GS",  "SOUTH GEORGIA AND THE SOUTH SANDWICH ISLANDS"],
+	["ES",  "SPAIN"],
+	["LK",  "SRI LANKA"],
+	["SD",  "SUDAN"],
+	["SR",  "SURINAME"],
+	["SJ",  "SVALBARD AND JAN MAYEN"],
+	["SZ",  "SWAZILAND"],
+	["SE",  "SWEDEN"],
+	["CH",  "SWITZERLAND"],
+	["SY",  "SYRIAN ARAB REPUBLIC"],
+	["TW",  "TAIWAN, PROVINCE OF CHINA"],
+	["TJ",  "TAJIKISTAN"],
+	["TZ",  "TANZANIA, UNITED REPUBLIC OF"],
+	["TH",  "THAILAND"],
+	["TL",  "TIMOR-LESTE"],
+	["TG",  "TOGO"],
+	["TK",  "TOKELAU"],
+	["TO",  "TONGA"],
+	["TT",  "TRINIDAD AND TOBAGO"],
+	["TN",  "TUNISIA"],
+	["TR",  "TURKEY"],
+	["TM",  "TURKMENISTAN"],
+	["TC",  "TURKS AND CAICOS ISLANDS"],
+	["TV",  "TUVALU"],
+	["UG",  "UGANDA"],
+	["UA",  "UKRAINE"],
+	["AE",  "UNITED ARAB EMIRATES"],
+	["GB",  "UNITED KINGDOM"],
+	["US",  "UNITED STATES"],
+	["UM",  "UNITED STATES MINOR OUTLYING ISLANDS"],
+	["UY",  "URUGUAY"],
+	["UZ",  "UZBEKISTAN"],
+	["VU",  "VANUATU"],
+	["VE",  "VENEZUELA, BOLIVARIAN REPUBLIC OF"],
+	["VN",  "VIET NAM"],
+	["VG",  "VIRGIN ISLANDS, BRITISH"],
+	["VI",  "VIRGIN ISLANDS, U.S."],
+	["WF",  "WALLIS AND FUTUNA"],
+	["EH",  "WESTERN SAHARA"],
+	["YE",  "YEMEN"],
+	["ZM",  "ZAMBIA"],
+	["ZW",  "ZIMBABWE"],
+]
+
+#--------------#
+# STREAM TYPES #
+#--------------#
+streamTypes = [
+#	 CODE   ID     DESCRIPTION
+#        ----   ------ ----------------------------------------------------------	
+	[1,     'Aa+', 'Very steep. Deeply entrenched. Debris transport streams'],
+	[2,     'A',   'Steep, entrenched, cascading step-pool streams: high energy/debris transport associated with depositional soils: very stable if bedrock or boulder dominated channel'],
+	[3,     'B',   'Moderately entrenched, moderate-gradient, riffle dominated channel with infrequently spaced pools; very stable plan and profile: stable banks'],
+	[4,     'C',   'Low-gradient, meandering, point-bar, riffle-pool, alluvial channels with broad. well-defined floodplains'],
+	[5,     'D',   'Braided channel with longitudinal and transverse bars: very wide channel with eroding banks'],
+	[6,     'DA',  'Anastomosing (multiple channels) narrow and deep with expansive wellvegetated floodplain and associated wetlands: very gentle relief with highly variable sinuosities; stable streambanks'], 
+	[7,     'E',   'Low-gradient. meandering riffle-pool stream with low width-to-depth ratio and little deposition; very efficient and stable; high meander width ratio'],
+	[8,     'F',   'Entrenched meandering riffle-pool channel on low gradients with high width-to-depth ratio'], 
+	[9,     'G',   'Entrenched ''gully'' step-pool and low width-to-depth ratio on moderate gradients'],
+]
+
 #--------------------------------------------------#
 # parse the offices into dbhost_offices dictionary #
 #--------------------------------------------------#
@@ -8134,6 +8452,331 @@ for k in range(len(office_ids)) :
             displayUnitsLoadTemplate +="/\n"
 displayUnitsLoadTemplate +="COMMIT;\n"
 
+
+
+sys.stderr.write("Building locationCategoryCreationTemplate\n")
+locationCategoryCreationTemplate = \
+'''
+-- ## TABLE ###############################################
+-- ## @TABLE
+-- ##
+CREATE TABLE @TABLE
+(
+   CATEGORY_CODE NUMBER(10)     NOT NULL,
+   CATEGORY_ID   VARCHAR2(32)   NOT NULL,
+   DESCRIPTION   VARCHAR2(256)
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+	    INITIAL          10K
+	    NEXT             10K
+	    MINEXTENTS       1
+	    MAXEXTENTS       UNLIMITED
+	    PCTINCREASE      0
+	    BUFFER_POOL      DEFAULT
+	   )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING;
+
+-------------------------------
+-- @TABLE constraints  --
+--
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (CATEGORY_CODE) USING INDEX;
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_U1  UNIQUE (CATEGORY_ID) USING INDEX;
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK(TRIM(CATEGORY_ID) = CATEGORY_ID);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK2 CHECK(UPPER(CATEGORY_ID) = CATEGORY_ID);
+
+---------------------------
+-- @TABLE comments --
+--
+COMMENT ON TABLE  @TABLE               IS 'Contains pre-defined location categories.';
+COMMENT ON COLUMN @TABLE.CATEGORY_CODE IS 'Primary key relating location categories to other entities.';
+COMMENT ON COLUMN @TABLE.CATEGORY_ID   IS 'Text name used as an input to the lookup.';
+COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Optional description or comments.';
+
+COMMIT;
+'''
+sys.stderr.write("Building locationCategoryLoadTemplate\n")
+locationCategoryLoadTemplate = ''
+for code, id, description in locationCategories :
+	locationCategoryLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
+locationCategoryLoadTemplate += "COMMIT;\n"
+
+sys.stderr.write("Building gageMethodCreationTemplate\n")
+gageMethodCreationTemplate = \
+'''
+-- ## TABLE ###############################################
+-- ## @TABLE
+-- ##
+CREATE TABLE @TABLE
+(
+   METHOD_CODE NUMBER(10)    NOT NULL,
+   METHOD_ID   VARCHAR2(32)  NOT NULL,
+   DESCRIPTION VARCHAR2(256)
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          10K
+            NEXT             10K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING;
+
+-------------------------------
+-- @TABLE constraints  --
+--
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY(METHOD_CODE) USING INDEX;
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_U1  UNIQUE (METHOD_ID) USING INDEX;
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(METHOD_ID) = METHOD_ID);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK2 CHECK (UPPER(METHOD_ID) = METHOD_ID);
+
+---------------------------
+-- @TABLE comments --
+--
+COMMENT ON TABLE  @TABLE             IS 'Contains inquiry and transmission methods gages.';
+COMMENT ON COLUMN @TABLE.METHOD_CODE IS 'Primary key relating methods to other entities.'; 
+COMMENT ON COLUMN @TABLE.METHOD_ID   IS 'Name of method (''MANUAL'', ''PHONE'', ''INTERNET'', ''GOES'', etc...).'; 
+COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Optional description.';
+
+COMMIT;
+'''
+sys.stderr.write("Building gageMethodLoadTemplate\n")
+gageMethodLoadTemplate = ''
+for code, id, description in gageMethods :
+	gageMethodLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
+gageMethodLoadTemplate += "COMMIT;\n"
+
+sys.stderr.write("Building gageTypeCreationTemplate\n")
+gageTypeCreationTemplate = \
+'''
+-- ## TABLE ###############################################
+-- ## @TABLE
+-- ##
+CREATE TABLE @TABLE
+(
+   GAGE_TYPE_CODE      NUMBER(10)    NOT NULL,
+   GAGE_TYPE_ID        VARCHAR2(32)  NOT NULL,
+   MANUALLY_READ       VARCHAR2(1)   NOT NULL,
+   INQUIRY_METHOD      NUMBER(10),
+   TRANSMIT_METHOD     NUMBER(10), 
+   DESCRIPTION         VARCHAR2(256)
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          10K
+            NEXT             10K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING;
+
+
+-------------------------------
+-- @TABLE constraints  --
+--
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (GAGE_TYPE_CODE) USING INDEX;
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(GAGE_TYPE_ID) = GAGE_TYPE_ID);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (INQUIRY_METHOD) REFERENCES CWMS_GAGE_METHOD (METHOD_CODE);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (TRANSMIT_METHOD) REFERENCES CWMS_GAGE_METHOD (METHOD_CODE);
+
+-------------------------------
+-- @TABLE indicies  --
+--
+CREATE UNIQUE INDEX @TABLE_U1 ON @TABLE (UPPER(GAGE_TYPE_ID))
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          10K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL;
+
+---------------------------
+-- @TABLE comments --
+--
+COMMENT ON TABLE  @TABLE                 IS 'Contains pre-defined gage types.';
+COMMENT ON COLUMN @TABLE.GAGE_TYPE_CODE  IS 'Primary key used to relate gage types to other entities.';
+COMMENT ON COLUMN @TABLE.GAGE_TYPE_ID    IS 'Name of gage type.';
+COMMENT ON COLUMN @TABLE.MANUALLY_READ   IS 'Indicator of whether gage is manually read.';
+COMMENT ON COLUMN @TABLE.INQUIRY_METHOD  IS 'Reference to method of inquiry.';
+COMMENT ON COLUMN @TABLE.TRANSMIT_METHOD IS 'Reference to method of data transmission.';
+COMMENT ON COLUMN @TABLE.DESCRIPTION     IS 'Optional description.';
+
+COMMIT;
+'''
+sys.stderr.write("Building gageTypeLoadTemplate\n")
+gageTypeLoadTemplate = ''
+for code, id, manually_read, inquiry_method, tx_method, description in gageTypes :
+	if inquiry_method != 'NULL' :
+		inquiry_method = "(SELECT METHOD_CODE FROM CWMS_GAGE_METHOD WHERE METHOD_ID='%s')" % inquiry_method
+	if tx_method != 'NULL' :
+		tx_method = "(SELECT METHOD_CODE FROM CWMS_GAGE_METHOD WHERE METHOD_ID='%s')" % tx_method
+	gageTypeLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s', %s, %s, '%s');\n" % \
+		(code, id, manually_read, inquiry_method, tx_method, description)
+gageTypeLoadTemplate += "COMMIT;\n"
+gageTypeLoadTemplate = gageTypeLoadTemplate.replace("'NULL'", "NULL")
+
+sys.stderr.write("Building nationCreationTemplate\n")
+nationCreationTemplate = \
+'''
+-- ## TABLE ###############################################
+-- ## @TABLE
+-- ##
+CREATE TABLE @TABLE
+(
+   NATION_CODE VARCHAR2(2)  NOT NULL,
+   NATION_ID   VARCHAR2(48) NOT NULL
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          10K
+            NEXT             10K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING;
+
+-------------------------------
+-- @TABLE constraints  --
+--
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (NATION_CODE) USING INDEX;
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(NATION_ID) = NATION_ID);
+
+-------------------------------
+-- @TABLE indicies  --
+--
+CREATE UNIQUE INDEX @TABLE_U1 ON @TABLE (UPPER(NATION_ID))
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          10K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL;
+
+---------------------------
+-- @TABLE comments --
+--
+COMMENT ON TABLE  @TABLE             IS 'Contains names of nations';
+COMMENT ON COLUMN @TABLE.NATION_CODE IS 'Primary key used to relate nation to other entities';
+COMMENT ON COLUMN @TABLE.NATION_ID   IS 'Name of nation';
+
+COMMIT;
+'''
+sys.stderr.write("Building nationLoadTemplate\n")
+nationLoadTemplate = ''
+for code, id,  in nations :
+	nationLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s');\n" % (code, id.replace("'", "''"))
+nationLoadTemplate += "COMMIT;\n"
+
+sys.stderr.write("Building streamTypeCreationTemplate\n")
+streamTypeCreationTemplate = \
+'''
+-- ## TABLE ###############################################
+-- ## @TABLE
+-- ##
+CREATE TABLE @TABLE
+(
+  STREAM_TYPE_CODE   NUMBER(10)    NOT NULL,
+  STREAM_TYPE_ID     VARCHAR2(32)  NOT NULL,
+  DESCRIPTION        VARCHAR2(256)
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          10K
+            NEXT             10K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING;
+
+-------------------------------
+-- @TABLE constraints  --
+--
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (STREAM_TYPE_CODE) USING INDEX;
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_U1  UNIQUE (STREAM_TYPE_ID) USING INDEX;
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(STREAM_TYPE_ID) = STREAM_TYPE_ID);
+
+---------------------------
+-- @TABLE comments --
+--
+COMMENT ON TABLE  @TABLE                  IS 'Contains pre-defined stream types';
+COMMENT ON COLUMN @TABLE.STREAM_TYPE_CODE IS 'Primary key used to relate stream to other entities';
+COMMENT ON COLUMN @TABLE.STREAM_TYPE_ID   IS 'Name of stream type';
+COMMENT ON COLUMN @TABLE.DESCRIPTION      IS 'Optional description';
+
+COMMIT;
+'''
+sys.stderr.write("Building streamTypeLoadTemplate\n")
+streamTypeLoadTemplate = ''
+for code, id, description in streamTypes :
+	streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
+streamTypeLoadTemplate += "COMMIT;\n"
+
+
+
 #==
 #====
 #======
@@ -8158,11 +8801,8 @@ for table1 in tables :
             cmdStr = "%sLoadTemplate  = %sLoadTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
             #sys.stderr.write("%s\n" % cmdStr);
             exec(cmdStr)
-        except :
-            try :
-            	pass
-	    except : 
-                pass
+        except : 
+            pass
         try : 
             cmdStr = "%sTestTemplate  = %sTestTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
             #sys.stderr.write("%s\n" % cmdStr);
@@ -8170,11 +8810,6 @@ for table1 in tables :
         except : 
             pass
             
-
-
-
-
-
 
 
 #------------------------------------------------------------------------------
