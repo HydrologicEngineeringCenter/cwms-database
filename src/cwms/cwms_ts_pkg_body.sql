@@ -2275,13 +2275,13 @@ end retrieve_ts_multi;
       c_ok                  constant integer :=          2; -- 0000 0000 0000 0000 0000 0000 0000 0010
       c_ok_mask             constant integer := 4294967267; -- 1111 1111 1111 1111 1111 1111 1110 0011 
       c_missing             constant integer :=          4; -- 0000 0000 0000 0000 0000 0000 0000 0100
-      c_missing_mask        constant integer :=          5; -- 1111 1111 1111 1111 1111 1111 1110 0101 
+      c_missing_mask        constant integer := 4294967269; -- 1111 1111 1111 1111 1111 1111 1110 0101 
       c_questioned          constant integer :=          8; -- 0000 0000 0000 0000 0000 0000 0000 1000
       c_questioned_mask     constant integer := 4294967273; -- 1111 1111 1111 1111 1111 1111 1110 1001 
       c_rejected            constant integer :=         16; -- 0000 0000 0000 0000 0000 0000 0001 0000
       c_rejected_mask       constant integer := 4294967281; -- 1111 1111 1111 1111 1111 1111 1111 0001 
       c_different_mask      constant integer :=        128; -- 0000 0000 0000 0000 0000 0000 1000 0000
-      c_not_different_mask  constant integer :=        128; -- 1111 1111 1111 1111 1111 1111 0111 1111
+      c_not_different_mask  constant integer :=       -129; -- 1111 1111 1111 1111 1111 1111 0111 1111
       c_repl_cause_mask     constant integer :=       1792; -- 0000 0000 0000 0000 0000 0111 0000 0000
       c_no_repl_cause_mask  constant integer := 4294965503; -- 1111 1111 1111 1111 1111 1000 1111 1111
       c_repl_method_mask    constant integer :=      30720; -- 0000 0000 0000 0000 0111 1000 0000 0000
@@ -2335,7 +2335,7 @@ end retrieve_ts_multi;
                l_repl_cause := trunc(bitand(l_quality_code, c_repl_cause_mask) / c_repl_cause_factor);
                if l_repl_cause > 4 then
                   l_repl_cause := 4;
-                  l_quality_code := bitor(bitand(l_quality_code, c_no_repl_cause_mask), l_repl_cause * c_repl_cause_factor);
+                  l_quality_code := bitor(l_quality_code, l_repl_cause * c_repl_cause_factor);
                end if;
                ---------------------------------------------------------
                -- ensure the replacement method is not greater than 4 --
@@ -2343,7 +2343,7 @@ end retrieve_ts_multi;
                l_repl_method := trunc(bitand(l_quality_code, c_repl_method_mask) / c_repl_method_factor);
                if l_repl_method > 4 then
                   l_repl_method := 4;
-                  l_quality_code := bitor(bitand(l_quality_code, c_no_repl_method_mask), l_repl_method * c_repl_method_factor);
+                  l_quality_code := bitor(l_quality_code, l_repl_method * c_repl_method_factor);
                end if;
                --------------------------------------------------------------------------------------------------------------
                -- ensure that if 2 of replacement cause, replacement method, and different are 0, the remaining one is too --
@@ -3520,7 +3520,7 @@ end retrieve_ts_multi;
                                       from TABLE(cast(:p_timeseries_data as tsv_array)) t)
                        and t1.ts_code =: l_tcode
                        and t1.version_date = :l_version_date';
-
+                       
                   --dbms_output.put_line(l_sql_txt);
                dbms_output.put_line('CASE 8: executing DELETE FROM dynamic sql for av_tsv view');
 
