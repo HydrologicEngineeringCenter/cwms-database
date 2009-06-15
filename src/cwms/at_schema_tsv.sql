@@ -51,7 +51,7 @@ BEGIN
    l_names.extend(2);
    l_names(1) := '';
    l_names(2) := '_ARCHIVAL';
-   FOR i IN  2002..2009 LOOP
+   FOR i IN  2002..2010 LOOP
       l_names.extend;
       l_names(l_names.count) := '_' || i;
    END LOOP;
