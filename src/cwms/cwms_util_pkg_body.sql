@@ -2581,6 +2581,8 @@ BEGIN
 		LOGGING
 		TABLESPACE cwms_20at_data
 		NOPARALLEL';
+      
+   sys.utl_recomp.recomp_serial('CWMS_20');      
 
 END rebuild_timeseries_mviews;
 
