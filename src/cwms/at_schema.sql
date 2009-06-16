@@ -15,40 +15,28 @@ declare
    mview_log_names id_array_t := new id_array_t();
 begin
    for rec in (select object_name 
-	              from dba_objects 
-					 where object_type = 'TABLE' 
-					   and object_name not like 'MLOG$\_%' escape '\'
-						and object_name not like 'AQ$%'
-						and object_name not like 'SYS\_%' escape '\')
+                  from dba_objects 
+                 where object_type = 'TABLE' 
+                   and object_name not like 'AQ$%'
+                   and object_name not like 'SYS\_%' escape '\')
    loop                       
-      begin                   
-         execute immediate 'drop table ' 
-			                  || rec.object_name 
-									|| 'cascade constraints'; 
-                              
-         dbms_output.put_line ('Dropped table ' || rec.object_name);
+      begin
+            if substr(rec.object_name, 1, 6) = 'MLOG$_' then
+                 execute immediate 'drop materialized view log on '
+                                   || substr(rec.object_name, 7); 
+                                      
+                 dbms_output.put_line ('Dropped materialized view log on '
+                                       || substr(rec.object_name, 7)
+                                      );
+            else
+               execute immediate 'drop table ' 
+                                  || rec.object_name 
+                                  || 'cascade constraints'; 
+                                
+               dbms_output.put_line ('Dropped table ' || rec.object_name);
+            end if;                   
       exception               
-         when others          
-         then                 
-            null;             
-      end;                    
-   end loop;                  
-   for rec in (select object_name 
-	              from dba_objects 
-					 where object_type = 'TABLE' 
-					   and object_name like 'MLOG$_')
-   loop                       
-      begin                   
-         execute immediate 'drop materialized view log on '
-                           || substr(rec.object_name, 7); 
-                              
-         dbms_output.put_line ('Dropped materialized view log on '
-                               || substr(rec.object_name, 7)
-                              );
-      exception               
-         when others          
-         then                 
-            null;             
+         when others then null;             
       end;                    
    end loop;                  
 end;
@@ -2328,25 +2316,25 @@ CREATE UNIQUE INDEX at_properties_uk1 ON at_properties(office_code, UPPER("PROP_
 -- AT_PROPERTIES default data.
 -- 
 INSERT INTO at_properties values(
-	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
-	'CWMSDB',
-	'logging.table.max_entries',
-	'100000',
-	'Max number of rows to keep when trimming log.');
-	
+    (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+    'CWMSDB',
+    'logging.table.max_entries',
+    '100000',
+    'Max number of rows to keep when trimming log.');
+    
 INSERT INTO at_properties values(
-	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
-	'CWMSDB',
-	'logging.entry.max_age',
-	'120',
-	'Max entry age in days to keep when trimming log.');
-	
+    (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+    'CWMSDB',
+    'logging.entry.max_age',
+    '120',
+    'Max entry age in days to keep when trimming log.');
+    
 INSERT INTO at_properties values(
-	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
-	'CWMSDB',
-	'logging.auto_trim.interval',
-	'240',
-	'Interval in minutes for job TRIM_LOG_JOB to execute.');
+    (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+    'CWMSDB',
+    'logging.auto_trim.interval',
+    '240',
+    'Interval in minutes for job TRIM_LOG_JOB to execute.');
 
 -----------------------------
 -- AT_REPORT_TEMPLATES table
@@ -2582,8 +2570,8 @@ INSERT INTO at_clob
   <center>
     <h2>
       Time series IDs matching pattern 
-	    "<xsl:value-of select="/tsid_catalog[1]/@pattern"/>" for Office 
-	    "<xsl:value-of select="/tsid_catalog[1]/@office"/>".
+        "<xsl:value-of select="/tsid_catalog[1]/@pattern"/>" for Office 
+        "<xsl:value-of select="/tsid_catalog[1]/@office"/>".
     </h2>
     <hr/>
     <table border="1"> 
