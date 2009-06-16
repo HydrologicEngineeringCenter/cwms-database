@@ -24,7 +24,8 @@ DECLARE
                      'av_screening_id',
                      'av_shef_decode_spec',
                      'av_shef_pe_codes',
-                     'av_unit'
+                     'av_unit',
+                     'av_storage_unit'
                     );
 BEGIN
    FOR i IN view_names.FIRST .. view_names.LAST
@@ -679,4 +680,21 @@ AS
      WHERE         b.unit_code = a.unit_code
                 AND b.abstract_param_code = c.abstract_param_code
                 AND a.db_office_code = d.office_code
+/
+--------------------------------------------------------------------------------
+CREATE OR REPLACE FORCE VIEW av_storage_unit
+(
+    base_parameter_id,
+    sub_parameter_id,
+    unit_id
+)
+AS
+   select base_parameter_id,
+          sub_parameter_id,
+          unit_id
+     from at_parameter ap,
+          cwms_base_parameter bp,
+          cwms_unit u
+    where ap.base_parameter_code = bp.base_parameter_code
+      and bp.unit_code = u.unit_code
 /
