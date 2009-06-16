@@ -8,89 +8,50 @@ SET define off
 -- drop tables, mviews & mview logs if they exist --
 ----------------------------------------------------
 
-DECLARE
-   TYPE id_array_t IS TABLE OF VARCHAR2 (32);
+declare
+   type id_array_t is table of varchar2 (32);
 
-   table_names       id_array_t
-      := id_array_t ('at_ts_table_properties',
-                     'at_base_location',
-                     'at_physical_location',
-                     'at_loc_category',
-                     'at_loc_group',
-                     'at_loc_group_assignment',
-                     'at_data_stream_id',
-                     'at_alarm_id',
-                     'at_alarm_criteria',
-                     'at_screening_id',
-                     'at_screening_control',
-                     'at_screening_criteria',
-                     'at_screening_dur_mag',
-                     'at_cwms_ts_spec',
-                     'at_shef_decode',
-                     'at_screening',
-                     'at_alarm',
-                     'at_comp_vt',
-                     'at_transform_criteria',
-                     'at_unit_alias',
-                     'at_user_preferences',
-                     'at_office_settings',
-                     'at_properties',
-                     'at_dss_file',
-                     'at_dss_ts_spec',
-                     'at_dss_ts_xchg_spec',
-                     'at_dss_xchg_set',
-                     'at_dss_ts_xchg_map',
-                     'at_ts_msg_archive_1',
-                     'at_ts_msg_archive_2',
-                     'at_mview_refresh_paused',
-                     'at_report_templates',
-                     'at_clob'
-                    );
-   mview_log_names   id_array_t
-      := id_array_t ('at_base_location',
-                     'at_physical_location',
-                     'at_cwms_ts_spec',
-                     'cwms_office',
-                     'cwms_abstract_parameter',
-                     'cwms_parameter_type',
-                     'cwms_base_parameter',
-                     'at_parameter',
-                     'cwms_interval',
-                     'cwms_duration',
-                     'cwms_unit'
-                    );
-BEGIN
-   FOR i IN table_names.FIRST .. table_names.LAST
-   LOOP
-      BEGIN
-         EXECUTE IMMEDIATE    'drop table '
-                           || table_names (i)
-                           || ' cascade constraints';
-
-         DBMS_OUTPUT.put_line ('Dropped table ' || table_names (i));
-      EXCEPTION
-         WHEN OTHERS
-         THEN
-            NULL;
-      END;
-   END LOOP;
-
-   FOR i IN mview_log_names.FIRST .. mview_log_names.LAST
-   LOOP
-      BEGIN
-         EXECUTE IMMEDIATE    'drop materialized view log on '
-                           || mview_log_names (i);
-
-         DBMS_OUTPUT.put_line (   'Dropped materialized view log on '
-                               || mview_log_names (i)
+   table_names     id_array_t := new id_array_t();
+   mview_log_names id_array_t := new id_array_t();
+begin
+   for rec in (select object_name 
+	              from dba_objects 
+					 where object_type = 'TABLE' 
+					   and object_name not like 'MLOG$\_%' escape '\'
+						and object_name not like 'AQ$%'
+						and object_name not like 'SYS\_%' escape '\')
+   loop                       
+      begin                   
+         execute immediate 'drop table ' 
+			                  || rec.object_name 
+									|| 'cascade constraints'; 
+                              
+         dbms_output.put_line ('Dropped table ' || rec.object_name);
+      exception               
+         when others          
+         then                 
+            null;             
+      end;                    
+   end loop;                  
+   for rec in (select object_name 
+	              from dba_objects 
+					 where object_type = 'TABLE' 
+					   and object_name like 'MLOG$_')
+   loop                       
+      begin                   
+         execute immediate 'drop materialized view log on '
+                           || substr(rec.object_name, 7); 
+                              
+         dbms_output.put_line ('Dropped materialized view log on '
+                               || substr(rec.object_name, 7)
                               );
-      EXCEPTION
-         WHEN OTHERS
-         THEN
-            NULL;
-      END;
-   END LOOP;
-END;
+      exception               
+         when others          
+         then                 
+            null;             
+      end;                    
+   end loop;                  
+end;
 /
 
 -------------------
@@ -526,9 +487,9 @@ NOPARALLEL
 
 CREATE TABLE AT_SPECIFIED_LEVEL
 (
-   SPECIFIED_LEVEL_CODE NUMBER(10)   NOT NULL,
-   OFFICE_CODE          NUMBER(10)   NOT NULL,
-   SPECIFIED_LEVEL_ID   VARCHAR2(32) NOT NULL,
+   SPECIFIED_LEVEL_CODE NUMBER(10)    NOT NULL,
+   OFFICE_CODE          NUMBER(10)    NOT NULL,
+   SPECIFIED_LEVEL_ID   VARCHAR2(256) NOT NULL,
    DESCRIPTION          VARCHAR2(256)
 )
 TABLESPACE CWMS_20AT_DATA
