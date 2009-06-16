@@ -2415,7 +2415,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            cwms_err.RAISE ('ITEM_DOES_NOT__EXIST',
+            cwms_err.RAISE ('ITEM_DOES_NOT_EXIST',
                             'Category id: ',
                             p_loc_category_id
                            );
@@ -2447,7 +2447,7 @@ AS
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            cwms_err.RAISE ('ITEM_DOES_NOT__EXIST',
+            cwms_err.RAISE ('ITEM_DOES_NOT_EXIST',
                             'group id: ',
                             p_loc_group_id
                            );
