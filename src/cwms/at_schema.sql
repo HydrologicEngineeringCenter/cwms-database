@@ -1400,6 +1400,12 @@ INSERT INTO at_loc_category
      VALUES (0, 'Default', 53,
              'Default'
             );
+INSERT 
+  INTO at_loc_category 
+VALUES (/* loc_category_code */ 1,                                      
+        /* loc_category_id   */ 'Agency Aliases',                       
+        /* db_office_code    */ 53,                                     
+        /* loc_category_desc */ 'Location aliases for other agencies'); 
 
 --------
 --------
@@ -1492,15 +1498,17 @@ ALTER TABLE at_loc_group ADD (
  FOREIGN KEY (loc_category_code)
  REFERENCES at_loc_category (loc_category_code))
 /
-INSERT INTO at_loc_group
-            (loc_group_code, loc_category_code, loc_group_id, loc_group_desc,
-             db_office_code
-            )
-     VALUES (0, 0, 'Default', 'All Locations',
-             53
-            );
-COMMIT ;
------
+INSERT INTO at_loc_group VALUES (0, 0, 'Default',             'All Locations',                                            53);
+INSERT INTO at_loc_group VALUES (1, 1, 'USGS Station Name',   'US Geological Survey Station Name',                        53);
+INSERT INTO at_loc_group VALUES (2, 1, 'USGS Station Number', 'US Geological Survey Station Number',                      53);
+INSERT INTO at_loc_group VALUES (3, 1, 'NWS Handbook 5 ID',   'National Weather Service Handbook 5 ID',                   53);
+INSERT INTO at_loc_group VALUES (4, 1, 'DCP Platform ID',     'Data Collection Platform ID',                              53);
+INSERT INTO at_loc_group VALUES (5, 1, 'SHEF Location ID',    'Standard Hydrometeorological Exchange Format Location ID', 53);
+INSERT INTO at_loc_group VALUES (6, 1, 'CBT Station ID',      'Columbia Basin Teletype Station ID',                       53);
+INSERT INTO at_loc_group VALUES (7, 1, 'USBR Station ID',     'US Bureau of Reclamation Station ID',                      53);
+INSERT INTO at_loc_group VALUES (8, 1, 'TVA Station ID',      'Tennessee Valley Authority Station ID',                    53);
+INSERT INTO at_loc_group VALUES (9, 1, 'NRCS Station ID',     'Natural Resources Conservation Service Station ID',        53);
+COMMIT;
 -----
 
 CREATE TABLE at_loc_group_assignment
