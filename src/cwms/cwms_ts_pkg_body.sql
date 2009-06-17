@@ -2335,7 +2335,7 @@ end retrieve_ts_multi;
                l_repl_cause := trunc(bitand(l_quality_code, c_repl_cause_mask) / c_repl_cause_factor);
                if l_repl_cause > 4 then
                   l_repl_cause := 4;
-                  l_quality_code := bitor(l_quality_code, l_repl_cause * c_repl_cause_factor);
+                  l_quality_code := bitor(bitand(l_quality_code, c_no_repl_cause_mask), l_repl_cause * c_repl_cause_factor);
                end if;
                ---------------------------------------------------------
                -- ensure the replacement method is not greater than 4 --
@@ -2343,7 +2343,7 @@ end retrieve_ts_multi;
                l_repl_method := trunc(bitand(l_quality_code, c_repl_method_mask) / c_repl_method_factor);
                if l_repl_method > 4 then
                   l_repl_method := 4;
-                  l_quality_code := bitor(l_quality_code, l_repl_method * c_repl_method_factor);
+                  l_quality_code := bitor(bitand(l_quality_code, c_no_repl_method_mask), l_repl_method * c_repl_method_factor);
                end if;
                --------------------------------------------------------------------------------------------------------------
                -- ensure that if 2 of replacement cause, replacement method, and different are 0, the remaining one is too --
