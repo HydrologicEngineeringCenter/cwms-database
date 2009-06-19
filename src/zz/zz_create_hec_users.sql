@@ -66,7 +66,7 @@ BEGIN
             || l_hash
             || ''' default tablespace cwms_20data
                  temporary tablespace temp
-                 profile default
+                 profile CWMS_PROF
                  account unlock';
 
          EXECUTE IMMEDIATE l_execute;
