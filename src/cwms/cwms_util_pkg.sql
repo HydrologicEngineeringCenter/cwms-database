@@ -460,6 +460,13 @@ AS
 										 p_unit_system  IN VARCHAR2 DEFAULT 'SI'
 										)
 		RETURN VARCHAR2;
+      
+   --
+   -- sign-extends 32-bit integers so they can be retrieved by 
+   -- java int type
+   --
+   function sign_extend(p_int in integer) return integer;
+   
 END cwms_util;
 /
 

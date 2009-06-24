@@ -2586,6 +2586,32 @@ BEGIN
 
 END rebuild_timeseries_mviews;
 
+--
+-- sign-extends 32-bit integers so they can be retrieved by 
+-- java int type
+--
+function sign_extend(p_int in integer) return integer
+is
+   i  integer;
+   bi binary_integer;
+   numeric_overflow exception;
+   pragma exception_init (numeric_overflow, -1426);
+begin
+   begin
+      bi := p_int;
+   exception
+      when numeric_overflow then
+         begin
+            bi := p_int - 4294967296;
+         exception
+            when others then
+               cwms_err.raise('INVALID_ITEM', p_int, '32-bit integer');
+         end;
+   end;
+   i := bi;
+   return i;
+end;
+
 /*
 BEGIN
 	-- anything put here will be executed on every mod_plsql call
