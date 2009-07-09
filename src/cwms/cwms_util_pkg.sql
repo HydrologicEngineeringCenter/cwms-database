@@ -269,10 +269,11 @@ AS
 	--------------------------------------------------------------------------------
 	-- function pause_mv_refresh
 	--
-	FUNCTION pause_mv_refresh (p_mview_name	IN VARCHAR2,
-										p_reason 		IN VARCHAR2 DEFAULT NULL
-									  )
-		RETURN UROWID;
+-- Commented out because it doesn't appear to be used anywhere
+--	FUNCTION pause_mv_refresh (p_mview_name	IN VARCHAR2,
+--										p_reason 		IN VARCHAR2 DEFAULT NULL
+--									  )
+--		RETURN UROWID;
 
 	--------------------------------------------------------------------------------
 	-- procedure resume_mv_refresh
@@ -327,7 +328,8 @@ AS
 											p_recognize_sql	BOOLEAN DEFAULT FALSE
 										  )
 		RETURN VARCHAR2;
-
+    FUNCTION denormalize_wildcards (p_string IN VARCHAR2)
+        RETURN VARCHAR2;
 	PROCEDURE parse_ts_id (p_base_location_id   OUT VARCHAR2,
 								  p_sub_location_id	 OUT VARCHAR2,
 								  p_base_parameter_id	OUT VARCHAR2,

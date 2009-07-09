@@ -5307,7 +5307,7 @@ if testAccount == None:
     print
     print '-----------TEST ACCOUNT-----------'
     print
-    line = raw_input('--Do you want to create at test account? [n]: ')
+    line = raw_input('--Do you want to create test accounts? [n]: ')
     testAccount = line.strip().upper().startswith('Y')
     print
 
@@ -5334,24 +5334,63 @@ test_user_template = '''
 --
 whenever sqlerror continue
 
-drop user %s;
+drop user &eroc.hectest;
+drop user &eroc.hectest_ro;
+drop user &eroc.hectest_db;
+drop user &eroc.hectest_ua;
+drop user &eroc.hectest_dx;
+drop user &eroc.hectest_da;
+drop user &eroc.hectest_vt;
+drop user &eroc.hectest_dv;
 
 --
 -- notice errors
 --
 whenever sqlerror exit sql.sqlcode
 
-create user %s
-   identified by &test_passwd
-   default tablespace cwms_20data
-   temporary tablespace temp
-   profile cwms_prof
-   account unlock;
+variable test_passwd varchar2(50)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+exec :test_passwd := '&test_passwd';
 
-grant cwms_user to %s;
-alter user %s default role cwms_user;
-alter user %s grant connect through %scwmsdbi with role cwms_user;
+clear
 
+DECLARE
+    test_passwd  VARCHAR2 (50) := :test_passwd;
+    group_list   cwms_20.char_32_array_type;
+BEGIN
+    -- hectest
+    group_list := cwms_20.char_32_array_type ('TS ID Creator', 'CWMS Users');
+    cwms_20.cwms_sec.create_user ('&eroc.hectest', test_passwd, group_list, '&office_id');
+    --
+    -- hectest_ro
+    group_list := cwms_20.char_32_array_type ('TS ID Creator', 'CWMS Users', 'Viewer Users');
+    cwms_20.cwms_sec.create_user ('&eroc.hectest_ro', test_passwd, group_list, '&office_id');
+    --
+    -- hectest_dba
+    group_list := cwms_20.char_32_array_type ('CWMS DBA Users');
+    cwms_20.cwms_sec.create_user ('&eroc.hectest_db', test_passwd, group_list, '&office_id');
+    --
+    -- hectest_ua
+    group_list := cwms_20.char_32_array_type ('CWMS User Admins', 'TS ID Creator', 'Viewer Users');
+    cwms_20.cwms_sec.create_user ('&eroc.hectest_ua', test_passwd, group_list, '&office_id');
+    --
+    -- hectest_dx
+    group_list := cwms_20.char_32_array_type ('Data Exchange Mgr', 'TS ID Creator', 'CWMS Users');
+    cwms_20.cwms_sec.create_user ('&eroc.hectest_dx', test_passwd, group_list, '&office_id');
+    --
+    -- hectest_da
+    group_list := cwms_20.char_32_array_type ('Data Acquisition Mgr', 'TS ID Creator', 'CWMS Users');
+    cwms_20.cwms_sec.create_user ('&eroc.hectest_da', test_passwd, group_list, '&office_id');
+    --
+    -- hectest_vt
+    group_list := cwms_20.char_32_array_type ('VT Mgr', 'TS ID Creator', 'CWMS Users');
+    cwms_20.cwms_sec.create_user ('&eroc.hectest_vt', test_passwd, group_list, '&office_id');
+    --
+    -- hectest_dv
+    group_list := cwms_20.char_32_array_type ('Data Acquisition Mgr', 'VT Mgr', 'TS ID Creator', 'CWMS Users');
+    cwms_20.cwms_sec.create_user ('&eroc.hectest_dv', test_passwd, group_list, '&office_id');
+
+END;
+/
 '''
 
 user_template = '''
@@ -5368,25 +5407,25 @@ drop user &eroc.cwmsdbi;
 --
 whenever sqlerror exit sql.sqlcode
 
-create user &eroc.cwmsdbi
-   identified by &dbi_passwd
-   default tablespace users
-   temporary tablespace temp
-   profile cwms_prof
-   account unlock;
+variable dbi_passwd varchar2(50)
+exec :dbi_passwd := '&dbi_passwd';
 
-grant create session to &eroc.cwmsdbi;
+clear
 
-create user &eroc.cwmspd
-   identified by values 'FEDCBA9876543210'
-   default tablespace cwms_20data
-   temporary tablespace temp
-   profile cwms_prof
-   account unlock;
+DECLARE
+    dbi_passwd      VARCHAR2 (50) := :dbi_passwd;
+    group_list      cwms_20.char_32_array_type := cwms_20.char_32_array_type('CWMS PD Users');
+BEGIN
+    cwms_20.cwms_sec.create_cwmsdbi_db_user('&eroc.cwmsdbi', dbi_passwd, '&office_id');
 
-grant cwms_user to &eroc.cwmspd;
-alter user &eroc.cwmspd default role cwms_user;
-alter user &eroc.cwmspd grant connect through &eroc.cwmsdbi with role cwms_user;
+    cwms_20.cwms_sec.create_user ('&eroc.cwmspd', NULL, group_list, '&office_id');
+    
+    cwms_20.cwms_sec.assign_ts_group_user_group ('All Rev TS IDs', 'Viewer Users', 'Read', '&office_id');
+    
+    cwms_20.cwms_sec.assign_ts_group_user_group ('All TS IDs', 'CWMS Users', 'Read-Write', '&office_id');
+
+END;
+/
 '''
 
 queue_template = '''
@@ -5402,74 +5441,23 @@ queue_template = '''
    dbms_aqadm.start_queue(queue_name => '%s_%s');
 '''
 
-userSecUserOffice_template = '''
-Insert into AT_SEC_USER_OFFICE
-   (USER_ID, USER_DB_OFFICE_CODE)
- Values
-   ('%s', %s);
-Insert into AT_SEC_USERS
-   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_ID)
- Values
-   (%s, 1, '%s');
-'''
-
-testuserSecUserOffice_template = '''
-Insert into AT_SEC_USER_OFFICE
-   (USER_ID, USER_DB_OFFICE_CODE)
- Values
-   ('%s', %s);
-
-Insert into AT_SEC_USER_GROUPS
-   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_GROUP_ID, USER_GROUP_DESC)
- Values
-   (%s, 10, 'Test Users', 'Test CWMS Users.');
-
-Insert into AT_SEC_USERS
-   (DB_OFFICE_CODE, USER_GROUP_CODE, USER_ID)
- Values
-   (%s, 10, '%s');
-
-Insert into AT_SEC_ALLOW
-   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
- Values
-   (%s, 0, 10, 4);
-
-Insert into AT_SEC_ALLOW
-   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
- Values
-   (%s, 2, 10, 2);
-
-Insert into AT_SEC_ALLOW
-   (DB_OFFICE_CODE, TS_GROUP_CODE, USER_GROUP_CODE, PRIVILEGE_BIT)
- Values
-   (%s, 2, 10, 4);
-'''
 #==============================================================================
 
 sys.stderr.write("Creating py_ErocUsers.sql\n");
 f  = open("py_ErocUsers.sql", "w")
-f1 = open("py_SecUserOffice.sql", "w")
 users_created = []
 for dbhost_id in office_ids :
     for office_id in dbhost_offices[dbhost_id] :
         eroc = office_erocs[office_id].lower()
         if eroc not in users_created :
-            f.write(user_template.replace("&eroc.", eroc))
+            f.write(user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
             user_id = eroc+"cwmspd"
-            f1.write(userSecUserOffice_template % (user_id,
-                db_office_code[dbhost_id], 
-                db_office_code[dbhost_id],user_id.upper()))
             users_created.append(eroc)
 if test_user_id : 
     db_ofc_code = db_office_code[db_office_id]
     db_ofc_eroc = office_erocs[db_office_id]
-    f.write(test_user_template % (test_user_id, test_user_id, test_user_id, test_user_id,
-        test_user_id, db_ofc_eroc))
-    f1.write(testuserSecUserOffice_template %(test_user_id, db_ofc_code, db_ofc_code, 
-        db_ofc_code, test_user_id.upper(), db_ofc_code, db_ofc_code, db_ofc_code) )
+    f.write(test_user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
 f.close()
-f1.write("\ncommit;\n")
-f1.close()
 
 #==============================================================================
 #==

@@ -1,15 +1,15 @@
-/* Formatted on 4/7/2009 10:29:27 AM (QP5 v5.115.810.9015) */
+/* Formatted on 6/30/2009 6:36:59 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
 	/******************************************************************************
-				*	 Name:		 CWMS_UTL
+				 *   Name:		  CWMS_UTL
 				*	 Purpose:	 Miscellaneous CWMS Procedures
 		*
-				*	 Revisions:
-				*	 Ver			Date			Author		Descriptio
-					*	 ---------	----------	----------	----------------------------------------
-				*	 1.1			9/07/2005	Portin		create_view: at_ts_table_properties start and end dates
-			*													changed to DATE datatype
+				  *	Revisions:
+				 *   Ver 		 Date 		 Author		 Descriptio
+					  *	---------  ----------  ----------  ----------------------------------------
+				  *	1.1		  9/07/2005   Portin 	  create_view: at_ts_table_properties start and end dates
+			  *												  changed to DATE datatype
 				 *   1.0 		 8/29/2005	 Portin		 Original
 				******************************************************************************/
 	--
@@ -262,52 +262,52 @@ AS
 	--------------------------------------------------------------------------------
 	-- function pause_mv_refresh
 	--
-	FUNCTION pause_mv_refresh (p_mview_name	IN VARCHAR2,
-										p_reason 		IN VARCHAR2 DEFAULT NULL
-									  )
-		RETURN UROWID
-	IS
-		PRAGMA AUTONOMOUS_TRANSACTION;
-		l_mview_name						VARCHAR2 (32);
-		l_user_id							VARCHAR2 (32);
-		l_rowid								UROWID := NULL;
-		l_log_msg							VARCHAR2 (256);
-		l_tstamp 							timestamp;
-	BEGIN
-		l_user_id := get_user_id;
-		l_tstamp := SYSTIMESTAMP;
-		l_mview_name := get_real_name (p_mview_name);
-		LOCK TABLE at_mview_refresh_paused IN EXCLUSIVE MODE;
+--	FUNCTION pause_mv_refresh (p_mview_name	IN VARCHAR2,
+--										p_reason 		IN VARCHAR2 DEFAULT NULL
+--									  )
+--		RETURN UROWID
+--	IS
+--		PRAGMA AUTONOMOUS_TRANSACTION;
+--		l_mview_name						VARCHAR2 (32);
+--		l_user_id							VARCHAR2 (32);
+--		l_rowid								UROWID := NULL;
+--		l_log_msg							VARCHAR2 (256);
+--		l_tstamp 							timestamp;
+--	BEGIN
+--		l_user_id := get_user_id;
+--		l_tstamp := SYSTIMESTAMP;
+--		l_mview_name := get_real_name (p_mview_name);
+--		LOCK TABLE at_mview_refresh_paused IN EXCLUSIVE MODE;
 
-		INSERT INTO at_mview_refresh_paused
-			VALUES	(l_tstamp, l_mview_name, l_user_id, p_reason
-						)
-		RETURNING	ROWID, paused_at		 INTO   l_rowid, l_tstamp;
+--		INSERT INTO at_mview_refresh_paused
+--			VALUES	(l_tstamp, l_mview_name, l_user_id, p_reason
+--						)
+--		RETURNING	ROWID, paused_at		 INTO   l_rowid, l_tstamp;
 
-		EXECUTE IMMEDIATE   'alter materialized view '
-							  || l_mview_name
-							  || ' refresh on demand';
+--		EXECUTE IMMEDIATE   'alter materialized view '
+--							  || l_mview_name
+--							  || ' refresh on demand';
 
-		COMMIT;
-		l_log_msg :=
-				'MVIEW '''
-			|| l_mview_name
-			|| ''' on-commit refresh paused at '
-			|| l_tstamp
-			|| ' by '
-			|| l_user_id
-			|| ', reason: '
-			|| p_reason;
+--		COMMIT;
+--		l_log_msg :=
+--				'MVIEW '''
+--			|| l_mview_name
+--			|| ''' on-commit refresh paused at '
+--			|| l_tstamp
+--			|| ' by '
+--			|| l_user_id
+--			|| ', reason: '
+--			|| p_reason;
 
-		cwms_msg.log_db_message ('PAUSE_MV_REFRESH', 4, l_log_msg);
+--		cwms_msg.log_db_message ('PAUSE_MV_REFRESH', 4, l_log_msg);
 
-		RETURN l_rowid;
-	EXCEPTION
-		WHEN OTHERS
-		THEN
-			ROLLBACK;
-			RAISE;
-	END pause_mv_refresh;
+--		RETURN l_rowid;
+--	EXCEPTION
+--		WHEN OTHERS
+--		THEN
+--			ROLLBACK;
+--			RAISE;
+--	END pause_mv_refresh;
 
 	--------------------------------------------------------------------------------
 	-- procedure resume_mv_refresh
@@ -762,33 +762,35 @@ AS
 		RETURN l_parameter_id;
 	END get_parameter_id;
 
-	--------------------------------------------------------
-	-- Replace filename wildcard chars (?,*) with SQL ones
-	-- (_,%), using '\' as an escape character.
-	--
-	--  A null input generates a result of '%'.
-	--
-	-- +--------------+-------------------------------------------------------------------------+
-	-- |		|										Output String										  |
-	-- |		+------------------------------------------------------------+------------+
-	-- |		|									  Recognize SQL						 | 			  |
-	-- |		|										Wildcards?							 | 			  |
-	-- |		+------+---------------------------+-----+-------------------+ 			  |
-	-- | Input String | No : comments			  | Yes : comments			 | Different? |
-	-- +--------------+------+---------------------------+-----+-------------------+------------+
-	-- | %	| \%	 : literal '%'               | %   : multi-wildcard    | Yes        |
-	-- | _	| \_	 : literal '_'               | _   : single-wildcard   | Yes        |
-	-- | *	| %	 : multi-wildcard 			  | %   : multi-wildcard	 | No 		  |
-	-- | ?	| _	 : single-wildcard			  | _   : single-wildcard	 | No 		  |
-	-- | \%	|		 : not allowed 				  | \%  : literal '%'       | Yes        |
-	-- | \_	|		 : not allowed 				  | \_  : literal '_'       | Yes        |
-	-- | \*	| *	 : literal '*'               | *   : literal '*'       | No         |
-	-- | \?	| ?	 : literal '?'               | ?   : literal '?'       | No         |
-	-- | \\%   | \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
-	-- | \\_   | \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
-	-- | \\*   | \\% : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
-	-- | \\?   | \\_ : literal '\' + swc         | \\_ : literal '\' + swc | No         |
-	-- +--------------+------+---------------------------+-----+-------------------+------------+
+	/*
+		--------------------------------------------------------
+	 -- Replace filename wildcard chars (?,*) with SQL ones
+		-- (_,%), using '\' as an escape character.
+	  --
+	 --  A null input generates a result of '%'.
+	  --
+	+--------------+-------------------------------------------------------------------------+
+	|										 Output String 										|
+	|				+------------------------------------------------------------+------------+
+	|					|									  Recognize SQL						 | 			  |
+	|					|										Wildcards?							 | 			  |
+	|					+------+---------------------------+-----+-------------------+ 			  |
+	| Input String | No : comments			  | Yes : comments			 | Different? |
+	+--------------+------+---------------------------+-----+-------------------+------------+
+	| %				  | \% : literal '%'         | %   : multi-wildcard     | Yes        |
+	| _				| \_ : literal '_'         | _   : single-wildcard    | Yes        |
+	| *				| %	: multi-wildcard		 | %	 : multi-wildcard 	 | No 		  |
+	| ?				| _  : single-wildcard		| _	: single-wildcard 	 | No 		  |
+	| \%	|		 : not allowed 				  | \%  : literal '%'       | Yes        |
+	| \_	|		 : not allowed 				  | \_  : literal '_'       | Yes        |
+	| \*	| *	 : literal '*'               | *   : literal '*'       | No         |
+	| \?	| ?	 : literal '?'               | ?   : literal '?'       | No         |
+	| \\%   | \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
+	| \\_   | \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
+	| \\*   | \\% : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
+	| \\?   | \\_ : literal '\' + swc         | \\_ : literal '\' + swc | No         |
+	+--------------+------+---------------------------+-----+-------------------+------------+
+		 */
 	FUNCTION normalize_wildcards (p_string 			IN VARCHAR2,
 											p_recognize_sql	IN BOOLEAN DEFAULT FALSE
 										  )
@@ -923,6 +925,120 @@ AS
 		RETURN l_result;
 	END normalize_wildcards;
 
+	--------------------------------------------------------
+	-- Replace SQL ones (_,%) with filename wildcard chars (?,*),
+	-- using '\' as an escape character.
+	--
+	--  A null input generates a result of '*'.
+	--
+	-- +--------------+-------------------------------------------------------------------------+
+	-- |			|													  Output String														|
+	-- |			+------------------------------------------------------------+------------+
+	-- |			|													Recognize SQL								  |					|
+	-- |			|													  Wildcards?									  |					|
+	-- |			+------+---------------------------+-----+-------------------+ 				  |
+	-- | Input String | No : comments				  | Yes : comments				 | Different? |
+	-- +--------------+------+---------------------------+-----+-------------------+------------+
+	-- | %	 | \% 	 : literal '%'               | %   : multi-wildcard    | Yes        |
+	-- | _	 | \_ 	 : literal '_'               | _   : single-wildcard   | Yes        |
+	-- | *	 | %		: multi-wildcard					 | %	 : multi-wildcard 	 | No 			 |
+	-- | ?	 | _		: single-wildcard 				 | _	 : single-wildcard	  | No			  |
+	-- | \%	  |			: not allowed						  | \%  : literal '%'       | Yes        |
+	-- | \_	  |			: not allowed						  | \_  : literal '_'       | Yes        |
+	-- | \*	  | * 	 : literal '*'               | *   : literal '*'       | No         |
+	-- | \?	  | ? 	 : literal '?'               | ?   : literal '?'       | No         |
+	-- | \\%   | \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
+	-- | \\_   | \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
+	-- | \\*   | \\% : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
+	-- | \\?   | \\_ : literal '\' + swc         | \\_ : literal '\' + swc | No         |
+	-- +--------------+------+---------------------------+-----+-------------------+------------+
+
+	FUNCTION denormalize_wildcards (p_string IN VARCHAR2)
+		RETURN VARCHAR2
+	IS
+		l_result 							VARCHAR2 (32767);
+		l_char								VARCHAR2 (1);
+		l_skip								BOOLEAN := FALSE;
+	BEGIN
+		--------------------------------
+		-- default null string to '*' --
+		--------------------------------
+		IF p_string IS NULL
+		THEN
+			RETURN '*';
+		END IF;
+
+		l_result := NULL;
+
+		FOR i IN 1 .. LENGTH (p_string)
+		LOOP
+			IF l_skip
+			THEN
+				l_skip := FALSE;
+			ELSE
+				l_char := SUBSTR (p_string, i, 1);
+
+				CASE l_char
+					WHEN '\'
+					THEN
+						IF i = LENGTH (p_string)
+						THEN
+							cwms_err.raise (
+								'ERROR',
+								'Escape character ''\'' cannot end a match string.'
+							);
+						END IF;
+
+						l_skip := TRUE;
+
+						IF REGEXP_INSTR (NVL (SUBSTR (p_string, i + 1), ' '),
+											  '\\[*?%_]'
+											 ) = 1
+						THEN
+							l_result := l_result || '\\';
+						ELSE
+							l_char := SUBSTR (p_string, i + 1, 1);
+
+
+							CASE l_char
+								WHEN '\'
+								THEN
+									l_result := l_result || '\';
+								WHEN '*'
+								THEN
+									l_result := l_result || '*';
+								WHEN '?'
+								THEN
+									l_result := l_result || '?';
+								WHEN '%'
+								THEN
+									l_result := l_result || '%';
+								WHEN '_'
+								THEN
+									l_result := l_result || '_';
+								ELSE
+									cwms_err.raise ('INVALID_ITEM',
+														 p_string,
+														 'match string'
+														);
+							END CASE;
+						END IF;
+					WHEN '%'
+					THEN
+						l_result := l_result || '*';
+					WHEN '_'
+					THEN
+						l_result := l_result || '?';
+
+					ELSE
+						l_result := l_result || l_char;
+				END CASE;
+			END IF;
+		END LOOP;
+
+		RETURN l_result;
+	END denormalize_wildcards;
+
 	PROCEDURE parse_ts_id (p_base_location_id 		OUT VARCHAR2,
 								  p_sub_location_id			OUT VARCHAR2,
 								  p_base_parameter_id		OUT VARCHAR2,
@@ -961,41 +1077,41 @@ AS
 										  )
 		RETURN VARCHAR2
 	--------------------------------------------------------------------------------
-	-- Usage:																				 -
-	--   *  - wild card character matches zero or more occurences. 		 -
-	--   ?  - wild card character matches zero or one occurence.			 -
-	--   and - AND or a blank space, e.g., abc* *123 is eqivalent to		 -
-	-- 											abc* AND *123							 -
-	--   or - OR  e.g., abc* OR *123 												 -
+	-- Usage:																				-
+	--   *  - wild card character matches zero or more occurences. 		-
+	--   ?  - wild card character matches zero or one occurence.			-
+	--   and - AND or a blank space, e.g., abc* *123 is eqivalent to		-
+	-- 										  abc* AND *123							-
+	--   or - OR  e.g., abc* OR *123 												-
 	--   not - NOT or a dash, e.g., 'NOT abc*' is equivalent to '-abc*'     -
 	--   " " - quotes are used to aggregate patters that have blank spaces   -
-	-- 	  e.g., "abc 123*"                                              -
+	-- 	 e.g., "abc 123*"                                              -
 	--
 	--   One can use the backslash as an escape character for the following  -
-	--   special characters:															 -
-	--   \* used to make an asterisks a literal instead of a wild character  - 																		  -
-	--   \? used to make a question mark a literal instead of a wild		 -
-	--   character 																		 -
+	--   special characters:															-
+	--   \* used to make an asterisks a literal instead of a wild character  - 																		 -
+	--   \? used to make a question mark a literal instead of a wild		-
+	--   character 																		-
 	--   \- used to start a new parse pattern with a dash instead of a NOT -
 	--   \" used to make a quote a literal part of the parse pattern.        -
 	--
 	-- Example:
-	-- p_search_column: COLUMN_OF_INTEREST 										 -
-	-- p_search_patterns: cb* NOT cbt* OR NOT cbk*								 -
-	--   will return: 																	 -
-	-- 			 AND UPPER(COLUMN_OF_INTEREST)  LIKE 'CB%'                -
-	-- 			 AND UPPER(COLUMN_OF_INTEREST) NOT LIKE 'CBT%'            -
-	-- 			 OR UPPER(COLUMN_OF_INTEREST) NOT LIKE 'CBK%'             -
+	-- p_search_column: COLUMN_OF_INTEREST 										-
+	-- p_search_patterns: cb* NOT cbt* OR NOT cbk*								-
+	--   will return: 																	-
+	-- 			AND UPPER(COLUMN_OF_INTEREST)  LIKE 'CB%'                -
+	-- 			AND UPPER(COLUMN_OF_INTEREST) NOT LIKE 'CBT%'            -
+	-- 			OR UPPER(COLUMN_OF_INTEREST) NOT LIKE 'CBK%'             -
 	--
 	--  if p_use_upper is set to false, the above will return:
 	--
-	-- 			  AND COLUMN_OF_INTEREST  LIKE 'cb%'                      -
-	-- 			  AND COLUMN_OF_INTEREST NOT LIKE 'cbt%'                  -
-	-- 			  OR COLUMN_OF_INTEREST NOT LIKE 'cbk%'                   -
+	-- 			 AND COLUMN_OF_INTEREST  LIKE 'cb%'                      -
+	-- 			 AND COLUMN_OF_INTEREST NOT LIKE 'cbt%'                  -
+	-- 			 OR COLUMN_OF_INTEREST NOT LIKE 'cbk%'                   -
 	--
 	--  A null p_search_patterns generates a result of '%'.
 	--
-	-- 			  AND COLUMN_OF_INTEREST  LIKE '%'                        -
+	-- 			 AND COLUMN_OF_INTEREST  LIKE '%'                        -
 	--------------------------------------------------------------------------------
 	--
 	IS
@@ -1052,12 +1168,12 @@ AS
 				--   END IF;
 
 				--   DBMS_OUTPUT.put_line (  l_t
-				-- 							|| l_char_position
-				-- 							|| '>'
-				-- 							|| l_sub_string
-				-- 							|| '< skip: '
-				-- 							|| l_skip
-				-- 						  );
+				-- 						  || l_char_position
+				-- 						  || '>'
+				-- 						  || l_sub_string
+				-- 						  || '< skip: '
+				-- 						  || l_skip
+				-- 						 );
 				IF l_skip > 0
 				THEN
 					l_skip := l_skip - 1;
@@ -1172,16 +1288,16 @@ AS
 									l_sub_string := '"' || l_sub_string || l_tmp_string;
 								END IF;
 							-----------------
-							-- 			  IF	  INSTR (NVL (SUBSTR (l_string, i + 1), ' '), ' ') =
-							-- 																						 1
-							-- 				  OR i = l_string_length
-							-- 			  THEN
-							-- 				  l_skip := l_skip + 1;
-							-- 				  l_sub_string_done := TRUE;
-							-- 			  ELSE
-							-- 				  l_sub_string := l_sub_string || l_char;
-							-- 				  l_char_position := l_char_position + 1;
-							-- 			  END IF;
+							-- 			 IF	 INSTR (NVL (SUBSTR (l_string, i + 1), ' '), ' ') =
+							-- 																						1
+							-- 				 OR i = l_string_length
+							-- 			 THEN
+							-- 				 l_skip := l_skip + 1;
+							-- 				 l_sub_string_done := TRUE;
+							-- 			 ELSE
+							-- 				 l_sub_string := l_sub_string || l_char;
+							-- 				 l_char_position := l_char_position + 1;
+							-- 			 END IF;
 							END IF;
 						WHEN ' '
 						THEN
@@ -1895,37 +2011,40 @@ AS
 	FUNCTION TO_TIMESTAMP (p_millis IN NUMBER)
 		RETURN timestamp
 	IS
-		l_millis	NUMBER := abs(p_millis);
-		l_day		NUMBER;
-		l_hour	  NUMBER;
-		l_min		NUMBER;
-		l_sec		NUMBER;
-		l_negative BOOLEAN := p_millis < 0;
-		l_interval interval day (5) to second (3);
+		l_millis 							NUMBER := ABS (p_millis);
+		l_day 								NUMBER;
+		l_hour								NUMBER;
+		l_min 								NUMBER;
+		l_sec 								NUMBER;
+		l_negative							BOOLEAN := p_millis < 0;
+		l_interval							INTERVAL DAY (5) TO SECOND (3);
 	BEGIN
-		l_day			:= TRUNC (l_millis / 86400000);
-		l_millis		:= l_millis - (l_day * 86400000);
-		l_hour		:= TRUNC (l_millis / 3600000);
-		l_millis		:= l_millis - (l_hour * 3600000);
-		l_min			:= TRUNC (l_millis / 60000);
-		l_millis		:= l_millis - (l_min * 60000);
-		l_sec			:= TRUNC (l_millis / 1000);
-		l_millis		:= l_millis - (l_sec * 1000);
-		l_interval	:= TO_DSINTERVAL(	''
-			|| l_day
-			|| ' '
-			|| TO_CHAR (l_hour, '00')
-			|| ':'
-			|| TO_CHAR (l_min, '00')
-			|| ':'
-			|| TO_CHAR (l_sec, '00')
-			|| '.'
-			|| TO_CHAR (l_millis, '000'));
-		IF l_negative THEN
-			return epoch - l_interval;
+		l_day := TRUNC (l_millis / 86400000);
+		l_millis := l_millis - (l_day * 86400000);
+		l_hour := TRUNC (l_millis / 3600000);
+		l_millis := l_millis - (l_hour * 3600000);
+		l_min := TRUNC (l_millis / 60000);
+		l_millis := l_millis - (l_min * 60000);
+		l_sec := TRUNC (l_millis / 1000);
+		l_millis := l_millis - (l_sec * 1000);
+		l_interval :=
+			TO_DSINTERVAL(   ''
+							  || l_day
+							  || ' '
+							  || TO_CHAR (l_hour, '00')
+							  || ':'
+							  || TO_CHAR (l_min, '00')
+							  || ':'
+							  || TO_CHAR (l_sec, '00')
+							  || '.'
+							  || TO_CHAR (l_millis, '000'));
+
+		IF l_negative
+		THEN
+			RETURN epoch - l_interval;
 		ELSE
-			return epoch + l_interval;
-		END IF;			
+			RETURN epoch + l_interval;
+		END IF;
 	END TO_TIMESTAMP;
 
 	--------------------------------------------------------------------
@@ -2228,112 +2347,117 @@ AS
 
 		RETURN l_default_units;
 	END;
-	
---------------------------------------------------------------------
--- This procedure changes all the materialized views associated with
--- time series ids to be changed from REFRESH FAST ON COMMIT to
--- REFRESH ON DEMAND.  This allows for fast bulk creation of tsids.
---------------------------------------------------------------------
-PROCEDURE pause_timeseries_mviews
-IS
-BEGIN
-	execute immediate 'alter materialized view mv_cwms_ts_id refresh on demand';
-	execute immediate 'alter materialized view mv_sec_ts_group_masks refresh on demand';
-	execute immediate 'alter materialized view mv_sec_ts_privileges refresh on demand';
-	execute immediate 'alter materialized view mv_sec_ts_priv refresh on demand';
-END pause_timeseries_mviews;
 
---------------------------------------------------------------------
--- This procedure changes all the materialized views associated with
--- time series ids to be changed from REFRESH ON DEMAND to REFRESH
--- FAST ON COMMIT.
--- 
--- This is actually quite a bit slower than simply dropping and 
--- rebuilding the materialzed vews (see REBUILD_TIMESERIES_MVIEWS),
--- but has the advantage of not invalidating running code in the 
--- process.
---------------------------------------------------------------------
-PROCEDURE unpause_timeseries_mviews
-IS
-BEGIN
-   dbms_mview.refresh('mv_cwms_tsids,mv_sec_ts_group_masks,mv_sec_ts_privileges,mv_sec_ts_priv', 'F');
-   execute immediate 'alter materialized view mv_cwms_ts_id refresh fast on commit';
-   execute immediate 'alter materialized view mv_sec_ts_group_masks refresh fast on commit';
-   execute immediate 'alter materialized view mv_sec_ts_privileges refresh fast on commit';
-   execute immediate 'alter materialized view mv_sec_ts_priv refresh fast on commit';
-END unpause_timeseries_mviews;
+	--------------------------------------------------------------------
+	-- This procedure changes all the materialized views associated with
+	-- time series ids to be changed from REFRESH FAST ON COMMIT to
+	-- REFRESH ON DEMAND.  This allows for fast bulk creation of tsids.
+	--------------------------------------------------------------------
+	PROCEDURE pause_timeseries_mviews
+	IS
+	BEGIN
+		EXECUTE IMMEDIATE 'alter materialized view mv_cwms_ts_id refresh on demand';
 
---------------------------------------------------------------------
--- This procedure drops and rebuilds all the materialized views
--- associated with time series ids.  Call this after calling 
--- PAUSE_TIMESERIES_MVIEWS and bulk creating time series ids.  This
--- is considerably faster than calling UNPAUSE_TIMESEIRES_MVIEWS,
--- but has the nasty side-effect of invalidating all objects that
--- depend on the views.
---
--- DO NOT CALL THIS PROCEDURE UNLESS YOU ARE RUNNING FROM A SCRIPT
--- FROM WHICH YOU CAN CALL UTL_RECOMP.RECOMP_SERIAL('CWMS_20') OR 
--- CAN MANUALLY RECOMPILE THE INVALIDATED OBJECTS (E.G. FROM TOAD).  
---------------------------------------------------------------------
-PROCEDURE rebuild_timeseries_mviews
-IS
-BEGIN
-	-----------------------------
-	-- DROP MATERIALIZED VIEWS --
-	-----------------------------
-	-- SECURITY VIEWS
-	execute immediate 'DROP INDEX mv_sec_ts_privileges_i01';
-	execute immediate 'DROP MATERIALIZED VIEW mv_sec_ts_privileges';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON mv_sec_ts_priv';
-	execute immediate 'DROP MATERIALIZED VIEW mv_sec_ts_priv';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON mv_sec_ts_group_masks';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON mv_sec_users';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON mv_sec_allow';
-	execute immediate 'DROP MATERIALIZED VIEW mv_sec_allow';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_sec_allow';
-	execute immediate 'DROP INDEX mv_sec_users_u01';
-	execute immediate 'DROP MATERIALIZED VIEW mv_sec_users';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_sec_users';
-	execute immediate 'DROP INDEX mv_sec_ts_group_masks_u01';
-	execute immediate 'DROP MATERIALIZED VIEW mv_sec_ts_group_masks';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_sec_ts_group_masks';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON mv_cwms_ts_id';
+	END pause_timeseries_mviews;
 
-	-- TIME SERIES VIEWS
-	execute immediate 'DROP INDEX CWMS_20.MV_CWMS_TS_ID_UK1';
-	execute immediate 'DROP INDEX CWMS_20.MV_CWMS_TS_ID_PK';
-	execute immediate 'DROP MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID'; 
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_abstract_parameter';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_unit';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_duration';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_interval';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_parameter';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_base_parameter';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_parameter_type';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON cwms_office';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_cwms_ts_spec';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_physical_location';
-	execute immediate 'DROP MATERIALIZED VIEW LOG ON at_base_location';
+	--------------------------------------------------------------------
+	-- This procedure changes all the materialized views associated with
+	-- time series ids to be changed from REFRESH ON DEMAND to REFRESH
+	-- FAST ON COMMIT.
+	--
+	-- This is actually quite a bit slower than simply dropping and
+	-- rebuilding the materialzed vews (see REBUILD_TIMESERIES_MVIEWS),
+	-- but has the advantage of not invalidating running code in the
+	-- process.
+	--------------------------------------------------------------------
+	PROCEDURE unpause_timeseries_mviews
+	IS
+	BEGIN
+		dbms_mview.refresh (
+			'mv_cwms_tsids',
+			'F'
+		);
 
-	----------------------------------
-	-- RE-CREATE MATERIALIZED VIEWS --
-	----------------------------------
-	
-	-- TIME SERIES VIEWS
-	execute immediate 'CREATE MATERIALIZED VIEW LOG ON at_base_location     WITH ROWID';
-	execute immediate 'CREATE MATERIALIZED VIEW LOG ON at_physical_location WITH ROWID';
-	execute immediate 'CREATE MATERIALIZED VIEW LOG ON at_cwms_ts_spec      WITH ROWID';
-	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_office          WITH ROWID';
-	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_parameter_type  WITH ROWID';
-	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_base_parameter  WITH ROWID';
-	execute immediate 'CREATE MATERIALIZED VIEW LOG ON at_parameter         WITH ROWID';
-	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_interval        WITH ROWID';
-	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_duration        WITH ROWID';
-	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_unit            WITH ROWID';
-	execute immediate 'CREATE MATERIALIZED VIEW LOG ON cwms_abstract_parameter            WITH ROWID';
+		EXECUTE IMMEDIATE 'alter materialized view mv_cwms_ts_id refresh fast on commit';
 
-	execute immediate
-	  'CREATE MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID 
+	END unpause_timeseries_mviews;
+
+	--------------------------------------------------------------------
+	-- This procedure drops and rebuilds all the materialized views
+	-- associated with time series ids.  Call this after calling
+	-- PAUSE_TIMESERIES_MVIEWS and bulk creating time series ids.	This
+	-- is considerably faster than calling UNPAUSE_TIMESEIRES_MVIEWS,
+	-- but has the nasty side-effect of invalidating all objects that
+	-- depend on the views.
+	--
+	-- DO NOT CALL THIS PROCEDURE UNLESS YOU ARE RUNNING FROM A SCRIPT
+	-- FROM WHICH YOU CAN CALL UTL_RECOMP.RECOMP_SERIAL('CWMS_20') OR
+	-- CAN MANUALLY RECOMPILE THE INVALIDATED OBJECTS (E.G. FROM TOAD).
+	--------------------------------------------------------------------
+	PROCEDURE rebuild_timeseries_mviews
+	IS
+	BEGIN
+		-----------------------------
+		-- DROP MATERIALIZED VIEWS --
+		-----------------------------
+        --
+		-- TIME SERIES VIEWS
+		EXECUTE IMMEDIATE 'DROP INDEX CWMS_20.MV_CWMS_TS_ID_UK1';
+
+		EXECUTE IMMEDIATE 'DROP INDEX CWMS_20.MV_CWMS_TS_ID_PK';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON cwms_abstract_parameter';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON cwms_unit';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON cwms_duration';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON cwms_interval';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON at_parameter';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON cwms_base_parameter';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON cwms_parameter_type';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON cwms_office';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON at_cwms_ts_spec';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON at_physical_location';
+
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON at_base_location';
+
+		----------------------------------
+		-- RE-CREATE MATERIALIZED VIEWS --
+		----------------------------------
+
+		-- TIME SERIES VIEWS
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON at_base_location     WITH ROWID';
+
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON at_physical_location WITH ROWID';
+
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON at_cwms_ts_spec      WITH ROWID';
+
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON cwms_office          WITH ROWID';
+
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON cwms_parameter_type  WITH ROWID';
+
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON cwms_base_parameter  WITH ROWID';
+
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON at_parameter         WITH ROWID';
+
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON cwms_interval        WITH ROWID';
+
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON cwms_duration        WITH ROWID';
+
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON cwms_unit            WITH ROWID';
+
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON cwms_abstract_parameter            WITH ROWID';
+
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID 
 		TABLESPACE CWMS_20AT_DATA
 		NOCACHE
 		LOGGING
@@ -2342,7 +2466,7 @@ BEGIN
 		BUILD IMMEDIATE
 		REFRESH FAST ON COMMIT
 		WITH PRIMARY KEY
-		AS 
+		AS
 		SELECT abl.db_office_code, abl.base_location_code,
 				 s.location_code,
 				 l.active_flag loc_active_flag,
@@ -2408,216 +2532,58 @@ BEGIN
 			AND l.base_location_code = abl.base_location_code
 			AND s.delete_date IS NULL';
 
-   execute immediate 'COMMENT ON MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID IS ''snapshot table for snapshot CWMS_20.MV_CWMS_TS_ID''';
+		EXECUTE IMMEDIATE 'COMMENT ON MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID IS ''snapshot table for snapshot CWMS_20.MV_CWMS_TS_ID''';
 
-	execute immediate
-	  'CREATE UNIQUE INDEX CWMS_20.MV_CWMS_TS_ID_UK1 ON CWMS_20.MV_CWMS_TS_ID
+		EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX CWMS_20.MV_CWMS_TS_ID_UK1 ON CWMS_20.MV_CWMS_TS_ID
 		(UPPER("DB_OFFICE_ID"), UPPER("CWMS_TS_ID"))
 		LOGGING
 		TABLESPACE CWMS_20AT_DATA
 		NOPARALLEL';
 
-	execute immediate
-	  'CREATE UNIQUE INDEX CWMS_20.MV_CWMS_TS_ID_PK ON CWMS_20.MV_CWMS_TS_ID
+		EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX CWMS_20.MV_CWMS_TS_ID_PK ON CWMS_20.MV_CWMS_TS_ID
 		(DB_OFFICE_ID, CWMS_TS_ID)
 		LOGGING
 		TABLESPACE CWMS_20AT_DATA
 		NOPARALLEL';
 
-	-- SECURITY VIEWS
-	execute immediate
-	  'CREATE MATERIALIZED VIEW LOG ON mv_cwms_ts_id
-		WITH SEQUENCE, ROWID (db_office_code, ts_code, cwms_ts_id)
-		INCLUDING NEW VALUES';
+		sys.UTL_RECOMP.recomp_serial ('CWMS_20');
+	END rebuild_timeseries_mviews;
 
-	execute immediate
-	  'CREATE MATERIALIZED VIEW LOG ON at_sec_ts_group_masks WITH SEQUENCE, ROWID
-		(db_office_code, ts_group_code, ts_group_mask)
-		INCLUDING NEW VALUES';
+	--
+	-- sign-extends 32-bit integers so they can be retrieved by
+	-- java int type
+	--
+	FUNCTION sign_extend (p_int IN INTEGER)
+		RETURN INTEGER
+	IS
+		i										INTEGER;
+		bi 									BINARY_INTEGER;
+		numeric_overflow exception;
+		PRAGMA EXCEPTION_INIT (numeric_overflow, -1426);
+	BEGIN
+		BEGIN
+			bi := p_int;
+		EXCEPTION
+			WHEN numeric_overflow
+			THEN
+				BEGIN
+					bi := p_int - 4294967296;
+				EXCEPTION
+					WHEN OTHERS
+					THEN
+						cwms_err.raise ('INVALID_ITEM', p_int, '32-bit integer');
+				END;
+		END;
 
-	execute immediate
-	  'CREATE MATERIALIZED VIEW mv_sec_ts_group_masks
-		PARALLEL
-		BUILD IMMEDIATE
-		REFRESH FAST ON COMMIT AS
-		SELECT   mcti.db_office_code, mcti.ts_code,
-					SUM (POWER (2, astg.ts_group_code)) net_ts_group_bit,
-					COUNT (astg.ts_group_code) count_ts_group_code, COUNT (*) cnt
-			 FROM mv_cwms_ts_id mcti, at_sec_ts_group_masks astg
-			WHERE astg.db_office_code = mcti.db_office_code
-			  AND UPPER (mcti.cwms_ts_id) LIKE UPPER (astg.ts_group_mask)
-		GROUP BY mcti.db_office_code, mcti.ts_code';
-
-	execute immediate
-	  'CREATE UNIQUE INDEX mv_sec_ts_group_masks_u01 ON mv_sec_ts_group_masks
-		(db_office_code, ts_code)
-		LOGGING
-		TABLESPACE cwms_20data
-		PCTFREE    10
-		INITRANS   2
-		MAXTRANS   255
-		STORAGE    (
-						INITIAL          64 k
-						MINEXTENTS       1
-						MAXEXTENTS       2147483645
-						PCTINCREASE      0
-						BUFFER_POOL      DEFAULT
-					  )
-		NOPARALLEL';
-
-	execute immediate
-	  'CREATE MATERIALIZED VIEW LOG ON at_sec_users WITH SEQUENCE, ROWID
-	(db_office_code, user_id, user_group_code)
-	INCLUDING NEW VALUES';
-
-	execute immediate
-	  'CREATE MATERIALIZED VIEW mv_sec_users
-		PARALLEL
-		BUILD IMMEDIATE
-		REFRESH FAST ON COMMIT AS
-			SELECT   asu.db_office_code, asu.user_id,
-						SUM (POWER(2,asu.user_group_code)) net_user_group_bit,
-						COUNT(asu.user_group_code) count_user_group_code,
-						COUNT(*) cnt
-				 FROM at_sec_users asu
-			GROUP BY asu.db_office_code, asu.user_id';
-
-	execute immediate
-	  'CREATE UNIQUE INDEX mv_sec_users_u01 ON mv_sec_users
-		(db_office_code, user_id)
-		LOGGING
-		TABLESPACE cwms_20data
-		PCTFREE    10
-		INITRANS   2
-		MAXTRANS   255
-		STORAGE    (
-						INITIAL          64 k
-						MINEXTENTS       1
-						MAXEXTENTS       2147483645
-						PCTINCREASE      0
-						BUFFER_POOL      DEFAULT
-					  )
-		NOPARALLEL';
-
-	execute immediate
-	  'CREATE MATERIALIZED VIEW LOG ON at_sec_allow WITH SEQUENCE, ROWID
-		(  db_office_code,
-		  ts_group_code,
-		  user_group_code,
-		  privilege_bit )
-		INCLUDING NEW VALUES';
-
-	execute immediate
-	  'CREATE MATERIALIZED VIEW mv_sec_allow
-		PARALLEL
-		BUILD IMMEDIATE
-		REFRESH FAST ON COMMIT AS
-			SELECT   asa.db_office_code, asa.ts_group_code, asa.user_group_code,
-						SUM (asa.privilege_bit) net_privilege_bit,
-						COUNT (asa.privilege_bit) count_privilege_bit, COUNT(*) cnt
-				 FROM at_sec_allow asa
-			GROUP BY db_office_code, ts_group_code, user_group_code';
-
-	execute immediate
-	  'CREATE MATERIALIZED VIEW LOG ON mv_sec_allow WITH SEQUENCE, ROWID
-		(  db_office_code,
-		  ts_group_code,
-		  user_group_code,
-		  net_privilege_bit )
-		INCLUDING NEW VALUES';
-
-	execute immediate
-	  'CREATE MATERIALIZED VIEW LOG ON mv_sec_users WITH SEQUENCE, ROWID
-	(db_office_code, user_id, net_user_group_bit)
-	INCLUDING NEW VALUES';
-
-	execute immediate
-	  'CREATE MATERIALIZED VIEW LOG ON mv_sec_ts_group_masks WITH SEQUENCE, ROWID
-		(db_office_code,
-		 ts_code,
-		 net_ts_group_bit,
-		 count_ts_group_code,
-		 cnt)
-		INCLUDING NEW VALUES';
-
-	execute immediate
-	  'CREATE MATERIALIZED VIEW mv_sec_ts_priv
-		PARALLEL
-		BUILD IMMEDIATE
-		REFRESH FAST ON COMMIT AS
-		SELECT mv_su.user_id, mv_sts.db_office_code, mv_sts.ts_code,
-				 mv_sa.net_privilege_bit, mv_sa.ROWID mv_sa_rowid,
-				 mv_sts.ROWID mv_sts_rowid, mv_su.ROWID mv_su_rowid
-		  FROM mv_sec_allow mv_sa, mv_sec_ts_group_masks mv_sts, mv_sec_users mv_su
-		 WHERE mv_sts.db_office_code = mv_sa.db_office_code
-			AND BITAND (mv_sts.net_ts_group_bit, POWER (2, mv_sa.ts_group_code)) =
-																		POWER (2, mv_sa.ts_group_code)
-			AND mv_su.db_office_code = mv_sa.db_office_code
-			AND BITAND (mv_su.net_user_group_bit, POWER (2, mv_sa.user_group_code)) =
-																	 POWER (2, mv_sa.user_group_code)';
-
-	execute immediate
-	  'CREATE MATERIALIZED VIEW LOG ON mv_sec_ts_priv WITH ROWID
-		(user_id,
-		 db_office_code,
-		 ts_code,
-		 net_privilege_bit)
-		INCLUDING NEW VALUES';
-
-	execute immediate
-	  'CREATE MATERIALIZED VIEW mv_sec_ts_privileges
-		REFRESH FAST ON COMMIT
-		WITH PRIMARY KEY
-		AS
-		SELECT   user_id, db_office_code, ts_code,
-					MAX (net_privilege_bit) net_privilege_bit,
-					COUNT (net_privilege_bit) count_privilege_bit, COUNT (*) cnt
-			 FROM mv_sec_ts_priv
-		GROUP BY user_id, db_office_code, ts_code';
-
-	execute immediate
-	  'CREATE INDEX mv_sec_ts_privileges_i01 ON mv_sec_ts_privileges
-		(user_id)
-		LOGGING
-		TABLESPACE cwms_20at_data
-		NOPARALLEL';
-      
-   sys.utl_recomp.recomp_serial('CWMS_20');      
-
-END rebuild_timeseries_mviews;
-
---
--- sign-extends 32-bit integers so they can be retrieved by 
--- java int type
---
-function sign_extend(p_int in integer) return integer
-is
-   i  integer;
-   bi binary_integer;
-   numeric_overflow exception;
-   pragma exception_init (numeric_overflow, -1426);
-begin
-   begin
-      bi := p_int;
-   exception
-      when numeric_overflow then
-         begin
-            bi := p_int - 4294967296;
-         exception
-            when others then
-               cwms_err.raise('INVALID_ITEM', p_int, '32-bit integer');
-         end;
-   end;
-   i := bi;
-   return i;
-end;
-
+		i := bi;
+		RETURN i;
+	END;
 /*
 BEGIN
-	-- anything put here will be executed on every mod_plsql call
-	NULL;
+ -- anything put here will be executed on every mod_plsql call
+  NULL;
 */
-	
+
 END cwms_util;
 /
 

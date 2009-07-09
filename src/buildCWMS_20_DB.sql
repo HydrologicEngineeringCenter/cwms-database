@@ -15,6 +15,8 @@ spool buildCWMS_20_DB.log
 -- log on as sysdba
 --
 connect sys/&sys_passwd@&inst as sysdba
+--
+--
 select sysdate from dual;
 set serveroutput on
 begin dbms_output.enable; end;
@@ -28,18 +30,14 @@ whenever sqlerror exit sql.sqlcode
 @@cwms/User-Roles/cwms_user_roles
 @@cwms/User-Roles/cwms_users
 @@cwms/User-Roles/cwms_dba_user
-@@py_ErocUsers
 
---
--- switch to CWMS_DBA schema
---
-alter session set current_schema = cwms_dba;
 --
 @@cwms_dba/cwms_user_admin_pkg
 @@cwms_dba/cwms_user_admin_pkg_body
 --
 grant execute on  cwms_dba.cwms_user_admin to cwms_20;
 grant execute on  dbms_crypto to cwms_user;
+
 --
 -- switch to CWMS_20 schema
 --
@@ -70,11 +68,8 @@ alter session set current_schema = cwms_20;
 --  Load data into cwms tables...
 --
 @@data/cwms_shef_pe_codes
---
---
---
 
-@@py_SecUserOffice
+
 --
 -- CWMS API
 --
@@ -85,12 +80,17 @@ alter session set current_schema = cwms_20;
 -- 
 @@cwms/at_schema_2
 @@cwms/at_schema_tsv_dqu
-
+--
+-- Create dbi and pd user accounts...
+---
+set define on
+@@py_ErocUsers
+set define off
 
 alter session set current_schema = sys;
 set serveroutput on
 set echo off
-
+--
 --
 -- create public synonyms for CWMS_20 packages and views
 -- grant execute on packages to CWMS_USER role
@@ -251,6 +251,8 @@ prompt Starting jobs...
 exec cwms_util.start_timeout_mv_refresh_job;
 /
 exec cwms_msg.start_trim_log_job;
+/
+exec cwms_sec.start_refresh_mv_sec_privs_job;
 /
 --
 -- all done
