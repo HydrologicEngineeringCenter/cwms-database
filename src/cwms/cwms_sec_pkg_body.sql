@@ -1,4 +1,4 @@
-/* Formatted on 7/7/2009 6:55:03 AM (QP5 v5.115.810.9015) */
+/* Formatted on 7/10/2009 12:44:22 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_sec
 AS
 	FUNCTION is_user_admin (p_db_office_code IN NUMBER)
@@ -203,10 +203,10 @@ AS
 	/* get_ts_user_group_code return the user_group code for valid
 			user_groups that can be coupled with ts_groups.
 
-									 Exception is thrown if the user_group is one of the primary
-									 privilege user groups.
+										 Exception is thrown if the user_group is one of the primary
+										 privilege user groups.
 
-												*/
+													 */
 
 	FUNCTION get_ts_user_group_code (p_user_group_id	 IN VARCHAR2,
 												p_db_office_code	 IN NUMBER
@@ -385,22 +385,22 @@ AS
 	/*
 
 					From cwmsdb.CwmsSecJdbc
-																								unlockUser(String username, String officeId)
+																									unlockUser(String username, String officeId)
 
-														This procedure unlocks p_username for the specified p_db_office_id. This does
-											  not unock the users Oracle Account, it only unlocks access to data for
-														 the p_db_office_id.
+															This procedure unlocks p_username for the specified p_db_office_id. This does
+												not unock the users Oracle Account, it only unlocks access to data for
+															  the p_db_office_id.
 
-														  Exceptions are thrown if:
-													 - If the user runing this procedure is not a member of the "CWMS DBA
-												Users" privilege group or the "Users Admin" privilege group for the
-																 p_db_office_id.
-																	- If the p_username does not have any exiting privileges on the
-														p_db_office_id data.
-													 - If the p_username is already unlocked for the p_db_office_id data.
-													  - If the p_username's Oracle Account is locked or if the p_username
-													  does not have an Oracle Account in the database.
-													*/
+																Exceptions are thrown if:
+														 - If the user runing this procedure is not a member of the "CWMS DBA
+												 Users" privilege group or the "Users Admin" privilege group for the
+																		 p_db_office_id.
+																		- If the p_username does not have any exiting privileges on the
+														  p_db_office_id data.
+														- If the p_username is already unlocked for the p_db_office_id data.
+														  - If the p_username's Oracle Account is locked or if the p_username
+														does not have an Oracle Account in the database.
+														*/
 
 	PROCEDURE unlock_user (p_username		 IN VARCHAR2,
 								  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
@@ -440,17 +440,17 @@ AS
 	/*
 
 					From cwmsdb.CwmsSecJdbc
-																  addUserToGroup(String username, String officeId, String group)
+																	  addUserToGroup(String username, String officeId, String group)
 
-															This procedure is used to add p_username to the p_user_group.
+																This procedure is used to add p_username to the p_user_group.
 
-																		  Exceptions are thrown if:
-															 - If the user runing this procedure is not a member of the "CWMS DBA
-																			  Users" privilege group or the "Users Admin" privilege group for the
+																				Exceptions are thrown if:
+																- If the user runing this procedure is not a member of the "CWMS DBA
+																				 Users" privilege group or the "Users Admin" privilege group for the
 																	  p_db_office_id.
-											  - If a non-existing p_user_group_id is passed in.
-																 - If the user is already a member of the p_user_group_id.
-														  */
+												  - If a non-existing p_user_group_id is passed in.
+																	 - If the user is already a member of the p_user_group_id.
+																*/
 
 	FUNCTION get_user_group_code (p_user_group_id	 IN VARCHAR2,
 											p_db_office_code	 IN NUMBER
@@ -540,25 +540,25 @@ AS
 
 			 From cwmsdb.CwmsSecJdbc
 					createUser(String username, List<String> userGroupList,
-																												 String officeId)
+																														 String officeId)
 
-														This procedure will create a new CWMS user associated with the
-									  identified db_office_id.
+															This procedure will create a new CWMS user associated with the
+										 identified db_office_id.
 
-													  If the p_username is not an existing Oracle username/account,
-															 then a new Oracle account is created.
+														If the p_username is not an existing Oracle username/account,
+																  then a new Oracle account is created.
 
-												  Exceptions are thrown if:
-													 - If the user runing this procedure is not a member of the "CWMS DBA
-													 Users" privilege group or the "Users Admin" privilege group for the
-												 p_db_office_id.
-													- If the CWMS user already exists for the p_db_office_id, then an
-															exception is thrown that indicates that and and suggest that either
-													the add_user_to_group or remove_user_from_group procedures
-													should be called.
-														- If one or more of the p_user_group_id_list entries is not a valid
-															 user_group_id for this p_db_office_id,
-												*/
+														Exceptions are thrown if:
+														 - If the user runing this procedure is not a member of the "CWMS DBA
+													  Users" privilege group or the "Users Admin" privilege group for the
+													 p_db_office_id.
+														- If the CWMS user already exists for the p_db_office_id, then an
+																 exception is thrown that indicates that and and suggest that either
+														  the add_user_to_group or remove_user_from_group procedures
+														 should be called.
+															  - If one or more of the p_user_group_id_list entries is not a valid
+																	user_group_id for this p_db_office_id,
+												 */
 
 	PROCEDURE create_user (p_username				 IN VARCHAR2,
 								  p_password				 IN VARCHAR2,
@@ -604,21 +604,21 @@ AS
 						 deleteUser(String username, String officeId)
 
 					This procedure will delete the p_username from the identified
-										 p_db_office_id. It will not delete the Oracle account associated
-							  with the p_username. If the p_username is not associated with another
-													 db_office_id, then this procedure will Lock the p_username's Oracle
-														Account.
+												 p_db_office_id. It will not delete the Oracle account associated
+								  with the p_username. If the p_username is not associated with another
+														db_office_id, then this procedure will Lock the p_username's Oracle
+														 Account.
 
-									  Exceptions are thrown if:
-																  - If the user runing this procedure is not a member of the "CWMS DBA
-																	 Users" privilege group or the "Users Admin" privilege group for the
-															  p_db_office_id.
-													  - If p_username is not associated with the identified p_db_office_id.
-																		  - If p_username does not have an Oracle Account in the DB, then a Warning
-																	  exception is thrown indicating that an Oracle Account does not exist
-															  for this p_username.
+										Exceptions are thrown if:
+																		- If the user runing this procedure is not a member of the "CWMS DBA
+																		  Users" privilege group or the "Users Admin" privilege group for the
+																  p_db_office_id.
+														 - If p_username is not associated with the identified p_db_office_id.
+																			- If p_username does not have an Oracle Account in the DB, then a Warning
+																			exception is thrown indicating that an Oracle Account does not exist
+																	for this p_username.
 
-													*/
+														*/
 
 	PROCEDURE delete_user (p_username		 IN VARCHAR2,
 								  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
@@ -660,20 +660,20 @@ AS
 	/*
 
 				From cwmsdb.CwmsSecJdbc
-															 lockUser(String username, String officeId)
+																 lockUser(String username, String officeId)
 
-														 This procedure locks p_username from the specified p_db_office_id. This does
-																		not lock the users Oracle Account, it only locks access to data for
-														  the p_db_office_id.
+															 This procedure locks p_username from the specified p_db_office_id. This does
+																			 not lock the users Oracle Account, it only locks access to data for
+																 the p_db_office_id.
 
-															 Exceptions are thrown if:
-															  - If the user runing this procedure is not a member of the "CWMS DBA
-												Users" privilege group or the "Users Admin" privilege group for the
-														  p_db_office_id.
-																	- If the p_username does not have any exiting privileges on the p_db_office_id
-															data.
-												  - If the p_username is already locked for the p_db_office_id data.
-													 */
+															  Exceptions are thrown if:
+																 - If the user runing this procedure is not a member of the "CWMS DBA
+													Users" privilege group or the "Users Admin" privilege group for the
+																p_db_office_id.
+																		  - If the p_username does not have any exiting privileges on the p_db_office_id
+															  data.
+														- If the p_username is already locked for the p_db_office_id data.
+														 */
 
 	PROCEDURE lock_user (p_username		  IN VARCHAR2,
 								p_db_office_id   IN VARCHAR2 DEFAULT NULL
@@ -701,16 +701,16 @@ AS
 					 removeUserFromGroup(String username, String officeId,
 												String group)
 
-																								  This procedure is used to remove p_username from the p_user_group.
+																										  This procedure is used to remove p_username from the p_user_group.
 
-														Exceptions are thrown if:
-																					  - If the user runing this procedure is not a member of the "CWMS DBA
-															 Users" privilege group or the "Users Admin" privilege group for the
-															p_db_office_id.
-														  - If a non-existing p_user_group_id is passed in.
-																- If the user is not a member of the p_user_group_id.
+															Exceptions are thrown if:
+																							 - If the user runing this procedure is not a member of the "CWMS DBA
+																  Users" privilege group or the "Users Admin" privilege group for the
+																  p_db_office_id.
+															 - If a non-existing p_user_group_id is passed in.
+																 - If the user is not a member of the p_user_group_id.
 
-																*/
+																	*/
 
 	PROCEDURE remove_user_from_group (
 		p_username			IN VARCHAR2,
@@ -741,24 +741,47 @@ AS
 
 		getUserState(String username, String officeId)
 
-																						 */
+																								 */
 
 	FUNCTION get_user_state (p_username 		IN VARCHAR2,
 									 p_db_office_id	IN VARCHAR2 DEFAULT NULL
 									)
 		RETURN VARCHAR2
 	IS
+		l_db_office_id 					VARCHAR2 (16)
+				:= cwms_util.get_db_office_id (p_db_office_id) ;
+		l_db_office_code					NUMBER
+				:= cwms_util.get_db_office_code (l_db_office_id) ;
+		l_account_status					VARCHAR2 (32) := NULL;
 	BEGIN
-		NULL;
+		confirm_user_admin_priv (l_db_office_code);
+
+		BEGIN
+			SELECT	account_status
+			  INTO	l_account_status
+			  FROM	sys.dba_users
+			 WHERE	username = UPPER (TRIM (p_username));
+		EXCEPTION
+			WHEN NO_DATA_FOUND
+			THEN
+				l_account_status := NULL;
+		END;
+
+		IF l_account_status IS NULL
+		THEN
+			RETURN 'NO ACCOUNT';
+		ELSE
+			RETURN l_account_status;
+		END IF;
 	END;
 
 	/*
 
 		storePrivilegeGroups(String username, String officeId,
 					List<String> groupNameList, List<String> groupOfficeIdList,
-																			  List<Boolean> groupAssignedList)
+																				  List<Boolean> groupAssignedList)
 
-													*/
+														*/
 
 
 
@@ -768,8 +791,8 @@ AS
 
 	/*
 				From cwmsdb.CwmsSecJdbc
-														  setDbiUserPass(String dbiUserName, String dbiUserPass)
-											  */
+															  setDbiUserPass(String dbiUserName, String dbiUserPass)
+												  */
 
 	PROCEDURE set_dbi_user_passwd (p_dbi_password	IN VARCHAR2,
 											 p_dbi_username	IN VARCHAR2 DEFAULT NULL ,
@@ -958,7 +981,8 @@ AS
 																	l_db_office_code
 															AND c.db_office_code =
 																	l_db_office_code
-															AND a.user_group_code > 100) a
+															AND a.user_group_code >
+																	max_cwms_priv_ugroup_code) a
 										  LEFT OUTER JOIN
 											  at_sec_allow b
 										  USING (db_office_code,
