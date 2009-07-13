@@ -571,15 +571,15 @@ AS
 		RETURN VARCHAR2
 	IS
 		l_office_id 						VARCHAR2 (16) := 'UNK';
-		l_user_id							VARCHAR2 (32);
+		l_username							VARCHAR2 (32);
 	BEGIN
-		l_user_id := get_user_id;
+		l_username := get_user_id;
 
 		BEGIN
 			SELECT	a.office_id
 			  INTO	l_office_id
 			  FROM	cwms_office a, at_sec_user_office b
-			 WHERE	b.user_id = l_user_id
+			 WHERE	b.username = l_username
 						AND a.office_code = b.user_db_office_code;
 		EXCEPTION
 			WHEN NO_DATA_FOUND
@@ -588,11 +588,11 @@ AS
 					SELECT	office_id
 					  INTO	l_office_id
 					  FROM	cwms_office
-					 WHERE	eroc = UPPER (SUBSTR (l_user_id, 1, 2));
+					 WHERE	eroc = UPPER (SUBSTR (l_username, 1, 2));
 				EXCEPTION
 					WHEN NO_DATA_FOUND
 					THEN
-						IF l_user_id = 'CWMS_20'
+						IF l_username = 'CWMS_20'
 						THEN
 							l_office_id := 'CWMS';
 						END IF;
@@ -606,15 +606,15 @@ AS
 											  p_office_long_name   OUT VARCHAR2
 											 )
 	IS
-		l_user_id							VARCHAR2 (32);
+		l_username							VARCHAR2 (32);
 	BEGIN
-		l_user_id := get_user_id;
+		l_username := get_user_id;
 
 		BEGIN
 			SELECT	a.office_id, a.long_name
 			  INTO	p_office_id, p_office_long_name
 			  FROM	cwms_office a, at_sec_user_office b
-			 WHERE	b.user_id = l_user_id
+			 WHERE	b.username = l_username
 						AND a.office_code = b.user_db_office_code;
 		EXCEPTION
 			WHEN NO_DATA_FOUND
@@ -623,7 +623,7 @@ AS
 					SELECT	a.office_id, a.long_name
 					  INTO	p_office_id, p_office_long_name
 					  FROM	cwms_office a
-					 WHERE	eroc = UPPER (SUBSTR (l_user_id, 1, 2));
+					 WHERE	eroc = UPPER (SUBSTR (l_username, 1, 2));
 				EXCEPTION
 					WHEN NO_DATA_FOUND
 					THEN
@@ -639,15 +639,15 @@ AS
 		RETURN NUMBER
 	IS
 		l_office_code						NUMBER (10) := 0;
-		l_user_id							VARCHAR2 (32);
+		l_username							VARCHAR2 (32);
 	BEGIN
-		l_user_id := get_user_id;
+		l_username := get_user_id;
 
 		BEGIN
 			SELECT	user_db_office_code
 			  INTO	l_office_code
 			  FROM	at_sec_user_office
-			 WHERE	user_id = l_user_id;
+			 WHERE	username = l_username;
 		EXCEPTION
 			WHEN NO_DATA_FOUND
 			THEN
@@ -655,11 +655,11 @@ AS
 					SELECT	office_code
 					  INTO	l_office_code
 					  FROM	cwms_office
-					 WHERE	eroc = UPPER (SUBSTR (l_user_id, 1, 2));
+					 WHERE	eroc = UPPER (SUBSTR (l_username, 1, 2));
 				EXCEPTION
 					WHEN NO_DATA_FOUND
 					THEN
-						IF l_user_id = 'CWMS_20'
+						IF l_username = 'CWMS_20'
 						THEN
 							SELECT	office_code
 							  INTO	l_office_code

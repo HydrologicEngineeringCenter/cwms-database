@@ -48,7 +48,7 @@ AS
 		  FROM	cwms_20.at_sec_users atsu
 		 WHERE		 atsu.db_office_code = p_db_office_code
 					AND atsu.user_group_code IN (0, 7)
-					AND atsu.user_id = UPPER (l_username);
+					AND atsu.username = UPPER (l_username);
 
 		IF l_count > 0
 		THEN
@@ -96,7 +96,7 @@ AS
 		  FROM	at_sec_users a
 		 WHERE		 a.db_office_code = p_db_office_code
 					AND a.user_group_code = p_user_group_code
-					AND a.user_id = UPPER (TRIM (p_username));
+					AND a.username = UPPER (TRIM (p_username));
 
 		IF l_count > 0
 		THEN
@@ -171,7 +171,7 @@ AS
 		p_db_office_id   IN		VARCHAR2 DEFAULT NULL
 	)
 	IS
-		l_user_id							VARCHAR2 (31)
+		l_username							VARCHAR2 (31)
 				:= UPPER (NVL (TRIM (p_username), cwms_util.get_user_id)) ;
 		l_db_office_id 					VARCHAR2 (16)
 				:= UPPER (NVL (TRIM (p_db_office_id), cwms_util.user_office_id)) ;
@@ -179,20 +179,20 @@ AS
 		IF l_db_office_id = 'ALL'
 		THEN
 			OPEN p_priv_groups FOR
-				SELECT	b.office_id db_office_id, a.user_id username,
+				SELECT	b.office_id db_office_id, a.username,
 							c.user_group_id
 				  FROM	at_sec_users a, cwms_office b, cwms_sec_user_groups c
 				 WHERE		 a.db_office_code = b.office_code
 							AND a.user_group_code = c.user_group_code
-							AND user_id = l_user_id;
+							AND username = l_username;
 		ELSE
 			OPEN p_priv_groups FOR
-				SELECT	b.office_id db_office_id, a.user_id username,
+				SELECT	b.office_id db_office_id, a.username,
 							c.user_group_id
 				  FROM	at_sec_users a, cwms_office b, cwms_sec_user_groups c
 				 WHERE		 a.db_office_code = b.office_code
 							AND a.user_group_code = c.user_group_code
-							AND user_id = l_user_id
+							AND username = l_username
 							AND a.db_office_code =
 									cwms_util.get_db_office_code (l_db_office_id);
 		END IF;
@@ -318,7 +318,7 @@ AS
 																		 l_dbi_username
 																		);
 
-		INSERT INTO at_sec_user_office (user_id, user_db_office_code
+		INSERT INTO at_sec_user_office (username, user_db_office_code
 												 )
 		  VALUES   (l_username, l_db_office_code
 					  );
@@ -491,7 +491,7 @@ AS
 		l_user_group_code :=
 			get_user_group_code (p_user_group_id, p_db_office_code);
 
-		INSERT INTO at_sec_users (db_office_code, user_group_code, user_id
+		INSERT INTO at_sec_users (db_office_code, user_group_code, username
 										 )
 		  VALUES   (p_db_office_code, l_user_group_code, l_username
 					  );
@@ -634,7 +634,7 @@ AS
 		l_username := UPPER (TRIM (p_username));
 
 		DELETE FROM   at_sec_users
-				WHERE   user_id = l_username
+				WHERE   username = l_username
 						  AND db_office_code = l_db_office_code;
 
 		DELETE FROM   at_sec_locked_users
@@ -643,7 +643,7 @@ AS
 
 		BEGIN
 			DELETE FROM   at_sec_user_office
-					WHERE   user_id = l_username;
+					WHERE   username = l_username;
 		EXCEPTION
 			WHEN OTHERS
 			THEN
@@ -704,7 +704,7 @@ AS
 		SELECT	COUNT ( * )
 		  INTO	l_count
 		  FROM	at_sec_users
-		 WHERE	user_id = l_username AND db_office_code = l_db_office_code;
+		 WHERE	username = l_username AND db_office_code = l_db_office_code;
 
 		IF l_count = 0
 		THEN
@@ -761,7 +761,7 @@ AS
 		DELETE FROM   at_sec_users
 				WHERE 		db_office_code = l_db_office_code
 						  AND user_group_code = l_user_group_code
-						  AND user_id = UPPER (p_username);
+						  AND username = UPPER (p_username);
 	END;
 
 	----------------------------------------------------------------------------
@@ -1056,18 +1056,18 @@ AS
 	BEGIN
 		SELECT	COUNT ( * )
 		  INTO	l_tot
-		  FROM	(SELECT	 db_office_code, user_id, ts_code, net_privilege_bit
+		  FROM	(SELECT	 db_office_code, username, ts_code, net_privilege_bit
 						FROM	 mv_sec_ts_privileges
 					 MINUS
-					 SELECT	 db_office_code, user_id, ts_code, net_privilege_bit
+					 SELECT	 db_office_code, username, ts_code, net_privilege_bit
 						FROM	 av_sec_ts_privileges);
 
 		SELECT	COUNT ( * )
 		  INTO	l_count
-		  FROM	(SELECT	 db_office_code, user_id, ts_code, net_privilege_bit
+		  FROM	(SELECT	 db_office_code, username, ts_code, net_privilege_bit
 						FROM	 av_sec_ts_privileges
 					 MINUS
-					 SELECT	 db_office_code, user_id, ts_code, net_privilege_bit
+					 SELECT	 db_office_code, username, ts_code, net_privilege_bit
 						FROM	 mv_sec_ts_privileges);
 
 		l_tot := l_tot + l_count;

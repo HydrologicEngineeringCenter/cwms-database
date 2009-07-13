@@ -1101,7 +1101,7 @@ IS
                                 (SELECT aa.ts_code,
                                         aa.net_privilege_bit user_privileges
                                    FROM mv_sec_ts_privileges aa
-                                  WHERE aa.user_id = cwms_util.get_user_id) a
+                                  WHERE aa.username = cwms_util.get_user_id) a
                           WHERE v.ts_code = a.ts_code
                             AND v.db_office_code = l_db_office_code) b,
                         at_cwms_ts_spec s,
@@ -1122,7 +1122,7 @@ IS
                                 (SELECT aa.ts_code,
                                         aa.net_privilege_bit user_privileges
                                    FROM mv_sec_ts_privileges aa
-                                  WHERE aa.user_id = cwms_util.get_user_id) a
+                                  WHERE aa.username = cwms_util.get_user_id) a
                           WHERE v.ts_code = a.ts_code
                             AND v.db_office_code = l_db_office_code) b,
                         (SELECT c.location_code
@@ -1150,7 +1150,7 @@ IS
                                 (SELECT aa.ts_code,
                                         aa.net_privilege_bit user_privileges
                                    FROM mv_sec_ts_privileges aa
-                                  WHERE aa.user_id = cwms_util.get_user_id) a
+                                  WHERE aa.username = cwms_util.get_user_id) a
                           WHERE v.ts_code = a.ts_code
                             AND v.db_office_code = l_db_office_code) b,
                         at_cwms_ts_spec s,
@@ -1174,7 +1174,7 @@ IS
                                 (SELECT aa.ts_code,
                                         aa.net_privilege_bit user_privileges
                                    FROM mv_sec_ts_privileges aa
-                                  WHERE aa.user_id = cwms_util.get_user_id) a
+                                  WHERE aa.username = cwms_util.get_user_id) a
                           WHERE v.ts_code = a.ts_code
                             AND v.db_office_code = l_db_office_code) b,
                         (SELECT c.location_code

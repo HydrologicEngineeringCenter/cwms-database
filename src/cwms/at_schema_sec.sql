@@ -204,7 +204,7 @@ COMMIT;
 
 CREATE TABLE at_sec_user_office
 (
-	user_id								VARCHAR2 (31 BYTE),
+	username								VARCHAR2 (31 BYTE),
 	user_db_office_code				NUMBER NOT NULL
 )
 TABLESPACE cwms_20data
@@ -226,7 +226,7 @@ MONITORING
 /
 
 CREATE UNIQUE INDEX at_sec_user_office_pk
-	ON at_sec_user_office (user_id)
+	ON at_sec_user_office (username)
 	LOGGING
 	TABLESPACE cwms_20data
 	PCTFREE 10
@@ -242,20 +242,20 @@ CREATE UNIQUE INDEX at_sec_user_office_pk
 /
 
 CREATE OR REPLACE TRIGGER at_sec_user_office_trig
-	BEFORE INSERT OR UPDATE OF user_id
+	BEFORE INSERT OR UPDATE OF username
 	ON at_sec_user_office
 	REFERENCING NEW AS new OLD AS old
 	FOR EACH ROW
 DECLARE
 BEGIN
-	:new.user_id := UPPER (:new.user_id);
+	:new.username := UPPER (:new.username);
 END;
 /
 
 ALTER TABLE at_sec_user_office ADD (
   CONSTRAINT at_sec_user_office_pk
  PRIMARY KEY
- (user_id)
+ (username)
 	 USING INDEX
 	 TABLESPACE cwms_20data
 	 PCTFREE 	10
@@ -344,7 +344,7 @@ CREATE TABLE at_sec_users
 (
 	db_office_code 					NUMBER,
 	user_group_code					NUMBER,
-	user_id								VARCHAR2 (31 BYTE)
+	username								VARCHAR2 (31 BYTE)
 )
 TABLESPACE cwms_20data
 PCTUSED 0
@@ -365,7 +365,7 @@ MONITORING
 /
 
 CREATE UNIQUE INDEX at_sec_users_pk
-	ON at_sec_users (db_office_code, user_group_code, user_id)
+	ON at_sec_users (db_office_code, user_group_code, username)
 	LOGGING
 	TABLESPACE cwms_20data
 	PCTFREE 10
@@ -383,7 +383,7 @@ CREATE UNIQUE INDEX at_sec_users_pk
 ALTER TABLE at_sec_users ADD (
   CONSTRAINT at_sec_users_pk
  PRIMARY KEY
- (db_office_code, user_group_code, user_id)
+ (db_office_code, user_group_code, username)
 	 USING INDEX
 	 TABLESPACE cwms_20data
 	 PCTFREE 	10
@@ -398,8 +398,8 @@ ALTER TABLE at_sec_users ADD (
 /
 ALTER TABLE at_sec_users ADD (
   CONSTRAINT at_sec_users_r02
- FOREIGN KEY (user_id)
- REFERENCES at_sec_user_office (user_id))
+ FOREIGN KEY (username)
+ REFERENCES at_sec_user_office (username))
 /
 ALTER TABLE at_sec_users ADD (
   CONSTRAINT at_sec_users_r01
@@ -1054,7 +1054,7 @@ AS
 				CASE WHEN is_locked IS NULL THEN 'F' ELSE is_locked END is_locked,
 				user_group_desc, user_db_office_code, db_office_code,
 				user_group_code
-	  FROM		(SELECT	 user_id username, user_db_office_id, db_office_id,
+	  FROM		(SELECT	 username username, user_db_office_id, db_office_id,
 								 user_group_id, user_group_desc, user_db_office_code,
 								 db_office_code db_office_code, user_group_code,
 								 CASE
@@ -1062,7 +1062,7 @@ AS
 									 ELSE 'F'
 								 END
 									 is_member
-						FROM		 (SELECT   a.user_id,
+						FROM		 (SELECT   a.username,
 												  d.office_id user_db_office_id,
 												  c.office_id db_office_id,
 												  b.user_group_id, b.user_group_desc,
@@ -1077,7 +1077,7 @@ AS
 														  d.office_code) a
 								 LEFT OUTER JOIN
 									 at_sec_users b
-								 USING (user_id, db_office_code, user_group_code)) a
+								 USING (username, db_office_code, user_group_code)) a
 				LEFT OUTER JOIN
 					at_sec_locked_users
 				USING (username, db_office_code);
@@ -1093,15 +1093,15 @@ AS
 CREATE OR REPLACE FORCE VIEW av_sec_ts_privileges
 (
 	db_office_code,
-	user_id,
+	username,
 	ts_code,
 	net_privilege_bit
 )
 AS
-	  SELECT   db_office_code, user_id, ts_code,
+	  SELECT   db_office_code, username, ts_code,
 				  SUM (privilege_bit) net_privilege_bit
-		 FROM   (SELECT	UNIQUE db_office_code, user_id, ts_code, privilege_bit --, cwms_ts_id
-					  FROM		(SELECT	 db_office_code, user_id, ts_group_mask,
+		 FROM   (SELECT	UNIQUE db_office_code, username, ts_code, privilege_bit --, cwms_ts_id
+					  FROM		(SELECT	 db_office_code, username, ts_group_mask,
 												 privilege_bit
 										FROM			 at_sec_users
 													 JOIN
@@ -1109,13 +1109,13 @@ AS
 													 USING (db_office_code, user_group_code)
 												 JOIN
 													 at_sec_ts_group_masks
-												 USING (db_office_code, ts_group_code) -- WHERE 	  user_id = 'Q0CWMSPD' --AND privilege_bit = 4
+												 USING (db_office_code, ts_group_code) -- WHERE 	  username = 'Q0CWMSPD' --AND privilege_bit = 4
 																								  )
 								JOIN
 									mv_cwms_ts_id
 								USING (db_office_code)
 					 WHERE	UPPER (cwms_ts_id) LIKE ts_group_mask ESCAPE '\')
-	GROUP BY   db_office_code, user_id, ts_code;
+	GROUP BY   db_office_code, username, ts_code;
 
 /
 
@@ -1148,14 +1148,14 @@ BUILD IMMEDIATE
 REFRESH COMPLETE ON DEMAND
 WITH PRIMARY KEY
 AS
-SELECT db_office_code, user_id, ts_code, net_privilege_bit
+SELECT db_office_code, username, ts_code, net_privilege_bit
   FROM av_sec_ts_privileges;
 
 COMMENT ON MATERIALIZED VIEW mv_sec_ts_privileges IS
 'snapshot table for snapshot MV_SEC_TS_PRIVILEGES';
 
 CREATE INDEX mv_sec_ts_privileges_i01
-	ON mv_sec_ts_privileges (db_office_code, user_id)
+	ON mv_sec_ts_privileges (db_office_code, username)
 	LOGGING
 	TABLESPACE cwms_20data
 	PCTFREE 10
@@ -1171,7 +1171,7 @@ CREATE INDEX mv_sec_ts_privileges_i01
 	NOPARALLEL;
 
 CREATE INDEX mv_sec_ts_privileges_i02
-	ON mv_sec_ts_privileges (user_id)
+	ON mv_sec_ts_privileges (username)
 	LOGGING
 	TABLESPACE cwms_20data
 	PCTFREE 10
