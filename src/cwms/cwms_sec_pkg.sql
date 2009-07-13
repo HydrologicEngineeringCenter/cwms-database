@@ -1,7 +1,9 @@
 /* Formatted on 7/5/2009 1:19:30 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_sec
 AS
-	TYPE cat_at_sec_allow_rec_t IS RECORD (
+	max_cwms_priv_ugroup_code constant number := 9;
+    
+    TYPE cat_at_sec_allow_rec_t IS RECORD (
 												 db_office_code					 NUMBER,
 												 user_group_code					 NUMBER,
 												 ts_group_code 					 NUMBER,
