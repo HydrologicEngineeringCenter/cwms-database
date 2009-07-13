@@ -290,7 +290,7 @@ AS
 		l_username							VARCHAR2 (31)
 				:= UPPER (TRIM (p_username)) ;
 		l_password							VARCHAR2 (31)
-				:= UPPER (TRIM (p_password)) ;
+				:= TRIM (p_password) ;
 		l_is_locked 						VARCHAR2 (1);
 		l_dbi_username 					VARCHAR2 (31);
 		l_db_office_id 					VARCHAR2 (16)
@@ -759,7 +759,7 @@ AS
 		BEGIN
 			SELECT	account_status
 			  INTO	l_account_status
-			  FROM	sys.dba_users
+			  FROM	dba_users
 			 WHERE	username = UPPER (TRIM (p_username));
 		EXCEPTION
 			WHEN NO_DATA_FOUND

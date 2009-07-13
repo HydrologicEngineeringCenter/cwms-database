@@ -4,7 +4,7 @@
 --
 whenever sqlerror continue
 
-DROP PROFILE cwms_prof;
+DROP PROFILE cwms_prof cascade;
 
 --
 -- notice errors

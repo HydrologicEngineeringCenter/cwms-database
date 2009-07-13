@@ -1,15 +1,15 @@
-/* Formatted on 6/24/2009 6:45:00 AM (QP5 v5.115.810.9015) */
+/* Formatted on 7/10/2009 1:37:43 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_dba.cwms_user_admin
 AS
 	/******************************************************************************
-		  NAME:		  cwms_admin
-			PURPOSE:
+				NAME: 		cwms_admin
+				PURPOSE:
 
-			REVISIONS:
-			Ver		  Date		  Author 			 Description
-		 ---------	----------	---------------  ------------------------------------
-			 1.0			10/6/2008				 1. Created this package body.
-		******************************************************************************/
+				  REVISIONS:
+				 Ver			Date			Author			  Description
+		  --------- ----------	---------------	------------------------------------
+				1.0		  10/6/2008 				1. Created this package body.
+			 ******************************************************************************/
 	PROCEDURE lock_db_account (p_username IN VARCHAR2 DEFAULT NULL )
 	AS
 		l_sql_string						VARCHAR2 (400);
@@ -38,30 +38,56 @@ AS
 		l_sql_string						VARCHAR2 (400);
 		l_username							VARCHAR2 (30);
 		l_password							VARCHAR2 (50);
+		l_account_status					VARCHAR2 (156) := NULL;
+		l_username_exists 				BOOLEAN;
 	BEGIN
-		l_username := p_username;
+		l_username := UPPER (TRIM (p_username));
 		l_password := p_password;
 
+		BEGIN
+			SELECT	account_status
+			  INTO	l_account_status
+			  FROM	dba_users
+			 WHERE	username = l_username;
 
-		IF l_password IS NULL
+			l_username_exists := TRUE;
+		EXCEPTION
+			WHEN NO_DATA_FOUND
+			THEN
+				l_username_exists := FALSE;
+		END;
+
+
+		IF l_username_exists
 		THEN
-			l_sql_string :=
-				'create user ' || l_username
-				|| ' PROFILE CWMS_PROF IDENTIFIED BY values ''FEDCBA9876543210''
-									 DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP ACCOUNT UNLOCK';
+			IF l_account_status != 'OPEN'
+			THEN
+				l_sql_string := 'alter user ' || l_username || ' account unlock';
+
+				EXECUTE IMMEDIATE l_sql_string;
+			--
+			END IF;
 		ELSE
-			l_sql_string :=
-					'create user '
-				|| l_username
-				|| ' PROFILE CWMS_PROF IDENTIFIED BY '
-				|| l_password
-				|| ' DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP ACCOUNT UNLOCK';
+			IF l_password IS NULL
+			THEN
+				l_sql_string :=
+					'create user ' || l_username
+					|| ' PROFILE CWMS_PROF IDENTIFIED BY values ''FEDCBA9876543210''
+									 DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP ACCOUNT UNLOCK';
+			ELSE
+				l_sql_string :=
+						'create user '
+					|| l_username
+					|| ' PROFILE CWMS_PROF IDENTIFIED BY "'
+					|| l_password
+					|| '" DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP ACCOUNT UNLOCK';
+			END IF;
+
+			--DBMS_OUTPUT.put_line (l_sql_string);
+
+			EXECUTE IMMEDIATE l_sql_string;
+		--
 		END IF;
-
-		--DBMS_OUTPUT.put_line (l_sql_string);
-
-
-		EXECUTE IMMEDIATE l_sql_string;
 	END;
 
 
