@@ -198,6 +198,9 @@ end;
 --
 -- compile all invalid objects
 --
+alter materialized view cwms_20.mv_sec_ts_privileges compile
+/
+
 set echo off
 prompt Invalid objects...
   select substr(object_name, 1, 31) "INVALID OBJECT", object_type 

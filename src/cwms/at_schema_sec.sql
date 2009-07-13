@@ -1054,7 +1054,7 @@ AS
 				CASE WHEN is_locked IS NULL THEN 'F' ELSE is_locked END is_locked,
 				user_group_desc, user_db_office_code, db_office_code,
 				user_group_code
-	  FROM		(SELECT	 username username, user_db_office_id, db_office_id,
+	  FROM		(SELECT	 username, user_db_office_id, db_office_id,
 								 user_group_id, user_group_desc, user_db_office_code,
 								 db_office_code db_office_code, user_group_code,
 								 CASE
@@ -1098,25 +1098,43 @@ CREATE OR REPLACE FORCE VIEW av_sec_ts_privileges
 	net_privilege_bit
 )
 AS
-	  SELECT   db_office_code, username, ts_code,
-				  SUM (privilege_bit) net_privilege_bit
-		 FROM   (SELECT	UNIQUE db_office_code, username, ts_code, privilege_bit --, cwms_ts_id
-					  FROM		(SELECT	 db_office_code, username, ts_group_mask,
-												 privilege_bit
-										FROM			 at_sec_users
-													 JOIN
-														 at_sec_allow
-													 USING (db_office_code, user_group_code)
-												 JOIN
-													 at_sec_ts_group_masks
-												 USING (db_office_code, ts_group_code) -- WHERE 	  username = 'Q0CWMSPD' --AND privilege_bit = 4
-																								  )
-								JOIN
-									mv_cwms_ts_id
-								USING (db_office_code)
-					 WHERE	UPPER (cwms_ts_id) LIKE ts_group_mask ESCAPE '\')
-	GROUP BY   db_office_code, username, ts_code;
-
+      SELECT   db_office_code, username, ts_code,
+                  SUM (privilege_bit) net_privilege_bit
+         FROM   (SELECT    UNIQUE db_office_code, username, ts_code, privilege_bit
+                      FROM        (SELECT     db_office_code, username, ts_group_mask,
+                                                 privilege_bit
+                                        FROM             at_sec_users
+                                                     JOIN
+                                                         at_sec_allow
+                                                     USING (db_office_code, user_group_code)
+                                                 JOIN
+                                                     at_sec_ts_group_masks
+                                                 USING (db_office_code, ts_group_code))
+                                JOIN
+                                    mv_cwms_ts_id
+                                USING (db_office_code)
+                     WHERE    UPPER (cwms_ts_id) LIKE ts_group_mask ESCAPE '\')
+    GROUP BY   db_office_code, username, ts_code
+/
+--
+--=============================================================================
+-- av_sec_ts_privileges_mv
+--=============================================================================
+--
+CREATE OR REPLACE FORCE VIEW av_sec_ts_privileges_mv
+(
+    db_office_code,
+    username,
+    ts_code,
+    net_privilege_bit
+)
+AS
+    SELECT    db_office_code, username, ts_code, net_privilege_bit
+      FROM        av_sec_ts_privileges
+                JOIN
+                    at_sec_locked_users
+                USING (db_office_code, username)
+     WHERE    is_locked != 'T'
 /
 
 --
@@ -1148,11 +1166,13 @@ BUILD IMMEDIATE
 REFRESH COMPLETE ON DEMAND
 WITH PRIMARY KEY
 AS
-SELECT db_office_code, username, ts_code, net_privilege_bit
-  FROM av_sec_ts_privileges;
+  SELECT   db_office_code, username, ts_code, net_privilege_bit
+     FROM  av_sec_ts_privileges_mv
+/
 
 COMMENT ON MATERIALIZED VIEW mv_sec_ts_privileges IS
-'snapshot table for snapshot MV_SEC_TS_PRIVILEGES';
+'snapshot table for snapshot MV_SEC_TS_PRIVILEGES'
+/
 
 CREATE INDEX mv_sec_ts_privileges_i01
 	ON mv_sec_ts_privileges (db_office_code, username)
@@ -1184,4 +1204,5 @@ CREATE INDEX mv_sec_ts_privileges_i02
 				PCTINCREASE 0
 				BUFFER_POOL DEFAULT
 			  )
-	NOPARALLEL;
+	NOPARALLEL
+/
