@@ -1,17 +1,17 @@
-/* Formatted on 7/5/2009 1:19:30 PM (QP5 v5.115.810.9015) */
+/* Formatted on 7/13/2009 6:15:17 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_sec
 AS
-	max_cwms_priv_ugroup_code constant number := 9;
-    
-    TYPE cat_at_sec_allow_rec_t IS RECORD (
-												 db_office_code					 NUMBER,
-												 user_group_code					 NUMBER,
-												 ts_group_code 					 NUMBER,
-												 db_office_id						 VARCHAR2 (16),
-												 user_group_id 					 VARCHAR2 (32),
-												 ts_group_id						 VARCHAR2 (32),
-												 priv_sum							 NUMBER,
-												 priv 								 VARCHAR2 (15)
+	max_cwms_priv_ugroup_code CONSTANT	 NUMBER := 9;
+
+	TYPE cat_at_sec_allow_rec_t IS RECORD (
+												 db_office_code	 NUMBER,
+												 user_group_code	 NUMBER,
+												 ts_group_code 	 NUMBER,
+												 db_office_id		 VARCHAR2 (16),
+												 user_group_id 	 VARCHAR2 (32),
+												 ts_group_id		 VARCHAR2 (32),
+												 priv_sum			 NUMBER,
+												 priv 				 VARCHAR2 (15)
 											 );
 
 	TYPE cat_at_sec_allow_tab_t IS TABLE OF cat_at_sec_allow_rec_t;
@@ -49,6 +49,11 @@ AS
 		p_dbi_password   IN VARCHAR2 DEFAULT NULL ,
 		p_db_office_id   IN VARCHAR2 DEFAULT NULL
 	);
+
+	PROCEDURE set_dbi_user_passwd (p_dbi_password	IN VARCHAR2,
+											 p_dbi_username	IN VARCHAR2 DEFAULT NULL ,
+											 p_db_office_id	IN VARCHAR2 DEFAULT NULL
+											);
 
 	PROCEDURE delete_cwms_db_account (p_username IN VARCHAR2);
 
@@ -118,7 +123,7 @@ AS
 		PIPELINED;
 
 	PROCEDURE refresh_mv_sec_ts_privileges;
-    
-    procedure start_refresh_mv_sec_privs_job;
+
+	PROCEDURE start_refresh_mv_sec_privs_job;
 END cwms_sec;
 /
