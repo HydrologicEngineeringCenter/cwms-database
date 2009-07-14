@@ -563,63 +563,68 @@ AS
 	-- create_user
 	----------------------------------------------------------------------------
 
-	/*
+    /*
 
-			 From cwmsdb.CwmsSecJdbc
-					createUser(String username, List<String> userGroupList,
-																																								 String officeId)
+    From cwmsdb.CwmsSecJdbc
+    createUser(String username, List<String> userGroupList,
+                    String officeId)
 
-																				This procedure will create a new CWMS user associated with the
-													  identified db_office_id.
+    This procedure will create a new CWMS user associated with the
+    identified db_office_id.
 
-																			  If the p_username is not an existing Oracle username/account,
-																							 then a new Oracle account is created.
+    If the p_username is not an existing Oracle username/account,
+    then a new Oracle account is created.
 
-																		  Exceptions are thrown if:
-																			 - If the user runing this procedure is not a member of the "CWMS DBA
-																	  Users" privilege group or the "Users Admin" privilege group for the
-																		p_db_office_id.
-																	  - If the CWMS user already exists for the p_db_office_id, then an
-																			 exception is thrown that indicates that and and suggest that either
-																	 the add_user_to_group or remove_user_from_group procedures
-																			should be called.
-																			  - If one or more of the p_user_group_id_list entries is not a valid
-																					 user_group_id for this p_db_office_id,
-																			*/
+    Exceptions are thrown if:
+    - If the user runing this procedure is not a member of the "CWMS DBA
+    Users" privilege group or the "Users Admin" privilege group for the
+    p_db_office_id.
+    - If the CWMS user already exists for the p_db_office_id, then an
+    exception is thrown that indicates that and and suggest that either
+    the add_user_to_group or remove_user_from_group procedures
+    should be called.
+    - If one or more of the p_user_group_id_list entries is not a valid
+    user_group_id for this p_db_office_id,
+    */
 
-	PROCEDURE create_user (p_username				 IN VARCHAR2,
-								  p_password				 IN VARCHAR2,
-								  p_user_group_id_list	 IN char_32_array_type,
-								  p_db_office_id			 IN VARCHAR2 DEFAULT NULL
-								 )
-	IS
-		l_db_office_id VARCHAR2 (16)
-				:= cwms_util.get_db_office_id (p_db_office_id) ;
-		l_db_office_code NUMBER
-				:= cwms_util.get_db_office_code (l_db_office_id) ;
-		l_dbi_username 	  VARCHAR2 (31);
-		l_username			  VARCHAR2 (31) := UPPER (TRIM (p_username));
-		l_user_group_code   NUMBER;
-		l_count				  NUMBER;
-	BEGIN
-		confirm_user_admin_priv (l_db_office_code);
+    PROCEDURE create_user (p_username				 IN VARCHAR2,
+                                  p_password				 IN VARCHAR2,
+                                  p_user_group_id_list	 IN char_32_array_type,
+                                  p_db_office_id			 IN VARCHAR2 DEFAULT NULL
+                                 )
+    IS
+        l_db_office_id VARCHAR2 (16)
+                := cwms_util.get_db_office_id (p_db_office_id) ;
+        l_db_office_code	  NUMBER := cwms_util.get_db_office_code (l_db_office_id);
+        l_dbi_username 	  VARCHAR2 (31);
+        l_username			  VARCHAR2 (31) := UPPER (TRIM (p_username));
+        l_user_group_code   NUMBER;
+        l_count				  NUMBER;
+    BEGIN
+        confirm_user_admin_priv (l_db_office_code);
 
-		FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
-		LOOP
-			l_user_group_code :=
-				get_user_group_code (p_user_group_id_list (i), l_db_office_code);
-		END LOOP;
+        IF p_user_group_id_list.LAST > 0
+        THEN
+            FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
+            LOOP
+                l_user_group_code :=
+                    get_user_group_code (p_user_group_id_list (i), l_db_office_code);
+            END LOOP;
+        END IF;
 
-		create_cwms_db_account (l_username, p_password, l_db_office_id);
+        create_cwms_db_account (l_username, p_password, l_db_office_id);
 
-		FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
-		LOOP
-			add_user_to_group (l_username,
-									 p_user_group_id_list (i),
-									 l_db_office_code
-									);
-		END LOOP;
-	END;
+        IF p_user_group_id_list.LAST > 0
+        THEN
+            FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
+            LOOP
+                add_user_to_group (l_username,
+                                         p_user_group_id_list (i),
+                                         l_db_office_code
+                                        );
+            END LOOP;
+        END IF;
+    END;
 
 	----------------------------------------------------------------------------
 	-- delete_user

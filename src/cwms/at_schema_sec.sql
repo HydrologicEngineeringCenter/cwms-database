@@ -1045,7 +1045,7 @@ CREATE OR REPLACE FORCE VIEW av_sec_users
 AS
 	SELECT	username, user_db_office_id, db_office_id,
 				CASE
-					WHEN user_group_code < 10 THEN 'Privelege User Group'
+					WHEN user_group_code < 10 THEN 'Privilege User Group'
 					ELSE 'TS Collection User Group'
 				END
 					user_group_type,
