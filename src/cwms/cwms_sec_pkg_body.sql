@@ -182,21 +182,36 @@ AS
         RETURN;
     END get_assigned_priv_groups_tab;
     --
+
     PROCEDURE get_assigned_priv_groups (
         p_priv_groups		  OUT sys_refcursor,
         p_db_office_id   IN		VARCHAR2 DEFAULT NULL
     )
     IS
         l_username			 VARCHAR2 (31) := cwms_util.get_user_id;
-        l_db_office_id VARCHAR2 (16)
-                := cwms_util.get_db_office_id (p_db_office_id) ;
-        l_db_office_code	 NUMBER := cwms_util.get_db_office_code (l_db_office_id);
+        l_db_office_id 	 VARCHAR2 (16);
+        l_db_office_code	 NUMBER;
     BEGIN
-        OPEN p_priv_groups FOR
-            SELECT	username, user_db_office_id, db_office_id, user_group_type,
-                        user_group_owner, user_group_id, is_member, user_group_desc
-              FROM	av_sec_users
-             WHERE	db_office_code = l_db_office_code AND username = l_username;
+        --
+        IF p_db_office_id IS NULL
+        THEN
+            OPEN p_priv_groups FOR
+                SELECT	username, user_db_office_id, db_office_id, user_group_type,
+                            user_group_owner, user_group_id, is_member, user_group_desc
+                  FROM	av_sec_users
+                 WHERE	username = l_username AND is_member = 'T';
+        ELSE
+            l_db_office_id := cwms_util.get_db_office_id (p_db_office_id);
+            l_db_office_code := cwms_util.get_db_office_code (l_db_office_id);
+
+            OPEN p_priv_groups FOR
+                SELECT	username, user_db_office_id, db_office_id, user_group_type,
+                            user_group_owner, user_group_id, is_member, user_group_desc
+                  FROM	av_sec_users
+                 WHERE		 db_office_code = l_db_office_code
+                            AND username = l_username
+                            AND is_member = 'T';
+        END IF;
     END;
 
     /*--------------------------------------------------------------------------------
