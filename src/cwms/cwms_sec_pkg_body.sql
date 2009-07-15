@@ -161,14 +161,14 @@ AS
     USER_GROUP_DESC
     */
 /* Formatted on 7/15/2009 3:22:40 AM (QP5 v5.115.810.9015) */
-    FUNCTION get_my_priv_groups_tab (p_db_office_id	 IN VARCHAR2 DEFAULT NULL)
+    FUNCTION get_assigned_priv_groups_tab (p_db_office_id	 IN VARCHAR2 DEFAULT NULL)
         RETURN cat_priv_groups_tab_t
         PIPELINED
     IS
         query_cursor	sys_refcursor;
         output_row		cat_priv_groups_rec_t;
     BEGIN
-        get_my_priv_groups (query_cursor, p_db_office_id);
+        get_assigned_priv_groups (query_cursor, p_db_office_id);
 
         LOOP
             FETCH query_cursor INTO   output_row;
@@ -180,9 +180,9 @@ AS
         CLOSE query_cursor;
 
         RETURN;
-    END get_my_priv_groups_tab;
+    END get_assigned_priv_groups_tab;
     --
-    PROCEDURE get_my_priv_groups (
+    PROCEDURE get_assigned_priv_groups (
         p_priv_groups		  OUT sys_refcursor,
         p_db_office_id   IN		VARCHAR2 DEFAULT NULL
     )
@@ -252,6 +252,7 @@ AS
         l_db_office_code			  NUMBER;
         l_retrieve_all_username   BOOLEAN;
         l_retrieve_all_offices	  BOOLEAN;
+        l_count                       NUMBER;
     BEGIN
         IF p_username IS NULL
         THEN
@@ -263,6 +264,22 @@ AS
 
         IF p_db_office_id IS NULL
         THEN
+            SELECT	COUNT ( * )
+              INTO	l_count
+              FROM	at_sec_users
+             WHERE	username = cwms_util.get_user_id
+                        AND user_group_code IN
+                                    (user_group_code_dba_users,
+                                     user_group_code_user_admins);
+
+            IF l_count = 0
+            THEN
+                cwms_err.raise (
+                    'ERROR',
+                    'Permission Denied. Your account needs "CWMS DBA" or "CWMS User Admin" privileges to use the cwms_sec package.'
+                );
+            END IF;
+
             l_retrieve_all_offices := TRUE;
         ELSE
             l_retrieve_all_offices := FALSE;
@@ -700,7 +717,7 @@ AS
     BEGIN
         confirm_user_admin_priv (l_db_office_code);
 
-        IF p_user_group_id_list is not null
+        IF p_user_group_id_list.COUNT > 0
         THEN
             FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
             LOOP
@@ -711,7 +728,7 @@ AS
 
         create_cwms_db_account (l_username, p_password, l_db_office_id);
 
-        IF p_user_group_id_list is not null
+        IF p_user_group_id_list.COUNT > 0
         THEN
             FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
             LOOP
@@ -1327,29 +1344,74 @@ AS
         List<String> groupNameList, List<String> groupOfficeIdList,
         List<Boolean> groupAssignedList)
     */
-/* Formatted on 7/15/2009 8:11:36 AM (QP5 v5.115.810.9015) */
+    /* Formatted on 7/15/2009 1:26:53 PM (QP5 v5.115.810.9015) */
     PROCEDURE store_priv_groups (p_username				 IN VARCHAR2,
                                           p_user_group_id_list	 IN char_32_array_type,
                                           p_db_office_id_list	 IN char_16_array_type,
                                           p_is_member_list		 IN char_16_array_type
                                          )
     IS
+        l_db_office_code_list	number_tab_t := number_tab_t ();
+        l_is_member_list			char_16_array_type := char_16_array_type ();
+        l_user_group_code 		NUMBER;
+        l_username					VARCHAR2 (31);
     BEGIN
         -- confirm user exicuting this call has privileges on all db_offices
         --   in the p_db_office_id_list
-        IF p_db_office_id_list IS NULL
+        IF p_db_office_id_list.COUNT = 0
         THEN
-            NULL;
+            RETURN;
         ELSE
             FOR i IN p_db_office_id_list.FIRST .. p_db_office_id_list.LAST
             LOOP
-                confirm_user_admin_priv (
-                    cwms_util.get_db_office_code (p_db_office_id_list (i))
-                );
+                l_db_office_code_list.EXTEND;
+                l_db_office_code_list (i) :=
+                    cwms_util.get_db_office_code (p_db_office_id_list (i));
+                confirm_user_admin_priv (l_db_office_code_list (i));
+
+                l_user_group_code :=
+                    get_user_group_code (p_user_group_id_list (i),
+                                                l_db_office_code_list (i)
+                                              );
+
+                l_is_member_list.EXTEND;
+                l_is_member_list (i) :=
+                    cwms_util.return_t_or_f_flag (p_is_member_list (i));
+
+                IF l_is_member_list (i) = 'F'
+                    AND l_user_group_code = user_group_code_all_users
+                THEN
+                    cwms_err.raise (
+                        'ERROR',
+                        'Cannot remove users from the "All Users" User Group.'
+                    );
+                END IF;
             END LOOP;
         END IF;
+
+        --
+        l_username := UPPER (TRIM (p_username));
+
+        --
+        -- Calling user has USER ADMIN privileges and all user groups are valid so
+        -- make the assignements...
+        --
+        FOR i IN p_db_office_id_list.FIRST .. p_db_office_id_list.LAST
+        LOOP
+            IF l_is_member_list (i) = 'T'
+            THEN
+                add_user_to_group (p_username 		  => l_username,
+                                         p_user_group_id	  => p_user_group_id_list (i),
+                                         p_db_office_code   => l_db_office_code_list (i)
+                                        );
+            ELSE
+                remove_user_from_group (
+                    p_username			=> l_username,
+                    p_user_group_id	=> p_user_group_id_list (i),
+                    p_db_office_id 	=> p_db_office_id_list (i)
+                );
+            END IF;
+        END LOOP;
     END;
-    --
-    
 END cwms_sec;
 /
