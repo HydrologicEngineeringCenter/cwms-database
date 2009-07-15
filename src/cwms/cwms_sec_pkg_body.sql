@@ -143,6 +143,61 @@ AS
 				);
 		END;
 	END;
+    /*  cwms_sec.get_my_user_priv_groups(p_priv_groups  OUT sys_refcursor,
+                                         p_db_office_id IN  VARCHAR2 DEFAULT NULL)
+        
+    This call is callable by anyone and returns a listing of that users
+    priv_groups for the identified and/or the users default db_office_id.
+    
+    Returns a refcursor of:
+
+    USERNAME
+    USER_DB_OFFICE_ID
+    DB_OFFICE_ID
+    USER_GROUP_TYPE     (either "Privelege User Group" or "TS Collection User Group"
+    USER_GROUP_OWNER  ("CWMS" or the owning DB_OFFICE_ID)
+    USER_GROUP_ID
+    IS_MEMBER            ("T" or "F")
+    USER_GROUP_DESC
+    */
+/* Formatted on 7/15/2009 3:22:40 AM (QP5 v5.115.810.9015) */
+    FUNCTION get_my_priv_groups_tab (p_db_office_id	 IN VARCHAR2 DEFAULT NULL)
+        RETURN cat_priv_groups_tab_t
+        PIPELINED
+    IS
+        query_cursor	sys_refcursor;
+        output_row		cat_priv_groups_rec_t;
+    BEGIN
+        get_my_priv_groups (query_cursor, p_db_office_id);
+
+        LOOP
+            FETCH query_cursor INTO   output_row;
+
+            EXIT WHEN query_cursor%NOTFOUND;
+            PIPE ROW (output_row);
+        END LOOP;
+
+        CLOSE query_cursor;
+
+        RETURN;
+    END get_my_priv_groups_tab;
+    --
+    PROCEDURE get_my_priv_groups (
+        p_priv_groups		  OUT sys_refcursor,
+        p_db_office_id   IN		VARCHAR2 DEFAULT NULL
+    )
+    IS
+        l_username			 VARCHAR2 (31) := cwms_util.get_user_id;
+        l_db_office_id VARCHAR2 (16)
+                := cwms_util.get_db_office_id (p_db_office_id) ;
+        l_db_office_code	 NUMBER := cwms_util.get_db_office_code (l_db_office_id);
+    BEGIN
+        OPEN p_priv_groups FOR
+            SELECT	username, user_db_office_id, db_office_id, user_group_type,
+                        user_group_owner, user_group_id, is_member, user_group_desc
+              FROM	av_sec_users
+             WHERE	db_office_code = l_db_office_code AND username = l_username;
+    END;
 
     /*--------------------------------------------------------------------------------
     The get_user_priv_groups procedure returns a refcursor of:
@@ -161,6 +216,31 @@ AS
     associated with the calling username's admin privileges.
 
     */
+    /* Formatted on 7/15/2009 6:58:35 AM (QP5 v5.115.810.9015) */
+    FUNCTION get_user_priv_groups_tab (p_username		 IN VARCHAR2 DEFAULT NULL ,
+                                                  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
+                                                 )
+        RETURN cat_priv_groups_tab_t
+        PIPELINED
+    IS
+        query_cursor	sys_refcursor;
+        output_row		cat_priv_groups_rec_t;
+    BEGIN
+        get_user_priv_groups (query_cursor, p_username, p_db_office_id);
+
+        LOOP
+            FETCH query_cursor INTO   output_row;
+
+            EXIT WHEN query_cursor%NOTFOUND;
+            PIPE ROW (output_row);
+        END LOOP;
+
+        CLOSE query_cursor;
+
+        RETURN;
+    END get_user_priv_groups_tab;
+    --
+
     PROCEDURE get_user_priv_groups (
         p_priv_groups		  OUT sys_refcursor,
         p_username		  IN		VARCHAR2 DEFAULT NULL ,
@@ -201,7 +281,9 @@ AS
                                     (SELECT	 UNIQUE db_office_code
                                         FROM	 at_sec_users
                                       WHERE	 username = cwms_util.get_user_id
-                                                 AND user_group_code IN (0, 7));
+                                                 AND user_group_code IN
+                                                             (user_group_code_dba_users,
+                                                              user_group_code_user_admins));
         ELSIF (l_retrieve_all_username AND NOT l_retrieve_all_offices)
         THEN
             OPEN p_priv_groups FOR
@@ -232,13 +314,13 @@ AS
 
 	---
 	---
-	/* get_ts_user_group_code return the user_group code for valid
-			user_groups that can be coupled with ts_groups.
+    /* get_ts_user_group_code return the user_group code for valid
+    user_groups that can be coupled with ts_groups.
 
-															 Exception is thrown if the user_group is one of the primary
-															 privilege user groups.
+    Exception is thrown if the user_group is one of the primary
+    privilege user groups.
 
-																				*/
+    */
 
 	FUNCTION get_ts_user_group_code (p_user_group_id	 IN VARCHAR2,
 												p_db_office_code	 IN NUMBER
@@ -311,75 +393,86 @@ AS
 		cwms_dba.cwms_user_admin.unlock_db_account (p_username);
 	END;
 
-	PROCEDURE create_cwms_db_account (
-		p_username		  IN VARCHAR2,
-		p_password		  IN VARCHAR2,
-		p_db_office_id   IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_username		  VARCHAR2 (31) := UPPER (TRIM (p_username));
-		l_password		  VARCHAR2 (31) := TRIM (p_password);
-		l_is_locked 	  VARCHAR2 (1);
-		l_dbi_username   VARCHAR2 (31);
-		l_db_office_id VARCHAR2 (16)
-				:= cwms_util.get_db_office_id (p_db_office_id) ;
-		l_db_office_code NUMBER
-				:= cwms_util.get_db_office_code (l_db_office_id) ;
-	BEGIN
-		confirm_user_admin_priv (l_db_office_code);
+    PROCEDURE create_cwms_db_account (p_username 		IN VARCHAR2,
+                                                 p_password 		IN VARCHAR2,
+                                                 p_db_office_id	IN VARCHAR2 DEFAULT NULL
+                                                )
+    IS
+        l_username			 VARCHAR2 (31) := UPPER (TRIM (p_username));
+        l_password			 VARCHAR2 (31) := TRIM (p_password);
+        l_is_locked 		 VARCHAR2 (1);
+        l_dbi_username 	 VARCHAR2 (31);
+        l_db_office_id VARCHAR2 (16)
+                := cwms_util.get_db_office_id (p_db_office_id) ;
+        l_db_office_code	 NUMBER := cwms_util.get_db_office_code (l_db_office_id);
+    --
+    BEGIN
+        confirm_user_admin_priv (l_db_office_code);
 
-		BEGIN
-			SELECT	dbi_username
-			  INTO	l_dbi_username
-			  FROM	at_sec_dbi_user
-			 WHERE	db_office_code = l_db_office_code;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise (
-					'ERROR',
-					'Unable to create user because a dbi_username was not found for this CWMS Oracle Database.'
-				);
-		END;
+        BEGIN
+            SELECT	dbi_username
+              INTO	l_dbi_username
+              FROM	at_sec_dbi_user
+             WHERE	db_office_code = l_db_office_code;
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+                cwms_err.raise (
+                    'ERROR',
+                    'Unable to create user because a dbi_username was not found for this CWMS Oracle Database.'
+                );
+        END;
 
-		cwms_dba.cwms_user_admin.create_cwms_db_account (l_username,
-																		 l_password,
-																		 l_dbi_username
-																		);
+        cwms_dba.cwms_user_admin.create_cwms_db_account (l_username,
+                                                                         l_password,
+                                                                         l_dbi_username
+                                                                        );
 
-		INSERT INTO at_sec_user_office (username, user_db_office_code
-												 )
-		  VALUES   (l_username, l_db_office_code
-					  );
+        BEGIN
+            INSERT INTO at_sec_user_office (username, user_db_office_code
+                                                     )
+              VALUES   (l_username, l_db_office_code
+                          );
+        EXCEPTION
+            WHEN DUP_VAL_ON_INDEX
+            THEN
+                NULL;
+        END;
 
-		BEGIN
-			SELECT	is_locked
-			  INTO	l_is_locked
-			  FROM	at_sec_locked_users
-			 WHERE	db_office_code = l_db_office_code AND username = l_username;
+        BEGIN
+            SELECT	is_locked
+              INTO	l_is_locked
+              FROM	at_sec_locked_users
+             WHERE	db_office_code = l_db_office_code AND username = l_username;
 
-			IF l_is_locked != 'F'
-			THEN
-				UPDATE	at_sec_locked_users
-					SET	is_locked = 'F'
-				 WHERE	db_office_code = l_db_office_code
-							AND username = l_username;
-			END IF;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				INSERT INTO at_sec_locked_users (
-																db_office_code,
-																username,
-																is_locked
-							  )
-				  VALUES   (l_db_office_code, l_username, 'F'
-							  );
-		END;
+            IF l_is_locked != 'F'
+            THEN
+                UPDATE	at_sec_locked_users
+                    SET	is_locked = 'F'
+                 WHERE	db_office_code = l_db_office_code AND username = l_username;
+            END IF;
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+                INSERT INTO at_sec_locked_users (db_office_code, username, is_locked
+                                                          )
+                  VALUES   (l_db_office_code, l_username, 'F'
+                              );
+        END;
 
-		COMMIT;
-	END;
+        BEGIN
+            INSERT INTO at_sec_users (db_office_code, user_group_code, username
+                                             )
+              VALUES   (l_db_office_code, user_group_code_all_users, l_username
+                          );
+        EXCEPTION
+            WHEN DUP_VAL_ON_INDEX
+            THEN
+                NULL;
+        END;
 
+        COMMIT;
+    END;
 	PROCEDURE delete_cwms_db_account (p_username IN VARCHAR2)
 	IS
 	BEGIN
@@ -410,57 +503,56 @@ AS
 	----------------------------------------------------------------------------
 	-- unlock_user
 	----------------------------------------------------------------------------
-	/*
+    /*
 
-		From cwmsdb.CwmsSecJdbc
-							unlockUser(String username, String officeId)
+    From cwmsdb.CwmsSecJdbc
+    unlockUser(String username, String officeId)
 
-						 This procedure unlocks p_username for the specified p_db_office_id. This does
-					  not unock the users Oracle Account, it only unlocks access to data for
-							the p_db_office_id.
+    This procedure unlocks p_username for the specified p_db_office_id. This does
+    not unock the users Oracle Account, it only unlocks access to data for
+    the p_db_office_id.
 
-						Exceptions are thrown if:
-					-	 If the user runing this procedure is not a member of the "CWMS DBA
-									Users" privilege group or the "Users Admin" privilege group for the
-										p_db_office_id.
-								 - If the p_username does not have any exiting privileges on the
-								  p_db_office_id data.
-							 -   If the p_username is already unlocked for the p_db_office_id data.
-						 -   If the p_username's Oracle Account is locked or if the p_username
-							  does not have an Oracle Account in the database.
-						  */
+    Exceptions are thrown if:
+    -	 If the user runing this procedure is not a member of the "CWMS DBA
+    Users" privilege group or the "Users Admin" privilege group for the
+    p_db_office_id.
+    - If the p_username does not have any exiting privileges on the
+    p_db_office_id data.
+    -   If the p_username is already unlocked for the p_db_office_id data.
+    -   If the p_username's Oracle Account is locked or if the p_username
+    does not have an Oracle Account in the database.
+    */
+    PROCEDURE unlock_user (p_username		 IN VARCHAR2,
+                                  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
+                                 )
+    IS
+        l_db_office_code	 NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+        l_count				 NUMBER;
+        l_username			 VARCHAR2 (31);
+    BEGIN
+        confirm_user_admin_priv (l_db_office_code);
 
-	PROCEDURE unlock_user (p_username		 IN VARCHAR2,
-								  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
-								 )
-	IS
-		l_db_office_code NUMBER
-				:= cwms_util.get_db_office_code (p_db_office_id) ;
-		l_count	 NUMBER;
-	BEGIN
-		confirm_user_admin_priv (l_db_office_code);
 
+        l_username := UPPER (TRIM (p_username));
+        cwms_dba.cwms_user_admin.unlock_db_account (l_username);
 
-		cwms_dba.cwms_user_admin.unlock_db_account (p_username);
+        SELECT	COUNT ( * )
+          INTO	l_count
+          FROM	at_sec_locked_users
+         WHERE	username = l_username AND db_office_code = l_db_office_code;
 
-		SELECT	COUNT ( * )
-		  INTO	l_count
-		  FROM	at_sec_locked_users
-		 WHERE	username = p_username AND db_office_code = l_db_office_code;
-
-		IF l_count = 0
-		THEN
-			INSERT INTO at_sec_locked_users (db_office_code, username, is_locked
-													  )
-			  VALUES   (l_db_office_code, UPPER (p_username), 'F'
-						  );
-		ELSE
-			UPDATE	at_sec_locked_users
-				SET	db_office_code = l_db_office_code,
-						username = UPPER (p_username),
-						is_locked = 'F';
-		END IF;
-	END;
+        IF l_count = 0
+        THEN
+            INSERT INTO at_sec_locked_users (db_office_code, username, is_locked
+                                                      )
+              VALUES   (l_db_office_code, l_username, 'F'
+                          );
+        ELSE
+            UPDATE	at_sec_locked_users
+                SET	is_locked = 'F'
+             WHERE	db_office_code = l_db_office_code AND username = l_username;
+        END IF;
+    END;
 
 	----------------------------------------------------------------------------
 	-- add_user_to_group
@@ -505,26 +597,31 @@ AS
 		RETURN l_user_group_code;
 	END;
 
-	PROCEDURE add_user_to_group (p_username			IN VARCHAR2,
-										  p_user_group_id 	IN VARCHAR2,
-										  p_db_office_code	IN NUMBER
-										 )
-	IS
-		l_user_group_code   NUMBER;
-		l_username			  VARCHAR2 (31) := UPPER (TRIM (p_username));
-	BEGIN
-		confirm_user_admin_priv (p_db_office_code);
+    PROCEDURE add_user_to_group (p_username			IN VARCHAR2,
+                                          p_user_group_id 	IN VARCHAR2,
+                                          p_db_office_code	IN NUMBER
+                                         )
+    IS
+        l_user_group_code   NUMBER;
+        l_username			  VARCHAR2 (31) := UPPER (TRIM (p_username));
+    BEGIN
+        confirm_user_admin_priv (p_db_office_code);
 
 
-		l_user_group_code :=
-			get_user_group_code (p_user_group_id, p_db_office_code);
+        l_user_group_code :=
+            get_user_group_code (p_user_group_id, p_db_office_code);
 
-		INSERT INTO at_sec_users (db_office_code, user_group_code, username
-										 )
-		  VALUES   (p_db_office_code, l_user_group_code, l_username
-					  );
-	END;
-
+        BEGIN
+            INSERT INTO at_sec_users (db_office_code, user_group_code, username
+                                             )
+              VALUES   (p_db_office_code, l_user_group_code, l_username
+                          );
+        EXCEPTION
+            WHEN DUP_VAL_ON_INDEX
+            THEN
+                NULL;
+        END;
+    END;
 	PROCEDURE add_user_to_group (p_username		  IN VARCHAR2,
 										  p_user_group_id   IN VARCHAR2,
 										  p_db_office_id	  IN VARCHAR2 DEFAULT NULL
@@ -603,7 +700,7 @@ AS
     BEGIN
         confirm_user_admin_priv (l_db_office_code);
 
-        IF p_user_group_id_list.LAST > 0
+        IF p_user_group_id_list is not null
         THEN
             FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
             LOOP
@@ -614,7 +711,7 @@ AS
 
         create_cwms_db_account (l_username, p_password, l_db_office_id);
 
-        IF p_user_group_id_list.LAST > 0
+        IF p_user_group_id_list is not null
         THEN
             FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
             LOOP
@@ -758,45 +855,48 @@ AS
 	END;
 
 
-	----------------------------------------------------------------------------
-	-- remove_user_from_group
-	----------------------------------------------------------------------------
-	/*
-		From cwmsdb.CwmsSecJdbc
-							removeUserFromGroup(String username, String officeId,
-						 String group)
+    ----------------------------------------------------------------------------
+    -- remove_user_from_group
+    ----------------------------------------------------------------------------
+    /*
+    From cwmsdb.CwmsSecJdbc
+    removeUserFromGroup(String username, String officeId,
+    String group)
 
-						 This procedure is used to remove p_username from the p_user_group.
+    This procedure is used to remove p_username from the p_user_group.
 
-						  Exceptions are thrown if:
-								  - If the user runing this procedure is not a member of the "CWMS DBA
-								Users" privilege group or the "Users Admin" privilege group for the
-									 p_db_office_id.
-								-	If a non-existing p_user_group_id is passed in.
-						  -  If the user is not a member of the p_user_group_id.
+    Exceptions are thrown if:
+    - If the user runing this procedure is not a member of the "CWMS DBA
+    Users" privilege group or the "Users Admin" privilege group for the
+    p_db_office_id.
+    -	If a non-existing p_user_group_id is passed in.
 
-							*/
+    */
+    PROCEDURE remove_user_from_group (p_username 		 IN VARCHAR2,
+                                                 p_user_group_id	 IN VARCHAR2,
+                                                 p_db_office_id	 IN VARCHAR2 DEFAULT NULL
+                                                )
+    IS
+        l_db_office_code	  NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+        l_user_group_code   NUMBER;
+    BEGIN
+        confirm_user_admin_priv (l_db_office_code);
 
-	PROCEDURE remove_user_from_group (
-		p_username			IN VARCHAR2,
-		p_user_group_id	IN VARCHAR2,
-		p_db_office_id 	IN VARCHAR2 DEFAULT NULL
-	)
-	IS
-		l_db_office_code NUMBER
-				:= cwms_util.get_db_office_code (p_db_office_id) ;
-		l_user_group_code   NUMBER;
-	BEGIN
-		confirm_user_admin_priv (l_db_office_code);
+        l_user_group_code :=
+            get_user_group_code (p_user_group_id, l_db_office_code);
 
-		l_user_group_code :=
-			get_user_group_code (p_user_group_id, l_db_office_code);
+        IF l_user_group_code = user_group_code_all_users
+        THEN
+            cwms_err.raise ('ERROR',
+                                 'Cannot remove users from the "All Users" User Group.'
+                                );
+        END IF;
 
-		DELETE FROM   at_sec_users
-				WHERE 		db_office_code = l_db_office_code
-						  AND user_group_code = l_user_group_code
-						  AND username = UPPER (p_username);
-	END;
+        DELETE FROM   at_sec_users
+                WHERE 		db_office_code = l_db_office_code
+                          AND user_group_code = l_user_group_code
+                          AND username = UPPER (p_username);
+    END;
 
 	----------------------------------------------------------------------------
 	-- get_user_state
@@ -1221,5 +1321,35 @@ AS
 			END;
 		END IF;
 	END start_refresh_mv_sec_privs_job;
+    
+    /*
+    storePrivilegeGroups(String username, String officeId,
+        List<String> groupNameList, List<String> groupOfficeIdList,
+        List<Boolean> groupAssignedList)
+    */
+/* Formatted on 7/15/2009 8:11:36 AM (QP5 v5.115.810.9015) */
+    PROCEDURE store_priv_groups (p_username				 IN VARCHAR2,
+                                          p_user_group_id_list	 IN char_32_array_type,
+                                          p_db_office_id_list	 IN char_16_array_type,
+                                          p_is_member_list		 IN char_16_array_type
+                                         )
+    IS
+    BEGIN
+        -- confirm user exicuting this call has privileges on all db_offices
+        --   in the p_db_office_id_list
+        IF p_db_office_id_list IS NULL
+        THEN
+            NULL;
+        ELSE
+            FOR i IN p_db_office_id_list.FIRST .. p_db_office_id_list.LAST
+            LOOP
+                confirm_user_admin_priv (
+                    cwms_util.get_db_office_code (p_db_office_id_list (i))
+                );
+            END LOOP;
+        END IF;
+    END;
+    --
+    
 END cwms_sec;
 /

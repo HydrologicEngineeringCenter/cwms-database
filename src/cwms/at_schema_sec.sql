@@ -27,7 +27,7 @@ MONITORING
 /
 
 CREATE UNIQUE INDEX at_sec_locked_users_pk
-	ON at_sec_locked_users (db_office_code, username, is_locked)
+	ON at_sec_locked_users (db_office_code, username)
 	LOGGING
 	TABLESPACE cwms_20data
 	PCTFREE 10
@@ -45,7 +45,7 @@ CREATE UNIQUE INDEX at_sec_locked_users_pk
 ALTER TABLE at_sec_locked_users ADD (
   CONSTRAINT at_sec_locked_users_pk
  PRIMARY KEY
- (db_office_code, username, is_locked)
+ (db_office_code, username)
 	 USING INDEX
 	 TABLESPACE cwms_20data
 	 PCTFREE 	10

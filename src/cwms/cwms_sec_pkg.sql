@@ -1,7 +1,11 @@
-/* Formatted on 7/13/2009 6:15:17 PM (QP5 v5.115.810.9015) */
+/* Formatted on 7/15/2009 6:56:10 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_sec
 AS
-	max_cwms_priv_ugroup_code CONSTANT	 NUMBER := 9;
+	max_cwms_priv_ugroup_code CONSTANT	  NUMBER := 9;
+	--
+	user_group_code_all_users CONSTANT	  NUMBER := 10;
+	user_group_code_dba_users CONSTANT	  NUMBER := 0;
+	user_group_code_user_admins CONSTANT   NUMBER := 7;
 
 	TYPE cat_at_sec_allow_rec_t IS RECORD (
 												 db_office_code	 NUMBER,
@@ -15,6 +19,19 @@ AS
 											 );
 
 	TYPE cat_at_sec_allow_tab_t IS TABLE OF cat_at_sec_allow_rec_t;
+
+	TYPE cat_priv_groups_rec_t IS RECORD (
+												username 			  VARCHAR2 (31),
+												user_db_office_id   VARCHAR2 (16),
+												db_office_id		  VARCHAR2 (16),
+												user_group_type	  VARCHAR2 (24),
+												user_group_owner	  VARCHAR2 (16),
+												user_group_id		  VARCHAR2 (32),
+												is_member			  VARCHAR2 (1),
+												user_group_desc	  VARCHAR2 (256)
+											);
+
+	TYPE cat_priv_groups_tab_t IS TABLE OF cat_priv_groups_rec_t;
 
 
 
@@ -57,11 +74,27 @@ AS
 
 	PROCEDURE delete_cwms_db_account (p_username IN VARCHAR2);
 
+	PROCEDURE get_my_priv_groups (
+		p_priv_groups		  OUT sys_refcursor,
+		p_db_office_id   IN		VARCHAR2 DEFAULT NULL
+	);
+
+	FUNCTION get_my_priv_groups_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL )
+		RETURN cat_priv_groups_tab_t
+		PIPELINED;
+
 	PROCEDURE get_user_priv_groups (
 		p_priv_groups		  OUT sys_refcursor,
 		p_username		  IN		VARCHAR2 DEFAULT NULL ,
 		p_db_office_id   IN		VARCHAR2 DEFAULT NULL
 	);
+
+	FUNCTION get_user_priv_groups_tab (
+		p_username		  IN VARCHAR2 DEFAULT NULL ,
+		p_db_office_id   IN VARCHAR2 DEFAULT NULL
+	)
+		RETURN cat_priv_groups_tab_t
+		PIPELINED;
 
 	PROCEDURE get_user_office_data (p_office_id			  OUT VARCHAR2,
 											  p_office_long_name   OUT VARCHAR2
