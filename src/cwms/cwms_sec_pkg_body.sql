@@ -1428,5 +1428,161 @@ AS
             END IF;
         END LOOP;
     END;
+--
+    /* Formatted on 7/16/2009 5:49:32 AM (QP5 v5.115.810.9015) */
+    PROCEDURE delete_user_group (p_user_group_id   IN VARCHAR2,
+                                          p_db_office_id	  IN VARCHAR2 DEFAULT NULL
+                                         )
+    AS
+        l_db_office_code	  NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+        l_user_group_code   NUMBER;
+    BEGIN
+        confirm_user_admin_priv (l_db_office_code);
+
+        --
+        BEGIN
+            l_user_group_code :=
+                get_user_group_code (p_user_group_id	 => p_user_group_id,
+                                            p_db_office_code	 => l_db_office_code
+                                          );
+        EXCEPTION
+            WHEN OTHERS
+            THEN
+                RETURN;							  -- silent when user_group does not exist
+        END;
+
+        --
+        -- delete all at_sec_allow pairings with this user_group...
+        --
+        DELETE FROM   at_sec_allow
+                WHERE   user_group_code = l_user_group_code
+                          AND db_office_code = l_db_office_code;
+
+        --
+        -- delete all at_sec_users entries with this user_code...
+        --
+        DELETE FROM   at_sec_users
+                WHERE   user_group_code = l_user_group_code
+                          AND db_office_code = l_db_office_code;
+
+        --
+        -- finally delete the user_group from at_sec_user_groups...
+        --
+        DELETE FROM   at_sec_user_groups
+                WHERE   user_group_code = l_user_group_code
+                          AND db_office_code = l_db_office_code;
+    --
+    END;
+
+    PROCEDURE create_user_group (p_user_group_id 	 IN VARCHAR2,
+                                          p_user_group_desc	 IN VARCHAR2,
+                                          p_db_office_id		 IN VARCHAR2 DEFAULT NULL
+                                         )
+    AS
+        l_db_office_code	  NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+        l_lowest_code		  NUMBER;
+        l_user_group_desc   VARCHAR2 (256);
+        l_user_group_id	  VARCHAR2 (32);
+        l_error				  BOOLEAN := TRUE;
+    BEGIN
+        confirm_user_admin_priv (l_db_office_code);
+        --
+        l_user_group_id := TRIM (p_user_group_id);
+
+        --
+        -- Confirm that the new user_group_id is unique
+        --
+        BEGIN
+            SELECT	user_group_desc
+              INTO	l_user_group_desc
+              FROM	at_sec_user_groups
+             WHERE		 db_office_code = l_db_office_code
+                        AND user_group_code > max_cwms_ts_ugroup_code
+                        AND UPPER (user_group_id) = UPPER (l_user_group_id);
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+                l_error := FALSE;
+        END;
+
+        --
+        IF l_error
+        THEN
+            cwms_err.raise (
+                'ERROR',
+                    'Unable to create new User Group. The User Group '
+                || l_user_group_id
+                || ' already exists. The existing User Group Description of: '
+                || l_user_group_desc
+            );
+        END IF;
+
+        --
+        -- Determine lowest available user_group_code
+        --
+        SELECT	MIN (user_group_code)
+          INTO	l_lowest_code
+          FROM	at_sec_user_groups
+         WHERE	db_office_code = l_db_office_code
+                    AND user_group_code > max_cwms_ts_ugroup_code;
+
+        IF l_lowest_code IS NULL OR l_lowest_code != 20
+        THEN
+            l_lowest_code := max_cwms_ts_ugroup_code;
+        ELSE
+            SELECT	MAX (user_group_code)
+              INTO	l_lowest_code
+              FROM	at_sec_user_groups
+             WHERE	db_office_code = l_db_office_code
+                        AND user_group_code > max_cwms_ts_ugroup_code;
+
+            IF l_lowest_code IS NULL
+            THEN
+                l_lowest_code := max_cwms_ts_ugroup_code;
+            END IF;
+
+            --
+            IF l_lowest_code > max_cwms_ts_ugroup_code
+            THEN
+                SELECT	MIN (user_group_code)
+                  INTO	l_lowest_code
+                  FROM	(	SELECT	user_group_code,
+                                            LEAD (user_group_code)
+                                                OVER (ORDER BY user_group_code)
+                                            - user_group_code
+                                                dif_value
+                                  FROM	at_sec_user_groups
+                                 WHERE	db_office_code = l_db_office_code
+                                            AND user_group_code > max_cwms_ts_ugroup_code
+                             ORDER BY	user_group_code)
+                 WHERE	dif_value > 1;
+
+                IF l_lowest_code IS NULL
+                THEN
+                      SELECT   MAX (user_group_code)
+                         INTO   l_lowest_code
+                         FROM   at_sec_user_groups
+                        WHERE   db_office_code = l_db_office_code
+                                  AND user_group_code > max_cwms_ts_ugroup_code
+                    ORDER BY   user_group_code;
+                END IF;
+            END IF;
+        --
+        END IF;
+
+        --
+        INSERT INTO at_sec_user_groups (
+                                                      db_office_code,
+                                                      user_group_code,
+                                                      user_group_id,
+                                                      user_group_desc
+                      )
+          VALUES   (
+                            l_db_office_code,
+                            l_lowest_code + 1,
+                            l_user_group_id,
+                            TRIM (p_user_group_desc)
+                      );
+    END;
 END cwms_sec;
 /

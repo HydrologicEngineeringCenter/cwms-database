@@ -1,7 +1,8 @@
-/* Formatted on 7/15/2009 1:25:21 PM (QP5 v5.115.810.9015) */
+/* Formatted on 7/16/2009 5:49:59 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_sec
 AS
 	max_cwms_priv_ugroup_code CONSTANT		NUMBER := 9;
+	max_cwms_ts_ugroup_code CONSTANT 		NUMBER := 19;
 	--
 	user_group_code_all_users CONSTANT		NUMBER := 10;
 	user_group_code_dba_users CONSTANT		NUMBER := 0;
@@ -165,6 +166,15 @@ AS
 										  p_user_group_id_list	 IN char_32_array_type,
 										  p_db_office_id_list	 IN char_16_array_type,
 										  p_is_member_list		 IN char_16_array_type
+										 );
+
+	PROCEDURE delete_user_group (p_user_group_id   IN VARCHAR2,
+										  p_db_office_id	  IN VARCHAR2 DEFAULT NULL
+										 );
+
+	PROCEDURE create_user_group (p_user_group_id 	 IN VARCHAR2,
+										  p_user_group_desc	 IN VARCHAR2,
+										  p_db_office_id		 IN VARCHAR2 DEFAULT NULL
 										 );
 END cwms_sec;
 /
