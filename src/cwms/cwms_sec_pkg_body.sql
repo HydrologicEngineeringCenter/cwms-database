@@ -648,6 +648,7 @@ AS
                                              )
               VALUES   (p_db_office_code, l_user_group_code, l_username
                           );
+			COMMIT;
         EXCEPTION
             WHEN DUP_VAL_ON_INDEX
             THEN
@@ -928,6 +929,7 @@ AS
                 WHERE 		db_office_code = l_db_office_code
                           AND user_group_code = l_user_group_code
                           AND username = UPPER (p_username);
+		COMMIT;
     END;
 
 	----------------------------------------------------------------------------
@@ -1426,7 +1428,7 @@ AS
                     p_db_office_id 	=> p_db_office_id_list (i)
                 );
             END IF;
-        END LOOP;
+		END LOOP;
     END;
 --
     /* Formatted on 7/16/2009 5:49:32 AM (QP5 v5.115.810.9015) */
