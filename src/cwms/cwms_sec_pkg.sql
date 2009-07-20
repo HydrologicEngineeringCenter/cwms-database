@@ -1,8 +1,9 @@
-/* Formatted on 7/16/2009 5:49:59 AM (QP5 v5.115.810.9015) */
+/* Formatted on 7/19/2009 4:12:02 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE cwms_20.cwms_sec
 AS
 	max_cwms_priv_ugroup_code CONSTANT		NUMBER := 9;
 	max_cwms_ts_ugroup_code CONSTANT 		NUMBER := 19;
+	max_cwms_ts_group_code CONSTANT			NUMBER := 9;
 	--
 	user_group_code_all_users CONSTANT		NUMBER := 10;
 	user_group_code_dba_users CONSTANT		NUMBER := 0;
@@ -168,6 +169,18 @@ AS
 										  p_is_member_list		 IN char_16_array_type
 										 );
 
+	PROCEDURE change_user_group_id (
+		p_user_group_id_old	 IN VARCHAR2,
+		p_user_group_id_new	 IN VARCHAR2,
+		p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
+	);
+
+	PROCEDURE change_user_group_desc (
+		p_user_group_id	  IN VARCHAR2,
+		p_user_group_desc   IN VARCHAR2,
+		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
+	);
+
 	PROCEDURE delete_user_group (p_user_group_id   IN VARCHAR2,
 										  p_db_office_id	  IN VARCHAR2 DEFAULT NULL
 										 );
@@ -176,5 +189,35 @@ AS
 										  p_user_group_desc	 IN VARCHAR2,
 										  p_db_office_id		 IN VARCHAR2 DEFAULT NULL
 										 );
+
+	PROCEDURE delete_ts_group (p_ts_group_id	  IN VARCHAR2,
+										p_db_office_id   IN VARCHAR2 DEFAULT NULL
+									  );
+
+	PROCEDURE change_ts_group_id (p_ts_group_id_old   IN VARCHAR2,
+											p_ts_group_id_new   IN VARCHAR2,
+											p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
+										  );
+
+	PROCEDURE change_ts_group_desc (p_ts_group_id	  IN VARCHAR2,
+											  p_ts_group_desc   IN VARCHAR2,
+											  p_db_office_id	  IN VARCHAR2 DEFAULT NULL
+											 );
+
+	PROCEDURE clear_ts_masks (p_ts_group_id	 IN VARCHAR2,
+									  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
+									 );
+
+	PROCEDURE assign_ts_masks_to_ts_group (
+		p_ts_group_id		  IN VARCHAR2,
+		p_ts_mask_list 	  IN char_183_array_type,
+		p_add_remove_list   IN char_16_array_type,
+		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
+	);
+
+	PROCEDURE create_ts_group (p_ts_group_id		IN VARCHAR2,
+										p_ts_group_desc	IN VARCHAR2,
+										p_db_office_id 	IN VARCHAR2 DEFAULT NULL
+									  );
 END cwms_sec;
 /

@@ -1,6 +1,65 @@
 /* Formatted on 7/13/2009 5:29:15 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_sec
 AS
+    FUNCTION find_lowest_code (p_list_of_codes    IN sys_refcursor,
+                                        p_lowest_code        IN NUMBER
+                                      )
+        RETURN NUMBER
+    AS
+        l_lowest_code     NUMBER;
+        l_count             NUMBER;
+        l_codes_array     number_tab_t;
+    BEGIN
+        NULL;
+
+        FETCH p_list_of_codes BULK COLLECT INTO    l_codes_array;
+
+        CLOSE p_list_of_codes;
+
+
+        BEGIN
+            l_count := l_codes_array.COUNT;
+        EXCEPTION
+            WHEN COLLECTION_IS_NULL
+            THEN
+                l_count := 0;
+        END;
+
+        IF l_count = 0
+        THEN
+            RETURN p_lowest_code;
+        END IF;
+
+        SELECT    MIN (COLUMN_VALUE)
+          INTO    l_lowest_code
+          FROM    table (l_codes_array);
+
+        IF l_lowest_code != p_lowest_code
+        THEN
+            RETURN p_lowest_code;
+        END IF;
+        --
+        SELECT    MIN (l_code)
+          INTO    l_lowest_code
+          FROM    (SELECT     COLUMN_VALUE l_code,
+                                 LEAD (COLUMN_VALUE) OVER (ORDER BY COLUMN_VALUE)
+                                 - COLUMN_VALUE
+                                     dif_value
+                        FROM     table (l_codes_array))
+         WHERE    dif_value > 1;
+
+        IF l_lowest_code IS NULL
+        THEN
+              SELECT   MAX (COLUMN_VALUE)
+                 INTO   l_lowest_code
+                 FROM   table (l_codes_array)
+            ORDER BY   COLUMN_VALUE;
+        END IF;
+
+        RETURN l_lowest_code + 1;
+    --
+    END;
+    --
 	FUNCTION is_user_admin (p_db_office_code IN NUMBER)
 		RETURN BOOLEAN
 	IS
@@ -1431,7 +1490,127 @@ AS
 		END LOOP;
     END;
 --
-    /* Formatted on 7/16/2009 5:49:32 AM (QP5 v5.115.810.9015) */
+/* Formatted on 7/19/2009 1:07:21 PM (QP5 v5.115.810.9015) */
+PROCEDURE change_user_group_id (
+	p_user_group_id_old	 IN VARCHAR2,
+	p_user_group_id_new	 IN VARCHAR2,
+	p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
+)
+AS
+	l_db_office_code			NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+	l_user_group_code 		NUMBER;
+	l_user_group_code_new	NUMBER;
+BEGIN
+	confirm_user_admin_priv (l_db_office_code);
+
+	--
+	BEGIN
+		l_user_group_code :=
+			get_user_group_code (p_user_group_id	 => p_user_group_id_old,
+										p_db_office_code	 => l_db_office_code
+									  );
+	EXCEPTION
+		WHEN OTHERS
+		THEN
+			cwms_err.raise (
+				'ERROR',
+					'Cannot rename '
+				|| TRIM (p_user_group_id_old)
+				|| ' because it does not exist.'
+			);
+	END;
+
+	IF l_user_group_code <= max_cwms_ts_ugroup_code
+	THEN
+		cwms_err.raise (
+			'ERROR',
+				'Cannot rename '
+			|| TRIM (p_user_group_id_old)
+			|| ' because it is owned by the system.'
+		);
+	END IF;
+
+	BEGIN
+		l_user_group_code_new :=
+			get_user_group_code (p_user_group_id	 => p_user_group_id_new,
+										p_db_office_code	 => l_db_office_code
+									  );
+		l_user_group_code_new := 0;
+	EXCEPTION
+		WHEN OTHERS
+		THEN
+			l_user_group_code_new := 1;
+	END;
+
+	IF l_user_group_code_new = 0
+	THEN
+		cwms_err.raise (
+			'ERROR',
+				'Cannot rename '
+			|| TRIM (p_user_group_id_old)
+			|| ' to '
+			|| TRIM (p_user_group_id_new)
+			|| ' because '
+			|| TRIM (p_user_group_id_new)
+			|| ' already exists.'
+		);
+	END IF;
+
+	UPDATE	at_sec_user_groups
+		SET	user_group_id = TRIM (p_user_group_id_new)
+	 WHERE	user_group_code = l_user_group_code
+				AND db_office_code = l_db_office_code;
+
+	COMMIT;
+END;
+/* Formatted on 7/19/2009 1:14:21 PM (QP5 v5.115.810.9015) */
+PROCEDURE change_user_group_desc (
+	p_user_group_id	  IN VARCHAR2,
+	p_user_group_desc   IN VARCHAR2,
+	p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
+)
+AS
+	l_db_office_code	  NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+	l_user_group_code   NUMBER;
+BEGIN
+	confirm_user_admin_priv (l_db_office_code);
+
+	--
+	BEGIN
+		l_user_group_code :=
+			get_user_group_code (p_user_group_id	 => p_user_group_id,
+										p_db_office_code	 => l_db_office_code
+									  );
+	EXCEPTION
+		WHEN OTHERS
+		THEN
+			cwms_err.raise (
+				'ERROR',
+					'Cannot change the User Group Description of the '
+				|| TRIM (p_user_group_id)
+				|| ' because the user group does not exist.'
+			);
+	END;
+
+	IF l_user_group_code <= max_cwms_ts_ugroup_code
+	THEN
+		cwms_err.raise (
+			'ERROR',
+				'Cannot change the User Group Description of the '
+			|| TRIM (p_user_group_id)
+			|| ' because it is owned by the system.'
+		);
+	END IF;
+
+	UPDATE	at_sec_user_groups
+		SET	user_group_desc = TRIM (p_user_group_desc)
+	 WHERE	user_group_code = l_user_group_code
+				AND db_office_code = l_db_office_code;
+
+	COMMIT;
+END;
+
+    /* Formatted on 7/19/2009 12:41:06 PM (QP5 v5.115.810.9015) */
     PROCEDURE delete_user_group (p_user_group_id   IN VARCHAR2,
                                           p_db_office_id	  IN VARCHAR2 DEFAULT NULL
                                          )
@@ -1453,6 +1632,16 @@ AS
                 RETURN;							  -- silent when user_group does not exist
         END;
 
+        IF l_user_group_code <= max_cwms_ts_ugroup_code
+        THEN
+            cwms_err.raise (
+                'ERROR',
+                    'Cannot delete '
+                || TRIM (p_user_group_id)
+                || ' because it is owned by the system.'
+            );
+        END IF;
+
         --
         -- delete all at_sec_allow pairings with this user_group...
         --
@@ -1473,19 +1662,24 @@ AS
         DELETE FROM   at_sec_user_groups
                 WHERE   user_group_code = l_user_group_code
                           AND db_office_code = l_db_office_code;
+
+        --
+        COMMIT;
     --
     END;
 
+    /* Formatted on 7/19/2009 10:58:28 AM (QP5 v5.115.810.9015) */
     PROCEDURE create_user_group (p_user_group_id 	 IN VARCHAR2,
                                           p_user_group_desc	 IN VARCHAR2,
                                           p_db_office_id		 IN VARCHAR2 DEFAULT NULL
                                          )
     AS
-        l_db_office_code	  NUMBER := cwms_util.get_db_office_code (p_db_office_id);
-        l_lowest_code		  NUMBER;
-        l_user_group_desc   VARCHAR2 (256);
-        l_user_group_id	  VARCHAR2 (32);
-        l_error				  BOOLEAN := TRUE;
+        l_db_office_code		NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+        l_lowest_code			NUMBER;
+        l_user_group_desc 	VARCHAR2 (256);
+        l_user_group_id		VARCHAR2 (32);
+        l_error					BOOLEAN := TRUE;
+        l_user_group_codes	sys_refcursor;
     BEGIN
         confirm_user_admin_priv (l_db_office_code);
         --
@@ -1522,55 +1716,15 @@ AS
         --
         -- Determine lowest available user_group_code
         --
-        SELECT	MIN (user_group_code)
-          INTO	l_lowest_code
-          FROM	at_sec_user_groups
-         WHERE	db_office_code = l_db_office_code
-                    AND user_group_code > max_cwms_ts_ugroup_code;
-
-        IF l_lowest_code IS NULL OR l_lowest_code != 20
-        THEN
-            l_lowest_code := max_cwms_ts_ugroup_code;
-        ELSE
-            SELECT	MAX (user_group_code)
-              INTO	l_lowest_code
+        OPEN l_user_group_codes FOR
+            SELECT	user_group_code
               FROM	at_sec_user_groups
              WHERE	db_office_code = l_db_office_code
                         AND user_group_code > max_cwms_ts_ugroup_code;
 
-            IF l_lowest_code IS NULL
-            THEN
-                l_lowest_code := max_cwms_ts_ugroup_code;
-            END IF;
-
-            --
-            IF l_lowest_code > max_cwms_ts_ugroup_code
-            THEN
-                SELECT	MIN (user_group_code)
-                  INTO	l_lowest_code
-                  FROM	(	SELECT	user_group_code,
-                                            LEAD (user_group_code)
-                                                OVER (ORDER BY user_group_code)
-                                            - user_group_code
-                                                dif_value
-                                  FROM	at_sec_user_groups
-                                 WHERE	db_office_code = l_db_office_code
-                                            AND user_group_code > max_cwms_ts_ugroup_code
-                             ORDER BY	user_group_code)
-                 WHERE	dif_value > 1;
-
-                IF l_lowest_code IS NULL
-                THEN
-                      SELECT   MAX (user_group_code)
-                         INTO   l_lowest_code
-                         FROM   at_sec_user_groups
-                        WHERE   db_office_code = l_db_office_code
-                                  AND user_group_code > max_cwms_ts_ugroup_code
-                    ORDER BY   user_group_code;
-                END IF;
-            END IF;
         --
-        END IF;
+        l_lowest_code :=
+            find_lowest_code (l_user_group_codes, max_cwms_ts_ugroup_code + 1);
 
         --
         INSERT INTO at_sec_user_groups (
@@ -1581,10 +1735,377 @@ AS
                       )
           VALUES   (
                             l_db_office_code,
-                            l_lowest_code + 1,
+                            l_lowest_code,
                             l_user_group_id,
                             TRIM (p_user_group_desc)
                       );
     END;
+
+    /* Formatted on 7/19/2009 12:40:03 PM (QP5 v5.115.810.9015) */
+    PROCEDURE delete_ts_group (p_ts_group_id	  IN VARCHAR2,
+                                        p_db_office_id   IN VARCHAR2 DEFAULT NULL
+                                      )
+    AS
+        l_db_office_code	 NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+        l_ts_group_code	 NUMBER;
+    BEGIN
+        confirm_user_admin_priv (l_db_office_code);
+
+        --
+        BEGIN
+            l_ts_group_code :=
+                get_ts_group_code (p_ts_group_id 	  => p_ts_group_id,
+                                         p_db_office_code   => l_db_office_code
+                                        );
+        EXCEPTION
+            WHEN OTHERS
+            THEN
+                RETURN;							  -- silent when user_group does not exist
+        END;
+
+        IF l_ts_group_code <= max_cwms_ts_group_code
+        THEN
+            cwms_err.raise (
+                'ERROR',
+                    'Cannot delete '
+                || TRIM (p_ts_group_id)
+                || ' because it is owned by the system.'
+            );
+        END IF;
+
+        --
+        -- delete all at_sec_allow pairings with this user_group...
+        --
+        DELETE FROM   at_sec_allow
+                WHERE   ts_group_code = l_ts_group_code
+                          AND db_office_code = l_db_office_code;
+
+        --
+        -- delete all at_sec_users entries with this user_code...
+        --
+        DELETE FROM   at_sec_ts_group_masks
+                WHERE   ts_group_code = l_ts_group_code
+                          AND db_office_code = l_db_office_code;
+
+        --
+        -- finally delete the user_group from at_sec_user_groups...
+        --
+        DELETE FROM   at_sec_ts_groups
+                WHERE   ts_group_code = l_ts_group_code
+                          AND db_office_code = l_db_office_code;
+
+        --
+        COMMIT;
+    --
+    END;
+PROCEDURE change_ts_group_id (
+    p_ts_group_id_old     IN VARCHAR2,
+    p_ts_group_id_new     IN VARCHAR2,
+    p_db_office_id          IN VARCHAR2 DEFAULT NULL
+)
+AS
+    l_db_office_code            NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+    l_ts_group_code         NUMBER;
+    l_ts_group_code_new    NUMBER;
+BEGIN
+    confirm_user_admin_priv (l_db_office_code);
+
+    --
+    BEGIN
+        l_ts_group_code :=
+            get_ts_group_code (p_ts_group_id     => p_ts_group_id_old,
+                                        p_db_office_code     => l_db_office_code
+                                      );
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            cwms_err.raise (
+                'ERROR',
+                    'Cannot rename '
+                || TRIM (p_ts_group_id_old)
+                || ' because it does not exist.'
+            );
+    END;
+
+    IF l_ts_group_code <= max_cwms_ts_group_code
+    THEN
+        cwms_err.raise (
+            'ERROR',
+                'Cannot rename '
+            || TRIM (p_ts_group_id_old)
+            || ' because it is owned by the system.'
+        );
+    END IF;
+
+    BEGIN
+        l_ts_group_code_new :=
+            get_ts_group_code (p_ts_group_id     => p_ts_group_id_new,
+                                        p_db_office_code     => l_db_office_code
+                                      );
+        l_ts_group_code_new := 0;
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            l_ts_group_code_new := 1;
+    END;
+
+    IF l_ts_group_code_new = 0
+    THEN
+        cwms_err.raise (
+            'ERROR',
+                'Cannot rename '
+            || TRIM (p_ts_group_id_old)
+            || ' to '
+            || TRIM (p_ts_group_id_new)
+            || ' because '
+            || TRIM (p_ts_group_id_new)
+            || ' already exists.'
+        );
+    END IF;
+
+    UPDATE    at_sec_ts_groups
+        SET    ts_group_id = TRIM (p_ts_group_id_new)
+     WHERE    ts_group_code = l_ts_group_code
+                AND db_office_code = l_db_office_code;
+
+    COMMIT;
+END;
+PROCEDURE change_ts_group_desc (
+    p_ts_group_id      IN VARCHAR2,
+    p_ts_group_desc   IN VARCHAR2,
+    p_db_office_id       IN VARCHAR2 DEFAULT NULL
+)
+AS
+    l_db_office_code      NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+    l_ts_group_code   NUMBER;
+BEGIN
+    confirm_user_admin_priv (l_db_office_code);
+
+    --
+    BEGIN
+        l_ts_group_code :=
+            get_ts_group_code (p_ts_group_id     => p_ts_group_id,
+                                        p_db_office_code     => l_db_office_code
+                                      );
+    EXCEPTION
+        WHEN OTHERS
+        THEN
+            cwms_err.raise (
+                'ERROR',
+                    'Cannot change the TS Group Description of the '
+                || TRIM (p_ts_group_id)
+                || ' because the TS Group does not exist.'
+            );
+    END;
+
+    IF l_ts_group_code <= max_cwms_ts_group_code
+    THEN
+        cwms_err.raise (
+            'ERROR',
+                'Cannot change the TS Group Description of the '
+            || TRIM (p_ts_group_id)
+            || ' because it is owned by the system.'
+        );
+    END IF;
+
+    UPDATE    at_sec_ts_groups
+        SET    ts_group_desc = TRIM (p_ts_group_desc)
+     WHERE    ts_group_code = l_ts_group_code
+                AND db_office_code = l_db_office_code;
+
+    COMMIT;
+END;
+    PROCEDURE create_ts_group (p_ts_group_id		IN VARCHAR2,
+                                        p_ts_group_desc	IN VARCHAR2,
+                                        p_db_office_id 	IN VARCHAR2 DEFAULT NULL
+                                      )
+    AS
+        l_db_office_code	 NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+        l_lowest_code		 NUMBER;
+        l_ts_group_desc	 VARCHAR2 (256);
+        l_ts_group_id		 VARCHAR2 (32);
+        l_error				 BOOLEAN := TRUE;
+        l_ts_group_codes	 sys_refcursor;
+    BEGIN
+        confirm_user_admin_priv (l_db_office_code);
+
+        l_ts_group_id := TRIM (p_ts_group_id);
+        --
+        --Confirm that the new ts_group_id is unique
+        --
+
+        BEGIN
+            SELECT	ts_group_desc
+              INTO	l_ts_group_desc
+              FROM	at_sec_ts_groups
+             WHERE		 db_office_code = l_db_office_code
+                        AND ts_group_code > max_cwms_ts_group_code
+                        AND UPPER (ts_group_id) = UPPER (l_ts_group_id);
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+                l_error := FALSE;
+        END;
+
+        --
+        IF l_error
+        THEN
+            cwms_err.raise (
+                'ERROR',
+                'Unable to create new TS Collection. The TS Group ' || l_ts_group_id
+                || ' already exists. The existing Collection Group has a Description of: '
+                || l_ts_group_desc
+            );
+        END IF;
+
+        --
+        -- Determine lowest available ts_group_code
+        --
+        OPEN l_ts_group_codes FOR
+            SELECT	ts_group_code
+              FROM	at_sec_ts_groups
+             WHERE	db_office_code = l_db_office_code
+                        AND ts_group_code > max_cwms_ts_group_code;
+
+        --
+        l_lowest_code :=
+            find_lowest_code (l_ts_group_codes, max_cwms_ts_group_code + 1);
+
+        --
+        INSERT INTO at_sec_ts_groups (
+                                                    db_office_code,
+                                                    ts_group_code,
+                                                    ts_group_id,
+                                                    ts_group_desc
+                      )
+          VALUES   (
+                            l_db_office_code,
+                            l_lowest_code,
+                            l_ts_group_id,
+                            TRIM (p_ts_group_desc)
+                      );
+    END;
+
+/* Formatted on 7/19/2009 5:02:51 PM (QP5 v5.115.810.9015) */
+PROCEDURE assign_ts_masks_to_ts_group (
+	p_ts_group_id		  IN VARCHAR2,
+	p_ts_mask_list 	  IN char_183_array_type,
+	p_add_remove_list   IN char_16_array_type,
+	p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
+)
+AS
+	l_db_office_code	 NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+	l_ts_group_code	 NUMBER;
+	l_count				 NUMBER;
+	l_ts_mask			 VARCHAR2 (183);
+BEGIN
+	confirm_user_admin_priv (l_db_office_code);
+	--
+	l_ts_group_code := get_ts_group_code (p_ts_group_id, l_db_office_code);
+
+	IF l_ts_group_code <= max_cwms_ts_group_code
+	THEN
+		cwms_err.raise (
+			'ERROR',
+				'Cannot assign/reassign TS Masks from the '
+			|| TRIM (p_ts_group_id)
+			|| ' TS Group because it is owned by the system.'
+		);
+	END IF;
+
+	BEGIN
+		l_count := p_ts_mask_list.COUNT;
+	EXCEPTION
+		WHEN COLLECTION_IS_NULL
+		THEN
+			cwms_err.raise ('ERROR', 'The p_ts_mask_list has not records.');
+	END;
+
+	--
+	IF p_ts_mask_list.COUNT != p_add_remove_list.COUNT
+	THEN
+		cwms_err.raise (
+			'ERROR',
+			'Unable to assign/reassign TS masks because the p_ts_mask_list and p_add_remove_lists are mismatched. The p_ts_mask_list has '
+			|| p_ts_mask_list.COUNT
+			|| ' elements and the p_add_remove_list has '
+			|| p_add_remove_list.COUNT
+			|| ' elements.'
+		);
+	END IF;
+
+	SELECT	COUNT ( * )
+	  INTO	l_count
+	  FROM	table (p_add_remove_list)
+	 WHERE	UPPER (TRIM (COLUMN_VALUE)) NOT IN ('ADD', 'REMOVE');
+
+	IF l_count > 0
+	THEN
+		cwms_err.raise (
+			'ERROR',
+			'Unable to assign/reassign TS Masks because the p_add_remove_list contains invalid values. Valid values are "Add" or "Remove".'
+		);
+	END IF;
+
+	--
+	FOR i IN 1 .. p_add_remove_list.LAST
+	LOOP
+		l_ts_mask :=
+			cwms_util.normalize_wildcards (UPPER (TRIM (p_ts_mask_list (i))));
+
+		IF UPPER (TRIM (p_add_remove_list (i))) = 'ADD'
+		THEN
+			BEGIN
+				INSERT INTO at_sec_ts_group_masks (
+																  db_office_code,
+																  ts_group_code,
+																  ts_group_mask
+							  )
+				  VALUES   (l_db_office_code, l_ts_group_code, l_ts_mask
+							  );
+			EXCEPTION
+				WHEN DUP_VAL_ON_INDEX
+				THEN
+					NULL;
+			END;
+		ELSE
+			DELETE FROM   at_sec_ts_group_masks
+					WHERE   db_office_code = l_db_office_code
+							  AND UPPER (ts_group_mask) = l_ts_mask;
+		END IF;
+
+		COMMIT;
+	END LOOP;
+END;
+/*
+clear_ts_masks deletes all ts masks from the identified ts_group_id.
+*/
+PROCEDURE clear_ts_masks (p_ts_group_id	 IN VARCHAR2,
+								  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
+								 )
+AS
+	l_db_office_code	 NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+	l_ts_group_code	 NUMBER;
+BEGIN
+	confirm_user_admin_priv (l_db_office_code);
+	--
+	l_ts_group_code := get_ts_group_code (p_ts_group_id, l_db_office_code);
+
+	IF l_ts_group_code <= max_cwms_ts_group_code
+	THEN
+		cwms_err.raise (
+			'ERROR',
+				'Cannot clear TS Masks from the '
+			|| TRIM (p_ts_group_id)
+			|| ' TS Group because it is owned by the system.'
+		);
+	END IF;
+
+	DELETE FROM   at_sec_ts_group_masks
+			WHERE   ts_group_code = l_ts_group_code
+					  AND db_office_code = l_db_office_code;
+
+	COMMIT;
+END;
 END cwms_sec;
 /
