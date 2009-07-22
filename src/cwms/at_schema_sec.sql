@@ -983,15 +983,24 @@ CREATE OR REPLACE FORCE VIEW av_sec_ts_group_mask
 	ts_group_mask
 )
 AS
-	SELECT	b.office_id db_office_id, c.ts_group_id, c.ts_group_desc,
-				cwms_util.denormalize_wildcards (a.ts_group_mask)
-					ts_group_mask_display, a.db_office_code, a.ts_group_code,
+	SELECT	    c.office_id db_office_id, 
+                b.ts_group_id, 
+                b.ts_group_desc,
+				CASE 
+                  WHEN a.ts_group_mask IS NULL 
+                  THEN 
+                    NULL 
+                  ELSE 
+                    cwms_util.denormalize_wildcards (a.ts_group_mask) 
+                  END ts_group_mask_display, 
+                db_office_code, 
+                ts_group_code,
 				a.ts_group_mask
-	  FROM	at_sec_ts_group_masks a, cwms_office b, at_sec_ts_groups c
-	 WHERE		 a.db_office_code = c.db_office_code
-				AND b.office_code = a.db_office_code
-				AND a.ts_group_code = c.ts_group_code
-				AND c.db_office_code != 0;
+	  FROM		at_sec_ts_group_masks a
+				RIGHT OUTER JOIN
+					at_sec_ts_groups b
+				USING (db_office_code, ts_group_code), cwms_office c
+	 WHERE	db_office_code = c.office_code AND db_office_code != 0;
 
 /
 
