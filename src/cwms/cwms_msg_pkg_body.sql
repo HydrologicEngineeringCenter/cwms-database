@@ -355,6 +355,7 @@ begin
       l_node        := l_document.extract('/cwms_message/text');
       if l_node is not null then
          l_message := cwms_util.strip(l_node.extract('*/node()').getstringval());
+		   l_message := utl_i18n.unescape_reference(l_message, 'us7ascii');
       end if;
 
       --------------------------------
@@ -542,10 +543,12 @@ procedure log_db_message(
    p_msg_level in integer,
    p_message   in varchar2)
 is
-   i  integer;
+   l_message   varchar2(4000) := p_message;
+   i           integer;
    lf constant varchar2(1) := chr(10);
    l_msg_level integer := nvl(p_msg_level, msg_level_normal);
 begin
+   l_message := utl_i18n.escape_reference(l_message, 'us7ascii');
    i := log_message(
       'CWMSDB',
       null,
@@ -555,7 +558,7 @@ begin
       '<cwms_message type="Status">' || lf
       || '  <property name="procedure" type="String">' || p_procedure || '</property>' || lf
       || '  <text>' || lf
-      || '  ' || p_message || lf
+      || '  ' || l_message || lf
       || '  </text>' || lf
       || '</cwms_message>',
       l_msg_level,
