@@ -355,7 +355,7 @@ begin
       l_node        := l_document.extract('/cwms_message/text');
       if l_node is not null then
          l_message := cwms_util.strip(l_node.extract('*/node()').getstringval());
-		   l_message := utl_i18n.unescape_reference(l_message, 'us7ascii');
+         l_message := utl_i18n.unescape_reference(l_message);
       end if;
 
       --------------------------------
