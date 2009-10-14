@@ -574,7 +574,7 @@ COMMENT ON COLUMN AT_LOCATION_LEVEL.DURATION_CODE          IS 'References durati
 COMMENT ON COLUMN AT_LOCATION_LEVEL.LOCATION_LEVEL_DATE    IS 'Observed date or effective date depending on type of level';
 COMMENT ON COLUMN AT_LOCATION_LEVEL.CALENDAR_INTERVAL      IS 'Interval period for seasonal levels if period is specified in years or months.';
 COMMENT ON COLUMN AT_LOCATION_LEVEL.TIME_INTERVAL          IS 'Interval period for seasonal levels if period is specified in days.';
-COMMENT ON COLUMN AT_LOCATION_LEVEL.INTERVAL_ORIGIN        IS 'Origin time for interval period - required if time interval is not null';
+COMMENT ON COLUMN AT_LOCATION_LEVEL.INTERVAL_ORIGIN        IS 'Origin time in UTC for interval period - required if time interval is not null';
 COMMENT ON COLUMN AT_LOCATION_LEVEL.INTERVAL_IN_LOCAL_TZ   IS 'Interval is aligned with local time zone (T) or UTC (F)';
 COMMENT ON COLUMN AT_LOCATION_LEVEL.INTERPOLATE            IS 'Values between offset are interpolated bewteen dates (T) or take the most recent value (F).';
 COMMENT ON COLUMN AT_LOCATION_LEVEL.LOCATION_LEVEL_VALUE   IS 'Value of non-seasonal level.';

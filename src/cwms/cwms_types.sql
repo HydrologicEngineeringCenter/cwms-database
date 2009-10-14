@@ -87,7 +87,9 @@ DECLARE
                      'group_type',
                      'group_array',
                      'group_cat_t',
-                     'group_cat_tab_t'
+                     'group_cat_tab_t',
+                     'seasonal_value_t',
+                     'seasonal_value_array'
                     );
 BEGIN
    defined_count := type_names.COUNT;
@@ -597,6 +599,16 @@ create or replace type number_tab_t is table of number;
 /
 
 create or replace type double_tab_t is table of binary_double;
+/
+
+create or replace type seasonal_value_t is object (
+   offset_months  number(2),
+   offset_minutes number(5),
+   value          number
+)
+/
+
+create or replace type seasonal_value_array is table of seasonal_value_t
 /
 
 COMMIT ;
