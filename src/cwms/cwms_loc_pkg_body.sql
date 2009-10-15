@@ -2397,6 +2397,54 @@ AS
    --
    END retrieve_location;
 
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_local_timezone
+   --------------------------------------------------------------------------------
+   function get_local_timezone(
+      p_location_code in number)
+      return varchar2
+   is
+      l_local_tz varchar2(28);
+   begin
+      select time_zone_name
+        into l_local_tz
+        from cwms_time_zone ctz,
+             at_physical_location atp
+       where atp.location_code = p_location_code
+         and ctz.time_zone_code = nvl(atp.time_zone_code, 0);
+      if l_local_tz = 'Unknown or Not Applicable' then
+         l_local_tz := 'UTC';
+      end if;
+
+      return l_local_tz;
+   end get_local_timezone;
+
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_local_timezone
+   --------------------------------------------------------------------------------
+   function get_local_timezone(
+      p_location_id in varchar2,
+      p_office_id   in varchar2)
+      return varchar2
+   is
+      l_local_tz varchar2(28);
+   begin
+      select ctz.time_zone_name
+        into l_local_tz
+        from cwms_time_zone ctz,
+             av_loc vl,
+             at_physical_location atp
+       where vl.location_id = p_location_id
+         and vl.db_office_id = p_office_id
+         and atp.location_code = vl.location_code
+         and ctz.time_zone_code = nvl(atp.time_zone_code, 0);
+      if l_local_tz = 'Unknown or Not Applicable' then
+         l_local_tz := 'UTC';
+      end if;
+
+      return l_local_tz;
+   end get_local_timezone;
+   
    FUNCTION get_loc_category_code (
       p_loc_category_id   IN   VARCHAR2,
       p_db_office_code    IN   NUMBER

@@ -288,6 +288,21 @@ AS
       p_db_office_id       IN       VARCHAR2 DEFAULT NULL
    );
 
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_local_timezone
+   --------------------------------------------------------------------------------
+   function get_local_timezone(
+      p_location_code in number)
+      return varchar2;
+
+   --------------------------------------------------------------------------------
+   -- FUNCTION get_local_timezone
+   --------------------------------------------------------------------------------
+   function get_local_timezone(
+      p_location_id in varchar2,
+      p_office_id   in varchar2)
+      return varchar2;
+
    PROCEDURE create_loc_group (
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_id      IN   VARCHAR2,
