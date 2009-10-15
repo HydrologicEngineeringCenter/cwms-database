@@ -1,4 +1,6 @@
 set echo off
+set serveroutput on
+set linesize 132
 set define on
 prompt
 define target = &target_schema
