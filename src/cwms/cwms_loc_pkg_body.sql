@@ -2429,15 +2429,12 @@ AS
    is
       l_local_tz varchar2(28);
    begin
-      select ctz.time_zone_name
+      select vl.time_zone_name
         into l_local_tz
-        from cwms_time_zone ctz,
-             av_loc vl,
+        from av_loc vl,
              at_physical_location atp
        where vl.location_id = p_location_id
-         and vl.db_office_id = p_office_id
-         and atp.location_code = vl.location_code
-         and ctz.time_zone_code = nvl(atp.time_zone_code, 0);
+         and vl.db_office_id = p_office_id;
       if l_local_tz = 'Unknown or Not Applicable' then
          l_local_tz := 'UTC';
       end if;
