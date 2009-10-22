@@ -2578,6 +2578,49 @@ AS
 		i := bi;
 		RETURN i;
 	END;
+   
+   function months_to_yminterval(
+      p_months in integer) 
+      return interval year to month 
+   is
+   begin
+      return to_yminterval(
+         to_char(trunc(p_months / 12)) 
+         || '-' 
+         || to_char(mod(p_months, 12)));
+   end months_to_yminterval;
+   
+   function minutes_to_dsinterval(
+      p_minutes in integer) 
+      return interval day to second 
+   is
+   begin
+      return to_dsinterval(
+         to_char(trunc(p_minutes / 1440)) 
+         || ' ' 
+         || to_char(trunc(mod(p_minutes, 1440) / 60)) 
+         || ':' 
+         || to_char(mod(p_minutes, 60) || ': 00'));
+   end minutes_to_dsinterval;
+   
+   function yminterval_to_months(
+      p_intvl in interval year to month) 
+      return integer 
+   is
+   begin
+      return 12 * extract(year from p_intvl) + extract(month from p_intvl);
+   end yminterval_to_months;
+   
+   function dsinterval_to_minutes(
+      p_intvl in interval day to second) 
+      return integer 
+   is
+   begin
+      return 1440 * extract(day    from p_intvl) 
+             + 60 * extract(hour   from p_intvl) 
+             +      extract(minute from p_intvl);
+   end dsinterval_to_minutes;
+   
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call
