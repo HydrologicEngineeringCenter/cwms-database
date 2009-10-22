@@ -86,6 +86,25 @@ procedure retrieve_timeseries(
    p_start_time_utc    in date,
    p_end_time_utc      in date default null); -- null = current time
    
+--------------------------------------------------------------------------------
+-- RETRIEVE_AND_LOG
+--
+-- Calls RETRIEVE_TIMESERIES and logs start time, end time and items processed
+--------------------------------------------------------------------------------
+procedure retrieve_and_log(
+   p_office_id_masks   in varchar2,
+   p_start_time_utc    in date,
+   p_end_time_utc      in date default null); -- null = current time
+   
+--------------------------------------------------------------------------------
+-- RETRIEVE_AND_LOG
+--
+-- Calls RETRIEVE_TIMESERIES and logs start time, end time and items processed
+--------------------------------------------------------------------------------
+procedure retrieve_and_log(
+   p_office_id_masks  in varchar2,
+   p_days_to_retrieve in number);
+   
 end;
 /
 show errors
@@ -115,7 +134,7 @@ is
                    interval_id         varchar2(16),
                    duration_id         varchar2(16),
                    version             varchar2(48));
-   l_office_id   varchar2(16) := upper(p_office_id);                   
+   l_office_id   varchar2(16) := upper(p_office_id);
    l_dblink      varchar2(31);
    l_cwms_ver    varchar2(3);
    l_clob        clob;
@@ -129,7 +148,7 @@ is
    l_duration    varchar2(64);
    l_version     varchar2(64);
    l_first       boolean := true;
-   l_rec         l_rec_t;   
+   l_rec         l_rec_t;
    l_query_str   varchar2(32767);
    procedure append_clob(p_data in varchar2) is
    begin
@@ -145,7 +164,7 @@ begin
           l_cwms_ver
      from remote_offices
     where office_id = upper(p_office_id);
-    
+
    dbms_lob.createtemporary(l_clob, true);
    dbms_lob.open(l_clob, dbms_lob.lob_readwrite);
    l_tsid_masks := cwms_util.split_text(p_tsid_masks, ',');
@@ -153,9 +172,9 @@ begin
       l_tsid_parts := cwms_util.split_text(upper(l_tsid_masks(i)), '.');
       if l_tsid_parts.count != 6 then
          raise_application_error(
-            -20999, 
-            'TSID mask must contain 6 parts separated by periods: ' 
-            || l_tsid_masks(i), 
+            -20999,
+            'TSID mask must contain 6 parts separated by periods: '
+            || l_tsid_masks(i),
             false);
       end if;
       l_location   := l_tsid_parts(1);
@@ -165,7 +184,7 @@ begin
       l_duration   := l_tsid_parts(5);
       l_version    := l_tsid_parts(6);
       if l_cwms_ver = '1.5' then
-         l_query_str  := 
+         l_query_str  :=
             --------------------
             -- CWMS 1.5 query --
             --------------------
@@ -188,7 +207,7 @@ begin
                     cwms.rt_interval@:dblink i,
                     cwms.rt_duration@:dblink d
               where o.office_id = :office_id
-                and n.office_code = o.office_code 
+                and n.office_code = o.office_code
                 and (n.cwms_id_uc like :location
                      or (n.cwms_id_uc || ''-'' || upper(ts.subcwms_id)) like :location)
                 and (p.parameter_id_uc like :parameter
@@ -205,21 +224,21 @@ begin
                 and d.duration_code = ts.duration_code';
             l_query_str := replace(l_query_str, ':dblink', l_dblink); -- can't bind
             open l_cursor
-             for l_query_str 
-           using l_office_id, 
-                 l_location, 
-                 l_location, 
-                 l_parameter, 
+             for l_query_str
+           using l_office_id,
+                 l_location,
+                 l_location,
                  l_parameter,
-                 l_param_type, 
-                 l_interval, 
-                 l_duration, 
+                 l_parameter,
+                 l_param_type,
+                 l_interval,
+                 l_duration,
                  l_version;
          else
             --------------------
             -- CWMS 2.0 query --
             --------------------
-            l_query_str := 
+            l_query_str :=
                'select ts_code,
                        interval_utc_offset,
                        base_location_id cwms_id,
@@ -231,7 +250,7 @@ begin
                        duration_id,
                        version_id version
                   from cwms_20.mv_cwms_ts_id@:dblink
-                 where db_office_id = :office_id 
+                 where db_office_id = :office_id
                    and upper(location_id) like :location
                    and upper(parameter_id) like :parameter
                    and upper(parameter_type_id) like :param_type
@@ -239,14 +258,14 @@ begin
                    and upper(duration_id) like :duration
                    and upper(version_id) like :version';
             l_query_str := replace(l_query_str, ':dblink', l_dblink); -- can't bind
-            open l_cursor 
-             for l_query_str 
-           using l_office_id, 
-                 l_location, 
-                 l_parameter, 
-                 l_param_type, 
-                 l_interval, 
-                 l_duration, 
+            open l_cursor
+             for l_query_str
+           using l_office_id,
+                 l_location,
+                 l_parameter,
+                 l_param_type,
+                 l_interval,
+                 l_duration,
                  l_version;
       end if;
       loop
@@ -258,9 +277,9 @@ begin
             append_clob(cwms_util.record_separator);
          end if;
          append_clob(
-            '' || l_rec.ts_code 
+            '' || l_rec.ts_code
             || cwms_util.field_separator
-            || l_rec.interval_utc_offset 
+            || l_rec.interval_utc_offset
             || cwms_util.field_separator
             ||
             case l_rec.subcwms_id is null
@@ -269,7 +288,7 @@ begin
                else
                   l_rec.cwms_id || '-' || l_rec.subcwms_id
             end
-            || '.' || 
+            || '.' ||
             case l_rec.subparameter_id is null
                when true then
                   l_rec.parameter_id
@@ -280,18 +299,18 @@ begin
             || '.' || l_rec.interval_id
             || '.' || l_rec.duration_id
             || '.' || l_rec.version);
-      end loop;                
+      end loop;
    end loop;
-   
+
    dbms_lob.close(l_clob);
    return l_clob;
-   
+
 end get_ts_codes;
 
 --------------------------------------------------------------------------------
 -- POPULATE_TSIDS
 --
--- Only call this if you have manually edited the REMOTE_OFFICES and/or 
+-- Only call this if you have manually edited the REMOTE_OFFICES and/or
 -- REMOTE_TSID_MASKS tables.
 --------------------------------------------------------------------------------
 procedure populate_tsids(
@@ -347,7 +366,7 @@ end populate_tsids;
 --------------------------------------------------------------------------------
 -- CREATE_LOCATIONS
 --
--- Only call this if you have manually edited the REMOTE_OFFICES and/or 
+-- Only call this if you have manually edited the REMOTE_OFFICES and/or
 -- REMOTE_TSID_MASKS tables.
 --------------------------------------------------------------------------------
 procedure create_locations(
@@ -494,12 +513,12 @@ begin
              and t.location_code = l.location_code
              and p.cwms_code = n.cwms_code
              and l.location_code = p.location_code';
-      l_tz_query_str := 
-         'select zone_id 
-            into :name 
-            from cwms.rt_time_zone@:dblink 
+      l_tz_query_str :=
+         'select zone_id
+            into :name
+            from cwms.rt_time_zone@:dblink
            where zone_code = :code';
-      l_st_query_str := 
+      l_st_query_str :=
          'select c.name,
                  s.state_initial
             into :county,
@@ -536,12 +555,12 @@ begin
              and b.db_office_code = o.office_code
              and upper(b.base_location_id) || ''-'' || upper (l.sub_location_id) in (:locations)
              and l.base_location_code = b.base_location_code';
-      l_tz_query_str := 
+      l_tz_query_str :=
          'select time_zone_name
             into :name
             from cwms_20.cwms_time_zone@:dblink
            where time_zone_code = :code';
-      l_st_query_str := 
+      l_st_query_str :=
          'select c.county_name,
                  s.state_initial
             into :county,
@@ -568,8 +587,8 @@ begin
          l_loc2_rec.time_zone_name := null;
       else
          execute
-            immediate l_tz_query_str 
-                 into l_loc2_rec.time_zone_name 
+            immediate l_tz_query_str
+                 into l_loc2_rec.time_zone_name
                 using l_loc_rec.time_zone_code;
          if l_cwms_ver = '1.5' then
             begin
@@ -586,7 +605,7 @@ begin
       else
          execute
             immediate l_st_query_str
-                 into l_loc2_rec.county_name, 
+                 into l_loc2_rec.county_name,
                       l_loc2_rec.state_initial
                 using l_loc_rec.county_code;
       end if;
@@ -597,7 +616,7 @@ begin
          case l_loc_rec.sub_location_id is null
             when true then l_loc_rec.base_location_id
             else l_loc_rec.base_location_id || '-' || l_loc_rec.sub_location_id
-         end; 
+         end;
       cwms_msg.log_db_message(
          'remote_query.create_locations',
          cwms_msg.msg_level_detailed,
@@ -607,7 +626,7 @@ begin
             l_location,
             l_loc_rec.location_type,
             l_loc_rec.elevation,
-            l_loc_rec.elevation_unit, 
+            l_loc_rec.elevation_unit,
             l_loc_rec.vertical_datum,
             l_loc_rec.latitude,
             l_loc_rec.longitude,
@@ -651,7 +670,7 @@ begin
    ------------------
    if p_dblink is null then
       raise_application_error(
-         -20999, 
+         -20999,
          'Database link must not be null.',
          false);
    end if;
@@ -661,20 +680,20 @@ begin
     where upper(db_link) = upper(p_dblink);
    if l_count = 0 then
       raise_application_error(
-         -20999, 
+         -20999,
          'Database link ' || p_dblink || ' does not exist.',
          false);
    end if;
    if p_cwms_ver != '1.5' and p_cwms_ver != '2.0' then
       raise_application_error(
-         -20999, 
+         -20999,
          'CWMS Version must be ''1.5'' or ''2.0''.',
          false);
    end if;
    select count(*) into l_count from cwms_office where office_id = l_office_id;
    if l_count = 0 then
       raise_application_error(
-         -20999, 
+         -20999,
          'Office ''' || p_office_id || ''' is not a valid CWMS office.',
          false);
    end if;
@@ -684,9 +703,9 @@ begin
          l_mask_parts := cwms_util.split_text(l_masks(i), '.');
          if l_mask_parts.count != 6 then
             raise_application_error(
-               -20999, 
-               'TSID mask must contain 6 parts separated by periods: ' 
-               || l_masks(i), 
+               -20999,
+               'TSID mask must contain 6 parts separated by periods: '
+               || l_masks(i),
                false);
          end if;
       end loop;
@@ -696,22 +715,22 @@ begin
    --------------------------
    select count(*) into l_count from remote_offices where office_id = l_office_id;
    if l_count = 0 then
-      insert 
-        into remote_offices 
-      values (l_office_id, p_dblink, p_cwms_ver); 
+      insert
+        into remote_offices
+      values (l_office_id, p_dblink, p_cwms_ver);
    else
       update remote_offices
          set dblink = p_dblink,
              cwms_ver = p_cwms_ver
        where office_id = l_office_id;
    end if;
-   delete 
+   delete
      from remote_tsid_masks
     where dblink = p_dblink;
    if l_masks is not null then
       for i in 1..l_masks.count loop
-         insert 
-           into remote_tsid_masks 
+         insert
+           into remote_tsid_masks
          values(p_dblink, l_masks(i));
       end loop;
    end if;
@@ -754,7 +773,7 @@ begin
       cwms_msg.msg_level_normal,
       l_office_id
       || ': Done');
-   
+
 end set_office;
 
 --------------------------------------------------------------------------------
@@ -802,9 +821,9 @@ begin
                  value,
                  quality "QUALITY_CODE"
             from cwms.at_time_series_value@:dblink
-           where ts_code    =  :ts_code 
-             and date_time  >= :start_time  
-             and date_time  <= :end_time 
+           where ts_code    =  :ts_code
+             and date_time  >= :start_time
+             and date_time  <= :end_time
         order by date_time asc';
       l_query_str := replace(l_query_str, ':dblink',  p_dblink); -- can't bind
       open l_cursor
@@ -828,12 +847,12 @@ begin
          else
             l_reg_start_time := cwms_ts.get_time_on_after_interval(p_start_time, l_offset, l_interval);
             l_reg_end_time   := cwms_ts.get_time_on_before_interval(p_end_time, l_offset, l_interval);
-        end if;        
+        end if;
       end if;
       --
       -- change interval from minutes to days
       --
-      l_interval := l_interval / 1440;       
+      l_interval := l_interval / 1440;
       --
       -- build the query string - for some reason the time zone must be a
       -- string literal and bind variables are problematic
@@ -853,7 +872,7 @@ begin
             else
                l_interval := l_interval / 365 * 12;
             end if;
-            l_query_str := 
+            l_query_str :=
                'select v.date_time,
                        value,
                        nvl(quality_code, :missing) "QUALITY_CODE"
@@ -862,10 +881,10 @@ begin
                              max(value) keep(dense_rank last order by version_date) "VALUE",
                              max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
                         from cwms_20.av_tsv@:dblink
-                       where ts_code    =  :ts_code 
-                         and date_time  >= :start_time  
-                         and date_time  <= :end_time 
-                         and start_date <= :end_time 
+                       where ts_code    =  :ts_code
+                         and date_time  >= :start_time
+                         and date_time  <= :end_time
+                         and start_date <= :end_time
                          and end_date   >  :start_time
                     group by date_time
                       ) v
@@ -882,8 +901,8 @@ begin
             --
             -- can use date arithmetic
             --
-            l_query_str := 
-               'select v.date_time,
+            l_query_str :=
+               'select  v.date_time,
                         value,
                         nvl(quality_code, :missing) "QUALITY_CODE"
                    from (
@@ -891,10 +910,10 @@ begin
                                max(value) keep(dense_rank last order by version_date) "VALUE",
                                max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
                           from cwms_20.av_tsv@:dblink
-                         where ts_code    =  :ts_code 
-                           and date_time  >= :start_time  
-                           and date_time  <= :end_time 
-                           and start_date <= :end_time 
+                         where ts_code    =  :ts_code
+                           and date_time  >= :start_time
+                           and date_time  <= :end_time
+                           and start_date <= :end_time
                            and end_date   >  :start_time
                       group by date_time
                         ) v
@@ -927,15 +946,15 @@ begin
         --
         -- irregular time series
         --
-         l_query_str := 
+         l_query_str :=
             'select date_time,
                     max(value) keep(dense_rank last order by version_date) "VALUE",
                     max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
                from cwms_20.av_tsv@:dblink
-              where ts_code    =  :ts_code 
-                and date_time  >= :start_time  
-                and date_time  <= :end_time 
-                and start_date <= :end_time 
+              where ts_code    =  :ts_code
+                and date_time  >= :start_time
+                and date_time  <= :end_time
+                and start_date <= :end_time
                 and end_date   >  :start_time
            group by date_time
            order by date_time asc';
@@ -949,9 +968,9 @@ begin
                  p_start_time;
       end if;
    end if;
-   
+
    p_cursor := l_cursor;
-    
+
 end build_retrieve_ts_query;
 
 --------------------------------------------------------------------------------
@@ -995,13 +1014,24 @@ is
    l_missing           integer := 5;
    l_not_screened      integer := 0;
 begin
+   --
+   -- If the following line is omitted, Oracle often pukes with an internal error
+   -- when executing the queries across the dblinks.  I don't know if using this 
+   -- setting is the culprit, but the cursors have NULL times for missing data in
+   -- regular time series.  The values should be NULL, but not the times.  I added
+   -- 'continue when date_time is null' in the loops below to deal with it.  Other-
+   -- wise the store_ts() procedure pukes.
+   --
+   -- MDP 07-JUL-2009
+   -- 
+   execute immediate 'alter session set "_optimizer_connect_by_cost_based"=false';
    -------------------------------------------
    -- loop through office masks and offices --
    -------------------------------------------
    cwms_msg.log_db_message(
       'remote_query.retrieve_timeseries',
       cwms_msg.msg_level_normal,
-      'Retrieving remote timeseries data for interval ' 
+      'Retrieving remote timeseries data for interval '
       || to_char(p_start_time_utc, 'yyyy/mm/dd hh24:mi:ss')
       || ' through '
       || to_char(l_end_time_utc, 'yyyy/mm/dd hh24:mi:ss'));
@@ -1010,33 +1040,33 @@ begin
          select office_id,
                 dblink,
                 cwms_ver
-           from remote_offices 
+           from remote_offices
           where office_id like l_office_id_masks(i))
       loop
          l_offices_processed := l_offices_processed + 1;
          cwms_msg.log_db_message(
             'remote_query.retrieve_timeseries',
             cwms_msg.msg_level_normal,
-            'Retrieving timeseries data for office ' 
+            'Retrieving timeseries data for office '
             || ofc_rec.office_id
             || ' through dblink '
-            || ofc_rec.dblink); 
+            || ofc_rec.dblink);
          ------------------------
          -- loop through tsids --
          ------------------------
          for tsid_rec in (
             select ts_code,
                    interval_utc_offset,
-                   ts_id 
-              from remote_tsids 
-             where dblink = ofc_rec.dblink) 
+                   ts_id
+              from remote_tsids
+             where dblink = ofc_rec.dblink)
          loop
             l_tsids_processed := l_tsids_processed + 1;
             cwms_msg.log_db_message(
                'remote_query.retrieve_timeseries',
                cwms_msg.msg_level_detailed,
                'Retrieving timeseries data for '
-               || tsid_rec.ts_id); 
+               || tsid_rec.ts_id);
             begin
                build_retrieve_ts_query (
                   l_ts_cur,
@@ -1052,11 +1082,11 @@ begin
                   cwms_msg.log_db_message(
                      'remote_query.retrieve_timeseries',
                      cwms_msg.msg_level_normal,
-                     'Error ' || sqlcode || ' on ' || tsid_rec.ts_id || ': ' || sqlerrm); 
+                     'Error ' || sqlcode || ' on ' || tsid_rec.ts_id || ': ' || sqlerrm);
                   dbms_output.put_line('Error ' || sqlcode || ' on ' || tsid_rec.ts_id || ': ' || sqlerrm);
                   dbms_output.put_line(l_query_str);
                   continue;
-            end;   
+            end;
             -----------------------------------------
             -- loop through the time series values --
             -----------------------------------------
@@ -1065,6 +1095,7 @@ begin
                loop
                   fetch l_ts_cur into l_ts_rec15;
                   exit when l_ts_cur%notfound;
+                  continue when l_ts_rec15.date_time is null;
                   l_tsv_array.extend;
                   if l_ts_rec15.value < -1.0e38 then
                     l_ts_rec15.value := null;
@@ -1076,21 +1107,22 @@ begin
                         l_quality := l_not_screened;
                      end if;
                   else
-                     l_quality := to_number(rawtohex(l_ts_rec15.quality), 'XXXXXXXX'); 
+                     l_quality := to_number(rawtohex(l_ts_rec15.quality), 'XXXXXXXX');
                   end if;
                   l_tsv_array(l_tsv_array.count) := new tsv_type(
-                     from_tz(cast(l_ts_rec15.date_time as timestamp), 'UTC'), 
-                     cast(l_ts_rec15.value as binary_integer), 
+                     from_tz(cast(l_ts_rec15.date_time as timestamp), 'UTC'),
+                     cast(l_ts_rec15.value as binary_integer),
                      l_quality);
                end loop;
             else
                loop
                   fetch l_ts_cur into l_ts_rec20;
                   exit when l_ts_cur%notfound;
+                  continue when l_ts_rec20.date_time is null;
                   l_tsv_array.extend;
                   l_tsv_array(l_tsv_array.count) := new tsv_type(
-                     from_tz(cast(l_ts_rec20.date_time as timestamp), 'UTC'), 
-                     l_ts_rec20.value, 
+                     from_tz(cast(l_ts_rec20.date_time as timestamp), 'UTC'),
+                     l_ts_rec20.value,
                      l_ts_rec20.quality);
                end loop;
             end if;
@@ -1098,30 +1130,39 @@ begin
             cwms_msg.log_db_message(
                'remote_query.retrieve_timeseries',
                cwms_msg.msg_level_detailed,
-               '' || l_tsv_array.count 
+               '' || l_tsv_array.count
                || ' timeseries values retrieved for '
-               || tsid_rec.ts_id); 
+               || tsid_rec.ts_id);
             if l_tsv_array.count > 0 then
                l_values_retrieved := l_values_retrieved + l_tsv_array.count;
                -------------------------------------------------
                -- store the time series in the local database --
                -------------------------------------------------
-               cwms_ts.store_ts (
-                  tsid_rec.ts_id,
-                  cwms_ts.get_db_unit_id(tsid_rec.ts_id),
-                  l_tsv_array,
-                  cwms_util.delete_insert,
-                  'F',
-                  cwms_util.non_versioned,
-                  ofc_rec.office_id);
-               end if;
+               begin
+                  cwms_ts.store_ts (
+                     tsid_rec.ts_id,
+                     cwms_ts.get_db_unit_id(tsid_rec.ts_id),
+                     l_tsv_array,
+                     cwms_util.delete_insert,
+                     'F',
+                     cwms_util.non_versioned,
+                     ofc_rec.office_id);
+               exception
+                  when others then
+                     cwms_msg.log_db_message(
+                        'remote_query.retrieve_timeseries',
+                        cwms_msg.msg_level_normal,
+                        'Error during interval: ' || sqlerrm);
+               end;
+            end if;
          end loop;
       end loop;
    end loop;
+   execute immediate 'alter session set "_optimizer_connect_by_cost_based"=true';
    cwms_msg.log_db_message(
       'remote_query.retrieve_timeseries',
       cwms_msg.msg_level_normal,
-      'Remote timeseries data retrieval completed for interval ' 
+      'Remote timeseries data retrieval completed for interval '
       || to_char(p_start_time_utc, 'yyyy/mm/dd hh24:mi:ss')
       || ' through '
       || to_char(l_end_time_utc, 'yyyy/mm/dd hh24:mi:ss'));
@@ -1129,6 +1170,71 @@ begin
    p_tsids_processed   := l_tsids_processed;
    p_values_retrieved  := l_values_retrieved;
 end retrieve_timeseries;
+
+--------------------------------------------------------------------------------
+-- RETRIEVE_AND_LOG
+--
+-- Calls RETRIEVE_TIMESERIES and logs start time, end time and items processed
+--------------------------------------------------------------------------------
+procedure retrieve_and_log(
+   p_office_id_masks   in varchar2,
+   p_start_time_utc    in date,
+   p_end_time_utc      in date default null) -- null = current time
+is   
+   l_offices_processed  integer;
+   l_tsids_processed    integer;
+   l_values_retrieved   integer;
+   l_end_time_utc       date := nvl(p_end_time_utc, sysdate); 
+begin
+   cwms_msg.log_db_message(
+      'retrieve timeseries', 
+      cwms_msg.msg_level_normal,
+      to_char(systimestamp) 
+      || ' Starting retrieval for offices ('
+      || p_office_id_masks
+      || ') and time window '
+      || to_char(p_start_time_utc, 'dd-Mon-yyyy hh24mi')
+      || ' to '
+      || to_char(l_end_time_utc, 'dd-Mon-yyyy hh24mi'));
+      
+   retrieve_timeseries(
+      l_offices_processed,
+      l_tsids_processed,
+      l_values_retrieved,
+      p_office_id_masks,
+      p_start_time_utc,
+      p_end_time_utc);
+      
+   cwms_msg.log_db_message(
+      'retrieve timeseries', 
+      cwms_msg.msg_level_normal,
+      to_char(systimestamp) 
+      || ' Retrieved '
+      || l_values_retrieved
+      || ' values from '
+      || l_tsids_processed
+      || ' tsids in '
+      || l_offices_processed
+      || ' offices');
+      
+end retrieve_and_log;
+
+   
+--------------------------------------------------------------------------------
+-- RETRIEVE_AND_LOG
+--
+-- Calls RETRIEVE_TIMESERIES and logs start time, end time and items processed
+--------------------------------------------------------------------------------
+procedure retrieve_and_log(
+   p_office_id_masks  in varchar2,
+   p_days_to_retrieve in number)
+is
+   l_end_time   date := sysdate;
+   l_start_time date := l_end_time - p_days_to_retrieve;
+begin
+   retrieve_and_log(p_office_id_masks, l_start_time, l_end_time);
+end retrieve_and_log;   
+
 end;
 /
 show errors
