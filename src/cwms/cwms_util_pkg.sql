@@ -468,6 +468,22 @@ AS
    -- java int type
    --
    function sign_extend(p_int in integer) return integer;
+
+   function months_to_yminterval(
+      p_months in integer) 
+      return interval year to month;
+   
+   function minutes_to_dsinterval(
+      p_minutes in integer) 
+      return interval day to second;
+   
+   function yminterval_to_months(
+      p_intvl in interval year to month) 
+      return integer;
+   
+   function dsinterval_to_minutes(
+      p_intvl in interval day to second) 
+      return integer;
    
 END cwms_util;
 /

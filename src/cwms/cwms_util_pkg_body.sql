@@ -2584,6 +2584,7 @@ AS
       return interval year to month 
    is
    begin
+      if p_months is null then return null; end if;
       return to_yminterval(
          to_char(trunc(p_months / 12)) 
          || '-' 
@@ -2595,6 +2596,7 @@ AS
       return interval day to second 
    is
    begin
+      if p_minutes is null then return null; end if;
       return to_dsinterval(
          to_char(trunc(p_minutes / 1440)) 
          || ' ' 
@@ -2608,6 +2610,7 @@ AS
       return integer 
    is
    begin
+      if p_intvl is null then return null; end if;
       return 12 * extract(year from p_intvl) + extract(month from p_intvl);
    end yminterval_to_months;
    
@@ -2616,7 +2619,8 @@ AS
       return integer 
    is
    begin
-      return 1440 * extract(day    from p_intvl) 
+      if p_intvl is null then return null; end if;
+      return 1440 * extract(day    from p_intvl)
              + 60 * extract(hour   from p_intvl) 
              +      extract(minute from p_intvl);
    end dsinterval_to_minutes;
