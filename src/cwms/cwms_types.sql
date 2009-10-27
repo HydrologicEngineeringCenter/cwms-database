@@ -64,6 +64,10 @@ DECLARE
                      'cat_ts_cwms_20_otab_t',
                      'cat_loc_obj_t',
                      'cat_loc_otab_t',
+                     'cat_location_obj_t',
+                     'cat_location_otab_t',
+                     'cat_location2_obj_t',
+                     'cat_location2_otab_t',
                      'cat_loc_alias_obj_t',
                      'cat_loc_alias_otab_t',
                      'cat_param_obj_t',
@@ -114,7 +118,10 @@ BEGIN
             EXCEPTION
                WHEN not_defined
                THEN
-                  defined_count := defined_count - 1;
+                  IF pass_count = 1
+                  THEN
+                     defined_count := defined_count - 1;
+                  END IF;
                WHEN has_dependencies
                THEN
                   NULL;
@@ -446,6 +453,63 @@ CREATE TYPE cat_loc_obj_t AS OBJECT (
 /
 
 CREATE TYPE cat_loc_otab_t AS TABLE OF cat_loc_obj_t;
+/
+
+CREATE TYPE cat_location_obj_t AS OBJECT (
+   db_office_id       VARCHAR2 (16),
+   location_id        VARCHAR2 (49),
+   base_location_id   VARCHAR2 (16),
+   sub_location_id    VARCHAR2 (32),
+   state_initial      VARCHAR2 (2),
+   county_name        VARCHAR2 (40),
+   time_zone_name     VARCHAR2 (28),
+   location_type      VARCHAR2 (32),
+   latitude           NUMBER,
+   longitude          NUMBER,
+   horizontal_datum   VARCHAR2 (16),
+   elevation          NUMBER,
+   elev_unit_id       VARCHAR2 (16),
+   vertical_datum     VARCHAR2 (16),
+   public_name        VARCHAR2 (32),
+   long_name          VARCHAR2 (80),
+   description        VARCHAR2 (512),
+   active_flag        VARCHAR2 (1)
+);
+/
+
+CREATE TYPE cat_location_otab_t AS TABLE OF cat_location_obj_t;
+/
+
+CREATE TYPE cat_location2_obj_t AS OBJECT (
+   db_office_id         VARCHAR2 (16),
+   location_id          VARCHAR2 (49),
+   base_location_id     VARCHAR2 (16),
+   sub_location_id      VARCHAR2 (32),
+   state_initial        VARCHAR2 (2),
+   county_name          VARCHAR2 (40),
+   time_zone_name       VARCHAR2 (28),
+   location_type        VARCHAR2 (32),
+   latitude             NUMBER,
+   longitude            NUMBER,
+   horizontal_datum     VARCHAR2 (16),
+   elevation            NUMBER,
+   elev_unit_id         VARCHAR2 (16),
+   vertical_datum       VARCHAR2 (16),
+   public_name          VARCHAR2 (32),
+   long_name            VARCHAR2 (80),
+   description          VARCHAR2 (512),
+   active_flag          VARCHAR2 (1),
+   location_category_id varchar2(32),
+   map_label            varchar2(50),
+   published_latitude   number,
+   published_longitude  number,
+   bounding_office_id   varchar2(16),
+   nation_id            varchar2(48),
+   nearest_city         varchar2(50)
+);
+/
+
+CREATE TYPE cat_location2_otab_t AS TABLE OF cat_location2_obj_t;
 /
 
 CREATE TYPE cat_loc_alias_obj_t AS OBJECT (
