@@ -74,6 +74,36 @@ IS
 
    TYPE cat_location_tab_t IS TABLE OF cat_location_rec_t;
 
+   TYPE cat_location2_rec_t IS RECORD (
+      db_office_id         VARCHAR2 (16),
+      location_id          VARCHAR2 (49),
+      base_location_id     VARCHAR2 (16),
+      sub_location_id      VARCHAR2 (32),
+      state_initial        VARCHAR2 (2),
+      county_name          VARCHAR2 (40),
+      time_zone_name       VARCHAR2 (28),
+      location_type        VARCHAR2 (32),
+      latitude             NUMBER,
+      longitude            NUMBER,
+      horizontal_datum     VARCHAR2 (16),
+      elevation            NUMBER,
+      elev_unit_id         VARCHAR2 (16),
+      vertical_datum       VARCHAR2 (16),
+      public_name          VARCHAR2 (32),
+      long_name            VARCHAR2 (80),
+      description          VARCHAR2 (512),
+      active_flag          VARCHAR2 (1),
+      location_category_id varchar2(32),
+      map_label            varchar2(50),
+      published_latitude   number,
+      published_longitude  number,
+      bounding_office_id   varchar2(16),
+      nation_id            varchar2(48),
+      nearest_city         varchar2(50)
+   );
+
+   TYPE cat_location2_tab_t IS TABLE OF cat_location2_rec_t;
+
    TYPE cat_loc_grp_rec_t IS RECORD (
       cat_db_office_id    VARCHAR2 (16),
       loc_category_id     VARCHAR2 (32),
@@ -281,6 +311,32 @@ IS
 
    FUNCTION cat_loc_obj2tab (o IN cat_loc_otab_t)
       RETURN cat_loc_tab_t;
+
+-- cat_location...
+   FUNCTION cat_location_rec2obj (r IN cat_location_rec_t)
+      RETURN cat_location_obj_t;
+
+   FUNCTION cat_location_tab2obj (t IN cat_location_tab_t)
+      RETURN cat_location_otab_t;
+
+   FUNCTION cat_location_obj2rec (o IN cat_location_obj_t)
+      RETURN cat_location_rec_t;
+
+   FUNCTION cat_location_obj2tab (o IN cat_location_otab_t)
+      RETURN cat_location_tab_t;
+
+-- cat_location2...
+   FUNCTION cat_location2_rec2obj (r IN cat_location2_rec_t)
+      RETURN cat_location2_obj_t;
+
+   FUNCTION cat_location2_tab2obj (t IN cat_location2_tab_t)
+      RETURN cat_location2_otab_t;
+
+   FUNCTION cat_location2_obj2rec (o IN cat_location2_obj_t)
+      RETURN cat_location2_rec_t;
+
+   FUNCTION cat_location2_obj2tab (o IN cat_location2_otab_t)
+      RETURN cat_location2_tab_t;
 
 -- cat_loc_alias...
 --   FUNCTION cat_loc_alias_rec2obj (r IN cat_loc_alias_rec_t)
@@ -1072,6 +1128,41 @@ IS
       p_prop_id         IN       VARCHAR2 DEFAULT NULL
    );
 
+-------------------------------------------------------------------------------
+-- CAT_LOCATION
+--
+-- These procedures and functions catalog locations in the CWMS.
+-- database.
+--
+-- Function returns may be used as source of SELECT statements.
+--
+-- The returned records contain the following columns:
+--
+--    Name                      Datatype      Description
+--    ------------------------ ------------- ----------------------------
+--    db_office_id             varchar2(16)   owning office of location
+--    location_id              varchar2(49)   full location id
+--    base_location_id         varchar2(16)   base location id
+--    sub_location_id          varchar2(32)   sub-location id, if any
+--    state_initial            varchar2(2)    two-character state abbreviation
+--    county_name              varchar2(40)   county name
+--    time_zone_name           varchar2(28)   local time zone name for location
+--    location_type            varchar2(32)   descriptive text of loctaion type
+--    latitude                 number         location latitude
+--    longitude                number         location longitude
+--    horizontal_datum         varchar2(16)   horizontal datrum of lat/lon
+--    elevation                number         location elevation
+--    elev_unit_id             varchar2(16)   location elevation units
+--    vertical_datum           varchar2(16)   veritcal datum of elevation
+--    public_name              varchar2(32)   location public name
+--    long_name                varchar2(80)   location long name
+--    description              varchar2(512)  location description
+--    active_flag              varchar2(1)    'T' if active, else 'F'
+--
+-------------------------------------------------------------------------------
+-- procedure cat_location(...)
+--
+--
    PROCEDURE cat_location (
       p_cwms_cat          OUT      sys_refcursor,
       p_elevation_unit    IN       VARCHAR2 DEFAULT 'm',
@@ -1081,6 +1172,10 @@ IS
       p_db_office_id      IN       VARCHAR2 DEFAULT NULL
    );
 
+-------------------------------------------------------------------------------
+-- function cat_location_tab(...)
+--
+--
    FUNCTION cat_location_tab (
       p_elevation_unit    IN   VARCHAR2 DEFAULT 'm',
       p_base_loc_only     IN   VARCHAR2 DEFAULT 'F',
@@ -1089,6 +1184,70 @@ IS
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_location_tab_t PIPELINED;
+
+-------------------------------------------------------------------------------
+-- CAT_LOCATION2
+--
+-- These procedures and functions catalog locations in the CWMS.
+-- database.
+--
+-- Function returns may be used as source of SELECT statements.
+--
+-- The returned records contain the following columns:
+--
+--    Name                      Datatype      Description
+--    ------------------------ ------------- ----------------------------
+--    db_office_id             varchar2(16)   owning office of location
+--    location_id              varchar2(49)   full location id
+--    base_location_id         varchar2(16)   base location id
+--    sub_location_id          varchar2(32)   sub-location id, if any
+--    state_initial            varchar2(2)    two-character state abbreviation
+--    county_name              varchar2(40)   county name
+--    time_zone_name           varchar2(28)   local time zone name for location
+--    location_type            varchar2(32)   descriptive text of loctaion type
+--    latitude                 number         location latitude
+--    longitude                number         location longitude
+--    horizontal_datum         varchar2(16)   horizontal datrum of lat/lon
+--    elevation                number         location elevation
+--    elev_unit_id             varchar2(16)   location elevation units
+--    vertical_datum           varchar2(16)   veritcal datum of elevation
+--    public_name              varchar2(32)   location public name
+--    long_name                varchar2(80)   location long name
+--    description              varchar2(512)  location description
+--    active_flag              varchar2(1)    'T' if active, else 'F'
+--    location_category_id     varchar2(32)   location type (category)
+--    map_label                varchar2(50)   map label for location
+--    published_latitude       number         published latitude for location
+--    published_longitude      number         published longitude for location
+--    bounding_office_id       varchar2(16)   id of office whose area bounds location
+--    nation_id                varchar2(48)   nation of location
+--    nearest_city             varchar2(50)   nearest city of location
+--
+-------------------------------------------------------------------------------
+-- procedure cat_location2(...)
+--
+--
+   PROCEDURE cat_location2 (
+      p_cwms_cat          OUT      sys_refcursor,
+      p_elevation_unit    IN       VARCHAR2 DEFAULT 'm',
+      p_base_loc_only     IN       VARCHAR2 DEFAULT 'F',
+      p_loc_category_id   IN       VARCHAR2 DEFAULT NULL,
+      p_loc_group_id      IN       VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN       VARCHAR2 DEFAULT NULL
+   );
+
+-------------------------------------------------------------------------------
+-- function cat_location2_tab(...)
+--
+--
+   FUNCTION cat_location2_tab (
+      p_elevation_unit    IN   VARCHAR2 DEFAULT 'm',
+      p_base_loc_only     IN   VARCHAR2 DEFAULT 'F',
+      p_loc_category_id   IN   VARCHAR2 DEFAULT NULL,
+      p_loc_group_id      IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN cat_location2_tab_t PIPELINED;
 
    PROCEDURE cat_loc_group (
       p_cwms_cat       OUT      sys_refcursor,

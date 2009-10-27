@@ -215,6 +215,208 @@ IS
       RETURN t;
    END cat_loc_obj2tab;
 
+-------------------------------------------------------------------------------
+-- CAT_LOCATION record-to-object conversion function
+--
+   FUNCTION cat_location_rec2obj (r IN cat_location_rec_t)
+      RETURN cat_location_obj_t
+   IS
+   BEGIN
+      RETURN cat_location_obj_t (
+         r.db_office_id,
+         r.location_id,
+         r.base_location_id,
+         r.sub_location_id,
+         r.state_initial,
+         r.county_name,
+         r.time_zone_name,
+         r.location_type,
+         r.latitude,
+         r.longitude,
+         r.horizontal_datum,
+         r.elevation,
+         r.elev_unit_id,
+         r.vertical_datum,
+         r.public_name,
+         r.long_name,
+         r.description,
+         r.active_flag
+         );
+   END cat_location_rec2obj;
+
+-------------------------------------------------------------------------------
+-- CAT_LOCATION table-to-object conversion function
+--
+   FUNCTION cat_location_tab2obj (t IN cat_location_tab_t)
+      RETURN cat_location_otab_t
+   IS
+      o   cat_location_otab_t;
+   BEGIN
+      FOR i IN 1 .. t.LAST
+      LOOP
+         o (i) := cat_location_rec2obj (t (i));
+      END LOOP;
+
+      RETURN o;
+   END cat_location_tab2obj;
+
+-------------------------------------------------------------------------------
+-- CAT_LOCATION object-to-record conversion function
+--
+   FUNCTION cat_location_obj2rec (o IN cat_location_obj_t)
+      RETURN cat_location_rec_t
+   IS
+      r   cat_location_rec_t := NULL;
+   BEGIN
+      IF o IS NOT NULL
+      THEN
+         r.db_office_id := o.db_office_id;
+         r.location_id := o.location_id;
+         r.base_location_id := o.base_location_id;
+         r.sub_location_id := o.sub_location_id;
+         r.state_initial := o.state_initial;
+         r.county_name := o.county_name;
+         r.time_zone_name := o.time_zone_name;
+         r.location_type := o.location_type;
+         r.latitude := o.latitude;
+         r.longitude := o.longitude;
+         r.horizontal_datum := o.horizontal_datum;
+         r.elevation := o.elevation;
+         r.elev_unit_id := o.elev_unit_id;
+         r.vertical_datum := o.vertical_datum;
+         r.public_name := o.public_name;
+         r.long_name := o.long_name;
+         r.description := o.description;
+         r.active_flag := o.active_flag;
+      END IF;
+
+      RETURN r;
+   END cat_location_obj2rec;
+
+-------------------------------------------------------------------------------
+-- CAT_LOCATION object-to-table conversion function
+--
+   FUNCTION cat_location_obj2tab (o IN cat_location_otab_t)
+      RETURN cat_location_tab_t
+   IS
+      t   cat_location_tab_t;
+   BEGIN
+      FOR i IN 1 .. o.LAST
+      LOOP
+         t (i) := cat_location_obj2rec (o (i));
+      END LOOP;
+
+      RETURN t;
+   END cat_location_obj2tab;
+
+-------------------------------------------------------------------------------
+-- CAT_LOCATION2 record-to-object conversion function
+--
+   FUNCTION cat_location2_rec2obj (r IN cat_location2_rec_t)
+      RETURN cat_location2_obj_t
+   IS
+   BEGIN
+      RETURN cat_location2_obj_t (
+         r.db_office_id,
+         r.location_id,
+         r.base_location_id,
+         r.sub_location_id,
+         r.state_initial,
+         r.county_name,
+         r.time_zone_name,
+         r.location_type,
+         r.latitude,
+         r.longitude,
+         r.horizontal_datum,
+         r.elevation,
+         r.elev_unit_id,
+         r.vertical_datum,
+         r.public_name,
+         r.long_name,
+         r.description,
+         r.active_flag,
+         r.location_category_id,
+         r.map_label,
+         r.published_latitude,
+         r.published_longitude,
+         r.bounding_office_id,
+         r.nation_id,
+         r.nearest_city
+         );
+   END cat_location2_rec2obj;
+
+-------------------------------------------------------------------------------
+-- CAT_LOCATION2 table-to-object conversion function
+--
+   FUNCTION cat_location2_tab2obj (t IN cat_location2_tab_t)
+      RETURN cat_location2_otab_t
+   IS
+      o   cat_location2_otab_t;
+   BEGIN
+      FOR i IN 1 .. t.LAST
+      LOOP
+         o (i) := cat_location2_rec2obj (t (i));
+      END LOOP;
+
+      RETURN o;
+   END cat_location2_tab2obj;
+
+-------------------------------------------------------------------------------
+-- CAT_LOCATION2 object-to-record conversion function
+--
+   FUNCTION cat_location2_obj2rec (o IN cat_location2_obj_t)
+      RETURN cat_location2_rec_t
+   IS
+      r   cat_location2_rec_t := NULL;
+   BEGIN
+      IF o IS NOT NULL
+      THEN
+         r.db_office_id := o.db_office_id;
+         r.location_id := o.location_id;
+         r.base_location_id := o.base_location_id;
+         r.sub_location_id := o.sub_location_id;
+         r.state_initial := o.state_initial;
+         r.county_name := o.county_name;
+         r.time_zone_name := o.time_zone_name;
+         r.location_type := o.location_type;
+         r.latitude := o.latitude;
+         r.longitude := o.longitude;
+         r.horizontal_datum := o.horizontal_datum;
+         r.elevation := o.elevation;
+         r.elev_unit_id := o.elev_unit_id;
+         r.vertical_datum := o.vertical_datum;
+         r.public_name := o.public_name;
+         r.long_name := o.long_name;
+         r.description := o.description;
+         r.active_flag := o.active_flag;
+         r.location_category_id := o.location_category_id;
+         r.map_label := o.map_label;
+         r.published_latitude := o.published_latitude;
+         r.published_longitude := o.published_longitude;
+         r.bounding_office_id := o.bounding_office_id;
+         r.nation_id := o.nation_id;
+         r.nearest_city := o.nearest_city;
+      END IF;
+
+      RETURN r;
+   END cat_location2_obj2rec;
+
+-------------------------------------------------------------------------------
+-- CAT_LOCATION2 object-to-table conversion function
+--
+   FUNCTION cat_location2_obj2tab (o IN cat_location2_otab_t)
+      RETURN cat_location2_tab_t
+   IS
+      t   cat_location2_tab_t;
+   BEGIN
+      FOR i IN 1 .. o.LAST
+      LOOP
+         t (i) := cat_location2_obj2rec (o (i));
+      END LOOP;
+
+      RETURN t;
+   END cat_location2_obj2tab;
+
 ---------------------------------------------------------------------------------
 ---- CAT_LOC_ALIAS record-to-object conversion function
 ----
@@ -1081,7 +1283,7 @@ IS
       THEN
          IF l_loc_group_code IS NULL
          THEN
---            DBMS_OUTPUT.put_line (   'subselect & loc_group_code are null! '
+--            DBMS_OUTPUT.put_line (   'subselect and loc_group_code are null! '
 --                                  || CHR (10)
 --                                  || 'db_office_code = '
 --                                  || l_db_office_code
@@ -1224,7 +1426,38 @@ IS
    END cat_ts_id_tab;
 
 -------------------------------------------------------------------------------
--- procedure cat_location --
+-- CAT_LOCATION
+--
+-- These procedures and functions catalog locations in the CWMS.
+-- database.
+--
+-- Function returns may be used as source of SELECT statements.
+--
+-- The returned records contain the following columns:
+--
+--    Name                      Datatype      Description
+--    ------------------------ ------------- ----------------------------
+--    db_office_id             varchar2(16)   owning office of location
+--    location_id              varchar2(49)   full location id
+--    base_location_id         varchar2(16)   base location id
+--    sub_location_id          varchar2(32)   sub-location id, if any
+--    state_initial            varchar2(2)    two-character state abbreviation
+--    county_name              varchar2(40)   county name
+--    time_zone_name           varchar2(28)   local time zone name for location
+--    location_type            varchar2(32)   descriptive text of loctaion type
+--    latitude                 number         location latitude
+--    longitude                number         location longitude
+--    horizontal_datum         varchar2(16)   horizontal datrum of lat/lon
+--    elevation                number         location elevation
+--    elev_unit_id             varchar2(16)   location elevation units
+--    vertical_datum           varchar2(16)   veritcal datum of elevation
+--    public_name              varchar2(32)   location public name
+--    long_name                varchar2(80)   location long name
+--    description              varchar2(512)  location description
+--    active_flag              varchar2(1)    'T' if active, else 'F'
+--
+-------------------------------------------------------------------------------
+-- procedure cat_location(...)
 --
 --
    PROCEDURE cat_location (
@@ -1447,6 +1680,10 @@ IS
       END IF;
    END cat_location;
 
+-------------------------------------------------------------------------------
+-- function cat_location(...)
+--
+--
    FUNCTION cat_location_tab (
       p_elevation_unit    IN   VARCHAR2 DEFAULT 'm',
       p_base_loc_only     IN   VARCHAR2 DEFAULT 'F',
@@ -1479,6 +1716,392 @@ IS
 
       RETURN;
    END cat_location_tab;
+
+-------------------------------------------------------------------------------
+-- CAT_LOCATION2
+--
+-- These procedures and functions catalog locations in the CWMS.
+-- database.
+--
+-- Function returns may be used as source of SELECT statements.
+--
+-- The returned records contain the following columns:
+--
+--    Name                      Datatype      Description
+--    ------------------------ ------------- ----------------------------
+--    db_office_id             varchar2(16)   owning office of location
+--    location_id              varchar2(49)   full location id
+--    base_location_id         varchar2(16)   base location id
+--    sub_location_id          varchar2(32)   sub-location id, if any
+--    state_initial            varchar2(2)    two-character state abbreviation
+--    county_name              varchar2(40)   county name
+--    time_zone_name           varchar2(28)   local time zone name for location
+--    location_type            varchar2(32)   descriptive text of loctaion type
+--    latitude                 number         location latitude
+--    longitude                number         location longitude
+--    horizontal_datum         varchar2(16)   horizontal datrum of lat/lon
+--    elevation                number         location elevation
+--    elev_unit_id             varchar2(16)   location elevation units
+--    vertical_datum           varchar2(16)   veritcal datum of elevation
+--    public_name              varchar2(32)   location public name
+--    long_name                varchar2(80)   location long name
+--    description              varchar2(512)  location description
+--    active_flag              varchar2(1)    'T' if active, else 'F'
+--    location_category_id     varchar2(32)   location type (category)
+--    map_label                varchar2(50)   map label for location
+--    published_latitude       number         published latitude for location
+--    published_longitude      number         published longitude for location
+--    bounding_office_id       varchar2(16)   id of office whose area bounds location
+--    nation_id                varchar2(48)   nation of location
+--    nearest_city             varchar2(50)   nearest city of location
+--
+-------------------------------------------------------------------------------
+-- procedure cat_location2(...)
+--
+--
+   PROCEDURE cat_location2 (
+      p_cwms_cat          OUT      sys_refcursor,
+      p_elevation_unit    IN       VARCHAR2 DEFAULT 'm',
+      p_base_loc_only     IN       VARCHAR2 DEFAULT 'F',
+      p_loc_category_id   IN       VARCHAR2 DEFAULT NULL,
+      p_loc_group_id      IN       VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN       VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_from_id          cwms_unit.unit_id%TYPE := 'm';
+      l_to_id            cwms_unit.unit_id%TYPE := NVL (p_elevation_unit, 'm');
+      l_from_code        cwms_unit.unit_code%TYPE;
+      l_to_code          cwms_unit.unit_code%TYPE;
+      l_factor           cwms_unit_conversion.factor%TYPE;
+      l_offset           cwms_unit_conversion.offset%TYPE;
+      l_office_id        cwms_office.office_id%TYPE;
+      l_db_office_id     cwms_office.office_id%TYPE;
+      l_db_office_code   NUMBER;
+      l_loc_group_code   NUMBER := NULL;
+      l_base_loc_only    BOOLEAN
+               := cwms_util.return_true_or_false (NVL (p_base_loc_only, 'F'));
+   BEGIN
+-----------------------------------------------
+-- get the office id of the hosting database --
+-----------------------------------------------
+      l_db_office_code := cwms_util.get_db_office_code (p_db_office_id);
+
+      SELECT office_id
+        INTO l_db_office_id
+        FROM cwms_office
+       WHERE office_code = l_db_office_code;
+
+---------------------------------------------------
+-- get the loc_group_code if cat/group passed in --
+---------------------------------------------------
+      IF p_loc_category_id IS NOT NULL AND p_loc_group_id IS NOT NULL
+      THEN
+         l_loc_group_code :=
+            cwms_util.get_loc_group_code (p_loc_category_id,
+                                          p_loc_group_id,
+                                          l_db_office_code
+                                         );
+      ELSIF    (p_loc_category_id IS NOT NULL AND p_loc_group_id IS NULL)
+            OR (p_loc_category_id IS NULL AND p_loc_group_id IS NOT NULL)
+      THEN
+         cwms_err.RAISE
+            ('ERROR',
+             'The loc_category_id and loc_group_id is not a valid combination'
+            );
+      END IF;
+
+------------------------------------------
+-- get the conversion factor and offset --
+------------------------------------------
+      SELECT unit_code
+        INTO l_from_code
+        FROM cwms_unit
+       WHERE unit_id = l_from_id;
+
+      SELECT unit_code
+        INTO l_to_code
+        FROM cwms_unit
+       WHERE unit_id = l_to_id;
+
+      SELECT factor, offset
+        INTO l_factor, l_offset
+        FROM cwms_unit_conversion
+       WHERE from_unit_code = l_from_code AND to_unit_code = l_to_code;
+
+----------------------
+-- open the cursor  --
+----------------------
+      IF l_loc_group_code IS NOT NULL
+      THEN
+         IF l_base_loc_only
+         THEN
+            OPEN p_cwms_cat FOR
+               SELECT   co.office_id db_office_id,
+                           abl.base_location_id
+                        || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
+                        || apl.sub_location_id location_id,
+                        abl.base_location_id, apl.sub_location_id,
+                        cs.state_initial, cc.county_name, ctz.time_zone_name,
+                        apl.location_type, apl.latitude, apl.longitude,
+                        apl.horizontal_datum,
+                        apl.elevation * cuc.factor + cuc.offset elevation,
+                        cuc.to_unit_id elev_unit_id, apl.vertical_datum,
+                        apl.public_name, apl.long_name, apl.description,
+                        apl.active_flag,
+                        clc.category_id location_category_id,
+                        apl.map_label, apl.published_latitude,
+                        apl.published_longitude,
+                        case when apl.office_code is null
+                           then
+                             null
+                           else
+                              co2.office_id
+                        end bounding_office_id,
+                        case when apl.nation_code is null
+                           then
+                             null
+                           else
+                              cn.nation_id
+                        end nation_id,
+                        apl.nearest_city
+                   FROM at_physical_location apl,
+                        at_base_location abl,
+                        cwms_county cc,
+                        cwms_office co,
+                        cwms_state cs,
+                        cwms_time_zone ctz,
+                        cwms_unit_conversion cuc,
+                        cwms_location_category clc,
+                        cwms_office co2,
+                        cwms_nation cn,
+                        ---
+                        at_loc_group_assignment atlga                      ---
+                  WHERE abl.db_office_code = l_db_office_code
+                    AND (cc.county_code = NVL (apl.county_code, 0))
+                    AND (cs.state_code = NVL (cc.state_code, 0))
+                    AND (abl.db_office_code = co.office_code)
+                    AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
+                    AND apl.base_location_code = abl.base_location_code
+                    AND apl.location_code != 0
+                    AND cuc.from_unit_id = 'm'
+                    AND cuc.to_unit_id = p_elevation_unit
+                    AND clc.category_code = apl.location_category
+                    AND (apl.office_code is null or co2.office_code = apl.office_code)
+                    AND (apl.nation_code is null or cn.nation_code = apl.nation_code)
+                    ---
+                    AND atlga.loc_group_code = l_loc_group_code            ---
+                    AND apl.location_code = atlga.location_code            ---
+                    AND apl.sub_location_id IS NULL                        ---
+               ORDER BY location_id ASC;
+         ELSE
+            OPEN p_cwms_cat FOR
+               SELECT   co.office_id db_office_id,
+                           abl.base_location_id
+                        || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
+                        || apl.sub_location_id location_id,
+                        abl.base_location_id, apl.sub_location_id,
+                        cs.state_initial, cc.county_name, ctz.time_zone_name,
+                        apl.location_type, apl.latitude, apl.longitude,
+                        apl.horizontal_datum,
+                        apl.elevation * cuc.factor + cuc.offset elevation,
+                        cuc.to_unit_id elev_unit_id, apl.vertical_datum,
+                        apl.public_name, apl.long_name, apl.description,
+                        apl.active_flag,
+                        clc.category_id location_category_id,
+                        apl.map_label, apl.published_latitude,
+                        apl.published_longitude,
+                        case when apl.office_code is null
+                           then
+                             null
+                           else
+                              co2.office_id
+                        end bounding_office_id,
+                        case when apl.nation_code is null
+                           then
+                             null
+                           else
+                              cn.nation_id
+                        end nation_id,
+                        apl.nearest_city
+                   FROM at_physical_location apl,
+                        at_base_location abl,
+                        cwms_county cc,
+                        cwms_office co,
+                        cwms_state cs,
+                        cwms_time_zone ctz,
+                        cwms_unit_conversion cuc,
+                        cwms_location_category clc,
+                        cwms_office co2,
+                        cwms_nation cn,
+                        ---
+                        at_loc_group_assignment atlga                      ---
+                  WHERE abl.db_office_code = l_db_office_code
+                    AND (cc.county_code = NVL (apl.county_code, 0))
+                    AND (cs.state_code = NVL (cc.state_code, 0))
+                    AND (abl.db_office_code = co.office_code)
+                    AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
+                    AND apl.base_location_code = abl.base_location_code
+                    AND apl.location_code != 0
+                    AND cuc.from_unit_id = 'm'
+                    AND cuc.to_unit_id = p_elevation_unit
+                    AND clc.category_code = apl.location_category
+                    AND (apl.office_code is null or co2.office_code = apl.office_code)
+                    AND (apl.nation_code is null or cn.nation_code = apl.nation_code)
+                    ---
+                    AND atlga.loc_group_code = l_loc_group_code            ---
+                    AND apl.location_code = atlga.location_code            ---
+               ORDER BY location_id ASC;
+         END IF;
+      ELSE
+         IF l_base_loc_only
+         THEN
+            OPEN p_cwms_cat FOR
+               SELECT   co.office_id db_office_id,
+                           abl.base_location_id
+                        || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
+                        || apl.sub_location_id location_id,
+                        abl.base_location_id, apl.sub_location_id,
+                        cs.state_initial, cc.county_name, ctz.time_zone_name,
+                        apl.location_type, apl.latitude, apl.longitude,
+                        apl.horizontal_datum,
+                        apl.elevation * cuc.factor + cuc.offset elevation,
+                        cuc.to_unit_id elev_unit_id, apl.vertical_datum,
+                        apl.public_name, apl.long_name, apl.description,
+                        apl.active_flag,
+                        clc.category_id location_category_id,
+                        apl.map_label, apl.published_latitude,
+                        apl.published_longitude,
+                        case when apl.office_code is null
+                           then
+                             null
+                           else
+                              co2.office_id
+                        end bounding_office_id,
+                        case when apl.nation_code is null
+                           then
+                             null
+                           else
+                              cn.nation_id
+                        end nation_id,
+                        apl.nearest_city
+                   FROM at_physical_location apl,
+                        at_base_location abl,
+                        cwms_county cc,
+                        cwms_office co,
+                        cwms_state cs,
+                        cwms_time_zone ctz,
+                        cwms_unit_conversion cuc,
+                        cwms_location_category clc,
+                        cwms_office co2,
+                        cwms_nation cn
+                  WHERE abl.db_office_code = l_db_office_code
+                    AND (cc.county_code = NVL (apl.county_code, 0))
+                    AND (cs.state_code = NVL (cc.state_code, 0))
+                    AND (abl.db_office_code = co.office_code)
+                    AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
+                    AND apl.base_location_code = abl.base_location_code
+                    AND apl.location_code != 0
+                    AND cuc.from_unit_id = 'm'
+                    AND cuc.to_unit_id = p_elevation_unit
+                    AND clc.category_code = apl.location_category
+                    AND (apl.office_code is null or co2.office_code = apl.office_code)
+                    AND (apl.nation_code is null or cn.nation_code = apl.nation_code)
+                    ---
+                    AND apl.sub_location_id IS NULL                        ---
+               ORDER BY location_id ASC;
+         ELSE
+            OPEN p_cwms_cat FOR
+               SELECT   co.office_id db_office_id,
+                           abl.base_location_id
+                        || SUBSTR ('-', 1, LENGTH (apl.sub_location_id))
+                        || apl.sub_location_id location_id,
+                        abl.base_location_id, apl.sub_location_id,
+                        cs.state_initial, cc.county_name, ctz.time_zone_name,
+                        apl.location_type, apl.latitude, apl.longitude,
+                        apl.horizontal_datum,
+                        apl.elevation * cuc.factor + cuc.offset elevation,
+                        cuc.to_unit_id elev_unit_id, apl.vertical_datum,
+                        apl.public_name, apl.long_name, apl.description,
+                        apl.active_flag,
+                        clc.category_id location_category_id,
+                        apl.map_label, apl.published_latitude,
+                        apl.published_longitude,
+                        case when apl.office_code is null
+                           then
+                             null
+                           else
+                              co2.office_id
+                        end bounding_office_id,
+                        case when apl.nation_code is null
+                           then
+                             null
+                           else
+                              cn.nation_id
+                        end nation_id,
+                        apl.nearest_city
+                   FROM at_physical_location apl,
+                        at_base_location abl,
+                        cwms_county cc,
+                        cwms_office co,
+                        cwms_state cs,
+                        cwms_time_zone ctz,
+                        cwms_unit_conversion cuc,
+                        cwms_location_category clc,
+                        cwms_office co2,
+                        cwms_nation cn
+                  WHERE abl.db_office_code = l_db_office_code
+                    AND (cc.county_code = NVL (apl.county_code, 0))
+                    AND (cs.state_code = NVL (cc.state_code, 0))
+                    AND (abl.db_office_code = co.office_code)
+                    AND (ctz.time_zone_code = NVL (apl.time_zone_code, 0))
+                    AND apl.base_location_code = abl.base_location_code
+                    AND apl.location_code != 0
+                    AND cuc.from_unit_id = 'm'
+                    AND cuc.to_unit_id = p_elevation_unit
+                    AND clc.category_code = apl.location_category
+                    AND (apl.office_code is null or co2.office_code = apl.office_code)
+                    AND (apl.nation_code is null or cn.nation_code = apl.nation_code)
+               ORDER BY location_id ASC;
+         END IF;
+      END IF;
+   END cat_location2;
+
+-------------------------------------------------------------------------------
+-- function cat_location2(...)
+--
+--
+   FUNCTION cat_location2_tab (
+      p_elevation_unit    IN   VARCHAR2 DEFAULT 'm',
+      p_base_loc_only     IN   VARCHAR2 DEFAULT 'F',
+      p_loc_category_id   IN   VARCHAR2 DEFAULT NULL,
+      p_loc_group_id      IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN cat_location2_tab_t PIPELINED
+   IS
+      query_cursor   sys_refcursor;
+      output_row     cat_location2_rec_t;
+   BEGIN
+      cat_location2 (query_cursor,
+                    p_elevation_unit,
+                    p_base_loc_only,
+                    p_loc_category_id,
+                    p_loc_group_id,
+                    p_db_office_id
+                   );
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   END cat_location2_tab;
 
 --------------------------------------------------------------------------------
 -- DEPRICATED --
