@@ -22,7 +22,14 @@ CREATE OR REPLACE VIEW av_loc (location_code,
                                public_name,
                                long_name,
                                description,
-                               active_flag
+                               active_flag,
+                               location_category_id,
+                               map_label,
+                               published_latitude,
+                               published_longitude,
+                               bounding_office_id,
+                               nation_id,
+                               nearest_city
                               )
 AS
    SELECT apl.location_code, abl.base_location_code,
@@ -36,13 +43,32 @@ AS
           cuc.to_unit_id unit_id, apl.vertical_datum, apl.longitude,
           apl.latitude, apl.horizontal_datum, ctz.time_zone_name,
           cc.county_name, cs.state_initial, apl.public_name, apl.long_name,
-          apl.description, apl.active_flag
+          apl.description, apl.active_flag,
+          clc.category_id location_category_id,
+          apl.map_label, apl.published_latitude,
+          apl.published_longitude,
+          case when apl.office_code is null
+             then
+               null
+             else
+                co2.office_id
+          end bounding_office_id,
+          case when apl.nation_code is null
+             then
+               null
+             else
+                cn.nation_id
+          end nation_id,
+          apl.nearest_city
      FROM at_physical_location apl,
           at_base_location abl,
           cwms_county cc,
           cwms_office co,
           cwms_state cs,
           cwms_time_zone ctz,
+          cwms_location_category clc,
+          cwms_office co2,
+          cwms_nation cn,
           at_display_units adu,
           cwms_unit_conversion cuc
     WHERE (cc.county_code = NVL (apl.county_code, 0))
@@ -55,6 +81,9 @@ AS
                          cwms_ts.get_parameter_code ('Elev', NULL, 'CWMS', 'F')
       AND cuc.from_unit_id = 'm'
       AND cuc.to_unit_code = adu.display_unit_code
+      AND clc.category_code = apl.location_category
+      AND (apl.office_code is null or co2.office_code = apl.office_code)
+      AND (apl.nation_code is null or cn.nation_code = apl.nation_code)
       AND adu.db_office_code = abl.db_office_code;
 /
 SHOW ERRORS;
