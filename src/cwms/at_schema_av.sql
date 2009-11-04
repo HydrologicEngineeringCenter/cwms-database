@@ -6,10 +6,8 @@ SET serveroutput on
 ----------------------------------------------------
 -- drop tables, mviews & mview logs if they exist --
 ----------------------------------------------------
-
 DECLARE
    TYPE id_array_t IS TABLE OF VARCHAR2 (32);
-
    view_names   id_array_t
       := id_array_t ('av_active_flag',
                      'av_loc',          -- av_loc is created in at_schema_2...
@@ -33,7 +31,6 @@ BEGIN
    LOOP
       BEGIN
          EXECUTE IMMEDIATE 'drop view' || view_names (i);
-
          DBMS_OUTPUT.put_line ('Dropped view ' || view_names (i));
       EXCEPTION
          WHEN OTHERS
@@ -43,8 +40,6 @@ BEGIN
    END LOOP;
 END;
 /
-
-
 ---------------------------------------------------------
 CREATE OR REPLACE FORCE VIEW av_shef_pe_codes
 (
@@ -137,9 +132,7 @@ AS
                 AND a.db_office_code = h.office_code
     ORDER BY   shef_pe_code
 /
-
 --------------------------------------------------------------------------------
-
 CREATE OR REPLACE FORCE VIEW av_shef_decode_spec
 (
     ts_code,
@@ -215,21 +208,16 @@ AS
                 AND a.ts_code = h.ts_code
                 AND a.shef_unit_code = i.unit_code
 /
-
 begin
 	execute immediate 'DROP PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC';
 exception
 	when others then null;
 end;		
 /
-
 CREATE PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC FOR AV_SHEF_DECODE_SPEC
 /
-
-
 GRANT SELECT ON AV_SHEF_DECODE_SPEC TO CWMS_USER
 /
-
 --------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW av_active_flag (data_stream_id,
                                        shef_spec,
@@ -522,8 +510,6 @@ AS
       AND avsc.screening_code = asctl.screening_code(+)
       AND asctl.rate_change_disp_interval_code = ci.interval_code(+)
 /
-
-
 --------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW av_screening_dur_mag (screening_code,
                                              db_office_id,
@@ -702,73 +688,285 @@ AS
 --------------------------------------------------------------------------------
 CREATE OR REPLACE FORCE VIEW av_loc_level
 AS
-      select c_o.office_id                                          as office_id,
-             a_bl.base_location_id
-             || substr('-', length(a_pl.sub_location_id))
-             || a_pl.sub_location_id                                as location_id,
-             c_bp1.base_parameter_id
-             || substr('-', length(a_p1.sub_parameter_id))
-             || a_p1.sub_parameter_id                               as parameter_id,
-             c_pt.parameter_type_id                                 as parameter_type_id,
-             c_d.duration_id                                        as duration_id,
-             a_sl.specified_level_id                                as specified_level_id,
-             case when a_ll.attribute_parameter_code is null
-                then
-                  null
-                else
+   select office_id,
+          location_id,
+          parameter_id,
+          parameter_type_id,
+          duration_id,
+          specified_level_id,
+          attribute_parameter_id,
+          attribute_parameter_type_id,
+          attribute_duration_id,
+          level_date,
+          unit_system,
+          attribute_unit,
+          level_unit,
+          attribute_value,
+          constant_level,
+          interval_origin,
+          calendar_interval,
+          time_interval,
+          interpolate,
+          calendar_offset,
+          time_offset,
+          seasonal_level,
+          level_comment,
+          attribute_comment
+     from ((select c_o.office_id                                          as office_id,
+                   a_bl.base_location_id
+                   || substr('-', 1, length(a_pl.sub_location_id))
+                   || a_pl.sub_location_id                                as location_id,
+                   c_bp1.base_parameter_id
+                   || substr('-', 1, length(a_p1.sub_parameter_id))
+                   || a_p1.sub_parameter_id                               as parameter_id,
+                   c_pt1.parameter_type_id                                as parameter_type_id,
+                   c_d1.duration_id                                       as duration_id,
+                   a_sl.specified_level_id                                as specified_level_id,
+                   null                                                   as attribute_parameter_id,
+                   null                                                   as attribute_parameter_type_id,
+                   null                                                   as attribute_duration_id,
+                   a_ll.location_level_date                               as level_date,
+                   a_du1.unit_system                                      as unit_system,
+                   c_uc1.to_unit_id                                       as level_unit,
+                   null                                                   as attribute_unit,
+                   a_ll.attribute_value                                   as attribute_value,
+                   a_ll.location_level_value*c_uc1.factor+c_uc1.offset    as constant_level,
+                   a_ll.interval_origin                                   as interval_origin,
+                   a_ll.calendar_interval                                 as calendar_interval,
+                   a_ll.time_interval                                     as time_interval,
+                   a_ll.interpolate                                       as interpolate,
+                   null                                                   as calendar_offset,
+                   null                                                   as time_offset,
+                   null                                                   as seasonal_level,
+                   a_ll.location_level_comment                            as level_comment,
+                   a_ll.attribute_comment                                 as attribute_comment
+              from at_location_level          a_ll,
+                   at_specified_level         a_sl,
+                   at_physical_location       a_pl,
+                   at_base_location           a_bl,
+                   at_parameter               a_p1,
+                   at_display_units           a_du1,
+                   cwms_duration              c_d1,
+                   cwms_base_parameter        c_bp1,
+                   cwms_parameter_type        c_pt1,
+                   cwms_unit_conversion       c_uc1,
+                   cwms_office                c_o
+             where a_pl.location_code            = a_ll.location_code
+               and a_bl.base_location_code       = a_pl.base_location_code
+               and c_o.office_code               = a_bl.db_office_code
+               and a_p1.parameter_code           = a_ll.parameter_code
+               and c_bp1.base_parameter_code     = a_p1.base_parameter_code
+               and c_pt1.parameter_type_code     = a_ll.parameter_type_code
+               and c_d1.duration_code            = a_ll.duration_code
+               and a_sl.specified_level_code     = a_ll.specified_level_code
+               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and c_uc1.from_unit_code          = c_bp1.unit_code
+               and c_uc1.to_unit_code            = a_du1.display_unit_code
+               and a_ll.attribute_parameter_code is null
+               and a_ll.location_level_value     is not null) 
+           union
+           (select c_o.office_id                                          as office_id,
+                   a_bl.base_location_id
+                   || substr('-', 1, length(a_pl.sub_location_id))
+                   || a_pl.sub_location_id                                as location_id,
+                   c_bp1.base_parameter_id
+                   || substr('-', 1, length(a_p1.sub_parameter_id))
+                   || a_p1.sub_parameter_id                               as parameter_id,
+                   c_pt1.parameter_type_id                                as parameter_type_id,
+                   c_d1.duration_id                                       as duration_id,
+                   a_sl.specified_level_id                                as specified_level_id,
+                   null                                                   as attribute_parameter_id,
+                   null                                                   as attribute_parameter_type_id,
+                   null                                                   as attribute_duration_id,
+                   a_ll.location_level_date                               as level_date,
+                   a_du1.unit_system                                      as unit_system,
+                   c_uc1.to_unit_id                                       as level_unit,
+                   null                                                   as attribute_unit,
+                   a_ll.attribute_value                                   as attribute_value,
+                   null                                                   as constant_level,
+                   a_ll.interval_origin                                   as interval_origin,
+                   a_ll.calendar_interval                                 as calendar_interval,
+                   a_ll.time_interval                                     as time_interval,
+                   a_ll.interpolate                                       as interpolate,
+                   a_sll.calendar_offset                                  as calendar_offset,
+                   a_sll.time_offset                                      as time_offset,
+                   a_sll.value*c_uc1.factor+c_uc1.offset                  as seasonal_level,
+                   a_ll.location_level_comment                            as level_comment,
+                   a_ll.attribute_comment                                 as attribute_comment
+              from at_location_level          a_ll,
+                   at_seasonal_location_level a_sll,
+                   at_specified_level         a_sl,
+                   at_physical_location       a_pl,
+                   at_base_location           a_bl,
+                   at_parameter               a_p1,
+                   at_display_units           a_du1,
+                   cwms_duration              c_d1,
+                   cwms_base_parameter        c_bp1,
+                   cwms_parameter_type        c_pt1,
+                   cwms_unit_conversion       c_uc1,
+                   cwms_office                c_o
+             where a_pl.location_code            = a_ll.location_code
+               and a_bl.base_location_code       = a_pl.base_location_code
+               and c_o.office_code               = a_bl.db_office_code
+               and a_p1.parameter_code           = a_ll.parameter_code
+               and c_bp1.base_parameter_code     = a_p1.base_parameter_code
+               and c_pt1.parameter_type_code     = a_ll.parameter_type_code
+               and c_d1.duration_code            = a_ll.duration_code
+               and a_sl.specified_level_code     = a_ll.specified_level_code
+               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and c_uc1.from_unit_code          = c_bp1.unit_code
+               and c_uc1.to_unit_code            = a_du1.display_unit_code
+               and a_ll.attribute_parameter_code is null
+               and a_ll.location_level_value     is null
+               and a_sll.location_level_code     = a_ll.location_level_code)
+           union
+           (select c_o.office_id                                          as office_id,
+                   a_bl.base_location_id
+                   || substr('-', 1, length(a_pl.sub_location_id))
+                   || a_pl.sub_location_id                                as location_id,
+                   c_bp1.base_parameter_id
+                   || substr('-', 1, length(a_p1.sub_parameter_id))
+                   || a_p1.sub_parameter_id                               as parameter_id,
+                   c_pt1.parameter_type_id                                as parameter_type_id,
+                   c_d1.duration_id                                       as duration_id,
+                   a_sl.specified_level_id                                as specified_level_id,
                    c_bp2.base_parameter_id
-                   || substr('-', length(a_p2.sub_parameter_id))
-                   || a_p2.sub_parameter_id
-             end                                                    as attribute_parameter_id,
-             a_ll.location_level_date                               as level_date,
-             a_ll.attribute_value                                   as attribute,
-             a_ll.location_level_value                              as constant_value,
-             a_ll.interval_origin                                   as interval_origin,
-             a_ll.calendar_interval                                 as calendar_interval,
-             a_ll.time_interval                                     as time_interval,
-             a_ll.interpolate                                       as interpolate,
-             a_sll.calendar_offset                                  as calendar_offset,
-             a_sll.time_offset                                      as time_offset,
-             a_sll.value                                            as offset_value,
-             a_ll.location_level_comment                            as level_comment,
-             a_ll.attribute_comment                                 as attribute_comment
-        from at_location_level          a_ll,
-             at_seasonal_location_level a_sll,
-             at_specified_level         a_sl,
-             at_physical_location       a_pl,
-             at_base_location           a_bl,
-             at_parameter               a_p1,
-             at_parameter               a_p2,
-             cwms_duration              c_d,
-             cwms_base_parameter        c_bp1,
-             cwms_base_parameter        c_bp2,
-             cwms_parameter_type        c_pt,
-             cwms_office                c_o
-       where a_pl.location_code         = a_ll.location_code
-         and a_bl.base_location_code    = a_pl.base_location_code
-         and c_o.office_code            = a_bl.db_office_code
-         and a_p1.parameter_code        = a_ll.parameter_code
-         and c_pt.parameter_type_code   = a_ll.parameter_type_code
-         and c_d.duration_code          = a_ll.duration_code
-         and a_sl.specified_level_code  = a_ll.specified_level_code
-         and a_p2.parameter_code        = a_ll.attribute_parameter_code
-         and a_sll.location_level_code  = a_ll.location_level_code
-    order by c_o.office_id,
-             a_bl.base_location_id
-             || substr('-', length(a_pl.sub_location_id))
-             || a_pl.sub_location_id,
-             parameter_id,
-             c_pt.parameter_type_id,
-             c_d.duration_id,
-             a_sl.specified_level_id,
-             case when a_ll.attribute_parameter_code is null
-                then
-                  null
-                else
+                   || substr('-', 1, length(a_p2.sub_parameter_id))
+                   || a_p2.sub_parameter_id                               as attribute_parameter_id,
+                   c_pt2.parameter_type_id                                as attribute_parameter_type_id,
+                   c_d2.duration_id                                       as attribute_duration_id,
+                   a_ll.location_level_date                               as level_date,
+                   a_du1.unit_system                                      as unit_system,
+                   c_uc1.to_unit_id                                       as level_unit,
+                   c_uc2.to_unit_id                                       as attribute_unit,
+                   a_ll.attribute_value*c_uc2.factor+c_uc2.offset         as attribute_value,
+                   a_ll.location_level_value*c_uc1.factor+c_uc1.offset    as constant_level,
+                   a_ll.interval_origin                                   as interval_origin,
+                   a_ll.calendar_interval                                 as calendar_interval,
+                   a_ll.time_interval                                     as time_interval,
+                   a_ll.interpolate                                       as interpolate,
+                   null                                                   as calendar_offset,
+                   null                                                   as time_offset,
+                   null                                                   as seasonal_level,
+                   a_ll.location_level_comment                            as level_comment,
+                   a_ll.attribute_comment                                 as attribute_comment
+              from at_location_level          a_ll,
+                   at_specified_level         a_sl,
+                   at_physical_location       a_pl,
+                   at_base_location           a_bl,
+                   at_parameter               a_p1,
+                   at_parameter               a_p2,
+                   at_display_units           a_du1,
+                   at_display_units           a_du2,
+                   cwms_duration              c_d1,
+                   cwms_base_parameter        c_bp1,
+                   cwms_parameter_type        c_pt1,
+                   cwms_unit_conversion       c_uc1,
+                   cwms_duration              c_d2,
+                   cwms_base_parameter        c_bp2,
+                   cwms_parameter_type        c_pt2,
+                   cwms_unit_conversion       c_uc2,
+                   cwms_office                c_o
+             where a_pl.location_code            = a_ll.location_code
+               and a_bl.base_location_code       = a_pl.base_location_code
+               and c_o.office_code               = a_bl.db_office_code
+               and a_p1.parameter_code           = a_ll.parameter_code
+               and c_bp1.base_parameter_code     = a_p1.base_parameter_code
+               and c_pt1.parameter_type_code     = a_ll.parameter_type_code
+               and c_d1.duration_code            = a_ll.duration_code
+               and a_sl.specified_level_code     = a_ll.specified_level_code
+               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and c_uc1.from_unit_code          = c_bp1.unit_code
+               and c_uc1.to_unit_code            = a_du1.display_unit_code
+               and a_ll.attribute_parameter_code is not null
+               and a_p2.parameter_code           = a_ll.attribute_parameter_code
+               and c_bp2.base_parameter_code     = a_p2.base_parameter_code
+               and c_pt2.parameter_type_code     = a_ll.attribute_parameter_type_code
+               and c_d2.duration_code            = a_ll.attribute_duration_code
+               and a_du2.unit_system             = a_du1.unit_system
+               and a_du2.parameter_code          = cwms_ts.get_display_parameter_code(c_bp2.base_parameter_id, a_p2.sub_parameter_id, c_o.office_id)
+               and c_uc2.from_unit_code          = c_bp2.unit_code
+               and c_uc2.to_unit_code            = a_du2.display_unit_code
+               and a_ll.location_level_value     is not null) 
+           union
+           (select c_o.office_id                                          as office_id,
+                   a_bl.base_location_id
+                   || substr('-', 1, length(a_pl.sub_location_id))
+                   || a_pl.sub_location_id                                as location_id,
+                   c_bp1.base_parameter_id
+                   || substr('-', 1, length(a_p1.sub_parameter_id))
+                   || a_p1.sub_parameter_id                               as parameter_id,
+                   c_pt1.parameter_type_id                                as parameter_type_id,
+                   c_d1.duration_id                                       as duration_id,
+                   a_sl.specified_level_id                                as specified_level_id,
                    c_bp2.base_parameter_id
-                   || substr('-', length(a_p2.sub_parameter_id))
-                   || a_p2.sub_parameter_id
-             end nulls first,
-             a_ll.location_level_date,
-             a_ll.attribute_value;
+                   || substr('-', 1, length(a_p2.sub_parameter_id))
+                   || a_p2.sub_parameter_id                               as attribute_parameter_id,
+                   c_pt2.parameter_type_id                                as attribute_parameter_type_id,
+                   c_d2.duration_id                                       as attribute_duration_id,
+                   a_ll.location_level_date                               as level_date,
+                   a_du1.unit_system                                      as unit_system,
+                   c_uc1.to_unit_id                                       as level_unit,
+                   c_uc2.to_unit_id                                       as attribute_unit,
+                   a_ll.attribute_value*c_uc2.factor+c_uc2.offset         as attribute_value,
+                   null                                                   as constant_level,
+                   a_ll.interval_origin                                   as interval_origin,
+                   a_ll.calendar_interval                                 as calendar_interval,
+                   a_ll.time_interval                                     as time_interval,
+                   a_ll.interpolate                                       as interpolate,
+                   a_sll.calendar_offset                                  as calendar_offset,
+                   a_sll.time_offset                                      as time_offset,
+                   a_sll.value*c_uc1.factor+c_uc1.offset                  as seasonal_level,
+                   a_ll.location_level_comment                            as level_comment,
+                   a_ll.attribute_comment                                 as attribute_comment
+              from at_location_level          a_ll,
+                   at_seasonal_location_level a_sll,
+                   at_specified_level         a_sl,
+                   at_physical_location       a_pl,
+                   at_base_location           a_bl,
+                   at_parameter               a_p1,
+                   at_parameter               a_p2,
+                   at_display_units           a_du1,
+                   at_display_units           a_du2,
+                   cwms_duration              c_d1,
+                   cwms_base_parameter        c_bp1,
+                   cwms_parameter_type        c_pt1,
+                   cwms_unit_conversion       c_uc1,
+                   cwms_duration              c_d2,
+                   cwms_base_parameter        c_bp2,
+                   cwms_parameter_type        c_pt2,
+                   cwms_unit_conversion       c_uc2,
+                   cwms_office                c_o
+             where a_pl.location_code            = a_ll.location_code
+               and a_bl.base_location_code       = a_pl.base_location_code
+               and c_o.office_code               = a_bl.db_office_code
+               and a_p1.parameter_code           = a_ll.parameter_code
+               and c_bp1.base_parameter_code     = a_p1.base_parameter_code
+               and c_pt1.parameter_type_code     = a_ll.parameter_type_code
+               and c_d1.duration_code            = a_ll.duration_code
+               and a_sl.specified_level_code     = a_ll.specified_level_code
+               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and c_uc1.from_unit_code          = c_bp1.unit_code
+               and c_uc1.to_unit_code            = a_du1.display_unit_code
+               and a_ll.attribute_parameter_code is not null
+               and a_p2.parameter_code           = a_ll.attribute_parameter_code
+               and c_bp2.base_parameter_code     = a_p2.base_parameter_code
+               and c_pt2.parameter_type_code     = a_ll.attribute_parameter_type_code
+               and c_d2.duration_code            = a_ll.attribute_duration_code
+               and a_du2.unit_system             = a_du1.unit_system
+               and a_du2.parameter_code          = cwms_ts.get_display_parameter_code(c_bp2.base_parameter_id, a_p2.sub_parameter_id, c_o.office_id)
+               and c_uc2.from_unit_code          = c_bp2.unit_code
+               and c_uc2.to_unit_code            = a_du2.display_unit_code
+               and a_ll.location_level_value     is null
+               and a_sll.location_level_code     = a_ll.location_level_code))
+  order by office_id,
+           location_id,
+           parameter_id,
+           parameter_type_id,
+           duration_id,
+           specified_level_id,
+           attribute_parameter_id,
+           level_date,
+           unit_system,
+           attribute_value;
 /
