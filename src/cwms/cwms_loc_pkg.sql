@@ -105,6 +105,38 @@ AS
    );
 
 --********************************************************************** -
+--.
+--  CREATE_LOCATION2 -
+--.
+--********************************************************************** -
+--
+   PROCEDURE create_location2 (
+      p_location_id          IN   VARCHAR2,
+      p_location_type        IN   VARCHAR2 DEFAULT NULL,
+      p_elevation            IN   NUMBER DEFAULT NULL,
+      p_elev_unit_id         IN   VARCHAR2 DEFAULT NULL,
+      p_vertical_datum       IN   VARCHAR2 DEFAULT NULL,
+      p_latitude             IN   NUMBER DEFAULT NULL,
+      p_longitude            IN   NUMBER DEFAULT NULL,
+      p_horizontal_datum     IN   VARCHAR2 DEFAULT NULL,
+      p_public_name          IN   VARCHAR2 DEFAULT NULL,
+      p_long_name            IN   VARCHAR2 DEFAULT NULL,
+      p_description          IN   VARCHAR2 DEFAULT NULL,
+      p_time_zone_id         IN   VARCHAR2 DEFAULT NULL,
+      p_county_name          IN   VARCHAR2 DEFAULT NULL,
+      p_state_initial        IN   VARCHAR2 DEFAULT NULL,
+      p_active               IN   VARCHAR2 DEFAULT NULL,
+      p_location_category_id IN   VARCHAR2 DEFAULT NULL,
+      p_map_label            IN   VARCHAR2 DEFAULT NULL,
+      p_published_latitude   IN   NUMBER DEFAULT NULL,
+      p_published_longitude  IN   NUMBER DEFAULT NULL,
+      p_bounding_office_id   IN   VARCHAR2 DEFAULT NULL,
+      p_nation_id            IN   VARCHAR2 DEFAULT NULL,
+      p_nearest_city         IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id         IN   VARCHAR2 DEFAULT NULL
+   );
+
+--********************************************************************** -
 --********************************************************************** -
 --.
 --  CREATE_LOCATION_RAW -
@@ -129,6 +161,40 @@ AS
       p_time_zone_code       IN       NUMBER DEFAULT NULL,
       p_county_code          IN       NUMBER DEFAULT NULL,
       p_active_flag          IN       VARCHAR2 DEFAULT 'T'
+   );
+
+--********************************************************************** -
+--.
+--  CREATE_LOCATION_RAW2 -
+--.
+--********************************************************************** -
+--
+   PROCEDURE create_location_raw2 (
+      p_base_location_code   OUT  NUMBER,
+      p_location_code        OUT  NUMBER,
+      p_base_location_id     IN   VARCHAR2,
+      p_sub_location_id      IN   VARCHAR2,
+      p_db_office_code       IN   NUMBER,
+      p_location_type        IN   VARCHAR2 DEFAULT NULL,
+      p_elevation            IN   NUMBER DEFAULT NULL,
+      p_vertical_datum       IN   VARCHAR2 DEFAULT NULL,
+      p_latitude             IN   NUMBER DEFAULT NULL,
+      p_longitude            IN   NUMBER DEFAULT NULL,
+      p_horizontal_datum     IN   VARCHAR2 DEFAULT NULL,
+      p_public_name          IN   VARCHAR2 DEFAULT NULL,
+      p_long_name            IN   VARCHAR2 DEFAULT NULL,
+      p_description          IN   VARCHAR2 DEFAULT NULL,
+      p_time_zone_code       IN   NUMBER DEFAULT NULL,
+      p_county_code          IN   NUMBER DEFAULT NULL,
+      p_active_flag          IN   VARCHAR2 DEFAULT 'T',
+      p_location_category_id IN   VARCHAR2 DEFAULT NULL,
+      p_map_label            IN   VARCHAR2 DEFAULT NULL,
+      p_published_latitude   IN   NUMBER DEFAULT NULL,
+      p_published_longitude  IN   NUMBER DEFAULT NULL,
+      p_bounding_office_id   IN   VARCHAR2 DEFAULT NULL,
+      p_nation_id            IN   VARCHAR2 DEFAULT NULL,
+      p_nearest_city         IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id         IN   VARCHAR2 DEFAULT NULL
    );
 
 --
@@ -194,6 +260,33 @@ AS
       p_active             IN   VARCHAR2 DEFAULT NULL,
       p_ignorenulls        IN   VARCHAR2 DEFAULT 'T',
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE update_location2 (
+      p_location_id          IN   VARCHAR2,
+      p_location_type        IN   VARCHAR2 DEFAULT NULL,
+      p_elevation            IN   NUMBER DEFAULT NULL,
+      p_elev_unit_id         IN   VARCHAR2 DEFAULT NULL,
+      p_vertical_datum       IN   VARCHAR2 DEFAULT NULL,
+      p_latitude             IN   NUMBER DEFAULT NULL,
+      p_longitude            IN   NUMBER DEFAULT NULL,
+      p_horizontal_datum     IN   VARCHAR2 DEFAULT NULL,
+      p_public_name          IN   VARCHAR2 DEFAULT NULL,
+      p_long_name            IN   VARCHAR2 DEFAULT NULL,
+      p_description          IN   VARCHAR2 DEFAULT NULL,
+      p_time_zone_id         IN   VARCHAR2 DEFAULT NULL,
+      p_county_name          IN   VARCHAR2 DEFAULT NULL,
+      p_state_initial        IN   VARCHAR2 DEFAULT NULL,
+      p_active               IN   VARCHAR2 DEFAULT NULL,
+      p_location_category_id IN   VARCHAR2 DEFAULT NULL,
+      p_map_label            IN   VARCHAR2 DEFAULT NULL,
+      p_published_latitude   IN   NUMBER DEFAULT NULL,
+      p_published_longitude  IN   NUMBER DEFAULT NULL,
+      p_bounding_office_id   IN   VARCHAR2 DEFAULT NULL,
+      p_nation_id            IN   VARCHAR2 DEFAULT NULL,
+      p_nearest_city         IN   VARCHAR2 DEFAULT NULL,
+      p_ignorenulls          IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id         IN   VARCHAR2 DEFAULT NULL
    );
 
 --
@@ -268,6 +361,33 @@ AS
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
 
+   PROCEDURE store_location2 (
+      p_location_id          IN   VARCHAR2,
+      p_location_type        IN   VARCHAR2 DEFAULT NULL,
+      p_elevation            IN   NUMBER DEFAULT NULL,
+      p_elev_unit_id         IN   VARCHAR2 DEFAULT NULL,
+      p_vertical_datum       IN   VARCHAR2 DEFAULT NULL,
+      p_latitude             IN   NUMBER DEFAULT NULL,
+      p_longitude            IN   NUMBER DEFAULT NULL,
+      p_horizontal_datum     IN   VARCHAR2 DEFAULT NULL,
+      p_public_name          IN   VARCHAR2 DEFAULT NULL,
+      p_long_name            IN   VARCHAR2 DEFAULT NULL,
+      p_description          IN   VARCHAR2 DEFAULT NULL,
+      p_time_zone_id         IN   VARCHAR2 DEFAULT NULL,
+      p_county_name          IN   VARCHAR2 DEFAULT NULL,
+      p_state_initial        IN   VARCHAR2 DEFAULT NULL,
+      p_active               IN   VARCHAR2 DEFAULT NULL,
+      p_location_category_id IN   VARCHAR2 DEFAULT NULL,
+      p_map_label            IN   VARCHAR2 DEFAULT NULL,
+      p_published_latitude   IN   NUMBER DEFAULT NULL,
+      p_published_longitude  IN   NUMBER DEFAULT NULL,
+      p_bounding_office_id   IN   VARCHAR2 DEFAULT NULL,
+      p_nation_id            IN   VARCHAR2 DEFAULT NULL,
+      p_nearest_city         IN   VARCHAR2 DEFAULT NULL,
+      p_ignorenulls          IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id         IN   VARCHAR2 DEFAULT NULL
+   );
+
    PROCEDURE retrieve_location (
       p_location_id        IN OUT   VARCHAR2,
       p_elev_unit_id       IN       VARCHAR2 DEFAULT 'm',
@@ -286,6 +406,33 @@ AS
       p_active             OUT      VARCHAR2,
       p_alias_cursor       OUT      sys_refcursor,
       p_db_office_id       IN       VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE retrieve_location2(
+      p_location_id          IN OUT   VARCHAR2,
+      p_elev_unit_id         IN       VARCHAR2 DEFAULT 'm',
+      p_location_type        OUT      VARCHAR2,
+      p_elevation            OUT      NUMBER,
+      p_vertical_datum       OUT      VARCHAR2,
+      p_latitude             OUT      NUMBER,
+      p_longitude            OUT      NUMBER,
+      p_horizontal_datum     OUT      VARCHAR2,
+      p_public_name          OUT      VARCHAR2,
+      p_long_name            OUT      VARCHAR2,
+      p_description          OUT      VARCHAR2,
+      p_time_zone_id         OUT      VARCHAR2,
+      p_county_name          OUT      VARCHAR2,
+      p_state_initial        OUT      VARCHAR2,
+      p_active               OUT      VARCHAR2,
+      p_location_category_id OUT      VARCHAR2,
+      p_map_label            OUT      VARCHAR2,
+      p_published_latitude   OUT      NUMBER,
+      p_published_longitude  OUT      NUMBER,
+      p_bounding_office_id   OUT      VARCHAR2,
+      p_nation_id            OUT      VARCHAR2,
+      p_nearest_city         OUT      VARCHAR2,
+      p_alias_cursor         OUT      sys_refcursor,
+      p_db_office_id         IN       VARCHAR2 DEFAULT NULL
    );
 
    --------------------------------------------------------------------------------
