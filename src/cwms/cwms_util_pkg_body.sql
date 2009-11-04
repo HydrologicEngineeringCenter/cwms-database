@@ -2579,6 +2579,9 @@ AS
 		RETURN i;
 	END;
    
+   -----------------------------------
+   -- function months_to_yminterval --
+   -----------------------------------
    function months_to_yminterval(
       p_months in integer) 
       return interval year to month 
@@ -2591,6 +2594,9 @@ AS
          || to_char(mod(p_months, 12)));
    end months_to_yminterval;
    
+   ------------------------------------
+   -- function minutes_to_dsinterval --
+   ------------------------------------
    function minutes_to_dsinterval(
       p_minutes in integer) 
       return interval day to second 
@@ -2605,6 +2611,9 @@ AS
          || to_char(mod(p_minutes, 60) || ': 00'));
    end minutes_to_dsinterval;
    
+   -----------------------------------
+   -- function yminterval_to_months --
+   -----------------------------------
    function yminterval_to_months(
       p_intvl in interval year to month) 
       return integer 
@@ -2625,6 +2634,76 @@ AS
              +      extract(minute from p_intvl);
    end dsinterval_to_minutes;
    
+   -----------------------------------
+   -- function parse_odbc_ts_string --
+   -----------------------------------
+   function parse_odbc_ts_string(
+      p_odbc_str in varchar2)
+      return date
+   is
+   begin
+      if p_odbc_str is null then
+         return null;
+      end if;
+      return to_date(p_odbc_str, odbc_ts_fmt);
+   exception
+      when others then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_odbc_str,
+            'ODBC timestamp format (' || odbc_ts_fmt || ')');
+   end parse_odbc_ts_string;
+
+   ----------------------------------
+   -- function parse_odbc_d_string --
+   ----------------------------------
+   function parse_odbc_d_string(
+      p_odbc_str in varchar2)
+      return date
+   is
+   begin
+      if p_odbc_str is null then
+         return null;
+      end if;
+      return to_date(p_odbc_str, odbc_d_fmt);
+   exception
+      when others then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_odbc_str,
+            'ODBC date format (' || odbc_d_fmt || ')');
+   end parse_odbc_d_string;
+
+   ----------------------------------------
+   -- function parse_odbc_ts_or_d_string --
+   ----------------------------------------
+   function parse_odbc_ts_or_d_string(
+      p_odbc_str in varchar2)
+      return date
+   is
+      l_date date;
+   begin
+      if p_odbc_str is null then
+         return null;
+      end if;
+      l_date := parse_odbc_ts_string(p_odbc_str);
+   exception
+      when others then
+         begin
+            l_date := parse_odbc_d_string(p_odbc_str);
+         exception
+            when others then
+               cwms_err.raise(
+                  'INVALID_ITEM',
+                  p_odbc_str,
+                  'ODBC timestamp or date format ('
+                  || odbc_ts_fmt
+                  || ', '
+                  || ')');
+         end;
+      return l_date;
+   end parse_odbc_ts_or_d_string;
+
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call

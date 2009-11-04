@@ -61,6 +61,8 @@ AS
 	mv_pause_timeout_interval CONSTANT	 INTERVAL DAY TO SECOND := '0 0:30:0';
 	mv_pause_job_run_interval CONSTANT	 NUMBER := 60;
 	-- minutes
+   odbc_ts_fmt constant varchar2(50) := '"{ts ''"yyyy-mm-dd hh24:mi:ss"''}"';
+   odbc_d_fmt  constant varchar2(50) := '"{d ''"yyyy-mm-dd"''}"';
 	-- CWMS_PRIVILEGES...
 	read_privilege CONSTANT 				 NUMBER := 4;
 	write_privilege CONSTANT				 NUMBER := 2;
@@ -484,7 +486,19 @@ AS
    function dsinterval_to_minutes(
       p_intvl in interval day to second) 
       return integer;
-   
+      
+   function parse_odbc_ts_string(
+      p_odbc_str in varchar2)
+      return date;
+
+   function parse_odbc_d_string(
+      p_odbc_str in varchar2)
+      return date;
+
+   function parse_odbc_ts_or_d_string(
+      p_odbc_str in varchar2)
+      return date;
+
 END cwms_util;
 /
 
