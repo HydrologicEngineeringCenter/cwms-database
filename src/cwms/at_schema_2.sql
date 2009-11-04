@@ -32,7 +32,8 @@ CREATE OR REPLACE VIEW av_loc (location_code,
                                nearest_city
                               )
 AS
-   SELECT apl.location_code, abl.base_location_code,
+   SELECT DISTINCT
+          apl.location_code, abl.base_location_code,
           co.office_id db_office_id, abl.base_location_id,
           apl.sub_location_id,
              abl.base_location_id
