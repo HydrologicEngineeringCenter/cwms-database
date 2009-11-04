@@ -350,6 +350,46 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 --*******************************************************************   --
 --*******************************************************************   --
 --
+-- GET_DISPLAY_PARAMETER_CODE -
+--
+   FUNCTION get_display_parameter_code (p_base_parameter_id IN VARCHAR2,
+                                        p_sub_parameter_id IN VARCHAR2,
+                                        p_office_id IN VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER
+   IS
+      l_display_parameter_code number := null;
+      l_parameter_code         number := null;
+      l_count                  integer;
+   BEGIN
+      l_parameter_code := get_parameter_code(p_base_parameter_id,
+                                             p_sub_parameter_id,
+                                             p_office_id);
+      select count(*)
+        into l_count
+        from at_display_units
+       where parameter_code = l_parameter_code;
+      if l_count = 0 then
+         l_parameter_code := get_parameter_code(p_base_parameter_id,
+                                                null,
+                                                p_office_id);
+         select count(*)
+           into l_count
+           from at_display_units
+          where parameter_code = l_parameter_code;
+         if l_count > 0 then
+            l_display_parameter_code := l_parameter_code;
+         end if;                                                    
+      else
+         l_display_parameter_code := l_parameter_code;
+      end if;
+      
+      return l_display_parameter_code;                                                    
+   END;
+--
+--*******************************************************************   --
+--*******************************************************************   --
+--
 -- GET_PARAMETER_CODE -
 --
    FUNCTION get_parameter_code (
