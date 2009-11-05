@@ -398,7 +398,7 @@ AS
       l_ret                    NUMBER;
       l_base_loc_exists        BOOLEAN := TRUE;
       l_sub_loc_exists         BOOLEAN := TRUE;
-      l_nation_id              varchar2(48) := nvl(p_nation_id, 'UNITED_STATES');
+      l_nation_id              varchar2(48) := nvl(p_nation_id, 'UNITED STATES');
       l_bounding_office_id     varchar2(16);
       l_location_category_code number;
       l_bounding_office_code   number := null;
