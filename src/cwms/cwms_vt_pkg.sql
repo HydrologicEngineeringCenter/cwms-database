@@ -1,5 +1,6 @@
+SET define off
 /* Formatted on 2008/07/17 07:19 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE PACKAGE cwms_20.cwms_vt
+CREATE OR REPLACE PACKAGE cwms_vt
 AS
 /******************************************************************************
    NAME:       CWMS_VAL

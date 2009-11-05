@@ -73,7 +73,7 @@ logFileName["BUILDCWMS"] = "buildCwms.lst"
 logFileName["DROPCWMS"]  = "dropCwms.lst"
 #logFileName["DROPUSER"]  = "dropCwmsPd.lst"
 
-cwmsTableSpaceName = "%sDATA" % user
+cwmsTableSpaceName = "CWMS_20DATA"
 #userTableSpaceName = "%sCWMSDATA" % user
 #tsTableSpaceName = "%sCWMSTS" % user
 #userSchema = "%sCWMSPD" % user
@@ -5355,39 +5355,39 @@ clear
 
 DECLARE
     test_passwd  VARCHAR2 (50) := :test_passwd;
-    group_list   cwms_20.char_32_array_type;
+    group_list   "&cwms_schema"."CHAR_32_ARRAY_TYPE";
 BEGIN
     -- hectest
-    group_list := cwms_20.char_32_array_type ('TS ID Creator', 'CWMS Users');
-    cwms_20.cwms_sec.create_user ('&eroc.hectest', test_passwd, group_list, '&office_id');
+    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('TS ID Creator', 'CWMS Users');
+    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest', test_passwd, group_list, '&office_id');
     --
     -- hectest_ro
-    group_list := cwms_20.char_32_array_type ('TS ID Creator', 'CWMS Users', 'Viewer Users');
-    cwms_20.cwms_sec.create_user ('&eroc.hectest_ro', test_passwd, group_list, '&office_id');
+    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('TS ID Creator', 'CWMS Users', 'Viewer Users');
+    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ro', test_passwd, group_list, '&office_id');
     --
     -- hectest_dba
-    group_list := cwms_20.char_32_array_type ('CWMS DBA Users');
-    cwms_20.cwms_sec.create_user ('&eroc.hectest_db', test_passwd, group_list, '&office_id');
+    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS DBA Users');
+    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_db', test_passwd, group_list, '&office_id');
     --
     -- hectest_ua
-    group_list := cwms_20.char_32_array_type ('CWMS User Admins', 'TS ID Creator', 'Viewer Users');
-    cwms_20.cwms_sec.create_user ('&eroc.hectest_ua', test_passwd, group_list, '&office_id');
+    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'TS ID Creator', 'Viewer Users');
+    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ua', test_passwd, group_list, '&office_id');
     --
     -- hectest_dx
-    group_list := cwms_20.char_32_array_type ('Data Exchange Mgr', 'TS ID Creator', 'CWMS Users');
-    cwms_20.cwms_sec.create_user ('&eroc.hectest_dx', test_passwd, group_list, '&office_id');
+    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Exchange Mgr', 'TS ID Creator', 'CWMS Users');
+    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_dx', test_passwd, group_list, '&office_id');
     --
     -- hectest_da
-    group_list := cwms_20.char_32_array_type ('Data Acquisition Mgr', 'TS ID Creator', 'CWMS Users');
-    cwms_20.cwms_sec.create_user ('&eroc.hectest_da', test_passwd, group_list, '&office_id');
+    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Acquisition Mgr', 'TS ID Creator', 'CWMS Users');
+    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_da', test_passwd, group_list, '&office_id');
     --
     -- hectest_vt
-    group_list := cwms_20.char_32_array_type ('VT Mgr', 'TS ID Creator', 'CWMS Users');
-    cwms_20.cwms_sec.create_user ('&eroc.hectest_vt', test_passwd, group_list, '&office_id');
+    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('VT Mgr', 'TS ID Creator', 'CWMS Users');
+    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_vt', test_passwd, group_list, '&office_id');
     --
     -- hectest_dv
-    group_list := cwms_20.char_32_array_type ('Data Acquisition Mgr', 'VT Mgr', 'TS ID Creator', 'CWMS Users');
-    cwms_20.cwms_sec.create_user ('&eroc.hectest_dv', test_passwd, group_list, '&office_id');
+    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Acquisition Mgr', 'VT Mgr', 'TS ID Creator', 'CWMS Users');
+    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_dv', test_passwd, group_list, '&office_id');
 
 END;
 /
@@ -5414,15 +5414,15 @@ clear
 
 DECLARE
     dbi_passwd      VARCHAR2 (50) := :dbi_passwd;
-    group_list      cwms_20.char_32_array_type := cwms_20.char_32_array_type('CWMS PD Users');
+    group_list      "&cwms_schema"."CHAR_32_ARRAY_TYPE" := "&cwms_schema"."CHAR_32_ARRAY_TYPE"('CWMS PD Users');
 BEGIN
-    cwms_20.cwms_sec.create_cwmsdbi_db_user('&eroc.cwmsdbi', dbi_passwd, '&office_id');
+    "&cwms_schema"."CWMS_SEC"."CREATE_CWMSDBI_DB_USER"('&eroc.cwmsdbi', dbi_passwd, '&office_id');
 
-    cwms_20.cwms_sec.create_user ('&eroc.cwmspd', NULL, group_list, '&office_id');
+    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.cwmspd', NULL, group_list, '&office_id');
     
-    cwms_20.cwms_sec.assign_ts_group_user_group ('All Rev TS IDs', 'Viewer Users', 'Read', '&office_id');
+    "&cwms_schema"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All Rev TS IDs', 'Viewer Users', 'Read', '&office_id');
     
-    cwms_20.cwms_sec.assign_ts_group_user_group ('All TS IDs', 'CWMS Users', 'Read-Write', '&office_id');
+    "&cwms_schema"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All TS IDs', 'CWMS Users', 'Read-Write', '&office_id');
 
 END;
 /
@@ -5484,7 +5484,7 @@ prompt
 accept echo_state  char prompt 'Enter ON or OFF for echo         : '
 accept inst        char prompt 'Enter the database SID           : '
 accept sys_passwd  char prompt 'Enter the password for SYS       : '
-accept cwms_passwd char prompt 'Enter the password for CWMS_20   : '
+accept cwms_passwd char prompt 'Enter the password for &cwms_schema   : '
 accept dbi_passwd  char prompt 'Enter the password for %scwmsdbi : '
 '''
 
@@ -7261,7 +7261,7 @@ ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK4 FOREIGN KEY (TO_UNIT_ID, ABSTRACT_P
 CREATE UNIQUE INDEX CWMS_UNIT_CONVERSION_U01 ON CWMS_UNIT_CONVERSION
 (FROM_UNIT_CODE, TO_UNIT_CODE)
 LOGGING
-TABLESPACE CWMS_20DATA
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -8376,7 +8376,7 @@ ALTER TABLE AT_DISPLAY_UNITS ADD (
  PRIMARY KEY
  (DB_OFFICE_CODE, PARAMETER_CODE, UNIT_SYSTEM)
     USING INDEX 
-    TABLESPACE CWMS_20DATA
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -8454,7 +8454,7 @@ CREATE TABLE @TABLE
    CATEGORY_ID   VARCHAR2(32)   NOT NULL,
    DESCRIPTION   VARCHAR2(256)
 )
-TABLESPACE CWMS_20DATA
+tablespace CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -8509,7 +8509,7 @@ CREATE TABLE @TABLE
    METHOD_ID   VARCHAR2(32)  NOT NULL,
    DESCRIPTION VARCHAR2(256)
 )
-TABLESPACE CWMS_20DATA
+tablespace CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -8567,7 +8567,7 @@ CREATE TABLE @TABLE
    TRANSMIT_METHOD     NUMBER(10), 
    DESCRIPTION         VARCHAR2(256)
 )
-TABLESPACE CWMS_20DATA
+tablespace CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -8600,7 +8600,7 @@ ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (TRANSMIT_METHOD) REFER
 --
 CREATE UNIQUE INDEX @TABLE_U1 ON @TABLE (UPPER(GAGE_TYPE_ID))
 LOGGING
-TABLESPACE CWMS_20DATA
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -8650,7 +8650,7 @@ CREATE TABLE @TABLE
    NATION_CODE VARCHAR2(2)  NOT NULL,
    NATION_ID   VARCHAR2(48) NOT NULL
 )
-TABLESPACE CWMS_20DATA
+tablespace CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -8721,7 +8721,7 @@ CREATE TABLE @TABLE
   STREAM_TYPE_ID     VARCHAR2(32)  NOT NULL,
   DESCRIPTION        VARCHAR2(256)
 )
-TABLESPACE CWMS_20DATA
+tablespace CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1

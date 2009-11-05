@@ -1,4 +1,5 @@
-CREATE OR REPLACE package body CWMS_20.cwms_rating as
+SET define on
+CREATE OR REPLACE package body cwms_rating as
 
 /******************************************************************************
 *   Name:       CWMS_RATING 

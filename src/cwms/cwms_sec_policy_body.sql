@@ -1,3 +1,5 @@
+SET define on
+@@defines.sql
 /* Formatted on 2007/01/08 15:21 (Formatter Plus v4.8.8) */
 CREATE OR REPLACE PACKAGE BODY cwms_sec_policy
 AS
@@ -15,7 +17,7 @@ AS
    IS
       l_predicate   VARCHAR2 (2000);
    BEGIN
-      IF SYS_CONTEXT ('USERENV', 'SESSION_USER') = 'CWMS_20'
+      IF SYS_CONTEXT ('USERENV', 'SESSION_USER') = '&cwms_schema'
       THEN
          l_predicate := '1=1';
       ELSE
@@ -32,7 +34,7 @@ AS
    IS
       l_predicate   VARCHAR2 (2000);
    BEGIN
-      IF SYS_CONTEXT ('USERENV', 'SESSION_USER') = 'CWMS_20'
+      IF SYS_CONTEXT ('USERENV', 'SESSION_USER') = '&cwms_schema'
       THEN
          l_predicate := '1=1';
       ELSE

@@ -10,7 +10,7 @@ whenever sqlerror exit sql.sqlcode
 --
 @@py_prompt
  
-spool buildCWMS_20_DB.log
+spool buildCWMS_DB.log
 --
 -- log on as sysdba
 --
@@ -35,13 +35,14 @@ whenever sqlerror exit sql.sqlcode
 @@cwms_dba/cwms_user_admin_pkg
 @@cwms_dba/cwms_user_admin_pkg_body
 --
-grant execute on  cwms_dba.cwms_user_admin to cwms_20;
+set define on
+grant execute on  cwms_dba.cwms_user_admin to &cwms_schema;
 grant execute on  dbms_crypto to cwms_user;
 
 --
--- switch to CWMS_20 schema
+-- switch to cwms_schema 
 --
-alter session set current_schema = cwms_20;
+alter session set current_schema = &cwms_schema;
 
 --
 -- structure that can be built without the CWMS API,
@@ -85,14 +86,14 @@ alter session set current_schema = cwms_20;
 ---
 set define on
 @@py_ErocUsers
-set define off
+
 
 alter session set current_schema = sys;
 set serveroutput on
-set echo off
+set echo on
 --
 --
--- create public synonyms for CWMS_20 packages and views
+-- create public synonyms for CWMS schema packages and views
 -- grant execute on packages to CWMS_USER role
 -- grant select on view to CWMS_USER role
 --
@@ -107,12 +108,12 @@ declare
    view_synonym varchar2(32);
 begin
    --
-   -- collect CWMS_20 packages except for security
+   -- collect CWMS schema packages except for security
    --
    for rec in (
       select object_name 
         from dba_objects 
-       where owner = 'CWMS_20' 
+       where owner = '&cwms_schema' 
          and object_type = 'PACKAGE')
    loop
       if instr(rec.object_name, '_SEC_') = 0 then
@@ -121,12 +122,12 @@ begin
       end if;
    end loop;
    --
-   -- collect CWMS_20 views except for security
+   -- collect CWMS schema views except for security
    --
    for rec in (
       select object_name 
         from dba_objects 
-       where owner = 'CWMS_20'
+       where owner = '&cwms_schema'
          and object_type like '%VIEW'
          and regexp_like(object_name, '^[AM]V_')) 
    loop
@@ -136,23 +137,25 @@ begin
       end if;
    end loop;
    --
-   -- collect CWMS_20 object types
+   -- collect CWMS schema object types
    --
    for rec in (
       select object_name 
         from dba_objects 
-       where owner = 'CWMS_20'
+       where owner = '&cwms_schema'
          and object_type = 'TYPE'
          and object_name not like 'SYS_%')
    loop
       type_names.extend;
       type_names(type_names.last) := rec.object_name;
    end loop;
+   
+
    --
    -- create public synonyms for collected packages
    --
    for i in 1..package_names.count loop
-      sql_statement := 'CREATE OR REPLACE PUBLIC SYNONYM '||package_names(i)||' FOR CWMS_20.'||package_names(i);
+      sql_statement := 'CREATE OR REPLACE PUBLIC SYNONYM '||package_names(i)||' FOR &cwms_schema'||'.'||package_names(i);
       dbms_output.put_line('-- ' || sql_statement);
       execute immediate sql_statement;
    end loop;
@@ -161,7 +164,7 @@ begin
    --
    for i in 1..view_names.count loop
       view_synonym := regexp_replace(view_names(i), '^[AM]V_(CWMS_)*', 'CWMS_V_');
-      sql_statement := 'CREATE OR REPLACE PUBLIC SYNONYM '||view_synonym||' FOR CWMS_20.'||view_names(i);
+      sql_statement := 'CREATE OR REPLACE PUBLIC SYNONYM '||view_synonym||' FOR &cwms_schema'||'.'||view_names(i);
       dbms_output.put_line('-- ' || sql_statement);
       execute immediate sql_statement;
    end loop;
@@ -170,7 +173,7 @@ begin
    --
    dbms_output.put_line('--');
    for i in 1..package_names.count loop
-      sql_statement := 'GRANT EXECUTE ON CWMS_20.'||package_names(i)||' TO CWMS_USER';
+      sql_statement := 'GRANT EXECUTE ON &cwms_schema'||'.'||package_names(i)||' TO CWMS_USER';
       dbms_output.put_line('-- ' || sql_statement);
       execute immediate sql_statement;
    end loop;
@@ -179,7 +182,7 @@ begin
    --
    dbms_output.put_line('--');
    for i in 1..type_names.count loop
-      sql_statement := 'GRANT EXECUTE ON CWMS_20.'||type_names(i)||' TO CWMS_USER';
+      sql_statement := 'GRANT EXECUTE ON &cwms_schema'||'.'||type_names(i)||' TO CWMS_USER';
       dbms_output.put_line('-- ' || sql_statement);
       execute immediate sql_statement;
    end loop;
@@ -188,7 +191,7 @@ begin
    --
    dbms_output.put_line('--');
    for i in 1..view_names.count loop
-      sql_statement := 'GRANT SELECT ON CWMS_20.'||view_names(i)||' TO CWMS_USER';
+      sql_statement := 'GRANT SELECT ON &cwms_schema'||'.'||view_names(i)||' TO CWMS_USER';
       dbms_output.put_line('-- ' || sql_statement);
       execute immediate sql_statement;
    end loop;
@@ -198,25 +201,26 @@ end;
 --
 -- compile all invalid objects
 --
-alter materialized view cwms_20.mv_sec_ts_privileges compile
+SET define on
+alter materialized view "&cwms_schema"."MV_SEC_TS_PRIVILEGES" compile
 /
 
 set echo off
 prompt Invalid objects...
   select substr(object_name, 1, 31) "INVALID OBJECT", object_type 
     from dba_objects 
-   where owner = 'CWMS_20' 
+   where owner = '&cwms_schema' 
      and status = 'INVALID'
 order by object_name, object_type asc;
 
 prompt Recompiling all invalid objects...
-exec utl_recomp.recomp_serial('CWMS_20');
+exec utl_recomp.recomp_serial('&cwms_schema');
 /
 
 prompt Remaining invalid objects...
   select substr(object_name, 1, 31) "INVALID OBJECT", object_type 
     from dba_objects 
-   where owner = 'CWMS_20' 
+   where owner = '&cwms_schema' 
      and status = 'INVALID'
 order by object_name, object_type asc;
 
@@ -226,7 +230,7 @@ begin
    select count(*)
      into obj_count
      from dba_objects
-    where owner = 'CWMS_20' 
+    where owner = '&cwms_schema' 
       and status = 'INVALID';
    if obj_count > 0 then
       dbms_output.put_line('' || obj_count || ' objects are still invalid.');
@@ -240,10 +244,10 @@ end;
 
 set echo off
 --
--- log on as the CWMS_20 user and start queues and jobs
+-- log on as the CWMS schema user and start queues and jobs
 --
 set define on
-connect cwms_20/&cwms_passwd@&inst
+connect &cwms_schema/&cwms_passwd@&inst
 set serveroutput on
 --------------------------------------
 -- create and start queues and jobs --

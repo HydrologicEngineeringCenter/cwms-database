@@ -1,3 +1,4 @@
+@@defines.sql
 
 declare
    type id_array_t is table of varchar2(32);
@@ -32,9 +33,8 @@ CREATE MATERIALIZED VIEW LOG ON cwms_unit            WITH ROWID;
 CREATE MATERIALIZED VIEW LOG ON cwms_abstract_parameter            WITH ROWID;
 
 
-SET DEFINE OFF;
 
-CREATE MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID 
+CREATE MATERIALIZED VIEW "&cwms_schema"."MV_CWMS_TS_ID" 
 TABLESPACE CWMS_20AT_DATA
 NOCACHE
 LOGGING
@@ -109,15 +109,17 @@ SELECT abl.db_office_code, abl.base_location_code,
    AND l.base_location_code = abl.base_location_code
    AND s.delete_date IS NULL;
 
-COMMENT ON MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID IS 'snapshot table for snapshot CWMS_20.MV_CWMS_TS_ID';
+SET define on
+COMMENT ON MATERIALIZED VIEW "&cwms_schema"."MV_CWMS_TS_ID" IS 'snapshot table for snapshot MV_CWMS_TS_ID';
 
-CREATE UNIQUE INDEX CWMS_20.MV_CWMS_TS_ID_UK1 ON CWMS_20.MV_CWMS_TS_ID
+
+CREATE UNIQUE INDEX "&cwms_schema"."MV_CWMS_TS_ID_UK1" ON "&cwms_schema"."MV_CWMS_TS_ID"
 (UPPER("DB_OFFICE_ID"), UPPER("CWMS_TS_ID"))
 LOGGING
 TABLESPACE CWMS_20AT_DATA
 NOPARALLEL;
 
-CREATE UNIQUE INDEX CWMS_20.MV_CWMS_TS_ID_PK ON CWMS_20.MV_CWMS_TS_ID
+CREATE UNIQUE INDEX "&cwms_schema"."MV_CWMS_TS_ID_PK" ON "&cwms_schema"."MV_CWMS_TS_ID"
 (DB_OFFICE_ID, CWMS_TS_ID)
 LOGGING
 TABLESPACE CWMS_20AT_DATA

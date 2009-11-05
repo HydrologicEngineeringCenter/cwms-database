@@ -3,7 +3,9 @@
 This script should be run by the cwms schema owner.
 */
 SET serveroutput on
-SET define off
+SET define on
+@@defines.sql
+
 ----------------------------------------------------
 -- drop tables, mviews & mview logs if they exist --
 ----------------------------------------------------
@@ -66,7 +68,7 @@ CREATE TABLE at_ts_table_properties
 )
 ORGANIZATION INDEX
 LOGGING
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -113,7 +115,7 @@ CREATE TABLE at_base_location
   base_location_id    VARCHAR2(16 BYTE)         NOT NULL,
   active_flag         VARCHAR2(1 BYTE)
 )
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -140,7 +142,7 @@ COMMENT ON COLUMN at_base_location.active_flag IS 'T or F';
 CREATE UNIQUE INDEX at_base_location_pk ON at_base_location
 (base_location_code)
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -158,7 +160,7 @@ NOPARALLEL
 CREATE UNIQUE INDEX at_base_location_idx1 ON at_base_location
 (db_office_code, UPPER("BASE_LOCATION_ID"))
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -186,7 +188,7 @@ ALTER TABLE at_base_location ADD (
  PRIMARY KEY
  (base_location_code)
     USING INDEX
-    TABLESPACE cwms_20data
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -368,7 +370,7 @@ DELETE FROM USER_SDO_GEOM_METADATA WHERE TABLE_NAME='AT_GEOGRAPHIC_LOCATION';
 DELETE FROM MDSYS.SDO_GEOM_METADATA_TABLE WHERE SDO_TABLE_NAME='AT_GEOGRAPHIC_LOCATION';
 
 INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
-   'CWMS_20',
+   '&cwms_schema',
    'AT_GEOGRAPHIC_LOCATION',
    'POINT',
    SDO_DIM_ARRAY(
@@ -380,7 +382,7 @@ INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
      WHERE CS_NAME='WGS 84 (geographic 3D)'));
 
 INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
-   'CWMS_20',
+   '&cwms_schema',
    'AT_GEOGRAPHIC_LOCATION',
    'MULTI_POINT',
    SDO_DIM_ARRAY(
@@ -392,7 +394,7 @@ INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
      WHERE CS_NAME='WGS 84 (geographic 3D)'));
 
 INSERT INTO MDSYS.SDO_GEOM_METADATA_TABLE VALUES (
-   'CWMS_20',
+   '&cwms_schema',
    'AT_GEOGRAPHIC_LOCATION',
    'POLYGON',
    SDO_DIM_ARRAY(
@@ -1138,6 +1140,7 @@ CREATE TABLE AT_FORECAST
    FORECAST_TYPE       VARCHAR2(5),
    MISSING_LIMIT       NUMBER(4)
 )
+TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -1301,7 +1304,7 @@ CREATE TABLE at_loc_category
   db_office_code     NUMBER                     NOT NULL,
   loc_category_desc  VARCHAR2(128 BYTE)
 )
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -1323,7 +1326,7 @@ MONITORING
 CREATE UNIQUE INDEX at_loc_category_name_pk ON at_loc_category
 (loc_category_code)
 LOGGING
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1340,7 +1343,7 @@ NOPARALLEL
 CREATE UNIQUE INDEX at_loc_category_name_u1 ON at_loc_category
 (UPPER("LOC_CATEGORY_ID"), db_office_code)
 LOGGING
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1359,7 +1362,7 @@ ALTER TABLE at_loc_category ADD (
  PRIMARY KEY
  (loc_category_code)
     USING INDEX
-    TABLESPACE cwms_20at_data
+    TABLESPACE CWMS_20AT_DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -1395,7 +1398,7 @@ CREATE TABLE at_loc_group
   loc_group_desc     VARCHAR2(128 BYTE),
   db_office_code     NUMBER                     NOT NULL
 )
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -1417,7 +1420,7 @@ MONITORING
 CREATE UNIQUE INDEX at_loc_groups_pk ON at_loc_group
 (loc_group_code)
 LOGGING
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1434,7 +1437,7 @@ NOPARALLEL
 CREATE UNIQUE INDEX at_loc_groups_u1 ON at_loc_group
 (loc_category_code, UPPER("LOC_GROUP_ID"))
 LOGGING
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1453,7 +1456,7 @@ ALTER TABLE at_loc_group ADD (
  PRIMARY KEY
  (loc_group_code)
     USING INDEX
-    TABLESPACE cwms_20at_data
+    TABLESPACE CWMS_20AT_DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -1494,7 +1497,7 @@ CREATE TABLE at_loc_group_assignment
   loc_group_code  NUMBER,
   loc_alias_id    VARCHAR2(128 BYTE)
 )
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -1516,7 +1519,7 @@ MONITORING
 CREATE UNIQUE INDEX at_loc_group_assignment_pk ON at_loc_group_assignment
 (location_code, loc_group_code)
 LOGGING
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1535,7 +1538,7 @@ ALTER TABLE at_loc_group_assignment ADD (
  PRIMARY KEY
  (location_code, loc_group_code)
     USING INDEX
-    TABLESPACE cwms_20at_data
+    TABLESPACE CWMS_20AT_DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -1598,7 +1601,7 @@ CREATE TABLE at_cwms_ts_spec
   delete_date          DATE,
   data_source          VARCHAR2(16 BYTE)
 )
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -1633,7 +1636,7 @@ CREATE UNIQUE INDEX at_cwms_ts_spec_ui ON at_cwms_ts_spec
 (location_code, parameter_type_code, parameter_code, interval_code,
 duration_code, UPPER("VERSION"), delete_date)
 LOGGING
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1651,7 +1654,7 @@ NOPARALLEL
 CREATE UNIQUE INDEX at_cwms_ts_spec_pk ON at_cwms_ts_spec
 (ts_code)
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1682,7 +1685,7 @@ ALTER TABLE at_cwms_ts_spec ADD (
  PRIMARY KEY
  (ts_code)
     USING INDEX
-    TABLESPACE cwms_20data
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -1740,7 +1743,7 @@ CREATE TABLE at_screening
   active_flag        VARCHAR2(1 BYTE),
   resultant_ts_code  NUMBER
 )
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -1764,7 +1767,7 @@ COMMENT ON COLUMN at_screening.active_flag IS 'T of F';
 CREATE UNIQUE INDEX at_screening_pk ON at_screening
 (ts_code)
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1783,7 +1786,7 @@ ALTER TABLE at_screening ADD (
  PRIMARY KEY
  (ts_code)
     USING INDEX
-    TABLESPACE cwms_20data
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -1812,7 +1815,7 @@ CREATE TABLE at_alarm
   alarm_code   NUMBER                           NOT NULL,
   active_flag  VARCHAR2(1 BYTE)
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -1836,7 +1839,7 @@ COMMENT ON COLUMN at_alarm.active_flag IS 'T or F';
 CREATE UNIQUE INDEX at_alarm_pk ON at_alarm
 (ts_code)
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1855,7 +1858,7 @@ ALTER TABLE at_alarm ADD (
  PRIMARY KEY
  (ts_code)
     USING INDEX
-    TABLESPACE cwms_20data
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -1886,7 +1889,7 @@ CREATE TABLE at_comp_vt
   exchange_set_post_raw  VARCHAR2(32 BYTE),
   exchange_set_post_rev  VARCHAR2(32 BYTE)
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -1908,7 +1911,7 @@ MONITORING
 CREATE UNIQUE INDEX at_comp_vt_pk ON at_comp_vt
 (comp_vt_code)
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1925,7 +1928,7 @@ NOPARALLEL
 CREATE UNIQUE INDEX at_comp_vt_u01 ON at_comp_vt
 (comp_vt_id, db_office_code)
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1944,7 +1947,7 @@ ALTER TABLE at_comp_vt ADD (
  PRIMARY KEY
  (comp_vt_code)
     USING INDEX
-    TABLESPACE cwms_20data
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -1960,7 +1963,7 @@ ALTER TABLE at_comp_vt ADD (
   CONSTRAINT at_comp_vt_u01
  UNIQUE (comp_vt_id, db_office_code)
     USING INDEX
-    TABLESPACE cwms_20data
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -1996,7 +1999,7 @@ CREATE TABLE at_transform_criteria
   call_seq_interval_conversion  NUMBER,
   resultant_ts_code             NUMBER
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -2018,7 +2021,7 @@ MONITORING
 CREATE UNIQUE INDEX at_transform_criteria_pk ON at_transform_criteria
 (ts_code)
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -2035,7 +2038,7 @@ NOPARALLEL
 CREATE UNIQUE INDEX at_transform_criteria_u02 ON at_transform_criteria
 (resultant_ts_code)
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -2054,7 +2057,7 @@ ALTER TABLE at_transform_criteria ADD (
  PRIMARY KEY
  (ts_code)
     USING INDEX
-    TABLESPACE cwms_20data
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -2070,7 +2073,7 @@ ALTER TABLE at_transform_criteria ADD (
   CONSTRAINT at_transform_criteria_u02
  UNIQUE (resultant_ts_code)
     USING INDEX
-    TABLESPACE cwms_20data
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -2109,7 +2112,7 @@ CREATE TABLE at_unit_alias
   db_office_code  NUMBER                  NOT NULL,
   unit_code       NUMBER(10)                    NOT NULL
 )
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -2141,7 +2144,7 @@ COMMENT ON COLUMN at_unit_alias.unit_code IS 'Foreign key referencing CWMS_UNIT 
 CREATE UNIQUE INDEX at_unit_alias_pk ON at_unit_alias
 (alias_id, db_office_code)
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -2162,7 +2165,7 @@ ALTER TABLE at_unit_alias ADD CONSTRAINT at_unit_alias_r02 FOREIGN KEY (db_offic
 ALTER TABLE at_unit_alias ADD CONSTRAINT fk_at_unit_alias  FOREIGN KEY (unit_code) REFERENCES cwms_unit (unit_code);
 ALTER TABLE at_unit_alias ADD CONSTRAINT at_unit_alias_pk  PRIMARY KEY (alias_id, db_office_code)
     USING INDEX
-    TABLESPACE cwms_20data
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -2184,7 +2187,7 @@ CREATE TABLE at_user_preferences
   display_format_lat_long  VARCHAR2(3 BYTE),
   display_unit_system      VARCHAR2(2 BYTE)
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -2206,7 +2209,7 @@ MONITORING
 CREATE UNIQUE INDEX at_user_preferences_pk ON at_user_preferences
 (db_office_code, username)
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -2225,7 +2228,7 @@ ALTER TABLE at_user_preferences ADD (
  PRIMARY KEY
  (db_office_code, username)
     USING INDEX
-    TABLESPACE cwms_20data
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -2252,7 +2255,7 @@ CREATE TABLE at_office_settings
   display_lat_long_format  VARCHAR2(3 BYTE),
   display_unit_system      VARCHAR2(2 BYTE)
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -2274,7 +2277,7 @@ MONITORING
 CREATE UNIQUE INDEX at_office_settings_pk ON at_office_settings
 (db_office_code)
 LOGGING
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -2293,7 +2296,7 @@ ALTER TABLE at_office_settings ADD (
  PRIMARY KEY
  (db_office_code)
     USING INDEX
-    TABLESPACE cwms_20data
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -2316,6 +2319,7 @@ CREATE TABLE at_properties
         prop_value     VARCHAR2(256),
         prop_comment   VARCHAR2(256)
     )
+	TABLESPACE CWMS_20AT_DATA
     LOGGING
     NOCOMPRESS
     NOCACHE
@@ -2375,7 +2379,7 @@ CREATE TABLE at_report_templates
   record_template  VARCHAR2(4000 BYTE),
   footer_template  VARCHAR2(4000 BYTE)
 )
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -2412,7 +2416,7 @@ ALTER TABLE at_report_templates ADD
 (
   PRIMARY KEY (ID)
   USING INDEX
-  TABLESPACE cwms_20at_data
+  TABLESPACE CWMS_20AT_DATA
   PCTFREE    10
   INITRANS   2
   MAXTRANS   255
@@ -2480,7 +2484,7 @@ CREATE TABLE at_clob
   description  VARCHAR2(256 BYTE),
   VALUE        CLOB
 )
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -2497,7 +2501,7 @@ LOGGING
 NOCOMPRESS
 LOB (VALUE) STORE AS
 (
-  TABLESPACE  cwms_20at_data
+  TABLESPACE  CWMS_20AT_DATA
   ENABLE      STORAGE IN ROW
   CHUNK       8192
   PCTVERSION  0
@@ -2531,7 +2535,7 @@ ALTER TABLE at_clob ADD
 (
   PRIMARY KEY (ID)
   USING INDEX
-  TABLESPACE cwms_20at_data
+  TABLESPACE CWMS_20AT_DATA
   PCTFREE    10
   INITRANS   2
   MAXTRANS   255
@@ -2545,6 +2549,7 @@ ALTER TABLE at_clob ADD
 )
 /
 
+SET define off
 -----------------------------
 -- AT_CLOB default data
 --
@@ -2622,7 +2627,7 @@ INSERT INTO at_clob
 '           );
 
 COMMIT ;
-
+SET define on
 
 SHOW ERRORS;
 COMMIT ;

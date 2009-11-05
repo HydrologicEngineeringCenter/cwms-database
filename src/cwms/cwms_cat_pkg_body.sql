@@ -1,5 +1,6 @@
+SET define off
 /* Formatted on 2008/11/07 08:49 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_cat
+CREATE OR REPLACE PACKAGE BODY cwms_cat
 IS
 -------------------------------------------------------------------------------
 -- CAT_TS record-to-object conversion function

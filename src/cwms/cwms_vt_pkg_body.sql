@@ -1,9 +1,10 @@
+set define off
 /* Formatted on 2008/06/26 15:28 (Formatter Plus v4.8.8) */
 /* Formatted on 2008/07/14 11:42 (Formatter Plus v4.8.8) */
 /* Formatted on 2008/07/17 07:58 (Formatter Plus v4.8.8) */
 /*<TOAD_FILE_CHUNK>*/
 
-CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_vt
+CREATE OR REPLACE PACKAGE BODY cwms_vt
 AS
 /******************************************************************************
    NAME:       CWMS_VAL

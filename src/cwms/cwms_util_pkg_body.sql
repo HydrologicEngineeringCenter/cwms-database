@@ -1,3 +1,6 @@
+SET define on
+@@defines.sql
+
 /* Formatted on 6/30/2009 6:36:59 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_util
 AS
@@ -243,7 +246,7 @@ AS
 			  FROM	sys.all_synonyms
 			 WHERE		 synonym_name = l_name
 						AND owner = 'PUBLIC'
-						AND table_owner = 'CWMS_20';
+						AND table_owner = '&cwms_schema';
 		EXCEPTION
 			WHEN invalid_sql_name
 			THEN
@@ -496,11 +499,11 @@ AS
 		--------------------------------------
 		l_user_id := get_user_id;
 
-		IF l_user_id != 'CWMS_20'
+		IF l_user_id != '&cwms_schema'
 		THEN
 			raise_application_error (
 				-20999,
-				'Must be CWMS_20 user to start job ' || l_job_id,
+				'Must be &cwms_schema user to start job ' || l_job_id,
 				TRUE
 			);
 		END IF;
@@ -592,7 +595,7 @@ AS
 				EXCEPTION
 					WHEN NO_DATA_FOUND
 					THEN
-						IF l_username = 'CWMS_20'
+						IF l_username = '&cwms_schema'
 						THEN
 							l_office_id := 'CWMS';
 						END IF;
@@ -659,7 +662,7 @@ AS
 				EXCEPTION
 					WHEN NO_DATA_FOUND
 					THEN
-						IF l_username = 'CWMS_20'
+						IF l_username = '&cwms_schema'
 						THEN
 							SELECT	office_code
 							  INTO	l_office_code
@@ -2391,7 +2394,7 @@ AS
 	-- depend on the views.
 	--
 	-- DO NOT CALL THIS PROCEDURE UNLESS YOU ARE RUNNING FROM A SCRIPT
-	-- FROM WHICH YOU CAN CALL UTL_RECOMP.RECOMP_SERIAL('CWMS_20') OR
+	-- FROM WHICH YOU CAN CALL UTL_RECOMP.RECOMP_SERIAL('&cwms_schema') OR
 	-- CAN MANUALLY RECOMPILE THE INVALIDATED OBJECTS (E.G. FROM TOAD).
 	--------------------------------------------------------------------
 	PROCEDURE rebuild_timeseries_mviews
@@ -2402,11 +2405,11 @@ AS
 		-----------------------------
         --
 		-- TIME SERIES VIEWS
-		EXECUTE IMMEDIATE 'DROP INDEX CWMS_20.MV_CWMS_TS_ID_UK1';
+		EXECUTE IMMEDIATE 'DROP INDEX '||'&cwms_schema'||'.MV_CWMS_TS_ID_UK1';
 
-		EXECUTE IMMEDIATE 'DROP INDEX CWMS_20.MV_CWMS_TS_ID_PK';
+		EXECUTE IMMEDIATE 'DROP INDEX '||'&cwms_schema'||'.MV_CWMS_TS_ID_PK';
 
-		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID';
+		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW '||'&cwms_schema'||'.MV_CWMS_TS_ID';
 
 		EXECUTE IMMEDIATE 'DROP MATERIALIZED VIEW LOG ON cwms_abstract_parameter';
 
@@ -2457,7 +2460,7 @@ AS
 
 		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW LOG ON cwms_abstract_parameter            WITH ROWID';
 
-		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID 
+		EXECUTE IMMEDIATE 'CREATE MATERIALIZED VIEW '||'&cwms_schema'||'.MV_CWMS_TS_ID 
 		TABLESPACE CWMS_20AT_DATA
 		NOCACHE
 		LOGGING
@@ -2532,21 +2535,21 @@ AS
 			AND l.base_location_code = abl.base_location_code
 			AND s.delete_date IS NULL';
 
-		EXECUTE IMMEDIATE 'COMMENT ON MATERIALIZED VIEW CWMS_20.MV_CWMS_TS_ID IS ''snapshot table for snapshot CWMS_20.MV_CWMS_TS_ID''';
+		EXECUTE IMMEDIATE 'COMMENT ON MATERIALIZED VIEW '||'&cwms_schema'||'.MV_CWMS_TS_ID IS ''snapshot table for snapshot '||'&cwms_schema'||'.MV_CWMS_TS_ID''';
 
-		EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX CWMS_20.MV_CWMS_TS_ID_UK1 ON CWMS_20.MV_CWMS_TS_ID
+		EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX '||'&cwms_schema'||'.MV_CWMS_TS_ID_UK1 ON '||'&cwms_schema'||'.MV_CWMS_TS_ID
 		(UPPER("DB_OFFICE_ID"), UPPER("CWMS_TS_ID"))
 		LOGGING
 		TABLESPACE CWMS_20AT_DATA
 		NOPARALLEL';
 
-		EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX CWMS_20.MV_CWMS_TS_ID_PK ON CWMS_20.MV_CWMS_TS_ID
+		EXECUTE IMMEDIATE 'CREATE UNIQUE INDEX '||'&cwms_schema'||'.MV_CWMS_TS_ID_PK ON '||'&cwms_schema'||'.MV_CWMS_TS_ID
 		(DB_OFFICE_ID, CWMS_TS_ID)
 		LOGGING
 		TABLESPACE CWMS_20AT_DATA
 		NOPARALLEL';
 
-		sys.UTL_RECOMP.recomp_serial ('CWMS_20');
+		sys.UTL_RECOMP.recomp_serial ('&cwms_schema');
 	END rebuild_timeseries_mviews;
 
 	--

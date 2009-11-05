@@ -1,5 +1,7 @@
+SET define on
+@@defines.sql
 /* Formatted on 7/13/2009 5:29:15 PM (QP5 v5.115.810.9015) */
-CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_sec
+CREATE OR REPLACE PACKAGE BODY cwms_sec
 AS
     FUNCTION find_lowest_code (p_list_of_codes    IN sys_refcursor,
                                         p_lowest_code        IN NUMBER
@@ -70,7 +72,7 @@ AS
 		--
 		-- cwms_20, system, sys are ok
 		--
-		IF l_username IN ('CWMS_20', 'SYSTEM', 'SYS', 'GERHARD', 'ART')
+		IF l_username IN ('&cwms_schema', 'SYSTEM', 'SYS', 'GERHARD', 'ART')
 		THEN
 			RETURN TRUE;
 		END IF;
@@ -83,7 +85,7 @@ AS
 		BEGIN
 			SELECT	atslu.is_locked
 			  INTO	l_is_locked
-			  FROM	cwms_20.at_sec_locked_users atslu
+			  FROM	"&cwms_schema"."AT_SEC_LOCKED_USERS" atslu
 			 WHERE	atslu.db_office_code = p_db_office_code
 						AND atslu.username = UPPER (l_username);
 		EXCEPTION
@@ -104,7 +106,7 @@ AS
 		--
 		SELECT	COUNT ( * )
 		  INTO	l_count
-		  FROM	cwms_20.at_sec_users atsu
+		  FROM	"&cwms_schema"."AT_SEC_USERS" atsu
 		 WHERE		 atsu.db_office_code = p_db_office_code
 					AND atsu.user_group_code IN (0, 7)
 					AND atsu.username = UPPER (l_username);
@@ -1310,7 +1312,7 @@ AS
 			EXECUTE IMMEDIATE 'alter materialized view MV_SEC_TS_PRIVILEGES compile';
 
 
-			DBMS_SNAPSHOT.refresh (list						 => 'CWMS_20.MV_SEC_TS_PRIVILEGES',
+			DBMS_SNAPSHOT.refresh (list						 => '&cwms_schema'||'.MV_SEC_TS_PRIVILEGES',
 										  push_deferred_rpc		 => TRUE,
 										  refresh_after_errors	 => FALSE,
 										  purge_option 			 => 1,
@@ -1346,11 +1348,11 @@ AS
 		--------------------------------------
 		l_user_id := cwms_util.get_user_id;
 
-		IF l_user_id != 'CWMS_20'
+		IF l_user_id != '&cwms_schema'
 		THEN
 			raise_application_error (
 				-20999,
-				'Must be CWMS_20 user to start job ' || l_job_id,
+				'Must be &cwms_schema user to start job ' || l_job_id,
 				TRUE
 			);
 		END IF;

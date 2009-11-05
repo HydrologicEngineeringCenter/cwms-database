@@ -2,13 +2,15 @@
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 
+@@defines.sql
+
 CREATE TABLE at_sec_locked_users
 (
 	db_office_code 					NUMBER,
 	username 							VARCHAR2 (31 BYTE),
 	is_locked							VARCHAR2 (1 BYTE)
 )
-TABLESPACE cwms_20data
+TABLESPACE CWMS_20DATA
 PCTUSED 0
 PCTFREE 10
 INITRANS 1
@@ -29,7 +31,7 @@ MONITORING
 CREATE UNIQUE INDEX at_sec_locked_users_pk
 	ON at_sec_locked_users (db_office_code, username)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -47,7 +49,7 @@ ALTER TABLE at_sec_locked_users ADD (
  PRIMARY KEY
  (db_office_code, username)
 	 USING INDEX
-	 TABLESPACE cwms_20data
+	 tablespace CWMS_20DATA
 	 PCTFREE 	10
 	 INITRANS	2
 	 MAXTRANS	255
@@ -67,7 +69,7 @@ CREATE TABLE at_sec_dbi_user
 	db_office_code 					NUMBER,
 	dbi_username						VARCHAR2 (31 BYTE) NOT NULL
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED 0
 PCTFREE 10
 INITRANS 1
@@ -88,7 +90,7 @@ MONITORING
 CREATE UNIQUE INDEX at_dbi_user_pk
 	ON at_sec_dbi_user (db_office_code)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -106,7 +108,7 @@ ALTER TABLE at_sec_dbi_user ADD (
  PRIMARY KEY
  (db_office_code)
 	 USING INDEX
-	 TABLESPACE cwms_20data
+	 tablespace CWMS_20DATA
 	 PCTFREE 	10
 	 INITRANS	2
 	 MAXTRANS	255
@@ -134,7 +136,7 @@ CREATE TABLE cwms_sec_privileges
 	privilege_bit						NUMBER,
 	privilege_id						VARCHAR2 (16 BYTE)
 )
-TABLESPACE cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 PCTUSED 0
 PCTFREE 10
 INITRANS 1
@@ -155,7 +157,7 @@ MONITORING
 CREATE UNIQUE INDEX cwms_sec_privileges_pk
 	ON cwms_sec_privileges (privilege_bit)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -173,7 +175,7 @@ ALTER TABLE cwms_sec_privileges ADD (
  PRIMARY KEY
  (privilege_bit)
 	 USING INDEX
-	 TABLESPACE cwms_20data
+	 tablespace CWMS_20DATA
 	 PCTFREE 	10
 	 INITRANS	2
 	 MAXTRANS	255
@@ -202,12 +204,13 @@ COMMIT;
 --=============================================================================
 --
 
+SET define on
 CREATE TABLE at_sec_user_office
 (
 	username								VARCHAR2 (31 BYTE),
 	user_db_office_code				NUMBER NOT NULL
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED 0
 PCTFREE 10
 INITRANS 1
@@ -228,7 +231,7 @@ MONITORING
 CREATE UNIQUE INDEX at_sec_user_office_pk
 	ON at_sec_user_office (username)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -257,7 +260,7 @@ ALTER TABLE at_sec_user_office ADD (
  PRIMARY KEY
  (username)
 	 USING INDEX
-	 TABLESPACE cwms_20data
+	 tablespace CWMS_20DATA
 	 PCTFREE 	10
 	 INITRANS	2
 	 MAXTRANS	255
@@ -285,7 +288,7 @@ CREATE TABLE at_sec_user_groups
 	user_group_id						VARCHAR2 (32 BYTE),
 	user_group_desc					VARCHAR2 (256 BYTE)
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED 0
 PCTFREE 10
 INITRANS 1
@@ -306,7 +309,7 @@ MONITORING
 CREATE UNIQUE INDEX at_sec_user_groups_pk
 	ON at_sec_user_groups (db_office_code, user_group_code)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -324,7 +327,7 @@ ALTER TABLE at_sec_user_groups ADD (
  PRIMARY KEY
  (db_office_code, user_group_code)
 	 USING INDEX
-	 TABLESPACE cwms_20data
+	 tablespace CWMS_20DATA
 	 PCTFREE 	10
 	 INITRANS	2
 	 MAXTRANS	255
@@ -346,7 +349,7 @@ CREATE TABLE at_sec_users
 	user_group_code					NUMBER,
 	username								VARCHAR2 (31 BYTE)
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED 0
 PCTFREE 10
 INITRANS 1
@@ -367,7 +370,7 @@ MONITORING
 CREATE UNIQUE INDEX at_sec_users_pk
 	ON at_sec_users (db_office_code, user_group_code, username)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -385,7 +388,7 @@ ALTER TABLE at_sec_users ADD (
  PRIMARY KEY
  (db_office_code, user_group_code, username)
 	 USING INDEX
-	 TABLESPACE cwms_20data
+	 tablespace CWMS_20DATA
 	 PCTFREE 	10
 	 INITRANS	2
 	 MAXTRANS	255
@@ -418,7 +421,7 @@ CREATE TABLE at_sec_ts_groups
 	ts_group_id 						VARCHAR2 (32 BYTE) NOT NULL,
 	ts_group_desc						VARCHAR2 (256 BYTE)
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED 0
 PCTFREE 10
 INITRANS 1
@@ -439,7 +442,7 @@ MONITORING
 CREATE UNIQUE INDEX at_sec_ts_groups_pk
 	ON at_sec_ts_groups (db_office_code, ts_group_code)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -455,7 +458,7 @@ CREATE UNIQUE INDEX at_sec_ts_groups_pk
 CREATE UNIQUE INDEX at_sec_ts_groups_u01
 	ON at_sec_ts_groups (db_office_code, UPPER ("TS_GROUP_ID"))
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -473,7 +476,7 @@ ALTER TABLE at_sec_ts_groups ADD (
  PRIMARY KEY
  (db_office_code, ts_group_code)
 	 USING INDEX
-	 TABLESPACE cwms_20data
+	 tablespace CWMS_20DATA
 	 PCTFREE 	10
 	 INITRANS	2
 	 MAXTRANS	255
@@ -495,7 +498,7 @@ CREATE TABLE at_sec_ts_group_masks
 	ts_group_code						NUMBER,
 	ts_group_mask						VARCHAR2 (256 BYTE)
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED 0
 PCTFREE 10
 INITRANS 1
@@ -516,7 +519,7 @@ MONITORING
 CREATE UNIQUE INDEX at_sec_ts_group_masks_pk
 	ON at_sec_ts_group_masks (db_office_code, ts_group_code, ts_group_mask)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -546,7 +549,7 @@ ALTER TABLE at_sec_ts_group_masks ADD (
  PRIMARY KEY
  (db_office_code, ts_group_code, ts_group_mask)
 	 USING INDEX
-	 TABLESPACE cwms_20data
+	 tablespace CWMS_20DATA
 	 PCTFREE 	10
 	 INITRANS	2
 	 MAXTRANS	255
@@ -574,7 +577,7 @@ CREATE TABLE at_sec_allow
 	user_group_code					NUMBER,
 	privilege_bit						NUMBER
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED 0
 PCTFREE 10
 INITRANS 1
@@ -599,7 +602,7 @@ CREATE UNIQUE INDEX at_sec_allow_pk
 						  privilege_bit
 						 )
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -617,7 +620,7 @@ ALTER TABLE at_sec_allow ADD (
  PRIMARY KEY
  (db_office_code, ts_group_code, user_group_code, privilege_bit)
 	 USING INDEX
-	 TABLESPACE cwms_20data
+	 tablespace CWMS_20DATA
 	 PCTFREE 	10
 	 INITRANS	2
 	 MAXTRANS	255
@@ -654,7 +657,7 @@ CREATE TABLE cwms_sec_user_groups
 	user_group_id						VARCHAR2 (32 BYTE) NOT NULL,
 	user_group_desc					VARCHAR2 (256 BYTE) NOT NULL
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED 0
 PCTFREE 10
 INITRANS 1
@@ -675,7 +678,7 @@ MONITORING
 CREATE UNIQUE INDEX cwms_sec_user_groups_pk
 	ON cwms_sec_user_groups (user_group_code)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -693,7 +696,7 @@ ALTER TABLE cwms_sec_user_groups ADD (
  PRIMARY KEY
  (user_group_code)
 	 USING INDEX
-	 TABLESPACE cwms_20data
+	 tablespace CWMS_20DATA
 	 PCTFREE 	10
 	 INITRANS	2
 	 MAXTRANS	255
@@ -825,6 +828,7 @@ END;
 --=============================================================================
 --
 
+SET define on
 CREATE TABLE cwms_sec_ts_groups
 (
 	ts_group_code						NUMBER NOT NULL,
@@ -832,7 +836,7 @@ CREATE TABLE cwms_sec_ts_groups
 	ts_group_desc						VARCHAR2 (256 BYTE) NOT NULL,
 	ts_group_mask						VARCHAR2 (183 BYTE) NOT NULL
 )
-TABLESPACE cwms_20data
+tablespace CWMS_20DATA
 PCTUSED 0
 PCTFREE 10
 INITRANS 1
@@ -853,7 +857,7 @@ MONITORING
 CREATE UNIQUE INDEX cwms_sec_ts_groups_pk
 	ON cwms_sec_ts_groups (ts_group_code)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -871,7 +875,7 @@ ALTER TABLE cwms_sec_ts_groups ADD (
  PRIMARY KEY
  (ts_group_code)
 	 USING INDEX
-	 TABLESPACE cwms_20data
+	 tablespace CWMS_20DATA
 	 PCTFREE 	10
 	 INITRANS	2
 	 MAXTRANS	255
@@ -1151,10 +1155,10 @@ AS
 -- mv_sec_ts_privileges
 --=============================================================================
 --
-SET DEFINE OFF;
 
+SET DEFINE ON
 CREATE MATERIALIZED VIEW MV_SEC_TS_PRIVILEGES
-TABLESPACE CWMS_20DATA
+tablespace CWMS_20DATA
 PCTUSED	  0
 PCTFREE	  10
 INITRANS   2
@@ -1186,7 +1190,7 @@ COMMENT ON MATERIALIZED VIEW mv_sec_ts_privileges IS
 CREATE INDEX mv_sec_ts_privileges_i01
 	ON mv_sec_ts_privileges (db_office_code, username)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255
@@ -1202,7 +1206,7 @@ CREATE INDEX mv_sec_ts_privileges_i01
 CREATE INDEX mv_sec_ts_privileges_i02
 	ON mv_sec_ts_privileges (username)
 	LOGGING
-	TABLESPACE cwms_20data
+	tablespace CWMS_20DATA
 	PCTFREE 10
 	INITRANS 2
 	MAXTRANS 255

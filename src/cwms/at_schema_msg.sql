@@ -1,3 +1,6 @@
+SET define on
+@@defines.sql
+
 -----------------------------
 -- AT_TS_MSG_ARCHIVE_1 table
 --
@@ -9,7 +12,7 @@ create table at_ts_msg_archive_1
    first_data_time date          not null,
    last_data_time  date          not null
 )
-tablespace cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 pctused    0
 pctfree    10
 initrans   1
@@ -41,7 +44,7 @@ comment on column at_ts_msg_archive_1.last_data_time  is 'End of time window of 
 --
 alter table at_ts_msg_archive_1 add constraint at_ts_msg_archive_1_pk primary key (msg_id)
     using index 
-    tablespace cwms_20at_data
+    TABLESPACE CWMS_20AT_DATA
     pctfree    10
     initrans   2
     maxtrans   255
@@ -60,7 +63,7 @@ commit;
 create index at_ts_msg_archive_1_ndx1 on at_ts_msg_archive_1
 (message_time, ts_code)
 logging
-tablespace cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 pctfree    10
 initrans   2
 maxtrans   255
@@ -85,7 +88,7 @@ create table at_ts_msg_archive_2
    first_data_time date          not null,
    last_data_time  date          not null
 )
-tablespace cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 pctused    0
 pctfree    10
 initrans   1
@@ -117,7 +120,7 @@ comment on column at_ts_msg_archive_2.last_data_time  is 'End of time window of 
 --
 alter table at_ts_msg_archive_2 add constraint at_ts_msg_archive_2_pk primary key (msg_id)
     using index 
-    tablespace cwms_20at_data
+    TABLESPACE CWMS_20AT_DATA
     pctfree    10
     initrans   2
     maxtrans   255
@@ -135,7 +138,7 @@ show errors;
 create index at_ts_msg_archive_2_ndx1 on at_ts_msg_archive_2
 (message_time, ts_code)
 logging
-tablespace cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 pctfree    10
 initrans   2
 maxtrans   255
@@ -166,7 +169,7 @@ create table at_log_message
    msg_type             number(2),
    msg_text             varchar2(4000)
 )
-tablespace cwms_20at_data
+TABLESPACE CWMS_20AT_DATA
 pctused    0
 pctfree    10
 initrans   1
@@ -206,7 +209,7 @@ alter table at_log_message add constraint at_log_message_fk1 foreign key (msg_ty
 alter table at_log_message add constraint at_log_message_fk2 foreign key (office_code) references cwms_office (office_code);
 alter table at_log_message add constraint at_log_message_pk  primary key (msg_id)
     using index 
-    tablespace cwms_20at_data
+    TABLESPACE CWMS_20AT_DATA
     pctfree    10
     initrans   2
     maxtrans   255
@@ -258,7 +261,7 @@ alter table at_log_message_properties add constraint at_log_message_properties_f
 alter table at_log_message_properties add constraint at_log_message_properties_fk2 foreign key (prop_type) references cwms_log_message_prop_types (prop_type_code);
 alter table at_log_message_properties add constraint at_log_message_properties_pk  primary key (msg_id, prop_name)
     using index 
-    tablespace cwms_20at_data
+    TABLESPACE CWMS_20AT_DATA
     pctfree    10
     initrans   2
     maxtrans   255

@@ -1,5 +1,6 @@
+SET define on
 /* Formatted on 2008/11/04 15:41 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_shef
+CREATE OR REPLACE PACKAGE BODY cwms_shef
 AS
    PROCEDURE clean_at_shef_crit_file (
       p_data_stream_code   IN   NUMBER,

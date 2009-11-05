@@ -1,5 +1,6 @@
+SET define on
 /* Formatted on 7/19/2009 4:12:02 PM (QP5 v5.115.810.9015) */
-CREATE OR REPLACE PACKAGE cwms_20.cwms_sec
+CREATE OR REPLACE PACKAGE cwms_sec
 AS
 	max_cwms_priv_ugroup_code CONSTANT		NUMBER := 9;
 	max_cwms_ts_ugroup_code CONSTANT 		NUMBER := 19;

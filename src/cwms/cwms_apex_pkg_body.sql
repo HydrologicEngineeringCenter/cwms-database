@@ -1,5 +1,7 @@
+SET define on
+@@defines.sql
 /* Formatted on 4/21/2009 11:15:31 AM (QP5 v5.115.810.9015) */
-CREATE OR REPLACE PACKAGE BODY cwms_20.cwms_apex
+CREATE OR REPLACE PACKAGE BODY cwms_apex
 AS
 	TYPE varchar2_t
 	IS
@@ -1590,11 +1592,11 @@ AS
 		l_cmt 								VARCHAR2 (256);
 		l_steps_per_commit				NUMBER;
 
-		l_scrn_data 						cwms_20.screen_crit_array
+		l_scrn_data 						"&cwms_schema"."SCREEN_CRIT_ARRAY"
 				:= screen_crit_array () ;
-		l_d_m_data							cwms_20.screen_dur_mag_array
+		l_d_m_data							"&cwms_schema"."SCREEN_DUR_MAG_ARRAY"
 				:= screen_dur_mag_array () ;
-		l_scn_cntl							cwms_20.screening_control_t;
+		l_scn_cntl							"&cwms_schema"."SCREENING_CONTROL_T";
 		i_num 								NUMBER;
 		j_num 								NUMBER;
 	BEGIN

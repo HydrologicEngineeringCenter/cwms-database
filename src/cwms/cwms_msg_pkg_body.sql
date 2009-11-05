@@ -1,3 +1,5 @@
+SET define on
+@@defines.sql
 create or replace package body cwms_msg
 as
 
@@ -49,7 +51,7 @@ begin
               into l_queuename
               from dba_queues
              where name = upper(l_queuename)
-               and owner = 'CWMS_20'
+               and owner = '&cwms_schema'
                and queue_type = 'NORMAL_QUEUE';
             l_found := true;
          exception
@@ -62,7 +64,7 @@ begin
    if not l_found then
       l_queuename := null;
    else
-      l_queuename := 'CWMS_20.' || l_queuename;
+      l_queuename := '&cwms_schema'||'.'|| l_queuename;
    end if;
    
    return l_queuename;
@@ -1033,10 +1035,10 @@ begin
    --------------------------------------
    l_user_id := cwms_util.get_user_id;
 
-   if l_user_id != 'CWMS_20'
+   if l_user_id != '&cwms_schema'
    then
       raise_application_error (-20999,
-                                  'Must be CWMS_20 user to start job '
+                                  'Must be &cwms_schema user to start job '
                                || l_job_id,
                                true
                               );

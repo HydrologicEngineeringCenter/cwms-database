@@ -1,4 +1,6 @@
 SET serveroutput on
+SET define on
+@@defines.sql
 ----------------------------------------------------
 -- For debuging of apex applications, the aa1 table is used --
 -- The cwms_apex aa1 procudure is normally reduced to a null; --
@@ -38,7 +40,7 @@ BEGIN
 END;
 /
 
-CREATE SEQUENCE CWMS_20.GK
+CREATE SEQUENCE "&cwms_schema"."GK"
   START WITH 2675692
   MAXVALUE 999999999999999999999999999
   MINVALUE 0
@@ -52,7 +54,7 @@ CREATE TABLE AA1
   LINE         NUMBER,
   STRINGSTUFF  VARCHAR2(4000 BYTE)
 )
-TABLESPACE CWMS_20DATA
+tablespace CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -71,10 +73,10 @@ NOPARALLEL
 MONITORING;
 
 
-CREATE UNIQUE INDEX AA1_PK ON CWMS_20.AA1
+CREATE UNIQUE INDEX AA1_PK ON "&cwms_schema"."AA1"
 (LINE)
 LOGGING
-TABLESPACE CWMS_20DATA
+tablespace CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -90,7 +92,7 @@ NOPARALLEL;
 
 CREATE OR REPLACE TRIGGER aa1_PK
   BEFORE INSERT
-  ON CWMS_20.AA1   for each row
+  ON "&cwms_schema"."AA1"   for each row
 declare
   NEWPK NUMBER;
 begin
@@ -105,7 +107,7 @@ ALTER TABLE AA1 ADD (
  PRIMARY KEY
  (LINE)
     USING INDEX 
-    TABLESPACE CWMS_20DATA
+    tablespace CWMS_20DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255

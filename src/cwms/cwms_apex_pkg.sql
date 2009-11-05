@@ -1,5 +1,6 @@
+SET define on
 /* Formatted on 3/24/2009 6:35:27 AM (QP5 v5.115.810.9015) */
-CREATE OR REPLACE PACKAGE cwms_20.cwms_apex
+CREATE OR REPLACE PACKAGE cwms_apex
 AS
 	/******************************************************************************
 		  NAME:		  cwms_apex

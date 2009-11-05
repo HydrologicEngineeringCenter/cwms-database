@@ -1,3 +1,7 @@
+SET define on
+@@defines.sql
+
+
 CREATE TABLE AT_XCHG_DATASTORE_DSS
 (
   DATASTORE_CODE  NUMBER(10)         NOT NULL,
@@ -177,7 +181,7 @@ NOPARALLEL;
 create or replace trigger at_unit_alias_constraint
 before delete or update
 of alias_id
-on cwms_20.at_unit_alias 
+on "&cwms_schema"."AT_UNIT_ALIAS" 
 referencing new as new old as old
 for each row
 declare

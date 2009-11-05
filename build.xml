@@ -62,8 +62,8 @@
 		<echo message="perforce.enabled = ${perforce.enabled}"/>
 	</target>
 	
-	<!-- Executes python scripts to build the CWMS_20 schema. -->
-	<target name="build" description="Executes python scripts to build the CWMS_20 schema">		
+	<!-- Executes python scripts to build the CWMS schema. -->
+	<target name="build" description="Executes python scripts to build the CWMS schema">		
 		
 		<echo message="Build sql scripts..."/>
 		
@@ -100,10 +100,9 @@
 		
 		<echo message="Finished building sql scripts"/>
 		
-		<echo message="Creating new CWMS20 Schema..."/>
+		<echo message="Creating new CWMS Schema..."/>
 
-		<property name="autobuild-arg-line" value="/c python autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} 
-cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_passwd=${oracle.hectest.password}"/>
+		<property name="autobuild-arg-line" value="/c python autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_passwd=${oracle.hectest.password}"/>
 		<echo message="${autobuild-arg-line}"/>
 
 		<exec dir="${src}" executable="cmd" outputproperty="auto-build-output" errorproperty="auto-build-error"
@@ -114,7 +113,7 @@ cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_p
 		<if>
 			<equals arg1="${auto-build-result}" arg2="0" />
 			<then>
-				<echo message="Finished creating new CWMS20 Schema"/>
+				<echo message="Finished creating new CWMS Schema"/>
 			</then>
 			<else>
 				<echo message="${auto-build-output}"/>
@@ -126,12 +125,12 @@ cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_p
 
     </target>
 	
-	<!-- Executes python script to drop the CWMS_20 schema. -->
-	<target name="clean" description="Executes python script to drop the CWMS_20 schema">
+	<!-- Executes python script to drop the CWMS schema. -->
+	<target name="clean" description="Executes python script to drop the CWMS schema">
 		
-		<echo message="dropping existing CWMS20 Schema..."/>
+		<echo message="dropping existing CWMS Schema..."/>
 		
-		<property name="autokill-arg-line" value="/c python autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} ${autokill.force}"/>
+		<property name="autokill-arg-line" value="/c python autokill.py echo=${autokill.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} ${autokill.force}"/>
 		<echo message="${autokill-arg-line}"/>
 		
 		<exec dir="${src}" executable="cmd" outputproperty="auto-kill-output" errorproperty="auto-kill-error"
@@ -142,7 +141,7 @@ cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_p
 		<if>
 			<equals arg1="${auto-kill-result}" arg2="0" />
 			<then>
-				<echo message="Finished dropping existing CWMS20 Schema"/>
+				<echo message="Finished dropping existing CWMS Schema"/>
 			</then>
 			<else>
 				<echo message="${auto-kill-output}"/>
@@ -154,8 +153,8 @@ cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_p
 	
     </target>
 	
-	<!-- Drop existing CWMS_20 schema then build a new CWMS_20 schema. -->
-	<target name="all-schema" depends="clean,build" description="drop existing CWMS_20 schema then build a new CWMS_20 schema">
+	<!-- Drop existing CWMS schema then build a new CWMS schema. -->
+	<target name="all-schema" depends="clean,build" description="drop existing CWMS schema then build a new CWMS schema">
     </target>
 	
     <target name="all" depends="all-schema" description="empty for the moment">

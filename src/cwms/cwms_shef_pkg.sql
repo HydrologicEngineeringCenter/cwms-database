@@ -1,5 +1,6 @@
+SET define on
 /* Formatted on 2008/11/12 15:02 (Formatter Plus v4.8.8) */
-CREATE OR REPLACE PACKAGE cwms_20.cwms_shef
+CREATE OR REPLACE PACKAGE cwms_shef
 AS
 -- PROCEDURE clean_at_shef_crit_file p_action constants.
    ten_file_limit   CONSTANT VARCHAR2 (32) := 'TEN FILE LIMIT';

@@ -1,3 +1,5 @@
+SET define on
+@@defines.sql
 -------------------------
 -- AT_CWMS_TSV_**** table
 -- 

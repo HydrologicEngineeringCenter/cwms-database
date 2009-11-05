@@ -1,5 +1,7 @@
 whenever sqlerror continue
 
+@@defines.sql
+
 drop table remote_offices;
 drop table remote_tsid_masks;
 drop table remote_tsids;
@@ -249,7 +251,7 @@ begin
                        interval_id,
                        duration_id,
                        version_id version
-                  from cwms_20.mv_cwms_ts_id@:dblink
+                  from '||'&cwms_schema'||'.mv_cwms_ts_id@:dblink
                  where db_office_id = :office_id
                    and upper(location_id) like :location
                    and upper(parameter_id) like :parameter
@@ -548,9 +550,9 @@ begin
                  l.time_zone_code,
                  l.county_code,
                  l.active_flag
-            from cwms_20.cwms_office@:dblink o,
-                 cwms_20.at_base_location@:dblink b,
-                 cwms_20.at_physical_location@:dblink l
+            from '||'&cwms_schema'||'.cwms_office@:dblink o,
+                 '||'&cwms_schema'||'.at_base_location@:dblink b,
+                 '||'&cwms_schema'||'.at_physical_location@:dblink l
            where o.office_id = :office
              and b.db_office_code = o.office_code
              and upper(b.base_location_id) || ''-'' || upper (l.sub_location_id) in (:locations)
@@ -558,15 +560,15 @@ begin
       l_tz_query_str :=
          'select time_zone_name
             into :name
-            from cwms_20.cwms_time_zone@:dblink
+            from '||'&cwms_schema'||'.cwms_time_zone@:dblink
            where time_zone_code = :code';
       l_st_query_str :=
          'select c.county_name,
                  s.state_initial
             into :county,
                  :state
-            from cwms_20.cwms_county@:dblink c,
-                 cwms_20.cwms_state@:dblink s
+            from '||'&cwms_schema'||'.cwms_county@:dblink c,
+                 '||'&cwms_schema'||'.cwms_state@:dblink s
            where c.county_code = :code
              and s.state_code = c.state_code';
    end if;
@@ -880,7 +882,7 @@ begin
                       select date_time,
                              max(value) keep(dense_rank last order by version_date) "VALUE",
                              max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
-                        from cwms_20.av_tsv@:dblink
+                        from '||'&cwms_schema'||'.av_tsv@:dblink
                        where ts_code    =  :ts_code
                          and date_time  >= :start_time
                          and date_time  <= :end_time
@@ -909,7 +911,7 @@ begin
                         select date_time,
                                max(value) keep(dense_rank last order by version_date) "VALUE",
                                max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
-                          from cwms_20.av_tsv@:dblink
+                          from '||'&cwms_schema'||'.av_tsv@:dblink
                          where ts_code    =  :ts_code
                            and date_time  >= :start_time
                            and date_time  <= :end_time
@@ -950,7 +952,7 @@ begin
             'select date_time,
                     max(value) keep(dense_rank last order by version_date) "VALUE",
                     max(quality_code) keep(dense_rank last order by version_date) "QUALITY_CODE"
-               from cwms_20.av_tsv@:dblink
+               from '||'&cwms_schema'||'.av_tsv@:dblink
               where ts_code    =  :ts_code
                 and date_time  >= :start_time
                 and date_time  <= :end_time

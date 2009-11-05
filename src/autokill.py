@@ -1,7 +1,7 @@
 #!/bin/env python
 import os, sys
 
-manual_sqlfilename = "killCWMS_20_DB.sql"
+manual_sqlfilename = "killCWMS_DB.sql"
 auto_sqlfilename   = "autokill.sql"
 
 prompt_block = \
@@ -15,7 +15,7 @@ accept inst        char prompt 'Enter the database instance    : '
 accept sys_passwd  char prompt 'Enter the password for SYS     : '
 prompt '***************************************************************'
 prompt '***                                                         ***'
-prompt '*** Warning: This will completely remove all CWMS_20 schema ***'
+prompt '*** Warning: This will completely remove all CWMS schema ***'
 prompt '*** objects!                                                ***'
 prompt '***                                                         ***'
 prompt '*** Press Ctrl-C now if you do not wish to continue!        ***'
@@ -28,13 +28,14 @@ accept dummy char noprompt
 
 auto_block_template = \
 '''
-define echo_state = %s
+define echo = %s
 define inst = %s
 define sys_passwd = %s
+define cwms_schema = %s
 '''
 
 force = False
-echo, inst, sys_passwd = None, None, None
+echo, inst, sys_passwd, cwms_schema = None, None, None, None
 for arg in sys.argv[1:] : 
 	if arg.find("=") != -1 : 
 		name, value = arg.split("=", 1)
@@ -43,15 +44,19 @@ for arg in sys.argv[1:] :
 	elif arg.lower() in ("-force", "/force") :
 		force = True
 		
-if not (echo and inst and sys_passwd) :
+if not (echo and inst and sys_passwd and cwms_schema) :
 	print
-	print "Usage %s echo=(on|off) inst=<SID> sys_passwd=<password> [-force]" % sys.argv[0]
+	print "Usage %s echo=(on|off) inst=<SID> sys_passwd=<password> cwms_schema=<schema> [-force]" % sys.argv[0]
 	print
 	print "The -force option keeps the script from exiting on errors."
 	print
 	sys.exit(-1)
+	
+cwms_schema = cwms_schema.upper()
+inst = inst.upper()
 
-auto_block = auto_block_template % (echo, inst, sys_passwd)
+
+auto_block = auto_block_template % (echo, inst, sys_passwd, cwms_schema)
 
 f = open(manual_sqlfilename, "r")
 sql_script = f.read()
@@ -69,7 +74,7 @@ f.close()
 cmd = "sqlplus /nolog @%s" % auto_sqlfilename
 print cmd
 ec = os.system(cmd)
-os.remove(auto_sqlfilename)
+#os.remove(auto_sqlfilename)
 
 if ec :
 	print
