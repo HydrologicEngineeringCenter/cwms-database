@@ -2690,10 +2690,12 @@ AS
          return null;
       end if;
       l_date := parse_odbc_ts_string(p_odbc_str);
+      return l_date;
    exception
       when others then
          begin
             l_date := parse_odbc_d_string(p_odbc_str);
+            return l_date;
          exception
             when others then
                cwms_err.raise(
@@ -2704,7 +2706,6 @@ AS
                   || ', '
                   || ')');
          end;
-      return l_date;
    end parse_odbc_ts_or_d_string;
 
 /*
