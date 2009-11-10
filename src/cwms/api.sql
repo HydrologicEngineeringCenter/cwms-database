@@ -19,6 +19,12 @@
 @@cwms_loc_pkg
 @@cwms_loc_pkg_body
 
+@@cwms_level_pkg
+@@cwms_level_pkg_body
+
+@@cwms_lookup_pkg
+@@cwms_lookup_pkg_body
+
 @@cwms_priv_pkg
 @@cwms_priv_pkg_body
 
