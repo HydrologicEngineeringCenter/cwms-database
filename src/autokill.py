@@ -24,6 +24,7 @@ prompt '*** Otherwise, press Enter.                                 ***'
 prompt '***                                                         ***'
 prompt '***************************************************************'
 accept dummy char noprompt
+set echo &echo_state
 '''
 
 auto_block_template = \
