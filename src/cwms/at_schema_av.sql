@@ -968,5 +968,6 @@ AS
            attribute_parameter_id,
            level_date,
            unit_system,
-           attribute_value;
+           attribute_value,
+           interval_origin + calendar_offset + time_offset;
 /
