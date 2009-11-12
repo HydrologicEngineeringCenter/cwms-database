@@ -136,7 +136,7 @@ MONITORING
 
 COMMENT ON COLUMN at_base_location.db_office_code IS 'Refererences the office "owning" this location.  In the CWMS v2 schema, the office hosting the database "owns" all locations.';
 COMMENT ON COLUMN at_base_location.base_location_id IS 'Text name of this Base Location';
-COMMENT ON COLUMN at_base_location.active_flag IS 'T or F';
+COMMENT ON COLUMN at_base_location.active_flag IS 'Specifies whether data is being collected for this location';
 
 
 CREATE UNIQUE INDEX at_base_location_pk ON at_base_location
