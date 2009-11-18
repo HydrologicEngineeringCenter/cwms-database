@@ -1373,6 +1373,9 @@ ALTER TABLE at_loc_category ADD (
                 PCTINCREASE      0
                ))
 /
+
+ALTER TABLE AT_LOC_CATEGORY ADD CONSTRAINT AT_LOC_CATEGORY_FK1 FOREIGN KEY (DB_OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
+
 INSERT INTO at_loc_category
             (loc_category_code, loc_category_id, db_office_code,
              loc_category_desc
