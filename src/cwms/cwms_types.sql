@@ -48,6 +48,8 @@ DECLARE
                      'loc_type',
                      'loc_alias_type',
                      'loc_alias_array',
+                     'loc_alias_type2',
+                     'loc_alias_array2',
                      'alias_type',
                      'alias_array',
                      'cwms_ts_id_array',
@@ -639,6 +641,16 @@ CREATE OR REPLACE TYPE loc_alias_type AS OBJECT (
 /
 
 CREATE OR REPLACE TYPE loc_alias_array IS TABLE OF loc_alias_type;
+/
+
+CREATE OR REPLACE TYPE loc_alias_type2 AS OBJECT (
+   location_id    VARCHAR2 (49),
+   loc_attribute  NUMBER,
+   loc_alias_id   VARCHAR2 (128)
+)
+/
+
+CREATE OR REPLACE TYPE loc_alias_array2 IS TABLE OF loc_alias_type2;
 /
 
 CREATE OR REPLACE TYPE group_type AS OBJECT (

@@ -494,10 +494,26 @@ AS
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 
+   PROCEDURE assign_loc_group2 (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_location_id       IN   VARCHAR2,
+      p_loc_attribute     IN   NUMBER   DEFAULT NULL,
+      p_loc_alias_id      IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
    PROCEDURE assign_loc_groups (
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_id      IN   VARCHAR2,
       p_loc_alias_array   IN   loc_alias_array,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE assign_loc_groups2 (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_alias_array   IN   loc_alias_array2,
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 

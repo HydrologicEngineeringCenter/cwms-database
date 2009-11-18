@@ -3660,7 +3660,6 @@ AS
 --   loc_alias_type AS OBJECT (
 --           location_id             VARCHAR2 (49),
 --           loc_alias_id            VARCHAR2 (16),
---           loc_alias_     name     VARCHAR2 (80)
 --
    PROCEDURE assign_loc_groups (
       p_loc_category_id   IN   VARCHAR2,
@@ -3724,10 +3723,90 @@ AS
              AND a.location_code = b.location_code)
          WHEN MATCHED THEN
             UPDATE
-               SET a.loc_alias_id = b.loc_alias_id
+               SET a.loc_attribute = null,
+                   a.loc_alias_id = b.loc_alias_id
          WHEN NOT MATCHED THEN
-            INSERT (location_code, loc_group_code, loc_alias_id)
-            VALUES (b.location_code, l_loc_group_code, b.loc_alias_id);
+            INSERT (location_code, loc_group_code, loc_attribute, loc_alias_id)
+            VALUES (b.location_code, l_loc_group_code, null, b.loc_alias_id);
+   END;
+
+--
+-- assign_groups is used to assign one or more location_id's --
+-- to a location group.
+--
+--   loc_alias_type2 AS OBJECT (
+--           location_id             VARCHAR2 (49),
+--           loc_attribute           NUMBER,
+--           loc_alias_id            VARCHAR2 (16),
+--
+   PROCEDURE assign_loc_groups2 (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_alias_array   IN   loc_alias_array2,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_db_office_id        VARCHAR2 (16);
+      l_db_office_code      NUMBER;
+      l_loc_category_code   NUMBER;
+      l_loc_group_code      NUMBER;
+   BEGIN
+      IF p_db_office_id IS NULL
+      THEN
+         l_db_office_id := cwms_util.user_office_id;
+      ELSE
+         l_db_office_id := UPPER (p_db_office_id);
+      END IF;
+
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+
+      BEGIN
+         l_loc_category_code :=
+                  get_loc_category_code (p_loc_category_id, l_db_office_code);
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('GENERIC_ERROR',
+                               'The category id: '
+                            || p_loc_category_id
+                            || ' does not exist.'
+                           );
+      END;
+
+      BEGIN
+         l_loc_group_code :=
+            get_loc_group_code (p_loc_category_id,
+                                p_loc_group_id,
+                                l_db_office_code
+                               );
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.RAISE ('GENERIC_ERROR',
+                               'There is no group: '
+                            || p_loc_group_id
+                            || ' in the '
+                            || p_loc_category_id
+                            || ' category.'
+                           );
+      END;
+
+      MERGE INTO at_loc_group_assignment a
+         USING (SELECT get_location_code (l_db_office_id,
+                                          plaa.location_id
+                                         ) location_code,
+                       plaa.loc_attribute,
+                       plaa.loc_alias_id
+                  FROM TABLE (p_loc_alias_array) plaa) b
+         ON (    a.loc_group_code = l_loc_group_code
+             AND a.location_code = b.location_code)
+         WHEN MATCHED THEN
+            UPDATE
+               SET a.loc_attribute = b.loc_attribute,
+                   a.loc_alias_id = b.loc_alias_id
+         WHEN NOT MATCHED THEN
+            INSERT (location_code, loc_group_code, loc_attribute, loc_alias_id)
+            VALUES (b.location_code, l_loc_group_code, b.loc_attribute, b.loc_alias_id);
    END;
 
 -- creates it and will rename the aliases if they already exist.
@@ -3747,6 +3826,25 @@ AS
                          p_loc_alias_array      => l_loc_alias_array,
                          p_db_office_id         => p_db_office_id
                         );
+   END;
+
+   PROCEDURE assign_loc_group2 (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_location_id       IN   VARCHAR2,
+      p_loc_attribute     IN   NUMBER   DEFAULT NULL,
+      p_loc_alias_id      IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+   IS
+      l_loc_alias_array2   loc_alias_array2
+          := loc_alias_array2 (loc_alias_type2 (p_location_id, p_loc_attribute, p_loc_alias_id));
+   BEGIN
+      assign_loc_groups2 (p_loc_category_id      => p_loc_category_id,
+                          p_loc_group_id         => p_loc_group_id,
+                          p_loc_alias_array      => l_loc_alias_array2,
+                          p_db_office_id         => p_db_office_id
+                         );
    END;
 
 -------------------------------------------------------------------------------

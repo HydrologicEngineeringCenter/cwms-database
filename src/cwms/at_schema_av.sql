@@ -266,6 +266,7 @@ CREATE OR REPLACE VIEW av_loc_alias (category_id,
                                      base_location_id,
                                      sub_location_id,
                                      location_id,
+                                     attribute,
                                      alias_id
                                     )
 AS
@@ -275,6 +276,7 @@ AS
              abl.base_location_id
           || SUBSTR ('-', 1, LENGTH (atpl.sub_location_id))
           || atpl.sub_location_id location_id,
+          atlga.loc_attribute,
           atlga.loc_alias_id
      FROM at_physical_location atpl,
           at_base_location abl,

@@ -1498,6 +1498,7 @@ CREATE TABLE at_loc_group_assignment
 (
   location_code   NUMBER,
   loc_group_code  NUMBER,
+  loc_attribute   NUMBER,
   loc_alias_id    VARCHAR2(128 BYTE)
 )
 TABLESPACE CWMS_20AT_DATA
