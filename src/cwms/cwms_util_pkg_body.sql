@@ -567,6 +567,156 @@ AS
 		END IF;
 	END start_timeout_mv_refresh_job;
 
+
+    PROCEDURE start_mv_cwms_ts_id_job
+    IS
+        l_count                                BINARY_INTEGER;
+        l_user_id                            VARCHAR2 (30);
+        l_job_id                             VARCHAR2 (30) := 'REFRESH_MV_CWMS_TS_ID_JOB';
+
+        FUNCTION job_count
+            RETURN BINARY_INTEGER
+        IS
+        BEGIN
+            SELECT    COUNT ( * )
+              INTO    l_count
+              FROM    sys.dba_scheduler_jobs
+             WHERE    job_name = l_job_id AND owner = l_user_id;
+
+            RETURN l_count;
+        END;
+    BEGIN
+        --------------------------------------
+        -- make sure we're the correct user --
+        --------------------------------------
+        l_user_id := get_user_id;
+
+        IF l_user_id != 'CWMS_20'
+        THEN
+            raise_application_error (
+                -20999,
+                'Must be CWMS_20 user to start job ' || l_job_id,
+                TRUE
+            );
+        END IF;
+
+        -------------------------------------------
+        -- drop the job if it is already running --
+        -------------------------------------------
+        IF job_count > 0
+        THEN
+            DBMS_OUTPUT.put ('Dropping existing job ' || l_job_id || '...');
+            DBMS_SCHEDULER.drop_job (l_job_id);
+
+            --------------------------------
+            -- verify that it was dropped --
+            --------------------------------
+            IF job_count = 0
+            THEN
+                DBMS_OUTPUT.put_line ('done.');
+            ELSE
+                DBMS_OUTPUT.put_line ('failed.');
+            END IF;
+        END IF;
+
+        IF job_count = 0
+        THEN
+            BEGIN
+                ---------------------
+                -- restart the job --
+                ---------------------
+                DBMS_SCHEDULER.create_job (
+                    job_name             => l_job_id,
+                    job_type             => 'stored_procedure',
+                    job_action            => 'cwms_util.refresh_mv_cwms_ts_id',
+                    start_date            => NULL,
+                    repeat_interval    => 'freq=minutely; interval='
+                                              || mv_cwms_ts_id_refresh_interval,
+                    end_date             => NULL,
+                    job_class            => 'default_job_class',
+                    enabled                => TRUE,
+                    auto_drop            => FALSE,
+                    comments             => 'Refreshes the mv_cwms_ts_id materialized view.'
+                );
+
+                IF job_count = 1
+                THEN
+                    DBMS_OUTPUT.put_line('Job ' || l_job_id
+                                                || ' successfully scheduled to execute every '
+                                                || mv_pause_job_run_interval
+                                                || ' minutes.');
+                ELSE
+                    cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
+                END IF;
+            EXCEPTION
+                WHEN OTHERS
+                THEN
+                    cwms_err.raise ('ITEM_NOT_CREATED',
+                                         'job',
+                                         l_job_id || ':' || SQLERRM
+                                        );
+            END;
+        END IF;
+    END start_mv_cwms_ts_id_job;
+    
+    PROCEDURE stop_mv_cwms_ts_id_job
+    IS
+        l_count                                BINARY_INTEGER;
+        l_user_id                            VARCHAR2 (30);
+        l_job_id                             VARCHAR2 (30) := 'REFRESH_MV_CWMS_TS_ID_JOB';
+
+        FUNCTION job_count
+            RETURN BINARY_INTEGER
+        IS
+        BEGIN
+            SELECT    COUNT ( * )
+              INTO    l_count
+              FROM    sys.dba_scheduler_jobs
+             WHERE    job_name = l_job_id AND owner = l_user_id;
+
+            RETURN l_count;
+        END;
+    BEGIN
+        --------------------------------------
+        -- make sure we're the correct user --
+        --------------------------------------
+        l_user_id := get_user_id;
+
+        IF l_user_id != 'CWMS_20'
+        THEN
+            raise_application_error (
+                -20999,
+                'Must be CWMS_20 user to start job ' || l_job_id,
+                TRUE
+            );
+        END IF;
+
+        -------------------------------------------
+        -- drop the job if it is already running --
+        -------------------------------------------
+        IF job_count > 0
+        THEN
+            DBMS_OUTPUT.put ('Dropping existing job ' || l_job_id || '...');
+            DBMS_SCHEDULER.drop_job (l_job_id);
+
+            --------------------------------
+            -- verify that it was dropped --
+            --------------------------------
+            IF job_count = 0
+            THEN
+                DBMS_OUTPUT.put_line ('done.');
+            ELSE
+                DBMS_OUTPUT.put_line ('failed.');
+            END IF;
+        END IF;
+
+    END stop_mv_cwms_ts_id_job;
+    
+    PROCEDURE refresh_mv_cwms_ts_id
+    IS
+    BEGIN
+        dbms_mview.refresh('mv_cwms_ts_id');
+    END refresh_mv_cwms_ts_id;
 	--------------------------------------------------------
 	-- Return the current session user's primary office id
 	--

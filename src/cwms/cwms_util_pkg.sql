@@ -1,80 +1,81 @@
-/* Formatted on 3/30/2009 1:34:33 PM (QP5 v5.115.810.9015) */
+/* Formatted on 11/17/2009 3:25:46 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 	/******************************************************************************
-	*	 Name:		 CWMS_UTL
+	 *   Name:		  CWMS_UTL
 	*	 Purpose:	 Miscellaneous CWMS Procedures
 	*
-	*	 Revisions:
-	*	 Ver			Date			Author		Descriptio
-	*	 ---------	----------	----------	----------------------------------------
-	*	 1.1			9/07/2005	Portin		create_view: at_ts_table_properties start and end dates
-	*													changed to DATE datatype
+	  *	Revisions:
+	 *   Ver 		 Date 		 Author		 Descriptio
+	  *	---------  ----------  ----------  ----------------------------------------
+	  *	1.1		  9/07/2005   Portin 	  create_view: at_ts_table_properties start and end dates
+	  *												  changed to DATE datatype
 	*	 1.0			8/29/2005	Portin		Original
-	******************************************************************************/
+	 ******************************************************************************/
 	l_epoch CONSTANT DATE
 			:= TO_DATE ('01Jan1970 00:00', 'ddmonyyyy hh24:mi') ;
 	l_epoch_wk_dy_1 CONSTANT DATE
 			:= TO_DATE ('04Jan1970 00:00', 'ddmonyyyy hh24:mi') ;
 	-- Sunday.
 	-- Constants for Storage Business Rules
-	replace_all CONSTANT 					 VARCHAR2 (16) := 'REPLACE ALL';
-	do_not_replace CONSTANT 				 VARCHAR2 (16) := 'DO NOT REPLACE';
+	replace_all CONSTANT 							VARCHAR2 (16) := 'REPLACE ALL';
+	do_not_replace CONSTANT 						VARCHAR2 (16) := 'DO NOT REPLACE';
 	replace_missing_values_only CONSTANT VARCHAR2 (32)
 			:= 'REPLACE MISSING VALUES ONLY' ;
 	replace_with_non_missing CONSTANT VARCHAR2 (32)
 			:= 'REPLACE WITH NON MISSING' ;
-	delete_insert CONSTANT					 VARCHAR2 (16) := 'DELETE INSERT';
+	delete_insert CONSTANT							VARCHAR2 (16) := 'DELETE INSERT';
 	--
 	---
 	---- DEPRICATED
-	delete_key CONSTANT						 VARCHAR2 (16) := 'DELETE KEY';
-	delete_data CONSTANT 					 VARCHAR2 (22) := 'DELETE DATA';
-	delete_all CONSTANT						 VARCHAR2 (16) := 'DELETE ALL';
+	delete_key CONSTANT								VARCHAR2 (16) := 'DELETE KEY';
+	delete_data CONSTANT 							VARCHAR2 (22) := 'DELETE DATA';
+	delete_all CONSTANT								VARCHAR2 (16) := 'DELETE ALL';
 	----DEPRICATED.
 	---
 	--
-	delete_ts_id CONSTANT					 VARCHAR2 (22) := 'DELETE TS ID';
-	delete_loc CONSTANT						 VARCHAR2 (22) := 'DELETE LOC';
-	delete_ts_data CONSTANT 				 VARCHAR2 (22) := 'DELETE TS DATA';
-	delete_ts_cascade CONSTANT 			 VARCHAR2 (22) := 'DELETE TS CASCADE';
-	delete_loc_cascade CONSTANT			 VARCHAR2 (22) := 'DELETE LOC CASCADE';
+	delete_ts_id CONSTANT							VARCHAR2 (22) := 'DELETE TS ID';
+	delete_loc CONSTANT								VARCHAR2 (22) := 'DELETE LOC';
+	delete_ts_data CONSTANT 						VARCHAR2 (22) := 'DELETE TS DATA';
+	delete_ts_cascade CONSTANT 					VARCHAR2 (22) := 'DELETE TS CASCADE';
+	delete_loc_cascade CONSTANT					VARCHAR2 (22) := 'DELETE LOC CASCADE';
 	--
 	-- non_versioned is the default version_date for non-versioned timeseries
-	non_versioned CONSTANT					 DATE := DATE '1111-11-11';
-	utc_offset_irregular CONSTANT 		 NUMBER := -2147483648;
-	utc_offset_undefined CONSTANT 		 NUMBER := 2147483647;
-	true_num CONSTANT 						 NUMBER := 1;
-	false_num CONSTANT						 NUMBER := 0;
-	max_base_id_length CONSTANT			 NUMBER := 16;
-	max_sub_id_length CONSTANT 			 NUMBER := 32;
+	non_versioned CONSTANT							DATE := DATE '1111-11-11';
+	utc_offset_irregular CONSTANT 				NUMBER := -2147483648;
+	utc_offset_undefined CONSTANT 				NUMBER := 2147483647;
+	true_num CONSTANT 								NUMBER := 1;
+	false_num CONSTANT								NUMBER := 0;
+	max_base_id_length CONSTANT					NUMBER := 16;
+	max_sub_id_length CONSTANT 					NUMBER := 32;
 	max_full_id_length CONSTANT NUMBER
 			:= max_base_id_length + max_sub_id_length + 1 ;
 	--
-	db_office_code_all CONSTANT			 NUMBER := 53;
+	db_office_code_all CONSTANT					NUMBER := 53;
 	--
-	irregular_interval_code CONSTANT 	 NUMBER := 29;
+	irregular_interval_code CONSTANT 			NUMBER := 29;
 	--
-	field_separator CONSTANT				 VARCHAR2 (1) := CHR (29);
-	record_separator CONSTANT				 VARCHAR2 (1) := CHR (30);
-	escape_char CONSTANT 					 VARCHAR2 (1) := '\';
-	mv_pause_timeout_interval CONSTANT	 INTERVAL DAY TO SECOND := '0 0:30:0';
-	mv_pause_job_run_interval CONSTANT	 NUMBER := 60;
+	field_separator CONSTANT						VARCHAR2 (1) := CHR (29);
+	record_separator CONSTANT						VARCHAR2 (1) := CHR (30);
+	escape_char CONSTANT 							VARCHAR2 (1) := '\';
+	mv_pause_timeout_interval CONSTANT			INTERVAL DAY TO SECOND := '0 0:30:0';
+	mv_pause_job_run_interval CONSTANT			NUMBER := 60;
+	mv_cwms_ts_id_refresh_interval CONSTANT	NUMBER := 5;
 	-- minutes
    odbc_ts_fmt constant varchar2(50) := '"{ts ''"yyyy-mm-dd hh24:mi:ss"''}"';
    odbc_d_fmt  constant varchar2(50) := '"{d ''"yyyy-mm-dd"''}"';
 	-- CWMS_PRIVILEGES...
-	read_privilege CONSTANT 				 NUMBER := 4;
-	write_privilege CONSTANT				 NUMBER := 2;
+	read_privilege CONSTANT 						NUMBER := 4;
+	write_privilege CONSTANT						NUMBER := 2;
 	--
 	-- CWMS SPECIAL USER GROUPS...
-	dba_users CONSTANT						 NUMBER := 1;
-	dbi_users CONSTANT						 NUMBER := 2;
-	data_exchange_mgr CONSTANT 			 NUMBER := 4;
-	data_acquisition_mgr CONSTANT 		 NUMBER := 8;
-	ts_creator CONSTANT						 NUMBER := 16;
-	vt_mgr CONSTANT							 NUMBER := 32;
-	all_users CONSTANT						 NUMBER := 64;
+	dba_users CONSTANT								NUMBER := 1;
+	dbi_users CONSTANT								NUMBER := 2;
+	data_exchange_mgr CONSTANT 					NUMBER := 4;
+	data_acquisition_mgr CONSTANT 				NUMBER := 8;
+	ts_creator CONSTANT								NUMBER := 16;
+	vt_mgr CONSTANT									NUMBER := 32;
+	all_users CONSTANT								NUMBER := 64;
 	epoch CONSTANT timestamp
 			:= STANDARD.TO_TIMESTAMP ('1970/01/01/ 00:00:00',
 											  'yyyy/mm/dd hh24:mi:ss'
@@ -98,9 +99,9 @@ AS
 	-- except that if no delimiter is supplied, sequential whitespace characters are
 	-- treated as a single delimiter.
 	--
-	FUNCTION split_text (p_text			IN VARCHAR2,
-								p_separator 	IN VARCHAR2 DEFAULT NULL ,
-								p_max_split 	IN INTEGER DEFAULT NULL
+	FUNCTION split_text (p_text		  IN VARCHAR2,
+								p_separator   IN VARCHAR2 DEFAULT NULL ,
+								p_max_split   IN INTEGER DEFAULT NULL
 							  )
 		RETURN str_tab_t;
 
@@ -112,9 +113,9 @@ AS
 	-- except that if no delimiter is supplied, sequential whitespace characters are
 	-- treated as a single delimiter.
 	--
-	FUNCTION split_text (p_text			IN CLOB,
-								p_separator 	IN VARCHAR2 DEFAULT NULL ,
-								p_max_split 	IN INTEGER DEFAULT NULL
+	FUNCTION split_text (p_text		  IN CLOB,
+								p_separator   IN VARCHAR2 DEFAULT NULL ,
+								p_max_split   IN INTEGER DEFAULT NULL
 							  )
 		RETURN str_tab_t;
 
@@ -124,8 +125,8 @@ AS
 	--
 	-- Null fields in the table result in sequential delimiters in the returned string.
 	--
-	FUNCTION join_text (p_text_tab	  IN str_tab_t,
-							  p_separator	  IN VARCHAR2 DEFAULT NULL
+	FUNCTION join_text (p_text_tab	 IN str_tab_t,
+							  p_separator	 IN VARCHAR2 DEFAULT NULL
 							 )
 		RETURN VARCHAR2;
 
@@ -133,10 +134,9 @@ AS
 	-- Formats the XML in the CLOB to have one element tag per line, indented by
 	-- the specified string.
 	--
-	PROCEDURE format_xml (
-		p_xml_clob		IN OUT NOCOPY CLOB,
-		p_indent 		IN 			  VARCHAR2 DEFAULT CHR (9)
-	);
+	PROCEDURE format_xml (p_xml_clob   IN OUT NOCOPY CLOB,
+								 p_indent	  IN				 VARCHAR2 DEFAULT CHR (9)
+								);
 
 	--------------------------------------------------------------------------------
 	-- Parses a CLOB into a table of tables of strings.
@@ -203,8 +203,8 @@ AS
 	FUNCTION get_sub_id (p_full_id IN VARCHAR2)
 		RETURN VARCHAR2;
 
-	FUNCTION get_ts_code (p_cwms_ts_id	 IN VARCHAR2,
-								 p_db_office_code IN NUMBER
+	FUNCTION get_ts_code (p_cwms_ts_id		  IN VARCHAR2,
+								 p_db_office_code   IN NUMBER
 								)
 		RETURN NUMBER;
 
@@ -214,14 +214,14 @@ AS
 	FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
 		RETURN VARCHAR2;
 
-	FUNCTION concat_ts_id (p_base_location_id IN VARCHAR2,
-								  p_sub_location_id IN VARCHAR2,
-								  p_base_parameter_id IN VARCHAR2,
-								  p_sub_parameter_id IN VARCHAR2,
-								  p_parameter_type_id IN VARCHAR2,
-								  p_interval_id  IN VARCHAR2,
-								  p_duration_id  IN VARCHAR2,
-								  p_version_id   IN VARCHAR2
+	FUNCTION concat_ts_id (p_base_location_id 	IN VARCHAR2,
+								  p_sub_location_id		IN VARCHAR2,
+								  p_base_parameter_id	IN VARCHAR2,
+								  p_sub_parameter_id 	IN VARCHAR2,
+								  p_parameter_type_id	IN VARCHAR2,
+								  p_interval_id			IN VARCHAR2,
+								  p_duration_id			IN VARCHAR2,
+								  p_version_id 			IN VARCHAR2
 								 )
 		RETURN VARCHAR2;
 
@@ -271,11 +271,11 @@ AS
 	--------------------------------------------------------------------------------
 	-- function pause_mv_refresh
 	--
--- Commented out because it doesn't appear to be used anywhere
---	FUNCTION pause_mv_refresh (p_mview_name	IN VARCHAR2,
---										p_reason 		IN VARCHAR2 DEFAULT NULL
---									  )
---		RETURN UROWID;
+	-- Commented out because it doesn't appear to be used anywhere
+	--   FUNCTION pause_mv_refresh (p_mview_name   IN VARCHAR2,
+	-- 									  p_reason		  IN VARCHAR2 DEFAULT NULL
+	-- 									 )
+	-- 	  RETURN UROWID;
 
 	--------------------------------------------------------------------------------
 	-- procedure resume_mv_refresh
@@ -306,49 +306,51 @@ AS
 	--  A null input generates a result of '%'.
 	--
 	-- +--------------+-------------------------------------------------------------------------+
-	-- |					|										Output String										  |
-	-- |					+------------------------------------------------------------+------------+
-	-- |					|									  Recognize SQL						 | 			  |
-	-- |					|										Wildcards?							 | 			  |
-	-- |					+------+---------------------------+-----+-------------------+ 			  |
-	-- | Input String | No	 : comments 					  | Yes : comments			 | Different? |
+	-- |				  |									  Output String										 |
+	-- |				  +------------------------------------------------------------+------------+
+	-- |				  |									 Recognize SQL 						|				 |
+	-- |				  |									  Wildcards?							|				 |
+	-- |				  +------+---------------------------+-----+-------------------+				 |
+	-- | Input String | No	: comments						 | Yes : comments 			| Different? |
 	-- +--------------+------+---------------------------+-----+-------------------+------------+
-	-- | %				| \%	 : literal '%'               | %   : multi-wildcard    | Yes        |
-	-- | _				| \_	 : literal '_'               | _   : single-wildcard   | Yes        |
-	-- | *				| %	 : multi-wildcard 			  | %   : multi-wildcard	 | No 		  |
-	-- | ?				| _	 : single-wildcard			  | _   : single-wildcard	 | No 		  |
-	-- | \%				|		 : not allowed 				  | \%  : literal '%'       | Yes        |
-	-- | \_				|		 : not allowed 				  | \_  : literal '_'       | Yes        |
-	-- | \*				| *	 : literal '*'               | *   : literal '*'       | No         |
-	-- | \?				| ?	 : literal '?'               | ?   : literal '?'       | No         |
-	-- | \\% 			| \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
-	-- | \\_ 			| \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
-	-- | \\* 			| \\%  : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
-	-- | \\? 			| \\_  : literal '\' + swc         | \\_ : literal '\' + swc | No         |
+	-- | %			  | \%	: literal '%'               | %   : multi-wildcard    | Yes        |
+	-- | _			  | \_	: literal '_'               | _   : single-wildcard   | Yes        |
+	-- | *			  | % 	: multi-wildcard				 | %	 : multi-wildcard 	| No			 |
+	-- | ?			  | _ 	: single-wildcard 			 | _	 : single-wildcard	| No			 |
+	-- | \%			  |		: not allowed					 | \%  : literal '%'       | Yes        |
+	-- | \_			  |		: not allowed					 | \_  : literal '_'       | Yes        |
+	-- | \*			  | * 	: literal '*'               | *   : literal '*'       | No         |
+	-- | \?			  | ? 	: literal '?'               | ?   : literal '?'       | No         |
+	-- | \\% 		  | \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
+	-- | \\_ 		  | \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
+	-- | \\* 		  | \\%	: literal '\' + mwc         | \\% : literal '\' + mwc | No         |
+	-- | \\? 		  | \\_	: literal '\' + swc         | \\_ : literal '\' + swc | No         |
 	-- +--------------+------+---------------------------+-----+-------------------+------------+
-	FUNCTION normalize_wildcards (p_string 		IN VARCHAR2,
-											p_recognize_sql	BOOLEAN DEFAULT FALSE
+	FUNCTION normalize_wildcards (p_string 			IN VARCHAR2,
+											p_recognize_sql		BOOLEAN DEFAULT FALSE
 										  )
 		RETURN VARCHAR2;
-    FUNCTION denormalize_wildcards (p_string IN VARCHAR2)
-        RETURN VARCHAR2;
-	PROCEDURE parse_ts_id (p_base_location_id   OUT VARCHAR2,
-								  p_sub_location_id	 OUT VARCHAR2,
-								  p_base_parameter_id	OUT VARCHAR2,
-								  p_sub_parameter_id   OUT VARCHAR2,
-								  p_parameter_type_id	OUT VARCHAR2,
-								  p_interval_id	  OUT VARCHAR2,
-								  p_duration_id	  OUT VARCHAR2,
-								  p_version_id 	  OUT VARCHAR2,
-								  p_cwms_ts_id   IN		VARCHAR2
+
+	FUNCTION denormalize_wildcards (p_string IN VARCHAR2)
+		RETURN VARCHAR2;
+
+	PROCEDURE parse_ts_id (p_base_location_id 		OUT VARCHAR2,
+								  p_sub_location_id			OUT VARCHAR2,
+								  p_base_parameter_id		OUT VARCHAR2,
+								  p_sub_parameter_id 		OUT VARCHAR2,
+								  p_parameter_type_id		OUT VARCHAR2,
+								  p_interval_id				OUT VARCHAR2,
+								  p_duration_id				OUT VARCHAR2,
+								  p_version_id 				OUT VARCHAR2,
+								  p_cwms_ts_id 			IN 	 VARCHAR2
 								 );
 
 	--------------------------------------------------------------------
 	-- Returns an AND/OR predicate string for a multi-element search set.
 	--
-	FUNCTION parse_search_string (p_search_patterns IN VARCHAR2,
-											p_search_column IN VARCHAR2,
-											p_use_upper 	IN BOOLEAN DEFAULT TRUE
+	FUNCTION parse_search_string (p_search_patterns   IN VARCHAR2,
+											p_search_column	  IN VARCHAR2,
+											p_use_upper 		  IN BOOLEAN DEFAULT TRUE
 										  )
 		RETURN VARCHAR2;
 
@@ -382,37 +384,37 @@ AS
 	FUNCTION current_millis
 		RETURN NUMBER;
 
-   --------------------------------------------------------------------
-   -- This procedure changes all the materialized views associated with
-   -- time series ids to be changed from REFRESH FAST ON COMMIT to
-   -- REFRESH ON DEMAND.  This allows for fast bulk creation of tsids.
-   --------------------------------------------------------------------
+	--------------------------------------------------------------------
+	-- This procedure changes all the materialized views associated with
+	-- time series ids to be changed from REFRESH FAST ON COMMIT to
+	-- REFRESH ON DEMAND.  This allows for fast bulk creation of tsids.
+	--------------------------------------------------------------------
 	PROCEDURE pause_timeseries_mviews;
 
-   --------------------------------------------------------------------
-   -- This procedure changes all the materialized views associated with
-   -- time series ids to be changed from REFRESH ON DEMAND to REFRESH
-   -- FAST ON COMMIT.
-   -- 
-   -- This is actually quite a bit slower than simply dropping and 
-   -- rebuilding the materialzed vews (see REBUILD_TIMESERIES_MVIEWS),
-   -- but has the advantage of not invalidating running code in the 
-   -- process.
-   --------------------------------------------------------------------
-   PROCEDURE unpause_timeseries_mviews;
+	--------------------------------------------------------------------
+	-- This procedure changes all the materialized views associated with
+	-- time series ids to be changed from REFRESH ON DEMAND to REFRESH
+	-- FAST ON COMMIT.
+	--
+	-- This is actually quite a bit slower than simply dropping and
+	-- rebuilding the materialzed vews (see REBUILD_TIMESERIES_MVIEWS),
+	-- but has the advantage of not invalidating running code in the
+	-- process.
+	--------------------------------------------------------------------
+	PROCEDURE unpause_timeseries_mviews;
 
-   --------------------------------------------------------------------
-   -- This procedure drops and rebuilds all the materialized views
-   -- associated with time series ids.  Call this after calling 
-   -- PAUSE_TIMESERIES_MVIEWS and bulk creating time series ids.  This
-   -- is considerably faster than calling UNPAUSE_TIMESEIRES_MVIEWS,
-   -- but has the nasty side-effect of invalidating all objects that
-   -- depend on the views.
-   --
-   -- DO NOT CALL THIS PROCEDURE UNLESS YOU ARE RUNNING FROM A SCRIPT
-   -- FROM WHICH YOU CAN CALL UTL_RECOMP.RECOMP_SERIAL('CWMS_20') OR 
-   -- CAN MANUALLY RECOMPILE THE INVALIDATED OBJECTS (E.G. FROM TOAD).  
-   --------------------------------------------------------------------
+	--------------------------------------------------------------------
+	-- This procedure drops and rebuilds all the materialized views
+	-- associated with time series ids.  Call this after calling
+	-- PAUSE_TIMESERIES_MVIEWS and bulk creating time series ids.	This
+	-- is considerably faster than calling UNPAUSE_TIMESEIRES_MVIEWS,
+	-- but has the nasty side-effect of invalidating all objects that
+	-- depend on the views.
+	--
+	-- DO NOT CALL THIS PROCEDURE UNLESS YOU ARE RUNNING FROM A SCRIPT
+	-- FROM WHICH YOU CAN CALL UTL_RECOMP.RECOMP_SERIAL('CWMS_20') OR
+	-- CAN MANUALLY RECOMPILE THE INVALIDATED OBJECTS (E.G. FROM TOAD).
+	--------------------------------------------------------------------
 	PROCEDURE rebuild_timeseries_mviews;
 
 	--------------------------------------------------------------------
@@ -424,33 +426,39 @@ AS
 	-- Create the partitioned timeseries table view
 	PROCEDURE create_view;
 
-	PROCEDURE get_user_office_data (p_office_id	  OUT VARCHAR2,
-											  p_office_long_name OUT VARCHAR2
+	PROCEDURE get_user_office_data (p_office_id			  OUT VARCHAR2,
+											  p_office_long_name   OUT VARCHAR2
 											 );
 
-	PROCEDURE get_valid_units (p_valid_units		OUT sys_refcursor,
-										p_parameter_id IN 	 VARCHAR2 DEFAULT NULL
+	PROCEDURE get_valid_units (p_valid_units		  OUT sys_refcursor,
+										p_parameter_id   IN		VARCHAR2 DEFAULT NULL
 									  );
+
+	PROCEDURE start_mv_cwms_ts_id_job;
+
+	PROCEDURE stop_mv_cwms_ts_id_job;
+
+	PROCEDURE refresh_mv_cwms_ts_id;
 
 	FUNCTION get_valid_units_tab (p_parameter_id IN VARCHAR2 DEFAULT NULL )
 		RETURN cat_unit_tab_t
 		PIPELINED;
 
-    FUNCTION get_unit_code (p_unit_id                 IN VARCHAR2,
-                                    p_abstract_param_id     IN VARCHAR2 DEFAULT NULL ,
-                                    p_db_office_id          IN VARCHAR2 DEFAULT NULL
-                                  )
+	FUNCTION get_unit_code (p_unit_id				 IN VARCHAR2,
+									p_abstract_param_id	 IN VARCHAR2 DEFAULT NULL ,
+									p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
+								  )
 		RETURN NUMBER;
 
-	FUNCTION get_loc_group_code (p_loc_category_id IN VARCHAR2,
-										  p_loc_group_id IN VARCHAR2,
-										  p_db_office_code IN NUMBER
+	FUNCTION get_loc_group_code (p_loc_category_id	 IN VARCHAR2,
+										  p_loc_group_id		 IN VARCHAR2,
+										  p_db_office_code	 IN NUMBER
 										 )
 		RETURN NUMBER;
 
-	FUNCTION get_loc_group_code (p_loc_category_id IN VARCHAR2,
-										  p_loc_group_id IN VARCHAR2,
-										  p_db_office_id IN VARCHAR2
+	FUNCTION get_loc_group_code (p_loc_category_id	 IN VARCHAR2,
+										  p_loc_group_id		 IN VARCHAR2,
+										  p_db_office_id		 IN VARCHAR2
 										 )
 		RETURN NUMBER;
 
@@ -460,17 +468,21 @@ AS
 	FUNCTION get_interval_string (p_interval IN NUMBER)
 		RETURN VARCHAR2;
 
-	FUNCTION get_default_units (p_parameter_id IN VARCHAR2,
-										 p_unit_system  IN VARCHAR2 DEFAULT 'SI'
+	FUNCTION get_default_units (p_parameter_id	IN VARCHAR2,
+										 p_unit_system 	IN VARCHAR2 DEFAULT 'SI'
 										)
 		RETURN VARCHAR2;
-      
-   --
-   -- sign-extends 32-bit integers so they can be retrieved by 
-   -- java int type
-   --
-   function sign_extend(p_int in integer) return integer;
 
+>>>> ORIGINAL //wcdba/dev/oracle/v2.0/src/cwms/cwms_util_pkg.sql#3
+   
+==== THEIRS //wcdba/dev/oracle/v2.0/src/cwms/cwms_util_pkg.sql#4
+	--
+	-- sign-extends 32-bit integers so they can be retrieved by
+	-- java int type
+	--
+	FUNCTION sign_extend (p_int IN INTEGER)
+		RETURN INTEGER;
+==== YOURS //iwr-nb-01552287/wcdba/dev/oracle/dev/src/cwms/cwms_util_pkg.sql
    function months_to_yminterval(
       p_months in integer) 
       return interval year to month;
@@ -499,6 +511,7 @@ AS
       p_odbc_str in varchar2)
       return date;
 
+<<<<
 END cwms_util;
 /
 
