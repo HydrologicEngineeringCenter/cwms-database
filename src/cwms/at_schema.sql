@@ -26,15 +26,15 @@ begin
             if substr(rec.object_name, 1, 6) = 'MLOG$_' then
                  execute immediate 'drop materialized view log on '
                                    || substr(rec.object_name, 7); 
-                                      
+
                  dbms_output.put_line ('Dropped materialized view log on '
                                        || substr(rec.object_name, 7)
-                                      );
+                    );
             else
                execute immediate 'drop table ' 
                                   || rec.object_name 
-                                  || 'cascade constraints'; 
-                                
+                           || ' cascade constraints';
+
                dbms_output.put_line ('Dropped table ' || rec.object_name);
             end if;                   
       exception               
@@ -83,27 +83,16 @@ NOPARALLEL
 MONITORING
 /
 
-INSERT INTO at_ts_table_properties
-     VALUES (DATE '1800-01-01', DATE '2002-01-01', 'AT_TSV_ARCHIVAL');
-INSERT INTO at_ts_table_properties
-     VALUES (DATE '2002-01-01', DATE '2003-01-01', 'AT_TSV_2002');
-INSERT INTO at_ts_table_properties
-     VALUES (DATE '2003-01-01', DATE '2004-01-01', 'AT_TSV_2003');
-INSERT INTO at_ts_table_properties
-     VALUES (DATE '2004-01-01', DATE '2005-01-01', 'AT_TSV_2004');
-INSERT INTO at_ts_table_properties
-     VALUES (DATE '2005-01-01', DATE '2006-01-01', 'AT_TSV_2005');
-INSERT INTO at_ts_table_properties
-     VALUES (DATE '2006-01-01', DATE '2007-01-01', 'AT_TSV_2006');
-INSERT INTO at_ts_table_properties
-     VALUES (DATE '2007-01-01', DATE '2008-01-01', 'AT_TSV_2007');
-INSERT INTO at_ts_table_properties
-     VALUES (DATE '2008-01-01', DATE '2009-01-01', 'AT_TSV_2008');
-INSERT INTO at_ts_table_properties
-     VALUES (DATE '2009-01-01', DATE '2010-01-01', 'AT_TSV_2009');
-INSERT INTO at_ts_table_properties
-     VALUES (DATE '2010-01-01', DATE '2100-01-01', 'AT_TSV_2010');
 COMMIT ;
+
+--
+----
+------
+-- The at_ts_table_properties table is loaded with data
+-- in the at_schema_tsv.sql ddl file.
+------
+----
+--
 
 ---------------------------------
 -- AT_BASE_LOCATION table.
@@ -256,8 +245,8 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
-NOCOMPRESS 
+LOGGING
+NOCOMPRESS
 NOCACHE
 NOPARALLEL
 MONITORING
@@ -960,7 +949,7 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
+LOGGING
 NOCOMPRESS 
 NOCACHE
 NOPARALLEL
@@ -1107,7 +1096,7 @@ STORAGE    (
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
-LOGGING 
+LOGGING
 NOCOMPRESS 
 NOCACHE
 NOPARALLEL
@@ -1225,15 +1214,15 @@ CREATE TABLE AT_DISPLAY_INDICATOR
 )   
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
-PCTFREE    10
+    PCTFREE    10
 INITRANS   1
-MAXTRANS   255
-STORAGE    (
+    MAXTRANS   255
+    STORAGE    (
             INITIAL          24K
             NEXT             24K
-            MINEXTENTS       1
+                MINEXTENTS       1
             MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
+                PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
 LOGGING 
@@ -1276,7 +1265,7 @@ CREATE UNIQUE INDEX AT_DISPLAY_INDICATOR_U1 ON AT_DISPLAY_INDICATOR
    NVL(ASCENDING_DESCENDING, '@'),
    NVL(REQUIRED_DURATION, TO_DSINTERVAL('0 0:0:0')),
    INDICATOR_LEVEL
-)
+            )
 LOGGING
 TABLESPACE CWMS_20AT_DATA
 PCTFREE    10
@@ -1289,7 +1278,7 @@ STORAGE    (
             MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
-           )
+            )
 NOPARALLEL
 /
 
@@ -1491,7 +1480,7 @@ INSERT INTO at_loc_group VALUES (6, 1, 'CBT Station ID',      'Columbia Basin Te
 INSERT INTO at_loc_group VALUES (7, 1, 'USBR Station ID',     'US Bureau of Reclamation Station ID',                      53);
 INSERT INTO at_loc_group VALUES (8, 1, 'TVA Station ID',      'Tennessee Valley Authority Station ID',                    53);
 INSERT INTO at_loc_group VALUES (9, 1, 'NRCS Station ID',     'Natural Resources Conservation Service Station ID',        53);
-COMMIT;
+COMMIT ;
 -----
 
 CREATE TABLE at_loc_group_assignment
@@ -2352,25 +2341,25 @@ CREATE UNIQUE INDEX at_properties_uk1 ON at_properties(office_code, UPPER("PROP_
 -- AT_PROPERTIES default data.
 -- 
 INSERT INTO at_properties values(
-    (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
-    'CWMSDB',
-    'logging.table.max_entries',
-    '100000',
-    'Max number of rows to keep when trimming log.');
-    
+	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+	'CWMSDB',
+	'logging.table.max_entries',
+	'100000',
+	'Max number of rows to keep when trimming log.');
+	
 INSERT INTO at_properties values(
-    (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
-    'CWMSDB',
-    'logging.entry.max_age',
-    '120',
-    'Max entry age in days to keep when trimming log.');
-    
+	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+	'CWMSDB',
+	'logging.entry.max_age',
+	'120',
+	'Max entry age in days to keep when trimming log.');
+	
 INSERT INTO at_properties values(
-    (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
-    'CWMSDB',
-    'logging.auto_trim.interval',
-    '240',
-    'Interval in minutes for job TRIM_LOG_JOB to execute.');
+	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+	'CWMSDB',
+	'logging.auto_trim.interval',
+	'240',
+	'Interval in minutes for job TRIM_LOG_JOB to execute.');
 
 -----------------------------
 -- AT_REPORT_TEMPLATES table
@@ -2607,8 +2596,8 @@ INSERT INTO at_clob
   <center>
     <h2>
       Time series IDs matching pattern 
-        "<xsl:value-of select="/tsid_catalog[1]/@pattern"/>" for Office 
-        "<xsl:value-of select="/tsid_catalog[1]/@office"/>".
+	    "<xsl:value-of select="/tsid_catalog[1]/@pattern"/>" for Office 
+	    "<xsl:value-of select="/tsid_catalog[1]/@office"/>".
     </h2>
     <hr/>
     <table border="1"> 
