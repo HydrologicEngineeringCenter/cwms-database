@@ -102,7 +102,7 @@ BEGIN
                 l_end_date := l_first_annual_year || '-01-01';
             ELSIF i = 3
             THEN
-                -- Infinity & Beyond Table...
+                -- Infinity and Beyond Table...
                 l_start_date := l_last_annual_year + 1 || '-01-01';
 
                 l_end_date := l_infinity_end_year || '-01-01';

@@ -1,11 +1,4 @@
->>>> ORIGINAL //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#2
-/* Formatted on 2008/11/07 08:49 (Formatter Plus v4.8.8) */
-==== THEIRS //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#3
-/* Formatted on 11/20/2009 11:29:30 AM (QP5 v5.115.810.9015) */
-==== YOURS //iwr-nb-01552287/wcdba/dev/oracle/dev/src/cwms/cwms_cat_pkg_body.sql
 SET define off
-/* Formatted on 2008/11/07 08:49 (Formatter Plus v4.8.8) */
-<<<<
 CREATE OR REPLACE PACKAGE BODY cwms_cat
 IS
 	-------------------------------------------------------------------------------
@@ -235,254 +228,221 @@ IS
 	-- 										 r.gage_id
 	-- 										);
 	--   END cat_loc_alias_rec2obj;
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION record-to-object conversion function
+   --
+      FUNCTION cat_location_rec2obj (r IN cat_location_rec_t)
+         RETURN cat_location_obj_t
+      IS
+      BEGIN
+         RETURN cat_location_obj_t (
+            r.db_office_id,
+            r.location_id,
+            r.base_location_id,
+            r.sub_location_id,
+            r.state_initial,
+            r.county_name,
+            r.time_zone_name,
+            r.location_type,
+            r.latitude,
+            r.longitude,
+            r.horizontal_datum,
+            r.elevation,
+            r.elev_unit_id,
+            r.vertical_datum,
+            r.public_name,
+            r.long_name,
+            r.description,
+            r.active_flag
+            );
+      END cat_location_rec2obj;
 
->>>> ORIGINAL //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#2
----------------------------------------------------------------------------------
----- CAT_LOC_ALIAS record-to-object conversion function
-----
---   FUNCTION cat_loc_alias_rec2obj (r IN cat_loc_alias_rec_t)
---      RETURN cat_loc_alias_obj_t
---   IS
---   BEGIN
---      RETURN cat_loc_alias_obj_t (r.office_id,
---                                  r.cwms_id,
---                                  r.source_id,
---                                  r.gage_id
---                                 );
---   END cat_loc_alias_rec2obj;
-==== THEIRS //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#3
-	-------------------------------------------------------------------------------
-	-- CAT_LOC_ALIAS table-to-object conversion function
-	--
-	--   FUNCTION cat_loc_alias_tab2obj (t IN cat_loc_alias_tab_t)
-	-- 	RETURN cat_loc_alias_otab_t
-	--   IS
-	-- 	o	 cat_loc_alias_otab_t;
-	--   BEGIN
-	-- 	FOR i IN 1 .. t.LAST
-	-- 	LOOP
-	-- 		o (i) := cat_loc_alias_rec2obj (t (i));
-	-- 	END LOOP;
-==== YOURS //iwr-nb-01552287/wcdba/dev/oracle/dev/src/cwms/cwms_cat_pkg_body.sql
--------------------------------------------------------------------------------
--- CAT_LOCATION record-to-object conversion function
---
-   FUNCTION cat_location_rec2obj (r IN cat_location_rec_t)
-      RETURN cat_location_obj_t
-   IS
-   BEGIN
-      RETURN cat_location_obj_t (
-         r.db_office_id,
-         r.location_id,
-         r.base_location_id,
-         r.sub_location_id,
-         r.state_initial,
-         r.county_name,
-         r.time_zone_name,
-         r.location_type,
-         r.latitude,
-         r.longitude,
-         r.horizontal_datum,
-         r.elevation,
-         r.elev_unit_id,
-         r.vertical_datum,
-         r.public_name,
-         r.long_name,
-         r.description,
-         r.active_flag
-         );
-   END cat_location_rec2obj;
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION table-to-object conversion function
+   --
+      FUNCTION cat_location_tab2obj (t IN cat_location_tab_t)
+         RETURN cat_location_otab_t
+      IS
+         o   cat_location_otab_t;
+      BEGIN
+         FOR i IN 1 .. t.LAST
+         LOOP
+            o (i) := cat_location_rec2obj (t (i));
+         END LOOP;
 
--------------------------------------------------------------------------------
--- CAT_LOCATION table-to-object conversion function
---
-   FUNCTION cat_location_tab2obj (t IN cat_location_tab_t)
-      RETURN cat_location_otab_t
-   IS
-      o   cat_location_otab_t;
-   BEGIN
-      FOR i IN 1 .. t.LAST
-      LOOP
-         o (i) := cat_location_rec2obj (t (i));
-      END LOOP;
+         RETURN o;
+      END cat_location_tab2obj;
 
-      RETURN o;
-   END cat_location_tab2obj;
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION object-to-record conversion function
+   --
+      FUNCTION cat_location_obj2rec (o IN cat_location_obj_t)
+         RETURN cat_location_rec_t
+      IS
+         r   cat_location_rec_t := NULL;
+      BEGIN
+         IF o IS NOT NULL
+         THEN
+            r.db_office_id := o.db_office_id;
+            r.location_id := o.location_id;
+            r.base_location_id := o.base_location_id;
+            r.sub_location_id := o.sub_location_id;
+            r.state_initial := o.state_initial;
+            r.county_name := o.county_name;
+            r.time_zone_name := o.time_zone_name;
+            r.location_type := o.location_type;
+            r.latitude := o.latitude;
+            r.longitude := o.longitude;
+            r.horizontal_datum := o.horizontal_datum;
+            r.elevation := o.elevation;
+            r.elev_unit_id := o.elev_unit_id;
+            r.vertical_datum := o.vertical_datum;
+            r.public_name := o.public_name;
+            r.long_name := o.long_name;
+            r.description := o.description;
+            r.active_flag := o.active_flag;
+         END IF;
 
--------------------------------------------------------------------------------
--- CAT_LOCATION object-to-record conversion function
---
-   FUNCTION cat_location_obj2rec (o IN cat_location_obj_t)
-      RETURN cat_location_rec_t
-   IS
-      r   cat_location_rec_t := NULL;
-   BEGIN
-      IF o IS NOT NULL
-      THEN
-         r.db_office_id := o.db_office_id;
-         r.location_id := o.location_id;
-         r.base_location_id := o.base_location_id;
-         r.sub_location_id := o.sub_location_id;
-         r.state_initial := o.state_initial;
-         r.county_name := o.county_name;
-         r.time_zone_name := o.time_zone_name;
-         r.location_type := o.location_type;
-         r.latitude := o.latitude;
-         r.longitude := o.longitude;
-         r.horizontal_datum := o.horizontal_datum;
-         r.elevation := o.elevation;
-         r.elev_unit_id := o.elev_unit_id;
-         r.vertical_datum := o.vertical_datum;
-         r.public_name := o.public_name;
-         r.long_name := o.long_name;
-         r.description := o.description;
-         r.active_flag := o.active_flag;
-      END IF;
+         RETURN r;
+      END cat_location_obj2rec;
 
-      RETURN r;
-   END cat_location_obj2rec;
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION object-to-table conversion function
+   --
+      FUNCTION cat_location_obj2tab (o IN cat_location_otab_t)
+         RETURN cat_location_tab_t
+      IS
+         t   cat_location_tab_t;
+      BEGIN
+         FOR i IN 1 .. o.LAST
+         LOOP
+            t (i) := cat_location_obj2rec (o (i));
+         END LOOP;
 
--------------------------------------------------------------------------------
--- CAT_LOCATION object-to-table conversion function
---
-   FUNCTION cat_location_obj2tab (o IN cat_location_otab_t)
-      RETURN cat_location_tab_t
-   IS
-      t   cat_location_tab_t;
-   BEGIN
-      FOR i IN 1 .. o.LAST
-      LOOP
-         t (i) := cat_location_obj2rec (o (i));
-      END LOOP;
+         RETURN t;
+      END cat_location_obj2tab;
 
-      RETURN t;
-   END cat_location_obj2tab;
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION2 record-to-object conversion function
+   --
+      FUNCTION cat_location2_rec2obj (r IN cat_location2_rec_t)
+         RETURN cat_location2_obj_t
+      IS
+      BEGIN
+         RETURN cat_location2_obj_t (
+            r.db_office_id,
+            r.location_id,
+            r.base_location_id,
+            r.sub_location_id,
+            r.state_initial,
+            r.county_name,
+            r.time_zone_name,
+            r.location_type,
+            r.latitude,
+            r.longitude,
+            r.horizontal_datum,
+            r.elevation,
+            r.elev_unit_id,
+            r.vertical_datum,
+            r.public_name,
+            r.long_name,
+            r.description,
+            r.active_flag,
+            r.location_category_id,
+            r.map_label,
+            r.published_latitude,
+            r.published_longitude,
+            r.bounding_office_id,
+            r.nation_id,
+            r.nearest_city
+            );
+      END cat_location2_rec2obj;
 
--------------------------------------------------------------------------------
--- CAT_LOCATION2 record-to-object conversion function
---
-   FUNCTION cat_location2_rec2obj (r IN cat_location2_rec_t)
-      RETURN cat_location2_obj_t
-   IS
-   BEGIN
-      RETURN cat_location2_obj_t (
-         r.db_office_id,
-         r.location_id,
-         r.base_location_id,
-         r.sub_location_id,
-         r.state_initial,
-         r.county_name,
-         r.time_zone_name,
-         r.location_type,
-         r.latitude,
-         r.longitude,
-         r.horizontal_datum,
-         r.elevation,
-         r.elev_unit_id,
-         r.vertical_datum,
-         r.public_name,
-         r.long_name,
-         r.description,
-         r.active_flag,
-         r.location_category_id,
-         r.map_label,
-         r.published_latitude,
-         r.published_longitude,
-         r.bounding_office_id,
-         r.nation_id,
-         r.nearest_city
-         );
-   END cat_location2_rec2obj;
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION2 table-to-object conversion function
+   --
+      FUNCTION cat_location2_tab2obj (t IN cat_location2_tab_t)
+         RETURN cat_location2_otab_t
+      IS
+         o   cat_location2_otab_t;
+      BEGIN
+         FOR i IN 1 .. t.LAST
+         LOOP
+            o (i) := cat_location2_rec2obj (t (i));
+         END LOOP;
 
--------------------------------------------------------------------------------
--- CAT_LOCATION2 table-to-object conversion function
---
-   FUNCTION cat_location2_tab2obj (t IN cat_location2_tab_t)
-      RETURN cat_location2_otab_t
-   IS
-      o   cat_location2_otab_t;
-   BEGIN
-      FOR i IN 1 .. t.LAST
-      LOOP
-         o (i) := cat_location2_rec2obj (t (i));
-      END LOOP;
+         RETURN o;
+      END cat_location2_tab2obj;
 
-      RETURN o;
-   END cat_location2_tab2obj;
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION2 object-to-record conversion function
+   --
+      FUNCTION cat_location2_obj2rec (o IN cat_location2_obj_t)
+         RETURN cat_location2_rec_t
+      IS
+         r   cat_location2_rec_t := NULL;
+      BEGIN
+         IF o IS NOT NULL
+         THEN
+            r.db_office_id := o.db_office_id;
+            r.location_id := o.location_id;
+            r.base_location_id := o.base_location_id;
+            r.sub_location_id := o.sub_location_id;
+            r.state_initial := o.state_initial;
+            r.county_name := o.county_name;
+            r.time_zone_name := o.time_zone_name;
+            r.location_type := o.location_type;
+            r.latitude := o.latitude;
+            r.longitude := o.longitude;
+            r.horizontal_datum := o.horizontal_datum;
+            r.elevation := o.elevation;
+            r.elev_unit_id := o.elev_unit_id;
+            r.vertical_datum := o.vertical_datum;
+            r.public_name := o.public_name;
+            r.long_name := o.long_name;
+            r.description := o.description;
+            r.active_flag := o.active_flag;
+            r.location_category_id := o.location_category_id;
+            r.map_label := o.map_label;
+            r.published_latitude := o.published_latitude;
+            r.published_longitude := o.published_longitude;
+            r.bounding_office_id := o.bounding_office_id;
+            r.nation_id := o.nation_id;
+            r.nearest_city := o.nearest_city;
+         END IF;
 
--------------------------------------------------------------------------------
--- CAT_LOCATION2 object-to-record conversion function
---
-   FUNCTION cat_location2_obj2rec (o IN cat_location2_obj_t)
-      RETURN cat_location2_rec_t
-   IS
-      r   cat_location2_rec_t := NULL;
-   BEGIN
-      IF o IS NOT NULL
-      THEN
-         r.db_office_id := o.db_office_id;
-         r.location_id := o.location_id;
-         r.base_location_id := o.base_location_id;
-         r.sub_location_id := o.sub_location_id;
-         r.state_initial := o.state_initial;
-         r.county_name := o.county_name;
-         r.time_zone_name := o.time_zone_name;
-         r.location_type := o.location_type;
-         r.latitude := o.latitude;
-         r.longitude := o.longitude;
-         r.horizontal_datum := o.horizontal_datum;
-         r.elevation := o.elevation;
-         r.elev_unit_id := o.elev_unit_id;
-         r.vertical_datum := o.vertical_datum;
-         r.public_name := o.public_name;
-         r.long_name := o.long_name;
-         r.description := o.description;
-         r.active_flag := o.active_flag;
-         r.location_category_id := o.location_category_id;
-         r.map_label := o.map_label;
-         r.published_latitude := o.published_latitude;
-         r.published_longitude := o.published_longitude;
-         r.bounding_office_id := o.bounding_office_id;
-         r.nation_id := o.nation_id;
-         r.nearest_city := o.nearest_city;
-      END IF;
+         RETURN r;
+      END cat_location2_obj2rec;
 
-      RETURN r;
-   END cat_location2_obj2rec;
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION2 object-to-table conversion function
+   --
+      FUNCTION cat_location2_obj2tab (o IN cat_location2_otab_t)
+         RETURN cat_location2_tab_t
+      IS
+         t   cat_location2_tab_t;
+      BEGIN
+         FOR i IN 1 .. o.LAST
+         LOOP
+            t (i) := cat_location2_obj2rec (o (i));
+         END LOOP;
 
--------------------------------------------------------------------------------
--- CAT_LOCATION2 object-to-table conversion function
---
-   FUNCTION cat_location2_obj2tab (o IN cat_location2_otab_t)
-      RETURN cat_location2_tab_t
-   IS
-      t   cat_location2_tab_t;
-   BEGIN
-      FOR i IN 1 .. o.LAST
-      LOOP
-         t (i) := cat_location2_obj2rec (o (i));
-      END LOOP;
+         RETURN t;
+      END cat_location2_obj2tab;
 
-      RETURN t;
-   END cat_location2_obj2tab;
-
----------------------------------------------------------------------------------
----- CAT_LOC_ALIAS record-to-object conversion function
-----
---   FUNCTION cat_loc_alias_rec2obj (r IN cat_loc_alias_rec_t)
---      RETURN cat_loc_alias_obj_t
---   IS
---   BEGIN
---      RETURN cat_loc_alias_obj_t (r.office_id,
---                                  r.cwms_id,
---                                  r.source_id,
---                                  r.gage_id
---                                 );
---   END cat_loc_alias_rec2obj;
-<<<<
-
-	-- 	RETURN o;
-	--   END cat_loc_alias_tab2obj;
+   ---------------------------------------------------------------------------------
+   ---- CAT_LOC_ALIAS record-to-object conversion function
+   ----
+   --   FUNCTION cat_loc_alias_rec2obj (r IN cat_loc_alias_rec_t)
+   --      RETURN cat_loc_alias_obj_t
+   --   IS
+   --   BEGIN
+   --      RETURN cat_loc_alias_obj_t (r.office_id,
+   --                                  r.cwms_id,
+   --                                  r.source_id,
+   --                                  r.gage_id
+   --                                 );
+   --   END cat_loc_alias_rec2obj;
 
 	---------------------------------------------------------------------------------
 	---- CAT_LOC_ALIAS object-to-record conversion function
@@ -1296,123 +1256,6 @@ IS
 		l_db_office_id := cwms_util.get_db_office_id (p_db_office_id);
 		l_db_office_code := cwms_util.get_db_office_code (l_db_office_id);
 
->>>> ORIGINAL //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#2
---      DBMS_OUTPUT.put_line ('cat_ts_id is here!');
-      IF p_ts_subselect_string IS NULL
-      THEN
-         IF l_loc_group_code IS NULL
-         THEN
---            DBMS_OUTPUT.put_line (   'subselect & loc_group_code are null! '
---                                  || CHR (10)
---                                  || 'db_office_code = '
---                                  || l_db_office_code
---                                  || CHR (10)
---                                  || 'user_id = '
---                                  || cwms_util.get_user_id
---                                 );
-            OPEN p_cwms_cat FOR
-               SELECT   b.db_office_id, b.base_location_id, b.cwms_ts_id,
-                        b.interval_utc_offset,
-                        z.time_zone_code lrts_timezone, b.ts_active_flag,
-                        b.user_privileges
-                   FROM (SELECT a.ts_code, v.db_office_id, v.base_location_id,
-                                v.cwms_ts_id, v.interval_utc_offset,
-                                v.ts_active_flag, a.user_privileges
-                           FROM mv_cwms_ts_id v,
-                                (SELECT aa.ts_code,
-                                        aa.net_privilege_bit user_privileges
-                                   FROM mv_sec_ts_privileges aa
-                                  WHERE aa.username = cwms_util.get_user_id) a
-                          WHERE v.ts_code = a.ts_code
-                            AND v.db_office_code = l_db_office_code) b,
-                        at_cwms_ts_spec s,
-                        cwms_time_zone z
-                  WHERE b.ts_code = s.ts_code AND s.time_zone_code = z.time_zone_code(+)
-               ORDER BY UPPER (b.cwms_ts_id) ASC;
-         ELSE
-            OPEN p_cwms_cat FOR
-               SELECT   b.ts_code, b.db_office_id, b.base_location_id,
-                        b.cwms_ts_id, b.interval_utc_offset,
-                        z.time_zone_code lrts_timezone, b.ts_active_flag,
-                        b.user_privileges
-                   FROM (SELECT a.ts_code, v.location_code, v.db_office_id,
-                                v.base_location_id, v.cwms_ts_id,
-                                v.interval_utc_offset, v.ts_active_flag,
-                                a.user_privileges
-                           FROM mv_cwms_ts_id v,
-                                (SELECT aa.ts_code,
-                                        aa.net_privilege_bit user_privileges
-                                   FROM mv_sec_ts_privileges aa
-                                  WHERE aa.username = cwms_util.get_user_id) a
-                          WHERE v.ts_code = a.ts_code
-                            AND v.db_office_code = l_db_office_code) b,
-                        (SELECT c.location_code
-                           FROM at_loc_group_assignment c
-                          WHERE c.loc_group_code = l_loc_group_code) cc,
-                        at_cwms_ts_spec s,
-                        cwms_time_zone z
-                  WHERE b.location_code = cc.location_code
-                    AND b.ts_code = s.ts_code
-                    AND s.time_zone_code = z.time_zone_code(+)
-               ORDER BY UPPER (b.cwms_ts_id) ASC;
-         END IF;
-      ELSE
-         IF l_loc_group_code IS NULL
-         THEN
-            OPEN p_cwms_cat FOR
-               SELECT   b.db_office_id, b.base_location_id, b.cwms_ts_id,
-                        b.interval_utc_offset,
-                        z.time_zone_code lrts_timezone, b.ts_active_flag,
-                        b.user_privileges
-                   FROM (SELECT a.ts_code, v.db_office_id, v.base_location_id,
-                                v.cwms_ts_id, v.interval_utc_offset,
-                                v.ts_active_flag, a.user_privileges
-                           FROM mv_cwms_ts_id v,
-                                (SELECT aa.ts_code,
-                                        aa.net_privilege_bit user_privileges
-                                   FROM mv_sec_ts_privileges aa
-                                  WHERE aa.username = cwms_util.get_user_id) a
-                          WHERE v.ts_code = a.ts_code
-                            AND v.db_office_code = l_db_office_code) b,
-                        at_cwms_ts_spec s,
-                        cwms_time_zone z
-                  WHERE b.ts_code = s.ts_code
-                    AND s.time_zone_code = z.time_zone_code(+)
-                    AND UPPER (b.cwms_ts_id) LIKE
-                                                 UPPER (l_ts_subselect_string)
-               ORDER BY UPPER (b.cwms_ts_id) ASC;
-         ELSE
-            OPEN p_cwms_cat FOR
-               SELECT   b.ts_code, b.db_office_id, b.base_location_id,
-                        b.cwms_ts_id, b.interval_utc_offset,
-                        z.time_zone_code lrts_timezone, b.ts_active_flag,
-                        b.user_privileges
-                   FROM (SELECT a.ts_code, v.location_code, v.db_office_id,
-                                v.base_location_id, v.cwms_ts_id,
-                                v.interval_utc_offset, v.ts_active_flag,
-                                a.user_privileges
-                           FROM mv_cwms_ts_id v,
-                                (SELECT aa.ts_code,
-                                        aa.net_privilege_bit user_privileges
-                                   FROM mv_sec_ts_privileges aa
-                                  WHERE aa.username = cwms_util.get_user_id) a
-                          WHERE v.ts_code = a.ts_code
-                            AND v.db_office_code = l_db_office_code) b,
-                        (SELECT c.location_code
-                           FROM at_loc_group_assignment c
-                          WHERE c.loc_group_code = l_loc_group_code) cc,
-                        at_cwms_ts_spec s,
-                        cwms_time_zone z
-                  WHERE b.location_code = cc.location_code
-                    AND b.ts_code = s.ts_code
-                    AND s.time_zone_code = z.time_zone_code(+)
-                    AND UPPER (b.cwms_ts_id) LIKE
-                                                 UPPER (l_ts_subselect_string)
-               ORDER BY UPPER (b.cwms_ts_id) ASC;
-         END IF;
-      END IF;
-   END cat_ts_id;
-==== THEIRS //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#3
 		---------------------------------------------------
 		-- get the loc_group_code if cat/group passed in --
 		---------------------------------------------------
@@ -1430,7 +1273,6 @@ IS
 				'The loc_category_id and loc_group_id is not a valid combination'
 			);
 		END IF;
-==== YOURS //iwr-nb-01552287/wcdba/dev/oracle/dev/src/cwms/cwms_cat_pkg_body.sql
 --      DBMS_OUTPUT.put_line ('cat_ts_id is here!');
       IF p_ts_subselect_string IS NULL
       THEN
@@ -1546,152 +1388,6 @@ IS
          END IF;
       END IF;
    END cat_ts_id;
-<<<<
-
-		-- 	DBMS_OUTPUT.put_line ('cat_ts_id is here!');
-		IF p_ts_subselect_string IS NULL
-		THEN
-			IF l_loc_group_code IS NULL
-			THEN
-				IF p_db_office_id IS NULL
-				THEN
-					OPEN p_cwms_cat FOR
-						  SELECT   b.db_office_id, b.base_location_id, b.cwms_ts_id,
-									  b.interval_utc_offset,
-									  z.time_zone_code lrts_timezone, b.ts_active_flag,
-									  b.user_privileges
-							 FROM   (SELECT	a.ts_code, v.db_office_id,
-													v.base_location_id, v.cwms_ts_id,
-													v.interval_utc_offset, v.ts_active_flag,
-													a.user_privileges
-										  FROM	mv_cwms_ts_id v,
-													(SELECT	 aa.ts_code,
-																 aa.net_privilege_bit
-																	 user_privileges
-														FROM	 mv_sec_ts_privileges aa
-													  WHERE	 aa.username =
-																	 cwms_util.get_user_id) a
-										 WHERE	v.ts_code = a.ts_code) b,
-									  at_cwms_ts_spec s,
-									  cwms_time_zone z
-							WHERE   b.ts_code = s.ts_code
-									  AND s.time_zone_code = z.time_zone_code(+)
-						ORDER BY   b.db_office_id, UPPER (b.cwms_ts_id) ASC;
-				ELSE
-					OPEN p_cwms_cat FOR
-						  SELECT   b.db_office_id, b.base_location_id, b.cwms_ts_id,
-									  b.interval_utc_offset,
-									  z.time_zone_code lrts_timezone, b.ts_active_flag,
-									  b.user_privileges
-							 FROM   (SELECT	a.ts_code, v.db_office_id,
-													v.base_location_id, v.cwms_ts_id,
-													v.interval_utc_offset, v.ts_active_flag,
-													a.user_privileges
-										  FROM	mv_cwms_ts_id v,
-													(SELECT	 aa.ts_code,
-																 aa.net_privilege_bit
-																	 user_privileges
-														FROM	 mv_sec_ts_privileges aa
-													  WHERE	 aa.username =
-																	 cwms_util.get_user_id) a
-										 WHERE	v.ts_code = a.ts_code
-													AND v.db_office_code = l_db_office_code)
-									  b,
-									  at_cwms_ts_spec s,
-									  cwms_time_zone z
-							WHERE   b.ts_code = s.ts_code
-									  AND s.time_zone_code = z.time_zone_code(+)
-						ORDER BY   UPPER (b.cwms_ts_id) ASC;
-				END IF;
-			ELSE
-				OPEN p_cwms_cat FOR
-					  SELECT   b.ts_code, b.db_office_id, b.base_location_id,
-								  b.cwms_ts_id, b.interval_utc_offset,
-								  z.time_zone_code lrts_timezone, b.ts_active_flag,
-								  b.user_privileges
-						 FROM   (SELECT	a.ts_code, v.location_code, v.db_office_id,
-												v.base_location_id, v.cwms_ts_id,
-												v.interval_utc_offset, v.ts_active_flag,
-												a.user_privileges
-									  FROM	mv_cwms_ts_id v,
-												(SELECT	 aa.ts_code,
-															 aa.net_privilege_bit
-																 user_privileges
-													FROM	 mv_sec_ts_privileges aa
-												  WHERE	 aa.username =
-																 cwms_util.get_user_id) a
-									 WHERE	v.ts_code = a.ts_code
-												AND v.db_office_code = l_db_office_code) b,
-								  (SELECT	c.location_code
-									  FROM	at_loc_group_assignment c
-									 WHERE	c.loc_group_code = l_loc_group_code) cc,
-								  at_cwms_ts_spec s,
-								  cwms_time_zone z
-						WHERE 		b.location_code = cc.location_code
-								  AND b.ts_code = s.ts_code
-								  AND s.time_zone_code = z.time_zone_code(+)
-					ORDER BY   UPPER (b.cwms_ts_id) ASC;
-			END IF;
-		ELSE
-			IF l_loc_group_code IS NULL
-			THEN
-				OPEN p_cwms_cat FOR
-					  SELECT   b.db_office_id, b.base_location_id, b.cwms_ts_id,
-								  b.interval_utc_offset, z.time_zone_code lrts_timezone,
-								  b.ts_active_flag, b.user_privileges
-						 FROM   (SELECT	a.ts_code, v.db_office_id,
-												v.base_location_id, v.cwms_ts_id,
-												v.interval_utc_offset, v.ts_active_flag,
-												a.user_privileges
-									  FROM	mv_cwms_ts_id v,
-												(SELECT	 aa.ts_code,
-															 aa.net_privilege_bit
-																 user_privileges
-													FROM	 mv_sec_ts_privileges aa
-												  WHERE	 aa.username =
-																 cwms_util.get_user_id) a
-									 WHERE	v.ts_code = a.ts_code
-												AND v.db_office_code = l_db_office_code) b,
-								  at_cwms_ts_spec s,
-								  cwms_time_zone z
-						WHERE   b.ts_code = s.ts_code
-								  AND s.time_zone_code = z.time_zone_code(+)
-								  AND UPPER (b.cwms_ts_id) LIKE
-										  UPPER (l_ts_subselect_string)
-					ORDER BY   UPPER (b.cwms_ts_id) ASC;
-			ELSE
-				OPEN p_cwms_cat FOR
-					  SELECT   b.ts_code, b.db_office_id, b.base_location_id,
-								  b.cwms_ts_id, b.interval_utc_offset,
-								  z.time_zone_code lrts_timezone, b.ts_active_flag,
-								  b.user_privileges
-						 FROM   (SELECT	a.ts_code, v.location_code, v.db_office_id,
-												v.base_location_id, v.cwms_ts_id,
-												v.interval_utc_offset, v.ts_active_flag,
-												a.user_privileges
-									  FROM	mv_cwms_ts_id v,
-												(SELECT	 aa.ts_code,
-															 aa.net_privilege_bit
-																 user_privileges
-													FROM	 mv_sec_ts_privileges aa
-												  WHERE	 aa.username =
-																 cwms_util.get_user_id) a
-									 WHERE	v.ts_code = a.ts_code
-												AND v.db_office_code = l_db_office_code) b,
-								  (SELECT	c.location_code
-									  FROM	at_loc_group_assignment c
-									 WHERE	c.loc_group_code = l_loc_group_code) cc,
-								  at_cwms_ts_spec s,
-								  cwms_time_zone z
-						WHERE 		b.location_code = cc.location_code
-								  AND b.ts_code = s.ts_code
-								  AND s.time_zone_code = z.time_zone_code(+)
-								  AND UPPER (b.cwms_ts_id) LIKE
-										  UPPER (l_ts_subselect_string)
-					ORDER BY   UPPER (b.cwms_ts_id) ASC;
-			END IF;
-		END IF;
-	END cat_ts_id;
 
 	FUNCTION cat_ts_id_tab (p_ts_subselect_string	IN VARCHAR2 DEFAULT NULL ,
 									p_loc_category_id 		IN VARCHAR2 DEFAULT NULL ,
@@ -1719,78 +1415,43 @@ IS
 		END LOOP;
 
 		CLOSE query_cursor;
-
->>>> ORIGINAL //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#2
--------------------------------------------------------------------------------
--- procedure cat_location --
---
---
-   PROCEDURE cat_location (
-      p_cwms_cat          OUT      sys_refcursor,
-      p_elevation_unit    IN       VARCHAR2 DEFAULT 'm',
-      p_base_loc_only     IN       VARCHAR2 DEFAULT 'F',
-      p_loc_category_id   IN       VARCHAR2 DEFAULT NULL,
-      p_loc_group_id      IN       VARCHAR2 DEFAULT NULL,
-      p_db_office_id      IN       VARCHAR2 DEFAULT NULL
-   )
-   IS
-      l_from_id          cwms_unit.unit_id%TYPE             := 'm';
-      l_to_id            cwms_unit.unit_id%TYPE
-                                               := NVL (p_elevation_unit, 'm');
-      l_from_code        cwms_unit.unit_code%TYPE;
-      l_to_code          cwms_unit.unit_code%TYPE;
-      l_factor           cwms_unit_conversion.factor%TYPE;
-      l_offset           cwms_unit_conversion.offset%TYPE;
-      l_office_id        cwms_office.office_id%TYPE;
-      l_db_office_id     cwms_office.office_id%TYPE;
-      l_db_office_code   NUMBER;
-      l_loc_group_code   NUMBER                             := NULL;
-      l_base_loc_only    BOOLEAN
-               := cwms_util.return_true_or_false (NVL (p_base_loc_only, 'F'));
-   BEGIN
------------------------------------------------
--- get the office id of the hosting database --
------------------------------------------------
-      l_db_office_code := cwms_util.get_db_office_code (p_db_office_id);
-==== THEIRS //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#3
-		RETURN;
 	END cat_ts_id_tab;
-==== YOURS //iwr-nb-01552287/wcdba/dev/oracle/dev/src/cwms/cwms_cat_pkg_body.sql
--------------------------------------------------------------------------------
--- CAT_LOCATION
---
--- These procedures and functions catalog locations in the CWMS.
--- database.
---
--- Function returns may be used as source of SELECT statements.
---
--- The returned records contain the following columns:
---
---    Name                      Datatype      Description
---    ------------------------ ------------- ----------------------------
---    db_office_id             varchar2(16)   owning office of location
---    location_id              varchar2(49)   full location id
---    base_location_id         varchar2(16)   base location id
---    sub_location_id          varchar2(32)   sub-location id, if any
---    state_initial            varchar2(2)    two-character state abbreviation
---    county_name              varchar2(40)   county name
---    time_zone_name           varchar2(28)   local time zone name for location
---    location_type            varchar2(32)   descriptive text of loctaion type
---    latitude                 number         location latitude
---    longitude                number         location longitude
---    horizontal_datum         varchar2(16)   horizontal datrum of lat/lon
---    elevation                number         location elevation
---    elev_unit_id             varchar2(16)   location elevation units
---    vertical_datum           varchar2(16)   veritcal datum of elevation
---    public_name              varchar2(32)   location public name
---    long_name                varchar2(80)   location long name
---    description              varchar2(512)  location description
---    active_flag              varchar2(1)    'T' if active, else 'F'
---
--------------------------------------------------------------------------------
--- procedure cat_location(...)
---
---
+
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION
+   --
+   -- These procedures and functions catalog locations in the CWMS.
+   -- database.
+   --
+   -- Function returns may be used as source of SELECT statements.
+   --
+   -- The returned records contain the following columns:
+   --
+   --    Name                      Datatype      Description
+   --    ------------------------ ------------- ----------------------------
+   --    db_office_id             varchar2(16)   owning office of location
+   --    location_id              varchar2(49)   full location id
+   --    base_location_id         varchar2(16)   base location id
+   --    sub_location_id          varchar2(32)   sub-location id, if any
+   --    state_initial            varchar2(2)    two-character state abbreviation
+   --    county_name              varchar2(40)   county name
+   --    time_zone_name           varchar2(28)   local time zone name for location
+   --    location_type            varchar2(32)   descriptive text of loctaion type
+   --    latitude                 number         location latitude
+   --    longitude                number         location longitude
+   --    horizontal_datum         varchar2(16)   horizontal datrum of lat/lon
+   --    elevation                number         location elevation
+   --    elev_unit_id             varchar2(16)   location elevation units
+   --    vertical_datum           varchar2(16)   veritcal datum of elevation
+   --    public_name              varchar2(32)   location public name
+   --    long_name                varchar2(80)   location long name
+   --    description              varchar2(512)  location description
+   --    active_flag              varchar2(1)    'T' if active, else 'F'
+   --
+   -------------------------------------------------------------------------------
+   -- procedure cat_location(...)
+   --
+   --
    PROCEDURE cat_location (
       p_cwms_cat          OUT      sys_refcursor,
       p_elevation_unit    IN       VARCHAR2 DEFAULT 'm',
@@ -1817,101 +1478,48 @@ IS
 -----------------------------------------------
 -- get the office id of the hosting database --
 -----------------------------------------------
-      l_db_office_code := cwms_util.get_db_office_code (p_db_office_id);
-<<<<
+   l_db_office_code := cwms_util.get_db_office_code (p_db_office_id);
+	SELECT	office_id
+	  INTO	l_db_office_id
+	  FROM	cwms_office
+	 WHERE	office_code = l_db_office_code;
 
-	-------------------------------------------------------------------------------
-	-- procedure cat_location --
-	--
-	--
-	PROCEDURE cat_location (p_cwms_cat				  OUT sys_refcursor,
-									p_elevation_unit	  IN		VARCHAR2 DEFAULT 'm' ,
-									p_base_loc_only	  IN		VARCHAR2 DEFAULT 'F' ,
-									p_loc_category_id   IN		VARCHAR2 DEFAULT NULL ,
-									p_loc_group_id 	  IN		VARCHAR2 DEFAULT NULL ,
-									p_db_office_id 	  IN		VARCHAR2 DEFAULT NULL
-								  )
-	IS
-		l_from_id			 cwms_unit.unit_id%TYPE := 'm';
-		l_to_id				 cwms_unit.unit_id%TYPE := NVL (p_elevation_unit, 'm');
-		l_from_code 		 cwms_unit.unit_code%TYPE;
-		l_to_code			 cwms_unit.unit_code%TYPE;
-		l_factor 			 cwms_unit_conversion.factor%TYPE;
-		l_offset 			 cwms_unit_conversion.offset%TYPE;
-		l_office_id 		 cwms_office.office_id%TYPE;
-		l_db_office_id 	 cwms_office.office_id%TYPE;
-		l_db_office_code	 NUMBER;
-		l_loc_group_code	 NUMBER := NULL;
-		l_base_loc_only BOOLEAN
-				:= cwms_util.return_true_or_false (NVL (p_base_loc_only, 'F')) ;
-	BEGIN
-		-----------------------------------------------
-		-- get the office id of the hosting database --
-		-----------------------------------------------
-		l_db_office_code := cwms_util.get_db_office_code (p_db_office_id);
+	---------------------------------------------------
+	-- get the loc_group_code if cat/group passed in --
+	---------------------------------------------------
+	IF p_loc_category_id IS NOT NULL AND p_loc_group_id IS NOT NULL
+	THEN
+		l_loc_group_code :=
+			cwms_util.get_loc_group_code (p_loc_category_id,
+													p_loc_group_id,
+													l_db_office_code
+												  );
+	ELSIF (p_loc_category_id IS NOT NULL AND p_loc_group_id IS NULL) OR (p_loc_category_id IS NULL AND p_loc_group_id IS NOT NULL)
+	THEN
+		cwms_err.raise (
+			'ERROR',
+			'The loc_category_id and loc_group_id is not a valid combination'
+		);
+	END IF;
 
-		SELECT	office_id
-		  INTO	l_db_office_id
-		  FROM	cwms_office
-		 WHERE	office_code = l_db_office_code;
+	------------------------------------------
+	-- get the conversion factor and offset --
+	------------------------------------------
+	SELECT	unit_code
+	  INTO	l_from_code
+	  FROM	cwms_unit
+	 WHERE	unit_id = l_from_id;
 
-		---------------------------------------------------
-		-- get the loc_group_code if cat/group passed in --
-		---------------------------------------------------
-		IF p_loc_category_id IS NOT NULL AND p_loc_group_id IS NOT NULL
-		THEN
-			l_loc_group_code :=
-				cwms_util.get_loc_group_code (p_loc_category_id,
-														p_loc_group_id,
-														l_db_office_code
-													  );
-		ELSIF (p_loc_category_id IS NOT NULL AND p_loc_group_id IS NULL) OR (p_loc_category_id IS NULL AND p_loc_group_id IS NOT NULL)
-		THEN
-			cwms_err.raise (
-				'ERROR',
-				'The loc_category_id and loc_group_id is not a valid combination'
-			);
-		END IF;
+	SELECT	unit_code
+	  INTO	l_to_code
+	  FROM	cwms_unit
+	 WHERE	unit_id = l_to_id;
 
-		------------------------------------------
-		-- get the conversion factor and offset --
-		------------------------------------------
-		SELECT	unit_code
-		  INTO	l_from_code
-		  FROM	cwms_unit
-		 WHERE	unit_id = l_from_id;
+	SELECT	factor, offset
+	  INTO	l_factor, l_offset
+	  FROM	cwms_unit_conversion
+	 WHERE	from_unit_code = l_from_code AND to_unit_code = l_to_code;
 
-		SELECT	unit_code
-		  INTO	l_to_code
-		  FROM	cwms_unit
-		 WHERE	unit_id = l_to_id;
-
-		SELECT	factor, offset
-		  INTO	l_factor, l_offset
-		  FROM	cwms_unit_conversion
-		 WHERE	from_unit_code = l_from_code AND to_unit_code = l_to_code;
-
->>>> ORIGINAL //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#2
-   FUNCTION cat_location_tab (
-      p_elevation_unit    IN   VARCHAR2 DEFAULT 'm',
-      p_base_loc_only     IN   VARCHAR2 DEFAULT 'F',
-      p_loc_category_id   IN   VARCHAR2 DEFAULT NULL,
-      p_loc_group_id      IN   VARCHAR2 DEFAULT NULL,
-      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
-   )
-      RETURN cat_location_tab_t PIPELINED
-   IS
-      query_cursor   sys_refcursor;
-      output_row     cat_location_rec_t;
-   BEGIN
-      cat_location (query_cursor,
-                    p_elevation_unit,
-                    p_base_loc_only,
-                    p_loc_category_id,
-                    p_loc_group_id,
-                    p_db_office_id
-                   );
-==== THEIRS //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#3
 		----------------------
 		-- open the cursor  --
 		----------------------
@@ -2061,31 +1669,6 @@ IS
 			END IF;
 		END IF;
 	END cat_location;
-==== YOURS //iwr-nb-01552287/wcdba/dev/oracle/dev/src/cwms/cwms_cat_pkg_body.sql
--------------------------------------------------------------------------------
--- function cat_location(...)
---
---
-   FUNCTION cat_location_tab (
-      p_elevation_unit    IN   VARCHAR2 DEFAULT 'm',
-      p_base_loc_only     IN   VARCHAR2 DEFAULT 'F',
-      p_loc_category_id   IN   VARCHAR2 DEFAULT NULL,
-      p_loc_group_id      IN   VARCHAR2 DEFAULT NULL,
-      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
-   )
-      RETURN cat_location_tab_t PIPELINED
-   IS
-      query_cursor   sys_refcursor;
-      output_row     cat_location_rec_t;
-   BEGIN
-      cat_location (query_cursor,
-                    p_elevation_unit,
-                    p_base_loc_only,
-                    p_loc_category_id,
-                    p_loc_group_id,
-                    p_db_office_id
-                   );
-<<<<
 
 	FUNCTION cat_location_tab (p_elevation_unit	  IN VARCHAR2 DEFAULT 'm' ,
 										p_base_loc_only	  IN VARCHAR2 DEFAULT 'F' ,
@@ -2115,44 +1698,7 @@ IS
 		END LOOP;
 
 		CLOSE query_cursor;
-
->>>> ORIGINAL //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#2
---------------------------------------------------------------------------------
--- DEPRICATED --
--- DEPRICATED -- cat_loc USE cat_location --
--- DEPRICATED --
-   PROCEDURE cat_loc (
-      p_cwms_cat         OUT      sys_refcursor,
-      p_office_id        IN       VARCHAR2 DEFAULT NULL,
-      p_elevation_unit   IN       VARCHAR2 DEFAULT 'm'
-   )
--- DEPRICATED --
--- DEPRICATED --
--- DEPRICATED --
---------------------------------------------------------------------------------
-   IS
-      l_from_id        cwms_unit.unit_id%TYPE             := 'm';
-      l_to_id          cwms_unit.unit_id%TYPE  := NVL (p_elevation_unit, 'm');
-      l_from_code      cwms_unit.unit_code%TYPE;
-      l_to_code        cwms_unit.unit_code%TYPE;
-      l_factor         cwms_unit_conversion.factor%TYPE;
-      l_offset         cwms_unit_conversion.offset%TYPE;
-      l_office_id      cwms_office.office_id%TYPE;
-      l_db_office_id   cwms_office.office_id%TYPE;
-   BEGIN
------------------------------------------------
--- get the office id of the hosting database --
------------------------------------------------
-      IF p_office_id IS NULL
-      THEN
-         l_office_id := cwms_util.user_office_id;
-      ELSE
-         l_office_id := p_office_id;
-      END IF;
-==== THEIRS //wcdba/dev/oracle/v2.0/src/cwms/cwms_cat_pkg_body.sql#3
-		RETURN;
-	END cat_location_tab;
-==== YOURS //iwr-nb-01552287/wcdba/dev/oracle/dev/src/cwms/cwms_cat_pkg_body.sql
+   END cat_location_tab;
 -------------------------------------------------------------------------------
 -- CAT_LOCATION2
 --
@@ -2571,39 +2117,6 @@ IS
       ELSE
          l_office_id := p_office_id;
       END IF;
-<<<<
-
-	--------------------------------------------------------------------------------
-	-- DEPRICATED --
-	-- DEPRICATED -- cat_loc USE cat_location --
-	-- DEPRICATED --
-	PROCEDURE cat_loc (p_cwms_cat 			  OUT sys_refcursor,
-							 p_office_id		  IN		VARCHAR2 DEFAULT NULL ,
-							 p_elevation_unit   IN		VARCHAR2 DEFAULT 'm'
-							)
-	-- DEPRICATED --
-	-- DEPRICATED --
-	-- DEPRICATED --
-	--------------------------------------------------------------------------------
-	IS
-		l_from_id		  cwms_unit.unit_id%TYPE := 'm';
-		l_to_id			  cwms_unit.unit_id%TYPE := NVL (p_elevation_unit, 'm');
-		l_from_code 	  cwms_unit.unit_code%TYPE;
-		l_to_code		  cwms_unit.unit_code%TYPE;
-		l_factor 		  cwms_unit_conversion.factor%TYPE;
-		l_offset 		  cwms_unit_conversion.offset%TYPE;
-		l_office_id 	  cwms_office.office_id%TYPE;
-		l_db_office_id   cwms_office.office_id%TYPE;
-	BEGIN
-		-----------------------------------------------
-		-- get the office id of the hosting database --
-		-----------------------------------------------
-		IF p_office_id IS NULL
-		THEN
-			l_office_id := cwms_util.user_office_id;
-		ELSE
-			l_office_id := p_office_id;
-		END IF;
 
 		SELECT	o2.office_id
 		  INTO	l_db_office_id

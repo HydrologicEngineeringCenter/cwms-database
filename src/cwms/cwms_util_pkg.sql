@@ -473,16 +473,13 @@ AS
 										)
 		RETURN VARCHAR2;
 
->>>> ORIGINAL //wcdba/dev/oracle/v2.0/src/cwms/cwms_util_pkg.sql#3
-   
-==== THEIRS //wcdba/dev/oracle/v2.0/src/cwms/cwms_util_pkg.sql#4
 	--
 	-- sign-extends 32-bit integers so they can be retrieved by
 	-- java int type
 	--
 	FUNCTION sign_extend (p_int IN INTEGER)
 		RETURN INTEGER;
-==== YOURS //iwr-nb-01552287/wcdba/dev/oracle/dev/src/cwms/cwms_util_pkg.sql
+		
    function months_to_yminterval(
       p_months in integer) 
       return interval year to month;
@@ -511,7 +508,6 @@ AS
       p_odbc_str in varchar2)
       return date;
 
-<<<<
 END cwms_util;
 /
 

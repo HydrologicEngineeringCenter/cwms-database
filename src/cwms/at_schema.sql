@@ -31,12 +31,17 @@ begin
                                        || substr(rec.object_name, 7)
                     );
             else
-               execute immediate 'drop table ' 
-                                  || rec.object_name 
-                           || ' cascade constraints';
+               if substr(rec.object_name, 1, 3) = 'AT_'
+                  and rec.object_name != 'AT_PARAMETER'
+                  and rec.object_name != 'AT_DISPLAY_UNITS'
+               then
+                  execute immediate 'drop table '
+                                     || rec.object_name
+                              || ' cascade constraints';
 
-               dbms_output.put_line ('Dropped table ' || rec.object_name);
-            end if;                   
+                  dbms_output.put_line ('Dropped table ' || rec.object_name);
+               end if;
+            end if;
       exception               
          when others then null;             
       end;                    
