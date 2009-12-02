@@ -591,11 +591,11 @@ AS
         --------------------------------------
         l_user_id := get_user_id;
 
-        IF l_user_id != 'CWMS_20'
+        IF l_user_id != '&cwms_schema'
         THEN
             raise_application_error (
                 -20999,
-                'Must be CWMS_20 user to start job ' || l_job_id,
+                'Must be &cwms_schema user to start job ' || l_job_id,
                 TRUE
             );
         END IF;
@@ -682,11 +682,11 @@ AS
         --------------------------------------
         l_user_id := get_user_id;
 
-        IF l_user_id != 'CWMS_20'
+        IF l_user_id != '&cwms_schema'
         THEN
             raise_application_error (
                 -20999,
-                'Must be CWMS_20 user to start job ' || l_job_id,
+                'Must be &cwms_schema user to start job ' || l_job_id,
                 TRUE
             );
         END IF;
