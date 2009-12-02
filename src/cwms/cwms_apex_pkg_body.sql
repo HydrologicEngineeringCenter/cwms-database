@@ -1427,7 +1427,7 @@ AS
 				* SIGN (l_longitude);
 			aa1 ('storing locs: ' || l_location_id);
 			--
-			cwms_loc.update_location (l_location_id,
+			cwms_loc.store_location (l_location_id,
 											  l_location_type,
 											  l_elevation,
 											  l_elev_unit_id,
