@@ -1540,7 +1540,7 @@ AS
 
 			aa1 ('storing locaa: ' || l_location_id);
 			--
-			cwms_loc.assign_loc_group (p_loc_category_id   => 'Agency Alias',
+			cwms_loc.assign_loc_group (p_loc_category_id   => 'Agency Aliases',
 												p_loc_group_id 	  => l_group,
 												p_location_id		  => l_location_id,
 												p_loc_alias_id 	  => l_alias,
