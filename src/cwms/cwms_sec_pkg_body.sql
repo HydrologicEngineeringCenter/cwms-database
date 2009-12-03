@@ -3,6 +3,12 @@ SET define on
 /* Formatted on 7/13/2009 5:29:15 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_sec
 AS
+    FUNCTION get_max_cwms_ts_group_code
+        RETURN NUMBER
+    AS
+    BEGIN
+        RETURN max_cwms_ts_group_code;
+    END;
     FUNCTION find_lowest_code (p_list_of_codes    IN sys_refcursor,
                                         p_lowest_code        IN NUMBER
                                       )

@@ -36,7 +36,8 @@ AS
 
 	TYPE cat_priv_groups_tab_t IS TABLE OF cat_priv_groups_rec_t;
 
-
+    FUNCTION get_max_cwms_ts_group_code
+        RETURN NUMBER;
 
 	FUNCTION is_user_admin (p_db_office_id IN VARCHAR2 DEFAULT NULL )
 		RETURN BOOLEAN;
