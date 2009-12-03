@@ -255,8 +255,6 @@ set serveroutput on
 prompt Creating and starting queues...
 @py_Queues
 prompt Starting jobs...
-exec cwms_util.start_timeout_mv_refresh_job;
-/
 exec cwms_util.start_mv_cwms_ts_id_job;
 /
 exec cwms_msg.start_trim_log_job;

@@ -58,8 +58,6 @@ AS
 	field_separator CONSTANT						VARCHAR2 (1) := CHR (29);
 	record_separator CONSTANT						VARCHAR2 (1) := CHR (30);
 	escape_char CONSTANT 							VARCHAR2 (1) := '\';
-	mv_pause_timeout_interval CONSTANT			INTERVAL DAY TO SECOND := '0 0:30:0';
-	mv_pause_job_run_interval CONSTANT			NUMBER := 60;
 	mv_cwms_ts_id_refresh_interval CONSTANT	NUMBER := 5;
 	-- minutes
    odbc_ts_fmt constant varchar2(50) := '"{ts ''"yyyy-mm-dd hh24:mi:ss"''}"';
@@ -268,30 +266,6 @@ AS
 	FUNCTION get_real_name (p_synonym IN VARCHAR2)
 		RETURN VARCHAR2;
 
-	--------------------------------------------------------------------------------
-	-- function pause_mv_refresh
-	--
-	-- Commented out because it doesn't appear to be used anywhere
-	--   FUNCTION pause_mv_refresh (p_mview_name   IN VARCHAR2,
-	-- 									  p_reason		  IN VARCHAR2 DEFAULT NULL
-	-- 									 )
-	-- 	  RETURN UROWID;
-
-	--------------------------------------------------------------------------------
-	-- procedure resume_mv_refresh
-	--
-	PROCEDURE resume_mv_refresh (p_paused_handle IN UROWID);
-
-	--------------------------------------------------------------------------------
-	-- procedure timeout_mv_refresh_paused
-	--
-	PROCEDURE timeout_mv_refresh_paused;
-
-	--------------------------------------------------------------------------------
-	-- procedure start_timeout_mv_refresh_job
-	--
-	PROCEDURE start_timeout_mv_refresh_job;
-
 	--------------------------------------------------------
 	-- Return the db host office code for the specified office id,
 	-- or the user's primary office if the office id is null
@@ -383,39 +357,6 @@ AS
 	--
 	FUNCTION current_millis
 		RETURN NUMBER;
-
-	--------------------------------------------------------------------
-	-- This procedure changes all the materialized views associated with
-	-- time series ids to be changed from REFRESH FAST ON COMMIT to
-	-- REFRESH ON DEMAND.  This allows for fast bulk creation of tsids.
-	--------------------------------------------------------------------
-	PROCEDURE pause_timeseries_mviews;
-
-	--------------------------------------------------------------------
-	-- This procedure changes all the materialized views associated with
-	-- time series ids to be changed from REFRESH ON DEMAND to REFRESH
-	-- FAST ON COMMIT.
-	--
-	-- This is actually quite a bit slower than simply dropping and
-	-- rebuilding the materialzed vews (see REBUILD_TIMESERIES_MVIEWS),
-	-- but has the advantage of not invalidating running code in the
-	-- process.
-	--------------------------------------------------------------------
-	PROCEDURE unpause_timeseries_mviews;
-
-	--------------------------------------------------------------------
-	-- This procedure drops and rebuilds all the materialized views
-	-- associated with time series ids.  Call this after calling
-	-- PAUSE_TIMESERIES_MVIEWS and bulk creating time series ids.	This
-	-- is considerably faster than calling UNPAUSE_TIMESEIRES_MVIEWS,
-	-- but has the nasty side-effect of invalidating all objects that
-	-- depend on the views.
-	--
-	-- DO NOT CALL THIS PROCEDURE UNLESS YOU ARE RUNNING FROM A SCRIPT
-	-- FROM WHICH YOU CAN CALL UTL_RECOMP.RECOMP_SERIAL('CWMS_20') OR
-	-- CAN MANUALLY RECOMPILE THE INVALIDATED OBJECTS (E.G. FROM TOAD).
-	--------------------------------------------------------------------
-	PROCEDURE rebuild_timeseries_mviews;
 
 	--------------------------------------------------------------------
 	PROCEDURE test;

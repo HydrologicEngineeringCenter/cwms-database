@@ -393,7 +393,10 @@ begin
       -- ... next the long message --
       -------------------------------
       if p_long_msg is not null then
-         cwms_text.store_text(p_long_msg, '/message_id/'||l_msg_id, to_char(l_now_ts));
+         l_number := cwms_text.store_text(
+            p_long_msg,
+            '/message_id/'||l_msg_id,
+            to_char(l_now_ts));
       end if;
       -------------------------------------
       -- ... then the message properties --
@@ -1024,10 +1027,10 @@ begin
    --------------------------------------
    l_user_id := cwms_util.get_user_id;
 
-   if l_user_id != 'CWMS_20'
+   if l_user_id != '&cwms_schema'
    then
       raise_application_error (-20999,
-                                  'Must be CWMS_20 user to start job '
+                                  'Must be &cwms_schema user to start job '
                                || l_job_id,
                                true
                               );

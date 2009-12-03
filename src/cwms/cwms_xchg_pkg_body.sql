@@ -345,6 +345,7 @@ CREATE OR REPLACE package body cwms_xchg as
       pragma autonomous_transaction;
       l_date_time varchar2(19) := to_char(sysdate, 'yyyy/mm/dd hh24:mi:ss');
       l_clob_id   varchar2(36);
+      l_number    number;
       already_exists exception;
       pragma exception_init (already_exists, -00001);
    begin
@@ -355,7 +356,7 @@ CREATE OR REPLACE package body cwms_xchg as
       else
          l_clob_id := '/dataexchange/configuration';
       end if;
-      cwms_text.store_text(p_xml, l_clob_id, l_date_time, 'F');
+      l_number := cwms_text.store_text(p_xml, l_clob_id, l_date_time, 'F');
       commit;
    end log_configuration_xml;
 --------------------------------------------------------------------------------
