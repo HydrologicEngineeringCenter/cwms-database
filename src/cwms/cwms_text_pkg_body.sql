@@ -5,11 +5,12 @@ as
 -- store text with optional description
 --
 procedure store_text(
-   p_text           in clob,                   -- the text, unlimited length
-   p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
-   p_description    in varchar2 default null,  -- description, defaults to null
-   p_fail_if_exists in varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
-   p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+   p_text_code      out number,                 -- the code for use in foreign keys
+	p_text           in  clob,                   -- the text, unlimited length
+	p_id             in  varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_description    in  varchar2 default null,  -- description, defaults to null
+	p_fail_if_exists in  varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+	p_office_id      in  varchar2 default null) -- office id, defaults current user's office
 is
    l_id               varchar2(256) := upper(p_id);
    l_fail_if_exists   boolean := cwms_util.return_true_or_false(p_fail_if_exists);
@@ -25,7 +26,10 @@ begin
       and id = l_id;
 
    if l_count = 0 then
-      insert into at_clob values(cwms_seq.nextval, l_office_code, l_id, p_description, p_text);
+      insert
+        into at_clob
+      values (cwms_seq.nextval, l_office_code, l_id, p_description, p_text)
+   returning clob_code into p_text_code;
    else
       if l_fail_if_exists then
          cwms_err.raise('ITEM_ALREADY_EXISTS', 'Text ID', p_id);
@@ -35,7 +39,7 @@ begin
              value = p_text
       where office_code = l_office_code
          and id = l_id
-      returning rowid into l_rowid;
+      returning rowid, clob_code into l_rowid, p_text_code;
       if l_rowid is null then
          cwms_err.raise(
             'ERROR',
@@ -48,12 +52,37 @@ end store_text;
 --
 -- store text with optional description
 --
+function store_text(
+	p_text           in clob,                   -- the text, unlimited length
+	p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_description    in varchar2 default null,  -- description, defaults to null
+	p_fail_if_exists in varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+	p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+   return number                               -- the code for use in foreign keys
+is
+   l_text_code number;
+begin
+   store_text(
+      p_text_code      => l_text_code,
+      p_text           => p_text,
+      p_id             => p_id,
+      p_description    => p_description,
+      p_fail_if_exists => p_fail_if_exists,
+      p_office_id      => p_office_id);
+
+   return l_text_code;
+end store_text;
+
+--
+-- store text with optional description
+--
 procedure store_text(
-   p_text           in varchar2,               -- the text, limited to varchar2 max size
-   p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
-   p_description    in varchar2 default null,  -- description, defaults to null
-   p_fail_if_exists in varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
-   p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+   p_text_code      out number,                 -- the code for use in foreign keys
+	p_text           in  varchar2,               -- the text, limited to varchar2 max size
+	p_id             in  varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_description    in  varchar2 default null,  -- description, defaults to null
+	p_fail_if_exists in  varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+	p_office_id      in  varchar2 default null)  -- office id, defaults current user's office
 is
    l_text clob;
 begin
@@ -61,7 +90,37 @@ begin
    dbms_lob.open(l_text, dbms_lob.lob_readwrite);
    dbms_lob.writeappend(l_text, length(p_text), p_text);
    dbms_lob.close(l_text);
-   store_text(l_text, p_id, p_description, p_fail_if_exists, p_office_id);
+   store_text(
+      p_text_code      => p_text_code,
+      p_text           => l_text,
+      p_id             => p_id,
+      p_description    => p_description,
+      p_fail_if_exists => p_fail_if_exists,
+      p_office_id      => p_office_id);
+end store_text;
+
+--
+-- store text with optional description
+--
+function store_text(
+	p_text           in varchar2,               -- the text, limited to varchar2 max size
+	p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_description    in varchar2 default null,  -- description, defaults to null
+	p_fail_if_exists in varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+	p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+   return number                               -- the code for use in foreign keys
+is
+   l_text_code number;
+begin
+   store_text(
+      p_text_code      => l_text_code,
+      p_text           => p_text,
+      p_id             => p_id,
+      p_description    => p_description,
+      p_fail_if_exists => p_fail_if_exists,
+      p_office_id      => p_office_id);
+
+   return l_text_code;
 end store_text;
 
 --
@@ -378,6 +437,39 @@ begin
    dbms_lob.close(l_ids);
    p_ids := l_ids;
 end get_matching_ids;
+
+--
+-- get code for id
+--
+procedure get_text_code(
+   p_text_code      out number,                 -- the code for use in foreign keys
+	p_id             in  varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_office_id      in  varchar2 default null)  -- office id, defaults current user's office
+is
+   l_id               varchar2(256) := upper(p_id);
+   l_office_code      number := cwms_util.get_office_code(p_office_id);
+   l_cwms_office_code number := cwms_util.get_office_code('CWMS');
+begin
+   select clob_code
+     into p_text_code
+     from at_clob
+    where office_code in (l_office_code, l_cwms_office_code)
+      and id = l_id;
+end get_text_code;
+
+--
+-- get code for id
+--
+function get_text_code(
+	p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+   return number                               -- the code for use in foreign keys
+is
+   l_text_code number;
+begin
+   get_text_code(l_text_code, p_id, p_office_id);
+   return l_text_code;
+end get_text_code;
 
 end;
 /
