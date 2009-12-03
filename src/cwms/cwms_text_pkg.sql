@@ -63,7 +63,7 @@ function retrieve_text(
 --	
 -- retrieve text and description
 --
-procedure retrieve_text(
+procedure retrieve_text2(
 	p_text        out clob,                   -- the text, unlimited length
 	p_description out varchar2,               -- the description
 	p_id          in  varchar2,               -- identifier used to store text (256 chars max)
