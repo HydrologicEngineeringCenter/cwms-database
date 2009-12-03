@@ -1,3 +1,6 @@
+SET define on
+@@defines.sql
+
 create or replace
 package body cwms_text
 as
