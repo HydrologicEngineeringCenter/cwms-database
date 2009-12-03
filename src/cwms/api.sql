@@ -25,6 +25,9 @@
 @@cwms_lookup_pkg
 @@cwms_lookup_pkg_body
 
+@@cwms_text_pkg
+@@cwms_text_pkg_body
+
 @@cwms_priv_pkg
 @@cwms_priv_pkg_body
 
