@@ -2478,6 +2478,8 @@ COMMIT ;
 --
 CREATE TABLE at_clob
 (
+  CLOB_CODE    NUMBER(10) NOT NULL,
+  OFFICE_CODE  NUMBER(10) NOT NULL,
   ID           VARCHAR2(256 BYTE) NOT NULL,
   description  VARCHAR2(256 BYTE),
   VALUE        CLOB
@@ -2522,6 +2524,8 @@ MONITORING
 -- AT_CLOB comments
 --
 COMMENT ON TABLE  at_clob             IS 'Character Large OBject Storage for CWMS';
+COMMENT ON COLUMN at_clob.CLOB_CODE   IS 'Unique reference code for this CLOB';
+COMMENT ON COLUMN at_clob.OFFICE_CODE IS 'Reference to CWMS office';
 COMMENT ON COLUMN at_clob.ID          IS 'Unique record identifier, using hierarchical /dir/subdir/.../file syntax';
 COMMENT ON COLUMN at_clob.description IS 'Description of this CLOB';
 COMMENT ON COLUMN at_clob.VALUE       IS 'The CLOB data';
@@ -2531,7 +2535,7 @@ COMMENT ON COLUMN at_clob.VALUE       IS 'The CLOB data';
 --
 ALTER TABLE at_clob ADD
 (
-  PRIMARY KEY (ID)
+  PRIMARY KEY (CLOB_CODE)
   USING INDEX
   TABLESPACE CWMS_20AT_DATA
   PCTFREE    10
@@ -2547,12 +2551,22 @@ ALTER TABLE at_clob ADD
 )
 /
 
+-----------------------------
+-- AT_CLOB constraints
+--
+ALTER TABLE AT_CLOB ADD CONSTRAINT AT_CLOB_U1  UNIQUE (OFFICE_CODE, ID) USING INDEX;
+ALTER TABLE AT_CLOB ADD CONSTRAINT AT_CLOB_FK1 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
+ALTER TABLE AT_CLOB ADD CONSTRAINT AT_CLOB_CK1 CHECK (SUBSTR(ID, 1, 1) = '/');
+ALTER TABLE AT_CLOB ADD CONSTRAINT AT_CLOB_CK2 CHECK (UPPER(ID) = ID);
+
 SET define off
 -----------------------------
 -- AT_CLOB default data
 --
 INSERT INTO at_clob
-     VALUES ('/xslt/identity',
+     VALUES (1,
+             (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'CWMS'),
+             '/XSLT/IDENTITY',
              'Transforms the input to an identical copy of itself',
              '<!-- The Identity Transformation -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
@@ -2560,7 +2574,7 @@ INSERT INTO at_clob
   <xsl:template match="node()|@*">
     <!-- Copy the current node -->
     <xsl:copy>
-      <!-- Including andy attributes it has and any child nodes -->
+      <!-- Including and attributes it has and any child nodes -->
       <xsl:apply-templates select="@*|node()"/>
     </xsl:copy>
   </xsl:template>
@@ -2568,7 +2582,9 @@ INSERT INTO at_clob
 '           );
 
 INSERT INTO at_clob
-     VALUES ('/xslt/cat_ts_xml/tabbed_text',
+     VALUES (2,
+             (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'CWMS'),
+             '/XSLT/CAT_TS_XML/TABBED_TEXT',
              'Transforms cat_ts_xml output to tab-separated text',
              '<xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <xsl:template match="/tsid_catalog[1]">
@@ -2578,11 +2594,11 @@ INSERT INTO at_clob
     <xsl:value-of select="/tsid_catalog[1]/@pattern"/>
     <xsl:text>"&#xA;&#xA;Time Series ID&#x9;TS CODE&#x9;UTC OFFSET"&#xA;</xsl:text>
     <xsl:for-each select="/tsid_catalog/tsid">
-      <xsl:value-of select="."/>   
+      <xsl:value-of select="."/>
       <xsl:text>&#x9;</xsl:text>
-      <xsl:value-of select="@ts_code"/>   
+      <xsl:value-of select="@ts_code"/>
       <xsl:text>&#x9;</xsl:text>
-      <xsl:value-of select="@offset"/>   
+      <xsl:value-of select="@offset"/>
       <xsl:text>&#xA;</xsl:text>
     </xsl:for-each>
   </xsl:template>
@@ -2590,22 +2606,25 @@ INSERT INTO at_clob
 '           );
 
 INSERT INTO at_clob
-     VALUES ('/xslt/cat_ts_xml/html', 'Transforms cat_ts_xml output to html',
+     VALUES (3,
+             (SELECT OFFICE_CODE FROM CWMS_OFFICE WHERE OFFICE_ID = 'CWMS'),
+             '/XSLT/CAT_TS_XML/HTML',
+             'Transforms cat_ts_xml output to html',
              '<html xsl:version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 <head>
-  <title>Time Series IDs for Office "<xsl:value-of select="/tsid_catalog[1]/@office"/>" 
+  <title>Time Series IDs for Office "<xsl:value-of select="/tsid_catalog[1]/@office"/>"
          Matching "<xsl:value-of select="/tsid_catalog[1]/@pattern"/>"
   </title>
 </head>
 <body>
   <center>
     <h2>
-      Time series IDs matching pattern 
-	    "<xsl:value-of select="/tsid_catalog[1]/@pattern"/>" for Office 
+      Time series IDs matching pattern
+	    "<xsl:value-of select="/tsid_catalog[1]/@pattern"/>" for Office
 	    "<xsl:value-of select="/tsid_catalog[1]/@office"/>".
     </h2>
     <hr/>
-    <table border="1"> 
+    <table border="1">
       <tr>
         <th>Time Series Identifier</th>
         <th>TS Code</th>
@@ -2616,7 +2635,7 @@ INSERT INTO at_clob
         <td><xsl:value-of select="."/></td>
         <td><xsl:value-of select="@ts_code"/></td>
         <td><xsl:value-of select="@offset"/></td>
-      </tr>   
+      </tr>
       </xsl:for-each>
     </table>
   </center>

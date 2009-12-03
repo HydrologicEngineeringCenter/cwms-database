@@ -348,22 +348,14 @@ CREATE OR REPLACE package body cwms_xchg as
       already_exists exception;
       pragma exception_init (already_exists, -00001);
    begin
-      begin
-         if upper(substr(p_direction, 1, 1)) = 'I' then
-            l_clob_id := '/dataexchange/incoming-configuration';
-         elsif upper(substr(p_direction, 1, 1)) = 'O' then
-            l_clob_id := '/dataexchange/outgoing-configuration';
-         else
-            l_clob_id := '/dataexchange/configuration';
-         end if;
-         insert into at_clob values(l_clob_id, l_date_time, p_xml);
-      exception
-         when already_exists then
-            update at_clob
-               set description = l_date_time,
-                   value = p_xml
-             where id = l_clob_id;
-      end;
+      if upper(substr(p_direction, 1, 1)) = 'I' then
+         l_clob_id := '/dataexchange/incoming-configuration';
+      elsif upper(substr(p_direction, 1, 1)) = 'O' then
+         l_clob_id := '/dataexchange/outgoing-configuration';
+      else
+         l_clob_id := '/dataexchange/configuration';
+      end if;
+      cwms_text.store_text(p_xml, l_clob_id, l_date_time, 'F');
       commit;
    end log_configuration_xml;
 --------------------------------------------------------------------------------
@@ -884,7 +876,7 @@ CREATE OR REPLACE package body cwms_xchg as
                      l_errormsg := l_errormsg || l_item1;
                   else
                      l_errormsg := l_errormsg || ', ' || l_item1;
-                  end if; 
+                  end if;
                end loop;
                l_errormsg := l_errormsg || lf;
             end if;
@@ -903,7 +895,7 @@ CREATE OR REPLACE package body cwms_xchg as
                      l_errormsg := l_errormsg || l_item1;
                   else
                      l_errormsg := l_errormsg || ', ' || l_item1;
-                  end if; 
+                  end if;
                end loop;
                l_errormsg := l_errormsg || lf;
             end if;
@@ -919,7 +911,7 @@ CREATE OR REPLACE package body cwms_xchg as
                      l_errormsg := l_errormsg || l_item1;
                   else
                      l_errormsg := l_errormsg || ', ' || l_item1;
-                  end if; 
+                  end if;
                end loop;
                l_errormsg := l_errormsg || lf;
             end if;
@@ -1036,22 +1028,22 @@ CREATE OR REPLACE package body cwms_xchg as
       begin
          return ltrim(rtrim(p_str, whitespace), whitespace);
       end;
-      
+
       function split(
-         p_str       in varchar2, 
+         p_str       in varchar2,
          p_delimiter in varchar2 default null,
-         p_max_split in integer  default null) 
-      return cwms_util.str_tab_t 
+         p_max_split in integer  default null)
+      return cwms_util.str_tab_t
       is
       begin
          return cwms_util.split_text(p_str, p_delimiter, p_max_split);
       end;
 
       function split(
-         p_clob      in clob, 
+         p_clob      in clob,
          p_delimiter in varchar2 default null,
-         p_max_split in integer  default null) 
-      return cwms_util.str_tab_t 
+         p_max_split in integer  default null)
+      return cwms_util.str_tab_t
       is
       begin
          return cwms_util.split_text(p_clob, p_delimiter, p_max_split);
@@ -1096,9 +1088,9 @@ CREATE OR REPLACE package body cwms_xchg as
       -- log the incoming XML for debugging purposes --
       -------------------------------------------------
       log_configuration_xml(p_dx_config, 'in');
-      ----------------------------------------------------------------------- 
+      -----------------------------------------------------------------------
       -- split the incoming XML around the ts-mapping element opening tags --
-      ----------------------------------------------------------------------- 
+      -----------------------------------------------------------------------
       l_mappings := split(p_dx_config, '<ts-mapping>');
       -------------------------
       -- process the offices --
