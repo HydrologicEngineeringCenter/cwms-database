@@ -620,7 +620,7 @@ AS
    )
    IS
    BEGIN
-      create_location_raw (
+      create_location_raw2 (
          p_base_location_code,
          p_location_code,
          p_base_location_id,
