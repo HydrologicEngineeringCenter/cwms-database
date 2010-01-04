@@ -382,7 +382,7 @@ AS
       p_time_zone_code       IN   NUMBER DEFAULT NULL,
       p_county_code          IN   NUMBER DEFAULT NULL,
       p_active_flag          IN   VARCHAR2 DEFAULT 'T',
-      p_location_category_id IN   VARCHAR2 DEFAULT NULL,
+      p_location_kind_id     IN   VARCHAR2 DEFAULT NULL,
       p_map_label            IN   VARCHAR2 DEFAULT NULL,
       p_published_latitude   IN   NUMBER DEFAULT NULL,
       p_published_longitude  IN   NUMBER DEFAULT NULL,
@@ -400,21 +400,23 @@ AS
       l_sub_loc_exists         BOOLEAN := TRUE;
       l_nation_id              varchar2(48) := nvl(p_nation_id, 'UNITED STATES');
       l_bounding_office_id     varchar2(16);
-      l_location_category_code number;
+      l_location_kind_code     number;
       l_bounding_office_code   number := null;
       l_nation_code            varchar2(2);
+      l_cwms_office_code       number(10) := cwms_util.user_office_code('CWMS');
    BEGIN
       begin
-         select category_code
+         select location_kind_code
            into l_location_category_code
-           from cwms_location_category
-          where category_id = upper(nvl(p_location_category_id, 'POINT'));
+           from at_location_kind
+          where location_kind_id = upper(nvl(p_location_kind_id, 'POINT'));
+            and office_code in (p_db_office_code, l_cwms_office_code);
       exception
          when no_data_found then
             cwms_err.raise(
                'INVALID_ITEM',
-               p_location_category_id,
-               'location category');
+               p_location_kind_id,
+               'location kind');
       end;
       if p_bounding_office_id is not null then
          begin
@@ -529,7 +531,7 @@ AS
                             elevation, vertical_datum, longitude,
                             latitude, horizontal_datum, public_name,
                             long_name, description, active_flag,
-                            location_category, map_label, published_latitude,
+                            location_kind_code, map_label, published_latitude,
                             published_longitude, office_code, nation_code,
                             nearest_city
                            )
@@ -538,7 +540,7 @@ AS
                             p_elevation, p_vertical_datum, p_longitude,
                             p_latitude, p_horizontal_datum, p_public_name,
                             p_long_name, p_description, p_active_flag,
-                            l_location_category_code, p_map_label,
+                            l_location_kind_code, p_map_label,
                             p_published_latitude, p_published_longitude,
                             l_bounding_office_code, l_nation_code,
                             p_nearest_city
@@ -559,7 +561,7 @@ AS
                             county_code, location_type, elevation,
                             vertical_datum, longitude, latitude,
                             horizontal_datum, public_name, long_name,
-                            description, active_flag, location_category,
+                            description, active_flag, location_kind_code,
                             map_label, published_latitude,
                             published_longitude, office_code, nation_code,
                             nearest_city
@@ -570,7 +572,7 @@ AS
                             p_vertical_datum, p_longitude, p_latitude,
                             p_horizontal_datum, p_public_name, p_long_name,
                             p_description, p_active_flag,
-                            l_location_category_code, p_map_label,
+                            l_location_kind_code, p_map_label,
                             p_published_latitude, p_published_longitude,
                             l_bounding_office_code, l_nation_code,
                             p_nearest_city
@@ -723,7 +725,7 @@ AS
       p_county_name          IN   VARCHAR2 DEFAULT NULL,
       p_state_initial        IN   VARCHAR2 DEFAULT NULL,
       p_active               IN   VARCHAR2 DEFAULT NULL,
-      p_location_category_id IN   VARCHAR2 DEFAULT NULL,
+      p_location_kind_id     IN   VARCHAR2 DEFAULT NULL,
       p_map_label            IN   VARCHAR2 DEFAULT NULL,
       p_published_latitude   IN   NUMBER DEFAULT NULL,
       p_published_longitude  IN   NUMBER DEFAULT NULL,
@@ -748,7 +750,7 @@ AS
       l_long_name              at_physical_location.long_name%TYPE;
       l_description            at_physical_location.description%TYPE;
       l_active_flag            at_physical_location.active_flag%TYPE;
-      l_location_category_code at_physical_location.location_category%type;
+      l_location_kind_code     at_physical_location.location_kind_code%type;
       l_map_label              at_physical_location.map_label%type;
       l_published_latitude     at_physical_location.published_latitude%type;
       l_published_longitude    at_physical_location.published_longitude%type;
@@ -759,6 +761,8 @@ AS
       l_state_initial      cwms_state.state_initial%TYPE;
       l_county_name        cwms_county.county_name%TYPE;
       l_ignorenulls        BOOLEAN       := cwms_util.is_true (p_ignorenulls);
+      l_office_code        number(10) := cwms_util.get_office_code(p_db_office_id);
+      l_cwms_office_code   number(10) := cwms_util.user_office_code('CWMS');
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
@@ -777,14 +781,14 @@ AS
              latitude, longitude, horizontal_datum,
              public_name, long_name, description,
              time_zone_code, county_code, active_flag,
-             location_category, map_label, published_latitude,
+             location_kind_code, map_label, published_latitude,
              published_longitude, office_code, nation_code,
              nearest_city
         INTO l_location_type, l_elevation, l_vertical_datum,
              l_latitude, l_longitude, l_horizontal_datum,
              l_public_name, l_long_name, l_description,
              l_time_zone_code, l_county_code, l_active_flag,
-             l_location_category_code, l_map_label, l_published_latitude,
+             l_location_kind_code, l_map_label, l_published_latitude,
              l_published_longitude, l_bounding_office_code, l_nation_code,
              l_nearest_city
         FROM at_physical_location
@@ -974,21 +978,22 @@ AS
          END IF;
       END IF;
       
-      -----------------------
-      -- location category --
-      -----------------------
-      if p_location_category_id is not null then
+      -------------------
+      -- location kind --
+      -------------------
+      if p_location_kind_id is not null then
          begin
-            select category_code
-              into l_location_category_code
-              from cwms_location_category
-             where category_id = upper(p_location_category_id);
+            select location_kind_code
+              into l_location_kind_code
+              from at_location_kind
+             where location_kind_id = upper(p_location_category_id)
+               and office_code in (l_office_code, l_cwms_office_code);
          exception
             when no_data_found then
                cwms_err.raise(
                   'INVALID_ITEM',
-                  p_location_category_id,
-                  'location category id');
+                  p_location_kind_id,
+                  'location kind id');
          end;
       end if;
       
@@ -1086,7 +1091,7 @@ AS
              time_zone_code = l_time_zone_code,
              county_code = l_county_code,
              active_flag = l_active_flag,
-             location_category = l_location_category_code,
+             location_kind_code = l_location_kind_code,
              map_label = l_map_label,
              published_latitude = l_published_latitude,
              published_longitude = l_published_longitude,
@@ -1469,7 +1474,7 @@ AS
       p_county_name          IN   VARCHAR2 DEFAULT NULL,
       p_state_initial        IN   VARCHAR2 DEFAULT NULL,
       p_active               IN   VARCHAR2 DEFAULT NULL,
-      p_location_category_id IN   VARCHAR2 DEFAULT NULL,
+      p_location_kind_id     IN   VARCHAR2 DEFAULT NULL,
       p_map_label            IN   VARCHAR2 DEFAULT NULL,
       p_published_latitude   IN   NUMBER DEFAULT NULL,
       p_published_longitude  IN   NUMBER DEFAULT NULL,
@@ -1720,7 +1725,7 @@ AS
                            l_time_zone_code,
                            l_county_code,
                            l_active_flag,
-                           p_location_category_id,
+                           p_location_kind_id,
                            p_map_label,
                            p_published_latitude,
                            p_published_longitude,
@@ -2790,7 +2795,7 @@ AS
       p_county_name          IN   VARCHAR2 DEFAULT NULL,
       p_state_initial        IN   VARCHAR2 DEFAULT NULL,
       p_active               IN   VARCHAR2 DEFAULT NULL,
-      p_location_category_id IN   VARCHAR2 DEFAULT NULL,
+      p_location_kind_id     IN   VARCHAR2 DEFAULT NULL,
       p_map_label            IN   VARCHAR2 DEFAULT NULL,
       p_published_latitude   IN   NUMBER DEFAULT NULL,
       p_published_longitude  IN   NUMBER DEFAULT NULL,
@@ -2823,7 +2828,7 @@ AS
                           p_county_name,
                           p_state_initial,
                           p_active,
-                          p_location_category_id,
+                          p_location_kind_id,
                           p_map_label,
                           p_published_latitude,
                           p_published_longitude,
@@ -2855,7 +2860,7 @@ AS
                              p_county_name,
                              p_state_initial,
                              p_active,
-                             p_location_category_id,
+                             p_location_kind_id,
                              p_map_label,
                              p_published_latitude,
                              p_published_longitude,
@@ -2997,7 +3002,7 @@ AS
       p_county_name          OUT      VARCHAR2,
       p_state_initial        OUT      VARCHAR2,
       p_active               OUT      VARCHAR2,
-      p_location_category_id OUT      VARCHAR2,
+      p_location_kind_id     OUT      VARCHAR2,
       p_map_label            OUT      VARCHAR2,
       p_published_latitude   OUT      NUMBER,
       p_published_longitude  OUT      NUMBER,
@@ -3013,6 +3018,7 @@ AS
       l_location_code          NUMBER;
       l_bounding_office_code   NUMBER := null;
       l_nation_code            NUMBER := null;
+      l_cwms_office_code       NUMBER := cwms_util.user_office_code('CWMS');
       --
       -- l_alias_cursor    sys_refcursor;
    --
@@ -3036,7 +3042,7 @@ AS
                 apl.latitude, apl.longitude, apl.horizontal_datum,
                 apl.public_name, apl.long_name, apl.description,
                 ctz.time_zone_name, cc.county_name, cs.state_initial,
-                apl.active_flag, cll.category_id, apl.map_label,
+                apl.active_flag, alk.location_kind_id, apl.map_label,
                 apl.published_latitude, apl.published_longitude,
                 apl.office_code, apl.nation_code, apl.nearest_city
            INTO p_location_type,
@@ -3044,18 +3050,19 @@ AS
                 p_latitude, p_longitude, p_horizontal_datum,
                 p_public_name, p_long_name, p_description,
                 p_time_zone_id, p_county_name, p_state_initial,
-                p_active, p_location_category_id, p_map_label,
+                p_active, p_location_kind_id, p_map_label,
                 p_published_latitude, p_published_longitude,
                 l_bounding_office_code, l_nation_code, p_nearest_city
            FROM at_physical_location apl,
                 cwms_county cc,
                 cwms_state cs,
                 cwms_time_zone ctz,
-                cwms_location_category cll
+                at_location_kind alk
           WHERE apl.county_code = cc.county_code
             AND cc.state_code = cs.state_code
             AND apl.time_zone_code = ctz.time_zone_code
-            AND cll.category_code = apl.location_category
+            AND alk.location_kind_code = apl.location_kind_code
+            AND alk.office_code in (l_office_code, l_cwms_office_code)
             AND apl.location_code = l_location_code;
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -3131,7 +3138,7 @@ AS
       p_db_office_id       IN       VARCHAR2 DEFAULT NULL
    )
    IS
-      l_location_category_id cwms_location_category.category_id%type;
+      l_location_kind_id     at_location_kind.location_kind_id%type;
       l_map_label            at_physical_location.map_label%type;
       l_published_latitude   at_physical_location.published_latitude%type;
       l_published_longitude  at_physical_location.published_longitude%type;
@@ -3155,7 +3162,7 @@ AS
          p_county_name,
          p_state_initial,
          p_active,
-         l_location_category_id,
+         l_location_kind_id,
          l_map_label,
          l_published_latitude,
          l_published_longitude,

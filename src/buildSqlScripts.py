@@ -128,7 +128,7 @@ tableInfo = [
     {"ID" : "logMessageTypes",    "TABLE" : "CWMS_LOG_MESSAGE_TYPES",     "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "logMessagePropTypes","TABLE" : "CWMS_LOG_MESSAGE_PROP_TYPES","SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "interpolateUnits"   ,"TABLE" : "CWMS_INTERPOLATE_UNITS",     "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "locationCategory",   "TABLE" : "CWMS_LOCATION_CATEGORY",     "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "locationKind",       "TABLE" : "AT_LOCATION_KIND",           "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "gageMethod",         "TABLE" : "CWMS_GAGE_METHOD",           "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "gageType",           "TABLE" : "CWMS_GAGE_TYPE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "nation",             "TABLE" : "CWMS_NATION",                "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -4871,12 +4871,17 @@ interpolateUnits = [
 # LOCATION CATEGORIES #
 #---------------------#
 sys.stderr.write("Processing location categories \n")
-locationCategories = [
+locationKinds = [
 # 	CODE  ID        DESCRIPTION
 #	----  --------  -----------------------------------------------------------------------------
-	[1,   'POINT',  'Location that can be represented by a single set of geospatial coordinates.'],
-	[2,   'STREAM', 'A named stream, the lat/lon represent the downstream-most point.'           ],
-	[3,   'BASIN',  'A named basin, the lat/lon represent the geospatial centroid.'              ],
+	[1,   'POINT',        'A generic location that can be represented by a single lat/lon.'      ],
+	[2,   'STREAM',       'A stream, the lat/lon represent the downstream-most point.'           ],
+	[3,   'BASIN',        'A basin, the lat/lon represent the geospatial centroid.'              ],
+	[4,   'GATE-LOWFLOW', 'A gated low-flow reservoir outlet'                                    ],
+	[5,   'GATE-SLUICE',  'A reservoir sluice gate'                                              ],
+	[6,   'GATE-TAINTER', 'A reservoir tainter gate'                                             ],
+	[7,   'POWERHOUSE',   'A reservoir power generation plant'                                   ],
+	[8,   'TURBINE',      'A turbine in a powerhouse'                                            ],
 ]
 
 #--------------#
@@ -8442,17 +8447,18 @@ displayUnitsLoadTemplate +="COMMIT;\n"
 
 
 
-sys.stderr.write("Building locationCategoryCreationTemplate\n")
-locationCategoryCreationTemplate = \
+sys.stderr.write("Building locationKindCreationTemplate\n")
+locationKindCreationTemplate = \
 '''
 -- ## TABLE ###############################################
 -- ## @TABLE
 -- ##
 CREATE TABLE @TABLE
 (
-   CATEGORY_CODE NUMBER(10)     NOT NULL,
-   CATEGORY_ID   VARCHAR2(32)   NOT NULL,
-   DESCRIPTION   VARCHAR2(256)
+   LOCATION_KIND_CODE NUMBER(10)     NOT NULL,
+   LOCATION_KIND_ID   VARCHAR2(32)   NOT NULL,
+   OFFICE_CODE        NUMBER(10)     NOT NULL,
+   DESCRIPTION        VARCHAR2(256)
 )
 tablespace CWMS_20DATA
 PCTUSED    0
@@ -8476,26 +8482,27 @@ MONITORING;
 -------------------------------
 -- @TABLE constraints  --
 --
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (CATEGORY_CODE) USING INDEX;
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_U1  UNIQUE (CATEGORY_ID) USING INDEX;
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK(TRIM(CATEGORY_ID) = CATEGORY_ID);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK2 CHECK(UPPER(CATEGORY_ID) = CATEGORY_ID);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (LOCATION_KIND_CODE, LOCATION_KIND_ID) USING INDEX;
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK(TRIM(LOCATION_KIND_ID) = LOCATION_KIND_ID);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK2 CHECK(UPPER(LOCATION_KIND_ID) = LOCATION_KIND_ID);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
 
 ---------------------------
 -- @TABLE comments --
 --
-COMMENT ON TABLE  @TABLE               IS 'Contains pre-defined location categories.';
-COMMENT ON COLUMN @TABLE.CATEGORY_CODE IS 'Primary key relating location categories to other entities.';
-COMMENT ON COLUMN @TABLE.CATEGORY_ID   IS 'Text name used as an input to the lookup.';
-COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Optional description or comments.';
+COMMENT ON TABLE  @TABLE                    IS 'Contains location kinds.';
+COMMENT ON COLUMN @TABLE.LOCATION_KIND_CODE IS 'Primary key relating location kinds to other entities.';
+COMMENT ON COLUMN @TABLE.LOCATION_KIND_ID   IS 'Text name used as an input to the lookup.';
+COMMENT ON COLUMN @TABLE.OFFICE_CODE        IS 'Office that generated/owns this kind code';
+COMMENT ON COLUMN @TABLE.DESCRIPTION        IS 'Optional description or comments.';
 
 COMMIT;
 '''
-sys.stderr.write("Building locationCategoryLoadTemplate\n")
-locationCategoryLoadTemplate = ''
-for code, id, description in locationCategories :
-	locationCategoryLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
-locationCategoryLoadTemplate += "COMMIT;\n"
+sys.stderr.write("Building locationKindLoadTemplate\n")
+locationKindLoadTemplate = ''
+for code, id, description in locationKinds :
+	locationKindLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', 53, '%s');\n" % (code, id, description)
+locationKindLoadTemplate += "COMMIT;\n"
 
 sys.stderr.write("Building gageMethodCreationTemplate\n")
 gageMethodCreationTemplate = \
