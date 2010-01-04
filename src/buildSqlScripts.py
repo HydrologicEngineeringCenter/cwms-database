@@ -8456,8 +8456,8 @@ locationKindCreationTemplate = \
 CREATE TABLE @TABLE
 (
    LOCATION_KIND_CODE NUMBER(10)     NOT NULL,
-   LOCATION_KIND_ID   VARCHAR2(32)   NOT NULL,
    OFFICE_CODE        NUMBER(10)     NOT NULL,
+   LOCATION_KIND_ID   VARCHAR2(32)   NOT NULL,
    DESCRIPTION        VARCHAR2(256)
 )
 tablespace CWMS_20DATA
@@ -8482,9 +8482,9 @@ MONITORING;
 -------------------------------
 -- @TABLE constraints  --
 --
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (LOCATION_KIND_CODE, LOCATION_KIND_ID) USING INDEX;
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK(TRIM(LOCATION_KIND_ID) = LOCATION_KIND_ID);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK2 CHECK(UPPER(LOCATION_KIND_ID) = LOCATION_KIND_ID);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (LOCATION_KIND_CODE) USING INDEX;
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_U1  UNIQUE (OFFICE_CODE, LOCATION_KIND_ID);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK(TRIM(UPPER(LOCATION_KIND_ID)) = LOCATION_KIND_ID);
 ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
 
 ---------------------------
@@ -8492,8 +8492,8 @@ ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (OFFICE_CODE) REFERENCE
 --
 COMMENT ON TABLE  @TABLE                    IS 'Contains location kinds.';
 COMMENT ON COLUMN @TABLE.LOCATION_KIND_CODE IS 'Primary key relating location kinds to other entities.';
-COMMENT ON COLUMN @TABLE.LOCATION_KIND_ID   IS 'Text name used as an input to the lookup.';
 COMMENT ON COLUMN @TABLE.OFFICE_CODE        IS 'Office that generated/owns this kind code';
+COMMENT ON COLUMN @TABLE.LOCATION_KIND_ID   IS 'Text name used as an input to the lookup.';
 COMMENT ON COLUMN @TABLE.DESCRIPTION        IS 'Optional description or comments.';
 
 COMMIT;
@@ -8501,7 +8501,7 @@ COMMIT;
 sys.stderr.write("Building locationKindLoadTemplate\n")
 locationKindLoadTemplate = ''
 for code, id, description in locationKinds :
-	locationKindLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', 53, '%s');\n" % (code, id, description)
+	locationKindLoadTemplate += "INSERT INTO @TABLE VALUES (%d, 53, '%s', '%s');\n" % (code, id, description)
 locationKindLoadTemplate += "COMMIT;\n"
 
 sys.stderr.write("Building gageMethodCreationTemplate\n")

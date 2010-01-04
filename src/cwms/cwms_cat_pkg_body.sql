@@ -1830,7 +1830,7 @@ IS
                         cuc.to_unit_id elev_unit_id, apl.vertical_datum,
                         apl.public_name, apl.long_name, apl.description,
                         apl.active_flag,
-                        clc.category_id location_category_id,
+                        alk.location_kind_id location_kind_id,
                         apl.map_label, apl.published_latitude,
                         apl.published_longitude,
                         case when apl.office_code is null
@@ -1853,7 +1853,7 @@ IS
                         cwms_state cs,
                         cwms_time_zone ctz,
                         cwms_unit_conversion cuc,
-                        cwms_location_category clc,
+                        at_location_kind alk,
                         cwms_office co2,
                         cwms_nation cn,
                         ---
@@ -1867,7 +1867,7 @@ IS
                     AND apl.location_code != 0
                     AND cuc.from_unit_id = 'm'
                     AND cuc.to_unit_id = p_elevation_unit
-                    AND clc.category_code = apl.location_category
+                    AND alk.location_kind_code = apl.location_kind
                     AND (apl.office_code is null or co2.office_code = apl.office_code)
                     AND (apl.nation_code is null or cn.nation_code = apl.nation_code)
                     ---
@@ -1889,7 +1889,7 @@ IS
                         cuc.to_unit_id elev_unit_id, apl.vertical_datum,
                         apl.public_name, apl.long_name, apl.description,
                         apl.active_flag,
-                        clc.category_id location_category_id,
+                        alk.location_kind_id location_kind_id,
                         apl.map_label, apl.published_latitude,
                         apl.published_longitude,
                         case when apl.office_code is null
@@ -1912,7 +1912,7 @@ IS
                         cwms_state cs,
                         cwms_time_zone ctz,
                         cwms_unit_conversion cuc,
-                        cwms_location_category clc,
+                        at_location_kind alk,
                         cwms_office co2,
                         cwms_nation cn,
                         ---
@@ -1926,7 +1926,7 @@ IS
                     AND apl.location_code != 0
                     AND cuc.from_unit_id = 'm'
                     AND cuc.to_unit_id = p_elevation_unit
-                    AND clc.category_code = apl.location_category
+                    AND alk.location_kind_code = apl.location_kind
                     AND (apl.office_code is null or co2.office_code = apl.office_code)
                     AND (apl.nation_code is null or cn.nation_code = apl.nation_code)
                     ---
@@ -1950,7 +1950,7 @@ IS
                         cuc.to_unit_id elev_unit_id, apl.vertical_datum,
                         apl.public_name, apl.long_name, apl.description,
                         apl.active_flag,
-                        clc.category_id location_category_id,
+                        alk.location_kind_id location_kind_id,
                         apl.map_label, apl.published_latitude,
                         apl.published_longitude,
                         case when apl.office_code is null
@@ -1973,7 +1973,7 @@ IS
                         cwms_state cs,
                         cwms_time_zone ctz,
                         cwms_unit_conversion cuc,
-                        cwms_location_category clc,
+                        at_location_kind alk,
                         cwms_office co2,
                         cwms_nation cn
                   WHERE abl.db_office_code = l_db_office_code
@@ -1985,7 +1985,7 @@ IS
                     AND apl.location_code != 0
                     AND cuc.from_unit_id = 'm'
                     AND cuc.to_unit_id = p_elevation_unit
-                    AND clc.category_code = apl.location_category
+                    AND alk.location_kind_code = apl.location_kind
                     AND (apl.office_code is null or co2.office_code = apl.office_code)
                     AND (apl.nation_code is null or cn.nation_code = apl.nation_code)
                     ---
@@ -2005,7 +2005,7 @@ IS
                         cuc.to_unit_id elev_unit_id, apl.vertical_datum,
                         apl.public_name, apl.long_name, apl.description,
                         apl.active_flag,
-                        clc.category_id location_category_id,
+                        alk.location_kind_id location_kind_id,
                         apl.map_label, apl.published_latitude,
                         apl.published_longitude,
                         case when apl.office_code is null
@@ -2028,7 +2028,7 @@ IS
                         cwms_state cs,
                         cwms_time_zone ctz,
                         cwms_unit_conversion cuc,
-                        cwms_location_category clc,
+                        at_location_kind alk,
                         cwms_office co2,
                         cwms_nation cn
                   WHERE abl.db_office_code = l_db_office_code
@@ -2040,7 +2040,7 @@ IS
                     AND apl.location_code != 0
                     AND cuc.from_unit_id = 'm'
                     AND cuc.to_unit_id = p_elevation_unit
-                    AND clc.category_code = apl.location_category
+                    AND alk.location_kind_code = apl.location_kind
                     AND (apl.office_code is null or co2.office_code = apl.office_code)
                     AND (apl.nation_code is null or cn.nation_code = apl.nation_code)
                ORDER BY location_id ASC;
