@@ -70,6 +70,8 @@ DECLARE
                      'cat_location_otab_t',
                      'cat_location2_obj_t',
                      'cat_location2_otab_t',
+                     'cat_location_kind_obj_t',
+                     'cat_location_kind_otab_t',
                      'cat_loc_alias_obj_t',
                      'cat_loc_alias_otab_t',
                      'cat_param_obj_t',
@@ -501,7 +503,7 @@ CREATE TYPE cat_location2_obj_t AS OBJECT (
    long_name            VARCHAR2 (80),
    description          VARCHAR2 (512),
    active_flag          VARCHAR2 (1),
-   location_category_id varchar2(32),
+   location_kind_id     varchar2(32),
    map_label            varchar2(50),
    published_latitude   number,
    published_longitude  number,
@@ -512,6 +514,16 @@ CREATE TYPE cat_location2_obj_t AS OBJECT (
 /
 
 CREATE TYPE cat_location2_otab_t AS TABLE OF cat_location2_obj_t;
+/
+
+CREATE TYPE cat_location_kind_obj_t AS OBJECT (
+   office_id        VARCHAR2(16),
+	location_kind_id VARCHAR2(32),
+	description      VARCHAR2(256)
+);
+/
+
+CREATE TYPE cat_location_kind_otab_t AS TABLE OF cat_location_kind_obj_t;
 /
 
 CREATE TYPE cat_loc_alias_obj_t AS OBJECT (

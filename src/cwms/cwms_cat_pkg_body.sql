@@ -348,7 +348,7 @@ IS
             r.long_name,
             r.description,
             r.active_flag,
-            r.location_category_id,
+            r.location_kind_id,
             r.map_label,
             r.published_latitude,
             r.published_longitude,
@@ -402,7 +402,7 @@ IS
             r.long_name := o.long_name;
             r.description := o.description;
             r.active_flag := o.active_flag;
-            r.location_category_id := o.location_category_id;
+            r.location_kind_id := o.location_kind_id;
             r.map_label := o.map_label;
             r.published_latitude := o.published_latitude;
             r.published_longitude := o.published_longitude;
@@ -429,6 +429,70 @@ IS
 
          RETURN t;
       END cat_location2_obj2tab;
+
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION_KIND record-to-object conversion function
+   --
+      FUNCTION cat_location_kind_rec2obj (r IN cat_location_kind_rec_t)
+         RETURN cat_location_kind_obj_t
+      IS
+      BEGIN
+         RETURN cat_location_kind_obj_t (
+            r.office_id,
+            r.location_kind_id,
+            r.description
+            );
+      END cat_location_kind_rec2obj;
+
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION_KIND table-to-object conversion function
+   --
+      FUNCTION cat_location_kind_tab2obj (t IN cat_location_kind_tab_t)
+         RETURN cat_location_kind_otab_t
+      IS
+         o   cat_location_kind_otab_t;
+      BEGIN
+         FOR i IN 1 .. t.LAST
+         LOOP
+            o (i) := cat_location_kind_rec2obj (t (i));
+         END LOOP;
+
+         RETURN o;
+      END cat_location_kind_tab2obj;
+
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION_KIND object-to-record conversion function
+   --
+      FUNCTION cat_location_kind_obj2rec (o IN cat_location_kind_obj_t)
+         RETURN cat_location_kind_rec_t
+      IS
+         r   cat_location_kind_rec_t := NULL;
+      BEGIN
+         IF o IS NOT NULL
+         THEN
+            r.office_id        := o.office_id;
+            r.location_kind_id := o.location_kind_id;
+            r.description      := o.description;
+         END IF;
+
+         RETURN r;
+      END cat_location_kind_obj2rec;
+
+   -------------------------------------------------------------------------------
+   -- CAT_LOCATION_KIND object-to-table conversion function
+   --
+      FUNCTION cat_location_kind_obj2tab (o IN cat_location_kind_otab_t)
+         RETURN cat_location_kind_tab_t
+      IS
+         t   cat_location_kind_tab_t;
+      BEGIN
+         FOR i IN 1 .. o.LAST
+         LOOP
+            t (i) := cat_location_kind_obj2rec (o (i));
+         END LOOP;
+
+         RETURN t;
+      END cat_location_kind_obj2tab;
 
    ---------------------------------------------------------------------------------
    ---- CAT_LOC_ALIAS record-to-object conversion function
@@ -1729,7 +1793,7 @@ IS
 --    long_name                varchar2(80)   location long name
 --    description              varchar2(512)  location description
 --    active_flag              varchar2(1)    'T' if active, else 'F'
---    location_category_id     varchar2(32)   location type (category)
+--    location_kind_id         varchar2(32)   location kind
 --    map_label                varchar2(50)   map label for location
 --    published_latitude       number         published latitude for location
 --    published_longitude      number         published longitude for location
@@ -2084,6 +2148,83 @@ IS
 
       RETURN;
    END cat_location2_tab;
+
+-------------------------------------------------------------------------------
+-- CAT_LOCATION_KIND
+--
+-- These procedures and functions catalog location kinds in the CWMS.
+-- database.
+--
+-- Function returns may be used as source of SELECT statements.
+--
+-- The returned records contain the following columns:
+--
+--    Name              Datatype      Description
+--    ------------------------------ --------------------------------
+--    office_id        varchar2(16)   owning office of location kind
+--    location_kind_id varchar2(32)   location kind id
+--    description      varchar2(256)  description of location kind
+--
+-------------------------------------------------------------------------------
+-- procedure cat_location_kind(...)
+--
+--
+   PROCEDURE cat_location_kind (
+      p_cwms_cat              out sys_refcursor,
+      p_location_kind_id_mask in  varchar2 default null,
+      p_office_id_mask        in  varchar2 default null
+   )
+   is
+      l_location_kind_id_mask varchar2(32);
+      l_office_id_mask        varchar2(16);
+   begin
+      l_location_kind_id_mask := cwms_util.normalize_wildcards(
+			upper(nvl(p_location_kind_id_mask, '*')), true);
+      l_office_id_mask        := cwms_util.normalize_wildcards(
+			upper(nvl(p_office_id_mask, '*')), true);
+      open p_cwms_cat for 
+         select o.office_id,
+					 k.location_kind_id,
+					 k.description
+			  from cwms_office o,
+					 at_location_kind k
+			 where k.location_kind_id like l_location_kind_id_mask escape '\'
+				and o.office_id like l_office_id_mask escape '\'
+			   and o.office_code = k.office_code
+		 order by o.office_id,
+					 k.location_kind_id;
+   end cat_location_kind;
+
+-------------------------------------------------------------------------------
+-- function cat_location_kind_tab(...)
+--
+--
+   FUNCTION cat_location_kind_tab (
+      p_location_kind_id_mask in  varchar2 default null,
+      p_office_id_mask        in  varchar2 default null
+   )
+      RETURN cat_location_kind_tab_t PIPELINED
+   IS
+      query_cursor   sys_refcursor;
+      output_row     cat_location_kind_rec_t;
+   BEGIN
+      cat_location_kind (
+			query_cursor,
+			p_location_kind_id_mask,
+			p_office_id_mask);
+
+      LOOP
+         FETCH query_cursor
+          INTO output_row;
+
+         EXIT WHEN query_cursor%NOTFOUND;
+         PIPE ROW (output_row);
+      END LOOP;
+
+      CLOSE query_cursor;
+
+      RETURN;
+   end cat_location_kind_tab;
 
 --------------------------------------------------------------------------------
 -- DEPRICATED --

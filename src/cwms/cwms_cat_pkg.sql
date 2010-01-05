@@ -93,7 +93,7 @@ IS
       long_name            VARCHAR2 (80),
       description          VARCHAR2 (512),
       active_flag          VARCHAR2 (1),
-      location_category_id varchar2(32),
+      location_kind_id     varchar2(32),
       map_label            varchar2(50),
       published_latitude   number,
       published_longitude  number,
@@ -103,6 +103,15 @@ IS
    );
 
    TYPE cat_location2_tab_t IS TABLE OF cat_location2_rec_t;
+   
+   TYPE cat_location_kind_rec_t IS RECORD (
+    office_id        VARCHAR2(16),
+		location_kind_id VARCHAR2(32),
+		description      VARCHAR2(256)
+	);
+	
+	TYPE cat_location_kind_tab_t IS TABLE OF cat_location_kind_rec_t;
+		
 
    TYPE cat_loc_grp_rec_t IS RECORD (
       cat_db_office_id    VARCHAR2 (16),
@@ -337,6 +346,19 @@ IS
 
    FUNCTION cat_location2_obj2tab (o IN cat_location2_otab_t)
       RETURN cat_location2_tab_t;
+
+-- cat_location_kind...
+   FUNCTION cat_location_kind_rec2obj (r IN cat_location_kind_rec_t)
+      RETURN cat_location_kind_obj_t;
+
+   FUNCTION cat_location_kind_tab2obj (t IN cat_location_kind_tab_t)
+      RETURN cat_location_kind_otab_t;
+
+   FUNCTION cat_location_kind_obj2rec (o IN cat_location_kind_obj_t)
+      RETURN cat_location_kind_rec_t;
+
+   FUNCTION cat_location_kind_obj2tab (o IN cat_location_kind_otab_t)
+      RETURN cat_location_kind_tab_t;
 
 -- cat_loc_alias...
 --   FUNCTION cat_loc_alias_rec2obj (r IN cat_loc_alias_rec_t)
@@ -1215,7 +1237,7 @@ IS
 --    long_name                varchar2(80)   location long name
 --    description              varchar2(512)  location description
 --    active_flag              varchar2(1)    'T' if active, else 'F'
---    location_category_id     varchar2(32)   location type (category)
+--    location_kind_id         varchar2(32)   location kind
 --    map_label                varchar2(50)   map label for location
 --    published_latitude       number         published latitude for location
 --    published_longitude      number         published longitude for location
@@ -1248,6 +1270,42 @@ IS
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_location2_tab_t PIPELINED;
+
+-------------------------------------------------------------------------------
+-- CAT_LOCATION_KIND
+--
+-- These procedures and functions catalog location kinds in the CWMS.
+-- database.
+--
+-- Function returns may be used as source of SELECT statements.
+--
+-- The returned records contain the following columns:
+--
+--    Name              Datatype      Description
+--    ------------------------------ --------------------------------
+--    office_id        varchar2(16)   owning office of location kind
+--    location_kind_id varchar2(32)   location kind id
+--    description      varchar2(256)  description of location kind
+--
+-------------------------------------------------------------------------------
+-- procedure cat_location_kind(...)
+--
+--
+   PROCEDURE cat_location_kind (
+      p_cwms_cat              out sys_refcursor,
+      p_location_kind_id_mask in  varchar2 default null,
+      p_office_id_mask        in  varchar2 default null
+   );
+
+-------------------------------------------------------------------------------
+-- function cat_location_kind_tab(...)
+--
+--
+   FUNCTION cat_location_kind_tab (
+      p_location_kind_id_mask in  varchar2 default null,
+      p_office_id_mask        in  varchar2 default null
+   )
+      RETURN cat_location_kind_tab_t PIPELINED;
 
    PROCEDURE cat_loc_group (
       p_cwms_cat       OUT      sys_refcursor,

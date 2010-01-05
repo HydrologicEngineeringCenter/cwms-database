@@ -403,13 +403,13 @@ AS
       l_location_kind_code     number;
       l_bounding_office_code   number := null;
       l_nation_code            varchar2(2);
-      l_cwms_office_code       number(10) := cwms_util.user_office_code('CWMS');
+      l_cwms_office_code       number(10) := cwms_util.get_office_code('CWMS');
    BEGIN
       begin
          select location_kind_code
-           into l_location_category_code
+           into l_location_kind_code
            from at_location_kind
-          where location_kind_id = upper(nvl(p_location_kind_id, 'POINT'));
+          where location_kind_id = upper(nvl(p_location_kind_id, 'POINT'))
             and office_code in (p_db_office_code, l_cwms_office_code);
       exception
          when no_data_found then
@@ -531,7 +531,7 @@ AS
                             elevation, vertical_datum, longitude,
                             latitude, horizontal_datum, public_name,
                             long_name, description, active_flag,
-                            location_kind_code, map_label, published_latitude,
+                            location_kind, map_label, published_latitude,
                             published_longitude, office_code, nation_code,
                             nearest_city
                            )
@@ -561,7 +561,7 @@ AS
                             county_code, location_type, elevation,
                             vertical_datum, longitude, latitude,
                             horizontal_datum, public_name, long_name,
-                            description, active_flag, location_kind_code,
+                            description, active_flag, location_kind,
                             map_label, published_latitude,
                             published_longitude, office_code, nation_code,
                             nearest_city
@@ -750,7 +750,7 @@ AS
       l_long_name              at_physical_location.long_name%TYPE;
       l_description            at_physical_location.description%TYPE;
       l_active_flag            at_physical_location.active_flag%TYPE;
-      l_location_kind_code     at_physical_location.location_kind_code%type;
+      l_location_kind_code     at_physical_location.location_kind%type;
       l_map_label              at_physical_location.map_label%type;
       l_published_latitude     at_physical_location.published_latitude%type;
       l_published_longitude    at_physical_location.published_longitude%type;
@@ -762,7 +762,7 @@ AS
       l_county_name        cwms_county.county_name%TYPE;
       l_ignorenulls        BOOLEAN       := cwms_util.is_true (p_ignorenulls);
       l_office_code        number(10) := cwms_util.get_office_code(p_db_office_id);
-      l_cwms_office_code   number(10) := cwms_util.user_office_code('CWMS');
+      l_cwms_office_code   number(10) := cwms_util.get_office_code('CWMS');
    BEGIN
       --.
       -- dbms_output.put_line('Bienvenue a update_loc');
@@ -781,7 +781,7 @@ AS
              latitude, longitude, horizontal_datum,
              public_name, long_name, description,
              time_zone_code, county_code, active_flag,
-             location_kind_code, map_label, published_latitude,
+             location_kind, map_label, published_latitude,
              published_longitude, office_code, nation_code,
              nearest_city
         INTO l_location_type, l_elevation, l_vertical_datum,
@@ -986,7 +986,7 @@ AS
             select location_kind_code
               into l_location_kind_code
               from at_location_kind
-             where location_kind_id = upper(p_location_category_id)
+             where location_kind_id = upper(p_location_kind_id)
                and office_code in (l_office_code, l_cwms_office_code);
          exception
             when no_data_found then
@@ -1091,7 +1091,7 @@ AS
              time_zone_code = l_time_zone_code,
              county_code = l_county_code,
              active_flag = l_active_flag,
-             location_kind_code = l_location_kind_code,
+             location_kind = l_location_kind_code,
              map_label = l_map_label,
              published_latitude = l_published_latitude,
              published_longitude = l_published_longitude,
@@ -3018,7 +3018,7 @@ AS
       l_location_code          NUMBER;
       l_bounding_office_code   NUMBER := null;
       l_nation_code            NUMBER := null;
-      l_cwms_office_code       NUMBER := cwms_util.user_office_code('CWMS');
+      l_cwms_office_code       NUMBER := cwms_util.get_office_code('CWMS');
       --
       -- l_alias_cursor    sys_refcursor;
    --
@@ -3060,8 +3060,8 @@ AS
                 at_location_kind alk
           WHERE apl.county_code = cc.county_code
             AND cc.state_code = cs.state_code
-            AND apl.time_zone_code = ctz.time_zone_code
-            AND alk.location_kind_code = apl.location_kind_code
+            and apl.time_zone_code = ctz.time_zone_code
+            AND alk.location_kind_code = apl.location_kind
             AND alk.office_code in (l_office_code, l_cwms_office_code)
             AND apl.location_code = l_location_code;
       EXCEPTION
@@ -3173,6 +3173,106 @@ AS
          p_db_office_id);
    END retrieve_location;
 
+
+	procedure create_location_kind(
+	   p_location_kind_id IN varchar2,
+	   p_description      IN varchar2)
+	is
+	   l_office_code      integer := cwms_util.user_office_code;
+		l_cwms_office_code integer := cwms_util.get_office_code('CWMS');
+		l_count            integer;
+	   l_location_kind_id varchar2(32) := upper(trim(p_location_kind_id));
+	   l_description      varchar2(256) := trim(p_description);
+	begin
+		select count(*)
+		  into l_count
+		  from at_location_kind
+		 where location_kind_id = l_location_kind_id
+			and office_code in (l_office_code, l_cwms_office_code);
+
+		if l_count != 0 then
+		   cwms_err.raise(
+				'ITEM_ALREADY_EXISTS',
+				'Location kind',
+				l_location_kind_id);
+		end if;
+		
+		insert
+		  into at_location_kind
+		values (cwms_seq.nextval, l_office_code, l_location_kind_id, l_description);
+	end create_location_kind;
+
+	procedure update_location_kind(
+	   p_location_kind_id IN varchar2,
+	   p_description      IN varchar2)
+	is
+	   l_office_code          integer := cwms_util.user_office_code;
+		l_cwms_office_code     integer := cwms_util.get_office_code('CWMS');
+		l_existing_office_code integer;
+	   l_location_kind_id     varchar2(32) := upper(trim(p_location_kind_id));
+	   l_description          varchar2(256) := trim(p_description);
+	begin
+		select office_code
+		  into l_existing_office_code
+		  from at_location_kind
+		 where location_kind_id = l_location_kind_id
+			and office_code in (l_office_code, l_cwms_office_code);
+
+		if l_existing_office_code = l_cwms_office_code then
+	      cwms_err.raise(
+	         'ERROR',
+	         'Cannot delete location kind '
+	         || l_location_kind_id
+				|| ' because it is owned by CWMS');
+		else
+		   update at_location_kind
+				set description = l_description
+			 where office_code = l_office_code
+				and location_kind_id = l_location_kind_id;
+		end if;
+	exception
+	   when no_data_found then
+		   cwms_err.raise(
+		      'INVALID_ITEM',
+				l_location_kind_id,
+				'location kind');
+	end update_location_kind;
+
+	procedure delete_location_kind(
+	   p_location_kind_id in varchar2)
+	is
+	   l_office_code          integer := cwms_util.user_office_code;
+		l_cwms_office_code     integer := cwms_util.get_office_code('CWMS');
+		l_existing_office_code integer;
+	   l_location_kind_id     varchar2(32) := upper(trim(p_location_kind_id));
+	begin
+		select office_code
+		  into l_existing_office_code
+		  from at_location_kind
+		 where location_kind_id = l_location_kind_id
+			and office_code in (l_office_code, l_cwms_office_code);
+
+		if l_existing_office_code = l_cwms_office_code then
+	      cwms_err.raise(
+	         'ERROR',
+	         'Cannot delete location kind '
+	         || l_location_kind_id
+				|| ' because it is owned by CWMS');
+		else
+		   delete
+			  from at_location_kind
+			 where office_code = l_office_code
+				and location_kind_id = l_location_kind_id;
+		end if;
+	exception
+	   when no_data_found then
+		   cwms_err.raise(
+		      'INVALID_ITEM',
+				l_location_kind_id,
+				'location kind');
+
+	end delete_location_kind;
+	
    --------------------------------------------------------------------------------
    -- FUNCTION get_local_timezone
    --------------------------------------------------------------------------------

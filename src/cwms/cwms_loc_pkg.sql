@@ -435,6 +435,17 @@ AS
       p_db_office_id         IN       VARCHAR2 DEFAULT NULL
    );
 
+	procedure create_location_kind(
+	   p_location_kind_id IN varchar2,
+	   p_description      IN varchar2);
+
+	procedure update_location_kind(
+	   p_location_kind_id IN varchar2,
+	   p_description      IN varchar2);
+
+	procedure delete_location_kind(
+	   p_location_kind_id in varchar2);
+	   
    --------------------------------------------------------------------------------
    -- FUNCTION get_local_timezone
    --------------------------------------------------------------------------------
