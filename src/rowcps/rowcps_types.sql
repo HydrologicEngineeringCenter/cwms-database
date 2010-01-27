@@ -9,13 +9,6 @@ CREATE OR REPLACE TYPE project_obj_t AS OBJECT (
 	--an instance of the location type.
 	project_location 		cat_location2_obj_t,
 
-	project_effective_date	DATE,
-
-	project_expiration_date	DATE,
-
-	--an instance of the location type.
-	parent_location			cat_location2_obj_t, 
-
 	authorizing_law			VARCHAR2(32),
 
 	federal_cost			NUMBER,
@@ -33,30 +26,24 @@ CREATE OR REPLACE TYPE project_obj_t AS OBJECT (
 	remarks					VARCHAR2(1000), 
 
 	project_owner			VARCHAR2(255),
-
-	-- should this be part of the lock table since there can be more than one lock per project?
-	lock_lift				NUMBER, 
-
-	-- should this be part of the lock table since there can be more than one lock per project?
-	lock_flow				NUMBER, 
-
-	river_mile				NUMBER,
-
-	has_hydro_power			VARCHAR2(1),
-
-	turbine_count			NUMBER,
 	
 	hydropower_description	VARCHAR2(255),
-
-	operating_purposes		VARCHAR2(255),
-
-	authorized_purposes		VARCHAR2(255),
 
 	-- an instance of the location type.
 	pumpback_location_id	cat_location2_obj_t,
 
 	--an instance of the location type
 	near_gage_location_id	cat_location2_obj_t
+	
+	sedimentation_description VARCHAR(255),
+	
+	downstream_urban_description VARCHAR(255),
+	
+	bank_full_capacity_description VARCHAR(255),
+	
+	yield_time_frame_start DATE,
+	
+	yield_time_frame_end DATE
 );   
    
 /
