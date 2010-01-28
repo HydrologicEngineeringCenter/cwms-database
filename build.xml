@@ -152,8 +152,36 @@
 	
     </target>
 	
+	<!-- Loads rowcps schema. -->
+	<target name="load-rowcps" description="Loads rowcps schema">
+		
+		<echo message="Loading rowcps Schema..."/>
+		
+		<property name="rowcpsLoad-arg-line" value="cwms_dev/cwmsdevdb@CWMSDEV @rowcps_schema"/>
+		<echo message="${rowcpsLoad-arg-line}"/>
+		
+		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-output.txt" error="rowcps-load-error.txt" resultproperty="rowcps-load-result">
+			<arg line="${rowcpsLoad-arg-line}"/>
+		</exec>	
+		
+		<if>
+			<equals arg1="${rowcps-load-result}" arg2="0" />
+			<then>
+				<echo message="Finished dropping existing CWMS Schema"/>
+			</then>
+			<else>
+				<concat>
+					<filelist dir="${root}" files="rowcps-load-output.txt,rowcps-load-error.txt"/>
+				</concat>				
+				<echo message="${rowcps-load-result}"/>
+				<fail/>
+			</else>
+		</if>
+	
+    </target>
+	
 	<!-- Drop existing CWMS schema then build a new CWMS schema. -->
-	<target name="all-schema" depends="clean,build" description="drop existing CWMS schema then build a new CWMS schema">
+	<target name="all-schema" depends="clean,build,load-rowcps" description="drop existing CWMS schema then build a new CWMS schema">
     </target>
 	
     <target name="all" depends="all-schema" description="empty for the moment">
