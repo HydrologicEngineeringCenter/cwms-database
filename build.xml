@@ -157,7 +157,7 @@
 		
 		<echo message="Loading rowcps Schema..."/>
 		
-		<property name="rowcpsLoad-arg-line" value="cwms_dev/cwmsdevdb@CWMSDEV @rowcps_schema"/>
+		<property name="rowcpsLoad-arg-line" value="${oracle.cwms.user}/{oracle.sys.password}@${oracle.cwms.instance} @rowcps_schema"/>
 		<echo message="${rowcpsLoad-arg-line}"/>
 		
 		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-output.txt" error="rowcps-load-error.txt" resultproperty="rowcps-load-result">
@@ -167,7 +167,7 @@
 		<if>
 			<equals arg1="${rowcps-load-result}" arg2="0" />
 			<then>
-				<echo message="Finished dropping existing CWMS Schema"/>
+				<echo message="Finished Loading existing rowcps Schema"/>
 			</then>
 			<else>
 				<concat>
@@ -178,6 +178,28 @@
 			</else>
 		</if>
 	
+		<echo message="Loading rowcps Types..."/>
+		
+		<property name="rowcpsLoadTypes-arg-line" value="${oracle.cwms.user}/{oracle.sys.password}@${oracle.cwms.instance} @rowcps_types"/>
+		<echo message="${rowcpsLoadTypes-arg-line}"/>
+		
+		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-types-load-output.txt" error="rowcps-types-load-error.txt" resultproperty="rowcps-types-load-result">
+			<arg line="${rowcpsLoadTypes-arg-line}"/>
+		</exec>	
+		
+		<if>
+			<equals arg1="${rowcps-types-load-result}" arg2="0" />
+			<then>
+				<echo message="Finished Loading existing rowcps Types"/>
+			</then>
+			<else>
+				<concat>
+					<filelist dir="${root}" files="rowcps-types-load-output.txt,rowcps-types-load-error.txt"/>
+				</concat>				
+				<echo message="${rowcps-types-load-result}"/>
+				<fail/>
+			</else>
+		</if>
     </target>
 	
 	<!-- Drop existing CWMS schema then build a new CWMS schema. -->
