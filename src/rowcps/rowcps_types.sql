@@ -33,7 +33,7 @@ CREATE OR REPLACE TYPE project_obj_t AS OBJECT (
 	pumpback_location_id	cat_location2_obj_t,
 
 	--an instance of the location type
-	near_gage_location_id	cat_location2_obj_t
+	near_gage_location_id	cat_location2_obj_t,
 	
 	sedimentation_description VARCHAR(255),
 	
