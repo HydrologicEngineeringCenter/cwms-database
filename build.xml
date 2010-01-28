@@ -200,6 +200,52 @@
 				<fail/>
 			</else>
 		</if>
+		
+		<echo message="Loading CWMS project Package..."/>
+		
+		<property name="rowcpsLoadCWMSProjectPkg-arg-line" value="${oracle.cwms.user}/${oracle.sys.password}@${oracle.cwms.instance} @cwms_project_pkg"/>
+		<echo message="${rowcpsLoadCWMSProjectPkg-arg-line}"/>
+		
+		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-output.txt" error="rowcps-load-CWMS-Project-Pkg-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-result">
+			<arg line="${rowcpsLoadCWMSProjectPkg-arg-line}"/>
+		</exec>	
+		
+		<if>
+			<equals arg1="${rowcps-load-CWMS-Project-Pkg-result}" arg2="0" />
+			<then>
+				<echo message="Finished Loading CWMS project Package"/>
+			</then>
+			<else>
+				<concat>
+					<filelist dir="${root}" files="rowcps-load-CWMS-Project-Pkg-output.txt,rowcps-load-CWMS-Project-Pkg-error.txt"/>
+				</concat>				
+				<echo message="${rowcps-load-CWMS-Project-Pkg-result}"/>
+				<fail/>
+			</else>
+		</if>
+		
+		<echo message="Loading CWMS project Package Body..."/>
+		
+		<property name="rowcpsLoadCWMSProjectPkgBody-arg-line" value="${oracle.cwms.user}/${oracle.sys.password}@${oracle.cwms.instance} @cwms_project_pkg_body"/>
+		<echo message="${rowcpsLoadCWMSProjectPkgBody-arg-line}"/>
+		
+		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-body-output.txt" error="rowcps-load-CWMS-Project-Pkg-body-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-body-result">
+			<arg line="${rowcpsLoadCWMSProjectPkgBody-arg-line}"/>
+		</exec>	
+		
+		<if>
+			<equals arg1="${rowcps-load-CWMS-Project-Pkg-body-result}" arg2="0" />
+			<then>
+				<echo message="Finished Loading CWMS project Package Body"/>
+			</then>
+			<else>
+				<concat>
+					<filelist dir="${root}" files="rowcps-load-CWMS-Project-Pkg-body-output.txt,rowcps-load-CWMS-Project-Pkg-body-error.txt"/>
+				</concat>				
+				<echo message="${rowcps-load-CWMS-Project-Pkg-body-result}"/>
+				<fail/>
+			</else>
+		</if>
     </target>
 	
 	<!-- Drop existing CWMS schema then build a new CWMS schema. -->
