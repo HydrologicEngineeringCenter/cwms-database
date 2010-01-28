@@ -157,7 +157,7 @@
 		
 		<echo message="Loading rowcps Schema..."/>
 		
-		<property name="rowcpsLoad-arg-line" value="${oracle.cwms.user}/{oracle.sys.password}@${oracle.cwms.instance} @rowcps_schema"/>
+		<property name="rowcpsLoad-arg-line" value="${oracle.cwms.user}/${oracle.sys.password}@${oracle.cwms.instance} @rowcps_schema"/>
 		<echo message="${rowcpsLoad-arg-line}"/>
 		
 		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-output.txt" error="rowcps-load-error.txt" resultproperty="rowcps-load-result">
@@ -180,7 +180,7 @@
 	
 		<echo message="Loading rowcps Types..."/>
 		
-		<property name="rowcpsLoadTypes-arg-line" value="${oracle.cwms.user}/{oracle.sys.password}@${oracle.cwms.instance} @rowcps_types"/>
+		<property name="rowcpsLoadTypes-arg-line" value="${oracle.cwms.user}/${oracle.sys.password}@${oracle.cwms.instance} @rowcps_types"/>
 		<echo message="${rowcpsLoadTypes-arg-line}"/>
 		
 		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-types-load-output.txt" error="rowcps-types-load-error.txt" resultproperty="rowcps-types-load-result">
