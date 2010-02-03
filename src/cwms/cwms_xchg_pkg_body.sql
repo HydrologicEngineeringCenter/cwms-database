@@ -1325,8 +1325,8 @@ CREATE OR REPLACE package body cwms_xchg as
                cwms_err.raise('ERROR', 'No units specified for pathname ' || l_pathname);
             end if;
             l_map_1.units := l_attributes('units');
-            if l_attributes.exists('time-zone') then
-               l_map_1.time_zone := l_attributes('time-zone');
+            if l_attributes.exists('timezone') then
+               l_map_1.time_zone := l_attributes('timezone');
             else
                l_map_1.time_zone := 'UTC';
             end if;
@@ -1448,22 +1448,16 @@ CREATE OR REPLACE package body cwms_xchg as
          -------------------------------------------------------------------
          -- delete datastores and xchg sets that are no longer referenced --
          -------------------------------------------------------------------
-         for rec in (
-            select dss_filemgr_url
-              from at_xchg_datastore_dss
-             where datastore_code not in (select distinct datastore_code from at_xchg_dss_ts_mappings))
-         loop
-            if not l_dss_filemgr_urls.exists(rec.dss_filemgr_url) then
-               l_dss_filemgr_urls(rec.dss_filemgr_url) := true;
-            end if;
-         end loop;
-         delete
-           from at_xchg_datastore_dss
-          where datastore_code not in (select distinct datastore_code from at_xchg_dss_ts_mappings);
-         delete
-           from at_xchg_set
-          where xchg_set_code not in (select distinct xchg_set_code from at_xchg_dss_ts_mappings);
       end if;
+      for rec in (
+         select dss_filemgr_url
+           from at_xchg_datastore_dss
+          where datastore_code not in (select distinct datastore_code from at_xchg_dss_ts_mappings))
+      loop
+         if not l_dss_filemgr_urls.exists(rec.dss_filemgr_url) then
+            l_dss_filemgr_urls(rec.dss_filemgr_url) := true;
+         end if;
+      end loop;
       -----------------------------------------------------------
       -- verify that we didn't use and invalid units or create --
       -- a realtime import/export loop                         --
@@ -1471,6 +1465,11 @@ CREATE OR REPLACE package body cwms_xchg as
       validate_dss_units;
       validate_dss_consistency;
       validate_realtime_direction;
+      ------------------------------
+      -- delete any orphaned info --
+      ------------------------------
+      commit;
+      del_unused_dss_xchg_info;
       commit;
       -------------------------------------------------------------
       -- notify listeners that the configuation has been updated --
