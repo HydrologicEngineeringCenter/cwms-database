@@ -157,7 +157,7 @@
 		
 		<echo message="Loading rowcps Schema..."/>
 		
-		<property name="rowcpsLoad-arg-line" value="${oracle.cwms.user}/${oracle.sys.password}@${oracle.cwms.instance} @rowcps_schema"/>
+		<property name="rowcpsLoad-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @rowcps_schema"/>
 		<echo message="${rowcpsLoad-arg-line}"/>
 		
 		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-output.txt" error="rowcps-load-error.txt" resultproperty="rowcps-load-result">
@@ -180,7 +180,7 @@
 	
 		<echo message="Loading rowcps Types..."/>
 		
-		<property name="rowcpsLoadTypes-arg-line" value="${oracle.cwms.user}/${oracle.sys.password}@${oracle.cwms.instance} @rowcps_types"/>
+		<property name="rowcpsLoadTypes-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @rowcps_types"/>
 		<echo message="${rowcpsLoadTypes-arg-line}"/>
 		
 		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-types-load-output.txt" error="rowcps-types-load-error.txt" resultproperty="rowcps-types-load-result">
@@ -203,7 +203,7 @@
 		
 		<echo message="Loading CWMS project Package..."/>
 		
-		<property name="rowcpsLoadCWMSProjectPkg-arg-line" value="${oracle.cwms.user}/${oracle.sys.password}@${oracle.cwms.instance} @cwms_project_pkg"/>
+		<property name="rowcpsLoadCWMSProjectPkg-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @cwms_project_pkg"/>
 		<echo message="${rowcpsLoadCWMSProjectPkg-arg-line}"/>
 		
 		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-output.txt" error="rowcps-load-CWMS-Project-Pkg-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-result">
@@ -226,7 +226,7 @@
 		
 		<echo message="Loading CWMS project Package Body..."/>
 		
-		<property name="rowcpsLoadCWMSProjectPkgBody-arg-line" value="${oracle.cwms.user}/${oracle.sys.password}@${oracle.cwms.instance} @cwms_project_pkg_body"/>
+		<property name="rowcpsLoadCWMSProjectPkgBody-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @cwms_project_pkg_body"/>
 		<echo message="${rowcpsLoadCWMSProjectPkgBody-arg-line}"/>
 		
 		<exec dir="${src}/rowcps" executable="sqlplus" output="rowcps-load-CWMS-Project-Pkg-body-output.txt" error="rowcps-load-CWMS-Project-Pkg-body-error.txt" resultproperty="rowcps-load-CWMS-Project-Pkg-body-result">
