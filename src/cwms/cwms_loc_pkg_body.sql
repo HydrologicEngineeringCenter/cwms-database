@@ -1844,37 +1844,40 @@ AS
                                   := cwms_util.get_sub_id (l_location_id_new);
        --
       -- l_db_office_code           cwms_office.office_code%TYPE;
-      l_base_location_code_old   at_base_location.base_location_code%TYPE;
-      l_base_location_code_new   at_base_location.base_location_code%TYPE;
-      l_location_code_old        at_physical_location.location_code%TYPE;
-      l_location_code_new        at_physical_location.location_code%TYPE;
+      l_base_location_code_old   at_base_location.base_location_code%type;
+      l_base_location_code_new   at_base_location.base_location_code%type;
+      l_location_code_old        at_physical_location.location_code%type;
+      l_location_code_new        at_physical_location.location_code%type;
       --
-      l_base_location_id_exist   at_base_location.base_location_id%TYPE;
-      l_sub_location_id_exist    at_physical_location.sub_location_id%TYPE
-                                                                      := NULL;
+      l_base_location_id_exist   at_base_location.base_location_id%type;
+      l_sub_location_id_exist    at_physical_location.sub_location_id%type := null;
       --
-      l_old_loc_is_base_loc      BOOLEAN                             := FALSE;
-      l_base_id_case_change      BOOLEAN                             := FALSE;
-      l_sub_id_case_change       BOOLEAN                             := FALSE;
-      l_id_case_change           BOOLEAN                             := FALSE;
+      l_old_loc_is_base_loc      boolean                             := false;
+      l_base_id_case_change      boolean                             := false;
+      l_sub_id_case_change       boolean                             := false;
+      l_id_case_change           boolean                             := false;
       --
-      l_location_type            at_physical_location.location_type%TYPE;
-      l_elevation                at_physical_location.elevation%TYPE  := NULL;
-      l_vertical_datum           at_physical_location.vertical_datum%TYPE;
-      l_latitude                 at_physical_location.latitude%TYPE   := NULL;
-      l_longitude                at_physical_location.longitude%TYPE  := NULL;
-      l_horizontal_datum         at_physical_location.horizontal_datum%TYPE;
-      l_public_name              at_physical_location.public_name%TYPE;
-      l_long_name                at_physical_location.long_name%TYPE;
-      l_description              at_physical_location.description%TYPE;
-      l_time_zone_code           at_physical_location.time_zone_code%TYPE
-                                                                      := NULL;
-      l_county_code              cwms_county.county_code%TYPE         := NULL;
-      l_active_flag              at_physical_location.active_flag%TYPE;
-      l_db_office_id             VARCHAR2 (16)
-                               := cwms_util.get_db_office_id (p_db_office_id);
-      l_db_office_code           cwms_office.office_code%TYPE
-                             := cwms_util.get_db_office_code (l_db_office_id);
+      l_location_type            at_physical_location.location_type%type;
+      l_elevation                at_physical_location.elevation%type := null;
+      l_vertical_datum           at_physical_location.vertical_datum%type;
+      l_latitude                 at_physical_location.latitude%type := null;
+      l_longitude                at_physical_location.longitude%type := null;
+      l_horizontal_datum         at_physical_location.horizontal_datum%type;
+      l_public_name              at_physical_location.public_name%type;
+      l_long_name                at_physical_location.long_name%type;
+      l_description              at_physical_location.description%type;
+      l_time_zone_code           at_physical_location.time_zone_code%type := null;
+      l_county_code              cwms_county.county_code%type := null;
+      l_active_flag              at_physical_location.active_flag%type;
+      l_location_kind            at_physical_location.location_kind%type := null;
+      l_map_label                at_physical_location.map_label%type := null;
+      l_published_latitude       at_physical_location.published_latitude%type := null;
+      l_published_longitude      at_physical_location.published_longitude%type := null;
+      l_office_code              at_physical_location.office_code%type := null;
+      l_nation_code              at_physical_location.nation_code%type := null;
+      l_nearest_city             at_physical_location.nearest_city%type := null;
+      l_db_office_id             varchar2 (16) := cwms_util.get_db_office_id (p_db_office_id);
+      l_db_office_code           cwms_office.office_code%type := cwms_util.get_db_office_code (l_db_office_id);
    BEGIN
       ---------.
       ---------.
@@ -1931,11 +1934,15 @@ AS
          SELECT location_code, time_zone_code, county_code,
                 location_type, elevation, vertical_datum, longitude,
                 latitude, horizontal_datum, public_name, long_name,
-                description, active_flag
+                description, active_flag, location_kind, map_label,
+                published_latitude, published_longitude, office_code,
+                nation_code, nearest_city
            INTO l_location_code_old, l_time_zone_code, l_county_code,
                 l_location_type, l_elevation, l_vertical_datum, l_longitude,
                 l_latitude, l_horizontal_datum, l_public_name, l_long_name,
-                l_description, l_active_flag
+                l_description, l_active_flag, l_location_kind, l_map_label,
+                l_published_latitude, l_published_longitude, l_office_code,
+                l_nation_code, l_nearest_city
            FROM at_physical_location apl
           WHERE apl.base_location_code = l_base_location_code_old
             AND apl.sub_location_id IS NULL;
@@ -1948,12 +1955,16 @@ AS
                    time_zone_code, county_code, location_type,
                    elevation, vertical_datum, longitude, latitude,
                    horizontal_datum, public_name, long_name,
-                   description, active_flag
+                   description, active_flag, location_kind, map_label,
+                   published_latitude, published_longitude, office_code,
+                   nation_code, nearest_city
               INTO l_location_code_old, l_sub_location_id_exist,
                    l_time_zone_code, l_county_code, l_location_type,
                    l_elevation, l_vertical_datum, l_longitude, l_latitude,
                    l_horizontal_datum, l_public_name, l_long_name,
-                   l_description, l_active_flag
+                   l_description, l_active_flag, l_location_kind, l_map_label,
+                   l_published_latitude, l_published_longitude, l_office_code,
+                   l_nation_code, l_nearest_city
               FROM at_physical_location apl
              WHERE apl.base_location_code = l_base_location_code_old
                AND UPPER (apl.sub_location_id) = UPPER (l_sub_location_id_old);
@@ -2072,7 +2083,7 @@ AS
                --
                -- 1) create a new Base Location with the new Base Location_name -
                --.
-               create_location_raw (l_base_location_code_new,
+               create_location_raw2 (l_base_location_code_new,
                                     l_location_code_new,
                                     l_base_location_id_new,
                                     NULL,
@@ -2088,7 +2099,14 @@ AS
                                     l_description,
                                     l_time_zone_code,
                                     l_county_code,
-                                    l_active_flag
+                                    l_active_flag, 
+                                    l_location_kind, 
+                                    l_map_label,
+                                    l_published_latitude, 
+                                    l_published_longitude, 
+                                    l_office_code,
+                                    l_nation_code, 
+                                    l_nearest_city
                                    );
 
                --.
