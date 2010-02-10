@@ -2147,6 +2147,71 @@ AS
 		RETURN UPPER (l_user_id);
 	END get_user_id;
 
+   procedure user_display_unit(
+      p_unit_id      out varchar2,
+      p_value_out    out number,
+      p_parameter_id in  varchar2,
+      p_value_in     in  number   default null,
+      p_user_id      in  varchar2 default null,
+      p_office_id    in  varchar2 default null)
+   is
+      l_unit_system         varchar2(2)  := 'SI';
+      l_user_id             varchar2(31) := upper(nvl(p_user_id, get_user_id));
+      l_office_id           varchar2(16) := get_db_office_id(p_office_id);
+      l_base_parameter_id   varchar2(16) := substr(p_parameter_id, least(instr(p_parameter_id, '-') - 1, length(p_parameter_id)));
+      l_office_code         number       := get_db_office_code(p_office_id);
+      l_unit_code           number;
+      l_base_parameter_code number;
+   begin
+      p_unit_id := null;
+      p_value_out := null;
+      --
+      -- get preferred unit system
+      --
+      begin
+         select display_unit_system
+           into l_unit_system
+           from at_user_preferences
+          where db_office_code = l_office_code
+            and username = l_user_id;
+      exception
+         when no_data_found then null;
+      end;
+      --
+      -- get display unit for parameter in preferred unit system
+      --
+      begin
+         select base_parameter_code,
+                case l_unit_system
+                  when 'SI' then display_unit_code_si
+                  when 'EN' then display_unit_code_en
+                end
+           into l_base_parameter_code,
+                l_unit_code
+           from cwms_base_parameter
+          where upper(base_parameter_id) = upper(l_base_parameter_id);                
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_PARAM_ID', p_parameter_id);
+      end;
+      select unit_id 
+        into p_unit_id 
+        from cwms_unit 
+       where unit_code = l_unit_code;
+      --
+      -- convert the specified value from storage unit
+      --
+      if p_value_in is not null then
+         select p_value_in * cuc.factor + cuc.offset
+           into p_value_out
+           from cwms_unit_conversion cuc,
+                cwms_base_parameter bp
+          where bp.base_parameter_code = l_base_parameter_code
+            and cuc.from_unit_code = bp.unit_code
+            and cuc.to_unit_code = l_unit_code;
+      end if;        
+   end user_display_unit;      
+
 	FUNCTION get_interval_string (p_interval IN NUMBER)
 		RETURN VARCHAR2
 	IS

@@ -406,6 +406,14 @@ AS
 	FUNCTION get_user_id
 		RETURN VARCHAR2;
 
+   procedure user_display_unit(
+      p_unit_id      out varchar2,
+      p_value_out    out number,
+      p_parameter_id in  varchar2,
+      p_value_in     in  number   default null,
+      p_user_id      in  varchar2 default null,
+      p_office_id    in  varchar2 default null);
+      
 	FUNCTION get_interval_string (p_interval IN NUMBER)
 		RETURN VARCHAR2;
 
