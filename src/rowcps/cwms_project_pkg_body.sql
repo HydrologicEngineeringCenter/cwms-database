@@ -1,10 +1,11 @@
 SET serveroutput on
 
 
-CREATE OR REPLACE PACKAGE BODY CWMS_PROJECT AS
+create or replace
+PACKAGE BODY CWMS_PROJECT AS
 
 PROCEDURE cat_project (
-	p_project_cat  out sys_refcursor, 
+	p_project_cat  out sys_refcursor,
 	p_db_office_id in  varchar2 default null
 )
 AS
@@ -25,22 +26,22 @@ BEGIN
       p_db_office_id);
    --
    -- open the cursor
-   --      
+   --
    open p_project_cat for
-      select l_db_office_id          db_office_id,       -- db_office_id      varchar2(16)  owning office of location        
-             bl.base_location_id     base_location_id,   -- base_location_id  varchar2(16)  base location id                 
-             pl.sub_location_id      sub_location_id,    -- sub_location_id   varchar2(32)  sub-location id, if any          
+      select l_db_office_id          db_office_id,       -- db_office_id      varchar2(16)  owning office of location
+             bl.base_location_id     base_location_id,   -- base_location_id  varchar2(16)  base location id
+             pl.sub_location_id      sub_location_id,    -- sub_location_id   varchar2(32)  sub-location id, if any
              tz.time_zone_name       time_zone_name,     -- time_zone_name    varchar2(28)  local time zone name for location
-             pl.latitude             latitude,           -- latitude          number        location latitude                
-             pl.longitude            longitude,          -- longitude         number        location longitude               
-             pl.horizontal_datum     horizontal_datum,   -- horizontal_datum  varchar2(16)  horizontal datrum of lat/lon     
-             pl.elevation * l_factor elevation,          -- elevation         number        location elevation               
-             l_unit                  elev_unit_id,       -- elev_unit_id      varchar2(16)  location elevation units         
-             pl.vertical_datum       vertical_datum,     -- vertical_datum    varchar2(16)  veritcal datum of elevation      
-             pl.public_name          public_name,        -- public_name       varchar2(32)  location public name             
-             pl.long_name            long_name,          -- long_name         varchar2(80)  location long name               
-             pl.description          description,        -- description       varchar2(512) location description             
-             pl.active_flag          active_flag         -- active_flag       varchar2(1)   'T' if active, else 'F'          
+             pl.latitude             latitude,           -- latitude          number        location latitude
+             pl.longitude            longitude,          -- longitude         number        location longitude
+             pl.horizontal_datum     horizontal_datum,   -- horizontal_datum  varchar2(16)  horizontal datrum of lat/lon
+             pl.elevation * l_factor elevation,          -- elevation         number        location elevation
+             l_unit                  elev_unit_id,       -- elev_unit_id      varchar2(16)  location elevation units
+             pl.vertical_datum       vertical_datum,     -- vertical_datum    varchar2(16)  veritcal datum of elevation
+             pl.public_name          public_name,        -- public_name       varchar2(32)  location public name
+             pl.long_name            long_name,          -- long_name         varchar2(80)  location long name
+             pl.description          description,        -- description       varchar2(512) location description
+             pl.active_flag          active_flag         -- active_flag       varchar2(1)   'T' if active, else 'F'
         from at_project            p,
              at_physical_location  pl,
              at_base_location      bl,
@@ -51,16 +52,16 @@ BEGIN
          and o.office_code         = bl.db_office_code
          and o.office_code         = l_db_office_code
     order by bl.base_location_id,
-             pl.sub_location_id;                            
+             pl.sub_location_id;
    NULL;
 END cat_project;
 
 
 PROCEDURE retrieve_project(
 	p_project		out project_obj_t,
-	p_project_id	in  varchar2, 
-	p_db_office_id	in	 varchar2 default null 
-) 
+	p_project_id	in  varchar2,
+	p_db_office_id	in	 varchar2 default null
+)
 AS
    l_db_office_code                 number := cwms_util.get_db_office_code(p_db_office_id);
    l_project_loc_code               number;
@@ -107,7 +108,7 @@ begin
              at_base_location bl
        where upper(bl.base_location_id) = upper(l_base_loc_id)
          and pl.base_location_code = bl.base_location_code
-         and upper(nvl(pl.sub_location_id, '-')) = upper(nvl(l_sub_loc_id, '-'));    
+         and upper(nvl(pl.sub_location_id, '-')) = upper(nvl(l_sub_loc_id, '-'));
    exception
       when no_data_found then
          cwms_err.raise('INVALID_ITEM', p_project_id, 'location id');
@@ -149,7 +150,7 @@ begin
                when pl.county_code is null then null
                else c.county_name
              end                                   county_name,
-             case 
+             case
                when tz.time_zone_code is null then null
                else tz.time_zone_name
              end                                   time_zone_name,
@@ -163,18 +164,18 @@ begin
              pl.long_name                          long_name,
              pl.description                        description,
              pl.active_flag                        active_flag,
-             case 
+             case
                when pl.location_kind is null then null
                else lk.location_kind_id
              end                                   location_kind_id,
              pl.map_label                          map_label,
              pl.published_latitude                 published_latitude,
              pl.published_longitude                published_longitude,
-             case 
+             case
                when pl.office_code is null then null
                else o.office_id
              end                                   bounding_office_id,
-             case 
+             case
                when pl.nation_code is null then null
                else n.nation_id
              end                                   nation_id,
@@ -186,34 +187,34 @@ begin
              cwms_county          c,
              cwms_state           s,
              cwms_nation          n,
-             cwms_office          o 
+             cwms_office          o
        where bl.base_location_code = pl.base_location_code
          and (
-               pl.county_code is null or 
+               pl.county_code is null or
                (
-                 s.state_code = c.state_code and 
+                 s.state_code = c.state_code and
                  c.county_code = pl.county_code
                )
              )
          and (
-               pl.time_zone_code is null or 
-               tz.time_zone_code = pl.time_zone_code 
+               pl.time_zone_code is null or
+               tz.time_zone_code = pl.time_zone_code
              )
          and (
-               pl.location_kind is null or 
-               lk.location_kind_code = pl.location_kind 
+               pl.location_kind is null or
+               lk.location_kind_code = pl.location_kind
              )
          and (
-               pl.office_code is null or 
-               o.office_code = pl.office_code 
+               pl.office_code is null or
+               o.office_code = pl.office_code
              )
          and (
-               pl.nation_code is null or 
-               n.nation_code = pl.nation_code 
+               pl.nation_code is null or
+               n.nation_code = pl.nation_code
              )
          and pl.location_code in (
-               l_project_loc_code, 
-               l_project.pump_back_location_code, 
+               l_project_loc_code,
+               l_project.pump_back_location_code,
                l_project.near_gage_location_code))
    loop
       l_temp_location := new cat_location2_obj_t (
@@ -248,34 +249,35 @@ begin
       if rec.location_code = l_project_loc_code then
          l_project_location := l_temp_location;
       elsif rec.location_code = l_project.pump_back_location_code then
-         l_pumpback_location := l_temp_location;            
+         l_pumpback_location := l_temp_location;
       elsif rec.location_code = l_project.near_gage_location_code then
          l_near_gage_location := l_temp_location;
-      end if;                     
+      end if;
    end loop;
    --
    -- create the project object
    --
-   p_project := new project_obj_t(               -- TYPE project_obj_t AS OBJECT (                         
-      p_db_office_id,                            --    db_office_id                   VARCHAR2(16),        
-      l_project_location,                        --    project_location               cat_location2_obj_t, 
-      l_project.authorizing_law,                 --    authorizing_law                VARCHAR2(32),        
-      l_project.federal_cost,                    --    federal_cost                   NUMBER,              
-      l_project.nonfederal_cost,                 --    nonfederal_cost                NUMBER,              
-      l_project.cost_year,                       --    cost_year                      DATE,                
-      l_project.federal_om_cost,                 --    federal_om_cost                NUMBER,              
-      l_project.nonfederal_om_cost,              --    nonfederal_om_cost             NUMBER,              
-      l_project.remarks,                         --    remarks                        VARCHAR2(1000),      
-      l_project.project_owner,                   --    project_owner                  VARCHAR2(255),       
-      l_project.hydropower_description,          --    hydropower_description         VARCHAR2(255),       
-      l_pumpback_location,                       --    pumpback_location_id           cat_location2_obj_t, 
-      l_near_gage_location,                      --    near_gage_location_id          cat_location2_obj_t, 
-      l_project.sedimentation_description,       --    sedimentation_description      VARCHAR(255),        
-      l_project.downstream_urban_description,    --    downstream_urban_description   VARCHAR(255),        
-      l_project.bank_full_capacity_description,  --    bank_full_capacity_description VARCHAR(255),        
-      l_project.yield_time_frame_start,          --    yield_time_frame_start         DATE,                
-      l_project.yield_time_frame_end);           --    yield_time_frame_end           DATE                 
-END retrieve_project;                            -- );                                                     
+   
+   p_project := new project_obj_t(               -- TYPE project_obj_t AS OBJECT (
+      p_db_office_id,                            --    db_office_id                   VARCHAR2(16),
+      l_project_location,                        --    project_location               cat_location2_obj_t,
+      l_pumpback_location,                       --    pump_back_location           cat_location2_obj_t,
+      l_near_gage_location,                      --    near_gage_location          cat_location2_obj_t,
+      l_project.authorizing_law,                 --    authorizing_law                VARCHAR2(32),
+      l_project.federal_cost,                    --    federal_cost                   NUMBER,
+      l_project.nonfederal_cost,                 --    nonfederal_cost                NUMBER,
+      l_project.cost_year,                       --    cost_year                      DATE,
+      l_project.federal_om_cost,                 --    federal_om_cost                NUMBER,
+      l_project.nonfederal_om_cost,              --    nonfederal_om_cost             NUMBER,
+      l_project.remarks,                         --    remarks                        VARCHAR2(1000),
+      l_project.project_owner,                   --    project_owner                  VARCHAR2(255),
+      l_project.hydropower_description,          --    hydropower_description         VARCHAR2(255),
+      l_project.sedimentation_description,       --    sedimentation_description      VARCHAR(255),
+      l_project.downstream_urban_description,    --    downstream_urban_description   VARCHAR(255),
+      l_project.bank_full_capacity_description,  --    bank_full_capacity_description VARCHAR(255),
+      l_project.yield_time_frame_start,          --    yield_time_frame_start         DATE,
+      l_project.yield_time_frame_end);           --    yield_time_frame_end           DATE
+END retrieve_project;                            -- );
 
 
 --stores the data contained within the project object into the database schema
@@ -297,7 +299,7 @@ BEGIN
    --        calls, so if you don't want to overwrite any location info
    --        just set everything exception location_id and db_office_id
    --       to null in the location objects
-   -- 
+   --
    cwms_loc.store_location2(
       p_project.project_location.location_id,
       p_project.project_location.location_type,
@@ -322,83 +324,83 @@ BEGIN
       p_project.project_location.nearest_city,
       'T',
       p_project.project_location.db_office_id);
-   if p_project.pumpback_location_id is not null then
+   if p_project.pump_back_location is not null then
       cwms_loc.store_location2(
-         p_project.pumpback_location_id.location_id,
-         p_project.pumpback_location_id.location_type,
-         p_project.pumpback_location_id.elevation,
-         p_project.pumpback_location_id.elev_unit_id,
-         p_project.pumpback_location_id.vertical_datum,
-         p_project.pumpback_location_id.latitude,
-         p_project.pumpback_location_id.longitude,
-         p_project.pumpback_location_id.public_name,
-         p_project.pumpback_location_id.long_name,
-         p_project.pumpback_location_id.description,
-         p_project.pumpback_location_id.time_zone_name,
-         p_project.pumpback_location_id.county_name,
-         p_project.pumpback_location_id.state_initial,
-         p_project.pumpback_location_id.active_flag,
-         p_project.pumpback_location_id.location_kind_id,
-         p_project.pumpback_location_id.map_label,
-         p_project.pumpback_location_id.published_latitude,
-         p_project.pumpback_location_id.published_longitude,
-         p_project.pumpback_location_id.bounding_office_id,
-         p_project.pumpback_location_id.nation_id,
-         p_project.pumpback_location_id.nearest_city,
+         p_project.pump_back_location.location_id,
+         p_project.pump_back_location.location_type,
+         p_project.pump_back_location.elevation,
+         p_project.pump_back_location.elev_unit_id,
+         p_project.pump_back_location.vertical_datum,
+         p_project.pump_back_location.latitude,
+         p_project.pump_back_location.longitude,
+         p_project.pump_back_location.public_name,
+         p_project.pump_back_location.long_name,
+         p_project.pump_back_location.description,
+         p_project.pump_back_location.time_zone_name,
+         p_project.pump_back_location.county_name,
+         p_project.pump_back_location.state_initial,
+         p_project.pump_back_location.active_flag,
+         p_project.pump_back_location.location_kind_id,
+         p_project.pump_back_location.map_label,
+         p_project.pump_back_location.published_latitude,
+         p_project.pump_back_location.published_longitude,
+         p_project.pump_back_location.bounding_office_id,
+         p_project.pump_back_location.nation_id,
+         p_project.pump_back_location.nearest_city,
          'T',
-         p_project.pumpback_location_id.db_office_id);
+         p_project.pump_back_location.db_office_id);
    end if;
-   if p_project.near_gage_location_id is not null then
+   if p_project.near_gage_location is not null then
       cwms_loc.store_location2(
-         p_project.near_gage_location_id.location_id,
-         p_project.near_gage_location_id.location_type,
-         p_project.near_gage_location_id.elevation,
-         p_project.near_gage_location_id.elev_unit_id,
-         p_project.near_gage_location_id.vertical_datum,
-         p_project.near_gage_location_id.latitude,
-         p_project.near_gage_location_id.longitude,
-         p_project.near_gage_location_id.public_name,
-         p_project.near_gage_location_id.long_name,
-         p_project.near_gage_location_id.description,
-         p_project.near_gage_location_id.time_zone_name,
-         p_project.near_gage_location_id.county_name,
-         p_project.near_gage_location_id.state_initial,
-         p_project.near_gage_location_id.active_flag,
-         p_project.near_gage_location_id.location_kind_id,
-         p_project.near_gage_location_id.map_label,
-         p_project.near_gage_location_id.published_latitude,
-         p_project.near_gage_location_id.published_longitude,
-         p_project.near_gage_location_id.bounding_office_id,
-         p_project.near_gage_location_id.nation_id,
-         p_project.near_gage_location_id.nearest_city,
+         p_project.near_gage_location.location_id,
+         p_project.near_gage_location.location_type,
+         p_project.near_gage_location.elevation,
+         p_project.near_gage_location.elev_unit_id,
+         p_project.near_gage_location.vertical_datum,
+         p_project.near_gage_location.latitude,
+         p_project.near_gage_location.longitude,
+         p_project.near_gage_location.public_name,
+         p_project.near_gage_location.long_name,
+         p_project.near_gage_location.description,
+         p_project.near_gage_location.time_zone_name,
+         p_project.near_gage_location.county_name,
+         p_project.near_gage_location.state_initial,
+         p_project.near_gage_location.active_flag,
+         p_project.near_gage_location.location_kind_id,
+         p_project.near_gage_location.map_label,
+         p_project.near_gage_location.published_latitude,
+         p_project.near_gage_location.published_longitude,
+         p_project.near_gage_location.bounding_office_id,
+         p_project.near_gage_location.nation_id,
+         p_project.near_gage_location.nearest_city,
          'T',
-         p_project.near_gage_location_id.db_office_id);
+         p_project.near_gage_location.db_office_id);
    end if;
    --
    -- get the location codes
    --
    l_project_location_code := cwms_loc.get_location_code(
-      p_project.project_location.db_office_id, 
+      p_project.project_location.db_office_id,
       p_project.project_location.location_id);
-   if p_project.pumpback_location_id is not null then
+   if p_project.pump_back_location is not null then
       l_pump_back_location_code := cwms_loc.get_location_code(
-         p_project.pumpback_location_id.db_office_id, 
-         p_project.pumpback_location_id.location_id);
+         p_project.pump_back_location.db_office_id,
+         p_project.pump_back_location.location_id);
    end if;
-   if p_project.near_gage_location_id is not null then
+   if p_project.near_gage_location is not null then
       l_near_gage_location_code := cwms_loc.get_location_code(
-         p_project.near_gage_location_id.db_office_id, 
-         p_project.near_gage_location_id.location_id);
+         p_project.near_gage_location.db_office_id,
+         p_project.near_gage_location.location_id);
    end if;
    --
    -- determine whether the project exists
    --
    begin
-      select * 
-       into l_rec 
-       from at_project 
+      select *
+       into l_rec
+       from at_project
       where project_location_code = l_project_location_code;
-      l_exists := true;      
+      l_exists := true;
    exception
       when no_data_found then
          l_exists := false;
@@ -427,15 +429,15 @@ BEGIN
    -- store the project
    --
    if l_exists then
-      update at_project 
-         set row = l_rec 
+      update at_project
+         set row = l_rec
        where project_location_code = l_rec.project_location_code;
    else
-      insert 
-        into at_project 
+      insert
+        into at_project
       values l_rec;
-   end if;      
-   
+   end if;
+
 END store_project;
 
 -- renames a project from one id to a new one.
@@ -443,7 +445,7 @@ procedure rename_project(
 	p_project_id_old	IN	VARCHAR2,
 	p_project_id_new	IN	VARCHAR2,
 	p_db_office_id		IN	VARCHAR2 DEFAULT NULL
-) 
+)
 AS
 BEGIN
    cwms_loc.rename_location(p_project_id_old, p_project_id_new, p_db_office_id);
@@ -453,7 +455,7 @@ END rename_project;
 procedure delete_project(
       p_project_id		IN   VARCHAR2,
       p_db_office_id    IN   VARCHAR2 DEFAULT NULL
-   ) 
+   )
 AS
    l_location_code number := cwms_loc.get_location_code(p_db_office_id, p_project_id);
 BEGIN
