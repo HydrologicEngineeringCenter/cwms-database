@@ -62,3 +62,6 @@ CREATE OR REPLACE TYPE project_obj_t AS OBJECT (
    
 /
 show errors;
+
+GRANT EXECUTE ON PROJECT_OBJ_T TO CWMS_USER;
+
