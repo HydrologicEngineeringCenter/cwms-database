@@ -16,7 +16,7 @@
 
 	<!-- the offices that also use this cwms database instance. -->
 	<!-- secondary is optional and the value can be 0 to many offices separated by a space. -->
-	<property name="office.secondary.id" value="NAD"/> 
+	<property name="office.secondary.id" value=""/> 
 
 	<property name="oracle.sys.password" value="cwms20db"/>
 	<property name="oracle.cwms.password" value="cwms20db"/>
