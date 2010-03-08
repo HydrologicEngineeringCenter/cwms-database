@@ -616,7 +616,8 @@ CREATE OR REPLACE package body cwms_xchg as
          writeln_xml('<ts-mapping-set>');
          indent;
          for rec2 in (
-            select v.cwms_ts_id,
+            select v.db_office_id,
+                   v.cwms_ts_id,
                    m.cwms_ts_code,
                    m.a_pathname_part,
                    m.b_pathname_part,
@@ -644,6 +645,13 @@ CREATE OR REPLACE package body cwms_xchg as
             indent;
             writeln_xml('<cwms-timeseries datastore-id="'
                         ||l_oracle_id
+                        || case
+                             when rec2.db_office_id != l_office_ids(rec.office_code) then
+                                '" office-id="'
+                                || rec2.db_office_id
+                             else
+                                null
+                           end
                         ||'">'
                         ||rec2.cwms_ts_id
                         ||'</cwms-timeseries>');
@@ -972,6 +980,7 @@ CREATE OR REPLACE package body cwms_xchg as
       l_dss_filemgrs       dss_filemgr_by_id;
       l_id                 varchar2(32);
       l_office_id          varchar2(16);
+      l_ts_office_id       varchar2(16);
       l_host               varchar2(256);
       l_port               varchar2(5);
       l_url                varchar2(262);
@@ -1314,9 +1323,11 @@ CREATE OR REPLACE package body cwms_xchg as
             l_parts      := split(l_pathname, '>');
             l_att_text   := l_parts(1);
             l_pathname   := trim(split(l_parts(2), '<')(1));
-            l_attributes := make_attributes(l_att_text);
+            l_attributes := make_attributes(l_att_text); -- from dss-timeseries element
             l_tsid       := split(l_mappings(i), 'cwms-timeseries')(2);
-            l_tsid       := trim(split(split(l_tsid, '>')(2), '<')(1));
+            l_parts      := split(l_tsid, '>');
+            l_att_text   := l_parts(1);
+            l_tsid       := trim(split(l_parts(2), '<')(1));
             if not l_attributes.exists('type') then
                cwms_err.raise('ERROR', 'No data type specified for pathname ' || l_pathname);
             end if;
@@ -1335,7 +1346,13 @@ CREATE OR REPLACE package body cwms_xchg as
             else
                l_map_1.tz_usage := 'Standard';
             end if;
-            cwms_ts.create_ts_code(l_ts_code, l_tsid, null, null, null, 'F', 'T', 'F', l_office_id);
+            l_attributes := make_attributes(l_att_text); -- from cwms-timeseries element
+            if l_attributes.exists('office-id') then
+               l_ts_office_id := l_attributes('office-id');
+            else
+               l_ts_office_id := l_office_id; 
+            end if;
+            cwms_ts.create_ts_code(l_ts_code, l_tsid, null, null, null, 'F', 'T', 'F', l_ts_office_id);
             cwms_xchg.parse_dss_pathname(
                l_map_1.a_path_part,
                l_map_1.b_path_part,
