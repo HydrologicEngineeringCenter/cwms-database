@@ -363,10 +363,10 @@ CREATE OR REPLACE package body cwms_xchg as
 -- CLOB FUNCTION GET_DSS_XCHG_SETS(...)
 --
    function get_dss_xchg_sets(
-      p_dss_filemgr_url in varchar2 default null,
-      p_dss_file_name   in varchar2 default null,
-      p_dss_xchg_set_id in varchar2 default null,
-      p_office_id       in varchar2 default null)
+      p_dss_filemgr_url in varchar2 default null, -- not used
+      p_dss_file_name   in varchar2 default null, -- not used
+      p_dss_xchg_set_id in varchar2 default null, -- '%' if null
+      p_office_id       in varchar2 default null) -- user's office if null
       return clob
    is
       type vc16_by_pi is table of varchar2(16) index by pls_integer;
@@ -377,8 +377,8 @@ CREATE OR REPLACE package body cwms_xchg as
       l_xml                  clob;
       l_level                binary_integer := 0;
       l_indent_str           varchar2(256) := null;
-      l_dss_filemgr_url_mask varchar2(256);
-      l_dss_file_name_mask   varchar2(256);
+      -- l_dss_filemgr_url_mask varchar2(256);
+      -- l_dss_file_name_mask   varchar2(256);
       l_xchg_set_id_mask     varchar2(256);
       l_office_id_mask       varchar2(256);
       l_xchg_set_codes       number_tab_t := new number_tab_t();
@@ -427,10 +427,10 @@ CREATE OR REPLACE package body cwms_xchg as
       end;
 
    begin
-      l_dss_filemgr_url_mask := cwms_util.normalize_wildcards(regexp_replace(p_dss_filemgr_url, '/DssFileManger$', '', 1, 1, 'i'));
-      l_dss_file_name_mask   := cwms_util.normalize_wildcards(p_dss_file_name);
-      l_xchg_set_id_mask     := cwms_util.normalize_wildcards(p_dss_xchg_set_id);
-      l_office_id_mask       := cwms_util.normalize_wildcards(p_office_id);
+      -- l_dss_filemgr_url_mask := cwms_util.normalize_wildcards(regexp_replace(p_dss_filemgr_url, '/DssFileManger$', '', 1, 1, 'i'));
+      -- l_dss_file_name_mask   := cwms_util.normalize_wildcards(p_dss_file_name);
+      l_xchg_set_id_mask     := cwms_util.normalize_wildcards(nvl(p_dss_xchg_set_id, '%'), true);
+      l_office_id_mask       := cwms_util.normalize_wildcards(nvl(p_office_id, cwms_util.user_office_id), true);
       ----------------------------------------------
       -- retrieve all the matching xchg set codes --
       ----------------------------------------------
