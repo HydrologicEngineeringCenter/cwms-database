@@ -1061,11 +1061,16 @@ CREATE OR REPLACE package body cwms_xchg as
 
       function make_attributes(p_att_str in varchar2) return str_by_str
       is
-         l_attr str_by_str;
-         parts  cwms_util.str_tab_t;
-         parts2 cwms_util.str_tab_t;
+         l_attr    str_by_str;
+         l_att_str varchar2(256) := trim(p_att_str);
+         l_len     binary_integer := length(l_att_str);
+         parts     cwms_util.str_tab_t;
+         parts2    cwms_util.str_tab_t;
       begin
-         parts := split(trim(p_att_str));
+         if substr(l_att_str, l_len) = '/' then
+            l_att_str := trim(substr(l_att_str, 1, l_len-1));
+         end if;
+         parts := split(trim(l_att_str));
          for j in 1..parts.count loop
             parts2 := split(parts(j), '=', 1);
             l_attr(trim(parts2(1))) := unquote(trim(parts2(2)));
