@@ -338,7 +338,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
         FROM cwms_base_parameter
        WHERE UPPER (base_parameter_id) = UPPER (p_base_parameter_id);
        
-      dbms_output.put_line(l_base_parameter_code);
+      --dbms_output.put_line(l_base_parameter_code);
       --
       RETURN get_parameter_code (l_base_parameter_code,
                                  p_sub_parameter_id,
