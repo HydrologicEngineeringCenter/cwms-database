@@ -11,11 +11,11 @@ AS
 	PROCEDURE aa1 (p_string IN VARCHAR2)
 	IS
 	BEGIN
-		INSERT INTO aa1 (stringstuff)
-		  VALUES   (p_string
-					  );
-
-		COMMIT;
+--		INSERT INTO aa1 (stringstuff)
+--		  VALUES   (p_string
+--					  );
+--
+--		COMMIT;
 		NULL;
 	END;
 
@@ -2036,9 +2036,9 @@ AS
 
 				BEGIN
 					l_cwms_ts_code :=
-						cwms_util.get_ts_code (
-							l_cwms_ts_id,
-							cwms_util.get_db_office_code (p_db_office_id)
+						cwms_ts.get_ts_code (
+							p_cwms_ts_id => l_cwms_ts_id,
+							p_db_office_code => cwms_util.get_db_office_code (p_db_office_id)
 						);
 				EXCEPTION
 					WHEN OTHERS

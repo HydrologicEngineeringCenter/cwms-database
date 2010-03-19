@@ -14,8 +14,6 @@ AS
    l_abstract_elev_param   VARCHAR2 (32) := 'Length';
 
    --
-   FUNCTION get_ts_code (p_office_id IN VARCHAR2, p_cwms_ts_id IN VARCHAR2)
-      RETURN NUMBER;
 
    FUNCTION get_location_code (
       p_db_office_id   IN   VARCHAR2,

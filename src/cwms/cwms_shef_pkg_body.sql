@@ -259,7 +259,7 @@ procedure store_shef_spec(
       --
       -- get the ts_code -
       BEGIN
-         l_ts_code := cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
+         l_ts_code := cwms_ts.get_ts_code (p_cwms_ts_id=>p_cwms_ts_id, p_db_office_code => l_db_office_code);
       EXCEPTION
          WHEN OTHERS
          THEN
@@ -515,7 +515,7 @@ procedure store_shef_spec(
       l_db_office_code     NUMBER
                              := cwms_util.get_db_office_code (p_db_office_id);
       l_cwms_ts_code       NUMBER
-                    := cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
+                    := cwms_ts.get_ts_code (p_cwms_ts_id=>p_cwms_ts_id, p_db_office_code => l_db_office_code);
       l_data_stream_code   NUMBER;
    BEGIN
       -- Check if data_stream already exists...

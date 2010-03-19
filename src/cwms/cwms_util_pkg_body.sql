@@ -16,6 +16,8 @@ AS
 				 *   1.0 		 8/29/2005	 Portin		 Original
 				******************************************************************************/
 	--
+    
+
 	FUNCTION min_dms (p_decimal_degrees IN NUMBER)
 		RETURN NUMBER
 	IS
@@ -1922,27 +1924,6 @@ AS
 		RETURN to_millis (SYS_EXTRACT_UTC (SYSTIMESTAMP));
 	END current_millis;
 
-	FUNCTION get_ts_code (p_cwms_ts_id		  IN VARCHAR2,
-								 p_db_office_code   IN NUMBER
-								)
-		RETURN NUMBER
-	IS
-		l_cwms_ts_code 					NUMBER;
-	BEGIN
-		BEGIN
-			SELECT	a.ts_code
-			  INTO	l_cwms_ts_code
-			  FROM	mv_cwms_ts_id a
-			 WHERE	UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
-						AND a.db_office_code = p_db_office_code;
-
-			RETURN l_cwms_ts_code;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise ('TS_ID_NOT_FOUND', TRIM (p_cwms_ts_id));
-		END;
-	END get_ts_code;
 
 	FUNCTION get_ts_interval (p_cwms_ts_code IN NUMBER)
 		RETURN NUMBER

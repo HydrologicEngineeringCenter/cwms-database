@@ -8,17 +8,73 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
       return l_max_open_cursors;
    end get_max_open_cursors;
 
- 
-    /* Formatted on 2007/06/25 10:58 (Formatter Plus v4.8.8) */
+    --********************************************************************** -
+    --
+    -- get_ts_code returns ts_code...
+    --
+    FUNCTION get_ts_code (p_cwms_ts_id IN VARCHAR2, p_db_office_id IN VARCHAR2)
+        RETURN NUMBER
+    IS
+        l_ts_code    NUMBER := NULL;
+    BEGIN
+        RETURN get_ts_code (
+                     p_cwms_ts_id          => p_cwms_ts_id,
+                     p_db_office_code   => cwms_util.
+                                                 get_db_office_code (p_db_office_id)
+                 );
+    END get_ts_code;
+    
+    FUNCTION get_ts_code (p_cwms_ts_id IN VARCHAR2, p_db_office_code IN NUMBER)
+        RETURN NUMBER
+    IS
+        l_cwms_ts_code   NUMBER;
+    BEGIN
+        BEGIN
+            SELECT	a.ts_code
+              INTO	l_cwms_ts_code
+              FROM	mv_cwms_ts_id a
+             WHERE	UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
+                        AND a.db_office_code = p_db_office_code;
+
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+                BEGIN
+                    SELECT	a.ts_code
+                      INTO	l_cwms_ts_code
+                      FROM	zav_cwms_ts_id a
+                     WHERE	UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
+                                AND a.db_office_code = p_db_office_code;
+                EXCEPTION
+                    WHEN NO_DATA_FOUND
+                    THEN
+                        cwms_err.raise ('TS_ID_NOT_FOUND', TRIM (p_cwms_ts_id));
+                END;
+        END;
+
+        RETURN l_cwms_ts_code;
+        
+    END get_ts_code;
+    ---------------------------------------------------------------------------
+
     FUNCTION get_ts_id (p_ts_code IN NUMBER)
        RETURN VARCHAR2
     IS
        l_cwms_ts_id   VARCHAR2 (183);
     BEGIN
-       SELECT cwms_ts_id
-         INTO l_cwms_ts_id
-         FROM mv_cwms_ts_id
-        WHERE ts_code = p_ts_code;
+        BEGIN
+            SELECT	cwms_ts_id
+              INTO	l_cwms_ts_id
+              FROM	mv_cwms_ts_id
+             WHERE	ts_code = p_ts_code;
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+                SELECT	cwms_ts_id
+                  INTO	l_cwms_ts_id
+                  FROM	zav_cwms_ts_id
+                 WHERE	ts_code = p_ts_code;
+        END;
     END;
  --******************************************************************************/   
    --
@@ -29,20 +85,30 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
    --
    -- Simply returns the cwms_ts_id using the case stored in the database   --
    --
-   FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
-      RETURN VARCHAR2
-   IS
-      l_cwms_ts_id   VARCHAR2 (183);
-   BEGIN
-      SELECT cwms_ts_id
-        INTO l_cwms_ts_id
-        FROM mv_cwms_ts_id mcti
-       WHERE UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
-         AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
-   
-      --
-      RETURN l_cwms_ts_id;
-   END;
+    FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
+        RETURN VARCHAR2
+    IS
+        l_cwms_ts_id	VARCHAR2 (183);
+    BEGIN
+        BEGIN
+            SELECT	cwms_ts_id
+              INTO	l_cwms_ts_id
+              FROM	mv_cwms_ts_id mcti
+             WHERE	UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
+                        AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+                SELECT	cwms_ts_id
+                  INTO	l_cwms_ts_id
+                  FROM	zav_cwms_ts_id mcti
+                 WHERE	UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
+                            AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
+        END;
+
+        --
+        RETURN l_cwms_ts_id;
+    END;
    --*******************************************************************   --
    --*******************************************************************   --
    --
@@ -297,7 +363,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
     IS
     BEGIN
        RETURN get_location_id
-                (p_cwms_ts_code      => cwms_util.get_ts_code
+                (p_cwms_ts_code      => get_ts_code
                                            (p_cwms_ts_id          => p_cwms_ts_id,
                                             p_db_office_code      => cwms_util.get_db_office_code
                                                                         (p_office_id      => p_db_office_id
@@ -306,16 +372,25 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
                 );
     END;
 
-    /* Formatted on 2007/06/29 09:41 (Formatter Plus v4.8.8) */
+
     FUNCTION get_location_id (p_cwms_ts_code IN NUMBER)
        RETURN VARCHAR2
     IS
        l_location_id   VARCHAR2 (49);
     BEGIN
-       SELECT location_id
-         INTO l_location_id
-         FROM mv_cwms_ts_id
-        WHERE ts_code = p_cwms_ts_code;
+        BEGIN
+            SELECT	location_id
+              INTO	l_location_id
+              FROM	mv_cwms_ts_id
+             WHERE	ts_code = p_cwms_ts_code;
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+                SELECT	location_id
+                  INTO	l_location_id
+                  FROM	zav_cwms_ts_id
+                 WHERE	ts_code = p_cwms_ts_code;
+        END;
     END;
 --
 --*******************************************************************   --
@@ -833,9 +908,9 @@ END;
     IS
     BEGIN
        update_ts_id
-          (p_ts_code                     => cwms_util.get_ts_code
-                                               (p_cwms_ts_id,
-                                                cwms_util.get_db_office_code
+          (p_ts_code                     => get_ts_code
+                                               (p_cwms_ts_id => p_cwms_ts_id,
+                                                p_db_office_code => cwms_util.get_db_office_code
                                                                    (p_db_office_id)
                                                ),
            p_interval_utc_offset         => p_interval_utc_offset,
@@ -976,25 +1051,39 @@ end get_ts_time_zone;
 --
 -- GET_TSID_TIME_ZONE -
 --
-function get_tsid_time_zone (p_ts_id     in varchar2,
-                             p_office_id in varchar2 default null)
-return varchar2
-is
-   l_ts_code   number;
-   l_office_id varchar2(16) := nvl(p_office_id, cwms_util.user_office_id);
-begin
-   begin
-      select ts_code
-        into l_ts_code
-        from mv_cwms_ts_id
-       where upper(cwms_ts_id) = upper(p_ts_id)
-         and upper(db_office_id) = upper(l_office_id);
-   exception
-      when no_data_found then
-         cwms_err.raise('INVALID_ITEM', p_ts_id, 'CWMS Timeseries Identifier');
-   end;
-   return get_ts_time_zone(l_ts_code);
-end get_tsid_time_zone;
+FUNCTION get_tsid_time_zone (p_ts_id		 IN VARCHAR2,
+									  p_office_id	 IN VARCHAR2 DEFAULT NULL
+									 )
+	RETURN VARCHAR2
+IS
+	l_ts_code	  NUMBER;
+	l_office_id   VARCHAR2 (16) := NVL (p_office_id, cwms_util.user_office_id);
+BEGIN
+	BEGIN
+		SELECT	ts_code
+		  INTO	l_ts_code
+		  FROM	mv_cwms_ts_id
+		 WHERE	UPPER (cwms_ts_id) = UPPER (p_ts_id)
+					AND UPPER (db_office_id) = UPPER (l_office_id);
+	EXCEPTION
+		WHEN NO_DATA_FOUND
+		THEN
+			BEGIN
+				SELECT	ts_code
+				  INTO	l_ts_code
+				  FROM	zav_cwms_ts_id
+				 WHERE	UPPER (cwms_ts_id) = UPPER (p_ts_id)
+							AND UPPER (db_office_id) = UPPER (l_office_id);
+			EXCEPTION
+				WHEN NO_DATA_FOUND
+				THEN
+					cwms_err.
+					raise ('INVALID_ITEM', p_ts_id, 'CWMS Timeseries Identifier');
+			END;
+	END;
+
+	RETURN get_ts_time_zone (l_ts_code);
+END get_tsid_time_zone;
 
 --
 --*******************************************************************   --
@@ -1166,6 +1255,26 @@ BEGIN
       cwms_err.RAISE ('INVALID_OFFICE_ID', l_office_id);
    end if;
 
+    DBMS_APPLICATION_INFO.set_action
+                          ('check for location_code, create if necessary');
+    -- check for valid base_location_code based on id passed in, if not there then create, -
+    -- if create error then fail and return -
+    
+    cwms_loc.create_location_raw (l_base_location_code,
+                                l_location_code,
+                                l_base_location_id,
+                                l_sub_location_id,
+                                l_office_code
+                               );
+
+    IF l_location_code IS NULL
+    THEN
+     raise_application_error (-20203,
+                              'Unable to generate location_code',
+                              TRUE
+                             );
+    END IF;
+
    -- check for valid cwms_code based on id passed in, if not there then create, if create error then fail and return
    DBMS_APPLICATION_INFO.set_action
                                    ('check for cwms_code, create if necessary');
@@ -1186,24 +1295,6 @@ BEGIN
       DBMS_LOCK.sleep (2);
    ELSE
       -- BEGIN...
-      DBMS_APPLICATION_INFO.set_action
-                              ('check for location_code, create if necessary');
-         -- check for valid base_location_code based on id passed in, if not there then create, -
-      -- if create error then fail and return -
-      cwms_loc.create_location_raw (l_base_location_code,
-                                    l_location_code,
-                                    l_base_location_id,
-                                    l_sub_location_id,
-                                    l_office_code
-                                   );
-
-      IF l_location_code IS NULL
-      THEN
-         raise_application_error (-20203,
-                                  'Unable to generate location_code',
-                                  TRUE
-                                 );
-      END IF;
 
       -- determine rest of lookup codes based on passed in values, use scalar subquery to minimize context switches, return error if lookups not found
       DBMS_APPLICATION_INFO.set_action ('check code lookups, scalar subquery');
@@ -1658,15 +1749,24 @@ begin
    -- get ts code
    --
    dbms_application_info.set_module ('cwms_ts.build_retrieve_ts_query','Get TS Code');
-   select ts_code,
-          interval,
-          interval_utc_offset
-     into l_ts_code,
-          l_interval,
-          l_offset
-     from mv_cwms_ts_id
-    where db_office_id = upper(l_office_id)
-      and upper(cwms_ts_id) = upper(p_cwms_ts_id);
+
+    BEGIN
+        SELECT	ts_code, interval, interval_utc_offset
+          INTO	l_ts_code, l_interval, l_offset
+          FROM	mv_cwms_ts_id
+         WHERE	db_office_id = UPPER (l_office_id)
+                    AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
+    EXCEPTION
+        WHEN NO_DATA_FOUND
+        THEN
+            SELECT	ts_code, interval, interval_utc_offset
+              INTO	l_ts_code, l_interval, l_offset
+              FROM	zav_cwms_ts_id
+             WHERE	db_office_id = UPPER (l_office_id)
+                        AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
+                        
+        CWMS_UTIL.REFRESH_MV_CWMS_TS_ID;
+    END;
 
    set_action('Handle start and end times');
    setup_retrieve(
@@ -1989,6 +2089,61 @@ begin
    dbms_application_info.set_module(null,null);
       
 end retrieve_ts_out;
+
+--*******************************************************************   --
+
+FUNCTION retrieve_ts_out_tab (p_cwms_ts_id          IN VARCHAR2,
+                                        p_units                  IN VARCHAR2,
+                                        p_start_time          IN DATE,
+                                        p_end_time              IN DATE,
+                                        p_time_zone           IN VARCHAR2 DEFAULT 'UTC',
+                                        p_trim                  IN VARCHAR2 DEFAULT 'F',
+                                        p_start_inclusive   IN VARCHAR2 DEFAULT 'T',
+                                        p_end_inclusive      IN VARCHAR2 DEFAULT 'T',
+                                        p_previous              IN VARCHAR2 DEFAULT 'F',
+                                        p_next                  IN VARCHAR2 DEFAULT 'F',
+                                        p_version_date       IN DATE DEFAULT NULL,
+                                        p_max_version          IN VARCHAR2 DEFAULT 'T',
+                                        p_office_id           IN VARCHAR2 DEFAULT NULL
+                                      )
+    RETURN zts_tab_t
+    PIPELINED
+IS
+    query_cursor         SYS_REFCURSOR;
+    output_row             zts_rec_t;
+    l_cwms_ts_id_out     VARCHAR2 (183);
+    l_units_out          VARCHAR2 (16);
+BEGIN
+    retrieve_ts_out (p_at_tsv_rc             => query_cursor,
+                          p_cwms_ts_id_out     => l_cwms_ts_id_out,
+                          p_units_out             => l_units_out,
+                          p_cwms_ts_id          => p_cwms_ts_id,
+                          p_units                 => p_units,
+                          p_start_time          => p_start_time,
+                          p_end_time             => p_end_time,
+                          p_time_zone             => p_time_zone,
+                          p_trim                  => p_trim,
+                          p_start_inclusive     => p_start_inclusive,
+                          p_end_inclusive      => p_end_inclusive,
+                          p_previous             => p_previous,
+                          p_next                  => p_next,
+                          p_version_date         => p_version_date,
+                          p_max_version         => p_max_version,
+                          p_office_id             => p_office_id
+                         );
+
+    LOOP
+        FETCH query_cursor
+        INTO     output_row;
+
+        EXIT WHEN query_cursor%NOTFOUND;
+        PIPE ROW (output_row);
+    END LOOP;
+
+    CLOSE query_cursor;
+
+    RETURN;
+END retrieve_ts_out_tab;
 --
 --*******************************************************************   --
 --*******************************************************************   --
@@ -2484,14 +2639,7 @@ end retrieve_ts_multi;
       l_ucount              NUMBER;
       l_store_date          TIMESTAMP ( 3 )  DEFAULT SYSTIMESTAMP;
       l_ts_code             NUMBER;
-      l_base_location_id    at_base_location.base_location_id%type;
-      l_sub_location_id     at_physical_location.sub_location_id%type;
-      l_base_parameter_id   cwms_base_parameter.base_parameter_id%type;
-      l_sub_parameter_id    at_parameter.sub_parameter_id%type;
-      l_parameter_type_id   cwms_parameter_type.parameter_type_id%type;
       l_interval_id         cwms_interval.interval_id%type;
-      l_duration_id         cwms_duration.duration_id%type;
-      l_version_id          at_cwms_ts_spec.version%type;
       l_interval_value      NUMBER;
       l_local_tz_code       NUMBER;
       l_tz_name             VARCHAR2 (28) := 'UTC';
@@ -2565,45 +2713,13 @@ end retrieve_ts_multi;
       -- every time a UTC_INTERVAL_OFFSET is updated, slowing the loading to
       -- unacceptable levels.
       --
-      parse_ts(
-         p_cwms_ts_id,
-         l_base_location_id,
-         l_sub_location_id,
-         l_base_parameter_id,
-         l_sub_parameter_id,
-         l_parameter_type_id,
-         l_interval_id,
-         l_duration_id,
-         l_version_id);
          
-      select ts_code, 
-             interval_utc_offset
-        into l_ts_code,
-             existing_utc_offset
-        from at_cwms_ts_spec ts,
-             at_base_location bl,
-             at_physical_location pl,
-             cwms_base_parameter bp,
-             at_parameter ap,
-             cwms_parameter_type pt,
-             cwms_interval i,
-             cwms_duration d
-       where upper(bl.base_location_id) = upper(l_base_location_id)
-         and bl.db_office_code = l_office_code
-         and upper(nvl(pl.sub_location_id, '.')) = upper(nvl(l_sub_location_id, '.'))
-         and pl.base_location_code = bl.base_location_code
-         and ts.location_code = pl.location_code
-         and upper(bp.base_parameter_id) = upper(l_base_parameter_id)
-         and upper(nvl(ap.sub_parameter_id, '.')) = upper(nvl(l_sub_parameter_id, '.'))
-         and ap.base_parameter_code = bp.base_parameter_code
-         and ts.parameter_code = ap.parameter_code
-         and upper(pt.parameter_type_id) = upper(l_parameter_type_id)
-         and ts.parameter_type_code = pt.parameter_type_code
-         and upper(i.interval_id) = upper(l_interval_id)
-         and ts.interval_code = i.interval_code
-         and upper(d.duration_id) = upper(l_duration_id)
-         and ts.duration_code = d.duration_code
-         and upper(nvl(ts.version, '.')) = upper(nvl(l_version_id, '.'));
+       l_ts_code := get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_code => l_office_code);
+        
+       select interval_utc_offset 
+         into existing_utc_offset 
+         from at_cwms_ts_spec 
+        where ts_code = l_ts_code;
        
     exception
     when no_data_found then
@@ -3855,17 +3971,28 @@ BEGIN
    END IF;
 
    --
-   BEGIN
-      SELECT ts_code
-        INTO l_ts_code
-        FROM mv_cwms_ts_id mcts
-       WHERE UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
-         AND mcts.db_office_code = l_db_office_code;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         cwms_err.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
-   END;
+
+    BEGIN
+        SELECT	ts_code
+          INTO	l_ts_code
+          FROM	mv_cwms_ts_id mcts
+         WHERE	UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
+                    AND mcts.db_office_code = l_db_office_code;
+    EXCEPTION
+        WHEN NO_DATA_FOUND
+        THEN
+            BEGIN
+                SELECT	ts_code
+                  INTO	l_ts_code
+                  FROM	zav_cwms_ts_id mcts
+                 WHERE	UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
+                            AND mcts.db_office_code = l_db_office_code;
+            EXCEPTION
+                WHEN NO_DATA_FOUND
+                THEN
+                    cwms_err.raise ('TS_ID_NOT_FOUND', p_cwms_ts_id);
+            END;
+    END;
 
    BEGIN
       SELECT ts_code
@@ -4061,7 +4188,7 @@ END delete_ts;
    --------------------------------------------------------
    -- Confirm old cwms_ts_id exists...
    --------------------------------------------------------
-      l_ts_code_old := cwms_loc.get_ts_code (l_office_id, p_cwms_ts_id_old);
+      l_ts_code_old := get_ts_code (p_cwms_ts_id=>p_cwms_ts_id_old, p_db_office_id=> l_office_id);
    
    --
    --------------------------------------------------------
@@ -4078,8 +4205,9 @@ END delete_ts;
    --------------------------------------------------------
       BEGIN
          --
-         l_ts_code_new := cwms_loc.get_ts_code (l_office_id, p_cwms_ts_id_new);
-      --
+         l_ts_code_new := get_ts_code (p_cwms_ts_id=>p_cwms_ts_id_new, p_db_office_id=>l_office_id);
+      --  
+      
       EXCEPTION
    -----------------------------------------------------------------
    -- Exception means cwms_ts_id_new does not exist - a good thing!.

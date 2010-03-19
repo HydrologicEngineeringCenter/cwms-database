@@ -89,6 +89,8 @@ AS
 
 	TYPE cat_unit_tab_t IS TABLE OF cat_unit_rec_t;
 
+
+
 	--------------------------------------------------------------------------------
 	-- Splits string into a table of strings using the specified delimiter.
 	-- If no delmiter is specified, the string is split around whitespace.
@@ -200,11 +202,6 @@ AS
 
 	FUNCTION get_sub_id (p_full_id IN VARCHAR2)
 		RETURN VARCHAR2;
-
-	FUNCTION get_ts_code (p_cwms_ts_id		  IN VARCHAR2,
-								 p_db_office_code   IN NUMBER
-								)
-		RETURN NUMBER;
 
 	FUNCTION get_ts_interval (p_cwms_ts_code IN NUMBER)
 		RETURN NUMBER;

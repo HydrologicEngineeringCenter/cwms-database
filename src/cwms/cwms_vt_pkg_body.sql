@@ -1707,7 +1707,7 @@ AS
       l_active_flag := cwms_util.return_t_or_f_flag (p_active_flag);
       l_db_office_code := cwms_util.get_office_code (p_db_office_id);
       l_cwms_ts_code :=
-                       cwms_util.get_ts_code (p_cwms_ts_id, l_db_office_code);
+                       cwms_ts.get_ts_code (p_cwms_ts_id => p_cwms_ts_id, p_db_office_code => l_db_office_code);
       l_template_code :=
                        get_tr_template_code (p_template_id, l_db_office_code);
 
