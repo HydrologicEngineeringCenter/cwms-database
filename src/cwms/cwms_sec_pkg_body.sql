@@ -3,6 +3,122 @@ SET define on
 /* Formatted on 7/13/2009 5:29:15 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_sec
 AS
+
+	FUNCTION is_user_admin (p_db_office_code IN NUMBER)
+		RETURN BOOLEAN
+	IS
+		l_count		  INTEGER := 0;
+		l_is_locked   VARCHAR2 (1);
+		l_username	  VARCHAR2 (31) := cwms_util.get_user_id;
+	BEGIN
+		--
+		-- cwms_20, system, sys are ok
+		--
+		IF l_username IN ('&cwms_schema', 'SYSTEM', 'SYS', 'GERHARD', 'ART')
+		THEN
+			RETURN TRUE;
+		END IF;
+
+		--
+		-- Check if user's account is locked for the p_db_office_code
+		-- portion of the database...
+		--
+
+		BEGIN
+			SELECT	atslu.is_locked
+			  INTO	l_is_locked
+			  FROM	"&cwms_schema"."AT_SEC_LOCKED_USERS" atslu
+			 WHERE	atslu.db_office_code = p_db_office_code
+						AND atslu.username = UPPER (l_username);
+		EXCEPTION
+			WHEN NO_DATA_FOUND
+			THEN
+				l_is_locked := 'F';
+		END;
+
+		IF l_is_locked = 'T'
+		THEN
+			RETURN FALSE;
+		END IF;
+
+
+		--
+		-- Check if user's account has either "dba" or "CWMS User Admins"
+		-- privileges.
+		--
+		SELECT	COUNT ( * )
+		  INTO	l_count
+		  FROM	"&cwms_schema"."AT_SEC_USERS" atsu
+		 WHERE		 atsu.db_office_code = p_db_office_code
+                    AND atsu.user_group_code IN
+                             (user_group_code_dba_users, user_group_code_user_admins)
+					AND atsu.username = UPPER (l_username);
+
+		IF l_count > 0
+		THEN
+			RETURN TRUE;
+		ELSE
+			RETURN FALSE;
+		END IF;
+	END;
+
+	FUNCTION is_user_admin (p_db_office_id IN VARCHAR2 DEFAULT NULL )
+		RETURN BOOLEAN
+	IS
+		l_db_office_id VARCHAR2 (16)
+				:= cwms_util.get_db_office_id (p_db_office_id) ;
+        l_db_office_code	 NUMBER := cwms_util.get_db_office_code (l_db_office_id);
+	BEGIN
+		RETURN is_user_admin (p_db_office_code => l_db_office_code);
+	END;
+
+
+	PROCEDURE confirm_user_admin_priv (p_db_office_code IN NUMBER)
+	AS
+	BEGIN
+		IF is_user_admin (p_db_office_code => p_db_office_code)
+		THEN
+			NULL;
+		ELSE
+            cwms_err.
+            raise (
+				'ERROR',
+				'Permission Denied. Your account needs "CWMS DBA" or "CWMS User Admin" privileges to use the cwms_sec package.'
+			);
+		END IF;
+	END;
+
+    PROCEDURE set_user_office_id (p_username		  IN VARCHAR2,
+                                            p_db_office_id   IN VARCHAR2
+                                          )
+    AS
+        l_db_office_code	 NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+        l_count				 NUMBER;
+        l_username			 VARCHAR2 (31);
+    BEGIN
+        confirm_user_admin_priv (l_db_office_code);
+
+        SELECT	COUNT (*)
+          INTO	l_count
+          FROM	at_sec_user_office
+         WHERE	username = UPPER (TRIM (p_username));
+
+        IF l_count > 0
+        THEN
+            UPDATE	at_sec_user_office
+                SET	user_db_office_code = l_db_office_code
+             WHERE	username = UPPER (TRIM (p_username));
+        ELSE
+            cwms_err.
+            raise (
+                'ERROR',
+                    'User: '
+                || UPPER (TRIM (p_username))
+                || ' is not a valid CWMS account name.'
+            );
+        END IF;
+    END;
+    
     FUNCTION get_max_cwms_ts_group_code
         RETURN NUMBER
     AS
@@ -68,87 +184,8 @@ AS
     --
     END;
     --
-	FUNCTION is_user_admin (p_db_office_code IN NUMBER)
-		RETURN BOOLEAN
-	IS
-		l_count		  INTEGER := 0;
-		l_is_locked   VARCHAR2 (1);
-		l_username	  VARCHAR2 (31) := cwms_util.get_user_id;
-	BEGIN
-		--
-		-- cwms_20, system, sys are ok
-		--
-		IF l_username IN ('&cwms_schema', 'SYSTEM', 'SYS', 'GERHARD', 'ART')
-		THEN
-			RETURN TRUE;
-		END IF;
-
-		--
-		-- Check if user's account is locked for the p_db_office_code
-		-- portion of the database...
-		--
-
-		BEGIN
-			SELECT	atslu.is_locked
-			  INTO	l_is_locked
-			  FROM	"&cwms_schema"."AT_SEC_LOCKED_USERS" atslu
-			 WHERE	atslu.db_office_code = p_db_office_code
-						AND atslu.username = UPPER (l_username);
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				l_is_locked := 'F';
-		END;
-
-		IF l_is_locked = 'T'
-		THEN
-			RETURN FALSE;
-		END IF;
 
 
-		--
-		-- Check if user's account has either "dba" or "CWMS User Admins"
-		-- privileges.
-		--
-		SELECT	COUNT ( * )
-		  INTO	l_count
-		  FROM	"&cwms_schema"."AT_SEC_USERS" atsu
-		 WHERE		 atsu.db_office_code = p_db_office_code
-					AND atsu.user_group_code IN (0, 7)
-					AND atsu.username = UPPER (l_username);
-
-		IF l_count > 0
-		THEN
-			RETURN TRUE;
-		ELSE
-			RETURN FALSE;
-		END IF;
-	END;
-
-	FUNCTION is_user_admin (p_db_office_id IN VARCHAR2 DEFAULT NULL )
-		RETURN BOOLEAN
-	IS
-		l_db_office_id VARCHAR2 (16)
-				:= cwms_util.get_db_office_id (p_db_office_id) ;
-		l_db_office_code NUMBER
-				:= cwms_util.get_db_office_code (l_db_office_id) ;
-	BEGIN
-		RETURN is_user_admin (p_db_office_code => l_db_office_code);
-	END;
-
-	PROCEDURE confirm_user_admin_priv (p_db_office_code IN NUMBER)
-	AS
-	BEGIN
-		IF is_user_admin (p_db_office_code => p_db_office_code)
-		THEN
-			NULL;
-		ELSE
-			cwms_err.raise (
-				'ERROR',
-				'Permission Denied. Your account needs "CWMS DBA" or "CWMS User Admin" privileges to use the cwms_sec package.'
-			);
-		END IF;
-	END;
 
 	FUNCTION is_member_user_group (p_user_group_code	IN NUMBER,
 											 p_username 			IN VARCHAR2,
@@ -323,8 +360,7 @@ AS
     END get_user_priv_groups_tab;
     --
 
-    PROCEDURE get_user_priv_groups (
-        p_priv_groups		  OUT sys_refcursor,
+    PROCEDURE get_user_priv_groups (p_priv_groups		 OUT SYS_REFCURSOR,
         p_username		  IN		VARCHAR2 DEFAULT NULL ,
         p_db_office_id   IN		VARCHAR2 DEFAULT NULL
     )
@@ -351,12 +387,12 @@ AS
               FROM	at_sec_users
              WHERE	username = cwms_util.get_user_id
                         AND user_group_code IN
-                                    (user_group_code_dba_users,
-                                     user_group_code_user_admins);
+                                 (user_group_code_dba_users, user_group_code_user_admins);
 
             IF l_count = 0
             THEN
-                cwms_err.raise (
+                cwms_err.
+                raise (
                     'ERROR',
                     'Permission Denied. Your account needs "CWMS DBA" or "CWMS User Admin" privileges to use the cwms_sec package.'
                 );
@@ -403,11 +439,21 @@ AS
                             user_group_owner, user_group_id, is_member, user_group_desc
                   FROM	av_sec_users
                  WHERE	username = l_username
+                 and user_group_code != 10
                             AND db_office_code IN
-                                        (SELECT	 UNIQUE db_office_code
-                                            FROM	 at_sec_users
+                                     (SELECT   db_office_code
+                                         FROM   at_sec_locked_users
                                           WHERE	 username = cwms_util.get_user_id
-                                                     AND user_group_code IN (0, 7));
+                                                  AND db_office_code IN
+                                                            (SELECT	 UNIQUE a.db_office_code
+                                                                FROM	 at_sec_users a --, at_sec_locked_users b
+                                                              WHERE	 a.username =
+                                                                             cwms_util.get_user_id
+                                                                         AND a.user_group_code IN
+                                                                                  (user_group_code_dba_users,
+                                                                                    user_group_code_user_admins))
+                                                  AND is_locked = 'F');
+
         END IF;
     END;
 
@@ -1046,14 +1092,14 @@ AS
 			EXCEPTION
 				WHEN NO_DATA_FOUND
 				THEN
-					RETURN 'NO ACCOUNT';
+					RETURN acc_state_locked;
 			END;
 
 			IF l_is_locked = 'T'
 			THEN
-				RETURN 'LOCKED';
+				RETURN acc_state_locked;
 			ELSE
-				RETURN 'OPEN';
+				RETURN acc_state_unlocked;
 			END IF;
 		END IF;
 	END;
@@ -2115,5 +2161,46 @@ BEGIN
 
 	COMMIT;
 END;
+
+    FUNCTION get_this_db_office_code
+        RETURN NUMBER
+    IS
+        l_db_office_code     NUMBER;
+    BEGIN
+        SELECT    min_value
+          INTO    l_db_office_code
+          FROM    user_sequences
+         WHERE    sequence_name = 'CWMS_SEQ';
+
+        RETURN l_db_office_code;
+    END;
+
+    FUNCTION get_this_db_office_id
+        RETURN VARCHAR2
+    IS
+        l_db_office_id      VARCHAR2 (16);
+        l_db_office_code     NUMBER := get_this_db_office_code;
+    BEGIN
+        SELECT    office_id
+          INTO    l_db_office_id
+          FROM    cwms_office
+         WHERE    office_code = l_db_office_code;
+
+        RETURN l_db_office_id;
+    END;
+
+    FUNCTION get_this_db_office_name
+        RETURN VARCHAR2
+    IS
+        l_db_office_name     VARCHAR2 (80);
+        l_db_office_code     NUMBER := get_this_db_office_code;
+    BEGIN
+        SELECT    long_name
+          INTO    l_db_office_name
+          FROM    cwms_office
+         WHERE    office_code = l_db_office_code;
+
+        RETURN l_db_office_name;
+    END;
 END cwms_sec;
 /

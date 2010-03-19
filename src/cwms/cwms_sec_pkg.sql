@@ -9,6 +9,10 @@ AS
 	user_group_code_all_users CONSTANT		NUMBER := 10;
 	user_group_code_dba_users CONSTANT		NUMBER := 0;
 	user_group_code_user_admins CONSTANT	NUMBER := 7;
+	--
+	acc_state_locked					CONSTANT VARCHAR2 (16) := 'LOCKED';
+	acc_state_unlocked				CONSTANT VARCHAR2 (16) := 'UNLOCKED';
+	acc_state_no_account 			CONSTANT VARCHAR2 (16) := 'NO ACCOUNT';
 
 	TYPE cat_at_sec_allow_rec_t IS RECORD (
 												 db_office_code	 NUMBER,
@@ -36,6 +40,16 @@ AS
 
 	TYPE cat_priv_groups_tab_t IS TABLE OF cat_priv_groups_rec_t;
 
+	FUNCTION get_this_db_office_code
+		RETURN NUMBER;
+
+	FUNCTION get_this_db_office_id
+		RETURN VARCHAR2;
+
+	FUNCTION get_this_db_office_name
+		RETURN VARCHAR2;
+
+
     FUNCTION get_max_cwms_ts_group_code
         RETURN NUMBER;
 
@@ -47,6 +61,10 @@ AS
 											 p_db_office_code 	IN NUMBER
 											)
 		RETURN BOOLEAN;
+
+	PROCEDURE set_user_office_id (p_username		  IN VARCHAR2,
+											p_db_office_id   IN VARCHAR2
+										  );
 
 	PROCEDURE assign_ts_group_user_group (
 		p_ts_group_id		IN VARCHAR2,
@@ -79,7 +97,7 @@ AS
 	PROCEDURE delete_cwms_db_account (p_username IN VARCHAR2);
 
 	PROCEDURE get_assigned_priv_groups (
-		p_priv_groups		  OUT sys_refcursor,
+		p_priv_groups		  OUT SYS_REFCURSOR,
 		p_db_office_id   IN		VARCHAR2 DEFAULT NULL
 	);
 
@@ -90,7 +108,7 @@ AS
 		PIPELINED;
 
 	PROCEDURE get_user_priv_groups (
-		p_priv_groups		  OUT sys_refcursor,
+		p_priv_groups		  OUT SYS_REFCURSOR,
 		p_username		  IN		VARCHAR2 DEFAULT NULL ,
 		p_db_office_id   IN		VARCHAR2 DEFAULT NULL
 	);
@@ -153,7 +171,7 @@ AS
 									)
 		RETURN VARCHAR2;
 
-	PROCEDURE cat_at_sec_allow (p_at_sec_allow		OUT sys_refcursor,
+	PROCEDURE cat_at_sec_allow (p_at_sec_allow		OUT SYS_REFCURSOR,
 										 p_db_office_id	IN 	 VARCHAR2 DEFAULT NULL
 										);
 
