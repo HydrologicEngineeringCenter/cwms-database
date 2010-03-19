@@ -670,6 +670,94 @@ AS
      FROM mv_cwms_ts_id
 /
 --------------------------------------------------------------------------------
+CREATE OR REPLACE FORCE VIEW zav_cwms_ts_id
+(
+    db_office_code,
+    base_location_code,
+    location_code,
+    loc_active_flag,
+    parameter_code,
+    ts_code,
+    ts_active_flag,
+    net_ts_active_flag,
+    db_office_id,
+    cwms_ts_id,
+    unit_id,
+    abstract_param_id,
+    base_location_id,
+    sub_location_id,
+    location_id,
+    base_parameter_id,
+    sub_parameter_id,
+    parameter_id,
+    parameter_type_id,
+    interval_id,
+    duration_id,
+    version_id,
+    interval,
+    interval_utc_offset,
+    version_flag
+)
+AS
+    SELECT    abl.db_office_code, abl.base_location_code, s.location_code,
+                l.active_flag loc_active_flag, ap.parameter_code, s.ts_code,
+                s.active_flag ts_active_flag,
+                CASE
+                    WHEN l.active_flag = 'T' AND s.active_flag = 'T' THEN 'T'
+                    ELSE 'F'
+                END
+                    net_ts_active_flag, o.office_id db_office_id,
+                    abl.base_location_id
+                || SUBSTR ('-', 1, LENGTH (l.sub_location_id))
+                || l.sub_location_id
+                || '.'
+                || base_parameter_id
+                || SUBSTR ('-', 1, LENGTH (ap.sub_parameter_id))
+                || ap.sub_parameter_id
+                || '.'
+                || parameter_type_id
+                || '.'
+                || interval_id
+                || '.'
+                || duration_id
+                || '.'
+                || version
+                    cwms_ts_id, u.unit_id, cap.abstract_param_id,
+                abl.base_location_id, l.sub_location_id,
+                    abl.base_location_id
+                || SUBSTR ('-', 1, LENGTH (l.sub_location_id))
+                || l.sub_location_id
+                    location_id, base_parameter_id, ap.sub_parameter_id,
+                    base_parameter_id
+                || SUBSTR ('-', 1, LENGTH (ap.sub_parameter_id))
+                || ap.sub_parameter_id
+                    parameter_id, parameter_type_id, interval_id, duration_id,
+                version version_id, i.interval, s.interval_utc_offset,
+                s.version_flag
+      FROM    cwms_office o,
+                at_base_location abl,
+                at_physical_location l,
+                at_cwms_ts_spec s,
+                at_parameter ap,
+                cwms_base_parameter p,
+                cwms_parameter_type t,
+                cwms_interval i,
+                cwms_duration d,
+                cwms_unit u,
+                cwms_abstract_parameter cap
+     WHERE         abl.db_office_code = o.office_code
+                AND l.location_code = s.location_code
+                AND ap.base_parameter_code = p.base_parameter_code
+                AND s.parameter_code = ap.parameter_code
+                AND s.parameter_type_code = t.parameter_type_code
+                AND s.interval_code = i.interval_code
+                AND s.duration_code = d.duration_code
+                AND u.unit_code = p.unit_code
+                AND u.abstract_param_code = cap.abstract_param_code
+                AND l.base_location_code = abl.base_location_code
+                AND s.delete_date IS NULL
+/
+--------------------------------------------------------------------------------
 CREATE OR REPLACE FORCE VIEW av_unit
 (
     unit_system,
