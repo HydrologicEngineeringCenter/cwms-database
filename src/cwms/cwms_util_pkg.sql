@@ -453,6 +453,132 @@ AS
    function parse_odbc_ts_or_d_string(
       p_odbc_str in varchar2)
       return date;
+   
+   -----------------------------------------------------------------------------
+   -- FUNCTION tokenize_algebraic
+   -- 
+   -- Returns a table of RPN tokens for a specified algebraic expression
+   --
+   -- The expression is not case sensitive
+   --
+   -- The operators supported are +, -, *, /, //, %, and ^
+   --
+   -- The constants supported are pi and e
+   --
+   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
+   --                             ln, log, sign, sin, tan, trunc
+   --
+   -- Standard operator precedence (order of operations) applies and can be
+   -- overridden by parentheses
+   --
+   -- All numbers, arguments and operators must be separated by whitespace,
+   -- except than no space is required adjacent to parentheses
+   -----------------------------------------------------------------------------
+   function tokenize_algebraic(
+      p_algebraic_expr in varchar2)
+      return str_tab_t;
+   
+   -----------------------------------------------------------------------------
+   -- FUNCTION tokenize_RPN
+   -- 
+   -- Returns a table of RPN tokens for a specified delimited RPN expression
+   --
+   -- The expression is not case sensitive
+   --
+   -- The operators supported are +, -, *, /, //, %, and ^
+   --
+   -- The constants supported are pi and e
+   --
+   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
+   --                             ln, log, sign, sin, tan, trunc
+   --
+   -- If p_delimiter is null, the expression will be parsed using whitespace
+   -- as the delimiter
+   -----------------------------------------------------------------------------
+   function tokenize_RPN(
+      p_RPN_expr  in varchar2,
+      p_delimiter in varchar default null)
+      return str_tab_t;
+      
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_tokenized_expression
+   -- 
+   -- Returns the result of evaluating RPN tokens against specified arguments
+   --
+   -- The tokens are not case sensitive
+   --
+   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
+   -- are accepted
+   --
+   -- p_args_offset is the offset into the args table for arg1
+   -----------------------------------------------------------------------------
+   function eval_tokenized_expression(
+      p_RPN_tokens in str_tab_t,
+      p_args           in number_tab_t,
+      p_args_offset    in integer default 0)
+      return number;      
+      
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_algebraic_expression
+   -- 
+   -- Returns the result of evaluating an algebraic expression against specified 
+   -- arguments
+   --
+   -- The expression is not case sensitive
+   --
+   -- The operators supported are +, -, *, /, //, %, and ^
+   --
+   -- The constants supported are pi and e
+   --
+   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
+   --                             ln, log, sign, sin, tan, trunc
+   --
+   -- Standard operator precedence (order of operations) applies and can be
+   -- overridden by parentheses
+   --
+   -- All numbers, arguments and operators must be separated by whitespace,
+   -- except than no space is required adjacent to parentheses
+   --
+   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
+   -- are accepted
+   --
+   -- p_args_offset is the offset into the args table for arg1
+   -----------------------------------------------------------------------------
+   function eval_algebraic_expression(
+      p_algebraic_expr in varchar2,
+      p_args           in number_tab_t,
+      p_args_offset    in integer default 0)
+      return number;      
+      
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_RPN_expression
+   -- 
+   -- Returns the result of evaluating a delimited RPN expression against
+   -- specified arguments
+   --
+   -- The expression is not case sensitive
+   --
+   -- The operators supported are +, -, *, /, //, %, and ^
+   --
+   -- The constants supported are pi and e
+   --
+   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
+   --                             ln, log, sign, sin, tan, trunc
+   --
+   -- If p_delimiter is null, the expression will be parsed using whitespace
+   -- as the delimiter
+   --
+   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
+   -- are accepted
+   --
+   -- p_args_offset is the offset into the args table for arg1
+   -----------------------------------------------------------------------------
+   function eval_RPN_expression(
+      p_RPN_expr    in varchar2,
+      p_args        in number_tab_t,
+      p_args_offset in integer default 0,
+      p_delimiter   in varchar default null)
+      return number;      
 
 END cwms_util;
 /
