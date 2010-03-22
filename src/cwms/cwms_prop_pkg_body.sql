@@ -6,7 +6,7 @@ AS
 	--
 	--
 	FUNCTION str_tab_tab2property_info_tab (
-		p_text_tab	 IN cwms_util.str_tab_tab_t
+		p_text_tab	 IN str_tab_tab_t
 	)
 		RETURN property_info_tab_t
 	IS
@@ -281,7 +281,7 @@ AS
 	IS
 		l_property_tab 					property_info_tab_t
 				:= property_info_tab_t () ;
-		l_text_table						cwms_util.str_tab_tab_t;
+		l_text_table						str_tab_tab_t;
 		i										PLS_INTEGER;
 	BEGIN
 		p_cwms_cat := NULL;
@@ -326,7 +326,7 @@ AS
 	IS
 		l_property_tab 					property_info_tab_t
 				:= property_info_tab_t () ;
-		l_text_table						cwms_util.str_tab_tab_t;
+		l_text_table						str_tab_tab_t;
 	BEGIN
 		p_cwms_cat := NULL;
 
@@ -428,14 +428,14 @@ AS
 		l_prop_row							property_info2_t;
 		l_last_office						VARCHAR2 (16) := ' ';
 		l_indent 							VARCHAR2 (256);
-		l_categories						cwms_util.str_tab_t
-				:= cwms_util.str_tab_t () ;
-		l_ids 								cwms_util.str_tab_t
-				:= cwms_util.str_tab_t () ;
-		l_this_category					cwms_util.str_tab_t
-				:= cwms_util.str_tab_t () ;
-		l_this_id							cwms_util.str_tab_t
-				:= cwms_util.str_tab_t () ;
+		l_categories						str_tab_t
+				:= str_tab_t () ;
+		l_ids 								str_tab_t
+				:= str_tab_t () ;
+		l_this_category					str_tab_t
+				:= str_tab_t () ;
+		l_this_id							str_tab_t
+				:= str_tab_t () ;
 		l_level								BINARY_INTEGER := 0;
 		spc CONSTANT						VARCHAR2 (1) := ' ';
 		nl CONSTANT 						VARCHAR (1) := CHR (10);
@@ -718,7 +718,7 @@ AS
 	IS
 		l_property_tab 					property_info2_tab_t
 				:= property_info2_tab_t () ;
-		l_text_table						cwms_util.str_tab_tab_t;
+		l_text_table						str_tab_tab_t;
 	BEGIN
 		IF p_property_info IS NULL
 		THEN
@@ -758,7 +758,7 @@ AS
 	IS
 		l_property_tab 					property_info2_tab_t
 				:= property_info2_tab_t () ;
-		l_text_table						cwms_util.str_tab_tab_t;
+		l_text_table						str_tab_tab_t;
 	BEGIN
 		IF p_property_info IS NULL
 		THEN

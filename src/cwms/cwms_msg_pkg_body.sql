@@ -574,8 +574,8 @@ is
    l_msg_type    varchar2(64);
    l_msg_text    varchar2(32767);
    l_prop_type   varchar2(8);
-   l_properties  cwms_util.str_tab_t;
-   l_parts       cwms_util.str_tab_t;
+   l_properties  str_tab_t;
+   l_parts       str_tab_t;
    i             pls_integer;
    lf            constant varchar2(1) := chr(10);
    l_msg_level   integer;

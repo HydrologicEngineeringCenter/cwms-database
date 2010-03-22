@@ -113,7 +113,7 @@ CREATE OR REPLACE package body cwms_xchg as
       p_f_pathname_part out nocopy varchar2,
       p_pathname        in  varchar2)
    is
-      l_parts cwms_util.str_tab_t := cwms_util.str_tab_t();
+      l_parts str_tab_t := str_tab_t();
    begin
       l_parts := cwms_util.split_text(upper(cwms_util.strip(p_pathname)), '/');
       if l_parts.count != 8 or l_parts(1) is not null or l_parts(8) is not null then
@@ -762,7 +762,7 @@ CREATE OR REPLACE package body cwms_xchg as
       l_item1       varchar2(128);
       l_item2       varchar2(128);
       l_errormsg    varchar2(32767);
-      l_parts       cwms_util.str_tab_t;
+      l_parts       str_tab_t;
       lf            constant varchar2(1) := chr(10);
       tab           constant varchar2(1) := chr(9);
       cursor l_comparison_cur
@@ -973,9 +973,9 @@ CREATE OR REPLACE package body cwms_xchg as
          time_zone   varchar2(28),
          tz_usage    varchar2(16));
       type dss_filemgr_by_id is table of dss_filemgr_t index by varchar2(49);
-      l_mappings           cwms_util.str_tab_t;
-      l_parts              cwms_util.str_tab_t;
-      l_parts2             cwms_util.str_tab_t;
+      l_mappings           str_tab_t;
+      l_parts              str_tab_t;
+      l_parts2             str_tab_t;
       l_offices            int_by_id16;
       l_dss_filemgrs       dss_filemgr_by_id;
       l_id                 varchar2(32);
@@ -1043,7 +1043,7 @@ CREATE OR REPLACE package body cwms_xchg as
          p_str       in varchar2,
          p_delimiter in varchar2 default null,
          p_max_split in integer  default null)
-      return cwms_util.str_tab_t
+      return str_tab_t
       is
       begin
          return cwms_util.split_text(p_str, p_delimiter, p_max_split);
@@ -1053,7 +1053,7 @@ CREATE OR REPLACE package body cwms_xchg as
          p_clob      in clob,
          p_delimiter in varchar2 default null,
          p_max_split in integer  default null)
-      return cwms_util.str_tab_t
+      return str_tab_t
       is
       begin
          return cwms_util.split_text(p_clob, p_delimiter, p_max_split);
@@ -1064,8 +1064,8 @@ CREATE OR REPLACE package body cwms_xchg as
          l_attr    str_by_str;
          l_att_str varchar2(256) := trim(p_att_str);
          l_len     binary_integer := length(l_att_str);
-         parts     cwms_util.str_tab_t;
-         parts2    cwms_util.str_tab_t;
+         parts     str_tab_t;
+         parts2    str_tab_t;
       begin
          if substr(l_att_str, l_len) = '/' then
             l_att_str := trim(substr(l_att_str, 1, l_len-1));
@@ -1620,7 +1620,7 @@ is
    l_port        integer       := null;
    l_reported    timestamp     := systimestamp;
    l_message     varchar2(4000);
-   l_parts       cwms_util.str_tab_t;
+   l_parts       str_tab_t;
    l_ts          integer;
 begin
    l_message := '<cwms_message type="Status">'
@@ -2043,7 +2043,7 @@ is
    l_office_code    number       := cwms_util.get_office_code(l_office_id);
    l_fail_if_exists boolean      := cwms_util.return_true_or_false(p_fail_if_exists);
    l_datastore_code number       := null;
-   l_url_patterns   cwms_util.str_tab_t;
+   l_url_patterns   str_tab_t;
    l_file_pattern   varchar2(64) := '(\$CWMS_HOME|[$/]|[a-zA-Z]:/)[^/]+(/[^/]+)*';
    l_port           integer := 0;
 begin
@@ -2065,7 +2065,7 @@ begin
    -----------------------------
    -- validate the url format --
    -----------------------------
-   l_url_patterns := cwms_util.str_tab_t(
+   l_url_patterns := str_tab_t(
       /* ip v4    */ '//(\d{1,3}[.]){3}\d{1,3}:\d{1,5}',
       /* DNS      */ '//([a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z\-][a-zA-Z0-9\-]*[a-zA-Z0-9][.])*[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z\-][a-zA-Z0-9\-]*[a-zA-Z0-9]:\d{1,5}',
       /* ip v6 #1 */ '//([a-fA-F0-9]{1,4}:){7}[a-fA-F0-9]{1,4}:\d{1,5}',

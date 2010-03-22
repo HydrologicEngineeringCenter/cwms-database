@@ -1533,7 +1533,7 @@ is
    l_ts_loc        timestamp;
    l_hours         integer;
    l_minutes       integer;
-   l_parts         cwms_util.str_tab_t;
+   l_parts         str_tab_t;
 begin
    if l_tz_offset_str != '+00:00' and l_tz_offset_str != '-00:00' then
       l_parts   := cwms_util.split_text(l_tz_offset_str, ':');
@@ -2782,7 +2782,7 @@ end retrieve_ts_multi;
       IF l_local_tz_code IS NOT NULL THEN
          DECLARE
             l_offset_str VARCHAR2(8);
-            l_parts      cwms_util.str_tab_t;
+            l_parts      str_tab_t;
             l_hours      INTEGER;
             l_minutes    INTEGER;
          BEGIN

@@ -259,8 +259,8 @@ is
    type id_collection is  table of boolean index by varchar2(256);
    l_include_descriptions boolean := cwms_util.return_true_or_false(p_include_descriptions);
    l_office_id_masks      varchar2(256) := nvl(p_office_id_masks, cwms_util.user_office_id);
-   l_office_id_mask_tab   cwms_util.str_tab_t;
-   l_id_mask_tab          cwms_util.str_tab_t;
+   l_office_id_mask_tab   str_tab_t;
+   l_id_mask_tab          str_tab_t;
    l_ids                  id_collection;
    l_office_id_bind_str   varchar2(32767);
    l_id_bind_str          varchar2(32767);
