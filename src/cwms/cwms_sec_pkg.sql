@@ -2,41 +2,41 @@ SET define on
 /* Formatted on 7/19/2009 4:12:02 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE cwms_sec
 AS
-	max_cwms_priv_ugroup_code CONSTANT		NUMBER := 9;
-	max_cwms_ts_ugroup_code CONSTANT 		NUMBER := 19;
-	max_cwms_ts_group_code CONSTANT			NUMBER := 9;
+	max_cwms_priv_ugroup_code		CONSTANT NUMBER := 9;
+	max_cwms_ts_ugroup_code 		CONSTANT NUMBER := 19;
+	max_cwms_ts_group_code			CONSTANT NUMBER := 9;
 	--
-	user_group_code_all_users CONSTANT		NUMBER := 10;
-	user_group_code_dba_users CONSTANT		NUMBER := 0;
-	user_group_code_user_admins CONSTANT	NUMBER := 7;
+	user_group_code_all_users		CONSTANT NUMBER := 10;
+	user_group_code_dba_users		CONSTANT NUMBER := 0;
+	user_group_code_user_admins	CONSTANT NUMBER := 7;
 	--
 	acc_state_locked					CONSTANT VARCHAR2 (16) := 'LOCKED';
 	acc_state_unlocked				CONSTANT VARCHAR2 (16) := 'UNLOCKED';
 	acc_state_no_account 			CONSTANT VARCHAR2 (16) := 'NO ACCOUNT';
 
 	TYPE cat_at_sec_allow_rec_t IS RECORD (
-												 db_office_code	 NUMBER,
-												 user_group_code	 NUMBER,
-												 ts_group_code 	 NUMBER,
-												 db_office_id		 VARCHAR2 (16),
-												 user_group_id 	 VARCHAR2 (32),
-												 ts_group_id		 VARCHAR2 (32),
-												 priv_sum			 NUMBER,
-												 priv 				 VARCHAR2 (15)
-											 );
+		db_office_code 	NUMBER,
+		user_group_code	NUMBER,
+		ts_group_code		NUMBER,
+		db_office_id		VARCHAR2 (16),
+		user_group_id		VARCHAR2 (32),
+		ts_group_id 		VARCHAR2 (32),
+		priv_sum 			NUMBER,
+		priv					VARCHAR2 (15)
+	);
 
 	TYPE cat_at_sec_allow_tab_t IS TABLE OF cat_at_sec_allow_rec_t;
 
 	TYPE cat_priv_groups_rec_t IS RECORD (
-												username 			  VARCHAR2 (31),
-												user_db_office_id   VARCHAR2 (16),
-												db_office_id		  VARCHAR2 (16),
-												user_group_type	  VARCHAR2 (24),
-												user_group_owner	  VARCHAR2 (16),
-												user_group_id		  VARCHAR2 (32),
-												is_member			  VARCHAR2 (1),
-												user_group_desc	  VARCHAR2 (256)
-											);
+		username 			  VARCHAR2 (31),
+		user_db_office_id   VARCHAR2 (16),
+		db_office_id		  VARCHAR2 (16),
+		user_group_type	  VARCHAR2 (24),
+		user_group_owner	  VARCHAR2 (16),
+		user_group_id		  VARCHAR2 (32),
+		is_member			  VARCHAR2 (1),
+		user_group_desc	  VARCHAR2 (256)
+	);
 
 	TYPE cat_priv_groups_tab_t IS TABLE OF cat_priv_groups_rec_t;
 
@@ -50,10 +50,10 @@ AS
 		RETURN VARCHAR2;
 
 
-    FUNCTION get_max_cwms_ts_group_code
-        RETURN NUMBER;
+	FUNCTION get_max_cwms_ts_group_code
+		RETURN NUMBER;
 
-	FUNCTION is_user_admin (p_db_office_id IN VARCHAR2 DEFAULT NULL )
+	FUNCTION is_user_admin (p_db_office_id IN VARCHAR2 DEFAULT NULL)
 		RETURN BOOLEAN;
 
 	FUNCTION is_member_user_group (p_user_group_code	IN NUMBER,
@@ -85,12 +85,12 @@ AS
 
 	PROCEDURE create_cwmsdbi_db_user (
 		p_dbi_username   IN VARCHAR2,
-		p_dbi_password   IN VARCHAR2 DEFAULT NULL ,
+		p_dbi_password   IN VARCHAR2 DEFAULT NULL,
 		p_db_office_id   IN VARCHAR2 DEFAULT NULL
 	);
 
 	PROCEDURE set_dbi_user_passwd (p_dbi_password	IN VARCHAR2,
-											 p_dbi_username	IN VARCHAR2 DEFAULT NULL ,
+											 p_dbi_username	IN VARCHAR2 DEFAULT NULL,
 											 p_db_office_id	IN VARCHAR2 DEFAULT NULL
 											);
 
@@ -102,19 +102,19 @@ AS
 	);
 
 	FUNCTION get_assigned_priv_groups_tab (
-		p_db_office_id   IN VARCHAR2 DEFAULT NULL
+		p_db_office_id IN VARCHAR2 DEFAULT NULL
 	)
 		RETURN cat_priv_groups_tab_t
 		PIPELINED;
 
 	PROCEDURE get_user_priv_groups (
 		p_priv_groups		  OUT SYS_REFCURSOR,
-		p_username		  IN		VARCHAR2 DEFAULT NULL ,
+		p_username		  IN		VARCHAR2 DEFAULT NULL,
 		p_db_office_id   IN		VARCHAR2 DEFAULT NULL
 	);
 
 	FUNCTION get_user_priv_groups_tab (
-		p_username		  IN VARCHAR2 DEFAULT NULL ,
+		p_username		  IN VARCHAR2 DEFAULT NULL,
 		p_db_office_id   IN VARCHAR2 DEFAULT NULL
 	)
 		RETURN cat_priv_groups_tab_t
@@ -152,9 +152,7 @@ AS
 								  p_db_office_id			 IN VARCHAR2 DEFAULT NULL
 								 );
 
-	PROCEDURE delete_user (p_username		 IN VARCHAR2,
-								  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
-								 );
+	PROCEDURE delete_user (p_username IN VARCHAR2);
 
 	PROCEDURE lock_user (p_username		  IN VARCHAR2,
 								p_db_office_id   IN VARCHAR2 DEFAULT NULL
@@ -175,7 +173,7 @@ AS
 										 p_db_office_id	IN 	 VARCHAR2 DEFAULT NULL
 										);
 
-	FUNCTION cat_at_sec_allow_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL )
+	FUNCTION cat_at_sec_allow_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
 		RETURN cat_at_sec_allow_tab_t
 		PIPELINED;
 
