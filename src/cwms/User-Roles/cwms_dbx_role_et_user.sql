@@ -1,6 +1,17 @@
 /*
   cwms_dbx user and role are used for the crrel corpsmap initiative.
 */
+
+whenever sqlerror continue
+
+DROP role cwms_dbx_role;
+DROP user cwms_dbx;
+
+--
+-- notice errors
+--
+whenever sqlerror exit sql.sqlcode
+
 --
 -- Create the cwms_dbx_role...
 --
