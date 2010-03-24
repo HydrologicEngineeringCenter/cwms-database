@@ -79,11 +79,6 @@ AS
 											  'yyyy/mm/dd hh24:mi:ss'
 											 ) ;
 
-	TYPE str_tab_t IS TABLE OF VARCHAR2 (32767);
-
-	-- table row with string fields
-	TYPE str_tab_tab_t IS TABLE OF str_tab_t;
-
 	-- table of rows with string fields
 	TYPE cat_unit_rec_t IS RECORD (unit_id VARCHAR2 (16));
 

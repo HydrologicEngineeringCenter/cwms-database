@@ -204,7 +204,7 @@ procedure get_location_level_codes(
    p_attribute_duration_id     in  varchar2,
    p_office_id                 in  varchar2)
 is
-   l_parts              cwms_util.str_tab_t;
+   l_parts              str_tab_t;
    l_base_parameter_id  varchar2(16);
    l_sub_parameter_id   varchar2(32) := null;
    l_spec_level_code    number(10);
@@ -491,7 +491,7 @@ procedure get_tsid_ids(
    p_duration_id       out varchar2,
    p_tsid              in  varchar2)
 is
-   l_parts cwms_util.str_tab_t := cwms_util.split_text(p_tsid, '.');
+   l_parts str_tab_t := cwms_util.split_text(p_tsid, '.');
 begin
    p_location_id       := l_parts(1);
    p_parameter_id      := l_parts(2);
@@ -1073,7 +1073,7 @@ is
    l_loc_level_code            number(10);
    l_interval_origin           date;
    l_location_code             number(10);
-   l_parts                     cwms_util.str_tab_t;
+   l_parts                     str_tab_t;
    l_base_parameter_id         varchar2(16);
    l_sub_parameter_id          varchar2(32);
    l_parameter_code            number(10);
@@ -1449,7 +1449,7 @@ procedure create_location_level2(
    p_seasonal_values         in  varchar2 default null,
    p_office_id               in  varchar2 default null)
 is
-   l_recordset           cwms_util.str_tab_tab_t;
+   l_recordset           str_tab_tab_t;
    l_offset_months       integer;
    l_offset_minutes      integer;
    l_offset_value        number;
@@ -1726,7 +1726,7 @@ is
    l_location_level_code       number(10);
    l_interval_origin           date;
    l_location_code             number(10);
-   l_parts                     cwms_util.str_tab_t;
+   l_parts                     str_tab_t;
    l_base_parameter_id         varchar2(16);
    l_sub_parameter_id          varchar2(32);
    l_parameter_code            number(10);
@@ -1877,7 +1877,7 @@ is
    l_location_level_code       number(10);
    l_interval_origin           date;
    l_location_code             number(10);
-   l_parts                     cwms_util.str_tab_t;
+   l_parts                     str_tab_t;
    l_base_parameter_id         varchar2(16);
    l_sub_parameter_id          varchar2(32);
    l_parameter_code            number(10);

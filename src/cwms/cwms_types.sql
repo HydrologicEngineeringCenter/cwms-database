@@ -152,6 +152,15 @@ BEGIN
 END;
 /
 
+
+CREATE OR REPLACE TYPE str_tab_t IS TABLE OF VARCHAR2 (32767);
+/
+
+	-- table row with string fields
+CREATE OR REPLACE TYPE str_tab_tab_t IS TABLE OF str_tab_t;
+/
+
+
 CREATE OR REPLACE
 TYPE SHEF_SPEC_TYPE
 AS
@@ -698,6 +707,8 @@ create or replace type seasonal_value_t is object (
 
 create or replace type seasonal_value_array is table of seasonal_value_t
 /
+
+
 
 COMMIT ;
 
