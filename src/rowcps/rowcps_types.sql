@@ -1,7 +1,90 @@
-SET serveroutput on
-   
-CREATE OR REPLACE TYPE project_obj_t AS OBJECT (
+SET define on
+@@../cwms/defines.sql
 
+SET serveroutput on
+
+------------------------------
+-- drop types if they exist --
+------------------------------
+
+DECLARE
+   not_defined        EXCEPTION;
+   has_dependencies   EXCEPTION;
+   PRAGMA EXCEPTION_INIT (not_defined, -4043);
+   PRAGMA EXCEPTION_INIT (has_dependencies, -2303);
+
+   TYPE id_array_t IS TABLE OF VARCHAR2 (32);
+
+   dropped_count      PLS_INTEGER;
+   defined_count      PLS_INTEGER;
+   total_count        PLS_INTEGER := 0;
+   pass_count         PLS_INTEGER := 0;
+   type_names         id_array_t
+      := id_array_t (
+'project_obj_t',
+'embank_protection_type_obj_t',
+'embank_structure_type_obj_t',
+'embankment_obj_t',
+'PHYSICAL_TRANSFER_TYPE_OBJ_T',
+'water_user_obj_t',
+'wat_user_contract_obj_t',
+'wat_usr_contract_acct_obj_t'
+                    );
+BEGIN
+   defined_count := type_names.COUNT;
+
+   LOOP
+      pass_count := pass_count + 1;
+      DBMS_OUTPUT.put_line ('Pass ' || pass_count);
+      dropped_count := 0;
+      DBMS_OUTPUT.put_line ('');
+
+      FOR i IN type_names.FIRST .. type_names.LAST
+      LOOP
+         IF LENGTH (type_names (i)) > 0
+         THEN
+            BEGIN
+               EXECUTE IMMEDIATE 'drop type ' || type_names (i);
+
+               DBMS_OUTPUT.put_line ('   Dropped type ' || type_names (i));
+               dropped_count := dropped_count + 1;
+               total_count := total_count + 1;
+               type_names (i) := '';
+            EXCEPTION
+               WHEN not_defined
+               THEN
+                  IF pass_count = 1
+                  THEN
+                     defined_count := defined_count - 1;
+                  END IF;
+               WHEN has_dependencies
+               THEN
+                  NULL;
+            END;
+         END IF;
+      END LOOP;
+
+      EXIT WHEN dropped_count = 0;
+   END LOOP;
+
+   DBMS_OUTPUT.put_line ('');
+
+   IF total_count != defined_count
+   THEN
+      DBMS_OUTPUT.put ('*** WARNING: Only ');
+   END IF;
+
+   DBMS_OUTPUT.put_line (   ''
+                         || total_count
+                         || ' out of '
+                         || defined_count
+                         || ' types dropped'
+                        );
+END;
+/
+show errors
+
+CREATE OR REPLACE TYPE project_obj_t AS OBJECT (
 	--locations
 	--the office id for the base location
 	db_office_id 			VARCHAR2(16),
@@ -58,9 +141,29 @@ CREATE OR REPLACE TYPE project_obj_t AS OBJECT (
 	
 	--The end date of the yield time frame
 	yield_time_frame_end DATE
-);   
+);
+/
+show errors
 
-create or replace type embankment_obj_t as object
+create or replace type embank_protection_type_obj_t as object
+(
+protection_type_display_value	varchar2(25 byte),  --The value to display for this protection_type code record
+protection_type_tooltip	varchar2(255 byte),     --The tooltip or meaning of this protection_type code record
+protection_type_active	varchar2(1 byte)	--Whether this protection_type entry is currently active
+);
+/
+show errors
+
+create or replace type embank_structure_type_obj_t as object
+( 
+structure_type_display_value	varchar2(25 byte),	--The value to display for this structure_type code record
+structure_type_tooltip	varchar2(255 byte),	--The tooltip or meaning of this structure_type code record
+structure_type_active	varchar2(1 byte)	--Whether this structure type entry is currently active
+);
+/
+show errors
+
+CREATE OR REPLACE TYPE embankment_obj_t AS OBJECT
 ( 
     embankment_code	number,                   --The unique surrogate key (code) for this embankment structure
     embankment_project_loc	project_obj_t,          --The project this embankment is a child of
@@ -74,41 +177,28 @@ create or replace type embankment_obj_t as object
     height_max	number,                   --The maximum height of the embankment structure
     top_width	number                    --The width at the top of the embankment structure
 );
+/
+show errors
 
-create or replace
-type embank_protection_type_obj_t as object
-(
-protection_type_display_value	varchar2(25 byte),  --The value to display for this protection_type code record
-protection_type_tooltip	varchar2(255 byte),     --The tooltip or meaning of this protection_type code record
-protection_type_active	varchar2(1 byte)	--Whether this protection_type entry is currently active
-);
-
-create or replace
-type embank_structure_type_obj_t as object
-( 
-structure_type_display_value	varchar2(25 byte),	--The value to display for this structure_type code record
-structure_type_tooltip	varchar2(255 byte),	--The tooltip or meaning of this structure_type code record
-structure_type_active	varchar2(1 byte)	--Whether this structure type entry is currently active
-);
-
-create or replace
-TYPE PHYSICAL_TRANSFER_TYPE_OBJ_T as object
+create or replace TYPE PHYSICAL_TRANSFER_TYPE_OBJ_T as object
 ( 
 phys_trans_type_display_value	varchar2(25 byte),--The value to display for this physical_transfer_type record
 physical_transfer_type_tooltip	varchar2(255 byte),--The description or meaning of this physical_transfer_type record
 physical_transfer_type_active	varchar2(1 byte)--Whether this physical_transfer_type entry is currently active
 );
+/
+show errors
 
-create or replace
-type water_user_obj_t as object
+create or replace type water_user_obj_t as object
 ( 
 WATER_USER_PROJECT_LOC_CODE	cat_location2_obj_t,      --The project that this user is pertaining to.
 ENTITY_NAME	VARCHAR2(64 BYTE),      --The entity name associated with this user
 WATER_RIGHT	VARCHAR2(255 BYTE)      --The water right of this user
 );
-   
-create or replace
-type wat_user_contract_obj_t as object
+/ 
+show errors
+
+create or replace type wat_user_contract_obj_t as object
 ( 
 
 CONTRACT_WATER_USER	water_user_obj_t,--The water user this record pertains to.  See table AT_WATER_USER.
@@ -124,9 +214,10 @@ FUTURE_USE_PERCENT_ACTIVATED	NUMBER,--The percent allocated future use for this 
 TOTAL_ALLOC_PERCENT_ACTIVATED	NUMBER,--The percentage of total allocation for this water user contract
 WITHDRAW_LOCATION	cat_location2_obj_t --The location where this user contract withdraws or pumps out their water
 );
+/ 
+show errors
 
-create or replace
-type wat_usr_contract_acct_obj_t as object
+create or replace type wat_usr_contract_acct_obj_t as object
 (
 WUSR_CONTRACT_ACCT_CONTR	wat_user_contract_obj_t,--The contract for this water movement. SEE AT_WATER_USER_CONTRACT.
 PHYSICAL_TRANSFER_TYPE	physical_transfer_type_obj_t,--The type of transfer for this water movement.  See AT_LU_PHYSICAL_TRANSFER_TYPE_CODE.
@@ -135,13 +226,48 @@ ACCOUNTING_VOLUME	NUMBER,--The volume associated with the water movement
 TRANSFER_START_DATETIME	DATE,--The date this water movement began
 TRANSFER_END_DATETIME	DATE,--the date this water movement stopped
 ACCOUNTING_REMARKS	VARCHAR2(255 BYTE) --Any comments regarding this water accounting movement
-
 );
+/ 
+show errors
+
+
+
+set echo on
+--
+--
+-- create public synonyms for CWMS schema packages and views
+-- grant execute on packages to CWMS_USER role
+-- grant select on view to CWMS_USER role
+--
+-- exclude any package or view named like %_SEC_%
+--
+declare 
+   type str_tab_t is table of varchar2(32);
+   type_names str_tab_t := str_tab_t();
+   sql_statement varchar2(128);
+begin
+   --
+   -- collect CWMS schema object types
+   --
+   for rec in (
+      select object_name 
+        from dba_objects 
+       where owner = '&cwms_schema'
+         and object_type = 'TYPE'
+         and object_name not like 'SYS_%')
+   loop
+      type_names.extend;
+      type_names(type_names.last) := rec.object_name;
+   end loop;
    
-   
-   
+   --
+   -- grant execute on COLLECTED types to CWMS_USER role
+   --
+   dbms_output.put_line('--');
+   for i in 1..type_names.count loop
+      sql_statement := 'GRANT EXECUTE ON &cwms_schema'||'.'||type_names(i)||' TO CWMS_USER';
+      dbms_output.put_line('-- ' || sql_statement);
+      execute immediate sql_statement;
+   end loop;
+end;
 /
-show errors;
-
-GRANT EXECUTE ON PROJECT_OBJ_T TO CWMS_USER;
-
