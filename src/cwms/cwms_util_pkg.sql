@@ -487,12 +487,10 @@ AS
    -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
    --                             ln, log, sign, sin, tan, trunc
    --
-   -- If p_delimiter is null, the expression will be parsed using whitespace
-   -- as the delimiter
+   -- All numbers, arguments and operators must be separated by whitespace
    -----------------------------------------------------------------------------
    function tokenize_RPN(
-      p_RPN_expr  in varchar2,
-      p_delimiter in varchar default null)
+      p_RPN_expr  in varchar2)
       return str_tab_t;
       
    -----------------------------------------------------------------------------
@@ -509,7 +507,7 @@ AS
    -----------------------------------------------------------------------------
    function eval_tokenized_expression(
       p_RPN_tokens in str_tab_t,
-      p_args           in number_tab_t,
+      p_args           in double_tab_t,
       p_args_offset    in integer default 0)
       return number;      
       
@@ -541,7 +539,7 @@ AS
    -----------------------------------------------------------------------------
    function eval_algebraic_expression(
       p_algebraic_expr in varchar2,
-      p_args           in number_tab_t,
+      p_args           in double_tab_t,
       p_args_offset    in integer default 0)
       return number;      
       
@@ -560,8 +558,7 @@ AS
    -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
    --                             ln, log, sign, sin, tan, trunc
    --
-   -- If p_delimiter is null, the expression will be parsed using whitespace
-   -- as the delimiter
+   -- All numbers, arguments and operators must be separated by whitespace
    --
    -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
    -- are accepted
@@ -570,9 +567,8 @@ AS
    -----------------------------------------------------------------------------
    function eval_RPN_expression(
       p_RPN_expr    in varchar2,
-      p_args        in number_tab_t,
-      p_args_offset in integer default 0,
-      p_delimiter   in varchar default null)
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
       return number;      
 
 END cwms_util;

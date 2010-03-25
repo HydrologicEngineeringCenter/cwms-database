@@ -2582,27 +2582,15 @@ AS
    -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
    --                             ln, log, sign, sin, tan, trunc
    --
-   -- If p_delimiter is null, the expression will be parsed using whitespace
-   -- as the delimiter
+   -- All numbers, arguments and operators must be separated by whitespace
    -----------------------------------------------------------------------------
    function tokenize_RPN(
-      p_RPN_expr  in varchar2,
-      p_delimiter in varchar default null)
+      p_RPN_expr  in varchar2)
       return str_tab_t
    is
       l_postfix_tokens str_tab_t;
    begin
-      if p_delimiter is null then
-         l_postfix_tokens := split_text(trim(upper(p_RPN_expr)));
-      else
-         l_postfix_tokens := split_text(
-            upper(trim(rtrim(ltrim(trim(p_RPN_expr),p_delimiter),p_delimiter))), 
-            p_delimiter);
-         for i in 1..l_postfix_tokens.count loop
-            l_postfix_tokens(i) := trim(l_postfix_tokens(i));
-         end loop;
-      end if;
-      return l_postfix_tokens;
+      return split_text(trim(upper(p_RPN_expr)));
    end tokenize_RPN;      
       
    -----------------------------------------------------------------------------
@@ -2619,13 +2607,13 @@ AS
    -----------------------------------------------------------------------------
    function eval_tokenized_expression(
       p_RPN_tokens  in str_tab_t,
-      p_args        in number_tab_t,
+      p_args        in double_tab_t,
       p_args_offset in integer default 0)
       return number
    is
       l_stack number_tab_t := new number_tab_t();
-      l_val1  number;
-      l_val2  number;
+      l_val1  binary_double;
+      l_val2  binary_double;
       l_idx   binary_integer;
       
       procedure token_error(token in varchar2)
@@ -2796,7 +2784,7 @@ AS
    -----------------------------------------------------------------------------
    function eval_algebraic_expression(
       p_algebraic_expr in varchar2,
-      p_args           in number_tab_t,
+      p_args           in double_tab_t,
       p_args_offset    in integer default 0)
       return number
    is
@@ -2825,8 +2813,7 @@ AS
    -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
    --                             ln, log, sign, sin, tan, trunc
    --
-   -- If p_delimiter is null, the expression will be parsed using whitespace
-   -- as the delimiter
+   -- All numbers, arguments and operators must be separated by whitespace
    --
    -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
    -- are accepted
@@ -2835,14 +2822,13 @@ AS
    -----------------------------------------------------------------------------
    function eval_RPN_expression(
       p_RPN_expr    in varchar2,
-      p_args        in number_tab_t,
-      p_args_offset in integer default 0,
-      p_delimiter   in varchar default null)
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
       return number
    is
    begin
       return eval_tokenized_expression(
-         tokenize_RPN(p_RPN_expr, p_delimiter),
+         tokenize_RPN(p_RPN_expr),
          p_args,
          p_args_offset);
    exception
