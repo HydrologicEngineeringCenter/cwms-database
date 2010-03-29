@@ -2632,6 +2632,7 @@ end retrieve_ts_multi;
       p_office_id         IN   VARCHAR2 DEFAULT NULL
    )
    IS
+      TS_ID_NOT_FOUND       exception; pragma exception_init (ts_id_not_found, -20001);
       l_office_id           VARCHAR2 (16);
       l_office_code         NUMBER;
       t1count               NUMBER;
@@ -2722,7 +2723,7 @@ end retrieve_ts_multi;
         where ts_code = l_ts_code;
        
     exception
-    when no_data_found then
+    when TS_ID_NOT_FOUND then
       /*
       Exception is thrown when the Time Series Description passed 
       does not exist in the database for the office_id. If this is
