@@ -52,6 +52,8 @@ DECLARE
                      'loc_alias_array',
                      'loc_alias_type2',
                      'loc_alias_array2',
+                     'location_ref_t',
+                     'location_ref_tab_t',
                      'alias_type',
                      'alias_array',
                      'cwms_ts_id_array',
@@ -722,6 +724,145 @@ create or replace type number_tab_t is table of number;
 /
 
 create or replace type double_tab_t is table of binary_double;
+/
+
+create or replace type location_ref_t is object(
+   base_location_id varchar2(16),
+   sub_location_id  varchar2(32),
+   office_id        varchar2(16),
+   
+   constructor function location_ref_t (
+      p_location_id in varchar2,
+      p_office_id   in varchar2) 
+   return self as result,
+
+   constructor function location_ref_t (
+      p_office_and_location_id in varchar2) -- office-id/location-id
+   return self as result,
+
+   constructor function location_ref_t (
+      p_location_code in number) 
+   return self as result,
+   
+   member function get_location_code
+   return number,
+   
+   member function get_office_code
+   return number,
+   
+   member procedure get_codes(
+      p_location_code out number,
+      p_office_code   out number)
+)
+/
+
+create or replace type body location_ref_t
+as
+   constructor function location_ref_t (
+      p_location_id in varchar2,
+      p_office_id   in varchar2) 
+   return self as result
+   is
+   begin
+      base_location_id := cwms_util.get_base_id(p_location_id);
+      sub_location_id  := cwms_util.get_sub_id(p_location_id);
+      office_id        := nvl(p_office_id, cwms_util.user_office_id);
+      return;
+   end location_ref_t;
+
+   constructor function location_ref_t (
+      p_office_and_location_id in varchar2) 
+   return self as result
+   is
+      l_parts str_tab_t;
+   begin
+      l_parts := cwms_util.split_text(p_office_and_location_id, '/', 1);
+      if l_parts.count = 2 and length(l_parts(1)) <= 16 then
+         base_location_id := cwms_util.get_base_id(trim(l_parts(2)));
+         sub_location_id  := cwms_util.get_sub_id(trim(l_parts(2)));
+         office_id        := upper(trim(l_parts(1)));
+      else
+         base_location_id := cwms_util.get_base_id(trim(l_parts(1)));
+         sub_location_id  := cwms_util.get_sub_id(trim(l_parts(1)));
+         office_id        := cwms_util.user_office_id;
+      end if;
+      return;
+   end location_ref_t;
+
+   constructor function location_ref_t (
+      p_location_code in number) 
+   return self as result
+   is
+   begin
+      select bl.base_location_id,
+             pl.sub_location_id,
+             o.office_id
+        into self.base_location_id,
+             self.sub_location_id,
+             self.office_id
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where pl.location_code = p_location_code
+         and bl.base_location_code = pl.base_location_code
+         and o.office_code = bl.db_office_code;
+      return;
+   end location_ref_t;
+   
+   member function get_location_code
+   return number
+   is
+      l_location_code number(10);
+   begin
+      select pl.location_code
+        into l_location_code
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where o.office_id = self.office_id
+         and bl.db_office_code = o.office_code
+         and bl.base_location_id = self.base_location_id
+         and pl.base_location_code = bl.base_location_code
+         and nvl(pl.sub_location_id, '.') = nvl(self.sub_location_id, '.');
+      return l_location_code;
+   end get_location_code;
+   
+   member function get_office_code
+   return number
+   is
+      l_office_code number(10);
+   begin
+      select office_code
+        into l_office_code
+        from cwms_office
+       where office_id = self.office_id;
+      return l_office_code;
+   end get_office_code;
+   
+   member procedure get_codes(
+      p_location_code out number,
+      p_office_code   out number)
+   is
+   begin
+      select pl.location_code,
+             o.office_code
+        into p_location_code,
+             p_office_code
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where o.office_id = self.office_id
+         and bl.db_office_code = o.office_code
+         and bl.base_location_id = self.base_location_id
+         and pl.base_location_code = bl.base_location_code
+         and nvl(pl.sub_location_id, '.') = nvl(self.sub_location_id, '.');
+      return;
+   end get_codes;
+end;
+/
+show errors;
+
+create or replace type location_ref_tab_t is table of location_ref_t;
 /
 
 create or replace type specified_level_t is object(
