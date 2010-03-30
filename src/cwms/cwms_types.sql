@@ -971,7 +971,7 @@ create or replace type loc_lvl_indicator_cond_t is object
    rate_factor                binary_double,
    uses_reference             varchar2(1),
    expression_tokens          str_tab_t,
-   expression_arguments       double_tab_t,
+   rate_expression_tokens     str_tab_t,
 
    constructor function loc_lvl_indicator_cond_t(
       p_indicator_value            in number,
@@ -1027,7 +1027,6 @@ create or replace type loc_lvl_indicator_cond_t is object
    -- rate_interval
    -----------------------------------------------------------------------------
    member function is_set(
-      self in out loc_lvl_indicator_cond_t,
       p_value   in binary_double,
       p_level   in binary_double,
       p_level_2 in binary_double,
@@ -1140,6 +1139,50 @@ as
       l_rate_connector             varchar2(3)   := trim(upper(p_rate_connector));
       l_rate_comparison_operator_2 varchar2(2)   := trim(upper(p_rate_comparison_operator_2));
       l_description                varchar2(256) := trim(p_description);
+      
+      function tokenize_expression(
+         p_expr    in varchar2,
+         p_is_rate in boolean)
+      return str_tab_t
+      is
+         l_expr   varchar2(128) := p_expr;
+         l_tokens str_tab_t;
+      begin
+         if p_expr is not null then
+            ---------------------------------------------------------------
+            -- replace V, L, L1, L2, R with ARG1, ARG2, ARG2, ARG3, ARG4 --
+            ---------------------------------------------------------------
+            if p_is_rate then
+               if regexp_instr(p_expr, '(^|\(|[[:space:]])(-?)(V|L[12]?)([[:space:]]|\)|$)') > 0 then
+                  cwms_err.raise('ERROR', 'Cannot reference variables V, L, L1, or L2 in rate expression');
+               end if;
+               l_expr := regexp_replace(l_expr, '(^|\(|[[:space:]])(-?)R([[:space:]]|\)|$)',   '\1\2ARG4\3');
+            else
+               if regexp_instr(p_expr, '(^|\(|[[:space:]])(-?)R([[:space:]]|\)|$)') > 0 then
+                  cwms_err.raise('ERROR', 'Cannot reference variable R in non-rate expression');
+               end if;
+               l_expr := regexp_replace(p_expr, '(^|\(|[[:space:]])(-?)V([[:space:]]|\)|$)',   '\1\2ARG1\3');
+               l_expr := regexp_replace(l_expr, '(^|\(|[[:space:]])(-?)L1?([[:space:]]|\)|$)', '\1\2ARG2\3');
+               l_expr := regexp_replace(l_expr, '(^|\(|[[:space:]])(-?)L2([[:space:]]|\)|$)',  '\1\2ARG3\3');
+            end if;
+            -------------------------------
+            -- tokenize algebraic or RPN --
+            -------------------------------
+            if instr(l_expr, '(') > 0 then
+               l_tokens := cwms_util.tokenize_algebraic(l_expr);
+            else
+               l_tokens := cwms_util.tokenize_rpn(l_expr);
+               if l_tokens.count > 1 and
+                  l_tokens(l_tokens.count) not in
+                  ('+','-','*','/','//','%','^','ABS','ACOS','ASIN','ATAN','CEIL',
+                   'COS','EXP','FLOOR','LN','LOG', 'SIGN','SIN','TAN','TRUNC')
+               then
+                  l_tokens := cwms_util.tokenize_algebraic(l_expr);
+               end if;            
+            end if;
+         end if;
+         return l_tokens;
+      end;
    begin
       -------------------
       -- sanity checks --
@@ -1284,6 +1327,8 @@ as
       factor                     := 1.0;
       offset                     := 0.0;
       rate_factor                := 1.0;
+      expression_tokens          := tokenize_expression(expression, false);
+      rate_expression_tokens     := tokenize_expression(rate_expression, true);
       uses_reference := 
          case regexp_instr(expression, '(^|\(|[[:space:]])-?L2([[:space:]]|\)|$)') > 0 
             when true  then 'T' 
@@ -1328,7 +1373,6 @@ as
    -- rate_interval
    -----------------------------------------------------------------------------
    member function is_set(
-      self in out loc_lvl_indicator_cond_t,
       p_value   in binary_double,
       p_level   in binary_double,
       p_level_2 in binary_double,
@@ -1339,44 +1383,35 @@ as
       l_comparison_1 boolean;
       l_comparison_2 boolean;
       l_is_set       boolean;
-      l_expression   varchar2(128);
+      l_arguments    double_tab_t;
    begin
-      if expression_tokens is null then 
-         ---------------------------------------------------------------
-         -- replace V, L, L1, L2, R with ARG1, ARG2, ARG2, ARG3, ARG4 --
-         ---------------------------------------------------------------
-         l_expression := regexp_replace(expression,   '(^|\(|[[:space:]])(-?)V([[:space:]]|\)|$)',   '\1\2ARG1\3');
-         l_expression := regexp_replace(l_expression, '(^|\(|[[:space:]])(-?)L1?([[:space:]]|\)|$)', '\1\2ARG2\3');
-         l_expression := regexp_replace(l_expression, '(^|\(|[[:space:]])(-?)L2([[:space:]]|\)|$)',  '\1\2ARG3\3');
-         l_expression := regexp_replace(l_expression, '(^|\(|[[:space:]])(-?)R([[:space:]]|\)|$)',   '\1\2ARG4\3');
-         -------------------------------
-         -- tokenize algebraic or RPN --
-         -------------------------------
-         if instr(l_expression, '(') > 0 then
-            expression_tokens := cwms_util.tokenize_algebraic(l_expression);
-         else
-            expression_tokens := cwms_util.tokenize_rpn(l_expression);
-            if expression_tokens.count > 1 and
-               expression_tokens(expression_tokens.count) not in
-               ('+','-','*','/','//','%','^','ABS','ACOS','ASIN','ATAN','CEIL',
-                'COS','EXP','FLOOR','LN','LOG', 'SIGN','SIN','TAN','TRUNC')
-            then
-               expression_tokens := cwms_util.tokenize_algebraic(l_expression);
-            end if;            
-         end if;
-      end if;
       -------------------------------------------------
       -- evaluate the expression with the parameters --
       -------------------------------------------------
-      if expression_arguments is null then
-         expression_arguments := new double_tab_t();
-         expression_arguments.extend(4);
-      end if;
-      expression_arguments(1) :=  p_value   * factor + offset;
-      expression_arguments(2) :=  p_level   * factor + offset;
-      expression_arguments(3) :=  p_level_2 * factor + offset;
-      expression_arguments(4) := (p_rate    * factor + offset) * rate_factor;
-      l_result := cwms_util.eval_tokenized_expression(expression_tokens, expression_arguments);
+      l_arguments := new double_tab_t();
+      l_arguments.extend(4);
+      l_arguments(1) :=  p_value   * factor + offset;
+      l_arguments(2) :=  p_level   * factor + offset;
+      l_arguments(3) :=  p_level_2 * factor + offset;
+      l_arguments(4) := (p_rate    * factor + offset) * rate_factor;
+      l_result := cwms_util.eval_tokenized_expression(expression_tokens, l_arguments);
+      /*
+      cwms_msg.log_db_message('x', 7, 'expression = '||expression);
+      declare
+         l_str varchar2(1024) := 'tokens = (';
+      begin
+         for i in 1..expression_tokens.count loop
+            if i > 1 then
+               l_str := l_str || ' ';
+            end if;
+            l_str := l_str || expression_tokens(i);
+         end loop;
+         l_str := l_str || ')';
+         cwms_msg.log_db_message('x', 7, l_str);
+      end;
+      cwms_msg.log_db_message('x', 7, 'args = ('||l_arguments(1)||', '||l_arguments(2)||', '||l_arguments(3)||', '||l_arguments(4)||')');
+      cwms_msg.log_db_message('x', 7, 'result = '||l_result);
+      */
       -----------------------------------
       -- evaluate the first comparison --
       -----------------------------------
@@ -1410,6 +1445,61 @@ as
                when 'OR'  then l_comparison_1 or  l_comparison_2
             end;            
       end if;
+      ---------------------------------------------------
+      -- evaluate the rate if a rate expression exists --
+      ---------------------------------------------------
+      if l_is_set and rate_expression_tokens is not null then
+         l_result := cwms_util.eval_tokenized_expression(rate_expression_tokens, l_arguments);
+         /*
+         cwms_msg.log_db_message('x', 7, 'rate expression = '||rate_expression);
+         declare
+            l_str varchar2(1024) := 'rate tokens = (';
+         begin
+            for i in 1..rate_expression_tokens.count loop
+               if i > 1 then
+                  l_str := l_str || ' ';
+               end if;
+               l_str := l_str || rate_expression_tokens(i);
+            end loop;
+            l_str := l_str || ')';
+            cwms_msg.log_db_message('x', 7, l_str);
+         end;
+         cwms_msg.log_db_message('x', 7, 'result = '||l_result);
+         */
+         ----------------------------------------
+         -- evaluate the first rate comparison --
+         ----------------------------------------
+         l_comparison_1 := 
+            case rate_comparison_operator_1
+               when 'LT' then l_result  < rate_comparison_value_1
+               when 'LE' then l_result <= rate_comparison_value_1
+               when 'EQ' then l_result  = rate_comparison_value_1
+               when 'NE' then l_result != rate_comparison_value_1
+               when 'GE' then l_result >= rate_comparison_value_1
+               when 'GT' then l_result  > rate_comparison_value_1
+            end;
+         ------------------------------------------------------         
+         -- evaluate the second rate comparison if specified --
+         ------------------------------------------------------         
+         if rate_connector is null then
+            l_is_set := l_comparison_1;
+         else
+            l_comparison_2 := 
+               case rate_comparison_operator_2
+                  when 'LT' then l_result  < rate_comparison_value_2
+                  when 'LE' then l_result <= rate_comparison_value_2
+                  when 'EQ' then l_result  = rate_comparison_value_2
+                  when 'NE' then l_result != rate_comparison_value_2
+                  when 'GE' then l_result >= rate_comparison_value_2
+                  when 'GT' then l_result  > rate_comparison_value_2
+               end;
+            l_is_set := 
+               case rate_connector
+                  when 'AND' then l_comparison_1 and l_comparison_2
+                  when 'OR'  then l_comparison_1 or  l_comparison_2
+               end;            
+         end if;
+      end if;
       return l_is_set;
    end is_set;      
 
@@ -1439,6 +1529,9 @@ create or replace type zloc_lvl_indicator_t is object
    maximum_age              interval day to second,
    conditions               loc_lvl_indicator_cond_tab_t,
 
+   constructor function zloc_lvl_indicator_t
+      return self as result,
+
    constructor function zloc_lvl_indicator_t(
       p_rowid in urowid)
       return self as result,
@@ -1450,6 +1543,13 @@ show errors;
 
 create or replace type body zloc_lvl_indicator_t
 as
+   constructor function zloc_lvl_indicator_t
+      return self as result
+   is
+   begin
+      return;
+   end zloc_lvl_indicator_t;
+      
    constructor function zloc_lvl_indicator_t(
       p_rowid in urowid)
       return self as result
@@ -1597,19 +1697,16 @@ create or replace type loc_lvl_indicator_t is object
    member procedure store,
 
    member function get_indicator_values(
-      self in out loc_lvl_indicator_t,
       p_ts        in ztsv_array,
       p_eval_time in date default null)
       return number_tab_t,
 
    member function get_max_indicator_value(
-      self in out loc_lvl_indicator_t,
       p_ts        in ztsv_array,
       p_eval_time in date default null)
       return number,
 
    member function get_max_indicator_values(
-      self in out loc_lvl_indicator_t,
       p_ts         in ztsv_array,
       p_start_time in date)
       return ztsv_array
@@ -1713,16 +1810,17 @@ as
          ref_attr_value := p_obj.ref_attr_value;
       end if;
 
-      minimum_duration  := p_obj.minimum_duration;
-      maximum_age       := p_obj.maximum_age;
-      conditions        := p_obj.conditions;
+      level_indicator_id := p_obj.level_indicator_id;
+      minimum_duration   := p_obj.minimum_duration;
+      maximum_age        := p_obj.maximum_age;
+      conditions         := p_obj.conditions;
    end init;
 
    member function zloc_lvl_indicator
       return zloc_lvl_indicator_t
    is
       l_parts       str_tab_t;
-      l_obj         zloc_lvl_indicator_t := zloc_lvl_indicator_t(null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null);
+      l_obj         zloc_lvl_indicator_t := new zloc_lvl_indicator_t;
       l_sub_id      varchar2(48);
       l_id          varchar2(256);
    begin
@@ -1827,7 +1925,6 @@ as
    end store;
 
    member function get_indicator_values(
-      self in out loc_lvl_indicator_t,
       p_ts        in ztsv_array,
       p_eval_time in date default null)
       return number_tab_t
@@ -1895,14 +1992,15 @@ as
       -- only evaluate if last valid time is recent enough --
       -------------------------------------------------------
       if l_eval_time - p_ts(l_last).date_time <= l_max_age then
+         l_rate_values_array.extend(l_last);
          if l_rate_of_change then
             -------------------------------------------------------
             -- compute the hourly rates of change if using rates --
             -------------------------------------------------------
-            l_rate_values_array.extend(l_last);
             for i in reverse 2..l_last loop
                continue when not is_valid(p_ts(i).quality_code);
                for j in reverse 1..i-1 loop
+                  get_indicator_values.j := j;
                   exit when is_valid(p_ts(j).quality_code);
                end loop;
                l_rate_values_array(i) :=
@@ -1910,9 +2008,9 @@ as
                   ((p_ts(i).date_time - p_ts(j).date_time) * 24);
             end loop;
          end if;
-         ---------------------------------------------------------------------
-         -- retrieve the level values to compare against if not using rates --
-         ---------------------------------------------------------------------
+         --------------------------------------------------
+         -- retrieve the level values to compare against --
+         --------------------------------------------------
          l_level_values_1 := cwms_level.retrieve_location_level_values(
             cwms_level.get_location_level_id(
                location_id,
@@ -2001,7 +2099,6 @@ as
    end get_indicator_values;
 
    member function get_max_indicator_value(
-      self in out loc_lvl_indicator_t,
       p_ts        in ztsv_array,
       p_eval_time in date default null)
       return number
@@ -2016,7 +2113,6 @@ as
    end get_max_indicator_value;      
 
    member function get_max_indicator_values(
-      self in out loc_lvl_indicator_t,
       p_ts         in ztsv_array,
       p_start_time in date)
       return ztsv_array

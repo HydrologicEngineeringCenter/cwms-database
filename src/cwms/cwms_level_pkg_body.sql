@@ -3973,18 +3973,18 @@ procedure store_loc_lvl_indicator_cond(
    p_level_indicator_value       in number,
    p_expression                  in varchar2,
    p_comparison_operator_1       in varchar2,
-   p_comparison_value_1          in number,
+   p_comparison_value_1          in binary_double,
    p_comparison_unit_code        in number                 default null,
    p_connector                   in varchar2               default null, 
    p_comparison_operator_2       in varchar2               default null,
-   p_comparison_value_2          in number                 default null,
+   p_comparison_value_2          in binary_double          default null,
    p_rate_expression             in varchar2               default null,
    p_rate_comparison_operator_1  in varchar2               default null,
-   p_rate_comparison_value_1     in number                 default null,
+   p_rate_comparison_value_1     in binary_double          default null,
    p_rate_comparison_unit_code   in number                 default null,
    p_rate_connector              in varchar2               default null, 
    p_rate_comparison_operator_2  in varchar2               default null,
-   p_rate_comparison_value_2     in number                 default null,
+   p_rate_comparison_value_2     in binary_double          default null,
    p_rate_interval               in interval day to second default null,
    p_description                 in varchar2               default null,
    p_fail_if_exists              in varchar2               default 'F',
@@ -4054,7 +4054,7 @@ begin
          and level_indicator_value = l_rec.level_indicator_value;
    else
       l_rec.level_indicator_code := p_level_indicator_code;
-      insert into at_loc_lvl_indicator_cond values l_rec; 
+      insert into at_loc_lvl_indicator_cond values l_rec;
    end if;
 end store_loc_lvl_indicator_cond;   
 
@@ -4089,13 +4089,15 @@ procedure store_loc_lvl_indicator_cond(
    p_ignore_nulls_on_update      in varchar2 default 'T',
    p_office_id                   in varchar2 default null)
 is
-   l_parts          str_tab_t := cwms_util.split_text(p_loc_lvl_indicator_id, '.');
-   l_parameter_id   varchar2(49) := l_parts(2);
-   l_unit_code      number(10);
-   l_rate_unit_code number(10);
+   l_unit_code               number(10);
+   l_rate_unit_code          number(10);
+   l_loc_lvl_indicator_code  number(10);
+   l_comparison_value_1      binary_double;
+   l_comparison_value_2      binary_double;
+   l_rate_comparison_value_1 binary_double;
+   l_rate_comparison_value_2 binary_double;
+   l_rate_interval           interval day(3) to second(0);
 begin
-   l_parts := cwms_util.split_text(p_loc_lvl_indicator_id, '.');
-   l_parameter_id := l_parts(2);
    if p_comparison_unit_id is not null then
       select unit_code
         into l_unit_code
@@ -4108,32 +4110,38 @@ begin
         from cwms_unit
        where unit_id = p_rate_comparison_unit_id;
    end if;
+   l_loc_lvl_indicator_code := get_loc_lvl_indicator_code(
+      p_loc_lvl_indicator_id,
+      p_attr_value,
+      p_attr_units_id,
+      p_attr_id,
+      p_ref_specified_level_id,
+      p_ref_attr_value,
+      p_office_id);
+   l_comparison_value_1 := cast(p_comparison_value_1 as binary_double);      
+   l_comparison_value_2 := cast(p_comparison_value_2 as binary_double);      
+   l_rate_comparison_value_1 := cast(p_rate_comparison_value_1 as binary_double);      
+   l_rate_comparison_value_2 := cast(p_rate_comparison_value_2 as binary_double);
+   l_rate_interval := to_dsinterval(p_rate_interval);      
       
    store_loc_lvl_indicator_cond(
-      get_loc_lvl_indicator_code(
-         p_loc_lvl_indicator_id,
-         p_attr_value,
-         p_attr_units_id,
-         p_attr_id,
-         p_ref_specified_level_id,
-         p_ref_attr_value,
-         p_office_id),
+      l_loc_lvl_indicator_code,
       p_level_indicator_value,
       p_expression,
       p_comparison_operator_1,
-      p_comparison_value_1,
+      l_comparison_value_1,
       l_unit_code,
       p_connector, 
       p_comparison_operator_2,
-      p_comparison_value_2,
+      l_comparison_value_2,
       p_rate_expression,
       p_rate_comparison_operator_1,
-      p_rate_comparison_value_1,
+      l_rate_comparison_value_1,
       l_rate_unit_code,
       p_rate_connector, 
       p_rate_comparison_operator_2,
-      p_rate_comparison_value_2,
-      to_dsinterval(p_rate_interval, 'ddd hh:mi:ss'),
+      l_rate_comparison_value_2,
+      l_rate_interval,
       p_description,
       p_fail_if_exists,
       p_ignore_nulls_on_update);
