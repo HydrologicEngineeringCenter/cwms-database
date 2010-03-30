@@ -2434,6 +2434,7 @@ AS
       l_left_paren_count     binary_integer := 0;
       l_right_paren_count    binary_integer := 0;
       l_func                 varchar2(8);
+      l_dummy                varchar2(1);
                               
       procedure error
       is
@@ -2533,21 +2534,23 @@ AS
             -- open parentheses --
             ----------------------
             when l_infix_tokens(i) = '(' then
+               push(null);
                push_func(null);
                l_left_paren_count := l_left_paren_count + 1;
             ------------------------
             -- close parentheses --
             ------------------------
             when l_infix_tokens(i) = ')' then
+               while l_stack(l_stack.count) is not null loop
+                  l_postfix_tokens.extend;
+                  l_postfix_tokens(l_postfix_tokens.count) := pop;
+               end loop;
+               l_dummy := pop;
                l_func := pop_func;
                if l_func_stack.count > 0 and l_func_stack(l_func_stack.count) is not null then
                   l_func := pop_func;
                   l_postfix_tokens.extend;
                   l_postfix_tokens(l_postfix_tokens.count) := l_func;
-               end if;
-               if l_stack.count > 0 and l_stack(l_stack.count) is not null then
-                  l_postfix_tokens.extend;
-                  l_postfix_tokens(l_postfix_tokens.count) := pop;
                end if;
                l_right_paren_count := l_right_paren_count + 1;
             ---------------------               
