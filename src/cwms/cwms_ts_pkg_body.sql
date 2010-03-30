@@ -1153,19 +1153,18 @@ END get_tsid_time_zone;
    IS
       l_ts_code   NUMBER;
    BEGIN
-
-        -- 	  create_ts_code (p_ts_code			  => l_ts_code,
-        -- 							p_cwms_ts_id		  => p_cwms_ts_id,
-        -- 							p_utc_offset		  => p_utc_offset,
-        -- 							p_interval_forward  => p_interval_forward,
-        -- 							p_interval_backward => p_interval_backward,
-        -- 							p_versioned 		  => p_versioned,
-        -- 							p_active_flag		  => p_active_flag,
-        -- 							p_time_zone_name,
-        -- 							p_office_id 		  => p_office_id
-        -- 						  );
-        null;
-        cwms_err.RAISE ('ERROR', 'create_ts_tz is not compelete - see Gemini Issue: CWDB-1654');
+       create_ts_code(
+          l_ts_code,
+          p_cwms_ts_id,
+          p_utc_offset,
+          p_interval_forward,
+          p_interval_backward,
+          p_versioned,
+          p_active_flag,
+          'F',
+          p_office_id);
+      
+       set_ts_time_zone (l_ts_code, p_time_zone_name);
     END create_ts_tz;
 
     --
