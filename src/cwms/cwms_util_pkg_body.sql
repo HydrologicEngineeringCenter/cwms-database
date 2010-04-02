@@ -18,7 +18,7 @@ AS
 	--
     
 
-	FUNCTION min_dms (p_decimal_degrees IN NUMBER)
+    FUNCTION min_dms (p_decimal_degrees IN NUMBER)
 		RETURN NUMBER
 	IS
 		l_sec_dms							NUMBER;
@@ -1956,10 +1956,74 @@ AS
 				 WHERE	abstract_param_code =
 								(SELECT	 abstract_param_code
 									FROM	 cwms_base_parameter
-								  WHERE	 base_parameter_id =
-												 get_base_id (p_parameter_id));
+								  WHERE	 upper(base_parameter_id) =
+												 upper(get_base_id (p_parameter_id)));
 		END IF;
 	END;
+
+/* get_valid_unit_id return the properly cased unit_id for p_unit_id.
+ */
+
+    /* Formatted on 3/30/2010 2:41:05 PM (QP5 v5.139.911.3011) */
+    FUNCTION get_valid_unit_id (p_unit_id			IN VARCHAR2,
+                                         p_parameter_id	IN VARCHAR2 DEFAULT NULL
+                                        )
+        RETURN VARCHAR2
+    IS
+        l_unit_id	VARCHAR2 (16);
+    BEGIN
+        BEGIN
+            SELECT	unit_id
+              INTO	l_unit_id
+              FROM	TABLE (get_valid_units_tab (p_parameter_id))
+             WHERE	unit_id = p_unit_id;
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+                BEGIN
+                    SELECT	unit_id
+                      INTO	l_unit_id
+                      FROM	TABLE (get_valid_units_tab (p_parameter_id))
+                     WHERE	UPPER (unit_id) = UPPER (p_unit_id);
+                EXCEPTION
+                    WHEN NO_DATA_FOUND
+                    THEN
+                        IF p_parameter_id IS NULL
+                        THEN
+                            raise_application_error (
+                                -20102,
+                                    'The unit: '
+                                || TRIM (p_unit_id)
+                                || ' is not a recognized CWMS Database unit.',
+                                TRUE
+                            );
+                        ELSE
+                            raise_application_error (
+                                -20102,
+                                    'The unit: '
+                                || TRIM (p_unit_id)
+                                || ' is not a recognized CWMS Database unit for the '
+                                || TRIM (p_parameter_id)
+                                || ' Parameter_ID.',
+                                TRUE
+                            );
+                        END IF;
+                    WHEN TOO_MANY_ROWS
+                    THEN
+                        raise_application_error (
+                            -20102,
+                                'The unit: '
+                            || TRIM (p_unit_id)
+                            || ' has multiple matches in the CWMS Database.'
+                            || ' Please specify the Parameter_ID and/or use the'
+                            || ' exact letter casing for the desired unit.',
+                            TRUE
+                        );
+                END;
+        END;
+
+        RETURN l_unit_id;
+    END;
 
 	FUNCTION get_valid_units_tab (p_parameter_id IN VARCHAR2 DEFAULT NULL )
 		RETURN cat_unit_tab_t

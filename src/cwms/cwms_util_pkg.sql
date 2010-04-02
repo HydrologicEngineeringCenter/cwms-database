@@ -1,4 +1,4 @@
-/* Formatted on 11/17/2009 3:25:46 PM (QP5 v5.115.810.9015) */
+/* Formatted on 3/29/2010 3:04:35 PM (QP5 v5.139.911.3011) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 	/******************************************************************************
@@ -372,6 +372,10 @@ AS
 	PROCEDURE stop_mv_cwms_ts_id_job;
 
 	PROCEDURE refresh_mv_cwms_ts_id;
+    FUNCTION get_valid_unit_id (p_unit_id            IN VARCHAR2,
+                                     p_parameter_id    IN VARCHAR2 DEFAULT NULL
+                                    )
+    RETURN VARCHAR2;
 
 	FUNCTION get_valid_units_tab (p_parameter_id IN VARCHAR2 DEFAULT NULL )
 		RETURN cat_unit_tab_t

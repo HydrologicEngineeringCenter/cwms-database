@@ -2651,6 +2651,10 @@ end retrieve_ts_multi;
       l_sql_txt             VARCHAR2 (10000);
       l_override_prot       BOOLEAN;
       l_version_date        DATE;
+      --
+      l_units               varchar2(16);
+      l_base_parameter_id   varchar2(16);
+      l_base_unit_id        varchar2(16);
    BEGIN
       dbms_application_info.set_module('cwms_ts_store.store_ts','get tscode from ts_id');
     cwms_apex.aa1(to_char(sysdate, 'YYYY-MM-DD HH24:MI') || 'store_ts: ' || p_cwms_ts_id);
@@ -2699,21 +2703,7 @@ end retrieve_ts_multi;
    dbms_application_info.set_action('Find or create a TS_CODE for your TS Desc');
   
     begin -- BEGIN - Find the TS_CODE 
-      
-      /*    
-      select ts_code, interval_utc_offset 
-        into l_ts_code, existing_utc_offset
-       from mv_CWMS_TS_ID m 
-       where upper(m.CWMS_TS_ID) = upper(p_cwms_ts_id)
-        and m.db_OFFICE_ID = upper(l_office_id);
-      */
-      --
-      -- Bypass the materialized view so we can pause it while we load the first
-      -- chunk of data after the database is built.  Otherwise the view refreshes
-      -- every time a UTC_INTERVAL_OFFSET is updated, slowing the loading to
-      -- unacceptable levels.
-      --
-         
+             
        l_ts_code := get_ts_code(p_cwms_ts_id => p_cwms_ts_id, p_db_office_code => l_office_code);
         
        select interval_utc_offset 
@@ -2723,6 +2713,7 @@ end retrieve_ts_multi;
        
     exception
     when TS_ID_NOT_FOUND then
+ 
       /*
       Exception is thrown when the Time Series Description passed 
       does not exist in the database for the office_id. If this is
@@ -2735,7 +2726,7 @@ end retrieve_ts_multi;
                      p_utc_offset=> cwms_util.UTC_OFFSET_UNDEFINED);
       
       existing_utc_offset := cwms_util.UTC_OFFSET_UNDEFINED;
- 
+         
     end; -- END - Find TS_CODE
 
     if l_ts_code is null then
@@ -2816,7 +2807,11 @@ end retrieve_ts_multi;
       elsif existing_utc_offset != l_utc_offset then
        -- Existing TS_Code's UTC_OFFSET does not match the offset of the data set - so storage of data set fails.
 
-        raise_application_error(-20101, 'Incoming Data Set''s UTC_OFFSET does not match UTC_OFFSET of previously stored data - data set was NOT stored', true);
+        raise_application_error(-20101, 
+           'Incoming Data Set''s UTC_OFFSET: ' 
+           || l_utc_offset || ' does not match its previously stored UTC_OFFSET of: '
+           || existing_utc_offset ||
+           ' - data set was NOT stored', true);
 
       end if; 
      
@@ -2827,6 +2822,19 @@ end retrieve_ts_multi;
       l_utc_offset := cwms_util.UTC_OFFSET_IRREGULAR;
    
     end if;   
+
+    dbms_application_info.set_action('check p_units is a valid unit for this parameter');
+    
+        select a.base_parameter_id
+      into l_base_parameter_id
+      from cwms_base_parameter a,
+           at_parameter b,
+           at_cwms_ts_spec c
+     where A.BASE_PARAMETER_CODE = B.BASE_PARAMETER_CODE
+       and B.PARAMETER_CODE = C.PARAMETER_CODE
+       and c.ts_code = l_ts_code;  
+    
+    l_units := CWMS_UTIL.GET_VALID_UNIT_ID(p_units, l_base_parameter_id);
 
     dbms_application_info.set_action('check for unit conversion factors');
 
@@ -2840,15 +2848,31 @@ end retrieve_ts_multi;
              cwms_unit u
        WHERE s.ts_code = l_ts_code
          AND s.parameter_code = ap.parameter_code
-         AND ap.base_parameter_code =p.base_parameter_code
+         AND ap.base_parameter_code = p.base_parameter_code
          AND p.unit_code = c.from_unit_code
          AND c.to_unit_code = u.unit_code
-         AND u.unit_id = p_units;
+         AND u.unit_id = l_units;
 
 
       if l_ucount <> 1 
       then
-         raise_application_error(-20103, 'Requested unit conversion is not available', true);
+      
+         select unit_id
+           into l_base_unit_id
+           from cwms_unit a,
+                cwms_base_parameter b
+          where A.UNIT_CODE = B.UNIT_CODE
+            and B.BASE_PARAMETER_ID = l_base_parameter_id;
+            
+         raise_application_error(-20103, 
+           'Unit conversion from ' 
+           || l_units || 
+           ' to the CWMS Database Base Units of ' 
+           || l_base_unit_id || 
+           ' is not available for the '
+           || l_base_parameter_id || 
+           ' parameter_id.', true);
+           
       end if;
 
     select count(*) 
@@ -2908,7 +2932,7 @@ end retrieve_ts_multi;
                       AND ap.base_parameter_code = p.base_parameter_code
                       AND p.unit_code = c.to_unit_code
                       AND c.from_unit_code = u.unit_code
-                      AND u.unit_id = p_units) t2
+                      AND u.unit_id = l_units) t2
             ON (    t1.ts_code = l_ts_code
                 AND t1.date_time = t2.date_time
                 AND t1.version_date = l_version_date)
@@ -2948,7 +2972,7 @@ end retrieve_ts_multi;
                         and ap.base_parameter_code = p.base_parameter_code
                                and p.unit_code      =  c.to_unit_code
                                and c.from_unit_code   =  u.unit_code
-                               and u.UNIT_ID        =  :p_units
+                               and u.UNIT_ID        =  :l_units
                                and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
                                and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'') 
                         ) t2
@@ -2964,7 +2988,7 @@ end retrieve_ts_multi;
                dbms_output.put_line('CASE 1: exectuing dynamic merge statement');
         
                  execute immediate l_sql_txt using p_timeseries_data, 
-                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                 l_ts_code, l_units, x.start_date, x.end_date, 
                                    l_ts_code, l_version_date, 
                                    l_store_date, 
                                    l_ts_code, l_store_date, l_version_date;
@@ -3008,7 +3032,7 @@ end retrieve_ts_multi;
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND p.unit_code = c.to_unit_code
                          AND c.from_unit_code = u.unit_code
-                         AND u.unit_id = p_units) t2
+                         AND u.unit_id = l_units) t2
                ON (    t1.ts_code = l_ts_code
                    AND t1.date_time = t2.date_time
                    AND t1.version_date = l_version_date)
@@ -3056,7 +3080,7 @@ end retrieve_ts_multi;
                                AND ap.base_parameter_code = p.base_parameter_code
                                 and p.unit_code      =  c.to_unit_code 
                                 and c.from_unit_code   =  u.unit_code 
-                                and u.UNIT_ID        =  :p_units 
+                                and u.UNIT_ID        =  :l_units 
                                 and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
                                 and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'') 
                         ) t2
@@ -3085,7 +3109,7 @@ end retrieve_ts_multi;
                dbms_output.put_line('CASE 2: Executing dynamic merge statment');
         
                  execute immediate l_sql_txt using p_timeseries_data, 
-                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                 l_ts_code, l_units, x.start_date, x.end_date, 
                                  l_ts_code,l_version_date, 
                                  l_store_date,
                                  l_ts_code, l_store_date, l_version_date;
@@ -3124,7 +3148,7 @@ end retrieve_ts_multi;
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND p.unit_code = c.to_unit_code
                          AND c.from_unit_code = u.unit_code
-                         AND u.unit_id = p_units) t2
+                         AND u.unit_id = l_units) t2
                ON (    t1.ts_code = l_ts_code
                    AND t1.date_time = t2.date_time
                    AND t1.version_date = l_version_date)
@@ -3157,7 +3181,7 @@ end retrieve_ts_multi;
                         and ap.base_parameter_code = p.base_parameter_code
                                 and p.unit_code      =  c.to_unit_code
                                 and c.from_unit_code   =  u.unit_code
-                                and u.UNIT_ID        =  :p_units
+                                and u.UNIT_ID        =  :l_units
                                 and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
                                 and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'') 
                          ) t2
@@ -3169,7 +3193,7 @@ end retrieve_ts_multi;
                        values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
          
                execute immediate l_sql_txt using p_timeseries_data, 
-                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                 l_ts_code, l_units, x.start_date, x.end_date, 
                                  l_ts_code, l_version_date,  
                                  l_ts_code, l_store_date, l_version_date;
             END LOOP;
@@ -3201,7 +3225,7 @@ end retrieve_ts_multi;
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND p.unit_code = c.to_unit_code
                          AND c.from_unit_code = u.unit_code
-                         AND u.unit_id = p_units) t2
+                         AND u.unit_id = l_units) t2
                ON (    t1.ts_code = l_ts_code
                    AND t1.date_time = t2.date_time
                    AND t1.version_date = l_version_date)
@@ -3239,7 +3263,7 @@ end retrieve_ts_multi;
                         and ap.base_parameter_code = p.base_parameter_code
                                 and p.unit_code      =  c.to_unit_code
                                 and c.from_unit_code   =  u.unit_code
-                                and u.UNIT_ID        =  :p_units
+                                and u.UNIT_ID        =  :l_units
                                 and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
                                 and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')
                          ) t2
@@ -3256,7 +3280,7 @@ end retrieve_ts_multi;
                         values (:l_ts_code, t2.date_time, :l_store_date,      t2.value, t2.quality_code, :l_version_date )';
  
                 execute immediate l_sql_txt using p_timeseries_data, 
-                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                 l_ts_code, l_units, x.start_date, x.end_date, 
                                  l_ts_code, l_version_date, 
                                  l_store_date, 
                                  l_ts_code, l_store_date, l_version_date;
@@ -3292,7 +3316,7 @@ end retrieve_ts_multi;
                          AND q.quality_code = t.quality_code
                          AND p.unit_code = c.to_unit_code
                          AND c.from_unit_code = u.unit_code
-                         AND u.unit_id = p_units) t2
+                         AND u.unit_id = l_units) t2
                ON (    t1.ts_code = l_ts_code
                    AND t1.date_time = t2.date_time
                    AND t1.version_date = l_version_date)
@@ -3332,7 +3356,7 @@ end retrieve_ts_multi;
                                 and q.quality_code   =  t.quality_code
                                 and p.unit_code      =  c.to_unit_code
                                 and c.from_unit_code   =  u.unit_code
-                                and u.UNIT_ID        =  :p_units
+                                and u.UNIT_ID        =  :l_units
                                 and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
                                 and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')   
                       ) t2
@@ -3349,7 +3373,7 @@ end retrieve_ts_multi;
                    values (:l_ts_code, t2.date_time, :l_store_date,      t2.value, t2.quality_code, :l_version_date )';  
    
                execute immediate l_sql_txt using p_timeseries_data, 
-                              l_ts_code, p_units, x.start_date, x.end_date, 
+                              l_ts_code, l_units, x.start_date, x.end_date, 
                               l_ts_code, l_version_date, 
                               l_store_date, 
                               l_ts_code, l_store_date, l_version_date;
@@ -3385,7 +3409,7 @@ end retrieve_ts_multi;
                          AND q.quality_code = t.quality_code
                          AND p.unit_code = c.to_unit_code
                          AND c.from_unit_code = u.unit_code
-                         AND u.unit_id = p_units) t2
+                         AND u.unit_id = l_units) t2
                ON (    t1.ts_code = l_ts_code
                    AND t1.date_time = t2.date_time
                    AND t1.version_date = l_version_date)
@@ -3441,7 +3465,7 @@ end retrieve_ts_multi;
                               and q.quality_code   =  t.quality_code
                               and p.unit_code      =  c.to_unit_code
                               and c.from_unit_code   =  u.unit_code
-                              and u.UNIT_ID        =  :p_units
+                              and u.UNIT_ID        =  :l_units
                               and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
                               and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')     
                     ) t2
@@ -3469,7 +3493,7 @@ end retrieve_ts_multi;
                   values (:l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
    
                execute immediate l_sql_txt using p_timeseries_data, 
-                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                 l_ts_code, l_units, x.start_date, x.end_date, 
                                  l_ts_code, l_version_date, 
                                  l_store_date, 
                                  l_ts_code, l_store_date, l_version_date;
@@ -3519,7 +3543,7 @@ end retrieve_ts_multi;
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND p.unit_code = c.to_unit_code
                          AND c.from_unit_code = u.unit_code
-                         AND u.unit_id = p_units) t2
+                         AND u.unit_id = l_units) t2
                ON (    t1.ts_code = l_ts_code
                    AND t1.date_time = t2.date_time
                    AND t1.version_date = l_version_date)
@@ -3579,7 +3603,7 @@ end retrieve_ts_multi;
                               and ap.base_parameter_code = p.base_parameter_code
                               and p.unit_code      =  c.to_unit_code
                               and c.from_unit_code   =  u.unit_code
-                              and u.UNIT_ID        =  :p_units
+                              and u.UNIT_ID        =  :l_units
                               and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
                               and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')   
                     ) t2
@@ -3598,7 +3622,7 @@ end retrieve_ts_multi;
                --dbms_output.put_line(l_sql_txt);
         
                  execute immediate l_sql_txt using p_timeseries_data, 
-                                 l_ts_code, p_units, x.start_date, x.end_date, 
+                                 l_ts_code, l_units, x.start_date, x.end_date, 
                                  l_ts_code, l_version_date, 
                                  l_ts_code, l_store_date, l_version_date,
                                  l_store_date;
@@ -3651,7 +3675,7 @@ end retrieve_ts_multi;
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND p.unit_code = c.to_unit_code
                          AND c.from_unit_code = u.unit_code
-                         AND u.unit_id = p_units) t2
+                         AND u.unit_id = l_units) t2
                ON (    t1.ts_code = l_ts_code
                    AND t1.date_time = t2.date_time
                    AND t1.version_date = l_version_date)
@@ -3699,7 +3723,7 @@ end retrieve_ts_multi;
                               AND ap.base_parameter_code = p.base_parameter_code
                               and p.unit_code      =  c.to_unit_code
                               and c.from_unit_code   =  u.unit_code
-                              and u.UNIT_ID        =  :p_units
+                              and u.UNIT_ID        =  :l_units
                               and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'') 
                               and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'') 
                     ) t2
@@ -3713,7 +3737,7 @@ end retrieve_ts_multi;
                dbms_output.put_line('CASE 8: Executing MERGE INTO dynamic sql for table: ' || x.table_name);
 
                execute immediate l_sql_txt using p_timeseries_data, 
-                                 l_ts_code, p_units, x.start_date, x.end_date,
+                                 l_ts_code, l_units, x.start_date, x.end_date,
                                  l_ts_code, l_version_date, 
                                  l_ts_code, l_store_date, l_version_date;
         
@@ -3747,6 +3771,18 @@ end retrieve_ts_multi;
        
    dbms_application_info.set_module(null, null);
 
+   EXCEPTION
+   WHEN OTHERS THEN                  
+     CWMS_MSG.LOG_DB_MESSAGE('store_ts', 
+                             1,
+                             'STORE_TS ERROR ***'
+                             || p_cwms_ts_id
+                             || '*** '
+                             || SQLCODE
+                             || ': '
+                             || SQLERRM);
+     
+     RAISE;
    END store_ts;
 --
 --*******************************************************************   --
@@ -3842,36 +3878,83 @@ end retrieve_ts_multi;
 --
 -- STORE_TS_MULTI -
 --
-PROCEDURE store_ts_multi (
-   p_timeseries_array  IN   timeseries_array,
-   p_store_rule        IN   VARCHAR2 DEFAULT NULL,
-   p_override_prot     IN   VARCHAR2 DEFAULT 'F',
-   p_version_date      IN   DATE DEFAULT cwms_util.non_versioned,
-   p_office_id         IN   VARCHAR2 DEFAULT NULL
-)
-IS
-   l_timeseries timeseries_type;
-BEGIN
-   dbms_application_info.set_module(
-      'cwms_ts_store.store_ts_multi',
-      'selecting time series from input');
-   for l_timeseries in (select * from table(p_timeseries_array)) loop
-      dbms_application_info.set_module(
-         'cwms_ts_store.store_ts_multi',
-         'calling store_ts');
-      store_ts(
-         l_timeseries.tsid, 
-         l_timeseries.unit, 
-         l_timeseries.data, 
-         p_store_rule,
-         p_override_prot, 
-         p_version_date, 
-         p_office_id);
-   end loop;
-   
-   dbms_application_info.set_module(null, null);
-   
-END store_ts_multi;
+    PROCEDURE store_ts_multi (
+        p_timeseries_array	IN timeseries_array,
+        p_store_rule			IN VARCHAR2 DEFAULT NULL,
+        p_override_prot		IN VARCHAR2 DEFAULT 'F',
+        p_version_date 		IN DATE DEFAULT cwms_util.non_versioned,
+        p_office_id 			IN VARCHAR2 DEFAULT NULL
+    )
+    IS
+        l_timeseries	  timeseries_type;
+        l_err_msg		  VARCHAR2 (512) := NULL;
+        l_all_err_msgs    VARCHAR2 (2048) := NULL;
+        l_len 			  NUMBER := 0;
+        l_total_len 	  NUMBER := 0;
+        l_num_ts_ids	  NUMBER := 0;
+        l_num_errors	  NUMBER := 0;
+        l_excep_errors    NUMBER := 0;
+    BEGIN
+        DBMS_APPLICATION_INFO.
+        set_module ('cwms_ts_store.store_ts_multi',
+                        'selecting time series from input'
+                      );
+
+        FOR l_timeseries IN (SELECT	*
+                                      FROM	TABLE (p_timeseries_array))
+        LOOP
+            DBMS_APPLICATION_INFO.
+            set_module ('cwms_ts_store.store_ts_multi', 'calling store_ts');
+
+            BEGIN
+                store_ts (l_timeseries.tsid,
+                             l_timeseries.unit,
+                             l_timeseries.data,
+                             p_store_rule,
+                             p_override_prot,
+                             p_version_date,
+                             p_office_id
+                            );
+        EXCEPTION
+            WHEN OTHERS
+            THEN
+                l_num_errors := l_num_errors + 1;
+
+                l_err_msg :=
+                        'STORE_ERROR ***'
+                    || l_timeseries.tsid
+                    || '*** '
+                    || SQLCODE
+                    || ': '
+                    || SQLERRM;
+
+                IF NVL (LENGTH (l_all_err_msgs), 0) + NVL (LENGTH (l_err_msg), 0) <=
+                        1930
+                THEN
+                    l_excep_errors := l_excep_errors + 1;
+                    l_all_err_msgs := l_all_err_msgs || ' ' || l_err_msg;
+                END IF;
+        END;
+    END LOOP;
+
+    IF l_all_err_msgs IS NOT NULL
+    THEN
+        l_all_err_msgs :=
+                'STORE ERRORS: store_ts_multi processed '
+            || l_num_ts_ids
+            || ' ts_ids of which '
+            || l_num_errors
+            || ' had STORE ERRORS. '
+            || l_excep_errors
+            || ' of those errors are: '
+            || l_all_err_msgs;
+
+        raise_application_error (-20999, l_all_err_msgs);
+    END IF;
+
+
+        DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+    END store_ts_multi;
 
 --
 --*******************************************************************   --
@@ -5346,37 +5429,84 @@ END;
       );
    END zstore_ts;
 
-   PROCEDURE zstore_ts_multi (p_timeseries_array IN ztimeseries_array,
-                              p_store_rule       IN varchar2 DEFAULT NULL ,
-                              p_override_prot    IN varchar2 DEFAULT 'F' ,
-                              p_version_date     IN DATE     DEFAULT cwms_util.non_versioned,
-                              p_office_id        IN varchar2 DEFAULT NULL
-   )
-   IS
-      l_timeseries   ztimeseries_type;
-   BEGIN
-      DBMS_APPLICATION_INFO.set_module ('cwms_ts.zstore_ts_multi',
-                                        'selecting time series from input'
-      );
+/* Formatted on 4/2/2010 6:46:07 AM (QP5 v5.139.911.3011) */
+PROCEDURE zstore_ts_multi (
+	p_timeseries_array	IN ztimeseries_array,
+	p_store_rule			IN VARCHAR2 DEFAULT NULL,
+	p_override_prot		IN VARCHAR2 DEFAULT 'F',
+	p_version_date 		IN DATE DEFAULT cwms_util.non_versioned,
+	p_office_id 			IN VARCHAR2 DEFAULT NULL
+)
+IS
+	l_timeseries	  ztimeseries_type;
+	l_err_msg		  VARCHAR2 (512) := NULL;
+	l_all_err_msgs   VARCHAR2 (2048) := NULL;
+	l_len 			  NUMBER := 0;
+	l_total_len 	  NUMBER := 0;
+	l_num_ts_ids	  NUMBER := 0;
+	l_num_errors	  NUMBER := 0;
+	l_excep_errors   NUMBER := 0;
+BEGIN
+	DBMS_APPLICATION_INFO.
+	set_module ('cwms_ts.zstore_ts_multi', 'selecting time series from input');
 
-      FOR l_timeseries IN (SELECT *
-                           FROM table (p_timeseries_array))
-      LOOP
-         DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.zstore_ts_multi',
-                                           'calling zstore_ts'
-         );
-         cwms_ts.zstore_ts (l_timeseries.tsid,
-                   l_timeseries.unit,
-                   l_timeseries.data,
-                   p_store_rule,
-                   p_override_prot,
-                   p_version_date,
-                   p_office_id
-         );
-      END LOOP;
+	FOR l_timeseries IN (SELECT	*
+								  FROM	TABLE (p_timeseries_array))
+	LOOP
+		DBMS_APPLICATION_INFO.
+		set_module ('cwms_ts_store.zstore_ts_multi', 'calling zstore_ts');
 
-      DBMS_APPLICATION_INFO.set_module (NULL, NULL);
-   END zstore_ts_multi;
+		BEGIN
+			l_num_ts_ids := l_num_ts_ids + 1;
+
+			cwms_ts.
+			zstore_ts (l_timeseries.tsid,
+						  l_timeseries.unit,
+						  l_timeseries.data,
+						  p_store_rule,
+						  p_override_prot,
+						  p_version_date,
+						  p_office_id
+						 );
+		EXCEPTION
+			WHEN OTHERS
+			THEN
+				l_num_errors := l_num_errors + 1;
+
+				l_err_msg :=
+						'STORE_ERROR ***'
+					|| l_timeseries.tsid
+					|| '*** '
+					|| SQLCODE
+					|| ': '
+					|| SQLERRM;
+
+				IF NVL (LENGTH (l_all_err_msgs), 0) + NVL (LENGTH (l_err_msg), 0) <=
+						1930
+				THEN
+					l_excep_errors := l_excep_errors + 1;
+					l_all_err_msgs := l_all_err_msgs || ' ' || l_err_msg;
+				END IF;
+		END;
+	END LOOP;
+
+	IF l_all_err_msgs IS NOT NULL
+	THEN
+		l_all_err_msgs :=
+				'STORE ERRORS: zstore_ts_multi processed '
+			|| l_num_ts_ids
+			|| ' ts_ids of which '
+			|| l_num_errors
+			|| ' had STORE ERRORS. '
+			|| l_excep_errors
+			|| ' of those errors are: '
+			|| l_all_err_msgs;
+
+		raise_application_error (-20999, l_all_err_msgs);
+	END IF;
+
+	DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+END zstore_ts_multi;
 
 
    END cwms_ts; --end package body
