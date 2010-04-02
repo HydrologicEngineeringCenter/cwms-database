@@ -343,6 +343,11 @@ is
    lf            constant varchar2(1) := chr(10);
    l_msg_level   integer := nvl(p_msg_level, msg_level_normal);
    l_publish     boolean := nvl(p_publish, true);
+   l_username    varchar2(30);
+   l_osuser      varchar2(30);
+   l_process     varchar2(24);
+   l_program     varchar2(64);
+   l_machine     varchar2(64);
 begin
    if l_msg_level > msg_level_none then
       -----------------------------------------
@@ -373,6 +378,19 @@ begin
             cwms_err.raise('INVALID_ITEM', l_type, 'log message type');
       end;
 
+      select username, 
+             osuser, 
+             process, 
+             program, 
+             machine
+        into l_username,
+             l_osuser,
+             l_process,
+             l_program,
+             l_machine             
+        from v$session 
+       where audsid = userenv('sessionid');
+       
       insert
         into at_log_message
       values (
@@ -385,6 +403,11 @@ begin
                 p_host,
                 p_port,
                 p_reported,
+                l_username,
+                l_osuser,
+                l_process,
+                l_program,
+                l_machine,
                 l_typeid,
                 l_message
              );

@@ -166,6 +166,11 @@ create table at_log_message
    host                 varchar2(256),
    port                 number(5),
    report_timestamp_utc timestamp,
+   session_username     varchar2(30),
+   session_osuser       varchar2(30),
+   session_process      varchar2(24),
+   session_program      varchar2(64),
+   session_machine      varchar2(64),
    msg_type             number(2),
    msg_text             varchar2(4000)
 )
@@ -199,6 +204,11 @@ comment on column at_log_message.instance             is 'Instance of reporting 
 comment on column at_log_message.host                 is 'Host on which reporting component is executing';
 comment on column at_log_message.port                 is 'Port at which reporting component is contacted, if applicable';
 comment on column at_log_message.report_timestamp_utc is 'Timestamp of when the message was reported (set by client)';
+comment on column at_log_message.session_username     is 'V$SESSION.USERNAME';
+comment on column at_log_message.session_osuser       is 'V$SESSION.OSUSER';
+comment on column at_log_message.session_process      is 'V$SESSION.PROCESS';
+comment on column at_log_message.session_program      is 'V$SESSION.PROGRAM';
+comment on column at_log_message.session_machine      is 'V$SESSION.MACHINE';
 comment on column at_log_message.msg_type             is 'Type of message from CWMS_LOG_MESSAGE table';
 comment on column at_log_message.msg_text             is 'Main text of message, possibly augmented by properties';
 
