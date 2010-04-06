@@ -806,17 +806,19 @@ AS
       and bp.unit_code = u.unit_code
 /
 --------------------------------------------------------------------------------
-CREATE OR REPLACE FORCE VIEW av_loc_level
+CREATE OR REPLACE FORCE VIEW av_location_level
 AS
    select office_id,
-          location_id,
-          parameter_id,
-          parameter_type_id,
-          duration_id,
-          specified_level_id,
-          attribute_parameter_id,
-          attribute_parameter_type_id,
-          attribute_duration_id,
+          location_id
+          || '.' || parameter_id
+          || '.' || parameter_type_id
+          || '.' || duration_id
+          || '.' || specified_level_id                            as location_level_id,
+          attribute_parameter_id
+          || substr('.', 1, length(attribute_parameter_type_id)) 
+          || attribute_parameter_type_id
+          || substr('.', 1, length(attribute_duration_id)) 
+          || attribute_duration_id                                as attribute_id,
           level_date,
           unit_system,
           attribute_unit,
@@ -824,11 +826,11 @@ AS
           attribute_value,
           constant_level,
           interval_origin,
-          calendar_interval,
+          substr(calendar_interval_, 2)                           as calendar_interval,
           time_interval,
           interpolate,
-          calendar_offset,
-          time_offset,
+          substr(calendar_offset_, 2)                             as calendar_offset,
+          substr(time_offset_, 2)                                 as time_offset,
           seasonal_level,
           level_comment,
           attribute_comment
@@ -852,11 +854,11 @@ AS
                    a_ll.attribute_value                                   as attribute_value,
                    a_ll.location_level_value*c_uc1.factor+c_uc1.offset    as constant_level,
                    a_ll.interval_origin                                   as interval_origin,
-                   a_ll.calendar_interval                                 as calendar_interval,
+                   a_ll.calendar_interval                                 as calendar_interval_,
                    a_ll.time_interval                                     as time_interval,
                    a_ll.interpolate                                       as interpolate,
-                   null                                                   as calendar_offset,
-                   null                                                   as time_offset,
+                   null                                                   as calendar_offset_,
+                   null                                                   as time_offset_,
                    null                                                   as seasonal_level,
                    a_ll.location_level_comment                            as level_comment,
                    a_ll.attribute_comment                                 as attribute_comment
@@ -905,11 +907,11 @@ AS
                    a_ll.attribute_value                                   as attribute_value,
                    null                                                   as constant_level,
                    a_ll.interval_origin                                   as interval_origin,
-                   a_ll.calendar_interval                                 as calendar_interval,
+                   a_ll.calendar_interval                                 as calendar_interval_,
                    a_ll.time_interval                                     as time_interval,
                    a_ll.interpolate                                       as interpolate,
-                   a_sll.calendar_offset                                  as calendar_offset,
-                   a_sll.time_offset                                      as time_offset,
+                   a_sll.calendar_offset                                  as calendar_offset_,
+                   a_sll.time_offset                                      as time_offset_,
                    a_sll.value*c_uc1.factor+c_uc1.offset                  as seasonal_level,
                    a_ll.location_level_comment                            as level_comment,
                    a_ll.attribute_comment                                 as attribute_comment
@@ -962,11 +964,11 @@ AS
                    a_ll.attribute_value*c_uc2.factor+c_uc2.offset         as attribute_value,
                    a_ll.location_level_value*c_uc1.factor+c_uc1.offset    as constant_level,
                    a_ll.interval_origin                                   as interval_origin,
-                   a_ll.calendar_interval                                 as calendar_interval,
+                   a_ll.calendar_interval                                 as calendar_interval_,
                    a_ll.time_interval                                     as time_interval,
                    a_ll.interpolate                                       as interpolate,
-                   null                                                   as calendar_offset,
-                   null                                                   as time_offset,
+                   null                                                   as calendar_offset_,
+                   null                                                   as time_offset_,
                    null                                                   as seasonal_level,
                    a_ll.location_level_comment                            as level_comment,
                    a_ll.attribute_comment                                 as attribute_comment
@@ -1031,11 +1033,11 @@ AS
                    a_ll.attribute_value*c_uc2.factor+c_uc2.offset         as attribute_value,
                    null                                                   as constant_level,
                    a_ll.interval_origin                                   as interval_origin,
-                   a_ll.calendar_interval                                 as calendar_interval,
+                   a_ll.calendar_interval                                 as calendar_interval_,
                    a_ll.time_interval                                     as time_interval,
                    a_ll.interpolate                                       as interpolate,
-                   a_sll.calendar_offset                                  as calendar_offset,
-                   a_sll.time_offset                                      as time_offset,
+                   a_sll.calendar_offset                                  as calendar_offset_,
+                   a_sll.time_offset                                      as time_offset_,
                    a_sll.value*c_uc1.factor+c_uc1.offset                  as seasonal_level,
                    a_ll.location_level_comment                            as level_comment,
                    a_ll.attribute_comment                                 as attribute_comment
@@ -1080,14 +1082,170 @@ AS
                and a_ll.location_level_value     is null
                and a_sll.location_level_code     = a_ll.location_level_code))
   order by office_id,
-           location_id,
-           parameter_id,
-           parameter_type_id,
-           duration_id,
-           specified_level_id,
-           attribute_parameter_id,
+           location_level_id,
+           attribute_id,
            level_date,
            unit_system,
            attribute_value,
-           interval_origin + calendar_offset + time_offset;
+           interval_origin + calendar_offset_ + time_offset_;
 /
+show errors;
+
+CREATE OR REPLACE FORCE VIEW av_location_level_indicator
+AS
+   with 
+      llic as (
+      select level_indicator_code,
+             level_indicator_value as value,
+             description as name,
+             expression
+             ||' '||comparison_operator_1
+             ||' '||round(cast(comparison_value_1 as number), 10)
+             ||substr(' ', 1, length(connector))
+             ||connector
+             ||substr(' ', 1, length(comparison_operator_2))
+             ||comparison_operator_2
+             ||substr(' ', 1, length(comparison_value_2))
+             ||round(cast(comparison_value_2 as number), 10) as expression,
+             comparison_unit,
+             rate_expression
+             ||substr(' ', 1, length(rate_comparison_operator_1))
+             ||rate_comparison_operator_1
+             ||substr(' ', 1, length(rate_comparison_value_1))
+             ||round(cast(rate_comparison_value_1 as number), 10)
+             ||substr(' ', 1, length(rate_connector))
+             ||rate_connector
+             ||substr(' ', 1, length(rate_comparison_operator_2))
+             ||rate_comparison_operator_2
+             ||substr(' ', 1, length(rate_comparison_value_2))
+             ||round(cast(rate_comparison_value_2 as number), 10) as rate_expression,
+             rate_comparison_unit,
+             rate_interval
+        from at_loc_lvl_indicator_cond),       
+      unit as (
+      select unit_code,
+             unit_id
+        from cwms_unit),
+      rate_unit as (
+      select unit_code as rate_unit_code,
+             unit_id as rate_unit_id
+        from cwms_unit),
+      lli as (
+      select *
+        from at_loc_lvl_indicator),
+      loc as (
+      select location_code,
+             base_location_code,
+             sub_location_id
+        from at_physical_location),
+      base_loc as (
+      select base_location_code,
+             base_location_id,
+             db_office_code
+        from at_base_location),
+      ofc as (
+      select office_code,
+             office_id
+        from cwms_office),
+      param as (
+      select parameter_code,
+             base_parameter_code,
+             sub_parameter_id
+        from at_parameter),
+      base_param as (
+      select base_parameter_code,
+             base_parameter_id
+        from cwms_base_parameter),
+      param_type as (
+      select parameter_type_code,
+             parameter_type_id
+        from cwms_parameter_type),
+      dur as (
+      select duration_code,
+             duration_id
+        from cwms_duration),                                              
+      spec_level as (select * from at_specified_level),
+      attr_param as (      
+      select parameter_code,
+             base_parameter_code,
+             sub_parameter_id
+        from at_parameter),
+      attr_base_param as (
+      select base_parameter_code,
+             base_parameter_id,
+             unit_code
+        from cwms_base_parameter),
+      attr_param_type as (
+      select parameter_type_code,
+             parameter_type_id
+        from cwms_parameter_type),
+      attr_dur as (
+      select duration_code,
+             duration_id
+        from cwms_duration),
+      disp as (select * from at_display_units),
+      conv as (select * from cwms_unit_conversion),                                                   
+      ref_spec_level as (select * from at_specified_level)
+   select office_id,
+          base_location_id
+          || substr('-', 1, length(sub_location_id))
+          || sub_location_id
+          ||'.' || base_param.base_parameter_id
+          || substr('-', 1, length(param.sub_parameter_id))
+          || param.sub_parameter_id
+          || '.' || param_type.parameter_type_id
+          || '.' || dur.duration_id
+          || '.' || spec_level.specified_level_id
+          || '.' || level_indicator_id as level_indicator_id,
+          ref_spec_level.specified_level_id as reference_level_id,
+          attr_base_param.base_parameter_id
+          || substr('-', 1, length(attr_param.sub_parameter_id))
+          || attr_param.sub_parameter_id
+          || substr('.', 1, length(attr_param_type.parameter_type_id))
+          || attr_param_type.parameter_type_id
+          || substr('.', 1, length(attr_dur.duration_id))
+          || attr_dur.duration_id as attribute_id,
+          unit_system,
+          round(attr_value * factor + offset, 10 - log(10, attr_value * factor + offset)) as attribute_value,
+          round(ref_attr_value * factor + offset, 10 - log(10, ref_attr_value * factor + offset)) as reference_attribute_value,
+          to_unit_id as attribute_units,
+          name,
+          value,
+          expression
+          ||substr(' ', 1, length(unit_id))
+          ||unit_id as expression,
+          rate_expression
+          ||substr(' ', 1, length(rate_unit_id))
+          ||rate_unit_id
+          ||substr(' per ', 1, length(rate_interval))
+          ||substr(rate_interval, 2) as rate_expression,
+          substr(minimum_duration, 2) as minimum_duration,
+          substr(maximum_age, 2) as maximum_age
+     from llic
+          join lli on lli.level_indicator_code = llic.level_indicator_code
+          join loc on loc.location_code = lli.location_code
+          join base_loc on base_loc.base_location_code = loc.base_location_code
+          join ofc on ofc.office_code = base_loc.db_office_code
+          join param on param.parameter_code = lli.parameter_code
+          join base_param on base_param.base_parameter_code = param.base_parameter_code
+          join param_type on param_type.parameter_type_code = lli.parameter_type_code
+          join dur on dur.duration_code = lli.duration_code
+          join spec_level on spec_level.specified_level_code = lli.specified_level_code 
+          left outer join attr_param on attr_param.parameter_code = lli.attr_parameter_code
+          left outer join attr_base_param on attr_base_param.base_parameter_code = attr_param.base_parameter_code
+          left outer join attr_param_type on attr_param_type.parameter_type_code = lli.attr_parameter_type_code
+          left outer join attr_dur on attr_dur.duration_code = lli.attr_duration_code
+          left outer join disp on disp.parameter_code = attr_base_param.base_parameter_code and disp.db_office_code = ofc.office_code
+          left outer join conv on conv.from_unit_code = attr_base_param.unit_code and conv.to_unit_code = disp.display_unit_code
+          left outer join ref_spec_level on ref_spec_level.specified_level_code = lli.ref_specified_level_code
+          left outer join unit on unit.unit_code = llic.comparison_unit 
+          left outer join rate_unit on rate_unit.rate_unit_code = llic.rate_comparison_unit     
+ order by office_id,
+          level_indicator_id,
+          reference_level_id,
+          attribute_id,
+          unit_system,
+          attribute_value,
+          value;
+/                  
+show errors;
