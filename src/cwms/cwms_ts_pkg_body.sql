@@ -4614,21 +4614,40 @@ BEGIN
       
 
    --Get Time series parameters for retrieval load into record structure
-   SELECT INTERVAL,
-          CASE interval_utc_offset
-             WHEN cwms_util.utc_offset_undefined
-                THEN NULL
-             WHEN cwms_util.utc_offset_irregular
-                THEN NULL
-             ELSE (interval_utc_offset)
-          END,
-          version_flag, ts_code
-     INTO l_ts_interval,
-          l_ts_offset,
-          l_versioned, l_ts_code
-     FROM mv_cwms_ts_id
-    WHERE db_office_id = UPPER (l_db_office_id)
-      AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
+   begin
+      SELECT INTERVAL,
+             CASE interval_utc_offset
+                WHEN cwms_util.utc_offset_undefined
+                   THEN NULL
+                WHEN cwms_util.utc_offset_irregular
+                   THEN NULL
+                ELSE (interval_utc_offset)
+             END,
+             version_flag, ts_code
+        INTO l_ts_interval,
+             l_ts_offset,
+             l_versioned, l_ts_code
+        FROM mv_cwms_ts_id
+       WHERE db_office_id = UPPER (l_db_office_id)
+         AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
+   exception
+      when no_data_found then
+         SELECT INTERVAL,
+                CASE interval_utc_offset
+                   WHEN cwms_util.utc_offset_undefined
+                      THEN NULL
+                   WHEN cwms_util.utc_offset_irregular
+                      THEN NULL
+                   ELSE (interval_utc_offset)
+                END,
+                version_flag, ts_code
+           INTO l_ts_interval,
+                l_ts_offset,
+                l_versioned, l_ts_code
+           FROM zav_cwms_ts_id
+          WHERE db_office_id = UPPER (l_db_office_id)
+            AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
+   end;
 
 
    IF l_ts_interval = 0
