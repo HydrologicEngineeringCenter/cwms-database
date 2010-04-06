@@ -382,7 +382,7 @@ function get_location_level_code(
    p_attribute_param_type_id in  varchar2,
    p_attribute_duration_id   in  varchar2,
    p_office_id               in  varchar2)
-   return number
+   return number result_cache
 is
    l_location_level_code       number(10);
    l_spec_level_code           number(10);
@@ -727,7 +727,7 @@ function get_attribute_id(
    p_parameter_id       in varchar2,
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2)
-   return varchar2
+   return varchar2 result_cache
 is
    l_attribute_id varchar2(83);
 begin
@@ -775,7 +775,7 @@ end parse_location_level_id;
 --------------------------------------------------------------------------------
 function get_location_level_id(
    p_location_level_code in number)
-   return varchar2
+   return varchar2 result_cache
 is
    l_location_level_id varchar2(422);
    l_office_id         varchar2(16);
@@ -838,7 +838,7 @@ function get_location_level_id(
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2)
-   return varchar2
+   return varchar2 result_cache
 is
    l_location_level_id varchar2(390);
 begin
@@ -889,7 +889,7 @@ function get_loc_lvl_indicator_id(
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2,
    p_level_indicator_id in varchar2)
-   return varchar2
+   return varchar2 result_cache
 is
    l_location_level_id varchar2(374);
 begin
@@ -1083,7 +1083,7 @@ function get_specified_level_code(
    p_level_id          in  varchar2,
    p_fail_if_not_found in  varchar2 default 'T',
    p_office_id         in  varchar2 default null)
-   return number
+   return number result_cache
 is
    l_level_code number(10);
 begin
@@ -2255,14 +2255,14 @@ is
    --------------------
    -- local routines --
    --------------------
-   function encode_date(p_date in date) return binary_integer
+   function encode_date(p_date in date) return binary_integer result_cache
    is
       l_origin constant date := to_date('01Jan2000 0000', 'ddMonyyyy hh24mi');
    begin
       return (p_date - l_origin) * 1440;
    end;
    
-   function decode_date(p_int in binary_integer) return date
+   function decode_date(p_int in binary_integer) return date result_cache
    is
       l_origin constant date := to_date('01Jan2000 0000', 'ddMonyyyy hh24mi');
    begin
@@ -2811,7 +2811,7 @@ function retrieve_loc_lvl_values2(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
-   return varchar2 -- recordset of (date, value) records
+   return varchar2 result_cache -- recordset of (date, value) records
 is
    l_level_values varchar2(32767);
 begin
@@ -2965,7 +2965,7 @@ function retrieve_location_level_value(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
-   return number
+   return number result_cache
 is
    l_level_value number;
 begin
@@ -3041,7 +3041,7 @@ function retrieve_location_level_value(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
-   return number
+   return number result_cache
 is
    l_location_level_value number(10);
 begin
@@ -3334,7 +3334,7 @@ function retrieve_location_level_attrs2(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  varchar2 default null,
    p_office_id               in  varchar2 default null)
-   return varchar2
+   return varchar2 result_cache
 is
    l_attribute_values varchar2(32767);
 begin
@@ -3365,7 +3365,7 @@ function lookup_level_or_attribute(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date default null,
    p_office_id               in  varchar2 default null)
-   return number
+   return number result_cache
 is
    l_location_id             varchar2(49);
    l_parameter_id            varchar2(49);
@@ -3507,7 +3507,7 @@ function lookup_level_by_attribute(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
-   return number
+   return number result_cache
 is
    l_level number;
 begin
@@ -3572,7 +3572,7 @@ function lookup_attribute_by_level(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
-   return number
+   return number result_cache
 is
    l_attribute number;
 begin
@@ -3696,7 +3696,7 @@ function get_loc_lvl_indicator_code(
    p_ref_specified_level_id in  varchar2 default null,
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null)
-   return number
+   return number result_cache
 is
    l_location_code            number(10);
    l_parameter_code           number(10);
@@ -3715,6 +3715,11 @@ is
    l_factor                   number := 1.;
    l_offset                   number := 0.;
    l_has_attribute            boolean;
+   l_attr_value               number;
+   l_ref_attr_value           number;
+   l_significant_digits       constant integer := 10;
+   l_attr_digits              integer;
+   l_ref_attr_digits          integer;
 begin
    -------------------
    -- sanity checks --
@@ -3864,8 +3869,8 @@ begin
         into l_factor,
              l_offset
         from cwms_unit_conversion
-       where from_unit_id = cwms_util.get_default_units(p_attr_parameter_id)
-         and to_unit_id = p_attr_units_id;                
+       where from_unit_id = p_attr_units_id
+         and to_unit_id = cwms_util.get_default_units(p_attr_parameter_id);                
    end if;
    if p_ref_specified_level_id is not null then
       begin
@@ -3884,6 +3889,14 @@ begin
    ------------------------------------               
    -- get the loc_lvl_indicator code --
    ------------------------------------
+   if p_attr_value is not null then
+      l_attr_value := p_attr_value * l_factor + l_offset;
+      l_attr_digits := l_significant_digits - trunc(log(10, l_attr_value));
+   end if;
+   if p_ref_attr_value is not null then
+      l_ref_attr_value := p_ref_attr_value * l_factor + l_offset;
+      l_ref_attr_digits := l_significant_digits - trunc(log(10, l_ref_attr_value));
+   end if;
    begin
       select level_indicator_code
         into l_loc_lvl_indicator_code
@@ -3893,11 +3906,11 @@ begin
          and parameter_type_code = l_parameter_type_code
          and duration_code = l_duration_code
          and specified_level_code = l_specified_level_code
-         and nvl(to_char(attr_value * l_factor + l_offset), '@') = nvl(to_char(p_attr_value), '@')
+         and nvl(to_char(round(attr_value, l_attr_digits)), '@') = nvl(to_char(round(l_attr_value, l_attr_digits)), '@')
          and nvl(attr_parameter_code, -1) = nvl(l_attr_parameter_code, -1)
          and nvl(attr_parameter_type_code, -1) = nvl(l_attr_parameter_type_code, -1)
          and nvl(attr_duration_code, -1) = nvl(l_attr_duration_code, -1)
-         and nvl(to_char(ref_attr_value * l_factor + l_offset), '@') = nvl(to_char(p_ref_attr_value), '@')
+         and nvl(to_char(round(ref_attr_value, l_ref_attr_digits)), '@') = nvl(to_char(round(l_ref_attr_value, l_ref_attr_digits)), '@')
          and nvl(ref_specified_level_code, -1) = nvl(l_ref_specified_level_code, -1)
          and level_indicator_id = upper(p_level_indicator_id);
    exception
@@ -3921,17 +3934,19 @@ function get_loc_lvl_indicator_code(
    p_ref_specified_level_id in  varchar2 default null,
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null)
-   return number
+   return number result_cache
 is
-   l_location_id        varchar2(49);
-   l_parameter_id       varchar2(49);
-   l_param_type_id      varchar2(16);
-   l_duration_id        varchar2(16);
-   l_specified_level_id varchar2(256);
-   l_level_indicator_id varchar2(32);
-   l_attr_parameter_id  varchar2(49);
-   l_attr_param_type_id varchar2(16);
-   l_attr_duration_id   varchar2(16);
+   ITEM_DOES_NOT_EXIST      exception; pragma exception_init (ITEM_DOES_NOT_EXIST, -20034);
+   l_location_id            varchar2(49);
+   l_parameter_id           varchar2(49);
+   l_param_type_id          varchar2(16);
+   l_duration_id            varchar2(16);
+   l_specified_level_id     varchar2(256);
+   l_level_indicator_id     varchar2(32);
+   l_attr_parameter_id      varchar2(49);
+   l_attr_param_type_id     varchar2(16);
+   l_attr_duration_id       varchar2(16);
+   l_loc_lvl_indicator_code number(10);
 begin
    cwms_level.parse_loc_lvl_indicator_id(
       l_location_id,
@@ -3947,22 +3962,63 @@ begin
       l_attr_param_type_id,
       l_attr_duration_id,
       p_attr_id);
-      
-   return get_loc_lvl_indicator_code(
-      l_location_id,
-      l_parameter_id,
-      l_param_type_id,
-      l_duration_id,
-      l_specified_level_id,
-      l_level_indicator_id,
-      p_attr_value,
-      p_attr_units_id,
-      l_attr_parameter_id,
-      l_attr_param_type_id,
-      l_attr_duration_id,
-      p_ref_specified_level_id,
-      p_ref_attr_value,
-      p_office_id);
+
+   begin
+      l_loc_lvl_indicator_code := get_loc_lvl_indicator_code(
+         l_location_id,
+         l_parameter_id,
+         l_param_type_id,
+         l_duration_id,
+         l_specified_level_id,
+         l_level_indicator_id,
+         p_attr_value,
+         p_attr_units_id,
+         l_attr_parameter_id,
+         l_attr_param_type_id,
+         l_attr_duration_id,
+         p_ref_specified_level_id,
+         p_ref_attr_value,
+         p_office_id);
+         
+      return l_loc_lvl_indicator_code;      
+   exception
+      when ITEM_DOES_NOT_EXIST then
+         declare
+            l_location_level_text varchar2(4000);
+         begin
+            l_location_level_text := p_loc_lvl_indicator_id;
+            if p_attr_id is not null then
+               l_location_level_text := l_location_level_text
+                  || ' (attribute '
+                  || p_attr_id
+                  || ' = '
+                  || p_attr_value
+                  || ' '
+                  || p_attr_units_id
+                  ||')';
+            end if;
+            if p_ref_specified_level_id is not null then
+               l_location_level_text := l_location_level_text
+                  || ' (reference = '
+                  || p_ref_specified_level_id;
+               if p_ref_attr_value is not null then
+                  l_location_level_text := l_location_level_text
+                     || ' (attribute '
+                     || p_attr_id
+                     || ' = '
+                     || p_ref_attr_value
+                     || ' '
+                     || p_attr_units_id
+                     || ')';
+               end if;                  
+               l_location_level_text := l_location_level_text || ')';
+            end if;
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Location Level Indicator',
+               l_location_level_text);
+         end;
+   end;      
 end get_loc_lvl_indicator_code;   
 
 --------------------------------------------------------------------------------
@@ -3994,6 +4050,9 @@ is
    l_ignore_nulls_on_update boolean := cwms_util.return_true_or_false(p_ignore_nulls_on_update);
    l_exists                 boolean := true;
    l_rec                    at_loc_lvl_indicator_cond%rowtype;
+   l_unit_code              number(10);
+   l_from_unit_id           varchar2(16);
+   l_to_unit_id             varchar2(16);
 begin
    begin
       select *
@@ -4047,13 +4106,102 @@ begin
       l_rec.rate_interval              := p_rate_interval;
       l_rec.description                := p_description;
    end if;
+   l_rec.level_indicator_code := p_level_indicator_code;
+   --------------------------------------
+   -- sanity check on comparison units --
+   --------------------------------------
+   if l_rec.comparison_unit is not null then
+      begin
+         select uc.from_unit_id,
+                uc.to_unit_id
+           into l_from_unit_id,
+                l_to_unit_id
+           from at_loc_lvl_indicator lli,
+                at_parameter p,
+                cwms_base_parameter bp,
+                cwms_unit_conversion uc
+          where lli.level_indicator_code = l_rec.level_indicator_code
+            and p.parameter_code = lli.parameter_code
+            and bp.base_parameter_code = p.base_parameter_code
+            and uc.from_unit_code = bp.unit_code
+            and uc.to_unit_code = l_rec.comparison_unit;
+      exception
+         when no_data_found then
+            select u.unit_id
+              into l_from_unit_id
+              from at_loc_lvl_indicator lli,
+                   at_parameter p,
+                   cwms_base_parameter bp,
+                   cwms_unit u
+             where lli.level_indicator_code = l_rec.level_indicator_code
+               and p.parameter_code = lli.parameter_code
+               and bp.base_parameter_code = p.base_parameter_code
+               and u.unit_code = bp.unit_code;
+            select unit_id 
+              into l_to_unit_id 
+              from cwms_unit 
+             where unit_code = l_rec.comparison_unit;
+         cwms_err.raise(
+            'ERROR',
+            'Cannot convert from database unit ('
+            || l_from_unit_id
+            ||') to comparison unit ('
+            || l_to_unit_id
+            || ')');             
+      end;
+   end if;
+   -------------------------------------------
+   -- sanity check on rate comparison units --
+   -------------------------------------------
+   if l_rec.rate_comparison_unit is not null then
+      begin
+         select uc.from_unit_id,
+                uc.to_unit_id
+           into l_from_unit_id,
+                l_to_unit_id
+           from at_loc_lvl_indicator lli,
+                at_parameter p,
+                cwms_base_parameter bp,
+                cwms_unit_conversion uc
+          where lli.level_indicator_code = l_rec.level_indicator_code
+            and p.parameter_code = lli.parameter_code
+            and bp.base_parameter_code = p.base_parameter_code
+            and uc.from_unit_code = bp.unit_code
+            and uc.to_unit_code = l_rec.rate_comparison_unit;
+      exception
+         when no_data_found then
+            select u.unit_id
+              into l_from_unit_id
+              from at_loc_lvl_indicator lli,
+                   at_parameter p,
+                   cwms_base_parameter bp,
+                   cwms_unit u
+             where lli.level_indicator_code = l_rec.level_indicator_code
+               and p.parameter_code = lli.parameter_code
+               and bp.base_parameter_code = p.base_parameter_code
+               and u.unit_code = bp.unit_code;
+            select unit_id 
+              into l_to_unit_id 
+              from cwms_unit 
+             where unit_code = l_rec.rate_comparison_unit;
+         cwms_err.raise(
+            'ERROR',
+            'Cannot convert from database unit ('
+            || l_from_unit_id
+            ||') to rate comparison unit ('
+            || l_to_unit_id
+            || ')');             
+      end;
+   end if;
+   ---------------------------------------
+   -- insert or update condition record --
+   ---------------------------------------
    if l_exists then
       update at_loc_lvl_indicator_cond
          set row = l_rec
        where level_indicator_code = l_rec.level_indicator_code
          and level_indicator_value = l_rec.level_indicator_value;
    else
-      l_rec.level_indicator_code := p_level_indicator_code;
       insert into at_loc_lvl_indicator_cond values l_rec;
    end if;
 end store_loc_lvl_indicator_cond;   
@@ -4092,10 +4240,6 @@ is
    l_unit_code               number(10);
    l_rate_unit_code          number(10);
    l_loc_lvl_indicator_code  number(10);
-   l_comparison_value_1      binary_double;
-   l_comparison_value_2      binary_double;
-   l_rate_comparison_value_1 binary_double;
-   l_rate_comparison_value_2 binary_double;
    l_rate_interval           interval day(3) to second(0);
 begin
    if p_comparison_unit_id is not null then
@@ -4118,10 +4262,6 @@ begin
       p_ref_specified_level_id,
       p_ref_attr_value,
       p_office_id);
-   l_comparison_value_1 := cast(p_comparison_value_1 as binary_double);      
-   l_comparison_value_2 := cast(p_comparison_value_2 as binary_double);      
-   l_rate_comparison_value_1 := cast(p_rate_comparison_value_1 as binary_double);      
-   l_rate_comparison_value_2 := cast(p_rate_comparison_value_2 as binary_double);
    l_rate_interval := to_dsinterval(p_rate_interval);      
       
    store_loc_lvl_indicator_cond(
@@ -4129,18 +4269,18 @@ begin
       p_level_indicator_value,
       p_expression,
       p_comparison_operator_1,
-      l_comparison_value_1,
+      p_comparison_value_1,
       l_unit_code,
       p_connector, 
       p_comparison_operator_2,
-      l_comparison_value_2,
+      p_comparison_value_2,
       p_rate_expression,
       p_rate_comparison_operator_1,
-      l_rate_comparison_value_1,
+      p_rate_comparison_value_1,
       l_rate_unit_code,
       p_rate_connector, 
       p_rate_comparison_operator_2,
-      l_rate_comparison_value_2,
+      p_rate_comparison_value_2,
       l_rate_interval,
       p_description,
       p_fail_if_exists,
@@ -4404,9 +4544,9 @@ procedure cat_loc_lvl_indicator_codes(
    p_attribute_id_mask          in  varchar2 default null,
    p_office_id_mask             in  varchar2 default null) -- user's office if null
 is
-   l_loc_lvl_indicator_id_mask varchar2(423);
-   l_attribute_id_mask         varchar2(83);
-   l_office_id_mask            varchar2(16);
+   l_loc_lvl_indicator_id_mask varchar2(423) := p_loc_lvl_indicator_id_mask;
+   l_attribute_id_mask         varchar2(83)  := p_attribute_id_mask;
+   l_office_id_mask            varchar2(16)  := nvl(p_office_id_mask, cwms_util.user_office_id);
    l_location_id_mask          varchar2(49);
    l_parameter_id_mask         varchar2(49);
    l_param_type_id_mask        varchar2(16);
@@ -4432,7 +4572,6 @@ begin
    then
       l_include_null_attrs := true;
    end if;
-   l_office_id_mask := nvl(p_office_id_mask, cwms_util.user_office_id);
    parse_loc_lvl_indicator_id(
       l_location_id_mask,
       l_parameter_id_mask,
@@ -4472,12 +4611,12 @@ begin
           where o.office_id like l_office_id_mask escape '\'
             and bl.db_office_code = o.office_code
             and upper(bl.base_location_id
-                      || substr('-', length(pl.sub_location_id))
+                      || substr('-', 1, length(pl.sub_location_id))
                       || pl.sub_location_id) like l_location_id_mask escape '\'
             and pl.base_location_code = bl.base_location_code
             and lli.location_code = pl.location_code
             and upper(bp.base_parameter_id
-                      || substr('-', length(p.sub_parameter_id))
+                      || substr('-', 1, length(p.sub_parameter_id))
                       || p.sub_parameter_id) like l_parameter_id_mask escape '\'
             and bp.base_parameter_code = p.base_parameter_code
             and p.db_office_code in (o.office_code, l_cwms_office_code)
@@ -4488,84 +4627,135 @@ begin
             and lli.duration_code = d.duration_code
             and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
             and lli.specified_level_code = sl.specified_level_code
+            and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
             and lli.attr_parameter_code is null
        order by o.office_id,
                 upper(bl.base_location_id
-                      || substr('-', length(pl.sub_location_id))
+                      || substr('-', 1, length(pl.sub_location_id))
                       || pl.sub_location_id),         
                 upper(bp.base_parameter_id
-                      || substr('-', length(p.sub_parameter_id))
+                      || substr('-', 1, length(p.sub_parameter_id))
                       || p.sub_parameter_id),
                 upper(pt.parameter_type_id),
                 upper(d.duration_id),
-                upper(sl.specified_level_id);
+                upper(sl.specified_level_id),
+                upper(lli.level_indicator_id);
    else   
       if l_include_null_attrs then
-         open p_cursor for 
-            select lli.level_indicator_code as level_indicator_code
-              from at_loc_lvl_indicator lli,
-                   at_physical_location pl,
-                   at_base_location bl,
-                   cwms_office o,
-                   at_parameter p1,
-                   cwms_base_parameter bp1,
-                   cwms_parameter_type pt1,
-                   cwms_duration d1,
-                   at_specified_level sl,
-                   at_parameter p2,
-                   cwms_base_parameter bp2,
-                   cwms_parameter_type pt2,
-                   cwms_duration d2
-             where o.office_id like l_office_id_mask escape '\'
-               and bl.db_office_code = o.office_code
-               and upper(bl.base_location_id
-                         || substr('-', length(pl.sub_location_id))
-                         || pl.sub_location_id) like l_location_id_mask escape '\'
-               and pl.base_location_code = bl.base_location_code
-               and lli.location_code = pl.location_code
-               and upper(bp1.base_parameter_id
-                         || substr('-', length(p1.sub_parameter_id))
-                         || p1.sub_parameter_id) like l_parameter_id_mask escape '\'
-               and bp1.base_parameter_code = p1.base_parameter_code
-               and p1.db_office_code in (o.office_code, l_cwms_office_code)
-               and lli.parameter_code = p1.parameter_code
-               and upper(pt1.parameter_type_id) like l_param_type_id_mask escape '\'
-               and lli.parameter_type_code = pt1.parameter_type_code
-               and upper(d1.duration_id) like l_duration_id_mask escape '\'
-               and lli.duration_code = d1.duration_code
-               and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
-               and lli.specified_level_code = sl.specified_level_code
-               and (
-                   lli.attr_parameter_code is null
-                    or 
-                    upper(bp2.base_parameter_id
-                              || substr('-', length(p2.sub_parameter_id))
-                              || p2.sub_parameter_id) like l_attr_parameter_id_mask escape '\'
-                    and bp2.base_parameter_code = p2.base_parameter_code
-                    and p2.db_office_code in (o.office_code, l_cwms_office_code)
-                    and lli.attr_parameter_code = p2.parameter_code
-                    and upper(pt2.parameter_type_id) like l_attr_param_type_id_mask escape '\'
-                    and lli.attr_parameter_type_code = pt2.parameter_type_code
-                    and upper(d2.duration_id) like l_attr_duration_id_mask escape '\'
-                    and lli.attr_duration_code = d2.duration_code
-                   )
-          order by o.office_id,
-                   upper(bl.base_location_id
-                         || substr('-', length(pl.sub_location_id))
-                         || pl.sub_location_id),         
-                   upper(bp1.base_parameter_id
-                         || substr('-', length(p1.sub_parameter_id))
-                         || p1.sub_parameter_id),
-                   upper(pt1.parameter_type_id),
-                   upper(d1.duration_id),
-                   upper(sl.specified_level_id),
-                   upper(bp2.base_parameter_id
-                         || substr('-', length(p2.sub_parameter_id))
-                         || p2.sub_parameter_id),
-                   upper(pt2.parameter_type_id);
+         open p_cursor for
+            select level_indicator_code from ( 
+               select lli.level_indicator_code as level_indicator_code,
+                      o.office_id as office_id,
+                      upper(bl.base_location_id
+                            || substr('-', 1, length(pl.sub_location_id))
+                            || pl.sub_location_id) as location_id,         
+                      upper(bp.base_parameter_id
+                            || substr('-', 1, length(p.sub_parameter_id))
+                            || p.sub_parameter_id) as parameter_id,
+                      upper(pt.parameter_type_id) as parameter_type_id,
+                      upper(d.duration_id) as duration_id,
+                      upper(sl.specified_level_id) as specified_level_id,
+                      upper(lli.level_indicator_id) as level_indicator_id,
+                      null as attr_parameter_id,
+                      null as attr_parameter_type_id,
+                      null as attr_duration_id
+                  from at_loc_lvl_indicator lli,
+                       at_physical_location pl,
+                       at_base_location bl,
+                       cwms_office o,
+                       at_parameter p,
+                       cwms_base_parameter bp,
+                       cwms_parameter_type pt,
+                       cwms_duration d,
+                       at_specified_level sl
+                 where o.office_id like l_office_id_mask escape '\'
+                   and bl.db_office_code = o.office_code
+                   and upper(bl.base_location_id
+                             || substr('-', 1, length(pl.sub_location_id))
+                             || pl.sub_location_id) like l_location_id_mask escape '\'
+                   and pl.base_location_code = bl.base_location_code
+                   and lli.location_code = pl.location_code
+                   and upper(bp.base_parameter_id
+                             || substr('-', 1, length(p.sub_parameter_id))
+                             || p.sub_parameter_id) like l_parameter_id_mask escape '\'
+                   and bp.base_parameter_code = p.base_parameter_code
+                   and p.db_office_code in (o.office_code, l_cwms_office_code)
+                   and lli.parameter_code = p.parameter_code
+                   and upper(pt.parameter_type_id) like l_param_type_id_mask escape '\'
+                   and lli.parameter_type_code = pt.parameter_type_code
+                   and upper(d.duration_id) like l_duration_id_mask escape '\'
+                   and lli.duration_code = d.duration_code
+                   and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
+                   and lli.specified_level_code = sl.specified_level_code
+                   and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
+                   and lli.attr_parameter_code is null
+               union
+               select distinct 
+                      lli.level_indicator_code as level_indicator_code,
+                      o.office_id as office_id,
+                      upper(bl.base_location_id
+                            || substr('-', 1, length(pl.sub_location_id))
+                            || pl.sub_location_id) as location_id,         
+                      upper(bp1.base_parameter_id
+                            || substr('-', 1, length(p1.sub_parameter_id))
+                            || p1.sub_parameter_id) as parameter_id,
+                      upper(pt1.parameter_type_id) as parameter_type_id,
+                      upper(d1.duration_id) as duration_id,
+                      upper(sl.specified_level_id) as specified_level_id,
+                      upper(lli.level_indicator_id) as level_indicator_id,
+                      upper(bp2.base_parameter_id
+                            || substr('-', 1, length(p2.sub_parameter_id))
+                            || p2.sub_parameter_id) as attr_parameter_id,
+                      upper(pt2.parameter_type_id) as attr_parameter_type_id,
+                      upper(d2.duration_id) as attr_duration_id
+                  from at_loc_lvl_indicator lli,
+                       at_physical_location pl,
+                       at_base_location bl,
+                       cwms_office o,
+                       at_parameter p1,
+                       cwms_base_parameter bp1,
+                       cwms_parameter_type pt1,
+                       cwms_duration d1,
+                       at_specified_level sl,
+                       at_parameter p2,
+                       cwms_base_parameter bp2,
+                       cwms_parameter_type pt2,
+                       cwms_duration d2
+                 where o.office_id like l_office_id_mask escape '\'
+                   and bl.db_office_code = o.office_code
+                   and upper(bl.base_location_id
+                             || substr('-', 1, length(pl.sub_location_id))
+                             || pl.sub_location_id) like l_location_id_mask escape '\'
+                   and pl.base_location_code = bl.base_location_code
+                   and lli.location_code = pl.location_code
+                   and upper(bp1.base_parameter_id
+                             || substr('-', 1, length(p1.sub_parameter_id))
+                             || p1.sub_parameter_id) like l_parameter_id_mask escape '\'
+                   and bp1.base_parameter_code = p1.base_parameter_code
+                   and p1.db_office_code in (o.office_code, l_cwms_office_code)
+                   and lli.parameter_code = p1.parameter_code
+                   and upper(pt1.parameter_type_id) like l_param_type_id_mask escape '\'
+                   and lli.parameter_type_code = pt1.parameter_type_code
+                   and upper(d1.duration_id) like l_duration_id_mask escape '\'
+                   and lli.duration_code = d1.duration_code
+                   and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
+                   and lli.specified_level_code = sl.specified_level_code
+                   and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
+                   and upper(bp2.base_parameter_id
+                             || substr('-', 1, length(p2.sub_parameter_id))
+                             || p2.sub_parameter_id) like l_attr_parameter_id_mask escape '\'
+                   and bp2.base_parameter_code = p2.base_parameter_code
+                   and p2.db_office_code in (o.office_code, l_cwms_office_code)
+                   and lli.attr_parameter_code = p2.parameter_code
+                   and upper(pt2.parameter_type_id) like l_attr_param_type_id_mask escape '\'
+                   and lli.attr_parameter_type_code = pt2.parameter_type_code
+                   and upper(d2.duration_id) like l_attr_duration_id_mask escape '\'
+                   and lli.attr_duration_code = d2.duration_code
+              order by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
       else
          open p_cursor for 
-            select lli.level_indicator_code as level_indicator_code
+            select distinct 
+                   lli.level_indicator_code as level_indicator_code
               from at_loc_lvl_indicator lli,
                    at_physical_location pl,
                    at_base_location bl,
@@ -4582,12 +4772,12 @@ begin
              where o.office_id like l_office_id_mask escape '\'
                and bl.db_office_code = o.office_code
                and upper(bl.base_location_id
-                         || substr('-', length(pl.sub_location_id))
+                         || substr('-', 1, length(pl.sub_location_id))
                          || pl.sub_location_id) like l_location_id_mask escape '\'
                and pl.base_location_code = bl.base_location_code
                and lli.location_code = pl.location_code
                and upper(bp1.base_parameter_id
-                         || substr('-', length(p1.sub_parameter_id))
+                         || substr('-', 1, length(p1.sub_parameter_id))
                          || p1.sub_parameter_id) like l_parameter_id_mask escape '\'
                and bp1.base_parameter_code = p1.base_parameter_code
                and p1.db_office_code in (o.office_code, l_cwms_office_code)
@@ -4598,8 +4788,9 @@ begin
                and lli.duration_code = d1.duration_code
                and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
                and lli.specified_level_code = sl.specified_level_code
+               and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
                and upper(bp2.base_parameter_id
-                         || substr('-', length(p2.sub_parameter_id))
+                         || substr('-', 1, length(p2.sub_parameter_id))
                          || p2.sub_parameter_id) like l_attr_parameter_id_mask escape '\'
                and bp2.base_parameter_code = p2.base_parameter_code
                and p2.db_office_code in (o.office_code, l_cwms_office_code)
@@ -4610,18 +4801,20 @@ begin
                and lli.attr_duration_code = d2.duration_code
           order by o.office_id,
                    upper(bl.base_location_id
-                         || substr('-', length(pl.sub_location_id))
+                         || substr('-', 1, length(pl.sub_location_id))
                          || pl.sub_location_id),         
                    upper(bp1.base_parameter_id
-                         || substr('-', length(p1.sub_parameter_id))
+                         || substr('-', 1, length(p1.sub_parameter_id))
                          || p1.sub_parameter_id),
                    upper(pt1.parameter_type_id),
                    upper(d1.duration_id),
                    upper(sl.specified_level_id),
+                   upper(lli.level_indicator_id),
                    upper(bp2.base_parameter_id
-                         || substr('-', length(p2.sub_parameter_id))
+                         || substr('-', 1, length(p2.sub_parameter_id))
                          || p2.sub_parameter_id),
-                   upper(pt2.parameter_type_id);
+                   upper(pt2.parameter_type_id),
+                   upper(d2.duration_id);
       end if;             
    end if;
                           
@@ -4875,11 +5068,11 @@ begin
              attr_parameter_type_id,
              attr_duration_id,
              cwms_util.get_default_units(attr_parameter_id) as attr_units_id,
-             attr_value * attr_param.factor + attr_param.offset,
+             round(attr_value * attr_param.factor + attr_param.offset, 10 - trunc(log(10, attr_value * attr_param.factor + attr_param.offset)))
              minimum_duration,
              maximum_age,
              ref_specified_level_id,
-             ref_attr_value * attr_param.factor + attr_param.offset,
+             round(ref_attr_value * attr_param.factor + attr_param.offset, 10 - trunc(log(10, ref_attr_value * attr_param.factor + attr_param.offset)))
              conditions
         from ((((indicator left outer join attr_param
                  on attr_param.parameter_code = indicator.attr_parameter_code
@@ -5475,6 +5668,7 @@ procedure get_level_indicator_values(
    p_unit_system          in  varchar2 default null,   -- 'SI' if null
    p_office_id            in  varchar2 default null)   -- user's office if null 
 is
+   l_tsid                   varchar2(183) := replace(p_tsid, '\%', '%');
    l_office_id              varchar2(16)  := nvl(upper(p_office_id), cwms_util.user_office_id);
    l_specified_level_mask   varchar2(256) := nvl(p_specified_level_mask, '%');
    l_indicator_id_mask      varchar2(256) := nvl(p_indicator_id_mask, '%');
@@ -5504,7 +5698,7 @@ begin
    -- open a cursor of all matching location level indicator codes --
    ------------------------------------------------------------------
    cwms_ts.parse_ts(
-      p_tsid,
+      l_tsid,
       l_base_location_id,
       l_sub_location_id,
       l_base_parameter_id,
@@ -5540,6 +5734,7 @@ begin
       l_loc_lvl_objs.extend;
       l_loc_lvl_objs(l_loc_lvl_objs.count) := new loc_lvl_indicator_t(l_rowid);
    end loop;
+   close l_indicator_codes_crsr;
    -------------------------------------
    -- compute the start and end times --
    -------------------------------------
@@ -5554,24 +5749,35 @@ begin
    ------------------------------               
    -- retrieve the time series --
    ------------------------------               
-   l_ts_units := cwms_util.get_default_units(l_base_parameter_id);      
-   cwms_ts.zretrieve_ts(
-      l_ts_crsr,
-      l_ts_units,
-      p_tsid,
-      cast(l_start_time as date),
-      cast(l_end_time as date),
-      'F',
-      null,
-      null,
-      'T',
-      l_office_id);
+   l_ts_units := cwms_util.get_default_units(l_base_parameter_id);
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc       => l_ts_crsr,
+      p_cwms_ts_id      => l_tsid,
+      p_units           => l_ts_units,
+      p_start_time      => cast(l_start_time as date),
+      p_end_time        => cast(l_end_time as date),
+      p_time_zone       => 'UTC',
+      p_trim            => 'F',
+      p_start_inclusive => 'T',
+      p_end_inclusive   => 'T',
+      p_previous        => 'T',
+      p_next            => 'F',
+      p_version_date    => null,
+      p_max_version     => 'T',
+      p_office_id       => l_office_id);
    loop
       fetch l_ts_crsr into l_ts_date_time, l_ts_value, l_ts_quality;
       exit when l_ts_crsr%notfound;
       l_ts.extend;
       l_ts(l_ts.count) := ztsv_type(l_ts_date_time, l_ts_value, l_ts_quality);   
    end loop;
+   close l_ts_crsr;
+   /*
+   cwms_msg.log_db_message('z', 7, 'retrieved '||l_ts.count||' values from '||p_tsid);
+   for i in 1..l_ts.count loop
+      cwms_msg.log_db_message('z', 7, ''||i||' = ('||l_ts(i).date_time||', '||l_ts(i).value||')');
+   end loop;
+   */
    -----------------------                     
    -- return the cursor --
    -----------------------
@@ -5587,7 +5793,7 @@ begin
                 o.attr_parameter_id,
                 o.attr_parameter_type_id,
                 o.attr_duration_id) as attribute_id,
-             o.attr_value * cuc.factor + cuc.offset as attribute_value,
+             round(o.attr_value * cuc.factor + cuc.offset, 10 - trunc(log(10, o.attr_value * cuc.factor + cuc.offset))) as attribute_value,
              cuc.to_unit_id as attribute_units,
              o.get_indicator_values(
                 l_ts,
@@ -5646,6 +5852,7 @@ procedure get_level_indicator_max_values(
    p_unit_system          in  varchar2 default null,   -- 'SI' if null
    p_office_id            in  varchar2 default null)   -- user's office if null
 is
+   l_tsid                   varchar2(183) := replace(p_tsid, '\%', '%');
    l_office_id              varchar2(16)  := nvl(upper(p_office_id), cwms_util.user_office_id);
    l_specified_level_mask   varchar2(256) := nvl(p_specified_level_mask, '%');
    l_indicator_id_mask      varchar2(256) := nvl(p_indicator_id_mask, '%');
@@ -5671,12 +5878,15 @@ is
    l_ts_value               binary_double;
    l_ts_quality             number;
    l_ts                     ztsv_array := new ztsv_array();
+   l_transaction_time       date;
+   l_units_out              varchar2(16);
+   l_cwms_ts_id_out         varchar2(183);
 begin
    ------------------------------------------------------------------
    -- open a cursor of all matching location level indicator codes --
    ------------------------------------------------------------------
    cwms_ts.parse_ts(
-      p_tsid,
+      l_tsid,
       l_base_location_id,
       l_sub_location_id,
       l_base_parameter_id,
@@ -5712,6 +5922,7 @@ begin
       l_loc_lvl_objs.extend;
       l_loc_lvl_objs(l_loc_lvl_objs.count) := new loc_lvl_indicator_t(l_rowid);
    end loop;
+   close l_indicator_codes_crsr;
    -------------------------------------
    -- compute the start and end times --
    -------------------------------------
@@ -5728,17 +5939,21 @@ begin
    -- retrieve the time series --
    ------------------------------               
    l_ts_units := cwms_util.get_default_units(l_base_parameter_id);      
-   cwms_ts.zretrieve_ts(
-      l_ts_crsr,
-      l_ts_units,
-      p_tsid,
-      cast(l_lookback_time as date),
-      cast(l_end_time as date),
-      'F',
-      null,
-      null,
-      'T',
-      l_office_id);
+   cwms_ts.retrieve_ts(
+      p_at_tsv_rc       => l_ts_crsr,
+      p_cwms_ts_id      => l_tsid,
+      p_units           => l_ts_units,
+      p_start_time      => cast(l_start_time as date),
+      p_end_time        => cast(l_end_time as date),
+      p_time_zone       => 'UTC',
+      p_trim            => 'F',
+      p_start_inclusive => 'T',
+      p_end_inclusive   => 'T',
+      p_previous        => 'T',
+      p_next            => 'F',
+      p_version_date    => null,
+      p_max_version     => 'T',
+      p_office_id       => l_office_id);
    loop
       fetch l_ts_crsr into l_ts_date_time, l_ts_value, l_ts_quality;
       exit when l_ts_crsr%notfound;
@@ -5746,6 +5961,7 @@ begin
       l_ts_date_time := cast(from_tz(cast(l_ts_date_time as timestamp), 'UTC') at time zone nvl(p_time_zone, 'UTC') as date);
       l_ts(l_ts.count) := ztsv_type(l_ts_date_time, l_ts_value, l_ts_quality);   
    end loop;
+   close l_ts_crsr;
    -----------------------                     
    -- return the cursor --
    -----------------------
@@ -5761,7 +5977,7 @@ begin
                 o.attr_parameter_id,
                 o.attr_parameter_type_id,
                 o.attr_duration_id) as attribute_id,
-             o.attr_value * cuc.factor + cuc.offset as attribute_value,
+             round(o.attr_value * cuc.factor + cuc.offset, 10 - trunc(log(10, o.attr_value * cuc.factor + cuc.offset))) as attribute_value,
              cuc.to_unit_id as attribute_units,
              o.get_max_indicator_values(
                 l_ts,

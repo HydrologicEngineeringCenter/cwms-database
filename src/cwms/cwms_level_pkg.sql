@@ -53,7 +53,7 @@ function get_attribute_id(
    p_parameter_id       in varchar2,
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2)
-   return varchar2;
+   return varchar2 result_cache;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE parse_location_level_id
@@ -71,7 +71,7 @@ procedure parse_location_level_id(
 --------------------------------------------------------------------------------
 function get_location_level_id(
    p_location_level_code in number)
-   return varchar2;
+   return varchar2 result_cache;
 
 --------------------------------------------------------------------------------
 -- FUNCTION get_location_level_id
@@ -82,7 +82,7 @@ function get_location_level_id(
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2)
-   return varchar2;
+   return varchar2 result_cache;
    
 --------------------------------------------------------------------------------
 -- PROCEDURE parse_loc_lvl_indicator_id
@@ -106,7 +106,7 @@ function get_loc_lvl_indicator_id(
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2,
    p_level_indicator_id in varchar2)
-   return varchar2;
+   return varchar2 result_cache;
    
 --------------------------------------------------------------------------------
 -- PROCEDURE create_specified_level_out
@@ -141,7 +141,7 @@ function get_specified_level_code(
    p_level_id          in  varchar2,
    p_fail_if_not_found in  varchar2 default 'T',
    p_office_id         in  varchar2 default null)
-   return number;
+   return number result_cache;
    
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_specified_level
@@ -386,7 +386,7 @@ function retrieve_loc_lvl_values2(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
-   return varchar2; -- recordset of (date, value) records
+   return varchar2 result_cache; -- recordset of (date, value) records
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
@@ -454,7 +454,7 @@ function retrieve_location_level_value(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
-   return number;
+   return number result_cache;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_value
@@ -484,7 +484,7 @@ function retrieve_location_level_value(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
-   return number;
+   return number result_cache;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_attrs
@@ -532,7 +532,7 @@ function retrieve_location_level_attrs2(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  varchar2 default null, -- yyyy/mm/dd hh:mm:ss
    p_office_id               in  varchar2 default null)
-   return varchar2; -- table of values separated by RS characater (chr(30))
+   return varchar2 result_cache; -- table of values separated by RS characater (chr(30))
 
 --------------------------------------------------------------------------------
 -- PROCEDURE lookup_level_by_attribute
@@ -564,7 +564,7 @@ function lookup_level_by_attribute(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
-   return number;
+   return number result_cache;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE lookup_attribute_by_level
@@ -596,7 +596,7 @@ function lookup_attribute_by_level(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
-   return number;
+   return number result_cache;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE delete_location_level
@@ -622,7 +622,7 @@ function get_loc_lvl_indicator_code(
    p_ref_specified_level_id in  varchar2 default null,
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null)
-   return number;
+   return number result_cache;
    
 --------------------------------------------------------------------------------
 -- PROCEDURE store_loc_lvl_indicator_cond

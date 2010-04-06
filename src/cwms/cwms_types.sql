@@ -969,6 +969,8 @@ create or replace type loc_lvl_indicator_cond_t is object
    factor                     binary_double,
    offset                     binary_double,
    rate_factor                binary_double,
+   rate_offset                binary_double,
+   interval_factor            binary_double,
    uses_reference             varchar2(1),
    expression_tokens          str_tab_t,
    rate_expression_tokens     str_tab_t,
@@ -1327,6 +1329,8 @@ as
       factor                     := 1.0;
       offset                     := 0.0;
       rate_factor                := 1.0;
+      rate_offset                := 0.0;
+      interval_factor            := 1.0;
       expression_tokens          := tokenize_expression(expression, false);
       rate_expression_tokens     := tokenize_expression(rate_expression, true);
       uses_reference := 
@@ -1393,8 +1397,7 @@ as
       l_arguments(1) :=  p_value   * factor + offset;
       l_arguments(2) :=  p_level   * factor + offset;
       l_arguments(3) :=  p_level_2 * factor + offset;
-      l_arguments(4) := (p_rate    * factor + offset) * rate_factor;
-      l_result := cwms_util.eval_tokenized_expression(expression_tokens, l_arguments);
+      l_arguments(4) := (p_rate    * rate_factor + rate_offset) * interval_factor;
       /*
       cwms_msg.log_db_message('x', 7, 'expression = '||expression);
       declare
@@ -1410,8 +1413,9 @@ as
          cwms_msg.log_db_message('x', 7, l_str);
       end;
       cwms_msg.log_db_message('x', 7, 'args = ('||l_arguments(1)||', '||l_arguments(2)||', '||l_arguments(3)||', '||l_arguments(4)||')');
-      cwms_msg.log_db_message('x', 7, 'result = '||l_result);
       */
+      l_result := cwms_util.eval_tokenized_expression(expression_tokens, l_arguments);
+      -- cwms_msg.log_db_message('x', 7, 'result = '||l_result);
       -----------------------------------
       -- evaluate the first comparison --
       -----------------------------------
@@ -1449,7 +1453,6 @@ as
       -- evaluate the rate if a rate expression exists --
       ---------------------------------------------------
       if l_is_set and rate_expression_tokens is not null then
-         l_result := cwms_util.eval_tokenized_expression(rate_expression_tokens, l_arguments);
          /*
          cwms_msg.log_db_message('x', 7, 'rate expression = '||rate_expression);
          declare
@@ -1464,8 +1467,9 @@ as
             l_str := l_str || ')';
             cwms_msg.log_db_message('x', 7, l_str);
          end;
-         cwms_msg.log_db_message('x', 7, 'result = '||l_result);
          */
+         l_result := cwms_util.eval_tokenized_expression(rate_expression_tokens, l_arguments);
+         -- cwms_msg.log_db_message('x', 7, 'result = '||l_result);
          ----------------------------------------
          -- evaluate the first rate comparison --
          ----------------------------------------
@@ -1598,10 +1602,10 @@ as
       loop
          conditions.extend;
          conditions(conditions.count) := loc_lvl_indicator_cond_t(rec.rowid);
-         ------------------------------------------------------------------------
-         -- set factor and offset to convert from db units to comparison units --
-         ------------------------------------------------------------------------
          if conditions(conditions.count).comparison_unit is not null then
+            ------------------------------------------------------------------------
+            -- set factor and offset to convert from db units to comparison units --
+            ------------------------------------------------------------------------
             select factor,
                    offset
               into conditions(conditions.count).factor,
@@ -1614,15 +1618,31 @@ as
                and uc.from_unit_code = bp.unit_code
                and uc.to_unit_code = conditions(conditions.count).comparison_unit;
          end if;
-         -------------------------------------------------------------            
-         -- set rate_factor to convert from 1 hour to rate interval --
-         -------------------------------------------------------------
          if conditions(conditions.count).rate_interval is not null then
-            conditions(conditions.count).rate_factor := 
-               (1/24) /  (extract(day    from conditions(conditions.count).rate_interval)        + 
-                          extract(hour   from conditions(conditions.count).rate_interval) / 24   + 
-                          extract(minute from conditions(conditions.count).rate_interval) / 3600 + 
-                          extract(second from conditions(conditions.count).rate_interval) / 86400);
+            if conditions(conditions.count).rate_comparison_unit is not null then
+               ----------------------------------------------------------------------------------
+               -- set rate_factor and rate_offset to convert from db units to comparison units --
+               ----------------------------------------------------------------------------------
+               select factor,
+                      offset
+                 into conditions(conditions.count).rate_factor,
+                      conditions(conditions.count).rate_offset
+                 from at_parameter p,
+                      cwms_base_parameter bp,
+                      cwms_unit_conversion uc
+                where p.parameter_code = self.parameter_code
+                  and bp.base_parameter_code = p.base_parameter_code
+                  and uc.from_unit_code = bp.unit_code
+                  and uc.to_unit_code = conditions(conditions.count).rate_comparison_unit;
+            end if;
+            -----------------------------------------------------------------            
+            -- set interval_factor to convert from 1 hour to rate interval --
+            -----------------------------------------------------------------
+            conditions(conditions.count).interval_factor := 24 * 
+               (extract(day    from conditions(conditions.count).rate_interval)        + 
+                extract(hour   from conditions(conditions.count).rate_interval) / 24   + 
+                extract(minute from conditions(conditions.count).rate_interval) / 3600 + 
+                extract(second from conditions(conditions.count).rate_interval) / 86400);
          end if;
       end loop;
       return;
@@ -1823,6 +1843,8 @@ as
       l_obj         zloc_lvl_indicator_t := new zloc_lvl_indicator_t;
       l_sub_id      varchar2(48);
       l_id          varchar2(256);
+      l_factor      binary_double;
+      l_offset      binary_double;
    begin
       l_parts := cwms_util.split_text(location_id, '-', 1);
       l_sub_id := case l_parts.count
@@ -1884,7 +1906,6 @@ as
           where upper(bp.base_parameter_id) = upper(l_parts(1))
             and p.base_parameter_code = bp.base_parameter_code
             and upper(nvl(p.sub_parameter_id, '@')) = upper(nvl(l_sub_id, '@'));
-
          select parameter_type_code
            into l_obj.attr_parameter_type_code
            from cwms_parameter_type
@@ -1894,6 +1915,14 @@ as
            into l_obj.attr_duration_code
            from cwms_duration
           where upper(duration_id) = upper(attr_duration_id);
+
+         select factor,
+                offset
+           into l_factor,
+                l_offset
+           from cwms_unit_conversion
+          where from_unit_id = attr_units_id
+            and to_unit_id = cwms_util.get_default_units(attr_parameter_id);
       end if;
 
       if ref_specified_level_id is not null then
@@ -1908,8 +1937,8 @@ as
       end if;
 
       l_obj.level_indicator_id := level_indicator_id;
-      l_obj.attr_value         := attr_value;
-      l_obj.ref_attr_value     := ref_attr_value;
+      l_obj.attr_value         := attr_value * l_factor + l_offset;
+      l_obj.ref_attr_value     := ref_attr_value * l_factor + l_offset;
       l_obj.minimum_duration   := minimum_duration;
       l_obj.maximum_age        := maximum_age;
       l_obj.conditions         := conditions;
@@ -1948,13 +1977,16 @@ as
          p_quality_code in number)
          return boolean
       is
-         l_validity_id varchar2(16);
+         -- l_validity_id varchar2(16);
       begin
+         /*
          select validity_id
            into l_validity_id
            from cwms_data_quality
           where quality_code = p_quality_code;
          return l_validity_id not in ('MISSING', 'REJECTED');
+         */
+         return bitand(p_quality_code, 20) = 0; -- 30 x faster!
       end is_valid;
    begin
       --------------------------------------
@@ -1986,7 +2018,7 @@ as
       for i in reverse 1..p_ts.count loop
          l_last := i;
          continue when p_ts(l_last).date_time > l_eval_time;
-         exit when is_valid(p_ts(l_last).quality_code);
+         exit when bitand(p_ts(l_last).quality_code, 20) = 0; --is_valid(p_ts(l_last).quality_code);
       end loop;
       -------------------------------------------------------
       -- only evaluate if last valid time is recent enough --
@@ -1998,14 +2030,15 @@ as
             -- compute the hourly rates of change if using rates --
             -------------------------------------------------------
             for i in reverse 2..l_last loop
-               continue when not is_valid(p_ts(i).quality_code);
+               continue when bitand(p_ts(i).quality_code, 20) != 0; --not is_valid(p_ts(i).quality_code);
                for j in reverse 1..i-1 loop
                   get_indicator_values.j := j;
-                  exit when is_valid(p_ts(j).quality_code);
+                  exit when bitand(p_ts(j).quality_code, 20) = 0; --is_valid(p_ts(j).quality_code);
                end loop;
                l_rate_values_array(i) :=
                   (p_ts(i).value - p_ts(j).value) /
                   ((p_ts(i).date_time - p_ts(j).date_time) * 24);
+               -- cwms_msg.log_db_message('z', 7, ''||i||', '||j||': '||l_rate_values_array(i));                  
             end loop;
          end if;
          --------------------------------------------------
@@ -2079,7 +2112,7 @@ as
       for i in 1..conditions.count loop
          l_set := false;
          for j in reverse 1..l_last loop
-            continue when not is_valid(p_ts(j).quality_code);
+            continue when bitand(p_ts(j).quality_code, 20) != 0; --not is_valid(p_ts(j).quality_code);
             exit when not conditions(i).is_set(
                p_ts(j).value,
                l_level_values_array_1(j),
