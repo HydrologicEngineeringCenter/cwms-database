@@ -2282,7 +2282,7 @@ AS
       if p_parameter_id is null then 
          return null; 
       end if;
-		l_base_param_code := cwms_util.get_base_param_code (p_parameter_id);
+		l_base_param_code := get_base_param_code(get_base_id(p_parameter_id));
 
 		IF UPPER (p_unit_system) = 'SI'
 		THEN
@@ -2789,8 +2789,11 @@ AS
             when substr(p_RPN_tokens(i), 1, 3) = 'ARG' then
                begin
                   l_idx := to_number(substr(p_RPN_tokens(i), 4)) + p_args_offset;
-                  if l_idx > p_args.count or p_args(l_idx) is null then
+                  if l_idx < 1 or l_idx > p_args.count then
                      argument_error(l_idx - p_args_offset);
+                  end if;
+                  if p_args(l_idx) is null then
+                     return null;
                   end if;
                   push(p_args(l_idx));
                exception
@@ -2799,8 +2802,11 @@ AS
             when substr(p_RPN_tokens(i), 1, 4) = '-ARG' then
                begin
                   l_idx := to_number(substr(p_RPN_tokens(i), 5));
-                  if l_idx > p_args.count or p_args(l_idx) is null then
-                     argument_error(l_idx);
+                  if l_idx < 1 or l_idx > p_args.count then
+                     argument_error(l_idx - p_args_offset);
+                  end if;
+                  if p_args(l_idx) is null then
+                     return null;
                   end if;
                   push(p_args(l_idx));
                exception
