@@ -65,7 +65,7 @@ PROCEDURE retrieve_project(
 AS
    l_db_office_code                 number := cwms_util.get_db_office_code(p_db_office_id);
    l_project_loc_code               number;
-   l_parts                          cwms_util.str_tab_t;
+   l_parts                          str_tab_t;
    l_base_loc_id                    varchar2(16);
    l_sub_loc_id                     varchar2(32);
    l_project                        at_project%rowtype;
