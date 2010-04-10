@@ -54,6 +54,7 @@ DECLARE
                      'loc_alias_array2',
                      'location_ref_t',
                      'location_ref_tab_t',
+                     'location_obj_t',
                      'alias_type',
                      'alias_array',
                      'cwms_ts_id_array',
@@ -120,14 +121,16 @@ DECLARE
                      --
                      -- ROWCPS TYPES
                      --
-                     'embankment_obj_t',
-                     'embank_protection_type_obj_t',
-                     'embank_structure_type_obj_t',
-                     'project_obj_t',
-                     'physical_transfer_type_obj_t',
-                     'water_user_obj_t',
-                     'wat_user_contract_obj_t',
-                     'wat_usr_contract_acct_obj_t'
+'project_obj_t',
+'lookup_type_obj_t',
+'embank_protection_type_obj_t',
+'embank_structure_type_obj_t',
+'embankment_obj_t',
+'PHYSICAL_TRANSFER_TYPE_OBJ_T',
+'water_user_obj_t',
+'wat_user_contract_obj_t',
+'wat_usr_contract_acct_obj_t'
+
                     );
 BEGIN
    defined_count := type_names.COUNT;
@@ -726,7 +729,7 @@ create or replace type number_tab_t is table of number;
 create or replace type double_tab_t is table of binary_double;
 /
 
-create or replace type location_ref_t is object(
+create type location_ref_t is object(
    base_location_id varchar2(16),
    sub_location_id  varchar2(32),
    office_id        varchar2(16),
@@ -746,6 +749,9 @@ create or replace type location_ref_t is object(
    
    member function get_location_code
    return number,
+   
+   member function get_location_id
+   return varchar2,
    
    member function get_office_code
    return number,
@@ -826,6 +832,17 @@ as
          and nvl(pl.sub_location_id, '.') = nvl(self.sub_location_id, '.');
       return l_location_code;
    end get_location_code;
+
+   member function get_location_id
+   return varchar2
+   is
+      l_location_id varchar2(49);
+   begin
+      l_location_id := self.base_location_id
+        || SUBSTR ('-', 1, LENGTH (self.sub_location_id))
+        || self.sub_location_id;
+      return l_location_id;
+   end get_location_id;
    
    member function get_office_code
    return number
@@ -864,6 +881,35 @@ show errors;
 
 create or replace type location_ref_tab_t is table of location_ref_t;
 /
+
+create or replace type location_obj_t as object
+(
+   location_ref         location_ref_t,  
+   state_initial        VARCHAR2 (2),
+   county_name          VARCHAR2 (40),
+   time_zone_name       VARCHAR2 (28),
+   location_type        VARCHAR2 (32),
+   latitude             NUMBER,
+   longitude            NUMBER,
+   horizontal_datum     VARCHAR2 (16),
+   elevation            NUMBER,
+   elev_unit_id         VARCHAR2 (16),
+   vertical_datum       VARCHAR2 (16),
+   public_name          VARCHAR2 (32),
+   long_name            VARCHAR2 (80),
+   description          VARCHAR2 (512),
+   active_flag          VARCHAR2 (1),
+   location_kind_id     varchar2(32),
+   map_label            varchar2(50),
+   published_latitude   number,
+   published_longitude  number,
+   bounding_office_id   varchar2(16),
+   nation_id            varchar2(48),
+   nearest_city         varchar2(50)
+);
+/
+
+
 
 create or replace type specified_level_t is object(
    office_id   varchar2(16),

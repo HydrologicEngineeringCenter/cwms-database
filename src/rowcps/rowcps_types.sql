@@ -85,6 +85,12 @@ END;
 /
 show errors
 
+
+--location objectss.
+
+
+
+--project object.
 CREATE OR REPLACE TYPE project_obj_t AS OBJECT (
     --locations
     --the office id for the base location
@@ -92,13 +98,13 @@ CREATE OR REPLACE TYPE project_obj_t AS OBJECT (
 
     -- the location associated with this project,
     --an instance of the location type.
-    project_location 		cat_location2_obj_t,
+    project_location 		location_obj_t,
 
     --The location code where the water is pumped back to
-    pump_back_location 		cat_location2_obj_t,
+    pump_back_location 		location_obj_t,
 
     --The location code known as the near gage for the project
-    near_gage_location 		cat_location2_obj_t,
+    near_gage_location 		location_obj_t,
     
     --The law authorizing this project
     authorizing_law			VARCHAR2(32),
@@ -157,9 +163,8 @@ show errors
 
 CREATE OR REPLACE TYPE embankment_obj_t AS OBJECT
 ( 
-    embankment_code	number,                   --The unique surrogate key (code) for this embankment structure
-    embankment_project_loc	project_obj_t,          --The project this embankment is a child of
-    embankment_id	varchar2(32 byte),              --The identification (id) of the embankment structure
+    project_location_ref	location_ref_t,          --The project this embankment is a child of
+    embankment_location location_obj_t,          --The location for this embankment 
     structure_type	lookup_type_obj_t,           --The lookup code for the type of the embankment structure
     structure_length	number,           --The overall length of the embankment structure
     upstream_prot_type	lookup_type_obj_t,           --The upstream protection type code for the embankment structure
@@ -174,7 +179,7 @@ show errors
 
 create or replace type water_user_obj_t as object
 ( 
-    WATER_USER_PROJECT_LOC_CODE	cat_location2_obj_t,      --The project that this user is pertaining to.
+    project_location_ref    location_ref_t,      --The project that this user is pertaining to.
     ENTITY_NAME	VARCHAR2(64 BYTE),      --The entity name associated with this user
     WATER_RIGHT	VARCHAR2(255 BYTE)      --The water right of this user
 );
@@ -186,7 +191,7 @@ create or replace type wat_user_contract_obj_t as object
     
     CONTRACT_WATER_USER	water_user_obj_t,--The water user this record pertains to.  See table AT_WATER_USER.
     CONTRACT_NAME	VARCHAR2(64 BYTE),--The identification name for the contract for this water user contract
-    SUPPLY_LOCATION	cat_location2_obj_t,--The location where the supply of water for this contract will come from.  See AT_PHYSICAL_LOCATION
+    SUPPLY_LOCATION	location_ref_t,--The location where the supply of water for this contract will come from.  See AT_PHYSICAL_LOCATION
     CONTRACTED_STORAGE	NUMBER,--The contracted storage amount for this water user contract
     CONTRACT_DOCUMENTS	VARCHAR2(64 BYTE),--The documents for the contract
     WS_CONTRACT_EFFECTIVE_DATE	DATE,--The start date of the contract for this water user contract
@@ -195,7 +200,7 @@ create or replace type wat_user_contract_obj_t as object
     FUTURE_USE_ALLOCATION	NUMBER,--The future contracted allocation for this water user contract
     FUTURE_USE_PERCENT_ACTIVATED	NUMBER,--The percent allocated future use for this water user contract
     TOTAL_ALLOC_PERCENT_ACTIVATED	NUMBER,--The percentage of total allocation for this water user contract
-    WITHDRAW_LOCATION	cat_location2_obj_t --The location where this user contract withdraws or pumps out their water
+    WITHDRAW_LOCATION	location_ref_t --The location where this user contract withdraws or pumps out their water
 );
 / 
 show errors

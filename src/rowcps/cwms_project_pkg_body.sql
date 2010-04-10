@@ -69,7 +69,7 @@ AS
    l_base_loc_id                    varchar2(16);
    l_sub_loc_id                     varchar2(32);
    l_project                        at_project%rowtype;
-   l_project_location               cat_location2_obj_t := null;
+   l_project_location               location_obj_t := null;
    l_db_office_id                   varchar2(16);
    l_authorizing_law                varchar2(32);
    l_federal_cost                   number;
@@ -80,8 +80,8 @@ AS
    l_remarks                        varchar2(1000);
    l_project_owner                  varchar2(255);
    l_hydropower_description         varchar2(255);
-   l_pumpback_location              cat_location2_obj_t := null;
-   l_near_gage_location             cat_location2_obj_t := null;
+   l_pumpback_location              location_obj_t := null;
+   l_near_gage_location             location_obj_t := null;
    l_sedimentation_description      varchar(255);
    l_downstream_urban_description   varchar(255);
    l_bank_full_capacity_descr       varchar(255);
@@ -89,7 +89,8 @@ AS
    l_yield_time_frame_end           date;
    l_factor                         number;
    l_unit                           varchar2(16);
-   l_temp_location                  cat_location2_obj_t := null;
+   l_temp_location_obj              location_obj_t := null;
+   l_temp_location_ref              location_ref_t := null;
 begin
    --
    -- get the location code
@@ -217,14 +218,13 @@ begin
                l_project.pump_back_location_code,
                l_project.near_gage_location_code))
    loop
-      l_temp_location := new cat_location2_obj_t (
+      l_temp_location_ref := new location_ref_t (
             p_db_office_id,
-            case rec.sub_location_id is null
-               when true  then l_base_loc_id
-               when false then l_base_loc_id || '-' || rec.sub_location_id
-            end,
             rec.base_location_id,
-            rec.sub_location_id,
+            rec.sub_location_id
+	  );
+      l_temp_location_obj := new location_obj_t (
+            l_temp_location_ref,
             rec.state_initial,
             rec.county_name,
             rec.time_zone_name,
@@ -247,11 +247,11 @@ begin
             rec.nation_id,
             rec.nearest_city);
       if rec.location_code = l_project_loc_code then
-         l_project_location := l_temp_location;
+         l_project_location := l_temp_location_obj;
       elsif rec.location_code = l_project.pump_back_location_code then
-         l_pumpback_location := l_temp_location;
+         l_pumpback_location := l_temp_location_obj;
       elsif rec.location_code = l_project.near_gage_location_code then
-         l_near_gage_location := l_temp_location;
+         l_near_gage_location := l_temp_location_obj;
       end if;
    end loop;
    --
@@ -301,7 +301,7 @@ BEGIN
    --       to null in the location objects
    --
    cwms_loc.store_location2(
-      p_project.project_location.location_id,
+      p_project.project_location.location_ref.get_location_id(),
       p_project.project_location.location_type,
       p_project.project_location.elevation,
       p_project.project_location.elev_unit_id,
@@ -324,10 +324,10 @@ BEGIN
       p_project.project_location.nation_id,
       p_project.project_location.nearest_city,
       'T',
-      p_project.project_location.db_office_id);
+      p_project.project_location.location_ref.office_id);
    if p_project.pump_back_location is not null then
       cwms_loc.store_location2(
-         p_project.pump_back_location.location_id,
+         p_project.pump_back_location.location_ref.get_location_id(),
          p_project.pump_back_location.location_type,
          p_project.pump_back_location.elevation,
          p_project.pump_back_location.elev_unit_id,
@@ -350,11 +350,11 @@ BEGIN
          p_project.pump_back_location.nation_id,
          p_project.pump_back_location.nearest_city,
          'T',
-         p_project.pump_back_location.db_office_id);
+         p_project.pump_back_location.location_ref.office_id);
    end if;
    if p_project.near_gage_location is not null then
       cwms_loc.store_location2(
-         p_project.near_gage_location.location_id,
+         p_project.near_gage_location.location_ref.get_location_id(),
          p_project.near_gage_location.location_type,
          p_project.near_gage_location.elevation,
          p_project.near_gage_location.elev_unit_id,
@@ -377,23 +377,23 @@ BEGIN
          p_project.near_gage_location.nation_id,
          p_project.near_gage_location.nearest_city,
          'T',
-         p_project.near_gage_location.db_office_id);
+         p_project.near_gage_location.location_ref.office_id);
    end if;
    --
    -- get the location codes
    --
    l_project_location_code := cwms_loc.get_location_code(
-      p_project.project_location.db_office_id,
-      p_project.project_location.location_id);
+      p_project.project_location.location_ref.office_id,
+      p_project.project_location.location_ref.get_location_id());
    if p_project.pump_back_location is not null then
       l_pump_back_location_code := cwms_loc.get_location_code(
-         p_project.pump_back_location.db_office_id,
-         p_project.pump_back_location.location_id);
+         p_project.pump_back_location.location_ref.office_id,
+         p_project.pump_back_location.location_ref.get_location_id());
    end if;
    if p_project.near_gage_location is not null then
       l_near_gage_location_code := cwms_loc.get_location_code(
-         p_project.near_gage_location.db_office_id,
-         p_project.near_gage_location.location_id);
+         p_project.near_gage_location.location_ref.office_id,
+         p_project.near_gage_location.location_ref.get_location_id());
    end if;
    --
    -- determine whether the project exists
