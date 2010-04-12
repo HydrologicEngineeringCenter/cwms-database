@@ -15,125 +15,22 @@ DECLARE
    TYPE id_array_t IS TABLE OF VARCHAR2 (32);
 
    dropped_count      PLS_INTEGER;
-   defined_count      PLS_INTEGER;
+   defined_count      PLS_INTEGER := 0;
    total_count        PLS_INTEGER := 0;
    pass_count         PLS_INTEGER := 0;
-   type_names         id_array_t
-      := id_array_t ('shef_spec_array',
-                     'shef_spec_type',
-                     'tr_template_set_type',
-                     'tr_template_set_array',
-                     'tsv_type',
-                     'tsv_array',
-                     'ztsv_type',
-                     'ztsv_array',
-                     'at_tsv_type',
-                     'at_tsv_array',
-                     'char_16_array_type',
-                     'char_32_array_type',
-                     'char_49_array_type',
-                     'char_183_array_type',
-                     'str_tab_t',
-                     'str_tab_tab_t',
-                     'date_table_type',
-                     'timeseries_type',
-                     'timeseries_array',
-                     'ztimeseries_type',
-                     'ztimeseries_array',
-                     'timeseries_req_type',
-                     'timeseries_req_array',
-                     'ts_request_type',
-                     'ts_request_array',
-                     'source_type',
-                     'source_array',
-                     'loc_type_ds',
-                     'loc_type',
-                     'loc_alias_type',
-                     'loc_alias_array',
-                     'loc_alias_type2',
-                     'loc_alias_array2',
-                     'location_ref_t',
-                     'location_ref_tab_t',
-                     'location_obj_t',
-                     'alias_type',
-                     'alias_array',
-                     'cwms_ts_id_array',
-                     'cwms_ts_id_t',
-                     'nested_ts_type',
-                     'nested_ts_table',
-                     'screen_assign_array',
-                     'screen_assign_t',
-                     'screen_dur_mag_array',
-                     'screen_dur_mag_type',
-                     'screen_crit_array',
-                     'screen_crit_type',
-                     'cat_ts_obj_t',
-                     'cat_ts_otab_t',
-                     'cat_ts_cwms_20_obj_t',
-                     'cat_ts_cwms_20_otab_t',
-                     'cat_loc_obj_t',
-                     'cat_loc_otab_t',
-                     'cat_location_obj_t',
-                     'cat_location_otab_t',
-                     'cat_location2_obj_t',
-                     'cat_location2_otab_t',
-                     'cat_location_kind_obj_t',
-                     'cat_location_kind_otab_t',
-                     'cat_loc_alias_obj_t',
-                     'cat_loc_alias_otab_t',
-                     'cat_param_obj_t',
-                     'cat_param_otab_t',
-                     'cat_sub_param_obj_t',
-                     'cat_sub_param_otab_t',
-                     'cat_sub_loc_obj_t',
-                     'cat_sub_loc_otab_t',
-                     'cat_state_obj_t',
-                     'cat_state_otab_t',
-                     'cat_county_obj_t',
-                     'cat_county_otab_t',
-                     'cat_timezone_obj_t',
-                     'cat_timezone_otab_t',
-                     'cat_dss_file_obj_t',
-                     'cat_dss_file_otab_t',
-                     'cat_dss_xchg_set_obj_t',
-                     'cat_dss_xchg_set_otab_t',
-                     'cat_dss_xchg_ts_map_obj_t',
-                     'cat_dss_xchg_ts_map_otab_t',
-                     'group_type',
-                     'group_array',
-                     'group_cat_t',
-                     'group_cat_tab_t',
-                     'specified_level_t',
-                     'specified_level_tab_t',
-                     'seasonal_value_t',
-                     'seasonal_value_tab_t',
-                     'loc_lvl_indicator_cond_t',
-                     'loc_lvl_indicator_cond_tab_t',
-                     'loc_lvl_indicator_t',
-                     'loc_lvl_indicator_tab_t',
-                     'zloc_lvl_indicator_t',
-                     'zloc_lvl_indicator_tab_t',
-                     'seasonal_location_level_t',
-                     'seasonal_location_level_tab_t',
-                     'zlocation_level_t',
-                     'location_level_t',
-                     'location_level_tab_t',
-                     --
-                     -- ROWCPS TYPES
-                     --
-'project_obj_t',
-'lookup_type_obj_t',
-'embank_protection_type_obj_t',
-'embank_structure_type_obj_t',
-'embankment_obj_t',
-'PHYSICAL_TRANSFER_TYPE_OBJ_T',
-'water_user_obj_t',
-'wat_user_contract_obj_t',
-'wat_usr_contract_acct_obj_t'
-
-                    );
+   type_names         id_array_t  := id_array_t();
 BEGIN
-   defined_count := type_names.COUNT;
+   for rec in (select object_name 
+                 from dba_objects 
+                where owner = 'CWMS_21' 
+                  and object_type = 'TYPE' 
+                  and object_name not like 'SYS\_%' escape '\'
+             order by object_name)
+   loop
+      defined_count := defined_count + 1;
+      type_names.extend;
+      type_names(defined_count) := rec.object_name;
+   end loop;
 
    LOOP
       pass_count := pass_count + 1;
