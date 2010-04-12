@@ -38,7 +38,7 @@ BEGIN
       dropped_count := 0;
       DBMS_OUTPUT.put_line ('');
 
-      FOR i IN type_names.FIRST .. type_names.LAST
+      FOR i IN 1..defined_count
       LOOP
          IF LENGTH (type_names (i)) > 0
          THEN
