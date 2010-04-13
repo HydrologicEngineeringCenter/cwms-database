@@ -58,9 +58,9 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
     ---------------------------------------------------------------------------
 
     FUNCTION get_ts_id (p_ts_code IN NUMBER)
-       RETURN VARCHAR2
+        RETURN VARCHAR2
     IS
-       l_cwms_ts_id   VARCHAR2 (183);
+        l_cwms_ts_id	VARCHAR2 (183);
     BEGIN
         BEGIN
             SELECT	cwms_ts_id
@@ -374,9 +374,9 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 
 
     FUNCTION get_location_id (p_cwms_ts_code IN NUMBER)
-       RETURN VARCHAR2
+        RETURN VARCHAR2
     IS
-       l_location_id   VARCHAR2 (49);
+        l_location_id	 VARCHAR2 (49);
     BEGIN
         BEGIN
             SELECT	location_id
@@ -1212,6 +1212,7 @@ IS
    l_all_office_code       NUMBER         := cwms_util.db_office_code_all;
    l_active_flag           VARCHAR2 (1)   := 'T';
    l_ts_id_exists          BOOLEAN        := FALSE;
+   l_can_create            BOOLEAN        := TRUE;
 BEGIN
    IF p_office_id IS NULL
    THEN
@@ -1291,8 +1292,9 @@ BEGIN
 
    IF l_ret > 0
    THEN
+      l_can_create := FALSE; -- don't create a ts_code, just retrieve the one we're blocking against.
       DBMS_LOCK.sleep (2);
-   ELSE
+   END IF;
       -- BEGIN...
 
       -- determine rest of lookup codes based on passed in values, use scalar subquery to minimize context switches, return error if lookups not found
@@ -1357,6 +1359,9 @@ BEGIN
                || ' is not a valid interval';
          END IF;
 
+      if l_can_create then
+         l_ret := dbms_lock.release(l_hashcode);
+      end if;         
          raise_application_error (-20205, l_str_error, TRUE);
       END IF;
 
@@ -1382,6 +1387,9 @@ BEGIN
          THEN
             IF l_sub_parameter_id IS NULL
             THEN
+            if l_can_create then
+               l_ret := dbms_lock.release(l_hashcode);
+            end if;         
                cwms_err.RAISE
                   ('GENERIC_ERROR',
                       l_base_parameter_id
@@ -1419,9 +1427,13 @@ BEGIN
 
          --
          l_ts_id_exists := TRUE;
+      if l_can_create then
+         l_ret := dbms_lock.release(l_hashcode);
+      end if;         
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
+         IF l_can_create THEN
             IF l_interval_id = '0'
             THEN
                l_utc_offset := cwms_util.utc_offset_irregular;
@@ -1461,8 +1473,8 @@ BEGIN
                    INTO p_ts_code;
 
             COMMIT;
+         END IF;
       END;
-   END IF;
 
    IF p_ts_code IS NULL
    THEN
@@ -4615,21 +4627,21 @@ BEGIN
 
    --Get Time series parameters for retrieval load into record structure
    begin
-      SELECT INTERVAL,
-             CASE interval_utc_offset
-                WHEN cwms_util.utc_offset_undefined
-                   THEN NULL
-                WHEN cwms_util.utc_offset_irregular
-                   THEN NULL
-                ELSE (interval_utc_offset)
-             END,
-             version_flag, ts_code
-        INTO l_ts_interval,
-             l_ts_offset,
-             l_versioned, l_ts_code
-        FROM mv_cwms_ts_id
-       WHERE db_office_id = UPPER (l_db_office_id)
-         AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
+   SELECT INTERVAL,
+          CASE interval_utc_offset
+             WHEN cwms_util.utc_offset_undefined
+                THEN NULL
+             WHEN cwms_util.utc_offset_irregular
+                THEN NULL
+             ELSE (interval_utc_offset)
+          END,
+          version_flag, ts_code
+     INTO l_ts_interval,
+          l_ts_offset,
+          l_versioned, l_ts_code
+     FROM mv_cwms_ts_id
+    WHERE db_office_id = UPPER (l_db_office_id)
+      AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
    exception
       when no_data_found then
          SELECT INTERVAL,
