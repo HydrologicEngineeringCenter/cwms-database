@@ -1,3 +1,4 @@
+WHENEVER sqlerror exit sql.sqlcode
 CREATE OR REPLACE
 PACKAGE CWMS_EMBANK AS
 

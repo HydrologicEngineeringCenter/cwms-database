@@ -1,3 +1,4 @@
+WHENEVER sqlerror exit sql.sqlcode
 
 SET serveroutput on
 ----------------------------------------------------
