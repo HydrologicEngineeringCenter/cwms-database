@@ -35,26 +35,26 @@ DECLARE
 					 'AT_LU_GATE_RELEASE_REASON_CODE',
 					 'AT_LU_PHYSICAL_TRANSFER_TYPE',
 					 'AT_LU_PROJECT_PURPOSE',
-					 'AT_LU_TURBINE_SETTING_TYPE',
+					 'AT_LU_TURBINE_SETTING_REASON',
 					 'AT_LU_TURBINE_COMPUTATION_CODE',
                                          'AT_LU_WS_CONTRACT_TYPE_CODE',
                                          'AT_LU_OPERATIONAL_STATUS_CODE',
-                                         'AT_OUTLET_CHARACTERISTIC',
-					 'DELETE This line and below once',
+                                         'AT_OUTLET_CHARACTERISTIC',                               
+					 'AT_TURBINE_CHARACTERISTIC',  
+                                         'DELETE This line and below once',
 					 ' 4.2 is installed correctly',
 					 ' Below are old table names',
-					 'AT_PROJECT_CHARACTERISTIC',                                     
-					 'AT_OUTLET_CHARACTERISTIC',                                      
-					 'AT_TURBINE_CHARACTERISTIC',                                      
+					 'AT_PROJECT_CHARACTERISTIC',                                     					                                   
 					 'AT_WATER_USER_ACCOUNTING',
-					 'at_lockage_change',                                                
+					 'at_lockage_change',  
+                                         'AT_PROJECT_TURBINE_CHANGE',
 					 'AT_LU_COMPUTATION_CODE',
 					 'AT_LU_RELEASE_CODE',
 					 'AT_LU_PROJECT_PURPOSE',
 					 'AT_LU_DOCUMENT_TYPE',
 					 'AT_LU_PROTECTION_TYPE',
 					 'AT_LU_STRUCTURE_TYPE',
-					 'AT_LU_TURBINE_SETTING'
+					 'AT_LU_TURBINE_SETTING_TYPE'
                     );
    mview_log_names   id_array_t
       := id_array_t (' '
@@ -131,7 +131,7 @@ COMMENT ON COLUMN at_lu_gate_ch_computation_code.computation_code_active IS 'Whe
 ALTER TABLE at_lu_gate_ch_computation_code ADD (
   CONSTRAINT at_lu_gate_computation_code_pk
  PRIMARY KEY
- (computation_code)
+ (discharge_computation_code)
     USING INDEX
     TABLESPACE cwms_20at_data
     PCTFREE    10
@@ -428,12 +428,12 @@ CHECK ( protection_type_active = 'T' OR protection_type_active = 'F'))
 --------
 --------
 
-CREATE TABLE at_lu_turbine_setting_type
+CREATE TABLE at_lu_turbine_setting_reason
 (
-  turbine_setting_type_code  			NUMBER(10)				NOT NULL,
-  turb_set_type_display_value			VARCHAR2(25 BYTE)		NOT NULL,
-  turbine_setting_type_tooltip			VARCHAR2(255 BYTE)		NOT NULL,
-  turbine_setting_type_active			VARCHAR2(1)	DEFAULT 'T'	NOT NULL 
+  turbine_setting_reason_code  			NUMBER(10)			NOT NULL,
+  turb_set_reason_display_value			VARCHAR2(25 BYTE)		NOT NULL,
+  turbine_setting_reason_tooltip		VARCHAR2(255 BYTE)		NOT NULL,
+  turbine_setting_reason_active			VARCHAR2(1)	DEFAULT 'T'	NOT NULL 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -453,15 +453,15 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_lu_turbine_setting_type.turbine_setting_type_code IS 'The unique id for this turbine_setting_type code record';
-COMMENT ON COLUMN at_lu_turbine_setting_type.turb_set_type_display_value IS 'The value to display for this turbine_setting_type record';
-COMMENT ON COLUMN at_lu_turbine_setting_type.turbine_setting_type_tooltip IS 'The description or meaning of this turbine_setting_type record';
-COMMENT ON COLUMN at_lu_turbine_setting_type.turbine_setting_type_active IS 'Whether this turbine_setting_type entry is currently active';
+COMMENT ON COLUMN at_lu_turbine_setting_reason.turbine_setting_reason_code IS 'The unique id for this turbine_setting_type code record';
+COMMENT ON COLUMN at_lu_turbine_setting_reason.turb_set_reason_display_value IS 'The value to display for this turbine_setting_type record';
+COMMENT ON COLUMN at_lu_turbine_setting_reason.turbine_setting_reason_tooltip IS 'The description or meaning of this turbine_setting_type record';
+COMMENT ON COLUMN at_lu_turbine_setting_reason.turbine_setting_reason_active IS 'Whether this turbine_setting_type entry is currently active';
 
-ALTER TABLE at_lu_turbine_setting_type ADD (
-  CONSTRAINT at_lu_turbine_setting_type_pk
+ALTER TABLE at_lu_turbine_setting_reason ADD (
+  CONSTRAINT at_lu_turb_setting_reason_pk
  PRIMARY KEY
- (turbine_setting_type_code)
+ (turbine_setting_reason_code)
     USING INDEX
     TABLESPACE cwms_20at_data
     PCTFREE    10
@@ -475,9 +475,9 @@ ALTER TABLE at_lu_turbine_setting_type ADD (
                ))
 /
 
-ALTER TABLE at_lu_turbine_setting_type ADD (
+ALTER TABLE at_lu_turbine_setting_reason ADD (
 CONSTRAINT atlu_tst_active_ck 
-CHECK ( turbine_setting_type_active = 'T' OR turbine_setting_type_active = 'F'))
+CHECK ( turbine_setting_reason_active = 'T' OR turbine_setting_reason_active = 'F'))
 /
 
 --------
@@ -485,7 +485,7 @@ CHECK ( turbine_setting_type_active = 'T' OR turbine_setting_type_active = 'F'))
 
 CREATE TABLE at_lu_turbine_computation_code
 (
-  turbine_computation_code	  		NUMBER(10)				NOT NULL,
+  turbine_discharge_comp_code	  		NUMBER(10)				NOT NULL,
   turb_comp_code_display_value			VARCHAR2(25 BYTE)		NOT NULL,
   turb_computation_code_tooltip			VARCHAR2(255 BYTE)		NOT NULL,
   turb_computation_code_active			VARCHAR2(1)	DEFAULT 'T'	NOT NULL
@@ -509,7 +509,7 @@ NOPARALLEL
 MONITORING
 /
 
-COMMENT ON COLUMN at_lu_turbine_computation_code.turbine_computation_code IS 'The unique id for this turbine_computation_code record';
+COMMENT ON COLUMN at_lu_turbine_computation_code.turbine_discharge_comp_code IS 'The unique id for this turbine_computation_code record';
 COMMENT ON COLUMN at_lu_turbine_computation_code.turb_comp_code_display_value IS 'The value to display for this at_lu_turbine_computation_code record';
 COMMENT ON COLUMN at_lu_turbine_computation_code.turb_computation_code_tooltip IS 'The description or meaning of this at_lu_turbine_computation_code record';
 COMMENT ON COLUMN at_lu_turbine_computation_code.turb_computation_code_active IS 'Whether this at_lu_turbine_computation_code entry is currently active';
@@ -517,7 +517,7 @@ COMMENT ON COLUMN at_lu_turbine_computation_code.turb_computation_code_active IS
 ALTER TABLE at_lu_turbine_computation_code ADD (
   CONSTRAINT at_lu_turb_computation_code_pk
  PRIMARY KEY
- (turbine_computation_code)
+ (turbine_discharge_comp_code)
     USING INDEX
     TABLESPACE cwms_20at_data
     PCTFREE    10
@@ -597,7 +597,7 @@ CHECK ( physical_transfer_type_active = 'T' OR physical_transfer_type_active = '
 CREATE TABLE at_lu_operational_status_code
 (
   operational_status_code  			NUMBER(10)			NOT NULL,
-  operational_status_display_value		VARCHAR2(25 BYTE)		NOT NULL,
+  oper_status_display_value		VARCHAR2(25 BYTE)		NOT NULL,
   operational_status_tooltip		        VARCHAR2(255 BYTE)		NOT NULL,
   operational_status_active			VARCHAR2(1)	DEFAULT 'T'	NOT NULL 
 )
@@ -620,7 +620,7 @@ NOPARALLEL
 MONITORING
 /
 COMMENT ON COLUMN at_lu_operational_status_code.operational_status_code IS 'The unique id for this operational_status_code code record';
-COMMENT ON COLUMN at_lu_operational_status_code.operational_status_display_value IS 'The value to display for this operational_status_code record';
+COMMENT ON COLUMN at_lu_operational_status_code.oper_status_display_value IS 'The value to display for this operational_status_code record';
 COMMENT ON COLUMN at_lu_operational_status_code.operational_status_tooltip IS 'The description or meaning of this operational_status_code record';
 COMMENT ON COLUMN at_lu_operational_status_code.operational_status_active IS 'Whether this operational_status_code entry is currently active';
 
@@ -643,7 +643,62 @@ ALTER TABLE at_lu_operational_status_code ADD (
 
 ALTER TABLE at_lu_operational_status_code ADD (
 CONSTRAINT at_lu_oper_status_active_ck 
-CHECK (operational_status_code_active = 'T' OR operational_status_code_active = 'F'))
+CHECK (operational_status_active = 'T' OR operational_status_active = 'F'))
+/
+
+--------
+--------
+
+CREATE TABLE at_lu_ws_contract_type_code
+(
+  ws_contract_type_code 		NUMBER(10)				NOT NULL,
+  ws_contract_type_display_value	VARCHAR2(25 BYTE)		NOT NULL,
+  ws_contract_type_tooltip		VARCHAR2(255 BYTE)		NOT NULL,
+  ws_contract_type_active		VARCHAR2(1)	DEFAULT 'T'	NOT NULL 
+)
+TABLESPACE cwms_20at_data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          504 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_code IS 'The unique id for this water supply contract type code record';
+COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_display_value IS 'The value to display for this ws_contract_type record';
+COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_tooltip IS 'The description or meaning of this ws_contract_type record';
+COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_active IS 'Whether this ws_contract_type entry is currently active';
+/
+ALTER TABLE at_lu_ws_contract_type_code ADD (
+  CONSTRAINT at_lu_ws_contract_type_pk
+ PRIMARY KEY
+ (ws_contract_type_code)
+    USING INDEX
+    TABLESPACE cwms_20at_data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+ALTER TABLE at_lu_ws_contract_type_code ADD (
+CONSTRAINT at_lu_ws_cntrct_typ_activ_ck 
+CHECK ( ws_contract_type_active = 'T' OR ws_contract_type_active = 'F'))
 /
 
 --------
@@ -651,23 +706,23 @@ CHECK (operational_status_code_active = 'T' OR operational_status_code_active = 
 
 CREATE TABLE at_project
 (
-  project_location_code				NUMBER(10)	NOT NULL,
+  project_location_code				NUMBER(10)	        NOT NULL,
+  federal_cost					NUMBER,
+  nonfederal_cost				NUMBER,
+  cost_year					DATE,
+  federal_om_cost				BINARY_DOUBLE,
+  nonfederal_om_cost				BINARY_DOUBLE,
+  authorizing_law				VARCHAR2(32),
+  project_owner					VARCHAR2(255),
+  hydropower_description			VARCHAR2(255),
+  sedimentation_description			VARCHAR2(255 BYTE),
+  downstream_urban_description		        VARCHAR2(255 BYTE),
+  bank_full_capacity_description	        VARCHAR2(255 BYTE),
   pump_back_location_code			NUMBER(10),
   near_gage_location_code			NUMBER(10),
   yield_time_frame_start			DATE,
   yield_time_frame_end				DATE,	
-  federal_cost						NUMBER,
-  nonfederal_cost					NUMBER,
-  cost_year							DATE,
-  federal_om_cost					NUMBER(10),
-  nonfederal_om_cost				NUMBER(10),
-  authorizing_law					VARCHAR2(32),
-  project_owner						VARCHAR2(255),
-  hydropower_description			VARCHAR2(255),
-  sedimentation_description			VARCHAR2(255 BYTE),
-  downstream_urban_description		VARCHAR2(255 BYTE),
-  bank_full_capacity_description	VARCHAR2(255 BYTE),
-  remarks							VARCHAR2(1000 BYTE)
+  project_remarks				VARCHAR2(1000 BYTE)
   )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -688,13 +743,13 @@ NOPARALLEL
 MONITORING
 /
 COMMENT ON COLUMN at_project.project_location_code IS 'Unique record identifier for this project. THis code is also in AT_PHYSICAL_LOCATION';
-COMMENT ON COLUMN at_project.authorizing_law IS 'The law authorizing this project';
+COMMENT ON COLUMN at_project.authorizing_law IS 'A semicolon separated list of laws authorizing this project';
 COMMENT ON COLUMN at_project.federal_cost IS 'The federal cost of this project';
 COMMENT ON COLUMN at_project.nonfederal_cost IS 'The non-federal cost of this project';
 COMMENT ON COLUMN at_project.cost_year IS 'The year the project cost data is from';
 COMMENT ON COLUMN at_project.federal_om_cost IS 'The om federal cost of this project';
 COMMENT ON COLUMN at_project.nonfederal_om_cost IS 'the non-federal cost of this project';
-COMMENT ON COLUMN at_project.remarks IS 'The general remarks regarding this project';
+COMMENT ON COLUMN at_project.project_remarks IS 'The general remarks regarding this project';
 COMMENT ON COLUMN at_project.project_owner IS 'The assigned owner of this project';
 COMMENT ON COLUMN at_project.hydropower_description IS 'The description of the hydro-power located at this project';
 COMMENT ON COLUMN at_project.pump_back_location_code IS 'The location code where the water is pumped back to';
@@ -702,8 +757,8 @@ COMMENT ON COLUMN at_project.near_gage_location_code IS 'The location code known
 COMMENT ON COLUMN at_project.sedimentation_description IS 'The description of the projects sedimentation';
 COMMENT ON COLUMN at_project.downstream_urban_description IS 'The description of the urban area downstream';
 COMMENT ON COLUMN at_project.bank_full_capacity_description IS 'The description of the full capacity';
-COMMENT ON COLUMN at_project.yield_time_frame_start IS 'The start date of the yield time frame';
-COMMENT ON COLUMN at_project.yield_time_frame_end IS 'The end date of the yield time frame';
+COMMENT ON COLUMN at_project.yield_time_frame_start IS 'The start date of the yield time frame.  The actual yield value is a flow value and therefore it is stored in the table SPECIFIED_LEVEL.';
+COMMENT ON COLUMN at_project.yield_time_frame_end IS 'The end date of the yield time frame.  The actual yield value is a flow value and therefore it is stored in the table SPECIFIED_LEVEL.';
 
 ALTER TABLE at_project ADD (
   CONSTRAINT at_project_pk
@@ -749,13 +804,13 @@ CREATE TABLE at_embankment
   embankment_project_loc_code	        NUMBER(10)			NOT NULL,
   embankment_location_code		NUMBER(10)      	        NOT NULL,
   structure_type_code			NUMBER(10)			NOT NULL,
-  structure_length			NUMBER(10),
+  structure_length			BINARY_DOUBLE,
   upstream_prot_type_code		NUMBER(10),
-  upstream_sideslope			NUMBER(10),
+  upstream_sideslope			BINARY_DOUBLE,
   downstream_prot_type_code		NUMBER(10),
-  downstream_sideslope			NUMBER(10),
-  height_max					NUMBER(10),
-  top_width						NUMBER(10)
+  downstream_sideslope			BINARY_DOUBLE,
+  height_max					BINARY_DOUBLE,
+  top_width						BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -857,12 +912,12 @@ ALTER TABLE at_embankment ADD (
 CREATE TABLE at_lock
 (
   lock_location_code			NUMBER(10)			NOT NULL,
-  lock_project_location_code	NUMBER(10)			NOT NULL,
-  lock_width					NUMBER(10),
-  lock_length					NUMBER(10),
-  volume_per_lockage			NUMBER(10),
-  draft							NUMBER(10),
-  normal_lock_lift				NUMBER(10)
+  project_location_code	NUMBER(10)			NOT NULL,
+  lock_width					BINARY_DOUBLE,
+  lock_length					BINARY_DOUBLE,
+  volume_per_lockage			BINARY_DOUBLE,
+  minimum_draft							BINARY_DOUBLE,
+  normal_lock_lift				BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -883,11 +938,14 @@ NOPARALLEL
 MONITORING
 /
 COMMENT ON COLUMN at_lock.lock_location_code IS 'Unique record identifier for this lock, also in at_physical_location';
-COMMENT ON COLUMN at_lock.lock_project_location_code IS 'The project that this lock is part of';
-COMMENT ON COLUMN at_lock.lock_width IS 'The overall width of the lock structure';
-COMMENT ON COLUMN at_lock.lock_length IS 'The overall length of the lock structure';
-COMMENT ON COLUMN at_lock.volume_per_lockage IS 'The volume of water contained in the lock structure';
-COMMENT ON COLUMN at_lock.draft IS 'The minimum depth of water that is maintained for vessels for this particular lock';
+COMMENT ON COLUMN at_lock.project_location_code IS 'The project that this lock is part of';
+COMMENT ON COLUMN at_lock.lock_width IS 'The width of the lock chamber';
+COMMENT ON COLUMN at_lock.lock_length IS 'The length of the lock chamber';
+COMMENT ON COLUMN at_lock.volume_per_lockage IS 'The volume of water discharged for one lockage at normal headwater and tailwater elevations.  This volume includes any flushing water.';
+COMMENT ON COLUMN at_lock.minimum_draft IS 'The minimum depth of water that is maintained for vessels for this particular lock';
+
+CREATE UNIQUE INDEX at_lock_idx_1 ON at_lock
+(lock_location_code,project_location_code)
 
 ALTER TABLE at_lock ADD (
   CONSTRAINT at_lock_pk
@@ -914,7 +972,7 @@ ALTER TABLE at_lock ADD (
 
 ALTER TABLE at_lock ADD (
   CONSTRAINT at_lock_fk2
- FOREIGN KEY (lock_project_location_code)
+ FOREIGN KEY (project_location_code)
  REFERENCES at_project (project_location_code))
 /
 
@@ -923,14 +981,14 @@ ALTER TABLE at_lock ADD (
 
 CREATE TABLE at_lockage
 (
-  lockage_code					NUMBER(10)			NOT NULL,
+  lockage_code				NUMBER(10)			NOT NULL,
   lockage_location_code			NUMBER(10)			NOT NULL,
-  change_date					DATE				NOT NULL,
-  number_boats					NUMBER(10),
-  number_barges					NUMBER(10),
-  tonnage						NUMBER(10),
+  lockage_datetime			DATE				NOT NULL,
+  number_boats				BINARY_DOUBLE,
+  number_barges				BINARY_DOUBLE,
+  tonnage				BINARY_DOUBLE,
   direction_of_travel			VARCHAR2(255 BYTE),
-  additional_notes				VARCHAR2(255 BYTE)
+  lockage_notes 			VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -950,14 +1008,14 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_lockage.lockage_code IS 'Unique record identifier for every lock change on a project.  IS automatically created';
-COMMENT ON COLUMN at_lockage.lockage_location_code IS 'The lock that has been activated.  SEE AT_LOCK';
-COMMENT ON COLUMN at_lockage.change_date IS 'The date and time of the Lockage event';
-COMMENT ON COLUMN at_lockage.direction_of_travel IS 'The direction of the water vehicles for this lock change';
-COMMENT ON COLUMN at_lockage.number_boats IS 'The number of boats accomodated for this lock change';
-COMMENT ON COLUMN at_lockage.number_barges IS 'The number of barges accomodated for this lock change';
-COMMENT ON COLUMN at_lockage.tonnage IS 'The tonnage of product accomodated for this lock change';
-COMMENT ON COLUMN at_lockage.additional_notes IS 'Any notes pertinent to this lock change';
+COMMENT ON COLUMN at_lockage.lockage_code IS 'Unique record identifier for every lockage on a project.  IS automatically generated.';
+COMMENT ON COLUMN at_lockage.lockage_location_code IS 'The lock at which this lockage occurred.  SEE AT_LOCK';
+COMMENT ON COLUMN at_lockage.lockage_datetime IS 'The date and time of the lockage';
+COMMENT ON COLUMN at_lockage.direction_of_travel IS 'The direction of boats and barges for this lock change.  Constrained to UPBOUND or DOWNBOUND by a check constraint.';
+COMMENT ON COLUMN at_lockage.number_boats IS 'The number of boats accomodated in this lockage';
+COMMENT ON COLUMN at_lockage.number_barges IS 'The number of barges accomodated in this lockage';
+COMMENT ON COLUMN at_lockage.tonnage IS 'The tonnage of product accomodated in this lockage';
+COMMENT ON COLUMN at_lockage.lockage_notes IS 'Any notes pertinent to this lockage';
 
 
 ALTER TABLE at_lockage ADD (
@@ -978,7 +1036,7 @@ ALTER TABLE at_lockage ADD (
 /
 
 CREATE UNIQUE INDEX at_lockage_idx_1 ON at_lockage
-(lockage_location_code,change_date)
+(lockage_location_code,lockage_datetime)
 LOGGING
 tablespace cwms_20at_data
 PCTFREE    10
@@ -1003,14 +1061,14 @@ ALTER TABLE at_lockage ADD (
 --------
 --------
 
-CREATE TABLE at_project_turbine_change
+CREATE TABLE at_turbine_change
 (
   turbine_change_code			NUMBER(10)			NOT NULL,
-  turbine_change_proj_loc_code	NUMBER(10)			NOT NULL,
-  change_date					DATE				NOT NULL,
-  old_totalq_override			NUMBER(10),
-  new_totalq_override			NUMBER(10),
-  additional_notes				VARCHAR2(255 BYTE)
+  project_location_code	                NUMBER(10)			NOT NULL,
+  turbine_change_datetime		DATE				NOT NULL,
+  old_total_discharge_override		BINARY_DOUBLE,
+  new_total_discharge_override		BINARY_DOUBLE,
+  turbine_change_notes			VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1030,15 +1088,15 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_project_turbine_change.turbine_change_code IS 'Unique record identifier for every turbine change on a project.  IS automatically created';
-COMMENT ON COLUMN at_project_turbine_change.turbine_change_proj_loc_code IS 'The project this turbine change refers to';
-COMMENT ON COLUMN at_project_turbine_change.change_date IS 'The date and time of the turbine change';
-COMMENT ON COLUMN at_project_turbine_change.old_totalq_override IS 'The total Q rate before the turbine change';
-COMMENT ON COLUMN at_project_turbine_change.new_totalq_override IS 'The total Q rate after the turbine change';
-COMMENT ON COLUMN at_project_turbine_change.additional_notes IS 'Any notes pertinent to this turbine change';
+COMMENT ON COLUMN at_turbine_change.turbine_change_code IS 'Unique record identifier for every turbine change on a project.  IS automatically created';
+COMMENT ON COLUMN at_turbine_change.project_location_code IS 'The project this turbine change refers to';
+COMMENT ON COLUMN at_turbine_change.turbine_change_datetime IS 'The date and time of the turbine change';
+COMMENT ON COLUMN at_turbine_change.old_total_discharge_override IS 'The total Q rate before the turbine change.  This value is from a manual entry or other external data source and overrides the calculated Q for the group of turbines.';
+COMMENT ON COLUMN at_turbine_change.new_total_discharge_override IS 'The total Q rate after the turbine change.  This value is from a manual entry or other external data source and overrides the calculated Q for the group of turbines.';
+COMMENT ON COLUMN at_turbine_change.turbine_change_notes IS 'Any notes pertinent to this turbine change';
 
-ALTER TABLE at_project_turbine_change ADD (
-  CONSTRAINT at_project_turbine_change_pk
+ALTER TABLE at_turbine_change ADD (
+  CONSTRAINT at_turbine_change_pk
  PRIMARY KEY
  (turbine_change_code)
     USING INDEX
@@ -1054,8 +1112,8 @@ ALTER TABLE at_project_turbine_change ADD (
                ))
 /
 
-CREATE UNIQUE INDEX at_project_turb_ch_idx_1 ON at_project_turbine_change
-(turbine_change_proj_loc_code,change_date)
+CREATE UNIQUE INDEX at_turbine_change_idx_1 ON at_turbine_change
+(project_location_code,turbine_change_datetime)
 LOGGING
 tablespace cwms_20at_data
 PCTFREE    10
@@ -1071,10 +1129,64 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_project_turbine_change ADD (
-  CONSTRAINT at_proj_turbine_change_fk1
- FOREIGN KEY (turbine_change_proj_loc_code)
+ALTER TABLE at_turbine_change ADD (
+  CONSTRAINT at_turbine_change_fk1
+ FOREIGN KEY (project_location_code)
  REFERENCES at_project (project_location_code))
+/
+
+--------
+--------
+
+CREATE TABLE at_turbine_characteristic
+(
+  turbine_characteristic_code           NUMBER(10)                      NOT NULL,
+  rated_power_capacity			BINARY_DOUBLE,
+  min_generation_flow			BINARY_DOUBLE,
+  max_generation_flow			BINARY_DOUBLE,
+  turbine_operation_rule_set		VARCHAR2(255 BYTE),
+  turbine_general_description		VARCHAR2(255 BYTE)
+)
+TABLESPACE cwms_20at_data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          504 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+COMMENT ON COLUMN at_turbine_characteristic.turbine_characteristic_code IS 'The automatically generated unique surrogate key';
+COMMENT ON COLUMN at_turbine_characteristic.rated_power_capacity IS 'The nameplate power generating capacity for this turbine';
+COMMENT ON COLUMN at_turbine_characteristic.min_generation_flow IS 'The minimum flow required to utilize the turbine';
+COMMENT ON COLUMN at_turbine_characteristic.max_generation_flow IS 'The maximum flow capacity for the turbine';
+COMMENT ON COLUMN at_turbine_characteristic.turbine_general_description IS 'The genearl description of this class of turbines';
+COMMENT ON COLUMN at_turbine_characteristic.turbine_operation_rule_set IS 'The operational rule set for this turbine';
+
+ALTER TABLE at_turbine_characteristic ADD (
+  CONSTRAINT at_turbine_characteristic_pk
+ PRIMARY KEY
+ (turbine_characteristic_code)
+    USING INDEX
+    TABLESPACE cwms_20at_data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
 /
 
 --------
@@ -1083,13 +1195,9 @@ ALTER TABLE at_project_turbine_change ADD (
 CREATE TABLE at_turbine
 (
   turbine_location_code			NUMBER(10)			NOT NULL,
-  turbine_project_location_code	NUMBER(10)			NOT NULL,
-  rated_capacity				NUMBER(10),
-  min_generation_flow			NUMBER(10),
-  max_generation_flow			NUMBER(10),
-  turbine_rating_code			NUMBER(10),
-  operation_rule_set			VARCHAR2(255 BYTE),
-  description					VARCHAR2(255 BYTE)
+  project_location_code	                NUMBER(10)			NOT NULL,
+  turbine_characteristic_code           NUMBER(10)                      NOT NULL,
+  turbine_description			VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1110,13 +1218,9 @@ NOPARALLEL
 MONITORING
 /
 COMMENT ON COLUMN at_turbine.turbine_location_code IS 'The actual turbine this record refers to.  The location_code also in AT_PHYSICAL_LOCATION';
-COMMENT ON COLUMN at_turbine.turbine_project_location_code IS 'The project this turbine is part of.  See AT_PROJECT.project_location_code';
-COMMENT ON COLUMN at_turbine.rated_capacity IS 'The capacity rating for the turbine';
-COMMENT ON COLUMN at_turbine.turbine_rating_code IS 'The surrogate_key of AT_RATING for the rating of the turbine';
-COMMENT ON COLUMN at_turbine.min_generation_flow IS 'The minimum flow required to utilize the turbine';
-COMMENT ON COLUMN at_turbine.max_generation_flow IS 'The maximum flow capacity for the turbine';
-COMMENT ON COLUMN at_turbine.description IS 'The description of the turbine';
-COMMENT ON COLUMN at_turbine.operation_rule_set IS 'The operational rule set for this turbine';
+COMMENT ON COLUMN at_turbine.project_location_code IS 'The project this turbine is part of.  See AT_PROJECT.project_location_code';
+COMMENT ON COLUMN at_turbine.turbine_characteristic_code IS 'The code for the foreign key record in the AT_TURBINE_CHARACTERISTIC table which describes turbine geometry and features.';
+COMMENT ON COLUMN at_turbine.turbine_description IS 'The description of the turbine';
 
 ALTER TABLE at_turbine ADD (
   CONSTRAINT at_turbine_pk
@@ -1134,7 +1238,9 @@ ALTER TABLE at_turbine ADD (
                 PCTINCREASE      0
                ))
 /
-
+CREATE UNIQUE INDEX at_turbine_idx_1 ON at_turbine
+(turbine_location_code,project_location_code,turbine_characteristic_code)
+/
 ALTER TABLE at_turbine ADD (
   CONSTRAINT at_turbine_fk1
  FOREIGN KEY (turbine_location_code)
@@ -1143,14 +1249,14 @@ ALTER TABLE at_turbine ADD (
 
 ALTER TABLE at_turbine ADD (
   CONSTRAINT at_turbine_fk2
- FOREIGN KEY (turbine_project_location_code)
+ FOREIGN KEY (project_location_code)
  REFERENCES at_project (project_location_code))
 /
 
 ALTER TABLE at_turbine ADD (
   CONSTRAINT at_turbine_fk3
- FOREIGN KEY (turbine_rating_code)
- REFERENCES at_rating (rating_code))
+ FOREIGN KEY (turbine_characteristic_code)
+ REFERENCES at_turbine_characteristic (turbine_characteristic_code))
 /
 
 --------
@@ -1159,13 +1265,13 @@ ALTER TABLE at_turbine ADD (
 CREATE TABLE at_turbine_setting
 (
   turbine_setting_code			NUMBER(10)			NOT NULL,
-  turbine_setting_turb_ch_code	NUMBER(10)			NOT NULL,
-  turbine_setting_location_code	NUMBER(10)			NOT NULL,
-  turbine_setting_type_code		NUMBER(10)			NOT NULL,
-  turbine_computation_code		NUMBER(10)			NOT NULL,
-  load							NUMBER(10),
-  power							NUMBER(10),
-  energy_rate					NUMBER(10)
+  turbine_change_code	                NUMBER(10)			NOT NULL,
+  turbine_location_code	                NUMBER(10)			NOT NULL,
+  turbine_setting_reason_code           NUMBER(10)                      NOT NULL,
+  turbine_discharge_comp_code		NUMBER(10)			NOT NULL,
+  load					BINARY_DOUBLE,
+  power_factor				BINARY_DOUBLE,
+  energy_rate				BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1186,13 +1292,13 @@ NOPARALLEL
 MONITORING
 /
 
-COMMENT ON COLUMN at_turbine_setting.turbine_setting_code IS 'The surrogate key for this individual turbine change event';
-COMMENT ON COLUMN at_turbine_setting.turbine_setting_turb_ch_code IS 'The turbine change event unique identifier.  See AT_PROJECT_TURBINE_CHANGE';
-COMMENT ON COLUMN at_turbine_setting.turbine_setting_location_code IS 'The unique individual turbine that is being changed';
-COMMENT ON COLUMN at_turbine_setting.turbine_setting_type_code IS 'The new turbine setting lookup setting code';
-COMMENT ON COLUMN at_turbine_setting.turbine_computation_code IS 'The new turbine setting lookup computation code';
-COMMENT ON COLUMN at_turbine_setting.load IS 'The load factor for the new turbine setting';
-COMMENT ON COLUMN at_turbine_setting.power IS 'The power rate for the new turbine setting';
+COMMENT ON COLUMN at_turbine_setting.turbine_setting_code IS 'The surrogate key for this individual turbine change event.  Automatically generated surrogate key.';
+COMMENT ON COLUMN at_turbine_setting.turbine_change_code IS 'The turbine change record to which this setting is associated.  See AT_TURBINE_CHANGE';
+COMMENT ON COLUMN at_turbine_setting.turbine_location_code IS 'The unique individual turbine that is being changed';
+COMMENT ON COLUMN at_turbine_setting.turbine_setting_reason_code IS 'The new turbine setting reason lookup code.  Examples of reasons are spin-noload, overload, dump energy, peaking, testing, etc.';
+COMMENT ON COLUMN at_turbine_setting.turbine_discharge_comp_code IS 'The new turbine setting discharge computation lookup code';
+COMMENT ON COLUMN at_turbine_setting.load IS 'The load for the new turbine setting';
+COMMENT ON COLUMN at_turbine_setting.power_factor IS 'The instantaneous power factor for the new turbine setting';
 COMMENT ON COLUMN at_turbine_setting.energy_rate IS 'The energy rate for the new turbine setting';
 
 ALTER TABLE at_turbine_setting ADD (
@@ -1213,7 +1319,7 @@ ALTER TABLE at_turbine_setting ADD (
 /
 
 CREATE UNIQUE INDEX at_turbine_setting_idx_1 ON at_turbine_setting
-(turbine_setting_turb_ch_code,turbine_setting_location_code)
+(turbine_change_code,turbine_location_code)
 LOGGING
 tablespace cwms_20at_data
 PCTFREE    10
@@ -1231,26 +1337,26 @@ NOPARALLEL
 
 ALTER TABLE at_turbine_setting ADD (
   CONSTRAINT at_turbine_setting_fk1
- FOREIGN KEY (turbine_setting_turb_ch_code)
- REFERENCES at_project_turbine_change (turbine_change_code))
+ FOREIGN KEY (turbine_change_code)
+ REFERENCES at_turbine_change (turbine_change_code))
 /
 
 ALTER TABLE at_turbine_setting ADD (
   CONSTRAINT at_turbine_setting_fk2
- FOREIGN KEY (turbine_setting_location_code)
+ FOREIGN KEY (turbine_location_code)
  REFERENCES at_turbine (turbine_location_code))
 /
 
 ALTER TABLE at_turbine_setting ADD (
   CONSTRAINT at_turbine_setting_fk3
- FOREIGN KEY (turbine_setting_type_code)
- REFERENCES at_lu_turbine_setting_type (turbine_setting_type_code))
+ FOREIGN KEY (turbine_setting_reason_code)
+ REFERENCES at_lu_turbine_setting_reason (turbine_setting_reason_code))
 /
 
 ALTER TABLE at_turbine_setting ADD (
   CONSTRAINT at_turbine_setting_fk4
- FOREIGN KEY (turbine_computation_code)
- REFERENCES at_lu_turbine_computation_code (turbine_computation_code))
+ FOREIGN KEY (turbine_discharge_comp_code)
+ REFERENCES at_lu_turbine_computation_code (turbine_discharge_comp_code))
 /
 
 --------
@@ -1323,10 +1429,10 @@ CREATE TABLE at_gate_change
   gate_change_code				NUMBER(10)			NOT NULL,
   project_location_code	                        NUMBER(10)			NOT NULL,
   gate_change_date				DATE				NOT NULL,
-  elev_pool					NUMBER(10),                     NOT NULL,
-  elev_tail     				NUMBER(10),
-  old_total_discharge_override	                NUMBER(10),
-  new_total_discharge_override	                NUMBER(10),
+  elev_pool					BINARY_DOUBLE                      NOT NULL,
+  elev_tailwater     				BINARY_DOUBLE,
+  old_total_discharge_override	                BINARY_DOUBLE,
+  new_total_discharge_override	                BINARY_DOUBLE,
   discharge_computation_code  			NUMBER(10)			NOT NULL,
   release_reason_code	  		        NUMBER(10)			NOT NULL,
   gate_change_notes				VARCHAR2(255 BYTE)
@@ -1415,14 +1521,150 @@ ALTER TABLE at_gate_change ADD (
 --------
 --------
 
+CREATE TABLE at_outlet_characteristic
+(
+  outlet_characteristic_code			NUMBER(10)	       NOT NULL,
+  opening_parameter_code                        NUMBER(10)             NOT NULL,
+  height					BINARY_DOUBLE,
+  width						BINARY_DOUBLE,
+  opening_radius				BINARY_DOUBLE,
+  elev_invert					BINARY_DOUBLE,
+  flow_capacity_max				BINARY_DOUBLE,
+  net_length_spillway				BINARY_DOUBLE,
+  spillway_notch_length			        BINARY_DOUBLE,
+  outlet_general_description                    VARCHAR2(255 BYTE)
+)
+TABLESPACE cwms_20at_data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          504 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+COMMENT ON COLUMN at_outlet_characteristic.outlet_characteristic_code IS 'The automatically generated surrogate unique key for this record.';
+COMMENT ON COLUMN at_outlet_characteristic.opening_parameter_code IS 'A foreign key to an AT_PARAMETER record that constrains the gate opening to a defined parameter and unit.';
+COMMENT ON COLUMN at_outlet_characteristic.height IS 'The height of the gate';
+COMMENT ON COLUMN at_outlet_characteristic.width IS 'The width of the gate';
+COMMENT ON COLUMN at_outlet_characteristic.opening_radius IS 'The radius of the pipe or circular conduit that this outlet is a control for.  This is not applicable to rectangular outlets, tainter gates, or uncontrolled spillways';
+COMMENT ON COLUMN at_outlet_characteristic.elev_invert IS 'The elevation of the invert for the outlet';
+COMMENT ON COLUMN at_outlet_characteristic.flow_capacity_max IS 'The maximum flow capacity of the gate';
+COMMENT ON COLUMN at_outlet_characteristic.net_length_spillway IS 'The net length of the spillway';
+COMMENT ON COLUMN at_outlet_characteristic.spillway_notch_length IS 'The length of the spillway notch';
+
+ALTER TABLE at_outlet_characteristic ADD (
+  CONSTRAINT at_outlet_characteristic_pk
+ PRIMARY KEY
+ (outlet_characteristic_code)
+    USING INDEX
+    TABLESPACE cwms_20at_data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+ALTER TABLE at_outlet_characteristic ADD (
+  CONSTRAINT at_outlet_characteristic_fk1
+ FOREIGN KEY (opening_parameter_code)
+ REFERENCES at_parameter (parameter_code))
+/
+--------
+--------
+
+CREATE TABLE at_outlet
+(
+  outlet_location_code			        NUMBER(10)			NOT NULL,
+  project_location_code	                        NUMBER(10)			NOT NULL,
+  outlet_characteristic_code    		NUMBER(10)                      NOT NULL,
+  outlet_description                            VARCHAR2(255 BYTE)   
+)
+TABLESPACE cwms_20at_data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          504 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+COMMENT ON COLUMN at_outlet.outlet_location_code IS 'The unique outlet this record is. Also in AT_OUTLET';
+COMMENT ON COLUMN at_outlet.project_location_code IS 'The project where this outlet is located. ';
+COMMENT ON COLUMN at_outlet.outlet_characteristic_code IS 'The code for the foreign key record in the AT_OUTLET_CHARACTERISTIC table which describe outlet geometry, features, and hydraulic equation parameters.';
+COMMENT ON COLUMN at_outlet.outlet_description IS 'The specific description for this outlet structure.';
+
+ALTER TABLE at_outlet ADD (
+  CONSTRAINT at_outlet_pk
+ PRIMARY KEY
+ (outlet_location_code)
+    USING INDEX
+    TABLESPACE cwms_20at_data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+CREATE UNIQUE INDEX at_outlet_idx_1 ON at_outlet
+(outlet_location_code,project_location_code,outlet_characteristic_code)
+/
+
+ALTER TABLE at_outlet ADD (
+  CONSTRAINT at_outlet_fk1
+ FOREIGN KEY (outlet_location_code)
+ REFERENCES at_physical_location (location_code))
+/
+
+ALTER TABLE at_outlet ADD (
+  CONSTRAINT at_outlet_fk2
+ FOREIGN KEY (project_location_code)
+ REFERENCES at_project (project_location_code))
+/
+
+ALTER TABLE at_outlet ADD (
+  CONSTRAINT at_outlet_fk3
+ FOREIGN KEY (outlet_characteristic_code)
+ REFERENCES at_outlet_characteristic (outlet_characteristic_code))
+/
+
+--------
+--------
+
 CREATE TABLE at_gate_setting
 (
   gate_setting_code	  	              NUMBER(10)			NOT NULL,
   gate_change_code	        	      NUMBER(10)			NOT NULL,
   outlet_location_code	                      NUMBER(10)			NOT NULL,
-  gate_opening				      NUMBER(10)			NOT NULL,
-  old_discharge				      NUMBER(10),
-  new_discharge				      NUMBER(10)
+  gate_opening				      BINARY_DOUBLE			NOT NULL,
+  old_discharge				      BINARY_DOUBLE,
+  new_discharge				      BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1443,8 +1685,8 @@ NOPARALLEL
 MONITORING
 /
 
-COMMENT ON COLUMN at_gate_setting.gate_setting_code IS 'The unique record for the overall gate change setting';
-COMMENT ON COLUMN at_gate_setting.gate_change_code IS 'The gate change record to which this setting is associated';
+COMMENT ON COLUMN at_gate_setting.gate_setting_code IS 'The unique record for the overall gate setting.  Automatically generated surrogate key.';
+COMMENT ON COLUMN at_gate_setting.gate_change_code IS 'The gate change record to which this setting is associated.  See AT_GATE_CHANGE.';
 COMMENT ON COLUMN at_gate_setting.outlet_location_code IS 'The unique gate that is being set. This location code also in AT_PHYSICAL_LOCATION';
 COMMENT ON COLUMN at_gate_setting.gate_opening IS 'The new gate opening.  This may be a dial opening rather than an actual opening';
 COMMENT ON COLUMN at_gate_setting.old_discharge IS 'The old discharge rate prior to the gate setting';
@@ -1494,167 +1736,6 @@ ALTER TABLE at_gate_setting ADD (
   CONSTRAINT at_gate_setting_fk2
  FOREIGN KEY (outlet_location_code)
  REFERENCES at_outlet (outlet_location_code))
-/
-
-ALTER TABLE at_gate_setting ADD (
-  CONSTRAINT at_gate_setting_fk3
- FOREIGN KEY (opening cwms_unit_params)
- REFERENCES at_outlet (outlet_location_code))
-/
---------
---------
-
-CREATE TABLE at_outlet
-(
-  outlet_location_code			        NUMBER(10)			NOT NULL,
-  project_location_code	                        NUMBER(10)			NOT NULL,
-  outlet_characteristic_code    		NUMBER(10)                      NOT NULL
-)
-TABLESPACE cwms_20at_data
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          504 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING
-NOCOMPRESS
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-COMMENT ON COLUMN at_outlet.outlet_location_code IS 'The unique outlet this record is. Also in AT_OUTLET';
-COMMENT ON COLUMN at_outlet.project_location_code IS 'The project where this outlet is located. ';
-COMMENT ON COLUMN at_outlet.outlet_characteristic_code IS 'The code for the foreign key record in the AT_OUTLET_CHARACTERISTIC table which describe outlet geometry, features, and hydraulic equation parameters.';
-
-ALTER TABLE at_outlet ADD (
-  CONSTRAINT at_outlet_pk
- PRIMARY KEY
- (outlet_location_code)
-    USING INDEX
-    TABLESPACE cwms_20at_data
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64 k
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-CREATE UNIQUE INDEX at_outlet_idx_1 ON at_outlet
-(outlet_location_code,project_location_code,outlet_characteric_code)
-LOGGING
-tablespace cwms_20at_data
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
-ALTER TABLE at_outlet ADD (
-  CONSTRAINT at_outlet_fk1
- FOREIGN KEY (outlet_location_code)
- REFERENCES at_physical_location (location_code))
-/
-
-ALTER TABLE at_outlet ADD (
-  CONSTRAINT at_outlet_fk2
- FOREIGN KEY (project_location_code)
- REFERENCES at_project (project_location_code))
-/
-
-ALTER TABLE at_outlet ADD (
-  CONSTRAINT at_outlet_fk3
- FOREIGN KEY (outlet_characteristic_code)
- REFERENCES at_outlet_characteristic (outlet_characteristic_code))
-/
-
---------
---------
-
-CREATE TABLE at_outlet_characteristic
-(
-  outlet_characteristic_code			NUMBER(10)			NOT NULL,
-  height					NUMBER(10),
-  width						NUMBER(10),
-  opening_radius				NUMBER(10),
-  elev_invert					NUMBER(10),
-  flow_capacity_max				NUMBER(10),
-  net_length_spillway				NUMBER(10),
-  spillway_notch_length			        NUMBER(10)
-)
-TABLESPACE cwms_20at_data
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          504 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING
-NOCOMPRESS
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-COMMENT ON COLUMN at_outlet_characteristic.outlet_characteristic_code IS 'The surrogate unique key for this record.';
-COMMENT ON COLUMN at_outlet_characteristic.height IS 'The height of the gate';
-COMMENT ON COLUMN at_outlet_characteristic.width IS 'The width of the gate';
-COMMENT ON COLUMN at_outlet_characteristic.opening_radius IS 'The radius of the pipe or circular conduit that this outlet is a control for.  This is not applicable to rectangular outlets, tainter gates, or uncontrolled spillways';
-COMMENT ON COLUMN at_outlet_characteristic.elev_invert IS 'The elevation of the invert for the outlet';
-COMMENT ON COLUMN at_outlet_characteristic.flow_capacity_max IS 'The maximum flow capacity of the gate';
-COMMENT ON COLUMN at_outlet_characteristic.net_length_spillway IS 'The net length of the spillway';
-COMMENT ON COLUMN at_outlet_characteristic.spillway_notch_length IS 'The length of the spillway notch';
-
-ALTER TABLE at_outlet ADD (
-  CONSTRAINT at_outlet_pk
- PRIMARY KEY
- (outlet_location_code)
-    USING INDEX
-    TABLESPACE cwms_20at_data
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64 k
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-CREATE UNIQUE INDEX at_outlet_characteristic_idx_1 ON at_outlet_characteristic
-(outlet_characteristic_code)
-LOGGING
-tablespace cwms_20at_data
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
 /
 
 --------
@@ -1818,17 +1899,17 @@ ALTER TABLE at_water_user ADD (
 CREATE TABLE at_water_user_contract
 (
   water_user_contract_code		NUMBER(10)			NOT NULL,
-  water_user_code		NUMBER(10)			NOT NULL,
+  water_user_code		NUMBER(10)			        NOT NULL,
   contract_name					VARCHAR2(64 BYTE)	NOT NULL,
-  contracted_storage			NUMBER(10)			NOT NULL,
-  contract_documents			VARCHAR2(64 BYTE)	NOT NULL,
-  water_supply_contract_type            VARCHAR2(64 BYTE)       NOT NULL,
+  contracted_storage			BINARY_DOUBLE			NOT NULL,
+  contract_documents			VARCHAR2(64 BYTE)       	NOT NULL,
+  water_supply_contract_type            NUMBER(10)                      NOT NULL,
   ws_contract_effective_date	DATE,
   ws_contract_expiration_date	DATE,
-  initial_use_allocation		NUMBER(10),
-  future_use_allocation			NUMBER(10),
-  future_use_percent_activated	NUMBER(10),
-  total_alloc_percent_activated NUMBER(10),
+  initial_use_allocation		BINARY_DOUBLE,
+  future_use_allocation			BINARY_DOUBLE,
+  future_use_percent_activated	BINARY_DOUBLE,
+  total_alloc_percent_activated BINARY_DOUBLE,
   withdrawal_location_code		NUMBER(10),
   supply_location_code			NUMBER(10)
 )
@@ -1862,7 +1943,7 @@ COMMENT ON COLUMN at_water_user_contract.initial_use_allocation IS 'The initial 
 COMMENT ON COLUMN at_water_user_contract.future_use_allocation IS 'The future contracted allocation for this water user contract';
 COMMENT ON COLUMN at_water_user_contract.future_use_percent_activated IS 'The percent allocated future use for this water user contract';
 COMMENT ON COLUMN at_water_user_contract.total_alloc_percent_activated IS 'The percentage of total allocation for this water user contract';
-COMMENT ON COLUMN at_water_user_contract.withdraw_location_code IS 'The code for the AT_PHYSICAL_LOCATION record which is the location where this water with be withdrawn from the permanent pool';
+COMMENT ON COLUMN at_water_user_contract.withdrawal_location_code IS 'The code for the AT_PHYSICAL_LOCATION record which is the location where this water with be withdrawn from the permanent pool';
 COMMENT ON COLUMN at_water_user_contract.supply_location_code IS 'The AT_PHYSICAL_LOCATION record which is the location where this water will be obtained below the dam or within the outlet works';
 
 ALTER TABLE at_water_user_contract ADD (
@@ -1883,7 +1964,7 @@ ALTER TABLE at_water_user_contract ADD (
 /
 
 CREATE UNIQUE INDEX at_water_user_contract_idx1 ON at_water_user_contract
-(contract_water_user_code,contract_name)
+(water_user_contract_code,contract_name)
 LOGGING
 tablespace cwms_20at_data
 PCTFREE    10
@@ -1907,13 +1988,13 @@ ALTER TABLE at_water_user_contract ADD (
 
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk2
- FOREIGN KEY (contract_water_user_code)
+ FOREIGN KEY (water_user_contract_code)
  REFERENCES at_water_user (water_user_code))
 /
 
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk3
- FOREIGN KEY (withdraw_location_code)
+ FOREIGN KEY (withdrawal_location_code)
  REFERENCES at_physical_location (location_code))
 /
 
@@ -2010,7 +2091,7 @@ CREATE TABLE at_wat_usr_contract_accounting
   water_user_contract_code	NUMBER(10)			NOT NULL,
   physical_transfer_type_code	NUMBER(10)			NOT NULL,
   accounting_credit_debit		VARCHAR2(6 BYTE)	NOT NULL,
-  accounting_volume				NUMBER(10)			NOT NULL,
+  accounting_volume				BINARY_DOUBLE			NOT NULL,
   transfer_start_datetime		DATE				NOT NULL,
   transfer_end_datetime			DATE				NOT NULL,
   accounting_remarks			VARCHAR2(255 BYTE)			
@@ -2091,60 +2172,6 @@ ALTER TABLE at_wat_usr_contract_accounting ADD (
 ALTER TABLE at_wat_usr_contract_accounting ADD (
 CONSTRAINT acct_credit_or_debit_check 
 CHECK ( upper(ACCOUNTING_CREDIT_DEBIT) = 'CREDIT' OR upper(ACCOUNTING_CREDIT_DEBIT) = 'DEBIT'))
-/
---------
---------
-
-CREATE TABLE at_lu_ws_contract_type_code
-(
-  ws_contract_type_code 		NUMBER(10)				NOT NULL,
-  ws_contract_type_display_value	VARCHAR2(25 BYTE)		NOT NULL,
-  ws_contract_type_tooltip		VARCHAR2(255 BYTE)		NOT NULL,
-  ws_contract_type_active		VARCHAR2(1)	DEFAULT 'T'	NOT NULL 
-)
-TABLESPACE cwms_20at_data
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          504 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING
-NOCOMPRESS
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_code IS 'The unique id for this water supply contract type code record';
-COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_display_value IS 'The value to display for this ws_contract_type record';
-COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_tooltip IS 'The description or meaning of this ws_contract_type record';
-COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_active IS 'Whether this ws_contract_type entry is currently active';
-/
-ALTER TABLE at_lu_ws_contract_type_code ADD (
-  CONSTRAINT at_lu_ws_contract_type_pk
- PRIMARY KEY
- (ws_contract_type_code)
-    USING INDEX
-    TABLESPACE cwms_20at_data
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64 k
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-
-ALTER TABLE at_lu_ws_contract_type ADD (
-CONSTRAINT at_lu_ws_cntrct_typ_activ_ck 
-CHECK ( ws_contract_type_active = 'T' OR ws_contract_type_active = 'F'))
 /
 
 --------
@@ -2288,13 +2315,13 @@ CREATE TABLE at_construction_history
   construction_end_date 		        DATE				NOT NULL,
   land_acq_start_date   			DATE,
   land_acq_end_date	        		DATE,
-  area_infee_total				NUMBER(10),
-  area_easement_total				NUMBER(10),
+  area_infee_total				BINARY_DOUBLE,
+  area_easement_total				BINARY_DOUBLE,
   impoundment_date				DATE,
   filling_date					DATE,
   impoundment_mod_date				DATE,
   pool_raise_date				DATE,
-  operational_status				VARCHAR2(255 BYTE),             NOT NULL,
+  operational_status_code			NUMBER(10)                      NOT NULL,
   construction_history_doc_code		        NUMBER(10)
 )
 TABLESPACE cwms_20at_data
@@ -2329,7 +2356,7 @@ COMMENT ON COLUMN at_construction_history.impoundment_date IS 'The impoundment d
 COMMENT ON COLUMN at_construction_history.filling_date IS 'The date that the reservoir first reached the normal pool elevation';
 COMMENT ON COLUMN at_construction_history.impoundment_mod_date IS 'The date that the reservoir first reached the modified impoundment elevation';
 COMMENT ON COLUMN at_construction_history.pool_raise_date IS 'The date the pool elevation was raised';
-COMMENT ON COLUMN at_construction_history.operational_status_code IS 'The operational status of the construction project';
+COMMENT ON COLUMN at_construction_history.operational_status_code IS 'The operational status of the construction project. Constrained to a value in the lookup table AT_LU_OPERATIONAL_STATUS_CODE';
 COMMENT ON COLUMN at_construction_history.construction_history_doc_code IS 'The surrogate code of a record in AT_DOCUMENT that describes this phase of the construction history';
 
 ALTER TABLE at_construction_history ADD (
