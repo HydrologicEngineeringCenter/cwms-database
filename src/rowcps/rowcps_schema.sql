@@ -41,20 +41,6 @@ DECLARE
                                          'AT_LU_OPERATIONAL_STATUS_CODE',
                                          'AT_OUTLET_CHARACTERISTIC',                               
 					 'AT_TURBINE_CHARACTERISTIC',  
-                                         'DELETE This line and below once',
-					 ' 4.2 is installed correctly',
-					 ' Below are old table names',
-					 'AT_PROJECT_CHARACTERISTIC',                                     					                                   
-					 'AT_WATER_USER_ACCOUNTING',
-					 'at_lockage_change',  
-                                         'AT_PROJECT_TURBINE_CHANGE',
-					 'AT_LU_COMPUTATION_CODE',
-					 'AT_LU_RELEASE_CODE',
-					 'AT_LU_PROJECT_PURPOSE',
-					 'AT_LU_DOCUMENT_TYPE',
-					 'AT_LU_PROTECTION_TYPE',
-					 'AT_LU_STRUCTURE_TYPE',
-					 'AT_LU_TURBINE_SETTING_TYPE'
                     );
    mview_log_names   id_array_t
       := id_array_t (' '
@@ -1142,6 +1128,7 @@ CREATE TABLE at_turbine_characteristic
 (
   turbine_characteristic_code           NUMBER(10)                      NOT NULL,
   rated_power_capacity			BINARY_DOUBLE,
+  max_power_overload                    BINARY_DOUBLE,
   min_generation_flow			BINARY_DOUBLE,
   max_generation_flow			BINARY_DOUBLE,
   turbine_operation_rule_set		VARCHAR2(255 BYTE),
@@ -1167,6 +1154,7 @@ MONITORING
 /
 COMMENT ON COLUMN at_turbine_characteristic.turbine_characteristic_code IS 'The automatically generated unique surrogate key';
 COMMENT ON COLUMN at_turbine_characteristic.rated_power_capacity IS 'The nameplate power generating capacity for this turbine';
+COMMENT ON COLUMN at_turbine_characteristic.max_power_overload IS 'The maximum percentage of nameplate power that this turbine type can run in overload mode';
 COMMENT ON COLUMN at_turbine_characteristic.min_generation_flow IS 'The minimum flow required to utilize the turbine';
 COMMENT ON COLUMN at_turbine_characteristic.max_generation_flow IS 'The maximum flow capacity for the turbine';
 COMMENT ON COLUMN at_turbine_characteristic.turbine_general_description IS 'The genearl description of this class of turbines';
