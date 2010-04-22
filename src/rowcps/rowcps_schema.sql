@@ -40,7 +40,7 @@ DECLARE
                                          'AT_LU_WS_CONTRACT_TYPE_CODE',
                                          'AT_LU_OPERATIONAL_STATUS_CODE',
                                          'AT_OUTLET_CHARACTERISTIC',                               
-					 'AT_TURBINE_CHARACTERISTIC',  
+					 'AT_TURBINE_CHARACTERISTIC'  
                     );
    mview_log_names   id_array_t
       := id_array_t (' '
