@@ -1,5 +1,8 @@
 /* Formatted on 2008/06/24 06:40 (Formatter Plus v4.8.8) */
 -- Defines the CWMS date-time, value, and quality types.
+WHENEVER sqlerror exit sql.sqlcode
+SET define on
+@@../cwms/defines.sql
 SET serveroutput on
 
 ------------------------------
@@ -22,7 +25,7 @@ DECLARE
 BEGIN
    for rec in (select object_name 
                  from dba_objects 
-                where owner = 'CWMS_21' 
+                where owner = '&cwms_schema' 
                   and object_type = 'TYPE' 
                   and object_name not like 'SYS\_%' escape '\'
              order by object_name)
