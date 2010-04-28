@@ -123,7 +123,7 @@ CREATE OR REPLACE TYPE water_user_contract_ref_t AS OBJECT
 /
 show errors
 
-create or replace type wat_user_contract_obj_t as object
+create or replace type water_user_contract_obj_t as object
 (
     water_user_contract_ref water_user_contract_ref_t,
    
