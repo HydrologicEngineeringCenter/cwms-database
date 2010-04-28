@@ -1,6 +1,9 @@
 WHENEVER sqlerror exit sql.sqlcode
+SET define on
+@@../cwms/defines.sql
 
 SET serveroutput on
+
 ----------------------------------------------------
 -- drop tables, mviews & mview logs if they exist --
 ----------------------------------------------------
