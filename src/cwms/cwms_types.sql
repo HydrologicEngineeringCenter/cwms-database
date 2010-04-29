@@ -804,6 +804,7 @@ create or replace type location_obj_t as object
    published_latitude   number,
    published_longitude  number,
    bounding_office_id   varchar2(16),
+   bounding_office_name varchar2(32),
    nation_id            varchar2(48),
    nearest_city         varchar2(50)
 );
