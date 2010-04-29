@@ -1955,7 +1955,7 @@ ALTER TABLE at_water_user_contract ADD (
 /
 
 CREATE UNIQUE INDEX at_water_user_contract_idx1 ON at_water_user_contract
-(water_user_contract_code,contract_name)
+(water_user_code,contract_name)
 LOGGING
 tablespace cwms_20at_data
 PCTFREE    10
