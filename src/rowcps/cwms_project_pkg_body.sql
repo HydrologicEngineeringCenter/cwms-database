@@ -260,7 +260,6 @@ begin
    --
    
    p_project := new project_obj_t(               -- TYPE project_obj_t AS OBJECT (
-      p_db_office_id,                            --    db_office_id                   VARCHAR2(16),
       l_project_location,                        --    project_location               cat_location2_obj_t,
       l_pumpback_location,                       --    pump_back_location           cat_location2_obj_t,
       l_near_gage_location,                      --    near_gage_location          cat_location2_obj_t,
@@ -270,7 +269,7 @@ begin
       l_project.cost_year,                       --    cost_year                      DATE,
       l_project.federal_om_cost,                 --    federal_om_cost                NUMBER,
       l_project.nonfederal_om_cost,              --    nonfederal_om_cost             NUMBER,
-      l_project.remarks,                         --    remarks                        VARCHAR2(1000),
+      l_project.project_remarks,                 --    remarks                        VARCHAR2(1000),
       l_project.project_owner,                   --    project_owner                  VARCHAR2(255),
       l_project.hydropower_description,          --    hydropower_description         VARCHAR2(255),
       l_project.sedimentation_description,       --    sedimentation_description      VARCHAR(255),
@@ -428,7 +427,7 @@ BEGIN
    l_rec.sedimentation_description      := p_project.sedimentation_description;
    l_rec.downstream_urban_description   := p_project.downstream_urban_description;
    l_rec.bank_full_capacity_description := p_project.bank_full_capacity_description;
-   l_rec.remarks                        := p_project.remarks;
+   l_rec.project_remarks                := p_project.remarks;
    --
    -- store the project
    --
