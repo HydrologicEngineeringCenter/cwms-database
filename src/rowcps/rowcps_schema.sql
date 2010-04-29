@@ -2343,9 +2343,9 @@ COMMENT ON COLUMN at_construction_history.land_acq_start_date IS 'The date the l
 COMMENT ON COLUMN at_construction_history.land_acq_end_date IS 'The date the land acquisition was completed';
 COMMENT ON COLUMN at_construction_history.area_infee_total IS 'The total area (usually presented in units of acres) in-fee for the land acquired';
 COMMENT ON COLUMN at_construction_history.area_easement_total IS 'The land area (usually presented in units of acres) under easement for this construction project';
-COMMENT ON COLUMN at_construction_history.impoundment_date IS 'The impoundment date';
+COMMENT ON COLUMN at_construction_history.impoundment_date IS 'The date in which impoundment began.  Sometimes called the date of closure.';
 COMMENT ON COLUMN at_construction_history.filling_date IS 'The date that the reservoir first reached the normal pool elevation';
-COMMENT ON COLUMN at_construction_history.impoundment_mod_date IS 'The date that the reservoir first reached the modified impoundment elevation';
+COMMENT ON COLUMN at_construction_history.impoundment_mod_date IS 'The date in which impoundment began for the modified normal elevation.';
 COMMENT ON COLUMN at_construction_history.pool_raise_date IS 'The date the pool elevation was raised';
 COMMENT ON COLUMN at_construction_history.operational_status_code IS 'The operational status of the construction project. Constrained to a value in the lookup table AT_LU_OPERATIONAL_STATUS_CODE';
 COMMENT ON COLUMN at_construction_history.construction_history_doc_code IS 'The surrogate code of a record in AT_DOCUMENT that describes this phase of the construction history';
