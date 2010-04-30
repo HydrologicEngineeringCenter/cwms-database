@@ -1539,6 +1539,11 @@ end create_location_level;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE store_location_level
+--
+-- Creates or updates a Location Level in the database
+--
+-- Only one of p_interval_months and p_interval_minutes can be specified for
+-- seasonal levels
 --------------------------------------------------------------------------------
 procedure store_location_level(
    p_location_level_id       in  varchar2,
@@ -1613,6 +1618,8 @@ end store_location_level;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE store_location_level
+--
+-- Creates or updates a Location Level in the database
 --------------------------------------------------------------------------------
 procedure store_location_level(
    p_location_level in  location_level_t)
@@ -1624,6 +1631,20 @@ end store_location_level;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE store_location_level2
+--
+-- Creates or updates a Location Level in the database using only text and 
+-- numeric parameters
+--
+-- Only one of p_interval_months and p_interval_minutes can be specified for
+-- seasonal levels
+--
+-- p_effective_date should be specified as ‘yyyy/mm/dd hh:mm:ss’
+--
+-- p_interval_origin should be specified as ‘yyyy/mm/dd hh:mm:ss’
+--
+-- p_seasonal_values should be specified as text records separated by the RS
+-- character (chr(30)) with each record containing offset_months, offset_minutes
+-- and offset_value, each separated by the GS character (chr(29))
 --------------------------------------------------------------------------------
 procedure store_location_level2(
    p_location_level_id       in  varchar2,
@@ -1827,6 +1848,8 @@ end update_location_level;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level
 --
+-- Retrieves the Location Level in effect at a specified time
+--
 -- If p_match_date is false ('F'), then the location level that has the latest
 -- effective date on or before p_date is returned.
 --
@@ -1851,7 +1874,7 @@ procedure retrieve_location_level(
    p_date                    in  date,
    p_timezone_id             in  varchar2 default 'UTC',
    p_attribute_value         in  number default null,
-   p_attribut_units          in  varchar2 default null,
+   p_attribute_units         in  varchar2 default null,
    p_attribute_parameter_id  in  varchar2 default null,
    p_attribute_param_type_id in  varchar2 default null,
    p_attribute_duration_id   in  varchar2 default null,
@@ -1911,7 +1934,7 @@ begin
       l_date,
       l_match_date,
       p_attribute_value,
-      p_attribut_units,
+      p_attribute_units,
       p_attribute_parameter_id,
       p_attribute_param_type_id,
       p_attribute_duration_id,
@@ -2006,7 +2029,7 @@ procedure retrieve_location_level(
    p_timezone_id             in  varchar2 default 'UTC',
    p_attribute_id            in  varchar2 default null,
    p_attribute_value         in  number   default null,
-   p_attribut_units          in  varchar2 default null,
+   p_attribute_units         in  varchar2 default null,
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
 is
@@ -2049,7 +2072,7 @@ begin
       p_date,
       p_timezone_id,
       p_attribute_value,
-      p_attribut_units,
+      p_attribute_units,
       l_attribute_parameter_id,
       l_attribute_param_type_id,
       l_attribute_duration_id,
@@ -2060,28 +2083,41 @@ end retrieve_location_level;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level2
 --
+-- Retrieves the Location Level in effect at a specified time using only text
+-- and numeric parameters
+--
+-- p_date should be specified as ‘yyyy/mm/dd hh:mm:ss’
+--
 -- If p_match_date is false ('F'), then the location level that has the latest
 -- effective date on or before p_date is returned.
 --
 -- If p_match_date is true ('T'), then a location level is returned only if
 -- it has an effective date matching p_date.
+--
+-- p_effective_date is returned as ‘yyyy/mm/dd hh:mm:ss’
+--
+-- p_interval_origin is returned as ‘yyyy/mm/dd hh:mm:ss’
+--
+-- p_seasonal_values is returned as as text records separated by the RS
+-- character (chr(30)) with each record containing offset_months, offset_minutes
+-- and offset_value, each separated by the GS character (chr(29))
 --------------------------------------------------------------------------------
 procedure retrieve_location_level2(
    p_level_value             out number,
    p_level_comment           out varchar2,
-   p_effective_date          out varchar2, -- 'yyyy/mm/dd hh:mm:ss'
-   p_interval_origin         out varchar2, -- 'yyyy/mm/dd hh:mm:ss'
+   p_effective_date          out varchar2,
+   p_interval_origin         out varchar2,
    p_interval_months         out integer,
    p_interval_minutes        out integer,
    p_interpolate             out varchar2,
-   p_seasonal_values         out varchar2, -- recordset of (offset_months, offset_minutes, offset_values) records
+   p_seasonal_values         out varchar2,
    p_location_level_id       in  varchar2,
    p_level_units             in  varchar2,
-   p_date                    in  varchar2 default null, -- 'yyyy/mm/dd hh:mm:ss'
+   p_date                    in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_attribute_id            in  varchar2 default null,
    p_attribute_value         in  number   default null,
-   p_attribut_units          in  varchar2 default null,
+   p_attribute_units         in  varchar2 default null,
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
 is
@@ -2108,7 +2144,7 @@ begin
       p_timezone_id,
       p_attribute_id,
       p_attribute_value,
-      p_attribut_units,
+      p_attribute_units,
       p_match_date,
       p_office_id);
       
@@ -2129,6 +2165,8 @@ end retrieve_location_level2;
 
 --------------------------------------------------------------------------------
 -- FUNCTION retrieve_location_level
+--
+-- Returns the Location Level in effect at a specified time
 --
 -- If p_match_date is false ('F'), then the location level that has the latest
 -- effective date on or before p_date is returned.
@@ -2198,7 +2236,9 @@ end retrieve_location_level;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
 --
--- Note: The returned QUALITY_CODE values will be zero.
+-- Retreives a time series of Location Level values for a specified time window
+--
+-- The returned QUALITY_CODE values of the time series will be zero.
 --------------------------------------------------------------------------------
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
@@ -2669,7 +2709,9 @@ end retrieve_location_level_values;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
 --
--- Note: The returned QUALITY_CODE values will be zero.
+-- Retreives a time series of Location Level values for a specified time window
+--
+-- The returned QUALITY_CODE values of the time series will be zero.
 --------------------------------------------------------------------------------
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
@@ -2726,7 +2768,9 @@ end retrieve_location_level_values;
 --------------------------------------------------------------------------------
 -- FUNCTION retrieve_location_level_values
 --
--- Note: The returned QUALITY_CODE values will be zero.
+-- Returns a time series of Location Level values for a specified time window
+--
+-- The returned QUALITY_CODE values of the time series will be zero.
 --------------------------------------------------------------------------------
 function retrieve_location_level_values(
    p_location_level_id       in  varchar2,
@@ -2759,13 +2803,24 @@ end retrieve_location_level_values;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_loc_lvl_values2
+--
+-- Retreives a time series of Location Level values for a specified time window
+-- using only text and numeric parameters
+--
+-- p_start_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
+--
+-- p_end_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
+--
+-- p_level_values is returned as as text records separated by the RS
+-- character (chr(30)) with each record containing date-time and value
+-- separated by the GS character (chr(29))
 --------------------------------------------------------------------------------
 procedure retrieve_loc_lvl_values2(
-   p_level_values            out varchar2, -- recordset of (date, value) records
+   p_level_values            out varchar2,
    p_location_level_id       in  varchar2,
    p_level_units             in  varchar2,
-   p_start_time              in  varchar2, -- yy/mm/dd hh:mm:ss
-   p_end_time                in  varchar2, -- yy/mm/dd hh:mm:ss
+   p_start_time              in  varchar2,
+   p_end_time                in  varchar2,
    p_attribute_id            in  varchar2 default null,
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
@@ -2800,12 +2855,24 @@ end retrieve_loc_lvl_values2;
 
 --------------------------------------------------------------------------------
 -- FUNCTION retrieve_loc_lvl_values2
+--
+-- Returns a time series of Location Level values for a specified time window
+-- using only text and numeric parameters
+--
+-- p_start_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
+--
+-- p_end_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
+--
+-- p_level_values is returned as as text records separated by the RS
+-- character (chr(30)) with each record containing date-time and value
+-- separated by the GS character (chr(29))
 --------------------------------------------------------------------------------
+
 function retrieve_loc_lvl_values2(
    p_location_level_id       in  varchar2,
    p_level_units             in  varchar2,
-   p_start_time              in  varchar2, -- yy/mm/dd hh:mm:ss
-   p_end_time                in  varchar2, -- yy/mm/dd hh:mm:ss
+   p_start_time              in  varchar2, -- yyyy/mm/dd hh:mm:ss
+   p_end_time                in  varchar2, -- yyyy/mm/dd hh:mm:ss
    p_attribute_id            in  varchar2 default null,
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
@@ -2833,7 +2900,12 @@ end retrieve_loc_lvl_values2;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
 --
--- Note: The returned QUALITY_CODE values will be zero.
+-- Retreives a time series of Location Level values for a specified time window
+-- for a specified Time Series Identifier and Specified Level Identifier
+--
+-- The Location Level Identifier is computed from p_ts_id and p_spec_level_id
+--
+-- The returned QUALITY_CODE values of the time series will be zero.
 --------------------------------------------------------------------------------
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
@@ -2885,7 +2957,12 @@ end retrieve_location_level_values;
 --------------------------------------------------------------------------------
 -- FUNCTION retrieve_location_level_values
 --
--- Note: The returned QUALITY_CODE values will be zero.
+-- Returns a time series of Location Level values for a specified time window
+-- for a specified Time Series Identifier and Specified Level Identifier
+--
+-- The Location Level Identifier is computed from p_ts_id and p_spec_level_id
+--
+-- The returned QUALITY_CODE values of the time series will be zero.
 --------------------------------------------------------------------------------
 function retrieve_location_level_values(
    p_ts_id                   in  varchar2,
@@ -2924,6 +3001,8 @@ end retrieve_location_level_values;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_value
+--
+-- Retreives a Location Level value for a specified time
 --------------------------------------------------------------------------------
 procedure retrieve_location_level_value(
    p_level_value             out number,
@@ -2955,6 +3034,8 @@ end retrieve_location_level_value;
 
 --------------------------------------------------------------------------------
 -- FUNCTION retrieve_location_level_value
+--
+-- Returns a Location Level value for a specified time
 --------------------------------------------------------------------------------
 function retrieve_location_level_value(
    p_location_level_id       in  varchar2,
@@ -2985,6 +3066,11 @@ end retrieve_location_level_value;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_value
+--
+-- Retreives a Location Level value for a specified time for a specified Time
+-- Series Identifier and Specified Level Identifier
+--
+-- The Location Level Identifier is computed from p_ts_id and p_spec_level_id
 --------------------------------------------------------------------------------
 procedure retrieve_location_level_value(
    p_level_value             out number,
@@ -3030,6 +3116,11 @@ end retrieve_location_level_value;
 
 --------------------------------------------------------------------------------
 -- FUNCTION retrieve_location_level_value
+--
+-- Retrurns a Location Level value for a specified time for a specified Time
+-- Series Identifier and Specified Level Identifier
+--
+-- The Location Level Identifier is computed from p_ts_id and p_spec_level_id
 --------------------------------------------------------------------------------
 function retrieve_location_level_value(
    p_ts_id                   in  varchar2,
@@ -3062,6 +3153,11 @@ end retrieve_location_level_value;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_attrs
+--
+-- Retrieves a table of attribute values for a Location Level in effect at a
+-- specified time
+--
+-- The attribute values are returned in the units specified
 --------------------------------------------------------------------------------
 procedure retrieve_location_level_attrs(
    p_attribute_values        out number_tab_t,
@@ -3223,7 +3319,13 @@ end retrieve_location_level_attrs;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_attrs
+--
+-- Retrieves a table of attribute values for a Location Level in effect at a
+-- specified time
+--
+-- The attribute values are returned in the units specified
 --------------------------------------------------------------------------------
+
 procedure retrieve_location_level_attrs(
    p_attribute_values        out number_tab_t,
    p_location_level_id       in  varchar2,
@@ -3272,6 +3374,11 @@ end retrieve_location_level_attrs;
 
 --------------------------------------------------------------------------------
 -- FUNCTION retrieve_location_level_attrs
+--
+-- Returns a table of attribute values for a Location Level in effect at a
+-- specified time
+--
+-- The attribute values are returned in the units specified
 --------------------------------------------------------------------------------
 function retrieve_location_level_attrs(
    p_location_level_id       in  varchar2,
@@ -3298,6 +3405,15 @@ end retrieve_location_level_attrs;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_attrs2
+--
+-- Retrieves a table of attribute values for a Location Level in effect at a
+-- specified time using only text and numeric parameters
+--
+-- p_date should be specifed as 'yyyy/mm/dd hh:mm:ss'
+--
+-- p_attribute_values is returned as text records separated by the RS character
+-- (chr(30)) with each record containing an attribute value in the units 
+-- specified
 --------------------------------------------------------------------------------
 procedure retrieve_location_level_attrs2(
    p_attribute_values        out varchar2,
@@ -3325,7 +3441,16 @@ begin
 end retrieve_location_level_attrs2;
 
 --------------------------------------------------------------------------------
--- FUNCTION retrieve_location_level_attrs
+-- FUNCTION retrieve_location_level_attrs2
+--
+-- Returns a table of attribute values for a Location Level in effect at a
+-- specified time using only text and numeric parameters
+--
+-- p_date should be specifed as 'yyyy/mm/dd hh:mm:ss'
+--
+-- The attribute values are returned as text records separated by the RS
+-- character (chr(30)) with each record containing an attribute value in the 
+-- units specified
 --------------------------------------------------------------------------------
 function retrieve_location_level_attrs2(
    p_location_level_id       in  varchar2,
@@ -3464,6 +3589,50 @@ end lookup_level_or_attribute;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE lookup_level_by_attribute
+--
+-- Retrieves the level value of a Location Level that corresponds to a specified
+-- attribute value and date
+--
+-- p_in_range_behavior specifies how the lookup is performed when the specified
+-- attribute value is within the range of attributes for the Location Level and
+-- is specified as one of the following constants from the CWMS_LOOKUP package:
+--
+--    CWMS_LOOKUP.IN_RANGE_INTERP - if the specified attribute value is not one
+--    of the Location Level attributes, the retrieved level is interpolated
+--    between levels associated with the nearest attribute values less and 
+--    greater than the specified attribute value
+--
+--    CWMS_LOOKUP.IN_RANGE_PREV - if the specified attribute value is not one
+--    of the Location Level attributes, the retrieved level is the level
+--    associated with the nearest attribute value less than the specified
+--    attribute value 
+--
+--    CWMS_LOOKUP.IN_RANGE_NEXT - if the specified attribute value is not one
+--    of the Location Level attributes, the retrieved level is the level
+--    associated with the nearest attribute value greater than the specified
+--    attribute value
+--
+--    CWMS_LOOKUP.IN_RANGE_NEAREST - if the specified attribute value is not one
+--    of the Location Level attributes, the retrieved level is the level
+--    associated with the nearest attribute value to the specified attribute 
+--    value
+--
+-- p_out_range_behavior specifies how the lookup is performed when the specified
+-- attribute value is outside the range of attributes for the Location Level and
+-- is specified as one of the following constants from the CWMS_LOOKUP package:
+--
+--    CWMS_LOOKUP.OUT_RANGE_NULL - NULL is retrieved for the level value
+--
+--    CWMS_LOOKUP.OUT_RANGE_ERROR - an error is raised instead of retrieving
+--    a value 
+--
+--    CWMS_LOOKUP.OUT_RANGE_NEAREST - the level value retrieved is the level
+--    value associated with the attribute value nearest the specified attribute
+--    value
+--
+--    CWMS_LOOKUP.OUT_RANGE_EXTRAP - the level value retrieved is extrapolated
+--    from the level values associated with the two attribute values nearst to
+--    the specified attribute value
 --------------------------------------------------------------------------------
 procedure lookup_level_by_attribute(
    p_level                   out number,
@@ -3495,6 +3664,50 @@ end lookup_level_by_attribute;
 
 --------------------------------------------------------------------------------
 -- FUNCTION lookup_level_by_attribute
+--
+-- Returns the level value of a Location Level that corresponds to a specified
+-- attribute value and date
+--
+-- p_in_range_behavior specifies how the lookup is performed when the specified
+-- attribute value is within the range of attributes for the Location Level and
+-- is specified as one of the following constants from the CWMS_LOOKUP package:
+--
+--    CWMS_LOOKUP.IN_RANGE_INTERP - if the specified attribute value is not one
+--    of the Location Level attributes, the returned level is interpolated
+--    between levels associated with the nearest attribute values less and 
+--    greater than the specified attribute value
+--
+--    CWMS_LOOKUP.IN_RANGE_PREV - if the specified attribute value is not one
+--    of the Location Level attributes, the returned level is the level
+--    associated with the nearest attribute value less than the specified
+--    attribute value 
+--
+--    CWMS_LOOKUP.IN_RANGE_NEXT - if the specified attribute value is not one
+--    of the Location Level attributes, the returned level is the level
+--    associated with the nearest attribute value greater than the specified
+--    attribute value
+--
+--    CWMS_LOOKUP.IN_RANGE_NEAREST - if the specified attribute value is not one
+--    of the Location Level attributes, the returned level is the level
+--    associated with the nearest attribute value to the specified attribute 
+--    value
+--
+-- p_out_range_behavior specifies how the lookup is performed when the specified
+-- attribute value is outside the range of attributes for the Location Level and
+-- is specified as one of the following constants from the CWMS_LOOKUP package:
+--
+--    CWMS_LOOKUP.OUT_RANGE_NULL - NULL is returned for the level value
+--
+--    CWMS_LOOKUP.OUT_RANGE_ERROR - an error is raised instead of retrieving
+--    a value 
+--
+--    CWMS_LOOKUP.OUT_RANGE_NEAREST - the level value returned is the level
+--    value associated with the attribute value nearest the specified attribute
+--    value
+--
+--    CWMS_LOOKUP.OUT_RANGE_EXTRAP - the level value returned is extrapolated
+--    from the level values associated with the two attribute values nearest to
+--    the specified attribute value
 --------------------------------------------------------------------------------
 function lookup_level_by_attribute(
    p_location_level_id       in  varchar2,
@@ -3529,6 +3742,52 @@ end lookup_level_by_attribute;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE lookup_attribute_by_level
+--
+-- Retrieves the attribute value of a Location Level that corresponds to a 
+-- specified level value and date
+--
+-- p_in_range_behavior specifies how the lookup is performed when the specified
+-- level value is within the range of levels associated attributes for the
+-- Location Level and is specified as one of the following constants from the
+-- CWMS_LOOKUP package:
+--
+--    CWMS_LOOKUP.IN_RANGE_INTERP - if the specified level value is not a level
+--    value associated with one of the Location Level attributes, the retrieved
+--    attribute value is interpolated between the attribute values whose
+--    associated levels are the nearest values less and greater than the
+--    specified level value
+--
+--    CWMS_LOOKUP.IN_RANGE_PREV - if the specified level value is not a level
+--    value associated with one of the Location Level attributes, the retrieved
+--    attribute value is the attribute value whose associated level is the 
+--    nearest value less than the specified level value 
+--
+--    CWMS_LOOKUP.IN_RANGE_NEXT - if the specified level value is not a level
+--    value associated with one of the Location Level attributes, the retrieved
+--    attribute value is the attribute value whose associated level is the 
+--    nearest value greater than the specified level value
+--
+--    CWMS_LOOKUP.IN_RANGE_NEAREST - if the specified level value is not a level
+--    value associated with one of the Location Level attributes, the retrieved
+--    attribute value is the attribute value whose associated level is the 
+--    nearest the specified level value
+--
+-- p_out_range_behavior specifies how the lookup is performed when the specified
+-- level value is outside the range of levels associated attributes for the
+-- Location Level and is specified as one of the following constants from the
+-- CWMS_LOOKUP package:
+--
+--    CWMS_LOOKUP.OUT_RANGE_NULL - NULL is retrieved for the attribute value
+--
+--    CWMS_LOOKUP.OUT_RANGE_ERROR - an error is raised instead of retrieving
+--    a value 
+--
+--    CWMS_LOOKUP.OUT_RANGE_NEAREST - the attribute value whose associated level
+--    value is the nearest the specified level value is retrieved
+--
+--    CWMS_LOOKUP.OUT_RANGE_EXTRAP - the attribute value retrieved is
+--    extrapolated from the two attribute values whose associated level values
+--    are nearset to the specified level value
 --------------------------------------------------------------------------------
 procedure lookup_attribute_by_level(
    p_attribute               out number,
@@ -3560,6 +3819,52 @@ end lookup_attribute_by_level;
 
 --------------------------------------------------------------------------------
 -- FUNCTION lookup_attribute_by_level
+--
+-- Returns the attribute value of a Location Level that corresponds to a 
+-- specified level value and date
+--
+-- p_in_range_behavior specifies how the lookup is performed when the specified
+-- level value is within the range of levels associated attributes for the
+-- Location Level and is specified as one of the following constants from the
+-- CWMS_LOOKUP package:
+--
+--    CWMS_LOOKUP.IN_RANGE_INTERP - if the specified level value is not a level
+--    value associated with one of the Location Level attributes, the returned
+--    attribute value is interpolated between the attribute values whose
+--    associated levels are the nearest values less and greater than the
+--    specified level value
+--
+--    CWMS_LOOKUP.IN_RANGE_PREV - if the specified level value is not a level
+--    value associated with one of the Location Level attributes, the returned
+--    attribute value is the attribute value whose associated level is the 
+--    nearest value less than the specified level value 
+--
+--    CWMS_LOOKUP.IN_RANGE_NEXT - if the specified level value is not a level
+--    value associated with one of the Location Level attributes, the returned
+--    attribute value is the attribute value whose associated level is the 
+--    nearest value greater than the specified level value
+--
+--    CWMS_LOOKUP.IN_RANGE_NEAREST - if the specified level value is not a level
+--    value associated with one of the Location Level attributes, the returned
+--    attribute value is the attribute value whose associated level is the 
+--    nearest the specified level value
+--
+-- p_out_range_behavior specifies how the lookup is performed when the specified
+-- level value is outside the range of levels associated attributes for the
+-- Location Level and is specified as one of the following constants from the
+-- CWMS_LOOKUP package:
+--
+--    CWMS_LOOKUP.OUT_RANGE_NULL - NULL is returned for the attribute value
+--
+--    CWMS_LOOKUP.OUT_RANGE_ERROR - an error is raised instead of returning
+--    a value 
+--
+--    CWMS_LOOKUP.OUT_RANGE_NEAREST - the attribute value whose associated level
+--    value is the nearest the specified level value is returned
+--
+--    CWMS_LOOKUP.OUT_RANGE_EXTRAP - the attribute value returned is
+--    extrapolated from the two attribute values whose associated level values
+--    are nearset to the specified level value
 --------------------------------------------------------------------------------
 function lookup_attribute_by_level(
    p_location_level_id       in  varchar2,
@@ -3594,6 +3899,8 @@ end lookup_attribute_by_level;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE delete_location_level
+--
+-- Deletes the specified Location Level from the database
 --------------------------------------------------------------------------------
 procedure delete_location_level(
    p_location_level_id       in  varchar2,
@@ -4208,6 +4515,10 @@ end store_loc_lvl_indicator_cond;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE store_loc_lvl_indicator_cond
+--
+-- Creates or updates a Location Level Indicator Condition in the database
+--
+-- p_rate_interval is specified as 'ddd hh:mm:ss'
 --------------------------------------------------------------------------------
 procedure store_loc_lvl_indicator_cond(
    p_loc_lvl_indicator_id        in varchar2,
@@ -4226,7 +4537,7 @@ procedure store_loc_lvl_indicator_cond(
    p_rate_connector              in varchar2 default null, 
    p_rate_comparison_operator_2  in varchar2 default null,
    p_rate_comparison_value_2     in number   default null,
-   p_rate_interval               in varchar2 default null, -- 'ddd hh:mm:ss'
+   p_rate_interval               in varchar2 default null,
    p_description                 in varchar2 default null,
    p_attr_value                  in number   default null,
    p_attr_units_id               in varchar2 default null,
@@ -4373,6 +4684,8 @@ end store_loc_lvl_indicator_out;
    
 --------------------------------------------------------------------------------
 -- PROCEDURE store_loc_lvl_indicator
+--
+-- Creates or updates a Location Level Indicator in the database
 --------------------------------------------------------------------------------
 procedure store_loc_lvl_indicator(
    p_location_id            in  varchar2,
@@ -4441,6 +4754,8 @@ end store_loc_lvl_indicator;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE store_loc_lvl_indicator
+--
+-- Creates or updates a Location Level Indicator in the database
 --------------------------------------------------------------------------------
 procedure store_loc_lvl_indicator(
    p_loc_lvl_indicator_id   in  varchar2,
@@ -4503,6 +4818,9 @@ end store_loc_lvl_indicator;
    
 --------------------------------------------------------------------------------
 -- PROCEDURE store_loc_lvl_indicator2
+--
+-- Creates or updates a Location Level Indicator in the database using only text
+-- and numeric parameters
 --------------------------------------------------------------------------------
 procedure store_loc_lvl_indicator2(
    p_loc_lvl_indicator_id   in  varchar2,
@@ -4846,13 +5164,27 @@ end cat_loc_lvl_indicator_codes;
 --------------------------------------------------------------------------------
 -- PROCEDURE cat_loc_lvl_indicator
 --
--- The cursor returned by this routine contains 19fields:
+-- Retrieves a cursor of Location Level Indicators and associated Conditions
+-- that match the input masks
+--
+-- p_location_level_id_mask - Location Level Identifier that can contain SQL
+-- wildcards (%, _) or filename wildcards (*, ?), cannot be NULL
+--
+-- p_attribute_id_mask - Attribute Identifier that can contain wildcards, cannot
+-- be NULL
+--
+-- p_office_id_mask - Office Identifier that can contain wildcards, if NULL, the
+-- user's office id is used
+--
+-- p_unit_system is 'EN' or 'SI'
+--
+-- p_cursor contains 18 fields:
 --   1 : office_id              varchar2(16)
 --   2 : location_id            varchar2(49)
 --   3 : parameter_id           varchar2(49)
 --   4 : parameter_type_id      varchar2(16)
 --   5 : duration_id            varchar2(16)
---   6 : specified_level_id     varchar2(265)
+--   6 : specified_level_id     varchar2(256)
 --   7 : level_indicator_id     varchar2(32)
 --   8 : level_units_id         varchar2(16)
 --   9 : attr_parameter_id      varchar2(49)
@@ -4860,31 +5192,30 @@ end cat_loc_lvl_indicator_codes;
 --  11 : attr_duration_id       varchar2(16)
 --  12 : attr_units_id          varchar2(16)
 --  13 : attr_value             number
---  14 : minimum_duration       interval day to second
---  15 : maximum_age            interval day to second
---  16 : rate_of_change         varchar2(1) ('T' or 'F')
---  17 : ref_specified_level_id varchar2(256)
---  18 : ref_attribute_value    number
---  19 : conditions             sys_refcursor
+--  14 : minimum_duration       interval day(3) to second(0)
+--  15 : maximum_age            interval day(3) to second(0)
+--  16 : ref_specified_level_id varchar2(256)
+--  17 : ref_attribute_value    number
+--  18 : conditions             sys_refcursor
 --
--- The cursor returned in field 19 contains 17 fields:
+-- The cursor returned in field 18 contains 17 fields:
 --   1 : indicator_value             integer  (1..5)
---   2 : expression                  varchar2
---   3 : comparison_operator_1       varchar2 (LT,LE,EQ,NE,GE,GT)
---   4 : comparison_value_1          number,
---   5 : comparison_unit_id          varchar2
---   6 : connector                   varchar2 (AND,OR) 
---   7 : comparison_operator_2       varchar2 (LT,LE,EQ,NE,GE,GT)
+--   2 : expression                  varchar2(64)
+--   3 : comparison_operator_1       varchar2(2) (LT,LE,EQ,NE,GE,GT)
+--   4 : comparison_value_1          number
+--   5 : comparison_unit_id          varchar2(16)
+--   6 : connector                   varchar2(3) (AND,OR) 
+--   7 : comparison_operator_2       varchar2(2) (LT,LE,EQ,NE,GE,GT)
 --   8 : comparison_value_2          number  
---   9 : rate_expression             varchar2
---  10 : rate_comparison_operator_1  varchar2 (LT,LE,EQ,NE,GE,GT)
---  11 : rate_comparison_value_1     number,
---  12 : rate_comparison_unit_id     varchar2
---  13 : rate_connector              varchar2 (AND,OR) 
---  14 : rate_comparison_operator_2  varchar2 (LT,LE,EQ,NE,GE,GT)
+--   9 : rate_expression             varchar2(64)
+--  10 : rate_comparison_operator_1  varchar2(2) (LT,LE,EQ,NE,GE,GT)
+--  11 : rate_comparison_value_1     number
+--  12 : rate_comparison_unit_id     varchar2(16)
+--  13 : rate_connector              varchar2(3) (AND,OR) 
+--  14 : rate_comparison_operator_2  varchar2(2) (LT,LE,EQ,NE,GE,GT)
 --  15 : rate_comparison_value_2     number  
---  16 : rate_interval               interval day to second
---  17 : description                 varchar2  
+--  16 : rate_interval               interval day(3) to second(0)
+--  17 : description                 varchar2(256)  
 --------------------------------------------------------------------------------
 procedure cat_loc_lvl_indicator(
    p_cursor                 out sys_refcursor,
@@ -5063,11 +5394,11 @@ begin
              duration_id,
              specified_level_id,
              level_indicator_id,
-             cwms_util.get_default_units(parameter_id) as level_units_id,
+             cwms_util.get_default_units(parameter_id, p_unit_system) as level_units_id,
              attr_parameter_id,
              attr_parameter_type_id,
              attr_duration_id,
-             cwms_util.get_default_units(attr_parameter_id) as attr_units_id,
+             cwms_util.get_default_units(attr_parameter_id, p_unit_system) as attr_units_id,
              round(attr_value * attr_param.factor + attr_param.offset, 10 - trunc(log(10, attr_value * attr_param.factor + attr_param.offset)))
              minimum_duration,
              maximum_age,
@@ -5099,13 +5430,27 @@ end cat_loc_lvl_indicator;
 --------------------------------------------------------------------------------
 -- PROCEDURE cat_loc_lvl_indicator2
 --
--- The cursor returned by this routine contains 19 fields:
+-- Retrieves a cursor of Location Level Indicators and associated Conditions
+-- that match the input masks and contains only text and numeric fields
+--
+-- p_location_level_id_mask - Location Level Identifier that can contain SQL
+-- wildcards (%, _) or filename wildcards (*, ?), cannot be NULL
+--
+-- p_attribute_id_mask - Attribute Identifier that can contain wildcards, cannot
+-- be NULL
+--
+-- p_office_id_mask - Office Identifier that can contain wildcards, if NULL, the
+-- user's office id is used
+--
+-- p_unit_system is 'EN' or 'SI'
+--
+-- p_cursor contains 18 fields:
 --   1 : office_id              varchar2(16)
 --   2 : location_id            varchar2(49)
 --   3 : parameter_id           varchar2(49)
 --   4 : parameter_type_id      varchar2(16)
 --   5 : duration_id            varchar2(16)
---   6 : specified_level_id     varchar2(265)
+--   6 : specified_level_id     varchar2(256)
 --   7 : level_indicator_id     varchar2(32)
 --   8 : level_units_id         varchar2(16)
 --   9 : attr_parameter_id      varchar2(49)
@@ -5113,33 +5458,36 @@ end cat_loc_lvl_indicator;
 --  11 : attr_duration_id       varchar2(16)
 --  12 : attr_units_id          varchar2(16)
 --  13 : attr_value             number
---  14 : minimum_duration       varchar2 (ddd hh:mm:ss)
---  15 : maximum_age            varchar2 (ddd hh:mm:ss)
---  16 : rate_of_change         varchar2(1) ('T' or 'F')
---  17 : ref_specified_level_id varchar2(256)
---  18 : ref_attribute_value    number
---  19 : conditions             varchar2(4096)
+--  14 : minimum_duration       varchar2(12)
+--  15 : maximum_age            varchar2(12)
+--  16 : ref_specified_level_id varchar2(256)
+--  17 : ref_attribute_value    number
+--  18 : conditions             varchar2(4096)
 --
--- The character string returned in field 19 contains text records separated
+-- Fields 14 and 15 are in the format 'ddd hh:mm:ss'
+--
+-- The character string returned in field 18 contains text records separated
 -- by the RS character (chr(30)), each record having 17 fields separated by
 -- the GS character (chr(29)):
 --   1 : indicator_value             integer  (1..5)
---   2 : expression                  varchar2
---   3 : comparison_operator_1       varchar2 (LT,LE,EQ,NE,GE,GT)
---   4 : comparison_value_1          number,
---   5 : comparison_unit_id          varchar2
---   6 : connector                   varchar2 (AND,OR) 
---   7 : comparison_operator_2       varchar2 (LT,LE,EQ,NE,GE,GT)
+--   2 : expression                  varchar2(64)
+--   3 : comparison_operator_1       varchar2(2) (LT,LE,EQ,NE,GE,GT)
+--   4 : comparison_value_1          number
+--   5 : comparison_unit_id          varchar2(16)
+--   6 : connector                   varchar2(3) (AND,OR) 
+--   7 : comparison_operator_2       varchar2(2) (LT,LE,EQ,NE,GE,GT)
 --   8 : comparison_value_2          number  
---   9 : rate_expression             varchar2
---  10 : rate_comparison_operator_1  varchar2 (LT,LE,EQ,NE,GE,GT)
---  11 : rate_comparison_value_1     number,
---  12 : rate_comparison_unit_id     varchar2
---  13 : rate_connector              varchar2 (AND,OR) 
---  14 : rate_comparison_operator_2  varchar2 (LT,LE,EQ,NE,GE,GT)
+--   9 : rate_expression             varchar2(64)
+--  10 : rate_comparison_operator_1  varchar2(2) (LT,LE,EQ,NE,GE,GT)
+--  11 : rate_comparison_value_1     number
+--  12 : rate_comparison_unit_id     varchar2(16)
+--  13 : rate_connector              varchar2(3) (AND,OR) 
+--  14 : rate_comparison_operator_2  varchar2(2) (LT,LE,EQ,NE,GE,GT)
 --  15 : rate_comparison_value_2     number  
---  16 : rate_interval               varchar2 (ddd hh:mm:ss)
---  17 : description                 varchar2  
+--  16 : rate_interval               varchar2(12)
+--  17 : description                 varchar2(256)  
+--
+-- Field 16 is in the format 'ddd hh:mm:ss'
 --------------------------------------------------------------------------------
 procedure cat_loc_lvl_indicator2(
    p_cursor                 out sys_refcursor,
@@ -5307,24 +5655,26 @@ end cat_loc_lvl_indicator2;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_loc_lvl_indicator
 --
+-- Retrieves a Location Level Indicator and its associated Conditions
+--
 -- The cursor returned in p_conditions contains 17 fields:
 --   1 : indicator_value             integer  (1..5)
---   2 : expression                  varchar2
---   3 : comparison_operator_1       varchar2 (LT,LE,EQ,NE,GE,GT)
---   4 : comparison_value_1          number,
---   5 : comparison_unit_id          varchar2
---   6 : connector                   varchar2 (AND,OR) 
---   7 : comparison_operator_2       varchar2 (LT,LE,EQ,NE,GE,GT)
+--   2 : expression                  varchar2(64)
+--   3 : comparison_operator_1       varchar2(2) (LT,LE,EQ,NE,GE,GT)
+--   4 : comparison_value_1          number
+--   5 : comparison_unit_id          varchar2(16)
+--   6 : connector                   varchar2(3) (AND,OR) 
+--   7 : comparison_operator_2       varchar2(2) (LT,LE,EQ,NE,GE,GT)
 --   8 : comparison_value_2          number  
---   9 : rate_expression             varchar2
---  10 : rate_comparison_operator_1  varchar2 (LT,LE,EQ,NE,GE,GT)
---  11 : rate_comparison_value_1     number,
---  12 : rate_comparison_unit_id     varchar2
---  13 : rate_connector              varchar2 (AND,OR) 
---  14 : rate_comparison_operator_2  varchar2 (LT,LE,EQ,NE,GE,GT)
+--   9 : rate_expression             varchar2(64)
+--  10 : rate_comparison_operator_1  varchar2(2) (LT,LE,EQ,NE,GE,GT)
+--  11 : rate_comparison_value_1     number
+--  12 : rate_comparison_unit_id     varchar2(16)
+--  13 : rate_connector              varchar2(3) (AND,OR) 
+--  14 : rate_comparison_operator_2  varchar2(2) (LT,LE,EQ,NE,GE,GT)
 --  15 : rate_comparison_value_2     number  
---  16 : rate_interval               interval day to second
---  17 : description                 varchar2  
+--  16 : rate_interval               interval day(3) to second(0)
+--  17 : description                 varchar2(256)  
 --------------------------------------------------------------------------------
 procedure retrieve_loc_lvl_indicator(
    p_minimum_duration       out interval day to second,
@@ -5443,26 +5793,35 @@ end retrieve_loc_lvl_indicator;
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_loc_lvl_indicator2
 --
+-- Retrieves a Location Level Indicator and its associated Conditions and uses
+-- only text and numeric fields
+--
+-- p_minimum_duration is in the format 'ddd hh:mm:ss'
+--
+-- p_maximum_age is in the format 'ddd hh:mm:ss'
+--
 -- The character string returned in p_conditions contains text records separated
 -- by the RS character (chr(30)), each record having 17 fields separated by
 -- the GS character (chr(29)):
 --   1 : indicator_value             integer  (1..5)
---   2 : expression                  varchar2
---   3 : comparison_operator_1       varchar2 (LT,LE,EQ,NE,GE,GT)
---   4 : comparison_value_1          number,
---   5 : comparison_unit_id          varchar2
---   6 : connector                   varchar2 (AND,OR) 
---   7 : comparison_operator_2       varchar2 (LT,LE,EQ,NE,GE,GT)
+--   2 : expression                  varchar2(64)
+--   3 : comparison_operator_1       varchar2(2) (LT,LE,EQ,NE,GE,GT)
+--   4 : comparison_value_1          number
+--   5 : comparison_unit_id          varchar2(16)
+--   6 : connector                   varchar2(3) (AND,OR) 
+--   7 : comparison_operator_2       varchar2(2) (LT,LE,EQ,NE,GE,GT)
 --   8 : comparison_value_2          number  
---   9 : rate_expression             varchar2
---  10 : rate_comparison_operator_1  varchar2 (LT,LE,EQ,NE,GE,GT)
---  11 : rate_comparison_value_1     number,
---  12 : rate_comparison_unit_id     varchar2
---  13 : rate_connector              varchar2 (AND,OR) 
---  14 : rate_comparison_operator_2  varchar2 (LT,LE,EQ,NE,GE,GT)
+--   9 : rate_expression             varchar2(64)
+--  10 : rate_comparison_operator_1  varchar2(2) (LT,LE,EQ,NE,GE,GT)
+--  11 : rate_comparison_value_1     number
+--  12 : rate_comparison_unit_id     varchar2(16)
+--  13 : rate_connector              varchar2(3) (AND,OR) 
+--  14 : rate_comparison_operator_2  varchar2(2) (LT,LE,EQ,NE,GE,GT)
 --  15 : rate_comparison_value_2     number  
---  16 : rate_interval               varchar2 (ddd hh:mm:ss)
---  17 : description                 varchar2  
+--  16 : rate_interval               varchar2(12)
+--  17 : description                 varchar2(256)  
+--
+-- Field 16 is in the format 'ddd hh:mm:ss'
 --------------------------------------------------------------------------------
 procedure retrieve_loc_lvl_indicator2(
    p_minimum_duration       out varchar2, -- 'ddd hh:mi:ss'
@@ -5574,7 +5933,10 @@ begin
 end retrieve_loc_lvl_indicator2;   
 
 --------------------------------------------------------------------------------
--- FUNCTION retrieve_loc_lvl_indicator
+-- FUNCTION retrieve_loc_lvl_indicator 
+--
+-- Returns a Location Level Indicator and its associated Conditions in a
+-- LOC_LVL_INDICATOR_T object
 --------------------------------------------------------------------------------
 function retrieve_loc_lvl_indicator(
    p_loc_lvl_indicator_id   in  varchar2,
@@ -5612,6 +5974,8 @@ end retrieve_loc_lvl_indicator;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE delete_loc_lvl_indicator
+--
+-- Deletes a Location Level Indicator and its associated Conditions
 --------------------------------------------------------------------------------
 procedure delete_loc_lvl_indicator(
    p_loc_lvl_indicator_id   in  varchar2,
@@ -5646,17 +6010,34 @@ end delete_loc_lvl_indicator;
 --------------------------------------------------------------------------------
 -- PROCEDURE get_level_indicator_values
 --
--- This procedure returns the values for all indicator conditions that are set
--- at p_eval_time and that match the input parameters.  Each indicator may have
--- multiple condions set.
+-- Retreieves the values for all Location Level Indicator Conditions that are
+-- set at p_eval_time and that match the input parameters.  Each indicator may
+-- have multiple condions set.
+--
+-- p_tsid - time series identifier, p_cursor will only include Conditions for 
+-- Location Levels that have the same Location, Parameter, and Parameter Type
 -- 
--- The returned cursor has the following fields:
+-- p_eval_time - evaluation time, current time if NULL
+--
+-- p_time_zone - time zone of p_eval_time, 'UTC' if NULL
+--
+-- p_specified_level_mask - Specified Level Indicator with optional SQL
+-- wildcards (%, _) or filename wildcards (*, ?), '%' if NULL
+--
+-- p_indicator_id_mask - Location Level Identifier with optional wildcards, '%'
+-- if NULL
+--
+-- p_unit_system - unit system for which to retrieve attribute values, 'EN' or 
+-- 'SI', 'SI' if NULL
+--
+-- p_office_id - office identifier for p_tsid, user's office identifier if NULL
+-- 
+-- p_cursor contains the following fields:
 -- 1 indicator_id     varchar2(423)
 -- 2 attribute_id     varchar2(83)
 -- 3 attribute_value  number           
 -- 4 attribute_units  varchar2(16)
--- 5 indicator_values number_tab_t (table of values for conditions that are set)
---
+-- 5 indicator_values number_tab_t
 --------------------------------------------------------------------------------
 procedure get_level_indicator_values(
    p_cursor               out sys_refcursor,
@@ -5825,21 +6206,39 @@ end get_level_indicator_values;
 --------------------------------------------------------------------------------
 -- PROCEDURE get_level_indicator_max_values
 --
--- This procedure returns a time series of indicator condition values for all
--- indicators that match the input parameters.  The returned time series have
--- the same times as the time series defined by p_tsid, p_start_time and
+-- Retrieves a time series of the maximum Condition value that is set for each 
+-- Location Level Indicator that matches the input parameters.  Each time series 
+-- has the same times as the time series defined by p_tsid, p_start_time and
 -- p_end_time.  Each date_time in the time series is in the specified time
--- zone. Each value the the time series is the maximum of values for conditions
--- that are set for that indicator at the time specified by the time series 
--- date_time field.  The quality_code of each time series value is set to zero.
--- 
--- The returned cursor has the following fields:
--- 1 indicator_id
--- 2 attribute_id
--- 3 attribute_value
--- 4 attribute_units
--- 5 indicator_values ztsv_array  
+-- zone. The quality_code of each time series value is set to zero.
 --
+-- p_tsid - time series identifier, p_cursor will only include Conditions for 
+-- Location Levels that have the same Location, Parameter, and Parameter Type
+-- 
+-- p_start_time - start of the time window for p_tsid, in p_time_zone
+-- 
+-- p_end_time - end of the time window for p_tsid, in p_time_zone
+--
+-- p_time_zone - time zone of p_start_time, p_end_time and the date_times of the
+-- retrieved time series, 'UTC' if NULL
+--
+-- p_specified_level_mask - Specified Level Indicator with optional SQL
+-- wildcards (%, _) or filename wildcards (*, ?), '%' if NULL
+--
+-- p_indicator_id_mask - Location Level Identifier with optional wildcards, '%'
+-- if NULL
+--
+-- p_unit_system - unit system for which to retrieve attribute values, 'EN' or 
+-- 'SI', 'SI' if NULL
+--
+-- p_office_id - office identifier for p_tsid, user's office identifier if NULL
+-- 
+-- p_cursor has the following fields:
+-- 1 indicator_id     varchar2(423)
+-- 2 attribute_id     varchar2(83)
+-- 3 attribute_value  number
+-- 4 attribute_units  varchar2(16)
+-- 5 indicator_values ztsv_array  
 --------------------------------------------------------------------------------
 procedure get_level_indicator_max_values(
    p_cursor               out sys_refcursor,
