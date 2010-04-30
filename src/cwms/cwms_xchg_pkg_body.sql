@@ -1850,6 +1850,7 @@ begin
                                      from at_xchg_dss_ts_mappings
                                     where xchg_set_code = l_xchg_code
                                   )
+               and tsid.ts_code = msg.ts_code                            
           order by msg.message_time asc
            )
    loop
