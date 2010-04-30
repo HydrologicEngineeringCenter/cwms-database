@@ -57,7 +57,7 @@ BEGIN
                THEN
                   IF pass_count = 1
                   THEN
-                     defined_count := defined_count - 1;
+                  defined_count := defined_count - 1;
                   END IF;
                WHEN has_dependencies
                THEN
@@ -101,11 +101,11 @@ AS
       snap_forward_minutes NUMBER,
       snap_backward_minutes NUMBER,
       ts_active_flag VARCHAR2 (1)                  -- T or F psuedo boolean.
-   );
+   ); 
 /
 
 CREATE OR REPLACE
-TYPE  SHEF_SPEC_ARRAY IS TABLE OF shef_spec_type;
+TYPE  SHEF_SPEC_ARRAY IS TABLE OF shef_spec_type; 
 /
 
 CREATE TYPE tsv_type AS OBJECT (
@@ -627,6 +627,18 @@ create or replace type number_tab_t is table of number;
 /
 
 create or replace type double_tab_t is table of binary_double;
+/
+
+create or replace type log_message_properties_t as object (
+   msg_id     varchar2(32),
+   prop_name  varchar2(64),
+   prop_type  number(1),
+   prop_value number,
+   prop_text  varchar2(4000)
+)
+/
+
+create or replace type log_message_properties_tab_t as table of log_message_properties_t
 /
 
 create type location_ref_t is object(

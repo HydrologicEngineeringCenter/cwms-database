@@ -167,6 +167,13 @@ function log_message_server_message(
 function log_message_server_message(
    p_message in out nocopy clob)
    return integer;
+
+-------------------------------------------------------------------------------
+-- FUNCTION PARSE_LOG_MSG_PROP_TAB(...)
+--
+function parse_log_msg_prop_tab (
+   p_tab in log_message_properties_tab_t)
+   return varchar2;
    
 -------------------------------------------------------------------------------
 -- PROCEDURE TRIM_LOG
