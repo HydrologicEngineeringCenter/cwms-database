@@ -24,7 +24,9 @@ DECLARE
                      'av_shef_decode_spec',
                      'av_shef_pe_codes',
                      'av_unit',
-                     'av_storage_unit'
+                     'av_storage_unit',
+                     'av_log_message',     -- located in at_schema_2
+                     'av_dataexchange_job'
                     );
 BEGIN
    FOR i IN view_names.FIRST .. view_names.LAST
@@ -806,6 +808,111 @@ AS
       and bp.unit_code = u.unit_code
 /
 --------------------------------------------------------------------------------
+CREATE OR REPLACE FORCE VIEW AV_DATAEXCHANGE_JOB
+(
+   JOB_ID,
+   REQUESTED_FROM,
+   SET_ID,
+   DIRECTION,
+   REQUEST_TIME,
+   START_TIME,
+   END_TIME,
+   START_DELAY,
+   EXECUTION_TIME,
+   TOTAL_TIME,
+   PROCESSED_BY,
+   RESULTS
+)
+AS
+   WITH request$
+           AS (SELECT p1.msg_id,
+                      p1.prop_text AS job_id,
+                      p3.prop_text AS set_id,
+                      p4.prop_text AS to_dss,
+                      m.log_timestamp_utc,
+                      o.office_id,
+                      m.HOST
+                 FROM at_log_message m,
+                      cwms_office o,
+                      at_log_message_properties p1,
+                      at_log_message_properties p2,
+                      at_log_message_properties p3,
+                      at_log_message_properties p4,
+                      cwms_log_message_types t
+                WHERE     p1.prop_name = 'job_id'
+                      AND p2.prop_name = 'subtype'
+                      AND p3.prop_name = 'set_id'
+                      AND p4.prop_name = 'to_dss'
+                      AND p2.prop_text = 'BatchExchange'
+                      AND p2.msg_id = p1.msg_id
+                      AND p3.msg_id = p1.msg_id
+                      AND p4.msg_id = p1.msg_id
+                      AND t.message_type_id = 'RequestAction'
+                      AND m.msg_type = t.message_type_code
+                      AND m.msg_id = p1.msg_id
+                      AND o.office_code = m.office_code),
+        start$
+           AS (SELECT p1.msg_id, p1.prop_text AS job_id, m.log_timestamp_utc
+                 FROM at_log_message m,
+                      cwms_office o,
+                      at_log_message_properties p1,
+                      at_log_message_properties p2,
+                      cwms_log_message_types t
+                WHERE     p1.prop_name = 'job_id'
+                      AND p2.prop_name = 'subtype'
+                      AND p2.prop_text = 'BatchStarting'
+                      AND p2.msg_id = p1.msg_id
+                      AND t.message_type_id = 'Status'
+                      AND m.msg_type = t.message_type_code
+                      AND m.msg_id = p1.msg_id
+                      AND o.office_code = m.office_code),
+        complete$
+           AS (SELECT p1.msg_id,
+                      p1.prop_text AS job_id,
+                      m.log_timestamp_utc,
+                      m.instance,
+                      m.msg_text
+                 FROM at_log_message m,
+                      cwms_office o,
+                      at_log_message_properties p1,
+                      at_log_message_properties p2,
+                      cwms_log_message_types t
+                WHERE     p1.prop_name = 'job_id'
+                      AND p2.prop_name = 'subtype'
+                      AND p2.prop_text = 'BatchCompleted'
+                      AND p2.msg_id = p1.msg_id
+                      AND t.message_type_id = 'Status'
+                      AND m.msg_type = t.message_type_code
+                      AND m.msg_id = p1.msg_id
+                      AND o.office_code = m.office_code)
+     SELECT request$.job_id,
+            request$.host AS requested_from,
+            request$.office_id || '/' || request$.set_id AS set_id,
+            CASE request$.to_dss
+               WHEN 'true'  THEN 'extract'
+               WHEN 'false' THEN 'post'
+            END
+               AS direction,
+            request$.log_timestamp_utc AS request_time,
+            start$.log_timestamp_utc AS start_time,
+            complete$.log_timestamp_utc AS end_time,
+            start$.log_timestamp_utc - request$.log_timestamp_utc
+               AS start_delay,
+            complete$.log_timestamp_utc - start$.log_timestamp_utc
+               AS execution_time,
+            complete$.log_timestamp_utc - request$.log_timestamp_utc
+               AS total_time,
+            complete$.instance AS processed_by,
+            complete$.msg_text AS results
+       FROM request$
+            LEFT OUTER JOIN start$
+               ON start$.job_id = request$.job_id
+            LEFT OUTER JOIN complete$
+               ON complete$.job_id = request$.job_id
+   ORDER BY request$.log_timestamp_utc DESC;
+/
+show errors;
+
 CREATE OR REPLACE FORCE VIEW av_location_level
 AS
    select office_id,
@@ -1248,4 +1355,91 @@ AS
           attribute_value,
           value;
 /                  
+show errors;
+
+create or replace force view av_dataexchange_job as
+   with 
+   request$ as (
+      select p1.msg_id,
+             p1.prop_text as job_id,
+             p3.prop_text as set_id,
+             p4.prop_text as to_dss,
+             m.log_timestamp_utc,
+             o.office_id,
+             m.host
+        from at_log_message m,
+              cwms_office o,
+              at_log_message_properties p1,
+              at_log_message_properties p2,
+              at_log_message_properties p3,
+              at_log_message_properties p4,
+              cwms_log_message_types t
+       where p1.prop_name = 'job_id'
+         and p2.prop_name = 'subtype'
+         and p3.prop_name = 'set_id'
+         and p4.prop_name = 'to_dss'
+         and p2.prop_text = 'BatchExchange'
+         and p2.msg_id = p1.msg_id
+         and p3.msg_id = p1.msg_id
+         and p4.msg_id = p1.msg_id
+         and t.message_type_id = 'RequestAction'
+         and m.msg_type = t.message_type_code
+         and m.msg_id = p1.msg_id
+         and o.office_code = m.office_code),
+   start$ as (
+      select p1.msg_id,
+             p1.prop_text as job_id,
+             m.log_timestamp_utc
+        from at_log_message m,
+              cwms_office o,
+              at_log_message_properties p1,
+              at_log_message_properties p2,
+              cwms_log_message_types t
+       where p1.prop_name = 'job_id'
+         and p2.prop_name = 'subtype'
+         and p2.prop_text = 'BatchStarting'
+         and p2.msg_id = p1.msg_id
+         and t.message_type_id = 'Status'
+         and m.msg_type = t.message_type_code
+         and m.msg_id = p1.msg_id
+         and o.office_code = m.office_code),
+   complete$ as (
+      select p1.msg_id,
+             p1.prop_text as job_id,
+             m.log_timestamp_utc,
+             m.instance,
+             m.msg_text
+        from at_log_message m,
+              cwms_office o,
+              at_log_message_properties p1,
+              at_log_message_properties p2,
+              cwms_log_message_types t
+       where p1.prop_name = 'job_id'
+         and p2.prop_name = 'subtype'
+         and p2.prop_text = 'BatchCompleted'
+         and p2.msg_id = p1.msg_id
+         and t.message_type_id = 'Status'
+         and m.msg_type = t.message_type_code
+         and m.msg_id = p1.msg_id
+         and o.office_code = m.office_code)
+   select request$.job_id,
+          request$.host as requested_from,
+          request$.office_id || '/' || request$.set_id as set_id,
+          case request$.to_dss
+            when 'true'  then 'extract'
+            when 'false' then 'post'
+          end as direction,
+          request$.log_timestamp_utc as request_time,
+          start$.log_timestamp_utc as start_time,
+          complete$.log_timestamp_utc as end_time,
+          start$.log_timestamp_utc - request$.log_timestamp_utc as start_delay,
+          complete$.log_timestamp_utc - start$.log_timestamp_utc as execution_time,
+          complete$.log_timestamp_utc - request$.log_timestamp_utc as total_time,
+          complete$.instance as processed_by,
+          complete$.msg_text as results
+     from request$
+          left outer join start$ on start$.job_id = request$.job_id
+          left outer join complete$ on complete$.job_id = request$.job_id           
+ order by request$.log_timestamp_utc desc;
+/
 show errors;

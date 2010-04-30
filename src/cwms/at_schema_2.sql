@@ -88,4 +88,61 @@ AS
       AND adu.db_office_code = abl.db_office_code;
 /
 SHOW ERRORS;
+
+-------------------------
+-- AV_LOG_MESSAGE view.
+-- 
+CREATE OR REPLACE FORCE VIEW AV_LOG_MESSAGE
+(
+   MSG_ID,
+   LOG_TIMESTAMP_UTC,
+   REPORT_TIMESTAMP_UTC,
+   OFFICE_ID,
+   COMPONENT,
+   INSTANCE,
+   HOST,
+   PORT,
+   MSG_LEVEL,
+   MSG_TYPE,
+   MSG_TEXT,
+   PROPERTIES
+)
+AS
+   SELECT a.msg_id,
+          a.log_timestamp_utc,
+          a.report_timestamp_utc,
+          c.office_id,
+          a.component,
+          a.instance,
+          a.host,
+          a.port,
+          CASE a.msg_level
+             WHEN 0 THEN 'None'
+             WHEN 1 THEN 'Normal'
+             WHEN 2 THEN 'Normal+'
+             WHEN 3 THEN 'Basic'
+             WHEN 4 THEN 'Basic+'
+             WHEN 5 THEN 'Detailed'
+             WHEN 6 THEN 'Detailed+'
+             WHEN 7 THEN 'Verbose'
+          END
+             AS msg_level,
+          d.message_type_id AS msg_type,
+          a.msg_text,
+          cwms_msg.
+          parse_log_msg_prop_tab (
+             CAST (
+                MULTISET (  SELECT b.msg_id,
+                                   b.prop_name,
+                                   b.prop_type,
+                                   b.prop_value,
+                                   b.prop_text
+                              FROM at_log_message_properties b
+                             WHERE b.msg_id = a.msg_id
+                          ORDER BY b.prop_name) AS log_message_properties_tab_t))
+             AS properties
+     FROM at_log_message a, cwms_office c, cwms_log_message_types d
+    WHERE c.office_code = a.office_code AND d.message_type_code = a.msg_type;
+/
+SHOW ERRORS;    
 COMMIT;
