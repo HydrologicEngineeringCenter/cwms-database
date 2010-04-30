@@ -3698,6 +3698,7 @@ unitDefs = [
 #    ABSTRACT PARAMETER                  UNIT ID        SYSTEM  NAME                             DESCRIPTION
 #    ----------------------------------- -------------- ------- -------------------------------- --------------------------------------------------------------------
     ["Angle",                            "deg",         "NULL", "Degrees",                       "Angle of 1 degree"                                                 ],
+    ["Angle",                            "rev",         "NULL", "Revolution",                    "Angle of 360 degrees"                                              ],
     ["Angular Speed",                    "rpm",         "NULL", "Revolutions per minute",        "Angular speed of 1 revolution per minute"                          ],
     ["Area",                             "1000 m2",     "SI",   "Thousands of square meters",    "Area of 1E+03 square meters"                                       ],
     ["Area",                             "acre",        "EN",   "Acre",                          "Area of 1 acre"                                                    ],
@@ -3948,6 +3949,8 @@ unitConversions = [
 #    ABSTRACT PARAMETER                  FROM UNIT ID   TO UNIT ID    OFFSET                FACTOR
 #    ----------------------------------- -------------- ------------- --------------------- -----------------------
     ["Angle",                            "deg",         "deg",         0.0,                 1.0                    ],
+    ["Angle",                            "deg",         "rev",         0.0,                 0.002777777777778      ],
+    ["Angle",                            "rev",         "deg",         0.0,                 360.0                  ],
     ["Angular Speed",                    "rpm",         "rpm",         0.0,                 1.0                    ],
     ["Area",                             "1000 m2",     "1000 m2",     0.0,                 1.0                    ],
     ["Area",                             "1000 m2",     "acre",        0.0,                 0.24710538146716532    ],
@@ -4549,6 +4552,7 @@ parameters = [
 #    CODE	ABSTRACT PARAMETER                  ID          NAME                  UNIT ID      SI       Non-SI         DESCRIPTION
 #    ------	----------------------------------- ----------- --------------------- ---------- ---------- -------------- -----------------------------------------------------------------------------
     [ 3,	"Angle",                            "Dir",      "Direction",          "deg",     "deg",     "deg",         "Map direction specified clockwise from North"                               ],
+    [41,	"Angle",                            "Rotation", "Rotation",           "deg",     "deg",     "deg",         "Angular displacement"                                                       ],
     [31,	"Angular Speed",                    "SpinRate", "Spin Rate",          "rpm",     "rpm",     "rpm",         "Number of revolutions made about an axis per unit of time"                  ],
     [ 2,	"Area",                             "Area",     "Surface Area",       "m2",      "m2",      "ft2",         "Area of a surface"                                                          ],
     [ 6,	"Conductivity",                     "Cond",     "Conductivity",       "umho/cm", "umho/cm", "umho/cm",     "Ability of an aqueous solution to conduct electricity"                      ],
