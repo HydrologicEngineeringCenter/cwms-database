@@ -86,6 +86,7 @@ grant execute on  ctxsys.ctx_doc to &cwms_schema;
 grant execute on  dbms_crypto to &cwms_schema;
 grant execute on  sys.dbms_aq to &cwms_schema;
 grant execute on  sys.dbms_aq_bqview to &cwms_schema;
+grant execute on  sys.dbms_aqadm to &cwms_schema;
 grant execute on  sys.dbms_lock to &cwms_schema;
 grant execute on  sys.dbms_rls to &cwms_schema;
 grant execute on  utl_recomp to &cwms_schema;
