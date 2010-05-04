@@ -189,6 +189,16 @@ procedure trim_log;
 -- procedure start_trim_log_job
 --
 procedure start_trim_log_job;
+
+--------------------------------------------------------------------------------
+-- procedure purge_queues
+--
+procedure purge_queues;
+
+--------------------------------------------------------------------------------
+-- procedure start_purge_queues_job
+--
+procedure start_purge_queues_job;
    
 end cwms_msg;
 /

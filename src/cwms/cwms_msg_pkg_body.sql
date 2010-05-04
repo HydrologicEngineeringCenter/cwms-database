@@ -51,7 +51,7 @@ begin
               into l_queuename
               from dba_queues
              where name = upper(l_queuename)
-               and owner = 'CWMS_20'
+               and owner = '&cwms_schema'
                and queue_type = 'NORMAL_QUEUE';
             l_found := true;
          exception
@@ -99,7 +99,7 @@ is
    l_msgid              raw(16);
    l_queuename          varchar2(32);
    l_now                integer := cwms_util.current_millis;           
-   l_expiration_time    constant binary_integer := 86400; --24 hours
+   l_expiration_time    constant binary_integer := 300; -- 5 minutes
 begin
    l_queuename := get_queue_name(p_msg_queue);
    if l_queuename is null then
@@ -1150,6 +1150,159 @@ begin
       end;
    end if;
 end start_trim_log_job;
+
+--------------------------------------------------------------------------------
+-- procedure purge_queues
+--
+procedure purge_queues
+is
+   l_purge_options dbms_aqadm.aq$_purge_options_t;
+   l_expired_count integer;
+   l_sql           varchar2(128);
+   l_purged        boolean := false;
+begin
+   l_purge_options.block := true;
+   for rec in (
+      select object_name 
+        from dba_objects 
+       where object_type = 'QUEUE' 
+         and owner = '&cwms_schema' 
+         and object_name not like 'AQ$%')
+   loop
+      l_sql := 'select count(*) from AQ$'||rec.object_name||'_TABLE where msg_state in (''UNDELIVERABLE'',''EXPIRED'')';
+      execute immediate l_sql into l_expired_count;
+      if l_expired_count > 50000 then
+         cwms_msg.log_db_message(
+            'purge_queues', 
+            cwms_msg.msg_level_normal, 
+            'Purging 50000 of '||l_expired_count||' expired messages from queue: '||rec.object_name);
+      elsif l_expired_count > 0 then
+         cwms_msg.log_db_message(
+            'purge_queues', 
+            cwms_msg.msg_level_normal, 
+            'Purging '||l_expired_count||' expired messages from queue: '||rec.object_name);
+      end if;
+      if l_expired_count > 0 then
+         l_purged := true;         
+         dbms_aqadm.purge_queue_table(
+            rec.object_name||'_TABLE',
+            'MSG_STATE IN (''UNDELIVERABLE'',''EXPIRED'') AND ROWNUM <= 50000',
+            l_purge_options);
+      end if;                     
+   end loop;
+   if l_purged then 
+      cwms_msg.log_db_message(
+         'purge_queues', 
+         cwms_msg.msg_level_normal, 
+         'Done purging expired messages from queues');
+   end if;         
+end purge_queues;
+
+--------------------------------------------------------------------------------
+-- procedure start_purge_queues_job
+--
+procedure start_purge_queues_job
+is
+   l_count        binary_integer;
+   l_user_id      varchar2(30);
+   l_job_id       varchar2(30)  := 'PURGE_QUEUES_JOB';
+   l_run_interval varchar2(8);
+   l_comment      varchar2(256);
+
+   function job_count
+      return binary_integer
+   is
+   begin
+      select count (*)
+        into l_count
+        from sys.dba_scheduler_jobs
+       where job_name = l_job_id and owner = l_user_id;
+
+      return l_count;
+   end;
+begin
+   --------------------------------------
+   -- make sure we're the correct user --
+   --------------------------------------
+   l_user_id := cwms_util.get_user_id;
+
+   if l_user_id != '&cwms_schema'
+   then
+      raise_application_error (-20999,
+                                  'Must be &cwms_schema user to start job '
+                               || l_job_id,
+                               true
+                              );
+   end if;
+
+   -------------------------------------------
+   -- drop the job if it is already running --
+   -------------------------------------------
+   if job_count > 0
+   then
+      dbms_output.put ('Dropping existing job ' || l_job_id || '...');
+      dbms_scheduler.drop_job (l_job_id);
+
+      --------------------------------
+      -- verify that it was dropped --
+      --------------------------------
+      if job_count = 0
+      then
+         dbms_output.put_line ('done.');
+      else
+         dbms_output.put_line ('failed.');
+      end if;
+   end if;
+
+   if job_count = 0
+   then
+      begin
+         ---------------------
+         -- restart the job --
+         ---------------------
+         cwms_properties.get_property(
+            l_run_interval,
+            l_comment,
+            'CWMSDB',
+            'queues.all.purge_interval',
+            '5',
+            'CWMS');
+         dbms_scheduler.create_job
+            (job_name             => l_job_id,
+             job_type             => 'stored_procedure',
+             job_action           => 'cwms_msg.purge_queues',
+             start_date           => null,
+             repeat_interval      => 'freq=minutely; interval=' || l_run_interval,
+             end_date             => null,
+             job_class            => 'default_job_class',
+             enabled              => true,
+             auto_drop            => false,
+             comments             => 'Purges expired and undeliverable messages from queues.'
+            );
+
+         if job_count = 1
+         then
+            dbms_output.put_line
+                           (   'Job '
+                            || l_job_id
+                            || ' successfully scheduled to execute every '
+                            || l_run_interval
+                            || ' minutes.'
+                           );
+         else
+            cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
+         end if;
+      exception
+         when others
+         then
+            cwms_err.raise ('ITEM_NOT_CREATED',
+                            'job',
+                            l_job_id || ':' || sqlerrm
+                           );
+      end;
+   end if;
+end start_purge_queues_job;
+
 
 end cwms_msg;
 /
