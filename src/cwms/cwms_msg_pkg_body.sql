@@ -1156,10 +1156,15 @@ end start_trim_log_job;
 --
 procedure purge_queues
 is
-   l_purge_options dbms_aqadm.aq$_purge_options_t;
-   l_expired_count integer;
-   l_sql           varchar2(128);
-   l_purged        boolean := false;
+   l_subscriber_name varchar2(31);
+   l_last_dequeue    timestamp;
+   l_subscriber      sys.aq$_agent := sys.aq$_agent(null, null, null);
+   l_cursor          sys_refcursor;
+   l_purge_options   dbms_aqadm.aq$_purge_options_t;
+   l_expired_count   integer;
+   l_max_purge_count integer := 50000;
+   l_sql             varchar2(128);
+   l_purged          boolean := false;
 begin
    l_purge_options.block := true;
    for rec in (
@@ -1169,24 +1174,82 @@ begin
          and owner = '&cwms_schema' 
          and object_name not like 'AQ$%')
    loop
-      l_sql := 'select count(*) from AQ$'||rec.object_name||'_TABLE where msg_state in (''UNDELIVERABLE'',''EXPIRED'')';
+      ---------------------------------------
+      -- first kill any zombie subscribers --
+      ---------------------------------------
+      open l_cursor for
+         'select consumer_name as subscriber, 
+                 max(deq_timestamp) as last_dequeue_time 
+            from AQ$'||rec.object_name||'_TABLE 
+           where msg_state != ''READY'' 
+        group by consumer_name';
+      loop
+         fetch l_cursor into l_subscriber_name, l_last_dequeue;
+         exit when l_cursor%notfound;
+         if l_last_dequeue is null then
+            ------------
+            -- zombie --
+            ------------
+            cwms_msg.log_db_message(
+               'purge_queues', 
+               cwms_msg.msg_level_normal, 
+               'Killing zombie subsciber '
+                  || l_subscriber_name
+                  || ' for queue '
+                  || rec.object_name);
+            l_subscriber.name := l_subscriber_name;
+            execute immediate
+               'select address,
+                       protocol
+                  into :address,
+                       :protocol
+                  from AQ$'||rec.object_name||'_TABLE_S
+                 where queue = :queue
+                   and name = :name'
+                  into l_subscriber.address,
+                       l_subscriber.protocol
+                 using rec.object_name,
+                       l_subscriber.name;         
+            dbms_aqadm.remove_subscriber(
+               rec.object_name,
+               l_subscriber);                            
+         end if;
+      end loop;
+      close l_cursor;      
+      ----------------------------------------------------------------
+      -- next purge queues of any expired or undeliverable messages --
+      ----------------------------------------------------------------
+      l_sql := 'select count(*) 
+                  from AQ$'
+                     || rec.object_name
+                     || '_TABLE 
+                 where msg_state in (''UNDELIVERABLE'',''EXPIRED'')';
       execute immediate l_sql into l_expired_count;
-      if l_expired_count > 50000 then
+      if l_expired_count > l_max_purge_count then
          cwms_msg.log_db_message(
             'purge_queues', 
             cwms_msg.msg_level_normal, 
-            'Purging 50000 of '||l_expired_count||' expired messages from queue: '||rec.object_name);
+            'Purging '
+               || l_max_purge_count
+               || ' of '
+               || l_expired_count
+               || ' expired messages from queue: '
+               || rec.object_name);
       elsif l_expired_count > 0 then
          cwms_msg.log_db_message(
             'purge_queues', 
             cwms_msg.msg_level_normal, 
-            'Purging '||l_expired_count||' expired messages from queue: '||rec.object_name);
+            'Purging '
+               || l_expired_count
+               || ' expired messages from queue: '
+               || rec.object_name);
       end if;
       if l_expired_count > 0 then
          l_purged := true;         
          dbms_aqadm.purge_queue_table(
             rec.object_name||'_TABLE',
-            'MSG_STATE IN (''UNDELIVERABLE'',''EXPIRED'') AND ROWNUM <= 50000',
+            'MSG_STATE IN (''UNDELIVERABLE'',''EXPIRED'') AND ROWNUM <= '
+               || l_max_purge_count,
             l_purge_options);
       end if;                     
    end loop;
