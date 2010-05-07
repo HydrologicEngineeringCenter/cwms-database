@@ -52,9 +52,10 @@ BEGIN
          and bl.base_location_code = pl.base_location_code
          and o.office_code         = bl.db_office_code
          and o.office_code         = l_db_office_code
+         and pl.time_zone_code     = tz.time_zone_code
     order by bl.base_location_id,
              pl.sub_location_id;
-   NULL;
+
 END cat_project;
 
 
@@ -177,6 +178,10 @@ begin
                when pl.office_code is null then null
                else o.office_id
              end                                   bounding_office_id,
+			 case
+               when pl.office_code is null then null
+               else o.public_name
+             end                                   bounding_office_name,
              case
                when pl.nation_code is null then null
                else n.nation_id
@@ -245,6 +250,7 @@ begin
             rec.published_latitude,
             rec.published_longitude,
             rec.bounding_office_id,
+            rec.bounding_office_name,
             rec.nation_id,
             rec.nearest_city);
       if rec.location_code = l_project_loc_code then
