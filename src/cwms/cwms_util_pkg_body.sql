@@ -2203,7 +2203,7 @@ AS
       l_unit_system         varchar2(2)  := 'SI';
       l_user_id             varchar2(31) := upper(nvl(p_user_id, get_user_id));
       l_office_id           varchar2(16) := get_db_office_id(p_office_id);
-      l_base_parameter_id   varchar2(16) := substr(p_parameter_id, least(instr(p_parameter_id, '-') - 1, length(p_parameter_id)));
+      l_base_parameter_id   varchar2(16) := get_base_id(p_parameter_id);
       l_office_code         number       := get_db_office_code(p_office_id);
       l_unit_code           number;
       l_base_parameter_code number;
