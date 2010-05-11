@@ -259,6 +259,8 @@ exec cwms_util.start_mv_cwms_ts_id_job;
 /
 exec cwms_msg.start_trim_log_job;
 /
+exec cwms_msg.start_purge_queues_job;
+/
 exec cwms_sec.start_refresh_mv_sec_privs_job;
 /
 --
