@@ -54,3 +54,6 @@
 -- @@cwms_rating_pkg_body
 
 
+@@../rowcps/cwms_project_pkg
+@@../rowcps/cwms_project_pkg_body
+
