@@ -1198,21 +1198,36 @@ begin
                   || ' for queue '
                   || rec.object_name);
             l_subscriber.name := l_subscriber_name;
-            execute immediate
-               'select address,
-                       protocol
-                  into :address,
-                       :protocol
-                  from AQ$'||rec.object_name||'_TABLE_S
-                 where queue = :queue
-                   and name = :name'
-                  into l_subscriber.address,
-                       l_subscriber.protocol
-                 using rec.object_name,
-                       l_subscriber.name;         
-            dbms_aqadm.remove_subscriber(
-               rec.object_name,
-               l_subscriber);                            
+            begin
+               execute immediate
+                  'select address,
+                          protocol
+                     into :address,
+                          :protocol
+                     from AQ$'||rec.object_name||'_TABLE_S
+                    where queue = :queue
+                      and name = :name'
+                     into l_subscriber.address,
+                          l_subscriber.protocol
+                    using rec.object_name,
+                          l_subscriber.name;         
+               dbms_aqadm.remove_subscriber(
+                  rec.object_name,
+                  l_subscriber);
+            exception
+               when others then
+                  cwms_msg.log_db_message(
+                     'purge_queues', 
+                     cwms_msg.msg_level_normal, 
+                     'Error killing zombie subsciber '
+                        || l_subscriber_name
+                        || ' for queue '
+                        || rec.object_name
+                        || ': '
+                        || sqlcode
+                        || ' - '
+                        || sqlerrm);
+            end;                                              
          end if;
       end loop;
       close l_cursor;      
