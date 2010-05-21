@@ -1163,7 +1163,7 @@ is
    l_purge_options   dbms_aqadm.aq$_purge_options_t;
    l_expired_count   integer;
    l_max_purge_count integer := 50000;
-   l_sql             varchar2(128);
+   l_sql             varchar2(256);
    l_purged          boolean := false;
 begin
    l_purge_options.block := true;
