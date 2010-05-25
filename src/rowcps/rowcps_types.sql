@@ -166,7 +166,18 @@ CREATE OR REPLACE TYPE wat_usr_contract_acct_tab_t is table of wat_usr_contract_
 show errors
 
 
-
+CREATE OR REPLACE TYPE lock_obj_t AS OBJECT
+( 
+    project_location_ref	location_ref_t, --The project this embankment is a child of
+    lock_location               location_obj_t, --The location for this embankment
+    lock_width	                binary_double,	-- the width of the lock chamber
+    lock_length	                binary_double,	-- the length of the lock chamber
+    volume_per_lockage	        binary_double,	-- the volume of water discharged for one lockage at normal headwater and tailwater elevations.  this volume includes any flushing water.
+    minimum_draft	        binary_double,	-- the minimum depth of water that is maintained for vessels for this particular lock
+    normal_lock_lift	        binary_double	-- The difference between upstream pool and downstream pool at normal elevation.
+);
+/
+show errors
 
 
 
