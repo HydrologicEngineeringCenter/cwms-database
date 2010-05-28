@@ -66,7 +66,6 @@ procedure rename_lock(
    p_lock_id_old  IN VARCHAR2,               -- the old lock concatenated location id
    p_lock_id_new  IN VARCHAR2,               -- the new lock concatenated location id
    p_db_office_id IN VARCHAR2 DEFAULT NULL); -- defaults to the connected user's office if null   
-is
 
 
 procedure delete_lock(
@@ -77,3 +76,5 @@ procedure delete_lock(
 END CWMS_LOCK;
 /
 show errors;
+
+GRANT EXECUTE ON CWMS_PROJECT to CWMS_USER;
