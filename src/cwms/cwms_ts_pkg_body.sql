@@ -1085,6 +1085,147 @@ BEGIN
 	RETURN get_ts_time_zone (l_ts_code);
 END get_tsid_time_zone;
 
+   
+procedure set_ts_versioned(
+   p_cwms_ts_code in number,
+   p_versioned    in varchar2 default 'T')
+is
+   l_version_flag       varchar2(1);
+   l_is_versioned       boolean;
+   l_version_date_count integer;
+begin
+
+   if p_versioned not in ('T', 'F', 't', 'f') then
+      cwms_err.raise(
+         'ERROR',
+         'Version flag must be ''T'' or ''F''');
+   end if;
+   
+   select version_flag
+     into l_version_flag
+     from at_cwms_ts_spec
+    where ts_code = p_cwms_ts_code;
+    
+   l_is_versioned := l_version_flag is not null;
+   
+   if p_versioned in ('T', 't') and not l_is_versioned then
+      ------------------------
+      -- turn on versioning --
+      ------------------------
+      update at_cwms_ts_spec
+         set version_flag = 'Y'
+       where ts_code = p_cwms_ts_code;
+   elsif p_versioned in ('F', 'f') and l_is_versioned then
+      -------------------------
+      -- turn off versioning --
+      -------------------------
+      select count(version_date)
+        into l_version_date_count
+        from av_tsv
+       where ts_code = p_cwms_ts_code
+         and version_date != date '1111-11-11';
+      if l_version_date_count = 0 then
+         update at_cwms_ts_spec
+            set version_flag = null
+          where ts_code = p_cwms_ts_code;
+      else
+         cwms_err.raise(
+            'ERROR',
+            'Cannot turn off versioning for a time series that has versioned data');
+      end if;         
+   end if;
+       
+end set_ts_versioned;   
+
+procedure set_tsid_versioned(
+   p_cwms_ts_id   in varchar2,
+   p_versioned    in varchar2 default 'T',
+   p_db_office_id in varchar2 default null)
+is
+begin
+   set_ts_versioned(
+      get_ts_code(p_cwms_ts_id, p_db_office_id),
+      p_versioned);
+end set_tsid_versioned;
+   
+procedure is_ts_versioned(
+   p_is_versioned out varchar2,
+   p_cwms_ts_code in  number)
+is
+   l_version_flag varchar2(1);
+begin
+   select version_flag
+     into l_version_flag
+     from at_cwms_ts_spec
+    where ts_code = p_cwms_ts_code;
+    
+   p_is_versioned := case l_version_flag is null
+                        when false then 'F'
+                        when true  then 'T'
+                     end;    
+end is_ts_versioned;
+   
+procedure is_tsid_versioned(
+   p_is_versioned out varchar2,
+   p_cwms_ts_id   in  varchar2,
+   p_db_office_id in  varchar2 default null)
+is
+begin
+   is_ts_versioned(
+      p_is_versioned,
+      get_ts_code(p_cwms_ts_id, p_db_office_id));
+end is_tsid_versioned;
+   
+function is_tsid_versioned_f(
+   p_cwms_ts_id   in varchar2,
+   p_db_office_id in varchar2 default null)
+   return varchar2
+is
+   l_is_versioned varchar2(1);
+begin
+   is_tsid_versioned(
+      l_is_versioned,
+      p_cwms_ts_id,
+      p_db_office_id);
+      
+   return l_is_versioned;      
+end is_tsid_versioned_f;
+   
+procedure get_ts_version_dates(
+   p_date_cat     out sys_refcursor,
+   p_cwms_ts_code in  number,
+   p_start_time   in  date,
+   p_end_time     in  date,
+   p_time_zone    in  varchar2 default 'UTC')
+is
+   l_start_time date := cast(from_tz(cast(p_start_time as timestamp), p_time_zone) at time zone 'UTC' as date);
+   l_end_time   date := cast(from_tz(cast(p_end_time as timestamp), p_time_zone) at time zone 'UTC' as date);
+begin
+   open p_date_cat for
+      select distinct version_date
+        from at_tsv
+       where ts_code = p_cwms_ts_code
+         and date_time between l_start_time and l_end_time
+    order by version_date;
+end get_ts_version_dates;      
+   
+procedure get_tsid_version_dates(
+   p_date_cat     out sys_refcursor,
+   p_cwms_ts_id   in  varchar2,
+   p_start_time   in  date,
+   p_end_time     in  date,
+   p_time_zone    in  varchar2 default 'UTC',
+   p_db_office_id in  varchar2 default null)
+is
+begin
+   get_ts_version_dates(
+      p_date_cat,
+      get_ts_code(p_cwms_ts_id, p_db_office_id),
+      p_start_time,
+      p_end_time,
+      p_time_zone);
+end get_tsid_version_dates;      
+
 --
 --*******************************************************************   --
 --*******************************************************************   --
@@ -1210,7 +1351,6 @@ IS
    l_str_error             VARCHAR2 (256);
    l_utc_offset            NUMBER;
    l_all_office_code       NUMBER         := cwms_util.db_office_code_all;
-   l_active_flag           VARCHAR2 (1)   := 'T';
    l_ts_id_exists          BOOLEAN        := FALSE;
    l_can_create            BOOLEAN        := TRUE;
 BEGIN
@@ -1457,17 +1597,67 @@ BEGIN
                   END IF;
                END IF;
             END IF;
+            if p_interval_forward < 0 or p_interval_forward >= l_interval then
+               commit;
+               cwms_err.raise(
+                  'ERROR',
+                  'Interval forward ('
+                  || p_interval_forward
+                  || ') must be >= 0 and < interval ('
+                  || l_interval
+                  || ')');
+            end if;
+            if p_interval_backward < 0 or p_interval_backward >= l_interval then
+               commit;
+               cwms_err.raise(
+                  'ERROR',
+                  'Interval backward ('
+                  || p_interval_backward
+                  || ') must be >= 0 and < interval ('
+                  || l_interval
+                  || ')');
+            end if;
+            if p_interval_forward + p_interval_backward >= l_interval then
+               commit;
+               cwms_err.raise(
+                  'ERROR',
+                  'Interval backward ('
+                  || p_interval_backward
+                  || ') plus interval forward ('
+                  || p_interval_forward
+                  || ') must be < interval ('
+                  || l_interval
+                  || ')');
+            end if;
+            if upper(p_active_flag) not in ('T', 'F') then
+               commit;
+               cwms_err.raise(
+                  'ERROR',
+                  'Active flag must be ''T'' or ''F''');
+            end if;
+            if upper(p_versioned) not in ('T', 'F') then
+               commit;
+               cwms_err.raise(
+                  'ERROR',
+                  'Versioned flag must be ''T'' or ''F''');
+            end if;
 
             INSERT INTO at_cwms_ts_spec t
                         (ts_code, location_code, parameter_code,
                          parameter_type_code, interval_code,
                          duration_code, VERSION, interval_utc_offset,
-                         active_flag
+                         interval_forward, interval_backward, 
+                         version_flag, active_flag
                         )
                  VALUES (cwms_seq.NEXTVAL, l_location_code, l_parameter_code,
                          l_parameter_type_code, l_interval_code,
                          l_duration_code, l_version, l_utc_offset,
-                         l_active_flag
+                         p_interval_forward, p_interval_backward,
+                         case upper(p_versioned)
+                            when 'T' then 'Y'
+                            when 'F' then null
+                         end,
+                         upper(p_active_flag)
                         )
               RETURNING ts_code
                    INTO p_ts_code;
@@ -2649,7 +2839,7 @@ end retrieve_ts_multi;
       t1count               NUMBER;
       t2count               NUMBER;
       l_ucount              NUMBER;
-      l_store_date          TIMESTAMP ( 3 )  DEFAULT SYSTIMESTAMP;
+      l_store_date          TIMESTAMP ( 3 )  DEFAULT SYSTIMESTAMP AT TIME ZONE 'UTC';
       l_ts_code             NUMBER;
       l_interval_id         cwms_interval.interval_id%type;
       l_interval_value      NUMBER;
