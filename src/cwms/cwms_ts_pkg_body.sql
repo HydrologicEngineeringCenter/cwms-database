@@ -1202,7 +1202,7 @@ is
    l_end_time   date := cast(from_tz(cast(p_end_time as timestamp), p_time_zone) at time zone 'UTC' as date);
 begin
    open p_date_cat for
-      select distinct version_date
+      select distinct cast(cast(version_date as timestamp) at time zone p_time_zone as date)
         from at_tsv
        where ts_code = p_cwms_ts_code
          and date_time between l_start_time and l_end_time
