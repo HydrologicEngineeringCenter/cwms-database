@@ -1353,7 +1353,7 @@ IS
             OPEN p_cwms_cat FOR
                SELECT   b.db_office_id, b.base_location_id, b.cwms_ts_id,
                         b.interval_utc_offset,
-                        z.time_zone_code lrts_timezone, b.ts_active_flag,
+                        z.time_zone_name lrts_timezone, b.ts_active_flag,
                         b.user_privileges
                    FROM (SELECT a.ts_code, v.db_office_id, v.base_location_id,
                                 v.cwms_ts_id, v.interval_utc_offset,
@@ -1373,7 +1373,7 @@ IS
             OPEN p_cwms_cat FOR
                SELECT   b.ts_code, b.db_office_id, b.base_location_id,
                         b.cwms_ts_id, b.interval_utc_offset,
-                        z.time_zone_code lrts_timezone, b.ts_active_flag,
+                        z.time_zone_name lrts_timezone, b.ts_active_flag,
                         b.user_privileges
                    FROM (SELECT a.ts_code, v.location_code, v.db_office_id,
                                 v.base_location_id, v.cwms_ts_id,
@@ -1402,7 +1402,7 @@ IS
             OPEN p_cwms_cat FOR
                SELECT   b.db_office_id, b.base_location_id, b.cwms_ts_id,
                         b.interval_utc_offset,
-                        z.time_zone_code lrts_timezone, b.ts_active_flag,
+                        z.time_zone_name lrts_timezone, b.ts_active_flag,
                         b.user_privileges
                    FROM (SELECT a.ts_code, v.db_office_id, v.base_location_id,
                                 v.cwms_ts_id, v.interval_utc_offset,
@@ -1425,7 +1425,7 @@ IS
             OPEN p_cwms_cat FOR
                SELECT   b.ts_code, b.db_office_id, b.base_location_id,
                         b.cwms_ts_id, b.interval_utc_offset,
-                        z.time_zone_code lrts_timezone, b.ts_active_flag,
+                        z.time_zone_name lrts_timezone, b.ts_active_flag,
                         b.user_privileges
                    FROM (SELECT a.ts_code, v.location_code, v.db_office_id,
                                 v.base_location_id, v.cwms_ts_id,
