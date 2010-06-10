@@ -1315,7 +1315,7 @@ IS
 		l_db_office_code	 NUMBER;
 		l_loc_group_code	 NUMBER := NULL;
 		l_ts_subselect_string VARCHAR2 (512)
-				:= cwms_util.normalize_wildcards (TRIM (p_ts_subselect_string)) ;
+				:= nvl(cwms_util.normalize_wildcards(TRIM (p_ts_subselect_string)), '%') ;
 	BEGIN
 		l_db_office_id := cwms_util.get_db_office_id (p_db_office_id);
 		l_db_office_code := cwms_util.get_db_office_code (l_db_office_id);
@@ -1323,134 +1323,57 @@ IS
 		---------------------------------------------------
 		-- get the loc_group_code if cat/group passed in --
 		---------------------------------------------------
-		IF p_loc_category_id IS NOT NULL AND p_loc_group_id IS NOT NULL
+      IF p_loc_category_id IS NULL != p_loc_group_id IS NULL
+      THEN
+			cwms_err.raise (
+				'ERROR',
+				'The loc_category_id and loc_group_id is not a valid combination'
+			);
+      END IF;
+		IF p_loc_group_id IS NOT NULL
 		THEN
 			l_loc_group_code :=
 				cwms_util.get_loc_group_code (p_loc_category_id,
 														p_loc_group_id,
 														l_db_office_code
 													  );
-		ELSIF (p_loc_category_id IS NOT NULL AND p_loc_group_id IS NULL) OR (p_loc_category_id IS NULL AND p_loc_group_id IS NOT NULL)
-		THEN
-			cwms_err.raise (
-				'ERROR',
-				'The loc_category_id and loc_group_id is not a valid combination'
-			);
 		END IF;
-		-- 	DBMS_OUTPUT.put_line ('cat_ts_id is here!');
-		IF p_ts_subselect_string IS NULL
-		THEN
-			IF l_loc_group_code IS NULL
-			THEN
---            DBMS_OUTPUT.put_line (   'subselect and loc_group_code are null! '
---                                  || CHR (10)
---                                  || 'db_office_code = '
---                                  || l_db_office_code
---                                  || CHR (10)
---                                  || 'user_id = '
---                                  || cwms_util.get_user_id
---                                 );
-					OPEN p_cwms_cat FOR
-						  SELECT   b.db_office_id, b.base_location_id, b.cwms_ts_id,
-									  b.interval_utc_offset,
-									  z.time_zone_name lrts_timezone, b.ts_active_flag,
-									  b.user_privileges
-                   FROM (SELECT a.ts_code, v.db_office_id, v.base_location_id,
-                                v.cwms_ts_id, v.interval_utc_offset,
-                                v.ts_active_flag, a.user_privileges
-										  FROM	mv_cwms_ts_id v,
-													(SELECT	 aa.ts_code,
-                                        aa.net_privilege_bit user_privileges
-														FROM	 mv_sec_ts_privileges aa
-                                  WHERE aa.username = cwms_util.get_user_id) a
-										 WHERE	v.ts_code = a.ts_code
-                            AND v.db_office_code = l_db_office_code) b,
-									  at_cwms_ts_spec s,
-									  cwms_time_zone z
-                  WHERE b.ts_code = s.ts_code AND s.time_zone_code = z.time_zone_code(+)
-						ORDER BY   UPPER (b.cwms_ts_id) ASC;
-			ELSE
-				OPEN p_cwms_cat FOR
-					  SELECT   b.db_office_id, b.base_location_id,
-								  b.cwms_ts_id, b.interval_utc_offset,
-								  z.time_zone_name lrts_timezone, b.ts_active_flag,
-								  b.user_privileges
-						 FROM   (SELECT	a.ts_code, v.location_code, v.db_office_id,
-												v.base_location_id, v.cwms_ts_id,
-												v.interval_utc_offset, v.ts_active_flag,
-												a.user_privileges
-									  FROM	mv_cwms_ts_id v,
-												(SELECT	 aa.ts_code,
-                                        aa.net_privilege_bit user_privileges
-													FROM	 mv_sec_ts_privileges aa
-                                  WHERE aa.username = cwms_util.get_user_id) a
-									 WHERE	v.ts_code = a.ts_code
-												AND v.db_office_code = l_db_office_code) b,
-								  (SELECT	c.location_code
-									  FROM	at_loc_group_assignment c
-									 WHERE	c.loc_group_code = l_loc_group_code) cc,
-								  at_cwms_ts_spec s,
-								  cwms_time_zone z
-						WHERE 		b.location_code = cc.location_code
-								  AND b.ts_code = s.ts_code
-								  AND s.time_zone_code = z.time_zone_code(+)
-					ORDER BY   UPPER (b.cwms_ts_id) ASC;
-			END IF;
-		ELSE
-			IF l_loc_group_code IS NULL
-			THEN
-				OPEN p_cwms_cat FOR
-					  SELECT   b.db_office_id, b.base_location_id, b.cwms_ts_id,
-                        b.interval_utc_offset,
-                        z.time_zone_name lrts_timezone, b.ts_active_flag,
-                        b.user_privileges
-                   FROM (SELECT a.ts_code, v.db_office_id, v.base_location_id,
-                                v.cwms_ts_id, v.interval_utc_offset,
-                                v.ts_active_flag, a.user_privileges
-									  FROM	mv_cwms_ts_id v,
-												(SELECT	 aa.ts_code,
-                                        aa.net_privilege_bit user_privileges
-													FROM	 mv_sec_ts_privileges aa
-                                  WHERE aa.username = cwms_util.get_user_id) a
-									 WHERE	v.ts_code = a.ts_code
-												AND v.db_office_code = l_db_office_code) b,
-								  at_cwms_ts_spec s,
-								  cwms_time_zone z
-						WHERE   b.ts_code = s.ts_code
-								  AND s.time_zone_code = z.time_zone_code(+)
-								  AND UPPER (b.cwms_ts_id) LIKE
-										  UPPER (l_ts_subselect_string)
-					ORDER BY   UPPER (b.cwms_ts_id) ASC;
-			ELSE
-				OPEN p_cwms_cat FOR
-					  SELECT   b.db_office_id, b.base_location_id,
-								  b.cwms_ts_id, b.interval_utc_offset,
-								  z.time_zone_name lrts_timezone, b.ts_active_flag,
-								  b.user_privileges
-						 FROM   (SELECT	a.ts_code, v.location_code, v.db_office_id,
-												v.base_location_id, v.cwms_ts_id,
-												v.interval_utc_offset, v.ts_active_flag,
-												a.user_privileges
-									  FROM	mv_cwms_ts_id v,
-												(SELECT	 aa.ts_code,
-                                        aa.net_privilege_bit user_privileges
-													FROM	 mv_sec_ts_privileges aa
-                                  WHERE aa.username = cwms_util.get_user_id) a
-									 WHERE	v.ts_code = a.ts_code
-												AND v.db_office_code = l_db_office_code) b,
-								  (SELECT	c.location_code
-									  FROM	at_loc_group_assignment c
-									 WHERE	c.loc_group_code = l_loc_group_code) cc,
-								  at_cwms_ts_spec s,
-								  cwms_time_zone z
-						WHERE 		b.location_code = cc.location_code
-								  AND b.ts_code = s.ts_code
-								  AND s.time_zone_code = z.time_zone_code(+)
-								  AND UPPER (b.cwms_ts_id) LIKE
-										  UPPER (l_ts_subselect_string)
-					ORDER BY   UPPER (b.cwms_ts_id) ASC;
-			END IF;
-		END IF;
+      OPEN p_cwms_cat FOR
+          SELECT b.db_office_id, 
+                 b.base_location_id,
+                 b.cwms_ts_id, 
+                 b.interval_utc_offset,
+                 z.time_zone_name lrts_timezone, 
+                 b.ts_active_flag,
+                 b.user_privileges
+           FROM  (   SELECT a.ts_code, 
+                            v.location_code,
+                            v.db_office_id,
+                            v.base_location_id,
+                            v.cwms_ts_id,
+                            v.interval_utc_offset,
+                            v.ts_active_flag,
+                            a.user_privileges
+                       FROM mv_cwms_ts_id v,
+                            (   SELECT ts_code,
+                                       net_privilege_bit user_privileges
+                                  FROM mv_sec_ts_privileges
+                                 WHERE username = cwms_util.get_user_id
+                            ) a
+                      WHERE v.ts_code = a.ts_code
+                        AND v.db_office_code = l_db_office_code
+                 ) b,
+                 (   SELECT location_code
+                       FROM at_loc_group_assignment
+                      WHERE loc_group_code = nvl(l_loc_group_code, loc_group_code)
+                 ) c,
+                 at_cwms_ts_spec s,
+                 cwms_time_zone z
+            WHERE b.location_code = c.location_code
+              AND b.ts_code = s.ts_code
+              AND s.time_zone_code = z.time_zone_code(+)
+              AND upper(b.cwms_ts_id) LIKE UPPER(l_ts_subselect_string)
+         ORDER BY UPPER(b.cwms_ts_id), UPPER(b.db_office_id) ASC;
 	END cat_ts_id;
 
 	FUNCTION cat_ts_id_tab (p_ts_subselect_string	IN VARCHAR2 DEFAULT NULL ,
