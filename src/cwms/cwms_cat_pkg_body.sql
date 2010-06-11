@@ -1323,7 +1323,7 @@ IS
 		---------------------------------------------------
 		-- get the loc_group_code if cat/group passed in --
 		---------------------------------------------------
-      IF p_loc_category_id IS NULL != p_loc_group_id IS NULL
+      IF (p_loc_category_id IS NULL) != (p_loc_group_id IS NULL)
       THEN
 			cwms_err.raise (
 				'ERROR',
