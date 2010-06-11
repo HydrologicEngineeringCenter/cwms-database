@@ -2999,6 +2999,7 @@ end;
 create or replace type location_level_tab_t is table of location_level_t
 /
 
+HOST pwd
 
-@../rowcps/rowcps_types
+@@rowcps_types
 COMMIT ;

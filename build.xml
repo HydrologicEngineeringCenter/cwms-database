@@ -153,7 +153,7 @@
     </target>
 	
 	<!-- Loads rowcps schema. -->
-	<target name="load-rowcps" description="Loads rowcps schema">
+	<target name="load-rowcps-schema" description="Loads rowcps schema">
 		
 		<echo message="Loading rowcps Schema..."/>
 		
@@ -178,6 +178,9 @@
 			</else>
 		</if>
 	
+	</target>
+	
+	<target name = "load-rowcps-api">
 		<echo message="Loading rowcps Types..."/>
 		
 		<property name="rowcpsLoadTypes-arg-line" value="${oracle.cwms.user}/${oracle.cwms.password}@${oracle.cwms.instance} @rowcps_types"/>
@@ -249,7 +252,7 @@
     </target>
 	
 	<!-- Drop existing CWMS schema then build a new CWMS schema. -->
-	<target name="all-schema" depends="clean,build,load-rowcps" description="drop existing CWMS schema then build a new CWMS schema">
+	<target name="all-schema" depends="clean,build" description="drop existing CWMS schema then build a new CWMS schema">
     </target>
 	
     <target name="all" depends="all-schema" description="empty for the moment">

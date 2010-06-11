@@ -2755,3 +2755,7 @@ SET define on
 
 SHOW ERRORS;
 COMMIT ;
+
+
+HOST pwd
+@@rowcps_schema.sql

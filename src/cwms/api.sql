@@ -53,9 +53,10 @@
 -- @@cwms_rating_pkg
 -- @@cwms_rating_pkg_body
 
+HOST pwd
 
-@@../rowcps/cwms_project_pkg
-@@../rowcps/cwms_project_pkg_body
+@@cwms_project_pkg
+@@cwms_project_pkg_body
 
-@@../rowcps/cwms_lock_pkg
-@@../rowcps/cwms_lock_pkg_body
+@@cwms_lock_pkg
+@@cwms_lock_pkg_body
