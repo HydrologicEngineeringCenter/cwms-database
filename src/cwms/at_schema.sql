@@ -537,7 +537,10 @@ INSERT INTO AT_SPECIFIED_LEVEL VALUES( 9, 53, 'Top of Induced Surcharge', 'Top o
 INSERT INTO AT_SPECIFIED_LEVEL VALUES(10, 53, 'Bottom of Normal', 'Bottom of Normal Pool');
 INSERT INTO AT_SPECIFIED_LEVEL VALUES(11, 53, 'Top of Normal', 'Top of Normal Pool');
 INSERT INTO AT_SPECIFIED_LEVEL VALUES(12, 53, 'Top of Overflow', 'Top of Overflow Section');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES(13, 53, 'Guide Curve', 'Limits based on season and an attribute');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(13, 53, 'Min Operating Pool', 'Bottom of Operational Pool');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(14, 53, 'Base Flood Control', 'Bottom of Pool used for Flood Control');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(15, 53, 'Base Exclusive Flood Control', 'Bottom of Pool used Exclusively for Flood Control');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(16, 53, 'Max Exclusive Flood Control', 'Top of Pool used Exclusively for Flood Control');
 
 CREATE TABLE AT_LOCATION_LEVEL
 (
