@@ -1339,7 +1339,8 @@ IS
 													  );
 		END IF;
       OPEN p_cwms_cat FOR
-          SELECT b.db_office_id, 
+          SELECT DISTINCT
+                 b.db_office_id, 
                  b.base_location_id,
                  b.cwms_ts_id, 
                  b.interval_utc_offset,
@@ -1372,7 +1373,7 @@ IS
             WHERE b.location_code = c.location_code
               AND b.ts_code = s.ts_code
               AND s.time_zone_code = z.time_zone_code(+)
-              AND upper(b.cwms_ts_id) LIKE UPPER(l_ts_subselect_string)
+              AND UPPER(b.cwms_ts_id) LIKE UPPER(l_ts_subselect_string)
          ORDER BY UPPER(b.cwms_ts_id), UPPER(b.db_office_id) ASC;
 	END cat_ts_id;
 
