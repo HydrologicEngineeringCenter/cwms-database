@@ -15,6 +15,16 @@ AS
 
 
 
+
+
+ FUNCTION hex_to_decimal
+-- 16JUN2010 - JDK - Function to get the upload CSV to work for eGIS Metadata work
+--this function is based on one by Connor McDonald
+--http://www.jlcomp.demon.co.uk/faq/base_convert.html
+( p_hex_str in varchar2 ) RETURN NUMBER ;
+
+
+
 	-- Utility functions --{{{
 	--{{{
 	-- Parse a HTML textarea element into the specified HTML DB collection

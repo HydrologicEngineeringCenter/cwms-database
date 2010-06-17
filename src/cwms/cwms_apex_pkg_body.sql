@@ -1,6 +1,6 @@
 SET define on
 @@defines.sql
---define cwms_schema "cwms_20"
+--DEFINE cwms_schema = 'CMWS_20'
 /* Formatted on 4/21/2009 11:15:31 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_apex
 AS
@@ -8,6 +8,27 @@ AS
 	IS
 		TABLE OF VARCHAR2 (32767)
 			INDEX BY BINARY_INTEGER;
+
+
+
+
+ function hex_to_decimal
+--this function is based on one by Connor McDonald
+--http://www.jlcomp.demon.co.uk/faq/base_convert.html
+( p_hex_str in varchar2 ) return number
+is
+v_dec   number;
+v_hex   varchar2(16) := '0123456789ABCDEF';
+begin
+v_dec := 0;
+for indx in 1 .. length(p_hex_str)
+loop
+v_dec := v_dec * 16 + instr(v_hex,upper(substr(p_hex_str,indx,1)))-1;
+end loop;
+return v_dec;
+end hex_to_decimal;
+
+
 
 	PROCEDURE aa1 (p_string IN VARCHAR2)
 	IS
@@ -1274,7 +1295,7 @@ AS
 	PROCEDURE store_parsed_loc_full_file (
 		p_parsed_collection_name		IN VARCHAR2,
 		p_store_err_collection_name	IN VARCHAR2,
-        p_db_office_id                     IN VARCHAR2 DEFAULT NULL,
+		p_db_office_id 					IN VARCHAR2 DEFAULT NULL ,
 		p_unique_process_id				IN VARCHAR2
 	)
 	IS
@@ -1341,7 +1362,7 @@ AS
 			COMMIT;
 		END IF;
 
-        SELECT    COUNT (*), MIN (seq_id), MAX (seq_id)
+		SELECT	COUNT ( * ), MIN (seq_id), MAX (seq_id)
 		  INTO	l_parsed_rows, l_min, l_max
 		  FROM	apex_collections
 		 WHERE	collection_name = p_parsed_collection_name;
@@ -1617,12 +1638,13 @@ AS
 
 		l_cmt 								VARCHAR2 (256);
 		l_steps_per_commit				NUMBER;
+--		l_scrn_data 						"&cwms_schema"."SCREEN_CRIT_ARRAY" 
 
-		l_scrn_data 						"&cwms_schema"."SCREEN_CRIT_ARRAY"
+		l_scrn_data 						"CWMS_20"."SCREEN_CRIT_ARRAY" 
 				:= screen_crit_array () ;
-		l_d_m_data							"&cwms_schema"."SCREEN_DUR_MAG_ARRAY"
+		l_d_m_data							"CWMS_20"."SCREEN_DUR_MAG_ARRAY"
 				:= screen_dur_mag_array () ;
-		l_scn_cntl							"&cwms_schema"."SCREENING_CONTROL_T";
+		l_scn_cntl							"CWMS_20"."SCREENING_CONTROL_T";
 		i_num 								NUMBER;
 		j_num 								NUMBER;
 	BEGIN
