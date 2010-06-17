@@ -1,5 +1,6 @@
 SET define on
 @@defines.sql
+--define cwms_schema "cwms_20"
 /* Formatted on 4/21/2009 11:15:31 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_apex
 AS
@@ -1270,11 +1271,10 @@ AS
 	--=============================================================================
 	--=============================================================================
 	--=============================================================================
-
 	PROCEDURE store_parsed_loc_full_file (
 		p_parsed_collection_name		IN VARCHAR2,
 		p_store_err_collection_name	IN VARCHAR2,
-		p_db_office_id 					IN VARCHAR2 DEFAULT NULL ,
+        p_db_office_id                     IN VARCHAR2 DEFAULT NULL,
 		p_unique_process_id				IN VARCHAR2
 	)
 	IS
@@ -1303,22 +1303,33 @@ AS
 		l_min 								NUMBER;
 		l_max 								NUMBER;
 		l_loc_id 							VARCHAR2 (32);
-		l_office_id_17 					VARCHAR2 (32);
-		l_office_id_19 					VARCHAR2 (32);
-		l_office_id_21 					VARCHAR2 (32);
+        l_location_kind_id        VARCHAR2 (32);
+        l_map_label                 VARCHAR2 (50);
+        l_published_latitude     NUMBER;
+        l_published_longitude    NUMBER;
+        l_bounding_office_id     VARCHAR2 (16);
+        l_nation_id                 VARCHAR (48);
+        l_nearest_city             VARCHAR2 (50);
+        l_office_id_24             VARCHAR2 (32);
+        l_office_id_26             VARCHAR2 (32);
+        l_office_id_28             VARCHAR2 (32);
 		l_cmt 								VARCHAR2 (256);
 		l_steps_per_commit				NUMBER;
 	BEGIN
-		aa1('store_parsed_loc_full_file - collection name: '
-			 || p_parsed_collection_name);
-
+        aa1 (
+            'store_parsed_loc_full_file - collection name: '
+            || p_parsed_collection_name
+        );
 		l_steps_per_commit :=
-			TO_NUMBER(SUBSTR (p_unique_process_id,
+            TO_NUMBER (
+                SUBSTR (p_unique_process_id,
 									(INSTR (p_unique_process_id, '.', 1, 5) + 1)
-								  ));
+                         )
+            );
 		l_cmt :=
 			'ST=' || LOCALTIMESTAMP || ';STEPS=' || l_steps_per_commit || ';CT=';
-		cwms_properties.set_property ('PROCESS_STATUS',
+        cwms_properties.
+        set_property ('PROCESS_STATUS',
 												p_unique_process_id,
 												'Initiated',
 												l_cmt || LOCALTIMESTAMP,
@@ -1330,23 +1341,24 @@ AS
 			COMMIT;
 		END IF;
 
-
-		SELECT	COUNT ( * ), MIN (seq_id), MAX (seq_id)
+        SELECT    COUNT (*), MIN (seq_id), MAX (seq_id)
 		  INTO	l_parsed_rows, l_min, l_max
 		  FROM	apex_collections
 		 WHERE	collection_name = p_parsed_collection_name;
 
-		SELECT	c002, c017, c019, c021
-		  INTO	l_loc_id, l_office_id_17, l_office_id_19, l_office_id_21
+        SELECT    c002, c024, c026, c028
+          INTO    l_loc_id, l_office_id_24, l_office_id_26, l_office_id_28
 		  FROM	apex_collections
 		 WHERE	collection_name = p_parsed_collection_name AND seq_id = 1;
 
-		aa1(	 'l_parsed_rows = '
+        aa1 (
+                'l_parsed_rows = '
 			 || l_parsed_rows
 			 || ' min '
 			 || l_min
 			 || ' max '
-			 || l_max);
+            || l_max
+        );
 
 		--   Start at 2, Skip first line in file to bypass column headings
 		FOR i IN 2 .. l_parsed_rows
@@ -1357,8 +1369,8 @@ AS
 			THEN
 				IF (i - TRUNC (i / l_steps_per_commit) * l_steps_per_commit = 0)
 				THEN
-					cwms_properties.set_property (
-						'PROCESS_STATUS',
+                    cwms_properties.
+                    set_property ('PROCESS_STATUS',
 						p_unique_process_id,
 						'Processing: ' || i || ' of ' || l_parsed_rows,
 						l_cmt || LOCALTIMESTAMP,
@@ -1368,7 +1380,6 @@ AS
 				END IF;
 			END IF;
 
-
 			l_latitude := 0;
 			l_longitude := 0;
 			l_lat_mins := 0;
@@ -1377,44 +1388,52 @@ AS
 			l_long_secs := 0;
 
 			IF (TRIM (NVL (l_loc_id, 'XXX')) = 'Location ID'
-				 AND TRIM (NVL (l_office_id_17, 'XXX')) = 'Office')
+                 AND TRIM (NVL (l_office_id_24, 'XXX')) = 'Office')
 			THEN
-				SELECT	c001, c002, c003, c004, c005, c006, c007, c008, c009,
-							c010, c011, c012, c013, c014, c015, c016
+                SELECT    c001, c002, c003, c004, c005, c006, c007, c008, c009, c010,
+                            c011, c012, c013, c014, c015, c016, c017, c018, c019, c020,
+                            c021, c022, c023
 				  INTO	l_line_no, l_location_id, l_public_name, l_county_name,
 							l_state_initial, l_active, l_location_type,
 							l_vertical_datum, l_elevation, l_elev_unit_id,
-							l_horizontal_datum, l_latitude, l_longitude,
-							l_time_zone_id, l_long_name, l_description
+                            l_horizontal_datum, l_latitude, l_longitude, l_time_zone_id,
+                            l_long_name, l_description, l_location_kind_id, l_map_label,
+                            l_published_latitude, l_published_longitude,
+                            l_bounding_office_id, l_nation_id, l_nearest_city
 				  FROM	apex_collections
-				 WHERE	collection_name = p_parsed_collection_name
-							AND seq_id = i;
-			ELSIF (TRIM (NVL (l_loc_id, 'XXX')) = 'Location ID' AND TRIM(NVL (l_office_id_19, 'XXX')) = 'Office')
+                 WHERE    collection_name = p_parsed_collection_name AND seq_id = i;
+            ELSIF (TRIM (NVL (l_loc_id, 'XXX')) = 'Location ID'
+                     AND TRIM (NVL (l_office_id_26, 'XXX')) = 'Office')
 			THEN
-				SELECT	c001, c002, c003, c004, c005, c006, c007, c008, c009,
-							c010, c011, c012, c013, c014, c015, c016, c017, c018
+                SELECT    c001, c002, c003, c004, c005, c006, c007, c008, c009, c010,
+                            c011, c012, c013, c014, c015, c016, c017, c018, c019, c020,
+                            c021, c022, c023, c024, c025
 				  INTO	l_line_no, l_location_id, l_public_name, l_county_name,
 							l_state_initial, l_active, l_location_type,
 							l_vertical_datum, l_elevation, l_elev_unit_id,
 							l_horizontal_datum, l_latitude, l_lat_mins, l_longitude,
-							l_long_mins, l_time_zone_id, l_long_name, l_description
+                            l_long_mins, l_time_zone_id, l_long_name, l_description,
+                            l_location_kind_id, l_map_label, l_published_latitude,
+                            l_published_longitude, l_bounding_office_id, l_nation_id,
+                            l_nearest_city
 				  FROM	apex_collections
-				 WHERE	collection_name = p_parsed_collection_name
-							AND seq_id = i;
-			ELSIF (TRIM (NVL (l_loc_id, 'XXX')) = 'Location ID' AND TRIM(NVL (l_office_id_21, 'XXX')) = 'Office')
+                 WHERE    collection_name = p_parsed_collection_name AND seq_id = i;
+            ELSIF (TRIM (NVL (l_loc_id, 'XXX')) = 'Location ID'
+                     AND TRIM (NVL (l_office_id_28, 'XXX')) = 'Office')
 			THEN
-				SELECT	c001, c002, c003, c004, c005, c006, c007, c008, c009,
-							c010, c011, c012, c013, c014, c015, c016, c017, c018,
-							c019, c020
+                SELECT    c001, c002, c003, c004, c005, c006, c007, c008, c009, c010,
+                            c011, c012, c013, c014, c015, c016, c017, c018, c019, c020,
+                            c021, c022, c023, c024, c025, c026, c027
 				  INTO	l_line_no, l_location_id, l_public_name, l_county_name,
 							l_state_initial, l_active, l_location_type,
 							l_vertical_datum, l_elevation, l_elev_unit_id,
 							l_horizontal_datum, l_latitude, l_lat_mins, l_lat_secs,
 							l_longitude, l_long_mins, l_long_secs, l_time_zone_id,
-							l_long_name, l_description
+                            l_long_name, l_description, l_location_kind_id, l_map_label,
+                            l_published_latitude, l_published_longitude,
+                            l_bounding_office_id, l_nation_id, l_nearest_city
 				  FROM	apex_collections
-				 WHERE	collection_name = p_parsed_collection_name
-							AND seq_id = i;
+                 WHERE    collection_name = p_parsed_collection_name AND seq_id = i;
 			ELSE
 				cwms_err.raise ('ERROR', 'Unable to parse data!');
 			END IF;
@@ -1427,7 +1446,8 @@ AS
 				* SIGN (l_longitude);
 			aa1 ('storing locs: ' || l_location_id);
 			--
-			cwms_loc.store_location (l_location_id,
+            cwms_loc.
+            store_location2 (l_location_id,
 											  l_location_type,
 											  l_elevation,
 											  l_elev_unit_id,
@@ -1442,20 +1462,26 @@ AS
 											  l_county_name,
 											  l_state_initial,
 											  l_active,
+                                  l_location_kind_id,
+                                  l_map_label,
+                                  l_published_latitude,
+                                  l_published_longitude,
+                                  l_bounding_office_id,
+                                  l_nation_id,
+                                  l_nearest_city,
 											  'F',
 											  p_db_office_id
 											 );
 		END LOOP;
 
-		cwms_properties.set_property (
-			'PROCESS_STATUS',
+        cwms_properties.
+        set_property ('PROCESS_STATUS',
 			p_unique_process_id,
 			'Completed ' || l_parsed_rows || ' records',
 			l_cmt || LOCALTIMESTAMP,
 			p_db_office_id
 		);
 	END;
-
 	--=============================================================================
 	--=============================================================================
 	--=============================================================================
