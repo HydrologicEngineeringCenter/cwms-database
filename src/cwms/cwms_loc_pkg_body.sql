@@ -2887,95 +2887,59 @@ AS
 	--
 	--*---------------------------------------------------------------------*-
 	--
-   PROCEDURE store_location (
-      p_location_id        IN   VARCHAR2,
-									  p_location_type 	  IN VARCHAR2 DEFAULT NULL ,
-									  p_elevation			  IN NUMBER DEFAULT NULL ,
-									  p_elev_unit_id		  IN VARCHAR2 DEFAULT NULL ,
-									  p_vertical_datum	  IN VARCHAR2 DEFAULT NULL ,
-									  p_latitude			  IN NUMBER DEFAULT NULL ,
-									  p_longitude			  IN NUMBER DEFAULT NULL ,
-									  p_horizontal_datum   IN VARCHAR2 DEFAULT NULL ,
-									  p_public_name		  IN VARCHAR2 DEFAULT NULL ,
-									  p_long_name			  IN VARCHAR2 DEFAULT NULL ,
-									  p_description		  IN VARCHAR2 DEFAULT NULL ,
-									  p_time_zone_id		  IN VARCHAR2 DEFAULT NULL ,
-									  p_county_name		  IN VARCHAR2 DEFAULT NULL ,
-									  p_state_initial 	  IN VARCHAR2 DEFAULT NULL ,
-									  p_active				  IN VARCHAR2 DEFAULT NULL ,
-									  p_ignorenulls		  IN VARCHAR2 DEFAULT 'T' ,
-									  p_db_office_id		  IN VARCHAR2 DEFAULT NULL
-									 )
-	IS
-		l_cwms_code 	 NUMBER;
-		l_office_id 	 VARCHAR2 (16);
-		l_office_code	 NUMBER;
-	BEGIN
-		--
-		-- check if cwms_id for this office already exists...
-		BEGIN
-         update_location2(p_location_id,
-								  p_location_type,
-								  p_elevation,
-								  p_elev_unit_id,
-								  p_vertical_datum,
-								  p_latitude,
-								  p_longitude,
-								  p_horizontal_datum,
-								  p_public_name,
-								  p_long_name,
-								  p_description,
-								  p_time_zone_id,
-								  p_county_name,
-								  p_state_initial,
-								  p_active,
-								  p_ignorenulls,
-								  p_db_office_id
-								 );
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				RAISE;
-			WHEN OTHERS
-			THEN												--l_cwms_code was not found...
-				DBMS_OUTPUT.put_line ('entering create_location');
-            create_location2(p_location_id,
-									  p_location_type,
-									  p_elevation,
-									  p_elev_unit_id,
-									  p_vertical_datum,
-									  p_latitude,
-									  p_longitude,
-									  p_horizontal_datum,
-									  p_public_name,
-									  p_long_name,
-									  p_description,
-									  p_time_zone_id,
-									  p_county_name,
-									  p_state_initial,
-									  p_active,
-									  p_db_office_id
-									 );
-		END;
-	--
+    /* Formatted on 6/18/2010 6:26:50 AM (QP5 v5.139.911.3011) */
+    PROCEDURE store_location (p_location_id		  IN VARCHAR2,
+                                      p_location_type 	  IN VARCHAR2 DEFAULT NULL,
+                                      p_elevation			  IN NUMBER DEFAULT NULL,
+                                      p_elev_unit_id		  IN VARCHAR2 DEFAULT NULL,
+                                      p_vertical_datum	  IN VARCHAR2 DEFAULT NULL,
+                                      p_latitude			  IN NUMBER DEFAULT NULL,
+                                      p_longitude			  IN NUMBER DEFAULT NULL,
+                                      p_horizontal_datum   IN VARCHAR2 DEFAULT NULL,
+                                      p_public_name		  IN VARCHAR2 DEFAULT NULL,
+                                      p_long_name			  IN VARCHAR2 DEFAULT NULL,
+                                      p_description		  IN VARCHAR2 DEFAULT NULL,
+                                      p_time_zone_id		  IN VARCHAR2 DEFAULT NULL,
+                                      p_county_name		  IN VARCHAR2 DEFAULT NULL,
+                                      p_state_initial 	  IN VARCHAR2 DEFAULT NULL,
+                                      p_active				  IN VARCHAR2 DEFAULT NULL,
+                                      p_ignorenulls		  IN VARCHAR2 DEFAULT 'T',
+                                      p_db_office_id		  IN VARCHAR2 DEFAULT NULL
+                                     )
+    IS
+    BEGIN
+        --
+        DBMS_OUTPUT.put_line ('entering store_location2');
 
-	--   store_aliases (p_location_id,
-	-- 				p_alias_array,
-	-- 				'DELETE INSERT',
-	-- 				p_ignorenulls,
-	-- 				p_db_office_id
-	-- 			  );
-	--
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			NULL;
-		WHEN OTHERS
-		THEN
-			-- Consider logging the error and then re-raise
-			RAISE;
-	END store_location;
-
+        store_location2 (p_location_id		  => p_location_id,
+                              p_location_type 	  => p_location_type,
+                              p_elevation			  => p_elevation,
+                              p_elev_unit_id		  => p_elev_unit_id,
+                              p_vertical_datum	  => p_vertical_datum,
+                              p_latitude			  => p_latitude,
+                              p_longitude			  => p_longitude,
+                              p_horizontal_datum   => p_horizontal_datum,
+                              p_public_name		  => p_public_name,
+                              p_long_name			  => p_long_name,
+                              p_description		  => p_description,
+                              p_time_zone_id		  => p_time_zone_id,
+                              p_county_name		  => p_county_name,
+                              p_state_initial 	  => p_state_initial,
+                              p_active				  => p_active,
+                              p_ignorenulls		  => p_ignorenulls,
+                              p_db_office_id		  => p_db_office_id
+                             );
+    EXCEPTION
+        WHEN NO_DATA_FOUND
+        THEN
+            NULL;
+        WHEN OTHERS
+        THEN
+            -- Consider logging the error and then re-raise
+            RAISE;
+    END store_location;
+    --
+    --
    PROCEDURE retrieve_location2(
 		p_location_id			IN OUT VARCHAR2,
 		p_elev_unit_id 		IN 	 VARCHAR2 DEFAULT 'm' ,
