@@ -1,6 +1,6 @@
 SET define on
-@@defines.sql
---DEFINE cwms_schema = 'CMWS_20'
+--@@defines.sql
+DEFINE cwms_schema = 'CMWS_20'
 /* Formatted on 4/21/2009 11:15:31 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_apex
 AS
@@ -2605,6 +2605,150 @@ end hex_to_decimal;
 							AND db_office_id = p_db_office_id;
 		END IF;
 	END;
-END cwms_apex;
+    /* Formatted on 6/18/2010 8:23:28 AM (QP5 v5.139.911.3011) */
+         --=============================================================================
+         --====Begin==store_parsed_loc_egis_file========================================
+         --=============================================================================
+
+    /* Formatted on 6/18/2010 8:25:15 AM (QP5 v5.139.911.3011) */
+    PROCEDURE store_parsed_loc_egis_file (
+        p_parsed_collection_name		IN VARCHAR2,
+        p_store_err_collection_name	IN VARCHAR2,
+        p_db_office_id 					IN VARCHAR2 DEFAULT NULL,
+        p_unique_process_id				IN VARCHAR2
+    )
+    IS
+        l_location_id			VARCHAR2 (48);
+        l_base_location_id	VARCHAR2 (16);
+        l_sub_location_id 	VARCHAR2 (32);
+        l_county_name			VARCHAR2 (40);
+        l_state_initial		VARCHAR2 (2);
+        --===================
+        l_latitude				NUMBER;
+        l_longitude 			NUMBER;
+        l_horizontal_datum	VARCHAR2 (16);
+        l_elevation 			NUMBER;
+        l_unit_id				VARCHAR2 (16);
+        l_vertical_datum		VARCHAR2 (16);
+
+        l_time_zone_name		VARCHAR2 (28);
+        l_long_name 			VARCHAR2 (80);
+        l_description			VARCHAR2 (1024);
+        l_db_office_id 		VARCHAR2 (16);
+
+        --====================
+        l_ignorenulls			VARCHAR2 (1);
+        l_parsed_rows			NUMBER;
+        l_line_no				VARCHAR2 (32);
+        l_min 					NUMBER;
+        l_max 					NUMBER;
+        l_cmt 					VARCHAR2 (256);
+        l_steps_per_commit	NUMBER;
+    BEGIN
+        aa1 (
+            'store_parsed_loc_egis_file - collection name: '
+            || p_parsed_collection_name
+        );
+
+        l_steps_per_commit :=
+            TO_NUMBER (
+                SUBSTR (p_unique_process_id,
+                          (INSTR (p_unique_process_id, '.', 1, 5) + 1)
+                         )
+            );
+        l_cmt :=
+            'ST=' || LOCALTIMESTAMP || ';STEPS=' || l_steps_per_commit || ';CT=';
+        cwms_properties.
+        set_property ('PROCESS_STATUS',
+                          p_unique_process_id,
+                          'Initiated',
+                          l_cmt || LOCALTIMESTAMP,
+                          p_db_office_id
+                         );
+
+        IF (l_steps_per_commit > 0)
+        THEN
+            COMMIT;
+        END IF;
+
+        SELECT	COUNT (*), MIN (seq_id), MAX (seq_id)
+          INTO	l_parsed_rows, l_min, l_max
+          FROM	apex_collections
+         WHERE	collection_name = p_parsed_collection_name;
+
+        aa1 (
+                'l_parsed_rows = '
+            || l_parsed_rows
+            || ' min '
+            || l_min
+            || ' max '
+            || l_max
+        );
+
+        -- Start at 2 to skip first line of column titles
+        FOR i IN 2 .. l_parsed_rows
+        LOOP
+            aa1 ('looping: ' || i);
+
+            IF (l_steps_per_commit > 0)
+            THEN
+                IF (i - TRUNC (i / l_steps_per_commit) * l_steps_per_commit = 0)
+                THEN
+                    cwms_properties.
+                    set_property ('PROCESS_STATUS',
+                                      p_unique_process_id,
+                                      'Processing: ' || i || ' of ' || l_parsed_rows,
+                                      l_cmt || LOCALTIMESTAMP,
+                                      p_db_office_id
+                                     );
+                    COMMIT;
+                END IF;
+            END IF;
+
+
+            SELECT	c001, c002, c003, c004, c005, c006, c007, c008, c009, c010,
+                        c011, c012, c013, c014, c015
+              INTO	l_line_no, l_base_location_id, l_sub_location_id, l_latitude,
+                        l_longitude, l_horizontal_datum, l_elevation, l_unit_id,
+                        l_vertical_datum, l_county_name, l_state_initial,
+                        l_time_zone_name, l_long_name, l_description, l_db_office_id
+              FROM	apex_collections
+             WHERE	collection_name = p_parsed_collection_name AND seq_id = i;
+
+            l_location_id :=
+                cwms_util.concat_base_sub_id (l_base_location_id, l_sub_location_id);
+
+            aa1 ('storing locs-egis: ' || l_base_location_id);
+            --
+            cwms_loc.
+            store_location (p_location_id 		 => l_location_id,
+                                 p_county_name 		 => l_county_name,
+                                 p_state_initial		 => l_state_initial,
+                                 p_latitude 			 => l_latitude,
+                                 p_longitude			 => l_longitude,
+                                 p_horizontal_datum	 => l_horizontal_datum,
+                                 p_elevation			 => l_elevation,
+                                 p_elev_unit_id		 => l_unit_id,
+                                 p_vertical_datum 	 => l_vertical_datum,
+                                 p_time_zone_id		 => l_time_zone_name,
+                                 p_long_name			 => l_long_name,
+                                 p_description 		 => l_description,
+                                 p_ignorenulls 		 => 'T',
+                                 p_db_office_id		 => l_db_office_id
+                                );
+        END LOOP;
+
+        cwms_properties.
+        set_property ('PROCESS_STATUS',
+                          p_unique_process_id,
+                          'Completed ' || l_parsed_rows || ' records',
+                          l_cmt || LOCALTIMESTAMP,
+                          p_db_office_id
+                         );
+    END;    
+    --=============================================================================
+    --====End==store_parsed_loc_egis_file==========================================
+    --=============================================================================
+  END cwms_apex;
 /
 show errors;

@@ -1,5 +1,6 @@
+/* Formatted on 6/18/2010 8:26:47 AM (QP5 v5.139.911.3011) */
 SET define on
-/* Formatted on 3/24/2009 6:35:27 AM (QP5 v5.115.810.9015) */
+
 CREATE OR REPLACE PACKAGE cwms_apex
 AS
 	/******************************************************************************
@@ -137,5 +138,13 @@ AS
 												p_data_stream_id IN VARCHAR2,
 												p_db_office_id IN VARCHAR2 DEFAULT NULL
 											  );
+                                              
+
+    PROCEDURE store_parsed_loc_egis_file (
+        p_parsed_collection_name		IN VARCHAR2,
+        p_store_err_collection_name	IN VARCHAR2,
+        p_db_office_id 					IN VARCHAR2 DEFAULT NULL,
+        p_unique_process_id				IN VARCHAR2
+    );
 END cwms_apex;
 /
