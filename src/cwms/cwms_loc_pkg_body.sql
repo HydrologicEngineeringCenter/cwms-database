@@ -117,7 +117,7 @@ AS
 		--dbms_output.put_line('function: get_county_code');
 		--
 		-- initialize l_state_initial...
-		IF p_state_initial IS NULL
+		IF p_state_initial IS NULL or p_state_initial = '0'
 		THEN
 			RETURN 0;
 		END IF;
@@ -167,7 +167,7 @@ AS
 
 		--
 		-- initialize l_state_initial...
-		IF p_state_initial IS NULL
+		IF p_state_initial IS NULL OR p_state_initial = '0'
 		THEN
 			l_state_initial := '00';
 		ELSE
