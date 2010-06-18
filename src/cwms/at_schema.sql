@@ -2831,6 +2831,5 @@ COMMIT ;
 SET define on
 
 
-
-HOST pwd
+-- HOST pwd
 @@rowcps_schema.sql

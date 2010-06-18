@@ -53,7 +53,7 @@
 -- @@cwms_rating_pkg
 -- @@cwms_rating_pkg_body
 
-HOST pwd
+-- HOST pwd
 
 @@cwms_project_pkg
 @@cwms_project_pkg_body
