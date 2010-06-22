@@ -1639,11 +1639,11 @@ end hex_to_decimal;
 		l_steps_per_commit				NUMBER;
 --		l_scrn_data 						"&cwms_schema"."SCREEN_CRIT_ARRAY" 
 
-		l_scrn_data 						"CWMS_20"."SCREEN_CRIT_ARRAY" 
+		l_scrn_data 						"&cwms_schema"."SCREEN_CRIT_ARRAY" 
 				:= screen_crit_array () ;
-		l_d_m_data							"CWMS_20"."SCREEN_DUR_MAG_ARRAY"
+		l_d_m_data							"&cwms_schema"."SCREEN_DUR_MAG_ARRAY"
 				:= screen_dur_mag_array () ;
-		l_scn_cntl							"CWMS_20"."SCREENING_CONTROL_T";
+		l_scn_cntl							"&cwms_schema"."SCREENING_CONTROL_T";
 		i_num 								NUMBER;
 		j_num 								NUMBER;
 	BEGIN
