@@ -1,6 +1,5 @@
 SET define on
---@@defines.sql
-DEFINE cwms_schema = 'CMWS_20'
+@@defines.sql
 /* Formatted on 4/21/2009 11:15:31 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_apex
 AS
