@@ -525,22 +525,28 @@ NOPARALLEL
 
 COMMIT;
 
-INSERT INTO AT_SPECIFIED_LEVEL VALUES( 1, 53, 'Regulating', 'Regulating Level');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES( 2, 53, 'Flood', 'Flood Level');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES( 3, 53, 'Max Non-Damaging', 'Maximum Without Causing Damage');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES( 4, 53, 'Top of Conservation', 'Top Conservation Pool Level');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES( 5, 53, 'Top of Dam', 'Top of Dam Level');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES( 6, 53, 'Top of Downstream', 'Top of Downstream Pool');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES( 7, 53, 'Top of Flood', 'Top of Flood Pool Level');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES( 8, 53, 'Top of Inactive', 'Top of Inactive Pool Level');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES( 9, 53, 'Top of Induced Surcharge', 'Top of Induced Surcharge Pool');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES(10, 53, 'Bottom of Normal', 'Bottom of Normal Pool');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES(11, 53, 'Top of Normal', 'Top of Normal Pool');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES(12, 53, 'Top of Overflow', 'Top of Overflow Section');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES(13, 53, 'Min Operating Pool', 'Bottom of Operational Pool');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES(14, 53, 'Base Flood Control', 'Bottom of Pool used for Flood Control');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES(15, 53, 'Base Exclusive Flood Control', 'Bottom of Pool used Exclusively for Flood Control');
-INSERT INTO AT_SPECIFIED_LEVEL VALUES(16, 53, 'Max Exclusive Flood Control', 'Top of Pool used Exclusively for Flood Control');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES( 1, 53, 'Regulating',                        'Regulating Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES( 2, 53, 'Flood',                             'Flood Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES( 3, 53, 'Max Non-Damaging',                  'Maximum Without Causing Damage Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES( 4, 53, 'Top of Conservation',               'Top Conservation Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES( 5, 53, 'Top of Dam',                        'Top of Dam Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES( 6, 53, 'Top of Downstream',                 'Top of Downstream Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES( 7, 53, 'Top of Flood',                      'Top of Flood Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES( 8, 53, 'Top of Inactive',                   'Top of Inactive Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES( 9, 53, 'Top of Induced Surcharge',          'Top of Induced Surcharge Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(10, 53, 'Bottom of Normal',                  'Bottom of Normal Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(11, 53, 'Top of Normal',                     'Top of Normal Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(12, 53, 'Top of Overflow',                   'Top of Overflow Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(13, 53, 'Bottom of Operating',               'Bottom of Operating Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(14, 53, 'Bottom of Flood Control',           'Bottom of Flood Control Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(15, 53, 'Bottom of Exclusive Flood Control', 'Bottom of Exclusive Flood Control Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(16, 53, 'Top of Exclusive Flood Control',    'Top of Exclusive Flood Control Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(17, 53, 'Design Capacity',                   'Design Capacity Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(18, 53, 'Top of Operating',                  'Top of Operational Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(19, 53, 'Bottom of Power',                   'Bottom of Power Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(20, 53, 'Top of Power',                      'Top of Power Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(21, 53, 'Bottom of Multi-Purpose',           'Bottom of Multi-Purpose Level');
+INSERT INTO AT_SPECIFIED_LEVEL VALUES(22, 53, 'Top of Multi-Purpose',              'Top of Multi-Purpose Level');
 
 CREATE TABLE AT_LOCATION_LEVEL
 (
