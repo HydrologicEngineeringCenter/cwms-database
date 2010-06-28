@@ -487,6 +487,18 @@ AS
       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER;
+      
+   PROCEDURE delete_loc_group (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id		IN VARCHAR2,
+      p_db_office_id		IN VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE delete_loc_cat (
+      p_loc_category_id IN   VARCHAR2,
+      p_cascade 			IN VARCHAR2 DEFAULT 'F' ,
+      p_db_office_id		IN VARCHAR2 DEFAULT NULL
+   );
 
 --   PROCEDURE store_alias (
 --      p_location_id    IN   VARCHAR2,
