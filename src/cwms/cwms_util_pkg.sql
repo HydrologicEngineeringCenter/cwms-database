@@ -25,15 +25,11 @@ AS
 	replace_with_non_missing CONSTANT VARCHAR2 (32)
 			:= 'REPLACE WITH NON MISSING' ;
 	delete_insert CONSTANT							VARCHAR2 (16) := 'DELETE INSERT';
-	--
-	---
-	---- DEPRICATED
+
 	delete_key CONSTANT								VARCHAR2 (16) := 'DELETE KEY';
 	delete_data CONSTANT 							VARCHAR2 (22) := 'DELETE DATA';
 	delete_all CONSTANT								VARCHAR2 (16) := 'DELETE ALL';
-	----DEPRICATED.
-	---
-	--
+
 	delete_ts_id CONSTANT							VARCHAR2 (22) := 'DELETE TS ID';
 	delete_loc CONSTANT								VARCHAR2 (22) := 'DELETE LOC';
 	delete_ts_data CONSTANT 						VARCHAR2 (22) := 'DELETE TS DATA';
