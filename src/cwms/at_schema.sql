@@ -1483,19 +1483,9 @@ ALTER TABLE at_loc_category ADD (
 
 ALTER TABLE AT_LOC_CATEGORY ADD CONSTRAINT AT_LOC_CATEGORY_FK1 FOREIGN KEY (DB_OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
 
-INSERT INTO at_loc_category
-            (loc_category_code, loc_category_id, db_office_code,
-             loc_category_desc
-            )
-     VALUES (0, 'Default', 53,
-             'Default'
-            );
-INSERT 
-  INTO at_loc_category 
-VALUES (/* loc_category_code */ 1,                                      
-        /* loc_category_id   */ 'Agency Aliases',                       
-        /* db_office_code    */ 53,                                     
-        /* loc_category_desc */ 'Location aliases for other agencies'); 
+INSERT INTO at_loc_category VALUES (0, 'Default',        53, 'Default');
+INSERT INTO at_loc_category VALUES (1, 'Agency Aliases', 53, 'Location aliases for other agencies'); 
+INSERT INTO at_loc_category VALUES (2, 'Basins',         53, 'Category for basin location groups'); 
 
 --------
 --------
