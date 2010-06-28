@@ -5,7 +5,7 @@ SET serveroutput on
 create or replace PACKAGE CWMS_PROJECT IS
 
 -------------------------------------------------------------------------------
--- CAT_PROJECT
+-- CWMS_PROJECT
 --
 -- These procedures and functions query and manipulate projects in the CWMS/ROWCPS
 -- database. 
@@ -31,8 +31,12 @@ create or replace PACKAGE CWMS_PROJECT IS
 -- group. I dont recall the names of these at the moment.
 -------------------------------------------------------------------------------
 
---
--- cat_project
+
+
+
+
+-------------------------------------------------------------------------------
+-- procedure: cat_project
 -- returns a listing of project identifying and geopositional data. 
 -- if a better design is returning a table of project_obj_t, that is fine.
 -- at a minimum the columns below need to be returned.
@@ -62,16 +66,41 @@ create or replace PACKAGE CWMS_PROJECT IS
 --    active_flag              varchar2(1)    'T' if active, else 'F'
 --
 -------------------------------------------------------------------------------
--- errors will be issued as thrown exceptions.
--- 
+--
+-- p_basin_cat
+-- returns a listing of assigned project locations for all "Basin" category location 
+-- groups described by the p_db_office_id parameter. 
+--
+-- security: can be called by user and dba group.
+--
+-- NOTE THAT THE COLUMN NAMES SHOULD NOT BE CHANGED AFTER BEING DEVELOPED.
+-- Changing them will end up breaking external code (so make any changes prior
+-- to development).
+-- The returned records contain the following columns:
+--    Name                      Datatype      Description
+--    ------------------------ ------------- ----------------------------
+--    group_office_id          varchar2(16)   owning office of location group
+--    loc_group_id             VARCHAR2(32)   the location group id
+--    loc_group_desc           VARCHAR2(128)  the location group description
+--    location_office_id       varchar2(16)   owning office of location
+--    base_location_id         varchar2(16)   base location id
+--    sub_location_id          varchar2(32)   sub-location id, if any
+--
+-- errors will be issued as thrown exceptions. 
+--
 PROCEDURE cat_project (
 	--described above.
-	p_project_cat		OUT		sys_refcursor, 
+	p_project_cat		OUT		sys_refcursor,
+  
+	--described above.
+	p_basin_cat		  OUT		sys_refcursor,
 	
-	-- defaults to the connected user's office if null
-	p_db_office_id		IN		VARCHAR2 DEFAULT NULL
+  -- defaults to the connected user's office if null
+  -- the office id can use sql masks for retrieval of additional offices.
+  p_db_office_id IN    VARCHAR2 DEFAULT NULL
+                                                
 );
-   
+
    
 -- Returns project data for a given project id. Returned data is encapsulated
 -- in a project oracle type. This includes the location data for the project (
@@ -115,7 +144,9 @@ PROCEDURE retrieve_project(
 -- 
 procedure store_project(
 	-- a populated project object type.
-	p_project					IN		project_obj_t
+	p_project					IN		project_obj_t,
+  -- fail the store if the project already exists.
+  p_fail_if_exists      IN       VARCHAR2 DEFAULT 'T'
 );
 
 
@@ -147,17 +178,120 @@ procedure rename_project(
 -- security: can only be called by dba group.
 -- 
 -- This delete does not affect any of the location tables, only project tables.
+-- AT_PHYSICAL_LOCATION will not be touched.
 -- delete will only delete from the project down. 
 -- 
 -- errors will be issued as thrown exceptions. 
 --
 procedure delete_project(
 	-- base location id + "-" + sub-loc id (if it exists)
-    p_project_id		IN   VARCHAR2,
+  p_project_id		IN   VARCHAR2,
+  -- the cwms_util delete action for this delete, options are delete_key and delete_all.
+  -- delete_key will fail if there are project children referencing this project, i.e. embankments, etc.
+  -- delete_all will cascade delete this project and all children. 
+  p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, 
 	-- defaults to the connected user's office if null
-    p_db_office_id    IN   VARCHAR2 DEFAULT NULL
+  p_db_office_id    IN   VARCHAR2 DEFAULT NULL
 );
 
+
+-- procedure create_basin_group
+-- creates a "Basin" category location group
+-- security: can only be called by the dba group.
+-- errors will be thrown as exceptions.
+PROCEDURE create_basin_group (
+      -- the basin name
+      p_loc_group_id      IN   VARCHAR2,
+      -- description of the basin
+      p_loc_group_desc    IN   VARCHAR2 DEFAULT NULL,
+      -- defaults to the connected user's office if null
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
+-- procedure rename_basin_group
+-- renames an existing "Basin" category location group.
+-- security: can only be called by the dba group.
+-- errors will be thrown as exceptions.
+PROCEDURE rename_basin_group (
+      -- the old basin name
+      p_loc_group_id_old   IN   VARCHAR2,
+      -- the new basin name
+      p_loc_group_id_new   IN   VARCHAR2,
+      -- an updated description
+      p_loc_group_desc     IN   VARCHAR2 DEFAULT NULL,
+      -- if true, null args should not be processed.
+      p_ignore_null        IN   VARCHAR2 DEFAULT 'T',
+      -- defaults to the connected user's office if null
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+   );
+
+   --delete_basin_group
+   -- deletes a "Basin" category location group.
+   -- 
+  PROCEDURE delete_basin_group (
+    -- the location group to delete.
+		p_loc_group_id		IN VARCHAR2,
+    -- delete_key will fail if there are assigned locations.
+    -- delete_all will delete all location assignments, then delete the group.
+    p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, 
+    -- defaults to the connected user's office if null
+		p_db_office_id		IN VARCHAR2 DEFAULT NULL
+  );
+   
+   -- Assign a location to a "Basin" category location group. The location id
+   -- that is being assigned to the basin needs to be constrained to location_codes
+   -- in the AT_PROJECT table.
+   PROCEDURE assign_basin_group2 (
+      -- the location group id.
+      p_loc_group_id      IN   VARCHAR2,
+      -- the project location id
+      p_location_id       IN   VARCHAR2,
+      -- the attribute for the project location.
+      p_loc_attribute     IN   NUMBER   DEFAULT NULL,
+      -- the alias for this project, this will most likely always be null.
+      p_loc_alias_id      IN   VARCHAR2 DEFAULT NULL,
+      -- defaults to the connected user's office if null
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
+  -- Assign a set of locations to the "Basin" category location group. The location id
+   -- that is being assigned to the basin needs to be constrained to location_codes
+   -- in the AT_PROJECT table.
+   PROCEDURE assign_basin_groups2 (
+     -- the basin location group id
+      p_loc_group_id      IN   VARCHAR2,
+      -- an array of the location ids and extra data to assign to the specified group.
+      p_loc_alias_array   IN   loc_alias_array2,
+      -- defaults to the connected user's office if null
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+   
+   -- Removes a location from a "Basin" category location group.
+   PROCEDURE unassign_basin_group (
+      -- the basin location group id
+      p_loc_group_id      IN   VARCHAR2,
+      -- the location id to remove. 
+      p_location_id       IN   VARCHAR2,
+      -- if unassign is T then all assigned locs are removed from group. 
+      -- p_location_id needs to be set to null when the arg is T.
+      p_unassign_all      IN   VARCHAR2 DEFAULT 'F',
+      -- defaults to the connected user's office if null
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+   
+   -- Removes a set of location ids from a "Basin" category location group.
+   PROCEDURE unassign_basin_groups (
+      -- the basin location group id.
+      p_loc_group_id      IN   VARCHAR2,
+      -- the array of location ids to remove.
+      p_location_array    IN   char_49_array_type,
+      -- if T, then all assigned locs are removed from the group.
+      -- p_location_array needs to be null when the arg is T.
+      p_unassign_all      IN   VARCHAR2 DEFAULT 'F',
+      -- defaults to the connected user's office if null
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );   
+   
 END CWMS_PROJECT;
 
 /
