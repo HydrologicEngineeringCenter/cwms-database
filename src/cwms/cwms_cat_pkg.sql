@@ -1077,12 +1077,12 @@ IS
 --
 --
    PROCEDURE cat_loc_aliases (
-      p_cwms_cat          IN OUT   sys_refcursor,
-      p_location_id       IN       VARCHAR2 DEFAULT NULL,
-      p_loc_category_id   IN       VARCHAR2 DEFAULT NULL,
-      p_loc_group_id      IN       VARCHAR2 DEFAULT NULL,
-      p_abreviated        IN       VARCHAR2 DEFAULT 'T',
-      p_db_office_id      IN       VARCHAR2 DEFAULT NULL
+      p_cwms_cat          OUT sys_refcursor,
+      p_location_id       IN  VARCHAR2 DEFAULT NULL,
+      p_loc_category_id   IN  VARCHAR2 DEFAULT NULL,
+      p_loc_group_id      IN  VARCHAR2 DEFAULT NULL,
+      p_abreviated        IN  VARCHAR2 DEFAULT 'T',
+      p_db_office_id      IN  VARCHAR2 DEFAULT NULL
    );
 
 --
