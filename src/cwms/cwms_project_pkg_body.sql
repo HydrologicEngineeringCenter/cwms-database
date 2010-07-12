@@ -7,6 +7,7 @@ PACKAGE BODY CWMS_PROJECT AS
 
 PROCEDURE cat_project (
 	p_project_cat  out sys_refcursor,
+	p_basin_cat  out sys_refcursor,
 	p_db_office_id in  varchar2 default null
 )
 AS
@@ -289,7 +290,8 @@ END retrieve_project;                            -- );
 --stores the data contained within the project object into the database schema
 --will this alter the referenced location types?
 procedure store_project(
-   p_project IN project_obj_t
+   p_project IN project_obj_t,
+   p_fail_if_exists      IN       VARCHAR2 DEFAULT 'T'
 )
 AS
    l_project_location_code   number := null;
@@ -463,6 +465,7 @@ END rename_project;
 -- deletes a project, this does not affect any of the location code data.
 procedure delete_project(
       p_project_id		IN   VARCHAR2,
+      p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, 
       p_db_office_id    IN   VARCHAR2 DEFAULT NULL
    )
 AS
@@ -470,6 +473,113 @@ AS
 BEGIN
    delete from at_project where project_location_code = l_location_code;
 END delete_project;
+
+PROCEDURE create_basin_group (
+      -- the basin name
+      p_loc_group_id      IN   VARCHAR2,
+      -- description of the basin
+      p_loc_group_desc    IN   VARCHAR2 DEFAULT NULL,
+      -- defaults to the connected user's office if null
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+AS
+BEGIN
+  NULL;
+END create_basin_group;
+
+
+PROCEDURE rename_basin_group (
+      -- the old basin name
+      p_loc_group_id_old   IN   VARCHAR2,
+      -- the new basin name
+      p_loc_group_id_new   IN   VARCHAR2,
+      -- an updated description
+      p_loc_group_desc     IN   VARCHAR2 DEFAULT NULL,
+      -- if true, null args should not be processed.
+      p_ignore_null        IN   VARCHAR2 DEFAULT 'T',
+      -- defaults to the connected user's office if null
+      p_db_office_id       IN   VARCHAR2 DEFAULT NULL
+   )
+AS
+BEGIN
+  NULL;
+END rename_basin_group;
+
+  PROCEDURE delete_basin_group (
+    -- the location group to delete.
+		p_loc_group_id		IN VARCHAR2,
+    -- delete_key will fail if there are assigned locations.
+    -- delete_all will delete all location assignments, then delete the group.
+    p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, 
+    -- defaults to the connected user's office if null
+		p_db_office_id		IN VARCHAR2 DEFAULT NULL
+  )
+AS
+BEGIN
+  NULL;
+END delete_basin_group;
+
+   PROCEDURE assign_basin_group2 (
+      -- the location group id.
+      p_loc_group_id      IN   VARCHAR2,
+      -- the project location id
+      p_location_id       IN   VARCHAR2,
+      -- the attribute for the project location.
+      p_loc_attribute     IN   NUMBER   DEFAULT NULL,
+      -- the alias for this project, this will most likely always be null.
+      p_loc_alias_id      IN   VARCHAR2 DEFAULT NULL,
+      -- defaults to the connected user's office if null
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+AS
+BEGIN
+  NULL;
+END assign_basin_group2;
+   
+      PROCEDURE assign_basin_groups2 (
+     -- the basin location group id
+      p_loc_group_id      IN   VARCHAR2,
+      -- an array of the location ids and extra data to assign to the specified group.
+      p_loc_alias_array   IN   loc_alias_array2,
+      -- defaults to the connected user's office if null
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+AS
+BEGIN
+  NULL;
+END assign_basin_groups2;
+   
+   PROCEDURE unassign_basin_group (
+      -- the basin location group id
+      p_loc_group_id      IN   VARCHAR2,
+      -- the location id to remove. 
+      p_location_id       IN   VARCHAR2,
+      -- if unassign is T then all assigned locs are removed from group. 
+      -- p_location_id needs to be set to null when the arg is T.
+      p_unassign_all      IN   VARCHAR2 DEFAULT 'F',
+      -- defaults to the connected user's office if null
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+AS
+BEGIN
+  NULL;
+END unassign_basin_group;
+   
+   PROCEDURE unassign_basin_groups (
+      -- the basin location group id.
+      p_loc_group_id      IN   VARCHAR2,
+      -- the array of location ids to remove.
+      p_location_array    IN   char_49_array_type,
+      -- if T, then all assigned locs are removed from the group.
+      -- p_location_array needs to be null when the arg is T.
+      p_unassign_all      IN   VARCHAR2 DEFAULT 'F',
+      -- defaults to the connected user's office if null
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   )
+AS
+BEGIN
+  NULL;
+END unassign_basin_groups;
 
 END CWMS_PROJECT;
  
