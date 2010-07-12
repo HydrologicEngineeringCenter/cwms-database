@@ -111,6 +111,9 @@ CREATE OR REPLACE TYPE embankment_obj_t AS OBJECT
 /
 show errors
 
+CREATE OR REPLACE TYPE embankment_tab_t IS TABLE OF embankment_obj_t;
+/
+show errors
 
 CREATE OR REPLACE TYPE water_user_obj_t AS OBJECT
 ( 

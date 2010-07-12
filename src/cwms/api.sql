@@ -60,3 +60,6 @@
 
 @@cwms_lock_pkg
 @@cwms_lock_pkg_body
+
+@@cwms_embank_pkg
+@@cwms_embank_pkg_body
