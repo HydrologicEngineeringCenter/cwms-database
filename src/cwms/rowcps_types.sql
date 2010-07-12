@@ -9,6 +9,7 @@ SET serveroutput on
 
 CREATE OR REPLACE TYPE lookup_type_obj_t AS OBJECT
 (
+    office_id VARCHAR2 (16), -- the office id for this lookup type
     display_value	varchar2(25 byte),  --The value to display for this lookup record
     tooltip	varchar2(255 byte),     --The tooltip or meaning of this lookup record
     active	varchar2(1 byte)	--Whether this lookup record entry is currently active
@@ -16,7 +17,12 @@ CREATE OR REPLACE TYPE lookup_type_obj_t AS OBJECT
 /
 show errors
 
+CREATE OR REPLACE TYPE lookup_type_tab_t IS TABLE OF lookup_type_obj_t;
+/
+show errors
+
 CREATE OR REPLACE TYPE document_obj_t AS OBJECT(
+    office_id VARCHAR2 (16), -- the office id for this lookup type
     document_id	VARCHAR2(64 BYTE)	-- The unique identifier for the individual document, user provided
 );
 /
