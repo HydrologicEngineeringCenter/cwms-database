@@ -5261,6 +5261,7 @@ begin
                  pt.parameter_type_id as parameter_type_id,
                  d.duration_id as duration_id,
                  sl.specified_level_id as specified_level_id,
+                 lli.level_indicator_code as level_indicator_code,
                  lli.level_indicator_id as level_indicator_id,
                  lli.minimum_duration as minimum_duration,
                  lli.maximum_age as maximum_age,
@@ -5269,60 +5270,7 @@ begin
                  lli.attr_duration_code as attr_duration_code,
                  lli.attr_value as attr_value,
                  lli.ref_specified_level_code as ref_specified_level_code,
-                 lli.ref_attr_value as ref_attr_value,
-                 cursor (
-                    select level_indicator_value,
-                            expression,
-                            comparison_operator_1,
-                            comparison_value_1,
-                            comparison_unit_id,
-                            connector,
-                            comparison_operator_2,
-                            comparison_value_2,
-                            rate_expression,
-                            rate_comparison_operator_1,
-                            rate_comparison_value_1,
-                            rate_comparison_unit_id,
-                            rate_connector,
-                            rate_comparison_operator_2,
-                            rate_comparison_value_2,
-                            rate_interval,
-                            description
-                       from ((select level_indicator_value,
-                                      expression,
-                                      comparison_operator_1,
-                                      comparison_value_1,
-                                      comparison_unit,
-                                      connector,
-                                      comparison_operator_2,
-                                      comparison_value_2,
-                                      rate_expression,
-                                      rate_comparison_operator_1,
-                                      rate_comparison_value_1,
-                                      rate_comparison_unit,
-                                      rate_connector,
-                                      rate_comparison_operator_2,
-                                      rate_comparison_value_2,
-                                      rate_interval,
-                                      description
-                                 from at_loc_lvl_indicator_cond
-                             ) cond
-                             left outer join
-                             (select unit_code,
-                                     unit_id as comparison_unit_id
-                                from cwms_unit
-                             ) unit
-                             on unit.unit_code = cond.comparison_unit
-                            )
-                            left outer join
-                            (select unit_code,
-                                    unit_id as rate_comparison_unit_id
-                               from cwms_unit
-                            ) rate_unit
-                            on rate_unit.unit_code = cond.rate_comparison_unit
-                      where level_indicator_code = lli.level_indicator_code
-                   order by level_indicator_value
-                 ) as conditions
+                 lli.ref_attr_value as ref_attr_value
             from at_loc_lvl_indicator lli,
                  at_physical_location pl,
                  at_base_location bl,
@@ -5403,8 +5351,60 @@ begin
              minimum_duration,
              maximum_age,
              ref_specified_level_id,
-             round(ref_attr_value * attr_param.factor + attr_param.offset, 10 - trunc(log(10, ref_attr_value * attr_param.factor + attr_param.offset)))
-             conditions
+             round(ref_attr_value * attr_param.factor + attr_param.offset, 10 - trunc(log(10, ref_attr_value * attr_param.factor + attr_param.offset))),
+                 cursor (
+                    select level_indicator_value,
+                            expression,
+                            comparison_operator_1,
+                            comparison_value_1,
+                            comparison_unit_id,
+                            connector,
+                            comparison_operator_2,
+                            comparison_value_2,
+                            rate_expression,
+                            rate_comparison_operator_1,
+                            rate_comparison_value_1,
+                            rate_comparison_unit_id,
+                            rate_connector,
+                            rate_comparison_operator_2,
+                            rate_comparison_value_2,
+                            rate_interval,
+                            description
+                       from ((select level_indicator_value,
+                                      expression,
+                                      comparison_operator_1,
+                                      comparison_value_1,
+                                      comparison_unit,
+                                      connector,
+                                      comparison_operator_2,
+                                      comparison_value_2,
+                                      rate_expression,
+                                      rate_comparison_operator_1,
+                                      rate_comparison_value_1,
+                                      rate_comparison_unit,
+                                      rate_connector,
+                                      rate_comparison_operator_2,
+                                      rate_comparison_value_2,
+                                      rate_interval,
+                                      description
+                                 from at_loc_lvl_indicator_cond
+                             ) cond
+                             left outer join
+                             (select unit_code,
+                                     unit_id as comparison_unit_id
+                                from cwms_unit
+                             ) unit
+                             on unit.unit_code = cond.comparison_unit
+                            )
+                            left outer join
+                            (select unit_code,
+                                    unit_id as rate_comparison_unit_id
+                               from cwms_unit
+                            ) rate_unit
+                            on rate_unit.unit_code = cond.rate_comparison_unit
+                      where level_indicator_code = indicator.level_indicator_code
+                   order by level_indicator_value
+                 ) as conditions
         from ((((indicator left outer join attr_param
                  on attr_param.parameter_code = indicator.attr_parameter_code
                 ) left outer join attr_param_type
