@@ -94,7 +94,7 @@ PROCEDURE retrieve_embankment(
    p_embankment_location_ref IN location_ref_t
 );  
 
--- Returns a set of embankments for a set of embankment ids. Returned data is encapsulated
+-- Returns a set of embankments for a given project. Returned data is encapsulated
 -- in a table of embankment oracle types. 
 --
 -- security: can be called by user and dba group.
@@ -104,10 +104,10 @@ PROCEDURE retrieve_embankment(
 PROCEDURE retrieve_embankments(
    --returns a filled set of objects including location data
    p_embankments OUT embankment_tab_t,     
-   -- a set of location refs that identify the objects we want to retrieve.
+   -- a project location refs that identify the objects we want to retrieve.
    -- includes the location id (base location + '-' + sublocation)
    -- the office id if null will default to the connected user's office
-   p_embankment_location_refs IN location_ref_tab_t
+   p_project_location_ref IN location_ref_t
 );  
 
 -- Stores the data contained within the embankment object into the database schema.
