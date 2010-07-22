@@ -1634,7 +1634,7 @@ as
    end store;
 end;
 /
-show errors
+show errors;
 
 create or replace type zloc_lvl_indicator_tab_t is table of zloc_lvl_indicator_t
 /
@@ -2175,6 +2175,7 @@ as
 
 end;
 /
+show errors;
 
 create or replace type seasonal_value_tab_t is table of seasonal_value_t
 /
@@ -2556,6 +2557,7 @@ as
 
 end;
 /
+show errors;
 
 create or replace type location_level_t is object (
    office_id                   varchar2(16),
@@ -2995,6 +2997,7 @@ as
    end store;      
 end;
 /
+show errors;
 
 create or replace type location_level_tab_t is table of location_level_t
 /
