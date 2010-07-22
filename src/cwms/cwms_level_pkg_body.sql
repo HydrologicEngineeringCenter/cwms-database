@@ -1241,13 +1241,13 @@ procedure create_location_level(
    p_office_id               in  varchar2 default null)
 is
    l_location_level_code       number(10) := null;
-   l_office_id                 varchar2(16);
    l_office_code               number;
    l_fail_if_exists            boolean;
    l_spec_level_code           number(10);
    l_loc_level_code            number(10);
    l_interval_origin           date;
    l_location_code             number(10);
+   l_location_tz_code          number(10);
    l_parts                     str_tab_t;
    l_base_parameter_id         varchar2(16);
    l_sub_parameter_id          varchar2(32);
@@ -1260,6 +1260,7 @@ is
    l_attr_offset               binary_double;
    l_attribute_value           number;
    l_effective_date            date;
+   l_timezone_id               varchar2(28) := null;
    l_effective_date_out        date;
    l_attribute_parameter_code  number(10);
    l_attribute_param_type_code number(10);
@@ -1278,6 +1279,18 @@ begin
    -- sanity checks --
    -------------------
    validate_specified_level_input(l_office_code, p_office_id, p_spec_level_id);
+   l_location_code := cwms_loc.get_location_code(l_office_code, p_location_id);
+   select time_zone_code
+     into l_location_tz_code
+     from at_physical_location
+    where location_code = l_location_code;
+   if l_location_tz_code is null then
+      cwms_err.raise(
+         'ERROR',
+         'Location '''
+         ||p_location_id
+         ||''' must be assigned a time zone before calling this routine.');
+   end if;    
    if p_attribute_value is not null and p_attribute_parameter_id is null then
       cwms_err.raise(
          'ERROR',
@@ -1307,6 +1320,15 @@ begin
             || 'in CREATE_LOCATION_LEVEL');
       end if;
    end if;
+   -------------------------------------------------------
+   -- default the time zone to the location's time zone --
+   -------------------------------------------------------
+   if p_timezone_id is null then
+      select time_zone_name
+        into l_timezone_id
+        from cwms_time_zone
+       where time_zone_code = l_location_tz_code;
+   end if;
    ---------------------------------
    -- get the codes for input ids --
    ---------------------------------
@@ -1314,7 +1336,7 @@ begin
       l_effective_date := to_date('01JAN1900 0000', 'ddmonyyyy hh24mi');
    else
       l_effective_date := cast(
-         from_tz(cast(p_effective_date as timestamp), p_timezone_id)
+         from_tz(cast(p_effective_date as timestamp), l_timezone_id)
          at time zone 'UTC' as date);
    end if;
    get_location_level_codes(
@@ -1402,7 +1424,7 @@ begin
             l_interval_origin := to_date('01JAN2000 0000', 'ddmonyyyy hh24mi');
          else
             l_interval_origin := cast(
-               from_tz(cast(p_interval_origin as timestamp), p_timezone_id)
+               from_tz(cast(p_interval_origin as timestamp), l_timezone_id)
                at time zone 'UTC' as date);
          end if;
          if l_calendar_interval is null then
@@ -1507,7 +1529,7 @@ begin
             l_interval_origin := to_date('01JAN2000 0000', 'ddmonyyyy hh24mi');
          else
             l_interval_origin := cast(
-               from_tz(cast(p_interval_origin as timestamp), p_timezone_id)
+               from_tz(cast(p_interval_origin as timestamp), l_timezone_id)
                at time zone 'UTC' as date);
          end if;
          update at_location_level
