@@ -7,8 +7,11 @@ CREATE OR REPLACE PACKAGE CWMS_LOCK AS
 -- database.
 
 
+
+
+
 --
--- cat_project
+-- cat_lock
 --
 -- security: can be called by user and dba group.
 --
@@ -19,8 +22,9 @@ CREATE OR REPLACE PACKAGE CWMS_LOCK AS
 --
 --    Name                      Datatype      Description
 --    ------------------------ ------------- ----------------------------
---    db_office_id             varchar2(16)   owning office of location
+--    project_office_id        varchar2(32)  the office id of the parent project.
 --    project_location_id      varchar2(49)   the parent project's location id
+--    db_office_id             varchar2(16)   owning office of location
 --    base_location_id         varchar2(16)   base location id
 --    sub_location_id          varchar2(32)   sub-location id, if any
 --    time_zone_name           varchar2(28)   local time zone name for location

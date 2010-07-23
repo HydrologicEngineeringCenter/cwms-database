@@ -63,3 +63,7 @@
 
 @@cwms_embank_pkg
 @@cwms_embank_pkg_body
+
+@@cwms_water_supply_pkg
+@@cwms_water_supply_pkg_body
+
