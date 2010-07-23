@@ -214,11 +214,14 @@ begin
    p_lock := lock_obj_t(
       location_ref_t(l_lock_rec.project_location_code),
       l_lock_loc,
+      l_lock_rec.volume_per_lockage,
+      null, -- volume units.
       l_lock_rec.lock_width,
       l_lock_rec.lock_length,
-      l_lock_rec.volume_per_lockage,
       l_lock_rec.minimum_draft,
-      l_lock_rec.normal_lock_lift);
+      l_lock_rec.normal_lock_lift,
+      null --  length units.
+    );
 
 end retrieve_lock;
 
