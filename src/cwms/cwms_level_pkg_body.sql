@@ -1260,7 +1260,7 @@ is
    l_attr_offset               binary_double;
    l_attribute_value           number;
    l_effective_date            date;
-   l_timezone_id               varchar2(28) := null;
+   l_timezone_id               varchar2(28);
    l_effective_date_out        date;
    l_attribute_parameter_code  number(10);
    l_attribute_param_type_code number(10);
@@ -1328,12 +1328,16 @@ begin
         into l_timezone_id
         from cwms_time_zone
        where time_zone_code = l_location_tz_code;
+   else
+      l_timezone_id := p_timezone_id;
    end if;
    ---------------------------------
    -- get the codes for input ids --
    ---------------------------------
    if p_effective_date is null then
-      l_effective_date := to_date('01JAN1900 0000', 'ddmonyyyy hh24mi');
+      l_effective_date := cast(
+         from_tz(to_timestamp('01JAN1900 0000', 'ddmonyyyy hh24mi'), l_timezone_id)
+         at time zone 'UTC' as date);
    else
       l_effective_date := cast(
          from_tz(cast(p_effective_date as timestamp), l_timezone_id)
