@@ -163,7 +163,14 @@ begin
    -- create public synonyms for collected views
    --
    for i in 1..view_names.count loop
-      view_synonym := regexp_replace(view_names(i), '^[AM]V_(CWMS_)*', 'CWMS_V_');
+   	begin
+	      view_synonym := regexp_replace(view_names(i), '^[AM]V_(CWMS_)*', 'CWMS_V_');
+		exception
+			when others then
+				-- view name is too long to be expanded by replacement!
+				dbms_output.put_line('-- ERROR CREATING SYN)NYM FOR VIEW ' || view_names(i));
+				continue;
+		end;
       sql_statement := 'CREATE OR REPLACE PUBLIC SYNONYM '||view_synonym||' FOR &cwms_schema'||'.'||view_names(i);
       dbms_output.put_line('-- ' || sql_statement);
       execute immediate sql_statement;
