@@ -1662,7 +1662,7 @@ AS
 	          reference_level_id,
 	          attribute_id,
 	          unit_system,
-	          attribute_value;show errors;
+	          attribute_value;
 /                  
 show errors;
 
