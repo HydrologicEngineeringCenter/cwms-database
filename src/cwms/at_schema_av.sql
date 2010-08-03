@@ -1357,6 +1357,315 @@ AS
 /                  
 show errors;
 
+CREATE OR REPLACE FORCE VIEW av_location_level_indicator_2
+AS
+	with
+	      llic1 as (
+	      select level_indicator_code,
+	             description as name,
+	             expression
+	             ||' '||comparison_operator_1
+	             ||' '||round(cast(comparison_value_1 as number), 10)
+	             ||substr(' ', 1, length(connector))
+	             ||connector
+	             ||substr(' ', 1, length(comparison_operator_2))
+	             ||comparison_operator_2
+	             ||substr(' ', 1, length(comparison_value_2))
+	             ||round(cast(comparison_value_2 as number), 10) as expression,
+	             comparison_unit,
+	             rate_expression
+	             ||substr(' ', 1, length(rate_comparison_operator_1))
+	             ||rate_comparison_operator_1
+	             ||substr(' ', 1, length(rate_comparison_value_1))
+	             ||round(cast(rate_comparison_value_1 as number), 10)
+	             ||substr(' ', 1, length(rate_connector))
+	             ||rate_connector
+	             ||substr(' ', 1, length(rate_comparison_operator_2))
+	             ||rate_comparison_operator_2
+	             ||substr(' ', 1, length(rate_comparison_value_2))
+	             ||round(cast(rate_comparison_value_2 as number), 10) as rate_expression,
+	             rate_comparison_unit,
+	             rate_interval
+	        from at_loc_lvl_indicator_cond
+		   where level_indicator_value = 1),
+	      llic2 as (
+	      select level_indicator_code,
+	             description as name,
+	             expression
+	             ||' '||comparison_operator_1
+	             ||' '||round(cast(comparison_value_1 as number), 10)
+	             ||substr(' ', 1, length(connector))
+	             ||connector
+	             ||substr(' ', 1, length(comparison_operator_2))
+	             ||comparison_operator_2
+	             ||substr(' ', 1, length(comparison_value_2))
+	             ||round(cast(comparison_value_2 as number), 10) as expression,
+	             comparison_unit,
+	             rate_expression
+	             ||substr(' ', 1, length(rate_comparison_operator_1))
+	             ||rate_comparison_operator_1
+	             ||substr(' ', 1, length(rate_comparison_value_1))
+	             ||round(cast(rate_comparison_value_1 as number), 10)
+	             ||substr(' ', 1, length(rate_connector))
+	             ||rate_connector
+	             ||substr(' ', 1, length(rate_comparison_operator_2))
+	             ||rate_comparison_operator_2
+	             ||substr(' ', 1, length(rate_comparison_value_2))
+	             ||round(cast(rate_comparison_value_2 as number), 10) as rate_expression,
+	             rate_comparison_unit,
+	             rate_interval
+	        from at_loc_lvl_indicator_cond
+		   where level_indicator_value = 2),
+	      llic3 as (
+	      select level_indicator_code,
+	             description as name,
+	             expression
+	             ||' '||comparison_operator_1
+	             ||' '||round(cast(comparison_value_1 as number), 10)
+	             ||substr(' ', 1, length(connector))
+	             ||connector
+	             ||substr(' ', 1, length(comparison_operator_2))
+	             ||comparison_operator_2
+	             ||substr(' ', 1, length(comparison_value_2))
+	             ||round(cast(comparison_value_2 as number), 10) as expression,
+	             comparison_unit,
+	             rate_expression
+	             ||substr(' ', 1, length(rate_comparison_operator_1))
+	             ||rate_comparison_operator_1
+	             ||substr(' ', 1, length(rate_comparison_value_1))
+	             ||round(cast(rate_comparison_value_1 as number), 10)
+	             ||substr(' ', 1, length(rate_connector))
+	             ||rate_connector
+	             ||substr(' ', 1, length(rate_comparison_operator_2))
+	             ||rate_comparison_operator_2
+	             ||substr(' ', 1, length(rate_comparison_value_2))
+	             ||round(cast(rate_comparison_value_2 as number), 10) as rate_expression,
+	             rate_comparison_unit,
+	             rate_interval
+	        from at_loc_lvl_indicator_cond
+		   where level_indicator_value = 3),
+	      llic4 as (
+	      select level_indicator_code,
+	             description as name,
+	             expression
+	             ||' '||comparison_operator_1
+	             ||' '||round(cast(comparison_value_1 as number), 10)
+	             ||substr(' ', 1, length(connector))
+	             ||connector
+	             ||substr(' ', 1, length(comparison_operator_2))
+	             ||comparison_operator_2
+	             ||substr(' ', 1, length(comparison_value_2))
+	             ||round(cast(comparison_value_2 as number), 10) as expression,
+	             comparison_unit,
+	             rate_expression
+	             ||substr(' ', 1, length(rate_comparison_operator_1))
+	             ||rate_comparison_operator_1
+	             ||substr(' ', 1, length(rate_comparison_value_1))
+	             ||round(cast(rate_comparison_value_1 as number), 10)
+	             ||substr(' ', 1, length(rate_connector))
+	             ||rate_connector
+	             ||substr(' ', 1, length(rate_comparison_operator_2))
+	             ||rate_comparison_operator_2
+	             ||substr(' ', 1, length(rate_comparison_value_2))
+	             ||round(cast(rate_comparison_value_2 as number), 10) as rate_expression,
+	             rate_comparison_unit,
+	             rate_interval
+	        from at_loc_lvl_indicator_cond
+		   where level_indicator_value = 4),
+	      llic5 as (
+	      select level_indicator_code,
+	             description as name,
+	             expression
+	             ||' '||comparison_operator_1
+	             ||' '||round(cast(comparison_value_1 as number), 10)
+	             ||substr(' ', 1, length(connector))
+	             ||connector
+	             ||substr(' ', 1, length(comparison_operator_2))
+	             ||comparison_operator_2
+	             ||substr(' ', 1, length(comparison_value_2))
+	             ||round(cast(comparison_value_2 as number), 10) as expression,
+	             comparison_unit,
+	             rate_expression
+	             ||substr(' ', 1, length(rate_comparison_operator_1))
+	             ||rate_comparison_operator_1
+	             ||substr(' ', 1, length(rate_comparison_value_1))
+	             ||round(cast(rate_comparison_value_1 as number), 10)
+	             ||substr(' ', 1, length(rate_connector))
+	             ||rate_connector
+	             ||substr(' ', 1, length(rate_comparison_operator_2))
+	             ||rate_comparison_operator_2
+	             ||substr(' ', 1, length(rate_comparison_value_2))
+	             ||round(cast(rate_comparison_value_2 as number), 10) as rate_expression,
+	             rate_comparison_unit,
+	             rate_interval
+	        from at_loc_lvl_indicator_cond
+		   where level_indicator_value = 5),
+	      unit as (
+	      select unit_code,
+	             unit_id
+	        from cwms_unit),
+	      rate_unit as (
+	      select unit_code as rate_unit_code,
+	             unit_id as rate_unit_id
+	        from cwms_unit),
+	      lli as (
+	      select *
+	        from at_loc_lvl_indicator),
+	      loc as (
+	      select location_code,
+	             base_location_code,
+	             sub_location_id
+	        from at_physical_location),
+	      base_loc as (
+	      select base_location_code,
+	             base_location_id,
+	             db_office_code
+	        from at_base_location),
+	      ofc as (
+	      select office_code,
+	             office_id
+	        from cwms_office),
+	      param as (
+	      select parameter_code,
+	             base_parameter_code,
+	             sub_parameter_id
+	        from at_parameter),
+	      base_param as (
+	      select base_parameter_code,
+	             base_parameter_id
+	        from cwms_base_parameter),
+	      param_type as (
+	      select parameter_type_code,
+	             parameter_type_id
+	        from cwms_parameter_type),
+	      dur as (
+	      select duration_code,
+	             duration_id
+	        from cwms_duration),
+	      spec_level as (select * from at_specified_level),
+	      attr_param as (
+	      select parameter_code,
+	             base_parameter_code,
+	             sub_parameter_id
+	        from at_parameter),
+	      attr_base_param as (
+	      select base_parameter_code,
+	             base_parameter_id,
+	             unit_code
+	        from cwms_base_parameter),
+	      attr_param_type as (
+	      select parameter_type_code,
+	             parameter_type_id
+	        from cwms_parameter_type),
+	      attr_dur as (
+	      select duration_code,
+	             duration_id
+	        from cwms_duration),
+	      disp as (select * from at_display_units),
+	      conv as (select * from cwms_unit_conversion),
+	      ref_spec_level as (select * from at_specified_level)
+	   select office_id,
+	          base_location_id
+	          || substr('-', 1, length(sub_location_id))
+	          || sub_location_id
+	          ||'.' || base_param.base_parameter_id
+	          || substr('-', 1, length(param.sub_parameter_id))
+	          || param.sub_parameter_id
+	          || '.' || param_type.parameter_type_id
+	          || '.' || dur.duration_id
+	          || '.' || spec_level.specified_level_id
+	          || '.' || level_indicator_id as level_indicator_id,
+	          ref_spec_level.specified_level_id as reference_level_id,
+	          attr_base_param.base_parameter_id
+	          || substr('-', 1, length(attr_param.sub_parameter_id))
+	          || attr_param.sub_parameter_id
+	          || substr('.', 1, length(attr_param_type.parameter_type_id))
+	          || attr_param_type.parameter_type_id
+	          || substr('.', 1, length(attr_dur.duration_id))
+	          || attr_dur.duration_id as attribute_id,
+	          unit_system,
+	          round(attr_value * factor + offset, 10 - log(10, attr_value * factor + offset)) as attribute_value,
+	          round(ref_attr_value * factor + offset, 10 - log(10, ref_attr_value * factor + offset)) as reference_attribute_value,
+	          to_unit_id as attribute_units,
+	          substr(minimum_duration, 2) as minimum_duration,
+	          substr(maximum_age, 2) as maximum_age,
+	          llic1.name as cond_1_name,
+	          llic1.expression
+	          ||substr(' ', 1, length(unit_id))
+	          ||unit_id as cond_1_expression,
+	          llic1.rate_expression
+	          ||substr(' ', 1, length(rate_unit_id))
+	          ||rate_unit_id
+	          ||substr(' per ', 1, length(llic1.rate_interval))
+	          ||substr(llic1.rate_interval, 2) as cond_1_rate_expression,
+	          llic2.name as cond_2_name,
+	          llic2.expression
+	          ||substr(' ', 1, length(unit_id))
+	          ||unit_id as cond_2_expression,
+	          llic2.rate_expression
+	          ||substr(' ', 1, length(rate_unit_id))
+	          ||rate_unit_id
+	          ||substr(' per ', 1, length(llic2.rate_interval))
+	          ||substr(llic2.rate_interval, 2) as cond_2_rate_expression,
+	          llic3.name as cond_3_name,
+	          llic3.expression
+	          ||substr(' ', 1, length(unit_id))
+	          ||unit_id as cond_3_expression,
+	          llic3.rate_expression
+	          ||substr(' ', 1, length(rate_unit_id))
+	          ||rate_unit_id
+	          ||substr(' per ', 1, length(llic3.rate_interval))
+	          ||substr(llic3.rate_interval, 2) as cond_3_rate_expression,
+	          llic4.name as cond_4_name,
+	          llic4.expression
+	          ||substr(' ', 1, length(unit_id))
+	          ||unit_id as cond_4_expression,
+	          llic4.rate_expression
+	          ||substr(' ', 1, length(rate_unit_id))
+	          ||rate_unit_id
+	          ||substr(' per ', 1, length(llic4.rate_interval))
+	          ||substr(llic4.rate_interval, 2) as cond_4_rate_expression,
+	          llic5.name as cond_5_name,
+	          llic5.expression
+	          ||substr(' ', 1, length(unit_id))
+	          ||unit_id as cond_5_expression,
+	          llic5.rate_expression
+	          ||substr(' ', 1, length(rate_unit_id))
+	          ||rate_unit_id
+	          ||substr(' per ', 1, length(llic5.rate_interval))
+	          ||substr(llic5.rate_interval, 2) as cond_5_rate_expression
+	     from llic1
+	          join llic2 on llic2.level_indicator_code = llic1.level_indicator_code
+	          join llic3 on llic3.level_indicator_code = llic1.level_indicator_code
+	          join llic4 on llic4.level_indicator_code = llic1.level_indicator_code
+	          join llic5 on llic5.level_indicator_code = llic1.level_indicator_code
+	          join lli on lli.level_indicator_code = llic1.level_indicator_code
+	          join loc on loc.location_code = lli.location_code
+	          join base_loc on base_loc.base_location_code = loc.base_location_code
+	          join ofc on ofc.office_code = base_loc.db_office_code
+	          join param on param.parameter_code = lli.parameter_code
+	          join base_param on base_param.base_parameter_code = param.base_parameter_code
+	          join param_type on param_type.parameter_type_code = lli.parameter_type_code
+	          join dur on dur.duration_code = lli.duration_code
+	          join spec_level on spec_level.specified_level_code = lli.specified_level_code
+	          left outer join attr_param on attr_param.parameter_code = lli.attr_parameter_code
+	          left outer join attr_base_param on attr_base_param.base_parameter_code = attr_param.base_parameter_code
+	          left outer join attr_param_type on attr_param_type.parameter_type_code = lli.attr_parameter_type_code
+	          left outer join attr_dur on attr_dur.duration_code = lli.attr_duration_code
+	          left outer join disp on disp.parameter_code = attr_base_param.base_parameter_code and disp.db_office_code = ofc.office_code
+	          left outer join conv on conv.from_unit_code = attr_base_param.unit_code and conv.to_unit_code = disp.display_unit_code
+	          left outer join ref_spec_level on ref_spec_level.specified_level_code = lli.ref_specified_level_code
+	          left outer join unit on unit.unit_code = llic1.comparison_unit
+	          left outer join rate_unit on rate_unit.rate_unit_code = llic1.rate_comparison_unit
+	 order by office_id,
+	          level_indicator_id,
+	          reference_level_id,
+	          attribute_id,
+	          unit_system,
+	          attribute_value;show errors;
+/                  
+show errors;
+
 create or replace force view av_dataexchange_job as
    with 
    request$ as (
