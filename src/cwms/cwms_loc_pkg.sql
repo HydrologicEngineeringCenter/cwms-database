@@ -580,5 +580,10 @@ AS
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER;
+      
+   FUNCTION get_location_object(
+      p_location_code IN NUMBER
+   )
+      RETURN location_obj_t;
 END cwms_loc;
 /

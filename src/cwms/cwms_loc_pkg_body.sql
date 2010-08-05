@@ -4299,5 +4299,159 @@ AS
 									p_db_office_id
 								  );
 	END;
+      
+   FUNCTION get_location_object(
+      p_location_code IN NUMBER
+   )
+      RETURN location_obj_t
+   IS
+      l_location_obj location_obj_t := null;
+      l_location_ref  location_ref_t := null;
+      
+      function elev_unit(p_office_id in number) return varchar2
+      is
+         l_unit  varchar2(16);
+         l_factor number;
+      begin
+         cwms_util.user_display_unit(
+            l_unit,
+            l_factor,
+            'Elev',
+            1.0,
+            null, 
+            p_office_id);
+         return l_unit;            
+      end;
+      function elev_factor(p_office_id in number) return number
+      is
+         l_unit  varchar2(16);
+         l_factor number;
+      begin
+         cwms_util.user_display_unit(
+            l_unit,
+            l_factor,
+            'Elev',
+            1.0,
+            null, 
+            p_office_id);
+         return l_factor;            
+      end;
+   BEGIN
+      for rec in (
+         select o.office_id                           office_id,
+                o.office_code                         office_code,
+                pl.location_code                      location_code,
+                bl.base_location_id                   base_location_id,
+                pl.sub_location_id                    sub_location_id,
+                case
+                  when pl.county_code is null then null
+                  else s.state_initial
+                end                                   state_initial,
+                case
+                  when pl.county_code is null then null
+                  else c.county_name
+                end                                   county_name,
+                case
+                  when tz.time_zone_code is null then null
+                  else tz.time_zone_name
+                end                                   time_zone_name,
+                pl.location_type                      location_type,
+                pl.latitude                           latitude,
+                pl.longitude                          longitude,
+                pl.horizontal_datum                   horizontal_datum,
+                pl.elevation                          elevation,
+                pl.vertical_datum                     vertical_datum,
+                pl.public_name                        public_name,
+                pl.long_name                          long_name,
+                pl.description                        description,
+                pl.active_flag                        active_flag,
+                case
+                  when pl.location_kind is null then null
+                  else lk.location_kind_id
+                end                                   location_kind_id,
+                pl.map_label                          map_label,
+                pl.published_latitude                 published_latitude,
+                pl.published_longitude                published_longitude,
+                case
+                  when pl.office_code is null then null
+                  else o.office_id
+                end                                   bounding_office_id,
+                case
+                  when pl.office_code is null then null
+                  else o.public_name
+                end                                   bounding_office_name,
+                case
+                  when pl.nation_code is null then null
+                  else n.nation_id
+                end                                   nation_id,
+                pl.nearest_city                       nearest_city
+           from at_physical_location pl,
+                at_base_location     bl,
+                at_location_kind     lk,
+                cwms_time_zone       tz,
+                cwms_county          c,
+                cwms_state           s,
+                cwms_nation          n,
+                cwms_office          o,
+                cwms_office          o2
+          where bl.base_location_code = pl.base_location_code
+            and o.office_code = bl.db_office_code
+            and (
+                  pl.county_code is null or
+                  (
+                    s.state_code = c.state_code and
+                    c.county_code = pl.county_code
+                  )
+                )
+            and (
+                  pl.time_zone_code is null or
+                  tz.time_zone_code = pl.time_zone_code
+                )
+            and (
+                  pl.location_kind is null or
+                  lk.location_kind_code = pl.location_kind
+                )
+            and (
+                  pl.office_code is null or
+                  o2.office_code = pl.office_code
+                )
+            and (
+                  pl.nation_code is null or
+                  n.nation_code = pl.nation_code
+                )
+            and pl.location_code = p_location_code)
+      loop
+        l_location_ref := new location_ref_t (
+           rec.office_id,
+           rec.base_location_id,
+           rec.sub_location_id
+        );
+        l_location_obj := new location_obj_t (
+           l_location_ref,
+           rec.state_initial,
+           rec.county_name,
+           rec.time_zone_name,
+           rec.location_type,
+           rec.latitude,
+           rec.longitude,
+           rec.horizontal_datum,
+           rec.elevation * elev_factor(rec.office_code),
+           elev_unit(rec.office_code),
+           rec.vertical_datum,
+           rec.public_name,
+           rec.long_name,
+           rec.description,
+           rec.active_flag,
+           rec.location_kind_id,
+           rec.map_label,
+           rec.published_latitude,
+           rec.published_longitude,
+           rec.bounding_office_id,
+           rec.bounding_office_name,
+           rec.nation_id,
+           rec.nearest_city);
+      end loop;
+   END get_location_object;
 END cwms_loc;
 /
+show errors
