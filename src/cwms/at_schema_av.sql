@@ -1363,141 +1363,101 @@ AS
 	      llic1 as (
 	      select level_indicator_code,
 	             description as name,
-	             expression
-	             ||' '||comparison_operator_1
-	             ||' '||round(cast(comparison_value_1 as number), 10)
-	             ||substr(' ', 1, length(connector))
-	             ||connector
-	             ||substr(' ', 1, length(comparison_operator_2))
-	             ||comparison_operator_2
-	             ||substr(' ', 1, length(comparison_value_2))
-	             ||round(cast(comparison_value_2 as number), 10) as expression,
+	             expression,
+	             comparison_operator_1 as op_1,
+	             round(cast(comparison_value_1 as number), 10) as val_1,
+	             connector,
+	             comparison_operator_2 as op_2,
+	             round(cast(comparison_value_2 as number), 10) as val_2,
 	             comparison_unit,
-	             rate_expression
-	             ||substr(' ', 1, length(rate_comparison_operator_1))
-	             ||rate_comparison_operator_1
-	             ||substr(' ', 1, length(rate_comparison_value_1))
-	             ||round(cast(rate_comparison_value_1 as number), 10)
-	             ||substr(' ', 1, length(rate_connector))
-	             ||rate_connector
-	             ||substr(' ', 1, length(rate_comparison_operator_2))
-	             ||rate_comparison_operator_2
-	             ||substr(' ', 1, length(rate_comparison_value_2))
-	             ||round(cast(rate_comparison_value_2 as number), 10) as rate_expression,
+	             rate_expression,
+	             rate_comparison_operator_1 as rate_op_1,
+	             round(cast(rate_comparison_value_1 as number), 10) as rate_val_1,
+	             rate_connector,
+	             rate_comparison_operator_2 as rate_op_2,
+	             round(cast(rate_comparison_value_2 as number), 10) as rate_val_2,
 	             rate_comparison_unit,
 	             rate_interval
 	        from at_loc_lvl_indicator_cond
 		   where level_indicator_value = 1),
 	      llic2 as (
 	      select level_indicator_code,
-	             description as name,
-	             expression
-	             ||' '||comparison_operator_1
-	             ||' '||round(cast(comparison_value_1 as number), 10)
-	             ||substr(' ', 1, length(connector))
-	             ||connector
-	             ||substr(' ', 1, length(comparison_operator_2))
-	             ||comparison_operator_2
-	             ||substr(' ', 1, length(comparison_value_2))
-	             ||round(cast(comparison_value_2 as number), 10) as expression,
-	             comparison_unit,
-	             rate_expression
-	             ||substr(' ', 1, length(rate_comparison_operator_1))
-	             ||rate_comparison_operator_1
-	             ||substr(' ', 1, length(rate_comparison_value_1))
-	             ||round(cast(rate_comparison_value_1 as number), 10)
-	             ||substr(' ', 1, length(rate_connector))
-	             ||rate_connector
-	             ||substr(' ', 1, length(rate_comparison_operator_2))
-	             ||rate_comparison_operator_2
-	             ||substr(' ', 1, length(rate_comparison_value_2))
-	             ||round(cast(rate_comparison_value_2 as number), 10) as rate_expression,
-	             rate_comparison_unit,
-	             rate_interval
+                description as name,
+                expression,
+                comparison_operator_1 as op_1,
+                round(cast(comparison_value_1 as number), 10) as val_1,
+                connector,
+                comparison_operator_2 as op_2,
+                round(cast(comparison_value_2 as number), 10) as val_2,
+                comparison_unit,
+                rate_expression,
+                rate_comparison_operator_1 as rate_op_1,
+                round(cast(rate_comparison_value_1 as number), 10) as rate_val_1,
+                rate_connector,
+                rate_comparison_operator_2 as rate_op_2,
+                round(cast(rate_comparison_value_2 as number), 10) as rate_val_2,
+                rate_comparison_unit,
+                rate_interval
 	        from at_loc_lvl_indicator_cond
 		   where level_indicator_value = 2),
 	      llic3 as (
 	      select level_indicator_code,
-	             description as name,
-	             expression
-	             ||' '||comparison_operator_1
-	             ||' '||round(cast(comparison_value_1 as number), 10)
-	             ||substr(' ', 1, length(connector))
-	             ||connector
-	             ||substr(' ', 1, length(comparison_operator_2))
-	             ||comparison_operator_2
-	             ||substr(' ', 1, length(comparison_value_2))
-	             ||round(cast(comparison_value_2 as number), 10) as expression,
-	             comparison_unit,
-	             rate_expression
-	             ||substr(' ', 1, length(rate_comparison_operator_1))
-	             ||rate_comparison_operator_1
-	             ||substr(' ', 1, length(rate_comparison_value_1))
-	             ||round(cast(rate_comparison_value_1 as number), 10)
-	             ||substr(' ', 1, length(rate_connector))
-	             ||rate_connector
-	             ||substr(' ', 1, length(rate_comparison_operator_2))
-	             ||rate_comparison_operator_2
-	             ||substr(' ', 1, length(rate_comparison_value_2))
-	             ||round(cast(rate_comparison_value_2 as number), 10) as rate_expression,
-	             rate_comparison_unit,
-	             rate_interval
+                description as name,
+                expression,
+                comparison_operator_1 as op_1,
+                round(cast(comparison_value_1 as number), 10) as val_1,
+                connector,
+                comparison_operator_2 as op_2,
+                round(cast(comparison_value_2 as number), 10) as val_2,
+                comparison_unit,
+                rate_expression,
+                rate_comparison_operator_1 as rate_op_1,
+                round(cast(rate_comparison_value_1 as number), 10) as rate_val_1,
+                rate_connector,
+                rate_comparison_operator_2 as rate_op_2,
+                round(cast(rate_comparison_value_2 as number), 10) as rate_val_2,
+                rate_comparison_unit,
+                rate_interval
 	        from at_loc_lvl_indicator_cond
 		   where level_indicator_value = 3),
 	      llic4 as (
 	      select level_indicator_code,
-	             description as name,
-	             expression
-	             ||' '||comparison_operator_1
-	             ||' '||round(cast(comparison_value_1 as number), 10)
-	             ||substr(' ', 1, length(connector))
-	             ||connector
-	             ||substr(' ', 1, length(comparison_operator_2))
-	             ||comparison_operator_2
-	             ||substr(' ', 1, length(comparison_value_2))
-	             ||round(cast(comparison_value_2 as number), 10) as expression,
-	             comparison_unit,
-	             rate_expression
-	             ||substr(' ', 1, length(rate_comparison_operator_1))
-	             ||rate_comparison_operator_1
-	             ||substr(' ', 1, length(rate_comparison_value_1))
-	             ||round(cast(rate_comparison_value_1 as number), 10)
-	             ||substr(' ', 1, length(rate_connector))
-	             ||rate_connector
-	             ||substr(' ', 1, length(rate_comparison_operator_2))
-	             ||rate_comparison_operator_2
-	             ||substr(' ', 1, length(rate_comparison_value_2))
-	             ||round(cast(rate_comparison_value_2 as number), 10) as rate_expression,
-	             rate_comparison_unit,
-	             rate_interval
+                description as name,
+                expression,
+                comparison_operator_1 as op_1,
+                round(cast(comparison_value_1 as number), 10) as val_1,
+                connector,
+                comparison_operator_2 as op_2,
+                round(cast(comparison_value_2 as number), 10) as val_2,
+                comparison_unit,
+                rate_expression,
+                rate_comparison_operator_1 as rate_op_1,
+                round(cast(rate_comparison_value_1 as number), 10) as rate_val_1,
+                rate_connector,
+                rate_comparison_operator_2 as rate_op_2,
+                round(cast(rate_comparison_value_2 as number), 10) as rate_val_2,
+                rate_comparison_unit,
+                rate_interval
 	        from at_loc_lvl_indicator_cond
 		   where level_indicator_value = 4),
 	      llic5 as (
 	      select level_indicator_code,
-	             description as name,
-	             expression
-	             ||' '||comparison_operator_1
-	             ||' '||round(cast(comparison_value_1 as number), 10)
-	             ||substr(' ', 1, length(connector))
-	             ||connector
-	             ||substr(' ', 1, length(comparison_operator_2))
-	             ||comparison_operator_2
-	             ||substr(' ', 1, length(comparison_value_2))
-	             ||round(cast(comparison_value_2 as number), 10) as expression,
-	             comparison_unit,
-	             rate_expression
-	             ||substr(' ', 1, length(rate_comparison_operator_1))
-	             ||rate_comparison_operator_1
-	             ||substr(' ', 1, length(rate_comparison_value_1))
-	             ||round(cast(rate_comparison_value_1 as number), 10)
-	             ||substr(' ', 1, length(rate_connector))
-	             ||rate_connector
-	             ||substr(' ', 1, length(rate_comparison_operator_2))
-	             ||rate_comparison_operator_2
-	             ||substr(' ', 1, length(rate_comparison_value_2))
-	             ||round(cast(rate_comparison_value_2 as number), 10) as rate_expression,
-	             rate_comparison_unit,
-	             rate_interval
+                description as name,
+                expression,
+                comparison_operator_1 as op_1,
+                round(cast(comparison_value_1 as number), 10) as val_1,
+                connector,
+                comparison_operator_2 as op_2,
+                round(cast(comparison_value_2 as number), 10) as val_2,
+                comparison_unit,
+                rate_expression,
+                rate_comparison_operator_1 as rate_op_1,
+                round(cast(rate_comparison_value_1 as number), 10) as rate_val_1,
+                rate_connector,
+                rate_comparison_operator_2 as rate_op_2,
+                round(cast(rate_comparison_value_2 as number), 10) as rate_val_2,
+                rate_comparison_unit,
+                rate_interval
 	        from at_loc_lvl_indicator_cond
 		   where level_indicator_value = 5),
 	      unit as (
@@ -1589,51 +1549,78 @@ AS
 	          to_unit_id as attribute_units,
 	          substr(minimum_duration, 2) as minimum_duration,
 	          substr(maximum_age, 2) as maximum_age,
+             unit_id,
+             rate_unit_id,
 	          llic1.name as cond_1_name,
-	          llic1.expression
-	          ||substr(' ', 1, length(unit_id))
-	          ||unit_id as cond_1_expression,
-	          llic1.rate_expression
-	          ||substr(' ', 1, length(rate_unit_id))
-	          ||rate_unit_id
-	          ||substr(' per ', 1, length(llic1.rate_interval))
-	          ||substr(llic1.rate_interval, 2) as cond_1_rate_expression,
-	          llic2.name as cond_2_name,
-	          llic2.expression
-	          ||substr(' ', 1, length(unit_id))
-	          ||unit_id as cond_2_expression,
-	          llic2.rate_expression
-	          ||substr(' ', 1, length(rate_unit_id))
-	          ||rate_unit_id
-	          ||substr(' per ', 1, length(llic2.rate_interval))
-	          ||substr(llic2.rate_interval, 2) as cond_2_rate_expression,
-	          llic3.name as cond_3_name,
-	          llic3.expression
-	          ||substr(' ', 1, length(unit_id))
-	          ||unit_id as cond_3_expression,
-	          llic3.rate_expression
-	          ||substr(' ', 1, length(rate_unit_id))
-	          ||rate_unit_id
-	          ||substr(' per ', 1, length(llic3.rate_interval))
-	          ||substr(llic3.rate_interval, 2) as cond_3_rate_expression,
-	          llic4.name as cond_4_name,
-	          llic4.expression
-	          ||substr(' ', 1, length(unit_id))
-	          ||unit_id as cond_4_expression,
-	          llic4.rate_expression
-	          ||substr(' ', 1, length(rate_unit_id))
-	          ||rate_unit_id
-	          ||substr(' per ', 1, length(llic4.rate_interval))
-	          ||substr(llic4.rate_interval, 2) as cond_4_rate_expression,
-	          llic5.name as cond_5_name,
-	          llic5.expression
-	          ||substr(' ', 1, length(unit_id))
-	          ||unit_id as cond_5_expression,
-	          llic5.rate_expression
-	          ||substr(' ', 1, length(rate_unit_id))
-	          ||rate_unit_id
-	          ||substr(' per ', 1, length(llic5.rate_interval))
-	          ||substr(llic5.rate_interval, 2) as cond_5_rate_expression
+	          llic1.expression as cond_1_expr,
+             llic1.op_1 as cond_1_op_1,
+             llic1.val_1 as cond_1_val_1,
+             llic1.connector as cond_1_connector,
+             llic1.op_2 as cond_1_op_2,
+             llic1.val_2 as cond_1_val_2,
+             llic1.rate_expression as cond_1_rate_expr,
+             llic1.rate_op_1 as cond_1_rate_op_1,
+             llic1.rate_val_1 as cond_1_rate_val_1,
+             llic1.rate_connector as cond_1_rate_connector,
+             llic1.rate_op_2 as cond_1_rate_op_2,
+             llic1.rate_val_2 as cond_1_rate_val_2,
+             llic1.rate_interval as cond_1_rate_interval,
+             llic2.name as cond_2_name,
+             llic2.expression as cond_2_expr,
+             llic2.op_1 as cond_2_op_1,
+             llic2.val_1 as cond_2_val_1,
+             llic2.connector as cond_2_connector,
+             llic2.op_2 as cond_2_op_2,
+             llic2.val_2 as cond_2_val_2,
+             llic2.rate_expression as cond_2_rate_expr,
+             llic2.rate_op_1 as cond_2_rate_op_1,
+             llic2.rate_val_1 as cond_2_rate_val_1,
+             llic2.rate_connector as cond_2_rate_connector,
+             llic2.rate_op_2 as cond_2_rate_op_2,
+             llic2.rate_val_2 as cond_2_rate_val_2,
+             llic2.rate_interval as cond_2_rate_interval,
+             llic3.name as cond_3_name,
+             llic3.expression as cond_3_expr,
+             llic3.op_1 as cond_3_op_1,
+             llic3.val_1 as cond_3_val_1,
+             llic3.connector as cond_3_connector,
+             llic3.op_2 as cond_3_op_2,
+             llic3.val_2 as cond_3_val_2,
+             llic3.rate_expression as cond_3_rate_expr,
+             llic3.rate_op_1 as cond_3_rate_op_1,
+             llic3.rate_val_1 as cond_3_rate_val_1,
+             llic3.rate_connector as cond_3_rate_connector,
+             llic3.rate_op_2 as cond_3_rate_op_2,
+             llic3.rate_val_2 as cond_3_rate_val_2,
+             llic3.rate_interval as cond_3_rate_interval,
+             llic4.name as cond_4_name,
+             llic4.expression as cond_4_expr,
+             llic4.op_1 as cond_4_op_1,
+             llic4.val_1 as cond_4_val_1,
+             llic4.connector as cond_4_connector,
+             llic4.op_2 as cond_4_op_2,
+             llic4.val_2 as cond_4_val_2,
+             llic4.rate_expression as cond_4_rate_expr,
+             llic4.rate_op_1 as cond_4_rate_op_1,
+             llic4.rate_val_1 as cond_4_rate_val_1,
+             llic4.rate_connector as cond_4_rate_connector,
+             llic4.rate_op_2 as cond_4_rate_op_2,
+             llic4.rate_val_2 as cond_4_rate_val_2,
+             llic4.rate_interval as cond_4_rate_interval,
+             llic5.name as cond_5_name,
+             llic5.expression as cond_5_expr,
+             llic5.op_1 as cond_5_op_1,
+             llic5.val_1 as cond_5_val_1,
+             llic5.connector as cond_5_connector,
+             llic5.op_2 as cond_5_op_2,
+             llic5.val_2 as cond_5_val_2,
+             llic5.rate_expression as cond_5_rate_expr,
+             llic5.rate_op_1 as cond_5_rate_op_1,
+             llic5.rate_val_1 as cond_5_rate_val_1,
+             llic5.rate_connector as cond_5_rate_connector,
+             llic5.rate_op_2 as cond_5_rate_op_2,
+             llic5.rate_val_2 as cond_5_rate_val_2,
+             llic5.rate_interval as cond_5_rate_interval
 	     from llic1
 	          join llic2 on llic2.level_indicator_code = llic1.level_indicator_code
 	          join llic3 on llic3.level_indicator_code = llic1.level_indicator_code
