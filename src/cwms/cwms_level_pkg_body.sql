@@ -5308,12 +5308,14 @@ begin
                  at_specified_level sl,
                  cwms_unit_conversion cuc
            where upper(o.office_id) like upper(l_office_id_mask) escape '\'
-             and upper(bl.base_location_id) like upper(cwms_util.get_base_id(l_location_id_mask)) escape '\'
-             and upper(nvl(pl.sub_location_id, '.')) like upper(nvl(cwms_util.get_sub_id(l_location_id_mask), '.')) escape '\'
-             and upper(bp.base_parameter_id) like upper(cwms_util.get_base_id(l_parameter_id_mask)) escape '\'
-             and upper(nvl(p.sub_parameter_id, '.')) like upper(nvl(cwms_util.get_sub_id(l_parameter_id_mask), '.')) escape '\'
+             and upper(bl.base_location_id
+                       || substr('-', 1, length(pl.sub_location_id))
+                       || pl.sub_location_id) like upper(l_location_id_mask) escape '\'
+             and upper(bp.base_parameter_id
+                       || substr('-', 1, length(p.sub_parameter_id))
+                       ||p.sub_parameter_id) like upper(l_parameter_id_mask) escape '\'
              and upper(pt.parameter_type_id) like upper(l_parameter_type_id_mask) escape '\'
-             and upper(d.duration_id) like upper(l_parameter_type_id_mask) escape '\'
+             and upper(d.duration_id) like upper(l_duration_id_mask) escape '\'
              and upper(sl.specified_level_id) like upper(l_specified_level_id_mask) escape '\'
              and bl.db_office_code = o.office_code
              and pl.base_location_code = bl.base_location_code
@@ -5350,11 +5352,13 @@ begin
          (select parameter_type_code,
                  parameter_type_id as attr_parameter_type_id
             from cwms_parameter_type
+           where upper(parameter_type_id) like upper(l_attr_parameter_type_id_mask) escape '\'
          ),
          attr_duration as
          (select duration_code,
                  duration_id as attr_duration_id
             from cwms_duration
+           where upper(duration_id) like upper(l_attr_duration_id_mask) escape '\'
          ),
          ref as    
          (select specified_level_code,
@@ -5373,63 +5377,63 @@ begin
              attr_parameter_type_id,
              attr_duration_id,
              cwms_util.get_default_units(attr_parameter_id, p_unit_system) as attr_units_id,
-             round(attr_value * attr_param.factor + attr_param.offset, 10 - trunc(log(10, attr_value * attr_param.factor + attr_param.offset)))
+             round(attr_value * attr_param.factor + attr_param.offset, 10 - trunc(log(10, attr_value * attr_param.factor + attr_param.offset))) as attr_value,
              minimum_duration,
              maximum_age,
              ref_specified_level_id,
-             round(ref_attr_value * attr_param.factor + attr_param.offset, 10 - trunc(log(10, ref_attr_value * attr_param.factor + attr_param.offset))),
+             round(ref_attr_value * attr_param.factor + attr_param.offset, 10 - trunc(log(10, ref_attr_value * attr_param.factor + attr_param.offset))) as ref_attr_value,
                  cursor (
                     select level_indicator_value,
-                            expression,
-                            comparison_operator_1,
-                            comparison_value_1,
-                            comparison_unit_id,
-                            connector,
-                            comparison_operator_2,
-                            comparison_value_2,
-                            rate_expression,
-                            rate_comparison_operator_1,
-                            rate_comparison_value_1,
-                            rate_comparison_unit_id,
-                            rate_connector,
-                            rate_comparison_operator_2,
-                            rate_comparison_value_2,
-                            rate_interval,
-                            description
-                       from ((select level_indicator_value,
-                                      expression,
-                                      comparison_operator_1,
-                                      comparison_value_1,
-                                      comparison_unit,
-                                      connector,
-                                      comparison_operator_2,
-                                      comparison_value_2,
-                                      rate_expression,
-                                      rate_comparison_operator_1,
-                                      rate_comparison_value_1,
-                                      rate_comparison_unit,
-                                      rate_connector,
-                                      rate_comparison_operator_2,
-                                      rate_comparison_value_2,
-                                      rate_interval,
-                                      description
-                                 from at_loc_lvl_indicator_cond
-                             ) cond
-                             left outer join
-                             (select unit_code,
-                                     unit_id as comparison_unit_id
-                                from cwms_unit
-                             ) unit
-                             on unit.unit_code = cond.comparison_unit
-                            )
-                            left outer join
-                            (select unit_code,
-                                    unit_id as rate_comparison_unit_id
-                               from cwms_unit
-                            ) rate_unit
-                            on rate_unit.unit_code = cond.rate_comparison_unit
-                      where level_indicator_code = indicator.level_indicator_code
-                   order by level_indicator_value
+                           expression,
+                           comparison_operator_1,
+                           comparison_value_1,
+                           comparison_unit_id,
+                           connector,
+                           comparison_operator_2,
+                           comparison_value_2,
+                           rate_expression,
+                           rate_comparison_operator_1,
+                           rate_comparison_value_1,
+                           rate_comparison_unit_id,
+                           rate_connector,
+                           rate_comparison_operator_2,
+                           rate_comparison_value_2,
+                           rate_interval,
+                           description
+                      from (select level_indicator_code,
+                                   level_indicator_value,
+                                   expression,
+                                   comparison_operator_1,
+                                   comparison_value_1,
+                                   comparison_unit,
+                                   connector,
+                                   comparison_operator_2,
+                                   comparison_value_2,
+                                   rate_expression,
+                                   rate_comparison_operator_1,
+                                   rate_comparison_value_1,
+                                   rate_comparison_unit,
+                                   rate_connector,
+                                   rate_comparison_operator_2,
+                                   rate_comparison_value_2,
+                                   rate_interval,
+                                   description
+                              from at_loc_lvl_indicator_cond
+                           ) cond
+                           left outer join
+                           (select unit_code,
+                                   unit_id as comparison_unit_id
+                              from cwms_unit
+                           ) unit
+                           on unit.unit_code = cond.comparison_unit
+                           left outer join
+                           (select unit_code,
+                                   unit_id as rate_comparison_unit_id
+                              from cwms_unit
+                           ) rate_unit
+                           on rate_unit.unit_code = cond.rate_comparison_unit
+                     where level_indicator_code = indicator.level_indicator_code
+                  order by level_indicator_value
                  ) as conditions
         from ((((indicator left outer join attr_param
                  on attr_param.parameter_code = indicator.attr_parameter_code
@@ -5523,14 +5527,14 @@ procedure cat_loc_lvl_indicator2(
    p_unit_system            in  varchar2 default 'SI')
 is
    l_cursor                      sys_refcursor;
-   l_parts                       str_tab_tab_t;
+   l_parts                       str_tab_tab_t := str_tab_tab_t();
    l_seq                         integer;
    l_office_id                   varchar2(16);
    l_location_id                 varchar2(49);
    l_parameter_id                varchar2(49);
    l_parameter_type_id           varchar2(16);
    l_duration_id                 varchar2(16);
-   l_specified_level_id          varchar2(265);
+   l_specified_level_id          varchar2(256);
    l_level_indicator_id          varchar2(32);
    l_level_units_id              varchar2(16);
    l_attr_parameter_id           varchar2(49);
@@ -5565,6 +5569,7 @@ is
    l_rs                          varchar2(1) := chr(30);
    l_gs                          varchar2(1) := chr(29);
 begin
+   delete from at_loc_lvl_indicator_tab;
    cat_loc_lvl_indicator(
       l_cursor,
       p_location_level_id_mask,
@@ -5588,7 +5593,6 @@ begin
             l_attr_value,
             l_minimum_duration,
             l_maximum_age,
-            l_rate_of_change,
             l_ref_specified_level_id,
             l_ref_attribute_value,
             l_conditions;
@@ -5615,6 +5619,7 @@ begin
                     l_description;
          exit when l_conditions%notfound;
          l_parts.extend;
+         l_parts(l_conditions%rowcount) := str_tab_t();
          l_parts(l_conditions%rowcount).extend(17);
          l_parts(l_conditions%rowcount)( 1) := to_char(l_indicator_value);               
          l_parts(l_conditions%rowcount)( 2) := l_expression;               
@@ -5664,8 +5669,8 @@ begin
               l_attr_duration_id,
               l_attr_units_id,
               l_attr_value,
-              substr(to_char(l_minimum_duration), 2),            
-              substr(to_char(l_maximum_age), 2),
+              to_char(l_minimum_duration),            
+              to_char(l_maximum_age),
               l_rate_of_change,
               l_ref_specified_level_id,
               l_ref_attribute_value,
