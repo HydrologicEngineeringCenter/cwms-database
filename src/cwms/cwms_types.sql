@@ -668,6 +668,9 @@ create type location_ref_t is object(
    member function get_office_code
    return number,
    
+   member function get_office_id
+   return varchar2,
+   
    member procedure get_codes(
       p_location_code out number,
       p_office_code   out number)
@@ -737,7 +740,7 @@ as
         from at_physical_location pl,
              at_base_location bl,
              cwms_office o
-       where o.office_id = self.office_id
+       where o.office_id = self.get_office_id
          and bl.db_office_code = o.office_code
          and bl.base_location_id = self.base_location_id
          and pl.base_location_code = bl.base_location_code
@@ -764,9 +767,16 @@ as
       select office_code
         into l_office_code
         from cwms_office
-       where office_id = self.office_id;
+       where office_id = self.get_office_id;
       return l_office_code;
    end get_office_code;
+   
+   member function get_office_id
+   return varchar2
+   is
+   begin
+      return nvl(office_id, cwms_util.user_office_id);
+   end;
    
    member procedure get_codes(
       p_location_code out number,
@@ -780,7 +790,7 @@ as
         from at_physical_location pl,
              at_base_location bl,
              cwms_office o
-       where o.office_id = self.office_id
+       where o.office_id = self.get_office_id
          and bl.db_office_code = o.office_code
          and bl.base_location_id = self.base_location_id
          and pl.base_location_code = bl.base_location_code
