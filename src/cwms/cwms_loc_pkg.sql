@@ -581,9 +581,20 @@ AS
    )
       RETURN NUMBER;
       
-   FUNCTION get_location_object(
+   FUNCTION retrieve_location (
       p_location_code IN NUMBER
    )
       RETURN location_obj_t;
+      
+   FUNCTION retrieve_location (
+      p_location_id  in VARCHAR2,
+      p_db_office_id in VARCHAR2 DEFAULT NULL
+   )
+      RETURN location_obj_t;
+      
+   PROCEDURE store_location (
+      p_location       IN location_obj_t,
+      p_fail_if_exists IN VARCHAR2 default 'T'
+   );
 END cwms_loc;
 /
