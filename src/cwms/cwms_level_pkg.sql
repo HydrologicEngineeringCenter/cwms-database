@@ -361,7 +361,7 @@ function retrieve_location_level(
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
    return location_level_t;
-   
+      
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
 --
@@ -909,6 +909,63 @@ procedure delete_location_level(
    p_cascade                 in  varchar2 default ('F'),
    p_office_id               in  varchar2 default null);
 
+--------------------------------------------------------------------------------
+-- PROCEDURE catalog_location_levels
+--
+-- in this procedure SQL- (%, _) or glob-style (*, ?) wildcards can be used
+-- in masks, and all masks are case insensitive
+--
+-- muilt-part masks need not specify all the parts if a partial mask will match
+-- all desired results 
+--
+-- p_cursor
+--   the cursor that is opened by this procedure. it must be manually closed
+--   after use.
+--
+-- p_location_level_id_mask
+--   a wildcard mask of the five-part location level identifier.  defaults
+--   to matching every location level identifier
+--
+-- p_attribute_id_mask
+--   a wildcard mask of the three-part attribute identifier.  null attribute
+--   identifiers are matched by '*' (or '%'), to match ONLY null attributes, 
+--   specify null for this parameter.  defaults to matching all attribute
+--   identifiers
+--
+-- p_office_id_mask
+--   a wildcard mask of the office identifier that owns the location levels.
+--   specify '*' (or '%') for this parameter to match every office identifier.
+--   defaults to matching only the calling user's office identifier
+--
+-- p_timezone_id
+--   the time zone in which location level dates are to be represented in the
+--   cursor opened by this procedure.  defaults to 'UTC'
+--
+-- p_unit_system
+--   the unit system in which the attribute values are to be represented in the
+--   cursor opened by this procedure.  The actual units will be determined by
+--   the entry in the AT_DISPLAY_UNITS table for the office that owns the 
+--   location level and the attribute parameter. defaults to 'SI'
+--
+-- The cursor opened by this routine contains six fields:
+--    1 : office_id           varchar2(16)
+--    2 : location_level_id   varchar2(390)
+--    3 : attribute_id        varchar2(83)
+--    4 : attribute_value     binary_double
+--    5 : attribute_unit      varchar2(16)
+--    6 : location_level_date date
+--
+-- Calling this routine with no parameters returns all specified
+-- levels for the calling user's office.
+--------------------------------------------------------------------------------
+procedure catalog_location_levels(
+   p_cursor                 out sys_refcursor,
+   p_location_level_id_mask in  varchar2 default '*',
+   p_attribute_id_mask      in  varchar2 default '*',
+   p_office_id_mask         in  varchar2 default null,
+   p_timezone_id            in  varchar2 default 'UTC',
+   p_unit_system            in  varchar2 default 'SI');
+   
 --------------------------------------------------------------------------------
 -- FUNCTION get_loc_lvl_indciator_code
 --------------------------------------------------------------------------------
