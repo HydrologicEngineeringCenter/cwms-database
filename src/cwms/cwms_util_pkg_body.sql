@@ -103,8 +103,20 @@ AS
 		RETURN DATE
 	IS
 	BEGIN
-		RETURN FROM_TZ (CAST (p_in_date AS timestamp), p_in_tz) AT TIME ZONE 'GMT';
+		RETURN change_timezone(p_in_date, p_in_tz);
 	END;
+
+   --
+   -- return the input date in a different time zone
+   FUNCTION change_timezone (
+      p_in_date IN DATE, 
+      p_from_tz IN VARCHAR2, 
+      p_to_tz   IN VARCHAR2 default 'UTC')
+      RETURN DATE
+   IS
+   BEGIN
+      return cast(from_tz (cast (p_in_date as timestamp), p_from_tz) at time zone p_to_tz as date);
+   END;      
 
 	FUNCTION get_base_id (p_full_id IN VARCHAR2)
 		RETURN VARCHAR2

@@ -169,6 +169,14 @@ AS
 	FUNCTION date_from_tz_to_utc (p_in_date IN DATE, p_in_tz IN VARCHAR2)
 		RETURN DATE;
 
+   --
+   -- return the input date in a different time zone
+   FUNCTION change_timezone (
+      p_in_date IN DATE, 
+      p_from_tz IN VARCHAR2, 
+      p_to_tz   IN VARCHAR2 default 'UTC')
+      RETURN DATE;
+
 	--
 	-- Retruns TRUE if p_true_false is T or True.
 	FUNCTION is_true (p_true_false IN VARCHAR2)
