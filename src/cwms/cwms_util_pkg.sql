@@ -417,6 +417,12 @@ AS
 	FUNCTION get_interval_string (p_interval IN NUMBER)
 		RETURN VARCHAR2;
 
+   function get_user_display_unit(
+      p_parameter_id in varchar2,
+      p_user_id      in varchar2 default null,
+      p_office_id    in varchar2 default null)
+   return varchar2;
+   
 	FUNCTION get_default_units (p_parameter_id	IN VARCHAR2,
 										 p_unit_system 	IN VARCHAR2 DEFAULT 'SI'
 										)

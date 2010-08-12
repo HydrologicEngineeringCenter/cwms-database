@@ -2282,6 +2282,26 @@ AS
 		RETURN '13mi';
 	END;
 
+   function get_user_display_unit(
+      p_parameter_id in varchar2,
+      p_user_id      in varchar2 default null,
+      p_office_id    in varchar2 default null)
+   return varchar2
+   is
+      l_unit_id   varchar2(16);
+      l_value_out number;
+   begin
+      user_display_unit(
+         l_unit_id,
+         l_value_out,
+         p_parameter_id,
+         1.0,
+         p_user_id,
+         p_office_id);
+         
+      return l_unit_id;         
+   end get_user_display_unit;      
+      
 	----------------------------------------------------------------------------
 	FUNCTION get_default_units (p_parameter_id	IN VARCHAR2,
 										 p_unit_system 	IN VARCHAR2 DEFAULT 'SI'
