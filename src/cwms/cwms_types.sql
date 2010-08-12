@@ -1825,7 +1825,7 @@ as
         from at_physical_location pl,
              at_base_location bl,
              cwms_office o
-       where upper(o.office_id) = upper(office_id)
+       where upper(o.office_id) = upper(self.office_id)
          and bl.db_office_code = o.office_code
          and upper(bl.base_location_id) = upper(l_parts(1))
          and pl.base_location_code = bl.base_location_code
