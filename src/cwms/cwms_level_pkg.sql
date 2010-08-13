@@ -141,7 +141,7 @@ function get_specified_level_code(
    p_level_id          in  varchar2,
    p_fail_if_not_found in  varchar2 default 'T',
    p_office_id         in  varchar2 default null)
-   return number result_cache;
+   return number;
    
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_specified_level
@@ -450,7 +450,7 @@ function retrieve_loc_lvl_values2(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
-   return varchar2 result_cache;
+   return varchar2;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_values
@@ -532,7 +532,7 @@ function retrieve_location_level_value(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
-   return number result_cache;
+   return number;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_value
@@ -572,7 +572,7 @@ function retrieve_location_level_value(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
-   return number result_cache;
+   return number;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level_attrs
@@ -648,7 +648,7 @@ function retrieve_location_level_attrs2(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  varchar2 default null,
    p_office_id               in  varchar2 default null)
-   return varchar2 result_cache;
+   return varchar2;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE lookup_level_by_attribute
@@ -768,7 +768,7 @@ function lookup_level_by_attribute(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
-   return number result_cache;
+   return number;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE lookup_attribute_by_level
@@ -892,7 +892,7 @@ function lookup_attribute_by_level(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
-   return number result_cache;
+   return number;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE delete_location_level
