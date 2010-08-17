@@ -64,6 +64,12 @@ AS
    )
       RETURN NUMBER;
 
+   function get_display_parameter_code2(
+      p_base_parameter_id in varchar2,
+      p_sub_parameter_id  in varchar2,
+      p_office_id         in varchar2 default null
+   )  return number;
+   
    FUNCTION get_parameter_code (p_base_parameter_code IN number,
                                 p_sub_parameter_id IN varchar2,
                                 p_office_code IN number,

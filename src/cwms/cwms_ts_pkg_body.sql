@@ -439,7 +439,8 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
    BEGIN
       l_parameter_code := get_parameter_code(p_base_parameter_id,
                                              p_sub_parameter_id,
-                                             p_office_id);
+                                             p_office_id,
+                                             'F');
       select count(*)
         into l_count
         from at_display_units
@@ -461,6 +462,27 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
       
       return l_display_parameter_code;                                                    
    END;
+
+   function get_display_parameter_code2(
+      p_base_parameter_id in varchar2,
+      p_sub_parameter_id  in varchar2,
+      p_office_id         in varchar2 default null
+   )  return number
+   is
+      invalid_param_id exception; pragma exception_init (invalid_param_id, -20006);
+      l_display_parameter_code number;
+   begin
+      begin
+         l_display_parameter_code := get_display_parameter_code(
+            p_base_parameter_id,
+            p_sub_parameter_id,
+            p_office_id);
+      exception
+         when invalid_param_id then null;
+      end;         
+      return l_display_parameter_code;
+   end get_display_parameter_code2;
+   
 --
 --*******************************************************************   --
 --*******************************************************************   --
@@ -477,6 +499,8 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
    IS
       l_parameter_code      NUMBER;
       l_base_parameter_id   cwms_base_parameter.base_parameter_id%TYPE;
+      l_office_code         NUMBER := nvl(p_office_code, cwms_util.user_office_code);
+      l_office_id           VARCHAR2(16);
    BEGIN
       BEGIN
          IF p_sub_parameter_id IS NOT NULL
@@ -511,15 +535,22 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
                  RETURNING parameter_code
                       INTO l_parameter_code;
             ELSE
+               SELECT office_id
+                 INTO l_office_id
+                 FROM cwms_office
+                WHERE office_code = l_office_code;
+                
                SELECT base_parameter_id
                  INTO l_base_parameter_id
                  FROM cwms_base_parameter
                 WHERE base_parameter_code = p_base_parameter_code;
-   
+
                cwms_err.RAISE ('INVALID_PARAM_ID',
-                               cwms_util.concat_base_sub_id (l_base_parameter_id,
-                                                             p_sub_parameter_id
-                                                            )
+                               l_office_id
+                               || '/'
+                               || cwms_util.concat_base_sub_id (
+                                    l_base_parameter_id,
+                                    p_sub_parameter_id)
                               );
             END IF;
       END;
