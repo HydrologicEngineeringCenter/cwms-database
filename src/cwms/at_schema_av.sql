@@ -988,7 +988,8 @@ AS
                and c_pt1.parameter_type_code     = a_ll.parameter_type_code
                and c_d1.duration_code            = a_ll.duration_code
                and a_sl.specified_level_code     = a_ll.specified_level_code
-               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and a_du1.parameter_code          is not null
                and c_uc1.from_unit_code          = c_bp1.unit_code
                and c_uc1.to_unit_code            = a_du1.display_unit_code
                and a_ll.attribute_parameter_code is null
@@ -1042,7 +1043,8 @@ AS
                and c_pt1.parameter_type_code     = a_ll.parameter_type_code
                and c_d1.duration_code            = a_ll.duration_code
                and a_sl.specified_level_code     = a_ll.specified_level_code
-               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and a_du1.parameter_code          is not null
                and c_uc1.from_unit_code          = c_bp1.unit_code
                and c_uc1.to_unit_code            = a_du1.display_unit_code
                and a_ll.attribute_parameter_code is null
@@ -1104,7 +1106,8 @@ AS
                and c_pt1.parameter_type_code     = a_ll.parameter_type_code
                and c_d1.duration_code            = a_ll.duration_code
                and a_sl.specified_level_code     = a_ll.specified_level_code
-               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and a_du1.parameter_code          is not null
                and c_uc1.from_unit_code          = c_bp1.unit_code
                and c_uc1.to_unit_code            = a_du1.display_unit_code
                and a_ll.attribute_parameter_code is not null
@@ -1113,7 +1116,8 @@ AS
                and c_pt2.parameter_type_code     = a_ll.attribute_parameter_type_code
                and c_d2.duration_code            = a_ll.attribute_duration_code
                and a_du2.unit_system             = a_du1.unit_system
-               and a_du2.parameter_code          = cwms_ts.get_display_parameter_code(c_bp2.base_parameter_id, a_p2.sub_parameter_id, c_o.office_id)
+               and a_du2.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp2.base_parameter_id, a_p2.sub_parameter_id, c_o.office_id)
+               and a_du2.parameter_code          is not null
                and c_uc2.from_unit_code          = c_bp2.unit_code
                and c_uc2.to_unit_code            = a_du2.display_unit_code
                and a_ll.location_level_value     is not null) 
@@ -1174,7 +1178,8 @@ AS
                and c_pt1.parameter_type_code     = a_ll.parameter_type_code
                and c_d1.duration_code            = a_ll.duration_code
                and a_sl.specified_level_code     = a_ll.specified_level_code
-               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
+               and a_du1.parameter_code          is not null
                and c_uc1.from_unit_code          = c_bp1.unit_code
                and c_uc1.to_unit_code            = a_du1.display_unit_code
                and a_ll.attribute_parameter_code is not null
@@ -1183,7 +1188,8 @@ AS
                and c_pt2.parameter_type_code     = a_ll.attribute_parameter_type_code
                and c_d2.duration_code            = a_ll.attribute_duration_code
                and a_du2.unit_system             = a_du1.unit_system
-               and a_du2.parameter_code          = cwms_ts.get_display_parameter_code(c_bp2.base_parameter_id, a_p2.sub_parameter_id, c_o.office_id)
+               and a_du2.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp2.base_parameter_id, a_p2.sub_parameter_id, c_o.office_id)
+               and a_du2.parameter_code          is not null
                and c_uc2.from_unit_code          = c_bp2.unit_code
                and c_uc2.to_unit_code            = a_du2.display_unit_code
                and a_ll.location_level_value     is null
