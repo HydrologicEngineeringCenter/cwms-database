@@ -2744,7 +2744,7 @@ end hex_to_decimal;
                                      p_long_name             => l_long_name,
                                      p_description          => l_description,
                                      p_ignorenulls          => 'T',
-                                     p_db_office_id         => l_db_office_id
+                                     p_db_office_id         => p_db_office_id
                                     );
             EXCEPTION
                 WHEN OTHERS
