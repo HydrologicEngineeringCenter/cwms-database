@@ -2043,7 +2043,7 @@ begin
             end if;
             l_query_str := 
                'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                      value,
+                      nanvl(value, null) "VALUE",
                       cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
                  from (
                       select date_time,
@@ -2074,7 +2074,7 @@ begin
             --
             l_query_str := 
                'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                      value,
+                      nanvl(value, null) "VALUE",
                       cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
                  from (
                       select date_time,
@@ -2106,7 +2106,7 @@ begin
         --
          l_query_str := 
             'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                    max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
+                    nanvl(max(value) keep(dense_rank :first_or_last order by version_date), null) "VALUE",
                     cwms_util.sign_extend(max(quality_code) keep(dense_rank :first_or_last order by version_date)) "QUALITY_CODE"
                from av_tsv_dqu
               where ts_code    =  :ts_code 
@@ -2146,7 +2146,7 @@ begin
             end if;
             l_query_str := 
                'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                      value,
+                      nanvl(value, null) "VALUE",
                       cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
                  from (
                       select date_time,
@@ -2177,7 +2177,7 @@ begin
             --
             l_query_str := 
                'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                      value,
+                      nanvl(value, null) "VALUE",
                       cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
                  from (
                       select date_time,
@@ -2209,7 +2209,7 @@ begin
         --
          l_query_str := 
             'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                    value,
+                    nanvl(value, null) "VALUE",
                     cwms_util.sign_extend(quality_code) "QUALITY_CODE"
                from av_tsv_dqu
               where ts_code      =  :ts_code 
@@ -3160,7 +3160,8 @@ end retrieve_ts_multi;
                           cwms_unit_conversion c,
                           cwms_base_parameter p,
                           cwms_unit u
-                    WHERE s.ts_code = l_ts_code
+                    WHERE t.value IS NOT NAN 
+                      AND s.ts_code = l_ts_code
                       AND s.parameter_code = ap.parameter_code
                       AND ap.base_parameter_code = p.base_parameter_code
                       AND p.unit_code = c.to_unit_code
@@ -3200,7 +3201,8 @@ end retrieve_ts_multi;
                             cwms_unit_conversion c, 
                             cwms_base_parameter p, 
                             cwms_unit u
-                             where s.ts_code        =  :l_ts_code
+                             where t.value is not nan 
+                               and s.ts_code        =  :l_ts_code
                                and s.parameter_code =  ap.parameter_code
                         and ap.base_parameter_code = p.base_parameter_code
                                and p.unit_code      =  c.to_unit_code
@@ -3260,7 +3262,8 @@ end retrieve_ts_multi;
                              cwms_unit_conversion c,
                              cwms_base_parameter p,
                              cwms_unit u
-                       WHERE s.ts_code = l_ts_code
+                       WHERE t.value IS NOT NAN 
+                         AND s.ts_code = l_ts_code
                          AND s.parameter_code = ap.parameter_code
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND p.unit_code = c.to_unit_code
@@ -3308,7 +3311,8 @@ end retrieve_ts_multi;
                             cwms_unit_conversion c, 
                             cwms_base_parameter p, 
                             cwms_unit u
-                             where s.ts_code        =  :l_ts_code
+                             where t.value is not nan 
+                               and s.ts_code        =  :l_ts_code
                                and s.parameter_code =  ap.parameter_code
                                AND ap.base_parameter_code = p.base_parameter_code
                                 and p.unit_code      =  c.to_unit_code 
@@ -3376,7 +3380,8 @@ end retrieve_ts_multi;
                              cwms_unit_conversion c,
                              cwms_base_parameter p,
                              cwms_unit u
-                       WHERE s.ts_code = l_ts_code
+                       WHERE t.value IS NOT NAN 
+                         AND s.ts_code = l_ts_code
                          AND s.parameter_code = ap.parameter_code
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND p.unit_code = c.to_unit_code
@@ -3409,7 +3414,8 @@ end retrieve_ts_multi;
                             cwms_unit_conversion c, 
                             cwms_base_parameter p, 
                             cwms_unit u
-                             where s.ts_code        =  :l_ts_code
+                             where t.value is not nan 
+                               and s.ts_code        =  :l_ts_code
                                and s.parameter_code =  ap.parameter_code
                         and ap.base_parameter_code = p.base_parameter_code
                                 and p.unit_code      =  c.to_unit_code
@@ -3453,7 +3459,8 @@ end retrieve_ts_multi;
                              cwms_unit_conversion c,
                              cwms_base_parameter p,
                              cwms_unit u
-                       WHERE s.ts_code = l_ts_code
+                       WHERE t.value IS NOT NAN 
+                         AND s.ts_code = l_ts_code
                          AND s.parameter_code = ap.parameter_code
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND p.unit_code = c.to_unit_code
@@ -3491,7 +3498,8 @@ end retrieve_ts_multi;
                             cwms_unit_conversion c, 
                             cwms_base_parameter p, 
                             cwms_unit u
-                             where s.ts_code        =  :l_ts_code
+                             where t.value is not nan 
+                               and s.ts_code        =  :l_ts_code
                                and s.parameter_code =  ap.parameter_code
                         and ap.base_parameter_code = p.base_parameter_code
                                 and p.unit_code      =  c.to_unit_code
@@ -3543,7 +3551,8 @@ end retrieve_ts_multi;
                              cwms_base_parameter p,
                              cwms_unit u,
                              cwms_data_quality q
-                       WHERE s.ts_code = l_ts_code
+                       WHERE t.value IS NOT NAN 
+                         AND s.ts_code = l_ts_code
                          AND s.parameter_code = ap.parameter_code
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND q.quality_code = t.quality_code
@@ -3583,7 +3592,8 @@ end retrieve_ts_multi;
                            cwms_base_parameter p, 
                            cwms_unit u, 
                            cwms_data_quality q
-                              where s.ts_code        =  :l_ts_code
+                              where t.value is not nan 
+                                and s.ts_code        =  :l_ts_code
                                 and s.parameter_code =  ap.parameter_code
                         and ap.base_parameter_code = p.base_parameter_code
                                 and q.quality_code   =  t.quality_code
@@ -3636,7 +3646,8 @@ end retrieve_ts_multi;
                              cwms_base_parameter p,
                              cwms_unit u,
                              cwms_data_quality q
-                       WHERE s.ts_code = l_ts_code
+                       WHERE t.value IS NOT NAN 
+                         AND s.ts_code = l_ts_code
                          AND s.parameter_code = ap.parameter_code
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND q.quality_code = t.quality_code
@@ -3692,7 +3703,8 @@ end retrieve_ts_multi;
                           cwms_base_parameter p, 
                           cwms_unit u,  
                           cwms_data_quality q
-                            where s.ts_code        =  :l_ts_code
+                            where t.value is not nan 
+                              and s.ts_code        =  :l_ts_code
                               and s.parameter_code =  p.parameter_code
                        and ap.base_parameter_code = p.base_parameter_code
                               and q.quality_code   =  t.quality_code
@@ -3771,7 +3783,8 @@ end retrieve_ts_multi;
                              cwms_unit_conversion c,
                              cwms_base_parameter p,
                              cwms_unit u
-                       WHERE s.ts_code = l_ts_code
+                       WHERE t.value IS NOT NAN 
+                         AND s.ts_code = l_ts_code
                          AND s.parameter_code = ap.parameter_code
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND p.unit_code = c.to_unit_code
@@ -3831,7 +3844,8 @@ end retrieve_ts_multi;
                           cwms_unit_conversion c, 
                           cwms_base_parameter p, 
                           cwms_unit u
-                            where s.ts_code        =  :l_ts_code
+                            where t.value is not nan 
+                              and s.ts_code        =  :l_ts_code
                               and s.parameter_code =  ap.parameter_code
                               and ap.base_parameter_code = p.base_parameter_code
                               and p.unit_code      =  c.to_unit_code
@@ -3903,7 +3917,8 @@ end retrieve_ts_multi;
                              cwms_unit_conversion c,
                              cwms_base_parameter p,
                              cwms_unit u
-                       WHERE s.ts_code = l_ts_code
+                       WHERE t.value IS NOT NAN 
+                         AND s.ts_code = l_ts_code
                          AND s.parameter_code = ap.parameter_code
                          AND ap.base_parameter_code = p.base_parameter_code
                          AND p.unit_code = c.to_unit_code
@@ -3951,7 +3966,8 @@ end retrieve_ts_multi;
                           cwms_unit_conversion c, 
                           cwms_base_parameter p, 
                           cwms_unit u
-                            where s.ts_code        =  :l_ts_code
+                            where t.value is not nan 
+                              and s.ts_code        =  :l_ts_code
                               and s.parameter_code =  ap.parameter_code
                               AND ap.base_parameter_code = p.base_parameter_code
                               and p.unit_code      =  c.to_unit_code
