@@ -2043,7 +2043,10 @@ begin
             end if;
             l_query_str := 
                'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                      nanvl(value, null) "VALUE",
+                      case
+                         when value is nan then null
+                         else value
+                      end "VALUE",
                       cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
                  from (
                       select date_time,
@@ -2074,7 +2077,10 @@ begin
             --
             l_query_str := 
                'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                      nanvl(value, null) "VALUE",
+                      case
+                         when value is nan then null
+                         else value
+                      end "VALUE",
                       cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
                  from (
                       select date_time,
@@ -2106,7 +2112,10 @@ begin
         --
          l_query_str := 
             'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                    nanvl(max(value) keep(dense_rank :first_or_last order by version_date), null) "VALUE",
+                    case
+                       when max(value) keep(dense_rank :first_or_last order by version_date) is nan then null
+                       else max(value) keep(dense_rank :first_or_last order by version_date)
+                    end "VALUE",
                     cwms_util.sign_extend(max(quality_code) keep(dense_rank :first_or_last order by version_date)) "QUALITY_CODE"
                from av_tsv_dqu
               where ts_code    =  :ts_code 
@@ -2146,7 +2155,10 @@ begin
             end if;
             l_query_str := 
                'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                      nanvl(value, null) "VALUE",
+                      case
+                         when value is nan then null
+                         else value
+                      end "VALUE",
                       cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
                  from (
                       select date_time,
@@ -2177,7 +2189,10 @@ begin
             --
             l_query_str := 
                'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                      nanvl(value, null) "VALUE",
+                      case
+                         when value is nan then null
+                         else value
+                      end "VALUE",
                       cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
                  from (
                       select date_time,
@@ -2209,7 +2224,10 @@ begin
         --
          l_query_str := 
             'select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                    nanvl(value, null) "VALUE",
+                    case
+                       when value is nan then null
+                       else value
+                    end "VALUE",
                     cwms_util.sign_extend(quality_code) "QUALITY_CODE"
                from av_tsv_dqu
               where ts_code      =  :ts_code 
