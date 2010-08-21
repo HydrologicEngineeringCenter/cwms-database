@@ -910,6 +910,23 @@ procedure delete_location_level(
    p_office_id               in  varchar2 default null);
 
 --------------------------------------------------------------------------------
+-- PROCEDURE delete_location_level_ex
+--
+-- Deletes the specified Location Level from the database, and optionally any 
+-- associated location level indicators and conditions
+--------------------------------------------------------------------------------
+procedure delete_location_level_ex(
+   p_location_level_id       in  varchar2,
+   p_effective_date          in  date     default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_cascade                 in  varchar2 default ('F'),
+   p_delete_indicators       in  varchar2 default ('F'),
+   p_office_id               in  varchar2 default null);
+
+--------------------------------------------------------------------------------
 -- PROCEDURE catalog_location_levels
 --
 -- in this procedure SQL- (%, _) or glob-style (*, ?) wildcards can be used
@@ -977,7 +994,7 @@ function get_loc_lvl_indicator_code(
    p_ref_specified_level_id in  varchar2 default null,
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null)
-   return number result_cache;
+   return number;
    
 --------------------------------------------------------------------------------
 -- PROCEDURE store_loc_lvl_indicator_cond

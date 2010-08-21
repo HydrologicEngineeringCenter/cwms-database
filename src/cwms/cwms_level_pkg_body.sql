@@ -1226,7 +1226,7 @@ procedure create_location_level(
    p_level_units             in  varchar2,
    p_level_comment           in  varchar2 default null,
    p_effective_date          in  date default null,
-   p_timezone_id             in  varchar2 default 'UTC',
+   p_timezone_id             in  varchar2 default null,
    p_attribute_value         in  number default null,
    p_attribute_units         in  varchar2 default null,
    p_attribute_parameter_id  in  varchar2 default null,
@@ -1334,15 +1334,10 @@ begin
    ---------------------------------
    -- get the codes for input ids --
    ---------------------------------
-   if p_effective_date is null then
-      l_effective_date := cast(
-         from_tz(to_timestamp('01JAN1900 0000', 'ddmonyyyy hh24mi'), l_timezone_id)
-         at time zone 'UTC' as date);
-   else     
-      l_effective_date := cast(
-         from_tz(cast(p_effective_date as timestamp), l_timezone_id)
-         at time zone 'UTC' as date);
-   end if;  
+   l_effective_date := cwms_util.change_timezone(
+      nvl(p_effective_date, '01-JAN-1900'),
+      l_timezone_id, 
+      'UTC');
    get_location_level_codes(
       l_location_level_code,
       l_spec_level_code,
@@ -1424,13 +1419,10 @@ begin
          -- set the interval origin for the seaonal values --
          -- (always stored in UTC in the database)         --
          ----------------------------------------------------
-         if p_interval_origin is null then
-            l_interval_origin := to_date('01JAN2000 0000', 'ddmonyyyy hh24mi');
-         else
-            l_interval_origin := cast(
-               from_tz(cast(p_interval_origin as timestamp), l_timezone_id)
-               at time zone 'UTC' as date);
-         end if;
+         l_interval_origin := cwms_util.change_timezone(
+            nvl(p_interval_origin, '01-JAN-2000'),
+            l_timezone_id, 
+            'UTC');
          if l_calendar_interval is null then
             -------------------
             -- time interval --
@@ -3922,7 +3914,7 @@ begin
             
    return l_attribute;
 end lookup_attribute_by_level;
-            
+
 --------------------------------------------------------------------------------
 -- PROCEDURE delete_location_level
 --          
@@ -3938,18 +3930,57 @@ procedure delete_location_level(
    p_cascade                 in  varchar2 default ('F'),
    p_office_id               in  varchar2 default null)
 is          
-   l_location_level_code     number(10);
-   l_date                    date;
-   l_cascade                 boolean := cwms_util.return_true_or_false(p_cascade);
-   l_location_id             varchar2(49);
-   l_parameter_id            varchar2(49);
-   l_parameter_type_id       varchar2(16);
-   l_duration_id             varchar2(16);
-   l_spec_level_id           varchar2(256);
-   l_attribute_parameter_id  varchar2(49);
-   l_attribute_param_type_id varchar2(16);
-   l_attribute_duration_id   varchar2(16);
-begin       
+begin
+   delete_location_level_ex(
+      p_location_level_id,
+      p_effective_date,
+      p_timezone_id,
+      p_attribute_id,
+      p_attribute_value,
+      p_attribute_units,
+      p_cascade,
+      'F',
+      p_office_id);
+end delete_location_level;
+--------------------------------------------------------------------------------
+-- PROCEDURE delete_location_level_ex
+--
+-- Deletes the specified Location Level from the database, and optionally any 
+-- associated location level indicators and conditions
+--------------------------------------------------------------------------------
+procedure delete_location_level_ex(
+   p_location_level_id       in  varchar2,
+   p_effective_date          in  date     default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_cascade                 in  varchar2 default ('F'),
+   p_delete_indicators       in  varchar2 default ('F'),
+   p_office_id               in  varchar2 default null)
+is
+   l_location_level_code       number(10);
+   l_location_code             number(10);
+   l_parameter_code            number(10);
+   l_parameter_type_code       number(10);
+   l_duration_code             number(10);
+   l_specified_level_code      number(10);
+   l_attribute_parameter_code  number(10);
+   l_attribute_param_type_code number(10);
+   l_attribute_duration_code   number(10);
+   l_attribute_value           number;
+   l_date                      date;
+   l_cascade                   boolean := cwms_util.return_true_or_false(p_cascade);
+   l_delete_indicators         boolean := cwms_util.return_true_or_false(p_delete_indicators);
+   l_location_id               varchar2(49);
+   l_parameter_id              varchar2(49);
+   l_parameter_type_id         varchar2(16);
+   l_duration_id               varchar2(16);
+   l_spec_level_id             varchar2(256);
+   l_attribute_parameter_id    varchar2(49);
+   l_attribute_param_type_id   varchar2(16);
+   l_attribute_duration_id     varchar2(16);
+begin
    l_date := cast(
       from_tz(cast(p_effective_date as timestamp), p_timezone_id)
       at time zone 'UTC' as date);
@@ -3967,7 +3998,7 @@ begin
       l_attribute_parameter_id,
       l_attribute_param_type_id,
       l_attribute_duration_id,
-      p_attribute_id);      
+      p_attribute_id);
    l_location_level_code := get_location_level_code(
       l_location_id,
       l_parameter_id,
@@ -3975,14 +4006,14 @@ begin
       l_duration_id,
       l_spec_level_id,
       l_date,
-      true, 
+      true,
       p_attribute_value,
       p_attribute_units,
       l_attribute_parameter_id,
       l_attribute_param_type_id,
       l_attribute_duration_id,
       p_office_id);
-            
+
    if l_location_level_code is null then
       cwms_err.raise(
          'ITEM_DOES_NOT_EXIST',
@@ -3996,20 +4027,91 @@ begin
                   ' (' || p_attribute_value || ' ' || p_attribute_units || ')'
             end
          || '@' || p_effective_date);
-   end if;  
-   ------------------------
-   -- delete the records --
-   ------------------------
+   end if;
+   ---------------------------------
+   -- delete the seasonal records --
+   ---------------------------------
    if l_cascade then
       delete
         from at_seasonal_location_level
        where location_level_code = l_location_level_code;
-   end if;  
-   delete   
+   end if;
+   ----------------------------------    
+   -- delete associated indicators --
+   ----------------------------------
+   -- cwms_msg.log_db_message('delete_location_level_ex', 7, 'p_delete_indicators = '||p_delete_indicators);    
+   if l_delete_indicators then
+      begin
+         -- cwms_msg.log_db_message('delete_location_level_ex', 7, 'level code = '||l_location_level_code);    
+         select location_code,
+                parameter_code,
+                parameter_type_code,
+                duration_code,
+                specified_level_code,
+                attribute_parameter_code,
+                attribute_parameter_type_code,
+                attribute_duration_code,
+                attribute_value
+           into l_location_code,
+                l_parameter_code,
+                l_parameter_type_code,
+                l_duration_code,
+                l_specified_level_code,
+                l_attribute_parameter_code,
+                l_attribute_param_type_code,
+                l_attribute_duration_code,
+                l_attribute_value
+           from at_location_level 			 
+          where location_level_code = l_location_level_code;
+         /* 
+         cwms_msg.log_db_message('delete_location_level_ex', 7, 'location code = '||l_location_code);    
+         cwms_msg.log_db_message('delete_location_level_ex', 7, 'parameter code = '||l_parameter_code);    
+         cwms_msg.log_db_message('delete_location_level_ex', 7, 'parametertype code = '||l_parameter_type_code);    
+         cwms_msg.log_db_message('delete_location_level_ex', 7, 'duration code = '||l_duration_code);    
+         cwms_msg.log_db_message('delete_location_level_ex', 7, 'specified level code = '||l_specified_level_code);    
+         cwms_msg.log_db_message('delete_location_level_ex', 7, 'attribute parameter code = '||l_attribute_parameter_code);    
+         cwms_msg.log_db_message('delete_location_level_ex', 7, 'attribute parameter type code = '||l_attribute_param_type_code);    
+         cwms_msg.log_db_message('delete_location_level_ex', 7, 'attribute duration code = '||l_attribute_duration_code);    
+         cwms_msg.log_db_message('delete_location_level_ex', 7, 'attribute value = '||l_attribute_value);    
+         cwms_msg.log_db_message('delete_location_level_ex', 7, 'deleting conditions');
+         */    
+         delete
+           from at_loc_lvl_indicator_cond
+          where level_indicator_code in 
+                (  select level_indicator_code
+                     from at_loc_lvl_indicator
+                    where location_code = l_location_code
+                      and parameter_code = l_parameter_code
+                      and parameter_type_code = l_parameter_type_code
+                      and specified_level_code = l_specified_level_code
+                      and nvl(attr_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
+                      and nvl(attr_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
+                      and nvl(attr_duration_code, -1) = nvl(l_attribute_duration_code, -1)
+                      and nvl(to_char(attr_value), '@') = nvl(to_char(l_attribute_value), '@')
+                );
+         -- cwms_msg.log_db_message('delete_location_level_ex', 7, 'deleting indicators');    
+         delete
+           from at_loc_lvl_indicator
+          where location_code = l_location_code
+            and parameter_code = l_parameter_code
+            and parameter_type_code = l_parameter_type_code
+            and specified_level_code = l_specified_level_code
+            and nvl(attr_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
+            and nvl(attr_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
+            and nvl(attr_duration_code, -1) = nvl(l_attribute_duration_code, -1)
+            and nvl(to_char(attr_value), '@') = nvl(to_char(l_attribute_value), '@');			 
+      exception
+         when no_data_found then null;
+      end;
+   end if;
+   -------------------------------
+   -- delete the location level --
+   -------------------------------
+   delete
      from at_location_level
     where location_level_code = l_location_level_code;
             
-end delete_location_level;
+end delete_location_level_ex;
             
 --------------------------------------------------------------------------------
 -- PROCEDURE catalog_location_levels
@@ -4285,7 +4387,7 @@ function get_loc_lvl_indicator_code(
    p_ref_specified_level_id in  varchar2 default null,
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null)
-   return number result_cache
+   return number
 is          
    l_location_code            number(10);
    l_parameter_code           number(10);
@@ -4523,7 +4625,7 @@ function get_loc_lvl_indicator_code(
    p_ref_specified_level_id in  varchar2 default null,
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null)
-   return number result_cache
+   return number
 is          
    ITEM_DOES_NOT_EXIST      exception; pragma exception_init (ITEM_DOES_NOT_EXIST, -20034);
    l_location_id            varchar2(49);
@@ -4696,6 +4798,25 @@ begin
       l_rec.description                := p_description;
    end if;  
    l_rec.level_indicator_code := p_level_indicator_code;
+   /*
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'level_indicator_value = '||l_rec.level_indicator_value);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'expression = '||l_rec.expression);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'comparison_operator_1 = '||l_rec.comparison_operator_1);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'comparison_value_1 = '||l_rec.comparison_value_1);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'comparison_unit = '||l_rec.comparison_unit);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'connector = '||l_rec.connector);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'comparison_operator_2 = '||l_rec.comparison_operator_2);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'comparison_value_2 = '||l_rec.comparison_value_2);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_expression = '||l_rec.rate_expression);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_comparison_operator_1 = '||l_rec.rate_comparison_operator_1);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_comparison_value_1 = '||l_rec.rate_comparison_value_1);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_comparison_unit = '||l_rec.rate_comparison_unit);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_connector = '||l_rec.rate_connector);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_comparison_operator_2 = '||l_rec.rate_comparison_operator_2);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_comparison_value_2 = '||l_rec.rate_comparison_value_2);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_interval = '||l_rec.rate_interval);
+   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'description = '||l_rec.description);
+   */
    --------------------------------------
    -- sanity check on comparison units --
    --------------------------------------
