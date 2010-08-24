@@ -30,20 +30,20 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
         l_cwms_ts_code   NUMBER;
     BEGIN
         BEGIN
-            SELECT	a.ts_code
-              INTO	l_cwms_ts_code
-              FROM	mv_cwms_ts_id a
-             WHERE	UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
+            SELECT   a.ts_code
+              INTO   l_cwms_ts_code
+              FROM   mv_cwms_ts_id a
+             WHERE   UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
                         AND a.db_office_code = p_db_office_code;
 
         EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
                 BEGIN
-                    SELECT	a.ts_code
-                      INTO	l_cwms_ts_code
-                      FROM	zav_cwms_ts_id a
-                     WHERE	UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
+                    SELECT a.ts_code
+                      INTO l_cwms_ts_code
+                      FROM zav_cwms_ts_id a
+                     WHERE UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
                                 AND a.db_office_code = p_db_office_code;
                 EXCEPTION
                     WHEN NO_DATA_FOUND
@@ -60,20 +60,20 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
     FUNCTION get_ts_id (p_ts_code IN NUMBER)
         RETURN VARCHAR2
     IS
-        l_cwms_ts_id	VARCHAR2 (183);
+        l_cwms_ts_id VARCHAR2 (183);
     BEGIN
         BEGIN
-            SELECT	cwms_ts_id
-              INTO	l_cwms_ts_id
-              FROM	mv_cwms_ts_id
-             WHERE	ts_code = p_ts_code;
+            SELECT   cwms_ts_id
+              INTO   l_cwms_ts_id
+              FROM   mv_cwms_ts_id
+             WHERE   ts_code = p_ts_code;
         EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-                SELECT	cwms_ts_id
-                  INTO	l_cwms_ts_id
-                  FROM	zav_cwms_ts_id
-                 WHERE	ts_code = p_ts_code;
+                SELECT  cwms_ts_id
+                  INTO  l_cwms_ts_id
+                  FROM  zav_cwms_ts_id
+                 WHERE  ts_code = p_ts_code;
         END;
     END;
  --******************************************************************************/   
@@ -88,21 +88,21 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
     FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
         RETURN VARCHAR2
     IS
-        l_cwms_ts_id	VARCHAR2 (183);
+        l_cwms_ts_id VARCHAR2 (183);
     BEGIN
         BEGIN
-            SELECT	cwms_ts_id
-              INTO	l_cwms_ts_id
-              FROM	mv_cwms_ts_id mcti
-             WHERE	UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
+            SELECT   cwms_ts_id
+              INTO   l_cwms_ts_id
+              FROM   mv_cwms_ts_id mcti
+             WHERE   UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
                         AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
         EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-                SELECT	cwms_ts_id
-                  INTO	l_cwms_ts_id
-                  FROM	zav_cwms_ts_id mcti
-                 WHERE	UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
+                SELECT  cwms_ts_id
+                  INTO  l_cwms_ts_id
+                  FROM  zav_cwms_ts_id mcti
+                 WHERE  UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
                             AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
         END;
 
@@ -376,20 +376,20 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
     FUNCTION get_location_id (p_cwms_ts_code IN NUMBER)
         RETURN VARCHAR2
     IS
-        l_location_id	 VARCHAR2 (49);
+        l_location_id    VARCHAR2 (49);
     BEGIN
         BEGIN
-            SELECT	location_id
-              INTO	l_location_id
-              FROM	mv_cwms_ts_id
-             WHERE	ts_code = p_cwms_ts_code;
+            SELECT   location_id
+              INTO   l_location_id
+              FROM   mv_cwms_ts_id
+             WHERE   ts_code = p_cwms_ts_code;
         EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-                SELECT	location_id
-                  INTO	l_location_id
-                  FROM	zav_cwms_ts_id
-                 WHERE	ts_code = p_cwms_ts_code;
+                SELECT  location_id
+                  INTO  l_location_id
+                  FROM  zav_cwms_ts_id
+                 WHERE  ts_code = p_cwms_ts_code;
         END;
     END;
 --
@@ -1082,38 +1082,38 @@ end get_ts_time_zone;
 --
 -- GET_TSID_TIME_ZONE -
 --
-FUNCTION get_tsid_time_zone (p_ts_id		 IN VARCHAR2,
-									  p_office_id	 IN VARCHAR2 DEFAULT NULL
-									 )
-	RETURN VARCHAR2
+FUNCTION get_tsid_time_zone (p_ts_id       IN VARCHAR2,
+                             p_office_id   IN VARCHAR2 DEFAULT NULL
+                            )
+   RETURN VARCHAR2
 IS
-	l_ts_code	  NUMBER;
-	l_office_id   VARCHAR2 (16) := NVL (p_office_id, cwms_util.user_office_id);
+   l_ts_code     NUMBER;
+   l_office_id   VARCHAR2 (16) := NVL (p_office_id, cwms_util.user_office_id);
 BEGIN
-	BEGIN
-		SELECT	ts_code
-		  INTO	l_ts_code
-		  FROM	mv_cwms_ts_id
-		 WHERE	UPPER (cwms_ts_id) = UPPER (p_ts_id)
-					AND UPPER (db_office_id) = UPPER (l_office_id);
-	EXCEPTION
-		WHEN NO_DATA_FOUND
-		THEN
-			BEGIN
-				SELECT	ts_code
-				  INTO	l_ts_code
-				  FROM	zav_cwms_ts_id
-				 WHERE	UPPER (cwms_ts_id) = UPPER (p_ts_id)
-							AND UPPER (db_office_id) = UPPER (l_office_id);
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-					cwms_err.
-					raise ('INVALID_ITEM', p_ts_id, 'CWMS Timeseries Identifier');
-			END;
-	END;
+   BEGIN
+      SELECT   ts_code
+        INTO   l_ts_code
+        FROM   mv_cwms_ts_id
+       WHERE   UPPER (cwms_ts_id) = UPPER (p_ts_id)
+               AND UPPER (db_office_id) = UPPER (l_office_id);
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         BEGIN
+            SELECT   ts_code
+              INTO   l_ts_code
+              FROM   zav_cwms_ts_id
+             WHERE   UPPER (cwms_ts_id) = UPPER (p_ts_id)
+                     AND UPPER (db_office_id) = UPPER (l_office_id);
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.
+               raise ('INVALID_ITEM', p_ts_id, 'CWMS Timeseries Identifier');
+         END;
+   END;
 
-	RETURN get_ts_time_zone (l_ts_code);
+   RETURN get_ts_time_zone (l_ts_code);
 END get_tsid_time_zone;
 
    
@@ -1983,18 +1983,18 @@ begin
    dbms_application_info.set_module ('cwms_ts.build_retrieve_ts_query','Get TS Code');
 
     BEGIN
-        SELECT	ts_code, interval, interval_utc_offset
-          INTO	l_ts_code, l_interval, l_offset
-          FROM	mv_cwms_ts_id
-         WHERE	db_office_id = UPPER (l_office_id)
+        SELECT ts_code, interval, interval_utc_offset
+          INTO l_ts_code, l_interval, l_offset
+          FROM mv_cwms_ts_id
+         WHERE db_office_id = UPPER (l_office_id)
                     AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
     EXCEPTION
         WHEN NO_DATA_FOUND
         THEN
-            SELECT	ts_code, interval, interval_utc_offset
-              INTO	l_ts_code, l_interval, l_offset
-              FROM	zav_cwms_ts_id
-             WHERE	db_office_id = UPPER (l_office_id)
+            SELECT   ts_code, interval, interval_utc_offset
+              INTO   l_ts_code, l_interval, l_offset
+              FROM   zav_cwms_ts_id
+             WHERE   db_office_id = UPPER (l_office_id)
                         AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
                         
         CWMS_UTIL.REFRESH_MV_CWMS_TS_ID;
@@ -2673,7 +2673,7 @@ end retrieve_ts_multi;
 --
 -- CLEAN_QUALITY_CODE -
 --  
-	function clean_quality_code (
+   function clean_quality_code (
       p_quality_code in number)
       return number result_cache
    is
@@ -2826,6 +2826,94 @@ end retrieve_ts_multi;
       return l_quality_code;
       
    end clean_quality_code;       
+
+   -------------------------------------------------------------------------------
+   -- BOOLEAN FUNCTION USE_FIRST_TABLE(TIMESTAMP)
+   --
+   function use_first_table(
+      p_timestamp in timestamp default null)
+      return boolean
+   is
+   begin
+      return mod(to_char(nvl(p_timestamp, systimestamp), 'MM'), 2) = 1;
+   end use_first_table;
+
+   -------------------------------------------------------------------------------
+   -- BOOLEAN FUNCTION USE_FIRST_TABLE(VARCHAR2)
+   --
+   function use_first_table(
+      p_timestamp in integer)
+      return boolean
+   
+   is
+   begin
+      return use_first_table(cwms_util.to_timestamp(p_timestamp));
+   end use_first_table;
+
+   -------------------------------------------------------------------------------
+   -- PROCEDURE TIME_SERIES_UPDATED(...)
+   --
+   procedure time_series_updated(
+      p_ts_code    in integer,
+      p_ts_id      in varchar2,
+      p_first_time in timestamp with time zone,
+      p_last_time  in timestamp with time zone)
+   is
+      pragma autonomous_transaction;
+      l_msg        sys.aq$_jms_map_message;
+      l_msgid      pls_integer;
+      l_first_time timestamp;
+      l_last_time  timestamp;
+      i            integer;
+   begin
+      -------------------------------------------------------
+      -- insert the time series update info into the table --
+      -------------------------------------------------------
+      l_first_time := sys_extract_utc(p_first_time);
+      l_last_time  := sys_extract_utc(p_last_time);
+      if use_first_table then
+         ----------------
+         -- odd months --
+         ----------------
+         insert
+           into at_ts_msg_archive_1
+         values (cwms_msg.get_msg_id,
+                 p_ts_code,
+                 systimestamp,
+                 cast(l_first_time as date),
+                 cast(l_last_time as date));
+      else
+         -----------------
+         -- even months --
+         -----------------
+         insert
+           into at_ts_msg_archive_2
+         values (cwms_msg.get_msg_id,
+                 p_ts_code,
+                 systimestamp,
+                 cast(l_first_time as date),
+                 cast(l_last_time as date));
+      end if;
+   
+      -------------------------
+      -- publish the message --
+      -------------------------
+      cwms_msg.new_message(l_msg, l_msgid, 'TSDataStored');
+      l_msg.set_string(l_msgid, 'ts_id', p_ts_id);
+      l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(l_first_time));
+      l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(l_last_time));
+      i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
+      if cwms_xchg.is_realtime_export(p_ts_code) then
+         -----------------------------------------------
+         -- notify the real-time Oracle->DSS exchange --
+         -----------------------------------------------
+         i := cwms_msg.publish_message(l_msg, l_msgid, 'realtime_ops');
+      end if;
+   
+      commit;
+   
+   end time_series_updated;
+
 --*******************************************************************   --
 --*******************************************************************   --
 --
@@ -3014,7 +3102,7 @@ end retrieve_ts_multi;
       EXCEPTION
         WHEN NO_DATA_FOUND
           THEN 
-	       dbms_application_info.set_action('Returning due to no data provided');
+          dbms_application_info.set_action('Returning due to no data provided');
           RETURN; -- Have already created TS_CODE if it didn't exist
         WHEN TOO_MANY_ROWS 
           THEN
@@ -4024,17 +4112,14 @@ end retrieve_ts_multi;
 
       COMMIT;
 
-   -----------------------------------------------                                                                    
-   -- notify the real-time Oracle->DSS exchange --
-   ----------------------------------------------- 
-   if cwms_xchg.is_realtime_export(l_ts_code) then 
-      dbms_application_info.set_action('queuing time_series_updated message');
-      cwms_xchg.time_series_updated(
-            l_ts_code, 
-            p_cwms_ts_id,
-            p_timeseries_data(p_timeseries_data.first).date_time,
-            p_timeseries_data(p_timeseries_data.last).date_time);
-   end if;
+   ---------------------------------
+   -- archive and publish message --
+   ---------------------------------
+   time_series_updated(
+         l_ts_code, 
+         p_cwms_ts_id,
+         p_timeseries_data(p_timeseries_data.first).date_time,
+         p_timeseries_data(p_timeseries_data.last).date_time);
        
    dbms_application_info.set_module(null, null);
 
@@ -4102,7 +4187,7 @@ end retrieve_ts_multi;
 -- STORE_TS - This version is for Java/Jython bypassing TIMESTAMPTZ type
 --
    PROCEDURE store_ts (
-		p_cwms_ts_id IN varchar2,
+      p_cwms_ts_id IN varchar2,
       p_units         IN varchar2,
       p_times         IN number_tab_t,
       p_values        IN number_tab_t,
@@ -4146,20 +4231,20 @@ end retrieve_ts_multi;
 -- STORE_TS_MULTI -
 --
     PROCEDURE store_ts_multi (
-        p_timeseries_array	IN timeseries_array,
-        p_store_rule			IN VARCHAR2 DEFAULT NULL,
-        p_override_prot		IN VARCHAR2 DEFAULT 'F',
-        p_version_date 		IN DATE DEFAULT cwms_util.non_versioned,
-        p_office_id 			IN VARCHAR2 DEFAULT NULL
+        p_timeseries_array IN timeseries_array,
+        p_store_rule       IN VARCHAR2 DEFAULT NULL,
+        p_override_prot    IN VARCHAR2 DEFAULT 'F',
+        p_version_date     IN DATE DEFAULT cwms_util.non_versioned,
+        p_office_id        IN VARCHAR2 DEFAULT NULL
     )
     IS
-        l_timeseries	  timeseries_type;
-        l_err_msg		  VARCHAR2 (512) := NULL;
+        l_timeseries   timeseries_type;
+        l_err_msg      VARCHAR2 (512) := NULL;
         l_all_err_msgs    VARCHAR2 (2048) := NULL;
-        l_len 			  NUMBER := 0;
-        l_total_len 	  NUMBER := 0;
-        l_num_ts_ids	  NUMBER := 0;
-        l_num_errors	  NUMBER := 0;
+        l_len          NUMBER := 0;
+        l_total_len    NUMBER := 0;
+        l_num_ts_ids   NUMBER := 0;
+        l_num_errors   NUMBER := 0;
         l_excep_errors    NUMBER := 0;
     BEGIN
         DBMS_APPLICATION_INFO.
@@ -4167,8 +4252,8 @@ end retrieve_ts_multi;
                         'selecting time series from input'
                       );
 
-        FOR l_timeseries IN (SELECT	*
-                                      FROM	TABLE (p_timeseries_array))
+        FOR l_timeseries IN (SELECT *
+                                      FROM   TABLE (p_timeseries_array))
         LOOP
             DBMS_APPLICATION_INFO.
             set_module ('cwms_ts_store.store_ts_multi', 'calling store_ts');
@@ -4323,19 +4408,19 @@ BEGIN
    --
 
     BEGIN
-        SELECT	ts_code
-          INTO	l_ts_code
-          FROM	mv_cwms_ts_id mcts
-         WHERE	UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
+        SELECT ts_code
+          INTO l_ts_code
+          FROM mv_cwms_ts_id mcts
+         WHERE UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
                     AND mcts.db_office_code = l_db_office_code;
     EXCEPTION
         WHEN NO_DATA_FOUND
         THEN
             BEGIN
-                SELECT	ts_code
-                  INTO	l_ts_code
-                  FROM	zav_cwms_ts_id mcts
-                 WHERE	UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
+                SELECT  ts_code
+                  INTO  l_ts_code
+                  FROM  zav_cwms_ts_id mcts
+                 WHERE  UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
                             AND mcts.db_office_code = l_db_office_code;
             EXCEPTION
                 WHEN NO_DATA_FOUND
@@ -5717,81 +5802,81 @@ END;
 
 /* Formatted on 4/2/2010 6:46:07 AM (QP5 v5.139.911.3011) */
 PROCEDURE zstore_ts_multi (
-	p_timeseries_array	IN ztimeseries_array,
-	p_store_rule			IN VARCHAR2 DEFAULT NULL,
-	p_override_prot		IN VARCHAR2 DEFAULT 'F',
-	p_version_date 		IN DATE DEFAULT cwms_util.non_versioned,
-	p_office_id 			IN VARCHAR2 DEFAULT NULL
+   p_timeseries_array   IN ztimeseries_array,
+   p_store_rule         IN VARCHAR2 DEFAULT NULL,
+   p_override_prot      IN VARCHAR2 DEFAULT 'F',
+   p_version_date       IN DATE DEFAULT cwms_util.non_versioned,
+   p_office_id          IN VARCHAR2 DEFAULT NULL
 )
 IS
-	l_timeseries	  ztimeseries_type;
-	l_err_msg		  VARCHAR2 (512) := NULL;
-	l_all_err_msgs   VARCHAR2 (2048) := NULL;
-	l_len 			  NUMBER := 0;
-	l_total_len 	  NUMBER := 0;
-	l_num_ts_ids	  NUMBER := 0;
-	l_num_errors	  NUMBER := 0;
-	l_excep_errors   NUMBER := 0;
+   l_timeseries     ztimeseries_type;
+   l_err_msg        VARCHAR2 (512) := NULL;
+   l_all_err_msgs   VARCHAR2 (2048) := NULL;
+   l_len            NUMBER := 0;
+   l_total_len      NUMBER := 0;
+   l_num_ts_ids     NUMBER := 0;
+   l_num_errors     NUMBER := 0;
+   l_excep_errors   NUMBER := 0;
 BEGIN
-	DBMS_APPLICATION_INFO.
-	set_module ('cwms_ts.zstore_ts_multi', 'selecting time series from input');
+   DBMS_APPLICATION_INFO.
+   set_module ('cwms_ts.zstore_ts_multi', 'selecting time series from input');
 
-	FOR l_timeseries IN (SELECT	*
-								  FROM	TABLE (p_timeseries_array))
-	LOOP
-		DBMS_APPLICATION_INFO.
-		set_module ('cwms_ts_store.zstore_ts_multi', 'calling zstore_ts');
+   FOR l_timeseries IN (SELECT   *
+                          FROM   TABLE (p_timeseries_array))
+   LOOP
+      DBMS_APPLICATION_INFO.
+      set_module ('cwms_ts_store.zstore_ts_multi', 'calling zstore_ts');
 
-		BEGIN
-			l_num_ts_ids := l_num_ts_ids + 1;
+      BEGIN
+         l_num_ts_ids := l_num_ts_ids + 1;
 
-			cwms_ts.
-			zstore_ts (l_timeseries.tsid,
-						  l_timeseries.unit,
-						  l_timeseries.data,
-						  p_store_rule,
-						  p_override_prot,
-						  p_version_date,
-						  p_office_id
-						 );
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-				l_num_errors := l_num_errors + 1;
+         cwms_ts.
+         zstore_ts (l_timeseries.tsid,
+                    l_timeseries.unit,
+                    l_timeseries.data,
+                    p_store_rule,
+                    p_override_prot,
+                    p_version_date,
+                    p_office_id
+                   );
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            l_num_errors := l_num_errors + 1;
 
-				l_err_msg :=
-						'STORE_ERROR ***'
-					|| l_timeseries.tsid
-					|| '*** '
-					|| SQLCODE
-					|| ': '
-					|| SQLERRM;
+            l_err_msg :=
+                  'STORE_ERROR ***'
+               || l_timeseries.tsid
+               || '*** '
+               || SQLCODE
+               || ': '
+               || SQLERRM;
 
-				IF NVL (LENGTH (l_all_err_msgs), 0) + NVL (LENGTH (l_err_msg), 0) <=
-						1930
-				THEN
-					l_excep_errors := l_excep_errors + 1;
-					l_all_err_msgs := l_all_err_msgs || ' ' || l_err_msg;
-				END IF;
-		END;
-	END LOOP;
+            IF NVL (LENGTH (l_all_err_msgs), 0) + NVL (LENGTH (l_err_msg), 0) <=
+                  1930
+            THEN
+               l_excep_errors := l_excep_errors + 1;
+               l_all_err_msgs := l_all_err_msgs || ' ' || l_err_msg;
+            END IF;
+      END;
+   END LOOP;
 
-	IF l_all_err_msgs IS NOT NULL
-	THEN
-		l_all_err_msgs :=
-				'STORE ERRORS: zstore_ts_multi processed '
-			|| l_num_ts_ids
-			|| ' ts_ids of which '
-			|| l_num_errors
-			|| ' had STORE ERRORS. '
-			|| l_excep_errors
-			|| ' of those errors are: '
-			|| l_all_err_msgs;
+   IF l_all_err_msgs IS NOT NULL
+   THEN
+      l_all_err_msgs :=
+            'STORE ERRORS: zstore_ts_multi processed '
+         || l_num_ts_ids
+         || ' ts_ids of which '
+         || l_num_errors
+         || ' had STORE ERRORS. '
+         || l_excep_errors
+         || ' of those errors are: '
+         || l_all_err_msgs;
 
-		raise_application_error (-20999, l_all_err_msgs);
-	END IF;
+      raise_application_error (-20999, l_all_err_msgs);
+   END IF;
 
-	DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+   DBMS_APPLICATION_INFO.set_module (NULL, NULL);
 END zstore_ts_multi;
 
 
