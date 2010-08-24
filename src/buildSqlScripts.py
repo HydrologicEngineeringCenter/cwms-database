@@ -5504,7 +5504,7 @@ f = open("py_Queues.sql", "w")
 f.write("set define off\nbegin")
 for office_id in office_ids :
     id = office_id.lower()
-    for q in ("realtime_ops", "status") : 
+    for q in ("realtime_ops", "status", "ts_stored") : 
         f.write(queue_template % (id,q,id,q,id,q,id,q))
 f.write("end;\n/\ncommit;\n")
 f.close()
