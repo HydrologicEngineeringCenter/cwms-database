@@ -4742,6 +4742,7 @@ is
    l_exists                 boolean := true;
    l_rec                    at_loc_lvl_indicator_cond%rowtype;
    l_unit_code              number(10);
+   l_na_unit_code           number(10);
    l_from_unit_id           varchar2(16);
    l_to_unit_id             varchar2(16);
 begin       
@@ -4820,7 +4821,11 @@ begin
    --------------------------------------
    -- sanity check on comparison units --
    --------------------------------------
-   if l_rec.comparison_unit is not null then
+   select unit_code
+     into l_na_unit_code
+     from cwms_unit
+    where unit_id = 'n/a';
+   if l_rec.comparison_unit is not null and l_rec.comparison_unit != l_na_unit_code then
       begin 
          select uc.from_unit_id,
                 uc.to_unit_id
