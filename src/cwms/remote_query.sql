@@ -141,8 +141,8 @@ is
    l_cwms_ver    varchar2(3);
    l_clob        clob;
    l_cursor      sys_refcursor;
-   l_tsid_masks  cwms_util.str_tab_t;
-   l_tsid_parts  cwms_util.str_tab_t;
+   l_tsid_masks  str_tab_t;
+   l_tsid_parts  str_tab_t;
    l_location    varchar2(64);
    l_parameter   varchar2(64);
    l_param_type  varchar2(64);
@@ -323,7 +323,7 @@ is
   l_ts_code  integer;
   l_tsid     varchar2(31);
   l_clob     clob;
-  l_data     cwms_util.str_tab_tab_t;
+  l_data     str_tab_tab_t;
   l_masks    varchar2(32767);
 begin
    ---------------------------
@@ -663,8 +663,8 @@ procedure set_office(
 is
    l_office_id  varchar2(16) := upper(p_office_id);
    l_count      integer;
-   l_masks      cwms_util.str_tab_t;
-   l_mask_parts cwms_util.str_tab_t;
+   l_masks      str_tab_t;
+   l_mask_parts str_tab_t;
    l_ts_code    integer;
 begin
    ------------------
@@ -1004,7 +1004,7 @@ is
    l_offices_processed integer := 0;
    l_tsids_processed   integer := 0;
    l_values_retrieved  integer := 0;
-   l_office_id_masks   cwms_util.str_tab_t := cwms_util.split_text(upper(p_office_id_masks), ',');
+   l_office_id_masks   str_tab_t := cwms_util.split_text(upper(p_office_id_masks), ',');
    l_office_id         varchar2(16);
    l_end_time_utc      date := nvl(p_end_time_utc, cast(systimestamp at time zone 'UTC' as date));
    l_query_str         varchar2(32767);
