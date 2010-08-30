@@ -302,7 +302,7 @@ procedure store_location_level2(
                                       SELECT c002 -- STRAGG(strip_for_stragg(c007)) seasonal_value
                                            , c004
                                            , calc_seasonal_mn_offset(c005) c005 -- cal offset
-                                           , TO_NUMBER(TRIM(SUBSTR(c006, 0, INSTR(c006, ' '))))  c006 -- time offset
+                                           , TO_NUMBER(TRIM(SUBSTR(c006, 0, INSTR(c006, ' ')))) * 24 * 60  c006 -- time offset
                                            , c007
                                            , c008
                                        FROM apex_collections
