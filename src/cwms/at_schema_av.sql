@@ -955,7 +955,7 @@ AS
                    null                                                   as attribute_parameter_type_id,
                    null                                                   as attribute_duration_id,
                    a_ll.location_level_date                               as level_date,
-                   a_du1.unit_system                                      as unit_system,
+                   us.unit_system                                         as unit_system,
                    c_uc1.to_unit_id                                       as level_unit,
                    null                                                   as attribute_unit,
                    a_ll.attribute_value                                   as attribute_value,
@@ -974,12 +974,12 @@ AS
                    at_physical_location       a_pl,
                    at_base_location           a_bl,
                    at_parameter               a_p1,
-                   at_display_units           a_du1,
                    cwms_duration              c_d1,
                    cwms_base_parameter        c_bp1,
                    cwms_parameter_type        c_pt1,
                    cwms_unit_conversion       c_uc1,
-                   cwms_office                c_o
+                   cwms_office                c_o,
+                   (select 'EN' as unit_system from dual union select 'SI' as unit_system from dual) us
              where a_pl.location_code            = a_ll.location_code
                and a_bl.base_location_code       = a_pl.base_location_code
                and c_o.office_code               = a_bl.db_office_code
@@ -988,10 +988,11 @@ AS
                and c_pt1.parameter_type_code     = a_ll.parameter_type_code
                and c_d1.duration_code            = a_ll.duration_code
                and a_sl.specified_level_code     = a_ll.specified_level_code
-               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
-               and a_du1.parameter_code          is not null
                and c_uc1.from_unit_code          = c_bp1.unit_code
-               and c_uc1.to_unit_code            = a_du1.display_unit_code
+               and c_uc1.to_unit_code = decode(
+                  us.unit_system, 
+                  'EN', c_bp1.display_unit_code_en, 
+                  'SI', c_bp1.display_unit_code_si)  
                and a_ll.attribute_parameter_code is null
                and a_ll.location_level_value     is not null) 
            union
@@ -1009,7 +1010,7 @@ AS
                    null                                                   as attribute_parameter_type_id,
                    null                                                   as attribute_duration_id,
                    a_ll.location_level_date                               as level_date,
-                   a_du1.unit_system                                      as unit_system,
+                   us.unit_system                                         as unit_system,
                    c_uc1.to_unit_id                                       as level_unit,
                    null                                                   as attribute_unit,
                    a_ll.attribute_value                                   as attribute_value,
@@ -1029,12 +1030,12 @@ AS
                    at_physical_location       a_pl,
                    at_base_location           a_bl,
                    at_parameter               a_p1,
-                   at_display_units           a_du1,
                    cwms_duration              c_d1,
                    cwms_base_parameter        c_bp1,
                    cwms_parameter_type        c_pt1,
                    cwms_unit_conversion       c_uc1,
-                   cwms_office                c_o
+                   cwms_office                c_o,
+                   (select 'EN' as unit_system from dual union select 'SI' as unit_system from dual) us
              where a_pl.location_code            = a_ll.location_code
                and a_bl.base_location_code       = a_pl.base_location_code
                and c_o.office_code               = a_bl.db_office_code
@@ -1043,10 +1044,11 @@ AS
                and c_pt1.parameter_type_code     = a_ll.parameter_type_code
                and c_d1.duration_code            = a_ll.duration_code
                and a_sl.specified_level_code     = a_ll.specified_level_code
-               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
-               and a_du1.parameter_code          is not null
                and c_uc1.from_unit_code          = c_bp1.unit_code
-               and c_uc1.to_unit_code            = a_du1.display_unit_code
+               and c_uc1.to_unit_code = decode(
+                  us.unit_system, 
+                  'EN', c_bp1.display_unit_code_en, 
+                  'SI', c_bp1.display_unit_code_si)  
                and a_ll.attribute_parameter_code is null
                and a_ll.location_level_value     is null
                and a_sll.location_level_code     = a_ll.location_level_code)
@@ -1067,7 +1069,7 @@ AS
                    c_pt2.parameter_type_id                                as attribute_parameter_type_id,
                    c_d2.duration_id                                       as attribute_duration_id,
                    a_ll.location_level_date                               as level_date,
-                   a_du1.unit_system                                      as unit_system,
+                   us.unit_system                                         as unit_system,
                    c_uc1.to_unit_id                                       as level_unit,
                    c_uc2.to_unit_id                                       as attribute_unit,
                    a_ll.attribute_value*c_uc2.factor+c_uc2.offset         as attribute_value,
@@ -1087,8 +1089,6 @@ AS
                    at_base_location           a_bl,
                    at_parameter               a_p1,
                    at_parameter               a_p2,
-                   at_display_units           a_du1,
-                   at_display_units           a_du2,
                    cwms_duration              c_d1,
                    cwms_base_parameter        c_bp1,
                    cwms_parameter_type        c_pt1,
@@ -1097,7 +1097,8 @@ AS
                    cwms_base_parameter        c_bp2,
                    cwms_parameter_type        c_pt2,
                    cwms_unit_conversion       c_uc2,
-                   cwms_office                c_o
+                   cwms_office                c_o,
+                   (select 'EN' as unit_system from dual union select 'SI' as unit_system from dual) us
              where a_pl.location_code            = a_ll.location_code
                and a_bl.base_location_code       = a_pl.base_location_code
                and c_o.office_code               = a_bl.db_office_code
@@ -1106,20 +1107,21 @@ AS
                and c_pt1.parameter_type_code     = a_ll.parameter_type_code
                and c_d1.duration_code            = a_ll.duration_code
                and a_sl.specified_level_code     = a_ll.specified_level_code
-               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
-               and a_du1.parameter_code          is not null
                and c_uc1.from_unit_code          = c_bp1.unit_code
-               and c_uc1.to_unit_code            = a_du1.display_unit_code
+               and c_uc1.to_unit_code = decode(
+                  us.unit_system, 
+                  'EN', c_bp1.display_unit_code_en, 
+                  'SI', c_bp1.display_unit_code_si)  
                and a_ll.attribute_parameter_code is not null
                and a_p2.parameter_code           = a_ll.attribute_parameter_code
                and c_bp2.base_parameter_code     = a_p2.base_parameter_code
                and c_pt2.parameter_type_code     = a_ll.attribute_parameter_type_code
                and c_d2.duration_code            = a_ll.attribute_duration_code
-               and a_du2.unit_system             = a_du1.unit_system
-               and a_du2.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp2.base_parameter_id, a_p2.sub_parameter_id, c_o.office_id)
-               and a_du2.parameter_code          is not null
                and c_uc2.from_unit_code          = c_bp2.unit_code
-               and c_uc2.to_unit_code            = a_du2.display_unit_code
+               and c_uc2.to_unit_code = decode(
+                  us.unit_system, 
+                  'EN', c_bp2.display_unit_code_en, 
+                  'SI', c_bp2.display_unit_code_si)  
                and a_ll.location_level_value     is not null) 
            union
            (select c_o.office_id                                          as office_id,
@@ -1138,7 +1140,7 @@ AS
                    c_pt2.parameter_type_id                                as attribute_parameter_type_id,
                    c_d2.duration_id                                       as attribute_duration_id,
                    a_ll.location_level_date                               as level_date,
-                   a_du1.unit_system                                      as unit_system,
+                   us.unit_system                                         as unit_system,
                    c_uc1.to_unit_id                                       as level_unit,
                    c_uc2.to_unit_id                                       as attribute_unit,
                    a_ll.attribute_value*c_uc2.factor+c_uc2.offset         as attribute_value,
@@ -1159,8 +1161,6 @@ AS
                    at_base_location           a_bl,
                    at_parameter               a_p1,
                    at_parameter               a_p2,
-                   at_display_units           a_du1,
-                   at_display_units           a_du2,
                    cwms_duration              c_d1,
                    cwms_base_parameter        c_bp1,
                    cwms_parameter_type        c_pt1,
@@ -1169,7 +1169,8 @@ AS
                    cwms_base_parameter        c_bp2,
                    cwms_parameter_type        c_pt2,
                    cwms_unit_conversion       c_uc2,
-                   cwms_office                c_o
+                   cwms_office                c_o,
+                   (select 'EN' as unit_system from dual union select 'SI' as unit_system from dual) us
              where a_pl.location_code            = a_ll.location_code
                and a_bl.base_location_code       = a_pl.base_location_code
                and c_o.office_code               = a_bl.db_office_code
@@ -1178,20 +1179,21 @@ AS
                and c_pt1.parameter_type_code     = a_ll.parameter_type_code
                and c_d1.duration_code            = a_ll.duration_code
                and a_sl.specified_level_code     = a_ll.specified_level_code
-               and a_du1.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp1.base_parameter_id, a_p1.sub_parameter_id, c_o.office_id)
-               and a_du1.parameter_code          is not null
                and c_uc1.from_unit_code          = c_bp1.unit_code
-               and c_uc1.to_unit_code            = a_du1.display_unit_code
+               and c_uc1.to_unit_code = decode(
+                  us.unit_system, 
+                  'EN', c_bp1.display_unit_code_en, 
+                  'SI', c_bp1.display_unit_code_si)  
                and a_ll.attribute_parameter_code is not null
                and a_p2.parameter_code           = a_ll.attribute_parameter_code
                and c_bp2.base_parameter_code     = a_p2.base_parameter_code
                and c_pt2.parameter_type_code     = a_ll.attribute_parameter_type_code
                and c_d2.duration_code            = a_ll.attribute_duration_code
-               and a_du2.unit_system             = a_du1.unit_system
-               and a_du2.parameter_code          = cwms_ts.get_display_parameter_code2(c_bp2.base_parameter_id, a_p2.sub_parameter_id, c_o.office_id)
-               and a_du2.parameter_code          is not null
                and c_uc2.from_unit_code          = c_bp2.unit_code
-               and c_uc2.to_unit_code            = a_du2.display_unit_code
+               and c_uc2.to_unit_code = decode(
+                  us.unit_system, 
+                  'EN', c_bp1.display_unit_code_en, 
+                  'SI', c_bp1.display_unit_code_si)  
                and a_ll.location_level_value     is null
                and a_sll.location_level_code     = a_ll.location_level_code))
   order by office_id,
