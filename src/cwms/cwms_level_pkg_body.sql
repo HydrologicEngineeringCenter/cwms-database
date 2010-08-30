@@ -1323,6 +1323,7 @@ begin
    -------------------------------------------------------
    -- default the time zone to the location's time zone --
    -------------------------------------------------------
+   cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'p_timezone_id = '||p_timezone_id);
    if p_timezone_id is null then
       select time_zone_name
         into l_timezone_id
@@ -1331,13 +1332,16 @@ begin
    else     
       l_timezone_id := p_timezone_id;
    end if;  
+   cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'l_timezone_id = '||l_timezone_id);
    ---------------------------------
    -- get the codes for input ids --
    ---------------------------------
+   cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'p_effective_date = '||to_char(p_effective_date, 'yyyy/mm/dd hh24:mi:ss'));
    l_effective_date := cwms_util.change_timezone(
       nvl(p_effective_date, '01-JAN-1900'),
       l_timezone_id, 
       'UTC');
+   cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'l_effective_date = '||to_char(l_effective_date, 'yyyy/mm/dd hh24:mi:ss'));
    get_location_level_codes(
       l_location_level_code,
       l_spec_level_code,
@@ -1419,6 +1423,7 @@ begin
          -- set the interval origin for the seaonal values --
          -- (always stored in UTC in the database)         --
          ----------------------------------------------------
+         cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'p_interval_origin = '||to_char(p_interval_origin, 'yyyy/mm/dd hh24:mi:ss'));
          if p_interval_origin is null then
             l_interval_origin := to_date('01JAN2000 0000', 'ddmonyyyy hh24mi');
          else
@@ -1426,6 +1431,7 @@ begin
                from_tz(cast(p_interval_origin as timestamp), l_timezone_id)
                at time zone 'UTC' as date);
          end if;
+         cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'l_interval_origin = '||to_char(l_interval_origin, 'yyyy/mm/dd hh24:mi:ss'));
          if l_calendar_interval is null then
             -------------------
             -- time interval --
@@ -1524,6 +1530,7 @@ begin
          -- set the interval origin for the seaonal values --
          -- (always stored in UTC in the database)         --
          ----------------------------------------------------
+         cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'p_interval_origin = '||to_char(p_interval_origin, 'yyyy/mm/dd hh24:mi:ss'));
          if p_interval_origin is null then
             l_interval_origin := to_date('01JAN2000 0000', 'ddmonyyyy hh24mi');
          else
@@ -1531,6 +1538,7 @@ begin
                from_tz(cast(p_interval_origin as timestamp), l_timezone_id)
                at time zone 'UTC' as date);
          end if;
+         cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'l_interval_origin = '||to_char(l_interval_origin, 'yyyy/mm/dd hh24:mi:ss'));
          update at_location_level
             set location_level_value = p_level_value * l_level_factor + l_level_offset,
                 location_level_comment = p_level_comment,
@@ -1572,7 +1580,7 @@ procedure store_location_level(
    p_level_units             in  varchar2,
    p_level_comment           in  varchar2 default null,
    p_effective_date          in  date     default null,
-   p_timezone_id             in  varchar2 default 'UTC',
+   p_timezone_id             in  varchar2 default null,
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_attribute_id            in  varchar2 default null,
@@ -1673,7 +1681,7 @@ procedure store_location_level2(
    p_level_units             in  varchar2,
    p_level_comment           in  varchar2 default null,
    p_effective_date          in  varchar2 default null, -- 'yyyy/mm/dd hh:mm:ss'
-   p_timezone_id             in  varchar2 default 'UTC',
+   p_timezone_id             in  varchar2 default null,
    p_attribute_value         in  number   default null,
    p_attribute_units         in  varchar2 default null,
    p_attribute_id            in  varchar2 default null,
