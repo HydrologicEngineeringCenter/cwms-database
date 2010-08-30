@@ -10,7 +10,59 @@ CREATE OR REPLACE PACKAGE BODY CWMS_APEX_TEMP AS
 ******************************************************************************/
 
  g_bad_chars        VARCHAR2(256);
+FUNCTION         F_valid_header (f_file_type IN NUMBER
+                                          ,f_header_loc IN NUMBER 
+                                          ) RETURN NUMBER IS
+temp_Var VARCHAR2(1999);
+/******************************************************************************
+   NAME:       F_valid_header
+   PURPOSE:    
 
+   REVISIONS:
+   Ver        Date        Author           Description
+   ---------  ----------  ---------------  ------------------------------------
+   1.0        7/6/2010    JDK             1. Created this function.
+                                            THis is based on the APEX_COLLECTIONS view
+                                                    NOT
+                                              the location in the CSV (APEX_COLLECTION - 1 ) 
+
+   NOTES:
+
+   Automatically available Auto Replace Keywords:
+      Object Name:     F_valid_header
+      Sysdate:         7/6/2010
+      Date and Time:   7/6/2010, 12:43:30 PM, and 7/6/2010 12:43:30 PM
+      Username:         (set in TOAD Options, Procedure Editor)
+      Table Name:       (set in the "New PL/SQL Object" dialog)
+
+******************************************************************************/
+BEGIN
+ CASE f_file_type
+     WHEN 1 THEN
+        temp_var := c_app_logic_no;
+     WHEN 2 THEN
+        -- this is a location_level
+        CASE  
+         WHEN f_header_loc = 2 THEN temp_Var := 'LOCATION LEVEL';
+         WHEN f_header_loc = 3 THEN temp_var := 'CONSTANT LEVEL';
+         WHEN f_header_loc = 4 THEN temp_var := 'UNIT';
+         WHEN f_header_loc = 5 THEN temp_var := 'CALENDAR OFFSET';
+         WHEN f_header_loc = 6 THEN temp_var := 'TIME OFFSET';
+         WHEN f_header_loc = 7 THEN temp_var := 'SEASONAL VALUE';
+         WHEN f_header_loc = 8 THEN temp_var := 'OFFICE';
+        ELSE
+          temp_var := c_app_logic_no;
+        END CASE; --loc and val    
+     WHEN 3 THEN
+        -- this is a location_level indicator
+        temp_var := c_app_logic_no;
+     ELSE
+        temp_var := c_app_logic_no;
+    END CASE;
+   
+   RETURN temp_var ;
+
+END F_valid_header; 
 FUNCTION calc_seasonal_mn_offset(f_005 IN VARCHAR2) RETURN NUMBER IS
 temp_out NUMBER;
 temp_yr NUMBER DEFAULT 0;

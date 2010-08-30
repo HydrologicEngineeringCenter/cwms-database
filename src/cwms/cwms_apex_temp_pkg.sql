@@ -26,7 +26,11 @@ CREATE OR REPLACE PACKAGE CWMS_APEX_TEMP AS
                                       ) RETURN VARCHAR2;
 
   FUNCTION strip_for_stragg( f_string IN VARCHAR2 ) RETURN VARCHAR2;
-  
+FUNCTION         F_valid_header (f_file_type IN NUMBER
+                                          ,f_header_loc IN NUMBER 
+                                          ) RETURN NUMBER;  
+
+
   function str2tbl( p_str in varchar2, p_delim in varchar2 default ',' ) return str2tblType
 PIPELINED
 ;
