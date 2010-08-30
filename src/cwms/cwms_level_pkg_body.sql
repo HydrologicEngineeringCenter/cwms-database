@@ -1419,10 +1419,13 @@ begin
          -- set the interval origin for the seaonal values --
          -- (always stored in UTC in the database)         --
          ----------------------------------------------------
-         l_interval_origin := cwms_util.change_timezone(
-            nvl(p_interval_origin, '01-JAN-2000'),
-            l_timezone_id, 
-            'UTC');
+         if p_interval_origin is null then
+            l_interval_origin := to_date('01JAN2000 0000', 'ddmonyyyy hh24mi');
+         else
+            l_interval_origin := cast(
+               from_tz(cast(p_interval_origin as timestamp), l_timezone_id)
+               at time zone 'UTC' as date);
+         end if;
          if l_calendar_interval is null then
             -------------------
             -- time interval --
@@ -4061,7 +4064,7 @@ begin
                 l_attribute_param_type_code,
                 l_attribute_duration_code,
                 l_attribute_value
-           from at_location_level 			 
+           from at_location_level           
           where location_level_code = l_location_level_code;
          /* 
          cwms_msg.log_db_message('delete_location_level_ex', 7, 'location code = '||l_location_code);    
@@ -4099,7 +4102,7 @@ begin
             and nvl(attr_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
             and nvl(attr_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
             and nvl(attr_duration_code, -1) = nvl(l_attribute_duration_code, -1)
-            and nvl(to_char(attr_value), '@') = nvl(to_char(l_attribute_value), '@');			 
+            and nvl(to_char(attr_value), '@') = nvl(to_char(l_attribute_value), '@');          
       exception
          when no_data_found then null;
       end;
@@ -6819,5 +6822,5 @@ begin
 end get_level_indicator_max_values;    
             
 END cwms_level;
-/           
+/
 show errors;
