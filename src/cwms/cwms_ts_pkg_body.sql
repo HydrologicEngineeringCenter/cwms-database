@@ -40,10 +40,10 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
             WHEN NO_DATA_FOUND
             THEN
                 BEGIN
-                    SELECT a.ts_code
-                      INTO l_cwms_ts_code
-                      FROM zav_cwms_ts_id a
-                     WHERE UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
+                    SELECT   a.ts_code
+                      INTO   l_cwms_ts_code
+                      FROM   zav_cwms_ts_id a
+                     WHERE   UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
                                 AND a.db_office_code = p_db_office_code;
                 EXCEPTION
                     WHEN NO_DATA_FOUND
@@ -60,7 +60,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
     FUNCTION get_ts_id (p_ts_code IN NUMBER)
         RETURN VARCHAR2
     IS
-        l_cwms_ts_id VARCHAR2 (183);
+        l_cwms_ts_id   VARCHAR2 (183);
     BEGIN
         BEGIN
             SELECT   cwms_ts_id
@@ -70,10 +70,10 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
         EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-                SELECT  cwms_ts_id
-                  INTO  l_cwms_ts_id
-                  FROM  zav_cwms_ts_id
-                 WHERE  ts_code = p_ts_code;
+                SELECT   cwms_ts_id
+                  INTO   l_cwms_ts_id
+                  FROM   zav_cwms_ts_id
+                 WHERE   ts_code = p_ts_code;
         END;
     END;
  --******************************************************************************/   
@@ -88,7 +88,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
     FUNCTION get_cwms_ts_id (p_cwms_ts_id IN VARCHAR2, p_office_id IN VARCHAR2)
         RETURN VARCHAR2
     IS
-        l_cwms_ts_id VARCHAR2 (183);
+        l_cwms_ts_id   VARCHAR2 (183);
     BEGIN
         BEGIN
             SELECT   cwms_ts_id
@@ -99,10 +99,10 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
         EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-                SELECT  cwms_ts_id
-                  INTO  l_cwms_ts_id
-                  FROM  zav_cwms_ts_id mcti
-                 WHERE  UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
+                SELECT   cwms_ts_id
+                  INTO   l_cwms_ts_id
+                  FROM   zav_cwms_ts_id mcti
+                 WHERE   UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
                             AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
         END;
 
@@ -386,10 +386,10 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
         EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
-                SELECT  location_id
-                  INTO  l_location_id
-                  FROM  zav_cwms_ts_id
-                 WHERE  ts_code = p_cwms_ts_code;
+                SELECT   location_id
+                  INTO   l_location_id
+                  FROM   zav_cwms_ts_id
+                 WHERE   ts_code = p_cwms_ts_code;
         END;
     END;
 --
@@ -544,7 +544,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
                  INTO l_base_parameter_id
                  FROM cwms_base_parameter
                 WHERE base_parameter_code = p_base_parameter_code;
-
+   
                cwms_err.RAISE ('INVALID_PARAM_ID',
                                l_office_id
                                || '/'
@@ -1083,7 +1083,7 @@ end get_ts_time_zone;
 -- GET_TSID_TIME_ZONE -
 --
 FUNCTION get_tsid_time_zone (p_ts_id       IN VARCHAR2,
-                             p_office_id   IN VARCHAR2 DEFAULT NULL
+                             p_office_id    IN VARCHAR2 DEFAULT NULL
                             )
    RETURN VARCHAR2
 IS
@@ -1466,144 +1466,144 @@ BEGIN
       l_can_create := FALSE; -- don't create a ts_code, just retrieve the one we're blocking against.
       DBMS_LOCK.sleep (2);
    END IF;
-      -- BEGIN...
+   -- BEGIN...
 
-      -- determine rest of lookup codes based on passed in values, use scalar subquery to minimize context switches, return error if lookups not found
-      DBMS_APPLICATION_INFO.set_action ('check code lookups, scalar subquery');
+   -- determine rest of lookup codes based on passed in values, use scalar subquery to minimize context switches, return error if lookups not found
+   DBMS_APPLICATION_INFO.set_action ('check code lookups, scalar subquery');
 
-      SELECT (SELECT base_parameter_code
-                FROM cwms_base_parameter p
-               WHERE UPPER (p.base_parameter_id) = UPPER (l_base_parameter_id))
-                                                                            p,
-             (SELECT duration_code
-                FROM cwms_duration d
-               WHERE UPPER (d.duration_id) = UPPER (l_duration_id)) d,
-             (SELECT parameter_type_code
-                FROM cwms_parameter_type p
-               WHERE UPPER (p.parameter_type_id) = UPPER (l_parameter_type_id))
-                                                                           pt,
-             (SELECT interval_code
-                FROM cwms_interval i
-               WHERE UPPER (i.interval_id) = UPPER (l_interval_id)) i,
-             (SELECT INTERVAL
-                FROM cwms_interval ii
-               WHERE UPPER (ii.interval_id) = UPPER (l_interval_id)) ii
-        INTO l_base_parameter_code,
-             l_duration_code,
-             l_parameter_type_code,
-             l_interval_code,
-             l_interval
-        FROM DUAL;
+   SELECT (SELECT base_parameter_code
+             FROM cwms_base_parameter p
+            WHERE UPPER (p.base_parameter_id) = UPPER (l_base_parameter_id))
+                                                                         p,
+          (SELECT duration_code
+             FROM cwms_duration d
+            WHERE UPPER (d.duration_id) = UPPER (l_duration_id)) d,
+          (SELECT parameter_type_code
+             FROM cwms_parameter_type p
+            WHERE UPPER (p.parameter_type_id) = UPPER (l_parameter_type_id))
+                                                                        pt,
+          (SELECT interval_code
+             FROM cwms_interval i
+            WHERE UPPER (i.interval_id) = UPPER (l_interval_id)) i,
+          (SELECT INTERVAL
+             FROM cwms_interval ii
+            WHERE UPPER (ii.interval_id) = UPPER (l_interval_id)) ii
+     INTO l_base_parameter_code,
+          l_duration_code,
+          l_parameter_type_code,
+          l_interval_code,
+          l_interval
+     FROM DUAL;
 
-      IF    l_base_parameter_code IS NULL
-         OR l_duration_code IS NULL
-         OR l_parameter_type_code IS NULL
-         OR l_interval_code IS NULL
+   IF    l_base_parameter_code IS NULL
+      OR l_duration_code IS NULL
+      OR l_parameter_type_code IS NULL
+      OR l_interval_code IS NULL
+   THEN
+      l_str_error :=
+                'ERROR: Invalid Time Series Description: ' || p_cwms_ts_id;
+
+      IF l_base_parameter_code IS NULL
       THEN
          l_str_error :=
-                   'ERROR: Invalid Time Series Description: ' || p_cwms_ts_id;
+               l_str_error
+            || CHR (10)
+            || l_base_parameter_id
+            || ' is not a valid base parameter';
+      END IF;
 
-         IF l_base_parameter_code IS NULL
-         THEN
-            l_str_error :=
-                  l_str_error
-               || CHR (10)
-               || l_base_parameter_id
-               || ' is not a valid base parameter';
-         END IF;
+      IF l_duration_code IS NULL
+      THEN
+         l_str_error :=
+               l_str_error
+            || CHR (10)
+            || l_duration_id
+            || ' is not a valid duration';
+      END IF;
 
-         IF l_duration_code IS NULL
-         THEN
-            l_str_error :=
-                  l_str_error
-               || CHR (10)
-               || l_duration_id
-               || ' is not a valid duration';
-         END IF;
-
-         IF l_interval_code IS NULL
-         THEN
-            l_str_error :=
-                  l_str_error
-               || CHR (10)
-               || l_interval_id
-               || ' is not a valid interval';
-         END IF;
+      IF l_interval_code IS NULL
+      THEN
+         l_str_error :=
+               l_str_error
+            || CHR (10)
+            || l_interval_id
+            || ' is not a valid interval';
+      END IF;
 
       if l_can_create then
          l_ret := dbms_lock.release(l_hashcode);
       end if;         
-         raise_application_error (-20205, l_str_error, TRUE);
-      END IF;
+      raise_application_error (-20205, l_str_error, TRUE);
+   END IF;
 
-      BEGIN
+   BEGIN
+      IF l_sub_parameter_id IS NULL
+      THEN
+         SELECT parameter_code
+           INTO l_parameter_code
+           FROM at_parameter ap
+          WHERE base_parameter_code = l_base_parameter_code
+            AND sub_parameter_id IS NULL
+            AND db_office_code IN (l_office_code, l_all_office_code);
+      ELSE
+         SELECT parameter_code
+           INTO l_parameter_code
+           FROM at_parameter ap
+          WHERE base_parameter_code = l_base_parameter_code
+            AND UPPER (sub_parameter_id) = UPPER (l_sub_parameter_id)
+            AND db_office_code IN (l_office_code, l_all_office_code);
+      END IF;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
          IF l_sub_parameter_id IS NULL
          THEN
-            SELECT parameter_code
-              INTO l_parameter_code
-              FROM at_parameter ap
-             WHERE base_parameter_code = l_base_parameter_code
-               AND sub_parameter_id IS NULL
-               AND db_office_code IN (l_office_code, l_all_office_code);
-         ELSE
-            SELECT parameter_code
-              INTO l_parameter_code
-              FROM at_parameter ap
-             WHERE base_parameter_code = l_base_parameter_code
-               AND UPPER (sub_parameter_id) = UPPER (l_sub_parameter_id)
-               AND db_office_code IN (l_office_code, l_all_office_code);
-         END IF;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            IF l_sub_parameter_id IS NULL
-            THEN
             if l_can_create then
                l_ret := dbms_lock.release(l_hashcode);
             end if;         
-               cwms_err.RAISE
-                  ('GENERIC_ERROR',
-                      l_base_parameter_id
-                   || ' is not a valid Base Parameter. Cannot Create a new CWMS_TS_ID'
-                  );
-            ELSE                                -- Insert new sub_parameter...
-               INSERT INTO at_parameter
-                           (parameter_code, db_office_code,
-                            base_parameter_code, sub_parameter_id
-                           )
-                    VALUES (cwms_seq.NEXTVAL, l_office_code,
-                            l_base_parameter_code, l_sub_parameter_id
-                           )
-                 RETURNING parameter_code
-                      INTO l_parameter_code;
-            END IF;
-      END;
+            cwms_err.RAISE
+               ('GENERIC_ERROR',
+                   l_base_parameter_id
+                || ' is not a valid Base Parameter. Cannot Create a new CWMS_TS_ID'
+               );
+         ELSE                                -- Insert new sub_parameter...
+            INSERT INTO at_parameter
+                        (parameter_code, db_office_code,
+                         base_parameter_code, sub_parameter_id
+                        )
+                 VALUES (cwms_seq.NEXTVAL, l_office_code,
+                         l_base_parameter_code, l_sub_parameter_id
+                        )
+              RETURNING parameter_code
+                   INTO l_parameter_code;
+         END IF;
+   END;
 
-      --after all lookups, check for existing ts_code, insert it if not found, and verify that it was inserted with the returning, error if no valid ts_code is returned
-      DBMS_APPLICATION_INFO.set_action
-                                     ('check for ts_code, create if necessary');
+   --after all lookups, check for existing ts_code, insert it if not found, and verify that it was inserted with the returning, error if no valid ts_code is returned
+   DBMS_APPLICATION_INFO.set_action
+                                  ('check for ts_code, create if necessary');
 
-      BEGIN
-         SELECT ts_code
-           INTO p_ts_code
-           FROM at_cwms_ts_spec acts
-          WHERE     /*office_code = l_office_code
-                AND */ acts.location_code = l_location_code
-            AND acts.parameter_code = l_parameter_code
-            AND acts.parameter_type_code = l_parameter_type_code
-            AND acts.interval_code = l_interval_code
-            AND acts.duration_code = l_duration_code
-            AND UPPER (NVL (acts.VERSION, 1)) = UPPER (NVL (l_version, 1))
-            AND acts.delete_date IS NULL;
+   BEGIN
+      SELECT ts_code
+        INTO p_ts_code
+        FROM at_cwms_ts_spec acts
+       WHERE     /*office_code = l_office_code
+             AND */ acts.location_code = l_location_code
+         AND acts.parameter_code = l_parameter_code
+         AND acts.parameter_type_code = l_parameter_type_code
+         AND acts.interval_code = l_interval_code
+         AND acts.duration_code = l_duration_code
+         AND UPPER (NVL (acts.VERSION, 1)) = UPPER (NVL (l_version, 1))
+         AND acts.delete_date IS NULL;
 
-         --
-         l_ts_id_exists := TRUE;
+      --
+      l_ts_id_exists := TRUE;
       if l_can_create then
          l_ret := dbms_lock.release(l_hashcode);
       end if;         
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
          IF l_can_create THEN
             IF l_interval_id = '0'
             THEN
@@ -1695,7 +1695,7 @@ BEGIN
 
             COMMIT;
          END IF;
-      END;
+   END;
 
    IF p_ts_code IS NULL
    THEN
@@ -1983,10 +1983,10 @@ begin
    dbms_application_info.set_module ('cwms_ts.build_retrieve_ts_query','Get TS Code');
 
     BEGIN
-        SELECT ts_code, interval, interval_utc_offset
-          INTO l_ts_code, l_interval, l_offset
-          FROM mv_cwms_ts_id
-         WHERE db_office_id = UPPER (l_office_id)
+        SELECT   ts_code, interval, interval_utc_offset
+          INTO   l_ts_code, l_interval, l_offset
+          FROM   mv_cwms_ts_id
+         WHERE   db_office_id = UPPER (l_office_id)
                     AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
     EXCEPTION
         WHEN NO_DATA_FOUND
@@ -4231,20 +4231,20 @@ end retrieve_ts_multi;
 -- STORE_TS_MULTI -
 --
     PROCEDURE store_ts_multi (
-        p_timeseries_array IN timeseries_array,
-        p_store_rule       IN VARCHAR2 DEFAULT NULL,
-        p_override_prot    IN VARCHAR2 DEFAULT 'F',
-        p_version_date     IN DATE DEFAULT cwms_util.non_versioned,
-        p_office_id        IN VARCHAR2 DEFAULT NULL
+        p_timeseries_array   IN timeseries_array,
+        p_store_rule         IN VARCHAR2 DEFAULT NULL,
+        p_override_prot      IN VARCHAR2 DEFAULT 'F',
+        p_version_date       IN DATE DEFAULT cwms_util.non_versioned,
+        p_office_id          IN VARCHAR2 DEFAULT NULL
     )
     IS
-        l_timeseries   timeseries_type;
-        l_err_msg      VARCHAR2 (512) := NULL;
+        l_timeseries     timeseries_type;
+        l_err_msg        VARCHAR2 (512) := NULL;
         l_all_err_msgs    VARCHAR2 (2048) := NULL;
-        l_len          NUMBER := 0;
-        l_total_len    NUMBER := 0;
-        l_num_ts_ids   NUMBER := 0;
-        l_num_errors   NUMBER := 0;
+        l_len            NUMBER := 0;
+        l_total_len      NUMBER := 0;
+        l_num_ts_ids     NUMBER := 0;
+        l_num_errors     NUMBER := 0;
         l_excep_errors    NUMBER := 0;
     BEGIN
         DBMS_APPLICATION_INFO.
@@ -4252,7 +4252,7 @@ end retrieve_ts_multi;
                         'selecting time series from input'
                       );
 
-        FOR l_timeseries IN (SELECT *
+        FOR l_timeseries IN (SELECT   *
                                       FROM   TABLE (p_timeseries_array))
         LOOP
             DBMS_APPLICATION_INFO.
@@ -4408,19 +4408,19 @@ BEGIN
    --
 
     BEGIN
-        SELECT ts_code
-          INTO l_ts_code
-          FROM mv_cwms_ts_id mcts
-         WHERE UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
+        SELECT   ts_code
+          INTO   l_ts_code
+          FROM   mv_cwms_ts_id mcts
+         WHERE   UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
                     AND mcts.db_office_code = l_db_office_code;
     EXCEPTION
         WHEN NO_DATA_FOUND
         THEN
             BEGIN
-                SELECT  ts_code
-                  INTO  l_ts_code
-                  FROM  zav_cwms_ts_id mcts
-                 WHERE  UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
+                SELECT   ts_code
+                  INTO   l_ts_code
+                  FROM   zav_cwms_ts_id mcts
+                 WHERE   UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
                             AND mcts.db_office_code = l_db_office_code;
             EXCEPTION
                 WHEN NO_DATA_FOUND
@@ -5879,8 +5879,38 @@ BEGIN
    DBMS_APPLICATION_INFO.set_module (NULL, NULL);
 END zstore_ts_multi;
 
+FUNCTION register_store_ts_callback (
+   p_procedure_name  IN VARCHAR2,
+   p_subscriber_name IN VARCHAR2 DEFAULT NULL)
+   RETURN VARCHAR2
+IS
+BEGIN
+   return cwms_msg.register_msg_callback(
+      p_procedure_name, 
+      'ts_stored', 
+      p_subscriber_name);
+END register_store_ts_callback;   
+   
+PROCEDURE unregister_store_ts_callback (
+   p_procedure_name  IN VARCHAR2,
+   p_subscriber_name IN VARCHAR2)
+IS
+BEGIN
+   cwms_msg.unregister_msg_callback(
+      p_procedure_name, 
+      'ts_stored',
+      p_subscriber_name);
+END unregister_store_ts_callback;
 
-   END cwms_ts; --end package body
+
+PROCEDURE refresh_ts_catalog
+IS
+BEGIN
+   cwms_util.refresh_mv_cwms_ts_id;
+END refresh_ts_catalog;
+
+
+END cwms_ts; --end package body
 /
 
 show errors;

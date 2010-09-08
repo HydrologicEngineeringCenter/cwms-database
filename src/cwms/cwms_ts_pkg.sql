@@ -650,6 +650,17 @@ AS
 		p_parameter_id_new	IN VARCHAR2,
 		p_db_office_id 		IN VARCHAR2 DEFAULT NULL
 	);
+   
+   FUNCTION register_store_ts_callback (
+      p_procedure_name  IN VARCHAR2,
+      p_subscriber_name IN VARCHAR2 DEFAULT NULL)
+      RETURN VARCHAR2;
+   
+   PROCEDURE unregister_store_ts_callback (
+      p_procedure_name  IN VARCHAR2,
+      p_subscriber_name IN VARCHAR2);
+
+   PROCEDURE refresh_ts_catalog;
 END;
 /
 
