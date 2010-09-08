@@ -1381,6 +1381,88 @@ begin
    end if;
 end start_purge_queues_job;
 
+--------------------------------------------------------------------------------
+-- function get_registration_info
+--
+function get_registration_info(
+   p_procedure_name  in varchar2,
+   p_queue_name      in varchar2,
+   p_subscriber_name in varchar2 default null)
+   return sys.aq$_reg_info_list
+is
+   l_reg_info        sys.aq$_reg_info_list := sys.aq$_reg_info_list();
+   l_queue_name      varchar2(61);
+   l_subscriber_name varchar2(30) := nvl(p_subscriber_name, dbms_random.string('l', 16));
+begin
+   l_queue_name := sys_context('userenv', 'current_schema')
+                   ||'.'||cwms_util.user_office_id
+                   ||'_'||p_queue_name;
+   l_reg_info.extend();
+   l_reg_info(1) := sys.aq$_reg_info(
+      name      => upper(l_queue_name||':'||l_subscriber_name),
+      namespace => dbms_aq.namespace_anonymous,
+      callback  => 'plsql://'||upper(p_procedure_name),
+      context   => hextoraw('ff'));
+   dbms_output.put_line('name      = ' || l_reg_info(1).name);      
+   dbms_output.put_line('namespace = ' || l_reg_info(1).namespace);      
+   dbms_output.put_line('callback  = ' || l_reg_info(1).callback);      
+   dbms_output.put_line('context   = ' || rawtohex(l_reg_info(1).context));      
+   return l_reg_info;      
+end get_registration_info;   
+   
+--------------------------------------------------------------------------------
+-- procedure register_msg_callback
+--
+function register_msg_callback (
+   p_procedure_name  in varchar2,
+   p_queue_name      in varchar2,
+   p_subscriber_name in varchar2 default null)
+   return varchar2
+is
+   l_reg_info        sys.aq$_reg_info_list;
+   l_parts           cwms_util.str_tab_t;
+   l_subscriber_name varchar2(30);
+   l_queue_name      varchar2(61);
+begin
+   l_reg_info := get_registration_info(
+      p_procedure_name, 
+      p_queue_name, 
+      p_subscriber_name);
+   l_parts := cwms_util.split_text(l_reg_info(1).name ,':');
+   l_queue_name := l_parts(1);      
+   l_subscriber_name := l_parts(2);
+   dbms_aqadm.add_subscriber(
+      queue_name => l_queue_name,
+      subscriber => sys.aq$_agent(l_subscriber_name, l_queue_name, 0));
+   dbms_aq.register(l_reg_info, l_reg_info.count);
+   return l_subscriber_name;
+end register_msg_callback;   
+   
+--------------------------------------------------------------------------------
+-- procedure unregister_msg_callback
+--
+procedure unregister_msg_callback (
+   p_procedure_name  in varchar2,
+   p_queue_name      in varchar2,
+   p_subscriber_name in varchar2)
+is
+   l_reg_info        sys.aq$_reg_info_list;
+   l_parts           cwms_util.str_tab_t;
+   l_subscriber_name varchar2(30);
+   l_queue_name      varchar2(61);
+begin
+   l_reg_info := get_registration_info(
+      p_procedure_name, 
+      p_queue_name, 
+      p_subscriber_name);
+   l_parts := cwms_util.split_text(l_reg_info(1).name ,':');
+   l_queue_name := l_parts(1);      
+   l_subscriber_name := l_parts(2);
+   dbms_aq.unregister(l_reg_info, l_reg_info.count);
+   dbms_aqadm.remove_subscriber(
+      queue_name => l_queue_name,
+      subscriber => sys.aq$_agent(l_subscriber_name, l_queue_name, 0));
+end unregister_msg_callback;
 
 end cwms_msg;
 /

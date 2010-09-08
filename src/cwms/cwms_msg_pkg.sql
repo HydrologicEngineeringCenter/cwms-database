@@ -200,6 +200,23 @@ procedure purge_queues;
 --
 procedure start_purge_queues_job;
    
+--------------------------------------------------------------------------------
+-- procedure register_msg_callback
+--
+function register_msg_callback (
+   p_procedure_name  in varchar2,
+   p_queue_name      in varchar2,
+   p_subscriber_name in varchar2 default null)
+   return varchar2;
+   
+--------------------------------------------------------------------------------
+-- procedure unregister_msg_callback
+--
+procedure unregister_msg_callback (
+   p_procedure_name  in varchar2,
+   p_queue_name      in varchar2,
+   p_subscriber_name in varchar2);
+
 end cwms_msg;
 /
 show errors;
