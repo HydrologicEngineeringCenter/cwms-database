@@ -1420,7 +1420,7 @@ function register_msg_callback (
    return varchar2
 is
    l_reg_info        sys.aq$_reg_info_list;
-   l_parts           cwms_util.str_tab_t;
+   l_parts           str_tab_t;
    l_subscriber_name varchar2(30);
    l_queue_name      varchar2(61);
 begin
@@ -1447,7 +1447,7 @@ procedure unregister_msg_callback (
    p_subscriber_name in varchar2)
 is
    l_reg_info        sys.aq$_reg_info_list;
-   l_parts           cwms_util.str_tab_t;
+   l_parts           str_tab_t;
    l_subscriber_name varchar2(30);
    l_queue_name      varchar2(61);
 begin
