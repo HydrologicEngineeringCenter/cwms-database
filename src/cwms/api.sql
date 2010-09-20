@@ -67,3 +67,6 @@
 @@cwms_water_supply_pkg
 @@cwms_water_supply_pkg_body
 
+@@cwms_outlet_pkg
+@@cwms_outlet_pkg_body
+

@@ -2,6 +2,9 @@ WHENEVER sqlerror EXIT sql.sqlcode
 SET define ON
 @@../cwms/defines.sql
 SET serveroutput ON
+--
+--
+--
 --location objects are defined in cwms_types.
 --location_ref_t and location_obj_t.
 CREATE OR REPLACE TYPE lookup_type_obj_t
@@ -15,11 +18,17 @@ AS
   );
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE TYPE lookup_type_tab_t
 IS
   TABLE OF lookup_type_obj_t;
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE TYPE document_obj_t
 AS
   OBJECT
@@ -29,12 +38,18 @@ AS
   );
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE TYPE document_tab_t
 IS
   TABLE OF document_obj_t;
   /
   show errors
   --project object.
+  --
+  --
+  --
 CREATE OR REPLACE TYPE project_obj_t
 AS
   OBJECT
@@ -74,10 +89,12 @@ AS
     --The start date of the yield time frame
     yield_time_frame_start DATE,
     --The end date of the yield time frame
-    yield_time_frame_end DATE 
-  );
+    yield_time_frame_end DATE );
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE TYPE embankment_obj_t
 AS
   OBJECT
@@ -91,16 +108,22 @@ AS
     downstream_sideslope BINARY_DOUBLE,     --Param: ??. The downstream side slope of the embankment structure
     structure_length BINARY_DOUBLE,         --Param: Length. The overall length of the embankment structure
     height_max BINARY_DOUBLE,               --Param: Height. The maximum height of the embankment structure
-    top_width BINARY_DOUBLE,                 --Param: Width. The width at the top of the embankment structure
-    units_id VARCHAR2(16)                  --The units id of the lenght, width, and height values
+    top_width BINARY_DOUBLE,                --Param: Width. The width at the top of the embankment structure
+    units_id VARCHAR2(16)                   --The units id of the lenght, width, and height values
   );
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE TYPE embankment_tab_t
 IS
   TABLE OF embankment_obj_t;
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE TYPE water_user_obj_t
 AS
   OBJECT
@@ -111,11 +134,17 @@ AS
   );
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE TYPE water_user_tab_t
 IS
   TABLE OF water_user_obj_t;
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE TYPE water_user_contract_ref_t
 AS
   OBJECT
@@ -125,6 +154,9 @@ AS
   );
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE type water_user_contract_obj_t
 AS
   object
@@ -145,12 +177,17 @@ AS
   );
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE TYPE water_user_contract_tab_t
 IS
   TABLE OF water_user_contract_obj_t;
   /
-  show errors  
-  
+  show errors
+  --
+  --
+  --
 CREATE OR REPLACE type wat_usr_contract_acct_obj_t
 AS
   object
@@ -166,11 +203,17 @@ AS
   );
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE TYPE wat_usr_contract_acct_tab_t
 IS
   TABLE OF wat_usr_contract_acct_obj_t;
   /
   show errors
+  --
+  --
+  --
 CREATE OR REPLACE TYPE lock_obj_t
 AS
   OBJECT
@@ -184,12 +227,80 @@ AS
     lock_width binary_double,         -- Param: Width. The width of the lock chamber
     lock_length binary_double,        -- Param: Length. the length of the lock chamber
     minimum_draft binary_double,      -- Param: Depth. the minimum depth of water that is maintained for vessels for this particular lock
-    normal_lock_lift binary_double,    -- Param: Height. The difference between upstream pool and downstream pool at normal elevation.
-    units_id VARCHAR2(16)            -- the units id used for width, length, draft, and lift.
+    normal_lock_lift binary_double,   -- Param: Height. The difference between upstream pool and downstream pool at normal elevation.
+    units_id VARCHAR2(16)             -- the units id used for width, length, draft, and lift.
   );
   /
   show errors
+  --
+  --
+  --
+CREATE OR REPLACE TYPE outlet_characteristic_ref_t
+AS
+  OBJECT
+  (
+    office_id         VARCHAR2 (16), -- the office id for this ref
+    characteristic_id VARCHAR2 (32)  -- the id of this characteristic.
+  );
+  /
+  show errors
+  --
+  --
+  --
+CREATE OR REPLACE TYPE outlet_obj_t
+AS
+  OBJECT
+  (
+    project_location_ref location_ref_t,           --The project this outlet is a child of
+    lock_location location_obj_t,                  --The location for this outlet
+    characteristic_ref outlet_characteristic_ref_t -- the characteristic for this outlet.
+  );
+  /
+  show errors
+  --
+  --
+  --
+CREATE OR REPLACE TYPE outlet_tab_t
+IS
+  TABLE OF outlet_obj_t;
+  /
+  show errors
+  --
+  --
+  --
+CREATE OR REPLACE TYPE outlet_characteristic_obj_t
+AS
+  OBJECT
+  (
+    characteristic_ref outlet_characteristic_ref_t, -- office id and characteristic id
+    opening_parameter_id VARCHAR2 (16),             -- A foreign key to an AT_PARAMETER record that constrains the gate opening to a defined parameter and unit.
+    height BINARY_DOUBLE,                           -- The height of the gate
+    width binary_double,                            -- The width of the gate
+    opening_radius binary_double,                   -- The radius of the pipe or circular conduit that this outlet is a control for.  This is not applicable to rectangular outlets, tainter gates, or uncontrolled spillways
+    opening_units_id VARCHAR2(16),                  -- the units of the opening radius value.
+    elev_invert binary_double,                      -- The elevation of the invert for the outlet
+    flow_capacity_max BINARY_DOUBLE,                --  The maximum flow capacity of the gate
+    flow_units_id VARCHAR2(16),                     -- the units of the flow value.
+    net_length_spillway binary_double,              -- The net length of the spillway
+    spillway_notch_length binary_double,            -- The length of the spillway notch
+    length_units_id            VARCHAR2(16),                   -- the units of the height, width, and length.
+    outlet_general_description VARCHAR2(255)                   -- description of the outlet characteristic
+  );
+  /
+  show errors
+  --
+  --
+  --
+CREATE OR REPLACE TYPE outlet_characteristic_tab_t
+IS
+  TABLE OF outlet_characteristic_obj_t;
+  /
+  show errors
+  --
+  --
+  --
   SET echo ON
+  --
   --
   --
   -- create public synonyms for CWMS schema packages and views
