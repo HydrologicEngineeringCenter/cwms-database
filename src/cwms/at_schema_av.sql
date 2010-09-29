@@ -26,7 +26,8 @@ DECLARE
                      'av_unit',
                      'av_storage_unit',
                      'av_log_message',     -- located in at_schema_2
-                     'av_dataexchange_job'
+                     'av_dataexchange_job',
+                     'av_display_units'
                     );
 BEGIN
    FOR i IN view_names.FIRST .. view_names.LAST
@@ -1745,5 +1746,31 @@ create or replace force view av_dataexchange_job as
           left outer join start$ on start$.job_id = request$.job_id
           left outer join complete$ on complete$.job_id = request$.job_id           
  order by request$.log_timestamp_utc desc;
+/
+show errors;
+
+create or replace view av_display_units
+(
+   office_id,
+   parameter_id,
+   unit_system,
+   unit_id
+)
+as
+select o.office_id,
+       bp.base_parameter_id
+       || substr('-', 1, length(p.sub_parameter_id))
+       || p.sub_parameter_id as parameter_id,
+       d.unit_system,
+       u.unit_id
+  from at_display_units d,
+       cwms_office o,
+       at_parameter p,
+       cwms_base_parameter bp,
+       cwms_unit u
+ where o.office_code = d.db_office_code
+   and p.parameter_code = d.parameter_code
+   and bp.base_parameter_code = p.base_parameter_code
+   and u.unit_code = display_unit_code
 /
 show errors;
