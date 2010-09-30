@@ -1778,7 +1778,7 @@ AS
 		l_time								VARCHAR2 (32);
 		l_parts								str_tab_t;
 		l_ts									timestamp;
-		l_offset 							INTERVAL DAY TO SECOND;
+		l_offset 							INTERVAL DAY (9) TO SECOND (9);
 		l_iso_pattern CONSTANT			VARCHAR2 (71)
 				:= '-?\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:(\d{2}([.]\d+)?))?([-+]\d{2}:\d{2}|Z)?' ;
 		l_str 								VARCHAR2 (64) := strip (p_iso_str);
@@ -1878,7 +1878,7 @@ AS
 		l_min 								NUMBER;
 		l_sec 								NUMBER;
 		l_negative							BOOLEAN := p_millis < 0;
-		l_interval							INTERVAL DAY (5) TO SECOND (3);
+		l_interval							INTERVAL DAY (9) TO SECOND (9);
 	BEGIN
 		l_day := TRUNC (l_millis / 86400000);
 		l_millis := l_millis - (l_day * 86400000);
@@ -1914,7 +1914,7 @@ AS
 	FUNCTION to_millis (p_timestamp IN timestamp)
 		RETURN NUMBER
 	IS
-		l_intvl								INTERVAL DAY (5) TO SECOND (3);
+		l_intvl								INTERVAL DAY (9) TO SECOND (9);
 		l_millis 							NUMBER;
 	BEGIN
 		l_intvl := p_timestamp - epoch;
