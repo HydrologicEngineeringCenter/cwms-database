@@ -651,12 +651,12 @@ AS
 		p_db_office_id 		IN VARCHAR2 DEFAULT NULL
 	);
    
-   FUNCTION register_store_ts_callback (
+   FUNCTION register_ts_callback (
       p_procedure_name  IN VARCHAR2,
       p_subscriber_name IN VARCHAR2 DEFAULT NULL)
       RETURN VARCHAR2;
    
-   PROCEDURE unregister_store_ts_callback (
+   PROCEDURE unregister_ts_callback (
       p_procedure_name  IN VARCHAR2,
       p_subscriber_name IN VARCHAR2);
 

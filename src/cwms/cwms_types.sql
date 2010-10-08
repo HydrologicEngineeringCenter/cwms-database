@@ -3012,6 +3012,9 @@ show errors;
 create or replace type location_level_tab_t is table of location_level_t
 /
 
+create or replace type jms_map_msg_tab_t as table of sys.aq$_jms_map_message;
+/
+
 -- HOST pwd
 
 @@rowcps_types

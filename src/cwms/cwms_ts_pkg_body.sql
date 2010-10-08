@@ -1692,8 +1692,19 @@ BEGIN
                         )
               RETURNING ts_code
                    INTO p_ts_code;
-
             COMMIT;
+            ---------------------------------  
+            -- Publish a TSCreated message --
+            ---------------------------------
+            declare
+               l_msg   sys.aq$_jms_map_message;
+               l_msgid pls_integer;
+               i       integer;
+            begin
+               cwms_msg.new_message(l_msg, l_msgid, 'TSCreated');
+               l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+               i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
+            end;
          END IF;
    END;
 
@@ -2994,6 +3005,12 @@ end retrieve_ts_multi;
       l_units               varchar2(16);
       l_base_parameter_id   varchar2(16);
       l_base_unit_id        varchar2(16);
+      --
+      l_first_time          date;
+      l_last_time           date;
+      l_msg                 sys.aq$_jms_map_message;
+      l_msgid               pls_integer;
+      i                     integer;
    BEGIN
       dbms_application_info.set_module('cwms_ts_store.store_ts','get tscode from ts_id');
     cwms_apex.aa1(to_char(sysdate, 'YYYY-MM-DD HH24:MI') || 'store_ts: ' || p_cwms_ts_id);
@@ -3863,6 +3880,19 @@ end retrieve_ts_multi;
          dbms_output.put_line('CASE 7: STORE_TS rule: delete-insert, FALSE');
          dbms_output.put_line('CASE 7: table_cnt: ' || table_cnt);
 
+         begin
+            select min(date_time),
+                   max(date_time)
+              into l_first_time,
+                   l_last_time
+              from av_tsv
+             where ts_code = l_ts_code;
+         exception
+            when no_data_found then
+               l_first_time := null;
+               l_last_time  := null;
+         end;
+
          IF table_cnt=1
          THEN
      
@@ -3983,7 +4013,18 @@ end retrieve_ts_multi;
                  dbms_output.put_line('CASE 7: Merge completed.');
         
               END LOOP;
-      
+              
+            -------------------------------------
+            -- Publish a TSDataDeleted message --
+            -------------------------------------
+            cwms_msg.new_message(l_msg, l_msgid, 'TSDataDeleted');
+            l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+            l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(
+               from_tz(cast(l_first_time as timestamp), 'UTC')));
+            l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(
+               from_tz(cast(l_last_time as timestamp), 'UTC')));
+            i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
+
             dbms_output.put_line('CASE 7: delete-insert FALSE Completed.');
             
          END IF;
@@ -4000,6 +4041,22 @@ end retrieve_ts_multi;
          dbms_output.put_line('CASE 8: STORE_TS rule: delete-insert, TRUE');
          dbms_output.put_line('CASE 8: table_cnt: ' || table_cnt);
       
+         begin
+            select min(v.date_time),
+                   max(v.date_time)
+              into l_first_time,
+                   l_last_time
+              from av_tsv v,
+                   cwms_data_quality q
+             where v.ts_code = l_ts_code
+               and q.quality_code = v.quality_code
+               and q.protection_id = 'UNPROTECTED';
+         exception
+            when no_data_found then
+               l_first_time := null;
+               l_last_time  := null;
+         end;
+         
          IF table_cnt=1
          THEN 
 
@@ -4099,7 +4156,18 @@ end retrieve_ts_multi;
                  dbms_output.put_line('CASE 8: Merge completed.');
                
             END LOOP;
-      
+              
+            -------------------------------------
+            -- Publish a TSDataDeleted message --
+            -------------------------------------
+            cwms_msg.new_message(l_msg, l_msgid, 'TSDataDeleted');
+            l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+            l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(
+               from_tz(cast(l_first_time as timestamp), 'UTC')));
+            l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(
+               from_tz(cast(l_last_time as timestamp), 'UTC')));
+            i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
+
             dbms_output.put_line('CASE 8: delete-insert TRUE Completed.');
             
          END IF;
@@ -4397,6 +4465,12 @@ IS
                        := UPPER (NVL (p_delete_action, cwms_util.delete_ts_id));
    l_delete_date     DATE          := SYSDATE;
    l_tmp_del_date    DATE          := l_delete_date + 1;
+   
+   l_msg             sys.aq$_jms_map_message;
+   l_msgid           pls_integer;
+   l_first_time      date;
+   l_last_time       date;
+   i                 integer;
 --
 BEGIN
    --
@@ -4471,6 +4545,10 @@ BEGIN
             SET location_code = 0,
                 delete_date = l_delete_date
           WHERE ts_code = l_ts_code;
+         -- Publish TSDeleted message -- 
+         cwms_msg.new_message(l_msg, l_msgid, 'TSDeleted');
+         l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+         i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
       ELSE
          cwms_err.RAISE ('GENERIC_ERROR',
                             'cwms_ts_id: '
@@ -4483,6 +4561,16 @@ BEGIN
    ELSIF    l_delete_action = cwms_util.delete_ts_cascade
          OR l_delete_action = cwms_util.delete_ts_data
    THEN
+      -----------------------------------------------------------
+      -- get the time series extents of the data being deleted --
+      -----------------------------------------------------------
+      select min(date_time),
+             max(date_time)
+        into l_first_time,
+             l_last_time
+        from av_tsv
+       where ts_code = l_ts_code;
+       
       -- If deleting the data only, then a new replacement ts_code must --
       -- be created --
       --
@@ -4519,6 +4607,25 @@ BEGIN
             SET delete_date = NULL
           WHERE ts_code = l_ts_code_new;
       END IF;
+      
+      ----------------------------------- 
+      -- Publish TSDataDeleted message --
+      ----------------------------------- 
+      cwms_msg.new_message(l_msg, l_msgid, 'TSDeleted');
+      l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+      l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(
+         from_tz(cast(l_first_time as timestamp), 'UTC')));
+      l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(
+         from_tz(cast(l_last_time as timestamp), 'UTC')));
+      i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
+      if l_delete_action = cwms_util.delete_ts_cascade then
+         ------------------------------- 
+         -- Publish TSDeleted message --
+         ------------------------------- 
+         cwms_msg.new_message(l_msg, l_msgid, 'TSDeleted');
+         l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+         i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
+      end if;
    --
    ELSE
       cwms_err.RAISE ('INVALID_DELETE_ACTION', p_delete_action);
@@ -4845,9 +4952,24 @@ END delete_ts;
              s.VERSION = l_version_id_new,
              s.interval_utc_offset = l_utc_offset_new
        WHERE s.ts_code = l_ts_code_old;
-   
+
       COMMIT;
-      --
+   --
+   ---------------------------------
+   -- Publish a TSRenamed message --
+   ---------------------------------
+   --
+   declare
+      l_msg   sys.aq$_jms_map_message;
+      l_msgid pls_integer;
+      i       integer;
+   begin
+      cwms_msg.new_message(l_msg, l_msgid, 'TSRenamed');
+      l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id_old);
+      l_msg.set_long(l_msgid, 'new_ts_id', p_cwms_ts_id_new);
+      i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
+   end;
+   --
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    --
    END rename_ts;
@@ -5879,7 +6001,7 @@ BEGIN
    DBMS_APPLICATION_INFO.set_module (NULL, NULL);
 END zstore_ts_multi;
 
-FUNCTION register_store_ts_callback (
+FUNCTION register_ts_callback (
    p_procedure_name  IN VARCHAR2,
    p_subscriber_name IN VARCHAR2 DEFAULT NULL)
    RETURN VARCHAR2
@@ -5889,9 +6011,9 @@ BEGIN
       p_procedure_name, 
       'ts_stored', 
       p_subscriber_name);
-END register_store_ts_callback;   
+END register_ts_callback;   
    
-PROCEDURE unregister_store_ts_callback (
+PROCEDURE unregister_ts_callback (
    p_procedure_name  IN VARCHAR2,
    p_subscriber_name IN VARCHAR2)
 IS
@@ -5900,7 +6022,7 @@ BEGIN
       p_procedure_name, 
       'ts_stored',
       p_subscriber_name);
-END unregister_store_ts_callback;
+END unregister_ts_callback;
 
 
 PROCEDURE refresh_ts_catalog

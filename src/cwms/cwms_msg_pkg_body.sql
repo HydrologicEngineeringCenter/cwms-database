@@ -1381,7 +1381,6 @@ begin
    end if;
 end start_purge_queues_job;
 
---------------------------------------------------------------------------------
 -- function get_registration_info
 --
 function get_registration_info(
@@ -1400,16 +1399,12 @@ begin
    l_reg_info.extend();
    l_reg_info(1) := sys.aq$_reg_info(
       name      => upper(l_queue_name||':'||l_subscriber_name),
-      namespace => dbms_aq.namespace_anonymous,
+      namespace => dbms_aq.namespace_aq,
       callback  => 'plsql://'||upper(p_procedure_name),
       context   => hextoraw('ff'));
-   dbms_output.put_line('name      = ' || l_reg_info(1).name);      
-   dbms_output.put_line('namespace = ' || l_reg_info(1).namespace);      
-   dbms_output.put_line('callback  = ' || l_reg_info(1).callback);      
-   dbms_output.put_line('context   = ' || rawtohex(l_reg_info(1).context));      
-   return l_reg_info;      
-end get_registration_info;   
-   
+   return l_reg_info;
+end get_registration_info;
+
 --------------------------------------------------------------------------------
 -- procedure register_msg_callback
 --
@@ -1425,19 +1420,19 @@ is
    l_queue_name      varchar2(61);
 begin
    l_reg_info := get_registration_info(
-      p_procedure_name, 
-      p_queue_name, 
+      p_procedure_name,
+      p_queue_name,
       p_subscriber_name);
    l_parts := cwms_util.split_text(l_reg_info(1).name ,':');
-   l_queue_name := l_parts(1);      
+   l_queue_name := l_parts(1);
    l_subscriber_name := l_parts(2);
    dbms_aqadm.add_subscriber(
       queue_name => l_queue_name,
-      subscriber => sys.aq$_agent(l_subscriber_name, l_queue_name, 0));
+      subscriber => sys.aq$_agent(l_subscriber_name, null, null));
    dbms_aq.register(l_reg_info, l_reg_info.count);
    return l_subscriber_name;
-end register_msg_callback;   
-   
+end register_msg_callback;
+
 --------------------------------------------------------------------------------
 -- procedure unregister_msg_callback
 --
@@ -1452,16 +1447,16 @@ is
    l_queue_name      varchar2(61);
 begin
    l_reg_info := get_registration_info(
-      p_procedure_name, 
-      p_queue_name, 
+      p_procedure_name,
+      p_queue_name,
       p_subscriber_name);
    l_parts := cwms_util.split_text(l_reg_info(1).name ,':');
-   l_queue_name := l_parts(1);      
+   l_queue_name := l_parts(1);
    l_subscriber_name := l_parts(2);
    dbms_aq.unregister(l_reg_info, l_reg_info.count);
    dbms_aqadm.remove_subscriber(
       queue_name => l_queue_name,
-      subscriber => sys.aq$_agent(l_subscriber_name, l_queue_name, 0));
+      subscriber => sys.aq$_agent(l_subscriber_name, null, null));
 end unregister_msg_callback;
 
 end cwms_msg;
