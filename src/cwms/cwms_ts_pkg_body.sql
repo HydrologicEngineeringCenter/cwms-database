@@ -1703,6 +1703,8 @@ BEGIN
             begin
                cwms_msg.new_message(l_msg, l_msgid, 'TSCreated');
                l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+               l_msg.set_string(l_msgid, 'office_id', l_office_id);
+               l_msg.set_long(l_msgid, 'ts_code', p_ts_code);
                i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
             end;
          END IF;
@@ -2867,6 +2869,7 @@ end retrieve_ts_multi;
    procedure time_series_updated(
       p_ts_code    in integer,
       p_ts_id      in varchar2,
+      p_office_id  in varchar2,
       p_first_time in timestamp with time zone,
       p_last_time  in timestamp with time zone)
    is
@@ -2911,6 +2914,8 @@ end retrieve_ts_multi;
       -------------------------
       cwms_msg.new_message(l_msg, l_msgid, 'TSDataStored');
       l_msg.set_string(l_msgid, 'ts_id', p_ts_id);
+      l_msg.set_string(l_msgid, 'office_id', p_office_id);
+      l_msg.set_long(l_msgid, 'ts_code', p_ts_code);
       l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(l_first_time));
       l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(l_last_time));
       i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
@@ -4019,6 +4024,8 @@ end retrieve_ts_multi;
             -------------------------------------
             cwms_msg.new_message(l_msg, l_msgid, 'TSDataDeleted');
             l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+            l_msg.set_string(l_msgid, 'office_id', l_office_id);
+            l_msg.set_long(l_msgid, 'ts_code', l_ts_code);
             l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(
                from_tz(cast(l_first_time as timestamp), 'UTC')));
             l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(
@@ -4162,6 +4169,8 @@ end retrieve_ts_multi;
             -------------------------------------
             cwms_msg.new_message(l_msg, l_msgid, 'TSDataDeleted');
             l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+            l_msg.set_string(l_msgid, 'office_id', l_office_id);
+            l_msg.set_long(l_msgid, 'ts_code', l_ts_code);
             l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(
                from_tz(cast(l_first_time as timestamp), 'UTC')));
             l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(
@@ -4186,6 +4195,7 @@ end retrieve_ts_multi;
    time_series_updated(
          l_ts_code, 
          p_cwms_ts_id,
+         l_office_id,
          p_timeseries_data(p_timeseries_data.first).date_time,
          p_timeseries_data(p_timeseries_data.last).date_time);
        
@@ -4458,6 +4468,7 @@ PROCEDURE delete_ts (
 )
 IS
    l_db_office_code  NUMBER := p_db_office_code;
+   l_db_office_id    VARCHAR2(16);
    l_ts_code         NUMBER;
    l_count           NUMBER;
    l_ts_code_new     NUMBER        := NULL;
@@ -4514,6 +4525,11 @@ BEGIN
       THEN
          cwms_err.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
    END;
+   
+   select office_id
+     into l_db_office_id
+     from cwms_office
+    where office_code = l_db_office_code; 
 
           --
    -- Process Depricated delete_actions -
@@ -4545,9 +4561,11 @@ BEGIN
             SET location_code = 0,
                 delete_date = l_delete_date
           WHERE ts_code = l_ts_code;
-         -- Publish TSDeleted message -- 
+         -- Publish TSDeleted message --
          cwms_msg.new_message(l_msg, l_msgid, 'TSDeleted');
          l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+         l_msg.set_string(l_msgid, 'office_id', l_db_office_id);
+         l_msg.set_long(l_msgid, 'ts_code', l_ts_code);
          i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
       ELSE
          cwms_err.RAISE ('GENERIC_ERROR',
@@ -4613,6 +4631,8 @@ BEGIN
       ----------------------------------- 
       cwms_msg.new_message(l_msg, l_msgid, 'TSDeleted');
       l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+      l_msg.set_string(l_msgid, 'office_id', l_db_office_id);
+      l_msg.set_long(l_msgid, 'ts_code', l_ts_code);
       l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(
          from_tz(cast(l_first_time as timestamp), 'UTC')));
       l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(
@@ -4624,6 +4644,8 @@ BEGIN
          ------------------------------- 
          cwms_msg.new_message(l_msg, l_msgid, 'TSDeleted');
          l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
+         l_msg.set_string(l_msgid, 'office_id', l_db_office_id);
+         l_msg.set_long(l_msgid, 'ts_code', l_ts_code);
          i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
       end if;
    --
@@ -4967,6 +4989,8 @@ END delete_ts;
       cwms_msg.new_message(l_msg, l_msgid, 'TSRenamed');
       l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id_old);
       l_msg.set_long(l_msgid, 'new_ts_id', p_cwms_ts_id_new);
+      l_msg.set_string(l_msgid, 'office_id', l_office_id);
+      l_msg.set_long(l_msgid, 'ts_code', l_ts_code_old);
       i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
    end;
    --
