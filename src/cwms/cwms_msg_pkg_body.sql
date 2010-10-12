@@ -1392,10 +1392,42 @@ is
    l_reg_info        sys.aq$_reg_info_list := sys.aq$_reg_info_list();
    l_queue_name      varchar2(61);
    l_subscriber_name varchar2(30) := nvl(p_subscriber_name, dbms_random.string('l', 16));
+   l_schema_name     varchar2(30);
+   l_office_id       varchar2(16);
+   l_parts           str_tab_t;
 begin
-   l_queue_name := sys_context('userenv', 'current_schema')
-                   ||'.'||cwms_util.user_office_id
-                   ||'_'||p_queue_name;
+   -----------------------------------------------------------------------------
+   -- get the schema and office id, either from the queue name or environment --
+   -----------------------------------------------------------------------------
+   l_queue_name  := p_queue_name;
+   l_parts := cwms_util.split_text(p_queue_name, '.', 1);
+   if l_parts.count = 1 then
+      l_schema_name := sys_context('userenv', 'current_schema');
+   else
+      l_schema_name := l_parts(1);
+      l_queue_name  := l_parts(2);
+   end if;
+   l_parts := cwms_util.split_text(l_queue_name, '_', 1);
+   if l_parts.count = 1 then
+      l_office_id := cwms_util.user_office_id;
+   else
+      begin
+         select office_id
+           into l_office_id
+           from cwms_office
+          where office_id = upper(l_parts(1));
+         l_queue_name := l_parts(2);          
+      exception
+         when no_data_found then
+            l_office_id := cwms_util.user_office_id;
+      end;
+   end if;
+   ----------------------------------------------------------------------
+   -- (re)construct the queue name, including the schema and office id --
+   ----------------------------------------------------------------------
+   l_queue_name := l_schema_name
+                   ||'.'||l_office_id
+                   ||'_'||l_queue_name;
    l_reg_info.extend();
    l_reg_info(1) := sys.aq$_reg_info(
       name      => upper(l_queue_name||':'||l_subscriber_name),

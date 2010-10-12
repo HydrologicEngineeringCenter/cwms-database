@@ -6003,24 +6003,26 @@ END zstore_ts_multi;
 
 FUNCTION register_ts_callback (
    p_procedure_name  IN VARCHAR2,
-   p_subscriber_name IN VARCHAR2 DEFAULT NULL)
+   p_subscriber_name IN VARCHAR2 DEFAULT NULL,
+   p_queue_name      IN VARCHAR2 DEFAULT NULL)
    RETURN VARCHAR2
 IS
 BEGIN
    return cwms_msg.register_msg_callback(
       p_procedure_name, 
-      'ts_stored', 
+      nvl(p_queue_name, 'ts_stored'), 
       p_subscriber_name);
 END register_ts_callback;   
    
 PROCEDURE unregister_ts_callback (
    p_procedure_name  IN VARCHAR2,
-   p_subscriber_name IN VARCHAR2)
+   p_subscriber_name IN VARCHAR2,
+   p_queue_name      IN VARCHAR2 DEFAULT NULL)
 IS
 BEGIN
    cwms_msg.unregister_msg_callback(
       p_procedure_name, 
-      'ts_stored',
+      nvl(p_queue_name, 'ts_stored'), 
       p_subscriber_name);
 END unregister_ts_callback;
 

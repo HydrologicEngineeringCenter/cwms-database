@@ -653,12 +653,14 @@ AS
    
    FUNCTION register_ts_callback (
       p_procedure_name  IN VARCHAR2,
-      p_subscriber_name IN VARCHAR2 DEFAULT NULL)
+      p_subscriber_name IN VARCHAR2 DEFAULT NULL,
+      p_queue_name      IN VARCHAR2 DEFAULT NULL)
       RETURN VARCHAR2;
    
    PROCEDURE unregister_ts_callback (
       p_procedure_name  IN VARCHAR2,
-      p_subscriber_name IN VARCHAR2);
+      p_subscriber_name IN VARCHAR2,
+      p_queue_name      IN VARCHAR2 DEFAULT NULL);
 
    PROCEDURE refresh_ts_catalog;
 END;
