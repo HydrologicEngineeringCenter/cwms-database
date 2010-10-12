@@ -252,8 +252,9 @@ AS
   OBJECT
   (
     project_location_ref location_ref_t,           --The project this outlet is a child of
-    lock_location location_obj_t,                  --The location for this outlet
-    characteristic_ref outlet_characteristic_ref_t -- the characteristic for this outlet.
+    outlet_location location_obj_t,                  --The location for this outlet
+    characteristic_ref outlet_characteristic_ref_t, -- the characteristic for this outlet.
+    outlet_description VARCHAR(255)                 -- The description of this outlet.
   );
   /
   show errors
