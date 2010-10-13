@@ -6025,16 +6025,33 @@ BEGIN
    DBMS_APPLICATION_INFO.set_module (NULL, NULL);
 END zstore_ts_multi;
 
+PROCEDURE validate_ts_queue_name(
+   p_queue_name in varchar)
+IS
+   l_pattern constant varchar2(39) := '([a-z0-9_$]+\.)?([a-z0-9$]+_)?ts_stored';
+   l_last    integer := length(p_queue_name) + 1;
+BEGIN
+   if regexp_instr(p_queue_name, l_pattern, 1, 1, 0, 'i') != 1 or
+      regexp_instr(p_queue_name, l_pattern, 1, 1, 1, 'i') != l_last then
+      cwms_err.raise(
+         'INVALID_ITEM',
+         p_queue_name,
+         'queue name for (un)registister_ts_callback');
+   end if;
+END validate_ts_queue_name;
+      
 FUNCTION register_ts_callback (
    p_procedure_name  IN VARCHAR2,
    p_subscriber_name IN VARCHAR2 DEFAULT NULL,
    p_queue_name      IN VARCHAR2 DEFAULT NULL)
    RETURN VARCHAR2
 IS
+   l_queue_name varchar2(61) := nvl(p_queue_name, 'ts_stored');
 BEGIN
+   validate_ts_queue_name(l_queue_name);
    return cwms_msg.register_msg_callback(
       p_procedure_name, 
-      nvl(p_queue_name, 'ts_stored'), 
+      l_queue_name, 
       p_subscriber_name);
 END register_ts_callback;   
    
@@ -6043,13 +6060,14 @@ PROCEDURE unregister_ts_callback (
    p_subscriber_name IN VARCHAR2,
    p_queue_name      IN VARCHAR2 DEFAULT NULL)
 IS
+   l_queue_name varchar2(61) := nvl(p_queue_name, 'ts_stored');
 BEGIN
+   validate_ts_queue_name(l_queue_name);
    cwms_msg.unregister_msg_callback(
       p_procedure_name, 
-      nvl(p_queue_name, 'ts_stored'), 
+      l_queue_name, 
       p_subscriber_name);
 END unregister_ts_callback;
-
 
 PROCEDURE refresh_ts_catalog
 IS
