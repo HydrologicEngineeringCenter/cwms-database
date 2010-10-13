@@ -420,7 +420,7 @@ CREATE TABLE at_lu_embank_structure_type
 (
   structure_type_code  				NUMBER(10)						NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  structure_type_display_value		VARCHAR2(25 BYTE)				NOT NULL,
+  structure_type_display_value		VARCHAR2(50 BYTE)				NOT NULL,
   structure_type_tooltip			VARCHAR2(255 BYTE)				NOT NULL,
   structure_type_active				VARCHAR2(1 BYTE) DEFAULT 'T'	NOT NULL 
 )
@@ -502,7 +502,7 @@ CREATE TABLE at_lu_embank_protection_type
 (
   protection_type_code  			NUMBER(10)				NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  protection_type_display_value		VARCHAR2(25 BYTE)		NOT NULL,
+  protection_type_display_value		VARCHAR2(50 BYTE)		NOT NULL,
   protection_type_tooltip			VARCHAR2(255 BYTE)		NOT NULL,
   protection_type_active			VARCHAR2(1)	DEFAULT 'T'	NOT NULL 
 )
@@ -1000,7 +1000,7 @@ CREATE TABLE at_project
   cost_year					DATE,
   federal_om_cost				BINARY_DOUBLE,
   nonfederal_om_cost				BINARY_DOUBLE,
-  authorizing_law				VARCHAR2(32),
+  authorizing_law				VARCHAR2(512),
   project_owner					VARCHAR2(255),
   hydropower_description			VARCHAR2(255),
   sedimentation_description			VARCHAR2(255 BYTE),
