@@ -91,7 +91,7 @@ PROCEDURE retrieve_embankments(
     -- a project location refs that identify the objects we want to retrieve.
     -- includes the location id (base location + '-' + sublocation)
     -- the office id if null will default to the connected user's office
-    p_project_location_ref IN location_ref_t );
+    p_project_location_refs IN location_ref_tab_t );
   -- Stores the data contained within the embankment object into the database schema.
   --
   --
@@ -153,7 +153,7 @@ PROCEDURE delete_embankment(
   --
   -- returns a listing of lookup objects.
 PROCEDURE get_structure_types(
-    p_lookup_type_tab_t OUT lookup_type_tab_t,
+    p_lookup_type_tab OUT lookup_type_tab_t,
     -- defaults to the connected user's office if null
     p_db_office_id IN VARCHAR2 DEFAULT NULL );
   -- inserts or updates a set of lookups.
@@ -163,7 +163,7 @@ PROCEDURE get_structure_types(
   --
   -- a failure will cause the whole set of lookups to not be stored.
 PROCEDURE set_structure_types(
-    p_lookup_type_tab_t IN lookup_type_tab_t,
+    p_lookup_type_tab IN lookup_type_tab_t,
     -- a flag that will cause the procedure to fail if the objects already exist
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
   -- inserts or updates a lookup.
@@ -183,7 +183,7 @@ PROCEDURE remove_structure_type(
   --
   -- returns a listing of lookup objects.
 PROCEDURE get_protection_types(
-    p_lookup_type_tab_t OUT lookup_type_tab_t,
+    p_lookup_type_tab OUT lookup_type_tab_t,
     -- defaults to the connected user's office if null
     p_db_office_id IN VARCHAR2 DEFAULT NULL );
   -- inserts or updates a set of lookups.
@@ -193,7 +193,7 @@ PROCEDURE get_protection_types(
   --
   -- a failure will cause the whole set of lookups to not be stored.
 PROCEDURE set_protection_types(
-    p_lookup_type_tab_t IN lookup_type_tab_t,
+    p_lookup_type_tab IN lookup_type_tab_t,
     -- a flag that will cause the procedure to fail if the objects already exist
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
   -- inserts or updates a lookup.
