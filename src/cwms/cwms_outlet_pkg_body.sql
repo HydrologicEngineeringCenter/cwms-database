@@ -378,7 +378,8 @@ END store_outlet_characteristics;
 --
 -- returns an individual outlet characteristics object.
 PROCEDURE retr_outlet_characteristic(
-    p_outlet_characteristic_ref OUT outlet_characteristic_ref_t )
+	p_outlet_characteristic_ref IN outlet_characteristic_ref_t,
+	p_outlet_characteristic OUT outlet_characteristic_obj_t )
 AS
 BEGIN
   NULL;
