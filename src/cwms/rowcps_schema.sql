@@ -1,4 +1,4 @@
-WHENEVER sqlerror exit sql.sqlcode
+FWHENEVER sqlerror exit sql.sqlcode
 SET define on
 -- @@../cwms/defines.sql
 @@defines.sql
@@ -25,7 +25,7 @@ DECLARE
 					 'AT_PROJECT',                                                    
 					 'AT_PROJECT_AGREEMENT',                                          
 					 'AT_PROJECT_CONGRESS_DISTRICT',                                  
-					 'AT_PROJECT_PURPOSE',                                            
+					 'AT_PROJECT_PURPOSES',                                            
 					 'AT_TURBINE',                                     
 					 'AT_TURBINE_SETTING',                                     
 					 'AT_WAT_USR_CONTRACT_ACCOUNTING',
@@ -245,14 +245,14 @@ ALTER TABLE at_gate_release_reason_code ADD (
 /
 
 ALTER TABLE at_gate_release_reason_code ADD (
-CONSTRAINT atlu_grrc_active_ck 
+CONSTRAINT at_grrc_active_ck 
 CHECK ( release_reason_active = 'T' OR release_reason_active = 'F'))
 /
 
 --------
 --------
 
-CREATE TABLE at_project_purpose
+CREATE TABLE at_project_purposes
 (
   purpose_code  			NUMBER(10)				NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -278,14 +278,14 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_project_purpose.purpose_code IS 'The unique id for this project_purpose record';
-COMMENT ON COLUMN at_project_purpose.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_project_purpose.purpose_display_value IS 'The value to display for this project_purpose record';
-COMMENT ON COLUMN at_project_purpose.purpose_tooltip IS 'The tooltip or meaning of this project_purpose record';
-COMMENT ON COLUMN at_project_purpose.purpose_active IS 'Whether the project_purpose entry is currently active';
+COMMENT ON COLUMN at_project_purposes.purpose_code IS 'The unique id for this project_purpose record';
+COMMENT ON COLUMN at_project_purposes.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_project_purposes.purpose_display_value IS 'The value to display for this project_purpose record';
+COMMENT ON COLUMN at_project_purposes.purpose_tooltip IS 'The tooltip or meaning of this project_purpose record';
+COMMENT ON COLUMN at_project_purposes.purpose_active IS 'Whether the project_purpose entry is currently active';
 
 -- unique index
-CREATE UNIQUE INDEX project_purpose_idx1 ON at_project_purpose
+CREATE UNIQUE INDEX project_purpose_idx1 ON at_project_purposes
 (db_office_code, UPPER("PURPOSE_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -302,8 +302,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_project_purpose ADD (
-  CONSTRAINT at_project_purpose_pk
+ALTER TABLE at_project_purposes ADD (
+  CONSTRAINT at_project_purposes_pk
  PRIMARY KEY
  (purpose_code)
     USING INDEX
@@ -320,13 +320,13 @@ ALTER TABLE at_project_purpose ADD (
 /
 
 -- FK
-ALTER TABLE at_project_purpose ADD (
-  CONSTRAINT at_project_purpose_fk1
+ALTER TABLE at_project_purposes ADD (
+  CONSTRAINT at_project_purposes_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_project_purpose ADD (
+ALTER TABLE at_project_purposes ADD (
 CONSTRAINT at_proj_purpose_active_ck 
 CHECK ( purpose_active = 'T' OR purpose_active = 'F'))
 /
@@ -409,7 +409,7 @@ ALTER TABLE at_document_type ADD (
 /
 
 ALTER TABLE at_document_type ADD (
-CONSTRAINT atlu_dt_active_ck 
+CONSTRAINT at_dt_active_ck 
 CHECK ( document_type_active = 'T' OR document_type_active = 'F'))
 /
 
@@ -491,7 +491,7 @@ ALTER TABLE at_embank_structure_type ADD (
 /
 
 ALTER TABLE at_embank_structure_type ADD (
-CONSTRAINT atlu_est_active_ck 
+CONSTRAINT at_est_active_ck 
 CHECK ( structure_type_active = 'T' OR structure_type_active = 'F'))
 /
 
@@ -573,7 +573,7 @@ ALTER TABLE at_embank_protection_type ADD (
 /
 
 ALTER TABLE at_embank_protection_type ADD (
-CONSTRAINT atlu_ept_active_ck 
+CONSTRAINT at_ept_active_ck 
 CHECK ( protection_type_active = 'T' OR protection_type_active = 'F'))
 /
 
@@ -649,13 +649,13 @@ ALTER TABLE at_turbine_setting_reason ADD (
 
 -- FK
 ALTER TABLE at_turbine_setting_reason ADD (
-  CONSTRAINT at_turbine_setting_fk1
+  CONSTRAINT at_turbine_setting_reason_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
 ALTER TABLE at_turbine_setting_reason ADD (
-CONSTRAINT atlu_tst_active_ck 
+CONSTRAINT at_tst_active_ck 
 CHECK ( turbine_setting_reason_active = 'T' OR turbine_setting_reason_active = 'F'))
 /
 
@@ -738,7 +738,7 @@ ALTER TABLE at_turbine_computation_code ADD (
 /
 
 ALTER TABLE at_turbine_computation_code ADD (
-CONSTRAINT atlu_tcc_active_ck 
+CONSTRAINT at_tcc_active_ck 
 CHECK ( turb_computation_code_active = 'T' OR turb_computation_code_active = 'F'))
 /
 
@@ -820,7 +820,7 @@ ALTER TABLE at_physical_transfer_type ADD (
 /
 
 ALTER TABLE at_physical_transfer_type ADD (
-CONSTRAINT atlu_ptt_active_ck 
+CONSTRAINT at_ptt_active_ck 
 CHECK ( physical_transfer_type_active = 'T' OR physical_transfer_type_active = 'F'))
 /
 
@@ -2543,7 +2543,7 @@ ALTER TABLE at_project_purpose ADD (
 ALTER TABLE at_project_purpose ADD (
   CONSTRAINT at_project_purpose_fk2
  FOREIGN KEY (project_purpose_code)
- REFERENCES at_project_purpose(purpose_code))
+ REFERENCES at_project_purposes(purpose_code))
 /
 
 ALTER TABLE at_project_purpose ADD (
