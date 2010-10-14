@@ -32,17 +32,17 @@ DECLARE
 					 'AT_WATER_USER_CONTRACT',                                      
 					 'AT_WATER_USER', 
 					 'AT_XREF_WAT_USR_CONTRACT_DOCS',
-					 'AT_LU_DOCUMENT_TYPE',
-					 'AT_LU_EMBANK_PROTECTION_TYPE',
-					 'AT_LU_EMBANK_STRUCTURE_TYPE',
-					 'AT_LU_GATE_CH_COMPUTATION_CODE',
-					 'AT_LU_GATE_RELEASE_REASON_CODE',
-					 'AT_LU_PHYSICAL_TRANSFER_TYPE',
-					 'AT_LU_PROJECT_PURPOSE',
-					 'AT_LU_TURBINE_SETTING_REASON',
-					 'AT_LU_TURBINE_COMPUTATION_CODE',
-                                         'AT_LU_WS_CONTRACT_TYPE_CODE',
-                                         'AT_LU_OPERATIONAL_STATUS_CODE',
+					 'AT_DOCUMENT_TYPE',
+					 'AT_EMBANK_PROTECTION_TYPE',
+					 'AT_EMBANK_STRUCTURE_TYPE',
+					 'AT_GATE_CH_COMPUTATION_CODE',
+					 'AT_GATE_RELEASE_REASON_CODE',
+					 'AT_PHYSICAL_TRANSFER_TYPE',
+					 'AT_PROJECT_PURPOSE',
+					 'AT_TURBINE_SETTING_REASON',
+					 'AT_TURBINE_COMPUTATION_CODE',
+                                         'AT_WS_CONTRACT_TYPE_CODE',
+                                         'AT_OPERATIONAL_STATUS_CODE',
                                          'AT_OUTLET_CHARACTERISTIC',                               
 					 'AT_TURBINE_CHARACTERISTIC'  
                     );
@@ -87,7 +87,7 @@ END;
 -- CREATE TABLES --
 -------------------
 
-CREATE TABLE at_lu_gate_ch_computation_code
+CREATE TABLE at_gate_ch_computation_code
 (
   discharge_computation_code  			NUMBER(10)			NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -114,14 +114,14 @@ NOPARALLEL
 MONITORING
 /
 
-COMMENT ON COLUMN at_lu_gate_ch_computation_code.discharge_computation_code IS 'The unique id for this lookup record';
-COMMENT ON COLUMN at_lu_gate_ch_computation_code.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_lu_gate_ch_computation_code.computation_code_display_value IS 'The value to display for this LU record';
-COMMENT ON COLUMN at_lu_gate_ch_computation_code.computation_code_tooltip IS 'The tooltip or meaning of this LU record';
-COMMENT ON COLUMN at_lu_gate_ch_computation_code.computation_code_active IS 'Whether the lu entry is currently active';
+COMMENT ON COLUMN at_gate_ch_computation_code.discharge_computation_code IS 'The unique id for this lookup record';
+COMMENT ON COLUMN at_gate_ch_computation_code.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_gate_ch_computation_code.computation_code_display_value IS 'The value to display for this LU record';
+COMMENT ON COLUMN at_gate_ch_computation_code.computation_code_tooltip IS 'The tooltip or meaning of this LU record';
+COMMENT ON COLUMN at_gate_ch_computation_code.computation_code_active IS 'Whether the lu entry is currently active';
 
 -- unique index
-CREATE UNIQUE INDEX gate_ch_computation_code_idx1 ON at_lu_gate_ch_computation_code
+CREATE UNIQUE INDEX gate_ch_computation_code_idx1 ON at_gate_ch_computation_code
 (db_office_code, UPPER("COMPUTATION_CODE_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -138,8 +138,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_lu_gate_ch_computation_code ADD (
-  CONSTRAINT at_lu_gate_computation_code_pk
+ALTER TABLE at_gate_ch_computation_code ADD (
+  CONSTRAINT at_gate_computation_code_pk
  PRIMARY KEY
  (discharge_computation_code)
     USING INDEX
@@ -156,21 +156,21 @@ ALTER TABLE at_lu_gate_ch_computation_code ADD (
 /
 
 -- FK
-ALTER TABLE at_lu_gate_ch_computation_code ADD (
-  CONSTRAINT at_lu_gate_ch_computation_fk1
+ALTER TABLE at_gate_ch_computation_code ADD (
+  CONSTRAINT at_gate_ch_computation_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_lu_gate_ch_computation_code ADD (
-CONSTRAINT at_lu_gccc_active_ck 
+ALTER TABLE at_gate_ch_computation_code ADD (
+CONSTRAINT at_gccc_active_ck 
 CHECK ( computation_code_active = 'T' OR computation_code_active = 'F'))
 /
 
 --------
 --------
 
-CREATE TABLE at_lu_gate_release_reason_code
+CREATE TABLE at_gate_release_reason_code
 (
   release_reason_code	  		NUMBER(10)						NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -196,14 +196,14 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_lu_gate_release_reason_code.release_reason_code IS 'The unique id for this release code record';
-COMMENT ON COLUMN at_lu_gate_release_reason_code.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_lu_gate_release_reason_code.release_reason_display_value IS 'The value to display for this release code record';
-COMMENT ON COLUMN at_lu_gate_release_reason_code.release_reason_tooltip IS 'The tooltip or meaning of this release code record';
-COMMENT ON COLUMN at_lu_gate_release_reason_code.release_reason_active IS 'Whether the release code entry is currently active';
+COMMENT ON COLUMN at_gate_release_reason_code.release_reason_code IS 'The unique id for this release code record';
+COMMENT ON COLUMN at_gate_release_reason_code.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_gate_release_reason_code.release_reason_display_value IS 'The value to display for this release code record';
+COMMENT ON COLUMN at_gate_release_reason_code.release_reason_tooltip IS 'The tooltip or meaning of this release code record';
+COMMENT ON COLUMN at_gate_release_reason_code.release_reason_active IS 'Whether the release code entry is currently active';
 
 -- unique index
-CREATE UNIQUE INDEX gate_release_reason_code_idx1 ON at_lu_gate_release_reason_code
+CREATE UNIQUE INDEX gate_release_reason_code_idx1 ON at_gate_release_reason_code
 (db_office_code, UPPER("RELEASE_REASON_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -220,8 +220,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_lu_gate_release_reason_code ADD (
-  CONSTRAINT at_lu_gate_release_reason_pk
+ALTER TABLE at_gate_release_reason_code ADD (
+  CONSTRAINT at_gate_release_reason_pk
  PRIMARY KEY
  (release_reason_code)
     USING INDEX
@@ -238,13 +238,13 @@ ALTER TABLE at_lu_gate_release_reason_code ADD (
 /
 
 -- FK
-ALTER TABLE at_lu_gate_release_reason_code ADD (
-  CONSTRAINT at_lu_gate_release_reason_fk1
+ALTER TABLE at_gate_release_reason_code ADD (
+  CONSTRAINT at_gate_release_reason_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_lu_gate_release_reason_code ADD (
+ALTER TABLE at_gate_release_reason_code ADD (
 CONSTRAINT atlu_grrc_active_ck 
 CHECK ( release_reason_active = 'T' OR release_reason_active = 'F'))
 /
@@ -252,7 +252,7 @@ CHECK ( release_reason_active = 'T' OR release_reason_active = 'F'))
 --------
 --------
 
-CREATE TABLE at_lu_project_purpose
+CREATE TABLE at_project_purpose
 (
   purpose_code  			NUMBER(10)				NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -278,14 +278,14 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_lu_project_purpose.purpose_code IS 'The unique id for this project_purpose record';
-COMMENT ON COLUMN at_lu_project_purpose.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_lu_project_purpose.purpose_display_value IS 'The value to display for this project_purpose record';
-COMMENT ON COLUMN at_lu_project_purpose.purpose_tooltip IS 'The tooltip or meaning of this project_purpose record';
-COMMENT ON COLUMN at_lu_project_purpose.purpose_active IS 'Whether the project_purpose entry is currently active';
+COMMENT ON COLUMN at_project_purpose.purpose_code IS 'The unique id for this project_purpose record';
+COMMENT ON COLUMN at_project_purpose.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_project_purpose.purpose_display_value IS 'The value to display for this project_purpose record';
+COMMENT ON COLUMN at_project_purpose.purpose_tooltip IS 'The tooltip or meaning of this project_purpose record';
+COMMENT ON COLUMN at_project_purpose.purpose_active IS 'Whether the project_purpose entry is currently active';
 
 -- unique index
-CREATE UNIQUE INDEX project_purpose_idx1 ON at_lu_project_purpose
+CREATE UNIQUE INDEX project_purpose_idx1 ON at_project_purpose
 (db_office_code, UPPER("PURPOSE_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -302,8 +302,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_lu_project_purpose ADD (
-  CONSTRAINT at_lu_project_purpose_pk
+ALTER TABLE at_project_purpose ADD (
+  CONSTRAINT at_project_purpose_pk
  PRIMARY KEY
  (purpose_code)
     USING INDEX
@@ -320,21 +320,21 @@ ALTER TABLE at_lu_project_purpose ADD (
 /
 
 -- FK
-ALTER TABLE at_lu_project_purpose ADD (
-  CONSTRAINT at_lu_project_purpose_fk1
+ALTER TABLE at_project_purpose ADD (
+  CONSTRAINT at_project_purpose_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_lu_project_purpose ADD (
-CONSTRAINT at_lu_proj_purpose_active_ck 
+ALTER TABLE at_project_purpose ADD (
+CONSTRAINT at_proj_purpose_active_ck 
 CHECK ( purpose_active = 'T' OR purpose_active = 'F'))
 /
 
 --------
 --------
 
-CREATE TABLE at_lu_document_type
+CREATE TABLE at_document_type
 (
   document_type_code  				NUMBER(10)			NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -360,14 +360,14 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_lu_document_type.document_type_code IS 'The unique id for this document_type record';
-COMMENT ON COLUMN at_lu_document_type.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_lu_document_type.document_type_display_value IS 'The value to display for this document_type record';
-COMMENT ON COLUMN at_lu_document_type.document_type_tooltip IS 'The tooltip or meaning of this document_type record';
-COMMENT ON COLUMN at_lu_document_type.document_type_active IS 'Whether this document type entry is currently active';
+COMMENT ON COLUMN at_document_type.document_type_code IS 'The unique id for this document_type record';
+COMMENT ON COLUMN at_document_type.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_document_type.document_type_display_value IS 'The value to display for this document_type record';
+COMMENT ON COLUMN at_document_type.document_type_tooltip IS 'The tooltip or meaning of this document_type record';
+COMMENT ON COLUMN at_document_type.document_type_active IS 'Whether this document type entry is currently active';
 
 -- unique index
-CREATE UNIQUE INDEX document_type_idx1 ON at_lu_document_type
+CREATE UNIQUE INDEX document_type_idx1 ON at_document_type
 (db_office_code, UPPER("DOCUMENT_TYPE_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -384,8 +384,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_lu_document_type ADD (
-  CONSTRAINT at_lu_doc_document_type_pk
+ALTER TABLE at_document_type ADD (
+  CONSTRAINT at_doc_document_type_pk
  PRIMARY KEY
  (document_type_code)
     USING INDEX
@@ -402,13 +402,13 @@ ALTER TABLE at_lu_document_type ADD (
 /
 
 -- FK
-ALTER TABLE at_lu_document_type ADD (
-  CONSTRAINT at_lu_document_type_fk1
+ALTER TABLE at_document_type ADD (
+  CONSTRAINT at_document_type_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_lu_document_type ADD (
+ALTER TABLE at_document_type ADD (
 CONSTRAINT atlu_dt_active_ck 
 CHECK ( document_type_active = 'T' OR document_type_active = 'F'))
 /
@@ -416,7 +416,7 @@ CHECK ( document_type_active = 'T' OR document_type_active = 'F'))
 --------
 --------
 
-CREATE TABLE at_lu_embank_structure_type
+CREATE TABLE at_embank_structure_type
 (
   structure_type_code  				NUMBER(10)						NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -442,14 +442,14 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_lu_embank_structure_type.structure_type_code IS 'The unique id for this structure_type code record';
-COMMENT ON COLUMN at_lu_embank_structure_type.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_lu_embank_structure_type.structure_type_display_value IS 'The value to display for this structure_type code record';
-COMMENT ON COLUMN at_lu_embank_structure_type.structure_type_tooltip IS 'The tooltip or meaning of this structure_type code record';
-COMMENT ON COLUMN at_lu_embank_structure_type.structure_type_active IS 'Whether this structure type entry is currently active';
+COMMENT ON COLUMN at_embank_structure_type.structure_type_code IS 'The unique id for this structure_type code record';
+COMMENT ON COLUMN at_embank_structure_type.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_embank_structure_type.structure_type_display_value IS 'The value to display for this structure_type code record';
+COMMENT ON COLUMN at_embank_structure_type.structure_type_tooltip IS 'The tooltip or meaning of this structure_type code record';
+COMMENT ON COLUMN at_embank_structure_type.structure_type_active IS 'Whether this structure type entry is currently active';
 
 -- unique index
-CREATE UNIQUE INDEX embank_structure_type_idx1 ON at_lu_embank_structure_type
+CREATE UNIQUE INDEX embank_structure_type_idx1 ON at_embank_structure_type
 (db_office_code, UPPER("STRUCTURE_TYPE_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -466,8 +466,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_lu_embank_structure_type ADD (
-  CONSTRAINT at_lu_emb_structure_type_pk
+ALTER TABLE at_embank_structure_type ADD (
+  CONSTRAINT at_emb_structure_type_pk
  PRIMARY KEY
  (structure_type_code)
     USING INDEX
@@ -484,13 +484,13 @@ ALTER TABLE at_lu_embank_structure_type ADD (
 /
 
 -- FK
-ALTER TABLE at_lu_embank_structure_type ADD (
-  CONSTRAINT at_lu_embank_structure_fk1
+ALTER TABLE at_embank_structure_type ADD (
+  CONSTRAINT at_embank_structure_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_lu_embank_structure_type ADD (
+ALTER TABLE at_embank_structure_type ADD (
 CONSTRAINT atlu_est_active_ck 
 CHECK ( structure_type_active = 'T' OR structure_type_active = 'F'))
 /
@@ -498,7 +498,7 @@ CHECK ( structure_type_active = 'T' OR structure_type_active = 'F'))
 --------
 --------
 
-CREATE TABLE at_lu_embank_protection_type
+CREATE TABLE at_embank_protection_type
 (
   protection_type_code  			NUMBER(10)				NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -524,14 +524,14 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_lu_embank_protection_type.protection_type_code IS 'The unique id for this protection_type code record';
-COMMENT ON COLUMN at_lu_embank_protection_type.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_lu_embank_protection_type.protection_type_display_value IS 'The value to display for this protection_type code record';
-COMMENT ON COLUMN at_lu_embank_protection_type.protection_type_tooltip IS 'The tooltip or meaning of this protection_type code record';
-COMMENT ON COLUMN at_lu_embank_protection_type.protection_type_active IS 'Whether this protection_type entry is currently active';
+COMMENT ON COLUMN at_embank_protection_type.protection_type_code IS 'The unique id for this protection_type code record';
+COMMENT ON COLUMN at_embank_protection_type.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_embank_protection_type.protection_type_display_value IS 'The value to display for this protection_type code record';
+COMMENT ON COLUMN at_embank_protection_type.protection_type_tooltip IS 'The tooltip or meaning of this protection_type code record';
+COMMENT ON COLUMN at_embank_protection_type.protection_type_active IS 'Whether this protection_type entry is currently active';
 
 -- unique index
-CREATE UNIQUE INDEX embank_protection_type_idx1 ON at_lu_embank_protection_type
+CREATE UNIQUE INDEX embank_protection_type_idx1 ON at_embank_protection_type
 (db_office_code, UPPER("PROTECTION_TYPE_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -548,8 +548,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_lu_embank_protection_type ADD (
-  CONSTRAINT at_lu_emb_protection_type_pk
+ALTER TABLE at_embank_protection_type ADD (
+  CONSTRAINT at_emb_protection_type_pk
  PRIMARY KEY
  (protection_type_code)
     USING INDEX
@@ -566,13 +566,13 @@ ALTER TABLE at_lu_embank_protection_type ADD (
 /
 
 -- FK
-ALTER TABLE at_lu_embank_protection_type ADD (
-  CONSTRAINT at_lu_embank_protection_fk1
+ALTER TABLE at_embank_protection_type ADD (
+  CONSTRAINT at_embank_protection_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_lu_embank_protection_type ADD (
+ALTER TABLE at_embank_protection_type ADD (
 CONSTRAINT atlu_ept_active_ck 
 CHECK ( protection_type_active = 'T' OR protection_type_active = 'F'))
 /
@@ -580,7 +580,7 @@ CHECK ( protection_type_active = 'T' OR protection_type_active = 'F'))
 --------
 --------
 
-CREATE TABLE at_lu_turbine_setting_reason
+CREATE TABLE at_turbine_setting_reason
 (
   turbine_setting_reason_code  			NUMBER(10)			NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -606,14 +606,14 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_lu_turbine_setting_reason.turbine_setting_reason_code IS 'The unique id for this turbine_setting_type code record';
-COMMENT ON COLUMN at_lu_turbine_setting_reason.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_lu_turbine_setting_reason.turb_set_reason_display_value IS 'The value to display for this turbine_setting_type record';
-COMMENT ON COLUMN at_lu_turbine_setting_reason.turbine_setting_reason_tooltip IS 'The description or meaning of this turbine_setting_type record';
-COMMENT ON COLUMN at_lu_turbine_setting_reason.turbine_setting_reason_active IS 'Whether this turbine_setting_type entry is currently active';
+COMMENT ON COLUMN at_turbine_setting_reason.turbine_setting_reason_code IS 'The unique id for this turbine_setting_type code record';
+COMMENT ON COLUMN at_turbine_setting_reason.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_turbine_setting_reason.turb_set_reason_display_value IS 'The value to display for this turbine_setting_type record';
+COMMENT ON COLUMN at_turbine_setting_reason.turbine_setting_reason_tooltip IS 'The description or meaning of this turbine_setting_type record';
+COMMENT ON COLUMN at_turbine_setting_reason.turbine_setting_reason_active IS 'Whether this turbine_setting_type entry is currently active';
 
 -- unique index
-CREATE UNIQUE INDEX turbine_setting_reason_idx1 ON at_lu_turbine_setting_reason
+CREATE UNIQUE INDEX turbine_setting_reason_idx1 ON at_turbine_setting_reason
 (db_office_code, UPPER("TURB_SET_REASON_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -630,8 +630,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_lu_turbine_setting_reason ADD (
-  CONSTRAINT at_lu_turb_setting_reason_pk
+ALTER TABLE at_turbine_setting_reason ADD (
+  CONSTRAINT at_turb_setting_reason_pk
  PRIMARY KEY
  (turbine_setting_reason_code)
     USING INDEX
@@ -648,13 +648,13 @@ ALTER TABLE at_lu_turbine_setting_reason ADD (
 /
 
 -- FK
-ALTER TABLE at_lu_turbine_setting_reason ADD (
-  CONSTRAINT at_lu_turbine_setting_fk1
+ALTER TABLE at_turbine_setting_reason ADD (
+  CONSTRAINT at_turbine_setting_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_lu_turbine_setting_reason ADD (
+ALTER TABLE at_turbine_setting_reason ADD (
 CONSTRAINT atlu_tst_active_ck 
 CHECK ( turbine_setting_reason_active = 'T' OR turbine_setting_reason_active = 'F'))
 /
@@ -662,7 +662,7 @@ CHECK ( turbine_setting_reason_active = 'T' OR turbine_setting_reason_active = '
 --------
 --------
 
-CREATE TABLE at_lu_turbine_computation_code
+CREATE TABLE at_turbine_computation_code
 (
   turbine_discharge_comp_code	  		NUMBER(10)				NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -689,14 +689,14 @@ NOPARALLEL
 MONITORING
 /
 
-COMMENT ON COLUMN at_lu_turbine_computation_code.turbine_discharge_comp_code IS 'The unique id for this turbine_computation_code record';
-COMMENT ON COLUMN at_lu_turbine_computation_code.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_lu_turbine_computation_code.turb_comp_code_display_value IS 'The value to display for this at_lu_turbine_computation_code record';
-COMMENT ON COLUMN at_lu_turbine_computation_code.turb_computation_code_tooltip IS 'The description or meaning of this at_lu_turbine_computation_code record';
-COMMENT ON COLUMN at_lu_turbine_computation_code.turb_computation_code_active IS 'Whether this at_lu_turbine_computation_code entry is currently active';
+COMMENT ON COLUMN at_turbine_computation_code.turbine_discharge_comp_code IS 'The unique id for this turbine_computation_code record';
+COMMENT ON COLUMN at_turbine_computation_code.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_turbine_computation_code.turb_comp_code_display_value IS 'The value to display for this at_turbine_computation_code record';
+COMMENT ON COLUMN at_turbine_computation_code.turb_computation_code_tooltip IS 'The description or meaning of this at_turbine_computation_code record';
+COMMENT ON COLUMN at_turbine_computation_code.turb_computation_code_active IS 'Whether this at_turbine_computation_code entry is currently active';
 
 -- unique index
-CREATE UNIQUE INDEX turbine_computation_code_idx1 ON at_lu_turbine_computation_code
+CREATE UNIQUE INDEX turbine_computation_code_idx1 ON at_turbine_computation_code
 (db_office_code, UPPER("TURB_COMP_CODE_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -713,8 +713,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_lu_turbine_computation_code ADD (
-  CONSTRAINT at_lu_turb_computation_code_pk
+ALTER TABLE at_turbine_computation_code ADD (
+  CONSTRAINT at_turb_computation_code_pk
  PRIMARY KEY
  (turbine_discharge_comp_code)
     USING INDEX
@@ -731,13 +731,13 @@ ALTER TABLE at_lu_turbine_computation_code ADD (
 /
 
 -- FK
-ALTER TABLE at_lu_turbine_computation_code ADD (
-  CONSTRAINT at_lu_turbine_computation_fk1
+ALTER TABLE at_turbine_computation_code ADD (
+  CONSTRAINT at_turbine_computation_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_lu_turbine_computation_code ADD (
+ALTER TABLE at_turbine_computation_code ADD (
 CONSTRAINT atlu_tcc_active_ck 
 CHECK ( turb_computation_code_active = 'T' OR turb_computation_code_active = 'F'))
 /
@@ -745,7 +745,7 @@ CHECK ( turb_computation_code_active = 'T' OR turb_computation_code_active = 'F'
 --------
 --------
 
-CREATE TABLE at_lu_physical_transfer_type
+CREATE TABLE at_physical_transfer_type
 (
   physical_transfer_type_code  			NUMBER(10)				NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -771,14 +771,14 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_lu_physical_transfer_type.physical_transfer_type_code IS 'The unique id for this physical_transfer_type code record';
-COMMENT ON COLUMN at_lu_physical_transfer_type.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_lu_physical_transfer_type.phys_trans_type_display_value IS 'The value to display for this physical_transfer_type record';
-COMMENT ON COLUMN at_lu_physical_transfer_type.physical_transfer_type_tooltip IS 'The description or meaning of this physical_transfer_type record';
-COMMENT ON COLUMN at_lu_physical_transfer_type.physical_transfer_type_active IS 'Whether this physical_transfer_type entry is currently active';
+COMMENT ON COLUMN at_physical_transfer_type.physical_transfer_type_code IS 'The unique id for this physical_transfer_type code record';
+COMMENT ON COLUMN at_physical_transfer_type.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_physical_transfer_type.phys_trans_type_display_value IS 'The value to display for this physical_transfer_type record';
+COMMENT ON COLUMN at_physical_transfer_type.physical_transfer_type_tooltip IS 'The description or meaning of this physical_transfer_type record';
+COMMENT ON COLUMN at_physical_transfer_type.physical_transfer_type_active IS 'Whether this physical_transfer_type entry is currently active';
 
 -- unique index
-CREATE UNIQUE INDEX physical_transfer_type_idx1 ON at_lu_physical_transfer_type
+CREATE UNIQUE INDEX physical_transfer_type_idx1 ON at_physical_transfer_type
 (db_office_code, UPPER("PHYS_TRANS_TYPE_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -795,8 +795,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_lu_physical_transfer_type ADD (
-  CONSTRAINT at_lu_phys_transfer_type_pk
+ALTER TABLE at_physical_transfer_type ADD (
+  CONSTRAINT at_phys_transfer_type_pk
  PRIMARY KEY
  (physical_transfer_type_code)
     USING INDEX
@@ -813,13 +813,13 @@ ALTER TABLE at_lu_physical_transfer_type ADD (
 /
 
 -- FK
-ALTER TABLE at_lu_physical_transfer_type ADD (
-  CONSTRAINT at_lu_physical_transfer_fk1
+ALTER TABLE at_physical_transfer_type ADD (
+  CONSTRAINT at_physical_transfer_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_lu_physical_transfer_type ADD (
+ALTER TABLE at_physical_transfer_type ADD (
 CONSTRAINT atlu_ptt_active_ck 
 CHECK ( physical_transfer_type_active = 'T' OR physical_transfer_type_active = 'F'))
 /
@@ -827,7 +827,7 @@ CHECK ( physical_transfer_type_active = 'T' OR physical_transfer_type_active = '
 --------
 --------
 
-CREATE TABLE at_lu_operational_status_code
+CREATE TABLE at_operational_status_code
 (
   operational_status_code  			NUMBER(10)			NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -853,14 +853,14 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_lu_operational_status_code.operational_status_code IS 'The unique id for this operational_status_code code record';
-COMMENT ON COLUMN at_lu_operational_status_code.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_lu_operational_status_code.oper_status_display_value IS 'The value to display for this operational_status_code record';
-COMMENT ON COLUMN at_lu_operational_status_code.operational_status_tooltip IS 'The description or meaning of this operational_status_code record';
-COMMENT ON COLUMN at_lu_operational_status_code.operational_status_active IS 'Whether this operational_status_code entry is currently active';
+COMMENT ON COLUMN at_operational_status_code.operational_status_code IS 'The unique id for this operational_status_code code record';
+COMMENT ON COLUMN at_operational_status_code.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_operational_status_code.oper_status_display_value IS 'The value to display for this operational_status_code record';
+COMMENT ON COLUMN at_operational_status_code.operational_status_tooltip IS 'The description or meaning of this operational_status_code record';
+COMMENT ON COLUMN at_operational_status_code.operational_status_active IS 'Whether this operational_status_code entry is currently active';
 
 -- unique index
-CREATE UNIQUE INDEX operational_status_code_idx1 ON at_lu_operational_status_code
+CREATE UNIQUE INDEX operational_status_code_idx1 ON at_operational_status_code
 (db_office_code, UPPER("OPER_STATUS_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -877,8 +877,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_lu_operational_status_code ADD (
-  CONSTRAINT at_lu_op_status_code_pk
+ALTER TABLE at_operational_status_code ADD (
+  CONSTRAINT at_op_status_code_pk
  PRIMARY KEY
  (operational_status_code)
     USING INDEX
@@ -895,21 +895,21 @@ ALTER TABLE at_lu_operational_status_code ADD (
 /
 
 -- FK
-ALTER TABLE at_lu_operational_status_code ADD (
-  CONSTRAINT at_lu_operational_status_fk1
+ALTER TABLE at_operational_status_code ADD (
+  CONSTRAINT at_operational_status_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_lu_operational_status_code ADD (
-CONSTRAINT at_lu_oper_status_active_ck 
+ALTER TABLE at_operational_status_code ADD (
+CONSTRAINT at_oper_status_active_ck 
 CHECK (operational_status_active = 'T' OR operational_status_active = 'F'))
 /
 
 --------
 --------
 
-CREATE TABLE at_lu_ws_contract_type_code
+CREATE TABLE at_ws_contract_type_code
 (
   ws_contract_type_code 		NUMBER(10)				NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -935,15 +935,15 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_code IS 'The unique id for this water supply contract type code record';
-COMMENT ON COLUMN at_lu_ws_contract_type_code.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_display_value IS 'The value to display for this ws_contract_type record';
-COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_tooltip IS 'The description or meaning of this ws_contract_type record';
-COMMENT ON COLUMN at_lu_ws_contract_type_code.ws_contract_type_active IS 'Whether this ws_contract_type entry is currently active';
+COMMENT ON COLUMN at_ws_contract_type_code.ws_contract_type_code IS 'The unique id for this water supply contract type code record';
+COMMENT ON COLUMN at_ws_contract_type_code.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_ws_contract_type_code.ws_contract_type_display_value IS 'The value to display for this ws_contract_type record';
+COMMENT ON COLUMN at_ws_contract_type_code.ws_contract_type_tooltip IS 'The description or meaning of this ws_contract_type record';
+COMMENT ON COLUMN at_ws_contract_type_code.ws_contract_type_active IS 'Whether this ws_contract_type entry is currently active';
 /
 
 -- unique index
-CREATE UNIQUE INDEX ws_contract_type_code_idx1 ON at_lu_ws_contract_type_code
+CREATE UNIQUE INDEX ws_contract_type_code_idx1 ON at_ws_contract_type_code
 (db_office_code, UPPER("WS_CONTRACT_TYPE_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -960,8 +960,8 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_lu_ws_contract_type_code ADD (
-  CONSTRAINT at_lu_ws_contract_type_pk
+ALTER TABLE at_ws_contract_type_code ADD (
+  CONSTRAINT at_ws_contract_type_pk
  PRIMARY KEY
  (ws_contract_type_code)
     USING INDEX
@@ -978,14 +978,14 @@ ALTER TABLE at_lu_ws_contract_type_code ADD (
 /
 
 -- FK
-ALTER TABLE at_lu_ws_contract_type_code ADD (
-  CONSTRAINT at_lu_ws_contract_type_fk1
+ALTER TABLE at_ws_contract_type_code ADD (
+  CONSTRAINT at_ws_contract_type_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_lu_ws_contract_type_code ADD (
-CONSTRAINT at_lu_ws_cntrct_typ_activ_ck 
+ALTER TABLE at_ws_contract_type_code ADD (
+CONSTRAINT at_ws_cntrct_typ_activ_ck 
 CHECK ( ws_contract_type_active = 'T' OR ws_contract_type_active = 'F'))
 /
 
@@ -1161,19 +1161,19 @@ ALTER TABLE at_embankment ADD (
 ALTER TABLE at_embankment ADD (
   CONSTRAINT at_embankment_fk3
  FOREIGN KEY (structure_type_code)
- REFERENCES at_lu_embank_structure_type (structure_type_code))
+ REFERENCES at_embank_structure_type (structure_type_code))
 /
 
 ALTER TABLE at_embankment ADD (
   CONSTRAINT at_embankment_fk4
  FOREIGN KEY (upstream_prot_type_code)
- REFERENCES at_lu_embank_protection_type (protection_type_code))
+ REFERENCES at_embank_protection_type (protection_type_code))
 /
 
 ALTER TABLE at_embankment ADD (
   CONSTRAINT at_embankment_fk5
  FOREIGN KEY (downstream_prot_type_code)
- REFERENCES at_lu_embank_protection_type (protection_type_code))
+ REFERENCES at_embank_protection_type (protection_type_code))
 /
 
 --------
@@ -1632,13 +1632,13 @@ ALTER TABLE at_turbine_setting ADD (
 ALTER TABLE at_turbine_setting ADD (
   CONSTRAINT at_turbine_setting_fk3
  FOREIGN KEY (turbine_setting_reason_code)
- REFERENCES at_lu_turbine_setting_reason (turbine_setting_reason_code))
+ REFERENCES at_turbine_setting_reason (turbine_setting_reason_code))
 /
 
 ALTER TABLE at_turbine_setting ADD (
   CONSTRAINT at_turbine_setting_fk4
  FOREIGN KEY (turbine_discharge_comp_code)
- REFERENCES at_lu_turbine_computation_code (turbine_discharge_comp_code))
+ REFERENCES at_turbine_computation_code (turbine_discharge_comp_code))
 /
 
 --------
@@ -1791,13 +1791,13 @@ ALTER TABLE at_gate_change ADD (
 ALTER TABLE at_gate_change ADD (
   CONSTRAINT at_gate_change_fk2
  FOREIGN KEY (discharge_computation_code)
- REFERENCES at_lu_gate_ch_computation_code (discharge_computation_code))
+ REFERENCES at_gate_ch_computation_code (discharge_computation_code))
 /
 
 ALTER TABLE at_gate_change ADD (
   CONSTRAINT at_gate_change_fk3
  FOREIGN KEY (release_reason_code)
- REFERENCES at_lu_gate_release_reason_code (release_reason_code))
+ REFERENCES at_gate_release_reason_code (release_reason_code))
 /
 
 --------
@@ -2117,7 +2117,7 @@ ALTER TABLE at_document ADD (
 ALTER TABLE at_document ADD (
   CONSTRAINT at_document_fk3
  FOREIGN KEY (document_type_code)
- REFERENCES at_lu_document_type (document_type_code))
+ REFERENCES at_document_type (document_type_code))
 /
 
 -- FK
@@ -2310,7 +2310,7 @@ ALTER TABLE at_water_user_contract ADD (
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk4
  FOREIGN KEY (water_supply_contract_type)
- REFERENCES at_lu_ws_contract_type_code (ws_contract_type_code))
+ REFERENCES at_ws_contract_type_code (ws_contract_type_code))
 /
 
 --------
@@ -2425,7 +2425,7 @@ MONITORING
 /
 COMMENT ON COLUMN at_wat_usr_contract_accounting.wat_usr_contract_acct_code IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
 COMMENT ON COLUMN at_wat_usr_contract_accounting.water_user_contract_code IS 'The contract identification number for this water movement. SEE AT_WATER_USER_CONTRACT.';
-COMMENT ON COLUMN at_wat_usr_contract_accounting.physical_transfer_type_code IS 'The type of transfer for this water movement.  See AT_LU_PHYSICAL_TRANSFER_TYPE_CODE.';
+COMMENT ON COLUMN at_wat_usr_contract_accounting.physical_transfer_type_code IS 'The type of transfer for this water movement.  See AT_PHYSICAL_TRANSFER_TYPE_CODE.';
 COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_start_datetime IS 'The date this water movement began';
 COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_end_datetime IS 'the date this water movement ended';
 COMMENT ON COLUMN at_wat_usr_contract_accounting.accounting_credit_debit IS 'Whether this water movement is a credit or a debit to the contract';
@@ -2475,7 +2475,7 @@ ALTER TABLE at_wat_usr_contract_accounting ADD (
 ALTER TABLE at_wat_usr_contract_accounting ADD (
   CONSTRAINT at_wat_usr_contr_accting_fk2
  FOREIGN KEY (physical_transfer_type_code)
- REFERENCES at_lu_physical_transfer_type (physical_transfer_type_code))
+ REFERENCES at_physical_transfer_type (physical_transfer_type_code))
 /
 
 ALTER TABLE at_wat_usr_contract_accounting ADD (
@@ -2513,7 +2513,7 @@ MONITORING
 /
 
 COMMENT ON COLUMN at_project_purpose.project_location_code IS 'The unique project this purpose relates to.  This key found in AT_PROJECT';
-COMMENT ON COLUMN at_project_purpose.project_purpose_code IS 'The purpose of the project from the at_lu_proj_purpose_code';
+COMMENT ON COLUMN at_project_purpose.project_purpose_code IS 'The purpose of the project from the at_proj_purpose_code';
 COMMENT ON COLUMN at_project_purpose.purpose_type IS 'The type for this purpose of the project.  Either operating or authorized.';
 COMMENT ON COLUMN at_project_purpose.additional_notes IS 'Any additional notes pertinent to this projects purpose';
 
@@ -2543,7 +2543,7 @@ ALTER TABLE at_project_purpose ADD (
 ALTER TABLE at_project_purpose ADD (
   CONSTRAINT at_project_purpose_fk2
  FOREIGN KEY (project_purpose_code)
- REFERENCES at_lu_project_purpose(purpose_code))
+ REFERENCES at_project_purpose(purpose_code))
 /
 
 ALTER TABLE at_project_purpose ADD (
@@ -2665,7 +2665,7 @@ COMMENT ON COLUMN at_construction_history.impoundment_date IS 'The date in which
 COMMENT ON COLUMN at_construction_history.filling_date IS 'The date that the reservoir first reached the normal pool elevation';
 COMMENT ON COLUMN at_construction_history.impoundment_mod_date IS 'The date in which impoundment began for the modified normal elevation.';
 COMMENT ON COLUMN at_construction_history.pool_raise_date IS 'The date the pool elevation was raised';
-COMMENT ON COLUMN at_construction_history.operational_status_code IS 'The operational status of the construction project. Constrained to a value in the lookup table AT_LU_OPERATIONAL_STATUS_CODE';
+COMMENT ON COLUMN at_construction_history.operational_status_code IS 'The operational status of the construction project. Constrained to a value in the lookup table AT_OPERATIONAL_STATUS_CODE';
 COMMENT ON COLUMN at_construction_history.construction_history_doc_code IS 'The surrogate code of a record in AT_DOCUMENT that describes this phase of the construction history';
 
 ALTER TABLE at_construction_history ADD (
@@ -2723,5 +2723,5 @@ ALTER TABLE at_construction_history ADD (
 ALTER TABLE at_construction_history ADD (
   CONSTRAINT at_construction_history_fk4
  FOREIGN KEY (operational_status_code)
- REFERENCES at_lu_operational_status_code (operational_status_code))
+ REFERENCES at_operational_status_code (operational_status_code))
 /

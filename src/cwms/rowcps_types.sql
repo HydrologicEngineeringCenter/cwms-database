@@ -193,7 +193,7 @@ AS
   object
   (
     water_user_contract_ref water_user_contract_ref_t,--The contract for this water movement. SEE AT_WATER_USER_CONTRACT.
-    physical_transfer_type lookup_type_obj_t,         --The type of transfer for this water movement.  See AT_LU_PHYSICAL_TRANSFER_TYPE_CODE.
+    physical_transfer_type lookup_type_obj_t,         --The type of transfer for this water movement.  See AT_PHYSICAL_TRANSFER_TYPE_CODE.
     accounting_credit_debit VARCHAR2(6 BYTE),         --Whether this water movement is a credit or a debit to the contract
     accounting_volume BINARY_DOUBLE,                  --Param: Stor. The volume associated with the water movement
     units_id VARCHAR2(16),                            --The units id for volume

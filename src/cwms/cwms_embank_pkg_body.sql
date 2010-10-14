@@ -188,11 +188,11 @@ begin
                 dp.protection_type_active as dp_prot_type_active,
                 dpo.office_id as dp_office_id 
            from at_embankment e,
-                at_lu_embank_structure_type s,
+                at_embank_structure_type s,
                 cwms_office so,
-                at_lu_embank_protection_type up,
+                at_embank_protection_type up,
                 cwms_office upo,
-                at_lu_embank_protection_type dp,
+                at_embank_protection_type dp,
                 cwms_office dpo
           where embankment_location_code = p_embankment_location_ref.get_location_code
             and s.structure_type_code = e.structure_type_code
@@ -358,7 +358,7 @@ begin
    begin
       select structure_type_code
         into l_embankment.structure_type_code
-        from at_lu_embank_structure_type
+        from at_embank_structure_type
        where db_office_code = p_embankment.structure_type.office_id
          and upper(structure_type_display_value) = upper(p_embankment.structure_type.display_value); 
    exception
@@ -377,7 +377,7 @@ begin
    begin
       select protection_type_code
         into l_embankment.upstream_prot_type_code
-        from at_lu_embank_protection_type
+        from at_embank_protection_type
        where db_office_code = p_embankment.upstream_prot_type.office_id
          and upper(protection_type_display_value) = upper(p_embankment.upstream_prot_type.display_value); 
    exception
@@ -396,7 +396,7 @@ begin
    begin
       select protection_type_code
         into l_embankment.downstream_prot_type_code
-        from at_lu_embank_protection_type
+        from at_embank_protection_type
        where db_office_code = p_embankment.downstream_prot_type.office_id
          and upper(protection_type_display_value) = upper(p_embankment.downstream_prot_type.display_value); 
    exception
@@ -547,7 +547,7 @@ begin
    p_lookup_type_tab := lookup_type_tab_t();
    for rec in (
       select * 
-        from at_lu_embank_structure_type
+        from at_embank_structure_type
        where db_office_code = cwms_util.get_office_code(l_db_office_id))
    loop
       p_lookup_type_tab.extend;
@@ -593,14 +593,14 @@ procedure set_structure_type(
    p_fail_if_exists in varchar2 default 'T'
 )
 is
-   l_rec         at_lu_embank_structure_type%rowtype;
+   l_rec         at_embank_structure_type%rowtype;
    l_office_code number  := cwms_util.get_office_code(p_lookup_type.office_id);
    l_exists      boolean;
 begin
    begin
       select *
         into l_rec
-        from at_lu_embank_structure_type
+        from at_embank_structure_type
        where db_office_code = l_office_code
          and structure_type_display_value = p_lookup_type.display_value;
       if cwms_util.is_true(p_fail_if_exists) then
@@ -621,10 +621,10 @@ begin
       l_rec.db_office_code := l_office_code;
       l_rec.structure_type_display_value := p_lookup_type.display_value;
       insert
-        into at_lu_embank_structure_type
+        into at_embank_structure_type
       values l_rec;
    else        
-      update at_lu_embank_structure_type
+      update at_embank_structure_type
          set row = l_rec
        where structure_type_code = l_rec.structure_type_code;
    end if;
@@ -637,7 +637,7 @@ procedure remove_structure_type(
 is
 begin
    delete 
-     from at_lu_embank_structure_type
+     from at_embank_structure_type
     where db_office_code = cwms_util.get_office_code(p_lookup_type.office_id)
       and structure_type_display_value = p_lookup_type.display_value;
 end remove_structure_type;
@@ -661,7 +661,7 @@ begin
    p_lookup_type_tab := lookup_type_tab_t();
    for rec in (
       select * 
-        from at_lu_embank_protection_type
+        from at_embank_protection_type
        where db_office_code = cwms_util.get_office_code(l_db_office_id))
    loop
       p_lookup_type_tab.extend;
@@ -708,14 +708,14 @@ procedure set_protection_type(
    p_fail_if_exists in varchar2 default 'T'
 )
 is
-   l_rec         at_lu_embank_protection_type%rowtype;
+   l_rec         at_embank_protection_type%rowtype;
    l_office_code number  := cwms_util.get_office_code(p_lookup_type.office_id);
    l_exists      boolean;
 begin
    begin
       select *
         into l_rec
-        from at_lu_embank_protection_type
+        from at_embank_protection_type
        where db_office_code = l_office_code
          and protection_type_display_value = p_lookup_type.display_value;
       if cwms_util.is_true(p_fail_if_exists) then
@@ -736,10 +736,10 @@ begin
       l_rec.db_office_code := l_office_code;
       l_rec.protection_type_display_value := p_lookup_type.display_value;
       insert
-        into at_lu_embank_protection_type
+        into at_embank_protection_type
       values l_rec;
    else        
-      update at_lu_embank_protection_type
+      update at_embank_protection_type
          set row = l_rec
        where protection_type_code = l_rec.protection_type_code;
    end if;
@@ -752,7 +752,7 @@ procedure remove_protection_type(
 is
 begin
    delete 
-     from at_lu_embank_protection_type
+     from at_embank_protection_type
     where db_office_code = cwms_util.get_office_code(p_lookup_type.office_id)
       and protection_type_display_value = p_lookup_type.display_value;
 end remove_protection_type;
