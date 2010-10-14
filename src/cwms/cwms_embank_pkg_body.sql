@@ -251,16 +251,20 @@ end retrieve_embankment;
 --    the office id if null will default to the connected user's office
 procedure retrieve_embankments(
    p_embankments           out embankment_tab_t,     
-   p_project_location_refs in  location_ref_tab_t
+   p_project_location_ref  in  location_ref_t
 ) 
 is
 begin
    p_embankments := embankment_tab_t();
-   p_embankments.extend(p_project_location_refs.count);
-   for i in 1..p_project_location_refs.count loop
+   for rec in
+      (select embankment_location_code
+         from at_embankment
+        where embankment_project_loc_code = p_project_location_ref.get_location_code)
+   loop
+      p_embankments.extend;
       retrieve_embankment(
-         p_embankments(i), 
-         p_project_location_refs(i));      
+         p_embankments(p_embankments.count), 
+         location_ref_t(rec.embankment_location_code));
    end loop;
 end retrieve_embankments;
 

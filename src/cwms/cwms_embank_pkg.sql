@@ -91,7 +91,7 @@ PROCEDURE retrieve_embankments(
     -- a project location refs that identify the objects we want to retrieve.
     -- includes the location id (base location + '-' + sublocation)
     -- the office id if null will default to the connected user's office
-    p_project_location_refs IN location_ref_tab_t );
+    p_project_location_ref IN location_ref_t );
   -- Stores the data contained within the embankment object into the database schema.
   --
   --
