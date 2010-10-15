@@ -119,32 +119,38 @@ IS
       loc_category_desc   VARCHAR2 (128),
       grp_db_office_id    VARCHAR2 (16),
       loc_group_id        VARCHAR2 (32),
-      loc_group_desc      VARCHAR2 (128)
+      loc_group_desc      VARCHAR2 (128),
+	   shared_loc_alias_id VARCHAR2 (128),
+		shared_loc_ref_id   VARCHAR2 (49)
    );
 
    TYPE cat_loc_grp_tab_t IS TABLE OF cat_loc_grp_rec_t;
 
    TYPE cat_loc_alias_rec_t IS RECORD (
-      db_office_id       VARCHAR2 (16),
-      location_id        VARCHAR2 (49),
-      cat_db_office_id   VARCHAR2 (16),
-      loc_category_id    VARCHAR2 (32),
-      grp_db_office_id   VARCHAR2 (16),
-      loc_group_id       VARCHAR2 (32),
-      loc_group_desc     VARCHAR2 (128),
-      loc_alias_id       VARCHAR2 (128)
+      db_office_id        VARCHAR2 (16),
+      location_id         VARCHAR2 (49),
+      cat_db_office_id    VARCHAR2 (16),
+      loc_category_id     VARCHAR2 (32),
+      grp_db_office_id    VARCHAR2 (16),
+      loc_group_id        VARCHAR2 (32),
+      loc_group_desc      VARCHAR2 (128),
+      loc_alias_id        VARCHAR2 (128),
+		loc_ref_id          VARCHAR2 (49),
+      shared_loc_alias_id VARCHAR2 (128),
+      shared_loc_ref_id   VARCHAR2 (49)
    );
+
+   TYPE cat_loc_alias_tab_t IS TABLE OF cat_loc_alias_rec_t;
 
    TYPE cat_loc_alias_abrev_rec_t IS RECORD (
       office_id     VARCHAR2 (16),
       location_id   VARCHAR2 (49),
       agency_id     VARCHAR2 (16),
-      alias_id      VARCHAR2 (16)
+      alias_id      VARCHAR2 (128),
+		loc_ref_id    VARCHAR2 (49)
    );
 
    TYPE cat_loc_alias_abrev_tab_t IS TABLE OF cat_loc_alias_abrev_rec_t;
-
-   TYPE cat_loc_alias_tab_t IS TABLE OF cat_loc_alias_rec_t;
 
    TYPE cat_base_param_rec_t IS RECORD (
       parameter_id        VARCHAR2 (16),
@@ -1047,16 +1053,19 @@ IS
 -- The returned cursor contains the following columns...
 --
 --
---    Name                Datatype      Description
---    ------------------- ------------- ------------------------------------------
---    db_office_id        varchar2(16)  DB's office id.
---    location_id         varchar2(49)  Location id.
---    cat_db_office_id    varchar2(16)  DB office id assigned to the category.
---    loc_category_id     varchar2(32)  Location category id.
---    loc_group_id        varchar2(32)  Location Group id.
---    grp_db_office_id    varchar2(16)  DB office id assigened to the group
---    loc_group_desc      varchar2(128) Location Group Description.
---    loc_alias_id        varchar2(128) Location alias.
+--    Name                   Datatype      Description
+--    -------------------    ------------- ------------------------------------------
+--    db_office_id           varchar2(16)  DB's office id.
+--    location_id            varchar2(49)  Location id.
+--    cat_db_office_id       varchar2(16)  DB office id assigned to the category.
+--    loc_category_id        varchar2(32)  Location category id.
+--    loc_group_id           varchar2(32)  Location Group id.
+--    grp_db_office_id       varchar2(16)  DB office id assigened to the group
+--    loc_group_desc         varchar2(128) Location Group Description.
+--    loc_alias_id           varchar2(128) Location alias.
+--    ref_location_id        varchar2(49)  Referenced location id
+--    shared_alias_id        varchar2(128) Location alias shared by group
+--    shared_ref_location_id varchar2(40)  Referenced location shared by group
 --
 --
 -- The records are returned sorted by location_id, category_id, group_id.

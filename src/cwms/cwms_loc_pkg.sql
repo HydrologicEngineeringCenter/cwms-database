@@ -466,6 +466,15 @@ AS
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 
+   PROCEDURE create_loc_group2 (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_group_desc    IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL,
+      p_shared_alias_id   IN   VARCHAR2 DEFAULT NULL,
+      p_shared_loc_ref_id IN   VARCHAR2 DEFAULT NULL
+   );
+
    PROCEDURE rename_loc_group (
       p_loc_category_id    IN   VARCHAR2,
       p_loc_group_id_old   IN   VARCHAR2,
@@ -524,6 +533,16 @@ AS
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 
+   PROCEDURE assign_loc_group3 (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_location_id       IN   VARCHAR2,
+      p_loc_attribute     IN   NUMBER   DEFAULT NULL,
+      p_loc_alias_id      IN   VARCHAR2 DEFAULT NULL,
+      p_ref_loc_id        IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
    PROCEDURE assign_loc_groups (
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_id      IN   VARCHAR2,
@@ -535,6 +554,13 @@ AS
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_id      IN   VARCHAR2,
       p_loc_alias_array   IN   loc_alias_array2,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE assign_loc_groups3 (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_alias_array   IN   loc_alias_array3,
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 
@@ -556,6 +582,21 @@ AS
    PROCEDURE assign_loc_grps_cat (
       p_loc_category_id   IN   VARCHAR2,
       p_loc_group_array   IN   group_array,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE assign_loc_grp_cat2 (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_group_desc    IN   VARCHAR2 DEFAULT NULL,
+	   p_shared_alias_id   IN   VARCHAR2 DEFAULT NULL,
+	   p_shared_loc_ref_id IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
+   PROCEDURE assign_loc_grps_cat2 (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_array   IN   group_array2,
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
 

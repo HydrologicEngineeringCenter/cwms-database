@@ -1515,11 +1515,13 @@ INSERT INTO at_loc_category VALUES (2, 'Basins',         53, 'Category for basin
 
 CREATE TABLE at_loc_group
 (
-  loc_group_code     NUMBER,
-  loc_category_code  NUMBER                     NOT NULL,
-  loc_group_id       VARCHAR2(32 BYTE)          NOT NULL,
-  loc_group_desc     VARCHAR2(128 BYTE),
-  db_office_code     NUMBER                     NOT NULL
+  loc_group_code      NUMBER,
+  loc_category_code   NUMBER                     NOT NULL,
+  loc_group_id        VARCHAR2(32 BYTE)          NOT NULL,
+  loc_group_desc      VARCHAR2(128 BYTE),
+  db_office_code      NUMBER                     NOT NULL,
+  shared_loc_alias_id VARCHAR2(128 BYTE),
+  shared_loc_ref_code NUMBER
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -1539,6 +1541,14 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
+comment on table  at_loc_group                     is 'Specifies a location group within a location group category';
+comment on column at_loc_group.loc_group_code      is 'Primary key uniquely identifying this group';
+comment on column at_loc_group.loc_category_code   is 'Reference to location group category to which this group belongs';
+comment on column at_loc_group.loc_group_id        is 'Name of this location group';
+comment on column at_loc_group.loc_group_desc      is 'Description of the purpose of this location group';
+comment on column at_loc_group.db_office_code      is 'Reference to office that owns this location group';
+comment on column at_loc_group.shared_loc_alias_id is 'Shared location alias assigned to all members of this group by virtue of membership';
+comment on column at_loc_group.shared_loc_ref_code is 'Shared reference to existing location assigned to all members of this group by virtue of memebership';
 
 CREATE UNIQUE INDEX at_loc_groups_pk ON at_loc_group
 (loc_group_code)
@@ -1592,6 +1602,11 @@ ALTER TABLE at_loc_group ADD (
 /
 
 ALTER TABLE at_loc_group ADD (
+  CONSTRAINT at_loc_groups_fk3
+ FOREIGN KEY (shared_loc_ref_code)
+ REFERENCES at_physical_location (location_code))
+/
+ALTER TABLE at_loc_group ADD (
   CONSTRAINT at_loc_groups_fk2
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
@@ -1601,16 +1616,16 @@ ALTER TABLE at_loc_group ADD (
  FOREIGN KEY (loc_category_code)
  REFERENCES at_loc_category (loc_category_code))
 /
-INSERT INTO at_loc_group VALUES (0, 0, 'Default',             'All Locations',                                            53);
-INSERT INTO at_loc_group VALUES (1, 1, 'USGS Station Name',   'US Geological Survey Station Name',                        53);
-INSERT INTO at_loc_group VALUES (2, 1, 'USGS Station Number', 'US Geological Survey Station Number',                      53);
-INSERT INTO at_loc_group VALUES (3, 1, 'NWS Handbook 5 ID',   'National Weather Service Handbook 5 ID',                   53);
-INSERT INTO at_loc_group VALUES (4, 1, 'DCP Platform ID',     'Data Collection Platform ID',                              53);
-INSERT INTO at_loc_group VALUES (5, 1, 'SHEF Location ID',    'Standard Hydrometeorological Exchange Format Location ID', 53);
-INSERT INTO at_loc_group VALUES (6, 1, 'CBT Station ID',      'Columbia Basin Teletype Station ID',                       53);
-INSERT INTO at_loc_group VALUES (7, 1, 'USBR Station ID',     'US Bureau of Reclamation Station ID',                      53);
-INSERT INTO at_loc_group VALUES (8, 1, 'TVA Station ID',      'Tennessee Valley Authority Station ID',                    53);
-INSERT INTO at_loc_group VALUES (9, 1, 'NRCS Station ID',     'Natural Resources Conservation Service Station ID',        53);
+INSERT INTO at_loc_group VALUES (0, 0, 'Default',             'All Locations',                                            53, NULL, NULL);
+INSERT INTO at_loc_group VALUES (1, 1, 'USGS Station Name',   'US Geological Survey Station Name',                        53, NULL, NULL);
+INSERT INTO at_loc_group VALUES (2, 1, 'USGS Station Number', 'US Geological Survey Station Number',                      53, NULL, NULL);
+INSERT INTO at_loc_group VALUES (3, 1, 'NWS Handbook 5 ID',   'National Weather Service Handbook 5 ID',                   53, NULL, NULL);
+INSERT INTO at_loc_group VALUES (4, 1, 'DCP Platform ID',     'Data Collection Platform ID',                              53, NULL, NULL);
+INSERT INTO at_loc_group VALUES (5, 1, 'SHEF Location ID',    'Standard Hydrometeorological Exchange Format Location ID', 53, NULL, NULL);
+INSERT INTO at_loc_group VALUES (6, 1, 'CBT Station ID',      'Columbia Basin Teletype Station ID',                       53, NULL, NULL);
+INSERT INTO at_loc_group VALUES (7, 1, 'USBR Station ID',     'US Bureau of Reclamation Station ID',                      53, NULL, NULL);
+INSERT INTO at_loc_group VALUES (8, 1, 'TVA Station ID',      'Tennessee Valley Authority Station ID',                    53, NULL, NULL);
+INSERT INTO at_loc_group VALUES (9, 1, 'NRCS Station ID',     'Natural Resources Conservation Service Station ID',        53, NULL, NULL);
 COMMIT ;
 -----
 
@@ -1619,7 +1634,8 @@ CREATE TABLE at_loc_group_assignment
   location_code   NUMBER,
   loc_group_code  NUMBER,
   loc_attribute   NUMBER,
-  loc_alias_id    VARCHAR2(128 BYTE)
+  loc_alias_id    VARCHAR2(128 BYTE),
+  loc_ref_code    NUMBER
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -1639,6 +1655,13 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
+
+comment on table  at_loc_group_assignment                is 'Assigns locations to location groups';
+comment on column at_loc_group_assignment.location_code  is 'Reference to assigned location';
+comment on column at_loc_group_assignment.loc_group_code is 'Reference to location group';
+comment on column at_loc_group_assignment.loc_attribute  is 'General purpose value (can be used for sorting, etc...)';
+comment on column at_loc_group_assignment.loc_alias_id   is 'Alias of location with respect to the assignment';
+comment on column at_loc_group_assignment.loc_ref_code   is 'Reference to an existing location with respect to the assignment';
 
 CREATE UNIQUE INDEX at_loc_group_assignment_pk ON at_loc_group_assignment
 (location_code, loc_group_code)
@@ -1684,11 +1707,16 @@ ALTER TABLE at_loc_group_assignment ADD (
  FOREIGN KEY (loc_group_code)
  REFERENCES at_loc_group (loc_group_code))
 /
+ALTER TABLE at_loc_group_assignment ADD (
+  CONSTRAINT at_loc_group_assignment_fk3
+ FOREIGN KEY (loc_ref_code)
+ REFERENCES at_physical_location (location_code))
+/
 
 INSERT INTO at_loc_group_assignment
-            (location_code, loc_group_code, loc_alias_id
+            (location_code, loc_group_code, loc_alias_id, loc_ref_code
             )
-     VALUES (0, 0, NULL
+     VALUES (0, 0, NULL, NULL
             );
 COMMIT ;
 ----------
@@ -2443,7 +2471,7 @@ CREATE TABLE at_properties
         prop_value     VARCHAR2(256),
         prop_comment   VARCHAR2(256)
     )
-	TABLESPACE CWMS_20AT_DATA
+   TABLESPACE CWMS_20AT_DATA
     LOGGING
     NOCOMPRESS
     NOCACHE
@@ -2472,25 +2500,25 @@ CREATE UNIQUE INDEX at_properties_uk1 ON at_properties(office_code, UPPER("PROP_
 -- AT_PROPERTIES default data.
 -- 
 INSERT INTO at_properties values(
-	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
-	'CWMSDB',
-	'logging.table.max_entries',
-	'100000',
-	'Max number of rows to keep when trimming log.');
-	
+   (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+   'CWMSDB',
+   'logging.table.max_entries',
+   '100000',
+   'Max number of rows to keep when trimming log.');
+   
 INSERT INTO at_properties values(
-	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
-	'CWMSDB',
-	'logging.entry.max_age',
-	'120',
-	'Max entry age in days to keep when trimming log.');
-	
+   (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+   'CWMSDB',
+   'logging.entry.max_age',
+   '120',
+   'Max entry age in days to keep when trimming log.');
+   
 INSERT INTO at_properties values(
-	(SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
-	'CWMSDB',
-	'logging.auto_trim.interval',
-	'240',
-	'Interval in minutes for job TRIM_LOG_JOB to execute.');
+   (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+   'CWMSDB',
+   'logging.auto_trim.interval',
+   '240',
+   'Interval in minutes for job TRIM_LOG_JOB to execute.');
 
 -----------------------------
 -- AT_REPORT_TEMPLATES table
@@ -2746,8 +2774,8 @@ INSERT INTO at_clob
   <center>
     <h2>
       Time series IDs matching pattern
-	    "<xsl:value-of select="/tsid_catalog[1]/@pattern"/>" for Office
-	    "<xsl:value-of select="/tsid_catalog[1]/@office"/>".
+       "<xsl:value-of select="/tsid_catalog[1]/@pattern"/>" for Office
+       "<xsl:value-of select="/tsid_catalog[1]/@office"/>".
     </h2>
     <hr/>
     <table border="1">

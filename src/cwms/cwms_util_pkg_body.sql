@@ -596,6 +596,33 @@ AS
 			cwms_err.raise ('INVALID_OFFICE_ID', p_db_office_id);
 	END get_db_office_id;
 
+   --------------------------------------------------------
+   --------------------------------------------------------
+   FUNCTION get_location_id (
+      p_location_code  IN NUMBER,
+      p_prepend_office IN VARCHAR2 DEFAULT 'F')
+      RETURN VARCHAR2
+   IS
+      l_location_id varchar2(183);
+      l_office_id   varchar2(16);
+   BEGIN
+      select o.office_id,
+             bl.base_location_id
+             || substr('-', 1, length(pl.sub_location_id))
+             || pl.sub_location_id
+        into l_office_id,
+             l_location_id
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where PL.LOCATION_CODE = p_location_code
+         and bl.base_location_code = pl.base_location_code
+         and o.office_code = bl.db_office_code;
+      if is_true(p_prepend_office) then
+         return l_office_id|| '/' || l_location_id;
+      end if;
+      return l_location_id;
+   END get_location_id;      
 	--------------------------------------------------------
 	--------------------------------------------------------
 	FUNCTION get_parameter_id (p_parameter_code IN NUMBER)

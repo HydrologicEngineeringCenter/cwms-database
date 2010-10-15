@@ -3139,7 +3139,10 @@ IS
 				OPEN p_cwms_cat FOR
 					  SELECT   db_office_id, location_id, cat_db_office_id,
 								  loc_category_id, grp_db_office_id, loc_group_id,
-								  loc_group_desc, loc_alias_id
+								  loc_group_desc, loc_alias_id, 
+								  cwms_util.get_location_id(loc_ref_code) ref_location_id,
+								  shared_loc_alias_id, 
+								  cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id 
 						 FROM 	  (SELECT	e1.office_id db_office_id,
 													c.location_code, b.loc_group_code,
 													d.base_location_id
@@ -3152,7 +3155,9 @@ IS
 													e2.office_id cat_db_office_id,
 													b.loc_group_id,
 													e3.office_id grp_db_office_id,
-													b.loc_group_desc
+													b.loc_group_desc,
+													b.shared_loc_alias_id,
+													b.shared_loc_ref_code
 										  FROM	at_loc_category a,
 													at_loc_group b,
 													at_physical_location c,
@@ -3182,7 +3187,10 @@ IS
 				OPEN p_cwms_cat FOR
 					  SELECT   db_office_id, location_id, cat_db_office_id,
 								  loc_category_id, grp_db_office_id, loc_group_id,
-								  loc_group_desc, loc_alias_id
+								  loc_group_desc, loc_alias_id, 
+								  cwms_util.get_location_id(loc_ref_code) ref_location_id,
+								  shared_loc_alias_id, 
+								  cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id
 						 FROM 	  (SELECT	e1.office_id db_office_id,
 													c.location_code, b.loc_group_code,
 													d.base_location_id
@@ -3195,7 +3203,9 @@ IS
 													e2.office_id cat_db_office_id,
 													b.loc_group_id,
 													e3.office_id grp_db_office_id,
-													b.loc_group_desc
+													b.loc_group_desc,
+													b.shared_loc_alias_id,
+													b.shared_loc_ref_code
 										  FROM	at_loc_category a,
 													at_loc_group b,
 													at_physical_location c,
@@ -3231,7 +3241,10 @@ IS
 				OPEN p_cwms_cat FOR
 					  SELECT   db_office_id, location_id, cat_db_office_id,
 								  loc_category_id, grp_db_office_id, loc_group_id,
-								  loc_group_desc, loc_alias_id
+								  loc_group_desc, loc_alias_id, 
+								  cwms_util.get_location_id(loc_ref_code) ref_location_id,
+								  shared_loc_alias_id, 
+								  cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id
 						 FROM 	  (SELECT	e1.office_id db_office_id,
 													c.location_code, b.loc_group_code,
 													d.base_location_id
@@ -3244,7 +3257,9 @@ IS
 													e2.office_id cat_db_office_id,
 													b.loc_group_id,
 													e3.office_id grp_db_office_id,
-													b.loc_group_desc
+													b.loc_group_desc,
+													b.shared_loc_alias_id,
+													b.shared_loc_ref_code
 										  FROM	at_loc_category a,
 													at_loc_group b,
 													at_physical_location c,
@@ -3274,7 +3289,10 @@ IS
 				OPEN p_cwms_cat FOR
 					  SELECT   db_office_id, location_id, cat_db_office_id,
 								  loc_category_id, grp_db_office_id, loc_group_id,
-								  loc_group_desc, loc_alias_id
+								  loc_group_desc, loc_alias_id, 
+								  cwms_util.get_location_id(loc_ref_code) ref_location_id,
+								  shared_loc_alias_id, 
+								  cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id
 						 FROM 	  (SELECT	e1.office_id db_office_id,
 													c.location_code, b.loc_group_code,
 													d.base_location_id
@@ -3287,7 +3305,9 @@ IS
 													e2.office_id cat_db_office_id,
 													b.loc_group_id,
 													e3.office_id grp_db_office_id,
-													b.loc_group_desc
+													b.loc_group_desc,
+													b.shared_loc_alias_id,
+													b.shared_loc_ref_code
 										  FROM	at_loc_category a,
 													at_loc_group b,
 													at_physical_location c,
@@ -3392,7 +3412,8 @@ IS
 		OPEN p_cwms_cat FOR
 			SELECT	co.office_id cat_db_office_id, loc_category_id,
 						loc_category_desc, coo.office_id grp_db_office_id,
-						loc_group_id, loc_group_desc
+						loc_group_id, loc_group_desc, shared_loc_alias_id,
+						cwms_util.get_location_id(shared_loc_ref_code) shared_loc_ref_id
 			  FROM	cwms_office co,
 						cwms_office coo,
 						at_loc_category atlc,

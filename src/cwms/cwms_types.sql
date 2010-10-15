@@ -598,6 +598,17 @@ CREATE OR REPLACE TYPE loc_alias_type2 AS OBJECT (
 CREATE OR REPLACE TYPE loc_alias_array2 IS TABLE OF loc_alias_type2;
 /
 
+CREATE OR REPLACE TYPE loc_alias_type3 AS OBJECT (
+   location_id    VARCHAR2 (49),
+   loc_attribute  NUMBER,
+   loc_alias_id   VARCHAR2 (128),
+   loc_ref_id     VARCHAR2 (49)
+)
+/
+
+CREATE OR REPLACE TYPE loc_alias_array3 IS TABLE OF loc_alias_type3;
+/
+
 CREATE OR REPLACE TYPE group_type AS OBJECT (
    GROUP_ID     VARCHAR2 (32),
    group_desc   VARCHAR2 (128)
@@ -605,6 +616,17 @@ CREATE OR REPLACE TYPE group_type AS OBJECT (
 /
 
 CREATE OR REPLACE TYPE group_array IS TABLE OF group_type;
+/
+
+CREATE OR REPLACE TYPE group_type2 AS OBJECT (
+   GROUP_ID          VARCHAR2 (32),
+   group_desc        VARCHAR2 (128),
+   shared_alias_id   VARCHAR2 (128),
+   shared_loc_ref_id VARCHAR2 (49)
+)
+/
+
+CREATE OR REPLACE TYPE group_array2 IS TABLE OF group_type2;
 /
 
 CREATE OR REPLACE TYPE group_cat_t AS OBJECT (

@@ -241,6 +241,11 @@ AS
 	FUNCTION get_db_office_id (p_db_office_id IN VARCHAR2 DEFAULT NULL )
 		RETURN VARCHAR2;
 
+   FUNCTION get_location_id (
+      p_location_code  IN NUMBER,
+      p_prepend_office IN VARCHAR2 DEFAULT 'F')
+      RETURN VARCHAR2;
+      
 	FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
 		RETURN VARCHAR2;
 

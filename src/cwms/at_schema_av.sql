@@ -212,10 +212,10 @@ AS
                 AND a.shef_unit_code = i.unit_code
 /
 begin
-	execute immediate 'DROP PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC';
+   execute immediate 'DROP PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC';
 exception
-	when others then null;
-end;		
+   when others then null;
+end;     
 /
 CREATE PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC FOR AV_SHEF_DECODE_SPEC
 /
@@ -300,7 +300,10 @@ CREATE OR REPLACE VIEW av_loc_grp_assgn (category_id,
                                          sub_location_id,
                                          location_id,
                                          alias_id,
-                                         attribute
+                                         attribute,
+                                         ref_location_id,
+                                         shared_alias_id,
+                                         shared_ref_location_id
                                         )
 AS
    SELECT atlc.loc_category_id, atlg.loc_group_id, atlga.location_code,
@@ -310,18 +313,33 @@ AS
           || SUBSTR ('-', 1, LENGTH (atpl.sub_location_id))
           || atpl.sub_location_id location_id,
           atlga.loc_alias_id,
-          atlga.loc_attribute
+          atlga.loc_attribute,
+          abl2.base_location_id
+          || SUBSTR ('-', 1, LENGTH (atpl2.sub_location_id))
+          || atpl2.sub_location_id ref_location_id,
+          atlg.shared_loc_alias_id,
+          abl3.base_location_id
+          || SUBSTR ('-', 1, LENGTH (atpl3.sub_location_id))
+          || atpl3.sub_location_id shared_ref_location_id
      FROM at_physical_location atpl,
           at_base_location abl,
           at_loc_group_assignment atlga,
           at_loc_group atlg,
           at_loc_category atlc,
-          cwms_office co
+          cwms_office co,
+          at_physical_location atpl2,
+          at_base_location abl2,
+          at_physical_location atpl3,
+          at_base_location abl3
     WHERE atlga.location_code = atpl.location_code
       AND atpl.base_location_code = abl.base_location_code
       AND atlga.loc_group_code = atlg.loc_group_code
       AND atlg.loc_category_code = atlc.loc_category_code
       AND abl.db_office_code = co.office_code
+      AND atpl2.location_code(+) = atlga.loc_ref_code
+      AND atpl2.base_location_code = abl2.base_location_code(+)
+      AND atpl3.location_code(+) = atlg.shared_loc_ref_code
+      AND atpl3.base_location_code = abl3.base_location_code(+)
 /
 --------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW av_loc_cat_grp (cat_db_office_id,
@@ -329,18 +347,28 @@ CREATE OR REPLACE VIEW av_loc_cat_grp (cat_db_office_id,
                                        loc_category_desc,
                                        grp_db_office_id,
                                        loc_group_id,
-                                       loc_group_desc
+                                       loc_group_desc,
+                                       shared_loc_alias_id,
+                                       shared_ref_location_id
                                       )
 AS
    SELECT co.office_id cat_db_office_id, loc_category_id, loc_category_desc,
-          coo.office_id grp_db_office_id, loc_group_id, loc_group_desc
+          coo.office_id grp_db_office_id, loc_group_id, loc_group_desc,
+          shared_loc_alias_id,
+          abl.base_location_id
+          || SUBSTR ('-', 1, LENGTH (atpl.sub_location_id))
+          || atpl.sub_location_id shared_ref_location_id 
      FROM cwms_office co,
           cwms_office coo,
           at_loc_category atlc,
-          at_loc_group atlg
+          at_loc_group atlg,
+          at_physical_location atpl,
+          at_base_location abl
     WHERE atlc.db_office_code = co.office_code
       AND atlg.db_office_code = coo.office_code(+)
       AND atlc.loc_category_code = atlg.loc_category_code(+)
+      AND atpl.location_code(+) = atlg.shared_loc_ref_code
+      AND atpl.base_location_code = abl.base_location_code(+)
 /
 --------------------------------------------------------------------------------
 CREATE OR REPLACE VIEW av_parameter (db_office_id,
@@ -1368,29 +1396,9 @@ show errors;
 
 CREATE OR REPLACE FORCE VIEW av_location_level_indicator_2
 AS
-	with
-	      llic1 as (
-	      select level_indicator_code,
-	             description as name,
-	             expression,
-	             comparison_operator_1 as op_1,
-	             round(cast(comparison_value_1 as number), 10) as val_1,
-	             connector,
-	             comparison_operator_2 as op_2,
-	             round(cast(comparison_value_2 as number), 10) as val_2,
-	             comparison_unit,
-	             rate_expression,
-	             rate_comparison_operator_1 as rate_op_1,
-	             round(cast(rate_comparison_value_1 as number), 10) as rate_val_1,
-	             rate_connector,
-	             rate_comparison_operator_2 as rate_op_2,
-	             round(cast(rate_comparison_value_2 as number), 10) as rate_val_2,
-	             rate_comparison_unit,
-	             rate_interval
-	        from at_loc_lvl_indicator_cond
-		   where level_indicator_value = 1),
-	      llic2 as (
-	      select level_indicator_code,
+   with
+         llic1 as (
+         select level_indicator_code,
                 description as name,
                 expression,
                 comparison_operator_1 as op_1,
@@ -1407,10 +1415,10 @@ AS
                 round(cast(rate_comparison_value_2 as number), 10) as rate_val_2,
                 rate_comparison_unit,
                 rate_interval
-	        from at_loc_lvl_indicator_cond
-		   where level_indicator_value = 2),
-	      llic3 as (
-	      select level_indicator_code,
+           from at_loc_lvl_indicator_cond
+         where level_indicator_value = 1),
+         llic2 as (
+         select level_indicator_code,
                 description as name,
                 expression,
                 comparison_operator_1 as op_1,
@@ -1427,10 +1435,10 @@ AS
                 round(cast(rate_comparison_value_2 as number), 10) as rate_val_2,
                 rate_comparison_unit,
                 rate_interval
-	        from at_loc_lvl_indicator_cond
-		   where level_indicator_value = 3),
-	      llic4 as (
-	      select level_indicator_code,
+           from at_loc_lvl_indicator_cond
+         where level_indicator_value = 2),
+         llic3 as (
+         select level_indicator_code,
                 description as name,
                 expression,
                 comparison_operator_1 as op_1,
@@ -1447,10 +1455,10 @@ AS
                 round(cast(rate_comparison_value_2 as number), 10) as rate_val_2,
                 rate_comparison_unit,
                 rate_interval
-	        from at_loc_lvl_indicator_cond
-		   where level_indicator_value = 4),
-	      llic5 as (
-	      select level_indicator_code,
+           from at_loc_lvl_indicator_cond
+         where level_indicator_value = 3),
+         llic4 as (
+         select level_indicator_code,
                 description as name,
                 expression,
                 comparison_operator_1 as op_1,
@@ -1467,101 +1475,121 @@ AS
                 round(cast(rate_comparison_value_2 as number), 10) as rate_val_2,
                 rate_comparison_unit,
                 rate_interval
-	        from at_loc_lvl_indicator_cond
-		   where level_indicator_value = 5),
-	      unit as (
-	      select unit_code,
-	             unit_id
-	        from cwms_unit),
-	      rate_unit as (
-	      select unit_code as rate_unit_code,
-	             unit_id as rate_unit_id
-	        from cwms_unit),
-	      lli as (
-	      select *
-	        from at_loc_lvl_indicator),
-	      loc as (
-	      select location_code,
-	             base_location_code,
-	             sub_location_id
-	        from at_physical_location),
-	      base_loc as (
-	      select base_location_code,
-	             base_location_id,
-	             db_office_code
-	        from at_base_location),
-	      ofc as (
-	      select office_code,
-	             office_id
-	        from cwms_office),
-	      param as (
-	      select parameter_code,
-	             base_parameter_code,
-	             sub_parameter_id
-	        from at_parameter),
-	      base_param as (
-	      select base_parameter_code,
-	             base_parameter_id
-	        from cwms_base_parameter),
-	      param_type as (
-	      select parameter_type_code,
-	             parameter_type_id
-	        from cwms_parameter_type),
-	      dur as (
-	      select duration_code,
-	             duration_id
-	        from cwms_duration),
-	      spec_level as (select * from at_specified_level),
-	      attr_param as (
-	      select parameter_code,
-	             base_parameter_code,
-	             sub_parameter_id
-	        from at_parameter),
-	      attr_base_param as (
-	      select base_parameter_code,
-	             base_parameter_id,
-	             unit_code
-	        from cwms_base_parameter),
-	      attr_param_type as (
-	      select parameter_type_code,
-	             parameter_type_id
-	        from cwms_parameter_type),
-	      attr_dur as (
-	      select duration_code,
-	             duration_id
-	        from cwms_duration),
-	      disp as (select * from at_display_units),
-	      conv as (select * from cwms_unit_conversion),
-	      ref_spec_level as (select * from at_specified_level)
-	   select office_id,
-	          base_location_id
-	          || substr('-', 1, length(sub_location_id))
-	          || sub_location_id
-	          ||'.' || base_param.base_parameter_id
-	          || substr('-', 1, length(param.sub_parameter_id))
-	          || param.sub_parameter_id
-	          || '.' || param_type.parameter_type_id
-	          || '.' || dur.duration_id
-	          || '.' || spec_level.specified_level_id
-	          || '.' || level_indicator_id as level_indicator_id,
-	          ref_spec_level.specified_level_id as reference_level_id,
-	          attr_base_param.base_parameter_id
-	          || substr('-', 1, length(attr_param.sub_parameter_id))
-	          || attr_param.sub_parameter_id
-	          || substr('.', 1, length(attr_param_type.parameter_type_id))
-	          || attr_param_type.parameter_type_id
-	          || substr('.', 1, length(attr_dur.duration_id))
-	          || attr_dur.duration_id as attribute_id,
-	          unit_system,
-	          round(attr_value * factor + offset, 10 - log(10, attr_value * factor + offset)) as attribute_value,
-	          round(ref_attr_value * factor + offset, 10 - log(10, ref_attr_value * factor + offset)) as reference_attribute_value,
-	          to_unit_id as attribute_units,
-	          substr(minimum_duration, 2) as minimum_duration,
-	          substr(maximum_age, 2) as maximum_age,
+           from at_loc_lvl_indicator_cond
+         where level_indicator_value = 4),
+         llic5 as (
+         select level_indicator_code,
+                description as name,
+                expression,
+                comparison_operator_1 as op_1,
+                round(cast(comparison_value_1 as number), 10) as val_1,
+                connector,
+                comparison_operator_2 as op_2,
+                round(cast(comparison_value_2 as number), 10) as val_2,
+                comparison_unit,
+                rate_expression,
+                rate_comparison_operator_1 as rate_op_1,
+                round(cast(rate_comparison_value_1 as number), 10) as rate_val_1,
+                rate_connector,
+                rate_comparison_operator_2 as rate_op_2,
+                round(cast(rate_comparison_value_2 as number), 10) as rate_val_2,
+                rate_comparison_unit,
+                rate_interval
+           from at_loc_lvl_indicator_cond
+         where level_indicator_value = 5),
+         unit as (
+         select unit_code,
+                unit_id
+           from cwms_unit),
+         rate_unit as (
+         select unit_code as rate_unit_code,
+                unit_id as rate_unit_id
+           from cwms_unit),
+         lli as (
+         select *
+           from at_loc_lvl_indicator),
+         loc as (
+         select location_code,
+                base_location_code,
+                sub_location_id
+           from at_physical_location),
+         base_loc as (
+         select base_location_code,
+                base_location_id,
+                db_office_code
+           from at_base_location),
+         ofc as (
+         select office_code,
+                office_id
+           from cwms_office),
+         param as (
+         select parameter_code,
+                base_parameter_code,
+                sub_parameter_id
+           from at_parameter),
+         base_param as (
+         select base_parameter_code,
+                base_parameter_id
+           from cwms_base_parameter),
+         param_type as (
+         select parameter_type_code,
+                parameter_type_id
+           from cwms_parameter_type),
+         dur as (
+         select duration_code,
+                duration_id
+           from cwms_duration),
+         spec_level as (select * from at_specified_level),
+         attr_param as (
+         select parameter_code,
+                base_parameter_code,
+                sub_parameter_id
+           from at_parameter),
+         attr_base_param as (
+         select base_parameter_code,
+                base_parameter_id,
+                unit_code
+           from cwms_base_parameter),
+         attr_param_type as (
+         select parameter_type_code,
+                parameter_type_id
+           from cwms_parameter_type),
+         attr_dur as (
+         select duration_code,
+                duration_id
+           from cwms_duration),
+         disp as (select * from at_display_units),
+         conv as (select * from cwms_unit_conversion),
+         ref_spec_level as (select * from at_specified_level)
+      select office_id,
+             base_location_id
+             || substr('-', 1, length(sub_location_id))
+             || sub_location_id
+             ||'.' || base_param.base_parameter_id
+             || substr('-', 1, length(param.sub_parameter_id))
+             || param.sub_parameter_id
+             || '.' || param_type.parameter_type_id
+             || '.' || dur.duration_id
+             || '.' || spec_level.specified_level_id
+             || '.' || level_indicator_id as level_indicator_id,
+             ref_spec_level.specified_level_id as reference_level_id,
+             attr_base_param.base_parameter_id
+             || substr('-', 1, length(attr_param.sub_parameter_id))
+             || attr_param.sub_parameter_id
+             || substr('.', 1, length(attr_param_type.parameter_type_id))
+             || attr_param_type.parameter_type_id
+             || substr('.', 1, length(attr_dur.duration_id))
+             || attr_dur.duration_id as attribute_id,
+             unit_system,
+             round(attr_value * factor + offset, 10 - log(10, attr_value * factor + offset)) as attribute_value,
+             round(ref_attr_value * factor + offset, 10 - log(10, ref_attr_value * factor + offset)) as reference_attribute_value,
+             to_unit_id as attribute_units,
+             substr(minimum_duration, 2) as minimum_duration,
+             substr(maximum_age, 2) as maximum_age,
              unit_id,
              rate_unit_id,
-	          llic1.name as cond_1_name,
-	          llic1.expression as cond_1_expr,
+             llic1.name as cond_1_name,
+             llic1.expression as cond_1_expr,
              llic1.op_1 as cond_1_op_1,
              llic1.val_1 as cond_1_val_1,
              llic1.connector as cond_1_connector,
@@ -1630,35 +1658,35 @@ AS
              llic5.rate_op_2 as cond_5_rate_op_2,
              llic5.rate_val_2 as cond_5_rate_val_2,
              llic5.rate_interval as cond_5_rate_interval
-	     from llic1
-	          join llic2 on llic2.level_indicator_code = llic1.level_indicator_code
-	          join llic3 on llic3.level_indicator_code = llic1.level_indicator_code
-	          join llic4 on llic4.level_indicator_code = llic1.level_indicator_code
-	          join llic5 on llic5.level_indicator_code = llic1.level_indicator_code
-	          join lli on lli.level_indicator_code = llic1.level_indicator_code
-	          join loc on loc.location_code = lli.location_code
-	          join base_loc on base_loc.base_location_code = loc.base_location_code
-	          join ofc on ofc.office_code = base_loc.db_office_code
-	          join param on param.parameter_code = lli.parameter_code
-	          join base_param on base_param.base_parameter_code = param.base_parameter_code
-	          join param_type on param_type.parameter_type_code = lli.parameter_type_code
-	          join dur on dur.duration_code = lli.duration_code
-	          join spec_level on spec_level.specified_level_code = lli.specified_level_code
-	          left outer join attr_param on attr_param.parameter_code = lli.attr_parameter_code
-	          left outer join attr_base_param on attr_base_param.base_parameter_code = attr_param.base_parameter_code
-	          left outer join attr_param_type on attr_param_type.parameter_type_code = lli.attr_parameter_type_code
-	          left outer join attr_dur on attr_dur.duration_code = lli.attr_duration_code
-	          left outer join disp on disp.parameter_code = attr_base_param.base_parameter_code and disp.db_office_code = ofc.office_code
-	          left outer join conv on conv.from_unit_code = attr_base_param.unit_code and conv.to_unit_code = disp.display_unit_code
-	          left outer join ref_spec_level on ref_spec_level.specified_level_code = lli.ref_specified_level_code
-	          left outer join unit on unit.unit_code = llic1.comparison_unit
-	          left outer join rate_unit on rate_unit.rate_unit_code = llic1.rate_comparison_unit
-	 order by office_id,
-	          level_indicator_id,
-	          reference_level_id,
-	          attribute_id,
-	          unit_system,
-	          attribute_value;
+        from llic1
+             join llic2 on llic2.level_indicator_code = llic1.level_indicator_code
+             join llic3 on llic3.level_indicator_code = llic1.level_indicator_code
+             join llic4 on llic4.level_indicator_code = llic1.level_indicator_code
+             join llic5 on llic5.level_indicator_code = llic1.level_indicator_code
+             join lli on lli.level_indicator_code = llic1.level_indicator_code
+             join loc on loc.location_code = lli.location_code
+             join base_loc on base_loc.base_location_code = loc.base_location_code
+             join ofc on ofc.office_code = base_loc.db_office_code
+             join param on param.parameter_code = lli.parameter_code
+             join base_param on base_param.base_parameter_code = param.base_parameter_code
+             join param_type on param_type.parameter_type_code = lli.parameter_type_code
+             join dur on dur.duration_code = lli.duration_code
+             join spec_level on spec_level.specified_level_code = lli.specified_level_code
+             left outer join attr_param on attr_param.parameter_code = lli.attr_parameter_code
+             left outer join attr_base_param on attr_base_param.base_parameter_code = attr_param.base_parameter_code
+             left outer join attr_param_type on attr_param_type.parameter_type_code = lli.attr_parameter_type_code
+             left outer join attr_dur on attr_dur.duration_code = lli.attr_duration_code
+             left outer join disp on disp.parameter_code = attr_base_param.base_parameter_code and disp.db_office_code = ofc.office_code
+             left outer join conv on conv.from_unit_code = attr_base_param.unit_code and conv.to_unit_code = disp.display_unit_code
+             left outer join ref_spec_level on ref_spec_level.specified_level_code = lli.ref_specified_level_code
+             left outer join unit on unit.unit_code = llic1.comparison_unit
+             left outer join rate_unit on rate_unit.rate_unit_code = llic1.rate_comparison_unit
+    order by office_id,
+             level_indicator_id,
+             reference_level_id,
+             attribute_id,
+             unit_system,
+             attribute_value;
 /                  
 show errors;
 
