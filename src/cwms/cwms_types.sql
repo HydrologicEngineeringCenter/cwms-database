@@ -3037,6 +3037,27 @@ create or replace type location_level_tab_t is table of location_level_t
 create or replace type jms_map_msg_tab_t as table of sys.aq$_jms_map_message;
 /
 
+
+create or replace type property_info_t as object (
+   office_id     varchar2 (16),
+   prop_category varchar2 (256),
+   prop_id       varchar2 (256));
+/
+
+create or replace type property_info_tab_t as table of property_info_t;
+/
+
+create or replace type property_info2_t as object (
+   office_id     varchar2 (16),
+   prop_category varchar2 (256),
+   prop_id       varchar2 (256),
+   prop_value    varchar2 (256),
+   prop_comment  varchar2 (256));
+/
+
+create or replace type property_info2_tab_t as table of property_info2_t;
+/
+
 -- HOST pwd
 
 @@rowcps_types
