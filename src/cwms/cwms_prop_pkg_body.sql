@@ -27,8 +27,8 @@ AS
 
 			l_property_tab.EXTEND;
 			l_property_tab (i).office_id := p_text_tab (i) (1);
-			l_property_tab (i).category := p_text_tab (i) (2);
-			l_property_tab (i).id := p_text_tab (i) (3);
+			l_property_tab (i).prop_category := p_text_tab (i) (2);
+			l_property_tab (i).prop_id := p_text_tab (i) (3);
 			i := p_text_tab.NEXT (i);
 		END LOOP;
 
@@ -58,23 +58,15 @@ AS
 		THEN
 			FOR i IN p_property_info.FIRST .. p_property_info.LAST
 			LOOP
-				--l_office_id := upper(nvl(p_property_info(i).office_id, cwms_util.user_office_id));
-				l_office_id := UPPER (p_property_info (i).office_id);
-				l_prop_category :=
-					UPPER(REPLACE (
-								REPLACE (NVL (p_property_info (i).category, '%'),
-											'*',
-											'%'
-										  ),
-								'?',
-								'_'
-							));
-				l_prop_id :=
-					UPPER(REPLACE (
-								REPLACE (NVL (p_property_info (i).id, '%'), '*', '%'),
-								'?',
-								'_'
-							));
+            l_office_id := upper(cwms_util.normalize_wildcards(
+               nvl(p_property_info(i).office_id, cwms_util.user_office_id), 
+               true));
+				l_prop_category := upper(cwms_util.normalize_wildcards(
+               p_property_info(i).prop_category,
+               true));
+				l_prop_id := upper(cwms_util.normalize_wildcards(
+               p_property_info(i).prop_id,
+               true));
 
 				IF i = 1
 				THEN
@@ -86,9 +78,10 @@ AS
 
 				l_query :=
 						l_query
-					|| '(o.office_id = '''
+					|| '(o.office_id like '''
 					|| l_office_id
-					|| ''' and p.office_code = o.office_code'
+               || ''' escape ''\'' '
+					|| ' and p.office_code = o.office_code'
 					|| ' and upper(p.prop_category) like '''
 					|| l_prop_category
 					|| ''' escape ''\'' '
@@ -150,8 +143,8 @@ AS
 		LOOP
 			-- l_office_id := upper(nvl(p_property_info(i).office_id, cwms_util.user_office_id));
 			l_office_id := UPPER (p_property_info (i).office_id);
-			l_prop_category := p_property_info (i).category;
-			l_prop_id := p_property_info (i).id;
+			l_prop_category := p_property_info (i).prop_category;
+			l_prop_id := p_property_info (i).prop_id;
 
 			OPEN l_query;
 
@@ -168,10 +161,10 @@ AS
 					  FROM	cwms_office
 					 WHERE	office_id = l_office_id;
 
-					l_table_row.prop_category := p_property_info (i).category;
-					l_table_row.prop_id := p_property_info (i).id;
-					l_table_row.prop_value := p_property_info (i).VALUE;
-					l_table_row.prop_comment := p_property_info (i).comment;
+					l_table_row.prop_category := p_property_info (i).prop_category;
+					l_table_row.prop_id := p_property_info (i).prop_id;
+					l_table_row.prop_value := p_property_info (i).prop_value;
+					l_table_row.prop_comment := p_property_info (i).prop_comment;
 
 					BEGIN
 						INSERT INTO at_properties
@@ -210,13 +203,13 @@ AS
 					l_updated := FALSE;
 
 					IF NVL (l_table_row.prop_value, '~') !=
-							NVL (p_property_info (i).VALUE, '~')
+							NVL (p_property_info (i).prop_value, '~')
 					THEN
 						l_updated := TRUE;
 					END IF;
 
 					IF NVL (l_table_row.prop_comment, '~') !=
-							NVL (p_property_info (i).comment, '~')
+							NVL (p_property_info (i).prop_comment, '~')
 					THEN
 						l_updated := TRUE;
 					END IF;
@@ -225,8 +218,8 @@ AS
 					THEN
 						BEGIN
 							UPDATE	at_properties
-								SET	prop_value = p_property_info (i).VALUE,
-										prop_comment = p_property_info (i).comment
+								SET	prop_value = p_property_info (i).prop_value,
+										prop_comment = p_property_info (i).prop_comment
 							 WHERE	CURRENT OF l_query;
 
 							l_success_count := l_success_count + 1;
@@ -307,8 +300,8 @@ AS
 
 			l_property_tab.EXTEND;
 			l_property_tab (i).office_id := l_text_table (i) (1);
-			l_property_tab (i).category := l_text_table (i) (2);
-			l_property_tab (i).id := l_text_table (i) (3);
+			l_property_tab (i).prop_category := l_text_table (i) (2);
+			l_property_tab (i).prop_id := l_text_table (i) (3);
 			i := l_text_table.NEXT (i);
 		END LOOP;
 
@@ -316,10 +309,24 @@ AS
 	END get_properties;
 
 
-	-------------------------------------------------------------------------------
-	-- procedure get_properties(...)
-	--
-	--
+   -------------------------------------------------------------------------------
+   -- procedure get_properties(...)
+   --
+   --
+   PROCEDURE get_properties (p_cwms_cat      OUT sys_refcursor,
+                             p_property_info IN   property_info_t
+                            )
+   IS
+   BEGIN
+      get_properties(
+         p_cwms_cat,
+         property_info_tab_t(p_property_info));
+   END get_properties;                            
+
+   -------------------------------------------------------------------------------
+   -- procedure get_properties(...)
+   --
+   --
 	PROCEDURE get_properties (p_cwms_cat			  OUT sys_refcursor,
 									  p_property_info   IN		CLOB
 									 )
@@ -350,8 +357,8 @@ AS
 
 			l_property_tab.EXTEND;
 			l_property_tab (i).office_id := l_text_table (i) (1);
-			l_property_tab (i).category := l_text_table (i) (2);
-			l_property_tab (i).id := l_text_table (i) (3);
+			l_property_tab (i).prop_category := l_text_table (i) (2);
+			l_property_tab (i).prop_id := l_text_table (i) (3);
 		END LOOP;
 
 		get_properties (p_cwms_cat, l_property_tab);
@@ -601,7 +608,7 @@ AS
 				l_last_office := l_prop_row.office_id;
 			END IF;
 
-			set_category (l_prop_row.category);
+			set_category (l_prop_row.prop_category);
 
 			FOR i IN l_this_category.FIRST .. l_this_category.COUNT
 			LOOP
@@ -625,7 +632,7 @@ AS
 				END IF;
 			END LOOP;
 
-			set_id (l_prop_row.id);
+			set_id (l_prop_row.prop_id);
 
 			FOR i IN l_this_id.FIRST .. l_this_id.LAST
 			LOOP
@@ -646,7 +653,7 @@ AS
 				END IF;
 			END LOOP;
 
-			IF l_prop_row.VALUE IS NULL
+			IF l_prop_row.prop_value IS NULL
 			THEN
 				write_clob (l_xml, l_indent || spc || '<value/>' || nl);
 			ELSE
@@ -655,13 +662,13 @@ AS
 						l_indent
 					|| spc
 					|| '<value text="'
-					|| l_prop_row.VALUE
+					|| l_prop_row.prop_value
 					|| '"/>'
 					|| nl
 				);
 			END IF;
 
-			IF l_prop_row.comment IS NULL
+			IF l_prop_row.prop_comment IS NULL
 			THEN
 				write_clob (l_xml, l_indent || spc || '<comment/>' || nl);
 			ELSE
@@ -670,7 +677,7 @@ AS
 						l_indent
 					|| spc
 					|| '<comment text="'
-					|| l_prop_row.comment
+					|| l_prop_row.prop_comment
 					|| '"/>'
 					|| nl
 				);
@@ -740,10 +747,10 @@ AS
 
 			l_property_tab.EXTEND;
 			l_property_tab (i).office_id := l_text_table (i) (1);
-			l_property_tab (i).category := l_text_table (i) (2);
-			l_property_tab (i).id := l_text_table (i) (3);
-			l_property_tab (i).VALUE := l_text_table (i) (4);
-			l_property_tab (i).comment := l_text_table (i) (5);
+			l_property_tab (i).prop_category := l_text_table (i) (2);
+			l_property_tab (i).prop_id := l_text_table (i) (3);
+			l_property_tab (i).prop_value := l_text_table (i) (4);
+			l_property_tab (i).prop_comment := l_text_table (i) (5);
 		END LOOP;
 
 		RETURN set_properties (l_property_tab);
@@ -780,10 +787,10 @@ AS
 
 			l_property_tab.EXTEND;
 			l_property_tab (i).office_id := l_text_table (i) (1);
-			l_property_tab (i).category := l_text_table (i) (2);
-			l_property_tab (i).id := l_text_table (i) (3);
-			l_property_tab (i).VALUE := l_text_table (i) (4);
-			l_property_tab (i).comment := l_text_table (i) (5);
+			l_property_tab (i).prop_category := l_text_table (i) (2);
+			l_property_tab (i).prop_id := l_text_table (i) (3);
+			l_property_tab (i).prop_value := l_text_table (i) (4);
+			l_property_tab (i).prop_comment := l_text_table (i) (5);
 		END LOOP;
 
 		RETURN set_properties (l_property_tab);
@@ -857,6 +864,41 @@ AS
 
 		CLOSE l_query;
 	END set_property;
+
+
+   -------------------------------------------------------------------------------
+   -- procedure delete_property(...)
+   --
+   --
+   PROCEDURE delete_property (p_category     IN VARCHAR2,
+                              p_id           IN VARCHAR2,
+                              p_office_id    IN VARCHAR2 DEFAULT NULL
+                             )
+   IS
+   BEGIN
+      delete 
+        from at_properties
+       where office_code = cwms_util.get_office_code(p_office_id)
+         and prop_category = p_category
+         and prop_id = p_id;
+   END delete_property;                             
+
+
+   -------------------------------------------------------------------------------
+   -- procedure delete_properties(...)
+   --
+   --
+   PROCEDURE delete_properties (p_property_info IN property_info_tab_t)
+   IS
+   BEGIN
+      for i in 1..p_property_info.count loop
+         delete_property(
+            p_property_info(i).prop_category,
+            p_property_info(i).prop_id,
+            nvl(upper(p_property_info(i).office_id), cwms_util.user_office_id));
+      end loop;
+   END delete_properties;
+                                
 END cwms_properties;
 /
 

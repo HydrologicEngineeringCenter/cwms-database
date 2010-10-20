@@ -1,24 +1,6 @@
 /* Formatted on 4/6/2009 12:40:25 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE cwms_properties
 AS
-	TYPE property_info_t IS RECORD (
-										office_id	VARCHAR2 (16),
-										category 	VARCHAR2 (256),
-										id 			VARCHAR2 (256)
-									);
-
-	TYPE property_info_tab_t IS TABLE OF property_info_t;
-
-	TYPE property_info2_t IS RECORD (
-										 office_id	 VARCHAR2 (16),
-										 category	 VARCHAR2 (256),
-										 id			 VARCHAR2 (256),
-										 VALUE		 VARCHAR2 (256),
-										 comment 	 VARCHAR2 (256)
-									 );
-
-	TYPE property_info2_tab_t IS TABLE OF property_info2_t;
-
 	-------------------------------------------------------------------------------
 	-- procedure get_properties(...)
 	--
@@ -34,6 +16,10 @@ AS
 	PROCEDURE get_properties (p_cwms_cat		  OUT sys_refcursor,
 									  p_property_info IN 	property_info_tab_t
 									 );
+
+   PROCEDURE get_properties (p_cwms_cat        OUT sys_refcursor,
+                             p_property_info IN    property_info_t
+                            );
 
 	-------------------------------------------------------------------------------
 	-- function get_property(...)
@@ -92,6 +78,21 @@ AS
 									p_comment		IN VARCHAR2,
 									p_office_id 	IN VARCHAR2 DEFAULT NULL
 								  );
+
+   -------------------------------------------------------------------------------
+   -- procedure delete_property(...)
+   --
+   --
+   PROCEDURE delete_property (p_category     IN VARCHAR2,
+                              p_id           IN VARCHAR2,
+                              p_office_id    IN VARCHAR2 DEFAULT NULL
+                             );
+
+   -------------------------------------------------------------------------------
+   -- procedure delete_properties(...)
+   --
+   --
+   PROCEDURE delete_properties (p_property_info IN property_info_tab_t);
 END cwms_properties;
 /
 
