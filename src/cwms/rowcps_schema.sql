@@ -2132,10 +2132,10 @@ ALTER TABLE at_document ADD (
 
 CREATE TABLE at_water_user
 (
-  water_user_code				NUMBER(10)			NOT NULL,
-  project_location_code	                        NUMBER(10)			NOT NULL,
-  entity_name					VARCHAR2(64 BYTE)	NOT NULL,
-  water_right					VARCHAR2(255 BYTE) 
+   water_user_code       NUMBER(10)        NOT NULL,
+   project_location_code NUMBER(10)        NOT NULL,
+   entity_name           VARCHAR2(64 BYTE) NOT NULL,
+   water_right           VARCHAR2(255 BYTE) 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2179,7 +2179,7 @@ ALTER TABLE at_water_user ADD (
 /
 
 CREATE UNIQUE INDEX at_water_user_idx1 ON at_water_user
-(project_location_code,entity_name)
+(project_location_code,upper(entity_name))
 LOGGING
 tablespace cwms_20at_data
 PCTFREE    10
@@ -2275,7 +2275,7 @@ ALTER TABLE at_water_user_contract ADD (
 /
 
 CREATE UNIQUE INDEX at_water_user_contract_idx1 ON at_water_user_contract
-(water_user_code,contract_name)
+(water_user_code,upper(contract_name))
 LOGGING
 tablespace cwms_20at_data
 PCTFREE    10
@@ -2694,7 +2694,7 @@ ALTER TABLE at_construction_history ADD (
 /
 
 CREATE UNIQUE INDEX at_construction_hist_idx_1 ON at_construction_history
-(project_location_code,construction_location_code,construction_id)
+(project_location_code,construction_location_code,upper(construction_id))
 LOGGING
 tablespace cwms_20at_data
 PCTFREE    10
