@@ -41,7 +41,7 @@ DECLARE
 					 'AT_PROJECT_PURPOSE',
 					 'AT_TURBINE_SETTING_REASON',
 					 'AT_TURBINE_COMPUTATION_CODE',
-                                         'AT_WS_CONTRACT_TYPE_CODE',
+                                         'AT_WS_CONTRACT_TYPE',
                                          'AT_OPERATIONAL_STATUS_CODE',
                                          'AT_OUTLET_CHARACTERISTIC',                               
 					 'AT_TURBINE_CHARACTERISTIC'  
@@ -909,7 +909,7 @@ CHECK (operational_status_active = 'T' OR operational_status_active = 'F'))
 --------
 --------
 
-CREATE TABLE at_ws_contract_type_code
+CREATE TABLE at_ws_contract_type
 (
   ws_contract_type_code 		NUMBER(10)				NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
@@ -935,15 +935,15 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_ws_contract_type_code.ws_contract_type_code IS 'The unique id for this water supply contract type code record';
-COMMENT ON COLUMN at_ws_contract_type_code.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_ws_contract_type_code.ws_contract_type_display_value IS 'The value to display for this ws_contract_type record';
-COMMENT ON COLUMN at_ws_contract_type_code.ws_contract_type_tooltip IS 'The description or meaning of this ws_contract_type record';
-COMMENT ON COLUMN at_ws_contract_type_code.ws_contract_type_active IS 'Whether this ws_contract_type entry is currently active';
+COMMENT ON COLUMN at_ws_contract_type.ws_contract_type_code IS 'The unique id for this water supply contract type code record';
+COMMENT ON COLUMN at_ws_contract_type.db_office_code IS 'Refererences the "owning" office.';
+COMMENT ON COLUMN at_ws_contract_type.ws_contract_type_display_value IS 'The value to display for this ws_contract_type record';
+COMMENT ON COLUMN at_ws_contract_type.ws_contract_type_tooltip IS 'The description or meaning of this ws_contract_type record';
+COMMENT ON COLUMN at_ws_contract_type.ws_contract_type_active IS 'Whether this ws_contract_type entry is currently active';
 /
 
 -- unique index
-CREATE UNIQUE INDEX ws_contract_type_code_idx1 ON at_ws_contract_type_code
+CREATE UNIQUE INDEX ws_contract_type_code_idx1 ON at_ws_contract_type
 (db_office_code, UPPER("WS_CONTRACT_TYPE_DISPLAY_VALUE"))
 LOGGING
 tablespace CWMS_20DATA
@@ -960,7 +960,7 @@ STORAGE    (
 NOPARALLEL
 /
 
-ALTER TABLE at_ws_contract_type_code ADD (
+ALTER TABLE at_ws_contract_type ADD (
   CONSTRAINT at_ws_contract_type_pk
  PRIMARY KEY
  (ws_contract_type_code)
@@ -978,13 +978,13 @@ ALTER TABLE at_ws_contract_type_code ADD (
 /
 
 -- FK
-ALTER TABLE at_ws_contract_type_code ADD (
+ALTER TABLE at_ws_contract_type ADD (
   CONSTRAINT at_ws_contract_type_fk1
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
 /
 
-ALTER TABLE at_ws_contract_type_code ADD (
+ALTER TABLE at_ws_contract_type ADD (
 CONSTRAINT at_ws_cntrct_typ_activ_ck 
 CHECK ( ws_contract_type_active = 'T' OR ws_contract_type_active = 'F'))
 /
@@ -2310,7 +2310,7 @@ ALTER TABLE at_water_user_contract ADD (
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk4
  FOREIGN KEY (water_supply_contract_type)
- REFERENCES at_ws_contract_type_code (ws_contract_type_code))
+ REFERENCES at_ws_contract_type (ws_contract_type_code))
 /
 
 --------
