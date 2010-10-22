@@ -1,4 +1,4 @@
-FWHENEVER sqlerror exit sql.sqlcode
+WHENEVER sqlerror exit sql.sqlcode
 SET define on
 -- @@../cwms/defines.sql
 @@defines.sql
@@ -2207,20 +2207,21 @@ ALTER TABLE at_water_user ADD (
 
 CREATE TABLE at_water_user_contract
 (
-  water_user_contract_code		NUMBER(10)			NOT NULL,
-  water_user_code		NUMBER(10)			        NOT NULL,
-  contract_name					VARCHAR2(64 BYTE)	NOT NULL,
-  contracted_storage			BINARY_DOUBLE			NOT NULL,
-  contract_documents			VARCHAR2(64 BYTE)       	NOT NULL,
-  water_supply_contract_type            NUMBER(10)                      NOT NULL,
-  ws_contract_effective_date	DATE,
-  ws_contract_expiration_date	DATE,
-  initial_use_allocation		BINARY_DOUBLE,
-  future_use_allocation			BINARY_DOUBLE,
-  future_use_percent_activated	BINARY_DOUBLE,
-  total_alloc_percent_activated BINARY_DOUBLE,
-  withdrawal_location_code		NUMBER(10),
-  supply_location_code			NUMBER(10)
+   water_user_contract_code      NUMBER(10)        NOT NULL,
+   water_user_code               NUMBER(10)        NOT NULL,
+   contract_name                 VARCHAR2(64 BYTE) NOT NULL,
+   contracted_storage            BINARY_DOUBLE     NOT NULL,
+   contract_documents            VARCHAR2(64 BYTE) NOT NULL,
+   water_supply_contract_type    NUMBER(10)        NOT NULL,
+   ws_contract_effective_date    DATE,
+   ws_contract_expiration_date   DATE,
+   initial_use_allocation        BINARY_DOUBLE,
+   future_use_allocation         BINARY_DOUBLE,
+   future_use_percent_activated  BINARY_DOUBLE,
+   total_alloc_percent_activated BINARY_DOUBLE,
+   withdrawal_location_code      NUMBER(10),
+   supply_location_code          NUMBER(10),
+   storage_unit_code             NUMBER(10)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2254,6 +2255,7 @@ COMMENT ON COLUMN at_water_user_contract.future_use_percent_activated IS 'The pe
 COMMENT ON COLUMN at_water_user_contract.total_alloc_percent_activated IS 'The percentage of total allocation for this water user contract';
 COMMENT ON COLUMN at_water_user_contract.withdrawal_location_code IS 'The code for the AT_PHYSICAL_LOCATION record which is the location where this water with be withdrawn from the permanent pool';
 COMMENT ON COLUMN at_water_user_contract.supply_location_code IS 'The AT_PHYSICAL_LOCATION record which is the location where this water will be obtained below the dam or within the outlet works';
+COMMENT ON COLUMN at_water_user_contract.storage_unit_code IS 'The unit of storage for this water user contract';
 
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_pk
@@ -2311,6 +2313,12 @@ ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk4
  FOREIGN KEY (water_supply_contract_type)
  REFERENCES at_ws_contract_type (ws_contract_type_code))
+/
+
+ALTER TABLE at_water_user_contract ADD (
+  CONSTRAINT at_water_user_contract_fk5
+ FOREIGN KEY (storage_unit_code)
+ REFERENCES cwms_unit (unit_code))
 /
 
 --------
