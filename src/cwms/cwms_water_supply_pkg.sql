@@ -21,8 +21,8 @@ IS
   --
   --    Name                      Datatype      Description
   --    ------------------------ ------------- ----------------------------
-  --    project_office_id         varchar2(32)  the office id of the parent project.
-  --    project_id                varchar2(32)   the identification (id) of the parent project.
+  --    project_office_id         varchar2(16)  the office id of the parent project.
+  --    project_id                varchar2(49)  the identification (id) of the parent project.
   --    entity_name               varchar2
   --    water_right               varchar2
   --
@@ -50,11 +50,11 @@ PROCEDURE cat_water_user(
   --
   --    Name                      Datatype      Description
   --    ------------------------ ------------- ----------------------------
-  --    project_office_id         varchar2(32)  the office id of the parent project.
-  --    project_id                varchar2(32)  the identification (id) of the parent project.
+  --    project_office_id         varchar2(16)  the office id of the parent project.
+  --    project_id                varchar2(49)  the identification (id) of the parent project.
   --    entity_name               varchar2
   --    contract_name             varchar2
-  --    contracted_storage        varchar2
+  --    contracted_storage        binary_double
   --    contract_type             varchar2      the display value of the lookup.
   --
   --------------------------------------------------------------------------------
@@ -86,11 +86,19 @@ PROCEDURE retrieve_water_users(
     -- the office id if null will default to the connected user's office
     p_project_location_ref IN location_ref_t );
   --------------------------------------------------------------------------------
+  -- store a water user.
+  -- errors preventing the return of data will be issued as a thrown exception
+  --------------------------------------------------------------------------------
+PROCEDURE store_water_user(
+    p_water_user IN water_user_obj_t,
+    -- a flag that will cause the procedure to fail if the object already exists
+    p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
+  --------------------------------------------------------------------------------
   -- store a set of water users.
   -- errors preventing the return of data will be issued as a thrown exception
   --------------------------------------------------------------------------------
 PROCEDURE store_water_users(
-    water_user IN water_user_tab_t,
+    p_water_users IN water_user_tab_t,
     -- a flag that will cause the procedure to fail if the object already exists
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
   --------------------------------------------------------------------------------
@@ -147,21 +155,21 @@ PROCEDURE delete_contract(
     -- delete all will also delete the referring children.
     p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key );
   --------------------------------------------------------------------------------
-  -- renames the water user contract associated with the water user arg from
+  -- renames the water user contract associated with the contract arg from
   -- the old contract name to the new contract name.
   -- errors preventing the return of data will be issued as a thrown exception
   --------------------------------------------------------------------------------
 PROCEDURE rename_contract(
-    p_water_user        IN water_user_obj_t,
-    p_old_contract_name IN VARCHAR2,
-    p_new_contract_name IN VARCHAR2 );
+    p_water_user_contract IN water_user_contract_ref_t,
+    p_old_contract_name   IN VARCHAR2,
+    p_new_contract_name   IN VARCHAR2 );
   --------------------------------------------------------------------------------
   -- errors preventing the return of data will be issued as a thrown exception
   --------------------------------------------------------------------------------
   -- look up procedures.
   -- returns a listing of lookup objects.
 PROCEDURE get_contract_types(
-    p_lookup_type_tab_t OUT lookup_type_tab_t,
+    p_contract_types OUT lookup_type_tab_t,
     -- defaults to the connected user's office if null
     p_db_office_id IN VARCHAR2 DEFAULT NULL );
   --------------------------------------------------------------------------------
@@ -174,7 +182,7 @@ PROCEDURE get_contract_types(
   --
   -- a failure will cause the whole set of lookups to not be stored.
 PROCEDURE set_contract_types(
-    p_lookup_type_tab_t IN lookup_type_tab_t,
+    p_contract_types IN lookup_type_tab_t,
     -- a flag that will cause the procedure to fail if the objects already exist
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
   --------------------------------------------------------------------------------
@@ -201,9 +209,6 @@ PROCEDURE retrieve_accounting_set(
     -- p_entity_name,
     -- p_contract_name
     p_contract_ref IN water_user_contract_ref_t,
-    -- a mask for the transfer type.
-    -- if null, return all transfers.
-    p_transfer_type IN VARCHAR2 DEFAULT NULL,
     -- the units to return the volume as.
     p_units IN VARCHAR2,
     -- the transfer start date time
@@ -211,11 +216,14 @@ PROCEDURE retrieve_accounting_set(
     -- the transfer end date time
     p_end_time IN DATE,
     -- the time zone of returned date time data.
-    p_time_zone IN VARCHAR2 DEFAULT 'UTC',
+    p_time_zone IN VARCHAR2 DEFAULT NULL,
     -- if the start time is inclusive.
     p_start_inclusive IN VARCHAR2 DEFAULT 'T',
     -- if the end time is inclusive
-    p_end_inclusive IN VARCHAR2 DEFAULT 'T'
+    p_end_inclusive IN VARCHAR2 DEFAULT 'T',
+    -- a mask for the transfer type.
+    -- if null, return all transfers.
+    p_transfer_type IN VARCHAR2 DEFAULT NULL
   );
 END CWMS_WATER_SUPPLY;
 /
