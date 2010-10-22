@@ -4988,7 +4988,7 @@ END delete_ts;
    begin
       cwms_msg.new_message(l_msg, l_msgid, 'TSRenamed');
       l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id_old);
-      l_msg.set_long(l_msgid, 'new_ts_id', p_cwms_ts_id_new);
+      l_msg.set_string(l_msgid, 'new_ts_id', p_cwms_ts_id_new);
       l_msg.set_string(l_msgid, 'office_id', l_office_id);
       l_msg.set_long(l_msgid, 'ts_code', l_ts_code_old);
       i := cwms_msg.publish_message(l_msg, l_msgid, 'ts_stored');
