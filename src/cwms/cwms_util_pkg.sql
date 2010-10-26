@@ -175,26 +175,26 @@ AS
       p_in_date IN DATE, 
       p_from_tz IN VARCHAR2, 
       p_to_tz   IN VARCHAR2 default 'UTC')
-      RETURN DATE;
+      RETURN DATE result_cache;
 
 	--
 	-- Retruns TRUE if p_true_false is T or True.
 	FUNCTION is_true (p_true_false IN VARCHAR2)
-		RETURN BOOLEAN;
+		RETURN BOOLEAN result_cache;
 
 	--
 	-- Retruns TRUE if p_true_false is F or False.
 	FUNCTION is_false (p_true_false IN VARCHAR2)
-		RETURN BOOLEAN;
+		RETURN BOOLEAN result_cache;
 
 	--
 	-- Retruns TRUE if p_true_false is T or True
 	-- Returns FALSE if p_true_false is F or False.
 	FUNCTION return_true_or_false (p_true_false IN VARCHAR2)
-		RETURN BOOLEAN;
+		RETURN BOOLEAN result_cache;
 
 	FUNCTION return_t_or_f_flag (p_true_false IN VARCHAR2)
-		RETURN VARCHAR2;
+		RETURN VARCHAR2 result_cache;
 
 	FUNCTION get_base_id (p_full_id IN VARCHAR2)
 		RETURN VARCHAR2;
@@ -590,6 +590,16 @@ AS
       p_args_offset in integer default 0)
       return number;      
 
+   -----------------------------
+   -- check for SQL injection --
+   -----------------------------
+   procedure check_inputs(
+      p_input in str_tab_t
+   );
+   procedure check_input(
+      p_input in varchar2
+   );
+   
 END cwms_util;
 /
 

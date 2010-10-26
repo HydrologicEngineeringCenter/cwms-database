@@ -112,10 +112,13 @@ AS
       p_in_date IN DATE, 
       p_from_tz IN VARCHAR2, 
       p_to_tz   IN VARCHAR2 default 'UTC')
-      RETURN DATE
+      RETURN DATE  result_cache
    IS
    BEGIN
-      return cast(from_tz (cast (p_in_date as timestamp), p_from_tz) at time zone p_to_tz as date);
+      return case p_to_tz = p_from_tz
+                when true then p_in_date
+                else cast(from_tz (cast (p_in_date as timestamp), p_from_tz) at time zone p_to_tz as date)
+             end;
    END;      
 
 	FUNCTION get_base_id (p_full_id IN VARCHAR2)
@@ -182,7 +185,7 @@ AS
 	END;
 
 	FUNCTION is_true (p_true_false IN VARCHAR2)
-		RETURN BOOLEAN
+		RETURN BOOLEAN result_cache
 	IS
 	BEGIN
 		IF UPPER (p_true_false) = 'T' OR UPPER (p_true_false) = 'TRUE'
@@ -195,7 +198,7 @@ AS
 
 	--
 	FUNCTION is_false (p_true_false IN VARCHAR2)
-		RETURN BOOLEAN
+		RETURN BOOLEAN result_cache
 	IS
 	BEGIN
 		IF UPPER (p_true_false) = 'F' OR UPPER (p_true_false) = 'FALSE'
@@ -209,7 +212,7 @@ AS
 	-- Retruns TRUE if p_true_false is T or True
 	-- Returns FALSE if p_true_false is F or False.
 	FUNCTION return_true_or_false (p_true_false IN VARCHAR2)
-		RETURN BOOLEAN
+		RETURN BOOLEAN result_cache
 	IS
 	BEGIN
 		IF cwms_util.is_true (p_true_false)
@@ -226,7 +229,7 @@ AS
 	-- Retruns 'T' if p_true_false is T or True
 	-- Returns 'F 'if p_true_false is F or False.
 	FUNCTION return_t_or_f_flag (p_true_false IN VARCHAR2)
-		RETURN VARCHAR2
+		RETURN VARCHAR2 result_cache
 	IS
 	BEGIN
 		IF cwms_util.is_true (p_true_false)
@@ -2967,6 +2970,38 @@ AS
       when others then
          cwms_err.raise('ERROR', 'Invalid RPN expression: ' || p_RPN_expr);
    end eval_RPN_expression;      
+
+   -----------------------------
+   -- check for SQL injection --
+   -----------------------------
+   procedure check_inputs(
+      p_input in str_tab_t
+   )
+   is
+      procedure invalid is
+      begin
+         cwms_err.raise('ERROR', 'Invalid input');
+      end;
+   begin
+      if p_input is not null then
+         for i in 1..p_input.count loop
+            case
+               when substr(p_input(i), 1, 1)  = '' then invalid;
+               when instr(p_input(i), '--' ) != 0  then invalid;
+               when instr(p_input(i), '/*' ) != 0  then invalid;
+               when instr(p_input(i), ';'  ) != 0  then invalid;
+            end case;
+         end loop;
+      end if;
+   end check_inputs;
+   
+   procedure check_input(
+      p_input in varchar2
+   )
+   is
+   begin
+      check_inputs(str_tab_t(p_input));
+   end check_input;
                
 /*
 BEGIN
