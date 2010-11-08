@@ -287,7 +287,6 @@ procedure store_embankment(
    p_fail_if_exists in varchar2 default 'T'
 )
 is
-   location_id_not_found exception; pragma exception_init (location_id_not_found, -20025);
    l_embankment  at_embankment%rowtype;
    l_factor      binary_double;
    l_offset      binary_double;
@@ -295,7 +294,7 @@ begin
    begin
       l_embankment.embankment_location_code := p_embankment.embankment_location.location_ref.get_location_code;
    exception
-      when location_id_not_found then null;
+      when no_data_found then null;
    end;
    if l_embankment.embankment_location_code is not null then
       -----------------------
