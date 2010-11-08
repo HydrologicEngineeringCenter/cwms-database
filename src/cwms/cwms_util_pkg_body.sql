@@ -2551,7 +2551,7 @@ AS
    -----------------------------------------------------------------------------
    function tokenize_algebraic(
       p_algebraic_expr in varchar2)
-      return str_tab_t
+      return str_tab_t result_cache
    is
       l_infix_tokens         str_tab_t;
       l_postfix_tokens       str_tab_t := new str_tab_t();
@@ -2715,7 +2715,7 @@ AS
    -----------------------------------------------------------------------------
    function tokenize_RPN(
       p_RPN_expr  in varchar2)
-      return str_tab_t
+      return str_tab_t result_cache
    is
       l_postfix_tokens str_tab_t;
    begin

@@ -490,7 +490,7 @@ AS
    -----------------------------------------------------------------------------
    function tokenize_algebraic(
       p_algebraic_expr in varchar2)
-      return str_tab_t;
+      return str_tab_t result_cache;
    
    -----------------------------------------------------------------------------
    -- FUNCTION tokenize_RPN
@@ -510,7 +510,7 @@ AS
    -----------------------------------------------------------------------------
    function tokenize_RPN(
       p_RPN_expr  in varchar2)
-      return str_tab_t;
+      return str_tab_t result_cache;
       
    -----------------------------------------------------------------------------
    -- FUNCTION eval_tokenized_expression
