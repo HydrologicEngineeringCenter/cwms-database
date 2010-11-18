@@ -81,6 +81,7 @@ alter session set current_schema = &cwms_schema;
 -- 
 @@cwms/at_schema_2
 @@cwms/at_schema_tsv_dqu
+@@cwms/cwms_types_rating
 --
 -- Create dbi and pd user accounts...
 ---

@@ -36,22 +36,22 @@ tempFilename = os.tmpnam()
 try :
     user = sys.argv[1].upper()
 except :
-	sys.stderr.write("Usage: python buildSqlScripts.py <schema name>\n")
-	sys.stderr.write("Ex:    python buildSqlScripts.py cwms\n")
-	sys.exit(-1)
+    sys.stderr.write("Usage: python buildSqlScripts.py <schema name>\n")
+    sys.stderr.write("Ex:    python buildSqlScripts.py cwms\n")
+    sys.exit(-1)
 
 
 args = sys.argv[2:]
 for arg in args :
-	arg = arg.upper()
-	if arg in ('/TESTACCOUNT', '-TESTACCOUNT') :
-		testAccount = True
-	elif arg in ('/NOTESTACCOUNT', '-NOTESTACCOUNT') :
-		testAccount = False
-	elif db_office_id == None :
-		db_office_id = arg
-	else :
-		office_ids.append(arg)
+    arg = arg.upper()
+    if arg in ('/TESTACCOUNT', '-TESTACCOUNT') :
+        testAccount = True
+    elif arg in ('/NOTESTACCOUNT', '-NOTESTACCOUNT') :
+        testAccount = False
+    elif db_office_id == None :
+        db_office_id = arg
+    else :
+        office_ids.append(arg)
 
 #-----------------------------------------------------------------------------#
 # Prefixes are pre-pended to every line of the first-round output to identify #
@@ -120,9 +120,7 @@ tableInfo = [
     {"ID" : "qTestFailed",        "TABLE" : "CWMS_DATA_Q_TEST_FAILED",    "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "qProtection",        "TABLE" : "CWMS_DATA_Q_PROTECTION",     "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "quality",            "TABLE" : "CWMS_DATA_QUALITY",          "SCHEMA" : "CWMS", "USERACCESS" : True},
-#   {"ID" : "ratingTsInterpType", "TABLE" : "CWMS_RATING_TS_INTERP_TYPE", "SCHEMA" : "CWMS", "USERACCESS" : False},
-#   {"ID" : "ratingTsExtrapType", "TABLE" : "CWMS_RATING_TS_EXTRAP_TYPE", "SCHEMA" : "CWMS", "USERACCESS" : False},
-#   {"ID" : "ratingType",         "TABLE" : "CWMS_RATING_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : False},
+    {"ID" : "ratingMethod",       "TABLE" : "CWMS_RATING_METHOD",         "SCHEMA" : "CWMS", "USERACCESS" : True}, 
     {"ID" : "dssParameterType",   "TABLE" : "CWMS_DSS_PARAMETER_TYPE",    "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "dssXchgDirection",   "TABLE" : "CWMS_DSS_XCHG_DIRECTION",    "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "logMessageTypes",    "TABLE" : "CWMS_LOG_MESSAGE_TYPES",     "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -3559,36 +3557,36 @@ offices = [
 #-----------#
 sys.stderr.write("Processing intervals.\n")
 intervals = [
-    [29,	'0',             0,'Irregular recurrence interval'            ],
-    [1,		'1Minute',       1,'Regular recurrence interval of 1 minute'  ],
-    [2,		'2Minutes',      2,'Regular recurrence interval of 2 minutes' ],
-    [3,		'3Minutes',      3,'Regular recurrence interval of 3 minutes' ],
-    [4,		'4Minutes',      4,'Regular recurrence interval of 4 minutes' ],
-    [5,		'5Minutes',      5,'Regular recurrence interval of 5 minutes' ],
-    [6,		'6Minutes',      6,'Regular recurrence interval of 6 minutes' ],
-    [7,		'8Minutes',      8,'Regular recurrence interval of 8 minutes' ],
-    [30,	'10Minutes',    10,'Regular recurrence interval of 10 minutes'],
-    [8,		'12Minutes',    12,'Regular recurrence interval of 12 minutes'],
-    [9,		'15Minutes',    15,'Regular recurrence interval of 15 minutes'],
-    [10,	'20Minutes',    20,'Regular recurrence interval of 20 minutes'],
-    [11,	'30Minutes',    30,'Regular recurrence interval of 30 minutes'],
-    [12,	'1Hour',        60,'Regular recurrence interval of 1 hour'    ],
-    [13,	'2Hours',      120,'Regular recurrence interval of 2 hours'   ],
-    [14,	'3Hours',      180,'Regular recurrence interval of 3 hours'   ],
-    [15,	'4Hours',      240,'Regular recurrence interval of 4 hours'   ],
-    [16,	'6Hours',      360,'Regular recurrence interval of 6 hours'   ],
-    [17,	'8Hours',      480,'Regular recurrence interval of 8 hours'   ],
-    [18,	'12Hours'     ,720,'Regular recurrence interval of 12 hours'  ],
-    [19,	'1Day',       1440,'Regular recurrence interval of 1 day'     ],
-    [20,	'2Days',      2880,'Regular recurrence interval of 2 days'    ],
-    [21,	'3Days',      4320,'Regular recurrence interval of 3 days'    ],
-    [22,	'4Days',      5760,'Regular recurrence interval of 4 days'    ],
-    [23,	'5Days',      7200,'Regular recurrence interval of 5 days'    ],
-    [24,	'6Days',      8640,'Regular recurrence interval of 6 days'    ],
-    [25,	'1Week',     10080,'Regular recurrence interval of 1 week'    ],
-    [26,	'1Month',    43200,'Regular recurrence interval of 1 month'   ],
-    [27,	'1Year',    525600,'Regular recurrence interval of 1 year'    ],
-    [28,	'1Decade', 5256000,'Regular recurrence interval of 1 decade'  ],
+    [29,    '0',             0,'Irregular recurrence interval'            ],
+    [1,     '1Minute',       1,'Regular recurrence interval of 1 minute'  ],
+    [2,     '2Minutes',      2,'Regular recurrence interval of 2 minutes' ],
+    [3,     '3Minutes',      3,'Regular recurrence interval of 3 minutes' ],
+    [4,     '4Minutes',      4,'Regular recurrence interval of 4 minutes' ],
+    [5,     '5Minutes',      5,'Regular recurrence interval of 5 minutes' ],
+    [6,     '6Minutes',      6,'Regular recurrence interval of 6 minutes' ],
+    [7,     '8Minutes',      8,'Regular recurrence interval of 8 minutes' ],
+    [30,    '10Minutes',    10,'Regular recurrence interval of 10 minutes'],
+    [8,     '12Minutes',    12,'Regular recurrence interval of 12 minutes'],
+    [9,     '15Minutes',    15,'Regular recurrence interval of 15 minutes'],
+    [10,    '20Minutes',    20,'Regular recurrence interval of 20 minutes'],
+    [11,    '30Minutes',    30,'Regular recurrence interval of 30 minutes'],
+    [12,    '1Hour',        60,'Regular recurrence interval of 1 hour'    ],
+    [13,    '2Hours',      120,'Regular recurrence interval of 2 hours'   ],
+    [14,    '3Hours',      180,'Regular recurrence interval of 3 hours'   ],
+    [15,    '4Hours',      240,'Regular recurrence interval of 4 hours'   ],
+    [16,    '6Hours',      360,'Regular recurrence interval of 6 hours'   ],
+    [17,    '8Hours',      480,'Regular recurrence interval of 8 hours'   ],
+    [18,    '12Hours'     ,720,'Regular recurrence interval of 12 hours'  ],
+    [19,    '1Day',       1440,'Regular recurrence interval of 1 day'     ],
+    [20,    '2Days',      2880,'Regular recurrence interval of 2 days'    ],
+    [21,    '3Days',      4320,'Regular recurrence interval of 3 days'    ],
+    [22,    '4Days',      5760,'Regular recurrence interval of 4 days'    ],
+    [23,    '5Days',      7200,'Regular recurrence interval of 5 days'    ],
+    [24,    '6Days',      8640,'Regular recurrence interval of 6 days'    ],
+    [25,    '1Week',     10080,'Regular recurrence interval of 1 week'    ],
+    [26,    '1Month',    43200,'Regular recurrence interval of 1 month'   ],
+    [27,    '1Year',    525600,'Regular recurrence interval of 1 year'    ],
+    [28,    '1Decade', 5256000,'Regular recurrence interval of 1 decade'  ],
 ]
 
 #-----------#
@@ -3596,64 +3594,64 @@ intervals = [
 #-----------#
 sys.stderr.write("Processing durations.\n")
 durations = [
-	[1,		'1Minute',		1,	'Measurement applies over 1 minute, time stamped at period end'],
-	[2,		'2Minutes',		2,	'Measurement applies over 2 minutes, time stamped at period end'],
-	[3,		'3Minutes',		3,	'Measurement applies over 3 minutes, time stamped at period end'],
-	[4,		'4Minutes',		4,	'Measurement applies over 4 minutes, time stamped at period end'],
-	[5,		'5Minutes',		5,	'Measurement applies over 5 minutes, time stamped at period end'],
-	[6,		'6Minutes',		6,	'Measurement applies over 6 minutes, time stamped at period end'],
-	[7,		'8Minutes',		8,	'Measurement applies over 8 minutes, time stamped at period end'],
-	[8,		'12Minutes',	12,	'Measurement applies over 12 minutes, time stamped at period end'],
-	[9,		'15Minutes',	15,	'Measurement applies over 15 minutes, time stamped at period end'],
-	[10,	'20Minutes',	20,	'Measurement applies over 20 minutes, time stamped at period end'],
-	[11,	'30Minutes',	30,	'Measurement applies over 30 minutes, time stamped at period end'],
-	[12,	'1Hour',		60,	'Measurement applies over 1 hour, time stamped at period end'],
-	[13,	'2Hours',		120,	'Measurement applies over 2 hours, time stamped at period end'],
-	[14,	'3Hours',		180,	'Measurement applies over 3 hours, time stamped at period end'],
-	[15,	'4Hours',		240,	'Measurement applies over 4 hours, time stamped at period end'],
-	[16,	'6Hours',		360,	'Measurement applies over 6 hours, time stamped at period end'],
-	[17,	'8Hours',		480,	'Measurement applies over 8 hours, time stamped at period end'],
-	[18,	'12Hours',		720,	'Measurement applies over 12 hours, time stamped at period end'],
-	[19,	'1Day',			1440,	'Measurement applies over 1 day, time stamped at period end'],
-	[20,	'2Days',		2880,	'Measurement applies over 2 days, time stamped at period end'],
-	[21,	'3Days',		4320,	'Measurement applies over 3 days, time stamped at period end'],
-	[22,	'4Days',		5760,	'Measurement applies over 4 days, time stamped at period end'],
-	[23,	'5Days',		7200,	'Measurement applies over 5 days, time stamped at period end'],
-	[24,	'6Days',		8640,	'Measurement applies over 6 days, time stamped at period end'],
-	[25,	'1Week',		10080,	'Measurement applies over 1 week, time stamped at period end'],
-	[26,	'1Month',		43200,	'Measurement applies over 1 month, time stamped at period end'],
-	[27,	'1Year',		525600,	'Measurement applies over 1 year, time stamped at period end'],
-	[28,	'1Decade',		5256000,	'Measurement applies over 1 decade, time stamped at period end'],
-	[29,	'0',			0,	'Measurement applies intantaneously at time stamp'],
-	[30,	'1MinuteBOP',	1,	'Measurement applies over 1 minute, time stamped at period beginning'],
-	[31,	'2MinutesBOP',	2,	'Measurement applies over 2 minutes, time stamped at period beginning'],
-	[32,	'3MinutesBOP',	3,	'Measurement applies over 3 minutes, time stamped at period beginning'],
-	[33,	'4MinutesBOP',	4,	'Measurement applies over 4 minutes, time stamped at period beginning'],
-	[34,	'5MinutesBOP',	5,	'Measurement applies over 5 minutes, time stamped at period beginning'],
-	[35,	'6MinutesBOP',	6,	'Measurement applies over 1 minutes, time stamped at period beginning'],
-	[36,	'8MinutesBOP',	8,	'Measurement applies over 8 minutes, time stamped at period beginning'],
-	[37,	'12MinutesBOP',	12,	'Measurement applies over 12 minutes, time stamped at period beginning'],
-	[38,	'15MinutesBOP',	15,	'Measurement applies over 15 minutes, time stamped at period beginning'],
-	[39,	'20MinutesBOP',	20,	'Measurement applies over 20 minutes, time stamped at period beginning'],
-	[40,	'30MinutesBOP',	30,	'Measurement applies over 30 minutes, time stamped at period beginning'],
-	[41,	'1HourBOP',		60,	'Measurement applies over 1 hour, time stamped at period beginnng'],
-	[42,	'2HoursBOP',	120,	'Measurement applies over 2 hours, time stamped at period beginning'],
-	[43,	'3HoursBOP',	180,	'Measurement applies over 3 hours, time stamped at period beginning'],
-	[44,	'4HoursBOP',	240,	'Measurement applies over 4 hours, time stamped at period beginning'],
-	[45,	'6HoursBOP',	360,	'Measurement applies over 6 hours, time stamped at period beginning'],
-	[46,	'8HoursBOP',	480,	'Measurement applies over 8 hours, time stamped at period beginning'],
-	[47,	'12HoursBOP',	720,	'Measurement applies over 12 hours, time stamped at period beginning'],
-	[49,	'2DaysBOP',		2880,	'Measurement applies over 2 days, time stamped at period beginning'],
-	[50,	'3DaysBOP',		4320,	'Measurement applies over 3 days, time stamped at period beginning'],
-	[51,	'4DaysBOP',		5760,	'Measurement applies over 4 days, time stamped at period beginning'],
-	[52,	'5DaysBOP',		7200,	'Measurement applies over 5 days, time stamped at period beginning'],
-	[53,	'6DaysBOP',		8640,	'Measurement applies over 6 days, time stamped at period beginning'],
-	[54,	'1WeekBOP',		10080,	'Measurement applies over 1 week, time stamped at period beginning'],
-	[55,	'1MonthBOP',	43200,	'Measurement applies over 1 month, time stamped at period beginning'],
-	[56,	'1YearBOP',		525600,	'Measurement applies over 1 year, time stamped at period beginning'],
-	[57,	'1DecadeBOP',	5256000,	'Measurement applies over 1 decade, time stamped at period beginning'],
-	[58,	'10Minutes',	10,	'Measurement applies over 10 minutes, time stamped at period end'],
-	[59,	'10MinutesBOP',	10,	'Measurement applies over 10 minutes, time stamped at period beginning']
+    [1,     '1Minute',      1,  'Measurement applies over 1 minute, time stamped at period end'],
+    [2,     '2Minutes',     2,  'Measurement applies over 2 minutes, time stamped at period end'],
+    [3,     '3Minutes',     3,  'Measurement applies over 3 minutes, time stamped at period end'],
+    [4,     '4Minutes',     4,  'Measurement applies over 4 minutes, time stamped at period end'],
+    [5,     '5Minutes',     5,  'Measurement applies over 5 minutes, time stamped at period end'],
+    [6,     '6Minutes',     6,  'Measurement applies over 6 minutes, time stamped at period end'],
+    [7,     '8Minutes',     8,  'Measurement applies over 8 minutes, time stamped at period end'],
+    [8,     '12Minutes',    12, 'Measurement applies over 12 minutes, time stamped at period end'],
+    [9,     '15Minutes',    15, 'Measurement applies over 15 minutes, time stamped at period end'],
+    [10,    '20Minutes',    20, 'Measurement applies over 20 minutes, time stamped at period end'],
+    [11,    '30Minutes',    30, 'Measurement applies over 30 minutes, time stamped at period end'],
+    [12,    '1Hour',        60, 'Measurement applies over 1 hour, time stamped at period end'],
+    [13,    '2Hours',       120,    'Measurement applies over 2 hours, time stamped at period end'],
+    [14,    '3Hours',       180,    'Measurement applies over 3 hours, time stamped at period end'],
+    [15,    '4Hours',       240,    'Measurement applies over 4 hours, time stamped at period end'],
+    [16,    '6Hours',       360,    'Measurement applies over 6 hours, time stamped at period end'],
+    [17,    '8Hours',       480,    'Measurement applies over 8 hours, time stamped at period end'],
+    [18,    '12Hours',      720,    'Measurement applies over 12 hours, time stamped at period end'],
+    [19,    '1Day',         1440,   'Measurement applies over 1 day, time stamped at period end'],
+    [20,    '2Days',        2880,   'Measurement applies over 2 days, time stamped at period end'],
+    [21,    '3Days',        4320,   'Measurement applies over 3 days, time stamped at period end'],
+    [22,    '4Days',        5760,   'Measurement applies over 4 days, time stamped at period end'],
+    [23,    '5Days',        7200,   'Measurement applies over 5 days, time stamped at period end'],
+    [24,    '6Days',        8640,   'Measurement applies over 6 days, time stamped at period end'],
+    [25,    '1Week',        10080,  'Measurement applies over 1 week, time stamped at period end'],
+    [26,    '1Month',       43200,  'Measurement applies over 1 month, time stamped at period end'],
+    [27,    '1Year',        525600, 'Measurement applies over 1 year, time stamped at period end'],
+    [28,    '1Decade',      5256000,    'Measurement applies over 1 decade, time stamped at period end'],
+    [29,    '0',            0,  'Measurement applies intantaneously at time stamp'],
+    [30,    '1MinuteBOP',   1,  'Measurement applies over 1 minute, time stamped at period beginning'],
+    [31,    '2MinutesBOP',  2,  'Measurement applies over 2 minutes, time stamped at period beginning'],
+    [32,    '3MinutesBOP',  3,  'Measurement applies over 3 minutes, time stamped at period beginning'],
+    [33,    '4MinutesBOP',  4,  'Measurement applies over 4 minutes, time stamped at period beginning'],
+    [34,    '5MinutesBOP',  5,  'Measurement applies over 5 minutes, time stamped at period beginning'],
+    [35,    '6MinutesBOP',  6,  'Measurement applies over 1 minutes, time stamped at period beginning'],
+    [36,    '8MinutesBOP',  8,  'Measurement applies over 8 minutes, time stamped at period beginning'],
+    [37,    '12MinutesBOP', 12, 'Measurement applies over 12 minutes, time stamped at period beginning'],
+    [38,    '15MinutesBOP', 15, 'Measurement applies over 15 minutes, time stamped at period beginning'],
+    [39,    '20MinutesBOP', 20, 'Measurement applies over 20 minutes, time stamped at period beginning'],
+    [40,    '30MinutesBOP', 30, 'Measurement applies over 30 minutes, time stamped at period beginning'],
+    [41,    '1HourBOP',     60, 'Measurement applies over 1 hour, time stamped at period beginnng'],
+    [42,    '2HoursBOP',    120,    'Measurement applies over 2 hours, time stamped at period beginning'],
+    [43,    '3HoursBOP',    180,    'Measurement applies over 3 hours, time stamped at period beginning'],
+    [44,    '4HoursBOP',    240,    'Measurement applies over 4 hours, time stamped at period beginning'],
+    [45,    '6HoursBOP',    360,    'Measurement applies over 6 hours, time stamped at period beginning'],
+    [46,    '8HoursBOP',    480,    'Measurement applies over 8 hours, time stamped at period beginning'],
+    [47,    '12HoursBOP',   720,    'Measurement applies over 12 hours, time stamped at period beginning'],
+    [49,    '2DaysBOP',     2880,   'Measurement applies over 2 days, time stamped at period beginning'],
+    [50,    '3DaysBOP',     4320,   'Measurement applies over 3 days, time stamped at period beginning'],
+    [51,    '4DaysBOP',     5760,   'Measurement applies over 4 days, time stamped at period beginning'],
+    [52,    '5DaysBOP',     7200,   'Measurement applies over 5 days, time stamped at period beginning'],
+    [53,    '6DaysBOP',     8640,   'Measurement applies over 6 days, time stamped at period beginning'],
+    [54,    '1WeekBOP',     10080,  'Measurement applies over 1 week, time stamped at period beginning'],
+    [55,    '1MonthBOP',    43200,  'Measurement applies over 1 month, time stamped at period beginning'],
+    [56,    '1YearBOP',     525600, 'Measurement applies over 1 year, time stamped at period beginning'],
+    [57,    '1DecadeBOP',   5256000,    'Measurement applies over 1 decade, time stamped at period beginning'],
+    [58,    '10Minutes',    10, 'Measurement applies over 10 minutes, time stamped at period end'],
+    [59,    '10MinutesBOP', 10, 'Measurement applies over 10 minutes, time stamped at period beginning']
 ]
 
 #---------------------#
@@ -4546,54 +4544,54 @@ q_protection = {
 #------------#
 sys.stderr.write("Processing parameter definitions.\n")
 parameters = [
-#    ------	----------------------------------- ----------- --------------------- ---------- ---------- -------------- -----------------------------------------------------------------------------
+#    ------ ----------------------------------- ----------- --------------------- ---------- ---------- -------------- -----------------------------------------------------------------------------
 #                                                                                  db        -----    Default  ------
 #                                                                                 store      ------Display Units-----
-#    CODE	ABSTRACT PARAMETER                  ID          NAME                  UNIT ID      SI       Non-SI         DESCRIPTION
-#    ------	----------------------------------- ----------- --------------------- ---------- ---------- -------------- -----------------------------------------------------------------------------
-    [ 1,   	"None",                             "%",        "Precent",            "%",       "%",       "%",           "Ratio expressed as hundredths"                                               ],
-    [ 2,   	"Area",                             "Area",     "Surface Area",       "m2",      "m2",      "ft2",         "Area of a surface"                                                           ],
-    [ 4,   	"None",                             "Code",     "Coded Information",  "n/a",     "n/a",     "n/a",         "Numeric code symbolically representing a phenomenon"                         ],
-    [ 5,   	"Mass Concentration",               "Conc",     "Concentration",      "mg/l",    "mg/l",    "ppm",         "Relative content of a component dissolved or dispersed in a volume of water" ],
-    [ 6,   	"Conductivity",                     "Cond",     "Conductivity",       "umho/cm", "umho/cm", "umho/cm",     "Ability of an aqueous solution to conduct electricity"                       ],
-    [ 7,   	"Count",                            "Count",    "Count",              "unit",    "unit",    "unit",        "Progressive sum of items enumerated one by one or group by group."           ],
-    [ 8,   	"Currency",                         "Currency", "Currency",           "$",       "$",       "$",           "Economic value expressed as currency/money"                                  ],
-    [ 9,   	"Length",                           "Depth",    "Depth",              "mm",      "mm",      "in",          "Depth of any form of water above the ground surface"                         ],
-    [ 3,   	"Angle",                            "Dir",      "Direction",          "deg",     "deg",     "deg",         "Map direction specified clockwise from North"                                ],
-    [36,   	"Length",                           "Dist",     "Distance",           "km",      "km",      "mi",          "Distance between two points."                                                ],
-    [10,   	"Length",                           "Elev",     "Elevation",          "m",       "m",       "ft",          "The height of a surface above a datum which approximates sea level"          ],
-    [11,   	"Energy",                           "Energy",   "Energy",             "MWh",     "MWh",     "MWh",         "Energy, work, or quantity of heat"                                           ],
-    [12,   	"Length",                           "Evap",     "Evaporation",        "mm",      "mm",      "in",          "Liquid water lost to vapor measured as an equivalent depth of liquid water"  ],
-    [13,   	"Linear Speed",                     "EvapRate", "Evaporation Rate",   "mm/day",  "mm/day",  "in/day",      "Rate of liquid water evaporation"                                            ],
-    [35,   	"Count",                            "Fish",     "Fish Count",         "unit",    "unit",    "unit",        "Fish Count."                                                                 ],
-    [14,   	"Volume Rate",                      "Flow",     "Flow Rate",          "cms",     "cms",     "cfs",         "Volume rate of moving water"                                                 ],
-    [15,   	"Length",                           "Frost",    "Ground Frost",       "cm",      "cm",      "in",          "Depth of frost penetration into the ground (non-permafrost)"                 ],
-    [40,   	"Length",                           "Height",   "Height",             "m",       "m",       "ft",          "The height of a surface above an arbitrary datum"                            ],
-    [32,   	"Irradiance",                       "Irrad",    "Irradiance",         "W/m2",    "W/m2",    "langley/min", "Radiant Power on a unit area of irradiated surface."                         ],
-    [42,   	"Length",                           "Length",   "Length",             "m",       "m",       "ft",          "Linear displacement associated with the larger horizontal planar measurment" ],
-    [16,   	"Length",                           "Opening",  "Opening Height",     "m",       "m",       "ft",          "Height of opening controlling passage of water"                              ],
-    [17,   	"Hydrogen Ion Concentration Index", "pH",       "pH",                 "su",      "su",      "su",          "Negative logarithm of hydrogen-ion concentration in a solution"              ],
-    [18,   	"Power",                            "Power",    "Power",              "MW",      "MW",      "MW",          "Energy rate, Radiant Flux"                                                   ],
-    [19,   	"Length",                           "Precip",   "Precipitation",      "mm",      "mm",      "in",          "Deposit on the earth of hail, mist, rain, sleet, or snow"                    ],
-    [20,   	"Pressure",                         "Pres",     "Pressure",           "kPa",     "kPa",     "in-hg",       "Pressure (force per unit area)"                                              ],
-    [21,   	"Irradiation",                      "Rad",      "Irradiation",        "J/m2",    "J/m2",    "langley",     "Radiant energy on a unit area of irradiated surface."                        ],
-    [37,   	"None",                             "Ratio",    "Ratio",              "n/a",     "n/a",     "n/a",         "Quotient of two numbers having the same units"                               ],
-    [41,   	"Angle",                            "Rotation", "Rotation",           "deg",     "deg",     "deg",         "Angular displacement"                                                        ],
-    [22,   	"Linear Speed",                     "Speed",    "Speed",              "kph",     "kph",     "mph",         "Rate of moving substance or object irrespective of direction"                ],
-    [31,   	"Angular Speed",                    "SpinRate", "Spin Rate",          "rpm",     "rpm",     "rpm",         "Number of revolutions made about an axis per unit of time"                   ],
-    [23,   	"Length",                           "Stage",    "Stage",              "m",       "m",       "ft",          "The height of a water surface above a designated datum other than sea level" ],
-    [24,   	"Volume",                           "Stor",     "Storage",            "m3",      "m3",      "ac-ft",       "Volume of impounded water"                                                   ],
-    [25,   	"Temperature",                      "Temp",     "Temperature",        "C",       "C",       "F",           "Hotness or coldness of a substance based on measuring expansion of mercury"  ],
-    [26,   	"Length",                           "Thick",    "Thickness",          "cm",      "cm",      "in",          "Thickness of sheet of substance"                                             ],
-    [27,   	"Elapsed Time",                     "Timing",   "Timing",             "sec",     "sec",     "sec",         "A duration of a phenomenon"                                                  ],
-    [30,   	"Length",                           "Travel",   "Accumulated Travel", "km",      "km",      "mi",          "Accumulated movement of a fluid past a point"                                ],
-    [28,   	"Turbidity",                        "Turb",     "Turbidity",          "JTU",     "JTU",     "JTU",         "Measurement of interference to the passage of light by matter in suspension" ],
-    [38,   	"Turbidity",                        "TurbF",    "Turbidity",          "FNU",     "FNU",     "FNU",         "Measurement of scattered light at an angle of 90+/-2.5 degrees to the incident light beam from a monochromatic light source (860+/-60 nm) (ISO 7027)"],
-    [33,   	"Turbidity",                        "TurbJ",    "Turbidity",          "JTU",     "JTU",     "JTU",         "Measurement of interference to the passage of light by matter in suspension" ],
-    [34,   	"Turbidity",                        "TurbN",    "Turbidity",          "NTU",     "NTU",     "NTU",         "Measurement of scattered light at an angle of 90+/-30 degrees to the incident light beam from a white light source (540+/-140 nm) (EPA method 180.1)"],
-    [29,   	"Electromotive Potential",          "Volt",     "Voltage",            "volt",    "volt",    "volt",        "Electric Potential"                                                          ],
-    [39,   	"Volume",                           "Volume",   "Volume",             "m3",      "m3",      "ft3",         "Volume of anything other than impounded water"                               ],
-    [43,   	"Length",                           "Width",    "Width",              "m",       "m",       "ft",          "Linear displacement associated with the smaller horizontal planar measurment"] ,
+#    CODE   ABSTRACT PARAMETER                  ID          NAME                  UNIT ID      SI       Non-SI         DESCRIPTION
+#    ------ ----------------------------------- ----------- --------------------- ---------- ---------- -------------- -----------------------------------------------------------------------------
+    [ 1,    "None",                             "%",        "Precent",            "%",       "%",       "%",           "Ratio expressed as hundredths"                                               ],
+    [ 2,    "Area",                             "Area",     "Surface Area",       "m2",      "m2",      "ft2",         "Area of a surface"                                                           ],
+    [ 4,    "None",                             "Code",     "Coded Information",  "n/a",     "n/a",     "n/a",         "Numeric code symbolically representing a phenomenon"                         ],
+    [ 5,    "Mass Concentration",               "Conc",     "Concentration",      "mg/l",    "mg/l",    "ppm",         "Relative content of a component dissolved or dispersed in a volume of water" ],
+    [ 6,    "Conductivity",                     "Cond",     "Conductivity",       "umho/cm", "umho/cm", "umho/cm",     "Ability of an aqueous solution to conduct electricity"                       ],
+    [ 7,    "Count",                            "Count",    "Count",              "unit",    "unit",    "unit",        "Progressive sum of items enumerated one by one or group by group."           ],
+    [ 8,    "Currency",                         "Currency", "Currency",           "$",       "$",       "$",           "Economic value expressed as currency/money"                                  ],
+    [ 9,    "Length",                           "Depth",    "Depth",              "mm",      "mm",      "in",          "Depth of any form of water above the ground surface"                         ],
+    [ 3,    "Angle",                            "Dir",      "Direction",          "deg",     "deg",     "deg",         "Map direction specified clockwise from North"                                ],
+    [36,    "Length",                           "Dist",     "Distance",           "km",      "km",      "mi",          "Distance between two points."                                                ],
+    [10,    "Length",                           "Elev",     "Elevation",          "m",       "m",       "ft",          "The height of a surface above a datum which approximates sea level"          ],
+    [11,    "Energy",                           "Energy",   "Energy",             "MWh",     "MWh",     "MWh",         "Energy, work, or quantity of heat"                                           ],
+    [12,    "Length",                           "Evap",     "Evaporation",        "mm",      "mm",      "in",          "Liquid water lost to vapor measured as an equivalent depth of liquid water"  ],
+    [13,    "Linear Speed",                     "EvapRate", "Evaporation Rate",   "mm/day",  "mm/day",  "in/day",      "Rate of liquid water evaporation"                                            ],
+    [35,    "Count",                            "Fish",     "Fish Count",         "unit",    "unit",    "unit",        "Fish Count."                                                                 ],
+    [14,    "Volume Rate",                      "Flow",     "Flow Rate",          "cms",     "cms",     "cfs",         "Volume rate of moving water"                                                 ],
+    [15,    "Length",                           "Frost",    "Ground Frost",       "cm",      "cm",      "in",          "Depth of frost penetration into the ground (non-permafrost)"                 ],
+    [40,    "Length",                           "Height",   "Height",             "m",       "m",       "ft",          "The height of a surface above an arbitrary datum"                            ],
+    [32,    "Irradiance",                       "Irrad",    "Irradiance",         "W/m2",    "W/m2",    "langley/min", "Radiant Power on a unit area of irradiated surface."                         ],
+    [42,    "Length",                           "Length",   "Length",             "m",       "m",       "ft",          "Linear displacement associated with the larger horizontal planar measurment" ],
+    [16,    "Length",                           "Opening",  "Opening Height",     "m",       "m",       "ft",          "Height of opening controlling passage of water"                              ],
+    [17,    "Hydrogen Ion Concentration Index", "pH",       "pH",                 "su",      "su",      "su",          "Negative logarithm of hydrogen-ion concentration in a solution"              ],
+    [18,    "Power",                            "Power",    "Power",              "MW",      "MW",      "MW",          "Energy rate, Radiant Flux"                                                   ],
+    [19,    "Length",                           "Precip",   "Precipitation",      "mm",      "mm",      "in",          "Deposit on the earth of hail, mist, rain, sleet, or snow"                    ],
+    [20,    "Pressure",                         "Pres",     "Pressure",           "kPa",     "kPa",     "in-hg",       "Pressure (force per unit area)"                                              ],
+    [21,    "Irradiation",                      "Rad",      "Irradiation",        "J/m2",    "J/m2",    "langley",     "Radiant energy on a unit area of irradiated surface."                        ],
+    [37,    "None",                             "Ratio",    "Ratio",              "n/a",     "n/a",     "n/a",         "Quotient of two numbers having the same units"                               ],
+    [41,    "Angle",                            "Rotation", "Rotation",           "deg",     "deg",     "deg",         "Angular displacement"                                                        ],
+    [22,    "Linear Speed",                     "Speed",    "Speed",              "kph",     "kph",     "mph",         "Rate of moving substance or object irrespective of direction"                ],
+    [31,    "Angular Speed",                    "SpinRate", "Spin Rate",          "rpm",     "rpm",     "rpm",         "Number of revolutions made about an axis per unit of time"                   ],
+    [23,    "Length",                           "Stage",    "Stage",              "m",       "m",       "ft",          "The height of a water surface above a designated datum other than sea level" ],
+    [24,    "Volume",                           "Stor",     "Storage",            "m3",      "m3",      "ac-ft",       "Volume of impounded water"                                                   ],
+    [25,    "Temperature",                      "Temp",     "Temperature",        "C",       "C",       "F",           "Hotness or coldness of a substance based on measuring expansion of mercury"  ],
+    [26,    "Length",                           "Thick",    "Thickness",          "cm",      "cm",      "in",          "Thickness of sheet of substance"                                             ],
+    [27,    "Elapsed Time",                     "Timing",   "Timing",             "sec",     "sec",     "sec",         "A duration of a phenomenon"                                                  ],
+    [30,    "Length",                           "Travel",   "Accumulated Travel", "km",      "km",      "mi",          "Accumulated movement of a fluid past a point"                                ],
+    [28,    "Turbidity",                        "Turb",     "Turbidity",          "JTU",     "JTU",     "JTU",         "Measurement of interference to the passage of light by matter in suspension" ],
+    [38,    "Turbidity",                        "TurbF",    "Turbidity",          "FNU",     "FNU",     "FNU",         "Measurement of scattered light at an angle of 90+/-2.5 degrees to the incident light beam from a monochromatic light source (860+/-60 nm) (ISO 7027)"],
+    [33,    "Turbidity",                        "TurbJ",    "Turbidity",          "JTU",     "JTU",     "JTU",         "Measurement of interference to the passage of light by matter in suspension" ],
+    [34,    "Turbidity",                        "TurbN",    "Turbidity",          "NTU",     "NTU",     "NTU",         "Measurement of scattered light at an angle of 90+/-30 degrees to the incident light beam from a white light source (540+/-140 nm) (EPA method 180.1)"],
+    [29,    "Electromotive Potential",          "Volt",     "Voltage",            "volt",    "volt",    "volt",        "Electric Potential"                                                          ],
+    [39,    "Volume",                           "Volume",   "Volume",             "m3",      "m3",      "ft3",         "Volume of anything other than impounded water"                               ],
+    [43,    "Length",                           "Width",    "Width",              "m",       "m",       "ft",          "Linear displacement associated with the smaller horizontal planar measurment"] ,
 ]
 
 cwmsUnitParamDefsById = {}
@@ -4673,41 +4671,22 @@ tzUsages = [
     {"ID" : "Local",      "DESCRIPTION" : "Use varying offset for zone local time" },
 ]
 
-#----------------------------------------#
-# Rating time-series interpolation types #
-#----------------------------------------#
-sys.stderr.write("Processing rating time-series interpolation types.\n")
-ratingTsInterpTypes = [
-    ['LIN_INTERP',   'Use linear interpolation between bounds.'       ],
-    ['LOG_INTERP',   'Use logarithmic interpolation between bounds.'  ],
-    ['STEP_PREV',    'Treat data as if it occurred at previous bound.'],
-    ['STEP_NEXT',    'Treat data as if it occurred at next bound.    '],
-    ['STEP_NEAREST', 'Treat data as if it occurred at previous bound.'],
-]
-
-#----------------------------------------#
-# Rating time-series extrapolation types #
-#----------------------------------------#
-sys.stderr.write("Processing rating time-series extrapolation types.\n")
-ratingTsExtrapTypes = [
-    ['NOT_ALLOWED', 'Don''t process out-of-bounds data.'                         ],
-    ['EXTRAPOLATE', 'Extrapolate for out-of-bounds data.'                        ],
-    ['USE_NEAREST', 'Treat out-of-bounds data as if it occurred at nearest bound'],
-]
-
-#--------------#
-# Rating types #
-#--------------#
-sys.stderr.write("Processing rating types.\n")
-ratingTypes = [
-    ['GENERAL',        1, 'Generalized rating : can be compound, composite and periodic.'                      ],
-    ['SIMPLE',         0, 'Simple rating : cannot be compound, composite or periodic.'                         ],
-    ['COMPOSITE',      0, 'Composite rating : can be composite, but not compound, or periodic.'                ],
-    ['COMPOUND',       1, 'Compound rating : can be compound, but not composite, or periodic.'                 ],
-    ['PERIODIC',       0, 'Periodic rating : can be periodic, but not composite, or compound.'                 ],
-    ['PERIODICVALUE',  0, 'Periodic values : no rated parameter.'                                              ],
-    ['STREAM',         0, 'Stream rating : simple rating with addition of USGS shifts and offsets.'            ],
-    ['CONICRESERVOIR', 0, 'Conic reservoir rating : simple elevation-area rating with conic volume information'],
+#----------------#
+# Rating Methods #
+#----------------#
+sys.stderr.write("Processing rating methods.\n")
+ratingMethods = [
+    ['NULL'        , 'Return null if between values or outside range'       ],
+    ['ERROR'       , 'Raise an exception if between values or outside range'],
+    ['LINEAR'      , 'Linear interpolation or extrapolation'                ],
+    ['LOGARITHMIC' , 'Logarithmic interpolation or extrapolation'           ],
+    ['CONIC'       , 'Conic interpolation or extrapolation'                 ],
+    ['PREVIOUS'    , 'Return the value that is lower in position'           ],
+    ['NEXT'        , 'Return the value that is higher in position'          ],
+    ['NEAREST'     , 'Return the value that is nearest in position'         ],
+    ['LOWER'       , 'Return the value that is lower in magnitude'          ],
+    ['HIGHER'      , 'Return the value that is higher in magnitude'         ],
+    ['CLOSEST'     , 'Return the value that is closest in magnitude'        ],
 ]
 
 #---------------#
@@ -4844,26 +4823,26 @@ sys.stderr.write("Processing log message types \n")
 logMessageTypes = [
 #      CODE  ID
 #      ----  -----------------------
-	[ 1, 'AcknowledgeAlarm'     ],
-	[ 2, 'AcknowledgeRequest'   ],
-	[ 3, 'Alarm'                ],
-	[ 4, 'ControlMessage'       ],
-	[ 5, 'DeactivateAlarm'      ],
-	[ 6, 'Exception Thrown'     ],
-	[ 7, 'Fatal Error'          ],
-	[ 8, 'Initialization Error' ],
-	[ 9, 'Initiated'            ],
-	[10, 'Load Library Error'   ],
-	[11, 'MissedHeartBeat'      ],
-	[12, 'PreventAlarm'         ],
-	[13, 'RequestAction'        ],
-	[14, 'ResetAlarm'           ],
-	[15, 'Runtime Exec Error'   ],
-	[16, 'Shutting Down'        ],
-	[17, 'State'                ],
-	[18, 'Status'               ],
-	[19, 'StatusIntervalMinutes'],
-	[20, 'Terminated'           ],
+    [ 1, 'AcknowledgeAlarm'     ],
+    [ 2, 'AcknowledgeRequest'   ],
+    [ 3, 'Alarm'                ],
+    [ 4, 'ControlMessage'       ],
+    [ 5, 'DeactivateAlarm'      ],
+    [ 6, 'Exception Thrown'     ],
+    [ 7, 'Fatal Error'          ],
+    [ 8, 'Initialization Error' ],
+    [ 9, 'Initiated'            ],
+    [10, 'Load Library Error'   ],
+    [11, 'MissedHeartBeat'      ],
+    [12, 'PreventAlarm'         ],
+    [13, 'RequestAction'        ],
+    [14, 'ResetAlarm'           ],
+    [15, 'Runtime Exec Error'   ],
+    [16, 'Shutting Down'        ],
+    [17, 'State'                ],
+    [18, 'Status'               ],
+    [19, 'StatusIntervalMinutes'],
+    [20, 'Terminated'           ],
 ]
 
 #----------------------------#
@@ -4873,14 +4852,14 @@ sys.stderr.write("Processing log message property types \n")
 logMessagePropTypes = [
 #      CODE  ID
 #      ----  --------
-	[1, 'boolean'],
-	[2, 'byte'   ],
-	[3, 'short'  ],
-	[4, 'int'    ],
-	[5, 'long'   ],
-	[6, 'float'  ],
-	[7, 'double' ],
-	[8, 'String' ],
+    [1, 'boolean'],
+    [2, 'byte'   ],
+    [3, 'short'  ],
+    [4, 'int'    ],
+    [5, 'long'   ],
+    [6, 'float'  ],
+    [7, 'double' ],
+    [8, 'String' ],
 ]
 
 #-------------------#
@@ -4890,8 +4869,8 @@ sys.stderr.write("Processing interpolate units \n")
 interpolateUnits = [
 #      CODE  ID
 #      ----  --------
-	[1, 'minutes'  ],
-	[2, 'intervals'],
+    [1, 'minutes'  ],
+    [2, 'intervals'],
 ]
 
 #---------------------#
@@ -4899,16 +4878,16 @@ interpolateUnits = [
 #---------------------#
 sys.stderr.write("Processing location categories \n")
 locationKinds = [
-# 	CODE  ID        DESCRIPTION
-#	----  --------  -----------------------------------------------------------------------------
-	[1,   'POINT',        'A generic location that can be represented by a single lat/lon.'      ],
-	[2,   'STREAM',       'A stream, the lat/lon represent the downstream-most point.'           ],
-	[3,   'BASIN',        'A basin, the lat/lon represent the geospatial centroid.'              ],
-	[4,   'GATE-LOWFLOW', 'A gated low-flow reservoir outlet'                                    ],
-	[5,   'GATE-SLUICE',  'A reservoir sluice gate'                                              ],
-	[6,   'GATE-TAINTER', 'A reservoir tainter gate'                                             ],
-	[7,   'POWERHOUSE',   'A reservoir power generation plant'                                   ],
-	[8,   'TURBINE',      'A turbine in a powerhouse'                                            ],
+#   CODE  ID        DESCRIPTION
+#   ----  --------  -----------------------------------------------------------------------------
+    [1,   'POINT',        'A generic location that can be represented by a single lat/lon.'      ],
+    [2,   'STREAM',       'A stream, the lat/lon represent the downstream-most point.'           ],
+    [3,   'BASIN',        'A basin, the lat/lon represent the geospatial centroid.'              ],
+    [4,   'GATE-LOWFLOW', 'A gated low-flow reservoir outlet'                                    ],
+    [5,   'GATE-SLUICE',  'A reservoir sluice gate'                                              ],
+    [6,   'GATE-TAINTER', 'A reservoir tainter gate'                                             ],
+    [7,   'POWERHOUSE',   'A reservoir power generation plant'                                   ],
+    [8,   'TURBINE',      'A turbine in a powerhouse'                                            ],
 ]
 
 #--------------#
@@ -4916,14 +4895,14 @@ locationKinds = [
 #--------------#
 sys.stderr.write("Processing gage methods \n")
 gageMethods = [
-# 	CODE  ID             DESCRIPTION
-#	----  -----------    ---------------------------------------
-	[1,   'MANUAL',      'No communication method'             ],
-	[2,   'GOES',        'Gage communicates via GOES satellite'],
-	[3,   'LOS',         'Line-of-site radio'                  ],
-	[4,   'METEORBURST', 'Gage communicates via meteorburst'   ],
-	[5,   'PHONE',       'Gage communicates via telephone'     ],
-	[6,   'INTERNET',    'Gage communicates via internet'      ],
+#   CODE  ID             DESCRIPTION
+#   ----  -----------    ---------------------------------------
+    [1,   'MANUAL',      'No communication method'             ],
+    [2,   'GOES',        'Gage communicates via GOES satellite'],
+    [3,   'LOS',         'Line-of-site radio'                  ],
+    [4,   'METEORBURST', 'Gage communicates via meteorburst'   ],
+    [5,   'PHONE',       'Gage communicates via telephone'     ],
+    [6,   'INTERNET',    'Gage communicates via internet'      ],
 ]
 
 #------------#
@@ -4931,285 +4910,285 @@ gageMethods = [
 #------------#
 sys.stderr.write("Processing gage types \n")
 gageTypes = [
-# 	CODE  ID         MANNUALLY_READ   INQUIRY_METHOD TX_METHOD    DESCRIPTION
-#	----  ---------- ---------------  -------------- ------------ ------------------------
-	[1,   'GOES_T',  'F',             'NULL',        'GOES',      'GOES TX-only'],
-	[2,   'GOES_TI', 'F',             'GOES',        'GOES',      'GOES TX+INQ'],
-	[3,   'LOS_T',   'F',             'NULL',        'LOS',       'LOS TX-only'],
-	[4,   'LOS_TI',  'F',             'LOS',         'LOS',       'LOS TX+INQ'],
-	[5,   'INET_T',  'F',             'NULL',        'INETERNET', 'INTERNET TX-only'],
-	[6,   'INET_TI', 'F',             'INTERNET',    'INETERNET', 'INTERNET TX+INQ'],
+#   CODE  ID         MANNUALLY_READ   INQUIRY_METHOD TX_METHOD    DESCRIPTION
+#   ----  ---------- ---------------  -------------- ------------ ------------------------
+    [1,   'GOES_T',  'F',             'NULL',        'GOES',      'GOES TX-only'],
+    [2,   'GOES_TI', 'F',             'GOES',        'GOES',      'GOES TX+INQ'],
+    [3,   'LOS_T',   'F',             'NULL',        'LOS',       'LOS TX-only'],
+    [4,   'LOS_TI',  'F',             'LOS',         'LOS',       'LOS TX+INQ'],
+    [5,   'INET_T',  'F',             'NULL',        'INETERNET', 'INTERNET TX-only'],
+    [6,   'INET_TI', 'F',             'INTERNET',    'INETERNET', 'INTERNET TX+INQ'],
 ]
 
 #---------#
 # NATIONS #
 #---------#
 nations = [
-#	 CODE   ID
-#        ----   -------------	
-	["AF",  "AFGHANISTAN"],
-	["AX",  "ÅLAND ISLANDS"],
-	["AL",  "ALBANIA"],
-	["DZ",  "ALGERIA"],
-	["AS",  "AMERICAN SAMOA"],
-	["AD",  "ANDORRA"],
-	["AO",  "ANGOLA"],
-	["AI",  "ANGUILLA"],
-	["AQ",  "ANTARCTICA"],
-	["AG",  "ANTIGUA AND BARBUDA"],
-	["AR",  "ARGENTINA"],
-	["AM",  "ARMENIA"],
-	["AW",  "ARUBA"],
-	["AU",  "AUSTRALIA"],
-	["AT",  "AUSTRIA"],
-	["AZ",  "AZERBAIJAN"],
-	["BS",  "BAHAMAS"],
-	["BH",  "BAHRAIN"],
-	["BD",  "BANGLADESH"],
-	["BB",  "BARBADOS"],
-	["BY",  "BELARUS"],
-	["BE",  "BELGIUM"],
-	["BZ",  "BELIZE"],
-	["BJ",  "BENIN"],
-	["BM",  "BERMUDA"],
-	["BT",  "BHUTAN"],
-	["BO",  "BOLIVIA"],
-	["BA",  "BOSNIA AND HERZEGOVINA"],
-	["BW",  "BOTSWANA"],
-	["BV",  "BOUVET ISLAND"],
-	["BR",  "BRAZIL"],
-	["IO",  "BRITISH INDIAN OCEAN TERRITORY"],
-	["BN",  "BRUNEI DARUSSALAM"],
-	["BG",  "BULGARIA"],
-	["BF",  "BURKINA FASO"],
-	["BI",  "BURUNDI"],
-	["KH",  "CAMBODIA"],
-	["CM",  "CAMEROON"],
-	["CA",  "CANADA"],
-	["CV",  "CAPE VERDE"],
-	["KY",  "CAYMAN ISLANDS"],
-	["CF",  "CENTRAL AFRICAN REPUBLIC"],
-	["TD",  "CHAD"],
-	["CL",  "CHILE"],
-	["CN",  "CHINA"],
-	["CX",  "CHRISTMAS ISLAND"],
-	["CC",  "COCOS (KEELING) ISLANDS"],
-	["CO",  "COLOMBIA"],
-	["KM",  "COMOROS"],
-	["CG",  "CONGO"],
-	["CD",  "CONGO, THE DEMOCRATIC REPUBLIC OF THE"],
-	["CK",  "COOK ISLANDS"],
-	["CR",  "COSTA RICA"],
-	["CI",  "CÔTE D'IVOIRE"],
-	["HR",  "CROATIA"],
-	["CU",  "CUBA"],
-	["CY",  "CYPRUS"],
-	["CZ",  "CZECH REPUBLIC"],
-	["DK",  "DENMARK"],
-	["DJ",  "DJIBOUTI"],
-	["DM",  "DOMINICA"],
-	["DO",  "DOMINICAN REPUBLIC"],
-	["EC",  "ECUADOR"],
-	["EG",  "EGYPT"],
-	["SV",  "EL SALVADOR"],
-	["GQ",  "EQUATORIAL GUINEA"],
-	["ER",  "ERITREA"],
-	["EE",  "ESTONIA"],
-	["ET",  "ETHIOPIA"],
-	["FK",  "FALKLAND ISLANDS (MALVINAS)"],
-	["FO",  "FAROE ISLANDS"],
-	["FJ",  "FIJI"],
-	["FI",  "FINLAND"],
-	["FR",  "FRANCE"],
-	["GF",  "FRENCH GUIANA"],
-	["PF",  "FRENCH POLYNESIA"],
-	["TF",  "FRENCH SOUTHERN TERRITORIES"],
-	["GA",  "GABON"],
-	["GM",  "GAMBIA"],
-	["GE",  "GEORGIA"],
-	["DE",  "GERMANY"],
-	["GH",  "GHANA"],
-	["GI",  "GIBRALTAR"],
-	["GR",  "GREECE"],
-	["GL",  "GREENLAND"],
-	["GD",  "GRENADA"],
-	["GP",  "GUADELOUPE"],
-	["GU",  "GUAM"],
-	["GT",  "GUATEMALA"],
-	["GG",  "GUERNSEY"],
-	["GN",  "GUINEA"],
-	["GW",  "GUINEA-BISSAU"],
-	["GY",  "GUYANA"],
-	["HT",  "HAITI"],
-	["HM",  "HEARD ISLAND AND MCDONALD ISLANDS"],
-	["VA",  "HOLY SEE (VATICAN CITY STATE)"],
-	["HN",  "HONDURAS"],
-	["HK",  "HONG KONG"],
-	["HU",  "HUNGARY"],
-	["IS",  "ICELAND"],
-	["IN",  "INDIA"],
-	["ID",  "INDONESIA"],
-	["IR",  "IRAN, ISLAMIC REPUBLIC OF"],
-	["IQ",  "IRAQ"],
-	["IE",  "IRELAND"],
-	["IM",  "ISLE OF MAN"],
-	["IL",  "ISRAEL"],
-	["IT",  "ITALY"],
-	["JM",  "JAMAICA"],
-	["JP",  "JAPAN"],
-	["JE",  "JERSEY"],
-	["JO",  "JORDAN"],
-	["KZ",  "KAZAKHSTAN"],
-	["KE",  "KENYA"],
-	["KI",  "KIRIBATI"],
-	["KP",  "KOREA, DEMOCRATIC PEOPLE'S REPUBLIC OF"],
-	["KR",  "KOREA, REPUBLIC OF"],
-	["KW",  "KUWAIT"],
-	["KG",  "KYRGYZSTAN"],
-	["LA",  "LAO PEOPLE'S DEMOCRATIC REPUBLIC"],
-	["LV",  "LATVIA"],
-	["LB",  "LEBANON"],
-	["LS",  "LESOTHO"],
-	["LR",  "LIBERIA"],
-	["LY",  "LIBYAN ARAB JAMAHIRIYA"],
-	["LI",  "LIECHTENSTEIN"],
-	["LT",  "LITHUANIA"],
-	["LU",  "LUXEMBOURG"],
-	["MO",  "MACAO"],
-	["MK",  "MACEDONIA, THE FORMER YUGOSLAV REPUBLIC OF"],
-	["MG",  "MADAGASCAR"],
-	["MW",  "MALAWI"],
-	["MY",  "MALAYSIA"],
-	["MV",  "MALDIVES"],
-	["ML",  "MALI"],
-	["MT",  "MALTA"],
-	["MH",  "MARSHALL ISLANDS"],
-	["MQ",  "MARTINIQUE"],
-	["MR",  "MAURITANIA"],
-	["MU",  "MAURITIUS"],
-	["YT",  "MAYOTTE"],
-	["MX",  "MEXICO"],
-	["FM",  "MICRONESIA, FEDERATED STATES OF"],
-	["MD",  "MOLDOVA, REPUBLIC OF"],
-	["MC",  "MONACO"],
-	["MN",  "MONGOLIA"],
-	["ME",  "MONTENEGRO"],
-	["MS",  "MONTSERRAT"],
-	["MA",  "MOROCCO"],
-	["MZ",  "MOZAMBIQUE"],
-	["MM",  "MYANMAR"],
-	["NA",  "NAMIBIA"],
-	["NR",  "NAURU"],
-	["NP",  "NEPAL"],
-	["NL",  "NETHERLANDS"],
-	["AN",  "NETHERLANDS ANTILLES"],
-	["NC",  "NEW CALEDONIA"],
-	["NZ",  "NEW ZEALAND"],
-	["NI",  "NICARAGUA"],
-	["NE",  "NIGER"],
-	["NG",  "NIGERIA"],
-	["NU",  "NIUE"],
-	["NF",  "NORFOLK ISLAND"],
-	["MP",  "NORTHERN MARIANA ISLANDS"],
-	["NO",  "NORWAY"],
-	["OM",  "OMAN"],
-	["PK",  "PAKISTAN"],
-	["PW",  "PALAU"],
-	["PS",  "PALESTINIAN TERRITORY, OCCUPIED"],
-	["PA",  "PANAMA"],
-	["PG",  "PAPUA NEW GUINEA"],
-	["PY",  "PARAGUAY"],
-	["PE",  "PERU"],
-	["PH",  "PHILIPPINES"],
-	["PN",  "PITCAIRN"],
-	["PL",  "POLAND"],
-	["PT",  "PORTUGAL"],
-	["PR",  "PUERTO RICO"],
-	["QA",  "QATAR"],
-	["RE",  "RÉUNION"],
-	["RO",  "ROMANIA"],
-	["RU",  "RUSSIAN FEDERATION"],
-	["RW",  "RWANDA"],
-	["BL",  "SAINT BARTHÉLEMY"],
-	["SH",  "SAINT HELENA"],
-	["KN",  "SAINT KITTS AND NEVIS"],
-	["LC",  "SAINT LUCIA"],
-	["MF",  "SAINT MARTIN"],
-	["PM",  "SAINT PIERRE AND MIQUELON"],
-	["VC",  "SAINT VINCENT AND THE GRENADINES"],
-	["WS",  "SAMOA"],
-	["SM",  "SAN MARINO"],
-	["ST",  "SAO TOME AND PRINCIPE"],
-	["SA",  "SAUDI ARABIA"],
-	["SN",  "SENEGAL"],
-	["RS",  "SERBIA"],
-	["SC",  "SEYCHELLES"],
-	["SL",  "SIERRA LEONE"],
-	["SG",  "SINGAPORE"],
-	["SK",  "SLOVAKIA"],
-	["SI",  "SLOVENIA"],
-	["SB",  "SOLOMON ISLANDS"],
-	["SO",  "SOMALIA"],
-	["ZA",  "SOUTH AFRICA"],
-	["GS",  "SOUTH GEORGIA AND THE SOUTH SANDWICH ISLANDS"],
-	["ES",  "SPAIN"],
-	["LK",  "SRI LANKA"],
-	["SD",  "SUDAN"],
-	["SR",  "SURINAME"],
-	["SJ",  "SVALBARD AND JAN MAYEN"],
-	["SZ",  "SWAZILAND"],
-	["SE",  "SWEDEN"],
-	["CH",  "SWITZERLAND"],
-	["SY",  "SYRIAN ARAB REPUBLIC"],
-	["TW",  "TAIWAN, PROVINCE OF CHINA"],
-	["TJ",  "TAJIKISTAN"],
-	["TZ",  "TANZANIA, UNITED REPUBLIC OF"],
-	["TH",  "THAILAND"],
-	["TL",  "TIMOR-LESTE"],
-	["TG",  "TOGO"],
-	["TK",  "TOKELAU"],
-	["TO",  "TONGA"],
-	["TT",  "TRINIDAD AND TOBAGO"],
-	["TN",  "TUNISIA"],
-	["TR",  "TURKEY"],
-	["TM",  "TURKMENISTAN"],
-	["TC",  "TURKS AND CAICOS ISLANDS"],
-	["TV",  "TUVALU"],
-	["UG",  "UGANDA"],
-	["UA",  "UKRAINE"],
-	["AE",  "UNITED ARAB EMIRATES"],
-	["GB",  "UNITED KINGDOM"],
-	["US",  "UNITED STATES"],
-	["UM",  "UNITED STATES MINOR OUTLYING ISLANDS"],
-	["UY",  "URUGUAY"],
-	["UZ",  "UZBEKISTAN"],
-	["VU",  "VANUATU"],
-	["VE",  "VENEZUELA, BOLIVARIAN REPUBLIC OF"],
-	["VN",  "VIET NAM"],
-	["VG",  "VIRGIN ISLANDS, BRITISH"],
-	["VI",  "VIRGIN ISLANDS, U.S."],
-	["WF",  "WALLIS AND FUTUNA"],
-	["EH",  "WESTERN SAHARA"],
-	["YE",  "YEMEN"],
-	["ZM",  "ZAMBIA"],
-	["ZW",  "ZIMBABWE"],
+#    CODE   ID
+#        ----   -------------   
+    ["AF",  "AFGHANISTAN"],
+    ["AX",  "ÅLAND ISLANDS"],
+    ["AL",  "ALBANIA"],
+    ["DZ",  "ALGERIA"],
+    ["AS",  "AMERICAN SAMOA"],
+    ["AD",  "ANDORRA"],
+    ["AO",  "ANGOLA"],
+    ["AI",  "ANGUILLA"],
+    ["AQ",  "ANTARCTICA"],
+    ["AG",  "ANTIGUA AND BARBUDA"],
+    ["AR",  "ARGENTINA"],
+    ["AM",  "ARMENIA"],
+    ["AW",  "ARUBA"],
+    ["AU",  "AUSTRALIA"],
+    ["AT",  "AUSTRIA"],
+    ["AZ",  "AZERBAIJAN"],
+    ["BS",  "BAHAMAS"],
+    ["BH",  "BAHRAIN"],
+    ["BD",  "BANGLADESH"],
+    ["BB",  "BARBADOS"],
+    ["BY",  "BELARUS"],
+    ["BE",  "BELGIUM"],
+    ["BZ",  "BELIZE"],
+    ["BJ",  "BENIN"],
+    ["BM",  "BERMUDA"],
+    ["BT",  "BHUTAN"],
+    ["BO",  "BOLIVIA"],
+    ["BA",  "BOSNIA AND HERZEGOVINA"],
+    ["BW",  "BOTSWANA"],
+    ["BV",  "BOUVET ISLAND"],
+    ["BR",  "BRAZIL"],
+    ["IO",  "BRITISH INDIAN OCEAN TERRITORY"],
+    ["BN",  "BRUNEI DARUSSALAM"],
+    ["BG",  "BULGARIA"],
+    ["BF",  "BURKINA FASO"],
+    ["BI",  "BURUNDI"],
+    ["KH",  "CAMBODIA"],
+    ["CM",  "CAMEROON"],
+    ["CA",  "CANADA"],
+    ["CV",  "CAPE VERDE"],
+    ["KY",  "CAYMAN ISLANDS"],
+    ["CF",  "CENTRAL AFRICAN REPUBLIC"],
+    ["TD",  "CHAD"],
+    ["CL",  "CHILE"],
+    ["CN",  "CHINA"],
+    ["CX",  "CHRISTMAS ISLAND"],
+    ["CC",  "COCOS (KEELING) ISLANDS"],
+    ["CO",  "COLOMBIA"],
+    ["KM",  "COMOROS"],
+    ["CG",  "CONGO"],
+    ["CD",  "CONGO, THE DEMOCRATIC REPUBLIC OF THE"],
+    ["CK",  "COOK ISLANDS"],
+    ["CR",  "COSTA RICA"],
+    ["CI",  "CÔTE D'IVOIRE"],
+    ["HR",  "CROATIA"],
+    ["CU",  "CUBA"],
+    ["CY",  "CYPRUS"],
+    ["CZ",  "CZECH REPUBLIC"],
+    ["DK",  "DENMARK"],
+    ["DJ",  "DJIBOUTI"],
+    ["DM",  "DOMINICA"],
+    ["DO",  "DOMINICAN REPUBLIC"],
+    ["EC",  "ECUADOR"],
+    ["EG",  "EGYPT"],
+    ["SV",  "EL SALVADOR"],
+    ["GQ",  "EQUATORIAL GUINEA"],
+    ["ER",  "ERITREA"],
+    ["EE",  "ESTONIA"],
+    ["ET",  "ETHIOPIA"],
+    ["FK",  "FALKLAND ISLANDS (MALVINAS)"],
+    ["FO",  "FAROE ISLANDS"],
+    ["FJ",  "FIJI"],
+    ["FI",  "FINLAND"],
+    ["FR",  "FRANCE"],
+    ["GF",  "FRENCH GUIANA"],
+    ["PF",  "FRENCH POLYNESIA"],
+    ["TF",  "FRENCH SOUTHERN TERRITORIES"],
+    ["GA",  "GABON"],
+    ["GM",  "GAMBIA"],
+    ["GE",  "GEORGIA"],
+    ["DE",  "GERMANY"],
+    ["GH",  "GHANA"],
+    ["GI",  "GIBRALTAR"],
+    ["GR",  "GREECE"],
+    ["GL",  "GREENLAND"],
+    ["GD",  "GRENADA"],
+    ["GP",  "GUADELOUPE"],
+    ["GU",  "GUAM"],
+    ["GT",  "GUATEMALA"],
+    ["GG",  "GUERNSEY"],
+    ["GN",  "GUINEA"],
+    ["GW",  "GUINEA-BISSAU"],
+    ["GY",  "GUYANA"],
+    ["HT",  "HAITI"],
+    ["HM",  "HEARD ISLAND AND MCDONALD ISLANDS"],
+    ["VA",  "HOLY SEE (VATICAN CITY STATE)"],
+    ["HN",  "HONDURAS"],
+    ["HK",  "HONG KONG"],
+    ["HU",  "HUNGARY"],
+    ["IS",  "ICELAND"],
+    ["IN",  "INDIA"],
+    ["ID",  "INDONESIA"],
+    ["IR",  "IRAN, ISLAMIC REPUBLIC OF"],
+    ["IQ",  "IRAQ"],
+    ["IE",  "IRELAND"],
+    ["IM",  "ISLE OF MAN"],
+    ["IL",  "ISRAEL"],
+    ["IT",  "ITALY"],
+    ["JM",  "JAMAICA"],
+    ["JP",  "JAPAN"],
+    ["JE",  "JERSEY"],
+    ["JO",  "JORDAN"],
+    ["KZ",  "KAZAKHSTAN"],
+    ["KE",  "KENYA"],
+    ["KI",  "KIRIBATI"],
+    ["KP",  "KOREA, DEMOCRATIC PEOPLE'S REPUBLIC OF"],
+    ["KR",  "KOREA, REPUBLIC OF"],
+    ["KW",  "KUWAIT"],
+    ["KG",  "KYRGYZSTAN"],
+    ["LA",  "LAO PEOPLE'S DEMOCRATIC REPUBLIC"],
+    ["LV",  "LATVIA"],
+    ["LB",  "LEBANON"],
+    ["LS",  "LESOTHO"],
+    ["LR",  "LIBERIA"],
+    ["LY",  "LIBYAN ARAB JAMAHIRIYA"],
+    ["LI",  "LIECHTENSTEIN"],
+    ["LT",  "LITHUANIA"],
+    ["LU",  "LUXEMBOURG"],
+    ["MO",  "MACAO"],
+    ["MK",  "MACEDONIA, THE FORMER YUGOSLAV REPUBLIC OF"],
+    ["MG",  "MADAGASCAR"],
+    ["MW",  "MALAWI"],
+    ["MY",  "MALAYSIA"],
+    ["MV",  "MALDIVES"],
+    ["ML",  "MALI"],
+    ["MT",  "MALTA"],
+    ["MH",  "MARSHALL ISLANDS"],
+    ["MQ",  "MARTINIQUE"],
+    ["MR",  "MAURITANIA"],
+    ["MU",  "MAURITIUS"],
+    ["YT",  "MAYOTTE"],
+    ["MX",  "MEXICO"],
+    ["FM",  "MICRONESIA, FEDERATED STATES OF"],
+    ["MD",  "MOLDOVA, REPUBLIC OF"],
+    ["MC",  "MONACO"],
+    ["MN",  "MONGOLIA"],
+    ["ME",  "MONTENEGRO"],
+    ["MS",  "MONTSERRAT"],
+    ["MA",  "MOROCCO"],
+    ["MZ",  "MOZAMBIQUE"],
+    ["MM",  "MYANMAR"],
+    ["NA",  "NAMIBIA"],
+    ["NR",  "NAURU"],
+    ["NP",  "NEPAL"],
+    ["NL",  "NETHERLANDS"],
+    ["AN",  "NETHERLANDS ANTILLES"],
+    ["NC",  "NEW CALEDONIA"],
+    ["NZ",  "NEW ZEALAND"],
+    ["NI",  "NICARAGUA"],
+    ["NE",  "NIGER"],
+    ["NG",  "NIGERIA"],
+    ["NU",  "NIUE"],
+    ["NF",  "NORFOLK ISLAND"],
+    ["MP",  "NORTHERN MARIANA ISLANDS"],
+    ["NO",  "NORWAY"],
+    ["OM",  "OMAN"],
+    ["PK",  "PAKISTAN"],
+    ["PW",  "PALAU"],
+    ["PS",  "PALESTINIAN TERRITORY, OCCUPIED"],
+    ["PA",  "PANAMA"],
+    ["PG",  "PAPUA NEW GUINEA"],
+    ["PY",  "PARAGUAY"],
+    ["PE",  "PERU"],
+    ["PH",  "PHILIPPINES"],
+    ["PN",  "PITCAIRN"],
+    ["PL",  "POLAND"],
+    ["PT",  "PORTUGAL"],
+    ["PR",  "PUERTO RICO"],
+    ["QA",  "QATAR"],
+    ["RE",  "RÉUNION"],
+    ["RO",  "ROMANIA"],
+    ["RU",  "RUSSIAN FEDERATION"],
+    ["RW",  "RWANDA"],
+    ["BL",  "SAINT BARTHÉLEMY"],
+    ["SH",  "SAINT HELENA"],
+    ["KN",  "SAINT KITTS AND NEVIS"],
+    ["LC",  "SAINT LUCIA"],
+    ["MF",  "SAINT MARTIN"],
+    ["PM",  "SAINT PIERRE AND MIQUELON"],
+    ["VC",  "SAINT VINCENT AND THE GRENADINES"],
+    ["WS",  "SAMOA"],
+    ["SM",  "SAN MARINO"],
+    ["ST",  "SAO TOME AND PRINCIPE"],
+    ["SA",  "SAUDI ARABIA"],
+    ["SN",  "SENEGAL"],
+    ["RS",  "SERBIA"],
+    ["SC",  "SEYCHELLES"],
+    ["SL",  "SIERRA LEONE"],
+    ["SG",  "SINGAPORE"],
+    ["SK",  "SLOVAKIA"],
+    ["SI",  "SLOVENIA"],
+    ["SB",  "SOLOMON ISLANDS"],
+    ["SO",  "SOMALIA"],
+    ["ZA",  "SOUTH AFRICA"],
+    ["GS",  "SOUTH GEORGIA AND THE SOUTH SANDWICH ISLANDS"],
+    ["ES",  "SPAIN"],
+    ["LK",  "SRI LANKA"],
+    ["SD",  "SUDAN"],
+    ["SR",  "SURINAME"],
+    ["SJ",  "SVALBARD AND JAN MAYEN"],
+    ["SZ",  "SWAZILAND"],
+    ["SE",  "SWEDEN"],
+    ["CH",  "SWITZERLAND"],
+    ["SY",  "SYRIAN ARAB REPUBLIC"],
+    ["TW",  "TAIWAN, PROVINCE OF CHINA"],
+    ["TJ",  "TAJIKISTAN"],
+    ["TZ",  "TANZANIA, UNITED REPUBLIC OF"],
+    ["TH",  "THAILAND"],
+    ["TL",  "TIMOR-LESTE"],
+    ["TG",  "TOGO"],
+    ["TK",  "TOKELAU"],
+    ["TO",  "TONGA"],
+    ["TT",  "TRINIDAD AND TOBAGO"],
+    ["TN",  "TUNISIA"],
+    ["TR",  "TURKEY"],
+    ["TM",  "TURKMENISTAN"],
+    ["TC",  "TURKS AND CAICOS ISLANDS"],
+    ["TV",  "TUVALU"],
+    ["UG",  "UGANDA"],
+    ["UA",  "UKRAINE"],
+    ["AE",  "UNITED ARAB EMIRATES"],
+    ["GB",  "UNITED KINGDOM"],
+    ["US",  "UNITED STATES"],
+    ["UM",  "UNITED STATES MINOR OUTLYING ISLANDS"],
+    ["UY",  "URUGUAY"],
+    ["UZ",  "UZBEKISTAN"],
+    ["VU",  "VANUATU"],
+    ["VE",  "VENEZUELA, BOLIVARIAN REPUBLIC OF"],
+    ["VN",  "VIET NAM"],
+    ["VG",  "VIRGIN ISLANDS, BRITISH"],
+    ["VI",  "VIRGIN ISLANDS, U.S."],
+    ["WF",  "WALLIS AND FUTUNA"],
+    ["EH",  "WESTERN SAHARA"],
+    ["YE",  "YEMEN"],
+    ["ZM",  "ZAMBIA"],
+    ["ZW",  "ZIMBABWE"],
 ]
 
 #--------------#
 # STREAM TYPES #
 #--------------#
 streamTypes = [
-#	 CODE   ID     DESCRIPTION
-#        ----   ------ ----------------------------------------------------------	
-	[1,     'Aa+', 'Very steep. Deeply entrenched. Debris transport streams'],
-	[2,     'A',   'Steep, entrenched, cascading step-pool streams: high energy/debris transport associated with depositional soils: very stable if bedrock or boulder dominated channel'],
-	[3,     'B',   'Moderately entrenched, moderate-gradient, riffle dominated channel with infrequently spaced pools; very stable plan and profile: stable banks'],
-	[4,     'C',   'Low-gradient, meandering, point-bar, riffle-pool, alluvial channels with broad. well-defined floodplains'],
-	[5,     'D',   'Braided channel with longitudinal and transverse bars: very wide channel with eroding banks'],
-	[6,     'DA',  'Anastomosing (multiple channels) narrow and deep with expansive wellvegetated floodplain and associated wetlands: very gentle relief with highly variable sinuosities; stable streambanks'], 
-	[7,     'E',   'Low-gradient. meandering riffle-pool stream with low width-to-depth ratio and little deposition; very efficient and stable; high meander width ratio'],
-	[8,     'F',   'Entrenched meandering riffle-pool channel on low gradients with high width-to-depth ratio'], 
-	[9,     'G',   'Entrenched ''gully'' step-pool and low width-to-depth ratio on moderate gradients'],
+#    CODE   ID     DESCRIPTION
+#        ----   ------ ----------------------------------------------------------   
+    [1,     'Aa+', 'Very steep. Deeply entrenched. Debris transport streams'],
+    [2,     'A',   'Steep, entrenched, cascading step-pool streams: high energy/debris transport associated with depositional soils: very stable if bedrock or boulder dominated channel'],
+    [3,     'B',   'Moderately entrenched, moderate-gradient, riffle dominated channel with infrequently spaced pools; very stable plan and profile: stable banks'],
+    [4,     'C',   'Low-gradient, meandering, point-bar, riffle-pool, alluvial channels with broad. well-defined floodplains'],
+    [5,     'D',   'Braided channel with longitudinal and transverse bars: very wide channel with eroding banks'],
+    [6,     'DA',  'Anastomosing (multiple channels) narrow and deep with expansive wellvegetated floodplain and associated wetlands: very gentle relief with highly variable sinuosities; stable streambanks'], 
+    [7,     'E',   'Low-gradient. meandering riffle-pool stream with low width-to-depth ratio and little deposition; very efficient and stable; high meander width ratio'],
+    [8,     'F',   'Entrenched meandering riffle-pool channel on low gradients with high width-to-depth ratio'], 
+    [9,     'G',   'Entrenched ''gully'' step-pool and low width-to-depth ratio on moderate gradients'],
 ]
 
 #--------------------------------------------------#
@@ -5235,14 +5214,14 @@ dbhosts.sort()
 # make sure the user entered a schema before the office ids on the command line #
 #-------------------------------------------------------------------------------#
 if user in dbhosts :
-	sys.stderr.write("No schema name was entered before the office id(s)\n\n")
-	sys.stderr.write("Usage: python buildSqlScripts.py <schema name> [<host officeid> [<other officeid(s)>]] [/[no]testaccount]\n")
-	sys.stderr.write("Ex:    python buildSqlScripts.py cwms SWF SWG /testaccount\n")
-	sys.exit(-1)
+    sys.stderr.write("No schema name was entered before the office id(s)\n\n")
+    sys.stderr.write("Usage: python buildSqlScripts.py <schema name> [<host officeid> [<other officeid(s)>]] [/[no]testaccount]\n")
+    sys.stderr.write("Ex:    python buildSqlScripts.py cwms SWF SWG /testaccount\n")
+    sys.exit(-1)
 
-#----------------------------------------------------------------------------------------#	
+#----------------------------------------------------------------------------------------#  
 # prompt the user for the primary and sharing offices if not entered on the command line #
-#----------------------------------------------------------------------------------------#	
+#----------------------------------------------------------------------------------------#  
 if not db_office_id:
     print
     for dbhost in dbhosts :
@@ -5266,7 +5245,7 @@ if not db_office_id:
         if not db_office_id :
             print
             print "ERROR! You must enter your office id."
-    	    continue
+            continue
         else :
             ok = db_office_id in dbhosts
 
@@ -5280,7 +5259,7 @@ if not db_office_id:
             print
             print "ERROR! Office %s does not host a database. Contact HEC if this" % db_office_id
             print "is no longer the case."
-    	
+        
     #------------------------------------------------------------------------------
     # Ask if any other offices will be sharing this database - need to know so that
     # queues can be set-up for them.
@@ -5332,9 +5311,9 @@ if not db_office_id:
             if not line or line[0].upper() != 'Y' :
                 ok = False
 
-#----------------------------------------------------------------------------------#		
+#----------------------------------------------------------------------------------#        
 # prompt the user about creating a test account if not entered on the command line #
-#----------------------------------------------------------------------------------#		
+#----------------------------------------------------------------------------------#        
 if testAccount == None:
     print
     print '-----------TEST ACCOUNT-----------'
@@ -6877,38 +6856,28 @@ subParameterLoadTemplate +="COMMIT;\n"
 #-------------------------------------------------------
 #-------------------------------------------------------
 
-sys.stderr.write("Building ratingTsInterpTypeCreationTemplate\n")
-ratingTsInterpTypeCreationTemplate = \
+sys.stderr.write("Building ratingMethodCreationTemplate\n")
+ratingMethodCreationTemplate = \
 '''
+-- ## TABLE ###############################################
+-- ## @TABLE
+-- ##
 CREATE TABLE @TABLE
    (
-       INTERPOLATION_TYPE_CODE NUMBER(10)         NOT NULL,
-       INTERPOLATION_ID        VARCHAR2(16 BYTE)  NOT NULL,
-       DESCRIPTION             VARCHAR2(160 BYTE) NOT NULL
-   )
-       TABLESPACE @DATASPACE
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       STORAGE
-       (
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 2147483645
-          PCTINCREASE 0
-          FREELISTS 1
-          FREELIST GROUPS 1
-       )
-       LOGGING ;
+       RATING_METHOD_CODE NUMBER(10),
+       RATING_METHOD_ID   VARCHAR2(32),
+       DESCRIPTION        VARCHAR2(256),
+       CONSTRAINT @TABLE_PK PRIMARY KEY(RATING_METHOD_CODE)
+   ) 
+       ORGANIZATION INDEX
+       TABLESPACE @DATASPACE;
 
 -----------------------------
 -- @TABLE indicies
 --
 CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
    (
-       UPPER(INTERPOLATION_ID)
+       UPPER(RATING_METHOD_ID)
    )
        PCTFREE 10
        INITRANS 2
@@ -6926,159 +6895,16 @@ CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
           BUFFER_POOL DEFAULT
        );
     
---------------------------------------------
--- @TABLE CONSTRAINTS --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY(INTERPOLATION_TYPE_CODE);
-
 COMMIT;   
 '''
 
-sys.stderr.write("Building ratingTsInterpTypeLoadTemplate\n")
-ratingTsInterpTypeLoadTemplate = ''
+sys.stderr.write("Building ratingMethodLoadTemplate\n")
+ratingMethodLoadTemplate = ''
 code = 1
-for id, description in ratingTsInterpTypes :
-    ratingTsInterpTypeLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
+for id, description in ratingMethods :
+    ratingMethodLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
     code += 1
-ratingTsInterpTypeLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building ratingTsExtrapTypeCreationTemplate\n")
-ratingTsExtrapTypeCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
----##
-CREATE TABLE @TABLE
-   (
-       EXTRAPOLATION_TYPE_CODE NUMBER(10)         NOT NULL,
-       EXTRAPOLATION_ID        VARCHAR2(16 byte)  NOT NULL,
-       DESCRIPTION             VARCHAR2(160 byte) NOT NULL
-   )
-       TABLESPACE @DATASPACE
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       STORAGE
-       (
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 2147483645
-          PCTINCREASE 0
-          FREELISTS 1
-          FREELIST GROUPS 1
-       )
-       LOGGING ;
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
-   (
-       UPPER(EXTRAPOLATION_ID)
-   )
-       PCTFREE 10
-       INITRANS 2
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 20k
-          NEXT 20k
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
---------------------------------------------
--- @TABLE constraints --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY(EXTRAPOLATION_TYPE_CODE);
-
-COMMIT;
-'''
-
-sys.stderr.write("Building ratingTsExtrapTypeLoadTemplate\n")
-ratingTsExtrapTypeLoadTemplate = ''
-code = 1
-for id, description in ratingTsExtrapTypes :
-    ratingTsExtrapTypeLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
-    code += 1
-ratingTsExtrapTypeLoadTemplate +="COMMIT;\n"
-
-
-sys.stderr.write("Building ratingTypeCreationTemplate\n")
-ratingTypeCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       RATING_TYPE_CODE NUMBER(10)         NOT NULL,
-       RATING_ID        VARCHAR2(16 byte)  NOT NULL,
-       CAN_BE_COMPOUND  NUMBER(1)          NOT NULL,
-       DESCRIPTION      VARCHAR2(160 byte) NOT NULL
-   )
-       TABLESPACE @DATASPACE
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       STORAGE
-       (
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 255
-          PCTINCREASE 0
-          FREELISTS 1
-          FREELIST GROUPS 1
-       )
-       LOGGING ;
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
-   (
-       UPPER(RATING_ID)
-   )
-       PCTFREE 10
-       INITRANS 2
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 20k
-          NEXT 20k
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------------
--- @TABLE constratints --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (RATING_TYPE_CODE);
-
-COMMIT;
-'''
-
-sys.stderr.write("Building ratingTypeLoadTemplate\n")
-ratingTypeLoadTemplate = ''
-code = 1
-for id, compound, description in ratingTypes :
-    ratingTypeLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', %d, '%s');\n" % (code, id, compound, description)
-    code += 1
-ratingTypeLoadTemplate +="COMMIT;\n"
+ratingMethodLoadTemplate +="COMMIT;\n"
 
 sys.stderr.write("Building dssParameterTypeCreationTemplate\n")
 dssParameterTypeCreationTemplate = \
@@ -8207,7 +8033,7 @@ for v in range(len(q_validity["values"])) :
                                 q_replacement_method["values"][m][1], # replacement method code
                                 q_test_failed["values"][t][1],        # test failed code
                                 q_protection["values"][p][1]))        # protection code
-	    
+        
 qualityLoadFile.close()
 
 sys.stderr.write("Building logMessageTypesCreationTemplate\n")
@@ -8255,7 +8081,7 @@ COMMIT;
 sys.stderr.write("Building logMessageTypesLoadTemplate\n")
 logMessageTypesLoadTemplate = ''
 for code, id in logMessageTypes :
-	logMessageTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
+    logMessageTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
 logMessageTypesLoadTemplate += "COMMIT;\n"
 
 sys.stderr.write("Building logMessagePropTypesCreationTemplate\n")
@@ -8303,7 +8129,7 @@ COMMIT;
 sys.stderr.write("Building logMessagePropTypesLoadTemplate\n")
 logMessagePropTypesLoadTemplate = ''
 for code, id in logMessagePropTypes :
-	logMessagePropTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
+    logMessagePropTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
 logMessagePropTypesLoadTemplate += "COMMIT;\n"
 
 sys.stderr.write("Building intpolateUnitsCreationTemplate\n")
@@ -8351,7 +8177,7 @@ COMMIT;
 sys.stderr.write("Building interpolateUnitsLoadTemplate\n")
 interpolateUnitsLoadTemplate = ''
 for code, id in interpolateUnits :
-	interpolateUnitsLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
+    interpolateUnitsLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
 interpolateUnitsLoadTemplate += "COMMIT;\n"
 
 sys.stderr.write("Building displayUnitsCreationTemplate\n")
@@ -8493,13 +8319,13 @@ PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
-	    INITIAL          10K
-	    NEXT             10K
-	    MINEXTENTS       1
-	    MAXEXTENTS       UNLIMITED
-	    PCTINCREASE      0
-	    BUFFER_POOL      DEFAULT
-	   )
+        INITIAL          10K
+        NEXT             10K
+        MINEXTENTS       1
+        MAXEXTENTS       UNLIMITED
+        PCTINCREASE      0
+        BUFFER_POOL      DEFAULT
+       )
 LOGGING 
 NOCOMPRESS 
 NOCACHE
@@ -8528,7 +8354,7 @@ COMMIT;
 sys.stderr.write("Building locationKindLoadTemplate\n")
 locationKindLoadTemplate = ''
 for code, id, description in locationKinds :
-	locationKindLoadTemplate += "INSERT INTO @TABLE VALUES (%d, 53, '%s', '%s');\n" % (code, id, description)
+    locationKindLoadTemplate += "INSERT INTO @TABLE VALUES (%d, 53, '%s', '%s');\n" % (code, id, description)
 locationKindLoadTemplate += "COMMIT;\n"
 
 sys.stderr.write("Building gageMethodCreationTemplate\n")
@@ -8583,7 +8409,7 @@ COMMIT;
 sys.stderr.write("Building gageMethodLoadTemplate\n")
 gageMethodLoadTemplate = ''
 for code, id, description in gageMethods :
-	gageMethodLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
+    gageMethodLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
 gageMethodLoadTemplate += "COMMIT;\n"
 
 sys.stderr.write("Building gageTypeCreationTemplate\n")
@@ -8664,12 +8490,12 @@ COMMIT;
 sys.stderr.write("Building gageTypeLoadTemplate\n")
 gageTypeLoadTemplate = ''
 for code, id, manually_read, inquiry_method, tx_method, description in gageTypes :
-	if inquiry_method != 'NULL' :
-		inquiry_method = "(SELECT METHOD_CODE FROM CWMS_GAGE_METHOD WHERE METHOD_ID='%s')" % inquiry_method
-	if tx_method != 'NULL' :
-		tx_method = "(SELECT METHOD_CODE FROM CWMS_GAGE_METHOD WHERE METHOD_ID='%s')" % tx_method
-	gageTypeLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s', %s, %s, '%s');\n" % \
-		(code, id, manually_read, inquiry_method, tx_method, description)
+    if inquiry_method != 'NULL' :
+        inquiry_method = "(SELECT METHOD_CODE FROM CWMS_GAGE_METHOD WHERE METHOD_ID='%s')" % inquiry_method
+    if tx_method != 'NULL' :
+        tx_method = "(SELECT METHOD_CODE FROM CWMS_GAGE_METHOD WHERE METHOD_ID='%s')" % tx_method
+    gageTypeLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s', %s, %s, '%s');\n" % \
+        (code, id, manually_read, inquiry_method, tx_method, description)
 gageTypeLoadTemplate += "COMMIT;\n"
 gageTypeLoadTemplate = gageTypeLoadTemplate.replace("'NULL'", "NULL")
 
@@ -8740,7 +8566,7 @@ COMMIT;
 sys.stderr.write("Building nationLoadTemplate\n")
 nationLoadTemplate = ''
 for code, id,  in nations :
-	nationLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s');\n" % (code, id.replace("'", "''"))
+    nationLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s');\n" % (code, id.replace("'", "''"))
 nationLoadTemplate += "COMMIT;\n"
 
 sys.stderr.write("Building streamTypeCreationTemplate\n")
@@ -8794,7 +8620,7 @@ COMMIT;
 sys.stderr.write("Building streamTypeLoadTemplate\n")
 streamTypeLoadTemplate = ''
 for code, id, description in streamTypes :
-	streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
+    streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
 streamTypeLoadTemplate += "COMMIT;\n"
 
 
@@ -8926,7 +8752,7 @@ for table in tables :
 #        tableName = eval("%sTableName" % table)
 #        print prefix[CWMS] + "GRANT SELECT ON %s TO %s;" % (tableName, userSchema)
 #        print prefix[CWMS] + "GRANT REFERENCES ON %s TO %s;" % (tableName, userSchema)
-		# generate private synonyms in the user schema
+        # generate private synonyms in the user schema
 #        print prefix[USER] + "CREATE OR REPLACE SYNONYM %s FOR %s.%s;" % (tableName, schema[table], tableName)
 #        print dropPrefix + "DROP SYNONYM %s;" % (tableName)
 print dropPrefix + "COMMIT;"
@@ -8972,5 +8798,4 @@ buildCwms.close()
 dropCwms.close()
 #dropUser.close()
 os.remove(tempFilename)
-
 
