@@ -3002,6 +3002,64 @@ AS
    begin
       check_inputs(str_tab_t(p_input));
    end check_input;
+   
+   ---------------------
+   -- Append routines --
+   ---------------------
+   procedure append(
+      p_dst in out nocopy clob,
+      p_src in            clob)
+   is
+   begin
+      dbms_lob.append(p_dst, p_src);      
+   end;      
+      
+   procedure append(
+      p_dst in out nocopy clob,
+      p_src in            varchar2)
+   is
+   begin
+      dbms_lob.writeappend(p_dst, length(p_src), p_src);
+   end;      
+      
+   procedure append(
+      p_dst in out nocopy clob,
+      p_src in            xmltype)
+   is
+      l_src clob := p_src.getclobval;
+   begin
+      append(p_dst, l_src);
+   end;      
+
+   procedure append(
+      p_dst in out nocopy xmltype,
+      p_src in            clob)
+   is
+      l_dst clob := p_dst.getclobval;
+   begin
+      append(l_dst, p_src);
+      p_dst := xmltype(l_dst);
+   end;      
+      
+   procedure append(
+      p_dst in out nocopy xmltype,
+      p_src in            varchar2)
+   is
+      l_dst clob := p_dst.getclobval;
+   begin
+      append(l_dst, p_src);
+      p_dst := xmltype(l_dst);
+   end;
+      
+   procedure append(
+      p_dst in out nocopy xmltype,
+      p_src in            xmltype)
+   is
+      l_dst clob := p_dst.getclobval;
+   begin
+      append(l_dst, p_src);
+      p_dst := xmltype(l_dst);
+   end;
                
 /*
 BEGIN

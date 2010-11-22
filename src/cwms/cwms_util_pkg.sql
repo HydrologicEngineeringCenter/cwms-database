@@ -600,6 +600,33 @@ AS
       p_input in varchar2
    );
    
+   ---------------------
+   -- Append routines --
+   ---------------------
+   procedure append(
+      p_dst in out nocopy clob,
+      p_src in            clob);
+      
+   procedure append(
+      p_dst in out nocopy clob,
+      p_src in            varchar2);
+      
+   procedure append(
+      p_dst in out nocopy clob,
+      p_src in            xmltype);
+
+   procedure append(
+      p_dst in out nocopy xmltype,
+      p_src in            clob);
+      
+   procedure append(
+      p_dst in out nocopy xmltype,
+      p_src in            varchar2);
+      
+   procedure append(
+      p_dst in out nocopy xmltype,
+      p_src in            xmltype);
+   
 END cwms_util;
 /
 
