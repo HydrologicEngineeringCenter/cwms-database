@@ -57,6 +57,8 @@ BEGIN
     order by bl.base_location_id,
              pl.sub_location_id;
 
+    open p_basin_cat for select null from dual;
+    
 END cat_project;
 
 
@@ -226,9 +228,9 @@ begin
                l_project.near_gage_location_code))
    loop
       l_temp_location_ref := new location_ref_t (
-            p_db_office_id,
             rec.base_location_id,
-            rec.sub_location_id
+            rec.sub_location_id,
+            p_db_office_id
 	  );
       l_temp_location_obj := new location_obj_t (
             l_temp_location_ref,
