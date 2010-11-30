@@ -111,8 +111,7 @@ begin
    -- set up a location ref that defaults to the user's office --
    --------------------------------------------------------------
    l_lock_location_ref := location_ref_t(
-      p_lock_location_ref.office_id, 
-      p_lock_location_ref.get_location_id);
+      p_lock_location_ref.get_location_id,p_lock_location_ref.office_id);
    if l_lock_location_ref.office_id is null then
       l_lock_location_ref.office_id := cwms_util.user_office_id;
    end if;         
