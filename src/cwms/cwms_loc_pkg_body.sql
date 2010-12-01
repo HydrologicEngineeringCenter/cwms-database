@@ -4522,7 +4522,7 @@ AS
       l_location_obj location_obj_t := null;
       l_location_ref  location_ref_t := null;
       
-      function elev_unit(p_office_id in number) return varchar2
+      function elev_unit(p_office_id in varchar2) return varchar2
       is
          l_unit  varchar2(16);
          l_factor number;
@@ -4536,7 +4536,7 @@ AS
             p_office_id);
          return l_unit;            
       end;
-      function elev_factor(p_office_id in number) return number
+      function elev_factor(p_office_id in varchar2) return number
       is
          l_unit  varchar2(16);
          l_factor number;
@@ -4649,8 +4649,8 @@ AS
            rec.latitude,
            rec.longitude,
            rec.horizontal_datum,
-           rec.elevation * elev_factor(rec.office_code),
-           elev_unit(rec.office_code),
+           rec.elevation * elev_factor(rec.office_id),
+           elev_unit(rec.office_id),
            rec.vertical_datum,
            rec.public_name,
            rec.long_name,
