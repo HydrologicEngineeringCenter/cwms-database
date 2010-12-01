@@ -46,8 +46,8 @@ CREATE OR REPLACE PACKAGE BODY CWMS_LOCK AS
 --
 PROCEDURE cat_lock (
    p_lock_cat     OUT sys_refcursor,         --described above.
-   p_project_id   IN	 VARCHAR2 DEFAULT NULL, -- the project id. if null, return all locks for the office.
-   p_db_office_id	IN	 VARCHAR2 DEFAULT NULL) -- defaults to the connected user's office if null
+   p_project_id   IN  VARCHAR2 DEFAULT NULL, -- the project id. if null, return all locks for the office.
+   p_db_office_id IN  VARCHAR2 DEFAULT NULL) -- defaults to the connected user's office if null
                                              -- the office id can use sql masks for retrieval of additional offices.
 is
    l_office_id_mask varchar2(16) := cwms_util.normalize_wildcards(nvl(upper(p_db_office_id), cwms_util.user_office_id), true);
@@ -171,42 +171,59 @@ begin
       l_lock_loc_rec.nearest_city);
    ------------------------------------------------------------------------------------    
    -- complete the lock location object from codes in the at_physical location table --
-   ------------------------------------------------------------------------------------    
-   select s.state_initial,
-          c.county_name,
-          tz.time_zone_name,
-          u.unit_id,
-          lk.location_kind_id,
-          o.office_id,
-          o.public_name,
-          n.nation_id
-     into l_lock_loc.state_initial,
-          l_lock_loc.county_name,
-          l_lock_loc.time_zone_name,
-          l_lock_loc.elev_unit_id,
-          l_lock_loc.location_kind_id,
-          l_lock_loc.bounding_office_id,
-          l_lock_loc.bounding_office_name,
-          l_lock_loc.nation_id
-     from cwms_county c,
-          cwms_state s,
-          cwms_time_zone tz,
-          cwms_base_parameter bp,
-          cwms_unit u,
-          at_location_kind lk,
-          at_base_location bl,
-          cwms_office o,
-          cwms_nation n
-    where c.county_code = nvl(l_lock_loc_rec.county_code, 0)
-      and s.state_code = c.state_code
-      and tz.time_zone_code = nvl(l_lock_loc_rec.time_zone_code, 0)
-      and bp.base_parameter_id = 'Elev'
-      and u.unit_code = bp.unit_code
-      and bl.base_location_code = l_lock_loc_rec.base_location_code
-      and lk.office_code = bl.db_office_code
-      and lk.location_kind_code = nvl(l_lock_loc_rec.location_kind, 1)
-      and o.office_code = nvl(l_lock_loc_rec.office_code, 0)
-      and n.nation_code = nvl(l_lock_loc_rec.nation_code, 'US');
+   ------------------------------------------------------------------------------------
+   begin
+      select s.state_initial,
+             c.county_name,
+             tz.time_zone_name,
+             u.unit_id,
+             lk.location_kind_id,
+             o.office_id,
+             o.public_name,
+             n.nation_id
+        into l_lock_loc.state_initial,
+             l_lock_loc.county_name,
+             l_lock_loc.time_zone_name,
+             l_lock_loc.elev_unit_id,
+             l_lock_loc.location_kind_id,
+             l_lock_loc.bounding_office_id,
+             l_lock_loc.bounding_office_name,
+             l_lock_loc.nation_id
+        from cwms_county c,
+             cwms_state s,
+             cwms_time_zone tz,
+             cwms_base_parameter bp,
+             cwms_unit u,
+             at_location_kind lk,
+             at_base_location bl,
+             cwms_office o,
+             cwms_nation n
+       where c.county_code = nvl(l_lock_loc_rec.county_code, 0)
+         and s.state_code = c.state_code
+         and tz.time_zone_code = nvl(l_lock_loc_rec.time_zone_code, 0)
+         and bp.base_parameter_id = 'Elev'
+         and u.unit_code = bp.unit_code
+         and bl.base_location_code = l_lock_loc_rec.base_location_code
+         and lk.office_code = bl.db_office_code
+         and lk.location_kind_code = nvl(l_lock_loc_rec.location_kind, 1)
+         and o.office_code = nvl(l_lock_loc_rec.office_code, 0)
+         and n.nation_code = nvl(l_lock_loc_rec.nation_code, 'US');
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ERROR',
+            'The following dataset could not be found:'
+            ||chr(10)||chr(9)||'cwms_count.county_code                = '||nvl(l_lock_loc_rec.county_code, 0)
+            ||chr(10)||chr(9)||'cwms_state.state_code                 = cwms_count.state_code'
+            ||chr(10)||chr(9)||'cwms_timee_zone.time_zone_code        = '||nvl(l_lock_loc_rec.time_zone_code, 0)
+            ||chr(10)||chr(9)||'cwms_base_parameter.base_parameter_id = ''Elev'''
+            ||chr(10)||chr(9)||'cwms_unit.unit_code                   = cwms_base_parameter.unit_code'
+            ||chr(10)||chr(9)||'at_base_location.location_cod         = '||l_lock_loc_rec.base_location_code 
+            ||chr(10)||chr(9)||'at_location_kind.office_code          = at_base_location.db_office_code'
+            ||chr(10)||chr(9)||'at_location_kind.location_kind_code   = '||nvl(l_lock_loc_rec.location_kind, 1)
+            ||chr(10)||chr(9)||'cwms_office.office_code               = '||nvl(l_lock_loc_rec.office_code, 0)
+            ||chr(10)||chr(9)||'cwms_nation.nation_code               = '||nvl(l_lock_loc_rec.nation_code, 'US'));
+   end;    
    ----------------------------    
    -- create the lock object --
    ----------------------------    
@@ -332,7 +349,7 @@ end store_lock;
 procedure rename_lock(
    p_lock_id_old  IN VARCHAR2,              -- the old lock concatenated location id
    p_lock_id_new  IN VARCHAR2,              -- the new lock concatenated location id
-   p_db_office_id IN VARCHAR2 DEFAULT NULL) -- defaults to the connected user's office if null	
+   p_db_office_id IN VARCHAR2 DEFAULT NULL) -- defaults to the connected user's office if null  
 is
 begin
    cwms_loc.rename_location(p_lock_id_old, p_lock_id_new, p_db_office_id);
@@ -342,7 +359,7 @@ end rename_lock;
 procedure delete_lock(
     p_lock_id       IN VARCHAR,                               -- base location id + "-" + sub-loc id (if it exists)
     p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, --
-    p_db_office_id  IN VARCHAR2 DEFAULT NULL)                 -- defaults to the connected user's office if null	
+    p_db_office_id  IN VARCHAR2 DEFAULT NULL)                 -- defaults to the connected user's office if null  
 is
    l_lock_location_code number(10) := cwms_loc.get_location_code(p_db_office_id, p_lock_id);
    -------------------------------------------------------------------------------
@@ -370,4 +387,3 @@ END CWMS_LOCK;
  
 /
 show errors;
-
