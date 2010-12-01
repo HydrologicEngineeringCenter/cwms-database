@@ -6,9 +6,9 @@ create or replace
 PACKAGE BODY CWMS_PROJECT AS
 
 PROCEDURE cat_project (
-	p_project_cat  out sys_refcursor,
-	p_basin_cat  out sys_refcursor,
-	p_db_office_id in  varchar2 default null
+   p_project_cat  out sys_refcursor,
+   p_basin_cat  out sys_refcursor,
+   p_db_office_id in  varchar2 default null
 )
 AS
    l_db_office_id   varchar2(16) := cwms_util.get_db_office_id(p_db_office_id);
@@ -63,9 +63,9 @@ END cat_project;
 
 
 PROCEDURE retrieve_project(
-	p_project		out project_obj_t,
-	p_project_id	in  varchar2,
-	p_db_office_id	in	 varchar2 default null
+   p_project      out project_obj_t,
+   p_project_id   in  varchar2,
+   p_db_office_id in  varchar2 default null
 )
 AS
    l_db_office_code                 number := cwms_util.get_db_office_code(p_db_office_id);
@@ -181,7 +181,7 @@ begin
                when pl.office_code is null then null
                else o.office_id
              end                                   bounding_office_id,
-			 case
+          case
                when pl.office_code is null then null
                else o.public_name
              end                                   bounding_office_name,
@@ -231,7 +231,7 @@ begin
             rec.base_location_id,
             rec.sub_location_id,
             p_db_office_id
-	  );
+     );
       l_temp_location_obj := new location_obj_t (
             l_temp_location_ref,
             rec.state_initial,
@@ -345,8 +345,8 @@ BEGIN
          p_project.pump_back_location.vertical_datum,
          p_project.pump_back_location.latitude,
          p_project.pump_back_location.longitude,
-		 p_project.pump_back_location.horizontal_datum,
-		 p_project.pump_back_location.public_name,
+       p_project.pump_back_location.horizontal_datum,
+       p_project.pump_back_location.public_name,
          p_project.pump_back_location.long_name,
          p_project.pump_back_location.description,
          p_project.pump_back_location.time_zone_name,
@@ -456,9 +456,9 @@ END store_project;
 
 -- renames a project from one id to a new one.
 procedure rename_project(
-	p_project_id_old	IN	VARCHAR2,
-	p_project_id_new	IN	VARCHAR2,
-	p_db_office_id		IN	VARCHAR2 DEFAULT NULL
+   p_project_id_old  IN VARCHAR2,
+   p_project_id_new  IN VARCHAR2,
+   p_db_office_id    IN VARCHAR2 DEFAULT NULL
 )
 AS
 BEGIN
@@ -467,14 +467,136 @@ END rename_project;
 
 -- deletes a project, this does not affect any of the location code data.
 procedure delete_project(
-      p_project_id		IN   VARCHAR2,
-      p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, 
-      p_db_office_id    IN   VARCHAR2 DEFAULT NULL
+      p_project_id      IN VARCHAR2,
+      p_delete_action   IN VARCHAR2 DEFAULT cwms_util.delete_key, 
+      p_db_office_id    IN VARCHAR2 DEFAULT NULL
    )
 AS
-   l_location_code number := cwms_loc.get_location_code(p_db_office_id, p_project_id);
+   type cat_rec_t is record(
+      project_office_id  varchar2(16),
+      project_id         varchar2(49),
+      office_id          varchar2(16),
+      base_location_id   varchar2(16),
+      sub_location_id    varchar2(32),
+      time_zone_id       varchar2(28),
+      latitude           number,
+      longitude          number,
+      horizontal_datum   varchar2(16),
+      elevation          number,
+      elev_unit_id       varchar2(16),
+      vertical_datum     varchar2(16),
+      public_name        varchar2(32),
+      long_name          varchar2(80),
+      description        varchar2(1024),
+      active_flag        varchar2(1));
+      
+   type cat_wu_rec_t is record(
+      project_office_id  varchar2(16),
+      project_id         varchar2(49),
+      entity_name        varchar2(64),
+      water_right        varchar2(255));
+          
+   l_proj_loc_code  number := cwms_loc.get_location_code(p_db_office_id, p_project_id);
+   l_location_id    varchar2(49);
+   l_cursor         sys_refcursor;
+   l_rec            cat_rec_t;
+   l_wu_rec         cat_wu_rec_t;
+   l_location_ref   location_ref_t := location_ref_t(p_project_id, p_db_office_id);
+   
+   function make_location_id (
+      p_base_location_id in varchar2,
+      p_sub_location_id  in varchar2)
+   return varchar2
+   is
+   begin
+      return p_base_location_id
+         ||substr('-', 1, length(p_sub_location_id))
+         ||p_sub_location_id; 
+   end;
 BEGIN
-   delete from at_project where project_location_code = l_location_code;
+   if p_delete_action in (cwms_util.delete_all, cwms_util.delete_data) then
+      -------------------------------------------------
+      -- delete all items that reference the project --
+      -------------------------------------------------
+      -----------------
+      -- embankments --
+      -----------------
+      cwms_embank.cat_embankment(l_cursor, p_project_id, p_db_office_id);
+      loop
+         fetch l_cursor into l_rec;
+         exit when l_cursor%notfound;
+         cwms_embank.delete_embankment(
+            make_location_id(l_rec.base_location_id, l_rec.sub_location_id),
+            cwms_util.delete_all,
+            p_db_office_id);               
+      end loop;
+      close l_cursor;
+      -----------
+      -- locks --
+      -----------
+      cwms_lock.cat_lock(l_cursor, p_project_id, p_db_office_id);
+      loop
+         fetch l_cursor into l_rec;
+         exit when l_cursor%notfound;
+         cwms_lock.delete_lock(
+            make_location_id(l_rec.base_location_id, l_rec.sub_location_id),
+            cwms_util.delete_all,
+            p_db_office_id);               
+      end loop;
+      close l_cursor;
+      -------------
+      -- outlets --
+      -------------
+      null;
+      --------------
+      -- turbines --
+      --------------
+      null;
+      ---------------------
+      -- turbine changes --
+      ---------------------
+      null;
+      ------------------
+      -- gate changes --
+      ------------------
+      null;
+      ----------------------------
+      -- construction histories --
+      ----------------------------
+      null;
+      ------------------------
+      -- project agreements --
+      ------------------------
+      null;
+      -------------------------------------
+      -- project congressional districts --
+      -------------------------------------
+      null;
+      ----------------------
+      -- project purposes --
+      ----------------------
+      null;
+      -----------------
+      -- water users --
+      -----------------
+      cwms_water_supply.cat_water_user(l_cursor, p_project_id, p_db_office_id);
+      loop
+         fetch l_cursor into l_wu_rec;
+         exit when l_cursor%notfound;
+         cwms_water_supply.delete_water_user(
+            l_location_ref, 
+            l_wu_rec.entity_name, 
+            cwms_util.delete_all);
+      end loop;
+   end if;
+   if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
+      -------------------------------
+      -- delete the project itself --
+      -------------------------------
+      delete 
+        from at_project 
+       where project_location_code = l_proj_loc_code;
+   end if;
 END delete_project;
 
 PROCEDURE create_basin_group (
@@ -510,12 +632,12 @@ END rename_basin_group;
 
   PROCEDURE delete_basin_group (
     -- the location group to delete.
-		p_loc_group_id		IN VARCHAR2,
+      p_loc_group_id    IN VARCHAR2,
     -- delete_key will fail if there are assigned locations.
     -- delete_all will delete all location assignments, then delete the group.
     p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, 
     -- defaults to the connected user's office if null
-		p_db_office_id		IN VARCHAR2 DEFAULT NULL
+      p_db_office_id    IN VARCHAR2 DEFAULT NULL
   )
 AS
 BEGIN
