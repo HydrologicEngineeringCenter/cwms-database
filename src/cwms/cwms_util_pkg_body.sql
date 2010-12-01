@@ -2990,6 +2990,7 @@ AS
                when instr(p_input(i), '--' ) != 0  then invalid;
                when instr(p_input(i), '/*' ) != 0  then invalid;
                when instr(p_input(i), ';'  ) != 0  then invalid;
+               else null;
             end case;
          end loop;
       end if;
