@@ -4676,17 +4676,19 @@ tzUsages = [
 #----------------#
 sys.stderr.write("Processing rating methods.\n")
 ratingMethods = [
-    ['NULL'        , 'Return null if between values or outside range'       ],
-    ['ERROR'       , 'Raise an exception if between values or outside range'],
-    ['LINEAR'      , 'Linear interpolation or extrapolation'                ],
-    ['LOGARITHMIC' , 'Logarithmic interpolation or extrapolation'           ],
-    ['CONIC'       , 'Conic interpolation or extrapolation'                 ],
-    ['PREVIOUS'    , 'Return the value that is lower in position'           ],
-    ['NEXT'        , 'Return the value that is higher in position'          ],
-    ['NEAREST'     , 'Return the value that is nearest in position'         ],
-    ['LOWER'       , 'Return the value that is lower in magnitude'          ],
-    ['HIGHER'      , 'Return the value that is higher in magnitude'         ],
-    ['CLOSEST'     , 'Return the value that is closest in magnitude'        ],
+    ['NULL'        , 'Return null if between values or outside range'                                            ],
+    ['ERROR'       , 'Raise an exception if between values or outside range'                                     ],
+    ['LINEAR'      , 'Linear interpolation or extrapolation of independent and dependent values'                 ],
+    ['LOGARITHMIC' , 'Logarithmic interpolation or extrapolation of independent and dependent values'            ],
+    ['LIN-LOG'     , 'Linear interpolation/extrapoloation of independent values, Logarithmic of dependent values'],
+    ['LOG-LIN'     , 'Logarithmic interpolation/extrapoloation of independent values, Linear of dependent values'],
+    ['CONIC'       , 'Conic interpolation or extrapolation'                                                      ],
+    ['PREVIOUS'    , 'Return the value that is lower in position'                                                ],
+    ['NEXT'        , 'Return the value that is higher in position'                                               ],
+    ['NEAREST'     , 'Return the value that is nearest in position'                                              ],
+    ['LOWER'       , 'Return the value that is lower in magnitude'                                               ],
+    ['HIGHER'      , 'Return the value that is higher in magnitude'                                              ],
+    ['CLOSEST'     , 'Return the value that is closest in magnitude'                                             ],
 ]
 
 #---------------#
