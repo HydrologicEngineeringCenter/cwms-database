@@ -53,43 +53,46 @@ is
    l_office_id_mask varchar2(16) := cwms_util.normalize_wildcards(nvl(upper(p_db_office_id), cwms_util.user_office_id), true);
 begin
    open p_lock_cat for
-      select o.office_id as db_office_id,                    --    db_office_id             varchar2(16)   owning office of location         
+      select po.office_id as project_office_id,
              cwms_util.concat_base_sub_id(
-               bl1.base_location_id, 
-               pl1.sub_location_id) as project_location_id,  --    project_location_id      varchar2(49)   the parent project's location id  
-             bl2.base_location_id,                           --    base_location_id         varchar2(16)   base location id                  
-             pl2.sub_location_id,                            --    sub_location_id          varchar2(32)   sub-location id, if any           
+               pbl.base_location_id, 
+               ppl.sub_location_id) as project_location_id,  --    project_location_id      varchar2(49)   the parent project's location id  
+             o.office_id as db_office_id,                    --    db_office_id             varchar2(16)   owning office of location         
+             bl.base_location_id,                           --    base_location_id         varchar2(16)   base location id                  
+             pl.sub_location_id,                            --    sub_location_id          varchar2(32)   sub-location id, if any           
              tz.time_zone_name,                              --    time_zone_name           varchar2(28)   local time zone name for location 
-             pl2.latitude,                                   --    latitude                 number         location latitude                 
-             pl2.longitude,                                  --    longitude                number         location longitude                
-             pl2.horizontal_datum,                           --    horizontal_datum         varchar2(16)   horizontal datrum of lat/lon      
-             pl2.elevation,                                  --    elevation                number         location elevation                
+             pl.latitude,                                   --    latitude                 number         location latitude                 
+             pl.longitude,                                  --    longitude                number         location longitude                
+             pl.horizontal_datum,                           --    horizontal_datum         varchar2(16)   horizontal datrum of lat/lon      
+             pl.elevation,                                  --    elevation                number         location elevation                
              u.unit_id as elevation_unit_id,                 --    elev_unit_id             varchar2(16)   location elevation units          
-             pl2.vertical_datum,                             --    vertical_datum           varchar2(16)   veritcal datum of elevation       
-             pl2.public_name,                                --    public_name              varchar2(32)   location public name              
-             pl2.long_name,                                  --    long_name                varchar2(80)   location long name                
-             pl2.description,                                --    description              varchar2(512)  location description              
-             pl2.active_flag                                 --    active_flag              varchar2(1)    'T' if active, else 'F'           
+             pl.vertical_datum,                             --    vertical_datum           varchar2(16)   veritcal datum of elevation       
+             pl.public_name,                                --    public_name              varchar2(32)   location public name              
+             pl.long_name,                                  --    long_name                varchar2(80)   location long name                
+             pl.description,                                --    description              varchar2(512)  location description              
+             pl.active_flag                                 --    active_flag              varchar2(1)    'T' if active, else 'F'           
         from cwms_office o,
+             cwms_office po,
              at_project p,
              at_lock l,
-             at_physical_location pl1, -- project location
-             at_base_location bl1,     -- project location
-             at_physical_location pl2, -- lock location
-             at_base_location bl2,     -- lock location
+             at_physical_location ppl, -- project location
+             at_base_location pbl,     -- project location
+             at_physical_location pl, -- lock location
+             at_base_location bl,     -- lock location
              cwms_time_zone tz,
              cwms_base_parameter bp,
              cwms_unit u
        where o.office_id like l_office_id_mask
-         and bl1.db_office_code = o.office_code
-         and pl1.base_location_code = bl1.base_location_code
-         and cwms_util.concat_base_sub_id(bl1.base_location_id, pl1.sub_location_id) 
-             = nvl(p_project_id, cwms_util.concat_base_sub_id(bl1.base_location_id, pl1.sub_location_id))
-         and p.project_location_code = pl1.location_code
+         and po.office_code = pbl.db_office_code
+         and o.office_code = bl.db_office_code
+         and ppl.base_location_code = pbl.base_location_code
+         and cwms_util.concat_base_sub_id(pbl.base_location_id, ppl.sub_location_id) 
+             = nvl(p_project_id, cwms_util.concat_base_sub_id(pbl.base_location_id, ppl.sub_location_id))
+         and p.project_location_code = ppl.location_code
          and l.project_location_code = p.project_location_code
-         and pl2.location_code = l.lock_location_code
-         and bl2.base_location_code = pl2.base_location_code
-         and tz.time_zone_code = pl2.time_zone_code
+         and pl.location_code = l.lock_location_code
+         and bl.base_location_code = pl.base_location_code
+         and tz.time_zone_code = pl.time_zone_code
          and bp.base_parameter_id = 'Elev'
          and u.unit_code = bp.unit_code;
 
