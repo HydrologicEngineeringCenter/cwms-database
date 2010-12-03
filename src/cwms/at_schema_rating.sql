@@ -130,6 +130,7 @@ create table at_rating
    create_date      date        not null,
    active_flag      varchar2(1) not null,
    formula          varchar2(1000),
+   native_units     varchar2(256),
    description      varchar2(256),
    constraint at_rating_pk  primary key (rating_code),
    constraint at_rating_u1  unique (rating_spec_code, effective_date) using index,
@@ -146,6 +147,7 @@ comment on column at_rating.effective_date   is 'The earliest time the rating is
 comment on column at_rating.create_date      is 'The time the rating is loaded into the database';
 comment on column at_rating.active_flag      is 'Specifies whether the rating is active';
 comment on column at_rating.formula          is 'Formula to be used instead of rating values';
+comment on column at_rating.native_units     is 'Units used for i/o and for formula, in format ind1_unit[,ind2_unit[,...]];dep_unit';
 comment on column at_rating.description      is 'Text description of rating specifics';
 
 -----------------------------
@@ -157,7 +159,6 @@ create table at_rating_ind_parameter
    rating_code           number(10) not null,
    ind_param_spec_code   number(10) not null,
    constraint at_rating_ind_parameter_pk  primary key (rating_ind_param_code),
-   constraint at_rating_ind_parameter_u1  unique (rating_code, ind_param_spec_code),
    constraint at_rating_ind_parameter_fk1 foreign key (rating_code) references at_rating (rating_code),
    constraint at_rating_ind_parameter_fk2 foreign key (ind_param_spec_code) references at_rating_ind_param_spec (ind_param_spec_code) 
 );
@@ -242,4 +243,21 @@ comment on column at_rating_extension_value.dep_value                 is 'Depend
 comment on column at_rating_extension_value.dep_rating_ind_param_code is 'Dependent table for rating (for multi-parameter ratings)';
 comment on column at_rating_extension_value.note_code                 is 'Reference to rating value note';
 
+------------------------
+-- AT_COMPOUND_RATING --
+------------------------
+create global temporary table at_compound_rating(
+   seq       integer,
+   position  integer,
+   ind_value binary_double,
+   parent_id varchar2(4000),
+   constraint at_compound_rating_pk primary key(seq)
+) on commit delete rows;
 
+create index at_compound_rating_idx on at_compound_rating(position, parent_id);
+
+comment on table  at_compound_rating           is 'Temp table used for parsing ratings xml into objects';
+comment on column at_compound_rating.seq       is 'Synthetic key';
+comment on column at_compound_rating.position  is 'Independent parameter position';
+comment on column at_compound_rating.ind_value is 'Independent parameter value';
+comment on column at_compound_rating.parent_id is 'Id specifying upstream lower-position parameter position/value combinations';
