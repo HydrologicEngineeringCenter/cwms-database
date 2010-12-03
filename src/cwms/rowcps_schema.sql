@@ -1421,6 +1421,8 @@ ALTER TABLE at_turbine_change ADD (
 CREATE TABLE at_turbine_characteristic
 (
   turbine_characteristic_code           NUMBER(10)                      NOT NULL,
+  db_office_code      NUMBER                    NOT NULL,
+  turbine_characteristic_id VARCHAR2(64 BYTE)   NOT NULL,
   rated_power_capacity			BINARY_DOUBLE,
   max_power_overload                    BINARY_DOUBLE,
   min_generation_flow			BINARY_DOUBLE,
@@ -1447,12 +1449,15 @@ NOPARALLEL
 MONITORING
 /
 COMMENT ON COLUMN at_turbine_characteristic.turbine_characteristic_code IS 'The automatically generated unique surrogate key';
+COMMENT ON COLUMN at_turbine_characteristic.db_office_code IS 'The office code for this turbine characteristic';
+COMMENT ON COLUMN at_turbine_characteristic.turbine_characteristic_id IS 'The name of this turbine characteristic';
 COMMENT ON COLUMN at_turbine_characteristic.rated_power_capacity IS 'The nameplate power generating capacity for this turbine';
 COMMENT ON COLUMN at_turbine_characteristic.max_power_overload IS 'The maximum percentage of nameplate power that this turbine type can run in overload mode';
 COMMENT ON COLUMN at_turbine_characteristic.min_generation_flow IS 'The minimum flow required to utilize the turbine';
 COMMENT ON COLUMN at_turbine_characteristic.max_generation_flow IS 'The maximum flow capacity for the turbine';
 COMMENT ON COLUMN at_turbine_characteristic.turbine_general_description IS 'The genearl description of this class of turbines';
 COMMENT ON COLUMN at_turbine_characteristic.turbine_operation_rule_set IS 'The operational rule set for this turbine';
+
 
 ALTER TABLE at_turbine_characteristic ADD (
   CONSTRAINT at_turbine_characteristic_pk
@@ -1470,6 +1475,29 @@ ALTER TABLE at_turbine_characteristic ADD (
                 PCTINCREASE      0
                ))
 /
+ALTER TABLE at_turbine_characteristic ADD (
+  CONSTRAINT at_turbine_characteristic_fk1
+ FOREIGN KEY (db_office_code)
+ REFERENCES cwms_office (office_code))
+/
+-- unique index
+CREATE UNIQUE INDEX at_turbine_characteristic_idx1 ON at_turbine_characteristic
+(db_office_code, UPPER("TURBINE_CHARACTERISTIC_ID"))
+LOGGING
+tablespace CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
 
 --------
 --------
@@ -1478,8 +1506,8 @@ CREATE TABLE at_turbine
 (
   turbine_location_code			NUMBER(10)			NOT NULL,
   project_location_code	                NUMBER(10)			NOT NULL,
-  turbine_characteristic_code           NUMBER(10)                      NOT NULL,
-  turbine_description			VARCHAR2(255 BYTE)
+  turbine_characteristic_code           NUMBER(10)                      NOT NULL
+--  turbine_description			VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1502,7 +1530,7 @@ MONITORING
 COMMENT ON COLUMN at_turbine.turbine_location_code IS 'The actual turbine this record refers to.  The location_code also in AT_PHYSICAL_LOCATION';
 COMMENT ON COLUMN at_turbine.project_location_code IS 'The project this turbine is part of.  See AT_PROJECT.project_location_code';
 COMMENT ON COLUMN at_turbine.turbine_characteristic_code IS 'The code for the foreign key record in the AT_TURBINE_CHARACTERISTIC table which describes turbine geometry and features.';
-COMMENT ON COLUMN at_turbine.turbine_description IS 'The description of the turbine';
+-- COMMENT ON COLUMN at_turbine.turbine_description IS 'The description of the turbine';
 
 ALTER TABLE at_turbine ADD (
   CONSTRAINT at_turbine_pk
@@ -1806,6 +1834,8 @@ ALTER TABLE at_gate_change ADD (
 CREATE TABLE at_outlet_characteristic
 (
   outlet_characteristic_code			NUMBER(10)	       NOT NULL,
+  db_office_code      NUMBER                    NOT NULL,
+  outlet_characteristic_id VARCHAR2(64 BYTE)   NOT NULL,
   opening_parameter_code                        NUMBER(10)             NOT NULL,
   height					BINARY_DOUBLE,
   width						BINARY_DOUBLE,
@@ -1834,7 +1864,9 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_outlet_characteristic.outlet_characteristic_code IS 'The automatically generated surrogate unique key for this record.';
+COMMENT ON COLUMN at_outlet_characteristic.outlet_characteristic_code IS 'The automatically generated surrogate unique key for this record';
+COMMENT ON COLUMN at_outlet_characteristic.db_office_code IS 'The office code that this characteristic is assigned to';
+COMMENT ON COLUMN at_outlet_characteristic.outlet_characteristic_id IS 'The name of this outlet characteristic';
 COMMENT ON COLUMN at_outlet_characteristic.opening_parameter_code IS 'A foreign key to an AT_PARAMETER record that constrains the gate opening to a defined parameter and unit.';
 COMMENT ON COLUMN at_outlet_characteristic.height IS 'The height of the gate';
 COMMENT ON COLUMN at_outlet_characteristic.width IS 'The width of the gate';
@@ -1865,6 +1897,28 @@ ALTER TABLE at_outlet_characteristic ADD (
  FOREIGN KEY (opening_parameter_code)
  REFERENCES at_parameter (parameter_code))
 /
+ALTER TABLE at_outlet_characteristic ADD (
+  CONSTRAINT at_outlet_characteristic_fk2
+ FOREIGN KEY (db_office_code)
+ REFERENCES cwms_office (office_code))
+/
+-- unique index
+CREATE UNIQUE INDEX at_outlet_characteristic_idx1 ON at_outlet_characteristic
+(db_office_code, UPPER("OUTLET_CHARACTERISTIC_ID"))
+LOGGING
+tablespace CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
 --------
 --------
 
@@ -1872,8 +1926,8 @@ CREATE TABLE at_outlet
 (
   outlet_location_code			        NUMBER(10)			NOT NULL,
   project_location_code	                        NUMBER(10)			NOT NULL,
-  outlet_characteristic_code    		NUMBER(10)                      NOT NULL,
-  outlet_description                            VARCHAR2(255 BYTE)   
+  outlet_characteristic_code    		NUMBER(10)                      NOT NULL
+  --outlet_description                            VARCHAR2(255 BYTE)   
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1896,7 +1950,7 @@ MONITORING
 COMMENT ON COLUMN at_outlet.outlet_location_code IS 'The unique outlet this record is. Also in AT_OUTLET';
 COMMENT ON COLUMN at_outlet.project_location_code IS 'The project where this outlet is located. ';
 COMMENT ON COLUMN at_outlet.outlet_characteristic_code IS 'The code for the foreign key record in the AT_OUTLET_CHARACTERISTIC table which describe outlet geometry, features, and hydraulic equation parameters.';
-COMMENT ON COLUMN at_outlet.outlet_description IS 'The specific description for this outlet structure.';
+--COMMENT ON COLUMN at_outlet.outlet_description IS 'The specific description for this outlet structure.';
 
 ALTER TABLE at_outlet ADD (
   CONSTRAINT at_outlet_pk
@@ -2211,7 +2265,7 @@ CREATE TABLE at_water_user_contract
    water_user_code               NUMBER(10)        NOT NULL,
    contract_name                 VARCHAR2(64 BYTE) NOT NULL,
    contracted_storage            BINARY_DOUBLE     NOT NULL,
-   contract_documents            VARCHAR2(64 BYTE) NOT NULL,
+--   contract_documents            VARCHAR2(64 BYTE) NOT NULL,
    water_supply_contract_type    NUMBER(10)        NOT NULL,
    ws_contract_effective_date    DATE,
    ws_contract_expiration_date   DATE,
@@ -2245,7 +2299,7 @@ COMMENT ON COLUMN at_water_user_contract.water_user_contract_code IS 'Unique rec
 COMMENT ON COLUMN at_water_user_contract.water_user_code IS 'The water user that has a contract for water storage at a project.  See table AT_WATER_USER.';
 COMMENT ON COLUMN at_water_user_contract.contract_name IS 'The identification name for the contract for this water user contract';
 COMMENT ON COLUMN at_water_user_contract.contracted_storage IS 'The contracted storage amount for this water user contract';
-COMMENT ON COLUMN at_water_user_contract.contract_documents IS 'The documents for the contract';
+--COMMENT ON COLUMN at_water_user_contract.contract_documents IS 'The documents for the contract';
 COMMENT ON COLUMN at_water_user_contract.water_supply_contract_type IS 'The type of water supply contract.  Constrained by a foreign key to a lookup table';
 COMMENT ON COLUMN at_water_user_contract.ws_contract_effective_date IS 'The start date of the contract for this water user contract';
 COMMENT ON COLUMN at_water_user_contract.ws_contract_expiration_date IS 'The expiration date for the contract of this water user contract';
