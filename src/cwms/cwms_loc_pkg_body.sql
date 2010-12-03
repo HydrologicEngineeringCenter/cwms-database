@@ -4636,9 +4636,9 @@ AS
             and pl.location_code = p_location_code)
       loop
         l_location_ref := new location_ref_t (
-           rec.office_id,
            rec.base_location_id,
-           rec.sub_location_id
+           rec.sub_location_id,
+           rec.office_id
         );
         l_location_obj := new location_obj_t (
            l_location_ref,
