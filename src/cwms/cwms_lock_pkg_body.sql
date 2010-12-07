@@ -109,7 +109,11 @@ is
    l_lock_loc      location_obj_t;
    l_lock_loc_rec  at_physical_location%rowtype;
    l_lock_location_ref location_ref_t;
+   l_cwms_office_code number;
 begin
+  -- get the cwms office code.
+  l_cwms_office_code := cwms_util.get_office_code('CWMS');
+  
    --------------------------------------------------------------
    -- set up a location ref that defaults to the user's office --
    --------------------------------------------------------------
@@ -137,12 +141,12 @@ begin
       select *
         into l_lock_loc_rec
         from at_physical_location
-       where location_code = l_lock_rec.project_location_code;
+       where location_code = l_lock_location_ref.get_location_code;
    exception
       when no_data_found then
          cwms_err.raise(
             'ITEM_DOES_NOT_EXIST',
-            'Project for lock location',
+            'Lock location',
             l_lock_location_ref.office_id||'/'||l_lock_location_ref.get_location_id);
    end;
    -------------------------------------        
@@ -207,25 +211,26 @@ begin
          and bp.base_parameter_id = 'Elev'
          and u.unit_code = bp.unit_code
          and bl.base_location_code = l_lock_loc_rec.base_location_code
-         and lk.office_code = bl.db_office_code
+         and (lk.office_code = bl.db_office_code or lk.office_code = l_cwms_office_code)
          and lk.location_kind_code = nvl(l_lock_loc_rec.location_kind, 1)
          and o.office_code = nvl(l_lock_loc_rec.office_code, 0)
+         -- and o.office_code = l_lock_loc_rec.office_code
          and n.nation_code = nvl(l_lock_loc_rec.nation_code, 'US');
    exception
       when no_data_found then
          cwms_err.raise(
             'ERROR',
             'The following dataset could not be found:'
-            ||chr(10)||chr(9)||'cwms_count.county_code                = '||nvl(l_lock_loc_rec.county_code, 0)
+            ||chr(10)||chr(9)||'cwms_count.county_code                = '||nvl(l_lock_loc_rec.county_code, -1)
             ||chr(10)||chr(9)||'cwms_state.state_code                 = cwms_count.state_code'
-            ||chr(10)||chr(9)||'cwms_timee_zone.time_zone_code        = '||nvl(l_lock_loc_rec.time_zone_code, 0)
+            ||chr(10)||chr(9)||'cwms_timee_zone.time_zone_code        = '||nvl(l_lock_loc_rec.time_zone_code, -1)
             ||chr(10)||chr(9)||'cwms_base_parameter.base_parameter_id = ''Elev'''
             ||chr(10)||chr(9)||'cwms_unit.unit_code                   = cwms_base_parameter.unit_code'
-            ||chr(10)||chr(9)||'at_base_location.location_cod         = '||l_lock_loc_rec.base_location_code 
+            ||chr(10)||chr(9)||'at_base_location.location_code        = '||l_lock_loc_rec.base_location_code 
             ||chr(10)||chr(9)||'at_location_kind.office_code          = at_base_location.db_office_code'
-            ||chr(10)||chr(9)||'at_location_kind.location_kind_code   = '||nvl(l_lock_loc_rec.location_kind, 1)
-            ||chr(10)||chr(9)||'cwms_office.office_code               = '||nvl(l_lock_loc_rec.office_code, 0)
-            ||chr(10)||chr(9)||'cwms_nation.nation_code               = '||nvl(l_lock_loc_rec.nation_code, 'US'));
+            ||chr(10)||chr(9)||'at_location_kind.location_kind_code   = '||nvl(l_lock_loc_rec.location_kind, -1)
+            ||chr(10)||chr(9)||'cwms_office.office_code               = '||nvl(l_lock_loc_rec.office_code, -1)
+            ||chr(10)||chr(9)||'cwms_nation.nation_code               = '||nvl(l_lock_loc_rec.nation_code, 'XX'));
    end;    
    ----------------------------    
    -- create the lock object --
@@ -381,6 +386,10 @@ begin
       del_non_ts_child_data(l_lock_location_code);
    end if;
    if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
+   
+      delete
+        from at_lock
+        where lock_location_code = l_lock_location_code;
       cwms_loc.delete_location(p_lock_id, p_delete_action, p_db_office_id);
    end if;
 end delete_lock;
