@@ -296,8 +296,12 @@ procedure store_lock(
    p_lock           IN lock_obj_t,           -- a populated lock object type.
    p_fail_if_exists IN VARCHAR2 DEFAULT 'T') -- a flag that will cause the procedure to fail if the lock already exists
 is
-   l_lock_rec at_lock%rowtype;
-   l_exists   boolean;
+   l_lock_rec      at_lock%rowtype;
+   l_exists        boolean;
+   l_length_factor binary_double;
+   l_length_offset binary_double;
+   l_volume_factor binary_double;
+   l_volume_offset binary_double;
 begin
    -------------------------------------
    -- retrieve the lock, if it exists --
@@ -334,14 +338,57 @@ begin
             'Project for lock location',
             p_lock.project_location_ref.office_id||'/'||p_lock.project_location_ref.get_location_id);
    end;
+   --------------------------------
+   -- get the conversion factors --
+   --------------------------------
+   select factor,
+          offset
+     into l_length_factor,
+          l_length_offset
+     from cwms_unit_conversion uc,
+          cwms_base_parameter bp
+    where uc.from_unit_id = p_lock.units_id
+      and bp.base_parameter_id = 'Length'
+      and uc.to_unit_code = bp.unit_code; 
+
+   select factor,
+          offset
+     into l_volume_factor,
+          l_volume_offset
+     from cwms_unit_conversion uc,
+          cwms_base_parameter bp
+    where uc.from_unit_id = p_lock.volume_units_id
+      and bp.base_parameter_id = 'Volume'
+      and uc.to_unit_code = bp.unit_code; 
+          
    ----------------------------------------------------------
    -- fill out the lock record, don't overwrite with nulls --
    ----------------------------------------------------------
-   l_lock_rec.lock_width            := nvl(p_lock.lock_width,         l_lock_rec.lock_width);
-   l_lock_rec.locK_length           := nvl(p_lock.lock_length,        l_lock_rec.lock_length);
-   l_lock_rec.volume_per_lockage    := nvl(p_lock.volume_per_lockage, l_lock_rec.volume_per_lockage);
-   l_lock_rec.minimum_draft         := nvl(p_lock.minimum_draft,      l_lock_rec.minimum_draft);
-   l_lock_rec.normal_lock_lift      := nvl(p_lock.normal_lock_lift,   l_lock_rec.normal_lock_lift);
+   l_lock_rec.lock_width := 
+      case p_lock is null
+         when true  then l_lock_rec.lock_width
+         when false then p_lock.lock_width * l_length_factor + l_length_offset
+      end;
+   l_lock_rec.lock_length := 
+      case p_lock is null
+         when true  then l_lock_rec.lock_length
+         when false then p_lock.lock_length * l_length_factor + l_length_offset
+      end;
+   l_lock_rec.volume_per_lockage := 
+      case p_lock is null
+         when true  then l_lock_rec.volume_per_lockage
+         when false then p_lock.volume_per_lockage * l_volume_factor + l_volume_offset
+      end;
+   l_lock_rec.minimum_draft := 
+      case p_lock is null
+         when true  then l_lock_rec.minimum_draft
+         when false then p_lock.minimum_draft * l_length_factor + l_length_offset
+      end;
+   l_lock_rec.normal_lock_lift := 
+      case p_lock is null
+         when true  then l_lock_rec.normal_lock_lift
+         when false then p_lock.normal_lock_lift * l_length_factor + l_length_offset
+      end;
    ---------------------------------
    -- insert or update the record --
    ---------------------------------
