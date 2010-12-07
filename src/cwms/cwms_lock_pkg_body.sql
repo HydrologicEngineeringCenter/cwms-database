@@ -99,7 +99,7 @@ begin
 end cat_lock;
 
 
-PROCEDURE retrieve_lock(
+PROCEDURE retrieve_lock_old(
    p_lock OUT lock_obj_t,                  --returns a filled in lock object including location data
    p_lock_location_ref IN location_ref_t)  -- a location ref that identifies the lock we want to retrieve.
                                            -- includes the lock's location id (base location + '-' + sublocation)
@@ -247,6 +247,49 @@ begin
       null --  length units.
     );
 
+end retrieve_lock_old;
+
+PROCEDURE retrieve_lock(
+   p_lock OUT lock_obj_t,                  --returns a filled in lock object including location data
+   p_lock_location_ref IN location_ref_t)  -- a location ref that identifies the lock we want to retrieve.
+                                           -- includes the lock's location id (base location + '-' + sublocation)
+                                           -- the office id if null will default to the connected user's office
+is
+   l_lock_loc location_obj_t;
+   l_unit                varchar2(16);
+   l_factor              number;
+begin
+   p_lock := null;
+  
+  ----------------------------------------------------------------------------------
+   -- use the cursor loop construct for convenience, there will only be one record --
+   ----------------------------------------------------------------------------------
+   for rec in 
+      (	select l.lock_location_code,
+                l.project_location_code,
+                l.volume_per_lockage,
+                l.lock_width,
+                l.lock_length,
+                l.minimum_draft,
+                l.normal_lock_lift
+           from at_lock l
+          where l.lock_location_code = p_lock_location_ref.get_location_code)
+   loop
+   ----------------------------    
+   -- create the lock object --
+   ----------------------------    
+   p_lock := lock_obj_t(
+      location_ref_t(rec.project_location_code),
+      cwms_loc.retrieve_location(rec.lock_location_code),
+      rec.volume_per_lockage,
+      cwms_util.get_default_units('Volume'), -- volume units.
+      rec.lock_width,
+      rec.lock_length,
+      rec.minimum_draft,
+      rec.normal_lock_lift,
+      cwms_util.get_default_units('Length') --  length units.
+    );
+   end loop;
 end retrieve_lock;
 
 procedure store_lock(
