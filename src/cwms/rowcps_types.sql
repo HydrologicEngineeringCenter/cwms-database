@@ -235,7 +235,7 @@ AS
   --
   --
   --
-CREATE OR REPLACE TYPE outlet_characteristic_ref_t
+CREATE OR REPLACE TYPE characteristic_ref_t
 AS
   OBJECT
   (
@@ -247,54 +247,53 @@ AS
   --
   --
   --
-CREATE OR REPLACE TYPE outlet_obj_t
+CREATE OR REPLACE TYPE project_structure_obj_t
 AS
   OBJECT
   (
-    project_location_ref location_ref_t,           --The project this outlet is a child of
-    outlet_location location_obj_t,                  --The location for this outlet
-    characteristic_ref outlet_characteristic_ref_t, -- the characteristic for this outlet.
-    outlet_description VARCHAR(255)                 -- The description of this outlet.
+    project_location_ref location_ref_t,           --The project this structure is a child of
+    structure_location location_obj_t,                  --The location for this structure
+    characteristic_ref characteristic_ref_t   -- the characteristic for this structure.
   );
   /
   show errors
   --
   --
   --
-CREATE OR REPLACE TYPE outlet_tab_t
+CREATE OR REPLACE TYPE project_structure_tab_t
 IS
-  TABLE OF outlet_obj_t;
+  TABLE OF project_structure_obj_t;
   /
   show errors
   --
   --
   --
-CREATE OR REPLACE TYPE outlet_characteristic_obj_t
+CREATE OR REPLACE TYPE characteristic_obj_t
 AS
   OBJECT
   (
-    characteristic_ref outlet_characteristic_ref_t, -- office id and characteristic id
-    opening_parameter_id VARCHAR2 (16),             -- A foreign key to an AT_PARAMETER record that constrains the gate opening to a defined parameter and unit.
-    height BINARY_DOUBLE,                           -- The height of the gate
-    width binary_double,                            -- The width of the gate
-    opening_radius binary_double,                   -- The radius of the pipe or circular conduit that this outlet is a control for.  This is not applicable to rectangular outlets, tainter gates, or uncontrolled spillways
-    opening_units_id VARCHAR2(16),                  -- the units of the opening radius value.
-    elev_invert binary_double,                      -- The elevation of the invert for the outlet
-    flow_capacity_max BINARY_DOUBLE,                --  The maximum flow capacity of the gate
-    flow_units_id VARCHAR2(16),                     -- the units of the flow value.
-    net_length_spillway binary_double,              -- The net length of the spillway
-    spillway_notch_length binary_double,            -- The length of the spillway notch
-    length_units_id            VARCHAR2(16),                   -- the units of the height, width, and length.
-    outlet_general_description VARCHAR2(255)                   -- description of the outlet characteristic
+    characteristic_ref characteristic_ref_t, -- office id and characteristic id
+--    opening_parameter_id VARCHAR2 (16),             -- A foreign key to an AT_PARAMETER record that constrains the gate opening to a defined parameter and unit.
+--    height BINARY_DOUBLE,                           -- The height of the gate
+--    width binary_double,                            -- The width of the gate
+--    opening_radius binary_double,                   -- The radius of the pipe or circular conduit that this outlet is a control for.  This is not applicable to rectangular outlets, tainter gates, or uncontrolled spillways
+--    opening_units_id VARCHAR2(16),                  -- the units of the opening radius value.
+--    elev_invert binary_double,                      -- The elevation of the invert for the outlet
+--    flow_capacity_max BINARY_DOUBLE,                --  The maximum flow capacity of the gate
+--    flow_units_id VARCHAR2(16),                     -- the units of the flow value.
+--    net_length_spillway binary_double,              -- The net length of the spillway
+--    spillway_notch_length binary_double,            -- The length of the spillway notch
+--    length_units_id            VARCHAR2(16),                   -- the units of the height, width, and length.
+    general_description VARCHAR2(255)                   -- description of the outlet characteristic
   );
   /
   show errors
   --
   --
   --
-CREATE OR REPLACE TYPE outlet_characteristic_tab_t
+CREATE OR REPLACE TYPE characteristic_tab_t
 IS
-  TABLE OF outlet_characteristic_obj_t;
+  TABLE OF characteristic_obj_t;
   /
   show errors
   --
