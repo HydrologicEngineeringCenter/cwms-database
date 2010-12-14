@@ -40,6 +40,8 @@ is
 begin
    if p_value is null then
       return null;
+   elsif p_value = 0 then
+      return 0;      
    else
       validate_rounding_spec(p_rounding_spec);
       l_magnitude  := trunc(log(10, abs(p_value)));
@@ -89,6 +91,8 @@ is
 begin
    if p_value is null then
       return null;
+   elsif p_value = 0 then
+      return 0;      
    else
       validate_rounding_spec(p_rounding_spec);
       l_magnitude  := trunc(log(10, abs(p_value)));
