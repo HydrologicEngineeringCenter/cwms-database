@@ -52,9 +52,8 @@
 @@cwms_rounding_pkg
 @@cwms_rounding_pkg_body
 
--- @@cwms_rating_pkg_java
--- @@cwms_rating_pkg
--- @@cwms_rating_pkg_body
+@@cwms_rating_pkg
+@@cwms_rating_pkg_body
 
 -- HOST pwd
 

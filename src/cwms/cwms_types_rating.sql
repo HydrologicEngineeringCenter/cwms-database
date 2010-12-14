@@ -104,45 +104,55 @@ as
    return self as result
    is
       l_xml xmltype;
+      ------------------------------
+      -- local function shortcuts --
+      ------------------------------
+      function get_node(p_xml in xmltype, p_path in varchar2) return xmltype is
+      begin
+         return cwms_util.get_xml_node(p_xml, p_path);
+      end;
+      function get_text(p_xml in xmltype, p_path in varchar2) return varchar2 is
+      begin
+         return cwms_util.get_xml_text(p_xml, p_path);
+      end;
+      function get_number(p_xml in xmltype, p_path in varchar2) return number is
+      begin
+         return cwms_util.get_xml_number(p_xml, p_path);
+      end;
    begin
       if p_xml.existsnode('//ind-parameter-spec') = 1 then
-         l_xml := p_xml.extract('//ind-parameter-spec');
+         l_xml := get_node(p_xml, '//ind-parameter-spec');
       else
          cwms_err.raise(
             'ERROR',
             'Cannot locate <ind-parameter-spec> element');
       end if;
-      if l_xml.existsnode('/ind-parameter-spec/@position') = 1 then
-         self.parameter_position := l_xml.extract('/ind-parameter-spec/@position').getnumberval;
-      else
+      self.parameter_position := get_number(l_xml, '/ind-parameter-spec/@position');
+      if self.parameter_position is null then
          cwms_err.raise(
             'ERROR',
             'Required "position" attribute not found in <ind-parameter-spec> element');
       end if;
-      if l_xml.existsnode('/ind-parameter-spec/parameter') = 1 then
-         self.parameter_id := l_xml.extract('/ind-parameter-spec/parameter/text()').getstringval;
-      else
+      self.parameter_id := get_text(l_xml, '/ind-parameter-spec/parameter');
+      if self.parameter_id is null then
          cwms_err.raise(
             'ERROR',
             '<parameter> element not found under <ind-parameter-spec> element');
       end if;
-      if l_xml.existsnode('/ind-parameter-spec/in-range-method') = 1 then
-         self.in_range_rating_method := l_xml.extract('/ind-parameter-spec/in-range-method/text()').getstringval;
-      else
+      self.in_range_rating_method := get_text(l_xml, '/ind-parameter-spec/in-range-method');
+      if self.in_range_rating_method is null then
          cwms_err.raise(
             'ERROR',
             '<in-range-method> element not found under <ind-parameter-spec> element');
       end if;
-      if l_xml.existsnode('/ind-parameter-spec/out-range-low-method') = 1 then
-         self.out_range_low_rating_method := l_xml.extract('/ind-parameter-spec/out-range-low-method/text()').getstringval;
-      else
+      self.out_range_low_rating_method := get_text( l_xml, '/ind-parameter-spec/out-range-low-method');
+      if self.out_range_low_rating_method is null then
          cwms_err.raise(
             'ERROR',
             '<out-range-low-method> element not found under <ind-parameter-spec> element');
       end if;
-      if l_xml.existsnode('/ind-parameter-spec/out-range-high-method') = 1 then
-         self.out_range_high_rating_method := l_xml.extract('/ind-parameter-spec/out-range-high-method/text()').getstringval;
-      else
+      self.out_range_high_rating_method := get_text(l_xml, '/ind-parameter-spec/out-range-high-method');
+      if self.out_range_high_rating_method is null then
          cwms_err.raise(
             'ERROR',
             '<out-range-high-method> element not found under <ind-parameter-spec> element');
@@ -487,6 +497,7 @@ as
    is
    begin
       init(p_office_id, p_parameters_id, p_version);
+      return;
    end;
    
    constructor function rating_template_t(
@@ -504,6 +515,7 @@ as
             'Rating template identifier');
       end if;
       init(p_office_id, l_parts(1), l_parts(2));
+      return;
    end;
    
    constructor function rating_template_t(
@@ -511,66 +523,66 @@ as
    return self as result
    is
       l_xml   xmltype;
+      l_node  xmltype;
       l_parts str_tab_t;
       i       binary_integer;
+      ------------------------------
+      -- local function shortcuts --
+      ------------------------------
+      function get_node(p_xml in xmltype, p_path in varchar2) return xmltype is
+      begin
+         return cwms_util.get_xml_node(p_xml, p_path);
+      end;
+      function get_text(p_xml in xmltype, p_path in varchar2) return varchar2 is
+      begin
+         return cwms_util.get_xml_text(p_xml, p_path);
+      end;
+      function get_number(p_xml in xmltype, p_path in varchar2) return number is
+      begin
+         return cwms_util.get_xml_number(p_xml, p_path);
+      end;
    begin
       if p_xml.existsnode('//rating-template') = 1 then
-         l_xml := p_xml.extract('//rating-template');
+         l_xml := get_node(p_xml, '//rating-template');
       else
          cwms_err.raise(
             'ERROR',
             'Cannot locate <rating-template> element');
       end if;         
-      if l_xml.existsnode('/rating-template/@office-id') = 1 then
-         self.office_id := l_xml.extract('/rating-template/@office-id').getstringval;
-      else
+      self.office_id := get_text(l_xml, '/rating-template/@office-id');
+      if self.office_id is null then
          cwms_err.raise(
             'ERROR',
             'Required "office-id" attribute is not found in <rating-template> element');
       end if;         
-      if l_xml.existsnode('/rating-template/parameters-id') = 1 then
-         self.parameters_id := l_xml.extract('/rating-template/parameters-id/text()').getstringval;
-      else
+      self.parameters_id := get_text(l_xml, '/rating-template/parameters-id');
+      if self.parameters_id is null then
          cwms_err.raise(
             'ERROR',
             '<parameters-id> element is not found under <rating-template> element');
       end if;         
-      if l_xml.existsnode('/rating-template/version') = 1 then
-         self.version := l_xml.extract('/rating-template/version/text()').getstringval;
-      else
+      self.version := get_text(l_xml, '/rating-template/version');
+      if self.version is null then
          cwms_err.raise(
             'ERROR',
             '<version> element is not found under <rating-template> element');
       end if;         
-      if l_xml.existsnode('/rating-template/dep-parameter') = 1 then
-         self.dep_parameter_id := l_xml.extract('/rating-template/dep-parameter/text()').getstringval;
-      else
+      self.dep_parameter_id := get_text(l_xml, '/rating-template/dep-parameter');
+      if self.dep_parameter_id is null then
          cwms_err.raise(
             'ERROR',
             '<dep-parameter> element is not found under <rating-template> element');
-      end if;         
-      if l_xml.existsnode('/rating-template/ind-parameter-specs') = 1 then
-         l_parts := cwms_util.split_text(
-            l_xml.extract('/rating-template/ind-parameter-specs/ind-parameter-spec').getstringval,
-            '</ind-parameter-spec>');
-         self.ind_parameters := rating_ind_param_spec_tab_t();
-         self.ind_parameters.extend(l_parts.count - 1);   
-         for i in 1..l_parts.count - 1 loop
-            self.ind_parameters(i) := rating_ind_param_spec_t(
-               l_xml.extract('/rating-template/ind-parameter-specs/ind-parameter-spec['||i||']'));
-         end loop;         
-      else
-         cwms_err.raise(
-            'ERROR',
-            '<ind-parameter-specs> element is not found under <rating-template> element');
-      end if;         
-      if l_xml.existsnode('/rating-template/description') = 1 then
-         begin
-            self.description := l_xml.extract('/rating-template/description/text()').getstringval;
-         exception
-            when others then if sqlcode = -30625 then null; else raise; end if;
-         end;
       end if;
+      for i in 1..9999999 loop
+         l_node := get_node(l_xml, '/rating-template/ind-parameter-specs/ind-parameter-spec['||i||']');
+         exit when l_node is null;
+         if i = 1 then
+            self.ind_parameters := rating_ind_param_spec_tab_t();
+         end if;
+         self.ind_parameters.extend;
+         self.ind_parameters(i) := rating_ind_param_spec_t(l_node);
+      end loop;
+      self.description := get_text(l_xml, '/rating-template/description');
       self.validate_obj;
       return;
    end;
@@ -1039,186 +1051,180 @@ as
    return self as result
    is
       l_xml            xmltype;
+      l_node           xmltype;
       l_rating_spec_id varchar2(372);
       l_parts          str_tab_t;
       l_text           varchar2(64);
+      ------------------------------
+      -- local function shortcuts --
+      ------------------------------
+      function get_node(p_xml in xmltype, p_path in varchar2) return xmltype is
+      begin
+         return cwms_util.get_xml_node(p_xml, p_path);
+      end;
+      function get_text(p_xml in xmltype, p_path in varchar2) return varchar2 is
+      begin
+         return cwms_util.get_xml_text(p_xml, p_path);
+      end;
+      function get_number(p_xml in xmltype, p_path in varchar2) return number is
+      begin
+         return cwms_util.get_xml_number(p_xml, p_path);
+      end;
    begin
-      if p_xml.existsnode('//rating-spec') = 1 then
-         l_xml := p_xml.extract('//rating-spec');
-      else
+      l_xml := get_node(p_xml, '//rating-spec');
+      if l_xml is null then
          cwms_err.raise(
             'ERROR',
             'Cannot locate <rating-spec> element');
       end if;
-      if l_xml.existsnode('/rating-spec/@office-id') = 1 then
-         self.office_id := l_xml.extract('/rating-spec/@office-id').getstringval;
-      else
+      self.office_id := get_text(l_xml, '/rating-spec/@office-id');
+      if self.office_id is null then
          cwms_err.raise(
             'ERROR',
             'Attribute "office-id" not found in <rating-spec> element');
       end if;
-      if l_xml.existsnode('/rating-spec/rating-spec-id') = 1 then
-         l_rating_spec_id := l_xml.extract('/rating-spec/rating-spec-id/text()').getstringval;
-      else
+      l_rating_spec_id := get_text(l_xml, '/rating-spec/rating-spec-id');
+      if l_rating_spec_id is null then
          cwms_err.raise(
             'ERROR',
             'Missing <rating-spec-id> element under <rating-spec> element');
       end if;
-      if l_xml.existsnode('/rating-spec/template-id') = 1 then
-         self.template_id := l_xml.extract('/rating-spec/template-id/text()').getstringval;
-      else
+      self.template_id := get_text(l_xml, '/rating-spec/template-id');
+      if self.template_id is null then
          cwms_err.raise(
             'ERROR',
             'Missing <template-id> element under <rating-spec> element');
       end if;
-      if l_xml.existsnode('/rating-spec/location-id') = 1 then
-         self.location_id := l_xml.extract('/rating-spec/location-id/text()').getstringval;
-      else
+      self.location_id := get_text(l_xml, '/rating-spec/location-id');
+      if self.location_id is null then
          cwms_err.raise(
             'ERROR',
             'Missing <location-id> element under <rating-spec> element');
       end if;
-      if l_xml.existsnode('/rating-spec/version') = 1 then
-         self.version := l_xml.extract('/rating-spec/version/text()').getstringval;
-      else
+      self.version := get_text(l_xml, '/rating-spec/version');
+      if self.version is null then
          cwms_err.raise(
             'ERROR',
             'Missing <version> element under <rating-spec> element');
       end if;
-      if l_xml.existsnode('/rating-spec/source-agency') = 1 then
-         begin
-            self.source_agency_id := l_xml.extract('/rating-spec/source-agency/text()').getstringval;
-         exception
-            when others then if sqlcode = -30625 then null; else raise; end if;
-         end;
-      end if;
-      if l_xml.existsnode('/rating-spec/in-range-method') = 1 then
-         self.in_range_rating_method := l_xml.extract('/rating-spec/in-range-method/text()').getstringval;
-      else
+      self.source_agency_id := get_text(l_xml, '/rating-spec/source-agency');
+      self.in_range_rating_method := get_text(l_xml, '/rating-spec/in-range-method');
+      if self.in_range_rating_method is null then
          cwms_err.raise(
             'ERROR',
             'Missing <in-range-method> element under <rating-spec> element');
       end if;
-      if l_xml.existsnode('/rating-spec/out-range-low-method') = 1 then
-         self.out_range_low_rating_method := l_xml.extract('/rating-spec/out-range-low-method/text()').getstringval;
-      else
+      self.out_range_low_rating_method := get_text(l_xml, '/rating-spec/out-range-low-method');
+      if self.out_range_low_rating_method is null then
          cwms_err.raise(
             'ERROR',
             'Missing <out-range-high-method> element under <rating-spec> element');
       end if;
-      if l_xml.existsnode('/rating-spec/out-range-high-method') = 1 then
-         self.out_range_high_rating_method := l_xml.extract('/rating-spec/out-range-high-method/text()').getstringval;
-      else
+      self.out_range_high_rating_method := get_text(l_xml, '/rating-spec/out-range-high-method');
+      if self.out_range_high_rating_method is null then
          cwms_err.raise(
             'ERROR',
             'Missing <out-range-high-method> element under <rating-spec> element');
       end if;
-      if l_xml.existsnode('/rating-spec/active') = 1 then
-         l_text := l_xml.extract('/rating-spec/active/text()').getstringval;
-         if l_text in ('true', 'false') then
-            self.active_flag := upper(substr(l_text, 1, 1));
-         else
-            cwms_err.raise(
-               'ERROR',
-               'Invlaid value for <active> element under <rating-spec> element: '
-               ||l_text
-               ||', should be true or false');
-         end if;
-      else
+      l_text := get_text(l_xml, '/rating-spec/active');
+      if l_text is null then
          cwms_err.raise(
             'ERROR',
             'Missing <active> element under <rating-spec> element');
-      end if;
-      if l_xml.existsnode('/rating-spec/auto-update') = 1 then
-         l_text := l_xml.extract('/rating-spec/auto-update/text()').getstringval;
-         if l_text in ('true', 'false') then
-            self.auto_update_flag := upper(substr(l_text, 1, 1));
-         else
-            cwms_err.raise(
-               'ERROR',
-               'Invlaid value for <auto-update> element under <rating-spec> element: '
-               ||l_text
-               ||', should be true or false');
-         end if;
       else
-         cwms_err.raise(
-            'ERROR',
-            'Missing <auto-update> element under <rating-spec> element');
-      end if;
-      if l_xml.existsnode('/rating-spec/auto-activate') = 1 then
-         l_text := l_xml.extract('/rating-spec/auto-activate/text()').getstringval;
-         if l_text in ('true', 'false') then
-            self.auto_activate_flag := upper(substr(l_text, 1, 1));
-         else
-            cwms_err.raise(
-               'ERROR',
-               'Invlaid value for <auto-activate> element under <rating-spec> element: '
-               ||l_text
-               ||', should be true or false');
-         end if;
-      else
-         cwms_err.raise(
-            'ERROR',
-            'Missing <auto-activate> element under <rating-spec> element');
-      end if;
-      if l_xml.existsnode('/rating-spec/auto-migrate-extension') = 1 then
-         l_text := l_xml.extract('/rating-spec/auto-migrate-extension/text()').getstringval;
-         if l_text in ('true', 'false') then
-            self.auto_migrate_ext_flag := upper(substr(l_text, 1, 1));
-         else
-            cwms_err.raise(
-               'ERROR',
-               'Invlaid value for <auto-migrate-extension> element under <rating-spec> element: '
-               ||l_text
-               ||', should be true or false');
-         end if;
-      else
-         cwms_err.raise(
-            'ERROR',
-            'Missing <auto-migrate-extension> element under <rating-spec> element');
-      end if;
-      if l_xml.existsnode('/rating-spec/ind-rounding-specs') = 1 then
-         l_parts := cwms_util.split_text(
-            l_xml.extract('/rating-spec/ind-rounding-specs/ind-rounding-spec').getstringval,
-            '</ind-rounding-spec>');
-         self.ind_rounding_specs := str_tab_t();
-         self.ind_rounding_specs.extend(l_parts.count-1);
-         for i in 1..l_parts.count-1 loop
-            if l_xml.existsnode('/rating-spec/ind-rounding-specs/ind-rounding-spec['||i||']/@position') = 1 then
-               if l_xml.extract('/rating-spec/ind-rounding-specs/ind-rounding-spec['||i||']/@position').getnumberval != i then
-                  cwms_err.raise(
-                     'ERROR',
-                     'Attribute "position" is '
-                     ||l_xml.extract('/rating-spec/ind-rounding-specs/ind-rounding-spec['||i||']/@position').getnumberval
-                     ||' on <ind-rounding-spec> number '||i||' under <rating-spec> element, should be '||i);
-               end if;
+         case l_text
+            when 'true'  then self.active_flag := 'T';
+            when '1'     then self.active_flag := 'T';
+            when 'false' then self.active_flag := 'F';
+            when '0'     then self.active_flag := 'F';
             else
                cwms_err.raise(
                   'ERROR',
-                  'Missing "position" attribute on <ind-rounding-spec> number '||i||' under <rating-spec> element');
-            end if;
-            self.ind_rounding_specs(i) := l_xml.extract('/rating-spec/ind-rounding-specs/ind-rounding-spec['||i||']/text()').getstringval;
-         end loop;            
-      else
+                  'Invalid value for <active> element under <rating-spec> element: '
+                  ||l_text
+                  ||', should be 1, 0, true or false');
+         end case;
+      end if;
+      l_text := get_text(l_xml, '/rating-spec/auto-update');
+      if l_text is null then
          cwms_err.raise(
             'ERROR',
-            'Missing <ind-rounding-specs> element under <rating-spec> element');
-      end if;
-      if l_xml.existsnode('/rating-spec/dep-rounding-spec') = 1 then
-         self.dep_rounding_spec := l_xml.extract('/rating-spec/dep-rounding-spec/text()').getstringval;
+            'Missing <auto-update> element under <rating-spec> element');
       else
+         case l_text
+            when 'true'  then self.auto_update_flag := 'T';
+            when '1'     then self.auto_update_flag := 'T';
+            when 'false' then self.auto_update_flag := 'F';
+            when '0'     then self.auto_update_flag := 'F';
+            else
+               cwms_err.raise(
+                  'ERROR',
+                  'Invalid value for <auto-update> element under <rating-spec> element: '
+                  ||l_text
+                  ||', should be 1, 0, true or false');
+         end case;
+      end if;
+      l_text := get_text(l_xml, '/rating-spec/auto-activate');
+      if l_text is null then
+         cwms_err.raise(
+            'ERROR',
+            'Missing <auto-activate> element under <rating-spec> element');
+      else
+         case l_text
+            when 'true'  then self.auto_activate_flag := 'T';
+            when '1'     then self.auto_activate_flag := 'T';
+            when 'false' then self.auto_activate_flag := 'F';
+            when '0'     then self.auto_activate_flag := 'F';
+            else
+               cwms_err.raise(
+                  'ERROR',
+                  'Invalid value for <auto-activate> element under <rating-spec> element: '
+                  ||l_text
+                  ||', should be 1, 0, true or false');
+         end case;
+      end if;
+      l_text := get_text(l_xml, '/rating-spec/auto-migrate-extension');
+      if l_text is null then
+         cwms_err.raise(
+            'ERROR',
+            'Missing <auto-migrate-extension> element under <rating-spec> element');
+      else
+         case l_text
+            when 'true'  then self.auto_migrate_ext_flag := 'T';
+            when '1'     then self.auto_migrate_ext_flag := 'T';
+            when 'false' then self.auto_migrate_ext_flag := 'F';
+            when '0'     then self.auto_migrate_ext_flag := 'F';
+            else
+               cwms_err.raise(
+                  'ERROR',
+                  'Invalid value for <auto-migrate-extension> element under <rating-spec> element: '
+                  ||l_text
+                  ||', should be 1, 0, true or false');
+         end case;
+      end if;
+      for i in 1..9999999 loop
+         l_node := get_node(l_xml, '/rating-spec/ind-rounding-specs/ind-rounding-spec['||i||']');
+         exit when l_node is null;
+         if i = 1 then
+            self.ind_rounding_specs := str_tab_t();
+         end if;
+         self.ind_rounding_specs.extend;
+         if get_number(l_node, '/@position') != i then
+            cwms_err.raise(
+               'ERROR',
+               'Attribute "position" is '
+               ||nvl(get_text(l_node, '/@position'), '<NULL>')
+               ||' on <ind-rounding-spec> number '||i||' under <rating-spec> element, should be '||i);
+         end if;
+         self.ind_rounding_specs(i) := get_text(l_node, '/.');
+      end loop;
+      self.dep_rounding_spec := get_text(l_xml, '/rating-spec/dep-rounding-spec');
+      if self.dep_rounding_spec is null then
          cwms_err.raise(
             'ERROR',
             'Missing <dep-rounding-spec> element under <rating-spec> element');
       end if;
-      
-      if l_xml.existsnode('/rating-spec/description') = 1 then
-         begin
-            self.description := l_xml.extract('/rating-spec/description/text()').getstringval;
-         exception
-            when others then if sqlcode = -30625 then null; else raise; end if;
-         end;
-      end if;
+      self.description := get_text(l_xml, '/rating-spec/description');
       l_parts := cwms_util.split_text(l_rating_spec_id, '.');
       if l_parts.count != 4 then
          cwms_err.raise('ERROR', 'Invalid value for <rating-spec-id> element');
@@ -1278,11 +1284,13 @@ as
             and o.office_code = lt.office_code;
             
          self.template_id := l_template_parameters_id || '.' || l_template_version;             
-          
-         select loc_group_id
-           into self.source_agency_id
-           from at_loc_group
-          where loc_group_code = rec.source_agency_code;
+         
+         if rec.source_agency_code is not null then
+            select loc_group_id
+              into self.source_agency_id
+              from at_loc_group
+             where loc_group_code = rec.source_agency_code;
+         end if; 
           
          select rating_method_id
            into self.in_range_rating_method
@@ -1579,7 +1587,7 @@ as
                'Rating template',
                self.office_id||'/'||self.template_id);
       end;
-      l_parts := cwms_util.split_text(l_template_code, ';');
+      l_parts := cwms_util.split_text(self.template_id, ';');
       l_parts := cwms_util.split_text(l_parts(1), ',');
       if self.ind_rounding_specs is null then
          self.ind_rounding_specs := str_tab_t();
@@ -1911,10 +1919,94 @@ show errors;
 
 
 create type abs_rating_ind_parameter_t as object(
-   constructed varchar2(1)
+   constructed varchar2(1),
+   
+   member procedure init(
+      p_rating_ind_parameter_code in number,
+      p_other_ind                 in double_tab_t),
+      
+   member procedure validate_obj(
+      p_parameter_position in number),
+
+   member procedure convert_to_database_units(
+      p_parameters_id in varchar2,
+      p_units_id      in varchar2),
+
+   member procedure convert_to_native_units(
+      p_parameters_id in varchar2,
+      p_units_id      in varchar2),
+               
+   member procedure store(
+      p_rating_ind_param_code out number,
+      p_rating_code           in  number,
+      p_other_ind             in  double_tab_t,
+      p_fail_if_exists        in  varchar2),
+      
+   member procedure store(
+      p_rating_code           in  number,
+      p_other_ind             in  double_tab_t,
+      p_fail_if_exists        in  varchar2),
+      
+   member function to_clob(
+      p_ind_params   in double_tab_t default null,
+      p_is_extension in boolean default false)
+   return clob,
+   
+   member function to_xml
+   return xmltype      
+      
 ) not final
   not instantiable;
 /
+show errors;
+
+create type body abs_rating_ind_parameter_t
+as
+
+   member procedure init(
+      p_rating_ind_parameter_code in number,
+      p_other_ind                 in double_tab_t)
+   is begin null; end;      
+      
+   member procedure validate_obj(
+      p_parameter_position in number)
+   is begin null; end;
+
+   member procedure convert_to_database_units(
+      p_parameters_id in varchar2,
+      p_units_id      in varchar2)
+   is begin null; end;
+
+   member procedure convert_to_native_units(
+      p_parameters_id in varchar2,
+      p_units_id      in varchar2)
+   is begin null; end;
+               
+   member procedure store(
+      p_rating_ind_param_code out number,
+      p_rating_code           in  number,
+      p_other_ind             in  double_tab_t,
+      p_fail_if_exists        in  varchar2)
+   is begin null; end;
+      
+   member procedure store(
+      p_rating_code           in  number,
+      p_other_ind             in  double_tab_t,
+      p_fail_if_exists        in  varchar2)
+   is begin null; end;
+      
+   member function to_clob(
+      p_ind_params   in double_tab_t default null,
+      p_is_extension in boolean default false)
+   return clob
+   is begin null; end;
+   
+   member function to_xml
+   return xmltype
+   is begin null; end;      
+   
+end;
+/   
 show errors;
 
 create type rating_value_t as object(
@@ -1928,14 +2020,21 @@ create type rating_value_t as object(
    
    constructor function rating_value_t(
       p_rating_ind_param_code in number,
+      p_other_ind             in double_tab_t,
+      p_other_ind_hash        in varchar2,
       p_ind_value             in binary_double,
       p_is_extension          in varchar2)
    return self as result,
    
    member procedure store(
       p_rating_ind_param_code in number,
+      p_other_ind             in double_tab_t,
       p_is_extension          in varchar2,
-      p_office_id             in varchar2)
+      p_office_id             in varchar2),
+      
+   static function hash_other_ind(
+      p_other_ind in double_tab_t)
+   return varchar2      
 );
 /
 show errors;
@@ -1956,32 +2055,46 @@ create type rating_ind_parameter_t under abs_rating_ind_parameter_t(
    return self as result,
    
    constructor function rating_ind_parameter_t(
+      p_rating_code in number,
+      p_other_ind   in double_tab_t)
+   return self as result,
+   
+   constructor function rating_ind_parameter_t(
       p_xml in xmltype)
    return self as result,
    
-   member procedure init(
-      p_rating_ind_parameter_code in number),
+   overriding member procedure init(
+      p_rating_ind_parameter_code in number,
+      p_other_ind                 in double_tab_t),
       
-   member procedure validate_obj(
+   overriding member procedure validate_obj(
       p_parameter_position in number),
-         
-   member procedure store(
+
+   overriding member procedure convert_to_database_units(
+      p_parameters_id in varchar2,
+      p_units_id      in varchar2),
+
+   overriding member procedure convert_to_native_units(
+      p_parameters_id in varchar2,
+      p_units_id      in varchar2),
+               
+   overriding member procedure store(
       p_rating_ind_param_code out number,
       p_rating_code           in  number,
-      p_parameter_position    in  number,
+      p_other_ind             in  double_tab_t,
       p_fail_if_exists        in  varchar2),
       
-   member procedure store(
+   overriding member procedure store(
       p_rating_code           in  number,
-      p_parameter_position    in  number,
+      p_other_ind             in  double_tab_t,
       p_fail_if_exists        in  varchar2),
       
-   member function to_clob(
+   overriding member function to_clob(
       p_ind_params   in double_tab_t default null,
       p_is_extension in boolean default false)
    return clob,
    
-   member function to_xml
+   overriding member function to_xml
    return xmltype,      
       
    static function get_rating_ind_parameter_code(
@@ -2000,13 +2113,24 @@ as
       -- members are null!
       return;
    end;
-
+   
    constructor function rating_ind_parameter_t(
       p_rating_code in number)
    return self as result
    is
    begin
-      init(rating_ind_parameter_t.get_rating_ind_parameter_code(p_rating_code));
+      init(rating_ind_parameter_t.get_rating_ind_parameter_code(p_rating_code), null);
+      return;
+   end;
+   
+
+   constructor function rating_ind_parameter_t(
+      p_rating_code in number,
+      p_other_ind   in double_tab_t)
+   return self as result
+   is
+   begin
+      init(rating_ind_parameter_t.get_rating_ind_parameter_code(p_rating_code), p_other_ind);
       return;
    end;
    
@@ -2016,7 +2140,6 @@ as
    is
       type rating_value_tab_by_id is table of rating_value_tab_t index by varchar2(32767);
 
-      p_rating_ind_param     rating_ind_parameter_t := rating_ind_parameter_t();
       l_rating_points        xmltype;
       l_other_ind            xmltype;
       l_point                xmltype;
@@ -2035,15 +2158,33 @@ as
       l_rating_value_tab_id  varchar2(32767);
       l_rating_value_tab     rating_value_tab_by_id;
       l_value_type           str_tab_t := str_tab_t('rating-points', 'extension-points');
+      l_parts                str_tab_t;
+      l_ind_params           str_tab_t;
+      l_ind_units            str_tab_t;
       
       pragma autonomous_transaction; -- allows commit to flush temp table
       
+      ------------------------------
+      -- local function shortcuts --
+      ------------------------------
+      function get_node(p_xml in xmltype, p_path in varchar2) return xmltype is
+      begin
+         return cwms_util.get_xml_node(p_xml, p_path);
+      end;
+      function get_text(p_xml in xmltype, p_path in varchar2) return varchar2 is
+      begin
+         return cwms_util.get_xml_text(p_xml, p_path);
+      end;
+      function get_number(p_xml in xmltype, p_path in varchar2) return number is
+      begin
+         return cwms_util.get_xml_number(p_xml, p_path);
+      end;
       -------------------------------------------------------------------------
       -- local function to build rating by recursing through temporary table --
       -------------------------------------------------------------------------
       function build_rating(
-         p_parent_id in varchar2,
-         p_position  in integer default 1)
+         p_parent_id  in varchar2,
+         p_position   in integer default 1)
       return rating_value_tab_t
       is
          last_ind_value        at_compound_rating.ind_value%type;
@@ -2096,6 +2237,7 @@ as
                   --------------------------------------------------------------------------------------------
                   l_rating_param.rating_values := build_rating(l_rating_value_tab_id, p_position+1);
                end if;
+                  l_rating_param.constructed := 'T';
                -----------------------------------------------------------------------------------
                -- assign the newly-populated rating_ind_parameter_t to the dep_rating_ind_param --
                -- abs_rating_ind_parameter_t field of l_rating(l_rating.count)                  --
@@ -2106,6 +2248,21 @@ as
          return l_rating;
       end;       
    begin
+      begin
+         l_parts := cwms_util.split_text(get_text(p_xml, '/rating/rating-spec-id'), '.');
+         l_parts := cwms_util.split_text(l_parts(2), ';');
+         l_ind_params := cwms_util.split_text(l_parts(1), ',');
+      exception
+         when others then
+            cwms_err.raise('ERROR', 'Cannot determine rating independent parameter(s)');
+      end;
+      begin
+         l_parts := cwms_util.split_text(get_text(p_xml, '/rating/units-id'), ';');
+         l_ind_units := cwms_util.split_text(l_parts(1), ',');
+      exception
+         when others then
+            cwms_err.raise('ERROR', 'Cannot determine rating independent unit(s)');
+      end;
       for i in 1..l_value_type.count loop
          ----------------------------------------------------------------
          -- for each value type in 'rating-points', 'extension-points' --
@@ -2114,21 +2271,21 @@ as
             ------------------------------------------------------------
             -- for each <rating-points> or <extension-points> element --
             ------------------------------------------------------------
-            l_rating_points       := p_xml.extract('/rating/'||l_value_type(i)||'['||j||']');
+            l_rating_points := get_node(p_xml, '/rating/'||l_value_type(i)||'['||j||']');
             exit when l_rating_points is null;
-            l_position            := 0;
+            l_position := 0;
             l_rating_value_tab_id := l_value_type(i)||'=';
             for k in 1..9999999 loop
                ----------------------------------
                -- for each <other-ind> element --
                ----------------------------------
-               l_other_ind := l_rating_points.extract('/'||l_value_type(i)||'/other-ind['||k||']');
+               l_other_ind := get_node(l_rating_points, '/'||l_value_type(i)||'/other-ind['||k||']');
                exit when l_other_ind is null;
                -----------------------------------------------
                -- extract the position and value attributes --
                -----------------------------------------------
-               l_position := l_other_ind.extract('/other-ind/@position').getnumberval; 
-               l_value    := l_other_ind.extract('/other-ind/@value').getnumberval;
+               l_position := get_number(l_other_ind, '/other-ind/@position'); 
+               l_value    := get_number(l_other_ind, '/other-ind/@value');
                ---------------------------------------
                -- verify expected position sequence --
                ---------------------------------------
@@ -2149,13 +2306,16 @@ as
                         ||' in <'||l_value_type(i)||'> element '||j);
                   end if;
                end if;
-               ---------------------------------------------------
-               -- ensure values at this position are increasing --
-               ---------------------------------------------------
+               --------------------------------------------------------------------------------------------
+               -- ensure values at this position are not decreasing (repeated values OK in this context) --
+               --------------------------------------------------------------------------------------------
                if l_value_at_pos(l_position) is not null and l_value < l_value_at_pos(l_position) then
                   cwms_err.raise(
                      'ERROR',
-                     'Rating values '||l_rating_value_tab_id||': independent values do not monotonically increase');
+                     'Rating values '
+                     ||l_rating_value_tab_id
+                     ||': independent values do not monotonically increase after value '
+                     ||l_value_at_pos(l_position));
                end if;
                ---------------------------------------------
                -- save the current value at this position --
@@ -2186,33 +2346,32 @@ as
                ------------------------------
                -- for each <point> element --
                ------------------------------
-               l_point := l_rating_points.extract('/'||l_value_type(i)||'/point['||k||']');
+               l_point := get_node(l_rating_points, '/'||l_value_type(i)||'/point['||k||']');
                exit when l_point is null;
                ------------------------------------------------------------------------------------
                -- extract the required <ind> and <dep> node values, and the optional <note> node --
                ------------------------------------------------------------------------------------
-               l_ind_value := l_point.extract('/point/ind/node()').getnumberval;
-               l_dep_value := l_point.extract('/point/dep/node()').getnumberval;
-               l_note      := l_point.extract('/point/note');
+               l_ind_value := get_number(l_point, '/point/ind');
+               l_dep_value := get_number(l_point, '/point/dep');
+               l_note_text := get_text(l_point, '/point/note');
                --------------------------------------------------
                -- ensure the independent values are increasing --
                --------------------------------------------------
                if l_last_ind_value is not null and l_ind_value <= l_last_ind_value then
                   cwms_err.raise(
                      'ERROR',
-                     'Rating values '||l_rating_value_tab_id||': independent values do not monotonically increase');
+                     'Rating values '
+                     ||l_rating_value_tab_id
+                     ||': independent values do not monotonically increase after value '
+                     || l_last_ind_value);
                end if;
                ------------------------------------------------------------------------------------------------
                -- create and populate a new rating_value_t object at the end of the l_rating_values variable --
                ------------------------------------------------------------------------------------------------
                l_rating_value := rating_value_t();
-               l_rating_value.ind_value := l_ind_value;
-               l_rating_value.dep_value := l_dep_value;
-               begin
-                  l_rating_value.note_id := l_note.extract('/node()/text()').getstringval;
-               exception
-                  when others then if sqlcode = -30625 then null; else raise; end if;
-               end;
+               l_rating_value.ind_value        := l_ind_value;
+               l_rating_value.dep_value        := l_dep_value;
+               l_rating_value.note_id          := l_note_text;
                l_rating_values.extend;
                l_rating_values(l_rating_values.count) := l_rating_value;
             end loop;
@@ -2240,14 +2399,17 @@ as
          end case;
       end loop;
       commit; -- flush temporary table
+      self.constructed := 'T';
       validate_obj(1);
       return;
    end;
    
-   member procedure init(
-      p_rating_ind_parameter_code in number)
+   overriding member procedure init(
+      p_rating_ind_parameter_code in number,
+      p_other_ind                 in double_tab_t)
    is
       l_parameter_position number(1);
+      l_other_ind_hash     varchar2(40);
    begin
       ----------------------------------------------------------
       -- use loop for convenience - only 1 at most will match --
@@ -2258,17 +2420,21 @@ as
              where rating_ind_param_code = p_rating_ind_parameter_code 
          )
       loop
+         l_other_ind_hash := rating_value_t.hash_other_ind(p_other_ind);
          self.rating_values := rating_value_tab_t();
          for rec2 in
             (  select ind_value
                  from at_rating_value
                 where rating_ind_param_code = rec.rating_ind_param_code
+                  and other_ind_hash = l_other_ind_hash
              order by ind_value
             )
          loop
             self.rating_values.extend;
             self.rating_values(self.rating_values.count) := rating_value_t(
-                  rec.rating_ind_param_code, 
+                  rec.rating_ind_param_code,
+                  p_other_ind,
+                  l_other_ind_hash, 
                   rec2.ind_value,
                   'F');
          end loop;
@@ -2278,12 +2444,15 @@ as
             (  select ind_value
                  from at_rating_extension_value
                 where rating_ind_param_code = rec.rating_ind_param_code
+                  and other_ind_hash = l_other_ind_hash
              order by ind_value
             )
          loop
             self.extension_values.extend;
             self.extension_values(self.extension_values.count) := rating_value_t(
                   rec.rating_ind_param_code, 
+                  p_other_ind,
+                  l_other_ind_hash, 
                   rec2.ind_value,
                   'T');
          end loop;
@@ -2301,11 +2470,14 @@ as
       self.constructed := 'T';
    end;
       
-   member procedure validate_obj(
+   overriding member procedure validate_obj(
       p_parameter_position in number)
    is
-      l_deepest boolean;
+      l_rating rating_ind_parameter_t;
    begin
+      if self.constructed != 'T' then
+         cwms_err.raise('ERROR', 'Object is not fully constructed');
+      end if;
       -------------------------
       -- rating values table --
       -------------------------
@@ -2315,15 +2487,6 @@ as
             'Rating independent parameter '||p_parameter_position||' has no values');
       else
          for i in 1..self.rating_values.count loop
-            if l_deepest is null then
-               l_deepest := self.rating_values(i).dep_rating_ind_param is null; 
-            else
-               if(self.rating_values(i).dep_rating_ind_param is null) != l_deepest then
-                  cwms_err.raise(
-                     'ERROR',
-                     'Rating parameter position '||p_parameter_position||' contains both values and ratings');
-               end if; 
-            end if;
             -------------------------------
             -- dependent value/reference --
             -------------------------------
@@ -2347,6 +2510,8 @@ as
                   cwms_err.raise(
                      'ERROR',
                      'Rating value notes can only be assigned to dependent values');
+               else
+                  self.rating_values(i).dep_rating_ind_param.validate_obj(p_parameter_position + 1);
                end if;
             end if; 
             ------------------------
@@ -2359,25 +2524,16 @@ as
                   'ERROR',
                   'Rating independent parameter '
                   ||p_parameter_position
-                  ||' rating values do not monotonically increase');
+                  ||' rating values do not monotonically increase after value '
+                  ||self.rating_values(i-1).ind_value);
             end if; 
          end loop;
       end if;
       ----------------------------
       -- extension values table --
       ----------------------------
-      l_deepest := null;
       if self.extension_values is not null then
          for i in 1..self.extension_values.count loop
-            if l_deepest is null then
-               l_deepest := self.extension_values(i).dep_rating_ind_param is null; 
-            else
-               if(self.extension_values(i).dep_rating_ind_param is null) != l_deepest then
-                  cwms_err.raise(
-                     'ERROR',
-                     'Extension parameter position '||p_parameter_position||' contains both values and ratings');
-               end if; 
-            end if;
             -------------------------------
             -- dependent value/reference --
             -------------------------------
@@ -2401,6 +2557,8 @@ as
                   cwms_err.raise(
                      'ERROR',
                      'Rating value notes can only be assigned to dependent values');
+               else
+                  self.extension_values(i).dep_rating_ind_param.validate_obj(p_parameter_position + 1);
                end if;
             end if; 
             ------------------------
@@ -2413,24 +2571,199 @@ as
                   'ERROR',
                   'Rating independent parameter '
                   ||p_parameter_position
-                  ||' extension values do not monotonically increase');
+                  ||' extension values do not monotonically increase after value '
+                  ||self.extension_values(i-1).ind_value);
             end if; 
          end loop;
       end if;
    end;
+
+   overriding member procedure convert_to_database_units(
+      p_parameters_id in varchar2,
+      p_units_id      in varchar2)
+   is
+      l_ind_factor              binary_double;
+      l_ind_offset              binary_double;
+      l_ind_param_id            varchar2(49);
+      l_ind_unit_id             varchar2(16);
+      l_dep_factor              binary_double;
+      l_dep_offset              binary_double;
+      l_dep_param_id            varchar2(49);
+      l_dep_unit_id             varchar2(16);
+      l_parts                   str_tab_t;
+      l_deepest                 boolean;
+      l_rating                  rating_ind_parameter_t;
+      l_remaining_parameters_id varchar2(256);
+      l_remaining_units_id      varchar2(256);
+   begin
+      if self.constructed = 'T' then
+         l_deepest := instr(p_parameters_id, ',') = 0;
+         if l_deepest then
+            l_parts := cwms_util.split_text(p_parameters_id, ';');
+            l_ind_param_id := l_parts(1);
+            l_dep_param_id := l_parts(2);
+            l_parts := cwms_util.split_text(p_units_id, ';');
+            l_ind_unit_id := l_parts(1);
+            l_dep_unit_id := l_parts(2);
+            select factor,
+                   offset
+              into l_dep_factor,
+                   l_dep_offset
+              from cwms_base_parameter bp,
+                   cwms_unit_conversion uc
+             where bp.base_parameter_id = cwms_util.get_base_id(l_dep_param_id)
+               and uc.to_unit_code = bp.unit_code
+               and uc.from_unit_id = l_dep_unit_id;
+         else
+            l_parts := cwms_util.split_text(p_parameters_id, ',');
+            l_ind_param_id := l_parts(1);             
+            l_parts := cwms_util.split_text(p_units_id, ',');
+            l_ind_unit_id := l_parts(1);
+            l_remaining_parameters_id := substr(p_parameters_id, instr(p_parameters_id, ',') + 1);
+            l_remaining_units_id := substr(p_units_id, instr(p_units_id, ',') + 1);
+         end if;
+         select factor,
+                offset
+           into l_ind_factor,
+                l_ind_offset
+           from cwms_base_parameter bp,
+                cwms_unit_conversion uc
+          where bp.base_parameter_id = cwms_util.get_base_id(l_ind_param_id)
+            and uc.to_unit_code = bp.unit_code
+            and uc.from_unit_id = l_ind_unit_id;
+         for i in 1..self.rating_values.count loop
+            self.rating_values(i).ind_value := 
+               self.rating_values(i).ind_value * l_ind_factor + l_ind_offset;
+            if l_deepest then
+               self.rating_values(i).dep_value := 
+                  self.rating_values(i).dep_value * l_dep_factor + l_dep_offset;
+            else
+               self.rating_values(i).dep_rating_ind_param.convert_to_database_units(
+                  l_remaining_parameters_id,
+                  l_remaining_units_id);
+            end if;
+         end loop;
+         if self.extension_values is not null then
+            for i in 1..self.extension_values.count loop
+               self.extension_values(i).ind_value := 
+                  self.extension_values(i).ind_value * l_ind_factor + l_ind_offset;
+               if l_deepest then
+                  self.extension_values(i).dep_value := 
+                     self.extension_values(i).dep_value * l_dep_factor + l_dep_offset;
+               else
+                  self.extension_values(i).dep_rating_ind_param.convert_to_database_units(
+                     l_remaining_parameters_id,
+                     l_remaining_units_id);
+               end if;
+            end loop;
+         end if;            
+      else
+         cwms_err.raise('ERROR', 'Object is not fully constructed');
+      end if;
+   end;
+
+   overriding member procedure convert_to_native_units(
+      p_parameters_id in varchar2,
+      p_units_id      in varchar2)
+   is
+      l_ind_factor              binary_double;
+      l_ind_offset              binary_double;
+      l_ind_param_id            varchar2(16);
+      l_ind_unit_id             varchar2(16);
+      l_dep_factor              binary_double;
+      l_dep_offset              binary_double;
+      l_dep_param_id            varchar2(16);
+      l_dep_unit_id             varchar2(16);
+      l_parts                   str_tab_t;
+      l_deepest                 boolean;
+      l_rating                  rating_ind_parameter_t;
+      l_remaining_parameters_id varchar2(256);
+      l_remaining_units_id      varchar2(256);
+   begin
+      if self.constructed = 'T' then
+         l_deepest := instr(p_parameters_id, ',') = 0;
+         if l_deepest then
+            l_parts := cwms_util.split_text(p_parameters_id, ';');
+            l_ind_param_id := l_parts(1);
+            l_dep_param_id := l_parts(2);
+            l_parts := cwms_util.split_text(p_units_id, ';');
+            l_ind_unit_id := l_parts(1);
+            l_dep_unit_id := l_parts(2);
+            select factor,
+                   offset
+              into l_dep_factor,
+                   l_dep_offset
+              from cwms_base_parameter bp,
+                   cwms_unit_conversion uc
+             where bp.base_parameter_id = cwms_util.get_base_id(l_dep_param_id)
+               and uc.from_unit_code = bp.unit_code
+               and uc.to_unit_id = l_dep_unit_id;
+         else
+            l_parts := cwms_util.split_text(p_parameters_id, ',');
+            l_ind_param_id := l_parts(1);             
+            l_parts := cwms_util.split_text(p_units_id, ',');
+            l_ind_unit_id := l_parts(1);
+            l_remaining_parameters_id := substr(p_parameters_id, instr(p_parameters_id, ',') + 1);
+            l_remaining_units_id := substr(p_units_id, instr(p_units_id, ',') + 1);
+         end if;
+         select factor,
+                offset
+           into l_ind_factor,
+                l_ind_offset
+           from cwms_base_parameter bp,
+                cwms_unit_conversion uc
+          where bp.base_parameter_id = cwms_util.get_base_id(l_ind_param_id)
+            and uc.from_unit_code = bp.unit_code
+            and uc.to_unit_id = l_ind_unit_id;
+         for i in 1..self.rating_values.count loop
+            self.rating_values(i).ind_value := 
+               self.rating_values(i).ind_value * l_ind_factor + l_ind_offset;
+            if l_deepest then
+               self.rating_values(i).dep_value := 
+                  self.rating_values(i).dep_value * l_dep_factor + l_dep_offset;
+            else
+               self.rating_values(i).dep_rating_ind_param.convert_to_database_units(
+                  l_remaining_parameters_id,
+                  l_remaining_units_id);
+            end if;
+         end loop;
+         if self.extension_values is not null then
+            for i in 1..self.extension_values.count loop
+               self.extension_values(i).ind_value := 
+                  self.extension_values(i).ind_value * l_ind_factor + l_ind_offset;
+               if l_deepest then
+                  self.extension_values(i).dep_value := 
+                     self.extension_values(i).dep_value * l_dep_factor + l_dep_offset;
+               else
+                  self.extension_values(i).dep_rating_ind_param.convert_to_native_units(
+                     l_remaining_parameters_id,
+                     l_remaining_units_id);
+               end if;
+            end loop;
+         end if;            
+      else
+         cwms_err.raise('ERROR', 'Object is not fully constructed');
+      end if;
+   end;
    
-   member procedure store(
+   overriding member procedure store(
       p_rating_ind_param_code out number,
       p_rating_code           in  number,
-      p_parameter_position    in  number,
+      p_other_ind             in  double_tab_t,
       p_fail_if_exists        in  varchar2)
    is
-      l_rec       at_rating_ind_parameter%rowtype;
-      l_office_id varchar2(16);
-      l_value     rating_value_t;
+      l_rec                at_rating_ind_parameter%rowtype;
+      l_office_id          varchar2(16);
+      l_value              rating_value_t;
+      l_parameter_position number(1);
+      l_hash_code          varchar2(40);
    begin
       l_rec.rating_code := p_rating_code;
-      
+      l_parameter_position := 
+         case p_other_ind is null
+            when true  then 1
+            when false then p_other_ind.count + 1
+         end; 
       begin
          select rips.ind_param_spec_code
            into l_rec.ind_param_spec_code
@@ -2440,12 +2773,12 @@ as
           where r.rating_code = p_rating_code
             and rs.rating_spec_code = r.rating_spec_code
             and rips.template_code = rs.template_code
-            and rips.parameter_position = p_parameter_position; 
+            and rips.parameter_position = l_parameter_position; 
       exception
          when no_data_found then
             cwms_err.raise(
                'ERROR',
-               'Invalid parameter position: '||p_parameter_position);
+               'Invalid parameter position: '||l_parameter_position);
       end;
       
       begin
@@ -2462,13 +2795,16 @@ as
                l_rec.rating_ind_param_code);
          end if;         
          
+         l_hash_code := rating_value_t.hash_other_ind(p_other_ind);
          delete
            from at_rating_value
-          where rating_ind_param_code = l_rec.rating_ind_param_code;
+          where rating_ind_param_code = l_rec.rating_ind_param_code
+            and other_ind_hash = l_hash_code;
          
          delete
            from at_rating_extension_value
-          where rating_ind_param_code = l_rec.rating_ind_param_code;
+          where rating_ind_param_code = l_rec.rating_ind_param_code
+            and other_ind_hash = l_hash_code;
       exception
          when no_data_found then
             l_rec.rating_ind_param_code := cwms_seq.nextval;
@@ -2491,7 +2827,8 @@ as
       for i in 1..self.rating_values.count loop
          l_value := self.rating_values(i); 
          l_value.store(
-            p_rating_ind_param_code => l_rec.rating_ind_param_code, 
+            p_rating_ind_param_code => l_rec.rating_ind_param_code,
+            p_other_ind             => p_other_ind, 
             p_is_extension          => 'F',
             p_office_id             => l_office_id);
       end loop;       
@@ -2501,6 +2838,7 @@ as
             l_value := self.extension_values(i);
             l_value.store(
                p_rating_ind_param_code => l_rec.rating_ind_param_code, 
+               p_other_ind             => p_other_ind, 
                p_is_extension          => 'T',
                p_office_id             => l_office_id);
          end loop;       
@@ -2509,9 +2847,9 @@ as
       p_rating_ind_param_code := l_rec.rating_ind_param_code;      
    end;      
    
-   member procedure store(
+   overriding member procedure store(
       p_rating_code           in  number,
-      p_parameter_position    in  number,
+      p_other_ind             in  double_tab_t,
       p_fail_if_exists        in  varchar2)
    is
       l_rating_ind_param_code number(10);
@@ -2519,11 +2857,11 @@ as
       self.store(
          l_rating_ind_param_code,
          p_rating_code,
-         p_parameter_position,
+         p_other_ind,
          p_fail_if_exists);
    end;
       
-   member function to_clob(
+   overriding member function to_clob(
       p_ind_params   in double_tab_t default null,
       p_is_extension in boolean default false)
    return clob
@@ -2554,11 +2892,9 @@ as
             ----------------------------
             -- recurse down one level --
             ----------------------------
-            l_dep_rating := treat(
-               self.rating_values(i).dep_rating_ind_param as rating_ind_parameter_t);
             l_ind_params.extend;
             l_ind_params(l_ind_params.count) := self.rating_values(i).ind_value;    
-            cwms_util.append(l_text, l_dep_rating.to_clob(l_ind_params, p_is_extension));  
+            cwms_util.append(l_text, self.rating_values(i).dep_rating_ind_param.to_clob(l_ind_params, p_is_extension));  
             l_ind_params.trim(1);
          else
             if i = 1 then
@@ -2611,7 +2947,7 @@ as
       return l_text;
    end;
    
-   member function to_xml
+   overriding member function to_xml
    return xmltype
    is
       l_text clob;
@@ -2673,6 +3009,8 @@ as
    
    constructor function rating_value_t(
       p_rating_ind_param_code in number,
+      p_other_ind             in double_tab_t,
+      p_other_ind_hash        in varchar2,
       p_ind_value             in binary_double,
       p_is_extension          in varchar2)
    return self as result
@@ -2689,15 +3027,17 @@ as
          'select *
            from :table_name
           where rating_ind_param_code = p_rating_ind_param_code
+            and other_ind_hash = :p_other_ind_hash
             and ind_value = p_ind_value'
       into l_rec            
-      using l_table_name;
+     using l_table_name,
+           p_other_ind_hash;
       
       self.ind_value := l_rec.ind_value;
       self.dep_value := l_rec.dep_value;
       
       if l_rec.dep_rating_ind_param_code is not null then
-         self.dep_rating_ind_param := rating_ind_parameter_t(l_rec.dep_rating_ind_param_code);
+         self.dep_rating_ind_param := rating_ind_parameter_t(l_rec.dep_rating_ind_param_code, p_other_ind);
       end if;
       
       if l_rec.note_code is not null then
@@ -2710,6 +3050,7 @@ as
    
    member procedure store(
       p_rating_ind_param_code in number,
+      p_other_ind             in double_tab_t,
       p_is_extension          in varchar2,
       p_office_id             in varchar2)
    is
@@ -2719,7 +3060,12 @@ as
       l_rating_code          number(10);
       l_rating_ind_parameter rating_ind_parameter_t;
       l_parameter_position   number(1);
+      l_other_ind            double_tab_t;
+      l_count                simple_integer := 0;
    begin
+      ----------------------------------
+      -- store the note, if necessary --
+      ----------------------------------
       if self.note_id is not null then
          begin
             select *
@@ -2738,30 +3084,53 @@ as
                values l_note_rec;
          end;
       end if;
+      ---------------------------------------------
+      -- store the dependent rating if necessary --
+      ---------------------------------------------
       if self.dep_rating_ind_param is not null then
          select rips.parameter_position
            into l_parameter_position
            from at_rating_ind_parameter rip,
                 at_rating_ind_param_spec rips
-          where rips.ind_param_spec_code = rip.ind_param_spec_code;
+          where rip.rating_ind_param_code = p_rating_ind_param_code
+            and rips.ind_param_spec_code = rip.ind_param_spec_code;
+
+         l_other_ind := p_other_ind;
+         if l_other_ind is null then
+            l_other_ind := double_tab_t();
+         end if;
+         l_other_ind.extend;
+         if l_other_ind.count != l_parameter_position then
+            cwms_err.raise(
+               'ERROR',
+               'Computed parameter position ('
+               ||l_other_ind.count
+               ||') does not agree with specified parameter position ('
+               ||l_parameter_position
+               ||')');
+         end if;
+         l_other_ind(l_parameter_position) := self.ind_value;
           
          select rating_code
            into l_rating_code
            from at_rating_ind_parameter
           where rating_ind_param_code = p_rating_ind_param_code;
            
-         l_rating_ind_parameter := treat(self.dep_rating_ind_param as rating_ind_parameter_t);
-         l_rating_ind_parameter.store(
-            p_rating_ind_param_code => l_rec.dep_rating_ind_param_code,
+         self.dep_rating_ind_param.store(
+            p_rating_ind_param_code => l_rec.dep_rating_ind_param_code, --- out parameter
             p_rating_code           => l_rating_code,
-            p_parameter_position    => l_parameter_position + 1,
+            p_other_ind             => l_other_ind,
             p_fail_if_exists        => 'F');
-      end if;
-      l_rec.rating_ind_param_code := p_rating_ind_param_code;
-      l_rec.ind_value := self.ind_value;
-      l_rec.dep_value := self.dep_value;
-      l_rec.note_code := l_note_rec.note_code;               
-      
+      end if;            
+      ----------------------------
+      -- store the rating value --
+      ----------------------------
+      l_rec.rating_ind_param_code     := p_rating_ind_param_code;
+      l_rec.other_ind_hash            := rating_value_t.hash_other_ind(p_other_ind);
+      l_rec.ind_value                 := self.ind_value;
+      l_rec.dep_value                 := self.dep_value;
+      l_rec.note_code                 := l_note_rec.note_code;               
+         
       if cwms_util.is_true(p_is_extension) then
          insert
            into at_rating_extension_value
@@ -2771,6 +3140,20 @@ as
            into at_rating_value
          values l_rec;
       end if;
+   end;      
+      
+   static function hash_other_ind(
+      p_other_ind in double_tab_t)
+   return varchar2
+   is
+      l_text varchar2(32767) := '/';
+   begin
+      if p_other_ind is not null then
+         for i in 1..p_other_ind.count loop
+            l_text := l_text || to_char(p_other_ind(i)) || '/';
+         end loop;
+      end if;
+      return rawtohex(dbms_crypto.hash(utl_raw.cast_to_raw(l_text), dbms_crypto.hash_sh1));
    end;      
 end;
 /
@@ -2786,6 +3169,8 @@ create type rating_t as object(
    native_units   varchar2(256),
    description    varchar2(256),
    rating_info    rating_ind_parameter_t,
+   current_units  varchar2(1), -- 'D' = database, 'N' = native, other = don't know
+   current_time   varchar2(2), -- 'D' = database, 'L' = native, other = don't know
    
    constructor function rating_t(
       p_rating_code in number)
@@ -2815,6 +3200,14 @@ create type rating_t as object(
       
    member procedure validate_obj,
          
+   member procedure convert_to_database_units,
+   
+   member procedure convert_to_native_units,
+   
+   member procedure convert_to_database_time,
+   
+   member procedure convert_to_local_time,
+   
    member procedure store(
       p_rating_code    out number,
       p_fail_if_exists in  varchar2),
@@ -2827,6 +3220,10 @@ create type rating_t as object(
    
    member function to_xml
    return xmltype,      
+         
+   member function get_date(
+      p_timestr in varchar2) 
+   return date,
       
    static function get_rating_code(         
       p_rating_spec_id in varchar2,
@@ -2834,7 +3231,7 @@ create type rating_t as object(
       p_match_date     in varchar2 default 'F',
       p_time_zone      in varchar2 default null,
       p_office_id      in varchar2 default null)
-   return number      
+   return number
       
 ) not final;
 /
@@ -2876,117 +3273,74 @@ as
    is
       l_xml     xmltype;
       l_node    xmltype;
-      l_timestr varchar2(32);
-      
-      -------------------------------------------------------------------
-      -- local function to retrieve xml dateTime value into local date --
-      -------------------------------------------------------------------
-      function get_date(p_timestr in varchar2) return date
-      is
-         l_date     date;
-         l_timezone varchar2(28);
-         l_parts    str_tab_t;
-         l_timestr  varchar2(32); -- hides outer declaration
+      l_text    varchar2(64);
+      ------------------------------
+      -- local function shortcuts --
+      ------------------------------
+      function get_node(p_xml in xmltype, p_path in varchar2) return xmltype is
       begin
-         l_date := cwms_util.to_timestamp(substr(p_timestr, 1, 19));
-         l_timestr := substr(p_timestr, 20);
-         if l_timestr is null then
-            ----------------------------
-            -- assume local time zone --
-            ----------------------------
-            null;
-         else
-            ------------------------------
-            -- shift to local time zone --
-            ------------------------------
-            l_timestr := 'Etc/GMT'
-            ||case substr(l_timestr, 1, 1)
-                 when '+' then '-' || to_number(l_timestr, 2, 2) 
-                 when '-' then '+' || to_number(l_timestr, 2, 2)
-              end;
-            l_parts := cwms_util.split_text(self.rating_spec_id, '.');              
-            select tz.time_zone_name
-              into l_timezone
-              from at_base_location bl,
-                   at_physical_location pl,
-                   cwms_office o,
-                   cwms_time_zone tz
-             where o.office_id = upper(self.office_id)
-                   and bl.db_office_code = o.office_code
-                   and bl.base_location_id = cwms_util.get_base_id(l_parts(1))
-                   and nvl(pl.sub_location_id, '.') = nvl(cwms_util.get_sub_id(l_parts(1)), '.') 
-                   and tz.time_zone_code = nvl(pl.time_zone_code, 0);
-            if l_timezone = 'Unknown or Not Applicable' then
-               l_timezone := 'UTC';
-            end if;
-            l_date := cwms_util.change_timezone(l_date, l_timestr, l_timezone);
-         end if;
-         return l_date;
-      end;      
+         return cwms_util.get_xml_node(p_xml, p_path);
+      end;
+      function get_text(p_xml in xmltype, p_path in varchar2) return varchar2 is
+      begin
+         return cwms_util.get_xml_text(p_xml, p_path);
+      end;
+      function get_number(p_xml in xmltype, p_path in varchar2) return number is
+      begin
+         return cwms_util.get_xml_number(p_xml, p_path);
+      end;
    begin
-      if p_xml.existsnode('//rating[1]') = 1 then
-         l_xml := p_xml.extract('//rating[1]');
-      else
+      l_xml := get_node(p_xml, '//rating[1]');
+      if l_xml is null then
          cwms_err.raise(
             'ERROR',
             'Cannot locate <rating> element');
       end if;
-      if l_xml.existsnode('/rating/@office-id') = 1 then
-         self.office_id := l_xml.extract('/rating/@office-id').getstringval;
-      else
+      self.office_id := get_text(l_xml, '/rating/@office-id');
+      if self.office_id is null then
          cwms_err.raise('ERROR', 'Required office-id attribute not found');
       end if;
-      if l_xml.existsnode('/rating/rating-spec-id') = 1 then
-         self.rating_spec_id := l_xml.extract('/rating/rating-spec-id/node()').getstringval;
-      else
+      self.rating_spec_id := get_text(l_xml, '/rating/rating-spec-id');
+      if self.rating_spec_id is null then
          cwms_err.raise('ERROR', 'Required <rating-spec-id> element not found');
       end if;
-      if l_xml.existsnode('/rating/effective-date') = 1 then
-         l_timestr := l_xml.extract('/rating/effective-date/node()').getstringval;
-         self.effective_date := get_date(l_timestr);
-      else
+      l_text := get_text(l_xml, '/rating/effective-date');
+      if l_text is null then
          cwms_err.raise('ERROR', 'Required <effective-date> element not found');
       end if;
-      if l_xml.existsnode('/rating/create-date') = 1 then
-         l_node := l_xml.extract('/rating/create-date/node()');
-         if l_node is not null then
-            l_timestr := l_node.getstringval;
-            self.create_date := get_date(l_timestr);
-         end if;
+      self.effective_date := get_date(l_text);
+      l_text := get_text(l_xml, '/rating/create-date');
+      if l_text is not null then
+         self.create_date := get_date(l_text);
       end if;
-      if l_xml.existsnode('/rating/active') = 1 then
-         self.active_flag := 
-            case l_xml.extract('/rating/active/node()').getstringval
-               when 'true'  then 'T'
-               when 'false' then 'F'
-            end;
-         if self.active_flag is null then
-            cwms_err.raise(
-               'ERROR', 
-               'Invalid text for <active> element: '
-               ||l_xml.extract('/rating/active/node()').getstringval);
-         end if;            
+      l_text := get_text(l_xml, '/rating/active');
+      if l_text is null then
+         cwms_err.raise(
+            'ERROR',
+            'Missing <active> element under <rating> element');
       else
-         cwms_err.raise('ERROR', 'Required <active> element not found');
+         case l_text
+            when 'true'  then self.active_flag := 'T';
+            when '1'     then self.active_flag := 'T';
+            when 'false' then self.active_flag := 'F';
+            when '0'     then self.active_flag := 'F';
+            else
+               cwms_err.raise(
+                  'ERROR',
+                  'Invalid value for <active> element under <rating-spec> element: '
+                  ||l_text
+                  ||', should be 1, 0, true or false');
+         end case;
       end if;
-      if l_xml.existsnode('/rating/formula') = 1 then
-         l_node := l_xml.extract('/rating/formula/node()');
-         if l_node is not null then
-            self.formula := l_node.getstringval;
-         end if;
-      end if;
-      if l_xml.existsnode('/rating/units-id') = 1 then
-         self.native_units := l_xml.extract('/rating/units-id/node()').getstringval;
-      else
+      self.formula := get_text(l_xml, '/rating/formula');
+      self.native_units := get_text(l_xml, '/rating/units-id');
+      if self.native_units is null then
          cwms_err.raise('ERROR', 'Required <units-id> element not found');
       end if;
-      if l_xml.existsnode('/rating/description') = 1 then
-         l_node := l_xml.extract('/rating/description/node()');
-         if l_node is not null then
-            self.description := l_node.getstringval;
-         end if;
-      end if;
-      self.rating_info := rating_ind_parameter_t(l_xml);
+      self.description   := get_text(l_xml, '/rating/description');
+      self.rating_info   := rating_ind_parameter_t(l_xml);
+      self.current_units := 'N';
+      self.current_time  := 'L';
       self.validate_obj;
       return;
    end;
@@ -3073,6 +3427,8 @@ as
          self.native_units   := rec.native_units;
          self.description    := rec.description;
          self.rating_info    := rating_ind_parameter_t(p_rating_code);
+         self.current_units  := 'D';
+         self.current_time   := 'D';
       end loop;
       validate_obj;
    end;      
@@ -3314,15 +3670,107 @@ as
          end if;
       end if;
    end;
+         
+   member procedure convert_to_database_units
+   is
+      l_parts str_tab_t;
+   begin
+      case self.current_units
+         when 'D' then 
+            null;
+         when 'N' then
+            l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+            self.rating_info.convert_to_database_units(l_parts(2), self.native_units);
+            self.current_units := 'D';
+         else
+            cwms_err.raise('ERROR', 'Don''t know the current units of the rating object'); 
+      end case;
+   end;
+   
+   member procedure convert_to_native_units
+   is
+      l_parts str_tab_t;
+   begin
+      case self.current_units
+         when 'D' then 
+            l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+            self.rating_info.convert_to_native_units(l_parts(2), self.native_units);
+            self.current_units := 'N';
+         when 'N' then
+            null;
+         else
+            cwms_err.raise('ERROR', 'Don''t know the current units of the rating object'); 
+      end case;
+   end;
+   
+   member procedure convert_to_database_time
+   is
+      l_local_timezone varchar2(28);
+      l_parts          str_tab_t;
+   begin
+      case self.current_time
+         when 'D' then
+            null;
+         when 'L' then
+            l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+            select tz.time_zone_name
+              into l_local_timezone
+              from at_physical_location pl,
+                   cwms_time_zone tz
+             where pl.location_code = cwms_loc.get_location_code(self.office_id, l_parts(1))
+               and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+            self.effective_date := cwms_util.change_timezone(self.effective_date, l_local_timezone, 'UTC');
+            if self.create_date is not null then
+               self.create_date := cwms_util.change_timezone(self.create_date, l_local_timezone, 'UTC');
+            end if;               
+            self.current_time := 'D';
+         else
+            cwms_err.raise('ERROR', 'Don''t know the current time setting of the rating object'); 
+      end case;
+   end;
+   
+   member procedure convert_to_local_time
+   is
+      l_local_timezone varchar2(28);
+      l_parts          str_tab_t;
+   begin
+      case self.current_time
+         when 'D' then
+            l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+            select tz.time_zone_name
+              into l_local_timezone
+              from at_physical_location pl,
+                   cwms_time_zone tz
+             where pl.location_code = cwms_loc.get_location_code(self.office_id, l_parts(1))
+               and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+            self.effective_date := cwms_util.change_timezone(self.effective_date, 'UTC', l_local_timezone);
+            if self.create_date is not null then
+               self.create_date := cwms_util.change_timezone(self.create_date, 'UTC', l_local_timezone);
+            end if;               
+            self.current_time := 'L';
+         when 'L' then
+            null;
+         else
+            cwms_err.raise('ERROR', 'Don''t know the current time setting of the rating object'); 
+      end case;
+   end;
    
    member procedure store(
       p_rating_code    out number,
       p_fail_if_exists in  varchar2)
    is
-      l_rec       at_rating%rowtype;
-      l_time_zone varchar2(28);
-      l_exists    boolean := true;
+      l_rec          at_rating%rowtype;
+      l_time_zone    varchar2(28);
+      l_exists       boolean := true;
+      l_clone        rating_t;
    begin
+      if self.current_units = 'N' or self.current_time = 'L' then
+         l_clone := self;
+         l_clone.convert_to_database_units;
+         l_clone.convert_to_database_time;
+         l_clone.store(p_rating_code, p_fail_if_exists);
+         return;
+      end if;
       l_rec.rating_spec_code := rating_spec_t.get_rating_spec_code(
          self.rating_spec_id,
          self.office_id);
@@ -3369,7 +3817,7 @@ as
       end;
 
       l_rec.ref_rating_code := null;
-      l_rec.create_date     := cwms_util.change_timezone(self.create_date, l_time_zone, 'UTC');
+      l_rec.create_date     := nvl(cwms_util.change_timezone(self.create_date, l_time_zone, 'UTC'), sysdate);
       l_rec.active_flag     := self.active_flag;
       l_rec.formula         := self.formula;
       l_rec.native_units    := self.native_units;
@@ -3386,7 +3834,7 @@ as
       end if;
       
       if self.rating_info is not null then
-         self.rating_info.store(l_rec.rating_code, 1, 'F');
+         self.rating_info.store(l_rec.rating_code, null, 'F');
       end if;
       
       p_rating_code := l_rec.rating_code;
@@ -3408,6 +3856,7 @@ as
       l_time_zone      varchar2(28);
       l_effective_date date;
       l_create_date    date;
+      l_clone          rating_t;
       function bool_text(
          p_state in boolean)
       return varchar2
@@ -3419,6 +3868,12 @@ as
                 end;
       end;         
    begin
+      if self.current_units = 'D' or self.current_time = 'D' then
+         l_clone := self;
+         l_clone.convert_to_native_units;
+         l_clone.convert_to_local_time;
+         return l_clone.to_clob;
+      end if;
       l_parts := cwms_util.split_text(self.rating_spec_id, '.');
       select tz.time_zone_name
         into l_time_zone
@@ -3429,8 +3884,6 @@ as
       if l_time_zone = 'Unknown or Not Applicable' then
          l_time_zone := 'UTC';
       end if;
-      l_effective_date := cwms_util.change_timezone(self.effective_date, 'UTC', l_time_zone);
-      l_create_date    := cwms_util.change_timezone(self.create_date, 'UTC', l_time_zone);
       dbms_lob.createtemporary(l_text, true);
       dbms_lob.open(l_text, dbms_lob.lob_readwrite);
       cwms_util.append(l_text, '<rating office-id="'||self.office_id||'">'
@@ -3460,6 +3913,49 @@ as
    is
    begin
       return xmltype(self.to_clob);
+   end;      
+         
+   member function get_date(p_timestr in varchar2) return date
+   is
+      l_date     date;
+      l_timezone varchar2(28);
+      l_parts    str_tab_t;
+      l_timestr  varchar2(32); -- hides outer declaration
+   begin
+      l_date := cwms_util.to_timestamp(substr(p_timestr, 1, 19));
+      l_timestr := substr(p_timestr, 20);
+      if l_timestr is null then
+         ----------------------------
+         -- assume local time zone --
+         ----------------------------
+         null;
+      else
+         ------------------------------
+         -- shift to local time zone --
+         ------------------------------
+         l_timestr := 'Etc/GMT'
+         ||case substr(l_timestr, 1, 1)
+              when '+' then '-' || to_number(l_timestr, 2, 2) 
+              when '-' then '+' || to_number(l_timestr, 2, 2)
+           end;
+         l_parts := cwms_util.split_text(self.rating_spec_id, '.');              
+         select tz.time_zone_name
+           into l_timezone
+           from at_base_location bl,
+                at_physical_location pl,
+                cwms_office o,
+                cwms_time_zone tz
+          where o.office_id = upper(self.office_id)
+                and bl.db_office_code = o.office_code
+                and bl.base_location_id = cwms_util.get_base_id(l_parts(1))
+                and nvl(pl.sub_location_id, '.') = nvl(cwms_util.get_sub_id(l_parts(1)), '.') 
+                and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+         if l_timezone = 'Unknown or Not Applicable' then
+            l_timezone := 'UTC';
+         end if;
+         l_date := cwms_util.change_timezone(l_date, l_timestr, l_timezone);
+      end if;
+      return l_date;
    end;      
       
    static function get_rating_code(         
@@ -3560,7 +4056,7 @@ as
       end if;
       
       return l_rating_code;
-   end;      
+   end;
 end;
 /
 show errors;
@@ -3571,11 +4067,12 @@ show errors;
 
 create type stream_rating_t under rating_t (
 -- office_id      varchar2(16),
--- rating_id      varchar2(339),
+-- rating_spec_id varchar2(372),
 -- effective_date date,
 -- create_date    date,
 -- active_flag    varchar2(1),
 -- formula        varchar2(1000),
+-- native_units   varchar2(256),
 -- description    varchar2(256),
 -- rating_info    rating_ind_parameter_t,
    offsets        rating_t,
@@ -3593,11 +4090,31 @@ create type stream_rating_t under rating_t (
       p_office_id      in varchar2 default null)
    return self as result,
    
+   constructor function stream_rating_t(
+      p_xml in xmltype)
+   return self as result,
+   
    overriding member procedure init(
       p_rating_code in number),
    
+   overriding member procedure validate_obj,
+   
+   overriding member procedure convert_to_database_units,
+   
+   overriding member procedure convert_to_native_units,
+   
+   overriding member procedure convert_to_database_time,
+   
+   overriding member procedure convert_to_local_time,
+   
    overriding member procedure store(
-      p_fail_if_exists in varchar2)
+      p_fail_if_exists in varchar2),
+      
+   overriding member function to_clob
+   return clob,
+   
+   overriding member function to_xml
+   return xmltype      
 );
 /
 show errors;
@@ -3633,6 +4150,310 @@ as
          
       (self as rating_t).init(l_rating_code);         
       self.init(l_rating_code);
+      return;
+   end;
+   
+   constructor function stream_rating_t(
+      p_xml in xmltype)
+   return self as result
+   is
+      l_xml              xmltype;
+      l_node             xmltype;
+      l_shift            xmltype;
+      l_offsets          xmltype;
+      l_rating_points    xmltype;
+      l_point            xmltype;
+      l_timestr          varchar2(32);
+      l_location_id      varchar2(49);
+      l_ind_param        varchar2(16);
+      l_template_version varchar2(32);
+      l_rating_version   varchar2(32);
+      l_parts            str_tab_t;
+      l_skipped          pls_integer;
+      ------------------------------
+      -- local function shortcuts --
+      ------------------------------
+      function get_node(p_xml in xmltype, p_path in varchar2) return xmltype is
+      begin
+         return cwms_util.get_xml_node(p_xml, p_path);
+      end;
+      function get_text(p_xml in xmltype, p_path in varchar2) return varchar2 is
+      begin
+         return cwms_util.get_xml_text(p_xml, p_path);
+      end;
+      function get_number(p_xml in xmltype, p_path in varchar2) return number is
+      begin
+         return cwms_util.get_xml_number(p_xml, p_path);
+      end;
+   begin
+      ----------------------------
+      -- get the rating element --
+      ----------------------------
+      l_xml := get_node(p_xml, '//usgs-stream-rating[1]');
+      if l_xml is null then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot locate <usgs-stream-rating> element');
+      end if;
+      -----------------------
+      -- get the office id --
+      -----------------------
+      self.office_id := get_text(l_xml, '/usgs-stream-rating/@office-id');
+      if self.office_id is null then
+         cwms_err.raise('ERROR', 'Required office-id attribute not found');
+      end if;
+      -------------------------
+      -- get the rating spec --
+      -------------------------
+      self.rating_spec_id := get_text(l_xml, '/usgs-stream-rating/rating-spec-id');
+      if self.rating_spec_id is null then
+         cwms_err.raise('ERROR', 'Required <rating-spec-id> element not found');
+      end if;
+      l_parts             := cwms_util.split_text(self.rating_spec_id, '.');
+      l_location_id       := l_parts(1);
+      l_template_version  := l_parts(3);
+      l_rating_version    := l_parts(4);
+      l_parts             := cwms_util.split_text(l_parts(2), ';');
+      l_ind_param         := cwms_util.get_base_id(l_parts(1));
+      ----------------------------
+      -- get the effective date --
+      ----------------------------
+      l_timestr := get_text(l_xml, '/usgs-stream-rating/effective-date');
+      if l_timestr is null then
+         cwms_err.raise('ERROR', 'Required <effective-date> element not found');
+      end if;
+      self.effective_date := (self as rating_t).get_date(l_timestr);
+      -------------------------
+      -- get the create date --
+      -------------------------
+      l_timestr := get_text(l_xml, '/usgs-stream-rating/create-date');
+      if l_timestr is not null then
+         self.create_date := (self as rating_t).get_date(l_timestr);
+      end if;
+      -------------------------
+      -- get the active flag --
+      -------------------------
+      self.active_flag := 
+         case get_text(l_xml, '/usgs-stream-rating/active')
+            when 'true'  then 'T'
+            when '1'     then 'T'
+            when 'false' then 'F'
+            when '0'     then 'F'
+            else               null
+         end;
+      if self.active_flag is null then
+         cwms_err.raise(
+            'ERROR', 
+            '<active> element not found or contains invalid text ');
+      end if;            
+      ----------------------
+      -- get the units id --
+      ----------------------
+      self.native_units := get_text(l_xml, '/usgs-stream-rating/units-id');
+      if self.native_units is null then
+         cwms_err.raise('ERROR', 'Required <units-id> element not found');
+      end if;
+      -------------------------
+      -- get the description --
+      -------------------------
+      self.description := get_text(l_xml, '/usgs-stream-rating/description');
+      --------------------
+      -- for each shift --
+      --------------------
+      l_skipped := 0;
+      for i in 1..9999999 loop
+         l_shift := get_node(l_xml, '/usgs-stream-rating/height-shifts['||i||']');
+         exit when l_shift is null;
+         ----------------------------------------------------
+         -- create a new rating_t object to hold the shift --
+         ----------------------------------------------------
+         if i = 1 then
+            self.shifts := rating_tab_t();
+         end if;
+         self.shifts.extend;
+         self.shifts(i-l_skipped) := rating_t(
+            self.office_id,              -- office_id
+            l_location_id
+            ||'.'||l_ind_param
+            ||';'||l_ind_param||'-Shift'
+            ||'.'||l_template_version
+            ||'.'||l_rating_version,     -- rating_spec_id
+            null,                        -- effective_date
+            null,                        -- create_date
+            null,                        -- active_flag
+            null,                        -- formula
+            null,                        -- native_units
+            null,                        -- description
+            null,                        -- rating_info
+            'N',                         -- current_units
+            'D');                        -- current_time
+         ----------------------------------
+         -- get the shift effective date --
+         ----------------------------------            
+         l_timestr := get_text(l_shift, '/height-shifts/effective-date');
+         if l_timestr is null then
+            cwms_err.raise('ERROR', 'Required <effective-date> element not found on shift');
+         end if;
+         self.shifts(i-l_skipped).effective_date := (self as rating_t).get_date(l_timestr);
+         ----------------------------------
+         -- get the shift create date --
+         ----------------------------------            
+         l_timestr := get_text(l_shift, '/height-shifts/create-date');
+         if l_timestr is not null then
+            self.shifts(i-l_skipped).create_date := (self as rating_t).get_date(l_timestr);
+         end if;
+         -------------------------------
+         -- get the shift active flag --
+         -------------------------------
+         self.shifts(i-l_skipped).active_flag := 
+            case get_text(l_shift, '/height-shifts/active')
+               when 'true'  then 'T'
+               when '1'     then 'T'
+               when 'false' then 'F'
+               when '0'     then 'F'
+               else               null
+            end;
+         if self.shifts(i-l_skipped).active_flag is null then
+            cwms_err.raise(
+               'ERROR', 
+               'Invalid text for <active> element: '
+               ||get_text(l_shift, '/height-shifts/active'));
+         end if;
+         ----------------------------
+         -- get the shift units id --
+         ----------------------------            
+         l_parts := cwms_util.split_text(self.native_units, ';');
+         self.shifts(i-l_skipped).native_units := l_parts(1) || ';' || l_parts(1);
+         -------------------------------
+         -- get the shift description --
+         ------------------------------- 
+         self.shifts(i-l_skipped).description := get_text(l_shift, '/height-shifts/description');
+         --------------------------
+         -- for each shift point --
+         --------------------------
+         for j in 1..9999999 loop
+            l_point := get_node(l_shift, '/height-shifts/point['||j||']');
+            exit when l_point is null;
+            ------------------------------------------------------------
+            -- create a new rating_value_t object for the shift point --
+            ------------------------------------------------------------
+            if j = 1 then
+               self.shifts(i-l_skipped).rating_info := rating_ind_parameter_t(
+                  'F',                  -- constructed
+                  rating_value_tab_t(), -- rating_values
+                  null);                -- extension_values
+            end if;
+            self.shifts(i-l_skipped).rating_info.rating_values.extend();
+            self.shifts(i-l_skipped).rating_info.rating_values(j) := rating_value_t();
+            self.shifts(i-l_skipped).rating_info.rating_values(j).ind_value := get_number(l_point, '/point/ind'); 
+            self.shifts(i-l_skipped).rating_info.rating_values(j).dep_value := get_number(l_point, '/point/dep');
+            self.shifts(i-l_skipped).rating_info.rating_values(j).note_id   := get_text(l_point, '/point/note'); 
+         end loop;
+         self.shifts(i-l_skipped).rating_info.constructed := 'T';
+         begin
+            self.shifts(i-l_skipped).rating_info.validate_obj(1);
+         exception
+            when others then
+               cwms_msg.log_db_message(
+                  'stream_rating_t.store',
+                  cwms_msg.msg_level_normal,
+                  'Rating shift '||i||' skipped due to '||sqlerrm);
+               l_skipped := l_skipped + 1;
+               self.shifts.trim;
+         end;
+      end loop;
+      l_offsets := get_node(l_xml, '/usgs-stream-rating/height-offsets');
+      if l_offsets is not null then
+         ------------------------------------------------------
+         -- create a new rating_t object to hold the offsets --
+         ------------------------------------------------------
+         self.offsets := rating_t(
+            self.office_id,                      -- office_id
+            l_location_id
+            ||'.'||l_ind_param
+            ||';'||l_ind_param||'-Offset'
+            ||'.'||l_template_version
+            ||'.'||l_rating_version,             -- rating_spec_id
+            self.effective_date,                 -- effective_date
+            self.create_date,                    -- create_date
+            self.active_flag,                    -- active_flag
+            null,                                -- formula
+            null,                                -- native_units
+            'Logarithmic interpolation offsets', -- description
+            null,                                -- rating_info
+            'N',                                 -- current_units
+            'D');                                -- current_time
+         ----------------------------
+         -- get the offset units id --
+         ----------------------------            
+         l_parts := cwms_util.split_text(self.native_units, ';');
+         self.offsets.native_units := l_parts(1) || ';' || l_parts(1);
+         --------------------------
+         -- for each offset point --
+         --------------------------
+         for i in 1..9999999 loop
+            l_point := get_node(l_offsets, '/height-offsets/point['||i||']');
+            exit when l_point is null;
+            ------------------------------------------------------------
+            -- create a new rating_value_t object for the offset point --
+            ------------------------------------------------------------
+            if i = 1 then
+               self.offsets.rating_info := rating_ind_parameter_t(
+                  'F',                  -- constructed
+                  rating_value_tab_t(), -- rating_values
+                  null);                -- extension_values
+            end if;
+            self.offsets.rating_info.rating_values.extend();
+            self.offsets.rating_info.rating_values(i) := rating_value_t();
+            self.offsets.rating_info.rating_values(i).ind_value := get_number(l_point, '/point/ind');
+            self.offsets.rating_info.rating_values(i).dep_value := get_number(l_point, '/point/dep');
+            self.offsets.rating_info.rating_values(i).note_id   := get_text(l_point, '/point/note');
+         end loop;
+         if self.offsets is not null then
+            self.offsets.rating_info.constructed := 'T';
+            begin
+               self.offsets.rating_info.validate_obj(1);
+            exception
+               when others then
+                  cwms_msg.log_db_message(
+                     'stream_rating_t.store',
+                     cwms_msg.msg_level_normal,
+                     'Rating offsets error '||sqlerrm);
+                  raise;
+            end;
+         end if;
+      end if;
+      l_rating_points := get_node(l_xml, '/usgs-stream-rating/rating-points');
+      if l_rating_points is not null then
+         ---------------------------
+         -- for each rating point --
+         ---------------------------
+         for i in 1..9999999 loop
+            l_point := get_node(l_rating_points, '/rating-points/point['||i||']');
+            exit when l_point is null;
+            -------------------------------------------------------------
+            -- create a new rating_value_t object for the rating point --
+            -------------------------------------------------------------
+            if i = 1 then
+               self.rating_info := rating_ind_parameter_t(
+                  'F',                  -- constructed
+                  rating_value_tab_t(), -- rating_values
+                  null);                -- extension_values
+            end if;
+            self.rating_info.rating_values.extend();
+            self.rating_info.rating_values(i) := rating_value_t();
+            self.rating_info.rating_values(i).ind_value := get_number(l_point, '/point/ind'); 
+            self.rating_info.rating_values(i).dep_value := get_number(l_point, '/point/dep');
+            self.rating_info.rating_values(i).note_id   := get_text(l_point, '/point/note');
+         end loop;
+         if self.rating_info is not null then
+            self.rating_info.constructed := 'T';
+            self.rating_info.validate_obj(1);
+         end if;
+      end if;
+      self.current_units := 'N';
+      self.current_time := 'D';
+      self.validate_obj;
       return;
    end;
    
@@ -3706,16 +4527,312 @@ as
       exception
          when no_data_found then null;
       end;
+      self.validate_obj;
+   end;
+   
+   overriding member procedure validate_obj
+   is
+      l_parts         str_tab_t;
+      l_ind_param     varchar2(256);
+      l_dep_param     varchar2(256);
+      l_parameters_id varchar2(256);
+   begin
+      ------------------------
+      -- validate as rating --
+      ------------------------
+      (self as rating_t).validate_obj;
+      ------------------------------------------------------
+      -- validate Stage;Flow or Elev;Flow base parameters --
+      ------------------------------------------------------
+      l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+      l_parts := cwms_util.split_text(l_parts(2), ';');
+      l_ind_param := l_parts(1);
+      l_dep_param := l_parts(2);
+      if instr(l_ind_param, ',') != 0 or
+         (cwms_util.get_base_id(l_ind_param) != 'Stage' and
+          cwms_util.get_base_id(l_ind_param) != 'Elev') or
+          cwms_util.get_base_id(l_dep_param) != 'Flow'
+      then
+         l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+         cwms_err.raise(
+            'ERROR',
+            'Invalid parameters identifier for stream rating: '||l_parts(2)); 
+      end if;
+      l_ind_param := cwms_util.get_base_id(l_ind_param);
+      ----------------------
+      -- validate offsets --
+      ----------------------
+      if self.offsets is not null then
+         begin
+            self.offsets.validate_obj;
+            if self.offsets.office_id != self.office_id then
+               cwms_err.raise('ERROR', 'Offsets office does not match rating office');
+            end if;
+            l_parts := cwms_util.split_text(self.offsets.rating_spec_id, '.');
+            l_parameters_id := l_parts(2);
+            if l_parameters_id != l_ind_param || ';' || l_ind_param || '-Offset' then
+               cwms_err.raise('ERROR', 'Invalid offsets parameter id - should be '||l_ind_param||';'||l_ind_param||'-Offset');
+            end if;
+            if self.offsets.effective_date != self.effective_date then
+               cwms_err.raise('ERROR', 'Offsets effective date does not match rating effective date');
+            end if;
+            if (self.offsets.create_date is null) != (self.create_date is null) then
+               cwms_err.raise('ERROR', 'Offsets create date does not match rating create date');
+            end if;
+            if self.create_date is not null then
+               if self.offsets.create_date != self.create_date then
+                  cwms_err.raise('ERROR', 'Offsets create date does not match rating create date');
+               end if;
+            end if;
+            if self.offsets.formula is not null then
+               cwms_err.raise('ERROR', 'Offsets cannot use a formula');
+            end if;
+            if self.offsets.native_units is null then
+               cwms_err.raise('ERROR', 'Offsets must use same unit as rating stage or elevation unit');
+            end if;
+            l_parts := cwms_util.split_text(self.offsets.native_units, ';');
+            if l_parts.count != 2 or l_parts(1) != l_parts(2) then
+               cwms_err.raise('ERROR', 'Invalid native units for offsets');
+            end if;
+            if substr(self.native_units, 1, instr(self.native_units, ';') - 1) != l_parts(1) then
+               cwms_err.raise('ERROR', 'Offsets must use same unit as rating stage or elevation unit');
+            end if;
+            if self.offsets.rating_info.extension_values is not null then
+               cwms_err.raise('ERROR', 'Offsets cannot contain extension values');
+            end if;          
+            if self.offsets.rating_info.rating_values is null then
+               cwms_err.raise('ERROR', 'Offsets must contain rating values if specified');
+            end if;
+            for i in 1..self.offsets.rating_info.rating_values.count loop
+               if i > 1 then
+                  if self.offsets.rating_info.rating_values(i).ind_value <= 
+                     self.offsets.rating_info.rating_values(i-1).ind_value
+                  then
+                     cwms_err.raise(
+                        'ERROR', 
+                        'Offsets stages/elevations do not monotonically increase after value '
+                        ||self.offsets.rating_info.rating_values(i-1).ind_value);
+                  end if;
+               end if;
+               if self.offsets.rating_info.rating_values(i).dep_value is null or
+                  self.offsets.rating_info.rating_values(i).dep_rating_ind_param is not null
+               then
+                  cwms_err.raise('ERROR', 'Offsets must contain offset values as dependent parameter');
+               end if;
+            end loop;          
+         exception
+            when others then
+               cwms_msg.log_db_message(
+                  'stream_rating_t.store',
+                  cwms_msg.msg_level_normal,
+                  'Rating offsets error '||sqlerrm);
+               raise;
+         end;
+      end if;
+      ---------------------
+      -- validate shifts --
+      ---------------------
+      if self.shifts is not null then
+         for i in reverse 1..self.shifts.count loop
+            begin
+               self.shifts(i).validate_obj;
+               if self.shifts(i).office_id != self.office_id then
+                  cwms_err.raise('ERROR', 'Shifts office does not match rating office');
+               end if;
+               l_parts := cwms_util.split_text(self.shifts(i).rating_spec_id, '.');
+               l_parameters_id := l_parts(2);
+               if l_parameters_id != l_ind_param || ';' || l_ind_param || '-Shift' then
+                  cwms_err.raise('ERROR', 'Invalid shift parameter id - should be '||l_ind_param||';'||l_ind_param||'-Shift');
+               end if;
+               if self.shifts(i).effective_date < self.effective_date then
+                  cwms_err.raise(
+                     'ERROR', 
+                     'Shift '||i||' effective date ('
+                     ||self.shifts(i).effective_date
+                     ||') is earlier than rating effective date ('
+                     ||self.effective_date
+                     ||')');
+               end if;
+               if self.shifts(i).create_date is not null then
+                  if self.create_date is null or self.shifts(i).create_date < self.create_date then
+                     cwms_err.raise(
+                        'ERROR', 
+                        'Shift '||i||' create date ('
+                        ||self.shifts(i).create_date
+                        ||') is earlier than rating create date ('
+                        ||self.create_date
+                        ||')');
+                  end if;
+               end if;
+               if self.shifts(i).formula is not null then
+                  cwms_err.raise('ERROR', 'Shifts cannot use a formula');
+               end if;
+               if self.shifts(i).native_units is null then
+                  cwms_err.raise('ERROR', 'Shifts must use same unit as rating stage or elevation unit');
+               end if;
+               l_parts := cwms_util.split_text(self.shifts(i).native_units, ';');
+               if l_parts.count != 2 or l_parts(1) != l_parts(2) then
+                  cwms_err.raise('ERROR', 'Invalid native units for shifts');
+               end if;
+               if substr(self.native_units, 1, instr(self.native_units, ';') - 1) != l_parts(1) then
+                  cwms_err.raise('ERROR', 'Shifts must use same unit as rating stage or elevation unit');
+               end if;
+               if self.shifts(i).rating_info.extension_values is not null then
+                  cwms_err.raise('ERROR', 'Shifts cannot contain extension values');
+               end if;          
+               if self.shifts(i).rating_info.rating_values is null then
+                  cwms_err.raise('ERROR', 'Shifts must contain rating values if specified');
+               end if;
+               for j in 1..self.shifts(i).rating_info.rating_values.count loop
+                  if j > 1 then
+                     if self.shifts(i).rating_info.rating_values(j).ind_value <= 
+                        self.shifts(i).rating_info.rating_values(j-1).ind_value
+                     then
+                        cwms_err.raise(
+                           'ERROR', 
+                           'Shifts stages/elevations do not monotonically increase after value '
+                           ||self.shifts(i).rating_info.rating_values(j-1).ind_value);
+                     end if;
+                  end if;
+                  if self.shifts(i).rating_info.rating_values(j).dep_value is null or
+                     self.shifts(i).rating_info.rating_values(j).dep_rating_ind_param is not null
+                  then
+                     cwms_err.raise('ERROR', 'Shifts must contain shift values as dependent parameter');
+                  end if;
+               end loop;          
+            exception
+               when others then
+                  cwms_msg.log_db_message(
+                     'stream_rating_t.store',
+                     cwms_msg.msg_level_normal,
+                     'Rating shift '||i||' skipped due to '||sqlerrm);
+                  for j in i+1..self.shifts.count loop
+                     self.shifts(j-1) := self.shifts(j);
+                     self.shifts.trim(1);
+                  end loop;
+            end;
+         end loop;
+      end if;
    end;      
+   
+   overriding member procedure convert_to_database_units
+   is
+   begin
+      (self as rating_t).convert_to_database_units;
+      if self.offsets is not null then
+         self.offsets.convert_to_database_units;
+      end if;
+      if self.shifts is not null then
+         for i in 1..self.shifts.count loop
+            self.shifts(i).convert_to_database_units;
+         end loop;
+      end if;
+   end;
+   
+   overriding member procedure convert_to_native_units
+   is
+   begin
+      (self as rating_t).convert_to_native_units;
+      if self.offsets is not null then
+         self.offsets.convert_to_native_units;
+      end if;
+      if self.shifts is not null then
+         for i in 1..self.shifts.count loop
+            self.shifts(i).convert_to_native_units;
+         end loop;
+      end if;
+   end;
+   
+   overriding member procedure convert_to_database_time
+   is
+   begin
+      (self as rating_t).convert_to_database_time;
+      if self.offsets is not null then
+         self.offsets.convert_to_database_time;
+      end if;
+      if self.shifts is not null then
+         for i in 1..self.shifts.count loop
+            self.shifts(i).convert_to_database_time;
+         end loop;
+      end if;
+   end;
+   
+   overriding member procedure convert_to_local_time
+   is
+   begin
+      (self as rating_t).convert_to_local_time;
+      if self.offsets is not null then
+         self.offsets.convert_to_local_time;
+      end if;
+      if self.shifts is not null then
+         for i in 1..self.shifts.count loop
+            self.shifts(i).convert_to_local_time;
+         end loop;
+      end if;
+   end;
    
    overriding member procedure store(
       p_fail_if_exists in varchar2)
    is
-      l_rating_code number(10);
-      l_ref_rating_code number(10);
+      l_rating_code      number(10);
+      l_ref_rating_code  number(10);
+      l_template         rating_template_t;
+      l_parts            str_tab_t;
+      l_location_id      varchar2(49);
+      l_ind_param        varchar2(16);
+      l_template_version varchar2(32);
+      l_spec_version     varchar2(23);
+      l_spec             rating_spec_t;
+      l_rating_spec      rating_spec_t;
+      l_clone            stream_rating_t;
    begin
+      if self.current_units = 'N' or self.current_time = 'L' then
+         l_clone := self;
+         l_clone.convert_to_database_units;
+         l_clone.convert_to_database_time;
+         l_clone.store(p_fail_if_exists);
+         return;
+      end if;
+      l_parts             := cwms_util.split_text(self.rating_spec_id, '.');
+      l_location_id       := l_parts(1);
+      l_template_version  := l_parts(3);
+      l_spec_version      := l_parts(4);
+      l_parts             := cwms_util.split_text(l_parts(2), ';');
+      l_ind_param         := cwms_util.get_base_id(l_parts(1));
+      l_rating_spec       := rating_spec_t(self.rating_spec_id, self.office_id);
       (self as rating_t).store(l_ref_rating_code, p_fail_if_exists);
       if self.shifts is not null then
+        l_template := rating_template_t(
+            self.office_id,
+            l_ind_param||';'||l_ind_param||'-Shift',
+            l_template_version,
+            rating_ind_param_spec_tab_t(
+               rating_ind_param_spec_t(
+                  1,
+                  l_ind_param,
+                  'LINEAR',
+                  'NEAREST',
+                  'NEAREST')),
+            l_ind_param||'-Shift',
+            'USGS-style rating shifts');
+         l_template.store('F');
+         l_spec := rating_spec_t(
+            self.office_id,
+            l_location_id,
+            l_template.parameters_id||'.'||l_template.version,
+            l_spec_version,
+            l_rating_spec.source_agency_id,
+            'LINEAR',
+            'LINEAR',
+            'NEAREST',
+            l_rating_spec.active_flag,
+            l_rating_spec.auto_update_flag,
+            l_rating_spec.auto_activate_flag,
+            'F',
+            str_tab_t(l_rating_spec.ind_rounding_specs(1)),
+            l_rating_spec.ind_rounding_specs(1),
+            'USGS-style rating shifts');
+         l_spec.store('F');
          for i in 1..self.shifts.count loop
             self.shifts(i).store(l_rating_code, 'F');
             update at_rating
@@ -3724,11 +4841,176 @@ as
          end loop;
       end if;
       if self.offsets is not null then
+         l_template := rating_template_t(
+            self.office_id,
+            l_ind_param||';'||l_ind_param||'-Offset',
+            l_template_version,
+            rating_ind_param_spec_tab_t(
+               rating_ind_param_spec_t(
+                  1,
+                  l_ind_param,
+                  'PREVIOUS',
+                  'NEAREST',
+                  'NEAREST')),
+            l_ind_param||'-Offset',
+            'USGS-style logarithmic interpolation offsets');
+         l_template.store('F');
+         l_spec := rating_spec_t(
+            self.office_id,
+            l_location_id,
+            l_template.parameters_id||'.'||l_template.version,
+            l_spec_version,
+            l_rating_spec.source_agency_id,
+            'NEAREST',
+            'PREVIOUS',
+            'NEAREST',
+            l_rating_spec.active_flag,
+            l_rating_spec.auto_update_flag,
+            l_rating_spec.auto_activate_flag,
+            'F',
+            str_tab_t(l_rating_spec.ind_rounding_specs(1)),
+            l_rating_spec.ind_rounding_specs(1),
+            'USGS-style logarithmic interpolation offsets');
+         l_spec.store('F');
          self.offsets.store(l_rating_code, 'F');
          update at_rating
             set ref_rating_code = l_ref_rating_code
           where rating_code = l_rating_code; 
       end if;
+   end;      
+      
+   overriding member function to_clob
+   return clob
+   is
+      l_text  clob;
+      l_clone stream_rating_t;
+      function bool_text(
+         p_state in boolean)
+      return varchar2
+      is
+      begin
+         return case p_state
+                   when true  then 'true'
+                   when false then 'false'
+                end;
+      end;         
+   begin
+      if self.current_units = 'D' or self.current_time = 'D' then
+         l_clone := self;
+         l_clone.convert_to_native_units;
+         l_clone.convert_to_local_time;
+         return l_clone.to_clob;
+      end if;
+      dbms_lob.createtemporary(l_text, true);
+      dbms_lob.open(l_text, dbms_lob.lob_readwrite);
+      cwms_util.append(l_text,
+         '<usgs-stream-rating office-id="'||self.office_id||'">'
+         ||'<rating-spec-id>'||self.rating_spec_id||'</rating-spec-id>'
+         ||'<units-id>'||self.native_units||'</units-id>'
+         ||'<effective-date>'||to_char(self.effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
+      if self.create_date is not null then
+         cwms_util.append(l_text, '<create-date>'||to_char(self.create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>');
+      end if;
+      cwms_util.append(l_text,
+         '<active>'
+         ||bool_text(cwms_util.is_true(self.active_flag))
+         ||'</active>');
+      if self.description is not null then
+         cwms_util.append(l_text, '<description>'||self.description||'</description>');
+      end if;
+      -------------------
+      -- output shifts --
+      -------------------
+      if self.shifts is not null then
+         for i in 1..self.shifts.count loop
+            cwms_util.append(l_text,
+               '<height-shifts><effective_date>'
+               ||to_char(self.shifts(i).effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
+            if self.shifts(i).create_date is not null then
+               cwms_util.append(l_text, '<create-date>'||to_char(self.shifts(i).create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>');
+            end if;
+            cwms_util.append(l_text,
+               '<active>'
+               ||bool_text(cwms_util.is_true(self.shifts(i).active_flag))
+               ||'</active>');
+            if self.shifts(i).description is not null then
+               cwms_util.append(l_text, '<description>'||self.shifts(i).description||'</description>');
+            end if;
+            for j in 1..self.shifts(i).rating_info.rating_values.count loop
+               cwms_util.append(l_text,
+                  '<point><ind>'
+                  ||self.shifts(i).rating_info.rating_values(j).ind_value
+                  ||'</ind><dep>'
+                  ||self.shifts(i).rating_info.rating_values(j).dep_value
+                  ||'</dep>');
+               if self.shifts(i).rating_info.rating_values(j).note_id is not null then
+                  cwms_util.append(l_text,
+                     '<note>'
+                     ||self.shifts(i).rating_info.rating_values(j).note_id
+                     ||'</note>');
+               end if;          
+               cwms_util.append(l_text, '</point>');     
+            end loop;
+         end loop;
+         cwms_util.append(l_text, '</height-shifts>');
+      end if;
+      -------------------
+      -- output offsets -
+      -------------------
+      if self.offsets is not null then
+         cwms_util.append(l_text,
+            '<height-offsets><effective_date>'
+            ||to_char(self.effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
+         if self.create_date is not null then
+            cwms_util.append(l_text, '<create-date>'||to_char(self.create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>');
+         end if;
+         cwms_util.append(l_text, '<active>T</active><description>Logarithmic interpolation offsets</description>');
+         for i in 1..self.offsets.rating_info.rating_values.count loop
+            cwms_util.append(l_text,
+               '<point><ind>'
+               ||self.offsets.rating_info.rating_values(i).ind_value
+               ||'</ind><dep>'
+               ||self.offsets.rating_info.rating_values(i).dep_value
+               ||'</dep>');
+            if self.offsets.rating_info.rating_values(i).note_id is not null then
+               cwms_util.append(l_text,
+                  '<note>'
+                  ||self.offsets.rating_info.rating_values(i).note_id
+                  ||'</note>');
+            end if;          
+            cwms_util.append(l_text, '</point>');     
+            end loop;
+         cwms_util.append(l_text, '</height-offsets>');
+      end if;
+      -------------------
+      -- rating points --
+      -------------------
+      cwms_util.append(l_text, '<rating-points>');
+      for i in 1..self.rating_info.rating_values.count loop
+         cwms_util.append(l_text,
+            '<point><ind>'
+            ||self.rating_info.rating_values(i).ind_value
+            ||'</ind><dep>'
+            ||self.rating_info.rating_values(i).dep_value
+            ||'</dep>');
+         if self.rating_info.rating_values(i).note_id is not null then
+            cwms_util.append(l_text,
+               '<note>'
+               ||self.rating_info.rating_values(i).note_id
+               ||'</note>');
+         end if;          
+         cwms_util.append(l_text, '</point>');     
+      end loop;
+      cwms_util.append(l_text, '</rating-points></usgs-stream-rating>');
+      dbms_lob.close(l_text);
+      return l_text;
+   end;
+   
+   overriding member function to_xml
+   return xmltype
+   is
+   begin
+      return xmltype(self.to_clob());
    end;      
 end;
 /

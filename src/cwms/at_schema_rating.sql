@@ -12,7 +12,7 @@ create table at_rating_template
    constraint at_rating_template_pk  primary key (template_code),
    constraint at_rating_template_fk1 foreign key (office_code) references cwms_office(office_code),
    constraint at_rating_template_fk2 foreign key (dep_parameter_code) references at_parameter(parameter_code)
-) organization index;
+) /*organization index*/;
 create unique index at_rating_template_u1 on at_rating_template(office_code, upper(parameters_id), upper(version));
 
 comment on table  at_rating_template                      is 'Templates for rating tables';
@@ -42,7 +42,7 @@ create table at_rating_ind_param_spec
    constraint at_rating_ind_param_spec_fk3 foreign key (in_range_rating_method) references cwms_rating_method(rating_method_code),
    constraint at_rating_ind_param_spec_fk4 foreign key (out_range_low_rating_method) references cwms_rating_method(rating_method_code),
    constraint at_rating_ind_param_spec_fk5 foreign key (out_range_high_rating_method) references cwms_rating_method(rating_method_code)
-) organization index;
+) /*organization index*/;
 
 comment on table  at_rating_ind_param_spec                              is 'Independent parameters for rating templates';
 comment on column at_rating_ind_param_spec.template_code                is 'Reference to rating template';
@@ -82,7 +82,7 @@ create table at_rating_spec
    constraint at_rating_spec_ck2 check (auto_update_flag in ('T', 'F')),
    constraint at_rating_spec_ck3 check (auto_activate_flag in ('T', 'F')),
    constraint at_rating_spec_ck4 check (auto_migrate_ext_flag in ('T', 'F'))
-) organization index;
+) /*organization index*/;
 create unique index at_rating_spec_u1 on at_rating_spec (template_code, location_code, upper(version));
 
 comment on table  at_rating_spec                              is 'Specifies a time series of ratings by location, parameters, and version';
@@ -111,7 +111,7 @@ create table at_rating_ind_rounding
    rounding_spec      varchar2(10),
    constraint at_rating_ind_rounding_pk  primary key (rating_spec_code, parameter_position),
    constraint at_rating_ind_rounding_fk1 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code)
-) organization index;
+) /*organization index*/;
 
 comment on table  at_rating_ind_rounding                    is 'Rounding specifications for rating input parameters';
 comment on column at_rating_ind_rounding.rating_spec_code   is 'References rating specification';
@@ -137,7 +137,7 @@ create table at_rating
    constraint at_rating_fk1 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
    constraint at_rating_fk2 foreign key (ref_rating_code) references at_rating (rating_code),
    constraint at_rating_ck1 check (active_flag in ('T', 'F'))
-) organization index;
+) /*organization index*/;
 
 comment on table  at_rating                  is 'A dated rating in a rating time series';
 comment on column at_rating.rating_code      is 'Synthetic key';
@@ -181,7 +181,7 @@ create table at_rating_value_note
    constraint at_rating_value_note_u1  unique (office_code, note_id) using index,
    constraint at_rating_value_note_ck1 check (note_id = upper(note_id)),
    constraint at_rating_value_note_fk1 foreign key (office_code) references cwms_office(office_code)
-) organization index;
+) /*organization index*/;
 
 comment on table  at_rating_value_note             is 'Provides notation for specific rating values';
 comment on column at_rating_value_note.note_code   is 'Synthetic key';
@@ -199,20 +199,22 @@ insert into at_rating_value_note values (3, 53, 'MANUAL'      , 'Value was enter
 create table at_rating_value
 (
     rating_ind_param_code     number(10),
+    other_ind_hash            varchar2(40),
     ind_value                 binary_double,
     dep_value                 binary_double,
     dep_rating_ind_param_code number(10),
     note_code                 number(10),
-    constraint at_rating_value_pk  primary key (rating_ind_param_code, ind_value),
+    constraint at_rating_value_pk  primary key (rating_ind_param_code, other_ind_hash, ind_value),
     constraint at_rating_value_ck1 check (dep_value is null or dep_rating_ind_param_code is null),
     constraint at_rating_value_ck2 check (dep_value is not null or dep_rating_ind_param_code is not null),
     constraint at_rating_value_fk1 foreign key (rating_ind_param_code) references at_rating_ind_parameter (rating_ind_param_code),
     constraint at_rating_value_fk2 foreign key (dep_rating_ind_param_code) references at_rating_ind_parameter (rating_ind_param_code),
     constraint at_rating_value_fk3 foreign key (note_code) references at_rating_value_note (note_code)
-) organization index;
+) /*organization index*/;
 
 comment on table  at_rating_value                           is 'Specifies rating values';
 comment on column at_rating_value.rating_ind_param_code     is 'References rating parameter';
+comment on column at_rating_value.other_ind_hash            is 'Unique identifier of previous-position independent values';
 comment on column at_rating_value.ind_value                 is 'Independent value for rating';
 comment on column at_rating_value.dep_value                 is 'Dependent value for rating';
 comment on column at_rating_value.dep_rating_ind_param_code is 'Dependent table for rating (for multi-parameter ratings)';
@@ -224,20 +226,22 @@ comment on column at_rating_value.note_code                 is 'Reference to rat
 create table at_rating_extension_value
 (
     rating_ind_param_code     number(10),
+    other_ind_hash            varchar2(40),
     ind_value                 binary_double,
     dep_value                 binary_double,
     dep_rating_ind_param_code number(10),
     note_code                 number(10),
-    constraint at_rating_extension_value_pk  primary key (rating_ind_param_code, ind_value),
+    constraint at_rating_extension_value_pk  primary key (rating_ind_param_code, other_ind_hash, ind_value),
     constraint at_rating_extension_value_ck1 check (dep_value is null or dep_rating_ind_param_code is null),
     constraint at_rating_extension_value_ck2 check (dep_value is not null or dep_rating_ind_param_code is not null),
     constraint at_rating_extension_value_fk1 foreign key (rating_ind_param_code) references at_rating_ind_parameter (rating_ind_param_code),
     constraint at_rating_extension_value_fk2 foreign key (dep_rating_ind_param_code) references at_rating_ind_parameter (rating_ind_param_code),
     constraint at_rating_extension_value_fk3 foreign key (note_code) references at_rating_value_note (note_code)
-) organization index;
+) /*organization index*/;
 
 comment on table  at_rating_extension_value                           is 'Specifies rating extension values';
 comment on column at_rating_extension_value.rating_ind_param_code     is 'References rating parameter';
+comment on column at_rating_extension_value.other_ind_hash            is 'Unique identifier of previous-position independent values';
 comment on column at_rating_extension_value.ind_value                 is 'Independent value for rating';
 comment on column at_rating_extension_value.dep_value                 is 'Dependent value for rating';
 comment on column at_rating_extension_value.dep_rating_ind_param_code is 'Dependent table for rating (for multi-parameter ratings)';
@@ -261,3 +265,5 @@ comment on column at_compound_rating.seq       is 'Synthetic key';
 comment on column at_compound_rating.position  is 'Independent parameter position';
 comment on column at_compound_rating.ind_value is 'Independent parameter value';
 comment on column at_compound_rating.parent_id is 'Id specifying upstream lower-position parameter position/value combinations';
+
+   

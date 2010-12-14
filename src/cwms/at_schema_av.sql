@@ -27,7 +27,13 @@ DECLARE
                      'av_storage_unit',
                      'av_log_message',     -- located in at_schema_2
                      'av_dataexchange_job',
-                     'av_display_units'
+                     'av_display_units',
+                     'av_rating_template',
+                     'av_rating_spec',
+                     'av_rating',
+                     'av_rating_local',
+                     'av_rating_values',
+                     'av_rating_values_native'
                     );
 BEGIN
    FOR i IN view_names.FIRST .. view_names.LAST
@@ -1800,5 +1806,721 @@ select o.office_id,
    and p.parameter_code = d.parameter_code
    and bp.base_parameter_code = p.base_parameter_code
    and u.unit_code = display_unit_code
+/
+show errors;
+
+------------------------
+-- AV_RATING_TEMPLATE --
+------------------------
+create or replace force view av_rating_template 
+(
+   office_id,
+   template_id,
+   parameters_id,
+   independent_parameters,
+   dependent_parameter,
+   version,
+   description,
+   rating_methods
+)
+as
+select distinct
+       office_id,
+       template_id,
+       parameters_id,
+       independent_parameters,
+       dependent_parameter,
+       version,
+       description,
+       rating_methods
+  from 
+(  select rt.template_code,
+          o.office_id,
+          rt.parameters_id||'.'||rt.version as template_id,
+          rt.parameters_id,
+          substr(rt.parameters_id, 1, instr(rt.parameters_id, ';') - 1) as independent_parameters,
+          substr(rt.parameters_id, instr(rt.parameters_id, ';') + 1) as dependent_parameter,
+          rt.version,
+          rt.description
+     from at_rating_template rt,
+          cwms_office o
+    where o.office_code = rt.office_code
+) a
+join
+(  select p1.template_code,
+          p1.rating_methods
+          ||substr('/', 1, length(p2.rating_methods))
+          ||p2.rating_methods
+          ||substr('/', 1, length(p3.rating_methods))
+          ||p3.rating_methods
+          ||substr('/', 1, length(p4.rating_methods))
+          ||p4.rating_methods
+          ||substr('/', 1, length(p5.rating_methods))
+          ||p5.rating_methods as rating_methods
+   from   
+   (  select template_code,
+             parameter_position,
+             rm2.rating_method_id||','||
+             rm1.rating_method_id||','||
+             rm3.rating_method_id as rating_methods
+       from  at_rating_ind_param_spec rips,
+             cwms_rating_method rm1,
+             cwms_rating_method rm2,
+             cwms_rating_method rm3
+       where rm1.rating_method_code = rips.in_range_rating_method
+         and rm2.rating_method_code = rips.out_range_low_rating_method
+         and rm3.rating_method_code = rips.out_range_high_rating_method
+         and parameter_position = 1
+   ) p1
+   left outer join
+   (  select template_code,
+             parameter_position,
+             rm2.rating_method_id||','||
+             rm1.rating_method_id||','||
+             rm3.rating_method_id as rating_methods
+       from  at_rating_ind_param_spec rips,
+             cwms_rating_method rm1,
+             cwms_rating_method rm2,
+             cwms_rating_method rm3
+       where rm1.rating_method_code = rips.in_range_rating_method
+         and rm2.rating_method_code = rips.out_range_low_rating_method
+         and rm3.rating_method_code = rips.out_range_high_rating_method
+         and parameter_position = 2
+   ) p2
+   on p2.template_code = p1.template_code
+   left outer join
+   (  select template_code,
+             parameter_position,
+             rm2.rating_method_id||','||
+             rm1.rating_method_id||','||
+             rm3.rating_method_id as rating_methods
+       from  at_rating_ind_param_spec rips,
+             cwms_rating_method rm1,
+             cwms_rating_method rm2,
+             cwms_rating_method rm3
+       where rm1.rating_method_code = rips.in_range_rating_method
+         and rm2.rating_method_code = rips.out_range_low_rating_method
+         and rm3.rating_method_code = rips.out_range_high_rating_method
+         and parameter_position = 3
+   ) p3
+   on p3.template_code = p1.template_code
+   left outer join
+   (  select template_code,
+             parameter_position,
+             rm2.rating_method_id||','||
+             rm1.rating_method_id||','||
+             rm3.rating_method_id as rating_methods
+       from  at_rating_ind_param_spec rips,
+             cwms_rating_method rm1,
+             cwms_rating_method rm2,
+             cwms_rating_method rm3
+       where rm1.rating_method_code = rips.in_range_rating_method
+         and rm2.rating_method_code = rips.out_range_low_rating_method
+         and rm3.rating_method_code = rips.out_range_high_rating_method
+         and parameter_position = 4
+   ) p4
+   on p4.template_code = p1.template_code
+   left outer join
+   (  select template_code,
+             parameter_position,
+             rm2.rating_method_id||','||
+             rm1.rating_method_id||','||
+             rm3.rating_method_id as rating_methods
+       from  at_rating_ind_param_spec rips,
+             cwms_rating_method rm1,
+             cwms_rating_method rm2,
+             cwms_rating_method rm3
+       where rm1.rating_method_code = rips.in_range_rating_method
+         and rm2.rating_method_code = rips.out_range_low_rating_method
+         and rm3.rating_method_code = rips.out_range_high_rating_method
+         and parameter_position = 5
+   ) p5
+   on p5.template_code = p1.template_code
+)  b
+on b.template_code = a.template_code; 
+/
+show errors;
+
+--------------------
+-- AV_RATING_SPEC --
+--------------------
+create or replace force view av_rating_spec
+(
+   office_id,
+   rating_id,
+   location_id,
+   template_id,
+   version,
+   source_agency,
+   active_flag,
+   auto_update_flag,
+   auto_activate_flag,
+   auto_migrate_ext_flag,
+   date_methods,
+   ind_rounding_specs,
+   dep_rounding_spec,
+   description
+)
+as
+select office_id,
+       rating_id,
+       location_id,
+       template_id,
+       version,
+       source_agency,
+       active_flag,
+       auto_update_flag,
+       auto_activate_flag,
+       auto_migrate_ext_flag,
+       date_methods,
+       ind_rounding_specs,
+       dep_rounding_spec,
+       description
+  from ( select rs.rating_spec_code,
+                rs.template_code,
+                o.office_id,
+                bl.base_location_id
+                ||substr('-', 1, length(pl.sub_location_id))
+                ||pl.sub_location_id
+                ||'.'
+                ||rt.parameters_id
+                ||'.'
+                ||rt.version
+                ||'.'
+                ||rs.version as rating_id,
+                bl.base_location_id
+                ||substr('-', 1, length(pl.sub_location_id))
+                ||pl.sub_location_id as location_id,
+                rt.parameters_id
+                ||'.'
+                ||rt.version as template_id,
+                rs.version,
+                replace(lg.loc_group_id, 'Default', '') as source_agency,
+                rs.active_flag,
+                rs.auto_update_flag,
+                rs.auto_activate_flag,
+                rs.auto_migrate_ext_flag,
+                rm2.rating_method_id
+                ||','
+                ||rm1.rating_method_id
+                ||','
+                ||rm3.rating_method_id as date_methods,
+                rs.dep_rounding_spec,
+                rs.description
+           from at_rating_spec rs,
+                at_rating_template rt,
+                at_physical_location pl,
+                at_loc_group lg,
+                at_base_location bl,
+                cwms_office o,
+                cwms_rating_method rm1,
+                cwms_rating_method rm2,
+                cwms_rating_method rm3
+          where rt.template_code = rs.template_code
+            and pl.location_code = rs.location_code
+            and bl.base_location_code = pl.base_location_code
+            and o.office_code = bl.db_office_code
+            and lg.loc_group_code = nvl(rs.source_agency_code, 0)
+            and rm1.rating_method_code = rs.in_range_rating_method
+            and rm2.rating_method_code = rs.out_range_low_rating_method
+            and rm3.rating_method_code = rs.out_range_high_rating_method
+       ) a
+       join
+       ( select p1.rating_spec_code,
+                p1.rounding_spec
+                ||substr('/', 1, length(p2.rounding_spec))
+                ||p2.rounding_spec
+                ||substr('/', 1, length(p3.rounding_spec))
+                ||p3.rounding_spec
+                ||substr('/', 1, length(p4.rounding_spec))
+                ||p4.rounding_spec
+                ||substr('/', 1, length(p5.rounding_spec))
+                ||p5.rounding_spec as ind_rounding_specs
+           from(  select rating_spec_code,
+                         rounding_spec
+                    from at_rating_ind_rounding
+                   where parameter_position = 1
+               ) p1
+               left outer join
+               (  select rating_spec_code,
+                         rounding_spec
+                    from at_rating_ind_rounding
+                   where parameter_position = 2
+               ) p2
+               on p2.rating_spec_code = p1.rating_spec_code
+               left outer join
+               (  select rating_spec_code,
+                         rounding_spec
+                    from at_rating_ind_rounding
+                   where parameter_position = 3
+               ) p3
+               on p3.rating_spec_code = p1.rating_spec_code
+               left outer join
+               (  select rating_spec_code,
+                         rounding_spec
+                    from at_rating_ind_rounding
+                   where parameter_position = 4
+               ) p4
+               on p4.rating_spec_code = p1.rating_spec_code
+               left outer join
+               (  select rating_spec_code,
+                         rounding_spec
+                    from at_rating_ind_rounding
+                   where parameter_position = 5
+               ) p5
+               on p5.rating_spec_code = p1.rating_spec_code
+       ) b on b.rating_spec_code = a.rating_spec_code;      
+/
+show errors;
+
+---------------
+-- AV_RATING --
+---------------
+create or replace force view av_rating
+(
+   rating_code,
+   parent_rating_code,
+   office_id,
+   rating_id,
+   location_id,
+   template_id,
+   version,
+   native_units,
+   effective_date,
+   create_date,
+   active_flag,
+   formula,
+   description
+)
+as
+select r.rating_code,
+       r.ref_rating_code as parent_rating_code,
+       o.office_id,
+       bl.base_location_id
+       ||substr('-', 1, length(pl.sub_location_id))
+       ||pl.sub_location_id
+       ||'.'
+       ||rt.parameters_id
+       ||'.'
+       ||rt.version
+       ||'.'
+       ||rs.version as rating_id,
+       bl.base_location_id
+       ||substr('-', 1, length(pl.sub_location_id))
+       ||pl.sub_location_id as location_id,
+       rt.parameters_id
+       ||'.'
+       ||rt.version as template_id,
+       rs.version,
+       r.native_units,
+       r.effective_date,
+       r.create_date,
+       r.active_flag,
+       r.formula,
+       r.description
+  from at_rating r,
+       at_rating_spec rs,
+       at_rating_template rt,
+       at_physical_location pl,
+       at_base_location bl,
+       cwms_office o
+ where rs.rating_spec_code = r.rating_spec_code
+   and rt.template_code = rs.template_code
+   and pl.location_code = rs.location_code
+   and bl.base_location_code = pl.base_location_code
+   and o.office_code = bl.db_office_code;
+/
+show errors;
+
+---------------------
+-- AV_RATING_LOCAL --
+---------------------
+create or replace force view av_rating_local
+(
+   rating_code,
+   parent_rating_code,
+   office_id,
+   rating_id,
+   location_id,
+   template_id,
+   version,
+   native_units,
+   effective_date,
+   create_date,
+   active_flag,
+   formula,
+   description
+)
+as
+select r.rating_code,
+       r.ref_rating_code as parent_rating_code,
+       o.office_id,
+       bl.base_location_id
+       ||substr('-', 1, length(pl.sub_location_id))
+       ||pl.sub_location_id
+       ||'.'
+       ||rt.parameters_id
+       ||'.'
+       ||rt.version
+       ||'.'
+       ||rs.version as rating_id,
+       bl.base_location_id
+       ||substr('-', 1, length(pl.sub_location_id))
+       ||pl.sub_location_id as location_id,
+       rt.parameters_id
+       ||'.'
+       ||rt.version as template_id,
+       rs.version,
+       r.native_units,
+       cwms_util.change_timezone(r.effective_date, 'UTC', tz.time_zone_name) as effective_date,
+       cwms_util.change_timezone(r.create_date, 'UTC', tz.time_zone_name) as create_date,
+       r.active_flag,
+       r.formula,
+       r.description
+  from at_rating r,
+       at_rating_spec rs,
+       at_rating_template rt,
+       at_physical_location pl,
+       at_base_location bl,
+       cwms_office o,
+       cwms_time_zone tz
+ where rs.rating_spec_code = r.rating_spec_code
+   and rt.template_code = rs.template_code
+   and pl.location_code = rs.location_code
+   and bl.base_location_code = pl.base_location_code
+   and o.office_code = bl.db_office_code
+   and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+/
+show errors;
+
+----------------------
+-- AV_RATING_VALUES --
+----------------------
+create or replace force view av_rating_values
+(
+   rating_code,
+   ind_value_1,
+   ind_value_2,
+   ind_value_3,
+   ind_value_4,
+   ind_value_5,
+   dep_value
+)
+as
+select distinct
+       p1.rating_code,
+       p1.ind_value as ind_value_1,
+       p2.ind_value as ind_value_2,
+       p3.ind_value as ind_value_3,
+       p4.ind_value as ind_value_4,
+       p5.ind_value as ind_value_5,
+       coalesce(p1.dep_value, p2.dep_value, p3.dep_value, p4.dep_value, p5.dep_value) as dep_value
+  from ( select rip.rating_code,
+                rip.rating_ind_param_code,
+                rv.other_ind_hash,
+                rv.ind_value,
+                rv.dep_value,
+                rv.dep_rating_ind_param_code
+           from at_rating_ind_parameter rip,
+                at_rating_ind_param_spec rips,
+                at_rating_value rv
+          where rips.ind_param_spec_code = rip.ind_param_spec_code
+            and rips.parameter_position = 1 
+            and rv.rating_ind_param_code = rip.rating_ind_param_code
+       ) p1
+       left outer join
+       ( select rip.rating_ind_param_code,
+                rv.other_ind_hash,
+                rv.ind_value,
+                rv.dep_value,
+                rv.dep_rating_ind_param_code
+           from at_rating_ind_parameter rip,
+                at_rating_ind_param_spec rips,
+                at_rating_value rv
+          where rips.ind_param_spec_code = rip.ind_param_spec_code
+            and rips.parameter_position = 2 
+            and rv.rating_ind_param_code = rip.rating_ind_param_code
+       ) p2
+       on p2.rating_ind_param_code=p1.dep_rating_ind_param_code
+       left outer join
+       ( select rip.rating_ind_param_code,
+                rv.other_ind_hash,
+                rv.ind_value,
+                rv.dep_value,
+                rv.dep_rating_ind_param_code
+           from at_rating_ind_parameter rip,
+                at_rating_ind_param_spec rips,
+                at_rating_value rv
+          where rips.ind_param_spec_code = rip.ind_param_spec_code
+            and rips.parameter_position = 3 
+            and rv.rating_ind_param_code = rip.rating_ind_param_code
+       ) p3
+       on p3.rating_ind_param_code=p2.dep_rating_ind_param_code
+       left outer join
+       ( select rip.rating_ind_param_code,
+                rv.other_ind_hash,
+                rv.ind_value,
+                rv.dep_value,
+                rv.dep_rating_ind_param_code
+           from at_rating_ind_parameter rip,
+                at_rating_ind_param_spec rips,
+                at_rating_value rv
+          where rips.ind_param_spec_code = rip.ind_param_spec_code
+            and rips.parameter_position = 4 
+            and rv.rating_ind_param_code = rip.rating_ind_param_code
+       ) p4
+       on p4.rating_ind_param_code=p3.dep_rating_ind_param_code
+       left outer join
+       ( select rip.rating_ind_param_code,
+                rv.other_ind_hash,
+                rv.ind_value,
+                rv.dep_value,
+                rv.dep_rating_ind_param_code
+           from at_rating_ind_parameter rip,
+                at_rating_ind_param_spec rips,
+                at_rating_value rv
+          where rips.ind_param_spec_code = rip.ind_param_spec_code
+            and rips.parameter_position = 5 
+            and rv.rating_ind_param_code = rip.rating_ind_param_code
+       ) p5
+       on p5.rating_ind_param_code=p4.dep_rating_ind_param_code
+ where (p1.dep_value is null or p1.other_ind_hash = rating_value_t.hash_other_ind(null))
+   and (p2.dep_value is null or p2.other_ind_hash = rating_value_t.hash_other_ind(double_tab_t(p1.ind_value)))
+   and (p3.dep_value is null or p3.other_ind_hash = rating_value_t.hash_other_ind(double_tab_t(p1.ind_value, p2.ind_value)))
+   and (p4.dep_value is null or p4.other_ind_hash = rating_value_t.hash_other_ind(double_tab_t(p1.ind_value, p2.ind_value, p3.ind_value)))
+   and (p5.dep_value is null or p5.other_ind_hash = rating_value_t.hash_other_ind(double_tab_t(p1.ind_value, p2.ind_value, p3.ind_value, p4.ind_value)));
+/
+show errors;
+   
+-----------------------------
+-- AV_RATING_VALUES_NATIVE --
+-----------------------------
+create or replace force view av_rating_values_native
+(
+   rating_code,
+   ind_value_1,
+   ind_value_2,
+   ind_value_3,
+   ind_value_4,
+   ind_value_5,
+   dep_value
+)
+as
+select distinct
+       r1.rating_code,
+       r1.native_ind_value as ind_value_1,
+       r2.native_ind_value as ind_value_2,
+       r3.native_ind_value as ind_value_3,
+       r4.native_ind_value as ind_value_4,
+       r5.native_ind_value as ind_value_5,
+       coalesce(r1.native_dep_value, r2.native_dep_value, r3.native_dep_value, r4.native_dep_value, r5.native_dep_value) as dep_value
+  from ( select rip.rating_code,
+                rip.rating_ind_param_code,
+                rv.other_ind_hash,
+                rv.ind_value,
+                rv.dep_value,
+                cwms_rounding.round_dd_f(rv.ind_value * uc1.factor + uc1.offset, '8888888888') as native_ind_value,
+                cwms_rounding.round_dd_f(rv.dep_value * uc2.factor + uc2.offset, '8888888888') as native_dep_value,
+                rv.dep_rating_ind_param_code
+           from at_parameter p1,
+                cwms_base_parameter bp1,
+                cwms_unit_conversion uc1,
+                at_parameter p2,
+                cwms_base_parameter bp2,
+                cwms_unit_conversion uc2,
+                at_rating_ind_parameter rip,
+                at_rating_ind_param_spec rips,
+                at_rating_value rv,
+                at_rating r,
+                at_rating_spec rs,
+                at_rating_template rt
+          where rips.ind_param_spec_code = rip.ind_param_spec_code
+            and rips.parameter_position = 1
+            and p1.parameter_code = rips.parameter_code
+            and bp1.base_parameter_code = p1.base_parameter_code 
+            and rv.rating_ind_param_code = rip.rating_ind_param_code
+            and r.rating_code = rip.rating_code
+            and uc1.from_unit_code = bp1.unit_code
+            and uc1.to_unit_id = substr(r.native_units, 1, instr(replace(r.native_units, ';', ','), ',') - 1)
+            and rs.rating_spec_code = r.rating_spec_code
+            and rt.template_code = rs.template_code
+            and p2.parameter_code = rt.dep_parameter_code
+            and bp2.base_parameter_code = p2.base_parameter_code
+            and uc2.from_unit_code = bp2.unit_code
+            and uc2.to_unit_id = substr(r.native_units, instr(r.native_units, ';') + 1)
+       ) r1
+       left outer join
+       ( select rip.rating_ind_param_code,
+                rv.other_ind_hash,
+                rv.ind_value,
+                rv.dep_value,
+                cwms_rounding.round_dd_f(rv.ind_value * uc1.factor + uc1.offset, '8888888888') as native_ind_value,
+                cwms_rounding.round_dd_f(rv.dep_value * uc2.factor + uc2.offset, '8888888888') as native_dep_value,
+                rv.dep_rating_ind_param_code
+           from at_parameter p1,
+                cwms_base_parameter bp1,
+                cwms_unit_conversion uc1,
+                at_parameter p2,
+                cwms_base_parameter bp2,
+                cwms_unit_conversion uc2,
+                at_rating_ind_parameter rip,
+                at_rating_ind_param_spec rips,
+                at_rating_value rv,
+                at_rating r,
+                at_rating_spec rs,
+                at_rating_template rt
+          where rips.ind_param_spec_code = rip.ind_param_spec_code
+            and rips.parameter_position = 2 
+            and rv.rating_ind_param_code = rip.rating_ind_param_code
+            and p1.parameter_code = rips.parameter_code
+            and bp1.base_parameter_code = p1.base_parameter_code 
+            and r.rating_code = rip.rating_code
+            and uc1.from_unit_code = bp1.unit_code
+            and uc1.to_unit_id = case instr(replace(r.native_units, ';', ','), ',', 1, 2)
+                                    when 0 then 
+                                       null
+                                    else substr(
+                                       r.native_units, instr(replace(r.native_units, ';', ','), ',', 1, 1) + 1, 
+                                       instr(replace(r.native_units, ';', ','), ',', 1, 2) - instr(replace(r.native_units, ';', ','), ',', 1, 1) - 1)  
+                                 end
+            and rs.rating_spec_code = r.rating_spec_code
+            and rt.template_code = rs.template_code
+            and p2.parameter_code = rt.dep_parameter_code
+            and bp2.base_parameter_code = p2.base_parameter_code
+            and uc2.from_unit_code = bp2.unit_code
+            and uc2.to_unit_id = substr(r.native_units, instr(r.native_units, ';') + 1)
+       ) r2
+       on r2.rating_ind_param_code=r1.dep_rating_ind_param_code
+       left outer join
+       ( select rip.rating_ind_param_code,
+                rv.other_ind_hash,
+                rv.ind_value,
+                rv.dep_value,
+                cwms_rounding.round_dd_f(rv.ind_value * uc1.factor + uc1.offset, '8888888888') as native_ind_value,
+                cwms_rounding.round_dd_f(rv.dep_value * uc2.factor + uc2.offset, '8888888888') as native_dep_value,
+                rv.dep_rating_ind_param_code
+           from at_parameter p1,
+                cwms_base_parameter bp1,
+                cwms_unit_conversion uc1,
+                at_parameter p2,
+                cwms_base_parameter bp2,
+                cwms_unit_conversion uc2,
+                at_rating_ind_parameter rip,
+                at_rating_ind_param_spec rips,
+                at_rating_value rv,
+                at_rating r,
+                at_rating_spec rs,
+                at_rating_template rt
+          where rips.ind_param_spec_code = rip.ind_param_spec_code
+            and rips.parameter_position = 3 
+            and rv.rating_ind_param_code = rip.rating_ind_param_code
+            and p1.parameter_code = rips.parameter_code
+            and bp1.base_parameter_code = p1.base_parameter_code 
+            and r.rating_code = rip.rating_code
+            and uc1.from_unit_code = bp1.unit_code
+            and uc1.to_unit_id = case instr(replace(r.native_units, ';', ','), ',', 1, 3)
+                                    when 0 then 
+                                       null
+                                    else substr(
+                                       r.native_units, instr(replace(r.native_units, ';', ','), ',', 1, 2) + 1, 
+                                       instr(replace(r.native_units, ';', ','), ',', 1, 3) - instr(replace(r.native_units, ';', ','), ',', 1, 2) - 1)  
+                                 end
+            and rs.rating_spec_code = r.rating_spec_code
+            and rt.template_code = rs.template_code
+            and p2.parameter_code = rt.dep_parameter_code
+            and bp2.base_parameter_code = p2.base_parameter_code
+            and uc2.from_unit_code = bp2.unit_code
+            and uc2.to_unit_id = substr(r.native_units, instr(r.native_units, ';') + 1)
+       ) r3
+       on r3.rating_ind_param_code=r2.dep_rating_ind_param_code
+       left outer join
+       ( select rip.rating_ind_param_code,
+                rv.other_ind_hash,
+                rv.ind_value,
+                rv.dep_value,
+                cwms_rounding.round_dd_f(rv.ind_value * uc1.factor + uc1.offset, '8888888888') as native_ind_value,
+                cwms_rounding.round_dd_f(rv.dep_value * uc2.factor + uc2.offset, '8888888888') as native_dep_value,
+                rv.dep_rating_ind_param_code
+           from at_parameter p1,
+                cwms_base_parameter bp1,
+                cwms_unit_conversion uc1,
+                at_parameter p2,
+                cwms_base_parameter bp2,
+                cwms_unit_conversion uc2,
+                at_rating_ind_parameter rip,
+                at_rating_ind_param_spec rips,
+                at_rating_value rv,
+                at_rating r,
+                at_rating_spec rs,
+                at_rating_template rt
+          where rips.ind_param_spec_code = rip.ind_param_spec_code
+            and rips.parameter_position = 4 
+            and rv.rating_ind_param_code = rip.rating_ind_param_code
+            and p1.parameter_code = rips.parameter_code
+            and bp1.base_parameter_code = p1.base_parameter_code 
+            and r.rating_code = rip.rating_code
+            and uc1.from_unit_code = bp1.unit_code
+            and uc1.to_unit_id = case instr(replace(r.native_units, ';', ','), ',', 1, 4)
+                                    when 0 then 
+                                       null
+                                    else substr(
+                                       r.native_units, instr(replace(r.native_units, ';', ','), ',', 1, 3) + 1, 
+                                       instr(replace(r.native_units, ';', ','), ',', 1, 4) - instr(replace(r.native_units, ';', ','), ',', 1, 3) - 1)  
+                                 end
+            and rs.rating_spec_code = r.rating_spec_code
+            and rt.template_code = rs.template_code
+            and p2.parameter_code = rt.dep_parameter_code
+            and bp2.base_parameter_code = p2.base_parameter_code
+            and uc2.from_unit_code = bp2.unit_code
+            and uc2.to_unit_id = substr(r.native_units, instr(r.native_units, ';') + 1)
+       ) r4
+       on r4.rating_ind_param_code=r3.dep_rating_ind_param_code
+       left outer join
+       ( select rip.rating_ind_param_code,
+                rv.other_ind_hash,
+                rv.ind_value,
+                rv.dep_value,
+                cwms_rounding.round_dd_f(rv.ind_value * uc1.factor + uc1.offset, '8888888888') as native_ind_value,
+                cwms_rounding.round_dd_f(rv.dep_value * uc2.factor + uc2.offset, '8888888888') as native_dep_value,
+                rv.dep_rating_ind_param_code
+           from at_parameter p1,
+                cwms_base_parameter bp1,
+                cwms_unit_conversion uc1,
+                at_parameter p2,
+                cwms_base_parameter bp2,
+                cwms_unit_conversion uc2,
+                at_rating_ind_parameter rip,
+                at_rating_ind_param_spec rips,
+                at_rating_value rv,
+                at_rating r,
+                at_rating_spec rs,
+                at_rating_template rt
+          where rips.ind_param_spec_code = rip.ind_param_spec_code
+            and rips.parameter_position = 5 
+            and rv.rating_ind_param_code = rip.rating_ind_param_code
+            and p1.parameter_code = rips.parameter_code
+            and bp1.base_parameter_code = p1.base_parameter_code 
+            and r.rating_code = rip.rating_code
+            and uc1.from_unit_code = bp1.unit_code
+            and uc1.to_unit_id = case instr(replace(r.native_units, ';', ','), ',', 1, 5)
+                                    when 0 then 
+                                       null
+                                    else substr(
+                                       r.native_units, instr(replace(r.native_units, ';', ','), ',', 1, 4) + 1, 
+                                       instr(replace(r.native_units, ';', ','), ',', 1, 5) - instr(replace(r.native_units, ';', ','), ',', 1, 4) - 1)  
+                                 end
+            and rs.rating_spec_code = r.rating_spec_code
+            and rt.template_code = rs.template_code
+            and p2.parameter_code = rt.dep_parameter_code
+            and bp2.base_parameter_code = p2.base_parameter_code
+            and uc2.from_unit_code = bp2.unit_code
+            and uc2.to_unit_id = substr(r.native_units, instr(r.native_units, ';') + 1)
+       ) r5
+       on r5.rating_ind_param_code=r4.dep_rating_ind_param_code
+ where (r1.dep_value is null or r1.other_ind_hash = rating_value_t.hash_other_ind(null))
+   and (r2.dep_value is null or r2.other_ind_hash = rating_value_t.hash_other_ind(double_tab_t(r1.ind_value)))
+   and (r3.dep_value is null or r3.other_ind_hash = rating_value_t.hash_other_ind(double_tab_t(r1.ind_value, r2.ind_value)))
+   and (r4.dep_value is null or r4.other_ind_hash = rating_value_t.hash_other_ind(double_tab_t(r1.ind_value, r2.ind_value, r3.ind_value)))
+   and (r5.dep_value is null or r5.other_ind_hash = rating_value_t.hash_other_ind(double_tab_t(r1.ind_value, r2.ind_value, r3.ind_value, r4.ind_value)));
 /
 show errors;
