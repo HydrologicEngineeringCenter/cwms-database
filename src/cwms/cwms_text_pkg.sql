@@ -74,10 +74,26 @@ procedure retrieve_text2(
 --
 procedure update_text(
 	p_text           in clob,                   -- the text, unlimited length
-	p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_id             in varchar2,               -- identifier of text to update (256 chars max)
 	p_description    in varchar2 default null,  -- description, defaults to null
 	p_ignore_nulls   in varchar2 default 'T',   -- flag specifying null inputs leave current values unchanged
 	p_office_id      in varchar2 default null); -- office id, defaults current user's office
+
+--
+-- append to text 
+--
+procedure append_text(
+   p_new_text       in out nocopy clob,        -- the text to append, unlimited length
+   p_id             in varchar2,               -- identifier of text to append to (256 chars max)
+   p_office_id      in varchar2 default null); -- office id, defaults current user's office
+
+--
+-- append to text 
+--
+procedure append_text(
+   p_new_text       in varchar2,               -- the text to append, limited to varchar2 max size
+   p_id             in varchar2,               -- identifier of text to append to (256 chars max)
+   p_office_id      in varchar2 default null); -- office id, defaults current user's office
 
 --
 -- delete text

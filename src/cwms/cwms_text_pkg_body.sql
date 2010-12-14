@@ -231,6 +231,94 @@ begin
 end update_text;
 
 --
+-- append to text 
+--
+procedure append_text(
+   p_new_text       in out nocopy clob,       -- the text to append, unlimited length
+   p_id             in varchar2,              -- identifier of text to append to (256 chars max)
+   p_office_id      in varchar2 default null) -- office id, defaults current user's office
+is
+   l_existing_text clob;
+   l_code          number(10);
+   l_office_code   number(10);
+begin
+   begin
+      l_code := cwms_text.get_text_code(p_id, p_office_id);
+      select office_code,
+             value
+        into l_office_code,
+             l_existing_text
+        from at_clob
+       where clob_code = l_code;
+
+      if l_office_code = cwms_util.db_office_code_all then
+            cwms_err.raise(
+               'ERROR',
+               'Cannot update text owned by the CWMS Office ID.');
+      end if;
+      cwms_util.append(l_existing_text, p_new_text);
+      update at_clob
+         set value = l_existing_text
+       where clob_code = l_code;       
+   exception
+      when no_data_found then
+         store_text(
+            p_text_code      => l_code,
+            p_text           => p_new_text,
+            p_id             => p_id,
+            p_description    => null,
+            p_fail_if_exists => 'T',
+            p_office_id      => p_office_id);
+   end;   
+end append_text;   
+
+--
+-- append to text 
+--
+procedure append_text(
+   p_new_text       in varchar2,              -- the text to append, limited to varchar2 max size
+   p_id             in varchar2,              -- identifier of text to append to (256 chars max)
+   p_office_id      in varchar2 default null) -- office id, defaults current user's office
+is   
+   l_existing_text clob;
+   l_code          number(10);
+   l_office_code   number(10);
+begin
+   begin
+      l_code := cwms_text.get_text_code(p_id, p_office_id);
+      select office_code,
+             value
+        into l_office_code,
+             l_existing_text
+        from at_clob
+       where clob_code = l_code;
+
+      if l_office_code = cwms_util.db_office_code_all then
+            cwms_err.raise(
+               'ERROR',
+               'Cannot update text owned by the CWMS Office ID.');
+      end if;
+      cwms_util.append(l_existing_text, p_new_text);
+      update at_clob
+         set value = l_existing_text
+       where clob_code = l_code;       
+   exception
+      when no_data_found then
+         dbms_lob.createtemporary(l_existing_text, true);
+         dbms_lob.open(l_existing_text, dbms_lob.lob_readwrite);
+         dbms_lob.writeappend(l_existing_text, length(p_new_text), p_new_text);
+         dbms_lob.close(l_existing_text);
+         store_text(
+            p_text_code      => l_code,
+            p_text           => l_existing_text,
+            p_id             => p_id,
+            p_description    => null,
+            p_fail_if_exists => 'T',
+            p_office_id      => p_office_id);
+   end;   
+end append_text;   
+
+--
 -- delete text
 --
 procedure delete_text(
@@ -449,7 +537,6 @@ procedure get_text_code(
 	p_id             in  varchar2,               -- identifier with which to retrieve text (256 chars max)
 	p_office_id      in  varchar2 default null)  -- office id, defaults current user's office
 is
-   l_id               varchar2(256) := upper(p_id);
    l_office_code      number := cwms_util.get_office_code(p_office_id);
    l_cwms_office_code number := cwms_util.get_office_code('CWMS');
 begin
@@ -457,7 +544,7 @@ begin
      into p_text_code
      from at_clob
     where office_code in (l_office_code, l_cwms_office_code)
-      and id = l_id;
+      and id = upper(p_id);
 end get_text_code;
 
 --
