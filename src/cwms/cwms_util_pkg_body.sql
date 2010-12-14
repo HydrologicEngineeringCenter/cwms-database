@@ -2369,6 +2369,28 @@ AS
 
 		RETURN l_default_units;
 	END;
+      
+   function convert_to_db_units(
+      p_value        in binary_double,
+      p_parameter_id in varchar2,
+      p_unit_id      in varchar2)
+   return binary_double
+   is
+      l_factor binary_double;
+      l_offset binary_double;
+   begin
+      select uc.factor,
+             uc.offset
+        into l_factor,
+             l_offset
+        from cwms_unit_conversion uc,
+             cwms_base_parameter bp
+       where bp.base_parameter_id = get_base_id(p_parameter_id)
+         and uc.to_unit_code = bp.unit_code
+         and uc.from_unit_id = p_unit_id;
+         
+      return p_value * l_factor + l_offset;         
+   end;      
 
 	--
 	-- sign-extends 32-bit integers so they can be retrieved by
@@ -3061,6 +3083,56 @@ AS
       append(l_dst, p_src);
       p_dst := xmltype(l_dst);
    end;
+
+   --------------------------   
+   -- XML Utility routines --
+   --------------------------
+   function get_xml_node(
+      p_xml  in xmltype,
+      p_path in varchar)
+   return xmltype
+   is
+   begin
+      return case p_xml is null or p_path is null
+                when true  then null
+                when false then p_xml.extract(p_path)
+             end;
+   end get_xml_node;
+      
+   function get_xml_text(
+      p_xml  in xmltype,
+      p_path in varchar)
+   return varchar2
+   is
+      l_xml xmltype;
+      l_text varchar2(32767);
+   begin
+      l_xml := get_xml_node(p_xml, p_path);
+      if l_xml is null then
+         return null;
+      else
+         l_text := l_xml.getstringval;
+         if instr(p_path, '/@') = 0 then         
+            l_xml := l_xml.extract('/node()/text()');
+         end if;  
+      end if;
+      if l_xml is null then
+         return null;
+      else         
+         l_text := regexp_replace(regexp_replace(l_xml.getstringval, '^\s+'), '\s+$');
+         return l_text;  
+      end if;
+   end;
+      
+   function get_xml_number(
+      p_xml  in xmltype,
+      p_path in varchar)
+   return number
+   is
+   begin
+      return to_number(get_xml_text(p_xml, p_path));
+   end;
+
                
 /*
 BEGIN

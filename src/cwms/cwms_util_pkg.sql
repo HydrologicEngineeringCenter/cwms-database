@@ -432,6 +432,12 @@ AS
 										 p_unit_system 	IN VARCHAR2 DEFAULT 'SI'
 										)
 		RETURN VARCHAR2;
+      
+   function convert_to_db_units(
+      p_value        in binary_double,
+      p_parameter_id in varchar2,
+      p_unit_id      in varchar2)
+   return binary_double;      
 
 	--
 	-- sign-extends 32-bit integers so they can be retrieved by
@@ -626,7 +632,25 @@ AS
    procedure append(
       p_dst in out nocopy xmltype,
       p_src in            xmltype);
-   
+
+   --------------------------   
+   -- XML Utility routines --
+   --------------------------
+   function get_xml_node(
+      p_xml  in xmltype,
+      p_path in varchar)
+   return xmltype;
+      
+   function get_xml_text(
+      p_xml  in xmltype,
+      p_path in varchar)
+   return varchar2;
+      
+   function get_xml_number(
+      p_xml  in xmltype,
+      p_path in varchar)
+   return number;
+      
 END cwms_util;
 /
 
