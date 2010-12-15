@@ -9,7 +9,9 @@ drop type rating_value_t;
 drop type abs_rating_ind_parameter_t;
 drop type rating_value_note_tab_t;
 drop type rating_value_note_t;
+drop type rating_spec_tab_t;
 drop type rating_spec_t;
+drop type rating_template_tab_t;
 drop type rating_template_t;
 drop type rating_ind_param_spec_tab_t;
 drop type rating_ind_param_spec_t;
@@ -911,6 +913,10 @@ end;
 /
 show errors;
 
+create type rating_template_tab_t as table of rating_template_t;
+/
+show errors;
+
 create type rating_spec_t as object(
    office_id                    varchar2(16),
    location_id                  varchar2(49),
@@ -1703,7 +1709,7 @@ as
          ||'<rating-spec-id>'||self.location_id||'.'||self.template_id||'.'||self.version||'</rating-spec-id>'
          ||'<template-id>'||self.template_id||'</template-id>'
          ||'<location-id>'||self.location_id||'</location-id>'
-         ||'<version>'||self.location_id||'</version>'
+         ||'<version>'||self.version||'</version>'
          ||case self.source_agency_id is null
               when true  then '<source-agency/>'
               when false then '<source-agency>'||self.source_agency_id||'</source-agency>'
@@ -1794,6 +1800,10 @@ as
          p_office_id);
    end;
 end;
+/
+show errors;
+
+create type rating_spec_tab_t as table of rating_spec_t;
 /
 show errors;
 
