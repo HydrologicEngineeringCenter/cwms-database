@@ -1508,7 +1508,10 @@ ALTER TABLE AT_LOC_CATEGORY ADD CONSTRAINT AT_LOC_CATEGORY_FK1 FOREIGN KEY (DB_O
 
 INSERT INTO at_loc_category VALUES (0, 'Default',        53, 'Default');
 INSERT INTO at_loc_category VALUES (1, 'Agency Aliases', 53, 'Location aliases for other agencies'); 
-INSERT INTO at_loc_category VALUES (2, 'Basins',         53, 'Category for basin location groups'); 
+-- INSERT INTO at_loc_category VALUES (2, 'Basin',          53, 'Category for basin location groups');
+-- INSERT INTO at_loc_category VALUES (3, 'Outlet',         53, 'Category for outlet location groups');
+-- INSERT INTO at_loc_category VALUES (4, 'Turbine',        53, 'Category for turbine location groups');
+
 
 --------
 --------
