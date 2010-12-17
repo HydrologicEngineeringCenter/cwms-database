@@ -362,7 +362,7 @@ begin
       select structure_type_code
         into l_embankment.structure_type_code
         from at_embank_structure_type
-       where db_office_code = cwms_util.get_office_code(p_embankment.structure_type.office_id)
+       where db_office_code = cwms_util.get_office_code(p_embankment.structure_type.office_id) 
          and upper(structure_type_display_value) = upper(p_embankment.structure_type.display_value); 
    exception
       when no_data_found then
@@ -377,6 +377,7 @@ begin
             || '/'
             || p_embankment.embankment_location.location_ref.get_location_id);
    end;
+   if p_embankment.upstream_prot_type is not null then
    begin
       select protection_type_code
         into l_embankment.upstream_prot_type_code
@@ -396,6 +397,8 @@ begin
             || '/'
             || p_embankment.embankment_location.location_ref.get_location_id);
    end;
+   end if;
+   if p_embankment.downstream_prot_type is not null then
    begin
       select protection_type_code
         into l_embankment.downstream_prot_type_code
@@ -415,6 +418,7 @@ begin
             || '/'
             || p_embankment.embankment_location.location_ref.get_location_id);
    end;
+   end if;
    l_embankment.upstream_sideslope   := p_embankment.upstream_sideslope;
    l_embankment.downstream_sideslope := p_embankment.downstream_sideslope;
    l_embankment.structure_length     := p_embankment.structure_length * l_factor;

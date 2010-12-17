@@ -167,6 +167,8 @@ CONSTRAINT at_gccc_active_ck
 CHECK ( computation_code_active = 'T' OR computation_code_active = 'F'))
 /
 
+-- INSERT INTO at_gate_ch_computation_code VALUES (0, 53, 'Default', 'Default', 'T');
+
 --------
 --------
 
@@ -248,6 +250,9 @@ ALTER TABLE at_gate_release_reason_code ADD (
 CONSTRAINT at_grrc_active_ck 
 CHECK ( release_reason_active = 'T' OR release_reason_active = 'F'))
 /
+
+-- INSERT INTO at_gate_release_reason_code VALUES (0, 53, 'Default', 'Default', 'T');
+
 
 --------
 --------
@@ -331,6 +336,8 @@ CONSTRAINT at_proj_purpose_active_ck
 CHECK ( purpose_active = 'T' OR purpose_active = 'F'))
 /
 
+-- INSERT INTO at_project_purposes VALUES (0, 53, 'Default', 'Default', 'T');
+
 --------
 --------
 
@@ -413,6 +420,8 @@ CONSTRAINT at_dt_active_ck
 CHECK ( document_type_active = 'T' OR document_type_active = 'F'))
 /
 
+-- INSERT INTO at_document_type VALUES (0, 53, 'Default', 'Default', 'T');
+
 --------
 --------
 
@@ -494,6 +503,7 @@ ALTER TABLE at_embank_structure_type ADD (
 CONSTRAINT at_est_active_ck 
 CHECK ( structure_type_active = 'T' OR structure_type_active = 'F'))
 /
+-- INSERT INTO at_embank_structure_type VALUES (0, 53, 'Default', 'Default', 'T');
 
 --------
 --------
@@ -577,6 +587,8 @@ CONSTRAINT at_ept_active_ck
 CHECK ( protection_type_active = 'T' OR protection_type_active = 'F'))
 /
 
+-- INSERT INTO at_embank_protection_type VALUES (0, 53, 'Default', 'Default', 'T');
+
 --------
 --------
 
@@ -658,6 +670,9 @@ ALTER TABLE at_turbine_setting_reason ADD (
 CONSTRAINT at_tst_active_ck 
 CHECK ( turbine_setting_reason_active = 'T' OR turbine_setting_reason_active = 'F'))
 /
+
+-- INSERT INTO at_turbine_setting_reason VALUES (0, 53, 'Default', 'Default', 'T');
+
 
 --------
 --------
@@ -742,6 +757,8 @@ CONSTRAINT at_tcc_active_ck
 CHECK ( turb_computation_code_active = 'T' OR turb_computation_code_active = 'F'))
 /
 
+-- INSERT INTO at_turbine_computation_code VALUES (0, 53, 'Default', 'Default', 'T');
+
 --------
 --------
 
@@ -823,6 +840,8 @@ ALTER TABLE at_physical_transfer_type ADD (
 CONSTRAINT at_ptt_active_ck 
 CHECK ( physical_transfer_type_active = 'T' OR physical_transfer_type_active = 'F'))
 /
+
+-- INSERT INTO at_physical_transfer_type VALUES (0, 53, 'Default', 'Default', 'T');
 
 --------
 --------
@@ -906,6 +925,9 @@ CONSTRAINT at_oper_status_active_ck
 CHECK (operational_status_active = 'T' OR operational_status_active = 'F'))
 /
 
+-- INSERT INTO at_operational_status_code VALUES (0, 53, 'Default', 'Default', 'T');
+
+
 --------
 --------
 
@@ -988,6 +1010,8 @@ ALTER TABLE at_ws_contract_type ADD (
 CONSTRAINT at_ws_cntrct_typ_activ_ck 
 CHECK ( ws_contract_type_active = 'T' OR ws_contract_type_active = 'F'))
 /
+
+-- INSERT INTO at_ws_contract_type VALUES (0, 53, 'Default', 'Default', 'T');
 
 --------
 --------
