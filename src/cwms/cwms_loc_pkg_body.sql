@@ -4161,26 +4161,99 @@ AS
 								  );
 	END;
 
-	-- can only delete if there are no shef decoding references.
+	-- can only delete if there are no assignments to this group.
    PROCEDURE delete_loc_group (
-      p_loc_category_id   IN   VARCHAR2,
-										 p_loc_group_id		IN VARCHAR2,
-										 p_db_office_id		IN VARCHAR2 DEFAULT NULL
-										)
-	IS
-	BEGIN
-		NULL;
-	END;
+      p_loc_category_id IN VARCHAR2,
+      p_loc_group_id		IN VARCHAR2,
+      p_db_office_id		IN VARCHAR2 DEFAULT NULL)
+   IS
+      l_loc_category_code number(10);
+      l_loc_group_code    number(10);
+   BEGIN
+      ------------------------------------------
+      -- get the the category and group codes --
+      ------------------------------------------
+      begin
+         select loc_category_code
+           into l_loc_category_code
+           from at_loc_category
+          where upper(loc_category_id) = upper(p_loc_category_id)
+            and db_office_code = cwms_util.get_office_code(p_db_office_id);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Location category ',
+               cwms_util.get_db_office_id(p_db_office_id)
+               ||'/'
+               ||p_loc_category_id);
+      end;
+      begin
+         select loc_group_code
+           into l_loc_group_code
+           from at_loc_group
+          where upper(loc_group_id) = upper(p_loc_group_id)
+            and loc_category_code = l_loc_category_code;
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Location group ',
+               cwms_util.get_db_office_id(p_db_office_id)
+               ||'/'
+               ||p_loc_category_id
+               ||'/'
+               ||p_loc_group_id);
+      end;
+      --------------------------------------------------------------------
+      -- delete the group (will fail if there are location assignments) --
+      --------------------------------------------------------------------
+      delete
+        from at_loc_group
+       where loc_group_code = l_loc_group_code;
+   END delete_loc_group;
 
    PROCEDURE delete_loc_cat (
-      p_loc_category_id   IN   VARCHAR2,
-									  p_cascade 			 IN VARCHAR2 DEFAULT 'F' ,
-									  p_db_office_id		 IN VARCHAR2 DEFAULT NULL
-									 )
-	IS
-	BEGIN
-		NULL;
-	END;
+      p_loc_category_id  IN VARCHAR2,
+      p_cascade 			 IN VARCHAR2 DEFAULT 'F' ,
+      p_db_office_id		 IN VARCHAR2 DEFAULT NULL)
+   IS
+      l_loc_category_code number(10);
+   BEGIN
+      ---------------------------
+      -- get the category code --
+      ---------------------------
+      begin
+         select loc_category_code
+           into l_loc_category_code
+           from at_loc_category
+          where upper(loc_category_id) = upper(p_loc_category_id)
+            and db_office_code = cwms_util.get_office_code(p_db_office_id);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Location category ',
+               cwms_util.get_db_office_id(p_db_office_id)
+               ||'/'
+               ||p_loc_category_id);
+      end;
+      ---------------------------------------------------
+      -- delete groups in this caegory if specified    -- 
+      -- (will fail if there are location assignments) --
+      ---------------------------------------------------
+      if cwms_util.is_true(p_cascade) then
+         delete
+           from at_loc_group
+          where loc_category_code = l_loc_category_code;
+      end if;
+      ---------------------------------------------------------------
+      -- delete the category (will fail if there are still groups) --
+      ---------------------------------------------------------------
+      delete
+        from at_loc_category
+       where loc_category_code = l_loc_category_code;
+   END delete_loc_cat;
 
 	PROCEDURE rename_loc_category (
 		p_loc_category_id_old	IN VARCHAR2,
