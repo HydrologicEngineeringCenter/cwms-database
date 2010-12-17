@@ -441,17 +441,18 @@ create type rating_template_t as object(
    static function get_template_code(
       p_parameters_id in varchar2,
       p_version       in varchar2,
-      p_office_code   in number default null)
+      p_office_id     in varchar2 default null)
+   return number,      
+
+   static function get_template_code(
+      p_parameters_id in varchar2,
+      p_version       in varchar2,
+      p_office_code   in number)
    return number,      
       
    static function get_template_code(
       p_template_id in varchar2,
       p_office_code in number)
-   return number,      
-      
-   static function get_template_code(
-      p_template_id in varchar2,
-      p_office_id   in varchar2 default null)
    return number      
 );
 /
@@ -839,20 +840,32 @@ as
       dbms_lob.close(l_text);                  
       return l_text;
    end;
+
+   static function get_template_code(
+      p_parameters_id in varchar2,
+      p_version       in varchar2,
+      p_office_id     in varchar2 default null)
+   return number
+   is
+   begin
+      return get_template_code(
+         p_parameters_id,
+         p_version,
+         cwms_util.get_office_code(p_office_id));
+   end;      
             
    static function get_template_code(
       p_parameters_id in varchar2,
       p_version       in varchar2,
-      p_office_code   in number default null)
+      p_office_code   in number)
    return number
    is
-      l_office_code   number(10) := nvl(p_office_code, cwms_util.user_office_code);
       l_template_code number(10);
    begin
       select template_code
         into l_template_code
         from at_rating_template
-       where office_code = l_office_code
+       where office_code = p_office_code
          and upper(parameters_id) = upper(p_parameters_id)
          and upper(version) = upper(p_version);
          
@@ -865,7 +878,7 @@ as
             select office_id 
               into l_office_id 
               from cwms_office 
-             where office_code = l_office_code;
+             where office_code = p_office_code;
              
             cwms_err.raise(
                'ITEM_DOES_NOT_EXIST',
@@ -897,17 +910,6 @@ as
          l_parts(2),
          p_office_code); 
    end;
-         
-   static function get_template_code(
-      p_template_id in varchar2,
-      p_office_id   in varchar2 default null)
-   return number
-   is
-   begin
-      return rating_template_t.get_template_code(
-         p_template_id,
-         cwms_util.get_office_code(p_office_id));
-   end;      
    
 end;
 /
@@ -2325,7 +2327,7 @@ as
                      'Rating values '
                      ||l_rating_value_tab_id
                      ||': independent values do not monotonically increase after value '
-                     ||l_value_at_pos(l_position));
+                     ||cwms_rounding.round_dt_f(l_value_at_pos(l_position), '9999999999'));
                end if;
                ---------------------------------------------
                -- save the current value at this position --
@@ -2373,7 +2375,7 @@ as
                      'Rating values '
                      ||l_rating_value_tab_id
                      ||': independent values do not monotonically increase after value '
-                     || l_last_ind_value);
+                     ||cwms_rounding.round_dt_f(l_last_ind_value, '9999999999'));
                end if;
                ------------------------------------------------------------------------------------------------
                -- create and populate a new rating_value_t object at the end of the l_rating_values variable --
@@ -2403,10 +2405,12 @@ as
                when false then 
                   build_rating(l_value_type(i)||'=') 
             end;
-         case i
-            when 1 then self.rating_values    := l_rating_values;
-            when 2 then self.extension_values := l_rating_values;
-         end case;
+         if l_rating_points is not null then
+            case i
+               when 1 then self.rating_values    := l_rating_values;
+               when 2 then self.extension_values := l_rating_values;
+            end case;
+         end if;            
       end loop;
       commit; -- flush temporary table
       self.constructed := 'T';
@@ -2535,7 +2539,7 @@ as
                   'Rating independent parameter '
                   ||p_parameter_position
                   ||' rating values do not monotonically increase after value '
-                  ||self.rating_values(i-1).ind_value);
+                  ||cwms_rounding.round_dt_f(self.rating_values(i-1).ind_value, '9999999999'));
             end if; 
          end loop;
       end if;
@@ -2582,7 +2586,7 @@ as
                   'Rating independent parameter '
                   ||p_parameter_position
                   ||' extension values do not monotonically increase after value '
-                  ||self.extension_values(i-1).ind_value);
+                  ||cwms_rounding.round_dt_f(self.extension_values(i-1).ind_value, '9999999999'));
             end if; 
          end loop;
       end if;
@@ -2924,7 +2928,7 @@ as
                   cwms_util.append(l_text, '<other-ind position="'
                      ||j
                      ||'" value="'  
-                     ||l_ind_params(j)  
+                     ||cwms_rounding.round_dt_f(l_ind_params(j), '9999999999')  
                      ||'"/>');
                end loop;   
             end if;
@@ -2932,9 +2936,9 @@ as
             -- output the <point> element --
             --------------------------------
             cwms_util.append(l_text, '<point><ind>'
-               ||self.rating_values(i).ind_value
+               ||cwms_rounding.round_dt_f(self.rating_values(i).ind_value, '9999999999')
                ||'</ind><dep>'
-               ||self.rating_values(i).dep_value
+               ||cwms_rounding.round_dt_f(self.rating_values(i).dep_value, '9999999999')
                ||'</dep>'
                ||case self.rating_values(i).note_id is not null
                     when true then '<note>'||self.rating_values(i).note_id||'</note>'
@@ -3026,22 +3030,22 @@ as
    return self as result
    is
       l_rec        at_rating_value%rowtype;
-      l_table_name varchar2(30);
    begin
-      l_table_name :=
-         case cwms_util.is_true(p_is_extension)
-            when true  then 'at_rating_extension_value'
-            when false then 'at_rating_value'
-         end;
-      execute immediate         
-         'select *
-           from :table_name
+      if cwms_util.is_true(p_is_extension) then
+         select *
+           into l_rec
+           from at_rating_extension_value
           where rating_ind_param_code = p_rating_ind_param_code
-            and other_ind_hash = :p_other_ind_hash
-            and ind_value = p_ind_value'
-      into l_rec            
-     using l_table_name,
-           p_other_ind_hash;
+            and other_ind_hash = p_other_ind_hash
+            and ind_value = p_ind_value;
+      else
+         select *
+           into l_rec
+           from at_rating_value
+          where rating_ind_param_code = p_rating_ind_param_code
+            and other_ind_hash = p_other_ind_hash
+            and ind_value = p_ind_value;
+      end if;
       
       self.ind_value := l_rec.ind_value;
       self.dep_value := l_rec.dep_value;
@@ -3055,7 +3059,9 @@ as
            into self.note_id
            from at_rating_value_note
           where note_code = l_rec.note_code;
-      end if;              
+      end if;
+      
+      return;              
    end;
    
    member procedure store(
@@ -3142,6 +3148,7 @@ as
       l_rec.note_code                 := l_note_rec.note_code;               
          
       if cwms_util.is_true(p_is_extension) then
+         -- cwms_err.raise('ERROR', 'Unexpected p_is_extension: '||p_is_extension);
          insert
            into at_rating_extension_value
          values l_rec;
@@ -3358,7 +3365,6 @@ as
    member procedure init(
       p_rating_code in number)
    is
-      l_time_zone            varchar2(28);
       l_ind_param_count      number(1);
       l_ind_param_spec_codes number_tab_t := number_tab_t();
    begin
@@ -3420,18 +3426,9 @@ as
                      ||l_ind_param_count);
                end if;                         
             end loop;
-            select tz.time_zone_name
-              into l_time_zone
-              from at_physical_location pl,
-                   cwms_time_zone tz
-             where pl.location_code = rec2.location_code
-               and tz.time_zone_code = nvl(pl.time_zone_code, 0);
-            if l_time_zone = 'Unknown or Not Applicable' then
-               l_time_zone := 'UTC';
-            end if;
          end loop;
-         self.effective_date := cwms_util.change_timezone(rec.effective_date, 'UTC', l_time_zone);               
-         self.create_date    := cwms_util.change_timezone(rec.create_date, 'UTC', l_time_zone);
+         self.effective_date := rec.effective_date;               
+         self.create_date    := rec.create_date;
          self.active_flag    := rec.active_flag;
          self.formula        := rec.formula;
          self.native_units   := rec.native_units;
@@ -4027,9 +4024,9 @@ as
                'ERROR',
                'Cannot specify p_match_date => ''T'' with p_effecive_date => null');
          end if;
-         l_effective_date := sysdate;
-         l_time_zone := 'UTC';
+         l_effective_date := sysdate + 1;
       else
+         l_effective_date := p_effective_date;
          if p_time_zone is null then
             select tz.time_zone_name
               into l_time_zone
@@ -4043,8 +4040,8 @@ as
          else
             l_time_zone := p_time_zone;
          end if;
+         l_effective_date := cwms_util.change_timezone(l_effective_date, l_time_zone, 'UTC');
       end if;
-      l_effective_date := cwms_util.change_timezone(l_effective_date, l_time_zone, 'UTC');
       
       if cwms_util.is_true(p_match_date) then
          select rating_code
@@ -4362,6 +4359,7 @@ as
          self.shifts(i-l_skipped).rating_info.constructed := 'T';
          begin
             self.shifts(i-l_skipped).rating_info.validate_obj(1);
+            dbms_output.put_line('shift OK');
          exception
             when others then
                cwms_msg.log_db_message(
@@ -4621,7 +4619,7 @@ as
                      cwms_err.raise(
                         'ERROR', 
                         'Offsets stages/elevations do not monotonically increase after value '
-                        ||self.offsets.rating_info.rating_values(i-1).ind_value);
+                        ||cwms_rounding.round_dt_f(self.offsets.rating_info.rating_values(i-1).ind_value, '9999999999'));
                   end if;
                end if;
                if self.offsets.rating_info.rating_values(i).dep_value is null or
@@ -4701,7 +4699,7 @@ as
                         cwms_err.raise(
                            'ERROR', 
                            'Shifts stages/elevations do not monotonically increase after value '
-                           ||self.shifts(i).rating_info.rating_values(j-1).ind_value);
+                           ||cwms_rounding.round_dt_f(self.shifts(i).rating_info.rating_values(j-1).ind_value, '9999999999'));
                      end if;
                   end if;
                   if self.shifts(i).rating_info.rating_values(j).dep_value is null or
@@ -4934,7 +4932,7 @@ as
       if self.shifts is not null then
          for i in 1..self.shifts.count loop
             cwms_util.append(l_text,
-               '<height-shifts><effective_date>'
+               '<height-shifts><effective-date>'
                ||to_char(self.shifts(i).effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
             if self.shifts(i).create_date is not null then
                cwms_util.append(l_text, '<create-date>'||to_char(self.shifts(i).create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>');
@@ -4949,9 +4947,9 @@ as
             for j in 1..self.shifts(i).rating_info.rating_values.count loop
                cwms_util.append(l_text,
                   '<point><ind>'
-                  ||self.shifts(i).rating_info.rating_values(j).ind_value
+                  ||cwms_rounding.round_dt_f(self.shifts(i).rating_info.rating_values(j).ind_value, '9999999999')
                   ||'</ind><dep>'
-                  ||self.shifts(i).rating_info.rating_values(j).dep_value
+                  ||cwms_rounding.round_dt_f(self.shifts(i).rating_info.rating_values(j).dep_value, '9999999999')
                   ||'</dep>');
                if self.shifts(i).rating_info.rating_values(j).note_id is not null then
                   cwms_util.append(l_text,
@@ -4969,7 +4967,7 @@ as
       -------------------
       if self.offsets is not null then
          cwms_util.append(l_text,
-            '<height-offsets><effective_date>'
+            '<height-offsets><effective-date>'
             ||to_char(self.effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
          if self.create_date is not null then
             cwms_util.append(l_text, '<create-date>'||to_char(self.create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>');
@@ -4978,9 +4976,9 @@ as
          for i in 1..self.offsets.rating_info.rating_values.count loop
             cwms_util.append(l_text,
                '<point><ind>'
-               ||self.offsets.rating_info.rating_values(i).ind_value
+               ||cwms_rounding.round_dt_f(self.offsets.rating_info.rating_values(i).ind_value, '9999999999')
                ||'</ind><dep>'
-               ||self.offsets.rating_info.rating_values(i).dep_value
+               ||cwms_rounding.round_dt_f(self.offsets.rating_info.rating_values(i).dep_value, '9999999999')
                ||'</dep>');
             if self.offsets.rating_info.rating_values(i).note_id is not null then
                cwms_util.append(l_text,
@@ -4999,9 +4997,9 @@ as
       for i in 1..self.rating_info.rating_values.count loop
          cwms_util.append(l_text,
             '<point><ind>'
-            ||self.rating_info.rating_values(i).ind_value
+            ||cwms_rounding.round_dt_f(self.rating_info.rating_values(i).ind_value, '9999999999')
             ||'</ind><dep>'
-            ||self.rating_info.rating_values(i).dep_value
+            ||cwms_rounding.round_dt_f(self.rating_info.rating_values(i).dep_value, '9999999999')
             ||'</dep>');
          if self.rating_info.rating_values(i).note_id is not null then
             cwms_util.append(l_text,
