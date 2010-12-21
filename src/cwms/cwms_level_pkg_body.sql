@@ -1152,9 +1152,10 @@ end delete_specified_level;
 --------------------------------------------------------------------------------
 -- PROCEDURE catalog_specified_levels
 --          
--- The cursor returned by this routine contains two fields:
+-- The cursor returned by this routine contains three fields:
 --    1 : office_id          varchar(16)
 --    2 : specified_level_id varchar2(256)
+--    3 : description        varchar2(256)
 --          
 -- Calling this routine with no parameters returns all specified
 -- levels for the calling user's office.
@@ -1178,7 +1179,8 @@ begin
    -----------------------------
    open p_level_cursor
     for select o.office_id,
-               l.specified_level_id
+               l.specified_level_id,
+               l.description
           from cwms_office o,
                at_specified_level l
          where o.office_id like upper(l_office_id_mask)
@@ -1189,9 +1191,10 @@ end catalog_specified_levels;
 --------------------------------------------------------------------------------
 -- FUNCTION catalog_specified_levels
 --          
--- The cursor returned by this routine contains two fields:
+-- The cursor returned by this routine contains three fields:
 --    1 : office_id          varchar(16)
 --    2 : specified_level_id varchar2(256)
+--    3 : description        varchar2(256)
 --          
 -- Calling this routine with no parameters returns all specified
 -- levels for the calling user's office.
