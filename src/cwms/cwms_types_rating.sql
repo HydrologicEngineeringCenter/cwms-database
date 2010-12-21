@@ -2173,6 +2173,7 @@ as
       l_parts                str_tab_t;
       l_ind_params           str_tab_t;
       l_ind_units            str_tab_t;
+      l_processed_points     boolean;
       
       pragma autonomous_transaction; -- allows commit to flush temp table
       
@@ -2279,12 +2280,14 @@ as
          ----------------------------------------------------------------
          -- for each value type in 'rating-points', 'extension-points' --
          ----------------------------------------------------------------
+         l_processed_points := false;
          for j in 1..9999999 loop
             ------------------------------------------------------------
             -- for each <rating-points> or <extension-points> element --
             ------------------------------------------------------------
             l_rating_points := get_node(p_xml, '/rating/'||l_value_type(i)||'['||j||']');
             exit when l_rating_points is null;
+            l_processed_points := true;
             l_position := 0;
             l_rating_value_tab_id := l_value_type(i)||'=';
             for k in 1..9999999 loop
@@ -2395,17 +2398,17 @@ as
          -----------------------------------------------------------
          -- construct the rating_values or extension_values field --
          -----------------------------------------------------------
-         l_rating_values := 
-            case l_position = 0
-               when true then 
-                  case l_rating_value_tab.exists(l_rating_value_tab_id) -- only 1 input parameter
-                     when true  then l_rating_value_tab(l_rating_value_tab_id)
-                     when false then null
-                  end
-               when false then 
-                  build_rating(l_value_type(i)||'=') 
-            end;
-         if l_rating_points is not null then
+         if l_processed_points then
+            l_rating_values := 
+               case l_position = 0
+                  when true then 
+                     case l_rating_value_tab.exists(l_rating_value_tab_id) -- only 1 input parameter
+                        when true  then l_rating_value_tab(l_rating_value_tab_id)
+                        when false then null
+                     end
+                  when false then 
+                     build_rating(l_value_type(i)||'=') 
+               end;
             case i
                when 1 then self.rating_values    := l_rating_values;
                when 2 then self.extension_values := l_rating_values;
@@ -3861,8 +3864,6 @@ as
       l_text           clob;
       l_parts          str_tab_t;
       l_time_zone      varchar2(28);
-      l_effective_date date;
-      l_create_date    date;
       l_clone          rating_t;
       function bool_text(
          p_state in boolean)
@@ -3896,9 +3897,9 @@ as
       cwms_util.append(l_text, '<rating office-id="'||self.office_id||'">'
          ||'<rating-spec-id>'||self.rating_spec_id||'</rating-spec-id>'
          ||'<units-id>'||self.native_units||'</units-id>'
-         ||'<effective-date>'||to_char(l_effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
-      if l_create_date is not null then
-         cwms_util.append(l_text, '<create-date>'||to_char(l_create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>'); 
+         ||'<effective-date>'||to_char(self.effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
+      if self.create_date is not null then
+         cwms_util.append(l_text, '<create-date>'||to_char(self.create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>'); 
       end if;            
       cwms_util.append(l_text,'<active>'||bool_text(cwms_util.is_true(self.active_flag))||'</active>'
          ||case self.description is null
@@ -4966,13 +4967,7 @@ as
       -- output offsets -
       -------------------
       if self.offsets is not null then
-         cwms_util.append(l_text,
-            '<height-offsets><effective-date>'
-            ||to_char(self.effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
-         if self.create_date is not null then
-            cwms_util.append(l_text, '<create-date>'||to_char(self.create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>');
-         end if;
-         cwms_util.append(l_text, '<active>T</active><description>Logarithmic interpolation offsets</description>');
+         cwms_util.append(l_text, '<height-offsets>');
          for i in 1..self.offsets.rating_info.rating_values.count loop
             cwms_util.append(l_text,
                '<point><ind>'
