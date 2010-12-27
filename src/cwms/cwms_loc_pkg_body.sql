@@ -3404,14 +3404,15 @@ AS
 				|| l_loc_category_id
 				|| ' category because it already exists as a system category.'
 			);
-		END IF;
-
-		BEGIN
-         INSERT INTO at_loc_category
+		end if;
+  
+    l_tmp := cwms_seq.nextval;
+    BEGIN
+		     INSERT INTO at_loc_category
                      (loc_category_code, loc_category_id, db_office_code,
 													  loc_category_desc
 						  )
-              VALUES (cwms_seq.NEXTVAL, l_loc_category_id, l_db_office_code,
+              VALUES (l_tmp, l_loc_category_id, l_db_office_code,
 								p_loc_category_desc
 						  );
 		EXCEPTION
@@ -3423,7 +3424,6 @@ AS
 					|| ' category as it already exists.'
 				);
 		END;
-
 		RETURN l_tmp;
 	END;
 
