@@ -1137,16 +1137,18 @@ procedure delete_specified_level(
    p_level_id          in  varchar2,
    p_fail_if_not_found in  varchar2 default 'T',
    p_office_id         in  varchar2 default null)
-is          
+is
+   l_spec_level_code  number;
 begin       
    --------------------------------
    -- delete the existing record --
    --------------------------------
-   delete from at_specified_level
-    where specified_level_code = get_specified_level_code(
+   l_spec_level_code := get_specified_level_code(
              p_level_id, 
              p_fail_if_not_found, 
              p_office_id);
+   delete from at_specified_level
+    where specified_level_code = l_spec_level_code;
 end delete_specified_level;   
             
 --------------------------------------------------------------------------------
