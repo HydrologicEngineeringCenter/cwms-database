@@ -1171,7 +1171,7 @@ begin
    ----------------------------------------------
    -- normalize the wildcards (handle * and ?) --
    ----------------------------------------------
-   l_level_id_mask  := cwms_util.normalize_wildcards(p_level_id_mask,  true);
+   l_level_id_mask  := cwms_util.normalize_wildcards(upper(p_level_id_mask),  true);
    l_office_id_mask := nvl(upper(p_office_id_mask), cwms_util.user_office_id);
    l_office_id_mask := cwms_util.normalize_wildcards(l_office_id_mask, true);
    -----------------------------
@@ -1183,9 +1183,9 @@ begin
                l.description
           from cwms_office o,
                at_specified_level l
-         where o.office_id like upper(l_office_id_mask)
+         where upper(o.office_id) like l_office_id_mask
            and l.office_code = o.office_code
-           and l.specified_level_id like upper(l_level_id_mask);
+           and upper(l.specified_level_id) like l_level_id_mask;
 end catalog_specified_levels;
             
 --------------------------------------------------------------------------------
