@@ -2904,6 +2904,7 @@ as
              cwms_office o
        where upper(o.office_id) = upper(office_id)
          and bl.db_office_code = o.office_code
+         and bl.base_location_code = pl.base_location_code         
          and upper(bl.base_location_id) = upper(cwms_util.get_base_id(location_id))
          and upper(nvl(pl.sub_location_id, '.')) = upper(nvl(cwms_util.get_sub_id(location_id), '.'));
          
@@ -2916,20 +2917,20 @@ as
          and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(parameter_id), '.'))
          and p.db_office_code in (l_office_code, l_cwms_office_code);       
          
-      select parameter_type_code
+      select pt.parameter_type_code
         into l_parameter_type_code
-        from cwms_parameter_type
-       where upper(parameter_type_id) = upper(parameter_type_id);            
+        from cwms_parameter_type pt
+       where upper(pt.parameter_type_id) = upper(parameter_type_id);            
          
-      select duration_code
+      select d.duration_code
         into l_duration_code
-        from cwms_duration
-       where upper(duration_id) = upper(duration_id);            
+        from cwms_duration d
+       where upper(d.duration_id) = upper(duration_id);            
          
-      select specified_level_code
+      select sl.specified_level_code
         into l_specified_level_code
-        from at_specified_level
-       where upper(specified_level_id) = upper(specified_level_id);
+        from at_specified_level sl
+       where upper(sl.specified_level_id) = upper(specified_level_id);
 
       select level_value * factor + offset
         into l_location_level_value
@@ -2947,15 +2948,15 @@ as
             and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(attribute_parameter_id), '.'))
             and p.db_office_code in (l_office_code, l_cwms_office_code);       
             
-         select parameter_type_code
+         select pt.parameter_type_code
            into l_attribute_param_type_code
-           from cwms_parameter_type
-          where upper(parameter_type_id) = upper(attribute_parameter_type_id);            
+           from cwms_parameter_type pt
+          where upper(pt.parameter_type_id) = upper(attribute_parameter_type_id);            
             
-         select duration_code
+         select d.duration_code
            into l_attribute_duration_code
-           from cwms_duration
-          where upper(duration_id) = upper(attribute_duration_id); 
+           from cwms_duration d
+          where upper(d.duration_id) = upper(attribute_duration_id); 
           
          select attribute_value * factor + offset
            into l_attribute_value
