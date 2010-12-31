@@ -2244,6 +2244,7 @@ create or replace type zlocation_level_t is object(
    interpolate                   varchar2(1),
    seasonal_level_values         seasonal_location_level_tab_t,
    indicators                    loc_lvl_indicator_tab_t,
+  
    
    constructor function zlocation_level_t(
       p_location_level_code           in number,
@@ -2894,7 +2895,12 @@ as
       l_time_interval                 interval day(3) to second(0);
       l_seasonal_level_values         seasonal_location_level_tab_t;
       l_obj                           zlocation_level_t;
+      l_parameter_type_id parameter_type_id%type := parameter_type_id;
+      l_duration_id duration_id%type := duration_id;
+      l_specified_level_id specified_level_id%type := specified_level_id;
+
    begin
+   
       select o.office_code,
              pl.location_code
         into l_office_code,
@@ -2920,17 +2926,17 @@ as
       select pt.parameter_type_code
         into l_parameter_type_code
         from cwms_parameter_type pt
-       where upper(pt.parameter_type_id) = upper(parameter_type_id);            
+       where upper(pt.parameter_type_id) = upper(l_parameter_type_id);            
          
       select d.duration_code
         into l_duration_code
         from cwms_duration d
-       where upper(d.duration_id) = upper(duration_id);            
+       where upper(d.duration_id) = upper(l_duration_id);            
          
       select sl.specified_level_code
         into l_specified_level_code
         from at_specified_level sl
-       where upper(sl.specified_level_id) = upper(specified_level_id);
+       where upper(sl.specified_level_id) = upper(l_specified_level_id);
 
       select level_value * factor + offset
         into l_location_level_value
@@ -2980,6 +2986,7 @@ as
       end if;                   
       
       begin
+      
          select location_level_code
            into l_location_level_code
            from at_location_level
@@ -2997,6 +3004,7 @@ as
       exception
          when no_data_found then null;
       end;
+      l_obj := zlocation_level_t(l_location_level_code);
       l_obj.init(
          l_location_level_code,
          l_location_code,
