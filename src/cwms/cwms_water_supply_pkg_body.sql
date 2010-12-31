@@ -360,12 +360,12 @@ begin
    p_contracts := water_user_contract_tab_t();
    for rec in (
       select wuc.contract_name,
-             wuc.contracted_storage * uc.factor + uc.offset as contracted_storage,
+             wuc.contracted_storage, -- * uc.factor + uc.offset as contracted_storage,
              wuc.water_supply_contract_type,
              wuc.ws_contract_effective_date,
              wuc.ws_contract_expiration_date,
-             wuc.initial_use_allocation * uc.factor + uc.offset as initial_use_allocation,
-             wuc.future_use_allocation * uc.factor + uc.offset as future_use_allocation,
+             wuc.initial_use_allocation, -- * uc.factor + uc.offset as initial_use_allocation,
+             wuc.future_use_allocation, -- * uc.factor + uc.offset as future_use_allocation,
              wuc.future_use_percent_activated,
              wuc.total_alloc_percent_activated,
              wuc.withdrawal_location_code,
@@ -376,22 +376,22 @@ begin
              wct.ws_contract_type_active,
              wu.entity_name,
              wu.water_right,
-             uc.to_unit_id as storage_unit_id
+             'm3' as storage_unit_id -- uc.to_unit_id as storage_unit_id
         from at_water_user_contract wuc,
              at_water_user wu,
              at_ws_contract_type wct,
-             cwms_base_parameter bp,
-             cwms_unit u,
-             cwms_unit_conversion uc,
+             -- cwms_base_parameter bp,
+             -- cwms_unit u,
+             -- cwms_unit_conversion uc,
              cwms_office o
        where wu.project_location_code = p_project_location_ref.get_location_code
          and upper(wu.entity_name) = upper(p_entity_name)
          and wuc.water_user_code = wu.water_user_code
          and wct.ws_contract_type_code = wuc.water_supply_contract_type
          and o.office_code = wct.db_office_code
-         and bp.base_parameter_id = 'Stor'
-         and uc.from_unit_code = bp.unit_code
-         and uc.to_unit_code = wuc.storage_unit_code
+         -- and bp.base_parameter_id = 'Stor'
+         -- and uc.from_unit_code = bp.unit_code
+         -- and uc.to_unit_code = wuc.storage_unit_code
          )
    loop
       p_contracts.extend;
@@ -479,8 +479,11 @@ is
       p_rec.future_use_allocation := p_obj.future_use_allocation * l_factor + l_offset;
       p_rec.future_use_percent_activated := p_obj.future_use_percent_activated;
       p_rec.total_alloc_percent_activated := p_obj.total_alloc_percent_activated;
+      
+      -- these need to create the locations if needed.
       -- p_rec.withdrawal_location_code := p_obj.withdraw_location.location_ref.get_location_code;
       -- p_rec.supply_location_code := p_obj.supply_location.location_ref.get_location_code;
+      
       p_rec.storage_unit_code := l_storage_unit_code;
    end;
 begin
