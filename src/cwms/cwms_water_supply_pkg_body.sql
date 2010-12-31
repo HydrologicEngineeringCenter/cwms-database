@@ -433,6 +433,7 @@ is
    l_fail_if_exists boolean;
    l_rec            at_water_user_contract%rowtype;
    l_ref            water_user_contract_ref_t;
+   l_water_user_code number(10);
    
    procedure populate_contract(
       p_rec in out nocopy at_water_user_contract%rowtype,
@@ -456,7 +457,7 @@ is
              cwms_unit_conversion uc
        where bp.base_parameter_id = 'Stor'
          and uc.to_unit_code = bp.unit_code
-         and uc.from_unit_id = p_obj.storage_units_id;
+         and uc.from_unit_id = nvl(p_obj.storage_units_id,'m3');
       --------------------------------         
       -- get the contract type code --
       --------------------------------
@@ -465,10 +466,11 @@ is
         from at_ws_contract_type
        where db_office_code = cwms_util.get_office_code(p_obj.water_supply_contract_type.office_id)
          and upper(ws_contract_type_display_value) = upper(p_obj.water_supply_contract_type.display_value);
+      
+
       ---------------------------                  
       -- set the record fields --
-      ---------------------------                  
-      p_rec.contract_name := p_obj.water_user_contract_ref.contract_name;
+      ---------------------------      
       p_rec.contracted_storage := p_obj.contracted_storage * l_factor + l_offset;
       p_rec.water_supply_contract_type := l_contract_type_code;
       p_rec.ws_contract_effective_date := p_obj.ws_contract_effective_date;
@@ -477,8 +479,8 @@ is
       p_rec.future_use_allocation := p_obj.future_use_allocation * l_factor + l_offset;
       p_rec.future_use_percent_activated := p_obj.future_use_percent_activated;
       p_rec.total_alloc_percent_activated := p_obj.total_alloc_percent_activated;
-      p_rec.withdrawal_location_code := p_obj.withdraw_location.location_ref.get_location_code;
-      p_rec.supply_location_code := p_obj.supply_location.location_ref.get_location_code;
+      -- p_rec.withdrawal_location_code := p_obj.withdraw_location.location_ref.get_location_code;
+      -- p_rec.supply_location_code := p_obj.supply_location.location_ref.get_location_code;
       p_rec.storage_unit_code := l_storage_unit_code;
    end;
 begin
@@ -513,6 +515,16 @@ begin
          exception
             when no_data_found then
                populate_contract(l_rec, p_contracts(i));
+               l_rec.contract_name := l_ref.contract_name;
+               
+                -- get the water user code --
+                select water_user_code 
+                  into l_water_user_code
+                  from at_water_user
+                where upper(l_ref.water_user.entity_name) = upper(entity_name)
+                  and l_ref.water_user.project_location_ref.get_location_code = project_location_code;
+               
+               l_rec.water_user_code := l_water_user_code;
                l_rec.water_user_contract_code := cwms_seq.nextval;
                insert
                  into at_water_user_contract
