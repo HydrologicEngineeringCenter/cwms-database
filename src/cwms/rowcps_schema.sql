@@ -2377,7 +2377,7 @@ ALTER TABLE at_water_user_contract ADD (
 
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk2
- FOREIGN KEY (water_user_contract_code)
+ FOREIGN KEY (water_user_code)
  REFERENCES at_water_user (water_user_code))
 /
 
