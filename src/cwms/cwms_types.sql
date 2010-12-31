@@ -3002,7 +3002,7 @@ as
             and nvl(attribute_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
             and nvl(attribute_duration_code, -1) = nvl(l_attribute_duration_code, -1);
       exception
-         when no_data_found then null;
+         when no_data_found then l_location_level_code := cwms_seq.nextval;
       end;
       l_obj := zlocation_level_t(l_location_level_code);
       l_obj.init(
