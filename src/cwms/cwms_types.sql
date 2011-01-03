@@ -681,7 +681,8 @@ create type location_ref_t is object(
       p_location_code in number) 
    return self as result,
    
-   member function get_location_code
+   member function get_location_code(
+      p_create_if_necessary in varchar2 default 'F')
    return number,
    
    member function get_location_id
@@ -694,8 +695,12 @@ create type location_ref_t is object(
    return varchar2,
    
    member procedure get_codes(
-      p_location_code out number,
-      p_office_code   out number)
+      p_location_code       out number,
+      p_office_code         out number,
+      p_create_if_necessary in  varchar2 default 'F'),
+
+   member procedure create_location(
+      p_fail_if_exists in varchar2)
 )
 /
 
@@ -752,11 +757,26 @@ as
       return;
    end location_ref_t;
    
-   member function get_location_code
+   member function get_location_code(
+      p_create_if_necessary in varchar2 default 'F')
    return number
    is
       l_location_code number(10);
    begin
+      if cwms_util.is_true(p_create_if_necessary) then
+         declare
+            LOCATION_ID_ALREADY_EXISTS exception; pragma exception_init (LOCATION_ID_ALREADY_EXISTS, -20026);
+         begin
+            cwms_loc.create_location2(
+               p_location_id => base_location_id
+                  || substr('-', 1, length(sub_location_id))
+                  || sub_location_id,
+               p_db_office_id => office_id);
+         exception
+            when LOCATION_ID_ALREADY_EXISTS then
+               null;
+         end;      
+      end if;
       select pl.location_code
         into l_location_code
         from at_physical_location pl,
@@ -801,10 +821,14 @@ as
    end;
    
    member procedure get_codes(
-      p_location_code out number,
-      p_office_code   out number)
+      p_location_code       out number,
+      p_office_code         out number,
+      p_create_if_necessary in  varchar2 default 'F')
    is
    begin
+      if cwms_util.is_true(p_create_if_necessary) then
+         create_location(p_fail_if_exists => 'F');
+      end if;
       select pl.location_code,
              o.office_code
         into p_location_code,
@@ -819,6 +843,26 @@ as
          and nvl(pl.sub_location_id, '.') = nvl(self.sub_location_id, '.');
       return;
    end get_codes;
+
+   member procedure create_location(
+      p_fail_if_exists in varchar2)
+   is
+      LOCATION_ID_ALREADY_EXISTS exception; pragma exception_init (LOCATION_ID_ALREADY_EXISTS, -20026);
+   begin
+      cwms_loc.create_location2(
+         p_location_id => base_location_id
+            || substr('-', 1, length(sub_location_id))
+            || sub_location_id,
+         p_db_office_id => office_id);
+   exception
+      when LOCATION_ID_ALREADY_EXISTS then
+         if cwms_util.is_true(p_fail_if_exists) then
+            raise;
+         else
+            null;
+         end if;         
+   end create_location;      
+                     
 end;
 /
 show errors;
