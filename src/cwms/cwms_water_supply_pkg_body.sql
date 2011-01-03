@@ -479,10 +479,8 @@ is
       p_rec.future_use_allocation := p_obj.future_use_allocation * l_factor + l_offset;
       p_rec.future_use_percent_activated := p_obj.future_use_percent_activated;
       p_rec.total_alloc_percent_activated := p_obj.total_alloc_percent_activated;
-      
-      -- these need to create the locations if needed.
-      -- p_rec.withdrawal_location_code := p_obj.withdraw_location.location_ref.get_location_code;
-      -- p_rec.supply_location_code := p_obj.supply_location.location_ref.get_location_code;
+      p_rec.withdrawal_location_code := p_obj.withdraw_location.location_ref.get_location_code('T');
+      p_rec.supply_location_code := p_obj.supply_location.location_ref.get_location_code('T');
       
       p_rec.storage_unit_code := l_storage_unit_code;
    end;
