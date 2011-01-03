@@ -199,29 +199,12 @@ begin
              cwms_nation          n,
              cwms_office          o
        where bl.base_location_code = pl.base_location_code
-         and (
-               pl.county_code is null or
-               (
-                 s.state_code = c.state_code and
-                 c.county_code = pl.county_code
-               )
-             )
-         and (
-               pl.time_zone_code is null or
-               tz.time_zone_code = pl.time_zone_code
-             )
-         and (
-               pl.location_kind is null or
-               lk.location_kind_code = pl.location_kind
-             )
-         and (
-               pl.office_code is null or
-               o.office_code = pl.office_code
-             )
-         and (
-               pl.nation_code is null or
-               n.nation_code = pl.nation_code
-             )
+         and c.county_code = nvl(pl.county_code, c.county_code)
+         and s.state_code = c.state_code
+         and tz.time_zone_code = nvl(pl.time_zone_code, tz.time_zone_code)
+         and lk.location_kind_code = nvl(pl.location_kind, lk.location_kind_code)
+         and o.office_code = nvl(pl.office_code, o.office_code)
+         and n.nation_code = nvl(pl.nation_code, n.nation_code)
          and pl.location_code in (
                l_project_loc_code,
                l_project.pump_back_location_code,
