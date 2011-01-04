@@ -54,7 +54,7 @@ AS
 	field_separator CONSTANT						VARCHAR2 (1) := CHR (29);
 	record_separator CONSTANT						VARCHAR2 (1) := CHR (30);
 	escape_char CONSTANT 							VARCHAR2 (1) := '\';
-	mv_cwms_ts_id_refresh_interval CONSTANT	NUMBER := 5;
+	mv_cwms_ts_id_refresh_interval CONSTANT	NUMBER := 30;
 	-- minutes
    odbc_ts_fmt constant varchar2(50) := '"{ts ''"yyyy-mm-dd hh24:mi:ss"''}"';
    odbc_d_fmt  constant varchar2(50) := '"{d ''"yyyy-mm-dd"''}"';

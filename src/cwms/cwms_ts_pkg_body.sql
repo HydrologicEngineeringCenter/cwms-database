@@ -4657,6 +4657,11 @@ BEGIN
    COMMIT;
    --
    delete_ts_cleanup (l_ts_code, l_ts_code_new, l_delete_action);
+   
+    -- Refresh the catalog to prevent selecting old ts_code when the data is deleted from
+   -- a time series
+   cwms_util.refresh_mv_cwms_ts_id;
+--
 --
 END delete_ts;
 --
@@ -6072,7 +6077,9 @@ END unregister_ts_callback;
 PROCEDURE refresh_ts_catalog
 IS
 BEGIN
-   cwms_util.refresh_mv_cwms_ts_id;
+    -- Catalog is now refreshed during the  call to fetch the catalog
+   -- cwms_util.refresh_mv_cwms_ts_id;
+   null;
 END refresh_ts_catalog;
 
 

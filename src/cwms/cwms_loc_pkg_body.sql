@@ -3021,9 +3021,9 @@ AS
 						cwms_state cs,
                 cwms_time_zone ctz,
                 at_location_kind alk
-			 WHERE		 apl.county_code = cc.county_code
-						AND cc.state_code = cs.state_code
-            and apl.time_zone_code = ctz.time_zone_code
+			 WHERE		 nvl(apl.county_code,0) = cc.county_code
+						AND nvl(cc.state_code,0) = cs.state_code
+            and nvl(apl.time_zone_code,0) = ctz.time_zone_code
             AND alk.location_kind_code = apl.location_kind
             AND alk.office_code in (l_office_code, l_cwms_office_code)
 						AND apl.location_code = l_location_code;
@@ -3062,7 +3062,7 @@ AS
 										  p_location_id		 => p_location_id,
 										  p_loc_category_id	 => NULL,
 										  p_loc_group_id		 => NULL,
-										  p_abreviated 		 => 'F',
+										  p_abreviated 		 => 'T',
 										  p_db_office_id		 => l_office_id
 										 );
 	--

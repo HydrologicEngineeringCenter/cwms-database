@@ -341,7 +341,7 @@ AS
                     job_type             => 'stored_procedure',
                     job_action            => 'cwms_util.refresh_mv_cwms_ts_id',
                     start_date            => NULL,
-                    repeat_interval    => 'freq=minutely; interval='
+                    repeat_interval    => 'freq=secondly; interval='
                                               || mv_cwms_ts_id_refresh_interval,
                     end_date             => NULL,
                     job_class            => 'default_job_class',
@@ -425,8 +425,26 @@ AS
     
     PROCEDURE refresh_mv_cwms_ts_id
     IS
+      l_staleness                 VARCHAR2(19);
     BEGIN
-        dbms_mview.refresh('mv_cwms_ts_id');
+        SELECT staleness 
+          INTO l_staleness
+          FROM user_mviews
+          WHERE mview_name = 'MV_CWMS_TS_ID';
+       IF l_staleness <> 'FRESH'
+       THEN
+         BEGIN
+            dbms_mview.refresh('mv_cwms_ts_id');
+         EXCEPTION
+            WHEN OTHERS
+            THEN
+                NULL;
+                -- Do a complete refresh if the fast refresh fails. Strictly not needed as the indexes
+                -- on the materialized views are changed from unique to non unique (to fix broken
+                -- materialized view after renaming the time series)
+                DBMS_MVIEW.refresh('mv_cwms_ts_id',method => 'C');
+             END;
+       END IF;
     END refresh_mv_cwms_ts_id;
 	--------------------------------------------------------
 	-- Return the current session user's primary office id

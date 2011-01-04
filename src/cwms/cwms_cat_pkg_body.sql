@@ -1317,6 +1317,7 @@ IS
 		l_ts_subselect_string VARCHAR2 (512)
 				:= nvl(cwms_util.normalize_wildcards(TRIM (p_ts_subselect_string)), '%') ;
 	BEGIN
+        cwms_util.refresh_mv_cwms_ts_id;
 		l_db_office_id := cwms_util.get_db_office_id (p_db_office_id);
 		l_db_office_code := cwms_util.get_db_office_code (l_db_office_id);
 
@@ -1358,11 +1359,11 @@ IS
                        FROM mv_cwms_ts_id v,
                             (   SELECT ts_code,
                                        net_privilege_bit user_privileges
-                                  FROM mv_sec_ts_privileges
+                                  FROM av_sec_ts_privileges
                                  WHERE username = cwms_util.get_user_id
                             ) a
                       WHERE v.ts_code = a.ts_code
-                        AND v.db_office_code = l_db_office_code
+                        AND  (v.db_office_code = l_db_office_code OR p_db_office_id IS NULL)
                  ) b,
                  (   SELECT location_code
                        FROM at_loc_group_assignment
@@ -1550,7 +1551,7 @@ IS
 								  AND atlga.loc_group_code = l_loc_group_code		---
 								  AND apl.location_code = atlga.location_code		---
 								  AND apl.sub_location_id IS NULL						---
-					ORDER BY   location_id ASC;
+					ORDER BY  UPPER(location_id) ASC;
 			ELSE
 				OPEN p_cwms_cat FOR
 					  SELECT   co.office_id db_office_id,
@@ -1586,7 +1587,7 @@ IS
 								  ---
 								  AND atlga.loc_group_code = l_loc_group_code		---
 								  AND apl.location_code = atlga.location_code		---
-					ORDER BY   location_id ASC;
+					ORDER BY   UPPER(location_id) ASC;
 			END IF;
 		ELSE
 			IF l_base_loc_only
@@ -1622,7 +1623,7 @@ IS
 								  AND cuc.to_unit_id = p_elevation_unit
 								  ---
 								  AND apl.sub_location_id IS NULL						---
-					ORDER BY   location_id ASC;
+					ORDER BY   UPPER(location_id) ASC;
 			ELSE
 				OPEN p_cwms_cat FOR
 					  SELECT   co.office_id db_office_id,
@@ -1653,7 +1654,7 @@ IS
 								  AND apl.location_code != 0
 								  AND cuc.from_unit_id = 'm'
 								  AND cuc.to_unit_id = p_elevation_unit
-					ORDER BY   location_id ASC;
+					ORDER BY   UPPER(location_id) ASC;
 			END IF;
 		END IF;
 	END cat_location;
@@ -3097,7 +3098,7 @@ IS
 				:= cwms_util.get_db_office_code (p_db_office_id) ;
 		l_abreviated BOOLEAN
 				:= cwms_util.return_true_or_false (NVL (p_abreviated, 'T')) ;
-		l_loc_id 		VARCHAR2 (16);
+		l_loc_id 		VARCHAR2 (49);
 		l_loc_grp_id	VARCHAR2 (32);
 		l_loc_cat_id	VARCHAR2 (32);
 		l_is_null		BOOLEAN := TRUE;
