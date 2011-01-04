@@ -3119,6 +3119,5 @@ create or replace type property_info2_tab_t as table of property_info2_t;
 /
 
 -- HOST pwd
-@@cwms_types_rating
 @@rowcps_types
 COMMIT ;
