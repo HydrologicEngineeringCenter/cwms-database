@@ -2321,7 +2321,10 @@ create or replace type zlocation_level_t is object(
 
    constructor function zlocation_level_t(
       p_location_level_code           in number)
-      return self as result,
+      return self as result,  
+      
+   constructor function zlocation_level_t
+      return self as result,      
 
    member procedure init(
       p_location_level_code           in number,
@@ -2474,6 +2477,16 @@ as
          l_indicators);
       return;
    end zlocation_level_t;
+      
+   constructor function zlocation_level_t
+      return self as result
+   is
+   begin
+      --------------------------
+      -- all members are null --
+      --------------------------
+      return;
+   end;            
 
    member procedure init(
       p_location_level_code           in number,
@@ -3053,6 +3066,7 @@ as
          when no_data_found then null;
       end;
       if l_location_level_code is null then
+         l_obj := zlocation_level_t();
          l_obj.init(
             cwms_seq.nextval,
             l_location_code,
