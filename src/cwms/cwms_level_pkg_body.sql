@@ -3519,8 +3519,8 @@ function lookup_level_or_attribute(
    p_lookup_level            in  boolean,
    p_level_units             in  varchar2,
    p_attribute_units         in  varchar2,
-   p_in_range_behavior       in  integer default cwms_lookup.in_range_interp,
-   p_out_range_behavior      in  integer default cwms_lookup.out_range_null,
+   p_in_range_behavior       in  integer default cwms_lookup.method_linear,
+   p_out_range_behavior      in  integer default cwms_lookup.method_null,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date default null,
    p_office_id               in  varchar2 default null)
@@ -3599,20 +3599,18 @@ begin
          p_value,
          l_attrs,
          l_levels,
-         false,
-         false,
          null,
          p_in_range_behavior,
+         p_out_range_behavior,
          p_out_range_behavior);
    else     
       l_value := cwms_lookup.lookup(
          p_value,
          l_levels,
          l_attrs,
-         false,
-         false,
          null,
          p_in_range_behavior,
+         p_out_range_behavior,
          p_out_range_behavior);
    end if;  
    -----------------------
@@ -3623,50 +3621,36 @@ end lookup_level_or_attribute;
             
 --------------------------------------------------------------------------------
 -- PROCEDURE lookup_level_by_attribute
---          
+--
 -- Retrieves the level value of a Location Level that corresponds to a specified
 -- attribute value and date
---          
+--
 -- p_in_range_behavior specifies how the lookup is performed when the specified
 -- attribute value is within the range of attributes for the Location Level and
 -- is specified as one of the following constants from the CWMS_LOOKUP package:
---          
---    CWMS_LOOKUP.IN_RANGE_INTERP - if the specified attribute value is not one
---    of the Location Level attributes, the retrieved level is interpolated
---    between levels associated with the nearest attribute values less and 
---    greater than the specified attribute value
---          
---    CWMS_LOOKUP.IN_RANGE_PREV - if the specified attribute value is not one
---    of the Location Level attributes, the retrieved level is the level
---    associated with the nearest attribute value less than the specified
---    attribute value 
---          
---    CWMS_LOOKUP.IN_RANGE_NEXT - if the specified attribute value is not one
---    of the Location Level attributes, the retrieved level is the level
---    associated with the nearest attribute value greater than the specified
---    attribute value
---          
---    CWMS_LOOKUP.IN_RANGE_NEAREST - if the specified attribute value is not one
---    of the Location Level attributes, the retrieved level is the level
---    associated with the nearest attribute value to the specified attribute 
---    value 
---          
+--
+-- CWMS_LOOKUP.METHOD_NULL        Return null if between values                                             
+-- CWMS_LOOKUP.METHOD_ERROR       Raise an exception if between values                                      
+-- CWMS_LOOKUP.METHOD_LINEAR      Linear interpolation of attribute and level values                  
+-- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic interpolation of attribute and level values             
+-- CWMS_LOOKUP.METHOD_LIN_LOG     Linear interpolation of attribute values, Logarithmic of level values 
+-- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic interpolation of attribute values, Linear of level values 
+-- CWMS_LOOKUP.METHOD_LOWER       Return the value that is lower in magnitude                                                
+-- CWMS_LOOKUP.METHOD_HIGHER      Return the value that is higher in magnitude                                               
+-- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude                                              
+--
 -- p_out_range_behavior specifies how the lookup is performed when the specified
 -- attribute value is outside the range of attributes for the Location Level and
 -- is specified as one of the following constants from the CWMS_LOOKUP package:
---          
---    CWMS_LOOKUP.OUT_RANGE_NULL - NULL is retrieved for the level value
---          
---    CWMS_LOOKUP.OUT_RANGE_ERROR - an error is raised instead of retrieving
---    a value 
---          
---    CWMS_LOOKUP.OUT_RANGE_NEAREST - the level value retrieved is the level
---    value associated with the attribute value nearest the specified attribute
---    value 
---          
---    CWMS_LOOKUP.OUT_RANGE_EXTRAP - the level value retrieved is extrapolated
---    from the level values associated with the two attribute values nearst to
---    the specified attribute value
+--
+-- CWMS_LOOKUP.METHOD_NULL        Return null if outside range                                             
+-- CWMS_LOOKUP.METHOD_ERROR       Raise an exception outside range                                      
+-- CWMS_LOOKUP.METHOD_LINEAR      Linear extrapolation of attribute and level values                  
+-- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic extrapolation of attribute and level values             
+-- CWMS_LOOKUP.METHOD_LIN_LOG     Linear extrapoloation of attribute values, Logarithmic of level values 
+-- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic extrapoloation of attribute values, Linear of level values 
+-- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude
+--                                              
 --------------------------------------------------------------------------------
 procedure lookup_level_by_attribute(
    p_level                   out number,
@@ -3675,8 +3659,8 @@ procedure lookup_level_by_attribute(
    p_attribute_value         in  number,
    p_attribute_units         in  varchar2,
    p_level_units             in  varchar2,
-   p_in_range_behavior       in  integer  default cwms_lookup.in_range_interp,
-   p_out_range_behavior      in  integer  default cwms_lookup.out_range_null,
+   p_in_range_behavior       in  integer  default cwms_lookup.method_linear,
+   p_out_range_behavior      in  integer  default cwms_lookup.method_null,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
@@ -3698,50 +3682,36 @@ end lookup_level_by_attribute;
             
 --------------------------------------------------------------------------------
 -- FUNCTION lookup_level_by_attribute
---          
+--
 -- Returns the level value of a Location Level that corresponds to a specified
 -- attribute value and date
---          
+--
 -- p_in_range_behavior specifies how the lookup is performed when the specified
 -- attribute value is within the range of attributes for the Location Level and
 -- is specified as one of the following constants from the CWMS_LOOKUP package:
---          
---    CWMS_LOOKUP.IN_RANGE_INTERP - if the specified attribute value is not one
---    of the Location Level attributes, the returned level is interpolated
---    between levels associated with the nearest attribute values less and 
---    greater than the specified attribute value
---          
---    CWMS_LOOKUP.IN_RANGE_PREV - if the specified attribute value is not one
---    of the Location Level attributes, the returned level is the level
---    associated with the nearest attribute value less than the specified
---    attribute value 
---          
---    CWMS_LOOKUP.IN_RANGE_NEXT - if the specified attribute value is not one
---    of the Location Level attributes, the returned level is the level
---    associated with the nearest attribute value greater than the specified
---    attribute value
---          
---    CWMS_LOOKUP.IN_RANGE_NEAREST - if the specified attribute value is not one
---    of the Location Level attributes, the returned level is the level
---    associated with the nearest attribute value to the specified attribute 
---    value 
---          
+--
+-- CWMS_LOOKUP.METHOD_NULL        Return null if between values                                             
+-- CWMS_LOOKUP.METHOD_ERROR       Raise an exception if between values                                      
+-- CWMS_LOOKUP.METHOD_LINEAR      Linear interpolation of attribute and level values                  
+-- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic interpolation of attribute and level values             
+-- CWMS_LOOKUP.METHOD_LIN_LOG     Linear interpolation of attribute values, Logarithmic of level values 
+-- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic interpolation of attribute values, Linear of level values 
+-- CWMS_LOOKUP.METHOD_LOWER       Return the value that is lower in magnitude                                                
+-- CWMS_LOOKUP.METHOD_HIGHER      Return the value that is higher in magnitude                                               
+-- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude                                              
+--
 -- p_out_range_behavior specifies how the lookup is performed when the specified
 -- attribute value is outside the range of attributes for the Location Level and
 -- is specified as one of the following constants from the CWMS_LOOKUP package:
---          
---    CWMS_LOOKUP.OUT_RANGE_NULL - NULL is returned for the level value
---          
---    CWMS_LOOKUP.OUT_RANGE_ERROR - an error is raised instead of retrieving
---    a value 
---          
---    CWMS_LOOKUP.OUT_RANGE_NEAREST - the level value returned is the level
---    value associated with the attribute value nearest the specified attribute
---    value 
---          
---    CWMS_LOOKUP.OUT_RANGE_EXTRAP - the level value returned is extrapolated
---    from the level values associated with the two attribute values nearest to
---    the specified attribute value
+--
+-- CWMS_LOOKUP.METHOD_NULL        Return null if outside range                                             
+-- CWMS_LOOKUP.METHOD_ERROR       Raise an exception outside range                                      
+-- CWMS_LOOKUP.METHOD_LINEAR      Linear extrapolation of attribute and level values                  
+-- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic extrapolation of attribute and level values             
+-- CWMS_LOOKUP.METHOD_LIN_LOG     Linear extrapoloation of attribute values, Logarithmic of level values 
+-- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic extrapoloation of attribute values, Linear of level values 
+-- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude
+--                                              
 --------------------------------------------------------------------------------
 function lookup_level_by_attribute(
    p_location_level_id       in  varchar2,
@@ -3749,8 +3719,8 @@ function lookup_level_by_attribute(
    p_attribute_value         in  number,
    p_attribute_units         in  varchar2,
    p_level_units             in  varchar2,
-   p_in_range_behavior       in  integer  default cwms_lookup.in_range_interp,
-   p_out_range_behavior      in  integer  default cwms_lookup.out_range_null,
+   p_in_range_behavior       in  integer  default cwms_lookup.method_linear,
+   p_out_range_behavior      in  integer  default cwms_lookup.method_null,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
@@ -3776,52 +3746,38 @@ end lookup_level_by_attribute;
             
 --------------------------------------------------------------------------------
 -- PROCEDURE lookup_attribute_by_level
---          
+--
 -- Retrieves the attribute value of a Location Level that corresponds to a 
 -- specified level value and date
---          
+--
 -- p_in_range_behavior specifies how the lookup is performed when the specified
 -- level value is within the range of levels associated attributes for the
 -- Location Level and is specified as one of the following constants from the
 -- CWMS_LOOKUP package:
---          
---    CWMS_LOOKUP.IN_RANGE_INTERP - if the specified level value is not a level
---    value associated with one of the Location Level attributes, the retrieved
---    attribute value is interpolated between the attribute values whose
---    associated levels are the nearest values less and greater than the
---    specified level value
---          
---    CWMS_LOOKUP.IN_RANGE_PREV - if the specified level value is not a level
---    value associated with one of the Location Level attributes, the retrieved
---    attribute value is the attribute value whose associated level is the 
---    nearest value less than the specified level value 
---          
---    CWMS_LOOKUP.IN_RANGE_NEXT - if the specified level value is not a level
---    value associated with one of the Location Level attributes, the retrieved
---    attribute value is the attribute value whose associated level is the 
---    nearest value greater than the specified level value
---          
---    CWMS_LOOKUP.IN_RANGE_NEAREST - if the specified level value is not a level
---    value associated with one of the Location Level attributes, the retrieved
---    attribute value is the attribute value whose associated level is the 
---    nearest the specified level value
---          
+--
+-- CWMS_LOOKUP.METHOD_NULL        Return null if between values                                             
+-- CWMS_LOOKUP.METHOD_ERROR       Raise an exception if between values                                      
+-- CWMS_LOOKUP.METHOD_LINEAR      Linear interpolation of level and attribute values                  
+-- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic interpolation of level and attribute values             
+-- CWMS_LOOKUP.METHOD_LIN_LOG     Linear interpolation of level values, Logarithmic of attribute values 
+-- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic interpolation of level values, Linear of attribute values 
+-- CWMS_LOOKUP.METHOD_LOWER       Return the value that is lower in magnitude                                                
+-- CWMS_LOOKUP.METHOD_HIGHER      Return the value that is higher in magnitude                                               
+-- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude                                              
+--
 -- p_out_range_behavior specifies how the lookup is performed when the specified
 -- level value is outside the range of levels associated attributes for the
 -- Location Level and is specified as one of the following constants from the
 -- CWMS_LOOKUP package:
---          
---    CWMS_LOOKUP.OUT_RANGE_NULL - NULL is retrieved for the attribute value
---          
---    CWMS_LOOKUP.OUT_RANGE_ERROR - an error is raised instead of retrieving
---    a value 
---          
---    CWMS_LOOKUP.OUT_RANGE_NEAREST - the attribute value whose associated level
---    value is the nearest the specified level value is retrieved
---          
---    CWMS_LOOKUP.OUT_RANGE_EXTRAP - the attribute value retrieved is
---    extrapolated from the two attribute values whose associated level values
---    are nearset to the specified level value
+--
+-- CWMS_LOOKUP.METHOD_NULL        Return null if outside range                                             
+-- CWMS_LOOKUP.METHOD_ERROR       Raise an exception outside range                                      
+-- CWMS_LOOKUP.METHOD_LINEAR      Linear extrapolation of level and attribute values                  
+-- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic extrapolation of level and attribute values             
+-- CWMS_LOOKUP.METHOD_LIN_LOG     Linear extrapoloation of level values, Logarithmic of attribute values 
+-- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic extrapoloation of level values, Linear of attribute values 
+-- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude
+--                                              
 --------------------------------------------------------------------------------
 procedure lookup_attribute_by_level(
    p_attribute               out number,
@@ -3830,8 +3786,8 @@ procedure lookup_attribute_by_level(
    p_level_value             in  number,
    p_level_units             in  varchar2,
    p_attribute_units         in  varchar2,
-   p_in_range_behavior       in  integer  default cwms_lookup.in_range_interp,
-   p_out_range_behavior      in  integer  default cwms_lookup.out_range_null,
+   p_in_range_behavior       in  integer  default cwms_lookup.method_linear,
+   p_out_range_behavior      in  integer  default cwms_lookup.method_null,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
@@ -3853,52 +3809,38 @@ end lookup_attribute_by_level;
             
 --------------------------------------------------------------------------------
 -- FUNCTION lookup_attribute_by_level
---          
+--
 -- Returns the attribute value of a Location Level that corresponds to a 
 -- specified level value and date
---          
+--
 -- p_in_range_behavior specifies how the lookup is performed when the specified
 -- level value is within the range of levels associated attributes for the
 -- Location Level and is specified as one of the following constants from the
 -- CWMS_LOOKUP package:
---          
---    CWMS_LOOKUP.IN_RANGE_INTERP - if the specified level value is not a level
---    value associated with one of the Location Level attributes, the returned
---    attribute value is interpolated between the attribute values whose
---    associated levels are the nearest values less and greater than the
---    specified level value
---          
---    CWMS_LOOKUP.IN_RANGE_PREV - if the specified level value is not a level
---    value associated with one of the Location Level attributes, the returned
---    attribute value is the attribute value whose associated level is the 
---    nearest value less than the specified level value 
---          
---    CWMS_LOOKUP.IN_RANGE_NEXT - if the specified level value is not a level
---    value associated with one of the Location Level attributes, the returned
---    attribute value is the attribute value whose associated level is the 
---    nearest value greater than the specified level value
---          
---    CWMS_LOOKUP.IN_RANGE_NEAREST - if the specified level value is not a level
---    value associated with one of the Location Level attributes, the returned
---    attribute value is the attribute value whose associated level is the 
---    nearest the specified level value
---          
+--
+-- CWMS_LOOKUP.METHOD_NULL        Return null if between values                                             
+-- CWMS_LOOKUP.METHOD_ERROR       Raise an exception if between values                                      
+-- CWMS_LOOKUP.METHOD_LINEAR      Linear interpolation of level and attribute values                  
+-- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic interpolation of level and attribute values             
+-- CWMS_LOOKUP.METHOD_LIN_LOG     Linear interpolation of level values, Logarithmic of attribute values 
+-- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic interpolation of level values, Linear of attribute values 
+-- CWMS_LOOKUP.METHOD_LOWER       Return the value that is lower in magnitude                                                
+-- CWMS_LOOKUP.METHOD_HIGHER      Return the value that is higher in magnitude                                               
+-- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude                                              
+--
 -- p_out_range_behavior specifies how the lookup is performed when the specified
 -- level value is outside the range of levels associated attributes for the
 -- Location Level and is specified as one of the following constants from the
 -- CWMS_LOOKUP package:
---          
---    CWMS_LOOKUP.OUT_RANGE_NULL - NULL is returned for the attribute value
---          
---    CWMS_LOOKUP.OUT_RANGE_ERROR - an error is raised instead of returning
---    a value 
---          
---    CWMS_LOOKUP.OUT_RANGE_NEAREST - the attribute value whose associated level
---    value is the nearest the specified level value is returned
---          
---    CWMS_LOOKUP.OUT_RANGE_EXTRAP - the attribute value returned is
---    extrapolated from the two attribute values whose associated level values
---    are nearset to the specified level value
+--
+-- CWMS_LOOKUP.METHOD_NULL        Return null if outside range                                             
+-- CWMS_LOOKUP.METHOD_ERROR       Raise an exception outside range                                      
+-- CWMS_LOOKUP.METHOD_LINEAR      Linear extrapolation of level and attribute values                  
+-- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic extrapolation of level and attribute values             
+-- CWMS_LOOKUP.METHOD_LIN_LOG     Linear extrapoloation of level values, Logarithmic of attribute values 
+-- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic extrapoloation of level values, Linear of attribute values 
+-- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude
+--                                              
 --------------------------------------------------------------------------------
 function lookup_attribute_by_level(
    p_location_level_id       in  varchar2,
@@ -3906,8 +3848,8 @@ function lookup_attribute_by_level(
    p_level_value             in  number,
    p_level_units             in  varchar2,
    p_attribute_units         in  varchar2,
-   p_in_range_behavior       in  integer  default cwms_lookup.in_range_interp,
-   p_out_range_behavior      in  integer  default cwms_lookup.out_range_null,
+   p_in_range_behavior       in  integer  default cwms_lookup.method_linear,
+   p_out_range_behavior      in  integer  default cwms_lookup.method_null,
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
