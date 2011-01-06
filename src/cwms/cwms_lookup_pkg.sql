@@ -11,17 +11,21 @@ type sequence_properties_t is record(
    constant_range   boolean);
    
 --------------------------------------------------------------------------------
--- CONSTANTS
+-- PACKAGE VARIABLES (SET AT THE BOTTOM OF THE PACKAGE BODY)
 --------------------------------------------------------------------------------
-in_range_interp   constant integer :=   1; -- interpolate if value is in range
-in_range_prev     constant integer :=   2; -- previous val if value is in range
-in_range_next     constant integer :=   4; -- next val if value is in range
-in_range_nearest  constant integer :=   8; -- nearest if value is in range
-
-out_range_null    constant integer :=  16; -- null if value not in range
-out_range_error   constant integer :=  32; -- exception if value not in range
-out_range_nearest constant integer :=  64; -- nearest val if value not in range
-out_range_extrap  constant integer := 128; -- extrapolate if value not in range
+method_null        pls_integer;  -- Return null if between values or outside range                                             
+method_error       pls_integer;  -- Raise an exception if between values or outside range                                      
+method_linear      pls_integer;  -- Linear interpolation or extrapolation of independent and dependent values                  
+method_logarithmic pls_integer;  -- Logarithmic interpolation or extrapolation of independent and dependent values             
+method_lin_log     pls_integer;  -- Linear interpolation/extrapoloation of independent values, Logarithmic of dependent values 
+method_log_lin     pls_integer;  -- Logarithmic interpolation/extrapoloation of independent values, Linear of dependent values 
+method_conic       pls_integer;  -- Conic interpolation or extrapolation                                                       
+method_previous    pls_integer;  -- Return the value that is lower in position                                                 
+method_next        pls_integer;  -- Return the value that is higher in position                                                
+method_nearest     pls_integer;  -- Return the value that is nearest in position                                               
+method_lower       pls_integer;  -- Return the value that is lower in magnitude                                                
+method_higher      pls_integer;  -- Return the value that is higher in magnitude                                               
+method_closest     pls_integer;  -- Return the value that is closest in magnitude                                              
 
 --------------------------------------------------------------------------------
 -- FUNCTION analyze_sequence
@@ -30,42 +34,133 @@ function analyze_sequence(
    p_sequence in number_tab_t)
    return sequence_properties_t;
 
+function analyze_sequence(
+   p_sequence in double_tab_t)
+   return sequence_properties_t;
+
 --------------------------------------------------------------------------------
 -- FUNCTION find_high_index
 --------------------------------------------------------------------------------
 function find_high_index(
    p_value           in number,
    p_sequence        in number_tab_t,
-   p_properties      in sequence_properties_t default null,
-   p_out_range_error in boolean default false) -- return NULL otherwise
-   return integer;
+   p_properties      in sequence_properties_t default null)
+   return pls_integer;
+   
+--------------------------------------------------------------------------------
+-- FUNCTION find_high_index
+--------------------------------------------------------------------------------
+function find_high_index(
+   p_value           in binary_double,
+   p_sequence        in double_tab_t,
+   p_properties      in sequence_properties_t default null)
+   return pls_integer;
    
 --------------------------------------------------------------------------------
 -- FUNCTION find_ratio
 --------------------------------------------------------------------------------
 function find_ratio(
-   p_use_log            in out boolean,
-   p_value              in     number,
-   p_sequence           in     number_tab_t,
-   p_high_index         in     integer,
-   p_increasing         in     boolean,
-   p_in_range_behavior  in     integer default in_range_interp,
-   p_out_range_behavior in     integer default out_range_null)
+   p_log_used                out boolean,
+   p_value                   in  number,
+   p_sequence                in  number_tab_t,
+   p_high_index              in  pls_integer,
+   p_increasing              in  boolean,
+   p_in_range_behavior       in  pls_integer default method_linear,
+   p_out_range_low_behavior  in  pls_integer default method_null,
+   p_out_range_high_behavior in  pls_integer default method_null)
+   return number;
+
+--------------------------------------------------------------------------------
+-- FUNCTION find_ratio
+--------------------------------------------------------------------------------
+function find_ratio(
+   p_log_used                out boolean,
+   p_value                   in  binary_double,
+   p_sequence                in  double_tab_t,
+   p_high_index              in  pls_integer,
+   p_increasing              in  boolean,
+   p_in_range_behavior       in  pls_integer default method_linear,
+   p_out_range_low_behavior  in  pls_integer default method_null,
+   p_out_range_high_behavior in  pls_integer default method_null)
+   return binary_double;
+
+--------------------------------------------------------------------------------
+-- FUNCTION lookup
+--------------------------------------------------------------------------------
+function lookup(
+   p_value                   in number,
+   p_independent             in number_tab_t,
+   p_dependent               in number_tab_t,
+   p_independent_properties  in sequence_properties_t default null,
+   p_in_range_behavior       in pls_integer default method_linear,
+   p_out_range_low_behavior  in pls_integer default method_null,
+   p_out_range_high_behavior in pls_integer default method_null)
    return number;
 
 --------------------------------------------------------------------------------
 -- FUNCTION lookup
 --------------------------------------------------------------------------------
 function lookup(
-   p_value                  in number,
-   p_independent            in number_tab_t,
-   p_dependent              in number_tab_t,
-   p_independent_log        in boolean default false,
-   p_dependent_log          in boolean default false,
-   p_independent_properties in sequence_properties_t default null,
-   p_in_range_behavior      in integer default in_range_interp,
-   p_out_range_behavior     in integer default out_range_null)
-   return number;
+   p_value                   in binary_double,
+   p_independent             in double_tab_t,
+   p_dependent               in double_tab_t,
+   p_independent_properties  in sequence_properties_t default null,
+   p_in_range_behavior       in pls_integer default method_linear,
+   p_out_range_low_behavior  in pls_integer default method_null,
+   p_out_range_high_behavior in pls_integer default method_null)
+   return binary_double;
+
+--------------------------------------------------------------------------------
+-- FUNCTION lookup
+--------------------------------------------------------------------------------
+function lookup(
+   p_values                  in number_tab_t,
+   p_independent             in number_tab_t,
+   p_dependent               in number_tab_t,
+   p_independent_properties  in sequence_properties_t default null,
+   p_in_range_behavior       in pls_integer default method_linear,
+   p_out_range_low_behavior  in pls_integer default method_null,
+   p_out_range_high_behavior in pls_integer default method_null)
+   return number_tab_t;
+
+--------------------------------------------------------------------------------
+-- FUNCTION lookup
+--------------------------------------------------------------------------------
+function lookup(
+   p_values                  in double_tab_t,
+   p_independent             in double_tab_t,
+   p_dependent               in double_tab_t,
+   p_independent_properties  in sequence_properties_t default null,
+   p_in_range_behavior       in pls_integer default method_linear,
+   p_out_range_low_behavior  in pls_integer default method_null,
+   p_out_range_high_behavior in pls_integer default method_null)
+   return double_tab_t;
+
+--------------------------------------------------------------------------------
+-- FUNCTION lookup
+--------------------------------------------------------------------------------
+function lookup(
+   p_array                   in tsv_array,
+   p_independent             in double_tab_t,
+   p_dependent               in double_tab_t,
+   p_independent_properties  in sequence_properties_t default null,
+   p_in_range_behavior       in pls_integer default method_linear,
+   p_out_range_low_behavior  in pls_integer default method_null,
+   p_out_range_high_behavior in pls_integer default method_null)
+   return tsv_array;
+
+--------------------------------------------------------------------------------
+-- FUNCTION lookup
+--------------------------------------------------------------------------------
+function lookup(
+   p_array                   in ztsv_array,
+   p_independent             in double_tab_t,
+   p_dependent               in double_tab_t,
+   p_independent_properties  in sequence_properties_t default null,
+   p_in_range_behavior       in pls_integer default method_linear,
+   p_out_range_low_behavior  in pls_integer default method_null,
+   p_out_range_high_behavior in pls_integer default method_null)
+   return ztsv_array;
 
 end cwms_lookup;
 /
