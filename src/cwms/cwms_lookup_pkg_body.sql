@@ -1308,6 +1308,20 @@ begin
    select rating_method_code into method_lower       from cwms_rating_method where rating_method_id = 'LOWER';
    select rating_method_code into method_higher      from cwms_rating_method where rating_method_id = 'HIGHER';
    select rating_method_code into method_closest     from cwms_rating_method where rating_method_id = 'CLOSEST';
+   
+   method_by_name('NULL')        := method_null;
+   method_by_name('ERROR')       := method_error;
+   method_by_name('LINEAR')      := method_linear;
+   method_by_name('LOGARITHMIC') := method_logarithmic;
+   method_by_name('LIN-LOG')     := method_lin_log;
+   method_by_name('LOG-LIN')     := method_log_lin;
+   method_by_name('CONIC')       := method_conic;
+   method_by_name('PREVIOUS')    := method_previous;
+   method_by_name('NEXT')        := method_next;
+   method_by_name('NEAREST')     := method_nearest;
+   method_by_name('LOWER')       := method_lower;
+   method_by_name('HIGHER')      := method_higher;
+   method_by_name('CLOSEST')     := method_closest;
 end cwms_lookup;
 /
 commit;

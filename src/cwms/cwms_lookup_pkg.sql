@@ -10,6 +10,8 @@ type sequence_properties_t is record(
    decreasing_range boolean,
    constant_range   boolean);
    
+type method_array_t is table of pls_integer index by varchar2(32);
+   
 --------------------------------------------------------------------------------
 -- PACKAGE VARIABLES (SET AT THE BOTTOM OF THE PACKAGE BODY)
 --------------------------------------------------------------------------------
@@ -25,7 +27,9 @@ method_next        pls_integer;  -- Return the value that is higher in position
 method_nearest     pls_integer;  -- Return the value that is nearest in position                                               
 method_lower       pls_integer;  -- Return the value that is lower in magnitude                                                
 method_higher      pls_integer;  -- Return the value that is higher in magnitude                                               
-method_closest     pls_integer;  -- Return the value that is closest in magnitude                                              
+method_closest     pls_integer;  -- Return the value that is closest in magnitude
+
+method_by_name method_array_t;                                               
 
 --------------------------------------------------------------------------------
 -- FUNCTION analyze_sequence
