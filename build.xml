@@ -1,4 +1,4 @@
-<project name="wcdba" default="all">
+<project name="wcdba-oracle" default="all">
 	<description>
 		"Build file for the oracle side of the WCDBA project."
 	</description>
@@ -255,7 +255,7 @@
 	<target name="all-schema" depends="clean,build" description="drop existing CWMS schema then build a new CWMS schema">
     </target>
 	
-    <target name="all" depends="all-schema" description="empty for the moment">
+    <target name="all" depends="all-schema" description="does a clean build">
     </target>
 	
 </project>
