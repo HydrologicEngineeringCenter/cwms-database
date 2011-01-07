@@ -34,79 +34,6 @@ AS
   -------------------------------------------------------------------------------
   --
   --
-  --
-  --
-  -- cat_outlet
-  -- returns a summary listing of outlets instended to be used for lists or display.
-  --
-  -- security: can be called by user and dba group.
-  --
-  -- NOTE THAT THE COLUMN NAMES SHOULD NOT BE CHANGED AFTER BEING DEVELOPED.
-  -- Changing them will end up breaking external code (so make any changes prior
-  -- to development).
-  -- The returned records contain the following columns:
-  --
-  --    Name                      Datatype      Description
-  --    ------------------------ ------------- ----------------------------
-  --    project_office_id        varchar2(32)   the office id of the parent project.
-  --    project_id               varchar2(32)   the location id of the parent project.
-  --    db_office_id             varchar2(16)   owning office of the outlet location.
-  --    base_location_id         varchar2(16)   the outlet base location id
-  --    sub_location_id          varchar2(32)   the outlet sub-location id, if defined
-  --    time_zone_name           varchar2(28)   local time zone name for outlet location
-  --    latitude                 number         outlet location latitude
-  --    longitude                number         outlet location longitude
-  --    horizontal_datum         varchar2(16)   horizontal datrum of lat/lon
-  --    elevation                number         outlet location elevation
-  --    elev_unit_id             varchar2(16)   outlet location elevation units
-  --    vertical_datum           varchar2(16)   veritcal datum of elevation
-  --    public_name              varchar2(32)   outlet location public name
-  --    long_name                varchar2(80)   outlet location long name
-  --    description              varchar2(512)  outlet location description
-  --    active_flag              varchar2(1)    'T' if active, else 'F'
-  --
-  -------------------------------------------------------------------------------
-  -- errors will be issued as thrown exceptions.
-  --
-PROCEDURE cat_outlet(
-    --described above.
-    p_outlet_cat OUT sys_refcursor,
-    -- the project id. if null, return all outlets for the office.
-    p_project_id IN VARCHAR2 DEFAULT NULL,
-    -- defaults to the connected user's office if null
-    -- the office id can use sql masks for retrieval of additional offices.
-    p_db_office_id IN VARCHAR2 DEFAULT NULL )
-AS
-BEGIN
-  NULL;
-END cat_outlet;
-  --
-  --
-  --
-  -- Core outlet procedures and functions.
-  --
-  --
-  --
-  -- Returns outlet data for a given outlet location id. Returned data is encapsulated
-  -- in an outlet oracle type.
-  --
-  -- security: can be called by user and dba group.
-  --
-  -- errors preventing the return of data will be issued as a thrown exception
-  --
-PROCEDURE retrieve_outlet(
-    --returns a filled in object including location data
-    p_outlet OUT project_structure_obj_t,
-    -- a location ref that identifies the object we want to retrieve.
-    -- includes the location id (base location + '-' + sublocation)
-    -- the office id if null will default to the connected user's office
-    p_outlet_location_ref IN location_ref_t )
-AS
-BEGIN
-  NULL;
-END retrieve_outlet;
---
---
 --
 -- Returns a set of outlets for a given project. Returned data is encapsulated
 -- in a table of outlet oracle types.
@@ -127,25 +54,6 @@ BEGIN
   NULL;
 END retrieve_outlets;
 --
---
---
--- Stores the data contained within the outlet object into the database schema.
---
--- security: can only be called by dba group.
---
--- This procedure performs both insert and update functionality.
---
--- errors will be issued as thrown exceptions.
---
-PROCEDURE store_outlet(
-    -- a populated outlet object type.
-    p_outlet IN project_structure_obj_t,
-    -- a flag that will cause the procedure to fail if the outlet already exists
-    p_fail_if_exists IN VARCHAR2 DEFAULT 'T' )
-AS
-BEGIN
-  NULL;
-END store_outlet;
 --
 --
 --
@@ -207,7 +115,66 @@ END delete_outlet;
 --
 --
 --
+-- stores a table of gate settings.
+--
+-- start and end determines time window for delete.
+-- start and end has to encompass the incoming time window defined in p_gate_settings.
+-- throw an error if it isnt.
+--
+-- inclusive determines if records at the start and end times are included in the delete.
+-- the type of inclusive is borrowed from cwms_ts, but it could be setup as a 'T' 'F' 
+-- if that makes more sense.
+--
+-- if rule isnt delete_insert then throw an error, initially ONLY delete insert
+-- will be supported.
+--
+-- override_protection will not be implemented at this time, but is included for
+-- future use.
 
+procedure store_gate_changes(
+    p_gate_changes in gate_change_tab_t,
+		-- store rule, only delete insert initially supported.
+    p_store_rule		in varchar2 default null,
+    -- start time of data to delete.
+    p_start_time	  in		date default null,
+    --end time of data to delete.
+    p_end_time		  in		date default null,
+    -- if the start time is inclusive.
+    p_start_inclusive IN VARCHAR2 DEFAULT 'T',
+    -- if the end time is inclusive
+    p_end_inclusive in varchar2 default 'T',
+    -- if protection is to be ignored, not initially supported.
+		p_override_prot	in varchar2 default 'F'
+)
+AS
+BEGIN
+  null;
+END store_gate_changes;
+
+PROCEDURE retrieve_gate_changes(
+    -- the retrieved set of water user contract accountings
+    p_gate_changes out gate_change_tab_t,
+    -- the retrieved changes should be for this project.
+    p_project_location in location_ref_t,
+    -- the start date time for changes
+    p_start_time in date,
+    -- the end date time for changes
+    p_end_time IN DATE,
+    -- the time zone of returned date time data.
+    p_time_zone IN VARCHAR2 DEFAULT NULL,
+    -- if the start time is inclusive.
+    p_start_inclusive IN VARCHAR2 DEFAULT 'T',
+    -- if the end time is inclusive
+    p_end_inclusive in varchar2 default 'T',
+    -- determines the unit system that returned data is in.
+    -- opening can be a variety of units across a given project, 
+    -- so the return units are not parameterized.
+    p_unit_system in varchar2 default null
+  )
+AS
+BEGIN
+  null;
+END retrieve_gate_changes;
 --
 --
 --

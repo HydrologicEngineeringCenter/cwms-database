@@ -194,21 +194,32 @@ PROCEDURE set_contract_types(
 PROCEDURE store_accounting_set(
     -- the set of water user contract accountings to store to the database.
     p_accounting_set IN wat_usr_contract_acct_tab_t,
-    
     -- a flag that will cause the procedure to fail if the objects already exist
-    p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
+    -- p_fail_if_exists in varchar2 default 'T' 
+
+		-- store rule, only delete insert initially supported.
+    p_store_rule		in varchar2 default null,
+    -- start time of data to delete.
+    p_start_time	  in		date default null,
+    --end time of data to delete.
+    p_end_time		  in		date default null,
+    -- if the start time is inclusive.
+    p_start_inclusive IN VARCHAR2 DEFAULT 'T',
+    -- if the end time is inclusive
+    p_end_inclusive in varchar2 default 'T',
+    -- if protection is to be ignored, not initially supported.
+		p_override_prot	in varchar2 default 'F'
+    );
   --------------------------------------------------------------------------------
   -- retrieve a water user contract accounting set.
   --------------------------------------------------------------------------------
 PROCEDURE retrieve_accounting_set(
     -- the retrieved set of water user contract accountings
-    p_accounting_set OUT wat_usr_contract_acct_tab_t,
-    -- a series of masks for the following attributes.
-    -- p_db_office_id,
-    -- p_project_id,
-    -- p_entity_name,
-    -- p_contract_name
+    p_accounting_set out wat_usr_contract_acct_tab_t,
+
+    -- the water user contract ref, does this need to be the project instead?
     p_contract_ref IN water_user_contract_ref_t,
+    
     -- the units to return the volume as.
     p_units IN VARCHAR2,
     -- the transfer start date time

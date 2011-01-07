@@ -706,11 +706,29 @@ end set_contract_types;
 --    a flag that will cause the procedure to fail if the objects already exist
 -- p_fail_if_exists IN VARCHAR2 DEFAULT 'T' )AS
 --    a flag that will cause the procedure to fail if the objects already exist
-procedure store_accounting_set(
-   p_accounting_set in wat_usr_contract_acct_tab_t,
-   p_fail_if_exists in varchar2 default 'T' )
+PROCEDURE store_accounting_set(
+    -- the set of water user contract accountings to store to the database.
+    p_accounting_set IN wat_usr_contract_acct_tab_t,
+    -- a flag that will cause the procedure to fail if the objects already exist
+    -- p_fail_if_exists in varchar2 default 'T' 
+
+		-- store rule, only delete insert initially supported.
+    p_store_rule		in varchar2 default null,
+    -- start time of data to delete.
+    p_start_time	  in		date default null,
+    --end time of data to delete.
+    p_end_time		  in		date default null,
+    -- if the start time is inclusive.
+    p_start_inclusive IN VARCHAR2 DEFAULT 'T',
+    -- if the end time is inclusive
+    p_end_inclusive in varchar2 default 'T',
+    -- if protection is to be ignored, not initially supported.
+		p_override_prot	in varchar2 default 'F'
+    )   
+   
+   
 is
-   l_fail_if_exists boolean;
+   -- l_fail_if_exists boolean;
    l_rec            at_wat_usr_contract_accounting%rowtype;
    l_ref            water_user_contract_ref_t;
    l_factor         binary_double;
@@ -742,8 +760,8 @@ is
       p_rec.accounting_remarks := p_obj.accounting_remarks;             
    end;
 begin
-	cwms_util.check_input(p_fail_if_exists);
-   l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
+	-- cwms_util.check_input(p_fail_if_exists);
+   -- l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
    if p_accounting_set is not null then
       for i in 1..p_accounting_set.count loop
          l_ref := p_accounting_set(i).water_user_contract_ref;
@@ -823,25 +841,25 @@ begin
                      p_accounting_set(i).transfer_end_datetime, 
                      l_time_zone, 
                      'UTC');             
-            if l_fail_if_exists then
-               cwms_err.raise(
-                  'ITEM_ALREADY_EXITS',
-                  'Water user contract accounting',
-                  l_ref.water_user.project_location_ref.get_office_id
-                  || '/'
-                  || l_ref.water_user.project_location_ref.get_location_id
-                  || '/'
-                  || l_ref.water_user.entity_name
-                  || '/'
-                  || l_ref.contract_name
-                  || '/'
-                  || p_accounting_set(i).physical_transfer_type.display_value
-                  || ' ('
-                  || to_char(p_accounting_set(i).transfer_start_datetime, 'dd-Mon-yyyy hh24mi')                  
-                  || ' to '
-                  || to_char(p_accounting_set(i).transfer_end_datetime, 'dd-Mon-yyyy hh24mi')
-                  || ')');                  
-            end if;
+            -- if l_fail_if_exists then
+             --  cwms_err.raise(
+             --     'ITEM_ALREADY_EXITS',
+             --     'Water user contract accounting',
+             --     l_ref.water_user.project_location_ref.get_office_id
+             --     || '/'
+             --     || l_ref.water_user.project_location_ref.get_location_id
+             --     || '/'
+             --     || l_ref.water_user.entity_name
+             --     || '/'
+             --     || l_ref.contract_name
+             --     || '/'
+             --     || p_accounting_set(i).physical_transfer_type.display_value
+             --     || ' ('
+             --     || to_char(p_accounting_set(i).transfer_start_datetime, 'dd-Mon-yyyy hh24mi')                  
+             --     || ' to '
+             --     || to_char(p_accounting_set(i).transfer_end_datetime, 'dd-Mon-yyyy hh24mi')
+             --     || ')');                  
+            -- end if;
             populate_accounting(
                l_rec,
                p_accounting_set(i));

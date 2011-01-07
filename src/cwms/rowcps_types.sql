@@ -54,6 +54,7 @@ CREATE OR REPLACE TYPE project_obj_t
 AS
   OBJECT
   (
+  
     --locations
     --the location associated with this project,
     --an instance of the location type.
@@ -296,6 +297,62 @@ IS
   TABLE OF characteristic_obj_t;
   /
   show errors
+--
+--
+CREATE OR REPLACE type gate_setting_obj_t
+AS
+  object
+  (
+  --required
+  outlet_location_ref location_ref_t,
+  gate_opening binary_double,
+  opening_units varchar2(16),
+
+  --not required
+  old_discharge binary_double,
+  new_discharge binary_double,
+  discharge_units  varchar2(16)
+);
+  /
+  show errors
+  --
+CREATE OR REPLACE TYPE gate_setting_tab_t
+is
+  TABLE OF gate_setting_obj_t;
+  /
+  show errors
+--
+--
+CREATE OR REPLACE type gate_change_obj_t
+AS
+  object
+  (
+      --required
+      project_location_ref location_ref_t, --PROJECT_LOCATION_CODE
+      gate_change_date date, --GATE_CHANGE_DATE
+      elev_pool binary_double, --ELEV_POOL
+      discharge_computation lookup_type_obj_t, --DISCHARGE_COMPUTATION_CODE
+      release_reason lookup_type_obj_t, --release_reason_code
+      gate_settings gate_setting_tab_t,
+      --not required
+      elev_tailwater binary_double, --ELEV_TAILWATER
+      elev_units varchar2(16), 
+      old_total_discharge_override binary_double, --OLD_TOTAL_DISCHARGE_OVERRIDE
+      new_total_discharge_override binary_double, --NEW_TOTAL_DISCHARGE_OVERRIDE
+      discharge_units  varchar2(16), 
+      gate_change_notes VARCHAR2(255 BYTE) --GATE_CHANGE_NOTES
+);
+  /
+  show errors
+  --
+  --
+  --
+CREATE OR REPLACE TYPE gate_change_tab_t
+is
+  TABLE OF gate_change_obj_t;
+  /
+  show errors
+
   --
   --
   --
