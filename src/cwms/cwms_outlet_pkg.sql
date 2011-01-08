@@ -27,6 +27,23 @@ AS
   -------------------------------------------------------------------------------
   --
   --
+  -- Returns outlet data for a given outlet location id. Returned data is encapsulated
+  -- in an outlet oracle type.
+  --
+  -- security: can be called by user and dba group.
+  --
+  -- errors preventing the return of data will be issued as a thrown exception
+  --
+PROCEDURE retrieve_outlet(
+    --returns a filled in object including location data
+    p_outlet OUT project_structure_obj_t,
+    -- a location ref that identifies the object we want to retrieve.
+    -- includes the location id (base location + '-' + sublocation)
+    -- the office id if null will default to the connected user's office
+    p_outlet_location_ref IN location_ref_t );
+  --
+  --
+  --
   --
   --
   -- Returns a set of outlets for a given project. Returned data is encapsulated
