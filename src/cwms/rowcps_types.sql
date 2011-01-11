@@ -174,7 +174,8 @@ AS
     future_use_percent_activated BINARY_DOUBLE,   --Param: ??. The percent allocated future use for this water user contract
     total_alloc_percent_activated BINARY_DOUBLE,  --Param: ??. The percentage of total allocation for this water user contract
     withdraw_location location_obj_t,             --The code for the AT_PHYSICAL_LOCATION record which is the location where this water with be withdrawn from the permanent pool
-    supply_location location_obj_t                --The AT_PHYSICAL_LOCATION record which is the location where this water will be obtained below the dam or within the outlet works
+    supply_location location_obj_t,                --The AT_PHYSICAL_LOCATION record which is the location where this water will be obtained below the dam or within the outlet works
+    pump_in_location location_obj_t                --The AT_PHYSICAL_LOCATION record which is the location where this water will be obtained below the dam or within the outlet works
   );
   /
   show errors
@@ -195,11 +196,11 @@ AS
   (
     water_user_contract_ref water_user_contract_ref_t,--The contract for this water movement. SEE AT_WATER_USER_CONTRACT.
     physical_transfer_type lookup_type_obj_t,         --The type of transfer for this water movement.  See AT_PHYSICAL_TRANSFER_TYPE_CODE.
-    accounting_credit_debit VARCHAR2(6 BYTE),         --Whether this water movement is a credit or a debit to the contract
+    -- accounting_credit_debit VARCHAR2(6 BYTE),         --Whether this water movement is a credit or a debit to the contract
     accounting_volume BINARY_DOUBLE,                  --Param: Stor. The volume associated with the water movement
     units_id VARCHAR2(16),                            --The units id for volume
-    transfer_start_datetime DATE,                     --The date this water movement began, DATE includes the time zone.
-    transfer_end_datetime DATE,                       --the date this water movement stopped, DATE includes the time zone.
+    transfer_start_datetime date,                     --The date this water movement began, DATE includes the time zone.
+    -- transfer_end_datetime DATE,                       --the date this water movement stopped, DATE includes the time zone.
     accounting_remarks VARCHAR2(255 BYTE)             --Any comments regarding this water accounting movement
   );
   /

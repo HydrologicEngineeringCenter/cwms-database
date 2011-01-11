@@ -1365,83 +1365,6 @@ CHECK ( is_lock_chamber_emptying = 'T' OR is_lock_chamber_emptying = 'F'))
 --------
 --------
 
-CREATE TABLE at_turbine_change
-(
-  turbine_change_code			NUMBER(10)			NOT NULL,
-  project_location_code	                NUMBER(10)			NOT NULL,
-  turbine_change_datetime		DATE				NOT NULL,
-  old_total_discharge_override		BINARY_DOUBLE,
-  new_total_discharge_override		BINARY_DOUBLE,
-  turbine_change_notes			VARCHAR2(255 BYTE)
-)
-TABLESPACE cwms_20at_data
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          504 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING
-NOCOMPRESS
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-COMMENT ON COLUMN at_turbine_change.turbine_change_code IS 'Unique record identifier for every turbine change on a project.  IS automatically created';
-COMMENT ON COLUMN at_turbine_change.project_location_code IS 'The project this turbine change refers to';
-COMMENT ON COLUMN at_turbine_change.turbine_change_datetime IS 'The date and time of the turbine change';
-COMMENT ON COLUMN at_turbine_change.old_total_discharge_override IS 'The total Q rate before the turbine change.  This value is from a manual entry or other external data source and overrides the calculated Q for the group of turbines.';
-COMMENT ON COLUMN at_turbine_change.new_total_discharge_override IS 'The total Q rate after the turbine change.  This value is from a manual entry or other external data source and overrides the calculated Q for the group of turbines.';
-COMMENT ON COLUMN at_turbine_change.turbine_change_notes IS 'Any notes pertinent to this turbine change';
-
-ALTER TABLE at_turbine_change ADD (
-  CONSTRAINT at_turbine_change_pk
- PRIMARY KEY
- (turbine_change_code)
-    USING INDEX
-    TABLESPACE cwms_20at_data
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64 k
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-
-CREATE UNIQUE INDEX at_turbine_change_idx_1 ON at_turbine_change
-(project_location_code,turbine_change_datetime)
-LOGGING
-tablespace cwms_20at_data
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
-ALTER TABLE at_turbine_change ADD (
-  CONSTRAINT at_turbine_change_fk1
- FOREIGN KEY (project_location_code)
- REFERENCES at_project (project_location_code))
-/
-
---------
---------
-
 CREATE TABLE at_turbine_characteristic
 (
   turbine_characteristic_code           NUMBER(10)                      NOT NULL,
@@ -1596,13 +1519,105 @@ ALTER TABLE at_turbine ADD (
 --------
 --------
 
+CREATE TABLE at_turbine_change
+(
+  turbine_change_code			NUMBER(10)			NOT NULL,
+  project_location_code	                NUMBER(10)			NOT NULL,
+  turbine_change_datetime		DATE				NOT NULL,
+  turbine_setting_reason_code           NUMBER(10)                      NOT NULL,
+  turbine_discharge_comp_code		NUMBER(10)			NOT NULL,
+  old_total_discharge_override		BINARY_DOUBLE,
+  new_total_discharge_override		BINARY_DOUBLE,
+  turbine_change_notes			VARCHAR2(255 BYTE)
+)
+TABLESPACE cwms_20at_data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          504 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+COMMENT ON COLUMN at_turbine_change.turbine_change_code IS 'Unique record identifier for every turbine change on a project.  IS automatically created';
+COMMENT ON COLUMN at_turbine_change.project_location_code IS 'The project this turbine change refers to';
+COMMENT ON COLUMN at_turbine_change.turbine_change_datetime IS 'The date and time of the turbine change';
+COMMENT ON COLUMN at_turbine_change.turbine_setting_reason_code IS 'The new turbine setting reason lookup code.  Examples of reasons are spin-noload, overload, dump energy, peaking, testing, etc.';
+COMMENT ON COLUMN at_turbine_change.turbine_discharge_comp_code IS 'The new turbine setting discharge computation lookup code';
+COMMENT ON COLUMN at_turbine_change.old_total_discharge_override IS 'The total Q rate before the turbine change.  This value is from a manual entry or other external data source and overrides the calculated Q for the group of turbines.';
+COMMENT ON COLUMN at_turbine_change.new_total_discharge_override IS 'The total Q rate after the turbine change.  This value is from a manual entry or other external data source and overrides the calculated Q for the group of turbines.';
+COMMENT ON COLUMN at_turbine_change.turbine_change_notes IS 'Any notes pertinent to this turbine change';
+
+ALTER TABLE at_turbine_change ADD (
+  CONSTRAINT at_turbine_change_pk
+ PRIMARY KEY
+ (turbine_change_code)
+    USING INDEX
+    TABLESPACE cwms_20at_data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+CREATE UNIQUE INDEX at_turbine_change_idx_1 ON at_turbine_change
+(project_location_code,turbine_change_datetime)
+LOGGING
+tablespace cwms_20at_data
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+ALTER TABLE at_turbine_change ADD (
+  CONSTRAINT at_turbine_change_fk1
+ FOREIGN KEY (project_location_code)
+ REFERENCES at_project (project_location_code))
+/
+
+ALTER TABLE at_turbine_change ADD (
+  CONSTRAINT at_turbine_change_fk2
+ FOREIGN KEY (turbine_setting_reason_code)
+ REFERENCES at_turbine_setting_reason (turbine_setting_reason_code))
+/
+
+ALTER TABLE at_turbine_change ADD (
+  CONSTRAINT at_turbine_change_fk3
+ FOREIGN KEY (turbine_discharge_comp_code)
+ REFERENCES at_turbine_computation_code (turbine_discharge_comp_code))
+/
+
+
+--------
+--------
+
 CREATE TABLE at_turbine_setting
 (
   turbine_setting_code			NUMBER(10)			NOT NULL,
   turbine_change_code	                NUMBER(10)			NOT NULL,
   turbine_location_code	                NUMBER(10)			NOT NULL,
-  turbine_setting_reason_code           NUMBER(10)                      NOT NULL,
-  turbine_discharge_comp_code		NUMBER(10)			NOT NULL,
   load					BINARY_DOUBLE,
   power_factor				BINARY_DOUBLE,
   energy_rate				BINARY_DOUBLE
@@ -1629,8 +1644,6 @@ MONITORING
 COMMENT ON COLUMN at_turbine_setting.turbine_setting_code IS 'The surrogate key for this individual turbine change event.  Automatically generated surrogate key.';
 COMMENT ON COLUMN at_turbine_setting.turbine_change_code IS 'The turbine change record to which this setting is associated.  See AT_TURBINE_CHANGE';
 COMMENT ON COLUMN at_turbine_setting.turbine_location_code IS 'The unique individual turbine that is being changed';
-COMMENT ON COLUMN at_turbine_setting.turbine_setting_reason_code IS 'The new turbine setting reason lookup code.  Examples of reasons are spin-noload, overload, dump energy, peaking, testing, etc.';
-COMMENT ON COLUMN at_turbine_setting.turbine_discharge_comp_code IS 'The new turbine setting discharge computation lookup code';
 COMMENT ON COLUMN at_turbine_setting.load IS 'The load for the new turbine setting';
 COMMENT ON COLUMN at_turbine_setting.power_factor IS 'The instantaneous power factor for the new turbine setting';
 COMMENT ON COLUMN at_turbine_setting.energy_rate IS 'The energy rate for the new turbine setting';
@@ -1679,18 +1692,6 @@ ALTER TABLE at_turbine_setting ADD (
   CONSTRAINT at_turbine_setting_fk2
  FOREIGN KEY (turbine_location_code)
  REFERENCES at_turbine (turbine_location_code))
-/
-
-ALTER TABLE at_turbine_setting ADD (
-  CONSTRAINT at_turbine_setting_fk3
- FOREIGN KEY (turbine_setting_reason_code)
- REFERENCES at_turbine_setting_reason (turbine_setting_reason_code))
-/
-
-ALTER TABLE at_turbine_setting ADD (
-  CONSTRAINT at_turbine_setting_fk4
- FOREIGN KEY (turbine_discharge_comp_code)
- REFERENCES at_turbine_computation_code (turbine_discharge_comp_code))
 /
 
 --------
@@ -2297,8 +2298,9 @@ CREATE TABLE at_water_user_contract
    future_use_allocation         BINARY_DOUBLE,
    future_use_percent_activated  BINARY_DOUBLE,
    total_alloc_percent_activated BINARY_DOUBLE,
-   withdrawal_location_code      NUMBER(10),
-   supply_location_code          NUMBER(10),
+   withdrawal_location_code      NUMBER(10), --pump-out
+   supply_location_code          NUMBER(10), --pump-out below
+   pump_in_location_code         NUMBER(10),
    storage_unit_code             NUMBER(10)
 )
 TABLESPACE cwms_20at_data
@@ -2333,6 +2335,7 @@ COMMENT ON COLUMN at_water_user_contract.future_use_percent_activated IS 'The pe
 COMMENT ON COLUMN at_water_user_contract.total_alloc_percent_activated IS 'The percentage of total allocation for this water user contract';
 COMMENT ON COLUMN at_water_user_contract.withdrawal_location_code IS 'The code for the AT_PHYSICAL_LOCATION record which is the location where this water with be withdrawn from the permanent pool';
 COMMENT ON COLUMN at_water_user_contract.supply_location_code IS 'The AT_PHYSICAL_LOCATION record which is the location where this water will be obtained below the dam or within the outlet works';
+COMMENT ON COLUMN at_water_user_contract.pump_in_location_code IS 'The AT_PHYSICAL_LOCATION record that identifies the project sub location where water is released into the permanent pool by pumping or gravity flow';
 COMMENT ON COLUMN at_water_user_contract.storage_unit_code IS 'The unit of storage for this water user contract';
 
 ALTER TABLE at_water_user_contract ADD (
@@ -2370,12 +2373,6 @@ NOPARALLEL
 /
 
 ALTER TABLE at_water_user_contract ADD (
-  CONSTRAINT at_water_user_contract_fk1
- FOREIGN KEY (supply_location_code)
- REFERENCES at_physical_location (location_code))
-/
-
-ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk2
  FOREIGN KEY (water_user_code)
  REFERENCES at_water_user (water_user_code))
@@ -2384,6 +2381,16 @@ ALTER TABLE at_water_user_contract ADD (
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk3
  FOREIGN KEY (withdrawal_location_code)
+ REFERENCES at_physical_location (location_code))
+/
+ALTER TABLE at_water_user_contract ADD (
+  CONSTRAINT at_water_user_contract_fk1
+ FOREIGN KEY (supply_location_code)
+ REFERENCES at_physical_location (location_code))
+/
+ALTER TABLE at_water_user_contract ADD (
+  CONSTRAINT at_water_user_contract_fk6
+ FOREIGN KEY (pump_in_location_code)
  REFERENCES at_physical_location (location_code))
 /
 
@@ -2397,6 +2404,106 @@ ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk5
  FOREIGN KEY (storage_unit_code)
  REFERENCES cwms_unit (unit_code))
+/
+
+--------
+--------
+
+CREATE TABLE at_wat_usr_contract_accounting
+(
+  wat_usr_contract_acct_code	NUMBER(10)			NOT NULL,
+  water_user_contract_code	NUMBER(10)			NOT NULL,
+  pump_location_code NUMBER(10) NOT NULL,
+  physical_transfer_type_code	NUMBER(10)			NOT NULL,
+  -- accounting_credit_debit		VARCHAR2(6 BYTE)	NOT NULL,
+  accounting_volume				BINARY_DOUBLE			NOT NULL,
+  transfer_start_datetime		DATE				NOT NULL,
+  -- transfer_end_datetime			DATE				NOT NULL,
+  accounting_remarks			VARCHAR2(255 BYTE)			
+)
+TABLESPACE cwms_20at_data
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          504 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+COMMENT ON COLUMN at_wat_usr_contract_accounting.wat_usr_contract_acct_code IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
+COMMENT ON COLUMN at_wat_usr_contract_accounting.water_user_contract_code IS 'The contract identification number for this water movement. SEE AT_WATER_USER_CONTRACT.';
+COMMENT ON COLUMN at_wat_usr_contract_accounting.pump_location_code IS 'The AT_PHYSICAL_LOCATION location_code of the pump as referred to in the contract (withdraw, supply, pump in) used for this water movement.';
+COMMENT ON COLUMN at_wat_usr_contract_accounting.physical_transfer_type_code IS 'The type of transfer for this water movement.  See AT_PHYSICAL_TRANSFER_TYPE_CODE.';
+COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_start_datetime IS 'The date this water movement began, the end date is defined as the start date of the next accounting.';
+-- COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_end_datetime IS 'the date this water movement ended';
+-- COMMENT ON COLUMN at_wat_usr_contract_accounting.accounting_credit_debit IS 'Whether this water movement is a credit or a debit to the contract';
+COMMENT ON COLUMN at_wat_usr_contract_accounting.accounting_volume IS 'The volume associated with the water movement, this value will always be positive.';
+COMMENT ON COLUMN at_wat_usr_contract_accounting.accounting_remarks IS 'Any comments regarding this water accounting movement';
+
+ALTER TABLE at_wat_usr_contract_accounting ADD (
+  CONSTRAINT at_wat_usr_contr_accounting_pk
+ PRIMARY KEY
+ (wat_usr_contract_acct_code)
+    USING INDEX
+    TABLESPACE cwms_20at_data
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+CREATE UNIQUE INDEX at_wat_usr_contr_account_idx1 ON at_wat_usr_contract_accounting
+(water_user_contract_code,pump_location_code,transfer_start_datetime)
+LOGGING
+tablespace cwms_20at_data
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+ALTER TABLE at_wat_usr_contract_accounting ADD (
+  CONSTRAINT at_wat_usr_contr_accting_fk1
+ FOREIGN KEY (water_user_contract_code)
+ REFERENCES at_water_user_contract (water_user_contract_code))
+/
+
+ALTER TABLE at_wat_usr_contract_accounting ADD (
+  CONSTRAINT at_wat_usr_contr_accting_fk2
+ FOREIGN KEY (physical_transfer_type_code)
+ REFERENCES at_physical_transfer_type (physical_transfer_type_code))
+/
+
+--ALTER TABLE at_wat_usr_contract_accounting ADD (
+--CONSTRAINT acct_credit_or_debit_check 
+--CHECK ( upper(ACCOUNTING_CREDIT_DEBIT) = 'CREDIT' OR upper(ACCOUNTING_CREDIT_DEBIT) = 'DEBIT'))
+--/
+
+ALTER TABLE at_wat_usr_contract_accounting ADD (
+  CONSTRAINT at_wat_usr_contr_accting_fk3
+ FOREIGN KEY (pump_location_code)
+ REFERENCES at_physical_location (location_code))
 /
 
 --------
@@ -2475,98 +2582,6 @@ ALTER TABLE at_xref_wat_usr_contract_docs ADD (
   CONSTRAINT at_xref_wat_usr_cont_docs_fk2
  FOREIGN KEY (water_user_contract_code)
  REFERENCES at_water_user_contract(water_user_contract_code))
-/
-
---------
---------
-
-CREATE TABLE at_wat_usr_contract_accounting
-(
-  wat_usr_contract_acct_code	NUMBER(10)			NOT NULL,
-  water_user_contract_code	NUMBER(10)			NOT NULL,
-  physical_transfer_type_code	NUMBER(10)			NOT NULL,
-  accounting_credit_debit		VARCHAR2(6 BYTE)	NOT NULL,
-  accounting_volume				BINARY_DOUBLE			NOT NULL,
-  transfer_start_datetime		DATE				NOT NULL,
-  transfer_end_datetime			DATE				NOT NULL,
-  accounting_remarks			VARCHAR2(255 BYTE)			
-)
-TABLESPACE cwms_20at_data
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          504 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING
-NOCOMPRESS
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-COMMENT ON COLUMN at_wat_usr_contract_accounting.wat_usr_contract_acct_code IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
-COMMENT ON COLUMN at_wat_usr_contract_accounting.water_user_contract_code IS 'The contract identification number for this water movement. SEE AT_WATER_USER_CONTRACT.';
-COMMENT ON COLUMN at_wat_usr_contract_accounting.physical_transfer_type_code IS 'The type of transfer for this water movement.  See AT_PHYSICAL_TRANSFER_TYPE_CODE.';
-COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_start_datetime IS 'The date this water movement began';
-COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_end_datetime IS 'the date this water movement ended';
-COMMENT ON COLUMN at_wat_usr_contract_accounting.accounting_credit_debit IS 'Whether this water movement is a credit or a debit to the contract';
-COMMENT ON COLUMN at_wat_usr_contract_accounting.accounting_volume IS 'The volume associated with the water movement';
-COMMENT ON COLUMN at_wat_usr_contract_accounting.accounting_remarks IS 'Any comments regarding this water accounting movement';
-
-ALTER TABLE at_wat_usr_contract_accounting ADD (
-  CONSTRAINT at_wat_usr_contr_accounting_pk
- PRIMARY KEY
- (wat_usr_contract_acct_code)
-    USING INDEX
-    TABLESPACE cwms_20at_data
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64 k
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-
-CREATE UNIQUE INDEX at_wat_usr_contr_account_idx1 ON at_wat_usr_contract_accounting
-(water_user_contract_code,physical_transfer_type_code,transfer_start_datetime,transfer_end_datetime)
-LOGGING
-tablespace cwms_20at_data
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
-ALTER TABLE at_wat_usr_contract_accounting ADD (
-  CONSTRAINT at_wat_usr_contr_accting_fk1
- FOREIGN KEY (water_user_contract_code)
- REFERENCES at_water_user_contract (water_user_contract_code))
-/
-
-ALTER TABLE at_wat_usr_contract_accounting ADD (
-  CONSTRAINT at_wat_usr_contr_accting_fk2
- FOREIGN KEY (physical_transfer_type_code)
- REFERENCES at_physical_transfer_type (physical_transfer_type_code))
-/
-
-ALTER TABLE at_wat_usr_contract_accounting ADD (
-CONSTRAINT acct_credit_or_debit_check 
-CHECK ( upper(ACCOUNTING_CREDIT_DEBIT) = 'CREDIT' OR upper(ACCOUNTING_CREDIT_DEBIT) = 'DEBIT'))
 /
 
 --------

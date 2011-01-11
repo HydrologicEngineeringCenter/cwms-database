@@ -370,6 +370,7 @@ begin
              wuc.total_alloc_percent_activated,
              wuc.withdrawal_location_code,
              wuc.supply_location_code,
+             wuc.pump_in_location_code,
              o.office_id,
              wct.ws_contract_type_display_value,
              wct.ws_contract_type_tooltip,
@@ -415,7 +416,8 @@ begin
          rec.future_use_percent_activated,
          rec.total_alloc_percent_activated,
          cwms_loc.retrieve_location(rec.withdrawal_location_code),
-         cwms_loc.retrieve_location(rec.supply_location_code));
+         cwms_loc.retrieve_location(rec.supply_location_code),
+         cwms_loc.retrieve_location(rec.pump_in_location_code));
    end loop;
 end retrieve_contracts;
 --------------------------------------------------------------------------------
@@ -480,6 +482,7 @@ is
       p_rec.total_alloc_percent_activated := p_obj.total_alloc_percent_activated;
       p_rec.withdrawal_location_code := p_obj.withdraw_location.location_ref.get_location_code('T');
       p_rec.supply_location_code := p_obj.supply_location.location_ref.get_location_code('T');
+      p_rec.pump_in_location_code := p_obj.pump_in_location.location_ref.get_location_code('T');
       
       p_rec.storage_unit_code := l_storage_unit_code;
    end;
@@ -745,18 +748,18 @@ is
    begin
       p_rec.water_user_contract_code := l_contract_code;
       p_rec.physical_transfer_type_code := l_xfer_type_code;
-      p_rec.accounting_credit_debit := p_obj.accounting_credit_debit;
+      -- p_rec.accounting_credit_debit := p_obj.accounting_credit_debit;
       p_rec.accounting_volume := p_obj.accounting_volume * l_factor + l_offset;
       p_rec.transfer_start_datetime := 
          cwms_util.change_timezone(
             p_obj.transfer_start_datetime, 
             l_time_zone, 
             'UTC');             
-      p_rec.transfer_end_datetime := 
-         cwms_util.change_timezone(
-            p_obj.transfer_end_datetime, 
-            l_time_zone, 
-            'UTC');             
+      -- p_rec.transfer_end_datetime := 
+      --   cwms_util.change_timezone(
+      --      p_obj.transfer_end_datetime, 
+      --      l_time_zone, 
+      --      'UTC');             
       p_rec.accounting_remarks := p_obj.accounting_remarks;             
    end;
 begin
@@ -836,11 +839,11 @@ begin
                and transfer_start_datetime = cwms_util.change_timezone(
                      p_accounting_set(i).transfer_start_datetime, 
                      l_time_zone, 
-                     'UTC')             
-               and transfer_end_datetime = cwms_util.change_timezone(
-                     p_accounting_set(i).transfer_end_datetime, 
-                     l_time_zone, 
-                     'UTC');             
+                     'UTC');
+               --and transfer_end_datetime = cwms_util.change_timezone(
+               --      p_accounting_set(i).transfer_end_datetime, 
+               --      l_time_zone, 
+               --      'UTC');             
             -- if l_fail_if_exists then
              --  cwms_err.raise(
              --     'ITEM_ALREADY_EXITS',
@@ -976,11 +979,11 @@ begin
                 ptt.phys_trans_type_display_value,
                 ptt.physical_transfer_type_tooltip,
                 ptt.physical_transfer_type_active,
-                wuca.accounting_credit_debit,
+                -- wuca.accounting_credit_debit,
                 wuca.accounting_volume,
                 u.unit_id as units_id,
                 wuca.transfer_start_datetime,
-                wuca.transfer_end_datetime,
+                -- wuca.transfer_end_datetime,
                 wuca.accounting_remarks,
                 uc.factor,
                 uc.offset
@@ -1012,16 +1015,16 @@ begin
                              l_end_time,
                              cwms_loc.get_local_timezone(pl.location_code), 
                              'UTC') 
-                  or
-                  wuca.transfer_end_datetime
-                     between cwms_util.change_timezone(
-                             l_start_time,
-                             cwms_loc.get_local_timezone(pl.location_code), 
-                             'UTC') 
-                         and cwms_util.change_timezone(
-                             l_end_time,
-                             cwms_loc.get_local_timezone(pl.location_code), 
-                             'UTC')
+                 -- or
+                 -- wuca.transfer_end_datetime
+                 --    between cwms_util.change_timezone(
+                 --            l_start_time,
+                 --            cwms_loc.get_local_timezone(pl.location_code), 
+                 --            'UTC') 
+                 --        and cwms_util.change_timezone(
+                 --            l_end_time,
+                 --            cwms_loc.get_local_timezone(pl.location_code), 
+                 --            'UTC')
                 ) 
             and ptt.physical_transfer_type_code = wuca.physical_transfer_type_code
             and upper(ptt.phys_trans_type_display_value) like nvl(l_transfer_type, ptt.phys_trans_type_display_value ) escape '\'
@@ -1045,7 +1048,7 @@ begin
                rec.phys_trans_type_display_value,
                rec.physical_transfer_type_tooltip,
                rec.physical_transfer_type_active),
-            rec.accounting_credit_debit,
+            -- rec.accounting_credit_debit,
             rec.accounting_volume * rec.factor + rec.offset,
             rec.units_id,
             cwms_util.change_timezone(
@@ -1054,12 +1057,12 @@ begin
                cwms_loc.get_local_timezone(
                   l_location_ref.get_location_id,
                   l_location_ref.get_office_id)),
-            cwms_util.change_timezone(
-               rec.transfer_end_datetime, 
-               'UTC',
-               cwms_loc.get_local_timezone(
-                  l_location_ref.get_location_id,
-                  l_location_ref.get_office_id)),
+            -- cwms_util.change_timezone(
+            --   rec.transfer_end_datetime, 
+            --   'UTC',
+            --   cwms_loc.get_local_timezone(
+            --      l_location_ref.get_location_id,
+            --      l_location_ref.get_office_id)),
             rec.accounting_remarks);
    end loop;      
 end retrieve_accounting_set;
