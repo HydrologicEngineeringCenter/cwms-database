@@ -2708,6 +2708,9 @@ create or replace type location_level_t is object (
       p_obj zlocation_level_t)
       return self as result,
 
+   constructor function location_level_t
+      return self as result,        
+
    member procedure init(
       p_office_id                   in varchar2,
       p_location_id                 in varchar2,
@@ -2880,6 +2883,16 @@ as
       indicators  := p_obj.indicators;
       return;
    end location_level_t;
+   
+ constructor function location_level_t
+      return self as result
+   is
+   begin
+      --------------------------
+      -- all members are null --
+      --------------------------
+      return;
+   end;               
 
    member procedure init(
       p_office_id                   in varchar2,
