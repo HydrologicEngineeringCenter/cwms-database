@@ -53,7 +53,12 @@ BEGIN
          and bl.base_location_code = pl.base_location_code
          and o.office_code         = bl.db_office_code
          and o.office_code         = l_db_office_code
-         and pl.time_zone_code     = tz.time_zone_code
+         and tz.time_zone_code = nvl(
+                  pl.time_zone_code, 
+                  (  select time_zone_code 
+                       from cwms_time_zone 
+                      where time_zone_name = 'UTC'
+                  ))
     order by bl.base_location_id,
              pl.sub_location_id;
 
