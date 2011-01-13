@@ -1,3 +1,10 @@
+whenever sqlerror exit sql.sqlcode
+--------------------------------------------------------------------------------
+-- package cwms_water_supply.
+-- used to manipulate the tables at_water_user, at_water_user_contract,
+-- at_wat_usr_contract_accounting, at_xref_wat_usr_contract_docs.
+-- also manipulates at_document.
+--------------------------------------------------------------------------------
 create or replace
 package body cwms_water_supply
 as
@@ -1064,3 +1071,6 @@ begin
    end loop;      
 end retrieve_accounting_set;
 end cwms_water_supply;
+/
+show errors;
+grant execute on cwms_water_supply to cwms_user;
