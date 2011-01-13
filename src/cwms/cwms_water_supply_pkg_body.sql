@@ -1,10 +1,3 @@
-whenever sqlerror exit sql.sqlcode
---------------------------------------------------------------------------------
--- package cwms_water_supply.
--- used to manipulate the tables at_water_user, at_water_user_contract,
--- at_wat_usr_contract_accounting, at_xref_wat_usr_contract_docs.
--- also manipulates at_document.
---------------------------------------------------------------------------------
 create or replace
 package body cwms_water_supply
 as
@@ -930,6 +923,7 @@ is
    l_end_time_inclusive   boolean;
    l_time_zone_code       number(10);
    l_location_ref         location_ref_t;
+   l_pump_location        location_obj_t;
    
 begin
    p_accounting_set := wat_usr_contract_acct_tab_t();
@@ -979,6 +973,7 @@ begin
                 ptt.phys_trans_type_display_value,
                 ptt.physical_transfer_type_tooltip,
                 ptt.physical_transfer_type_active,
+                wuca.pump_location_code,
                 -- wuca.accounting_credit_debit,
                 wuca.accounting_volume,
                 u.unit_id as units_id,
@@ -1036,6 +1031,7 @@ begin
    loop
       p_accounting_set.extend;
       l_location_ref := location_ref_t(rec.project_location_code);
+      l_pump_location := cwms_loc.retrieve_location(rec.pump_location_code);
       p_accounting_set(p_accounting_set.count) := wat_usr_contract_acct_obj_t(
          water_user_contract_ref_t(
             water_user_obj_t(
@@ -1043,6 +1039,7 @@ begin
                rec.entity_name,
                rec.water_right),
             rec.contract_name),
+            l_pump_location,  -- the pump location
             lookup_type_obj_t(
                rec.transfer_type_office_code,
                rec.phys_trans_type_display_value,
@@ -1067,6 +1064,3 @@ begin
    end loop;      
 end retrieve_accounting_set;
 end cwms_water_supply;
-/
-show errors;
-grant execute on cwms_water_supply to cwms_user;
