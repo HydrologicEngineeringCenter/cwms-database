@@ -195,13 +195,14 @@ AS
   object
   (
     water_user_contract_ref water_user_contract_ref_t,--The contract for this water movement. SEE AT_WATER_USER_CONTRACT.
+    pump_location location_obj_t, --the contract pump that was used for this accounting.
     physical_transfer_type lookup_type_obj_t,         --The type of transfer for this water movement.  See AT_PHYSICAL_TRANSFER_TYPE_CODE.
     -- accounting_credit_debit VARCHAR2(6 BYTE),         --Whether this water movement is a credit or a debit to the contract
     accounting_volume BINARY_DOUBLE,                  --Param: Stor. The volume associated with the water movement
     units_id VARCHAR2(16),                            --The units id for volume
     transfer_start_datetime date,                     --The date this water movement began, DATE includes the time zone.
     -- transfer_end_datetime DATE,                       --the date this water movement stopped, DATE includes the time zone.
-    accounting_remarks VARCHAR2(255 BYTE)             --Any comments regarding this water accounting movement
+    accounting_remarks varchar2(255 byte)             --Any comments regarding this water accounting movement
   );
   /
   show errors
