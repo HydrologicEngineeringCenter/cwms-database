@@ -657,6 +657,9 @@ create or replace type number_tab_t is table of number;
 create or replace type double_tab_t is table of binary_double;
 /
 
+create or replace type double_tab_tab_t is table of double_tab_t;
+/
+
 create or replace type log_message_properties_t as object (
    msg_id     varchar2(32),
    prop_name  varchar2(64),
