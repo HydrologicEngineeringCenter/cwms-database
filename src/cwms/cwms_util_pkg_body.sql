@@ -2409,6 +2409,26 @@ AS
          
       return p_value * l_factor + l_offset;         
    end;      
+                             
+   function convert_units(
+      p_value        in binary_double,
+      p_from_unit_id in varchar2,
+      p_to_unit_id   in varchar2)
+   return binary_double result_cache
+   is
+      l_factor binary_double;
+      l_offset binary_double;
+   begin
+      select factor,
+             offset
+        into l_factor,
+             l_offset
+        from cwms_unit_conversion
+       where from_unit_id = p_from_unit_id
+         and to_unit_id = p_to_unit_id;
+         
+      return p_value * l_factor + l_offset;         
+   end;   
 
 	--
 	-- sign-extends 32-bit integers so they can be retrieved by

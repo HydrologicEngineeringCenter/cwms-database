@@ -438,7 +438,12 @@ AS
       p_parameter_id in varchar2,
       p_unit_id      in varchar2)
    return binary_double;      
-
+                             
+   function convert_units(
+      p_value        in binary_double,
+      p_from_unit_id in varchar2,
+      p_to_unit_id   in varchar2)
+   return binary_double result_cache;   
 	--
 	-- sign-extends 32-bit integers so they can be retrieved by
 	-- java int type
