@@ -1931,6 +1931,2542 @@ begin
    end loop;
    commit;
 end store_ratings_xml;
+   
+--------------------------------------------------------------------------------
+-- GET_RATING
+--
+function get_rating(
+   p_rating_code in number)
+   return rating_t
+is
+   l_dependent_count pls_integer;
+begin
+   select count(*)
+     into l_dependent_count
+     from at_rating
+    where ref_rating_code = p_rating_code;
+    
+   if l_dependent_count = 0 then
+      return rating_t(p_rating_code);
+   else
+      return stream_rating_t(p_rating_code);
+   end if; 
+end;   
+
+--------------------------------------------------------------------------------
+-- RATE
+--
+procedure rate(
+   p_results     out double_tab_t,
+   p_rating_spec in  varchar2,
+   p_values      in  double_tab_tab_t,
+   p_units       in  str_tab_t,
+   p_value_times in  date_table_type default null,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is
+   c_base_date               constant date := date '1800-01-01';
+   l_office_id               varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+   l_time_zone               varchar2(28); 
+   l_parts                   str_tab_t;
+   l_ratings                 rating_tab_t;
+   l_rating_codes            number_tab_t;
+   l_value_times             date_table_type;
+   l_rating_time             date;
+   l_date_offsets            double_tab_t;
+   l_date_offset             binary_double;
+   l_date_offset_2           binary_double;
+   l_results                 double_tab_t;
+   l_hi_index                pls_integer;
+   l_hi_value                binary_double;
+   l_lo_value                binary_double;
+   l_ratio                   binary_double;
+   l_min_date                date;
+   l_max_date                date;
+   l_values_count            pls_integer;                      
+   l_in_range_behavior       pls_integer;
+   l_out_range_low_behavior  pls_integer;
+   l_out_range_high_behavior pls_integer;
+   date_properties           cwms_lookup.sequence_properties_t;
+   l_ind_set                 double_tab_t;
+   l_ind_set_2               double_tab_t;
+   l_rating_spec             rating_spec_t;
+   l_independent_log         boolean;
+   l_dependent_log           boolean;  
+   l_rating_units            str_tab_tab_t;
+   l_stream_rating           stream_rating_t; 
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(cwms_util.split_text(p_rating_spec, ';'));
+   cwms_util.check_input(p_time_zone);
+   cwms_util.check_input(p_office_id);
+   cwms_util.check_inputs(p_units);
+   if regexp_instr(p_rating_spec, '\*|\?') != 0 then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot use a wildcard mask for rating specification');
+   end if;
+   if regexp_instr(p_office_id, '\*|\?') != 0 then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot use a wildcard mask for office id');
+   end if; 
+   if p_values is null or p_values.count = 0 then
+      return;
+   else
+      for i in 1..p_values.count loop
+         if i = 1 then
+            l_values_count := p_values(i).count;
+         else
+            if p_values(i).count != l_values_count then
+               cwms_err.raise(
+                  'ERROR',
+                  'Input values must have consistent lengths');
+            end if;
+         end if; 
+      end loop;
+      if p_value_times is not null then
+         if p_value_times.count != l_values_count then
+            cwms_err.raise(
+               'ERROR',
+               'Input times must have same length as input parameters');
+         end if;
+      end if;
+   end if;
+   if p_units is null or p_units.count != p_values.count + 1 then  
+      cwms_err.raise(
+         'ERROR',
+         'Units are NULL or inconsistent with input values');
+   end if;
+   ------------------------------------------------------------------------
+   -- get the location, parameters, template version, and rating version --
+   ------------------------------------------------------------------------
+   l_parts := cwms_util.split_text(p_rating_spec, '.');
+   if l_parts.count != 4 then
+      cwms_err.raise(
+         'INVALID_ITEM',
+         p_rating_spec,
+         'rating specification');
+   end if;
+   -------------------------------
+   -- get the working time zone --
+   -------------------------------
+   if p_time_zone is null then
+      ---------------------------------
+      -- set to location's time zone --
+      ---------------------------------
+      select tz.time_zone_name
+        into l_time_zone
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_time_zone tz
+       where upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_parts(1)))
+         and bl.db_office_code = cwms_util.get_db_office_code(l_office_id)
+         and pl.base_location_code = bl.base_location_code
+         and nvl(pl.sub_location_id, '.') = nvl(cwms_util.get_sub_id(l_parts(1)), '.')
+         and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+         
+      if l_time_zone = 'Unknown or Not Applicable' then
+         l_time_zone := 'UTC';
+      end if;          
+   else
+      -----------------------------
+      -- use specified time zone --
+      -----------------------------
+      l_time_zone := p_time_zone;
+   end if;
+   -------------------------
+   -- get the rating time --
+   -------------------------
+   if p_rating_time is null then
+      l_rating_time := sysdate;
+   else
+      if l_time_zone = 'UTC' then
+         l_rating_time := p_rating_time;
+      else
+         l_rating_time := cwms_util.change_timezone(p_rating_time, l_time_zone, 'UTC');
+      end if;
+   end if;
+   ---------------------
+   -- get time window --
+   ---------------------
+   if p_value_times is not null and p_value_times.count > 0 then
+      l_value_times := date_table_type();
+      l_value_times.extend(p_value_times.count);
+      for i in 1..l_value_times.count loop
+         l_value_times(i) := p_value_times(i);
+         if l_min_date is null or l_value_times(i) < l_min_date then
+            l_min_date := l_value_times(i);
+         end if;
+         if l_max_date is null or l_value_times(i) > l_max_date then
+            l_max_date := l_value_times(i);
+         end if;
+      end loop;
+      if l_time_zone != 'UTC' then
+         l_min_date := cwms_util.change_timezone(l_min_date, l_time_zone, 'UTC');
+         l_max_date := cwms_util.change_timezone(l_max_date, l_time_zone, 'UTC');
+         for i in 1..l_value_times.count loop
+            l_value_times(i) := cwms_util.change_timezone(l_value_times(i), l_time_zone, 'UTC');
+         end loop;
+      end if;
+   end if;
+   --------------------------------
+   -- get rating codes and dates --
+   --------------------------------
+   for rec in
+      (  select r.rating_code,
+                r.effective_date
+           from at_rating r,
+                at_rating_spec rs,
+                at_rating_template rt,
+                at_physical_location pl,
+                at_base_location bl,
+                cwms_office o
+          where o.office_id = l_office_id
+            and bl.db_office_code = o.office_code
+            and upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_parts(1)))
+            and pl.base_location_code = bl.base_location_code
+            and nvl(upper(pl.sub_location_id), '-') = nvl(upper(cwms_util.get_sub_id(l_parts(1))), '-')
+            and rs.location_code = pl.location_code
+            and rs.active_flag = 'T'
+            and upper(rs.version) = upper(l_parts(4))
+            and rt.template_code = rs.template_code
+            and rt.office_code = o.office_code
+            and upper(rt.parameters_id) = upper(l_parts(2))
+            and upper(rt.version) = upper(l_parts(3))
+            and r.rating_spec_code = rs.rating_spec_code
+            and r.active_flag = 'T'
+            and r.create_date <= l_rating_time
+      )
+   loop
+      if l_ratings is null then
+         l_ratings      := rating_tab_t();
+         l_rating_codes := number_tab_t();
+         l_date_offsets := double_tab_t(); 
+         l_rating_units := str_tab_tab_t();
+      end if;
+      l_ratings.extend;
+      l_rating_codes.extend;
+      l_date_offsets.extend;
+      l_rating_units.extend;
+      l_rating_codes(l_rating_codes.count) := rec.rating_code;
+      l_date_offsets(l_date_offsets.count) := rec.effective_date - c_base_date;
+   end loop;
+   if l_ratings is null then
+      cwms_err.raise(
+         'ERROR',
+         'No active ratings for '
+         ||l_office_id
+         ||'/'
+         ||p_rating_spec);
+   elsif l_ratings.count = 1 then
+      ---------------------------------------------------------------
+      -- create a duplicate so the lookup procedures don't blow up --
+      ---------------------------------------------------------------
+      l_ratings.extend;
+      l_rating_codes.extend;
+      l_date_offsets.extend;
+      l_rating_units.extend;
+      l_rating_codes(2) := l_rating_codes(1); -- same rating
+      l_date_offsets(2) := l_date_offsets(1) + 1. / 86400.; -- 1 second later
+   end if;
+   -----------------------------------------------------
+   -- generate lookup behaviors from rating behaviors --
+   -----------------------------------------------------
+   l_rating_spec := rating_spec_t(p_rating_spec, l_office_id);
+   if cwms_lookup.method_by_name(l_rating_spec.in_range_rating_method) = cwms_lookup.method_lin_log then
+      l_in_range_behavior := cwms_lookup.method_linear;
+   elsif cwms_lookup.method_by_name(l_rating_spec.in_range_rating_method) = cwms_lookup.method_log_lin then
+      l_in_range_behavior := cwms_lookup.method_logarithmic;
+   else 
+      l_in_range_behavior := cwms_lookup.method_by_name(l_rating_spec.in_range_rating_method);
+   end if;
+   if cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method) = cwms_lookup.method_lin_log then
+      l_out_range_low_behavior := cwms_lookup.method_linear;
+   elsif cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method) = cwms_lookup.method_log_lin then
+      l_out_range_low_behavior := cwms_lookup.method_logarithmic;
+   else 
+      l_out_range_low_behavior := cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method);
+   end if;
+   if cwms_lookup.method_by_name(l_rating_spec.out_range_high_rating_method) = cwms_lookup.method_lin_log then
+      l_out_range_high_behavior := cwms_lookup.method_linear;
+   elsif cwms_lookup.method_by_name(l_rating_spec.out_range_high_rating_method) = cwms_lookup.method_log_lin then
+      l_out_range_high_behavior := cwms_lookup.method_logarithmic;
+   else 
+      l_out_range_high_behavior := cwms_lookup.method_by_name(l_rating_spec.out_range_high_rating_method);
+   end if;
+   --------------------
+   -- do the ratings --
+   --------------------
+   date_properties := cwms_lookup.analyze_sequence(l_date_offsets);
+   l_ind_set := double_tab_t();
+   p_results := double_tab_t();
+   p_results.extend(l_values_count);
+   for j in 1..l_values_count loop
+      if l_ind_set.count > 0 then
+         l_ind_set.trim(l_ind_set.count);
+      end if;
+      l_ind_set.extend(p_values.count);
+      for i in 1..p_values.count loop
+         l_ind_set(i) := p_values(i)(j);
+      end loop;
+      l_date_offset := case l_value_times is null
+                          when true  then sysdate - c_base_date
+                          when false then l_value_times(j) - c_base_date 
+                       end;
+      ---------------------------------------------------------
+      -- find the high index for interpolation/extrapolation --
+      ---------------------------------------------------------
+      l_hi_index := cwms_lookup.find_high_index(
+         l_date_offset,
+         l_date_offsets,
+         date_properties);
+      -----------------------------------------------------
+      -- find the ratio for interpolation/extrapoloation --
+      -----------------------------------------------------
+      l_ratio := cwms_lookup.find_ratio(
+         l_independent_log,
+         l_date_offset,
+         l_date_offsets,
+         l_hi_index,
+         date_properties.increasing_range,
+         l_in_range_behavior,
+         l_out_range_low_behavior,
+         l_out_range_high_behavior);
+      if l_ratio is not null then
+         ------------------------------------------      
+         -- set log properties on dependent axis --
+         ------------------------------------------
+         if l_ratio < 0. then
+            l_dependent_log := cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method) 
+                               in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
+            if l_dependent_log then
+               if cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method) 
+                  in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) 
+                  and not l_independent_log
+               then
+                  ---------------------------------------
+                  -- fall back from LOG-LoG to LIN-LIN --
+                  ---------------------------------------
+                  l_dependent_log := false;
+               end if;
+            end if;      
+         elsif l_ratio > 1. then
+            l_dependent_log := cwms_lookup.method_by_name(l_rating_spec.out_range_high_rating_method) 
+                               in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
+            if l_dependent_log then
+               if cwms_lookup.method_by_name(l_rating_spec.out_range_high_rating_method) 
+                  in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) 
+                  and not l_independent_log
+               then
+                  ---------------------------------------
+                  -- fall back from LOG-LoG to LIN-LIN --
+                  ---------------------------------------
+                  l_dependent_log := false;
+               end if;
+            end if;      
+         else
+            l_dependent_log := cwms_lookup.method_by_name(l_rating_spec.in_range_rating_method) 
+                               in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
+            if l_dependent_log then
+               if cwms_lookup.method_by_name(l_rating_spec.in_range_rating_method) 
+                  in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) 
+                  and not l_independent_log
+               then
+                  ---------------------------------------
+                  -- fall back from LOG-LoG to LIN-LIN --
+                  ---------------------------------------
+                  l_dependent_log := false;
+               end if;
+            end if;      
+         end if;
+         ---------------------------------------------------
+         -- get the values from individual rating objects --
+         ---------------------------------------------------
+         if l_ratio != 0. then
+            if l_ratings(l_hi_index) is null then  
+               l_ratings(l_hi_index) := get_rating(l_rating_codes(l_hi_index));
+               l_ratings(l_hi_index).convert_to_native_units;
+               l_rating_units(l_hi_index) := cwms_util.split_text(replace(l_ratings(l_hi_index).native_units, ';', ','), ',');
+               if l_rating_units(l_hi_index).count != p_units.count then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Wrong number of units supplied for rating '
+                     ||l_ratings(l_hi_index).office_id
+                     ||'/'
+                     ||l_ratings(l_hi_index).rating_spec_id);
+               end if;
+               if l_ratings(l_hi_index) is of (stream_rating_t) then
+                  if l_hi_index < l_date_offsets.count then
+                     ---------------------------------------------------------
+                     -- chop any shifts that are after the next rating date --
+                     ---------------------------------------------------------
+                     l_stream_rating := treat(l_ratings(l_hi_index) as stream_rating_t);
+                     l_stream_rating.trim_to_effective_date(c_base_date + l_date_offsets(l_hi_index+1));
+                     l_stream_rating.trim_to_create_date(l_rating_time);
+                  end if;
+               end if;
+            end if; 
+            l_ind_set_2 := double_tab_t();
+            l_ind_set_2.extend(l_ind_set.count);
+            for i in 1..l_ind_set.count loop
+               l_ind_set_2(i) := cwms_util.convert_units(l_ind_set(i), p_units(i), l_rating_units(l_hi_index)(i));
+            end loop; 
+            l_hi_value := l_ratings(l_hi_index).rate_one(l_ind_set_2);
+            l_hi_value := cwms_util.convert_units(l_hi_value, l_rating_units(l_hi_index)(p_units.count), p_units(p_units.count)); 
+         end if;
+         if l_ratio != 1. then
+            if l_ratings(l_hi_index-1) is null then
+               l_ratings(l_hi_index-1) := get_rating(l_rating_codes(l_hi_index-1));
+               l_ratings(l_hi_index-1).convert_to_native_units;
+               l_rating_units(l_hi_index-1) := cwms_util.split_text(replace(l_ratings(l_hi_index-1).native_units, ';', ','), ',');
+               if l_rating_units(l_hi_index-1).count != p_units.count then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Wrong number of units supplied for rating '
+                     ||l_ratings(l_hi_index-1).office_id
+                     ||'/'
+                     ||l_ratings(l_hi_index-1).rating_spec_id);
+               end if;
+               if l_ratings(l_hi_index-1) is of (stream_rating_t) then
+                  ---------------------------------------
+                  -- chop any shifts extraneous shifts --
+                  ---------------------------------------
+                  l_stream_rating := treat(l_ratings(l_hi_index-1) as stream_rating_t);
+                  l_stream_rating.trim_to_effective_date(c_base_date + l_date_offsets(l_hi_index));
+                  l_stream_rating.trim_to_create_date(l_rating_time);
+               end if;
+            end if;     
+            l_ind_set_2 := double_tab_t();
+            l_ind_set_2.extend(l_ind_set.count);
+            for i in 1..l_ind_set.count loop
+               l_ind_set_2(i) := cwms_util.convert_units(l_ind_set(i), p_units(i), l_rating_units(l_hi_index-1)(i));
+            end loop; 
+            l_lo_value := l_ratings(l_hi_index-1).rate_one(l_ind_set_2);
+            l_lo_value := cwms_util.convert_units(l_lo_value, l_rating_units(l_hi_index-1)(p_units.count), p_units(p_units.count)); 
+         end if;
+         -----------------------------------------
+         -- re-compute ratio for stream ratings --
+         -----------------------------------------
+         if l_ratings(l_hi_index-1) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1. then
+            l_date_offset_2 := treat(l_ratings(l_hi_index-1) as stream_rating_t).latest_shift_date - c_base_date;
+            if l_date_offset_2 >= l_date_offset then
+               l_ratio := 0.;
+            else
+               if l_independent_log then
+                  l_ratio := (log(10, l_date_offset) - log(10, l_date_offset_2)) 
+                           / (log(10, l_date_offsets(l_hi_index)) - log(10, l_date_offset_2));
+               else
+                  l_ratio := (l_date_offset - l_date_offset_2) 
+                           / (l_date_offsets(l_hi_index) - l_date_offset_2);
+               end if;
+            end if;
+         end if;
+         -------------------------------------------------------------------------------
+         -- generate the rated value from the values returned from the rating objects --
+         -------------------------------------------------------------------------------
+         case l_ratio
+            when 0. then
+               p_results(j) := l_lo_value;
+            when 1. then         
+               p_results(j) := l_hi_value;
+            else
+               ------------------------------------------------------------------
+               -- handle log interpolation/extrapolation on dependent sequence --
+               ------------------------------------------------------------------
+               if l_dependent_log then
+                  declare
+                     l_log_hi_val binary_double;
+                     l_log_lo_val binary_double; 
+                  begin
+                     begin
+                        l_log_hi_val := log(10, l_hi_value);
+                        l_log_lo_val := log(10, l_lo_value);
+                     exception
+                        when others then
+                           l_dependent_log := false;
+                           if l_independent_log then
+                              ---------------------------------------
+                              -- fall back from LOG-LoG to LIN-LIN --
+                              ---------------------------------------
+                              l_independent_log := false;
+                              if l_ratings(l_hi_index-1) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1. 
+                              then
+                                 l_ratio := (l_date_offset - l_date_offset_2) 
+                                          / (l_date_offsets(l_hi_index) - l_date_offset_2);
+                              else
+                                 l_ratio := cwms_lookup.find_ratio(
+                                    l_independent_log,
+                                    l_date_offset,
+                                    l_date_offsets,
+                                    l_hi_index,
+                                    date_properties.increasing_range,
+                                    cwms_lookup.method_linear,
+                                    cwms_lookup.method_linear,
+                                    cwms_lookup.method_linear);
+                              end if;
+                           end if;
+                     end;
+                     if l_dependent_log then
+                        l_hi_value := l_log_hi_val;
+                        l_lo_value := l_log_lo_val;
+                     end if;
+                  end;
+               end if;
+               -------------------------------
+               -- interpolate / extrapolate --
+               -------------------------------
+               p_results(j) := l_lo_value + l_ratio * (l_hi_value - l_lo_value);
+               --------------------------------------------------------------------
+               -- apply anti-log if log interpolation/extrapolation of dependent --
+               --------------------------------------------------------------------
+               if l_dependent_log then
+                  p_results(j) := power(10, p_results(j));
+               end if;
+         end case;
+      end if;         
+   end loop;                 
+end rate;      
+   
+--------------------------------------------------------------------------------
+-- RATE
+--
+procedure rate(
+   p_results     out double_tab_t,
+   p_rating_spec in  varchar2,
+   p_values      in  double_tab_t,
+   p_units       in  str_tab_t,
+   p_value_times in  date_table_type default null,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is
+   l_values double_tab_tab_t;
+begin
+   if p_values is not null then
+      l_values := double_tab_tab_t();
+      l_values.extend;
+      for i in 1..p_values.count loop
+         l_values(i) := double_tab_t(p_values(i));
+      end loop;
+   end if;
+   rate(
+      p_results,
+      p_rating_spec,
+      l_values,
+      p_units,
+      p_value_times,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+end rate;      
+   
+--------------------------------------------------------------------------------
+-- RATE
+--
+procedure rate(
+   p_result      out binary_double,
+   p_rating_spec in  varchar2,
+   p_value       in  binary_double,
+   p_units       in  str_tab_t,
+   p_value_time  in  date default null,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is
+begin
+   rate_one(
+      p_result,
+      p_rating_spec,
+      double_tab_t(p_value),
+      p_units,
+      p_value_time,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+end;    
+   
+--------------------------------------------------------------------------------
+-- RATE_ONE
+--
+procedure rate_one(
+   p_result      out binary_double,
+   p_rating_spec in  varchar2,
+   p_values      in  double_tab_t,
+   p_units       in  str_tab_t,
+   p_value_time  in  date default null,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is
+   l_results double_tab_t;
+begin
+   rate(
+      l_results,
+      p_rating_spec,
+      double_tab_tab_t(p_values),
+      p_units,
+      date_table_type(p_value_time),
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   p_result := l_results(1);      
+end rate_one;      
+   
+--------------------------------------------------------------------------------
+-- RATE
+--
+procedure rate(
+   p_results     out tsv_array,
+   p_rating_spec in  varchar2,
+   p_values      in  tsv_array,
+   p_units       in  str_tab_t,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is
+   l_values      double_tab_t;
+   l_results     double_tab_t;
+   l_value_times date_table_type;
+   l_rating_time date;
+begin
+   if p_values is not null then
+      l_values := double_tab_t();
+      l_values.extend(p_values.count);
+      l_value_times := date_table_type();
+      l_value_times.extend(p_values.count);
+      for i in 1..p_values.count loop
+         l_values(i) := p_values(i).value;
+         l_value_times(i) := cast(p_values(i).date_time at time zone 'UTC' as date);
+      end loop;
+      l_rating_time := cwms_util.change_timezone(
+         p_rating_time,
+         nvl(p_time_zone, 'UTC'),
+         'UTC');
+      rate(
+         l_results,
+         p_rating_spec,
+         l_values,
+         p_units,
+         l_value_times,
+         l_rating_time,
+         'UTC',
+         p_office_id);
+      p_results := tsv_array();               
+      for i in 1..p_values.count loop
+         p_results(i).date_time := p_values(i).date_time;
+         p_results(i).value := l_results(i);
+         p_results(i).quality_code := case l_results(i) is null
+                                         when true  then 5
+                                         when false then 0
+                                      end;
+      end loop;
+   end if;
+end rate;      
+   
+--------------------------------------------------------------------------------
+-- RATE
+--
+procedure rate(
+   p_results     out ztsv_array,
+   p_rating_spec in  varchar2,
+   p_values      in  ztsv_array,
+   p_units       in  str_tab_t,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is
+   l_values      double_tab_t;
+   l_results     double_tab_t;
+   l_value_times date_table_type;
+begin
+   if p_values is not null then
+      l_values := double_tab_t();
+      l_values.extend(p_values.count);
+      l_value_times := date_table_type();
+      l_value_times.extend(p_values.count);
+      for i in 1..p_values.count loop
+         l_values(i) := p_values(i).value;
+         l_value_times(i) := p_values(i).date_time;
+      end loop;
+      rate(
+         l_results,
+         p_rating_spec,
+         l_values,
+         p_units,
+         l_value_times,
+         p_rating_time,
+         p_time_zone,
+         p_office_id);
+      p_results := ztsv_array();               
+      for i in 1..p_values.count loop
+         p_results(i).date_time := p_values(i).date_time;
+         p_results(i).value := l_results(i);
+         p_results(i).quality_code := case l_results(i) is null
+                                         when true  then 5
+                                         when false then 0
+                                      end;
+      end loop;
+   end if;
+end rate;      
+   
+--------------------------------------------------------------------------------
+-- RATE
+--
+procedure rate(
+   p_result      out tsv_type,
+   p_rating_spec in  varchar2,
+   p_value       in  tsv_type,
+   p_units       in  str_tab_t,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is
+   l_values  tsv_array;
+   l_results tsv_array;
+begin
+   l_values := tsv_array(p_value);
+   rate(   
+      l_results,
+      p_rating_spec,
+      l_values,
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   p_result := l_results(1);      
+end rate;      
+   
+--------------------------------------------------------------------------------
+-- RATE
+--
+procedure rate(
+   p_result      out ztsv_type,
+   p_rating_spec in  varchar2,
+   p_value       in  ztsv_type,
+   p_units       in  str_tab_t,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is      
+   l_values  ztsv_array;
+   l_results ztsv_array;
+begin
+   l_values := ztsv_array(p_value);
+   rate(   
+      l_results,
+      p_rating_spec,
+      l_values,
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   p_result := l_results(1);      
+end rate;   
+--------------------------------------------------------------------------------
+-- RATE_F
+--
+function rate_f(
+   p_rating_spec in varchar2,
+   p_values      in double_tab_tab_t,
+   p_units       in str_tab_t,
+   p_value_times in date_table_type default null,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return double_tab_t   
+is
+   l_results double_tab_t;
+begin
+   rate(
+      l_results,
+      p_rating_spec,
+      p_values,
+      p_units,
+      p_value_times,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_results;
+end rate_f;
+
+--------------------------------------------------------------------------------
+-- RATE_F
+--
+function rate_f(
+   p_rating_spec in varchar2,
+   p_values      in double_tab_t,
+   p_units       in str_tab_t,
+   p_value_times in date_table_type default null,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return double_tab_t   
+is
+   l_values double_tab_t;
+begin
+   rate(
+      l_values,
+      p_rating_spec,
+      p_values,
+      p_units,
+      p_value_times,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+   
+   return l_values;
+end rate_f;
+   
+--------------------------------------------------------------------------------
+-- RATE_F
+--
+function rate_f(
+   p_rating_spec in varchar2,
+   p_value       in binary_double,
+   p_units       in str_tab_t,
+   p_value_times in date default null,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return binary_double
+is
+   l_result binary_double;
+begin
+   rate(
+      l_result,
+      p_rating_spec,
+      p_value,
+      p_units,
+      p_value_times,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_result;   
+end rate_f;     
+   
+--------------------------------------------------------------------------------
+-- RATE_ONE_F
+--
+function rate_one_f(
+   p_rating_spec in varchar2,
+   p_values      in double_tab_t,
+   p_units       in str_tab_t,
+   p_value_time  in date default null,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return binary_double
+is
+   l_result binary_double;
+begin
+   rate_one(
+      l_result,
+      p_rating_spec,
+      p_values,
+      p_units,
+      p_value_time,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_result;      
+end rate_one_f;      
+   
+--------------------------------------------------------------------------------
+-- RATE_F
+--
+function rate_f(
+   p_rating_spec in varchar2,
+   p_values      in tsv_array,
+   p_units       in str_tab_t,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return tsv_array
+is
+   l_results tsv_array;
+begin
+   rate(
+      l_results,
+      p_rating_spec,
+      p_values,
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_results;      
+end rate_f;         
+   
+--------------------------------------------------------------------------------
+-- RATE_F
+--
+function rate_f(
+   p_rating_spec in varchar2,
+   p_values      in ztsv_array,
+   p_units       in str_tab_t,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return ztsv_array
+is
+   l_results ztsv_array;
+begin
+   rate(
+      l_results,
+      p_rating_spec,
+      p_values,
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_results;      
+end rate_f;      
+   
+--------------------------------------------------------------------------------
+-- RATE_F
+--
+function rate_f(
+   p_rating_spec in varchar2,
+   p_value       in tsv_type,
+   p_units       in str_tab_t,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return tsv_type
+is
+   l_result tsv_type;
+begin
+   rate(
+      l_result,
+      p_rating_spec,
+      p_value,
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_result;      
+end rate_f;     
+   
+--------------------------------------------------------------------------------
+-- RATE_F
+--
+function rate_f(
+   p_rating_spec in varchar2,
+   p_value       in ztsv_type,
+   p_units       in str_tab_t,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return ztsv_type
+is
+   l_result ztsv_type;
+begin
+   rate(
+      l_result,
+      p_rating_spec,
+      p_value,
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+
+   return l_result;
+end rate_f;      
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE
+--
+procedure reverse_rate(
+   p_results     out double_tab_t,
+   p_rating_spec in  varchar2,
+   p_values      in  double_tab_t,
+   p_units       in  str_tab_t,
+   p_value_times in  date_table_type default null,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is
+   c_base_date               constant date := date '1800-01-01';
+   l_office_id               varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+   l_time_zone               varchar2(28); 
+   l_parts                   str_tab_t;
+   l_ratings                 rating_tab_t;
+   l_rating_codes            number_tab_t;
+   l_value_times             date_table_type;
+   l_rating_time             date;
+   l_date_offsets            double_tab_t;
+   l_date_offset             binary_double;
+   l_date_offset_2           binary_double;
+   l_results                 double_tab_t;
+   l_hi_index                pls_integer;
+   l_hi_value                binary_double;
+   l_lo_value                binary_double;
+   l_ratio                   binary_double;
+   l_min_date                date;
+   l_max_date                date;
+   l_values_count            pls_integer;                      
+   l_in_range_behavior       pls_integer;
+   l_out_range_low_behavior  pls_integer;
+   l_out_range_high_behavior pls_integer;
+   date_properties           cwms_lookup.sequence_properties_t;
+   l_rating_spec             rating_spec_t;
+   l_independent_log         boolean;
+   l_dependent_log           boolean;  
+   l_rating_units            str_tab_tab_t;
+   l_stream_rating           stream_rating_t; 
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(cwms_util.split_text(p_rating_spec, ';'));
+   cwms_util.check_input(p_time_zone);
+   cwms_util.check_input(p_office_id);
+   cwms_util.check_inputs(p_units);
+   if regexp_instr(p_rating_spec, '\*|\?') != 0 then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot use a wildcard mask for rating specification');
+   end if;
+   if regexp_instr(p_office_id, '\*|\?') != 0 then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot use a wildcard mask for office id');
+   end if; 
+   if p_values is null or p_values.count = 0 then
+      return;
+   end if;
+   if p_units is null or p_units.count != 2 then  
+      cwms_err.raise(
+         'ERROR',
+         'Units are NULL or inconsistent with input values');
+   end if;
+   ------------------------------------------------------------------------
+   -- get the location, parameters, template version, and rating version --
+   ------------------------------------------------------------------------
+   l_parts := cwms_util.split_text(p_rating_spec, '.');
+   if l_parts.count != 4 then
+      cwms_err.raise(
+         'INVALID_ITEM',
+         p_rating_spec,
+         'rating specification');
+   end if;
+   -------------------------------
+   -- get the working time zone --
+   -------------------------------
+   if p_time_zone is null then
+      ---------------------------------
+      -- set to location's time zone --
+      ---------------------------------
+      select tz.time_zone_name
+        into l_time_zone
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_time_zone tz
+       where upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_parts(1)))
+         and bl.db_office_code = cwms_util.get_db_office_code(l_office_id)
+         and pl.base_location_code = bl.base_location_code
+         and nvl(pl.sub_location_id, '.') = nvl(cwms_util.get_sub_id(l_parts(1)), '.')
+         and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+         
+      if l_time_zone = 'Unknown or Not Applicable' then
+         l_time_zone := 'UTC';
+      end if;          
+   else
+      -----------------------------
+      -- use specified time zone --
+      -----------------------------
+      l_time_zone := p_time_zone;
+   end if;
+   -------------------------
+   -- get the rating time --
+   -------------------------
+   if p_rating_time is null then
+      l_rating_time := sysdate;
+   else
+      if l_time_zone = 'UTC' then
+         l_rating_time := p_rating_time;
+      else
+         l_rating_time := cwms_util.change_timezone(p_rating_time, l_time_zone, 'UTC');
+      end if;
+   end if;
+   ---------------------
+   -- get time window --
+   ---------------------
+   if p_value_times is not null and p_value_times.count > 0 then
+      l_value_times := date_table_type();
+      l_value_times.extend(p_value_times.count);
+      for i in 1..l_value_times.count loop
+         l_value_times(i) := p_value_times(i);
+         if l_min_date is null or l_value_times(i) < l_min_date then
+            l_min_date := l_value_times(i);
+         end if;
+         if l_max_date is null or l_value_times(i) > l_max_date then
+            l_max_date := l_value_times(i);
+         end if;
+      end loop;
+      if l_time_zone != 'UTC' then
+         l_min_date := cwms_util.change_timezone(l_min_date, l_time_zone, 'UTC');
+         l_max_date := cwms_util.change_timezone(l_max_date, l_time_zone, 'UTC');
+         for i in 1..l_value_times.count loop
+            l_value_times(i) := cwms_util.change_timezone(l_value_times(i), l_time_zone, 'UTC');
+         end loop;
+      end if;
+   end if;
+   --------------------------------
+   -- get rating codes and dates --
+   --------------------------------
+   for rec in
+      (  select r.rating_code,
+                r.effective_date
+           from at_rating r,
+                at_rating_spec rs,
+                at_rating_template rt,
+                at_physical_location pl,
+                at_base_location bl,
+                cwms_office o
+          where o.office_id = l_office_id
+            and bl.db_office_code = o.office_code
+            and upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_parts(1)))
+            and pl.base_location_code = bl.base_location_code
+            and nvl(upper(pl.sub_location_id), '-') = nvl(upper(cwms_util.get_sub_id(l_parts(1))), '-')
+            and rs.location_code = pl.location_code
+            and rs.active_flag = 'T'
+            and upper(rs.version) = upper(l_parts(4))
+            and rt.template_code = rs.template_code
+            and rt.office_code = o.office_code
+            and upper(rt.parameters_id) = upper(l_parts(2))
+            and upper(rt.version) = upper(l_parts(3))
+            and r.rating_spec_code = rs.rating_spec_code
+            and r.active_flag = 'T'
+            and r.create_date <= l_rating_time
+      )
+   loop
+      if l_ratings is null then
+         l_ratings      := rating_tab_t();
+         l_rating_codes := number_tab_t();
+         l_date_offsets := double_tab_t(); 
+         l_rating_units := str_tab_tab_t();
+      end if;
+      l_ratings.extend;
+      l_rating_codes.extend;
+      l_date_offsets.extend;
+      l_rating_units.extend;
+      l_rating_codes(l_rating_codes.count) := rec.rating_code;
+      l_date_offsets(l_date_offsets.count) := rec.effective_date - c_base_date;
+   end loop;
+   if l_ratings is null then
+      cwms_err.raise(
+         'ERROR',
+         'No active ratings for '
+         ||l_office_id
+         ||'/'
+         ||p_rating_spec);
+   elsif l_ratings.count = 1 then
+      ---------------------------------------------------------------
+      -- create a duplicate so the lookup procedures don't blow up --
+      ---------------------------------------------------------------
+      l_ratings.extend;
+      l_rating_codes.extend;
+      l_date_offsets.extend;
+      l_rating_units.extend;
+      l_rating_codes(2) := l_rating_codes(1); -- same rating
+      l_date_offsets(2) := l_date_offsets(1) + 1. / 86400.; -- 1 second later
+   end if;
+   -----------------------------------------------------
+   -- generate lookup behaviors from rating behaviors --
+   -----------------------------------------------------
+   l_rating_spec := rating_spec_t(p_rating_spec, l_office_id);
+   if cwms_lookup.method_by_name(l_rating_spec.in_range_rating_method) = cwms_lookup.method_lin_log then
+      l_in_range_behavior := cwms_lookup.method_linear;
+   elsif cwms_lookup.method_by_name(l_rating_spec.in_range_rating_method) = cwms_lookup.method_log_lin then
+      l_in_range_behavior := cwms_lookup.method_logarithmic;
+   else 
+      l_in_range_behavior := cwms_lookup.method_by_name(l_rating_spec.in_range_rating_method);
+   end if;
+   if cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method) = cwms_lookup.method_lin_log then
+      l_out_range_low_behavior := cwms_lookup.method_linear;
+   elsif cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method) = cwms_lookup.method_log_lin then
+      l_out_range_low_behavior := cwms_lookup.method_logarithmic;
+   else 
+      l_out_range_low_behavior := cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method);
+   end if;
+   if cwms_lookup.method_by_name(l_rating_spec.out_range_high_rating_method) = cwms_lookup.method_lin_log then
+      l_out_range_high_behavior := cwms_lookup.method_linear;
+   elsif cwms_lookup.method_by_name(l_rating_spec.out_range_high_rating_method) = cwms_lookup.method_log_lin then
+      l_out_range_high_behavior := cwms_lookup.method_logarithmic;
+   else 
+      l_out_range_high_behavior := cwms_lookup.method_by_name(l_rating_spec.out_range_high_rating_method);
+   end if;
+   --------------------
+   -- do the ratings --
+   --------------------
+   date_properties := cwms_lookup.analyze_sequence(l_date_offsets);
+   p_results := double_tab_t();
+   p_results.extend(l_values_count);
+   for i in 1..l_values_count loop
+      l_date_offset := case l_value_times is null
+                          when true  then sysdate - c_base_date
+                          when false then l_value_times(i) - c_base_date 
+                       end;
+      ---------------------------------------------------------
+      -- find the high index for interpolation/extrapolation --
+      ---------------------------------------------------------
+      l_hi_index := cwms_lookup.find_high_index(
+         l_date_offset,
+         l_date_offsets,
+         date_properties);
+      -----------------------------------------------------
+      -- find the ratio for interpolation/extrapoloation --
+      -----------------------------------------------------
+      l_ratio := cwms_lookup.find_ratio(
+         l_independent_log,
+         l_date_offset,
+         l_date_offsets,
+         l_hi_index,
+         date_properties.increasing_range,
+         l_in_range_behavior,
+         l_out_range_low_behavior,
+         l_out_range_high_behavior);
+      if l_ratio is not null then
+         ------------------------------------------      
+         -- set log properties on dependent axis --
+         ------------------------------------------
+         if l_ratio < 0. then
+            l_dependent_log := cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method) 
+                               in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
+            if l_dependent_log then
+               if cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method) 
+                  in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) 
+                  and not l_independent_log
+               then
+                  ---------------------------------------
+                  -- fall back from LOG-LoG to LIN-LIN --
+                  ---------------------------------------
+                  l_dependent_log := false;
+               end if;
+            end if;      
+         elsif l_ratio > 1. then
+            l_dependent_log := cwms_lookup.method_by_name(l_rating_spec.out_range_high_rating_method) 
+                               in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
+            if l_dependent_log then
+               if cwms_lookup.method_by_name(l_rating_spec.out_range_high_rating_method) 
+                  in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) 
+                  and not l_independent_log
+               then
+                  ---------------------------------------
+                  -- fall back from LOG-LoG to LIN-LIN --
+                  ---------------------------------------
+                  l_dependent_log := false;
+               end if;
+            end if;      
+         else
+            l_dependent_log := cwms_lookup.method_by_name(l_rating_spec.in_range_rating_method) 
+                               in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
+            if l_dependent_log then
+               if cwms_lookup.method_by_name(l_rating_spec.in_range_rating_method) 
+                  in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) 
+                  and not l_independent_log
+               then
+                  ---------------------------------------
+                  -- fall back from LOG-LoG to LIN-LIN --
+                  ---------------------------------------
+                  l_dependent_log := false;
+               end if;
+            end if;      
+         end if;
+         ---------------------------------------------------
+         -- get the values from individual rating objects --
+         ---------------------------------------------------
+         if l_ratio != 0. then
+            if l_ratings(l_hi_index) is null then  
+               l_ratings(l_hi_index) := get_rating(l_rating_codes(l_hi_index));
+               l_ratings(l_hi_index).convert_to_native_units;
+               l_rating_units(l_hi_index) := cwms_util.split_text(replace(l_ratings(l_hi_index).native_units, ';', ','), ',');
+               if l_rating_units(l_hi_index).count != p_units.count then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Wrong number of units supplied for rating '
+                     ||l_ratings(l_hi_index).office_id
+                     ||'/'
+                     ||l_ratings(l_hi_index).rating_spec_id);
+               end if;
+               if l_ratings(l_hi_index) is of (stream_rating_t) then
+                  if l_hi_index < l_date_offsets.count then
+                     ---------------------------------------------------------
+                     -- chop any shifts that are after the next rating date --
+                     ---------------------------------------------------------
+                     l_stream_rating := treat(l_ratings(l_hi_index) as stream_rating_t);
+                     l_stream_rating.trim_to_effective_date(c_base_date + l_date_offsets(l_hi_index+1));
+                     l_stream_rating.trim_to_create_date(l_rating_time);
+                  end if;
+               end if;
+            end if; 
+            l_hi_value := cwms_util.convert_units(
+               l_ratings(l_hi_index).reverse_rate(
+                  cwms_util.convert_units(
+                     p_values(i), 
+                     p_units(1), 
+                     l_rating_units(l_hi_index)(1))), 
+               l_rating_units(l_hi_index)(2), 
+               p_units(2)); 
+         end if;
+         if l_ratio != 1. then
+            if l_ratings(l_hi_index-1) is null then
+               l_ratings(l_hi_index-1) := get_rating(l_rating_codes(l_hi_index-1));
+               l_ratings(l_hi_index-1).convert_to_native_units;
+               l_rating_units(l_hi_index-1) := cwms_util.split_text(replace(l_ratings(l_hi_index-1).native_units, ';', ','), ',');
+               if l_rating_units(l_hi_index-1).count != p_units.count then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Wrong number of units supplied for rating '
+                     ||l_ratings(l_hi_index-1).office_id
+                     ||'/'
+                     ||l_ratings(l_hi_index-1).rating_spec_id);
+               end if;
+               if l_ratings(l_hi_index-1) is of (stream_rating_t) then
+                  ---------------------------------------
+                  -- chop any shifts extraneous shifts --
+                  ---------------------------------------
+                  l_stream_rating := treat(l_ratings(l_hi_index-1) as stream_rating_t);
+                  l_stream_rating.trim_to_effective_date(c_base_date + l_date_offsets(l_hi_index));
+                  l_stream_rating.trim_to_create_date(l_rating_time);
+               end if;
+            end if;     
+            l_lo_value := cwms_util.convert_units(
+               l_ratings(l_hi_index-1).reverse_rate(
+                  cwms_util.convert_units(
+                     p_values(i), 
+                     p_units(1), 
+                     l_rating_units(l_hi_index-1)(1))), 
+               l_rating_units(l_hi_index-1)(2), 
+               p_units(2)); 
+         end if;
+         -----------------------------------------
+         -- re-compute ratio for stream ratings --
+         -----------------------------------------
+         if l_ratings(l_hi_index-1) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1. then
+            l_date_offset_2 := treat(l_ratings(l_hi_index-1) as stream_rating_t).latest_shift_date - c_base_date;
+            if l_date_offset_2 >= l_date_offset then
+               l_ratio := 0.;
+            else
+               if l_independent_log then
+                  l_ratio := (log(10, l_date_offset) - log(10, l_date_offset_2)) 
+                           / (log(10, l_date_offsets(l_hi_index)) - log(10, l_date_offset_2));
+               else
+                  l_ratio := (l_date_offset - l_date_offset_2) 
+                           / (l_date_offsets(l_hi_index) - l_date_offset_2);
+               end if;
+            end if;
+         end if;
+         -------------------------------------------------------------------------------
+         -- generate the rated value from the values returned from the rating objects --
+         -------------------------------------------------------------------------------
+         case l_ratio
+            when 0. then
+               p_results(i) := l_lo_value;
+            when 1. then         
+               p_results(i) := l_hi_value;
+            else
+               ------------------------------------------------------------------
+               -- handle log interpolation/extrapolation on dependent sequence --
+               ------------------------------------------------------------------
+               if l_dependent_log then
+                  declare
+                     l_log_hi_val binary_double;
+                     l_log_lo_val binary_double; 
+                  begin
+                     begin
+                        l_log_hi_val := log(10, l_hi_value);
+                        l_log_lo_val := log(10, l_lo_value);
+                     exception
+                        when others then
+                           l_dependent_log := false;
+                           if l_independent_log then
+                              ---------------------------------------
+                              -- fall back from LOG-LoG to LIN-LIN --
+                              ---------------------------------------
+                              l_independent_log := false;
+                              if l_ratings(l_hi_index-1) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1. 
+                              then
+                                 l_ratio := (l_date_offset - l_date_offset_2) 
+                                          / (l_date_offsets(l_hi_index) - l_date_offset_2);
+                              else
+                                 l_ratio := cwms_lookup.find_ratio(
+                                    l_independent_log,
+                                    l_date_offset,
+                                    l_date_offsets,
+                                    l_hi_index,
+                                    date_properties.increasing_range,
+                                    cwms_lookup.method_linear,
+                                    cwms_lookup.method_linear,
+                                    cwms_lookup.method_linear);
+                              end if;
+                           end if;
+                     end;
+                     if l_dependent_log then
+                        l_hi_value := l_log_hi_val;
+                        l_lo_value := l_log_lo_val;
+                     end if;
+                  end;
+               end if;
+               -------------------------------
+               -- interpolate / extrapolate --
+               -------------------------------
+               p_results(i) := l_lo_value + l_ratio * (l_hi_value - l_lo_value);
+               --------------------------------------------------------------------
+               -- apply anti-log if log interpolation/extrapolation of dependent --
+               --------------------------------------------------------------------
+               if l_dependent_log then
+                  p_results(i) := power(10, p_results(i));
+               end if;
+         end case;
+      end if;         
+   end loop;                 
+end reverse_rate;      
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE
+--
+procedure reverse_rate(
+   p_result      out binary_double,
+   p_rating_spec in  varchar2,
+   p_value       in  binary_double,
+   p_units       in  str_tab_t,
+   p_value_time  in  date default null,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is
+   l_results double_tab_t;
+begin
+   reverse_rate(
+      l_results,
+      p_rating_spec,
+      double_tab_t(p_value),
+      p_units,
+      date_table_type(p_value_time),
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   p_result := l_results(1);      
+end reverse_rate;      
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE
+--
+procedure reverse_rate(
+   p_results     out tsv_array,
+   p_rating_spec in  varchar2,
+   p_values      in  tsv_array,
+   p_units       in  str_tab_t,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is
+   l_parts      str_tab_t;
+   l_values     double_tab_t;
+   l_values_out double_tab_t;
+   l_times      date_table_type;
+   l_time_zone  varchar2(28);
+begin
+   if p_values is not null then
+      ---------------------------
+      -- set up the parameters --
+      ---------------------------
+      if p_time_zone is null then
+         l_parts := cwms_util.split_text(p_rating_spec, '.');
+         select tz.time_zone_name
+           into l_time_zone
+           from at_physical_location pl,
+                at_base_location bl,
+                cwms_time_zone tz
+          where upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_parts(1)))
+            and bl.db_office_code = cwms_util.get_db_office_code(p_office_id)
+            and pl.base_location_code = bl.base_location_code
+            and upper(pl.sub_location_id) = upper(cwms_util.get_sub_id(l_parts(1)))
+            and tz.time_zone_code = nvl(tz.time_zone_code, '0');
+             
+         if l_time_zone = 'Unknown or Not Applicable' then
+            l_time_zone := 'UTC';
+         end if;          
+      else
+         l_time_zone := p_time_zone;
+      end if;
+      l_values := double_tab_t();
+      l_values.extend(p_values.count);
+      l_times := date_table_type();
+      l_times.extend(p_values.count);
+      for i in 1..p_values.count loop
+         l_values(i) := p_values(i).value;
+         l_times(i) := cast(p_values(i).date_time at time zone l_time_zone as date);
+      end loop;
+      ------------------------
+      -- perform the rating --
+      ------------------------
+      reverse_rate(
+         l_values_out,
+         p_rating_spec,
+         l_values,
+         p_units,
+         l_times,
+         p_rating_time,
+         l_time_zone,
+         p_office_id);
+      -------------------------------
+      -- process the return values --
+      -------------------------------
+      p_results := tsv_array();
+      p_results.extend(p_values.count);
+      for i in 1..p_values.count loop
+         p_results(i).date_time := p_values(i).date_time;
+         p_results(i).value := l_values_out(i);
+         p_results(i).quality_code := case l_values_out(i) is null
+                                         when true  then 5
+                                         when false then 0
+                                      end;
+      end loop;
+   end if;
+end reverse_rate;      
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE
+--
+procedure reverse_rate(
+   p_results     out ztsv_array,
+   p_rating_spec in  varchar2,
+   p_values      in  ztsv_array,
+   p_units       in  str_tab_t,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)   
+is
+   l_values     double_tab_t;
+   l_values_out double_tab_t;
+   l_times      date_table_type;
+begin
+   if p_values is not null then
+      ---------------------------
+      -- set up the parameters --
+      ---------------------------
+      l_values := double_tab_t();
+      l_values.extend(p_values.count);
+      l_times := date_table_type();
+      l_times.extend(p_values.count);
+      for i in 1..p_values.count loop
+         l_values(i) := p_values(i).value;
+         l_times(i) := p_values(i).date_time;
+      end loop;
+      ------------------------
+      -- perform the rating --
+      ------------------------
+      reverse_rate(
+         l_values_out,
+         p_rating_spec,
+         l_values,
+         p_units,
+         l_times,
+         p_rating_time,
+         p_time_zone,
+         p_office_id);
+      -------------------------------
+      -- process the return values --
+      -------------------------------
+      p_results := ztsv_array();
+      p_results.extend(p_values.count);
+      for i in 1..p_values.count loop
+         p_results(i).date_time := p_values(i).date_time;
+         p_results(i).value := l_values_out(i);
+         p_results(i).quality_code := case l_values_out(i) is null
+                                         when true  then 5
+                                         when false then 0
+                                      end;
+      end loop;
+   end if;
+end reverse_rate;      
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE
+--
+procedure reverse_rate(
+   p_result      out tsv_type,
+   p_rating_spec in  varchar2,
+   p_value       in  tsv_type,
+   p_units       in  str_tab_t,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)
+is
+   l_results tsv_array;
+begin
+   reverse_rate(
+      l_results,
+      p_rating_spec,
+      tsv_array(p_value),
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   p_result := l_results(1);      
+end reverse_rate;      
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE
+--
+procedure reverse_rate(
+   p_result      out ztsv_type,
+   p_rating_spec in  varchar2,
+   p_value       in  ztsv_type,
+   p_units       in  str_tab_t,
+   p_rating_time in  date default null,
+   p_time_zone   in  varchar2 default null,
+   p_office_id   in  varchar2 default null)   
+is
+   l_results ztsv_array;
+begin
+   reverse_rate(
+      l_results,
+      p_rating_spec,
+      ztsv_array(p_value),
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   p_result := l_results(1);      
+end reverse_rate;      
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE_F
+--
+function reverse_rate_f(
+   p_rating_spec in varchar2,
+   p_values      in double_tab_t,
+   p_units       in str_tab_t,
+   p_value_times in date_table_type default null,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return double_tab_t
+is
+   l_results double_tab_t;
+begin
+   reverse_rate(
+      l_results,
+      p_rating_spec,
+      p_values,
+      p_units,
+      p_value_times,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_results;      
+end reverse_rate_f;      
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE_F
+--
+function reverse_rate_f(
+   p_rating_spec in varchar2,
+   p_value       in binary_double,
+   p_units       in str_tab_t,
+   p_value_times in date default null,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return binary_double
+is
+   l_result binary_double;
+begin
+   reverse_rate(
+      l_result,
+      p_rating_spec,
+      p_value,
+      p_units,
+      p_value_times,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_result;      
+end reverse_rate_f;      
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE_F
+--
+function reverse_rate_f(
+   p_rating_spec in varchar2,
+   p_values      in tsv_array,
+   p_units       in str_tab_t,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return tsv_array   
+is
+   l_results tsv_array;
+begin
+   rate(
+      l_results,
+      p_rating_spec,
+      p_values,
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_results;
+end reverse_rate_f;
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE_F
+--
+function reverse_rate_f(
+   p_rating_spec in varchar2,
+   p_values      in ztsv_array,
+   p_units       in str_tab_t,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return ztsv_array   
+is
+   l_results ztsv_array;
+begin
+   rate(
+      l_results,
+      p_rating_spec,
+      p_values,
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_results;
+end reverse_rate_f;
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE_F
+--
+function reverse_rate_f(
+   p_rating_spec in varchar2,
+   p_value       in tsv_type,
+   p_units       in str_tab_t,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return tsv_type
+is
+   l_results tsv_array;
+begin
+   l_results := reverse_rate_f(
+      p_rating_spec,
+      tsv_array(p_value),
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_results(1);      
+end reverse_rate_f;      
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE_F
+--
+function reverse_rate_f(
+   p_rating_spec in varchar2,
+   p_value       in ztsv_type,
+   p_units       in str_tab_t,
+   p_rating_time in date default null,
+   p_time_zone   in varchar2 default null,
+   p_office_id   in varchar2 default null)
+   return ztsv_type   
+is
+   l_results ztsv_array;
+begin
+   l_results := reverse_rate_f(
+      p_rating_spec,
+      ztsv_array(p_value),
+      p_units,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_results(1);      
+end reverse_rate_f;      
+   
+--------------------------------------------------------------------------------
+-- RETRIEVE_RATED_TS
+--
+function retrieve_rated_ts(
+   p_independent_ids  in str_tab_t,
+   p_rating_id        in varchar2,
+   p_units            in varchar2,
+   p_start_time       in date,
+   p_end_time         in date,
+   p_rating_time      in date     default null,
+   p_time_zone        in varchar2 default null,
+   p_trim             in varchar2 default 'F',
+   p_start_inclusive  in varchar2 default 'T',
+   p_end_inclusive    in varchar2 default 'T',
+   p_previous         in varchar2 default 'F',
+   p_next             in varchar2 default 'F',
+   p_version_date     in date     default null,
+   p_max_version      in varchar2 default 'T',
+   p_ts_office_id     in varchar2 default null,
+   p_rating_office_id in varchar2 default null)
+   return ztsv_array
+is
+   l_ind_values   double_tab_tab_t;
+   l_dep_values   double_tab_t;
+   l_times        date_table_type;
+   l_results      ztsv_array;
+   l_parts        str_tab_t;
+   l_location     varchar2(49); -- from first independent id
+   l_time_zone    varchar2(28);
+   l_interval     varchar2(16);
+   l_units        str_tab_t;
+   l_cursor       sys_refcursor;
+   l_date_time    date;
+   l_value        binary_double;
+   l_quality_code integer;
+   l_first_valid  pls_integer;
+   l_last_valid   pls_integer;
+   j              pls_integer;
+begin
+   if p_independent_ids is not null and p_independent_ids.count > 0 then
+      -------------------
+      -- sanity checks --
+      -------------------
+      l_parts := cwms_util.split_text(p_rating_id, '.');
+      if l_parts.count != 4 then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_rating_id,
+            'CWMS rating identifier');
+      end if;
+      l_units := cwms_util.split_text(replace(l_parts(1), ';', ','), ',');
+      if l_units.count != p_independent_ids.count + 1 then
+         cwms_err.raise(
+            'ERROR',
+            'Rating ('
+            ||p_rating_id
+            ||') requires '
+            ||l_units.count - 1
+            ||' independent parameters, '
+            ||p_independent_ids.count
+            ||' specified');
+      end if;
+      l_units(l_units.count) := p_units;
+      for i in 1..p_independent_ids.count loop
+         l_parts := cwms_util.split_text(p_independent_ids(i), '.');
+         if l_parts.count != 6 then
+            cwms_err.raise(
+               'INVALID_ITEM',
+               p_independent_ids(i),
+               'CWMS time series identifier');
+         end if;
+         if i = 1 then
+            l_location := l_parts(1);
+            l_interval := l_parts(4);
+         else
+            if l_parts(4) != l_interval then
+               cwms_err.raise(
+                  'ERROR',
+                  'Intervals of input time series must be the same');
+            end if;
+         end if;
+      end loop;
+      -------------------------------
+      -- get the working time zone --
+      -------------------------------
+      if p_time_zone is null then
+         ---------------------------------
+         -- set to location's time zone --
+         ---------------------------------
+         select tz.time_zone_name
+           into l_time_zone
+           from at_physical_location pl,
+                at_base_location bl,
+                cwms_time_zone tz
+          where upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_location))
+            and bl.db_office_code = cwms_util.get_db_office_code(p_ts_office_id)
+            and pl.base_location_code = bl.base_location_code
+            and nvl(pl.sub_location_id, '.') = nvl(cwms_util.get_sub_id(l_location), '.')
+            and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+            
+         if l_time_zone = 'Unknown or Not Applicable' then
+            l_time_zone := 'UTC';
+         end if;          
+      else
+         -----------------------------
+         -- use specified time zone --
+         -----------------------------
+         l_time_zone := p_time_zone;
+      end if;
+      -------------------------------------
+      -- retrieve the independent values --
+      -------------------------------------
+      l_ind_values := double_tab_tab_t();
+      l_ind_values.extend(p_independent_ids.count);
+      l_times := date_table_type();
+      for i in 1..p_independent_ids.count loop
+         cwms_ts.retrieve_ts(
+            l_cursor,
+            p_independent_ids(i),
+            l_units(i),
+            p_start_time,
+            p_end_time,
+            p_time_zone,
+            'F', -- don't trim independent values
+            p_start_inclusive,
+            p_end_inclusive,
+            p_previous,
+            p_next,
+            p_version_date,
+            p_max_version,
+            p_ts_office_id);
+         l_ind_values(i) := double_tab_t();
+         j := 0;            
+         loop
+            fetch l_cursor 
+             into l_date_time, 
+                  l_value, 
+                  l_quality_code;
+            exit when l_cursor%notfound;
+            j := j + 1;
+            l_ind_values(i).extend;
+            l_ind_values(i)(j) := l_value;
+            if i = 1 then
+               l_times.extend;
+               l_times(j) := l_date_time;
+            elsif l_date_time != l_times(j) then
+               close l_cursor;
+               cwms_err.raise(
+                  'ERROR',
+                  'Independent variable times do not match.');
+            end if;             
+         end loop;
+         close l_cursor;
+      end loop;
+      ------------------------
+      -- perform the rating --
+      ------------------------
+      l_dep_values := rate_f(
+         p_rating_id,
+         l_ind_values,
+         l_units,
+         l_times,
+         p_rating_time,
+         p_time_zone,
+         p_rating_office_id);
+      --------------------------------
+      -- construct the return value --
+      --------------------------------
+      l_results := ztsv_array();
+      if cwms_util.is_true(p_trim) then
+         for i in 1..l_times.count loop
+            if l_dep_values(i) is not null then
+               l_first_valid := i;
+               exit;
+            end if;
+         end loop;
+      else
+         l_first_valid := 1;
+      end if;
+      if l_first_valid is not null then
+         if cwms_util.is_true(p_trim) then
+            for i in reverse 1..l_times.count loop
+               if l_dep_values(i) is not null then
+                  l_last_valid := i;
+                  exit;
+               end if;
+            end loop;
+         else
+            l_last_valid := l_times.count;
+         end if;
+         for i in l_first_valid..l_last_valid loop
+            l_results.extend;
+            l_results(i) := ztsv_type(
+               l_times(i),
+               l_dep_values(i),
+               case l_dep_values(i) is null
+                  when true  then 5 -- missing
+                  when false then 0 -- unscreened
+               end);
+         end loop;
+      end if;
+   end if;
+   return l_results;
+end retrieve_rated_ts;   
+   
+--------------------------------------------------------------------------------
+-- RETRIEVE_RATED_TS
+--
+function retrieve_rated_ts(
+   p_independent_id   in varchar2,
+   p_rating_id        in varchar2,
+   p_units            in varchar2,
+   p_start_time       in date,
+   p_end_time         in date,
+   p_rating_time      in date     default null,
+   p_time_zone        in varchar2 default null,
+   p_trim             in varchar2 default 'F',
+   p_start_inclusive  in varchar2 default 'T',
+   p_end_inclusive    in varchar2 default 'T',
+   p_previous         in varchar2 default 'F',
+   p_next             in varchar2 default 'F',
+   p_version_date     in date     default null,
+   p_max_version      in varchar2 default 'T',
+   p_ts_office_id     in varchar2 default null,
+   p_rating_office_id in varchar2 default null)
+   return ztsv_array
+is
+begin
+   return retrieve_rated_ts(
+      str_tab_t(p_independent_id),
+      p_rating_id,
+      p_units,
+      p_start_time,
+      p_end_time,
+      p_rating_time,
+      p_time_zone,
+      p_trim,
+      p_start_inclusive,
+      p_end_inclusive,
+      p_previous,
+      p_next,
+      p_version_date,
+      p_max_version,
+      p_ts_office_id,
+      p_rating_office_id);
+end retrieve_rated_ts;   
+   
+--------------------------------------------------------------------------------
+-- RATE
+--
+procedure rate(
+   p_independent_ids  in str_tab_t,
+   p_dependent_id     in varchar2,
+   p_rating_id        in varchar2,
+   p_start_time       in date,
+   p_end_time         in date,
+   p_rating_time      in date     default null,
+   p_time_zone        in varchar2 default null,
+   p_trim             in varchar2 default 'F',
+   p_start_inclusive  in varchar2 default 'T',
+   p_end_inclusive    in varchar2 default 'T',
+   p_previous         in varchar2 default 'F',
+   p_next             in varchar2 default 'F',
+   p_version_date     in date     default null,
+   p_max_version      in varchar2 default 'T',
+   p_ts_office_id     in varchar2 default null,
+   p_rating_office_id in varchar2 default null)
+is
+   l_dep_ts   ztsv_array;
+   l_dep_unit varchar2(16);
+   l_parts    str_tab_t;
+   l_interval varchar2(16);
+begin
+   if p_independent_ids is not null and p_independent_ids.count > 0 then
+      -------------------
+      -- sanity checks --
+      -------------------
+      l_parts := cwms_util.split_text(p_independent_ids(1), '.');
+      if l_parts.count != 6 then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_independent_ids(1),
+            'CWMS time series identifier');
+      end if;
+      l_interval := l_parts(4);
+      l_parts := cwms_util.split_text(p_dependent_id, '.');
+      if l_parts.count != 6 then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_dependent_id,
+            'CWMS time series identifier');
+      end if;
+      if l_parts(4) = l_interval then
+         cwms_err.raise(
+            'ERROR',
+            'Dependent interval differs from independent interval');
+      end if;
+      --------------------------------------------------------
+      -- get the database units for the dependent parameter --
+      --------------------------------------------------------
+      select u.unit_id
+        into l_dep_unit
+        from cwms_base_parameter bp,
+             cwms_unit u
+       where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(l_parts(2)))
+         and u.unit_code = bp.unit_code;
+      ------------------------------------
+      -- retrieve the rated time series --
+      ------------------------------------
+      l_dep_ts := retrieve_rated_ts(
+         p_independent_ids,
+         p_rating_id,
+         l_dep_unit,
+         p_start_time,
+         p_end_time,
+         p_rating_time,
+         p_time_zone,
+         p_trim,
+         p_start_inclusive,
+         p_end_inclusive,
+         p_previous,
+         p_next,
+         p_version_date,
+         p_max_version,
+         p_ts_office_id,
+         p_rating_office_id);
+      ---------------------------------
+      -- store the rated time series --
+      ---------------------------------
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id      => p_dependent_id,
+         p_units           => l_dep_unit,
+         p_timeseries_data => l_dep_ts,
+         p_store_rule      => null,
+         p_override_prot   => 'F',
+         p_version_date    => p_version_date,
+         p_office_id       => p_ts_office_id);            
+   end if;
+end rate;   
+   
+--------------------------------------------------------------------------------
+-- RATE
+--
+procedure rate(
+   p_independent_id   in varchar2,
+   p_dependent_id     in varchar2,
+   p_rating_id        in varchar2,
+   p_start_time       in date,
+   p_end_time         in date,
+   p_rating_time      in date     default null,
+   p_time_zone        in varchar2 default null,
+   p_trim             in varchar2 default 'F',
+   p_start_inclusive  in varchar2 default 'T',
+   p_end_inclusive    in varchar2 default 'T',
+   p_previous         in varchar2 default 'F',
+   p_next             in varchar2 default 'F',
+   p_version_date     in date     default null,
+   p_max_version      in varchar2 default 'T',
+   p_ts_office_id     in varchar2 default null,
+   p_rating_office_id in varchar2 default null)
+is
+begin
+   rate(
+      str_tab_t(p_independent_id),
+      p_dependent_id,
+      p_rating_id,
+      p_start_time,
+      p_end_time,
+      p_rating_time,
+      p_time_zone,
+      p_trim,
+      p_start_inclusive,
+      p_end_inclusive,
+      p_previous,
+      p_next,
+      p_version_date,
+      p_max_version,
+      p_ts_office_id,
+      p_rating_office_id);
+end rate;   
+   
+--------------------------------------------------------------------------------
+-- RETRIEVE_REVERSE_RATED_TS
+--
+function retrieve_reverse_rated_ts(
+   p_independent_ids  in str_tab_t,
+   p_rating_id        in varchar2,
+   p_units            in varchar2,
+   p_start_time       in date,
+   p_end_time         in date,
+   p_rating_time      in date     default null,
+   p_time_zone        in varchar2 default null,
+   p_trim             in varchar2 default 'F',
+   p_start_inclusive  in varchar2 default 'T',
+   p_end_inclusive    in varchar2 default 'T',
+   p_previous         in varchar2 default 'F',
+   p_next             in varchar2 default 'F',
+   p_version_date     in date     default null,
+   p_max_version      in varchar2 default 'T',
+   p_ts_office_id     in varchar2 default null,
+   p_rating_office_id in varchar2 default null)
+   return ztsv_array
+is
+   l_ind_values   double_tab_tab_t;
+   l_dep_values   double_tab_t;
+   l_times        date_table_type;
+   l_results      ztsv_array;
+   l_parts        str_tab_t;
+   l_interval     varchar2(16);
+   l_location     varchar2(49); -- from first independent id
+   l_time_zone    varchar2(28);
+   l_units        str_tab_t;
+   l_cursor       sys_refcursor;
+   l_date_time    date;
+   l_value        binary_double;
+   l_quality_code integer;
+   l_first_valid  pls_integer;
+   l_last_valid   pls_integer;
+   j              pls_integer;
+begin   
+   if p_independent_ids is not null and p_independent_ids.count > 0 then
+      -------------------
+      -- sanity checks --
+      -------------------
+      l_parts := cwms_util.split_text(p_rating_id, '.');
+      if l_parts.count != 4 then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_rating_id,
+            'CWMS rating identifier');
+      end if;
+      l_units := cwms_util.split_text(replace(l_parts(1), ';', ','), ',');
+      if l_units.count != p_independent_ids.count + 1 then
+         cwms_err.raise(
+            'ERROR',
+            'Rating ('
+            ||p_rating_id
+            ||') requires '
+            ||l_units.count - 1
+            ||' independent parameters, '
+            ||p_independent_ids.count
+            ||' specified');
+      end if;
+      l_units(l_units.count) := p_units;
+      for i in 1..p_independent_ids.count loop
+         l_parts := cwms_util.split_text(p_independent_ids(i), '.');
+         if l_parts.count != 6 then
+            cwms_err.raise(
+               'INVALID_ITEM',
+               p_independent_ids(i),
+               'CWMS time series identifier');
+         end if;
+         if i = 1 then
+            l_location := l_parts(1);
+            l_interval := l_parts(4);
+         else
+            if l_parts(4) != l_interval then
+               cwms_err.raise(
+                  'ERROR',
+                  'Intervals of input time series must be the same');
+            end if;
+         end if;
+      end loop;
+      -------------------------------
+      -- get the working time zone --
+      -------------------------------
+      if p_time_zone is null then
+         ---------------------------------
+         -- set to location's time zone --
+         ---------------------------------
+         select tz.time_zone_name
+           into l_time_zone
+           from at_physical_location pl,
+                at_base_location bl,
+                cwms_time_zone tz
+          where upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_location))
+            and bl.db_office_code = cwms_util.get_db_office_code(p_ts_office_id)
+            and pl.base_location_code = bl.base_location_code
+            and nvl(pl.sub_location_id, '.') = nvl(cwms_util.get_sub_id(l_location), '.')
+            and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+            
+         if l_time_zone = 'Unknown or Not Applicable' then
+            l_time_zone := 'UTC';
+         end if;          
+      else
+         -----------------------------
+         -- use specified time zone --
+         -----------------------------
+         l_time_zone := p_time_zone;
+      end if;
+      -------------------------------------
+      -- retrieve the independent values --
+      -------------------------------------
+      l_ind_values := double_tab_tab_t();
+      l_ind_values.extend(p_independent_ids.count);
+      l_times := date_table_type();
+      for i in 1..p_independent_ids.count loop
+         cwms_ts.retrieve_ts(
+            l_cursor,
+            p_independent_ids(i),
+            l_units(i),
+            p_start_time,
+            p_end_time,
+            p_time_zone,
+            'F', -- don't trim independent values
+            p_start_inclusive,
+            p_end_inclusive,
+            p_previous,
+            p_next,
+            p_version_date,
+            p_max_version,
+            p_ts_office_id);
+         l_ind_values(i) := double_tab_t();
+         j := 0;            
+         loop
+            fetch l_cursor 
+             into l_date_time, 
+                  l_value, 
+                  l_quality_code;
+            exit when l_cursor%notfound;
+            j := j + 1;
+            l_ind_values(i).extend;
+            l_ind_values(i)(j) := l_value;
+            if i = 1 then
+               l_times.extend;
+               l_times(j) := l_date_time;
+            elsif l_date_time != l_times(j) then
+               close l_cursor;
+               cwms_err.raise(
+                  'ERROR',
+                  'Independent variable times do not match.');
+            end if;             
+         end loop;
+         close l_cursor;
+      end loop;
+      ------------------------
+      -- perform the rating --
+      ------------------------
+      l_dep_values := reverse_rate_f(
+         p_rating_id,
+         l_ind_values(1),
+         l_units,
+         l_times,
+         p_rating_time,
+         p_time_zone,
+         p_rating_office_id);
+      --------------------------------
+      -- construct the return value --
+      --------------------------------
+      l_results := ztsv_array();
+      if cwms_util.is_true(p_trim) then
+         for i in 1..l_times.count loop
+            if l_dep_values(i) is not null then
+               l_first_valid := i;
+               exit;
+            end if;
+         end loop;
+      else
+         l_first_valid := 1;
+      end if;
+      if l_first_valid is not null then
+         if cwms_util.is_true(p_trim) then
+            for i in reverse 1..l_times.count loop
+               if l_dep_values(i) is not null then
+                  l_last_valid := i;
+                  exit;
+               end if;
+            end loop;
+         else
+            l_last_valid := l_times.count;
+         end if;
+         for i in l_first_valid..l_last_valid loop
+            l_results.extend;
+            l_results(i) := ztsv_type(
+               l_times(i),
+               l_dep_values(i),
+               case l_dep_values(i) is null
+                  when true  then 5 -- missing
+                  when false then 0 -- unscreened
+               end);
+         end loop;
+      end if;
+   end if;
+   return l_results;
+end retrieve_reverse_rated_ts;   
+--------------------------------------------------------------------------------
+-- RETRIEVE_REVERSE_RATED_TS
+--
+function retrieve_reverse_rated_ts(
+   p_independent_id   in varchar2,
+   p_rating_id        in varchar2,
+   p_units            in varchar2,
+   p_start_time       in date,
+   p_end_time         in date,
+   p_rating_time      in date     default null,
+   p_time_zone        in varchar2 default null,
+   p_trim             in varchar2 default 'F',
+   p_start_inclusive  in varchar2 default 'T',
+   p_end_inclusive    in varchar2 default 'T',
+   p_previous         in varchar2 default 'F',
+   p_next             in varchar2 default 'F',
+   p_version_date     in date     default null,
+   p_max_version      in varchar2 default 'T',
+   p_ts_office_id     in varchar2 default null,
+   p_rating_office_id in varchar2 default null)
+   return ztsv_array
+is
+begin
+   return retrieve_reverse_rated_ts(
+      str_tab_t(p_independent_id),
+      p_rating_id,
+      p_units,
+      p_start_time,
+      p_end_time,
+      p_rating_time,
+      p_time_zone,
+      p_trim,
+      p_start_inclusive,
+      p_end_inclusive,
+      p_previous,
+      p_next,
+      p_version_date,
+      p_max_version,
+      p_ts_office_id,
+      p_rating_office_id);
+end retrieve_reverse_rated_ts;   
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE
+--
+procedure reverse_rate(
+   p_independent_ids  in str_tab_t,
+   p_dependent_id     in varchar2,
+   p_rating_id        in varchar2,
+   p_start_time       in date,
+   p_end_time         in date,
+   p_rating_time      in date     default null,
+   p_time_zone        in varchar2 default null,
+   p_trim             in varchar2 default 'F',
+   p_start_inclusive  in varchar2 default 'T',
+   p_end_inclusive    in varchar2 default 'T',
+   p_previous         in varchar2 default 'F',
+   p_next             in varchar2 default 'F',
+   p_version_date     in date     default null,
+   p_max_version      in varchar2 default 'T',
+   p_ts_office_id     in varchar2 default null,
+   p_rating_office_id in varchar2 default null)
+is
+   l_dep_ts   ztsv_array;
+   l_dep_unit varchar2(16);
+   l_parts    str_tab_t;
+   l_interval varchar2(16);
+begin
+   if p_independent_ids is not null and p_independent_ids.count > 0 then
+      -------------------
+      -- sanity checks --
+      -------------------
+      l_parts := cwms_util.split_text(p_independent_ids(1), '.');
+      if l_parts.count != 6 then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_independent_ids(1),
+            'CWMS time series identifier');
+      end if;
+      l_interval := l_parts(4);
+      l_parts := cwms_util.split_text(p_dependent_id, '.');
+      if l_parts.count != 6 then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_dependent_id,
+            'CWMS time series identifier');
+      end if;
+      if l_parts(4) = l_interval then
+         cwms_err.raise(
+            'ERROR',
+            'Dependent interval differs from independent interval');
+      end if;
+      --------------------------------------------------------
+      -- get the database units for the dependent parameter --
+      --------------------------------------------------------
+      select u.unit_id
+        into l_dep_unit
+        from cwms_base_parameter bp,
+             cwms_unit u
+       where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(l_parts(2)))
+         and u.unit_code = bp.unit_code;
+      ------------------------------------
+      -- retrieve the rated time series --
+      ------------------------------------
+      l_dep_ts := retrieve_reverse_rated_ts(
+         p_independent_ids,
+         p_rating_id,
+         l_dep_unit,
+         p_start_time,
+         p_end_time,
+         p_rating_time,
+         p_time_zone,
+         p_trim,
+         p_start_inclusive,
+         p_end_inclusive,
+         p_previous,
+         p_next,
+         p_version_date,
+         p_max_version,
+         p_ts_office_id,
+         p_rating_office_id);
+      ---------------------------------
+      -- store the rated time series --
+      ---------------------------------
+      cwms_ts.zstore_ts(
+         p_cwms_ts_id		=> p_dependent_id,
+         p_units				=> l_dep_unit,
+         p_timeseries_data => l_dep_ts,
+         p_store_rule		=> null,
+         p_override_prot	=> 'F',
+         p_version_date 	=> p_version_date,
+         p_office_id 		=> p_ts_office_id);            
+   end if;
+end reverse_rate;   
+   
+--------------------------------------------------------------------------------
+-- REVERSE_RATE
+--
+procedure reverse_rate(
+   p_independent_id   in varchar2,
+   p_dependent_id     in varchar2,
+   p_rating_id        in varchar2,
+   p_start_time       in date,
+   p_end_time         in date,
+   p_rating_time      in date     default null,
+   p_time_zone        in varchar2 default null,
+   p_trim             in varchar2 default 'F',
+   p_start_inclusive  in varchar2 default 'T',
+   p_end_inclusive    in varchar2 default 'T',
+   p_previous         in varchar2 default 'F',
+   p_next             in varchar2 default 'F',
+   p_version_date     in date     default null,
+   p_max_version      in varchar2 default 'T',
+   p_ts_office_id     in varchar2 default null,
+   p_rating_office_id in varchar2 default null)
+is
+begin
+   reverse_rate(
+      str_tab_t(p_independent_id),
+      p_dependent_id,
+      p_rating_id,
+      p_start_time,
+      p_end_time,
+      p_rating_time,
+      p_time_zone,
+      p_trim,
+      p_start_inclusive,
+      p_end_inclusive,
+      p_previous,
+      p_next,
+      p_version_date,
+      p_max_version,
+      p_ts_office_id,
+      p_rating_office_id);
+end reverse_rate;   
 
 end;
 /
