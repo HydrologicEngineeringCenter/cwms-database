@@ -92,7 +92,13 @@ begin
          and l.project_location_code = p.project_location_code
          and pl.location_code = l.lock_location_code
          and bl.base_location_code = pl.base_location_code
-         and tz.time_zone_code = pl.time_zone_code
+         --and tz.time_zone_code = pl.time_zone_code
+         and tz.time_zone_code = nvl(
+                  pl.time_zone_code, 
+                  (  select time_zone_code 
+                       from cwms_time_zone 
+                      where time_zone_name = 'UTC'
+                  ))
          and bp.base_parameter_id = 'Elev'
          and u.unit_code = bp.unit_code;
 
