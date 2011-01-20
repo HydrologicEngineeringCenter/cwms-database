@@ -663,6 +663,69 @@ AS
       p_queue_name      IN VARCHAR2 DEFAULT NULL);
 
    PROCEDURE refresh_ts_catalog;
+   
+   ---------------------------
+   -- Data quality routines --
+   ---------------------------
+   function get_quality_validity(
+      p_quality_code in number)
+      return varchar2 result_cache;
+      
+   function get_quality_validity(
+      p_value in tsv_type)
+      return varchar2;
+      
+   function get_quality_validity(
+      p_value in ztsv_type)
+      return varchar2;
+      
+   function quality_is_okay(
+      p_quality_code in number)
+      return boolean result_cache;      
+      
+   function quality_is_okay(
+      p_value in tsv_type)
+      return boolean;
+      
+   function quality_is_okay(
+      p_value in ztsv_type)
+      return boolean;
+      
+   function quality_is_missing(
+      p_quality_code in number)
+      return boolean result_cache;      
+      
+   function quality_is_missing(
+      p_value in tsv_type)
+      return boolean;
+      
+   function quality_is_missing(
+      p_value in ztsv_type)
+      return boolean;
+      
+   function quality_is_questionable(
+      p_quality_code in number)
+      return boolean result_cache;      
+      
+   function quality_is_questionable(
+      p_value in tsv_type)
+      return boolean;
+      
+   function quality_is_questionable(
+      p_value in ztsv_type)
+      return boolean;
+      
+   function quality_is_rejected(
+      p_quality_code in number)
+      return boolean result_cache;      
+      
+   function quality_is_rejected(
+      p_value in tsv_type)
+      return boolean;
+      
+   function quality_is_rejected(
+      p_value in ztsv_type)
+      return boolean;
 END;
 /
 

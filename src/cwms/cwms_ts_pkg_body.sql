@@ -6082,6 +6082,137 @@ BEGIN
    null;
 END refresh_ts_catalog;
 
+---------------------------
+-- Data quality routines --
+---------------------------
+function get_quality_validity(
+   p_quality_code in number)
+   return varchar2 result_cache
+is
+   l_validity varchar2(16);
+begin
+   select validity_id
+     into l_validity
+     from cwms_data_quality
+    where quality_code = p_quality_code;
+exception
+   when no_data_found then
+      null;
+end get_quality_validity;   
+      
+function get_quality_validity(
+   p_value in tsv_type)
+   return varchar2
+is
+begin
+   return get_quality_validity(p_value.quality_code);
+end get_quality_validity;   
+      
+function get_quality_validity(
+   p_value in ztsv_type)
+   return varchar2
+is
+begin
+   return get_quality_validity(p_value.quality_code);
+end get_quality_validity;
+      
+function quality_is_okay(
+   p_quality_code in number)
+   return boolean result_cache
+is
+begin
+   return get_quality_validity(p_quality_code) = 'OKAY';
+end quality_is_okay;         
+      
+function quality_is_okay(
+   p_value in tsv_type)
+   return boolean
+is
+begin
+   return quality_is_okay(p_value.quality_code);
+end quality_is_okay;   
+      
+function quality_is_okay(
+   p_value in ztsv_type)
+   return boolean
+is
+begin
+   return quality_is_okay(p_value.quality_code);
+end quality_is_okay;   
+      
+function quality_is_missing(
+   p_quality_code in number)
+   return boolean result_cache
+is
+begin
+   return get_quality_validity(p_quality_code) = 'MISSING';
+end quality_is_missing;         
+      
+function quality_is_missing(
+   p_value in tsv_type)
+   return boolean
+is
+begin
+   return quality_is_missing(p_value.quality_code);
+end quality_is_missing;   
+      
+function quality_is_missing(
+   p_value in ztsv_type)
+   return boolean
+is
+begin
+   return quality_is_missing(p_value.quality_code);
+end quality_is_missing;   
+      
+function quality_is_questionable(
+   p_quality_code in number)
+   return boolean result_cache
+is
+begin
+   return get_quality_validity(p_quality_code) = 'QUESTIONABLE';
+end quality_is_questionable;         
+      
+function quality_is_questionable(
+   p_value in tsv_type)
+   return boolean
+is
+begin
+   return quality_is_questionable(p_value.quality_code);
+end quality_is_questionable;   
+      
+function quality_is_questionable(
+   p_value in ztsv_type)
+   return boolean
+is
+begin
+   return quality_is_okay(p_value.quality_code);
+end quality_is_questionable;
+      
+function quality_is_rejected(
+   p_quality_code in number)
+   return boolean result_cache
+is
+begin
+   return get_quality_validity(p_quality_code) = 'REJECTED';
+end quality_is_rejected;         
+      
+function quality_is_rejected(
+   p_value in tsv_type)
+   return boolean
+is
+begin
+   return quality_is_rejected(p_value.quality_code);
+end quality_is_rejected;   
+      
+function quality_is_rejected(
+   p_value in ztsv_type)
+   return boolean
+is
+begin
+   return quality_is_rejected(p_value.quality_code);
+end quality_is_rejected;   
+   
+
 
 END cwms_ts; --end package body
 /
