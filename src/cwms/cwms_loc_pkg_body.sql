@@ -4681,14 +4681,14 @@ AS
                 n.nation_id             nation_id,
                 pl.nearest_city                       nearest_city
            from at_physical_location pl
-                left join at_base_location bl on (pl.base_location_code = bl.base_location_code)
-                left join at_location_kind lk on (pl.location_kind = lk.location_kind_code)
-                left join cwms_time_zone tz on (pl.time_zone_code = tz.time_zone_code)
-                left join cwms_county c on (pl.county_code = c.county_code)
-                left join cwms_state s on (c.state_code = s.state_code)
-                left join cwms_nation n on (pl.nation_code = n.nation_code)
-                left join cwms_office o on (bl.db_office_code = o.office_code)
-                left join cwms_office o2 on (pl.office_code = o2.office_code)
+                left outer join at_base_location bl on (pl.base_location_code = bl.base_location_code)
+                left outer join at_location_kind lk on (pl.location_kind = lk.location_kind_code)
+                left outer join cwms_time_zone tz on (pl.time_zone_code = tz.time_zone_code)
+                left outer join cwms_county c on (pl.county_code = c.county_code)
+                left outer join cwms_state s on (c.state_code = s.state_code)
+                left outer join cwms_nation n on (pl.nation_code = n.nation_code)
+                left outer join cwms_office o on (bl.db_office_code = o.office_code)
+                left outer join cwms_office o2 on (pl.office_code = o2.office_code)
             where pl.location_code = p_location_code)
       loop
         l_location_ref := new location_ref_t (
