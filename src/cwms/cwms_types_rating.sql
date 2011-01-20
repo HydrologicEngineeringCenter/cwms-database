@@ -4432,7 +4432,11 @@ as
          l_results := tsv_array();
          l_results.extend(p_ind_values.count);
          for i in 1..p_ind_values.count loop
-            l_values(i) := p_ind_values(i).value;
+            l_values(i) := case cwms_ts.quality_is_missing(p_ind_values(i)) or
+                                cwms_ts.quality_is_rejected(p_ind_values(i))
+                              when true  then null
+                              when false then p_ind_values(i).value
+                           end;
          end loop;
          l_values := rate(l_values);
          for i in 1..p_ind_values.count loop
@@ -4460,7 +4464,11 @@ as
          l_results := ztsv_array();
          l_results.extend(p_ind_values.count);
          for i in 1..p_ind_values.count loop
-            l_values(i) := p_ind_values(i).value;
+            l_values(i) := case cwms_ts.quality_is_missing(p_ind_values(i)) or
+                                cwms_ts.quality_is_rejected(p_ind_values(i))
+                              when true  then null
+                              when false then p_ind_values(i).value
+                           end;
          end loop;
          l_values := rate(l_values);
          for i in 1..p_ind_values.count loop
@@ -5003,6 +5011,30 @@ create type stream_rating_t under rating_t (
    overriding member function rate(
       p_ind_value in ztsv_type)
    return ztsv_type,
+   
+   overriding member function reverse_rate(
+      p_dep_values in double_tab_t)
+   return double_tab_t,
+   
+   overriding member function reverse_rate(
+      p_dep_value in binary_double)
+   return binary_double,
+   
+   overriding member function reverse_rate(
+      p_dep_values in tsv_array)
+   return tsv_array,
+   
+   overriding member function reverse_rate(
+      p_dep_values in ztsv_array)
+   return ztsv_array,
+   
+   overriding member function reverse_rate(
+      p_dep_value in tsv_type)
+   return tsv_type,      
+   
+   overriding member function reverse_rate(
+      p_dep_value in ztsv_type)
+   return ztsv_type,     
    
    member procedure trim_to_effective_date(
       p_date_time in date),
@@ -6312,6 +6344,443 @@ as
       l_results ztsv_array;
    begin
       l_results := rate(ztsv_array(p_ind_value));
+      return l_results(1);
+   end;
+   
+   overriding member function reverse_rate(
+      p_dep_values in double_tab_t)
+   return double_tab_t
+   is
+      l_results double_tab_t;
+      l_ztsv    ztsv_array;
+   begin
+      if p_dep_values is not null then
+         l_ztsv := ztsv_array();
+         l_ztsv.extend(p_dep_values.count);
+         for i in 1..p_dep_values.count loop
+            l_ztsv(i).date_time := sysdate;
+            l_ztsv(i).value     := p_dep_values(i);
+         end loop;
+         l_ztsv := reverse_rate(l_ztsv);
+         l_results := double_tab_t();
+         l_results.extend(p_dep_values.count);
+         for i in 1..p_dep_values.count loop
+            l_results(i) := l_ztsv(i).value;
+         end loop;
+      end if;
+      return l_results;
+   end;
+   
+   overriding member function reverse_rate(
+      p_dep_value in binary_double)
+   return binary_double
+   is
+      l_ztsv ztsv_type;
+   begin
+      l_ztsv := reverse_rate(ztsv_type(sysdate, p_dep_value, 0));
+      return l_ztsv.value;
+   end;
+   
+   overriding member function reverse_rate(
+      p_dep_values in tsv_array)
+   return tsv_array
+   is
+      l_results tsv_array;
+      l_ztsv    ztsv_array;
+      l_clone   stream_rating_t;
+   begin
+      if p_dep_values is not null then
+         l_ztsv := ztsv_array();
+         l_ztsv.extend(p_dep_values.count);
+         for i in 1..p_dep_values.count loop
+            l_ztsv(i).date_time    := cast(p_dep_values(i).date_time at time zone 'UTC' as date);
+            l_ztsv(i).value        := p_dep_values(i).value;
+            l_ztsv(i).quality_code := 0;
+         end loop;
+         if current_time = 'D' then
+            l_ztsv := reverse_rate(l_ztsv); 
+         else
+            l_clone := self;
+            l_clone.convert_to_database_time;
+            l_ztsv := l_clone.reverse_rate(l_ztsv);
+         end if;
+         l_results := tsv_array();
+         l_results.extend(p_dep_values.count);
+         for i in 1..p_dep_values.count loop
+            l_results(i).date_time    := p_dep_values(i).date_time;
+            l_results(i).value        := l_ztsv(i).value;
+            l_results(i).quality_code := case l_results(i) is null
+                                            when true  then 5
+                                            when false then 0
+                                         end;
+         end loop;         
+      end if;
+      return l_results;
+   end;
+   
+   overriding member function reverse_rate(
+      p_dep_values in ztsv_array)
+   return ztsv_array
+   is                                                        
+      type integer_tab_t is table of pls_integer;
+      c_base_date               constant date := '1900-01-01';
+      l_results                 ztsv_array;
+      l_date_offsets            double_tab_t;
+      l_date_offset             binary_double;
+      l_ratio                   binary_double;
+      l_date_offsets_properties cwms_lookup.sequence_properties_t;
+      l_shift                   binary_double;
+      l_offset                  binary_double;
+      l_heights                 double_tab_t;
+      l_flows                   double_tab_t; 
+      l_shifts                  double_tab_t;
+      l_flow                    binary_double;
+      l_flows_properties        cwms_lookup.sequence_properties_t;
+      i                         pls_integer;
+      j                         pls_integer;
+      k                         pls_integer; 
+      l_hi_index                pls_integer;
+      l_hi_value                binary_double;
+      l_lo_value                binary_double;
+      l_hi_height               binary_double;
+      l_lo_height               binary_double;
+      l_hi_flow                 binary_double;
+      l_lo_flow                 binary_double;
+      l_min_height              binary_double;
+      l_log_used                boolean;
+      l_rating_spec             rating_spec_t;
+      l_rating_method           pls_integer;
+   begin                  
+      if p_dep_values is not null then
+         -------------------------
+         -- get the rating spec --
+         -------------------------
+         l_rating_spec := rating_spec_t(rating_spec_id, office_id);
+         -----------------------------------------
+         -- populate the shift dates for lookup --
+         -----------------------------------------
+         if shifts is not null then
+            l_date_offsets := double_tab_t();
+            l_date_offsets.extend(shifts.count+1);
+            l_date_offsets(1) := effective_date - c_base_date;
+            for i in 1..shifts.count loop
+               l_date_offsets(i+1) := shifts(i+1).effective_date - c_base_date;
+            end loop;
+            l_date_offsets_properties := cwms_lookup.analyze_sequence(l_date_offsets);
+         end if;
+         ------------------------------------------------------
+         -- populate the rating heights and flows for lookup --
+         ------------------------------------------------------
+         i := 1;
+         j := 1;
+         k := 0;
+         l_flows := double_tab_t();
+         l_flows   := double_tab_t();
+         -------------------------------------------------
+         -- first any extension values below the rating --
+         -------------------------------------------------
+         if rating_info.extension_values is not null then
+            while i < rating_info.extension_values.count and
+                  rating_info.extension_values(i).ind_value < rating_info.rating_values(1).ind_value
+            loop
+               l_flows.extend;
+               l_flows.extend;
+               k := k + 1;
+               l_flows(k) := rating_info.extension_values(i).ind_value;
+               l_flows(k) := rating_info.extension_values(i).dep_value;
+            end loop;
+         end if;
+         ----------------------------
+         -- next the rating values --
+         ----------------------------
+         while j < rating_info.rating_values.count loop
+            l_flows.extend;
+            l_flows.extend;
+            k := k + 1;
+            l_flows(k) := rating_info.rating_values(j).ind_value;
+            l_flows(k) := rating_info.rating_values(j).dep_value;
+         end loop;
+         ---------------------------------------------------
+         -- finally any extension values above the rating --
+         ---------------------------------------------------
+         if rating_info.extension_values is not null then
+            while i < rating_info.extension_values.count loop
+               if rating_info.extension_values(i).ind_value > 
+                  rating_info.rating_values(rating_info.rating_values.count).ind_value
+               then
+                  l_flows.extend;
+                  l_flows.extend;     
+                  k := k + 1;
+                  l_flows(k) := rating_info.extension_values(i).ind_value;
+                  l_flows(k) := rating_info.extension_values(i).dep_value;
+               end if; 
+            end loop;
+         end if;
+         l_flows_properties := cwms_lookup.analyze_sequence(l_flows);
+         -----------------------   
+         -- process each flow --
+         -----------------------   
+         l_results := ztsv_array();
+         l_results.extend(p_dep_values.count);
+         for i in 1..p_dep_values.count loop 
+            l_flow := p_dep_values(i).value;
+            -----------------------------------
+            -- find the interpolation values --
+            -----------------------------------
+            l_hi_index := cwms_lookup.find_high_index(
+               l_flow, 
+               l_flows, 
+               l_flows_properties);
+            if l_flow < l_flows(1) then
+               l_rating_method := cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method);
+            elsif l_flow > l_flows(l_flows.count) then
+               l_rating_method := cwms_lookup.method_by_name(l_rating_spec.out_range_high_rating_method);
+            else
+               l_rating_method := cwms_lookup.method_by_name(l_rating_spec.in_range_rating_method);
+            end if;
+            if l_rating_method in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) then
+               if offsets is null then
+                  l_offset := 0;
+               else
+                  l_offset := offsets.rate(l_heights(l_hi_index-1));
+               end if;
+               begin
+                  l_lo_height := log(10, l_heights(l_hi_index-1) - l_offset);
+                  l_hi_height := log(10, l_heights(l_hi_index) - l_offset);
+                  l_log_used  := true;
+                  if l_rating_method = cwms_lookup.method_logarithmic then
+                     if l_flow <= 0 then
+                        cwms_err.raise('ERROR', 'Cannot take log of negative number');
+                     end if;
+                     l_lo_flow := log(10, l_flows(l_hi_index-1));
+                     l_hi_flow := log(10, l_flows(l_hi_index));
+                     l_flow    := log(10, l_flow);
+                  end if;
+               exception
+                  when others then
+                     l_lo_height := l_heights(l_hi_index-1);
+                     l_hi_height := l_heights(l_hi_index);
+                     l_lo_flow   := l_flows(l_hi_index-1);
+                     l_hi_flow   := l_flows(l_hi_index);
+                     l_log_used  := false;
+               end;
+            elsif l_rating_method = cwms_lookup.method_lin_log then
+               l_lo_height := l_heights(l_hi_index-1);
+               l_hi_height := l_heights(l_hi_index);
+               l_log_used  := false;
+               begin
+                  if l_flow <= 0 then
+                     cwms_err.raise('ERROR', 'Cannot take log of negative number');
+                  end if;
+                  l_lo_flow := log(10, l_flows(l_hi_index-1));
+                  l_hi_flow := log(10, l_flows(l_hi_index));
+                  l_flow    := log(10, l_flow);
+               exception
+                  when others then
+                     l_lo_flow   := l_flows(l_hi_index-1);
+                     l_hi_flow   := l_flows(l_hi_index);
+               end;
+            else
+               l_lo_height := l_heights(l_hi_index-1);
+               l_hi_height := l_heights(l_hi_index);
+               l_lo_flow   := l_flows(l_hi_index-1);
+               l_hi_flow   := l_flows(l_hi_index);
+               l_log_used  := false;
+            end if;
+            -------------------------------
+            -- perform the interpolation --
+            -------------------------------
+            if l_rating_method in (
+               cwms_lookup.method_linear,
+               cwms_lookup.method_logarithmic,
+               cwms_lookup.method_lin_log,
+               cwms_lookup.method_log_lin)
+            then
+               l_results(i).value := 
+                  l_lo_height 
+                  + (l_flow - l_lo_flow) 
+                  / (l_hi_flow - l_lo_flow) 
+                  * (l_hi_height - l_lo_height);
+               if l_log_used then
+                  l_results(i).value := power(10, l_results(i).value) + l_offset;
+               end if;
+               -------------------------------------            
+               -- unshift the height if necessary --
+               -------------------------------------
+               if shifts is not null and p_dep_values(i).date_time >= effective_date then
+                  l_date_offset := p_dep_values(i).date_time - c_base_date;
+                  l_hi_index := cwms_lookup.find_high_index(
+                     l_date_offset, 
+                     l_date_offsets, 
+                     l_date_offsets_properties);
+                  l_ratio := cwms_lookup.find_ratio(
+                     l_log_used,
+                     l_date_offset,
+                     l_date_offsets,
+                     l_hi_index,
+                     l_date_offsets_properties.increasing_range,
+                     cwms_lookup.method_linear,
+                     cwms_lookup.method_error,
+                     cwms_lookup.method_nearest);
+                  if l_ratio != 0. then
+                     l_heights.delete;
+                     l_heights.extend(shifts(l_hi_index+1).rating_info.rating_values.count);
+                     l_shifts := double_tab_t();
+                     l_shifts.extend(shifts(l_hi_index+1).rating_info.rating_values.count);
+                     for j in 1..shifts(l_hi_index+1).rating_info.rating_values.count loop
+                        l_heights(j) := shifts(l_hi_index+1).rating_info.rating_values(j).ind_value; 
+                        l_shifts(j) := shifts(l_hi_index+1).rating_info.rating_values(j).dep_value; 
+                     end loop;
+                     if l_results(i).value - l_shifts(1) <= l_heights(1) then
+                        l_hi_value := l_shifts(1);
+                     elsif l_results(i).value - l_shifts(l_shifts.count) >= l_heights(l_heights.count) then
+                        l_hi_value := l_shifts(l_shifts.count);
+                     else
+                        for j in 2..l_shifts.count-1 loop
+                           if l_results(i).value - l_shifts(j) < l_heights(j) then
+                              declare
+                                 ll_lo    pls_integer;
+                                 ll_hi    pls_integer;
+                                 ll_ratio binary_double;  
+                              begin
+                                 ll_lo    := j;
+                                 ll_hi    := j+1;
+                                 ll_ratio := (l_shifts(ll_hi)  - l_shifts(ll_lo)) / 
+                                             (l_heights(ll_hi) - l_heights(ll_lo)); 
+                                 l_hi_value := l_heights(ll_lo) + (l_results(i).value - l_shifts(ll_lo))  * ll_ratio / (1. + ll_ratio);  
+                              end;
+                              exit;
+                           end if;
+                        end loop;
+                     end if;                  
+                  end if;
+                  if l_ratio != 1. then
+                     if l_hi_index = 1 then
+                        l_lo_value := 0.; -- zero shift on base curve
+                     else
+                        l_heights.delete;
+                        l_heights.extend(shifts(l_hi_index).rating_info.rating_values.count);
+                        l_shifts := double_tab_t();
+                        l_shifts.extend(shifts(l_hi_index).rating_info.rating_values.count);
+                        for j in 1..shifts(l_hi_index).rating_info.rating_values.count loop
+                           l_heights(j) := shifts(l_hi_index).rating_info.rating_values(j).ind_value; 
+                           l_shifts(j) := shifts(l_hi_index).rating_info.rating_values(j).dep_value; 
+                        end loop;
+                        if l_results(i).value - l_shifts(1) <= l_heights(1) then
+                           l_lo_value := l_shifts(1);
+                        elsif l_results(i).value - l_shifts(l_shifts.count) >= l_heights(l_heights.count) then
+                           l_lo_value := l_shifts(l_shifts.count);
+                        else
+                           for j in 2..l_shifts.count-1 loop
+                              if l_results(i).value - l_shifts(j) < l_heights(j) then
+                                 declare
+                                    ll_lo    pls_integer;
+                                    ll_hi    pls_integer;
+                                    ll_ratio binary_double;  
+                                 begin
+                                    ll_lo    := j;
+                                    ll_hi    := j+1;
+                                    ll_ratio := (l_shifts(ll_hi)  - l_shifts(ll_lo)) / 
+                                                (l_heights(ll_hi) - l_heights(ll_lo)); 
+                                    l_lo_value := l_heights(ll_lo) + (l_results(i).value - l_shifts(ll_lo))  * ll_ratio / (1. + ll_ratio);  
+                                 end;
+                                 exit;
+                              end if;
+                           end loop;
+                        end if;                  
+                     end if;
+                  end if;
+                  if l_ratio = 0. then
+                     l_shift := l_lo_value;
+                  elsif l_ratio = 1. then
+                     l_shift := l_hi_value;
+                  else   
+                     l_shift := l_lo_value + l_ratio * (l_hi_value - l_lo_value);
+                  end if;
+                  l_results(i).value := l_results(i).value - l_shift;
+               end if;                
+            elsif l_rating_method = cwms_lookup.method_null then
+               l_results(i).value := null;
+            elsif l_rating_method = cwms_lookup.method_error then
+               if l_flow < l_lo_flow then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Value is out of bounds low');
+               elsif l_flow > l_hi_flow then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Value is out of bounds high');
+               else
+                  cwms_err.raise(
+                     'ERROR',
+                     'Value does not match any value in sequence');
+               end if;
+            elsif l_rating_method in (
+               cwms_lookup.method_previous, 
+               cwms_lookup.method_lower)
+            then
+               if l_flow < l_lo_flow then
+                  cwms_err.raise(
+                     'ERROR',
+                     'PREVIOUS or LOWER specified for out of bounds low behavior');
+               end if;
+               l_results(i).value := l_lo_height;
+            elsif l_rating_method in (
+               cwms_lookup.method_next, 
+               cwms_lookup.method_higher)
+            then
+               if l_flow > l_hi_flow then
+                  cwms_err.raise(
+                     'ERROR',
+                     'NEXT or HIGHER specified for out of bounds high behavior');
+               end if;
+               l_results(i).value := l_hi_height;
+            elsif l_rating_method in (
+               cwms_lookup.method_nearest, 
+               cwms_lookup.method_closest)
+            then
+               if l_flow < l_lo_flow then
+                  l_results(i).value := l_lo_height;
+               elsif l_flow > l_hi_flow then
+                  l_results(i).value := l_hi_height;
+               else
+                  if l_flow - l_lo_flow < l_hi_flow - l_flow then
+                     l_results(i).value := l_lo_height;
+                  else
+                     l_results(i).value := l_hi_height;
+                  end if;  
+               end if;
+            else
+               cwms_err.raise('ERROR', 'Invalid rating method');
+            end if;
+            l_results(i).date_time := p_dep_values(i).date_time;
+            l_results(i).quality_code := case l_results(i).value is null
+                                          when true  then 5
+                                          when false then 0
+                                       end;
+            
+         end loop;
+      end if;                     
+      return l_results;
+   end;
+   
+   overriding member function reverse_rate(
+      p_dep_value in tsv_type)
+   return tsv_type      
+   is
+      l_results tsv_array;
+   begin
+      l_results := reverse_rate(tsv_array(p_dep_value));
+      return l_results(1);
+   end;
+         
+   overriding member function reverse_rate(
+      p_dep_value in ztsv_type)
+   return ztsv_type
+   is
+      l_results ztsv_array;
+   begin
+      l_results := reverse_rate(ztsv_array(p_dep_value));
       return l_results(1);
    end;
    
