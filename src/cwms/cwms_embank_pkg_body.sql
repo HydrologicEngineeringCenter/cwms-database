@@ -424,8 +424,8 @@ begin
    l_embankment.structure_length     := p_embankment.structure_length * l_factor;
    l_embankment.height_max           := p_embankment.height_max * l_factor;
    l_embankment.top_width            := p_embankment.top_width * l_factor;
+   cwms_loc.store_location(p_embankment.embankment_location,'F');
    if l_embankment.embankment_location_code is null then
-      cwms_loc.store_location(p_embankment.embankment_location);
       l_embankment.embankment_location_code := cwms_loc.get_location_code(
          p_embankment.embankment_location.location_ref.get_office_id,
          p_embankment.embankment_location.location_ref.get_location_id);
