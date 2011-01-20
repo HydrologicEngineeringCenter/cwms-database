@@ -704,21 +704,6 @@ begin
       end if; 
    end if;   
          
-   l_use_log := l_in_range_behavior = method_logarithmic;
-   if l_use_log then
-      begin
-         l_val    := log(10, l_val);
-         l_hi_val := log(10, l_hi_val);
-         l_lo_val := log(10, l_lo_val);
-         p_log_used   := true;
-      exception
-         when others then
-            l_val    := p_value;
-            l_hi_val := p_sequence(i);
-            l_lo_val := p_sequence(i-1);
-            p_log_used := false;
-      end;
-   end if;
    ---------------------------------------------
    -- determine whether the value is in range --
    ---------------------------------------------
@@ -759,6 +744,18 @@ begin
          when method_linear then
             l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
          when method_logarithmic then
+            begin
+               l_val    := log(10, l_val);
+               l_hi_val := log(10, l_hi_val);
+               l_lo_val := log(10, l_lo_val);
+               p_log_used   := true;
+            exception
+               when others then
+                  l_val    := p_value;
+                  l_hi_val := p_sequence(i);
+                  l_lo_val := p_sequence(i-1);
+                  p_log_used := false;
+            end;
             l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
          when method_previous then 
             l_ratio := 0.;
@@ -799,6 +796,18 @@ begin
             when method_linear then
                l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
             when method_logarithmic then
+               begin
+                  l_val    := log(10, l_val);
+                  l_hi_val := log(10, l_hi_val);
+                  l_lo_val := log(10, l_lo_val);
+                  p_log_used   := true;
+               exception
+                  when others then
+                     l_val    := p_value;
+                     l_hi_val := p_sequence(i);
+                     l_lo_val := p_sequence(i-1);
+                     p_log_used := false;
+               end;
                l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
             when method_previous then
                l_ratio := 1.;
@@ -822,6 +831,18 @@ begin
             when method_linear then
                l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
             when method_logarithmic then
+               begin
+                  l_val    := log(10, l_val);
+                  l_hi_val := log(10, l_hi_val);
+                  l_lo_val := log(10, l_lo_val);
+                  p_log_used   := true;
+               exception
+                  when others then
+                     l_val    := p_value;
+                     l_hi_val := p_sequence(i);
+                     l_lo_val := p_sequence(i-1);
+                     p_log_used := false;
+               end;
                l_ratio := (l_val - l_lo_val) / (l_hi_val - l_lo_val);
             when method_previous then
                l_ratio := 1.;
