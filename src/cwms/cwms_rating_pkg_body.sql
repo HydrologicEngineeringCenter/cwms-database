@@ -2478,17 +2478,15 @@ procedure rate(
    p_office_id   in  varchar2 default null)
 is
 begin
-   -- no-op this until Mike fixes it.
-   null;
-   --rate_one(
-   --   p_result,
-   --   p_rating_spec,
-   --   double_tab_t(p_value),
-   --   p_units,
-   --   p_value_time,
-   --   p_rating_time,
-   --   p_time_zone,
-   --   p_office_id);
+   rate_one(
+      p_result,
+      p_rating_spec,
+      double_tab_t(p_value),
+      p_units,
+      p_value_time,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
 end;    
    
 --------------------------------------------------------------------------------
@@ -2542,7 +2540,11 @@ begin
       l_value_times := date_table_type();
       l_value_times.extend(p_values.count);
       for i in 1..p_values.count loop
-         l_values(i) := p_values(i).value;
+         l_values(i) := case cwms_ts.quality_is_missing(p_values(i)) or
+                             cwms_ts.quality_is_rejected(p_values(i))
+                           when true  then null
+                           when false then p_values(i).value
+                        end;
          l_value_times(i) := cast(p_values(i).date_time at time zone 'UTC' as date);
       end loop;
       l_rating_time := cwms_util.change_timezone(
@@ -2592,7 +2594,11 @@ begin
       l_value_times := date_table_type();
       l_value_times.extend(p_values.count);
       for i in 1..p_values.count loop
-         l_values(i) := p_values(i).value;
+         l_values(i) := case cwms_ts.quality_is_missing(p_values(i)) or
+                             cwms_ts.quality_is_rejected(p_values(i))
+                           when true  then null
+                           when false then p_values(i).value
+                        end;
          l_value_times(i) := p_values(i).date_time;
       end loop;
       rate(
@@ -3412,7 +3418,11 @@ begin
       l_times := date_table_type();
       l_times.extend(p_values.count);
       for i in 1..p_values.count loop
-         l_values(i) := p_values(i).value;
+         l_values(i) := case cwms_ts.quality_is_missing(p_values(i)) or
+                             cwms_ts.quality_is_rejected(p_values(i))
+                           when true  then null
+                           when false then p_values(i).value
+                        end;
          l_times(i) := cast(p_values(i).date_time at time zone l_time_zone as date);
       end loop;
       ------------------------
@@ -3468,7 +3478,11 @@ begin
       l_times := date_table_type();
       l_times.extend(p_values.count);
       for i in 1..p_values.count loop
-         l_values(i) := p_values(i).value;
+         l_values(i) := case cwms_ts.quality_is_missing(p_values(i)) or
+                             cwms_ts.quality_is_rejected(p_values(i))
+                           when true  then null
+                           when false then p_values(i).value
+                        end;
          l_times(i) := p_values(i).date_time;
       end loop;
       ------------------------
