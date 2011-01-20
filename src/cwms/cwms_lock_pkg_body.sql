@@ -402,6 +402,7 @@ begin
       -------------
       -- update ---
       -------------
+      cwms_loc.store_location(p_lock.lock_location,'F');
       update at_lock
          set row = l_lock_rec
        where lock_location_code = l_lock_rec.lock_location_code; 
@@ -416,31 +417,7 @@ begin
             --------------------------------------
             -- need to create the lock location --
             --------------------------------------
-            cwms_loc.create_location2(
-               p_lock.lock_location.location_ref.get_location_id, -- p_location_id         IN VARCHAR2,
-               p_lock.lock_location.location_type,                -- p_location_type       IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.elevation,                    -- p_elevation           IN NUMBER   DEFAULT NULL,
-               p_lock.lock_location.elev_unit_id,                 -- p_elev_unit_id        IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.vertical_datum,               -- p_vertical_datum      IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.latitude,                     -- p_latitude            IN NUMBER   DEFAULT NULL,
-               p_lock.lock_location.longitude,                    -- p_longitude           IN NUMBER   DEFAULT NULL,
-               p_lock.lock_location.horizontal_datum,             -- p_horizontal_datum    IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.public_name,                  -- p_public_name         IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.long_name,                    -- p_long_name           IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.description,                  -- p_description         IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.time_zone_name,               -- p_time_zone_id        IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.county_name,                  -- p_county_name         IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.state_initial,                -- p_state_initial       IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.active_flag,                  -- p_active              IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.location_kind_id,             -- p_location_kind_id    IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.map_label,                    -- p_map_label           IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.published_latitude,           -- p_published_latitude  IN NUMBER   DEFAULT NULL,
-               p_lock.lock_location.published_longitude,          -- p_published_longitude IN NUMBER   DEFAULT NULL,
-               p_lock.lock_location.bounding_office_id,           -- p_bounding_office_id  IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.nation_id,                    -- p_nation_id           IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.nearest_city,                 -- p_nearest_city        IN VARCHAR2 DEFAULT NULL,
-               p_lock.lock_location.location_ref.office_id);      -- p_db_office_id        IN VARCHAR2 DEFAULT NULL
-               
+            cwms_loc.store_location(p_lock.lock_location,'F');
             l_lock_rec.lock_location_code := p_lock.lock_location.location_ref.get_location_code;
       end;
       insert
