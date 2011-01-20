@@ -4659,18 +4659,9 @@ AS
                 pl.location_code                      location_code,
                 bl.base_location_id                   base_location_id,
                 pl.sub_location_id                    sub_location_id,
-                case
-                  when pl.county_code is null then null
-                  else s.state_initial
-                end                                   state_initial,
-                case
-                  when pl.county_code is null then null
-                  else c.county_name
-                end                                   county_name,
-                case
-                  when tz.time_zone_code is null then null
-                  else tz.time_zone_name
-                end                                   time_zone_name,
+                s.state_initial         state_initial,
+                c.county_name           county_name,
+                tz.time_zone_name       time_zone_name,
                 pl.location_type                      location_type,
                 pl.latitude                           latitude,
                 pl.longitude                          longitude,
@@ -4681,61 +4672,24 @@ AS
                 pl.long_name                          long_name,
                 pl.description                        description,
                 pl.active_flag                        active_flag,
-                case
-                  when pl.location_kind is null then null
-                  else lk.location_kind_id
-                end                                   location_kind_id,
+                lk.location_kind_id     location_kind_id,
                 pl.map_label                          map_label,
                 pl.published_latitude                 published_latitude,
                 pl.published_longitude                published_longitude,
-                case
-                  when pl.office_code is null then null
-                  else o.office_id
-                end                                   bounding_office_id,
-                case
-                  when pl.office_code is null then null
-                  else o.public_name
-                end                                   bounding_office_name,
-                case
-                  when pl.nation_code is null then null
-                  else n.nation_id
-                end                                   nation_id,
+                o2.office_id            bounding_office_id,
+                o2.public_name          bounding_office_name,
+                n.nation_id             nation_id,
                 pl.nearest_city                       nearest_city
-           from at_physical_location pl,
-                at_base_location     bl,
-                at_location_kind     lk,
-                cwms_time_zone       tz,
-                cwms_county          c,
-                cwms_state           s,
-                cwms_nation          n,
-                cwms_office          o,
-                cwms_office          o2
-          where bl.base_location_code = pl.base_location_code
-            and o.office_code = bl.db_office_code
-            and (
-                  pl.county_code is null or
-                  (
-                    s.state_code = c.state_code and
-                    c.county_code = pl.county_code
-                  )
-                )
-            and (
-                  pl.time_zone_code is null or
-                  tz.time_zone_code = pl.time_zone_code
-                )
-            and (
-                  pl.location_kind is null or
-                  lk.location_kind_code = pl.location_kind
-                )
-            and (
-                  pl.office_code is null or
-                  o2.office_code = pl.office_code
-                )
-            and (
-                  pl.nation_code is null or
-                  n.nation_code = pl.nation_code
-                )
-            and pl.location_code = p_location_code)
+           from at_physical_location pl
+                left join at_base_location bl on (pl.base_location_code = bl.base_location_code)
+                left join at_location_kind lk on (pl.location_kind = lk.location_kind_code)
+                left join cwms_time_zone tz on (pl.time_zone_code = tz.time_zone_code)
+                left join cwms_county c on (pl.county_code = c.county_code)
+                left join cwms_state s on (c.state_code = s.state_code)
+                left join cwms_nation n on (pl.nation_code = n.nation_code)
+                left join cwms_office o on (bl.db_office_code = o.office_code)
+                left join cwms_office o2 on (pl.office_code = o2.office_code)
+            where pl.location_code = p_location_code)
       loop
         l_location_ref := new location_ref_t (
            rec.base_location_id,
