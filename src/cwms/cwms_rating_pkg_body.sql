@@ -2478,15 +2478,17 @@ procedure rate(
    p_office_id   in  varchar2 default null)
 is
 begin
-   rate_one(
-      p_result,
-      p_rating_spec,
-      double_tab_t(p_value),
-      p_units,
-      p_value_time,
-      p_rating_time,
-      p_time_zone,
-      p_office_id);
+   -- no-op this until Mike fixes it.
+   null;
+   --rate_one(
+   --   p_result,
+   --   p_rating_spec,
+   --   double_tab_t(p_value),
+   --   p_units,
+   --   p_value_time,
+   --   p_rating_time,
+   --   p_time_zone,
+   --   p_office_id);
 end;    
    
 --------------------------------------------------------------------------------
