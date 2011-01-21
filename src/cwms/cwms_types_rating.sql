@@ -3526,6 +3526,7 @@ create type rating_t as object(
    rating_info    rating_ind_parameter_t,
    current_units  varchar2(1), -- 'D' = database, 'N' = native, other = don't know
    current_time   varchar2(2), -- 'D' = database, 'L' = native, other = don't know
+   formula_tokens str_tab_t,
    
    constructor function rating_t(
       p_rating_code in number)
@@ -4066,6 +4067,7 @@ as
                         'Formula does not contain token ARG'||i);
                   end if;
                end loop;
+               self.formula_tokens := l_tokens;
             end;
          else
             cwms_err.raise(
@@ -4352,33 +4354,36 @@ as
                end if; 
             end if;
          end loop;
-         if formula is not null then
-            --------------------
-            -- formula rating --
-            --------------------
-            cwms_err.raise(
-               'ERROR',
-               'Cannot yet rate with a formula');
-         else
-            ------------------
-            -- table rating --
-            ------------------
-            l_ind_set := double_tab_t();
-            l_results := double_tab_t();
-            l_results.extend(l_inp_length);
-            l_rating_spec := rating_spec_t(rating_spec_id, office_id);
-            l_template := rating_template_t(office_id, l_rating_spec.template_id);
-            for j in 1..l_inp_length loop     
-               if l_ind_set.count > 0 then
-                  l_ind_set.trim(l_ind_set.count);
-               end if;
-               l_ind_set.extend(p_ind_values.count);
-               for i in 1..p_ind_values.count loop
-                  l_ind_set(i) := p_ind_values(i)(j);
-               end loop;
-               l_results(j) := rating_info.rate(l_ind_set, 1, l_template.ind_parameters);
+         ------------------------
+         -- perform the rating --
+         ------------------------
+         l_ind_set := double_tab_t();
+         l_results := double_tab_t();
+         l_results.extend(l_inp_length);
+         for j in 1..l_inp_length loop     
+            if l_ind_set.count > 0 then
+               l_ind_set.trim(l_ind_set.count);
+            end if;
+            l_ind_set.extend(p_ind_values.count);
+            for i in 1..p_ind_values.count loop
+               l_ind_set(i) := p_ind_values(i)(j);
             end loop;
-         end if;
+            if formula is not null then
+               --------------------
+               -- formula rating --
+               --------------------
+               l_results(j) := cwms_util.eval_tokenized_expression(formula_tokens, l_ind_set);
+            else
+               ------------------
+               -- table rating --
+               ------------------
+               if l_template is null then
+                  l_rating_spec := rating_spec_t(rating_spec_id, office_id);
+                  l_template := rating_template_t(office_id, l_rating_spec.template_id);
+               end if;
+               l_results(j) := rating_info.rate(l_ind_set, 1, l_template.ind_parameters);
+            end if;
+         end loop;
       end if;
       return l_results;
    end;
@@ -5215,7 +5220,8 @@ as
             null,                        -- description
             null,                        -- rating_info
             'N',                         -- current_units
-            'D');                        -- current_time
+            'D',                         -- current_time
+            null);                       -- formula_tokens
          ----------------------------------
          -- get the shift effective date --
          ----------------------------------            
@@ -5312,7 +5318,8 @@ as
             'Logarithmic interpolation offsets', -- description
             null,                                -- rating_info
             'N',                                 -- current_units
-            'D');                                -- current_time
+            'D',                                 -- current_time
+            null);                               -- formula_tokens
          ----------------------------
          -- get the offset units id --
          ----------------------------            
