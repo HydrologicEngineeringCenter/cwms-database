@@ -3205,7 +3205,177 @@ procedure reverse_rate(
    p_max_version      in varchar2 default 'T',
    p_ts_office_id     in varchar2 default null,
    p_rating_office_id in varchar2 default null);
-   
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+-- Rounds independent values accoring to the rounding specifications contained
+-- in the rating specification
+--
+-- p_independent
+--    The values to round: one or more values of one or more independent 
+--    parameters
+--
+-- p_rating_id
+--    The rating id of the rating specification to use
+--
+-- p_office_id
+--    The owning office of the rating specification to use.  If null, then the
+--    current session user is used.
+--
+procedure round_independent(
+   p_independent in out nocopy double_tab_tab_t,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null);   
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+-- Rounds independent values accoring to the rounding specifications contained
+-- in the rating specification
+--
+-- p_independent
+--    The values to round: one or more values of a single independent parameter
+--
+-- p_rating_id
+--    The rating id of the rating specification to use
+--
+-- p_office_id
+--    The owning office of the rating specification to use.  If null, then the
+--    current session user is used.
+--
+procedure round_independent(
+   p_independent in out nocopy double_tab_t,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null);   
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+-- Rounds independent values accoring to the rounding specifications contained
+-- in the rating specification
+--
+-- p_independent
+--    The values to round: one or more values of a single independent parameter
+--
+-- p_rating_id
+--    The rating id of the rating specification to use
+--
+-- p_office_id
+--    The owning office of the rating specification to use.  If null, then the
+--    current session user is used.
+--
+procedure round_independent(
+   p_independent in out nocopy tsv_array,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null);   
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+-- Rounds independent values accoring to the rounding specifications contained
+-- in the rating specification
+--
+-- p_independent
+--    The values to round: one or more values of a single independent parameter
+--
+-- p_rating_id
+--    The rating id of the rating specification to use
+--
+-- p_office_id
+--    The owning office of the rating specification to use.  If null, then the
+--    current session user is used.
+--
+procedure round_independent(
+   p_independent in out nocopy ztsv_array,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null);   
+    
+--------------------------------------------------------------------------------
+-- ROUND_ONE_INDEPENDENT
+--
+-- Rounds independent values accoring to the rounding specifications contained
+-- in the rating specification
+--
+-- p_independent
+--    The values to round: a single set of values for one or more independent
+--    parameters
+--
+-- p_rating_id
+--    The rating id of the rating specification to use
+--
+-- p_office_id
+--    The owning office of the rating specification to use.  If null, then the
+--    current session user is used.
+--
+procedure round_one_independent(
+   p_independent in out nocopy double_tab_t,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null);
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+-- Rounds independent values accoring to the rounding specifications contained
+-- in the rating specification
+--
+-- p_independent
+--    The value to round: a single value for a single independent parameter
+--
+-- p_rating_id
+--    The rating id of the rating specification to use
+--
+-- p_office_id
+--    The owning office of the rating specification to use.  If null, then the
+--    current session user is used.
+--
+procedure round_independent(
+   p_independent in out nocopy binary_double,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null);   
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+-- Rounds independent values accoring to the rounding specifications contained
+-- in the rating specification
+--
+-- p_independent
+--    The value to round: a single value for a single independent parameter
+--
+-- p_rating_id
+--    The rating id of the rating specification to use
+--
+-- p_office_id
+--    The owning office of the rating specification to use.  If null, then the
+--    current session user is used.
+--
+procedure round_independent(
+   p_independent in out nocopy tsv_type,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null);   
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+-- Rounds independent values accoring to the rounding specifications contained
+-- in the rating specification
+--
+-- p_independent
+--    The value to round: a single value for a single independent parameter
+--
+-- p_rating_id
+--    The rating id of the rating specification to use
+--
+-- p_office_id
+--    The owning office of the rating specification to use.  If null, then the
+--    current session user is used.
+--
+procedure round_independent(
+   p_independent in out nocopy ztsv_type,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null);   
+      
 end;
 /                                                       
 show errors;

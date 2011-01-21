@@ -4553,6 +4553,184 @@ begin
       p_ts_office_id,
       p_rating_office_id);
 end reverse_rate;   
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+procedure round_independent(
+   p_independent in out nocopy double_tab_tab_t,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null)
+is
+   l_rating_spec     rating_spec_t;
+   l_ind_param_count pls_integer;
+   l_parts           str_tab_t;
+begin
+   if p_independent is not null then
+      l_rating_spec := rating_spec_t(p_rating_id, cwms_util.get_db_office_id(p_office_id));
+      l_parts := cwms_util.split_text(l_rating_spec.template_id, '.');
+      l_parts := cwms_util.split_text(l_parts(1), ';');
+      l_parts := cwms_util.split_text(l_parts(1), ',');
+      l_ind_param_count := l_parts.count;
+      if l_ind_param_count != p_independent.count then
+         cwms_err.raise(
+            'ERROR',
+            'Rating speicification ('
+            ||p_rating_id
+            ||') takes '
+            ||l_ind_param_count
+            ||' independnet parameters, '
+            ||p_independent.count
+            ||' specified');
+      end if;
+      for i in 1..l_ind_param_count loop
+         cwms_rounding.round_d_tab(p_independent(i), l_rating_spec.ind_rounding_specs(i));
+      end loop;
+   end if;
+end round_independent;      
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+procedure round_independent(
+   p_independent in out nocopy double_tab_t,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null)
+is
+   l_values double_tab_tab_t;
+begin
+   if p_independent is not null then
+      l_values := double_tab_tab_t(p_independent);
+      round_independent(
+         l_values,
+         p_rating_id,
+         p_office_id);
+      p_independent := l_values(1);         
+   end if;
+end round_independent;      
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+procedure round_independent(
+   p_independent in out nocopy tsv_array,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null)
+is
+   l_values double_tab_t;
+begin
+   if p_independent is not null then
+      l_values := double_tab_t();
+      l_values.extend(p_independent.count);
+      for i in 1..p_independent.count loop
+         l_values(i) := p_independent(i).value;
+      end loop;
+      round_independent(l_values, p_rating_id, p_office_id);
+      for i in 1..p_independent.count loop
+         p_independent(i).value := l_values(i);
+      end loop;
+   end if;
+end round_independent;      
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+procedure round_independent(
+   p_independent in out nocopy ztsv_array,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null)   
+is
+   l_values double_tab_t;
+begin
+   if p_independent is not null then
+      l_values := double_tab_t();
+      l_values.extend(p_independent.count);
+      for i in 1..p_independent.count loop
+         l_values(i) := p_independent(i).value;
+      end loop;
+      round_independent(l_values, p_rating_id, p_office_id);
+      for i in 1..p_independent.count loop
+         p_independent(i).value := l_values(i);
+      end loop;
+   end if;
+end round_independent;      
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+procedure round_one_independent(
+   p_independent in out nocopy double_tab_t,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null)
+is
+   l_values double_tab_tab_t;
+begin
+   if p_independent is not null then
+      l_values := double_tab_tab_t();
+      l_values.extend(p_independent.count);
+      for i in 1..p_independent.count loop
+         l_values(i) := double_tab_t(p_independent(i));
+      end loop;
+      round_independent(
+         l_values,
+         p_rating_id,
+         p_office_id);
+      for i in 1..p_independent.count loop
+         p_independent(i) := l_values(i)(1);
+      end loop;
+   end if;
+end round_one_independent;   
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+procedure round_independent(
+   p_independent in out nocopy binary_double,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null)
+is
+   l_values double_tab_tab_t;
+begin
+   if p_independent is not null then
+      l_values := double_tab_tab_t(double_tab_t(p_independent));
+      round_independent(l_values, p_rating_id, p_office_id);
+      p_independent := l_values(1)(1);
+   end if;
+end round_independent;      
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+procedure round_independent(
+   p_independent in out nocopy tsv_type,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null)   
+is
+   l_values double_tab_tab_t;
+begin
+   if p_independent is not null then
+      l_values := double_tab_tab_t(double_tab_t(p_independent.value));
+      round_independent(l_values, p_rating_id, p_office_id);
+      p_independent.value := l_values(1)(1);
+   end if;
+end round_independent;      
+    
+--------------------------------------------------------------------------------
+-- ROUND_INDEPENDENT
+--
+procedure round_independent(
+   p_independent in out nocopy ztsv_type,
+   p_rating_id   in            varchar2,
+   p_office_id   in            varchar2 default null)   
+is
+   l_values double_tab_tab_t;
+begin
+   if p_independent is not null then
+      l_values := double_tab_tab_t(double_tab_t(p_independent.value));
+      round_independent(l_values, p_rating_id, p_office_id);
+      p_independent.value := l_values(1)(1);
+   end if;
+end round_independent;      
 
 end;
 /
