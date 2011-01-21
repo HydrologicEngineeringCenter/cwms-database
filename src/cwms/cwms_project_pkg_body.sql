@@ -431,7 +431,10 @@ AS
          ||substr('-', 1, length(p_sub_location_id))
          ||p_sub_location_id; 
    end;
-BEGIN
+begin
+   if p_delete_action not in (cwms_util.delete_all, cwms_util.delete_data, cwms_util.delete_key) then
+      cwms_err.raise('INVALID_ITEM', p_delete_action, 'delete action');
+   end if;
    if p_delete_action in (cwms_util.delete_all, cwms_util.delete_data) then
       -------------------------------------------------
       -- delete all items that reference the project --
