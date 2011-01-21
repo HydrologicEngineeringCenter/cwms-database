@@ -2888,10 +2888,14 @@ AS
                push(exp(pop));
             when p_RPN_tokens(i) = 'FLOOR' then
                push(floor(pop));
+            when p_RPN_tokens(i) = 'INV' then
+               push(1 / pop);
             when p_RPN_tokens(i) = 'LN' then
                push(ln(pop));
             when p_RPN_tokens(i) = 'LOG' then  -- log base 10
                push(log(10, pop));
+            when p_RPN_tokens(i) = 'NEG' then
+               push(pop * -1);
             when p_RPN_tokens(i) = 'SIGN' then -- not SQL sign, but +1, 0, or -1
                l_val1 := pop;
                case

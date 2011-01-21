@@ -4032,8 +4032,8 @@ as
                   l_tokens := cwms_util.tokenize_rpn(self.formula);
                   if l_tokens.count > 1 and
                      l_tokens(l_tokens.count) not in
-                     ('+','-','*','/','//','%','^','ABS','ACOS','ASIN','ATAN','CEIL',
-                      'COS','EXP','FLOOR','LN','LOG', 'SIGN','SIN','TAN','TRUNC')
+                     ('+','-','*','/','//','%','^','ABS','ACOS','ASIN','ATAN','CEIL','COS',
+                     'EXP','FLOOR','INV','LN','LOG','NEG', 'SIGN','SIN','TAN','TRUNC')
                   then
                      l_tokens := cwms_util.tokenize_algebraic(self.formula);
                   end if;            
