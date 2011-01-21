@@ -444,6 +444,7 @@ is
       l_offset             binary_double;
       l_contract_type_code number(10);
       l_storage_unit_code  number(10);
+      l_water_user_code    number(10);
    begin
       ----------------------------------
       -- get the unit conversion info --
@@ -480,10 +481,27 @@ is
       p_rec.future_use_allocation := p_obj.future_use_allocation * l_factor + l_offset;
       p_rec.future_use_percent_activated := p_obj.future_use_percent_activated;
       p_rec.total_alloc_percent_activated := p_obj.total_alloc_percent_activated;
-      p_rec.withdrawal_location_code := p_obj.withdraw_location.location_ref.get_location_code('T');
-      p_rec.supply_location_code := p_obj.supply_location.location_ref.get_location_code('T');
-      p_rec.pump_in_location_code := p_obj.pump_in_location.location_ref.get_location_code('T');
-      
+      if p_obj.withdraw_location is not null
+      then
+        --store location data
+        cwms_loc.store_location(p_obj.withdraw_location,'F');
+        --get location code
+        p_rec.withdrawal_location_code := p_obj.withdraw_location.location_ref.get_location_code('F');
+      end if;
+      if p_obj.supply_location is not null
+      then
+        --store location data
+        cwms_loc.store_location(p_obj.supply_location,'F');
+        --get location code
+        p_rec.supply_location_code := p_obj.supply_location.location_ref.get_location_code('F');
+      end if;
+      if p_obj.pump_in_location is not null
+      then
+        --store location data
+        cwms_loc.store_location(p_obj.pump_in_location,'F');
+        --get location code.
+        p_rec.pump_in_location_code := p_obj.pump_in_location.location_ref.get_location_code('F');
+      end if;      
       p_rec.storage_unit_code := l_storage_unit_code;
    end;
 begin
@@ -493,12 +511,21 @@ begin
       for i in 1..p_contracts.count loop
          l_ref := p_contracts(i).water_user_contract_ref;
          begin
+            -- select the water user code
+            select water_user_code 
+            into l_water_user_code
+            from at_water_user
+            where project_location_code = l_ref.water_user.project_location_ref.get_location_code
+            and upper(entity_name) = upper(l_ref.water_user.entity_name);
+        
+            -- select the contract row.
             select *
-              into l_rec
-              from at_water_user_contract
-             where water_user_code 
-                   = l_ref.water_user.project_location_ref.get_location_code
-               and upper(contract_name) = upper(l_ref.contract_name);
+            into l_rec
+            from at_water_user_contract
+            where water_user_code = l_water_user_code
+            and upper(contract_name) = upper(l_ref.contract_name);
+            -- contract row exists
+            -- check fail if exists
             if l_fail_if_exists then
                cwms_err.raise(
                   'ITEM_ALREADY_EXISTS',
@@ -511,27 +538,26 @@ begin
                   || '/'
                   || l_ref.contract_name);                  
             end if;
+            -- update row
             populate_contract(l_rec, p_contracts(i));
             update at_water_user_contract
-               set row = l_rec
-             where water_user_contract_code = l_rec.water_user_contract_code;
+            set row = l_rec
+            where water_user_contract_code = l_rec.water_user_contract_code;
          exception
+            -- contract row not found
             when no_data_found then
-               populate_contract(l_rec, p_contracts(i));
-               l_rec.contract_name := l_ref.contract_name;
-               
-                -- get the water user code --
-                select water_user_code 
-                  into l_water_user_code
-                  from at_water_user
-                where upper(l_ref.water_user.entity_name) = upper(entity_name)
-                  and l_ref.water_user.project_location_ref.get_location_code = project_location_code;
-               
-               l_rec.water_user_code := l_water_user_code;
-               l_rec.water_user_contract_code := cwms_seq.nextval;
-               insert
-                 into at_water_user_contract
-               values l_rec;
+              -- copy incoming non-key contract data to row.
+              populate_contract(l_rec, p_contracts(i));
+              -- set the contract name
+              l_rec.contract_name := l_ref.contract_name;
+              -- assign water user code
+              l_rec.water_user_code := l_water_user_code;
+              -- generate new key
+              l_rec.water_user_contract_code := cwms_seq.nextval;
+              -- insert into table
+              insert
+              into at_water_user_contract
+              values l_rec;
          end;
       end loop;
    end if;
