@@ -1961,6 +1961,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_values      in  double_tab_tab_t,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_times in  date_table_type default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -1995,7 +1996,8 @@ is
    l_independent_log         boolean;
    l_dependent_log           boolean;  
    l_rating_units            str_tab_tab_t;
-   l_stream_rating           stream_rating_t; 
+   l_stream_rating           stream_rating_t;
+   l_round                   boolean := cwms_util.is_true(p_round); 
 begin
    -------------------
    -- sanity checks --
@@ -2429,6 +2431,9 @@ begin
          end case;
       end if;         
    end loop;                 
+   if l_round then
+      cwms_rounding.round_d_tab(p_results, l_rating_spec.dep_rounding_spec);
+   end if;
 end rate;      
    
 --------------------------------------------------------------------------------
@@ -2439,6 +2444,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_values      in  double_tab_t,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_times in  date_table_type default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -2458,6 +2464,7 @@ begin
       p_rating_spec,
       l_values,
       p_units,
+      p_round,
       p_value_times,
       p_rating_time,
       p_time_zone,
@@ -2472,6 +2479,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_value       in  binary_double,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_time  in  date default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -2483,6 +2491,7 @@ begin
       p_rating_spec,
       double_tab_t(p_value),
       p_units,
+      p_round,
       p_value_time,
       p_rating_time,
       p_time_zone,
@@ -2497,6 +2506,7 @@ procedure rate_one(
    p_rating_spec in  varchar2,
    p_values      in  double_tab_t,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_time  in  date default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -2509,6 +2519,7 @@ begin
       p_rating_spec,
       double_tab_tab_t(p_values),
       p_units,
+      p_round,
       date_table_type(p_value_time),
       p_rating_time,
       p_time_zone,
@@ -2525,6 +2536,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_values      in  tsv_array,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null)
@@ -2556,6 +2568,7 @@ begin
          p_rating_spec,
          l_values,
          p_units,
+         p_round,
          l_value_times,
          l_rating_time,
          'UTC',
@@ -2580,6 +2593,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_values      in  ztsv_array,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null)
@@ -2606,6 +2620,7 @@ begin
          p_rating_spec,
          l_values,
          p_units,
+         p_round,
          l_value_times,
          p_rating_time,
          p_time_zone,
@@ -2630,6 +2645,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_value       in  tsv_type,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null)
@@ -2643,6 +2659,7 @@ begin
       p_rating_spec,
       l_values,
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -2658,6 +2675,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_value       in  ztsv_type,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null)
@@ -2671,6 +2689,7 @@ begin
       p_rating_spec,
       l_values,
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -2684,6 +2703,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_tab_t,
    p_units       in str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_times in date_table_type default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -2697,6 +2717,7 @@ begin
       p_rating_spec,
       p_values,
       p_units,
+      p_round,
       p_value_times,
       p_rating_time,
       p_time_zone,
@@ -2712,6 +2733,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_t,
    p_units       in str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_times in date_table_type default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -2725,6 +2747,7 @@ begin
       p_rating_spec,
       p_values,
       p_units,
+      p_round,
       p_value_times,
       p_rating_time,
       p_time_zone,
@@ -2740,6 +2763,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_value       in binary_double,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_value_times in date default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -2753,6 +2777,7 @@ begin
       p_rating_spec,
       p_value,
       p_units,
+      p_round,
       p_value_times,
       p_rating_time,
       p_time_zone,
@@ -2768,6 +2793,7 @@ function rate_one_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_t,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_value_time  in date default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -2781,6 +2807,7 @@ begin
       p_rating_spec,
       p_values,
       p_units,
+      p_round,
       p_value_time,
       p_rating_time,
       p_time_zone,
@@ -2796,6 +2823,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_values      in tsv_array,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -2808,6 +2836,7 @@ begin
       p_rating_spec,
       p_values,
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -2822,6 +2851,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_values      in ztsv_array,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -2834,6 +2864,7 @@ begin
       p_rating_spec,
       p_values,
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -2848,6 +2879,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_value       in tsv_type,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -2860,6 +2892,7 @@ begin
       p_rating_spec,
       p_value,
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -2874,6 +2907,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_value       in ztsv_type,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -2886,6 +2920,7 @@ begin
       p_rating_spec,
       p_value,
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -2901,6 +2936,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_values      in  double_tab_t,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_times in  date_table_type default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -2933,7 +2969,8 @@ is
    l_independent_log         boolean;
    l_dependent_log           boolean;  
    l_rating_units            str_tab_tab_t;
-   l_stream_rating           stream_rating_t; 
+   l_stream_rating           stream_rating_t;
+   l_round                   boolean := cwms_util.is_true(p_round); 
 begin
    -------------------
    -- sanity checks --
@@ -3341,7 +3378,10 @@ begin
                end if;
          end case;
       end if;         
-   end loop;                 
+   end loop;
+   if l_round then
+      cwms_rounding.round_d_tab(p_results, l_rating_spec.ind_rounding_specs(1));
+   end if;                 
 end reverse_rate;      
    
 --------------------------------------------------------------------------------
@@ -3352,6 +3392,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_value       in  binary_double,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_time  in  date default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -3364,6 +3405,7 @@ begin
       p_rating_spec,
       double_tab_t(p_value),
       p_units,
+      p_round,
       date_table_type(p_value_time),
       p_rating_time,
       p_time_zone,
@@ -3380,6 +3422,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_values      in  tsv_array,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null)
@@ -3432,7 +3475,8 @@ begin
          l_values_out,
          p_rating_spec,
          l_values,
-         p_units,
+         p_units,    
+         p_round,
          l_times,
          p_rating_time,
          l_time_zone,
@@ -3461,6 +3505,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_values      in  ztsv_array,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null)   
@@ -3493,6 +3538,7 @@ begin
          p_rating_spec,
          l_values,
          p_units,
+         p_round,
          l_times,
          p_rating_time,
          p_time_zone,
@@ -3521,6 +3567,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_value       in  tsv_type,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null)
@@ -3532,6 +3579,7 @@ begin
       p_rating_spec,
       tsv_array(p_value),
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -3547,6 +3595,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_value       in  ztsv_type,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null)   
@@ -3558,6 +3607,7 @@ begin
       p_rating_spec,
       ztsv_array(p_value),
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -3572,6 +3622,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_t,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_value_times in date_table_type default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -3585,6 +3636,7 @@ begin
       p_rating_spec,
       p_values,
       p_units,
+      p_round,
       p_value_times,
       p_rating_time,
       p_time_zone,
@@ -3600,6 +3652,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_value       in binary_double,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_value_times in date default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -3613,6 +3666,7 @@ begin
       p_rating_spec,
       p_value,
       p_units,
+      p_round,
       p_value_times,
       p_rating_time,
       p_time_zone,
@@ -3628,6 +3682,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_values      in tsv_array,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -3640,6 +3695,7 @@ begin
       p_rating_spec,
       p_values,
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -3654,6 +3710,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_values      in ztsv_array,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -3666,6 +3723,7 @@ begin
       p_rating_spec,
       p_values,
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -3680,6 +3738,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_value       in tsv_type,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -3691,6 +3750,7 @@ begin
       p_rating_spec,
       tsv_array(p_value),
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -3705,6 +3765,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_value       in ztsv_type,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -3716,6 +3777,7 @@ begin
       p_rating_spec,
       ztsv_array(p_value),
       p_units,
+      p_round,
       p_rating_time,
       p_time_zone,
       p_office_id);
@@ -3734,6 +3796,7 @@ function retrieve_rated_ts(
    p_end_time         in date,
    p_rating_time      in date     default null,
    p_time_zone        in varchar2 default null,
+   p_round            in varchar2 default 'F',
    p_trim             in varchar2 default 'F',
    p_start_inclusive  in varchar2 default 'T',
    p_end_inclusive    in varchar2 default 'T',
@@ -3884,6 +3947,7 @@ begin
          p_rating_id,
          l_ind_values,
          l_units,
+         p_round,
          l_times,
          p_rating_time,
          p_time_zone,
@@ -3939,6 +4003,7 @@ function retrieve_rated_ts(
    p_end_time         in date,
    p_rating_time      in date     default null,
    p_time_zone        in varchar2 default null,
+   p_round            in varchar2 default 'F',
    p_trim             in varchar2 default 'F',
    p_start_inclusive  in varchar2 default 'T',
    p_end_inclusive    in varchar2 default 'T',
@@ -3959,6 +4024,7 @@ begin
       p_end_time,
       p_rating_time,
       p_time_zone,
+      p_round,
       p_trim,
       p_start_inclusive,
       p_end_inclusive,
@@ -4115,6 +4181,7 @@ function retrieve_reverse_rated_ts(
    p_end_time         in date,
    p_rating_time      in date     default null,
    p_time_zone        in varchar2 default null,
+   p_round            in varchar2 default 'F',
    p_trim             in varchar2 default 'F',
    p_start_inclusive  in varchar2 default 'T',
    p_end_inclusive    in varchar2 default 'T',
@@ -4265,6 +4332,7 @@ begin
          p_rating_id,
          l_ind_values(1),
          l_units,
+         p_round,
          l_times,
          p_rating_time,
          p_time_zone,
@@ -4319,6 +4387,7 @@ function retrieve_reverse_rated_ts(
    p_end_time         in date,
    p_rating_time      in date     default null,
    p_time_zone        in varchar2 default null,
+   p_round            in varchar2 default 'F',
    p_trim             in varchar2 default 'F',
    p_start_inclusive  in varchar2 default 'T',
    p_end_inclusive    in varchar2 default 'T',
@@ -4339,6 +4408,7 @@ begin
       p_end_time,
       p_rating_time,
       p_time_zone,
+      p_round,
       p_trim,
       p_start_inclusive,
       p_end_inclusive,

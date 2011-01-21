@@ -642,6 +642,10 @@ procedure store_ratings_xml(
 --    unit of the 1st, indpendent parameter, etc....  The last value is the unit
 --    of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_times
 --    The times corresponding to the parameters.  If specified, it must be as a
 --    table of date types, of the same length as each item of the p_values
@@ -673,6 +677,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_values      in  double_tab_tab_t,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_times in  date_table_type default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -707,6 +712,10 @@ procedure rate(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_times
 --    The times corresponding to the parameters. If specified, it must be as a 
 --    table of date types, of the same length as the p_values parameter. The 
@@ -737,6 +746,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_values      in  double_tab_t,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_times in  date_table_type default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -770,6 +780,10 @@ procedure rate(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned value according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_time
 --    The time of the parameters. If specified, it must be as a date type. The 
 --    If null, the time is assumed to be the current time. Time is interpreted 
@@ -797,6 +811,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_value       in  binary_double,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_time  in  date default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -833,6 +848,10 @@ procedure rate(
 --    unit of the 1st, indpendent parameter, etc....  The last value is the unit
 --    of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned value according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_time
 --    The time of the parameters. If specified, it must be as a date type. The 
 --    If null, the time is assumed to be the current time. Time is interpreted 
@@ -860,6 +879,7 @@ procedure rate_one(
    p_rating_spec in  varchar2,
    p_values      in  double_tab_t,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_time  in  date default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -901,6 +921,10 @@ procedure rate_one(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -925,6 +949,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_values      in  tsv_array,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
@@ -964,6 +989,10 @@ procedure rate(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -987,6 +1016,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_values      in  ztsv_array,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
@@ -1025,6 +1055,10 @@ procedure rate(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -1049,6 +1083,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_value       in  tsv_type,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
@@ -1086,6 +1121,10 @@ procedure rate(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -1108,6 +1147,7 @@ procedure rate(
    p_rating_spec in  varchar2,
    p_value       in  ztsv_type,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);
@@ -1142,6 +1182,10 @@ procedure rate(
 --    unit of the 1st, indpendent parameter, etc....  The last value is the unit
 --    of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_times
 --    The times corresponding to the parameters.  If specified, it must be as a
 --    table of date types, of the same length as each item of the p_values
@@ -1172,6 +1216,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_tab_t,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_value_times in date_table_type default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -1205,6 +1250,10 @@ function rate_f(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_times
 --    The times corresponding to the parameters. If specified, it must be as a 
 --    table of date types, of the same length as the p_values parameter. The 
@@ -1234,6 +1283,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_t,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_value_times in date_table_type default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -1266,6 +1316,10 @@ function rate_f(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned value according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_time
 --    The time of the parameters. If specified, it must be as a date type. The 
 --    If null, the time is assumed to be the current time. Time is interpreted 
@@ -1292,6 +1346,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_value       in binary_double,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_value_times in date default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -1326,6 +1381,10 @@ function rate_f(
 --    unit of the 1st, indpendent parameter, etc....  The last value is the unit
 --    of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned value according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_time
 --    The time of the parameters. If specified, it must be as a date type. The 
 --    If null, the time is assumed to be the current time. Time is interpreted 
@@ -1352,6 +1411,7 @@ function rate_one_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_t,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_value_time  in date default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -1382,6 +1442,10 @@ function rate_one_f(
 --    its own time zone information, so it is not interpreted according to the 
 --    p_time_zone parameter
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_units
 --    The units for the input (independent) parameter and output (dependent) 
 --    parameter, as a table of varchar2(16). The length of the table must be 
@@ -1411,6 +1475,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_values      in tsv_array,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -1445,6 +1510,10 @@ function rate_f(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -1467,6 +1536,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_values      in ztsv_array,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -1501,6 +1571,10 @@ function rate_f(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned value according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -1524,6 +1598,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_value       in tsv_type,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -1557,6 +1632,10 @@ function rate_f(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -1578,6 +1657,7 @@ function rate_f(
    p_rating_spec in varchar2,
    p_value       in ztsv_type,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -1612,6 +1692,10 @@ function rate_f(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_times
 --    The times corresponding to the parameters. If specified, it must be as a 
 --    table of date types, of the same length as the p_values parameter. The 
@@ -1642,6 +1726,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_values      in  double_tab_t,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_times in  date_table_type default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -1676,6 +1761,10 @@ procedure reverse_rate(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned value according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_time
 --    The time of the parameters. If specified, it must be as a date type. The 
 --    If null, the time is assumed to be the current time. Time is interpreted 
@@ -1703,6 +1792,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_value       in  binary_double,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_value_time  in  date default null,
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
@@ -1738,6 +1828,10 @@ procedure reverse_rate(
 --    its own time zone information, so it is not interpreted according to the 
 --    p_time_zone parameter
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_units
 --    The units for the input (independent) parameter and output (dependent) 
 --    parameter, as a table of varchar2(16). The length of the table must be 
@@ -1768,6 +1862,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_values      in  tsv_array,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
@@ -1807,6 +1902,10 @@ procedure reverse_rate(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -1830,6 +1929,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_values      in  ztsv_array,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
@@ -1868,6 +1968,10 @@ procedure reverse_rate(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -1892,6 +1996,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_value       in  tsv_type,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
@@ -1929,6 +2034,10 @@ procedure reverse_rate(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -1951,6 +2060,7 @@ procedure reverse_rate(
    p_rating_spec in  varchar2,
    p_value       in  ztsv_type,
    p_units       in  str_tab_t,
+   p_round       in  varchar2 default 'F',
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
@@ -1982,6 +2092,10 @@ procedure reverse_rate(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_times
 --    The times corresponding to the parameters. If specified, it must be as a 
 --    table of date types, of the same length as the p_values parameter. The 
@@ -2011,6 +2125,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_t,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_value_times in date_table_type default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -2044,6 +2159,10 @@ function reverse_rate_f(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_value_time
 --    The time of the parameters. If specified, it must be as a date type. The 
 --    If null, the time is assumed to be the current time. Time is interpreted 
@@ -2070,6 +2189,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_value       in binary_double,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_value_times in date default null,
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
@@ -2106,6 +2226,10 @@ function reverse_rate_f(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -2129,6 +2253,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_values      in tsv_array,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -2163,6 +2288,10 @@ function reverse_rate_f(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -2185,6 +2314,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_values      in ztsv_array,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -2219,6 +2349,10 @@ function reverse_rate_f(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -2242,6 +2376,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_value       in tsv_type,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -2275,6 +2410,10 @@ function reverse_rate_f(
 --    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
 --    is the unit of the dependent parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_rating_time
 --    The "current time" of the rating operation.  If specified, this is the
 --    historical time at which to perform the rating operation.  No ratings with
@@ -2296,6 +2435,7 @@ function reverse_rate_f(
    p_rating_spec in varchar2,
    p_value       in ztsv_type,
    p_units       in str_tab_t,
+   p_round       in varchar2 default 'F',
    p_rating_time in date default null,
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
@@ -2335,6 +2475,10 @@ function reverse_rate_f(
 --    location in the p_rating_spec parameter will be used. If no time zone is 
 --    associated with the location, UTC will be used. The location is taken 
 --    from the first item in the p_independent_ids parameter.
+--
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
 --
 -- p_trim
 --    Specifies whether to trim null values from the beginning and end of the
@@ -2383,6 +2527,7 @@ function retrieve_rated_ts(
    p_end_time         in date,
    p_rating_time      in date     default null,
    p_time_zone        in varchar2 default null,
+   p_round            in varchar2 default 'F',
    p_trim             in varchar2 default 'F',
    p_start_inclusive  in varchar2 default 'T',
    p_end_inclusive    in varchar2 default 'T',
@@ -2428,6 +2573,10 @@ function retrieve_rated_ts(
 --    location in the p_rating_spec parameter will be used. If no time zone is 
 --    associated with the location, UTC will be used. The location is taken 
 --    from the p_independent_id parameter.
+--
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
 --
 -- p_trim
 --    Specifies whether to trim null values from the beginning and end of the
@@ -2476,6 +2625,7 @@ function retrieve_rated_ts(
    p_end_time         in date,
    p_rating_time      in date     default null,
    p_time_zone        in varchar2 default null,
+   p_round            in varchar2 default 'F',
    p_trim             in varchar2 default 'F',
    p_start_inclusive  in varchar2 default 'T',
    p_end_inclusive    in varchar2 default 'T',
@@ -2707,6 +2857,10 @@ procedure rate(
 --    associated with the location, UTC will be used. The location is taken 
 --    from the first item in the p_independent_ids parameter.
 --
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
+--
 -- p_trim
 --    Specifies whether to trim null values from the beginning and end of the
 --    returned time series.  'T' = true, 'F' = false.
@@ -2754,6 +2908,7 @@ function retrieve_reverse_rated_ts(
    p_end_time         in date,
    p_rating_time      in date     default null,
    p_time_zone        in varchar2 default null,
+   p_round            in varchar2 default 'F',
    p_trim             in varchar2 default 'F',
    p_start_inclusive  in varchar2 default 'T',
    p_end_inclusive    in varchar2 default 'T',
@@ -2800,6 +2955,10 @@ function retrieve_reverse_rated_ts(
 --    location in the p_rating_spec parameter will be used. If no time zone is 
 --    associated with the location, UTC will be used. The location is taken 
 --    from the p_independent_id parameter.
+--
+-- p_round
+--    Specifies whether to round the returned values according to the rounding
+--    specification contained in the rating specification.
 --
 -- p_trim
 --    Specifies whether to trim null values from the beginning and end of the
@@ -2849,6 +3008,7 @@ function retrieve_reverse_rated_ts(
    p_end_time         in date,
    p_rating_time      in date     default null,
    p_time_zone        in varchar2 default null,
+   p_round            in varchar2 default 'F',
    p_trim             in varchar2 default 'F',
    p_start_inclusive  in varchar2 default 'T',
    p_end_inclusive    in varchar2 default 'T',
