@@ -2905,6 +2905,8 @@ AS
                end case;
             when p_RPN_tokens(i) = 'SIN' then
                push(sin(pop));
+            when p_RPN_tokens(i) = 'SQRT' then
+               push(sqrt(pop));
             when p_RPN_tokens(i) = 'TAN' then
                push(tan(pop));
             when p_RPN_tokens(i) = 'TRUNC' then

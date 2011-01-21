@@ -4033,7 +4033,7 @@ as
                   if l_tokens.count > 1 and
                      l_tokens(l_tokens.count) not in
                      ('+','-','*','/','//','%','^','ABS','ACOS','ASIN','ATAN','CEIL','COS',
-                     'EXP','FLOOR','INV','LN','LOG','NEG', 'SIGN','SIN','TAN','TRUNC')
+                     'EXP','FLOOR','INV','LN','LOG','NEG', 'SIGN','SIN','SQRT','TAN','TRUNC')
                   then
                      l_tokens := cwms_util.tokenize_algebraic(self.formula);
                   end if;            
