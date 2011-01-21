@@ -2353,7 +2353,11 @@ begin
          -----------------------------------------
          -- re-compute ratio for stream ratings --
          -----------------------------------------
-         if l_ratings(l_hi_index-1) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1. then
+         if l_ratings(l_hi_index-1) is of (stream_rating_t) 
+            and l_ratio > 0. 
+            and l_ratio < 1.
+            and treat(l_ratings(l_hi_index-1) as stream_rating_t).latest_shift_date is not null
+         then
             l_date_offset_2 := treat(l_ratings(l_hi_index-1) as stream_rating_t).latest_shift_date - c_base_date;
             if l_date_offset_2 >= l_date_offset then
                l_ratio := 0.;
@@ -3301,7 +3305,11 @@ begin
          -----------------------------------------
          -- re-compute ratio for stream ratings --
          -----------------------------------------
-         if l_ratings(l_hi_index-1) is of (stream_rating_t) and l_ratio > 0. and l_ratio < 1. then
+         if l_ratings(l_hi_index-1) is of (stream_rating_t) 
+            and l_ratio > 0. 
+            and l_ratio < 1.
+            and treat(l_ratings(l_hi_index-1) as stream_rating_t).latest_shift_date is not null
+         then
             l_date_offset_2 := treat(l_ratings(l_hi_index-1) as stream_rating_t).latest_shift_date - c_base_date;
             if l_date_offset_2 >= l_date_offset then
                l_ratio := 0.;
