@@ -187,20 +187,14 @@ begin
                 dp.protection_type_tooltip as dp_prot_type_tooltip,
                 dp.protection_type_active as dp_prot_type_active,
                 dpo.office_id as dp_office_id 
-           from at_embankment e,
-                at_embank_structure_type s,
-                cwms_office so,
-                at_embank_protection_type up,
-                cwms_office upo,
-                at_embank_protection_type dp,
-                cwms_office dpo
-          where embankment_location_code = p_embankment_location_ref.get_location_code
-            and s.structure_type_code = e.structure_type_code
-            and so.office_code = s.db_office_code
-            and up.protection_type_code = e.upstream_prot_type_code
-            and upo.office_code = up.db_office_code
-            and dp.protection_type_code = e.downstream_prot_type_code
-            and dpo.office_code = dp.db_office_code )
+           from at_embankment e
+                inner join  at_embank_structure_type s on (s.structure_type_code = e.structure_type_code)
+                inner join cwms_office so on (so.office_code = s.db_office_code)
+                left outer join at_embank_protection_type up on (up.protection_type_code = e.upstream_prot_type_code)
+                left outer join cwms_office upo on (upo.office_code = up.db_office_code)
+                left outer join at_embank_protection_type dp on (dp.protection_type_code = e.downstream_prot_type_code)
+                left outer join cwms_office dpo on (dpo.office_code = dp.db_office_code)
+          where embankment_location_code = p_embankment_location_ref.get_location_code)
    loop
       --------------------------------------------------
       -- create the object with database length units --
