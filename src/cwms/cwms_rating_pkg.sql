@@ -8,8 +8,8 @@ as
 --    contains zero or more <rating-template> elements
 --
 -- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_templates(
    p_xml            in xmltype,
@@ -22,8 +22,8 @@ procedure store_templates(
 --    contains zero or more <rating-template> elements
 --
 -- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_templates(
    p_xml            in varchar2,
@@ -36,8 +36,8 @@ procedure store_templates(
 --    contains zero or more <rating-template> elements
 --
 -- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_templates(
    p_xml            in clob,
@@ -50,8 +50,8 @@ procedure store_templates(
 --    contains zero or more rating_template_t objects
 --
 -- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_templates(
    p_templates      in rating_template_tab_t,
@@ -191,8 +191,8 @@ procedure delete_templates(
 --    contains zero or more <rating-specification> elements
 --
 -- p_fail_if_exists
---    'T' to fail if specification with same office_id and speicification_id exists
---    'F' to update existing specification if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_specs(
    p_xml            in xmltype,
@@ -205,8 +205,8 @@ procedure store_specs(
 --    contains zero or more <rating-specification> elements
 --
 -- p_fail_if_exists
---    'T' to fail if specification with same office_id and speicification_id exists
---    'F' to update existing specification if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_specs(
    p_xml            in varchar2,
@@ -219,8 +219,8 @@ procedure store_specs(
 --    contains zero or more <rating-specification> elements
 --
 -- p_fail_if_exists
---    'T' to fail if specification with same office_id and speicification_id exists
---    'F' to update existing specification if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_specs(
    p_xml            in clob,
@@ -233,8 +233,8 @@ procedure store_specs(
 --    contains zero or more rating_spec_t objects
 --
 -- p_fail_if_exists
---    'T' to fail if specification with same office_id and speicification_id exists
---    'F' to update existing specification if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_specs(
    p_specs          in rating_spec_tab_t,
@@ -375,8 +375,8 @@ procedure delete_specs(
 --    contains zero or more <rating> or <usgs-stream-rating> elements
 --
 -- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_ratings(
    p_xml            in xmltype,
@@ -389,8 +389,8 @@ procedure store_ratings(
 --    contains zero or more <rating> or <usgs-stream-rating> elements
 --
 -- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_ratings(
    p_xml            in varchar2,
@@ -403,8 +403,8 @@ procedure store_ratings(
 --    contains zero or more <rating> or <usgs-stream-rating> elements
 --
 -- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_ratings(
    p_xml            in clob,
@@ -417,8 +417,8 @@ procedure store_ratings(
 --    contains zero or more rating_t (possibly stream_rating_t) objects
 --
 -- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_ratings(
    p_ratings        in rating_tab_t,
@@ -603,10 +603,54 @@ procedure delete_ratings(
    p_office_id_mask       in varchar2 default null);
    
 --------------------------------------------------------------------------------
--- MULTIPLE TEMPLATES/SPECIFICATIONS/RATINGS 
+-- STORE_RATINGS_XML 
+--
+-- Stores rating templates, rating specifications, and ratings from an single
+-- XML instance
+--
+-- p_xml
+--    contains zero or more <rating> or <usgs-stream-rating> elements
+--
+-- p_fail_if_exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
 --
 procedure store_ratings_xml(
    p_xml            in xmltype,
+   p_fail_if_exists in varchar2);  
+   
+--------------------------------------------------------------------------------
+-- STORE_RATINGS_XML 
+--
+-- Stores rating templates, rating specifications, and ratings from an single
+-- XML instance
+--
+-- p_xml
+--    contains zero or more <rating> or <usgs-stream-rating> elements
+--
+-- p_fail_if_exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
+--
+procedure store_ratings_xml(
+   p_xml            in varchar2,
+   p_fail_if_exists in varchar2);  
+   
+--------------------------------------------------------------------------------
+-- STORE_RATINGS_XML 
+--
+-- Stores rating templates, rating specifications, and ratings from an single
+-- XML instance
+--
+-- p_xml
+--    contains zero or more <rating> or <usgs-stream-rating> elements
+--
+-- p_fail_if_exists
+--    'T' to fail if item to be stored already exists
+--    'F' to update existing item if it already exists
+--
+procedure store_ratings_xml(
+   p_xml            in clob,
    p_fail_if_exists in varchar2);  
    
 --------------------------------------------------------------------------------

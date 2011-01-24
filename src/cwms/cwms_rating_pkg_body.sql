@@ -3,13 +3,6 @@ as
 --------------------------------------------------------------------------------
 -- STORE TEMPLATES
 --
--- p_xml
---    contains zero or more <rating-template> elements
---
--- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
---
 procedure store_templates(
    p_xml            in xmltype,
    p_fail_if_exists in varchar2)
@@ -35,13 +28,6 @@ end store_templates;
 --------------------------------------------------------------------------------
 -- STORE TEMPLATES
 --
--- p_xml
---    contains zero or more <rating-template> elements
---
--- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
---
 procedure store_templates(
    p_xml            in varchar2,
    p_fail_if_exists in varchar2)
@@ -53,13 +39,6 @@ end store_templates;
 --------------------------------------------------------------------------------
 -- STORE TEMPLATES
 --
--- p_xml
---    contains zero or more <rating-template> elements
---
--- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
---
 procedure store_templates(
    p_xml            in clob,
    p_fail_if_exists in varchar2)
@@ -70,13 +49,6 @@ end store_templates;
 
 --------------------------------------------------------------------------------
 -- STORE TEMPLATES
---
--- p_templates
---    contains zero or more rating_template_t objects
---
--- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
 --
 procedure store_templates(
    p_templates      in rating_template_tab_t,
@@ -92,103 +64,7 @@ begin
 end store_templates;   
 
 --------------------------------------------------------------------------------
--- REMOVED FROM INTERFACE, KEPT ONLY TO BE ABLE TO RE-INSTATE
---------------------------------------------------------------------------------
--- -- STORE_TEMPLATE
--- --
--- -- p_template_id
--- --    ind-param[,ind-param[...]];dep-param.version
--- --
--- -- p_methods
--- --    out-range-low/in-range/out-range-high[,...] for each ind parameter
--- --       valid methods are
--- --          NULL        : return a NULL unless on rating point                             
--- --          ERROR       : raise an exception unless on rating point                   
--- --          LINEAR      : lin interp between ind and dep values                     
--- --          LOGARITHMIC : log interp between ind and dep values                     
--- --          LIN-LOG     : lin interp between ind, log interp between dep
--- --          LOG-LIN     : log interp between ind, lin interp between dep                    
--- --          CONIC       : conic interp (for elev-area-capacity ratings)               
--- --          PREVIOUS    : return dep value of rating point with ind value previous in sequence to the rated ind value                        
--- --          NEXT        : return dep value of rating point with ind value next in sequence to the rated ind value
--- --          NEAREST     : return dep value of rating point with ind value nearest in sequence to the rated ind value (extrapolation)                     
--- --          LOWER       : return dep value of rating point with ind value nearest to and less than rated ind value                    
--- --          HIGHER      : return dep value of rating point with ind value nearest to and greater than rated ind value                    
--- --          CLOSEST     : return dep value of rating point with ind value nearest to rated ind value
--- --
--- procedure store_template(
---    p_template_id    in varchar2,
---    p_methods        in varchar2,
---    p_description    in varchar2,
---    p_fail_if_exists in varchar2,
---    p_office_id      in varchar2 default null)   
--- is
---    l_parts       str_tab_t;
---    l_ind_params  str_tab_t;
---    l_methods     str_tab_t;
---    l_params_id   varchar2(256);
---    l_version     varchar2(32);
---    l_dep_param   varchar2(49);
---    l_param_specs rating_ind_param_spec_tab_t := rating_ind_param_spec_tab_t();  
---    l_template    rating_template_t;
--- begin
---    l_parts      := cwms_util.split_text(p_template_id, '.');
---    l_params_id  := l_parts(1);
---    l_version    := l_parts(2);
---    l_parts      := cwms_util.split_text(l_parts(1), ';');
---    l_dep_param  := l_parts(2);
---    l_ind_params := cwms_util.split_text(l_parts(1), ',');
---    l_methods    := cwms_util.split_text(p_methods, ',');
---    if l_methods.count != l_ind_params.count then
---       cwms_err.raise(
---          'ERROR', 
---          'Number of rating methods must match number of indepenedent parameters');
---    end if;
---    l_param_specs.extend(l_ind_params.count);
---    for i in 1..l_ind_params.count loop
---       l_parts := cwms_util.split_text(l_methods(i), '/');
---       if l_parts.count != 3 then
---          cwms_err.raise(
---             'ERROR', 
---             'Rating methods must be in out-range-low/in-range/out-range-high format');
---       end if;
---       l_param_specs(i) := rating_ind_param_spec_t(
---          i,
---          l_ind_params(i),
---          l_parts(2),
---          l_parts(1),
---          l_parts(3));   
---    end loop;
---    l_template := rating_template_t(
---       nvl(p_office_id, cwms_util.user_office_id),
---       l_params_id,
---       l_version,
---       l_param_specs,
---       l_dep_param,
---       p_description);
---    l_template.store(p_fail_if_exists);      
--- end store_template;   
---    
---------------------------------------------------------------------------------
 -- CAT_TEMPLATE_IDS
---
--- p_cat_cursor
---    cursor containing all matched rating templates in the following fields,
---    sorted ascending in the following order:
---       office_id     varchar2(16)  office id
---       template_id   varchar2(289) full rating template id
---       parameters_id varchar2(256) parameters portion of template id
---       version       varchar2(32)  version portion of template id
---
--- p_template_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure cat_template_ids(
    p_cat_cursor       out sys_refcursor,
@@ -237,8 +113,6 @@ end cat_template_ids;
 --------------------------------------------------------------------------------
 -- CAT_TEMPLATE_IDS_F
 --
--- same as above except that cursor is returned from function
---
 function cat_template_ids_f(
    p_template_id_mask in  varchar2 default '*',
    p_office_id_mask          in  varchar2 default null)
@@ -256,20 +130,6 @@ end cat_template_ids_f;
    
 --------------------------------------------------------------------------------
 -- RETRIEVE_TEMPLATES_OBJ
---
--- p_templates
---    a rating_template_tab_t object containing the rating_template_t
---    objects that match the input parameters
---
--- p_template_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure retrieve_templates_obj(
    p_templates        out rating_template_tab_t,
@@ -320,8 +180,6 @@ end retrieve_templates_obj;
 --------------------------------------------------------------------------------
 -- RETRIEVE_TEMPLATES_OBJ_F
 --
--- same as above except that rating_template_tab_t object returned from function
---
 function retrieve_templates_obj_f(
    p_template_id_mask in varchar2 default '*',
    p_office_id_mask   in varchar2 default null)
@@ -339,19 +197,6 @@ end retrieve_templates_obj_f;
    
 --------------------------------------------------------------------------------
 -- RETRIEVE_TEMPLATES_XML
---
--- p_templates
---    a clob containing the xml of the matching rating templates
---
--- p_template_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure retrieve_templates_xml(
    p_templates        out clob,
@@ -386,8 +231,6 @@ end retrieve_templates_xml;
 --------------------------------------------------------------------------------
 -- RETRIEVE_TEMPLATE_OBJ_F
 --
--- same as above except that rating_template_tab_t object returned from function
---
 function retrieve_templates_xml_f(
    p_template_id_mask in varchar2 default '*',
    p_office_id_mask   in varchar2 default null)
@@ -404,75 +247,7 @@ begin
 end retrieve_templates_xml_f;         
          
 --------------------------------------------------------------------------------
--- REMOVED FROM INTERFACE, KEPT ONLY TO BE ABLE TO RE-INSTATE
---------------------------------------------------------------------------------
--- -- RETRIEVE_TEMPLATE
--- --
--- -- p_template_id (in and out)
--- --    ind-param[,ind-param[...]];dep-param.version
--- --
--- -- p_methods
--- --    out-range-low/in-range/out-range-high[,...] for each ind parameter
--- --
--- procedure retrieve_template(
---    p_template_id_out out varchar2,
---    p_methods         out varchar2,
---    p_description     out varchar2,
---    p_template_id     in  varchar2,
---    p_office_id       in  varchar2 default null)
--- is
---    l_templates rating_template_tab_t;
--- begin
---    retrieve_templates_obj(
---       l_templates,
---       p_template_id,
---       p_office_id);
---    case l_templates.count
---       when 0 then
---          cwms_err.raise(
---             'ITEM_DOES_NOT_EXIST',
---             'Rating template ',
---             p_office_id||'/'||p_template_id);
---       when 1 then
---          p_template_id_out := l_templates(1).parameters_id || l_templates(1).version;
---          for i in 1..l_templates(1).ind_parameters.count loop
---             p_methods := p_methods
---                ||l_templates(1).ind_parameters(i).out_range_low_rating_method
---                ||'/'||l_templates(1).ind_parameters(i).in_range_rating_method
---                ||'/'||l_templates(1).ind_parameters(i).out_range_high_rating_method;
---             if i < l_templates(i).ind_parameters.count then
---                p_methods := p_methods || ',';
---             end if;
---          end loop;
---          p_description := l_templates(1).description;
---       else
---          cwms_err.raise(
---             'ERROR',
---             'Too many items match input specifications');
---    end case;      
--- end retrieve_template;
-   
---------------------------------------------------------------------------------
 -- DELETE_TEMPLATES
---
--- p_template_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_delete_action
---    cwms_util.delete_key
---       deletes only the templates, and only then if they are not referenced
---       by any rating specifications
---    cwms_util.delete_data
---       deletes only the specifications that reference the templates
---    cwms_util.delete_all
---       deletes the templates and the specifications that reference them
---
--- p_office_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure delete_templates(
    p_template_id_mask in varchar2 default '*',
@@ -522,13 +297,6 @@ end delete_templates;
 --------------------------------------------------------------------------------
 -- STORE_SPECS
 --
--- p_xml
---    contains zero or more <rating-specification> elements
---
--- p_fail_if_exists
---    'T' to fail if specification with same office_id and speicification_id exists
---    'F' to update existing specification if exists
---
 procedure store_specs(
    p_xml            in xmltype,
    p_fail_if_exists in varchar2)
@@ -555,13 +323,6 @@ end store_specs;
 --------------------------------------------------------------------------------
 -- STORE_SPECS
 --
--- p_xml
---    contains zero or more <rating-specification> elements
---
--- p_fail_if_exists
---    'T' to fail if specification with same office_id and speicification_id exists
---    'F' to update existing specification if exists
---
 procedure store_specs(
    p_xml            in varchar2,
    p_fail_if_exists in varchar2)
@@ -573,13 +334,6 @@ end store_specs;
 --------------------------------------------------------------------------------
 -- STORE_SPECS
 --
--- p_xml
---    contains zero or more <rating-specification> elements
---
--- p_fail_if_exists
---    'T' to fail if specification with same office_id and speicification_id exists
---    'F' to update existing specification if exists
---
 procedure store_specs(
    p_xml            in clob,
    p_fail_if_exists in varchar2)
@@ -590,13 +344,6 @@ end store_specs;
 
 --------------------------------------------------------------------------------
 -- STORE_SPECS
---
--- p_xml
---    contains zero or more rating_spec_t objects
---
--- p_fail_if_exists
---    'T' to fail if specification with same office_id and speicification_id exists
---    'F' to update existing specification if exists
 --
 procedure store_specs(
    p_specs          in rating_spec_tab_t,
@@ -612,153 +359,7 @@ begin
 end store_specs;   
    
 --------------------------------------------------------------------------------
--- REMOVED FROM INTERFACE, KEPT ONLY TO BE ABLE TO RE-INSTATE
---------------------------------------------------------------------------------
--- -- STORE_SPEC
--- --
--- -- p_spec_id
--- --    location-id.template-id.spec-version
--- --
--- -- p_date_methods
--- --    out-range-before-first/in-range/out-range-after-last
--- --       valid methods are
--- --          NULL        : return a NULL unless on actual rating date                             
--- --          ERROR       : raise an exception unless on rating date                  
--- --          LINEAR      : lin interp between dates and rated values                     
--- --          LOGARITHMIC : log interp between dates and rated values                     
--- --          LIN-LOG     : lin interp between dates, log interp between rated values
--- --          LOG-LIN     : log interp between dates, lin interp between rated values                    
--- --          PREVIOUS    : return rated value of using rating with latest date prior to ind value(s) date                        
--- --          NEXT        : return rated value of using rating with earliest date after ind value(s) date
--- --          NEAREST     : return rated value of using rating with date closest to ind value(s) date                     
--- --          LOWER       : same as PREVIOUS                    
--- --          HIGHER      : same as NEXT                    
--- --          CLOSEST     : same as NEAREST
--- --
--- -- p_description
--- --    text description of rating specification
--- --
--- -- p_active_flag
--- --    'T' for ratings using this specification to be marked active
--- --       individual ratings may still be marked inactive
--- --    'F' for all ratings using this specification to be marked inactive
--- --
--- -- p_auto_update_flag
--- --    'T' to automatically load new ratings when available
--- --    'F' otherwise
--- --
--- -- p_auto_activate_flag
--- --    'T' to mark automatically loaded ratings as active
--- --    'F' to mark automatically loaded ratings as inactive
--- --
--- -- p_auto_migrate_ext_flag
--- --    'T' to automatically migrate existing rating extensions to newly loaded rating
--- --    'F' otherwise
--- --
--- -- p_rounding_specs
--- --    USGS-style 10-digit rounding specifications for ind and dep parameters
--- --       ind and dep rounding specs are separated by ';'
--- --       multiple ind rounding specs are separated by ','
--- --       one rounding spec is required for each ind and dep parameter
--- --       if parameter is null, all rounding specs default to '4444444444'
--- --
--- -- p_source_agency_id
--- --    loc_group_id of agency that generates ratings for this specification
--- --
--- -- p_office_id   
--- --    identifier of owning office
--- --
--- procedure store_spec(
---    p_spec_id               in varchar2,
---    p_date_methods          in varchar2,
---    p_fail_if_exists        in varchar2,
---    p_description           in varchar2 default null,
---    p_active_flag           in varchar2 default 'T',
---    p_auto_update_flag      in varchar2 default 'F',
---    p_auto_activate_flag    in varchar2 default 'F',
---    p_auto_migrate_ext_flag in varchar2 default 'F',
---    p_rounding_specs        in varchar2 default null,
---    p_source_agency_id      in varchar2 default null,
---    p_office_id             in varchar2 default null)
--- is
---    l_parts          str_tab_t;
---    l_location_id    varchar2(16);
---    l_template_id    varchar2(32);
---    l_version        varchar2(32);
---    l_spec           rating_spec_t;
---    l_ind_count      simple_integer := 0;
---    l_date_methods   str_tab_t;
---    l_rounding_specs varchar2(256) := p_rounding_specs;
---    l_ind_rounding   str_tab_t;
---    l_dep_rounding   varchar2(10);
--- begin
---    l_date_methods := cwms_util.split_text(p_date_methods, '/');
---    if l_date_methods.count != 3 then
---       cwms_err.raise(
---          'ERROR',
---          'Date methods must be of format out-range-before-first/in-range/out-range-after-last');
---    end if;
---    l_parts := cwms_util.split_text(p_spec_id, '.');
---    if l_parts.count != 4 then
---       cwms_err.raise(
---          'INVALID_ITEM',
---          p_spec_id,
---          'rating specification id');
---    end if;
---    l_location_id := l_parts(1);
---    l_template_id := l_parts(2)||'.'||l_parts(3);
---    l_version     := l_parts(4);
---    l_ind_count   := cwms_util.split_text(cwms_util.split_text(l_parts(2), ';')(1), ',').count;
---    if l_rounding_specs is null then
---       for i in 1..l_ind_count loop
---          l_rounding_specs := l_rounding_specs || ',4444444444';
---       end loop;
---       l_rounding_specs := substr(l_rounding_specs, 1) || ';4444444444';
---    end if;
---    l_parts := cwms_util.split_text(l_rounding_specs, ';');
---    l_dep_rounding := l_parts(2);
---    l_ind_rounding := cwms_util.split_text(l_parts(1), ',');
---    l_spec := rating_spec_t(
---       nvl(p_office_id, cwms_util.user_office_id),
---       l_location_id,
---       l_template_id,
---       l_version,
---       p_source_agency_id,
---       l_date_methods(2),
---       l_date_methods(1),
---       l_date_methods(3),
---       p_active_flag,
---       p_auto_update_flag,
---       p_auto_activate_flag,
---       p_auto_migrate_ext_flag,
---       l_ind_rounding,
---       l_dep_rounding,
---       p_description);
---       
---    l_spec.store(p_fail_if_exists);         
--- end store_spec;      
---       
---------------------------------------------------------------------------------
 -- CAT_SPEC_IDS
---
--- p_cat_cursor
---    cursor containing all matched rating specifications in the following fields,
---    sorted ascending in the following order:
---       office_id        varchar2(16)  office id
---       specification_id varchar2(372) rating spec id
---       location_id      varchar2(49)  location portion of spec id
---       template_id      varchar2(289) template id portion of spec id
---       version          varchar2(32)  version portion of spec id
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure cat_spec_ids(
    p_cat_cursor     out sys_refcursor,
@@ -846,8 +447,6 @@ end cat_spec_ids;
 --------------------------------------------------------------------------------
 -- CAT_SPEC_IDS_F
 --
--- same as above except that cursor is returned from the function
---
 function cat_spec_ids_f(
    p_spec_id_mask   in  varchar2 default '*',
    p_office_id_mask in  varchar2 default null)
@@ -865,20 +464,6 @@ end cat_spec_ids_f;
    
 --------------------------------------------------------------------------------
 -- RETRIEVE_SPECS_OBJ
---
--- p_specs
---    a rating_spec_tab_t object containing the rating_spec_t
---    objects that match the input parameters
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure retrieve_specs_obj(
    p_specs          out rating_spec_tab_t,
@@ -960,9 +545,6 @@ end retrieve_specs_obj;
 --------------------------------------------------------------------------------
 -- RETRIEVE_SPECS_OBJ_F
 --
--- same as above except that rating_spec_tab_t object is returned from the
--- function
---
 function retrieve_specs_obj_f(
    p_spec_id_mask   in varchar2 default '*',
    p_office_id_mask in varchar2 default null)
@@ -980,19 +562,6 @@ end retrieve_specs_obj_f;
    
 --------------------------------------------------------------------------------
 -- RETRIEVE_SPECS_XML
---
--- p_specs
---    a clob containing the xml of the matching rating specifications
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure retrieve_specs_xml(
    p_specs          out clob,
@@ -1026,8 +595,6 @@ end retrieve_specs_xml;
 --------------------------------------------------------------------------------
 -- RETRIEVE_SPECS_XML_F
 --
--- same as above except that clob is returned from the function
---
 function retrieve_specs_xml_f(
    p_spec_id_mask   in varchar2 default '*',
    p_office_id_mask in varchar2 default null)
@@ -1044,124 +611,7 @@ begin
 end retrieve_specs_xml_f;   
    
 --------------------------------------------------------------------------------
--- REMOVED FROM INTERFACE, KEPT ONLY TO BE ABLE TO RE-INSTATE
---------------------------------------------------------------------------------
--- -- RETRIEVE_SPEC
--- --
--- -- p_spec_id_out
--- --    location-id.template-id.spec-version, case-corrected on output
--- --
--- -- p_date_methods
--- --    out-range-before-first/in-range/out-range-after-last
--- --
--- -- p_description
--- --    text description of rating specification
--- --
--- -- p_active_flag
--- --    'T' for ratings using this specification to be marked active
--- --       individual ratings may still be marked inactive
--- --    'F' for all ratings using this specification to be marked inactive
--- --
--- -- p_auto_update_flag
--- --    'T' to automatically load new ratings when available
--- --    'F' otherwise
--- --
--- -- p_auto_activate_flag
--- --    'T' to mark automatically loaded ratings as active
--- --    'F' to mark automatically loaded ratings as inactive
--- --
--- -- p_auto_migrate_ext_flag
--- --    'T' to automatically migrate existing rating extensions to newly loaded rating
--- --    'F' otherwise
--- --
--- -- p_rounding_specs
--- --    USGS-style 10-digit rounding specifications for ind and dep parameters
--- --       ind and dep rounding specs are separated by ';'
--- --       multiple ind rounding specs are separated by ','
--- --       one rounding spec is required for each ind and dep parameter
--- --       if parameter is null, all rounding specs default to '4444444444'
--- --
--- -- p_source_agency_id
--- --    loc_group_id of agency that generates ratings for this specification
--- --
--- -- p_spec_id
--- --    location-id.template-id.spec-version
--- --
--- -- p_office_id   
--- --    identifier of owning office
--- --
--- procedure retrieve_spec(
---    p_spec_id_out           out varchar2,
---    p_date_methods          out varchar2,
---    p_description           out varchar2,
---    p_active_flag           out varchar2,
---    p_auto_update_flag      out varchar2,
---    p_auto_activate_flag    out varchar2,
---    p_auto_migrate_ext_flag out varchar2,
---    p_rounding_specs        out varchar2,
---    p_source_agency_id      out varchar2,
---    p_spec_id               in  varchar2,
---    p_office_id             in  varchar2 default null)
--- is
---    l_specs rating_spec_tab_t;
--- begin
---    retrieve_specs_obj(
---       l_specs,
---       p_spec_id,
---       p_office_id);
---    case l_specs.count
---       when 0 then
---          cwms_err.raise(
---             'ITEM_DOES_NOT_EXIST',
---             'Rating spec ',
---             p_office_id||'/'||p_spec_id);
---       when 1 then
---          p_spec_id_out := l_specs(1).location_id
---             ||'.'||l_specs(1).template_id
---             ||'.'||l_specs(1).version;
---          p_date_methods := l_specs(1).out_range_low_rating_method
---             ||'/'||l_specs(1).in_range_rating_method
---             ||'/'||l_specs(1).out_range_high_rating_method;
---          p_description           := l_specs(1).description;
---          p_active_flag           := l_specs(1).active_flag;             
---          p_auto_update_flag      := l_specs(1).auto_update_flag;             
---          p_auto_activate_flag    := l_specs(1).auto_activate_flag;             
---          p_auto_migrate_ext_flag := l_specs(1).auto_migrate_ext_flag;
---          p_source_agency_id      := l_specs(1).source_agency_id;
---          p_rounding_specs := 
---             cwms_util.join_text(
---                str_tab_t(
---                   cwms_util.join_text(l_specs(1).ind_rounding_specs, ','), 
---                   l_specs(1).dep_rounding_spec), 
---                ';');             
---       else
---          cwms_err.raise(
---             'ERROR',
---             'Too many items match input specifications');
---    end case;      
--- end retrieve_spec;   
-   
---------------------------------------------------------------------------------
 -- DELETE_SPECS
---
--- p_spec_id_mask
---    wildcard pattern to match for rating specification id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_delete_action
---    cwms_util.delete_key
---       deletes only the specs, and only then if they are not referenced
---       by any rating ratings
---    cwms_util.delete_data
---       deletes only the ratings that reference the specs
---    cwms_util.delete_all
---       deletes the specs and the ratings that reference them
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure delete_specs(
    p_spec_id_mask   in varchar2 default '*',
@@ -1228,13 +678,6 @@ end delete_specs;
 --------------------------------------------------------------------------------
 -- STORE RATINGS
 --
--- p_xml
---    contains zero or more <rating> or <usgs-stream-rating> elements
---
--- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
---
 procedure store_ratings(
    p_xml            in xmltype,
    p_fail_if_exists in varchar2)
@@ -1280,13 +723,6 @@ end store_ratings;
 --------------------------------------------------------------------------------
 -- STORE RATINGS
 --
--- p_xml
---    contains zero or more <rating> or <usgs-stream-rating> elements
---
--- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
---
 procedure store_ratings(
    p_xml            in varchar2,
    p_fail_if_exists in varchar2)
@@ -1298,13 +734,6 @@ end store_ratings;
 --------------------------------------------------------------------------------
 -- STORE RATINGS
 --
--- p_xml
---    contains zero or more <rating> or <usgs-stream-rating> elements
---
--- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
---
 procedure store_ratings(
    p_xml            in clob,
    p_fail_if_exists in varchar2)
@@ -1315,13 +744,6 @@ end store_ratings;
    
 --------------------------------------------------------------------------------
 -- STORE RATINGS
---
--- p_ratings
---    contains zero or more rating_t (possibly stream_rating_t) objects
---
--- p_fail_if_exists
---    'T' to fail if template with same office_id and template_id exists
---    'F' to update existing template if exists
 --
 procedure store_ratings(
    p_ratings        in rating_tab_t,
@@ -1338,34 +760,6 @@ end store_ratings;
       
 --------------------------------------------------------------------------------
 -- CAT_RATINGS
---
--- p_cat_cursor
---    cursor containing all matched rating specifications in the following fields,
---    sorted ascending in the following order:
---       office_id        varchar2(16)  office id
---       specification_id varchar2(372) rating spec id
---       effective_date   date
---       create_date      date
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_effective_date_start
---    start of time window for matching ratings (in specified time zone)
---
--- p_effective_date_end
---    end of time window for matching ratings (in specified time zone)
---
--- p_time_zone
---    time zone to use for interpreting time window and for outputting dates
---    null specifies to default to location's time zone
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure cat_ratings(
    p_cat_cursor           out sys_refcursor,
@@ -1479,8 +873,6 @@ end cat_ratings;
 --------------------------------------------------------------------------------
 -- CAT_RATINGS_F
 --
--- same as above except that cursor is returned from the function
---
 function cat_ratings_f(
    p_spec_id_mask         in varchar2 default '*',
    p_effective_date_start in date     default null,
@@ -1504,30 +896,6 @@ end cat_ratings_f;
 
 --------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS
---
--- p_ratings
---    rating_tab_t object that contains rating_t objects (possibly including
---    stream_rating_t objects) that match the input parameters
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_effective_date_start
---    start of time window for matching ratings (in specified time zone)
---
--- p_effective_date_end
---    end of time window for matching ratings (in specified time zone)
---
--- p_time_zone
---    time zone to use for interpreting time window and for outputting dates
---    null specifies to default to location's time zone
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure retrieve_ratings_obj(
    p_ratings              out rating_tab_t,
@@ -1649,8 +1017,6 @@ end retrieve_ratings_obj;
 --------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS_OBJ_F
 --
--- same as above except that cursor is returned from the function
---
 function retrieve_ratings_obj_f(
    p_spec_id_mask         in  varchar2 default '*',
    p_effective_date_start in  date     default null,
@@ -1674,30 +1040,6 @@ end retrieve_ratings_obj_f;
    
 --------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS_XML
---
--- p_ratings
---    a clob that contains the xml for ratings (possibly including stream
---    ratings) that match the input parameters
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_effective_date_start
---    start of time window for matching ratings (in specified time zone)
---
--- p_effective_date_end
---    end of time window for matching ratings (in specified time zone)
---
--- p_time_zone
---    time zone to use for interpreting time window and for outputting dates
---    null specifies to default to location's time zone
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure retrieve_ratings_xml(
    p_ratings              out clob,
@@ -1738,8 +1080,6 @@ end retrieve_ratings_xml;
 --------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS_XML_F
 --
--- same as above except that cursor is returned from the function
---
 function retrieve_ratings_xml_f(
    p_spec_id_mask         in  varchar2 default '*',
    p_effective_date_start in  date     default null,
@@ -1763,26 +1103,6 @@ end retrieve_ratings_xml_f;
    
 --------------------------------------------------------------------------------
 -- DELETE_RATINGS
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_effective_date_start
---    start of time window for matching ratings (in specified time zone)
---
--- p_effective_date_end
---    end of time window for matching ratings (in specified time zone)
---
--- p_time_zone
---    time zone to use for interpreting time window and for outputting dates
---    null specifies to default to location's time zone
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
 --
 procedure delete_ratings(
    p_spec_id_mask         in varchar2 default '*',
@@ -1858,7 +1178,7 @@ begin
 end delete_ratings;   
    
 --------------------------------------------------------------------------------
--- MULTIPLE TEMPLATES/SPECIFICATIONS/RATINGS 
+-- STORE_RATINGS_XML 
 --
 procedure store_ratings_xml(
    p_xml            in xmltype,
@@ -1930,6 +1250,28 @@ begin
       end;
    end loop;
    commit;
+end store_ratings_xml;
+   
+--------------------------------------------------------------------------------
+-- STORE_RATINGS_XML 
+--
+procedure store_ratings_xml(
+   p_xml            in varchar2,
+   p_fail_if_exists in varchar2)
+is
+begin
+   store_ratings_xml(xmltype(p_xml), p_fail_if_exists);   
+end store_ratings_xml;
+   
+--------------------------------------------------------------------------------
+-- STORE_RATINGS_XML 
+--
+procedure store_ratings_xml(
+   p_xml            in clob,
+   p_fail_if_exists in varchar2)
+is
+begin
+   store_ratings_xml(xmltype(p_xml), p_fail_if_exists);   
 end store_ratings_xml;
    
 --------------------------------------------------------------------------------
