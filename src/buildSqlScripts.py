@@ -4683,7 +4683,6 @@ ratingMethods = [
     ['LOGARITHMIC' , 'Logarithmic interpolation or extrapolation of independent and dependent values'            ],
     ['LIN-LOG'     , 'Linear interpolation/extrapoloation of independent values, Logarithmic of dependent values'],
     ['LOG-LIN'     , 'Logarithmic interpolation/extrapoloation of independent values, Linear of dependent values'],
-    ['CONIC'       , 'Conic interpolation or extrapolation'                                                      ],
     ['PREVIOUS'    , 'Return the value that is lower in position'                                                ],
     ['NEXT'        , 'Return the value that is higher in position'                                               ],
     ['NEAREST'     , 'Return the value that is nearest in position'                                              ],

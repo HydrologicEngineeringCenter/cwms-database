@@ -303,7 +303,6 @@ begin
    if l_in_range_behavior in 
       (  method_lin_log,
          method_log_lin,
-         method_conic,
          method_nearest
       )
    then   
@@ -316,7 +315,6 @@ begin
       if l_out_range_low_behavior in 
          (  method_lin_log,
             method_log_lin,
-            method_conic,
             method_previous,
             method_lower
          )
@@ -329,7 +327,6 @@ begin
       if l_out_range_high_behavior in 
          (  method_lin_log,
             method_log_lin,
-            method_conic,
             method_next,
             method_higher
          )
@@ -365,7 +362,6 @@ begin
       if l_out_range_low_behavior in 
          (  method_lin_log,
             method_log_lin,
-            method_conic,
             method_next,
             method_lower
          )
@@ -378,7 +374,6 @@ begin
       if l_out_range_high_behavior in 
          (  method_lin_log,
             method_log_lin,
-            method_conic,
             method_previous,
             method_higher
          )
@@ -595,7 +590,6 @@ begin
    if l_in_range_behavior in 
       (  method_lin_log,
          method_log_lin,
-         method_conic,
          method_nearest
       )
    then   
@@ -608,7 +602,6 @@ begin
       if l_out_range_low_behavior in 
          (  method_lin_log,
             method_log_lin,
-            method_conic,
             method_previous,
             method_lower
          )
@@ -621,7 +614,6 @@ begin
       if l_out_range_high_behavior in 
          (  method_lin_log,
             method_log_lin,
-            method_conic,
             method_next,
             method_higher
          )
@@ -657,7 +649,6 @@ begin
       if l_out_range_low_behavior in 
          (  method_lin_log,
             method_log_lin,
-            method_conic,
             method_next,
             method_lower
          )
@@ -670,7 +661,6 @@ begin
       if l_out_range_high_behavior in 
          (  method_lin_log,
             method_log_lin,
-            method_conic,
             method_previous,
             method_higher
          )
@@ -1322,7 +1312,6 @@ begin
    select rating_method_code into method_logarithmic from cwms_rating_method where rating_method_id = 'LOGARITHMIC';
    select rating_method_code into method_lin_log     from cwms_rating_method where rating_method_id = 'LIN-LOG';
    select rating_method_code into method_log_lin     from cwms_rating_method where rating_method_id = 'LOG-LIN';
-   select rating_method_code into method_conic       from cwms_rating_method where rating_method_id = 'CONIC';
    select rating_method_code into method_previous    from cwms_rating_method where rating_method_id = 'PREVIOUS';
    select rating_method_code into method_next        from cwms_rating_method where rating_method_id = 'NEXT';
    select rating_method_code into method_nearest     from cwms_rating_method where rating_method_id = 'NEAREST';
@@ -1336,7 +1325,6 @@ begin
    method_by_name('LOGARITHMIC') := method_logarithmic;
    method_by_name('LIN-LOG')     := method_lin_log;
    method_by_name('LOG-LIN')     := method_log_lin;
-   method_by_name('CONIC')       := method_conic;
    method_by_name('PREVIOUS')    := method_previous;
    method_by_name('NEXT')        := method_next;
    method_by_name('NEAREST')     := method_nearest;

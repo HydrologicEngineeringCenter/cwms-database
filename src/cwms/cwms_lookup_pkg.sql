@@ -21,7 +21,6 @@ method_linear      pls_integer;  -- Linear interpolation or extrapolation of ind
 method_logarithmic pls_integer;  -- Logarithmic interpolation or extrapolation of independent and dependent values             
 method_lin_log     pls_integer;  -- Linear interpolation/extrapoloation of independent values, Logarithmic of dependent values 
 method_log_lin     pls_integer;  -- Logarithmic interpolation/extrapoloation of independent values, Linear of dependent values 
-method_conic       pls_integer;  -- Conic interpolation or extrapolation                                                       
 method_previous    pls_integer;  -- Return the value that is lower in position                                                 
 method_next        pls_integer;  -- Return the value that is higher in position                                                
 method_nearest     pls_integer;  -- Return the value that is nearest in position                                               
