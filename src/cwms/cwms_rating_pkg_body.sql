@@ -3524,7 +3524,7 @@ end rate;
 -- RETRIEVE_REVERSE_RATED_TS
 --
 function retrieve_reverse_rated_ts(
-   p_independent_ids  in str_tab_t,
+   p_dependent_id     in varchar2,
    p_rating_id        in varchar2,
    p_units            in varchar2,
    p_start_time       in date,
@@ -3543,13 +3543,13 @@ function retrieve_reverse_rated_ts(
    p_rating_office_id in varchar2 default null)
    return ztsv_array
 is
-   l_ind_values   double_tab_tab_t;
    l_dep_values   double_tab_t;
+   l_ind_values   double_tab_t;
    l_times        date_table_type;
    l_results      ztsv_array;
    l_parts        str_tab_t;
    l_interval     varchar2(16);
-   l_location     varchar2(49); -- from first independent id
+   l_location     varchar2(49); -- from dependent id
    l_time_zone    varchar2(28);
    l_units        str_tab_t;
    l_cursor       sys_refcursor;
@@ -3560,7 +3560,7 @@ is
    l_last_valid   pls_integer;
    j              pls_integer;
 begin   
-   if p_independent_ids is not null and p_independent_ids.count > 0 then
+   if p_dependent_id is not null then
       -------------------
       -- sanity checks --
       -------------------
@@ -3572,37 +3572,25 @@ begin
             'CWMS rating identifier');
       end if;
       l_units := cwms_util.split_text(replace(l_parts(1), ';', ','), ',');
-      if l_units.count != p_independent_ids.count + 1 then
+      if l_units.count != 2 then
          cwms_err.raise(
             'ERROR',
             'Rating ('
             ||p_rating_id
             ||') requires '
             ||l_units.count - 1
-            ||' independent parameters, '
-            ||p_independent_ids.count
-            ||' specified');
+            ||' independent parameters, 2 specified');
       end if;
       l_units(l_units.count) := p_units;
-      for i in 1..p_independent_ids.count loop
-         l_parts := cwms_util.split_text(p_independent_ids(i), '.');
-         if l_parts.count != 6 then
-            cwms_err.raise(
-               'INVALID_ITEM',
-               p_independent_ids(i),
-               'CWMS time series identifier');
-         end if;
-         if i = 1 then
-            l_location := l_parts(1);
-            l_interval := l_parts(4);
-         else
-            if l_parts(4) != l_interval then
-               cwms_err.raise(
-                  'ERROR',
-                  'Intervals of input time series must be the same');
-            end if;
-         end if;
-      end loop;
+      l_parts := cwms_util.split_text(p_dependent_id, '.');
+      if l_parts.count != 6 then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_dependent_id,
+            'CWMS time series identifier');
+      end if;
+      l_location := l_parts(1);
+      l_interval := l_parts(4);
       -------------------------------
       -- get the working time zone --
       -------------------------------
@@ -3633,54 +3621,43 @@ begin
       -------------------------------------
       -- retrieve the independent values --
       -------------------------------------
-      l_ind_values := double_tab_tab_t();
-      l_ind_values.extend(p_independent_ids.count);
+      l_dep_values := double_tab_t();
       l_times := date_table_type();
-      for i in 1..p_independent_ids.count loop
-         cwms_ts.retrieve_ts(
-            l_cursor,
-            p_independent_ids(i),
-            l_units(i),
-            p_start_time,
-            p_end_time,
-            p_time_zone,
-            'F', -- don't trim independent values
-            p_start_inclusive,
-            p_end_inclusive,
-            p_previous,
-            p_next,
-            p_version_date,
-            p_max_version,
-            p_ts_office_id);
-         l_ind_values(i) := double_tab_t();
-         j := 0;            
-         loop
-            fetch l_cursor 
-             into l_date_time, 
-                  l_value, 
-                  l_quality_code;
-            exit when l_cursor%notfound;
-            j := j + 1;
-            l_ind_values(i).extend;
-            l_ind_values(i)(j) := l_value;
-            if i = 1 then
-               l_times.extend;
-               l_times(j) := l_date_time;
-            elsif l_date_time != l_times(j) then
-               close l_cursor;
-               cwms_err.raise(
-                  'ERROR',
-                  'Independent variable times do not match.');
-            end if;             
-         end loop;
-         close l_cursor;
+      cwms_ts.retrieve_ts(
+         l_cursor,
+         p_dependent_id,
+         l_units(1),
+         p_start_time,
+         p_end_time,
+         p_time_zone,
+         'F', -- don't trim independent values
+         p_start_inclusive,
+         p_end_inclusive,
+         p_previous,
+         p_next,
+         p_version_date,
+         p_max_version,
+         p_ts_office_id);
+      j := 0;            
+      loop
+         fetch l_cursor 
+          into l_date_time, 
+               l_value, 
+               l_quality_code;
+         exit when l_cursor%notfound;
+         j := j + 1;
+         l_dep_values.extend;
+         l_dep_values(j) := l_value;
+         l_times.extend;
+         l_times(j) := l_date_time;
       end loop;
+      close l_cursor;
       ------------------------
       -- perform the rating --
       ------------------------
-      l_dep_values := reverse_rate_f(
+      l_ind_values := reverse_rate_f(
          p_rating_id,
-         l_ind_values(1),
+         l_dep_values,
          l_units,
          p_round,
          l_times,
@@ -3693,7 +3670,7 @@ begin
       l_results := ztsv_array();
       if cwms_util.is_true(p_trim) then
          for i in 1..l_times.count loop
-            if l_dep_values(i) is not null then
+            if l_ind_values(i) is not null then
                l_first_valid := i;
                exit;
             end if;
@@ -3704,7 +3681,7 @@ begin
       if l_first_valid is not null then
          if cwms_util.is_true(p_trim) then
             for i in reverse 1..l_times.count loop
-               if l_dep_values(i) is not null then
+               if l_ind_values(i) is not null then
                   l_last_valid := i;
                   exit;
                end if;
@@ -3716,8 +3693,8 @@ begin
             l_results.extend;
             l_results(i) := ztsv_type(
                l_times(i),
-               l_dep_values(i),
-               case l_dep_values(i) is null
+               l_ind_values(i),
+               case l_ind_values(i) is null
                   when true  then 5 -- missing
                   when false then 0 -- unscreened
                end);
@@ -3726,55 +3703,12 @@ begin
    end if;
    return l_results;
 end retrieve_reverse_rated_ts;   
---------------------------------------------------------------------------------
--- RETRIEVE_REVERSE_RATED_TS
---
-function retrieve_reverse_rated_ts(
-   p_independent_id   in varchar2,
-   p_rating_id        in varchar2,
-   p_units            in varchar2,
-   p_start_time       in date,
-   p_end_time         in date,
-   p_rating_time      in date     default null,
-   p_time_zone        in varchar2 default null,
-   p_round            in varchar2 default 'F',
-   p_trim             in varchar2 default 'F',
-   p_start_inclusive  in varchar2 default 'T',
-   p_end_inclusive    in varchar2 default 'T',
-   p_previous         in varchar2 default 'F',
-   p_next             in varchar2 default 'F',
-   p_version_date     in date     default null,
-   p_max_version      in varchar2 default 'T',
-   p_ts_office_id     in varchar2 default null,
-   p_rating_office_id in varchar2 default null)
-   return ztsv_array
-is
-begin
-   return retrieve_reverse_rated_ts(
-      str_tab_t(p_independent_id),
-      p_rating_id,
-      p_units,
-      p_start_time,
-      p_end_time,
-      p_rating_time,
-      p_time_zone,
-      p_round,
-      p_trim,
-      p_start_inclusive,
-      p_end_inclusive,
-      p_previous,
-      p_next,
-      p_version_date,
-      p_max_version,
-      p_ts_office_id,
-      p_rating_office_id);
-end retrieve_reverse_rated_ts;   
-   
+
 --------------------------------------------------------------------------------
 -- REVERSE_RATE
 --
 procedure reverse_rate(
-   p_independent_ids  in str_tab_t,
+   p_independent_id   in varchar2,
    p_dependent_id     in varchar2,
    p_rating_id        in varchar2,
    p_start_time       in date,
@@ -3796,15 +3730,15 @@ is
    l_parts    str_tab_t;
    l_interval varchar2(16);
 begin
-   if p_independent_ids is not null and p_independent_ids.count > 0 then
+   if p_independent_id is not null then
       -------------------
       -- sanity checks --
       -------------------
-      l_parts := cwms_util.split_text(p_independent_ids(1), '.');
+      l_parts := cwms_util.split_text(p_independent_id, '.');
       if l_parts.count != 6 then
          cwms_err.raise(
             'INVALID_ITEM',
-            p_independent_ids(1),
+            p_independent_id,
             'CWMS time series identifier');
       end if;
       l_interval := l_parts(4);
@@ -3833,7 +3767,7 @@ begin
       -- retrieve the rated time series --
       ------------------------------------
       l_dep_ts := retrieve_reverse_rated_ts(
-         p_independent_ids,
+         p_independent_id,
          p_rating_id,
          l_dep_unit,
          p_start_time,
@@ -3861,47 +3795,6 @@ begin
          p_version_date 	=> p_version_date,
          p_office_id 		=> p_ts_office_id);            
    end if;
-end reverse_rate;   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE
---
-procedure reverse_rate(
-   p_independent_id   in varchar2,
-   p_dependent_id     in varchar2,
-   p_rating_id        in varchar2,
-   p_start_time       in date,
-   p_end_time         in date,
-   p_rating_time      in date     default null,
-   p_time_zone        in varchar2 default null,
-   p_trim             in varchar2 default 'F',
-   p_start_inclusive  in varchar2 default 'T',
-   p_end_inclusive    in varchar2 default 'T',
-   p_previous         in varchar2 default 'F',
-   p_next             in varchar2 default 'F',
-   p_version_date     in date     default null,
-   p_max_version      in varchar2 default 'T',
-   p_ts_office_id     in varchar2 default null,
-   p_rating_office_id in varchar2 default null)
-is
-begin
-   reverse_rate(
-      str_tab_t(p_independent_id),
-      p_dependent_id,
-      p_rating_id,
-      p_start_time,
-      p_end_time,
-      p_rating_time,
-      p_time_zone,
-      p_trim,
-      p_start_inclusive,
-      p_end_inclusive,
-      p_previous,
-      p_next,
-      p_version_date,
-      p_max_version,
-      p_ts_office_id,
-      p_rating_office_id);
 end reverse_rate;   
     
 --------------------------------------------------------------------------------
