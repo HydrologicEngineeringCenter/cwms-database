@@ -6424,6 +6424,7 @@ is
    l_office_id              varchar2(16)  := nvl(upper(p_office_id), cwms_util.user_office_id);
    l_specified_level_mask   varchar2(256) := nvl(p_specified_level_mask, '%');
    l_indicator_id_mask      varchar2(256) := nvl(p_indicator_id_mask, '%');
+   l_unit_system            varchar2(2)   := nvl(p_unit_system, 'SI');
    l_location_level_id_mask varchar2(423);
    l_base_location_id       varchar2(16);
    l_sub_location_id        varchar2(32);
@@ -6556,10 +6557,10 @@ begin
                 o.attr_units_id, 
                 cwms_util.get_default_units
                    (nvl(o.attr_parameter_id, o.parameter_id), 
-                   p_unit_system))
+                   l_unit_system))
          and cuc.to_unit_id = cwms_util.get_default_units(
                 nvl(o.attr_parameter_id, o.parameter_id), 
-                p_unit_system)
+                l_unit_system)
     order by get_loc_lvl_indicator_id(
                 o.location_id,
                 o.parameter_id,
@@ -6626,6 +6627,7 @@ is
    l_office_id              varchar2(16)  := nvl(upper(p_office_id), cwms_util.user_office_id);
    l_specified_level_mask   varchar2(256) := nvl(p_specified_level_mask, '%');
    l_indicator_id_mask      varchar2(256) := nvl(p_indicator_id_mask, '%');
+   l_unit_system            varchar2(2)   := nvl(p_unit_system, 'SI');
    l_location_level_id_mask varchar2(423);
    l_base_location_id       varchar2(16);
    l_sub_location_id        varchar2(32);
@@ -6758,10 +6760,10 @@ begin
                 o.attr_units_id, 
                 cwms_util.get_default_units
                    (nvl(o.attr_parameter_id, o.parameter_id), 
-                   p_unit_system))
+                   l_unit_system))
          and cuc.to_unit_id = cwms_util.get_default_units(
                 nvl(o.attr_parameter_id, o.parameter_id), 
-                p_unit_system)
+                l_unit_system)
     order by get_loc_lvl_indicator_id(
                 o.location_id,
                 o.parameter_id,
