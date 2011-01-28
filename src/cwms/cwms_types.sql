@@ -1917,7 +1917,8 @@ as
              cwms_base_parameter bp
        where upper(bp.base_parameter_id) = upper(l_parts(1))
          and p.base_parameter_code = bp.base_parameter_code
-         and upper(nvl(p.sub_parameter_id, '@')) = upper(nvl(l_sub_id, '@'));
+         and upper(nvl(p.sub_parameter_id, '@')) = upper(nvl(l_sub_id, '@'))
+         and p.db_office_code = cwms_util.get_db_office_code(self.office_id);
 
       l_id := parameter_type_id;
       select parameter_type_code
