@@ -80,7 +80,19 @@ AS
 
 	TYPE cat_unit_tab_t IS TABLE OF cat_unit_rec_t;
 
-
+	--------------------------------------------------------------------------------
+	-- An overload of split_text that will return a single element of the split.
+	-- If no delmiter is specified, the string is split around whitespace.
+  -- The return index defines which element to return, it is defaulted to the first 
+  -- index.
+  -- If there is no split element to return, null is returned.
+	--
+	FUNCTION split_text (p_text		  IN VARCHAR2,
+								p_separator   IN VARCHAR2 DEFAULT NULL ,
+								p_max_split   IN INTEGER DEFAULT NULL,
+                p_return_index IN INTEGER DEFAULT 1
+							  )
+		RETURN VARCHAR2;
 
 	--------------------------------------------------------------------------------
 	-- Splits string into a table of strings using the specified delimiter.

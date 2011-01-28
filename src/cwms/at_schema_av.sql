@@ -33,7 +33,8 @@ DECLARE
                      'av_rating',
                      'av_rating_local',
                      'av_rating_values',
-                     'av_rating_values_native'
+                     'av_rating_values_native',
+                     'av_ts_association'
                     );
 BEGIN
    FOR i IN view_names.FIRST .. view_names.LAST
@@ -2522,5 +2523,28 @@ select distinct
    and (r3.dep_value is null or r3.other_ind_hash = rating_value_t.hash_other_ind(double_tab_t(r1.ind_value, r2.ind_value)))
    and (r4.dep_value is null or r4.other_ind_hash = rating_value_t.hash_other_ind(double_tab_t(r1.ind_value, r2.ind_value, r3.ind_value)))
    and (r5.dep_value is null or r5.other_ind_hash = rating_value_t.hash_other_ind(double_tab_t(r1.ind_value, r2.ind_value, r3.ind_value, r4.ind_value)));
+/
+show errors;
+
+
+-----------------------------
+-- AV_TS_ASSOCIATION--
+-----------------------------
+CREATE OR REPLACE FORCE VIEW AV_TS_ASSOCIATION (
+  ASSOCIATION_TYPE,
+  USAGE_CATEGORY_ID, 
+  USAGE_ID, 
+  ASSOCIATION_ID, 
+  TIMESERIES_ID, 
+  USAGE_DESCRIPTION) 
+AS 
+  select prop_category ASSOCIATION_TYPE,
+  cwms_util.split_text(p.prop_id,1,'.') USAGE_CATEGORY_ID,
+  cwms_util.split_text(p.prop_id,2,'.') USAGE_ID,
+  cwms_util.split_text(p.prop_id,3,'.') ASSOCIATION_ID,
+  p.prop_value TIMESERIES_ID,
+  p.prop_comment USAGE_DESCRIPTION
+from at_properties p
+where prop_category in ('LOCATION TIME SERIES ASSOCIATION', 'LOCATION_GROUP_TIME_SERIES_ASSOCIATION');
 /
 show errors;
