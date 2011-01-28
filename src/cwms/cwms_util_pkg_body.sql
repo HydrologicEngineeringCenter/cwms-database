@@ -1528,6 +1528,42 @@ AS
 			--dbms_output.put_line(SQLERRM);
 			RAISE;
 	END create_view;
+  
+	-------------------------------------------------------------------------------
+	-- function split_text(...) overload to return a single element of the split
+	--
+	--
+	function split_text (p_text		  in varchar2,
+                p_return_index in integer,
+								p_separator   IN VARCHAR2 DEFAULT NULL ,
+								p_max_split   in integer default null
+							  )
+		RETURN VARCHAR2
+	IS
+    l_str_tab str_tab_t;
+    l_return_index INTEGER;
+  begin
+    -- default index is first.
+    if p_return_index is null
+    then 
+      l_return_index := 1;
+    else
+      l_return_index := p_return_index;
+    end if;
+    
+    --split the text.
+    l_str_tab := split_text(p_text,
+                            p_separator,
+                            p_max_split);
+                            
+    --error handle indexes.
+    if l_return_index <= 0 OR l_return_index > l_str_tab.count
+    then
+      return null;
+    end if;
+    --grab element.
+    return l_str_tab(p_return_index);
+  end split_text;
 
 	-------------------------------------------------------------------------------
 	-- function split_text(...)

@@ -87,10 +87,10 @@ AS
   -- index.
   -- If there is no split element to return, null is returned.
 	--
-	FUNCTION split_text (p_text		  IN VARCHAR2,
+	function split_text (p_text		  in varchar2,
+                p_return_index in integer ,
 								p_separator   IN VARCHAR2 DEFAULT NULL ,
-								p_max_split   IN INTEGER DEFAULT NULL,
-                p_return_index IN INTEGER DEFAULT 1
+								p_max_split   in integer default null
 							  )
 		RETURN VARCHAR2;
 
