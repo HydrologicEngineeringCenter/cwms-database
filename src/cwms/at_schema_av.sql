@@ -2545,6 +2545,6 @@ AS
   p.prop_value TIMESERIES_ID,
   p.prop_comment USAGE_DESCRIPTION
 from at_properties p
-where prop_category in ('LOCATION TIME SERIES ASSOCIATION', 'LOCATION_GROUP_TIME_SERIES_ASSOCIATION');
+where prop_category in ('LOCATION TIME SERIES ASSOCIATION', 'LOCATION GROUP TIME SERIES ASSOCIATION');
 /
 show errors;
