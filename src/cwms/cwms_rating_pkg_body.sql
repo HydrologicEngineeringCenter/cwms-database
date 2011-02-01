@@ -948,7 +948,8 @@ begin
    l_parameters_id_mask    := cwms_util.normalize_wildcards(l_parameters_id_mask);
    l_template_version_mask := cwms_util.normalize_wildcards(l_template_version_mask);
    l_spec_version_mask     := cwms_util.normalize_wildcards(l_spec_version_mask);
-   
+   l_office_id_mask        := cwms_util.normalize_wildcards(l_office_id_mask);
+                                
    p_ratings := rating_tab_t();
    for rec in
       (  select r.rating_code
