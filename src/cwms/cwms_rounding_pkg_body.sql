@@ -46,7 +46,7 @@ begin
       return 0;      
    else                
       validate_rounding_spec(p_rounding_spec);
-      l_value      := l_value;
+      l_value      := p_value;
       l_magnitude  := trunc(log(10, abs(l_value)));
       l_spec_pos   := least(5, greatest(-3, l_magnitude)) + 4;
       l_sig_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1));
@@ -101,7 +101,7 @@ begin
       return 0;      
    else                
       validate_rounding_spec(p_rounding_spec);
-      l_value      := l_value;
+      l_value      := p_value;
       l_magnitude  := trunc(log(10, abs(l_value)));
       l_spec_pos   := least(5, greatest(-3, l_magnitude)) + 4;
       l_sig_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1));
