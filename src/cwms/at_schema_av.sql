@@ -1228,8 +1228,8 @@ AS
                and c_uc2.from_unit_code          = c_bp2.unit_code
                and c_uc2.to_unit_code = decode(
                   us.unit_system, 
-                  'EN', c_bp1.display_unit_code_en, 
-                  'SI', c_bp1.display_unit_code_si)  
+                  'EN', c_bp2.display_unit_code_en, 
+                  'SI', c_bp2.display_unit_code_si)  
                and a_ll.location_level_value     is null
                and a_sll.location_level_code     = a_ll.location_level_code))
   order by office_id,
