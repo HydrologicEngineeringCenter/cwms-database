@@ -1129,6 +1129,43 @@ begin
          'T',
          p_office_id));
 end retrieve_specified_level;
+   
+--------------------------------------------------------------------------------
+-- PROCEDURE rename_specified_level
+--------------------------------------------------------------------------------
+procedure rename_specified_level(
+   p_old_level_id in varchar2,
+   p_new_level_id in varchar2,
+   p_office_id    in varchar2 default null)
+is
+   l_office_code  number(10) := cwms_util.get_db_office_code(p_office_id);
+   l_old_level_id at_specified_level.specified_level_id%type; 
+begin
+   begin
+      select office_code,
+             specified_level_id
+        into l_office_code,
+             l_old_level_id
+        from at_specified_level
+       where upper(specified_level_id) = upper(p_old_level_id)
+         and office_code in (l_office_code, cwms_util.db_office_code_all);
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_old_level_id,
+            'Specified Level ID');
+   end;
+   if l_office_code = cwms_util.db_office_code_all then
+      cwms_err.raise(
+         'ERROR',
+         'Cannot rename a Specified Level owned by CWMS');
+   end if;
+   update at_specified_level
+      set specified_level_id = p_new_level_id
+    where specified_level_id = l_old_level_id
+      and office_code = l_office_code; 
+end rename_specified_level;   
             
 --------------------------------------------------------------------------------
 -- PROCEDURE delete_specified_level
@@ -3872,6 +3909,157 @@ begin
             
    return l_attribute;
 end lookup_attribute_by_level;
+
+--------------------------------------------------------------------------------
+-- PROCEDURE rename_location_level
+--------------------------------------------------------------------------------
+procedure rename_location_level(
+   p_old_location_level_id in  varchar2,
+   p_new_location_level_id in  varchar2,
+   p_office_id             in  varchar2 default null)
+is
+   l_office_code              number(10) := cwms_util.get_db_office_code(p_office_id);
+   l_old_parts                str_tab_t; 
+   l_new_parts                str_tab_t; 
+   l_old_location_code        number(10);
+   l_old_parameter_code       number(10);
+   l_old_parameter_type_code  number(10);
+   l_old_duration_code        number(10);  
+   l_old_specified_level_code number(10);
+   l_new_location_code        number(10);
+   l_new_parameter_code       number(10);
+   l_new_parameter_type_code  number(10);
+   l_new_duration_code        number(10);
+   l_new_specified_level_code number(10);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   if p_old_location_level_id is null or
+      p_new_location_level_id is null
+   then   
+      cwms_err.raise(
+         'ERROR',
+         'Location Level IDs must not be null.');
+   end if;
+   cwms_util.check_input(p_old_location_level_id);
+   cwms_util.check_input(p_new_location_level_id);
+   l_old_parts := cwms_util.split_text(p_old_location_level_id, '.');
+   if l_old_parts.count != 5 then
+      cwms_err.raise(
+         'INVALID_ITEM',
+         p_old_location_level_id,
+         'Location Level ID');
+   end if;
+   l_new_parts := cwms_util.split_text(p_new_location_level_id, '.');
+   if l_new_parts.count != 5 then
+      cwms_err.raise(
+         'INVALID_ITEM',
+         p_new_location_level_id,
+         'Location Level ID');
+   end if;
+   -------------------------------
+   -- get the codes for the ids --
+   -------------------------------
+   begin
+      select pl.location_code
+        into l_old_location_code
+        from at_physical_location pl,
+             at_base_location bl
+       where bl.base_location_code = pl.base_location_code
+         and upper(bl.base_location_id) = cwms_util.get_base_id(upper(l_old_parts(1)))
+         and upper(nvl(pl.sub_location_id, '.')) = nvl(cwms_util.get_sub_id(upper(l_old_parts(1))), '.') 
+         and bl.db_office_code = l_office_code;
+         
+      select p.parameter_code
+        into l_old_parameter_code
+        from at_parameter p,
+             cwms_base_parameter bp
+       where bp.base_parameter_code = p.base_parameter_code
+         and upper(bp.base_parameter_id) = cwms_util.get_base_id(upper(l_old_parts(2)))
+         and upper(nvl(p.sub_parameter_id, '.')) = nvl(cwms_util.get_sub_id(upper(l_old_parts(2))), '.') 
+         and p.db_office_code in (l_office_code, cwms_util.db_office_code_all);
+
+      select parameter_type_code
+        into l_old_parameter_type_code
+        from cwms_parameter_type
+       where upper(parameter_type_id) = upper(l_old_parts(3));
+
+      select duration_code
+        into l_old_duration_code
+        from cwms_duration
+       where upper(duration_id) = upper(l_old_parts(4));
+
+      select specified_level_code
+        into l_old_specified_level_code
+        from at_specified_level
+       where upper(specified_level_id) = upper(l_old_parts(5))
+         and office_code in(l_office_code, cwms_util.db_office_code_all);
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_old_location_level_id,
+            'Location Level ID');
+   end;
+   begin
+      select pl.location_code
+        into l_new_location_code
+        from at_physical_location pl,
+             at_base_location bl
+       where bl.base_location_code = pl.base_location_code
+         and upper(bl.base_location_id) = cwms_util.get_base_id(upper(l_new_parts(1)))
+         and upper(nvl(pl.sub_location_id, '.')) = nvl(cwms_util.get_sub_id(upper(l_new_parts(1))), '.') 
+         and bl.db_office_code = l_office_code;
+         
+      select p.parameter_code
+        into l_new_parameter_code
+        from at_parameter p,
+             cwms_base_parameter bp
+       where bp.base_parameter_code = p.base_parameter_code
+         and upper(bp.base_parameter_id) = cwms_util.get_base_id(upper(l_new_parts(2)))
+         and upper(nvl(p.sub_parameter_id, '.')) = nvl(cwms_util.get_sub_id(upper(l_new_parts(2))), '.') 
+         and p.db_office_code in (l_office_code, cwms_util.db_office_code_all);
+
+      select parameter_type_code
+        into l_new_parameter_type_code
+        from cwms_parameter_type
+       where upper(parameter_type_id) = upper(l_new_parts(3));
+
+      select duration_code
+        into l_new_duration_code
+        from cwms_duration
+       where upper(duration_id) = upper(l_new_parts(4));
+
+      select specified_level_code
+        into l_new_specified_level_code
+        from at_specified_level
+       where upper(specified_level_id) = upper(l_new_parts(5))
+         and office_code in(l_office_code, cwms_util.db_office_code_all);
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_new_location_level_id,
+            'Location Level ID');
+   end;
+   ----------------------        
+   -- update the table --
+   ----------------------
+   update at_location_level
+      set location_code        = l_new_location_code,
+          parameter_code       = l_new_parameter_code,        
+          parameter_type_code  = l_new_parameter_type_code,        
+          duration_code        = l_new_duration_code,        
+          specified_level_code = l_new_specified_level_code
+    where location_code        = l_old_location_code
+      and parameter_code       = l_old_parameter_code        
+      and parameter_type_code  = l_old_parameter_type_code        
+      and duration_code        = l_old_duration_code        
+      and specified_level_code = l_old_specified_level_code;
+                
+end rename_location_level;   
+
 
 --------------------------------------------------------------------------------
 -- PROCEDURE delete_location_level

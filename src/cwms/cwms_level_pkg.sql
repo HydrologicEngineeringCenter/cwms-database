@@ -166,6 +166,14 @@ procedure delete_specified_level(
    p_level_id          in  varchar2,
    p_fail_if_not_found in  varchar2 default 'T',
    p_office_id         in  varchar2 default null);
+   
+--------------------------------------------------------------------------------
+-- PROCEDURE rename_specified_level
+--------------------------------------------------------------------------------
+procedure rename_specified_level(
+   p_old_level_id in varchar2,
+   p_new_level_id in varchar2,
+   p_office_id    in varchar2 default null);
 
 --------------------------------------------------------------------------------
 -- PROCEDURE catalog_specified_levels
@@ -839,6 +847,16 @@ function lookup_attribute_by_level(
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
    return number;
+
+--------------------------------------------------------------------------------
+-- PROCEDURE rename_location_level
+--
+-- Renames a location level
+--------------------------------------------------------------------------------
+procedure rename_location_level(
+   p_old_location_level_id in  varchar2,
+   p_new_location_level_id in  varchar2,
+   p_office_id             in  varchar2 default null);
 
 --------------------------------------------------------------------------------
 -- PROCEDURE delete_location_level
