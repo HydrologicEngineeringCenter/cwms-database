@@ -911,192 +911,195 @@ end store_accounting_set;
 --------------------------------------------------------------------------------
 -- retrieve a water user contract accounting set.
 --------------------------------------------------------------------------------
--- p_accounting_set OUT wat_usr_contract_acct_tab_t,
---    the retrieved set of water user contract accountings
--- p_contract_ref IN water_user_contract_ref_t,
---    a series of masks for the following attributes.
---    p_db_office_id,
---    p_project_id,
---    p_entity_name,
---    p_contract_name
--- p_transfer_type IN VARCHAR2 DEFAULT NULL,
---    a mask for the transfer type.
---    if null, return all transfers.
--- p_units IN VARCHAR2,
---    the units to return the volume as.
--- p_start_time IN DATE,
---    the transfer start date time
--- p_end_time IN DATE,
---    the transfer end date time
--- p_time_zone IN VARCHAR2 DEFAULT 'UTC',
---    the time zone of returned date time data.
--- p_start_inclusive IN VARCHAR2 DEFAULT 'T',
---    if the start time is inclusive.
--- p_end_inclusive IN VARCHAR2 DEFAULT 'T' )AS
---    if the end time is inclusive
-procedure retrieve_accounting_set(
-   p_accounting_set  out wat_usr_contract_acct_tab_t,
-   p_contract_ref    in  water_user_contract_ref_t,
-   p_units           in  varchar2,
-   p_start_time      in  date,
-   p_end_time        in  date,
-   p_time_zone       in  varchar2 default null,
-   p_start_inclusive in  varchar2 default 'T',
-   p_end_inclusive   in  varchar2 default 'T', 
-   p_transfer_type   in  varchar2 default null)
-is
-   l_office_id_mask       varchar2(16);
-   l_project_id_mask      varchar2(49);
-   l_entity_name_mask     varchar2(64);
-   l_contract_name_mask   varchar2(64);
-   l_transfer_type        varchar2(6);
-   l_start_time           date;
-   l_end_time             date;
-   l_start_time_inclusive boolean;
-   l_end_time_inclusive   boolean;
-   l_time_zone_code       number(10);
-   l_location_ref         location_ref_t;
-   l_pump_location        location_obj_t;
+PROCEDURE retrieve_accounting_set(
+    -- the retrieved set of water user contract accountings
+    p_accounting_set out wat_usr_contract_acct_tab_t,
+
+    -- the water user contract ref
+    p_contract_ref IN water_user_contract_ref_t,
+    
+    -- the units to return the volume as.
+    p_units IN VARCHAR2,
+    --time window stuff
+    -- the transfer start date time
+    p_start_time IN DATE,
+    -- the transfer end date time
+    p_end_time IN DATE,
+    -- the time zone of returned date time data.
+    p_time_zone IN VARCHAR2 DEFAULT NULL,
+    -- if the start time is inclusive.
+    p_start_inclusive IN VARCHAR2 DEFAULT 'T',
+    -- if the end time is inclusive
+    p_end_inclusive IN VARCHAR2 DEFAULT 'T',
+    
+    -- a boolean flag indicating if the returned data should be the head or tail
+    -- of the set, i.e. the first n values or last n values.
+    p_ascending_flag IN VARCHAR2 DEFAULT 'T',
+    
+    -- limit on the number of rows returned
+    p_row_limit IN INTEGER DEFAULT NULL,
+    
+    -- a mask for the transfer type.
+    -- if null, return all transfers.
+    -- do we need this?
+    p_transfer_type IN VARCHAR2 DEFAULT NULL
+  )
+  is
+    l_contract_code          number(10);
+    l_project_location_code  number(10);
+    l_adjusted_start_time    date;
+    l_adjusted_end_time      date;
+    l_start_time_inclusive   boolean;
+    l_end_time_inclusive     boolean;
+    l_time_zone_code         number(10);
+    l_location_ref         location_ref_t;
+    l_pump_location_ref        location_ref_t;
    
 begin
-   p_accounting_set := wat_usr_contract_acct_tab_t();
-   if p_contract_ref is not null then
-      cwms_util.check_inputs(str_tab_t(
-         p_units,
-         p_time_zone,
-         p_start_inclusive,
-         p_end_inclusive,
-         p_transfer_type));
-      --------------------------------
-      -- prepare selection criteria --
-      --------------------------------
-      l_office_id_mask       := cwms_util.normalize_wildcards(upper(p_contract_ref.water_user.project_location_ref.get_office_id));
-      l_project_id_mask      := cwms_util.normalize_wildcards(p_contract_ref.water_user.project_location_ref.get_location_id);
-      l_entity_name_mask     := cwms_util.normalize_wildcards(p_contract_ref.water_user.entity_name);
-      l_contract_name_mask   := cwms_util.normalize_wildcards(p_contract_ref.contract_name);
-      l_transfer_type        := upper(p_transfer_type);
-      l_start_time_inclusive := cwms_util.is_true(p_start_inclusive);
-      l_end_time_inclusive   := cwms_util.is_true(p_end_inclusive);
-      if l_start_time_inclusive then
-         l_start_time := p_start_time;
-      else
-         l_start_time := p_start_time + 1 / 86400;
-      end if;
-      if l_end_time_inclusive then
-         l_end_time := p_end_time;
-      else
-         l_end_time := p_end_time - 1 / 86400;
-      end if;
-      if p_time_zone is not null then
-         select tz.time_zone_code
-           into l_time_zone_code
-           from cwms_time_zone tz
-          where upper(tz.time_zone_name) = upper(p_time_zone);
-      end if;
-   end if;
+    -- instantiate a table array to hold the output records.
+    p_accounting_set := wat_usr_contract_acct_tab_t();
+    -- null check the contract.
+    if p_contract_ref is null then
+      --error, the contract is null.
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Water User Contract Reference');
+    end if;
+    
+    
+    
+    cwms_util.check_inputs(str_tab_t(
+       p_units,
+       p_time_zone,
+       p_start_inclusive,
+       p_end_inclusive
+       ));
+    --------------------------------
+    -- prepare selection criteria --
+    --------------------------------
+    l_project_location_code :=  p_contract_ref.water_user.project_location_ref.get_location_code('F');
+    
+    select water_user_contract_code 
+    into l_contract_code
+    from at_water_user_contract wuc,
+        at_water_user wu
+    where wuc.water_user_code = wu.water_user_code
+        and upper(wuc.contract_name) = upper(p_contract_ref.contract_name)
+        and upper(wu.entity_name) = upper(p_contract_ref.water_user.entity_name)
+        and wu.project_location_code = l_project_location_code;
+    
+    l_start_time_inclusive := cwms_util.is_true(p_start_inclusive);
+    l_end_time_inclusive   := cwms_util.is_true(p_end_inclusive);
+    
+    l_adjusted_start_time := cwms_util.change_timezone(
+                     p_start_time,
+                     cwms_loc.get_local_timezone(l_project_location_code), 
+                     'UTC');
+    l_adjusted_end_time := cwms_util.change_timezone(
+                     p_end_time,
+                     cwms_loc.get_local_timezone(l_project_location_code), 
+                     'UTC');
+    
+    if l_start_time_inclusive = FALSE then
+       l_adjusted_start_time := l_adjusted_start_time + (1 / 86400);
+    end if;
+    
+    if l_end_time_inclusive = FALSE then
+       l_adjusted_end_time := l_adjusted_end_time - (1 / 86400);
+    end if;
+    
+    if p_time_zone is not null then
+       select tz.time_zone_code
+         into l_time_zone_code
+         from cwms_time_zone tz
+        where upper(tz.time_zone_name) = upper(p_time_zone);
+    end if;
+   
    ----------------------------------------
    -- select records and populate output --
    ----------------------------------------
-   for rec in
-      (  select wu.project_location_code,
-                wu.entity_name,
-                wu.water_right,
-                wuc.contract_name,
-                ptt.db_office_code as transfer_type_office_code,
-                ptt.phys_trans_type_display_value,
-                ptt.physical_transfer_type_tooltip,
-                ptt.physical_transfer_type_active,
-                wuca.pump_location_code,
-                -- wuca.accounting_credit_debit,
-                wuca.accounting_volume,
-                u.unit_id as units_id,
-                wuca.transfer_start_datetime,
-                -- wuca.transfer_end_datetime,
-                wuca.accounting_remarks,
-                uc.factor,
-                uc.offset
-           from at_water_user wu,
-                at_physical_location pl,
-                at_base_location bl,
-                cwms_office o,
-                at_water_user_contract wuc,
-                at_wat_usr_contract_accounting wuca,
-                at_physical_transfer_type ptt,
-                cwms_unit u,
-                cwms_unit_conversion uc,
-                cwms_base_parameter bp
-          where o.office_id like l_office_id_mask escape '\'
-            and bl.db_office_code = o.office_code
-            and pl.base_location_code = bl.base_location_code
-            and upper(cwms_util.get_location_id(pl.location_code, 'F')) like upper(l_project_id_mask) escape '\'
-            and wu.project_location_code = pl.location_code
-            and upper(wu.entity_name) like upper(l_entity_name_mask) escape '\'
-            and wuc.water_user_code = wu.water_user_code
-            and upper(wuc.contract_name) like upper(l_contract_name_mask) escape '\'
-            and wuca.water_user_contract_code = wuc.water_user_contract_code
-            and ( wuca.transfer_start_datetime 
-                     between cwms_util.change_timezone(
-                             l_start_time,
-                             cwms_loc.get_local_timezone(pl.location_code), 
-                             'UTC') 
-                         and cwms_util.change_timezone(
-                             l_end_time,
-                             cwms_loc.get_local_timezone(pl.location_code), 
-                             'UTC') 
-                 -- or
-                 -- wuca.transfer_end_datetime
-                 --    between cwms_util.change_timezone(
-                 --            l_start_time,
-                 --            cwms_loc.get_local_timezone(pl.location_code), 
-                 --            'UTC') 
-                 --        and cwms_util.change_timezone(
-                 --            l_end_time,
-                 --            cwms_loc.get_local_timezone(pl.location_code), 
-                 --            'UTC')
-                ) 
-            and ptt.physical_transfer_type_code = wuca.physical_transfer_type_code
-            and upper(ptt.phys_trans_type_display_value) like nvl(l_transfer_type, ptt.phys_trans_type_display_value ) escape '\'
-            and u.unit_code = wuc.storage_unit_code
-            and uc.to_unit_code = wuc.storage_unit_code
-            and bp.base_parameter_id = 'Stor'
-            and uc.from_unit_code = bp.unit_code
-      )
+   for rec in (  
+WITH ordered_wuca AS
+  (SELECT
+    /*+ FIRST_ROWS(100) */
+    wat_usr_contract_acct_code,
+    water_user_contract_code,
+    pump_location_code,
+    physical_transfer_type_code,
+    accounting_volume,
+    transfer_start_datetime,
+    accounting_remarks
+  FROM at_wat_usr_contract_accounting
+  WHERE water_user_contract_code = 623051
+  AND transfer_start_datetime BETWEEN to_date('2010/01/10-08:00:00', 'yyyy/mm/dd-hh24:mi:ss') AND to_date('2010/03/10-08:00:00', 'yyyy/mm/dd-hh24:mi:ss')
+  ORDER BY transfer_start_datetime DESC
+  ) ,
+  limited_wuca AS
+  (SELECT wat_usr_contract_acct_code,
+    water_user_contract_code,
+    pump_location_code,
+    physical_transfer_type_code,
+    accounting_volume,
+    transfer_start_datetime,
+    accounting_remarks
+  FROM ordered_wuca
+  WHERE rownum <= 50
+  )
+SELECT limited_wuca.pump_location_code,
+  limited_wuca.transfer_start_datetime,
+  limited_wuca.accounting_volume,
+  u.unit_id AS units_id,
+  uc.factor,
+  uc.offset,
+  o.office_id AS transfer_type_office_id,
+  ptt.phys_trans_type_display_value,
+  ptt.physical_transfer_type_tooltip,
+  ptt.physical_transfer_type_active,
+  limited_wuca.accounting_remarks
+FROM limited_wuca
+INNER JOIN at_water_user_contract wuc
+ON (limited_wuca.water_user_contract_code = wuc.water_user_contract_code)
+INNER JOIN at_physical_transfer_type ptt
+ON (limited_wuca.physical_transfer_type_code = ptt.physical_transfer_type_code)
+inner join cwms_office o on ptt.db_office_code = o.office_code
+INNER JOIN cwms_unit u
+ON (wuc.storage_unit_code = u.unit_code)
+INNER JOIN cwms_unit_conversion uc
+ON uc.to_unit_code = wuc.storage_unit_code
+INNER JOIN cwms_base_parameter bp
+ON uc.from_unit_code     = bp.unit_code
+AND bp.base_parameter_id = 'Stor'
+
+   )
    loop
+      --extend the array.
       p_accounting_set.extend;
-      l_location_ref := location_ref_t(rec.project_location_code);
-      l_pump_location := cwms_loc.retrieve_location(rec.pump_location_code);
+      
+      --dont need full pump location, just ref.
+      l_pump_location_ref := new location_ref_t(rec.pump_location_code);
+      
       p_accounting_set(p_accounting_set.count) := wat_usr_contract_acct_obj_t(
-         water_user_contract_ref_t(
-            water_user_obj_t(
-               l_location_ref,
-               rec.entity_name,
-               rec.water_right),
-            rec.contract_name),
-            l_pump_location,  -- the pump location
-            lookup_type_obj_t(
-               rec.transfer_type_office_code,
-               rec.phys_trans_type_display_value,
-               rec.physical_transfer_type_tooltip,
-               rec.physical_transfer_type_active),
-            -- rec.accounting_credit_debit,
-            rec.accounting_volume * rec.factor + rec.offset,
-            rec.units_id,
-            cwms_util.change_timezone(
-               rec.transfer_start_datetime, 
-               'UTC',
-               cwms_loc.get_local_timezone(
-                  l_location_ref.get_location_id,
-                  l_location_ref.get_office_id)),
-            -- cwms_util.change_timezone(
-            --   rec.transfer_end_datetime, 
-            --   'UTC',
-            --   cwms_loc.get_local_timezone(
-            --      l_location_ref.get_location_id,
-            --      l_location_ref.get_office_id)),
-            rec.accounting_remarks);
+         --re-use arg contract ref
+        p_contract_ref,
+        l_pump_location_ref,  -- the pump location
+        lookup_type_obj_t(
+          rec.transfer_type_office_id,
+          rec.phys_trans_type_display_value,
+          rec.physical_transfer_type_tooltip,
+          rec.physical_transfer_type_active),
+        rec.accounting_volume * rec.factor + rec.offset,
+        rec.units_id,
+        cwms_util.change_timezone(
+           rec.transfer_start_datetime, 
+           'UTC',
+           cwms_loc.get_local_timezone(
+              l_pump_location_ref.get_location_id,
+              l_pump_location_ref.get_office_id)),
+        rec.accounting_remarks);
    end loop;      
 end retrieve_accounting_set;
 end cwms_water_supply;
+
 /
 show errors;
 grant execute on cwms_water_supply to cwms_user;
