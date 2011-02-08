@@ -410,50 +410,69 @@ is
   TABLE OF turbine_change_obj_t;
   /
   show errors
-
-  --
-  --
-  --
-  SET echo ON
-  --
-  --
-  --
-  -- create public synonyms for CWMS schema packages and views
-  -- grant execute on packages to CWMS_USER role
-  -- grant select on view to CWMS_USER role
-  --
-  -- exclude any package or view named like %_SEC_%
-  --
-  DECLARE
-  type str_tab_t
-IS
-  TABLE OF VARCHAR2(32);
-  type_names str_tab_t := str_tab_t();
-  sql_statement VARCHAR2(128);
-BEGIN
-  --
-  -- collect CWMS schema object types
-  --
-  FOR rec IN
-  (SELECT object_name
-  FROM dba_objects
-  WHERE owner     = '&cwms_schema'
-  AND object_type = 'TYPE'
-  AND object_name NOT LIKE 'SYS_%'
-  )
-  LOOP
-    type_names.extend;
-    type_names(type_names.last) := rec.object_name;
-  END LOOP;
-  --
-  -- grant execute on COLLECTED types to CWMS_USER role
-  --
-  dbms_output.put_line('--');
-  FOR i IN 1..type_names.count
-  LOOP
-    sql_statement := 'GRANT EXECUTE ON &cwms_schema'||'.'||type_names(i)||' TO CWMS_USER';
-    dbms_output.put_line('-- ' || sql_statement);
-    EXECUTE immediate sql_statement;
-  END LOOP;
-END;
+--
+--
+SET echo ON
+--
+-- create public synonyms for CWMS schema types
+-- grant execute on types to CWMS_USER role
+--
+declare
+   type str_tab_t is table of varchar2(32);
+   l_type_names str_tab_t;
+   l_synonym    varchar2(32);
+   l_existing   varchar2(32);
+   l_sql        varchar2(256);
+begin
+   -----------------------
+   -- collect the types --
+   -----------------------
+   select type_name
+          bulk collect
+     into l_type_names
+     from dba_types
+    where owner='CWMS_21'
+      and type_name not like 'SYS\_%' escape '\'
+ order by type_name;
+   ----------------------------------------------
+   -- grant execute on types to CWMS user role --
+   ----------------------------------------------
+   for i in 1..l_type_names.count loop
+      l_sql := 'grant execute on &cwms_schema..'||l_type_names(i)||' to cwms_user';
+      dbms_output.put_line('-- '||l_sql);
+      execute immediate l_sql;
+   end loop;
+   --------------------------------------
+   -- create public synonyms for types --
+   --------------------------------------
+   for i in 1..l_type_names.count loop
+      l_synonym := lower(l_type_names(i));
+      if substr(l_synonym, -2) = '_t' then
+         l_synonym := substr(l_synonym, 1, length(l_synonym) - 2);
+      elsif substr(l_synonym, -5) = '_type' then
+         l_synonym := substr(l_synonym, 1, length(l_synonym) - 5);
+      end if; 
+      l_synonym := 'cwms_t_'||substr(l_synonym, 1, 25);
+      for j in 1..9 loop
+         begin
+            select synonym_name 
+              into l_existing
+              from dba_synonyms
+             where table_owner = '&cwms_schema'
+               and synonym_name = l_synonym;
+         exception
+            when no_data_found then exit;
+         end;
+         l_synonym := substr(l_synonym, 1, length(l_synonym) - 2)||'_'||j; 
+      end loop;
+      begin
+         execute immediate 'drop public synonym '||l_synonym;
+      exception
+         when others then null;
+      end;
+      l_sql := 'create public synonym '||l_synonym||' for &cwms_schema..'||l_type_names(i);
+      dbms_output.put_line('-- '||l_sql);
+      execute immediate l_sql;
+   end loop;    
+end;
 /
