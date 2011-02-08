@@ -954,6 +954,8 @@ PROCEDURE retrieve_accounting_set(
     l_time_zone_code         number(10);
     l_location_ref         location_ref_t;
     l_pump_location_ref        location_ref_t;
+    l_time_zone              varchar2(28) := nvl(p_time_zone, 'UTC');
+    l_orderby_mod     number(1);
    
 begin
     -- instantiate a table array to hold the output records.
@@ -970,14 +972,26 @@ begin
     
     cwms_util.check_inputs(str_tab_t(
        p_units,
-       p_time_zone,
+       l_time_zone,
        p_start_inclusive,
-       p_end_inclusive
+       p_end_inclusive,
+       p_ascending_flag,
+       p_transfer_type
        ));
     --------------------------------
     -- prepare selection criteria --
     --------------------------------
+    IF p_ascending_flag is null or p_ascending_flag in ('t','T') THEN
+        --default to asc order
+        l_orderby_mod := 1; 
+    ELSE
+        -- reverse order to desc
+        l_orderby_mod := -1; 
+    END IF;
+    
+
     l_project_location_code :=  p_contract_ref.water_user.project_location_ref.get_location_code('F');
+    
     
     select water_user_contract_code 
     into l_contract_code
@@ -993,11 +1007,11 @@ begin
     
     l_adjusted_start_time := cwms_util.change_timezone(
                      p_start_time,
-                     cwms_loc.get_local_timezone(l_project_location_code), 
+                     l_time_zone, 
                      'UTC');
     l_adjusted_end_time := cwms_util.change_timezone(
                      p_end_time,
-                     cwms_loc.get_local_timezone(l_project_location_code), 
+                     l_time_zone, 
                      'UTC');
     
     if l_start_time_inclusive = FALSE then
@@ -1008,11 +1022,11 @@ begin
        l_adjusted_end_time := l_adjusted_end_time - (1 / 86400);
     end if;
     
-    if p_time_zone is not null then
+    if l_time_zone is not null then
        select tz.time_zone_code
          into l_time_zone_code
          from cwms_time_zone tz
-        where upper(tz.time_zone_name) = upper(p_time_zone);
+        where upper(tz.time_zone_name) = upper(l_time_zone);
     end if;
    
    ----------------------------------------
@@ -1030,10 +1044,9 @@ WITH ordered_wuca AS
     transfer_start_datetime,
     accounting_remarks
   FROM at_wat_usr_contract_accounting
-  WHERE water_user_contract_code = 623051
-  AND transfer_start_datetime BETWEEN to_date('2010/01/10-08:00:00', 'yyyy/mm/dd-hh24:mi:ss') AND to_date('2010/03/10-08:00:00', 'yyyy/mm/dd-hh24:mi:ss')
-  ORDER BY transfer_start_datetime DESC
-  ) ,
+  WHERE water_user_contract_code = l_contract_code
+  AND transfer_start_datetime BETWEEN l_adjusted_start_time AND l_adjusted_end_time
+   ORDER BY cwms_util.to_millis(transfer_start_datetime) * l_orderby_mod),
   limited_wuca AS
   (SELECT wat_usr_contract_acct_code,
     water_user_contract_code,
@@ -1042,8 +1055,9 @@ WITH ordered_wuca AS
     accounting_volume,
     transfer_start_datetime,
     accounting_remarks
+    
   FROM ordered_wuca
-  WHERE rownum <= 50
+  WHERE rownum <= p_row_limit
   )
 SELECT limited_wuca.pump_location_code,
   limited_wuca.transfer_start_datetime,
@@ -1069,7 +1083,6 @@ ON uc.to_unit_code = wuc.storage_unit_code
 INNER JOIN cwms_base_parameter bp
 ON uc.from_unit_code     = bp.unit_code
 AND bp.base_parameter_id = 'Stor'
-
    )
    loop
       --extend the array.
@@ -1092,9 +1105,7 @@ AND bp.base_parameter_id = 'Stor'
         cwms_util.change_timezone(
            rec.transfer_start_datetime, 
            'UTC',
-           cwms_loc.get_local_timezone(
-              l_pump_location_ref.get_location_id,
-              l_pump_location_ref.get_office_id)),
+           l_time_zone),
         rec.accounting_remarks);
    end loop;      
 end retrieve_accounting_set;
