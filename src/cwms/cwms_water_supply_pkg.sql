@@ -203,6 +203,8 @@ PROCEDURE store_accounting_set(
     p_start_time	  in		date default null,
     --end time of data to delete.
     p_end_time		  in		date default null,
+    -- the time zone of the incoming data.
+    p_time_zone IN VARCHAR2 DEFAULT NULL,    
     -- if the start time is inclusive.
     p_start_inclusive IN VARCHAR2 DEFAULT 'T',
     -- if the end time is inclusive

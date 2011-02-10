@@ -3106,6 +3106,17 @@ AS
       check_inputs(str_tab_t(p_input));
    end check_input;
    
+   function check_input_f(
+      p_input in varchar2
+   )
+    return varchar2
+   is
+   begin
+      check_inputs(str_tab_t(p_input));
+      RETURN p_input;
+   END check_input_f;
+   
+   
    ---------------------
    -- Append routines --
    ---------------------

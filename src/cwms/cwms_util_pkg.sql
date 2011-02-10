@@ -623,6 +623,10 @@ AS
       p_input in varchar2
    );
    
+   FUNCTION check_input_f(
+      p_input IN VARCHAR2
+   ) RETURN VARCHAR2;
+   
    ---------------------
    -- Append routines --
    ---------------------

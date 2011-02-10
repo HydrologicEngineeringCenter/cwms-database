@@ -14,37 +14,37 @@ DECLARE
 
    table_names       id_array_t
       := id_array_t ('AT_CONSTRUCTION_HISTORY',                                       
-					 'AT_DOCUMENT',                                                   
-					 'AT_EMBANKMENT',                                                 
-					 'AT_GATE_SETTING',
-					 'AT_LOCK',                                                 
-					 'AT_LOCKAGE',                                                
-					 'AT_GATE_CHANGE',                                                
-					 'AT_TURBINE_CHANGE',                                                
-					 'AT_OUTLET',                                      
-					 'AT_PROJECT',                                                    
-					 'AT_PROJECT_AGREEMENT',                                          
-					 'AT_PROJECT_CONGRESS_DISTRICT',                                  
-					 'AT_PROJECT_PURPOSES',                                            
-					 'AT_TURBINE',                                     
-					 'AT_TURBINE_SETTING',                                     
-					 'AT_WAT_USR_CONTRACT_ACCOUNTING',
-					 'AT_WATER_USER_CONTRACT',                                      
-					 'AT_WATER_USER', 
-					 'AT_XREF_WAT_USR_CONTRACT_DOCS',
-					 'AT_DOCUMENT_TYPE',
-					 'AT_EMBANK_PROTECTION_TYPE',
-					 'AT_EMBANK_STRUCTURE_TYPE',
-					 'AT_GATE_CH_COMPUTATION_CODE',
-					 'AT_GATE_RELEASE_REASON_CODE',
-					 'AT_PHYSICAL_TRANSFER_TYPE',
-					 'AT_PROJECT_PURPOSE',
-					 'AT_TURBINE_SETTING_REASON',
-					 'AT_TURBINE_COMPUTATION_CODE',
+           'AT_DOCUMENT',                                                   
+           'AT_EMBANKMENT',                                                 
+           'AT_GATE_SETTING',
+           'AT_LOCK',                                                 
+           'AT_LOCKAGE',                                                
+           'AT_GATE_CHANGE',                                                
+           'AT_TURBINE_CHANGE',                                                
+           'AT_OUTLET',                                      
+           'AT_PROJECT',                                                    
+           'AT_PROJECT_AGREEMENT',                                          
+           'AT_PROJECT_CONGRESS_DISTRICT',                                  
+           'AT_PROJECT_PURPOSES',                                            
+           'AT_TURBINE',                                     
+           'AT_TURBINE_SETTING',                                     
+           'AT_WAT_USR_CONTRACT_ACCOUNTING',
+           'AT_WATER_USER_CONTRACT',                                      
+           'AT_WATER_USER', 
+           'AT_XREF_WAT_USR_CONTRACT_DOCS',
+           'AT_DOCUMENT_TYPE',
+           'AT_EMBANK_PROTECTION_TYPE',
+           'AT_EMBANK_STRUCTURE_TYPE',
+           'AT_GATE_CH_COMPUTATION_CODE',
+           'AT_GATE_RELEASE_REASON_CODE',
+           'AT_PHYSICAL_TRANSFER_TYPE',
+           'AT_PROJECT_PURPOSE',
+           'AT_TURBINE_SETTING_REASON',
+           'AT_TURBINE_COMPUTATION_CODE',
                                          'AT_WS_CONTRACT_TYPE',
                                          'AT_OPERATIONAL_STATUS_CODE',
                                          'AT_OUTLET_CHARACTERISTIC',                               
-					 'AT_TURBINE_CHARACTERISTIC'  
+           'AT_TURBINE_CHARACTERISTIC'  
                     );
    mview_log_names   id_array_t
       := id_array_t (' '
@@ -89,11 +89,11 @@ END;
 
 CREATE TABLE at_gate_ch_computation_code
 (
-  discharge_computation_code  			NUMBER(10)			NOT NULL,
+  discharge_comp_code       NUMBER(10)      NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  computation_code_display_value	        VARCHAR2(25 BYTE)		NOT NULL,
-  computation_code_tooltip			VARCHAR2(255 BYTE)		NOT NULL,
-  computation_code_active			VARCHAR2(1 BYTE) DEFAULT 'T'	NOT NULL 
+  discharge_comp_display_value          VARCHAR2(25 BYTE)   NOT NULL,
+  discharge_comp_tooltip      VARCHAR2(255 BYTE)    NOT NULL,
+  discharge_comp_active     VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -114,15 +114,15 @@ NOPARALLEL
 MONITORING
 /
 
-COMMENT ON COLUMN at_gate_ch_computation_code.discharge_computation_code IS 'The unique id for this lookup record';
+COMMENT ON COLUMN at_gate_ch_computation_code.discharge_comp_code IS 'The unique id for this lookup record';
 COMMENT ON COLUMN at_gate_ch_computation_code.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_gate_ch_computation_code.computation_code_display_value IS 'The value to display for this LU record';
-COMMENT ON COLUMN at_gate_ch_computation_code.computation_code_tooltip IS 'The tooltip or meaning of this LU record';
-COMMENT ON COLUMN at_gate_ch_computation_code.computation_code_active IS 'Whether the lu entry is currently active';
+COMMENT ON COLUMN at_gate_ch_computation_code.discharge_comp_display_value IS 'The value to display for this LU record';
+COMMENT ON COLUMN at_gate_ch_computation_code.discharge_comp_tooltip IS 'The tooltip or meaning of this LU record';
+COMMENT ON COLUMN at_gate_ch_computation_code.discharge_comp_active IS 'Whether the lu entry is currently active';
 
 -- unique index
 CREATE UNIQUE INDEX gate_ch_computation_code_idx1 ON at_gate_ch_computation_code
-(db_office_code, UPPER("COMPUTATION_CODE_DISPLAY_VALUE"))
+(db_office_code, UPPER(DISCHARGE_COMP_DISPLAY_VALUE))
 LOGGING
 tablespace CWMS_20DATA
 PCTFREE    10
@@ -141,7 +141,7 @@ NOPARALLEL
 ALTER TABLE at_gate_ch_computation_code ADD (
   CONSTRAINT at_gate_computation_code_pk
  PRIMARY KEY
- (discharge_computation_code)
+ (discharge_comp_code)
     USING INDEX
     TABLESPACE cwms_20at_data
     PCTFREE    10
@@ -164,7 +164,7 @@ ALTER TABLE at_gate_ch_computation_code ADD (
 
 ALTER TABLE at_gate_ch_computation_code ADD (
 CONSTRAINT at_gccc_active_ck 
-CHECK ( computation_code_active = 'T' OR computation_code_active = 'F'))
+CHECK ( discharge_comp_active = 'T' OR discharge_comp_active = 'F'))
 /
 
 -- INSERT INTO at_gate_ch_computation_code VALUES (0, 53, 'Default', 'Default', 'T');
@@ -174,11 +174,11 @@ CHECK ( computation_code_active = 'T' OR computation_code_active = 'F'))
 
 CREATE TABLE at_gate_release_reason_code
 (
-  release_reason_code	  		NUMBER(10)						NOT NULL,
+  release_reason_code       NUMBER(10)            NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  release_reason_display_value	VARCHAR2(25 BYTE)				NOT NULL,
-  release_reason_tooltip		VARCHAR2(255 BYTE)				NOT NULL,
-  release_reason_active			VARCHAR2(1 BYTE) DEFAULT 'T'	NOT NULL 
+  release_reason_display_value  VARCHAR2(25 BYTE)       NOT NULL,
+  release_reason_tooltip    VARCHAR2(255 BYTE)        NOT NULL,
+  release_reason_active     VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -259,11 +259,11 @@ CHECK ( release_reason_active = 'T' OR release_reason_active = 'F'))
 
 CREATE TABLE at_project_purposes
 (
-  purpose_code  			NUMBER(10)				NOT NULL,
+  purpose_code        NUMBER(10)        NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  purpose_display_value		        VARCHAR2(25 BYTE)			NOT NULL,
-  purpose_tooltip			VARCHAR2(255 BYTE)			NOT NULL,
-  purpose_active			VARCHAR2(1 BYTE) DEFAULT 'T'	        NOT NULL 
+  purpose_display_value           VARCHAR2(25 BYTE)     NOT NULL,
+  purpose_tooltip     VARCHAR2(255 BYTE)      NOT NULL,
+  purpose_active      VARCHAR2(1 BYTE) DEFAULT 'T'          NOT NULL 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -343,11 +343,11 @@ CHECK ( purpose_active = 'T' OR purpose_active = 'F'))
 
 CREATE TABLE at_document_type
 (
-  document_type_code  				NUMBER(10)			NOT NULL,
+  document_type_code          NUMBER(10)      NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  document_type_display_value		        VARCHAR2(25 BYTE)	        NOT NULL,
-  document_type_tooltip				VARCHAR2(255 BYTE)		NOT NULL,
-  document_type_active				VARCHAR2(1 BYTE) DEFAULT 'T'	NOT NULL 
+  document_type_display_value           VARCHAR2(25 BYTE)         NOT NULL,
+  document_type_tooltip       VARCHAR2(255 BYTE)    NOT NULL,
+  document_type_active        VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -427,11 +427,11 @@ CHECK ( document_type_active = 'T' OR document_type_active = 'F'))
 
 CREATE TABLE at_embank_structure_type
 (
-  structure_type_code  				NUMBER(10)						NOT NULL,
+  structure_type_code         NUMBER(10)            NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  structure_type_display_value		VARCHAR2(50 BYTE)				NOT NULL,
-  structure_type_tooltip			VARCHAR2(255 BYTE)				NOT NULL,
-  structure_type_active				VARCHAR2(1 BYTE) DEFAULT 'T'	NOT NULL 
+  structure_type_display_value    VARCHAR2(50 BYTE)       NOT NULL,
+  structure_type_tooltip      VARCHAR2(255 BYTE)        NOT NULL,
+  structure_type_active       VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -510,11 +510,11 @@ CHECK ( structure_type_active = 'T' OR structure_type_active = 'F'))
 
 CREATE TABLE at_embank_protection_type
 (
-  protection_type_code  			NUMBER(10)				NOT NULL,
+  protection_type_code        NUMBER(10)        NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  protection_type_display_value		VARCHAR2(50 BYTE)		NOT NULL,
-  protection_type_tooltip			VARCHAR2(255 BYTE)		NOT NULL,
-  protection_type_active			VARCHAR2(1)	DEFAULT 'T'	NOT NULL 
+  protection_type_display_value   VARCHAR2(50 BYTE)   NOT NULL,
+  protection_type_tooltip     VARCHAR2(255 BYTE)    NOT NULL,
+  protection_type_active      VARCHAR2(1) DEFAULT 'T' NOT NULL 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -594,11 +594,11 @@ CHECK ( protection_type_active = 'T' OR protection_type_active = 'F'))
 
 CREATE TABLE at_turbine_setting_reason
 (
-  turbine_setting_reason_code  			NUMBER(10)			NOT NULL,
+  turb_set_reason_code       NUMBER(10)      NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  turb_set_reason_display_value			VARCHAR2(25 BYTE)		NOT NULL,
-  turbine_setting_reason_tooltip		VARCHAR2(255 BYTE)		NOT NULL,
-  turbine_setting_reason_active			VARCHAR2(1)	DEFAULT 'T'	NOT NULL 
+  turb_set_reason_display_value     VARCHAR2(25 BYTE)   NOT NULL,
+  turb_set_reason_tooltip    VARCHAR2(255 BYTE)    NOT NULL,
+  turb_set_reason_active     VARCHAR2(1) DEFAULT 'T' NOT NULL 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -618,15 +618,15 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_turbine_setting_reason.turbine_setting_reason_code IS 'The unique id for this turbine_setting_type code record';
+COMMENT ON COLUMN at_turbine_setting_reason.turb_set_reason_code IS 'The unique id for this turbine_setting_type code record';
 COMMENT ON COLUMN at_turbine_setting_reason.db_office_code IS 'Refererences the "owning" office.';
 COMMENT ON COLUMN at_turbine_setting_reason.turb_set_reason_display_value IS 'The value to display for this turbine_setting_type record';
-COMMENT ON COLUMN at_turbine_setting_reason.turbine_setting_reason_tooltip IS 'The description or meaning of this turbine_setting_type record';
-COMMENT ON COLUMN at_turbine_setting_reason.turbine_setting_reason_active IS 'Whether this turbine_setting_type entry is currently active';
+COMMENT ON COLUMN at_turbine_setting_reason.turb_set_reason_tooltip IS 'The description or meaning of this turbine_setting_type record';
+COMMENT ON COLUMN at_turbine_setting_reason.turb_set_reason_active IS 'Whether this turbine_setting_type entry is currently active';
 
 -- unique index
 CREATE UNIQUE INDEX turbine_setting_reason_idx1 ON at_turbine_setting_reason
-(db_office_code, UPPER("TURB_SET_REASON_DISPLAY_VALUE"))
+(db_office_code, UPPER(TURB_SET_REASON_DISPLAY_VALUE))
 LOGGING
 tablespace CWMS_20DATA
 PCTFREE    10
@@ -645,7 +645,7 @@ NOPARALLEL
 ALTER TABLE at_turbine_setting_reason ADD (
   CONSTRAINT at_turb_setting_reason_pk
  PRIMARY KEY
- (turbine_setting_reason_code)
+ (turb_set_reason_code)
     USING INDEX
     TABLESPACE cwms_20at_data
     PCTFREE    10
@@ -668,7 +668,7 @@ ALTER TABLE at_turbine_setting_reason ADD (
 
 ALTER TABLE at_turbine_setting_reason ADD (
 CONSTRAINT at_tst_active_ck 
-CHECK ( turbine_setting_reason_active = 'T' OR turbine_setting_reason_active = 'F'))
+CHECK ( turb_set_reason_active = 'T' OR turb_set_reason_active = 'F'))
 /
 
 -- INSERT INTO at_turbine_setting_reason VALUES (0, 53, 'Default', 'Default', 'T');
@@ -679,11 +679,11 @@ CHECK ( turbine_setting_reason_active = 'T' OR turbine_setting_reason_active = '
 
 CREATE TABLE at_turbine_computation_code
 (
-  turbine_discharge_comp_code	  		NUMBER(10)				NOT NULL,
+  turbine_comp_code       NUMBER(10)        NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  turb_comp_code_display_value			VARCHAR2(25 BYTE)		NOT NULL,
-  turb_computation_code_tooltip			VARCHAR2(255 BYTE)		NOT NULL,
-  turb_computation_code_active			VARCHAR2(1)	DEFAULT 'T'	NOT NULL
+  turbine_comp_display_value      VARCHAR2(25 BYTE)   NOT NULL,
+  turbine_comp_tooltip     VARCHAR2(255 BYTE)    NOT NULL,
+  turbine_comp_active      VARCHAR2(1) DEFAULT 'T' NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -704,15 +704,15 @@ NOPARALLEL
 MONITORING
 /
 
-COMMENT ON COLUMN at_turbine_computation_code.turbine_discharge_comp_code IS 'The unique id for this turbine_computation_code record';
+COMMENT ON COLUMN at_turbine_computation_code.turbine_comp_code IS 'The unique id for this turbine_computation_code record';
 COMMENT ON COLUMN at_turbine_computation_code.db_office_code IS 'Refererences the "owning" office.';
-COMMENT ON COLUMN at_turbine_computation_code.turb_comp_code_display_value IS 'The value to display for this at_turbine_computation_code record';
-COMMENT ON COLUMN at_turbine_computation_code.turb_computation_code_tooltip IS 'The description or meaning of this at_turbine_computation_code record';
-COMMENT ON COLUMN at_turbine_computation_code.turb_computation_code_active IS 'Whether this at_turbine_computation_code entry is currently active';
+COMMENT ON COLUMN at_turbine_computation_code.turbine_comp_display_value IS 'The value to display for this at_turbine_computation_code record';
+COMMENT ON COLUMN at_turbine_computation_code.turbine_comp_tooltip IS 'The description or meaning of this at_turbine_computation_code record';
+COMMENT ON COLUMN at_turbine_computation_code.turbine_comp_active IS 'Whether this at_turbine_computation_code entry is currently active';
 
 -- unique index
 CREATE UNIQUE INDEX turbine_computation_code_idx1 ON at_turbine_computation_code
-(db_office_code, UPPER("TURB_COMP_CODE_DISPLAY_VALUE"))
+(db_office_code, UPPER(TURBINE_COMP_DISPLAY_VALUE))
 LOGGING
 tablespace CWMS_20DATA
 PCTFREE    10
@@ -731,7 +731,7 @@ NOPARALLEL
 ALTER TABLE at_turbine_computation_code ADD (
   CONSTRAINT at_turb_computation_code_pk
  PRIMARY KEY
- (turbine_discharge_comp_code)
+ (turbine_comp_code)
     USING INDEX
     TABLESPACE cwms_20at_data
     PCTFREE    10
@@ -754,7 +754,7 @@ ALTER TABLE at_turbine_computation_code ADD (
 
 ALTER TABLE at_turbine_computation_code ADD (
 CONSTRAINT at_tcc_active_ck 
-CHECK ( turb_computation_code_active = 'T' OR turb_computation_code_active = 'F'))
+CHECK ( turbine_comp_active = 'T' OR turbine_comp_active = 'F'))
 /
 
 -- INSERT INTO at_turbine_computation_code VALUES (0, 53, 'Default', 'Default', 'T');
@@ -764,11 +764,11 @@ CHECK ( turb_computation_code_active = 'T' OR turb_computation_code_active = 'F'
 
 CREATE TABLE at_physical_transfer_type
 (
-  physical_transfer_type_code  			NUMBER(10)				NOT NULL,
+  phys_trans_type_code        NUMBER(10)        NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  phys_trans_type_display_value			VARCHAR2(25 BYTE)		NOT NULL,
-  physical_transfer_type_tooltip		VARCHAR2(255 BYTE)		NOT NULL,
-  physical_transfer_type_active			VARCHAR2(1)	DEFAULT 'T'	NOT NULL 
+  phys_trans_type_display_value     VARCHAR2(25 BYTE)   NOT NULL,
+  phys_trans_type_tooltip   VARCHAR2(255 BYTE)    NOT NULL,
+  phys_trans_type_active      VARCHAR2(1) DEFAULT 'T' NOT NULL 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -788,11 +788,11 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-COMMENT ON COLUMN at_physical_transfer_type.physical_transfer_type_code IS 'The unique id for this physical_transfer_type code record';
+COMMENT ON COLUMN at_physical_transfer_type.phys_trans_type_code IS 'The unique id for this physical_transfer_type code record';
 COMMENT ON COLUMN at_physical_transfer_type.db_office_code IS 'Refererences the "owning" office.';
 COMMENT ON COLUMN at_physical_transfer_type.phys_trans_type_display_value IS 'The value to display for this physical_transfer_type record';
-COMMENT ON COLUMN at_physical_transfer_type.physical_transfer_type_tooltip IS 'The description or meaning of this physical_transfer_type record';
-COMMENT ON COLUMN at_physical_transfer_type.physical_transfer_type_active IS 'Whether this physical_transfer_type entry is currently active';
+COMMENT ON COLUMN at_physical_transfer_type.phys_trans_type_tooltip IS 'The description or meaning of this physical_transfer_type record';
+COMMENT ON COLUMN at_physical_transfer_type.phys_trans_type_active IS 'Whether this physical_transfer_type entry is currently active';
 
 -- unique index
 CREATE UNIQUE INDEX physical_transfer_type_idx1 ON at_physical_transfer_type
@@ -815,7 +815,7 @@ NOPARALLEL
 ALTER TABLE at_physical_transfer_type ADD (
   CONSTRAINT at_phys_transfer_type_pk
  PRIMARY KEY
- (physical_transfer_type_code)
+ (phys_trans_type_code)
     USING INDEX
     TABLESPACE cwms_20at_data
     PCTFREE    10
@@ -838,21 +838,21 @@ ALTER TABLE at_physical_transfer_type ADD (
 
 ALTER TABLE at_physical_transfer_type ADD (
 CONSTRAINT at_ptt_active_ck 
-CHECK ( physical_transfer_type_active = 'T' OR physical_transfer_type_active = 'F'))
+CHECK ( phys_trans_type_active = 'T' OR phys_trans_type_active = 'F'))
 /
 
--- INSERT INTO at_physical_transfer_type VALUES (0, 53, 'Default', 'Default', 'T');
+-- INSERT INTO at_phys_trans_type VALUES (0, 53, 'Default', 'Default', 'T');
 
 --------
 --------
 
 CREATE TABLE at_operational_status_code
 (
-  operational_status_code  			NUMBER(10)			NOT NULL,
+  operational_status_code       NUMBER(10)      NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  oper_status_display_value		VARCHAR2(25 BYTE)		NOT NULL,
-  operational_status_tooltip		        VARCHAR2(255 BYTE)		NOT NULL,
-  operational_status_active			VARCHAR2(1)	DEFAULT 'T'	NOT NULL 
+  oper_status_display_value   VARCHAR2(25 BYTE)   NOT NULL,
+  operational_status_tooltip            VARCHAR2(255 BYTE)    NOT NULL,
+  operational_status_active     VARCHAR2(1) DEFAULT 'T' NOT NULL 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -933,11 +933,11 @@ CHECK (operational_status_active = 'T' OR operational_status_active = 'F'))
 
 CREATE TABLE at_ws_contract_type
 (
-  ws_contract_type_code 		NUMBER(10)				NOT NULL,
+  ws_contract_type_code     NUMBER(10)        NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  ws_contract_type_display_value	VARCHAR2(25 BYTE)		NOT NULL,
-  ws_contract_type_tooltip		VARCHAR2(255 BYTE)		NOT NULL,
-  ws_contract_type_active		VARCHAR2(1)	DEFAULT 'T'	NOT NULL 
+  ws_contract_type_display_value  VARCHAR2(25 BYTE)   NOT NULL,
+  ws_contract_type_tooltip    VARCHAR2(255 BYTE)    NOT NULL,
+  ws_contract_type_active   VARCHAR2(1) DEFAULT 'T' NOT NULL 
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1018,23 +1018,23 @@ CHECK ( ws_contract_type_active = 'T' OR ws_contract_type_active = 'F'))
 
 CREATE TABLE at_project
 (
-  project_location_code				NUMBER(10)	        NOT NULL,
-  federal_cost					NUMBER,
-  nonfederal_cost				NUMBER,
-  cost_year					DATE,
-  federal_om_cost				BINARY_DOUBLE,
-  nonfederal_om_cost				BINARY_DOUBLE,
-  authorizing_law				VARCHAR2(512),
-  project_owner					VARCHAR2(255),
-  hydropower_description			VARCHAR2(255),
-  sedimentation_description			VARCHAR2(255 BYTE),
-  downstream_urban_description		        VARCHAR2(255 BYTE),
-  bank_full_capacity_description	        VARCHAR2(255 BYTE),
-  pump_back_location_code			NUMBER(10),
-  near_gage_location_code			NUMBER(10),
-  yield_time_frame_start			DATE,
-  yield_time_frame_end				DATE,	
-  project_remarks				VARCHAR2(1000 BYTE)
+  project_location_code       NUMBER(10)          NOT NULL,
+  federal_cost          NUMBER,
+  nonfederal_cost       NUMBER,
+  cost_year         DATE,
+  federal_om_cost       BINARY_DOUBLE,
+  nonfederal_om_cost        BINARY_DOUBLE,
+  authorizing_law       VARCHAR2(512),
+  project_owner         VARCHAR2(255),
+  hydropower_description      VARCHAR2(255),
+  sedimentation_description     VARCHAR2(255 BYTE),
+  downstream_urban_description            VARCHAR2(255 BYTE),
+  bank_full_capacity_description          VARCHAR2(255 BYTE),
+  pump_back_location_code     NUMBER(10),
+  near_gage_location_code     NUMBER(10),
+  yield_time_frame_start      DATE,
+  yield_time_frame_end        DATE, 
+  project_remarks       VARCHAR2(1000 BYTE)
   )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1112,16 +1112,16 @@ ALTER TABLE at_project ADD (
 
 CREATE TABLE at_embankment
 (
-  embankment_location_code		NUMBER(10)      	        NOT NULL,
-  embankment_project_loc_code	        NUMBER(10)			NOT NULL,
-  structure_type_code			NUMBER(10)			NOT NULL,
-  structure_length			BINARY_DOUBLE,
-  upstream_prot_type_code		NUMBER(10),
-  upstream_sideslope			BINARY_DOUBLE,
-  downstream_prot_type_code		NUMBER(10),
-  downstream_sideslope			BINARY_DOUBLE,
-  height_max					BINARY_DOUBLE,
-  top_width						BINARY_DOUBLE
+  embankment_location_code    NUMBER(10)                NOT NULL,
+  embankment_project_loc_code         NUMBER(10)      NOT NULL,
+  structure_type_code     NUMBER(10)      NOT NULL,
+  structure_length      BINARY_DOUBLE,
+  upstream_prot_type_code   NUMBER(10),
+  upstream_sideslope      BINARY_DOUBLE,
+  downstream_prot_type_code   NUMBER(10),
+  downstream_sideslope      BINARY_DOUBLE,
+  height_max          BINARY_DOUBLE,
+  top_width           BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1205,13 +1205,13 @@ ALTER TABLE at_embankment ADD (
 
 CREATE TABLE at_lock
 (
-  lock_location_code			NUMBER(10)			NOT NULL,
-  project_location_code	NUMBER(10)			NOT NULL,
-  lock_width					BINARY_DOUBLE,
-  lock_length					BINARY_DOUBLE,
-  volume_per_lockage			BINARY_DOUBLE,
-  minimum_draft							BINARY_DOUBLE,
-  normal_lock_lift				BINARY_DOUBLE
+  lock_location_code      NUMBER(10)      NOT NULL,
+  project_location_code NUMBER(10)      NOT NULL,
+  lock_width          BINARY_DOUBLE,
+  lock_length         BINARY_DOUBLE,
+  volume_per_lockage      BINARY_DOUBLE,
+  minimum_draft             BINARY_DOUBLE,
+  normal_lock_lift        BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1275,15 +1275,15 @@ ALTER TABLE at_lock ADD (
 
 CREATE TABLE at_lockage
 (
-  lockage_code				NUMBER(10)			NOT NULL,
-  lockage_location_code			NUMBER(10)			NOT NULL,
-  lockage_datetime			DATE				NOT NULL,
-  number_boats				BINARY_DOUBLE,
-  number_barges				BINARY_DOUBLE,
-  tonnage				BINARY_DOUBLE,
-  is_tow_upbound			VARCHAR2(1 BYTE)                NOT NULL,
+  lockage_code        NUMBER(10)      NOT NULL,
+  lockage_location_code     NUMBER(10)      NOT NULL,
+  lockage_datetime      DATE        NOT NULL,
+  number_boats        BINARY_DOUBLE,
+  number_barges       BINARY_DOUBLE,
+  tonnage       BINARY_DOUBLE,
+  is_tow_upbound      VARCHAR2(1 BYTE)                NOT NULL,
   is_lock_chamber_emptying              VARCHAR2(1 BYTE)                NOT NULL,
-  lockage_notes 			VARCHAR2(255 BYTE)
+  lockage_notes       VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1370,12 +1370,12 @@ CREATE TABLE at_turbine_characteristic
   turbine_characteristic_code           NUMBER(10)                      NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
   turbine_characteristic_id VARCHAR2(64 BYTE)   NOT NULL,
-  rated_power_capacity			BINARY_DOUBLE,
+  rated_power_capacity      BINARY_DOUBLE,
   max_power_overload                    BINARY_DOUBLE,
-  min_generation_flow			BINARY_DOUBLE,
-  max_generation_flow			BINARY_DOUBLE,
-  turbine_operation_rule_set		VARCHAR2(255 BYTE),
-  turbine_general_description		VARCHAR2(255 BYTE)
+  min_generation_flow     BINARY_DOUBLE,
+  max_generation_flow     BINARY_DOUBLE,
+  turbine_operation_rule_set    VARCHAR2(255 BYTE),
+  turbine_general_description   VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1451,10 +1451,10 @@ NOPARALLEL
 
 CREATE TABLE at_turbine
 (
-  turbine_location_code			NUMBER(10)			NOT NULL,
-  project_location_code	                NUMBER(10)			NOT NULL,
+  turbine_location_code     NUMBER(10)      NOT NULL,
+  project_location_code                 NUMBER(10)      NOT NULL,
   turbine_characteristic_code           NUMBER(10)                      NOT NULL
---  turbine_description			VARCHAR2(255 BYTE)
+--  turbine_description     VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1521,14 +1521,14 @@ ALTER TABLE at_turbine ADD (
 
 CREATE TABLE at_turbine_change
 (
-  turbine_change_code			NUMBER(10)			NOT NULL,
-  project_location_code	                NUMBER(10)			NOT NULL,
-  turbine_change_datetime		DATE				NOT NULL,
+  turbine_change_code     NUMBER(10)      NOT NULL,
+  project_location_code                 NUMBER(10)      NOT NULL,
+  turbine_change_datetime   DATE        NOT NULL,
   turbine_setting_reason_code           NUMBER(10)                      NOT NULL,
-  turbine_discharge_comp_code		NUMBER(10)			NOT NULL,
-  old_total_discharge_override		BINARY_DOUBLE,
-  new_total_discharge_override		BINARY_DOUBLE,
-  turbine_change_notes			VARCHAR2(255 BYTE)
+  turbine_discharge_comp_code   NUMBER(10)      NOT NULL,
+  old_total_discharge_override    BINARY_DOUBLE,
+  new_total_discharge_override    BINARY_DOUBLE,
+  turbine_change_notes      VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1600,13 +1600,13 @@ ALTER TABLE at_turbine_change ADD (
 ALTER TABLE at_turbine_change ADD (
   CONSTRAINT at_turbine_change_fk2
  FOREIGN KEY (turbine_setting_reason_code)
- REFERENCES at_turbine_setting_reason (turbine_setting_reason_code))
+ REFERENCES at_turbine_setting_reason (turb_set_reason_code))
 /
 
 ALTER TABLE at_turbine_change ADD (
   CONSTRAINT at_turbine_change_fk3
  FOREIGN KEY (turbine_discharge_comp_code)
- REFERENCES at_turbine_computation_code (turbine_discharge_comp_code))
+ REFERENCES at_turbine_computation_code (turbine_comp_code))
 /
 
 
@@ -1615,12 +1615,12 @@ ALTER TABLE at_turbine_change ADD (
 
 CREATE TABLE at_turbine_setting
 (
-  turbine_setting_code			NUMBER(10)			NOT NULL,
-  turbine_change_code	                NUMBER(10)			NOT NULL,
-  turbine_location_code	                NUMBER(10)			NOT NULL,
-  load					BINARY_DOUBLE,
-  power_factor				BINARY_DOUBLE,
-  energy_rate				BINARY_DOUBLE
+  turbine_setting_code      NUMBER(10)      NOT NULL,
+  turbine_change_code                 NUMBER(10)      NOT NULL,
+  turbine_location_code                 NUMBER(10)      NOT NULL,
+  load          BINARY_DOUBLE,
+  power_factor        BINARY_DOUBLE,
+  energy_rate       BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1699,10 +1699,10 @@ ALTER TABLE at_turbine_setting ADD (
 
 CREATE TABLE at_project_congress_district
 (
-  project_congress_location_code	NUMBER(10)			NOT NULL,
-  project_congress_state_code		NUMBER(10)			NOT NULL,
-  congressional_district		NUMBER(10)			NOT NULL,
-  congress_district_remarks		VARCHAR2(255 BYTE)
+  project_congress_location_code  NUMBER(10)      NOT NULL,
+  project_congress_state_code   NUMBER(10)      NOT NULL,
+  congressional_district    NUMBER(10)      NOT NULL,
+  congress_district_remarks   VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1761,16 +1761,16 @@ ALTER TABLE at_project_congress_district ADD (
 
 CREATE TABLE at_gate_change
 (
-  gate_change_code				NUMBER(10)			NOT NULL,
-  project_location_code	                        NUMBER(10)			NOT NULL,
-  gate_change_date				DATE				NOT NULL,
-  elev_pool					BINARY_DOUBLE                      NOT NULL,
-  elev_tailwater     				BINARY_DOUBLE,
-  old_total_discharge_override	                BINARY_DOUBLE,
-  new_total_discharge_override	                BINARY_DOUBLE,
-  discharge_computation_code  			NUMBER(10)			NOT NULL,
-  release_reason_code	  		        NUMBER(10)			NOT NULL,
-  gate_change_notes				VARCHAR2(255 BYTE)
+  gate_change_code        NUMBER(10)      NOT NULL,
+  project_location_code                         NUMBER(10)      NOT NULL,
+  gate_change_date        DATE        NOT NULL,
+  elev_pool         BINARY_DOUBLE                      NOT NULL,
+  elev_tailwater            BINARY_DOUBLE,
+  old_total_discharge_override                  BINARY_DOUBLE,
+  new_total_discharge_override                  BINARY_DOUBLE,
+  discharge_computation_code        NUMBER(10)      NOT NULL,
+  release_reason_code               NUMBER(10)      NOT NULL,
+  gate_change_notes       VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1844,7 +1844,7 @@ ALTER TABLE at_gate_change ADD (
 ALTER TABLE at_gate_change ADD (
   CONSTRAINT at_gate_change_fk2
  FOREIGN KEY (discharge_computation_code)
- REFERENCES at_gate_ch_computation_code (discharge_computation_code))
+ REFERENCES at_gate_ch_computation_code (discharge_comp_code))
 /
 
 ALTER TABLE at_gate_change ADD (
@@ -1858,17 +1858,17 @@ ALTER TABLE at_gate_change ADD (
 
 CREATE TABLE at_outlet_characteristic
 (
-  outlet_characteristic_code			NUMBER(10)	       NOT NULL,
+  outlet_characteristic_code      NUMBER(10)         NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
   outlet_characteristic_id VARCHAR2(64 BYTE)   NOT NULL,
   opening_parameter_code                        NUMBER(10)             NOT NULL,
-  height					BINARY_DOUBLE,
-  width						BINARY_DOUBLE,
-  opening_radius				BINARY_DOUBLE,
-  elev_invert					BINARY_DOUBLE,
-  flow_capacity_max				BINARY_DOUBLE,
-  net_length_spillway				BINARY_DOUBLE,
-  spillway_notch_length			        BINARY_DOUBLE,
+  height          BINARY_DOUBLE,
+  width           BINARY_DOUBLE,
+  opening_radius        BINARY_DOUBLE,
+  elev_invert         BINARY_DOUBLE,
+  flow_capacity_max       BINARY_DOUBLE,
+  net_length_spillway       BINARY_DOUBLE,
+  spillway_notch_length             BINARY_DOUBLE,
   outlet_general_description                    VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
@@ -1949,9 +1949,9 @@ NOPARALLEL
 
 CREATE TABLE at_outlet
 (
-  outlet_location_code			        NUMBER(10)			NOT NULL,
-  project_location_code	                        NUMBER(10)			NOT NULL,
-  outlet_characteristic_code    		NUMBER(10)                      NOT NULL
+  outlet_location_code              NUMBER(10)      NOT NULL,
+  project_location_code                         NUMBER(10)      NOT NULL,
+  outlet_characteristic_code        NUMBER(10)                      NOT NULL
   --outlet_description                            VARCHAR2(255 BYTE)   
 )
 TABLESPACE cwms_20at_data
@@ -2020,12 +2020,12 @@ ALTER TABLE at_outlet ADD (
 
 CREATE TABLE at_gate_setting
 (
-  gate_setting_code	  	              NUMBER(10)			NOT NULL,
-  gate_change_code	        	      NUMBER(10)			NOT NULL,
-  outlet_location_code	                      NUMBER(10)			NOT NULL,
-  gate_opening				      BINARY_DOUBLE			NOT NULL,
-  old_discharge				      BINARY_DOUBLE,
-  new_discharge				      BINARY_DOUBLE
+  gate_setting_code                   NUMBER(10)      NOT NULL,
+  gate_change_code                  NUMBER(10)      NOT NULL,
+  outlet_location_code                        NUMBER(10)      NOT NULL,
+  gate_opening              BINARY_DOUBLE     NOT NULL,
+  old_discharge             BINARY_DOUBLE,
+  new_discharge             BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2104,17 +2104,17 @@ ALTER TABLE at_gate_setting ADD (
 
 CREATE TABLE at_document
 (
-  document_code					NUMBER(10)			NOT NULL,
+  document_code         NUMBER(10)      NOT NULL,
   db_office_code      NUMBER                    NOT NULL,
-  document_id					VARCHAR2(64 BYTE)	NOT NULL,
-  document_type_code			NUMBER(10)			NOT NULL,
-  document_location_code		NUMBER(10),
-  document_url					VARCHAR2(100 BYTE),
-  document_date					DATE				NOT NULL,
-  document_mod_date				DATE,
-  document_obsolete_date		DATE,
-  document_preview_code			NUMBER(10),
-  stored_document				BLOB
+  document_id         VARCHAR2(64 BYTE) NOT NULL,
+  document_type_code      NUMBER(10)      NOT NULL,
+  document_location_code    NUMBER(10),
+  document_url          VARCHAR2(100 BYTE),
+  document_date         DATE        NOT NULL,
+  document_mod_date       DATE,
+  document_obsolete_date    DATE,
+  document_preview_code     NUMBER(10),
+  stored_document       BLOB
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2411,15 +2411,15 @@ ALTER TABLE at_water_user_contract ADD (
 
 CREATE TABLE at_wat_usr_contract_accounting
 (
-  wat_usr_contract_acct_code	NUMBER(10)			NOT NULL,
-  water_user_contract_code	NUMBER(10)			NOT NULL,
+  wat_usr_contract_acct_code  NUMBER(10)      NOT NULL,
+  water_user_contract_code  NUMBER(10)      NOT NULL,
   pump_location_code NUMBER(10) NOT NULL,
-  physical_transfer_type_code	NUMBER(10)			NOT NULL,
-  -- accounting_credit_debit		VARCHAR2(6 BYTE)	NOT NULL,
-  accounting_volume				BINARY_DOUBLE			NOT NULL,
-  transfer_start_datetime		DATE				NOT NULL,
-  -- transfer_end_datetime			DATE				NOT NULL,
-  accounting_remarks			VARCHAR2(255 BYTE)			
+  phys_trans_type_code  NUMBER(10)      NOT NULL,
+  -- accounting_credit_debit    VARCHAR2(6 BYTE)  NOT NULL,
+  accounting_volume       BINARY_DOUBLE     NOT NULL,
+  transfer_start_datetime   DATE        NOT NULL,
+  -- transfer_end_datetime      DATE        NOT NULL,
+  accounting_remarks      VARCHAR2(255 BYTE)      
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2442,7 +2442,7 @@ MONITORING
 COMMENT ON COLUMN at_wat_usr_contract_accounting.wat_usr_contract_acct_code IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
 COMMENT ON COLUMN at_wat_usr_contract_accounting.water_user_contract_code IS 'The contract identification number for this water movement. SEE AT_WATER_USER_CONTRACT.';
 COMMENT ON COLUMN at_wat_usr_contract_accounting.pump_location_code IS 'The AT_PHYSICAL_LOCATION location_code of the pump as referred to in the contract (withdraw, supply, pump in) used for this water movement.';
-COMMENT ON COLUMN at_wat_usr_contract_accounting.physical_transfer_type_code IS 'The type of transfer for this water movement.  See AT_PHYSICAL_TRANSFER_TYPE_CODE.';
+COMMENT ON COLUMN at_wat_usr_contract_accounting.phys_trans_type_code IS 'The type of transfer for this water movement.  See AT_phys_trans_type_CODE.';
 COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_start_datetime IS 'The date this water movement began, the end date is defined as the start date of the next accounting.';
 -- COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_end_datetime IS 'the date this water movement ended';
 -- COMMENT ON COLUMN at_wat_usr_contract_accounting.accounting_credit_debit IS 'Whether this water movement is a credit or a debit to the contract';
@@ -2491,8 +2491,8 @@ ALTER TABLE at_wat_usr_contract_accounting ADD (
 
 ALTER TABLE at_wat_usr_contract_accounting ADD (
   CONSTRAINT at_wat_usr_contr_accting_fk2
- FOREIGN KEY (physical_transfer_type_code)
- REFERENCES at_physical_transfer_type (physical_transfer_type_code))
+ FOREIGN KEY (phys_trans_type_code)
+ REFERENCES at_physical_transfer_type (phys_trans_type_code))
 /
 
 --ALTER TABLE at_wat_usr_contract_accounting ADD (
@@ -2511,9 +2511,9 @@ ALTER TABLE at_wat_usr_contract_accounting ADD (
 
 CREATE TABLE at_xref_wat_usr_contract_docs
 (
-  water_user_contract_doc_code	NUMBER(10)			NOT NULL,
-  document_code	                NUMBER(10)			NOT NULL,
-  water_user_contract_code	NUMBER(10)			NOT NULL
+  water_user_contract_doc_code  NUMBER(10)      NOT NULL,
+  document_code                 NUMBER(10)      NOT NULL,
+  water_user_contract_code  NUMBER(10)      NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2589,10 +2589,10 @@ ALTER TABLE at_xref_wat_usr_contract_docs ADD (
 
 CREATE TABLE at_project_purpose
 (
-  project_location_code 	        NUMBER(10)	  NOT NULL,
-  project_purpose_code			NUMBER(10)	  NOT NULL,
-  purpose_type				VARCHAR2(20 BYTE) NOT NULL,
-  additional_notes			VARCHAR2(255 BYTE)
+  project_location_code           NUMBER(10)    NOT NULL,
+  project_purpose_code      NUMBER(10)    NOT NULL,
+  purpose_type        VARCHAR2(20 BYTE) NOT NULL,
+  additional_notes      VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2657,9 +2657,9 @@ CHECK ( upper(PURPOSE_TYPE) = 'OPERATING' OR upper(PURPOSE_TYPE) = 'AUTHORIZED')
 
 CREATE TABLE at_project_agreement
 (
-  project_agreement_loc_code	        NUMBER(10)			NOT NULL,
-  external_agency_or_stakeholder        VARCHAR2(64 BYTE)	        NOT NULL,
-  project_agreement_doc_code	        NUMBER(10)			
+  project_agreement_loc_code          NUMBER(10)      NOT NULL,
+  external_agency_or_stakeholder        VARCHAR2(64 BYTE)         NOT NULL,
+  project_agreement_doc_code          NUMBER(10)      
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2717,22 +2717,22 @@ ALTER TABLE at_project_agreement ADD (
 
 CREATE TABLE at_construction_history
 (
-  construction_history_code			NUMBER(10)			NOT NULL,
+  construction_history_code     NUMBER(10)      NOT NULL,
   project_location_code                         NUMBER(10)                      NOT NULL,
-  construction_location_code		        NUMBER(10)			NOT NULL,
-  construction_id     			        VARCHAR2(64 BYTE)	        NOT NULL,
-  construction_start_date		        DATE				NOT NULL,
-  construction_end_date 		        DATE				NOT NULL,
-  land_acq_start_date   			DATE,
-  land_acq_end_date	        		DATE,
-  area_infee_total				BINARY_DOUBLE,
-  area_easement_total				BINARY_DOUBLE,
-  impoundment_date				DATE,
-  filling_date					DATE,
-  impoundment_mod_date				DATE,
-  pool_raise_date				DATE,
-  operational_status_code			NUMBER(10)                      NOT NULL,
-  construction_history_doc_code		        NUMBER(10)
+  construction_location_code            NUMBER(10)      NOT NULL,
+  construction_id                   VARCHAR2(64 BYTE)         NOT NULL,
+  construction_start_date           DATE        NOT NULL,
+  construction_end_date             DATE        NOT NULL,
+  land_acq_start_date         DATE,
+  land_acq_end_date             DATE,
+  area_infee_total        BINARY_DOUBLE,
+  area_easement_total       BINARY_DOUBLE,
+  impoundment_date        DATE,
+  filling_date          DATE,
+  impoundment_mod_date        DATE,
+  pool_raise_date       DATE,
+  operational_status_code     NUMBER(10)                      NOT NULL,
+  construction_history_doc_code           NUMBER(10)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0

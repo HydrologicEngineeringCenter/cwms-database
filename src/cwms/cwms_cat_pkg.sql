@@ -1324,6 +1324,32 @@ IS
    FUNCTION cat_loc_group_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_loc_grp_tab_t PIPELINED;
 
+
+-------------------------------------------------------------------------------
+--  manipulate generic lookup tables in the database.
+--
+
+-- retrieves a set of lookups
+  procedure get_lookup_table( 
+    -- the set of lookups for the office and type specified.
+    p_lookup_type_tab OUT lookup_type_tab_t,
+    -- the category of lookup to retrieve. currently should be the table name.
+    p_lookup_category IN VARCHAR2,
+    -- the lookups have a prefix on the column name.
+    p_lookup_prefix IN VARCHAR2,
+    -- defaults to the connected user's office if null
+    p_db_office_id IN VARCHAR2 DEFAULT NULL );
+    
+-- stores a set of lookups replacing the existing lookups for the given category
+-- and office id.
+procedure set_lookup_table(
+    p_lookup_type_tab IN lookup_type_tab_t,
+    -- the category of the incoming lookups, should be the table name.
+    p_lookup_category IN VARCHAR2,
+    -- the lookups have a prefix on the column name.
+    p_lookup_prefix IN VARCHAR2
+    );
+   
 END cwms_cat;
 /
 

@@ -3448,6 +3448,122 @@ IS
 
 		RETURN;
 	END cat_loc_group_tab;
+  
+  
+-------------------------------------------------------------------------------
+--  manipulate generic lookup tables in the database.
+--
+
+-- retrieves a set of lookups
+  procedure get_lookup_table( 
+    -- the set of lookups for the office and type specified.
+    p_lookup_type_tab OUT lookup_type_tab_t,
+    -- the category of lookup to retrieve. currently should be the table name.
+    p_lookup_category IN VARCHAR2,
+    -- the lookups have a prefix on the column name.
+    p_lookup_prefix IN VARCHAR2,
+    -- defaults to the connected user's office if null
+    p_db_office_id IN VARCHAR2 DEFAULT NULL )
+  is
+    l_db_office_id VARCHAR2(16) := nvl(p_db_office_id, cwms_util.user_office_id);
+  begin
+    dbms_application_info.set_module ('cwms_cat.get_lookup_table','querying lookups');
+    
+    --sanitize vars
+    dbms_application_info.set_action('sanitizing vars');
+    cwms_util.check_inputs(str_tab_t(
+      p_lookup_category,
+      p_lookup_prefix,
+      p_db_office_id));
+    
+    -- check args for errors
+    dbms_application_info.set_action('checking args');
+    if p_lookup_category is null then
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Lookup Category');
+    end if;
+    
+    if p_lookup_prefix is null then
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Lookup Prefix');
+    end if;
+    
+    --do work.
+    dbms_application_info.set_action('querying lookups for: '||p_lookup_category);
+    p_lookup_type_tab := lookup_type_tab_t();
+    
+    EXECUTE IMMEDIATE 'SELECT CAST (MULTISET (SELECT :bv1 office_id,
+        '|| p_lookup_prefix || '_display_value display_value,
+        '|| p_lookup_prefix || '_tooltip tooltip,
+        '|| p_lookup_prefix || '_active active
+      FROM '||p_lookup_category||'
+      WHERE db_office_code = cwms_util.get_office_code(:bv2)
+      ) AS lookup_type_tab_t) FROM dual'
+    INTO p_lookup_type_tab
+    USING l_db_office_id, l_db_office_id;
+
+  end get_lookup_table;
+
+-- stores a set of lookups replacing the existing lookups for the given category
+-- and office id.
+  procedure set_lookup_table(
+    p_lookup_type_tab IN lookup_type_tab_t,
+    -- the category of the incoming lookups, should be the table name.
+    p_lookup_category IN VARCHAR2,
+    -- the lookups have a prefix on the column name.
+    p_lookup_prefix IN VARCHAR2
+    )
+  is
+  begin
+    dbms_application_info.set_module ('cwms_cat.get_lookup_table','setting lookups');
+    
+    --sanitize vars
+    dbms_application_info.set_action('sanitizing vars');
+    cwms_util.check_inputs(str_tab_t(
+      p_lookup_category,
+      p_lookup_prefix));
+    
+    -- check args for errors
+    dbms_application_info.set_action('checking args');
+    if p_lookup_category is null then
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Lookup Category');
+    end if;
+    
+    if p_lookup_prefix is null then
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Lookup Prefix');
+    END IF;
+    
+EXECUTE IMMEDIATE 'delete 
+    from '||p_lookup_category||' 
+    where db_office_code in (
+      select cwms_util.get_office_code(cwms_util.check_input_f(ltab.office_id)) 
+      from table (cast (:bv1 as lookup_type_tab_t)) ltab )'
+  USING p_lookup_type_tab;
+
+--incoming object array sanitized when being used.
+EXECUTE IMMEDIATE 'INSERT INTO '||p_lookup_category||' 
+    ( '||p_lookup_prefix||'_code,
+    db_office_code,
+    '||p_lookup_prefix||'_display_value,
+    '||p_lookup_prefix||'_tooltip,
+    '||p_lookup_prefix||'_active ) 
+  SELECT cwms_seq.nextval code, 
+    cwms_util.get_office_code(cwms_util.check_input_f(ltab.office_id)) office_id, 
+    cwms_util.check_input_f(ltab.display_value) display_value, 
+    cwms_util.check_input_f(ltab.tooltip) tooltip, 
+    cwms_util.check_input_f(ltab.active) active 
+  from table (cast (:bv1 as lookup_type_tab_t)) ltab'
+  USING p_lookup_type_tab;
+  
+  end set_lookup_table;
+    
+    
 END cwms_cat;
 /
 
