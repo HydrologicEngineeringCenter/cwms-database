@@ -425,15 +425,8 @@ AS
     
     PROCEDURE refresh_mv_cwms_ts_id
     IS
-      l_staleness                 VARCHAR2(19);
     BEGIN
-        SELECT staleness 
-          INTO l_staleness
-          FROM user_mviews
-          WHERE mview_name = 'MV_CWMS_TS_ID';
-       IF l_staleness <> 'FRESH'
-       THEN
-         BEGIN
+      
             dbms_mview.refresh('mv_cwms_ts_id');
          EXCEPTION
             WHEN OTHERS
@@ -443,8 +436,7 @@ AS
                 -- on the materialized views are changed from unique to non unique (to fix broken
                 -- materialized view after renaming the time series)
                 DBMS_MVIEW.refresh('mv_cwms_ts_id',method => 'C');
-             END;
-       END IF;
+          
     END refresh_mv_cwms_ts_id;
 	--------------------------------------------------------
 	-- Return the current session user's primary office id
