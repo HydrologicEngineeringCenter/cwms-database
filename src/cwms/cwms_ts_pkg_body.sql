@@ -1605,7 +1605,7 @@ BEGIN
       WHEN NO_DATA_FOUND
       THEN
          IF l_can_create THEN
-            IF l_interval_id = '0'
+            IF l_interval = 0
             THEN
                l_utc_offset := cwms_util.utc_offset_irregular;
             ELSE
