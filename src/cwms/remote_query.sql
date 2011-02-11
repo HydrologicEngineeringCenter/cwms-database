@@ -1,6 +1,14 @@
-whenever sqlerror continue
+--##############################################################################
+-- VARIABLE DEFINITIONS
+--##############################################################################
+define cwms_schema           = 'cwms_20'                 -- remote schema name (cwms v2 remote only)
+define retrieve_ts_minutes   = '70'                      -- number of minutes of data to retrieve in job
+define retrieve_job_interval = '60'                      -- job interval in minutes
+define office_id             = 'SWT'                     -- office_id for database link name
+define cwms_pass             = '********'                -- cwms password for database link (v1.5 or v2 remote)
+define remote_db_url         = '155.88.11.61:1521/WM5B'  -- host:port/SID for remote database (v1.5 or v2 remote)
 
-@@defines.sql
+whenever sqlerror continue
 
 drop table remote_offices;
 drop table remote_tsid_masks;
@@ -13,12 +21,15 @@ whenever sqlerror exit sql.sqlcode
 --##############################################################################
 create table remote_offices
 (
-   office_id varchar2(16) primary key,
-   dblink    varchar2(31) not null,
-   cwms_ver  varchar2(3)  not null
+   src_office_id varchar2(16),
+   dst_office_id varchar2(16),
+   dblink        varchar2(31) not null,
+   cwms_ver      varchar2(3)  not null
 );
-alter table remote_offices add constraint remote_offices_ck1 check (upper(office_id) = office_id);
-alter table remote_offices add constraint remote_offices_ck2 check (cwms_ver = '1.5' or cwms_ver = '2.0');
+alter table remote_offices add constraint remote_offices_pk  primary key (src_office_id, dst_office_id);
+alter table remote_offices add constraint remote_offices_ck1 check (upper(src_office_id) = src_office_id);
+alter table remote_offices add constraint remote_offices_ck2 check (upper(dst_office_id) = dst_office_id);
+alter table remote_offices add constraint remote_offices_ck3 check (cwms_ver = '1.5' or cwms_ver = '2.0');
 
 create table remote_tsid_masks
 (
@@ -67,7 +78,7 @@ procedure create_locations(
 -- POPULATE_TSIDS and CREATE_LOCATIONS.
 --------------------------------------------------------------------------------
 procedure set_office(
-   p_office_id  in varchar2,  -- 'LRH', 'SPK', etc...
+   p_office_id  in varchar2,  -- 'LRH', 'SPK', etc... or SRC/DST (e.g. 'NWD/NWO')
    p_dblink     in varchar2,  -- database link
    p_cwms_ver   in varchar2,  -- must be '1.5' or '2.0'
    p_tsid_masks in varchar2); -- comma-separated list of tsid masks
@@ -105,7 +116,9 @@ procedure retrieve_and_log(
 --------------------------------------------------------------------------------
 procedure retrieve_and_log(
    p_office_id_masks  in varchar2,
-   p_days_to_retrieve in number);
+   p_days_to_retrieve in number);   
+   
+procedure retrieve_job;   
    
 end;
 /
@@ -136,27 +149,31 @@ is
                    interval_id         varchar2(16),
                    duration_id         varchar2(16),
                    version             varchar2(48));
-   l_office_id   varchar2(16) := upper(p_office_id);
-   l_dblink      varchar2(31);
-   l_cwms_ver    varchar2(3);
-   l_clob        clob;
-   l_cursor      sys_refcursor;
-   l_tsid_masks  str_tab_t;
-   l_tsid_parts  str_tab_t;
-   l_location    varchar2(64);
-   l_parameter   varchar2(64);
-   l_param_type  varchar2(64);
-   l_interval    varchar2(64);
-   l_duration    varchar2(64);
-   l_version     varchar2(64);
-   l_first       boolean := true;
-   l_rec         l_rec_t;
-   l_query_str   varchar2(32767);
+   l_src_office_id varchar2(16);
+   l_dst_office_id varchar2(16);
+   l_dblink        varchar2(31);
+   l_cwms_ver      varchar2(3);
+   l_clob          clob;
+   l_cursor        sys_refcursor;
+   l_tsid_masks    str_tab_t;
+   l_tsid_parts    str_tab_t;
+   l_location      varchar2(64);
+   l_parameter     varchar2(64);
+   l_param_type    varchar2(64);
+   l_interval      varchar2(64);
+   l_duration      varchar2(64);
+   l_version       varchar2(64);
+   l_first         boolean := true;
+   l_rec           l_rec_t;
+   l_query_str     varchar2(32767);
    procedure append_clob(p_data in varchar2) is
    begin
       dbms_lob.writeappend(l_clob, length(p_data), p_data);
    end;
 begin
+   l_tsid_masks := cwms_util.split_text(upper(p_office_id), '/', 1);
+   l_src_office_id := l_tsid_masks(1);
+   l_dst_office_id := l_tsid_masks(l_tsid_masks.count);
    ---------------------------
    -- get the database link --
    ---------------------------
@@ -165,7 +182,8 @@ begin
      into l_dblink,
           l_cwms_ver
      from remote_offices
-    where office_id = upper(p_office_id);
+    where src_office_id = l_src_office_id
+      and dst_office_id = l_dst_office_id;
 
    dbms_lob.createtemporary(l_clob, true);
    dbms_lob.open(l_clob, dbms_lob.lob_readwrite);
@@ -227,7 +245,7 @@ begin
             l_query_str := replace(l_query_str, ':dblink', l_dblink); -- can't bind
             open l_cursor
              for l_query_str
-           using l_office_id,
+           using l_src_office_id,
                  l_location,
                  l_location,
                  l_parameter,
@@ -262,7 +280,7 @@ begin
             l_query_str := replace(l_query_str, ':dblink', l_dblink); -- can't bind
             open l_cursor
              for l_query_str
-           using l_office_id,
+           using l_src_office_id,
                  l_location,
                  l_parameter,
                  l_param_type,
@@ -318,14 +336,20 @@ end get_ts_codes;
 procedure populate_tsids(
    p_office_id in varchar2)
 is
-  l_dblink   varchar2(31);
-  l_cwms_ver varchar2(3);
-  l_ts_code  integer;
-  l_tsid     varchar2(31);
-  l_clob     clob;
-  l_data     str_tab_tab_t;
-  l_masks    varchar2(32767);
+  l_dblink        varchar2(31);
+  l_cwms_ver      varchar2(3);
+  l_ts_code       integer;
+  l_tsid          varchar2(31);
+  l_clob          clob;
+  l_data          str_tab_tab_t;
+  l_masks         varchar2(32767);
+  l_parts         str_tab_t;
+  l_src_office_id varchar2(16);
+  l_dst_office_id varchar2(16);
 begin
+   l_parts := cwms_util.split_text(upper(p_office_id), '/', 1);
+   l_src_office_id := l_parts(1);
+   l_dst_office_id := l_parts(l_parts.count);
    ---------------------------
    -- get the database link --
    ---------------------------
@@ -334,7 +358,8 @@ begin
      into l_dblink,
           l_cwms_ver
      from remote_offices
-    where office_id = upper(p_office_id);
+    where src_office_id = l_src_office_id
+      and dst_office_id = l_dst_office_id;
    ------------------------
    -- get the tsid masks --
    ------------------------
@@ -352,7 +377,7 @@ begin
       cwms_msg.msg_level_detailed,
       '' || l_data.count
       || ' matching timeseries ids retrieved from '
-      || upper(p_office_id)
+      || upper(l_src_office_id)
       || ' through '
       || l_dblink);
    ------------------------
@@ -399,7 +424,9 @@ is
          state_initial  varchar2(2));
    location_already_exists exception;
    pragma exception_init (location_already_exists, -20026);
-   l_office_id     varchar2(16) := upper(p_office_id);
+   l_src_office_id varchar2(16);
+   l_dst_office_id varchar2(16);
+   l_parts         str_tab_t;
    l_dblink        varchar2(31);
    l_cwms_ver      varchar2(3);
    l_location      varchar2(49);
@@ -414,6 +441,9 @@ is
    l_loc2_rec      loc2_rec_t;
    l_new_tz        tz_collections_t;
 begin
+   l_parts := cwms_util.split_text(upper(p_office_id), '/', 1);
+   l_src_office_id := l_parts(1);
+   l_dst_office_id := l_parts(l_parts.count);
    -------------------------------------------------
    -- set up the 1.5 -> 2.0 time zone transitions --
    -------------------------------------------------
@@ -456,7 +486,8 @@ begin
      into l_dblink,
           l_cwms_ver
      from remote_offices
-    where office_id = upper(p_office_id);
+    where src_office_id = l_src_office_id
+      and dst_office_id = l_dst_office_id;
    -----------------------------------------
    -- collect the location ids from tsids --
    -----------------------------------------
@@ -575,7 +606,7 @@ begin
    l_query_str    := replace(l_query_str,    ':dblink', l_dblink); -- can't bind
    l_tz_query_str := replace(l_tz_query_str, ':dblink', l_dblink); -- can't bind
    l_st_query_str := replace(l_st_query_str, ':dblink', l_dblink); -- can't bind
-   open l_loc_cur for l_query_str using l_office_id, l_loc_str;
+   open l_loc_cur for l_query_str using l_src_office_id, l_loc_str;
    loop
       ---------------------------
       -- get the next location --
@@ -640,7 +671,7 @@ begin
             l_loc2_rec.county_name,
             l_loc2_rec.state_initial,
             l_loc_rec.active_flag,
-            upper(p_office_id));
+            upper(l_dst_office_id));
       exception
          when location_already_exists then null;
       end;
@@ -656,12 +687,13 @@ end create_locations;
 -- POPULATE_TSIDS
 --------------------------------------------------------------------------------
 procedure set_office(
-   p_office_id  in varchar2,  -- 'LRH', 'SPK', etc...
+   p_office_id  in varchar2,  -- 'LRH', 'SPK', etc... or SRC/DST (e.g. 'NWD/NWO')
    p_dblink     in varchar2,  -- database link
    p_cwms_ver   in varchar2,  -- must be '1.5' or '2.0'
    p_tsid_masks in varchar2)  -- comma-separated list of tsid masks
 is
-   l_office_id  varchar2(16) := upper(p_office_id);
+   l_dst_office_id  varchar2(16);
+   l_src_office_id  varchar2(16);
    l_count      integer;
    l_masks      str_tab_t;
    l_mask_parts str_tab_t;
@@ -692,11 +724,21 @@ begin
          'CWMS Version must be ''1.5'' or ''2.0''.',
          false);
    end if;
-   select count(*) into l_count from cwms_office where office_id = l_office_id;
+   l_masks := cwms_util.split_text(upper(p_office_id), '/', 1);
+   l_src_office_id := l_masks(1);
+   l_dst_office_id := l_masks(l_masks.count);
+   select count(*) into l_count from cwms_office where office_id = l_src_office_id;
    if l_count = 0 then
       raise_application_error(
          -20999,
-         'Office ''' || p_office_id || ''' is not a valid CWMS office.',
+         'Office ''' || l_src_office_id || ''' is not a valid CWMS office.',
+         false);
+   end if;
+   select count(*) into l_count from cwms_office where office_id = l_dst_office_id;
+   if l_count = 0 then
+      raise_application_error(
+         -20999,
+         'Office ''' || l_dst_office_id || ''' is not a valid CWMS office.',
          false);
    end if;
    if p_tsid_masks is not null then
@@ -715,16 +757,21 @@ begin
    --------------------------
    -- now insert or update --
    --------------------------
-   select count(*) into l_count from remote_offices where office_id = l_office_id;
+   select count(*) 
+     into l_count 
+     from remote_offices 
+    where src_office_id = l_src_office_id
+      and dst_office_id = l_dst_office_id;
    if l_count = 0 then
       insert
         into remote_offices
-      values (l_office_id, p_dblink, p_cwms_ver);
+      values (l_src_office_id, l_dst_office_id, p_dblink, p_cwms_ver);
    else
       update remote_offices
          set dblink = p_dblink,
              cwms_ver = p_cwms_ver
-       where office_id = l_office_id;
+       where src_office_id = l_src_office_id
+         and dst_office_id = l_dst_office_id;
    end if;
    delete
      from remote_tsid_masks
@@ -742,19 +789,19 @@ begin
    cwms_msg.log_db_message(
       'remote_query.set_office',
       cwms_msg.msg_level_normal,
-      l_office_id
+      l_dst_office_id
       || ': Retrieving remote timeseires ids');
-   populate_tsids(l_office_id);
+   populate_tsids(p_office_id);
    cwms_msg.log_db_message(
       'remote_query.set_office',
       cwms_msg.msg_level_normal,
-      l_office_id
+      l_dst_office_id
       || ': Creating local locations');
-   create_locations(l_office_id);
+   create_locations(p_office_id);
    cwms_msg.log_db_message(
       'remote_query.set_office',
       cwms_msg.msg_level_normal,
-      l_office_id
+      l_dst_office_id
       || ': Creating local timeseries ids');
    l_ts_code := -1;
    for rec in (select ts_id from remote_tsids where dblink = p_dblink) loop
@@ -767,13 +814,13 @@ begin
          'F',  -- versioned
          'T',  -- active
          'F',  -- fail if exists
-         l_office_id);
+         l_dst_office_id);
    end loop;
    commit;
    cwms_msg.log_db_message(
       'remote_query.set_office',
       cwms_msg.msg_level_normal,
-      l_office_id
+      l_dst_office_id
       || ': Done');
 
 end set_office;
@@ -1039,18 +1086,18 @@ begin
       || to_char(l_end_time_utc, 'yyyy/mm/dd hh24:mi:ss'));
    for i in 1..l_office_id_masks.count loop
       for ofc_rec in (
-         select office_id,
+         select dst_office_id,
                 dblink,
                 cwms_ver
            from remote_offices
-          where office_id like l_office_id_masks(i))
+          where dst_office_id like l_office_id_masks(i))
       loop
          l_offices_processed := l_offices_processed + 1;
          cwms_msg.log_db_message(
             'remote_query.retrieve_timeseries',
             cwms_msg.msg_level_normal,
             'Retrieving timeseries data for office '
-            || ofc_rec.office_id
+            || ofc_rec.dst_office_id
             || ' through dblink '
             || ofc_rec.dblink);
          ------------------------
@@ -1148,7 +1195,7 @@ begin
                      cwms_util.delete_insert,
                      'F',
                      cwms_util.non_versioned,
-                     ofc_rec.office_id);
+                     ofc_rec.dst_office_id);
                exception
                   when others then
                      cwms_msg.log_db_message(
@@ -1236,9 +1283,55 @@ is
 begin
    retrieve_and_log(p_office_id_masks, l_start_time, l_end_time);
 end retrieve_and_log;   
+   
+procedure retrieve_job
+is
+   l_now date := sysdate;
+begin
+   retrieve_and_log('%', l_now - &retrieve_ts_minutes / 1440, l_now);
+end retrieve_job;   
+
 
 end;
 /
 show errors
 commit;
+
+whenever sqlerror continue
+
+drop database link &office_id._cwms_remote;
+ 
+whenever sqlerror exit sql.sqlcode
+
+create database link &office_id._cwms_remote connect to cwms identified by &cwms_pass using '&remote_db_url';
+
+declare
+   l_job_name varchar2(30) := 'get_remote_cwms_data'; 
+begin
+   begin
+      dbms_scheduler.stop_job(l_job_name, true);
+   exception
+      when others then null;
+   end;
+   begin
+      dbms_scheduler.drop_job(l_job_name);
+   exception
+      when others then null;
+   end;
+   dbms_scheduler.create_job(
+       job_name             => l_job_name,
+       job_type             => 'stored_procedure',
+       job_action           => 'remote_query.retrieve_job',
+       start_date           => null,
+       repeat_interval      => 'freq=minutely; interval=&retrieve_job_interval',
+       end_date             => null,
+       job_class            => 'default_job_class',
+       enabled              => true,
+       auto_drop            => false,
+       comments             => 'Pulls specified time series data from remote CWMS system'
+      );
+end;   
+
+commit;   
+   
 
