@@ -2980,7 +2980,7 @@ AS
 		l_office_code		NUMBER;
 		l_location_code	NUMBER;
       l_bounding_office_code   NUMBER := null;
-      l_nation_code            NUMBER := null;
+      l_nation_code            VARCHAR(2) := null;
       l_cwms_office_code       NUMBER := cwms_util.get_office_code('CWMS');
 	--
 	-- l_alias_cursor   sys_refcursor;

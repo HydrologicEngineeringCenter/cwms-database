@@ -1371,7 +1371,7 @@ IS
                  ) c,
                  at_cwms_ts_spec s,
                  cwms_time_zone z
-            WHERE b.location_code = c.location_code
+            WHERE(( b.location_code = c.location_code) OR (p_loc_group_id is NULL))
               AND b.ts_code = s.ts_code
               AND s.time_zone_code = z.time_zone_code(+)
               AND UPPER(b.cwms_ts_id) LIKE UPPER(l_ts_subselect_string)
