@@ -1335,7 +1335,7 @@ as
       p_template_id in varchar2,
       p_version     in varchar2,
       p_office_id   in varchar2 default null)
-   is
+   is 
       l_rating_spec_code number(10);
    begin
       l_rating_spec_code := rating_spec_t.get_rating_spec_code(
@@ -1349,6 +1349,8 @@ as
    
    member procedure validate_obj
    is
+      LOCATION_ID_NOT_FOUND exception; 
+      pragma exception_init (LOCATION_ID_NOT_FOUND, -20025);
       l_code     number(10);
       l_template rating_template_t;
       
@@ -1412,7 +1414,21 @@ as
       -----------------
       -- location_id --
       -----------------
-      l_code := cwms_loc.get_location_code(self.office_id, self.location_id);
+      begin
+         l_code := cwms_loc.get_location_code(self.office_id, self.location_id);
+      exception
+         when LOCATION_ID_NOT_FOUND then           
+            declare
+               l_base_code number(10);
+            begin
+               cwms_loc.create_location_raw (
+                  l_base_code, -- out param (not used here)
+                  l_code,      -- out param
+                  cwms_util.get_base_id(self.location_id),
+                  cwms_util.get_sub_id(self.location_id),
+                  cwms_util.get_db_office_code(self.office_id));
+            end;            
+      end;
       -----------------
       -- template_id --
       -----------------
