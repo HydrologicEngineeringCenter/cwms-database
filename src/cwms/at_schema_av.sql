@@ -34,7 +34,8 @@ DECLARE
                      'av_rating_local',
                      'av_rating_values',
                      'av_rating_values_native',
-                     'av_ts_association'
+                     'av_ts_association',
+                     'av_stream_types'
                     );
 BEGIN
    FOR i IN view_names.FIRST .. view_names.LAST
@@ -2548,3 +2549,24 @@ from at_properties p
 where prop_category in ('LOCATION TIME SERIES ASSOCIATION', 'LOCATION GROUP TIME SERIES ASSOCIATION');
 /
 show errors;
+
+create or replace force view av_stream_types (
+   STREAM_TYPE_ID,
+   NUMBER_OF_CHANNELS,
+   ENTRENCHMENT_RATIO,
+   WIDTH_TO_DEPTH_RATIO,
+   SUNUOSITY,
+   SLOPE,
+   CHANNEL_MATERIAL)
+AS    
+   SELECT STREAM_TYPE_ID,
+          NUMBER_OF_CHANNELS,
+          ENTRENCHMENT_RATIO,
+          WIDTH_TO_DEPTH_RATIO,
+          SINUOSITY,
+          SLOPE,
+          CHANNEL_MATERIAL
+     FROM CWMS_STREAM_TYPE
+ ORDER BY STREAM_TYPE_ID;
+/
+show errors;              

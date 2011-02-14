@@ -5210,17 +5210,102 @@ nations = [
 # STREAM TYPES #
 #--------------#
 streamTypes = [
-#    CODE   ID     DESCRIPTION
-#        ----   ------ ----------------------------------------------------------   
-    [1,     'Aa+', 'Very steep. Deeply entrenched. Debris transport streams'],
-    [2,     'A',   'Steep, entrenched, cascading step-pool streams: high energy/debris transport associated with depositional soils: very stable if bedrock or boulder dominated channel'],
-    [3,     'B',   'Moderately entrenched, moderate-gradient, riffle dominated channel with infrequently spaced pools; very stable plan and profile: stable banks'],
-    [4,     'C',   'Low-gradient, meandering, point-bar, riffle-pool, alluvial channels with broad. well-defined floodplains'],
-    [5,     'D',   'Braided channel with longitudinal and transverse bars: very wide channel with eroding banks'],
-    [6,     'DA',  'Anastomosing (multiple channels) narrow and deep with expansive wellvegetated floodplain and associated wetlands: very gentle relief with highly variable sinuosities; stable streambanks'], 
-    [7,     'E',   'Low-gradient. meandering riffle-pool stream with low width-to-depth ratio and little deposition; very efficient and stable; high meander width ratio'],
-    [8,     'F',   'Entrenched meandering riffle-pool channel on low gradients with high width-to-depth ratio'], 
-    [9,     'G',   'Entrenched ''gully'' step-pool and low width-to-depth ratio on moderate gradients'],
+#    ID      CHANNELS    ENTRENCHMENT WIDTH/DEPTH        SINUOSITY          SLOPE           MATERIAL
+#    --------------------------------------------------------------------------------------------------
+    ['A1a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'BEDROCK'  ],   
+    ['A2a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'BOULDERS' ],   
+    ['A3a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'COBBLE'   ],   
+    ['A4a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'GRAVEL'   ],   
+    ['A5a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'SAND'     ],   
+    ['A6a+', 'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '> 0.10',       'SILT/CLAY'],
+    ['A1',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'BEDROCK'  ],   
+    ['A2',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'BOULDERS' ],   
+    ['A3',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'COBBLE'   ],   
+    ['A4',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'GRAVEL'   ],   
+    ['A5',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'SAND'     ],   
+    ['A6',   'SINGLE',   '< 1.4',     '< 12',            '< 1.2',           '0.04 - 0.10',  'SILT/CLAY'],
+    ['G1',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
+    ['G2',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
+    ['G3',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
+    ['G4',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
+    ['G5',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
+    ['G6',   'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
+    ['G1c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
+    ['G2c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
+    ['G3c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
+    ['G4c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
+    ['G5c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
+    ['G6c',  'SINGLE',   '< 1.4',     '< 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
+    ['F1b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
+    ['F2b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
+    ['F3b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
+    ['F4b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
+    ['F5b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
+    ['F6b',  'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
+    ['F1',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
+    ['F2',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
+    ['F3',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
+    ['F4',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
+    ['F5',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
+    ['F6',   'SINGLE',   '< 1.4',     '> 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
+    ['B1a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'BEDROCK'  ],   
+    ['B2a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'BOULDERS' ],   
+    ['B3a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'COBBLE'   ],   
+    ['B4a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'GRAVEL'   ],   
+    ['B5a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'SAND'     ],   
+    ['B6a',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.04 - 0.099', 'SILT/CLAY'],
+    ['B1b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
+    ['B2b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
+    ['B3b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
+    ['B4b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
+    ['B5b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
+    ['B6b',  'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],
+    ['B1',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'BEDROCK'  ],   
+    ['B2',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'BOULDERS' ],   
+    ['B3',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'COBBLE'   ],   
+    ['B4',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'GRAVEL'   ],   
+    ['B5',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'SAND'     ],   
+    ['B6',   'SINGLE',   '1.4 - 2.2', '> 12',            '> 1.2',           '< 0.02',       'SILT/CLAY'],
+    ['E3b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'COBBLE'   ],   
+    ['E4b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'GRAVEL'   ],   
+    ['E5b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'SAND'     ],   
+    ['E6b',  'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '0.02 - 0.039', 'SILT/CLAY'],
+    ['E3',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'COBBLE'   ],   
+    ['E4',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'GRAVEL'   ],   
+    ['E5',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'SAND'     ],   
+    ['E6',   'SINGLE',   '> 2.2',     '< 12',            '> 1.5',           '< 0.02',       'SILT/CLAY'],
+    ['C1b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BEDROCK'  ],   
+    ['C2b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'BOULDERS' ],   
+    ['C3b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'COBBLE'   ],   
+    ['C4b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'GRAVEL'   ],   
+    ['C5b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SAND'     ],   
+    ['C6b',  'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.02 - 0.039', 'SILT/CLAY'],   
+    ['C1',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'BEDROCK'  ],   
+    ['C2',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'BOULDERS' ],   
+    ['C3',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'COBBLE'   ],   
+    ['C4',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'GRAVEL'   ],   
+    ['C5',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'SAND'     ],   
+    ['C6',   'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '0.001 - 0.02', 'SILT/CLAY'],   
+    ['C1c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'BEDROCK'  ],   
+    ['C2c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'BOULDERS' ],   
+    ['C3c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'COBBLE'   ],   
+    ['C4c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'GRAVEL'   ],   
+    ['C5c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'SAND'     ],   
+    ['C6c-', 'SINGLE',   '> 2.2',     '> 12',            '> 1.2',           '< 0.001',      'SILT/CLAY'],   
+    ['D3b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'COBBLE'   ],   
+    ['D4b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'GRAVEL'   ],   
+    ['D5b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'SAND'     ],   
+    ['D6b',  'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.02 - 0.039', 'SILT/CLAY'],   
+    ['D3',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'COBBLE'   ],   
+    ['D4',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'GRAVEL'   ],   
+    ['D5',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'SAND'     ],   
+    ['D6',   'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '0.001 - 0.02', 'SILT/CLAY'],   
+    ['D4c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'GRAVEL'   ],   
+    ['D5c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'SAND'     ],   
+    ['D6c-', 'MULTIPLE', None,        'VERY HIGH',       'VERY LOW',        '< 0.001',      'SILT/CLAY'],   
+    ['DA4',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'GRAVEL'   ],   
+    ['DA5',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SAND'     ],   
+    ['DA6',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SILT/CLAY'],   
 ]
 
 #--------------------------------------------------#
@@ -8609,9 +8694,13 @@ streamTypeCreationTemplate = \
 -- ##
 CREATE TABLE @TABLE
 (
-  STREAM_TYPE_CODE   NUMBER(10)    NOT NULL,
-  STREAM_TYPE_ID     VARCHAR2(32)  NOT NULL,
-  DESCRIPTION        VARCHAR2(256)
+  STREAM_TYPE_ID       VARCHAR2(4)  NOT NULL,
+  NUMBER_OF_CHANNELS   VARCHAR2(8)  NOT NULL,
+  ENTRENCHMENT_RATIO   VARCHAR2(32) NOT NULL,
+  WIDTH_TO_DEPTH_RATIO VARCHAR2(32) NOT NULL,
+  SINUOSITY            VARCHAR2(32) NOT NULL,
+  SLOPE                VARCHAR2(32) NOT NULL,
+  CHANNEL_MATERIAL     VARCHAR2(32) NOT NULL
 )
 tablespace CWMS_20DATA
 PCTUSED    0
@@ -8635,24 +8724,26 @@ MONITORING;
 -------------------------------
 -- @TABLE constraints  --
 --
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (STREAM_TYPE_CODE) USING INDEX;
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_U1  UNIQUE (STREAM_TYPE_ID) USING INDEX;
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(STREAM_TYPE_ID) = STREAM_TYPE_ID);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (STREAM_TYPE_ID) USING INDEX;
 
 ---------------------------
 -- @TABLE comments --
 --
-COMMENT ON TABLE  @TABLE                  IS 'Contains pre-defined stream types';
-COMMENT ON COLUMN @TABLE.STREAM_TYPE_CODE IS 'Primary key used to relate stream to other entities';
-COMMENT ON COLUMN @TABLE.STREAM_TYPE_ID   IS 'Name of stream type';
-COMMENT ON COLUMN @TABLE.DESCRIPTION      IS 'Optional description';
+COMMENT ON TABLE  @TABLE                      IS 'Contains pre-defined stream types based on Rosgen Classification (see http://www.wildlandhydrology.com/assets/ARM_5-3.pdf)';
+COMMENT ON COLUMN @TABLE.STREAM_TYPE_ID       IS 'Rosgen Classification identifier';
+COMMENT ON COLUMN @TABLE.NUMBER_OF_CHANNELS   IS 'Single or multiple channels';
+COMMENT ON COLUMN @TABLE.ENTRENCHMENT_RATIO   IS 'Channel entrenchment ratio range';
+COMMENT ON COLUMN @TABLE.WIDTH_TO_DEPTH_RATIO IS 'Channel width/Depth ratio range';
+COMMENT ON COLUMN @TABLE.SINUOSITY            IS 'Channel sinuosity range';
+COMMENT ON COLUMN @TABLE.SLOPE                IS 'Channel slope';
+COMMENT ON COLUMN @TABLE.CHANNEL_MATERIAL     IS 'Channel material';
 
 COMMIT;
 '''
 sys.stderr.write("Building streamTypeLoadTemplate\n")
 streamTypeLoadTemplate = ''
-for code, id, description in streamTypes :
-    streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
+for v1, v2, v3, v4, v5, v6, v7 in streamTypes :
+    streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s');\n" % (v1, v2, v3, v4, v5, v6, v7)
 streamTypeLoadTemplate += "COMMIT;\n"
 
 
