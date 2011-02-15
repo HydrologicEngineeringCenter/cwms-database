@@ -384,6 +384,11 @@ AS
 											  p_office_long_name   OUT VARCHAR2
 											 );
 
+   function get_unit_id(
+      p_unit_or_alias in varchar2,
+      p_office_id     in varchar2 default null)
+      return varchar2 result_cache;
+      
 	PROCEDURE get_valid_units (p_valid_units		  OUT sys_refcursor,
 										p_parameter_id   IN		VARCHAR2 DEFAULT NULL
 									  );

@@ -2027,6 +2027,61 @@ AS
 		RETURN l_ts_interval;
 	END get_ts_interval;
 
+   function get_unit_id(
+      p_unit_or_alias in varchar2,
+      p_office_id     in varchar2 default null)
+      return varchar2 result_cache
+   is
+      l_unit_id varchar2(16);
+      l_office_code number(10) := get_db_office_code(p_office_id);
+   begin
+      begin
+         select unit_id
+           into l_unit_id
+           from cwms_unit
+          where unit_id = p_unit_or_alias;
+      exception
+         when no_data_found then null;
+      end;
+      if l_unit_id is null then
+         begin
+            select u.unit_id
+              into l_unit_id
+              from at_unit_alias ua,
+                   cwms_unit u
+             where ua.alias_id = p_unit_or_alias
+               and ua.db_office_code in (db_office_code_all, l_office_code)
+               and u.unit_code = ua.unit_code; 
+         exception
+            when no_data_found then null;
+         end;
+      end if;
+      if l_unit_id is null then
+         begin
+            select unit_id
+              into l_unit_id
+              from cwms_unit
+             where upper(unit_id) = (p_unit_or_alias);
+         exception
+            when others then null;
+         end;
+      end if;
+      if l_unit_id is null then
+         begin
+            select u.unit_id
+              into l_unit_id
+              from at_unit_alias ua,
+                   cwms_unit u
+             where upper(ua.alias_id) = upper(p_unit_or_alias)
+               and ua.db_office_code in (db_office_code_all, l_office_code)
+               and u.unit_code = ua.unit_code; 
+         exception
+            when others then null;
+         end;
+      end if;
+      return l_unit_id;
+   end get_unit_id;      
+                           
 	PROCEDURE get_valid_units (p_valid_units		  OUT sys_refcursor,
 										p_parameter_id   IN		VARCHAR2 DEFAULT NULL
 									  )
