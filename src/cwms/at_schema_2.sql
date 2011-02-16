@@ -150,4 +150,106 @@ AS
     WHERE c.office_code = a.office_code AND d.message_type_code = a.msg_type;
 /
 SHOW ERRORS;    
+--------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW av_ts_alias (category_id,
+                                     GROUP_ID,
+                                     ts_code,
+                                     db_office_id,
+                                     ts_id,
+                                     alias_id
+                                    )
+AS
+   SELECT atc.ts_category_id, 
+          atg.ts_group_id, 
+          atga.ts_code,
+          co.office_id as db_office_id, 
+          cwms_ts.get_cwms_ts_id(acts.ts_code, co.office_id) as ts_id, 
+          atga.ts_alias_id
+     FROM at_cwms_ts_spec acts,
+          at_ts_group_assignment atga,
+          at_ts_group atg,
+          at_ts_category atc,
+          at_physical_location pl,
+          at_base_location bl,
+          cwms_office co
+    WHERE pl.location_code = acts.location_code
+      and bl.base_location_code = pl.base_location_code
+      and co.office_code = bl.db_office_code
+      AND atga.ts_code = acts.ts_code
+      AND atga.ts_group_code = atg.ts_group_code
+      AND atg.ts_category_code = atc.ts_category_code
+/
+show errors;
+--------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW av_ts_grp_assgn (category_id,
+                                         group_id,
+                                         ts_code,
+                                         db_office_id,
+                                         ts_id,
+                                         alias_id,
+                                         attribute,
+                                         ref_ts_id,
+                                         shared_alias_id,
+                                         shared_ref_ts_id
+                                        )
+AS
+   SELECT atc.ts_category_id, 
+          atg.ts_group_id, 
+          atga.ts_code,
+          co.office_id as db_office_id,
+          cwms_ts.get_cwms_ts_id(acts.ts_code, co.office_id) as ts_id, 
+          atga.ts_alias_id,
+          atga.ts_attribute,
+          cwms_ts.get_cwms_ts_id(acts2.ts_code, co.office_id) as ref_ts_id,
+          atg.shared_ts_alias_id,
+          cwms_ts.get_cwms_ts_id(acts3.ts_code, co.office_id) as shared_ref_ts_id
+     FROM at_cwms_ts_spec acts,
+          at_ts_group_assignment atga,
+          at_ts_group atg,
+          at_ts_category atc,
+          at_physical_location pl,
+          at_base_location bl,
+          cwms_office co,
+          at_cwms_ts_spec acts2,
+          at_cwms_ts_spec acts3
+    WHERE pl.location_code = acts.location_code
+      and bl.base_location_code = pl.base_location_code
+      and co.office_code = bl.db_office_code
+      AND atga.ts_code = acts.ts_code
+      AND atga.ts_group_code = atg.ts_group_code
+      AND atg.ts_category_code = atc.ts_category_code
+      AND acts2.ts_code(+) = atga.ts_ref_code
+      AND acts3.ts_code(+) = atg.shared_ts_ref_code
+/
+show errors;
+--------------------------------------------------------------------------------
+CREATE OR REPLACE VIEW av_ts_cat_grp (cat_db_office_id,
+                                      ts_category_id,
+                                      ts_category_desc,
+                                      grp_db_office_id,
+                                      ts_group_id,
+                                      ts_group_desc,
+                                      shared_ts_alias_id,
+                                      shared_ref_ts_id
+                                      )
+AS
+   SELECT o1.office_id as cat_db_office_id, 
+          ts_category_id, 
+          ts_category_desc,
+          o2.office_id as grp_db_office_id, 
+          ts_group_id, 
+          ts_group_desc,
+          shared_ts_alias_id,
+          cwms_ts.get_cwms_ts_id(shared_ts_ref_code, o2.office_id) as shared_ref_ts_id 
+     FROM cwms_office o1,
+          cwms_office o2,
+          at_ts_category attc,
+          at_ts_group attg,
+          at_cwms_ts_spec atcts
+    WHERE attc.db_office_code = o1.office_code
+      AND attg.db_office_code = o2.office_code(+)
+      AND attc.ts_category_code = attg.ts_category_code(+)
+      AND atcts.ts_code(+) = attg.shared_ts_ref_code
+/
+show errors;
 COMMIT;

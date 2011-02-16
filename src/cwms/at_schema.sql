@@ -1781,6 +1781,287 @@ ALTER TABLE at_cwms_ts_spec ADD (
  REFERENCES cwms_time_zone (time_zone_code))
 /
 
+------------------------
+-- TIME SERIES GROUPS --
+------------------------
+CREATE TABLE at_ts_category
+(
+  ts_category_code  NUMBER,
+  ts_category_id    VARCHAR2(32 BYTE)          NOT NULL,
+  db_office_code    NUMBER                     NOT NULL,
+  ts_category_desc  VARCHAR2(128 BYTE)
+)
+TABLESPACE CWMS_20AT_DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+CREATE UNIQUE INDEX at_ts_category_name_pk ON at_ts_category
+(ts_category_code)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+CREATE UNIQUE INDEX at_ts_category_name_u1 ON at_ts_category
+(UPPER("TS_CATEGORY_ID"), db_office_code)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+ALTER TABLE at_ts_category ADD (
+  CONSTRAINT at_ts_category_name_pk
+ PRIMARY KEY
+ (ts_category_code)
+    USING INDEX
+    TABLESPACE CWMS_20AT_DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+ALTER TABLE AT_TS_CATEGORY ADD CONSTRAINT AT_TS_CATEGORY_FK1 FOREIGN KEY (DB_OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
+
+INSERT INTO at_ts_category VALUES (0, 'Default',        53, 'Default');
+INSERT INTO at_ts_category VALUES (1, 'Agency Aliases', 53, 'Time series aliases for various agencies'); 
+
+--------
+--------
+
+CREATE TABLE at_ts_group
+(
+  ts_group_code      NUMBER,
+  ts_category_code   NUMBER                     NOT NULL,
+  ts_group_id        VARCHAR2(32 BYTE)          NOT NULL,
+  ts_group_desc      VARCHAR2(128 BYTE),
+  db_office_code     NUMBER                     NOT NULL,
+  shared_ts_alias_id VARCHAR2(128 BYTE),
+  shared_ts_ref_code NUMBER
+)
+TABLESPACE CWMS_20AT_DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+comment on table  at_ts_group                    is 'Specifies a ts group within a ts group category';
+comment on column at_ts_group.ts_group_code      is 'Primary key uniquely identifying this group';
+comment on column at_ts_group.ts_category_code   is 'Reference to ts group category to which this group belongs';
+comment on column at_ts_group.ts_group_id        is 'Name of this ts group';
+comment on column at_ts_group.ts_group_desc      is 'Description of the purpose of this ts group';
+comment on column at_ts_group.db_office_code     is 'Reference to office that owns this ts group';
+comment on column at_ts_group.shared_ts_alias_id is 'Shared ts alias assigned to all members of this group by virtue of membership';
+comment on column at_ts_group.shared_ts_ref_code is 'Shared reference to existing ts assigned to all members of this group by virtue of memebership';
+
+CREATE UNIQUE INDEX at_ts_groups_pk ON at_ts_group
+(ts_group_code)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+CREATE UNIQUE INDEX at_ts_groups_u1 ON at_ts_group
+(ts_category_code, UPPER("TS_GROUP_ID"))
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+ALTER TABLE at_ts_group ADD (
+  CONSTRAINT at_ts_groups_pk
+ PRIMARY KEY
+ (ts_group_code)
+    USING INDEX
+    TABLESPACE CWMS_20AT_DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+ALTER TABLE at_ts_group ADD (
+  CONSTRAINT at_ts_groups_fk3
+ FOREIGN KEY (shared_ts_ref_code)
+ REFERENCES at_cwms_ts_spec (ts_code))
+/
+ALTER TABLE at_ts_group ADD (
+  CONSTRAINT at_ts_groups_fk2
+ FOREIGN KEY (db_office_code)
+ REFERENCES cwms_office (office_code))
+/
+ALTER TABLE at_ts_group ADD (
+  CONSTRAINT at_ts_groups_fk1
+ FOREIGN KEY (ts_category_code)
+ REFERENCES at_ts_category (ts_category_code))
+/
+INSERT INTO at_ts_group VALUES (0, 0, 'Default',        'All Time Series',                           53, NULL, NULL);
+INSERT INTO at_ts_group VALUES (1, 1, 'USACE Standard', 'USACE National Standard Naming Convention', 53, NULL, NULL);
+COMMIT ;
+-----
+
+CREATE TABLE at_ts_group_assignment
+(
+  ts_code        NUMBER,
+  ts_group_code  NUMBER,
+  ts_attribute   NUMBER,
+  ts_alias_id    VARCHAR2(183 BYTE),
+  ts_ref_code    NUMBER
+)
+TABLESPACE CWMS_20AT_DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING
+NOCOMPRESS
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+comment on table  at_ts_group_assignment               is 'Assigns time series to ts groups';
+comment on column at_ts_group_assignment.ts_code       is 'Reference to assigned ts';
+comment on column at_ts_group_assignment.ts_group_code is 'Reference to ts group';
+comment on column at_ts_group_assignment.ts_attribute  is 'General purpose value (can be used for sorting, etc...)';
+comment on column at_ts_group_assignment.ts_alias_id   is 'Alias of ts with respect to the assignment';
+comment on column at_ts_group_assignment.ts_ref_code   is 'Reference to an existing ts with respect to the assignment';
+
+CREATE UNIQUE INDEX at_ts_group_assignment_pk ON at_ts_group_assignment
+(ts_code, ts_group_code)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64 k
+            MINEXTENTS       1
+            MAXEXTENTS       2147483645
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+ALTER TABLE at_ts_group_assignment ADD (
+  CONSTRAINT at_ts_group_assignment_pk
+ PRIMARY KEY
+ (ts_code, ts_group_code)
+    USING INDEX
+    TABLESPACE CWMS_20AT_DATA
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64 k
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+               ))
+/
+
+ALTER TABLE at_ts_group_assignment ADD (
+  CONSTRAINT at_ts_group_assignment_fk1
+ FOREIGN KEY (ts_code)
+ REFERENCES at_cwms_ts_spec (ts_code))
+/
+ALTER TABLE at_ts_group_assignment ADD (
+  CONSTRAINT at_ts_group_assignment_fk2
+ FOREIGN KEY (ts_group_code)
+ REFERENCES at_ts_group (ts_group_code))
+/
+ALTER TABLE at_ts_group_assignment ADD (
+  CONSTRAINT at_ts_group_assignment_fk3
+ FOREIGN KEY (ts_ref_code)
+ REFERENCES at_cwms_ts_spec (ts_code))
+/
+COMMIT ;
+
 ---------------------------------
 -- AT_SCREENING table.
 -- 
