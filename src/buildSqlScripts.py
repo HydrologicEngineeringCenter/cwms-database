@@ -4843,6 +4843,7 @@ errorCodes = [
     ['-20104', 'UNITS_NOT_SPECIFIED',   'You must specifiy the UNITS of your data'                    ],
     ['-20234', 'ITEMS_ARE_IDENTICAL',   '%1'                                                          ],
     ['-20244', 'NULL_ARGUMENT',         'Argument %1 is not allowed to be null'                       ],
+    ['-20254', 'ARRAY_LENGTHS_DIFFER',  '%1 arrays must have identical lengths'                       ],
     ['-20997', 'GENERIC_ERROR',         '%1'                                                          ],
     ['-20998', 'ERROR',                 '%1'                                                          ],
     ['-20999', 'UNKNOWN_EXCEPTION',     'The requested exception is not in the CWMS_ERROR table: "%1"'],
