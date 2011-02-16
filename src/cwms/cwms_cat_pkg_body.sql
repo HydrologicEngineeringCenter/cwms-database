@@ -3541,50 +3541,51 @@ IS
       cwms_err.raise(
             'NULL_ARGUMENT',
             'Lookup Prefix');
-    END IF;
-    
-EXECUTE IMMEDIATE 'delete 
-    from '||p_lookup_category||' 
-    where db_office_code in (
-      select cwms_util.get_office_code(cwms_util.check_input_f(ltab.office_id)) 
-      from table (cast (:bv1 as lookup_type_tab_t)) ltab )'
-  using p_lookup_type_tab;
-  EXCEPTION
-      WHEN child_rec_exception THEN
-        null;
-
---this should be a merge.
---incoming object array sanitized when being used.
-EXECUTE IMMEDIATE 'MERGE INTO '||p_lookup_category||' lutab
-    USING (  SELECT cwms_util.get_office_code(cwms_util.check_input_f(ltab.office_id)) office_code, 
-                cwms_util.check_input_f(ltab.display_value) display_value, 
-                cwms_util.check_input_f(ltab.tooltip) tooltip, 
-                cwms_util.check_input_f(ltab.active) active 
-            from table (cast (:bv1 as lookup_type_tab_t)) ltab
-    ) mtab
-    ON (  lutab.db_office_code = mtab.office_code 
-          AND upper(lutab.'||p_lookup_prefix||'_display_value) = upper(mtab.display_value)
-    )  
-    WHEN MATCHED THEN
-        UPDATE SET 
-          lutab.'||p_lookup_prefix||'_tooltip = mtab.tooltip,
-          lutab.'||p_lookup_prefix||'_active = mtab.active
-    WHEN NOT MATCHED THEN
-        INSERT 
-        ( lutab.'||p_lookup_prefix||'_code,
-          lutab.db_office_code,
-          lutab.'||p_lookup_prefix||'_display_value,
-          lutab.'||p_lookup_prefix||'_tooltip,
-          lutab.'||p_lookup_prefix||'_active 
-        )
-        VALUES (
-          cwms_seq.nextval,
-          mtab.office_code,
-          mtab.display_value,
-          mtab.tooltip,
-          mtab.active
-        )'
-  USING p_lookup_type_tab;
+    end if;
+    begin
+      --clear out existing. this should probably be a loop to handle lus that are fked.
+      EXECUTE IMMEDIATE 'delete 
+          from '||p_lookup_category||' 
+          where db_office_code in (
+            select cwms_util.get_office_code(cwms_util.check_input_f(ltab.office_id)) 
+            from table (cast (:bv1 as lookup_type_tab_t)) ltab )'
+        using p_lookup_type_tab;
+        EXCEPTION
+            WHEN child_rec_exception THEN
+              null;
+    end;
+    --this should be a merge.
+    --incoming object array sanitized when being used.
+    EXECUTE IMMEDIATE 'MERGE INTO '||p_lookup_category||' lutab
+        USING (  SELECT cwms_util.get_office_code(cwms_util.check_input_f(ltab.office_id)) office_code, 
+                    cwms_util.check_input_f(ltab.display_value) display_value, 
+                    cwms_util.check_input_f(ltab.tooltip) tooltip, 
+                    cwms_util.check_input_f(ltab.active) active 
+                from table (cast (:bv1 as lookup_type_tab_t)) ltab
+        ) mtab
+        ON (  lutab.db_office_code = mtab.office_code 
+              AND upper(lutab.'||p_lookup_prefix||'_display_value) = upper(mtab.display_value)
+        )  
+        WHEN MATCHED THEN
+            UPDATE SET 
+              lutab.'||p_lookup_prefix||'_tooltip = mtab.tooltip,
+              lutab.'||p_lookup_prefix||'_active = mtab.active
+        WHEN NOT MATCHED THEN
+            INSERT 
+            ( lutab.'||p_lookup_prefix||'_code,
+              lutab.db_office_code,
+              lutab.'||p_lookup_prefix||'_display_value,
+              lutab.'||p_lookup_prefix||'_tooltip,
+              lutab.'||p_lookup_prefix||'_active 
+            )
+            VALUES (
+              cwms_seq.nextval,
+              mtab.office_code,
+              mtab.display_value,
+              mtab.tooltip,
+              mtab.active
+            )'
+      USING p_lookup_type_tab;
 
   end set_lookup_table;
     
