@@ -728,171 +728,7 @@ END set_contract_types;
 --------------------------------------------------------------------------------
 -- water supply accounting
 --------------------------------------------------------------------------------
---------------------------------------------------------------------------------
--- store a water user contract accounting set.
---------------------------------------------------------------------------------
 
-PROCEDURE store_accounting_set(
-    -- the set of water user contract accountings to store to the database.
-    p_accounting_set IN wat_usr_contract_acct_tab_t,
-    -- a flag that will cause the procedure to fail if the objects already exist
-    -- p_fail_if_exists in varchar2 default 'T' 
-
-		-- store rule, only delete insert initially supported.
-    p_store_rule		IN VARCHAR2 DEFAULT NULL,
-    -- start time of data to delete.
-    p_start_time	  IN		DATE DEFAULT NULL,
-    --end time of data to delete.
-    p_end_time		  IN		DATE DEFAULT NULL,
-    -- the time zone of the incoming data.
-    p_time_zone IN VARCHAR2 DEFAULT NULL,    
-    -- if the start time is inclusive.
-    p_start_inclusive IN VARCHAR2 DEFAULT 'T',
-    -- if the end time is inclusive
-    p_end_inclusive IN VARCHAR2 DEFAULT 'T',
-    -- if protection is to be ignored, not initially supported.
-		p_override_prot	IN VARCHAR2 DEFAULT 'F'
-    )   
-   
-   
-IS
-   -- l_fail_if_exists boolean;
-   l_rec            at_wat_usr_contract_accounting%rowtype;
-   l_ref            water_user_contract_ref_t;
-   l_factor         BINARY_DOUBLE;
-   l_offset         BINARY_DOUBLE;
-   l_water_usr_code NUMBER(10);
-   l_contract_code  NUMBER(10);
-   l_xfer_type_code NUMBER(10);
-   l_time_zone              VARCHAR2(28) := nvl(p_time_zone, 'UTC');
-   
-   PROCEDURE populate_accounting(
-      p_rec IN out nocopy at_wat_usr_contract_accounting%rowtype,
-      p_obj IN            wat_usr_contract_acct_obj_t)
-   IS
-   BEGIN
-      --WAT_USR_CONTRACT_ACCT_CODE -- pk
-      
-      --WATER_USER_CONTRACT_CODE id part
-      --PUMP_LOCATION_CODE id part
-      
-      --phys_trans_type
-      --ACCOUNTING_VOLUME
-      --TRANSFER_START_DATETIME
-      --ACCOUNTING_REMARKS
-      p_rec.water_user_contract_code := l_contract_code;
-      --create the loc if it doesnt exist?
-      p_rec.pump_location_code := p_obj.pump_location_ref.get_location_code('T');
-      p_rec.phys_trans_type_code := l_xfer_type_code;
-      p_rec.accounting_volume := p_obj.accounting_volume * l_factor + l_offset;
-      p_rec.transfer_start_datetime := 
-         cwms_util.change_timezone(
-            p_obj.transfer_start_datetime, 
-            l_time_zone, 
-            'UTC');             
-      p_rec.accounting_remarks := p_obj.accounting_remarks;
-   END;
-BEGIN
-    --check args...
-    -- cwms_util.check_input(p_fail_if_exists);
-    -- l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
-    IF p_accounting_set IS NULL THEN
-      --error
-      cwms_err.raise(
-            'NULL_ARGUMENT',
-            'Water Supply Accounting Set');
-    END IF;
-    
-
-    
-    --iterate incoming set
-    FOR i IN 1..p_accounting_set.count loop
-       l_ref := p_accounting_set(i).water_user_contract_ref;
-       -----------------------------
-       -- get the water user code --
-       -----------------------------
-       SELECT water_user_code
-         INTO l_water_usr_code
-         FROM at_water_user
-        WHERE project_location_code = l_ref.water_user.project_location_ref.get_location_code
-          AND upper(entity_name) = upper(l_ref.water_user.entity_name);
-      
-       ---------------------------
-       -- get the contract code --
-       ---------------------------
-       SELECT water_user_contract_code
-         INTO l_contract_code
-         FROM at_water_user_contract
-        WHERE water_user_code = l_water_usr_code 
-          AND upper(contract_name) = upper(l_ref.contract_name);
-
-       ----------------------------------
-       -- get the unit conversion info --
-       ----------------------------------
-       SELECT uc.factor,
-              uc.offset
-         INTO l_factor,
-              l_offset
-         FROM cwms_base_parameter bp,
-              cwms_unit_conversion uc,
-              at_water_user_contract wuc
-        WHERE bp.base_parameter_id = 'Stor'
-          AND uc.to_unit_code = bp.unit_code
-          AND wuc.water_user_contract_code = l_contract_code
-          AND uc.from_unit_code = wuc.storage_unit_code;    
-          
-       -----------------------------------------         
-       -- get the physical transfer type code --
-       -----------------------------------------
-       SELECT phys_trans_type_code
-         INTO l_xfer_type_code
-         FROM at_physical_transfer_type ptt,
-              cwms_office o
-        WHERE o.office_id = upper(p_accounting_set(i).physical_transfer_type.office_id)
-          AND ptt.db_office_code = o.office_code
-          AND upper(ptt.phys_trans_type_display_value) 
-              = upper(p_accounting_set(i).physical_transfer_type.display_value);
-
-              
-        --need to clear out the old records.
-        
-        --then insert the new ones.
-        BEGIN
-          --grab table record
-          SELECT *
-            INTO l_rec
-            FROM at_wat_usr_contract_accounting
-           WHERE water_user_contract_code = l_water_usr_code
-             AND phys_trans_type_code = l_xfer_type_code
-             AND transfer_start_datetime = cwms_util.change_timezone(
-                   p_accounting_set(i).transfer_start_datetime, 
-                   l_time_zone, 
-                   'UTC');
-                   
-          -- populate existing rec with incoming data.
-          populate_accounting(
-             l_rec,
-             p_accounting_set(i));
-          --update table record with rec
-          UPDATE at_wat_usr_contract_accounting
-             SET ROW = l_rec
-           WHERE wat_usr_contract_acct_code = l_rec.wat_usr_contract_acct_code;
-           
-        exception
-          WHEN no_data_found THEN
-            --table record doesnt exist.
-            populate_accounting(
-              l_rec,
-              p_accounting_set(i));
-            --get a new seq val for insert.          
-            l_rec.wat_usr_contract_acct_code := cwms_seq.nextval;
-            --inser the new rec
-            INSERT
-             INTO at_wat_usr_contract_accounting
-            VALUES l_rec;
-        END;
-    END loop;
-END store_accounting_set;
 --------------------------------------------------------------------------------
 -- retrieve a water user contract accounting set.
 --------------------------------------------------------------------------------
@@ -931,7 +767,8 @@ PROCEDURE retrieve_accounting_set(
   )
   IS
     l_contract_code          NUMBER(10);
-    l_project_location_code  NUMBER(10);
+    l_project_location_code  number(10);
+    l_unit_code              number(10);
     l_adjusted_start_time    DATE;
     l_adjusted_end_time      DATE;
     l_start_time_inclusive   boolean;
@@ -975,9 +812,16 @@ BEGIN
     END IF;
     
 
+    --grab the project loc code.
     l_project_location_code :=  p_contract_ref.water_user.project_location_ref.get_location_code('F');
     
+    -- get the out going unit code.
+    select unit_code 
+    into l_unit_code 
+    from cwms_unit
+    where unit_id = nvl(p_units,'m3');
     
+    -- get the contract code
     SELECT water_user_contract_code 
     INTO l_contract_code
     FROM at_water_user_contract wuc,
@@ -1014,62 +858,59 @@ BEGIN
         WHERE upper(tz.time_zone_name) = upper(l_time_zone);
     END IF;
    
-   ----------------------------------------
-   -- select records and populate output --
-   ----------------------------------------
-   FOR rec IN (  
-WITH ordered_wuca AS
-  (SELECT
-    /*+ FIRST_ROWS(100) */
-    wat_usr_contract_acct_code,
-    water_user_contract_code,
-    pump_location_code,
-    phys_trans_type_code,
-    accounting_volume,
-    transfer_start_datetime,
-    accounting_remarks
-  FROM at_wat_usr_contract_accounting
-  WHERE water_user_contract_code = l_contract_code
-  AND transfer_start_datetime BETWEEN l_adjusted_start_time AND l_adjusted_end_time
-   ORDER BY cwms_util.to_millis(transfer_start_datetime) * l_orderby_mod),
-  limited_wuca AS
-  (SELECT wat_usr_contract_acct_code,
-    water_user_contract_code,
-    pump_location_code,
-    phys_trans_type_code,
-    accounting_volume,
-    transfer_start_datetime,
-    accounting_remarks
-    
-  FROM ordered_wuca
-  WHERE ROWNUM <= p_row_limit
-  )
-SELECT limited_wuca.pump_location_code,
-  limited_wuca.transfer_start_datetime,
-  limited_wuca.accounting_volume,
-  u.unit_id AS units_id,
-  uc.factor,
-  uc.offset,
-  o.office_id AS transfer_type_office_id,
-  ptt.phys_trans_type_display_value,
-  ptt.phys_trans_type_tooltip,
-  ptt.phys_trans_type_active,
-  limited_wuca.accounting_remarks
-FROM limited_wuca
-INNER JOIN at_water_user_contract wuc
-ON (limited_wuca.water_user_contract_code = wuc.water_user_contract_code)
-INNER JOIN at_physical_transfer_type ptt
-ON (limited_wuca.phys_trans_type_code = ptt.phys_trans_type_code)
-INNER JOIN cwms_office o ON ptt.db_office_code = o.office_code
-INNER JOIN cwms_unit u
-ON (wuc.storage_unit_code = u.unit_code)
-INNER JOIN cwms_unit_conversion uc
-ON uc.to_unit_code = wuc.storage_unit_code
-INNER JOIN cwms_base_parameter bp
-ON uc.from_unit_code     = bp.unit_code
-AND bp.base_parameter_id = 'Stor'
-   )
-   loop
+    ----------------------------------------
+    -- select records and populate output --
+    ----------------------------------------
+    FOR rec IN (  
+        WITH ordered_wuca AS
+          (SELECT
+            /*+ FIRST_ROWS(100) */
+            wat_usr_contract_acct_code,
+            water_user_contract_code,
+            pump_location_code,
+            phys_trans_type_code,
+            accounting_volume,
+            transfer_start_datetime,
+            accounting_remarks
+          FROM at_wat_usr_contract_accounting
+          WHERE water_user_contract_code = l_contract_code
+          AND transfer_start_datetime BETWEEN l_adjusted_start_time AND l_adjusted_end_time
+           ORDER BY cwms_util.to_millis(transfer_start_datetime) * l_orderby_mod),
+          limited_wuca AS
+          (SELECT wat_usr_contract_acct_code,
+            water_user_contract_code,
+            pump_location_code,
+            phys_trans_type_code,
+            accounting_volume,
+            transfer_start_datetime,
+            accounting_remarks
+            
+          FROM ordered_wuca
+          WHERE ROWNUM <= p_row_limit
+          )
+        SELECT limited_wuca.pump_location_code,
+          limited_wuca.transfer_start_datetime,
+          limited_wuca.accounting_volume,
+          -- u.unit_id AS units_id,
+          uc.factor,
+          uc.offset,
+          o.office_id AS transfer_type_office_id,
+          ptt.phys_trans_type_display_value,
+          ptt.phys_trans_type_tooltip,
+          ptt.phys_trans_type_active,
+          limited_wuca.accounting_remarks
+        FROM limited_wuca
+        INNER JOIN at_water_user_contract wuc
+        ON (limited_wuca.water_user_contract_code = wuc.water_user_contract_code)
+        INNER JOIN at_physical_transfer_type ptt
+        ON (limited_wuca.phys_trans_type_code = ptt.phys_trans_type_code)
+        INNER JOIN cwms_office o ON ptt.db_office_code = o.office_code
+        inner join cwms_unit_conversion uc
+        on (uc.to_unit_code = l_unit_code)
+        inner join cwms_base_parameter bp
+        ON (uc.from_unit_code = bp.unit_code AND bp.base_parameter_id = 'Stor')
+    )
+    loop
       --extend the array.
       p_accounting_set.EXTEND;
       
@@ -1086,7 +927,7 @@ AND bp.base_parameter_id = 'Stor'
           rec.phys_trans_type_tooltip,
           rec.phys_trans_type_active),
         rec.accounting_volume * rec.factor + rec.offset,
-        rec.units_id,
+        -- rec.units_id,
         cwms_util.change_timezone(
            rec.transfer_start_datetime, 
            'UTC',
@@ -1094,6 +935,334 @@ AND bp.base_parameter_id = 'Stor'
         rec.accounting_remarks);
    END loop;      
 END retrieve_accounting_set;
+
+--------------------------------------------------------------------------------
+-- store a water user contract accounting set.
+--------------------------------------------------------------------------------
+PROCEDURE store_accounting_set(
+    -- the set of water user contract accountings to store to the database.
+    p_accounting_tab IN wat_usr_contract_acct_tab_t,
+
+    -- the contract ref for the incoming accountings.
+    p_contract_ref IN water_user_contract_ref_t,
+    
+    --the following represents pump time windows where data needs to be cleared
+    --out as part of the delete insert process.
+    p_pump_time_window_tab loc_ref_time_window_tab_t,
+
+    -- the time zone of all of the incoming data.
+    p_time_zone IN VARCHAR2 DEFAULT NULL,    
+    
+    -- the units of the incoming accounting volume data
+    p_volume_unit_id IN VARCHAR2 DEFAULT NULL,    
+
+		-- store rule, this variable is not supported. 
+    -- only delete insert initially supported.
+    p_store_rule		IN VARCHAR2 DEFAULT NULL,
+
+    -- if protection is to be ignored.
+    -- this variable is not supported.
+		p_override_prot	IN VARCHAR2 DEFAULT 'F'
+    )   
+   
+   
+IS
+
+    l_contract_name at_water_user_contract.contract_name%TYPE;
+    l_entity_name at_water_user.entity_name%TYPE;
+    l_project_loc_code NUMBER(10);
+    l_contract_code NUMBER(10);
+
+    l_factor         BINARY_DOUBLE;
+    l_offset         BINARY_DOUBLE;
+    l_time_zone      VARCHAR2(28) := nvl(p_time_zone, 'UTC');
+BEGIN
+
+    -- check arrays for errors
+    IF p_pump_time_window_tab IS NULL 
+    THEN
+      cwms_err.raise(
+      'NULL_ARGUMENT',
+      'Pump Location and Time Window Array');
+    END IF;
+    
+    IF p_contract_ref IS NULL THEN
+      --error, the contract is null.
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Water User Contract Reference');
+    END IF;      
+
+    l_contract_name := p_contract_ref.contract_name; -- 'WU CONTRACT 1'; 
+    IF l_contract_name IS NULL THEN
+      --error, the contract is null.
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Water User Contract Name');
+    END IF; 
+    cwms_util.check_input(l_contract_name);
+    
+    IF  p_contract_ref.water_user IS NULL THEN
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Contract Water User');
+    END IF; 
+    
+    l_entity_name := p_contract_ref.water_user.entity_name; -- 'KEYS WU 1'; 
+    IF  l_entity_name IS NULL THEN
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Water User Entity Name');
+    END IF; 
+    cwms_util.check_input(l_entity_name);
+    
+    IF p_contract_ref.water_user.project_location_ref IS NULL THEN
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Water User Project Location Ref');
+    END IF; 
+    
+    l_project_loc_code := p_contract_ref.water_user.project_location_ref.get_location_code('F'); -- 32051; 
+    
+    -- get the contract code
+    SELECT wuc.water_user_contract_code
+    INTO l_contract_code 
+    FROM at_water_user_contract wuc
+    INNER JOIN at_water_user wu ON (wuc.water_user_code = wu.water_user_code)
+    WHERE upper(wuc.contract_name) = upper(l_contract_name)
+    AND upper(wu.entity_name) = upper(l_entity_name)
+    AND wu.project_location_code = l_project_loc_code;
+
+    -- dbms_output.put_line('wuc code: '|| l_contract_code);
+        
+    --get the offset and factor
+    ----------------------------------
+    -- get the unit conversion info --
+    ----------------------------------
+    SELECT uc.factor,
+          uc.offset
+     INTO l_factor,
+          l_offset
+     from cwms_base_parameter bp,
+          cwms_unit_conversion uc,
+          cwms_unit u
+    WHERE bp.base_parameter_id = 'Stor'
+      and uc.to_unit_code = bp.unit_code
+      and uc.from_unit_code = u.unit_code
+      and u.unit_id = nvl(p_volume_unit_id,'m3');
+    
+    -- dbms_output.put_line('unit conv: '|| l_factor ||', '||l_offset);    
+    
+    
+    -- delete existing data
+    DELETE FROM at_wat_usr_contract_accounting 
+    WHERE wat_usr_contract_acct_code IN (
+        SELECT wuca.wat_usr_contract_acct_code acct_code
+        FROM at_wat_usr_contract_accounting wuca
+        INNER JOIN (
+            SELECT loc_tw_tab.location_ref.get_location_code('F') loc_code, 
+                -- convert to utc
+                cwms_util.change_timezone(
+                  loc_tw_tab.start_date, 
+                  l_time_zone, 
+                  'UTC'
+                )  start_date,
+                cwms_util.change_timezone(
+                  loc_tw_tab.end_date , 
+                  l_time_zone, 
+                  'UTC'
+                ) end_date
+            FROM TABLE (CAST (p_pump_time_window_tab AS loc_ref_time_window_tab_t)) loc_tw_tab
+        ) loc_tw ON (
+            wuca.pump_location_code = loc_tw.loc_code 
+            --wuca value is in utc.
+            AND wuca.transfer_start_datetime BETWEEN loc_tw.start_date AND loc_tw.end_date
+        )
+        WHERE wuca.water_user_contract_code = l_contract_code
+    );
+    
+     -- insert new data
+    INSERT INTO at_wat_usr_contract_accounting (
+        wat_usr_contract_acct_code,
+        water_user_contract_code,
+        pump_location_code,
+        phys_trans_type_code,
+        accounting_volume,
+        transfer_start_datetime,
+        accounting_remarks )
+
+        select cwms_seq.nextval pk_code,
+            l_contract_code contract_code,
+            acct_tab.pump_location_ref.get_location_code('F') pump_code,
+            ptt.phys_trans_type_code xfer_code,
+            acct_tab.accounting_volume * l_factor + l_offset volume,
+            cwms_util.change_timezone(
+                  acct_tab.transfer_start_datetime, 
+                  l_time_zone, 
+                  'UTC'
+              ) xfer_date,
+            acct_tab.accounting_remarks remarks
+        from table (cast (p_accounting_tab as wat_usr_contract_acct_tab_t)) acct_tab,
+            at_physical_transfer_type ptt,
+            cwms_office o,
+            at_water_user_contract wuc,
+            at_water_user wu
+        where wuc.water_user_code = wu.water_user_code
+        and wuc.water_user_contract_code = l_contract_code
+        and cwms_loc.get_location_code(acct_tab.water_user_contract_ref.water_user.project_location_ref.office_id,
+              acct_tab.water_user_contract_ref.water_user.project_location_ref.base_location_id
+              || substr ('-', 1, length (acct_tab.water_user_contract_ref.water_user.project_location_ref.sub_location_id))
+              || acct_tab.water_user_contract_ref.water_user.project_location_ref.sub_location_id
+            ) = l_project_loc_code
+        and upper(acct_tab.water_user_contract_ref.contract_name) = upper(wuc.contract_name)
+        AND upper(acct_tab.water_user_contract_ref.water_user.entity_name) = upper(wu.entity_name)
+        and acct_tab.physical_transfer_type.office_id = o.office_id
+        and acct_tab.physical_transfer_type.display_value = ptt.phys_trans_type_display_value
+        and ptt.db_office_code = o.office_code;
+
+END store_accounting_set;
+
+--   -- l_fail_if_exists boolean;
+--   l_rec            at_wat_usr_contract_accounting%rowtype;
+--   l_ref            water_user_contract_ref_t;
+--   l_factor         BINARY_DOUBLE;
+--   l_offset         BINARY_DOUBLE;
+--   l_water_usr_code NUMBER(10);
+--   l_contract_code  NUMBER(10);
+--   l_xfer_type_code NUMBER(10);
+--   l_time_zone              VARCHAR2(28) := nvl(p_time_zone, 'UTC');
+--   
+--   PROCEDURE populate_accounting(
+--      p_rec IN out nocopy at_wat_usr_contract_accounting%rowtype,
+--      p_obj IN            wat_usr_contract_acct_obj_t)
+--   IS
+--   BEGIN
+--      --WAT_USR_CONTRACT_ACCT_CODE -- pk
+--      
+--      --WATER_USER_CONTRACT_CODE id part
+--      --PUMP_LOCATION_CODE id part
+--      
+--      --phys_trans_type
+--      --ACCOUNTING_VOLUME
+--      --TRANSFER_START_DATETIME
+--      --ACCOUNTING_REMARKS
+--      p_rec.water_user_contract_code := l_contract_code;
+--      --create the loc if it doesnt exist?
+--      p_rec.pump_location_code := p_obj.pump_location_ref.get_location_code('T');
+--      p_rec.phys_trans_type_code := l_xfer_type_code;
+--      p_rec.accounting_volume := p_obj.accounting_volume * l_factor + l_offset;
+--      p_rec.transfer_start_datetime := 
+--         cwms_util.change_timezone(
+--            p_obj.transfer_start_datetime, 
+--            l_time_zone, 
+--            'UTC');             
+--      p_rec.accounting_remarks := p_obj.accounting_remarks;
+--   END;
+--BEGIN
+--    --check args...
+--    -- cwms_util.check_input(p_fail_if_exists);
+--    -- l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
+--    IF p_accounting_set IS NULL THEN
+--      --error
+--      cwms_err.raise(
+--            'NULL_ARGUMENT',
+--            'Water Supply Accounting Set');
+--    END IF;
+--    
+--
+--    
+--    --iterate incoming set
+--    FOR i IN 1..p_accounting_set.count loop
+--       l_ref := p_accounting_set(i).water_user_contract_ref;
+--       -----------------------------
+--       -- get the water user code --
+--       -----------------------------
+--       SELECT water_user_code
+--         INTO l_water_usr_code
+--         FROM at_water_user
+--        WHERE project_location_code = l_ref.water_user.project_location_ref.get_location_code('F')
+--          AND upper(entity_name) = upper(l_ref.water_user.entity_name);
+--      
+--       ---------------------------
+--       -- get the contract code --
+--       ---------------------------
+--       SELECT water_user_contract_code
+--         INTO l_contract_code
+--         FROM at_water_user_contract
+--        WHERE water_user_code = l_water_usr_code 
+--          AND upper(contract_name) = upper(l_ref.contract_name);
+--
+--       ----------------------------------
+--       -- get the unit conversion info --
+--       ----------------------------------
+--       SELECT uc.factor,
+--              uc.offset
+--         INTO l_factor,
+--              l_offset
+--         FROM cwms_base_parameter bp,
+--              cwms_unit_conversion uc,
+--              at_water_user_contract wuc
+--        WHERE bp.base_parameter_id = 'Stor'
+--          AND uc.to_unit_code = bp.unit_code
+--          AND wuc.water_user_contract_code = l_contract_code
+--          AND uc.from_unit_code = wuc.storage_unit_code;
+--          
+--       -----------------------------------------         
+--       -- get the physical transfer type code --
+--       -----------------------------------------
+--       SELECT phys_trans_type_code
+--         INTO l_xfer_type_code
+--         FROM at_physical_transfer_type ptt,
+--              cwms_office o
+--        WHERE o.office_id = upper(p_accounting_set(i).physical_transfer_type.office_id)
+--          AND ptt.db_office_code = o.office_code
+--          AND upper(ptt.phys_trans_type_display_value) 
+--              = upper(p_accounting_set(i).physical_transfer_type.display_value);
+--
+--              
+--        --need to clear out the old records.
+--        
+--        --then insert the new ones.
+--        BEGIN
+--          --grab table record
+--          SELECT *
+--            INTO l_rec
+--            FROM at_wat_usr_contract_accounting
+--           WHERE water_user_contract_code = l_water_usr_code
+--             AND phys_trans_type_code = l_xfer_type_code
+--             AND transfer_start_datetime = cwms_util.change_timezone(
+--                   p_accounting_set(i).transfer_start_datetime, 
+--                   l_time_zone, 
+--                   'UTC');
+--                   
+--          -- populate existing rec with incoming data.
+--          populate_accounting(
+--             l_rec,
+--             p_accounting_set(i));
+--          --update table record with rec
+--          UPDATE at_wat_usr_contract_accounting
+--             SET ROW = l_rec
+--           WHERE wat_usr_contract_acct_code = l_rec.wat_usr_contract_acct_code;
+--           
+--        exception
+--          WHEN no_data_found THEN
+--            --table record doesnt exist.
+--            populate_accounting(
+--              l_rec,
+--              p_accounting_set(i));
+--            --get a new seq val for insert.          
+--            l_rec.wat_usr_contract_acct_code := cwms_seq.nextval;
+--            --inser the new rec
+--            INSERT
+--             INTO at_wat_usr_contract_accounting
+--            VALUES l_rec;
+--        END;
+--    END loop;
+--END store_accounting_set;
+
+
+
+
 END cwms_water_supply;
 
 /

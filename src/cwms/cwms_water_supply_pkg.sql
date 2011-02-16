@@ -8,6 +8,10 @@ WHENEVER sqlerror EXIT sql.sqlcode
 CREATE OR REPLACE
 PACKAGE cwms_water_supply
 IS
+
+
+
+
   --------------------------------------------------------------------------------
   -- procedure cat_water_user
   -- returns a catalog of water users.
@@ -188,30 +192,7 @@ PROCEDURE set_contract_types(
   --------------------------------------------------------------------------------
   -- water supply accounting
   --------------------------------------------------------------------------------
-  --------------------------------------------------------------------------------
-  -- store a water user contract accounting set.
-  --------------------------------------------------------------------------------
-PROCEDURE store_accounting_set(
-    -- the set of water user contract accountings to store to the database.
-    p_accounting_set IN wat_usr_contract_acct_tab_t,
-    -- a flag that will cause the procedure to fail if the objects already exist
-    -- p_fail_if_exists in varchar2 default 'T' 
 
-		-- store rule, only delete insert initially supported.
-    p_store_rule		in varchar2 default null,
-    -- start time of data to delete.
-    p_start_time	  in		date default null,
-    --end time of data to delete.
-    p_end_time		  in		date default null,
-    -- the time zone of the incoming data.
-    p_time_zone IN VARCHAR2 DEFAULT NULL,    
-    -- if the start time is inclusive.
-    p_start_inclusive IN VARCHAR2 DEFAULT 'T',
-    -- if the end time is inclusive
-    p_end_inclusive in varchar2 default 'T',
-    -- if protection is to be ignored, not initially supported.
-		p_override_prot	in varchar2 default 'F'
-    );
   --------------------------------------------------------------------------------
   -- retrieve a water user contract accounting set.
   --------------------------------------------------------------------------------
@@ -247,6 +228,40 @@ PROCEDURE retrieve_accounting_set(
     -- if null, return all transfers.
     p_transfer_type IN VARCHAR2 DEFAULT NULL
   );
+  
+  --------------------------------------------------------------------------------
+  -- store a water user contract accounting set.
+  --------------------------------------------------------------------------------
+PROCEDURE store_accounting_set(
+    -- the set of water user contract accountings to store to the database.
+    p_accounting_tab IN wat_usr_contract_acct_tab_t,
+
+    -- the contract ref for the incoming accountings.
+    p_contract_ref IN water_user_contract_ref_t,
+    
+    --the following represents pump time windows where data needs to be cleared
+    --out as part of the delete insert process.
+    p_pump_time_window_tab loc_ref_time_window_tab_t,
+
+    -- the time zone of all of the incoming data.
+    p_time_zone IN VARCHAR2 DEFAULT NULL,    
+    
+    -- the units of the incoming accounting volume data
+    p_volume_unit_id IN VARCHAR2 DEFAULT NULL,    
+
+		-- store rule, this variable is not supported. 
+    -- only delete insert initially supported.
+    p_store_rule		IN VARCHAR2 DEFAULT NULL,
+
+    -- if protection is to be ignored.
+    -- this variable is not supported.
+		p_override_prot	in varchar2 default 'F'
+    );
+
+
+
+
+
 END CWMS_WATER_SUPPLY;
 /
 show errors;
