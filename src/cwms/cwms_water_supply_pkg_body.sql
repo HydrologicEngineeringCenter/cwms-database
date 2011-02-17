@@ -975,7 +975,8 @@ IS
 
     l_factor         BINARY_DOUBLE;
     l_offset         BINARY_DOUBLE;
-    l_time_zone      VARCHAR2(28) := nvl(p_time_zone, 'UTC');
+    l_time_zone      varchar2(28) := nvl(p_time_zone, 'UTC');
+--    l_count number;
 BEGIN
 
     -- check arrays for errors
@@ -1053,7 +1054,8 @@ BEGIN
     
     -- dbms_output.put_line('unit conv: '|| l_factor ||', '||l_offset);    
     
-    
+--    select count(*) into l_count from at_wat_usr_contract_accounting;
+--    dbms_output.put_line('row count: '|| l_count);    
     -- delete existing data
     DELETE FROM at_wat_usr_contract_accounting 
     WHERE wat_usr_contract_acct_code IN (
@@ -1062,6 +1064,8 @@ BEGIN
         INNER JOIN (
             SELECT loc_tw_tab.location_ref.get_location_code('F') loc_code, 
                 -- convert to utc
+--                loc_tw_tab.start_date start_date,
+--                loc_tw_tab.end_date end_date
                 cwms_util.change_timezone(
                   loc_tw_tab.start_date, 
                   l_time_zone, 
@@ -1080,6 +1084,8 @@ BEGIN
         )
         WHERE wuca.water_user_contract_code = l_contract_code
     );
+--    select count(*) into l_count from at_wat_usr_contract_accounting;
+--    dbms_output.put_line('row count: '|| l_count);    
     
      -- insert new data
     INSERT INTO at_wat_usr_contract_accounting (
