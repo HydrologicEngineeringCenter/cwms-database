@@ -3588,6 +3588,263 @@ IS
       USING p_lookup_type_tab;
 
   end set_lookup_table;
+
+   --------------------------------------------------------------------------------
+   -- procedure cat_streams
+   --
+   -- catalog has the following fields, sorted ascending by office_id and stream_id
+   --
+   --    office_id            varchar2(16)
+   --    stream_id            varchar2(49)
+   --    stationing_starts_ds varchar2(1)
+   --    flows_into_stream    varchar2(49)
+   --    flows_into_station   binary_double
+   --    flows_into_bank      varchar2(1) 
+   --    diverts_from_stream  varchar2(49)
+   --    diverts_from_station binary_double
+   --    diverts_from_bank    varchar2(1)
+   --    stream_length        binary_double
+   --    average_slope        binary_double
+   --    comments             varchar2(256) 
+   --
+   --------------------------------------------------------------------------------
+   procedure cat_streams(          
+      p_stream_catalog              out sys_refcursor,
+      p_stream_id_mask              in  varchar2 default '*',
+      p_station_units               in  varchar2 default 'km',
+      p_stationing_starts_ds_mask   in  varchar2 default '*',
+      p_flows_into_stream_id_mask   in  varchar2 default '*',
+      p_flows_into_station_min      in  binary_double default null,
+      p_flows_into_station_max      in  binary_double default null,
+      p_flows_into_bank_mask        in  varchar2 default '*',
+      p_diverts_from_stream_id_mask in  varchar2 default '*',
+      p_diverts_from_station_min    in  binary_double default null,
+      p_diverts_from_station_max    in  binary_double default null,
+      p_diverts_from_bank_mask      in  varchar2 default '*',
+      p_length_min                  in  binary_double default null,
+      p_length_max                  in  binary_double default null,
+      p_average_slope_min           in  binary_double default null,
+      p_average_slope_max           in  binary_double default null,
+      p_comments_mask               in  varchar2 default '*',
+      p_office_id_mask              in  varchar2 default null)
+   is
+   begin
+      cwms_stream.cat_streams(          
+         p_stream_catalog,
+         p_stream_id_mask,
+         p_station_units,
+         p_stationing_starts_ds_mask,
+         p_flows_into_stream_id_mask,
+         p_flows_into_station_min,
+         p_flows_into_station_max,
+         p_flows_into_bank_mask,
+         p_diverts_from_stream_id_mask,
+         p_diverts_from_station_min,
+         p_diverts_from_station_max,
+         p_diverts_from_bank_mask,
+         p_length_min,
+         p_length_max,
+         p_average_slope_min,
+         p_average_slope_max,
+         p_comments_mask,
+         p_office_id_mask);
+   end cat_streams;      
+
+   --------------------------------------------------------------------------------
+   -- function cat_streams_f
+   --
+   -- catalog has the following fields, sorted ascending by office_id and stream_id
+   --
+   --    office_id            varchar2(16)
+   --    stream_id            varchar2(49)
+   --    stationing_starts_ds varchar2(1)
+   --    flows_into_stream    varchar2(49)
+   --    flows_into_station   binary_double
+   --    flows_into_bank      varchar2(1) 
+   --    diverts_from_stream  varchar2(49)
+   --    diverts_from_station binary_double
+   --    diverts_from_bank    varchar2(1)
+   --    stream_length        binary_double
+   --    average_slope        binary_double
+   --    comments             varchar2(256) 
+   --
+   --------------------------------------------------------------------------------
+   function cat_streams_f(          
+      p_stream_id_mask              in varchar2 default '*',
+      p_station_units               in varchar2 default 'km',
+      p_stationing_starts_ds_mask   in varchar2 default '*',
+      p_flows_into_stream_id_mask   in varchar2 default '*',
+      p_flows_into_station_min      in binary_double default null,
+      p_flows_into_station_max      in binary_double default null,
+      p_flows_into_bank_mask        in varchar2 default '*',
+      p_diverts_from_stream_id_mask in varchar2 default '*',
+      p_diverts_from_station_min    in binary_double default null,
+      p_diverts_from_station_max    in binary_double default null,
+      p_diverts_from_bank_mask      in varchar2 default '*',
+      p_length_min                  in binary_double default null,
+      p_length_max                  in binary_double default null,
+      p_average_slope_min           in binary_double default null,
+      p_average_slope_max           in binary_double default null,
+      p_comments_mask               in varchar2 default '*',
+      p_office_id_mask              in varchar2 default null)
+      return sys_refcursor
+   is
+   begin
+      return cwms_stream.cat_streams_f(          
+         p_stream_id_mask,
+         p_station_units,
+         p_stationing_starts_ds_mask,
+         p_flows_into_stream_id_mask,
+         p_flows_into_station_min,
+         p_flows_into_station_max,
+         p_flows_into_bank_mask,
+         p_diverts_from_stream_id_mask,
+         p_diverts_from_station_min,
+         p_diverts_from_station_max,
+         p_diverts_from_bank_mask,
+         p_length_min,
+         p_length_max,
+         p_average_slope_min,
+         p_average_slope_max,
+         p_comments_mask,
+         p_office_id_mask);
+   end cat_streams_f;      
+
+   --------------------------------------------------------------------------------
+   -- procedure cat_stream_reaches
+   --
+   -- catalog has the following fields, sorted by first 3 fields
+   --
+   --    office_id            varchar2(16)
+   --    stream_id            varchar2(49)
+   --    stream_reach_id      varchar2(64)
+   --    upstream_station     binary_double
+   --    downstream_station   binary_double
+   --    stream_type_id       varchar2(4)
+   --    comments             varchar2(256)
+   --------------------------------------------------------------------------------
+   procedure cat_stream_reaches(
+      p_reach_catalog       out sys_refcursor,
+      p_stream_id_mask      in  varchar2 default '*',
+      p_reach_id_mask       in  varchar2 default '*',
+      p_stream_type_id_mask in  varchar2 default '*',
+      p_comments_mask       in  varchar2 default '*',
+      p_office_id_mask      in  varchar2 default null)
+   is
+   begin
+      cwms_stream.cat_stream_reaches(
+         p_reach_catalog,
+         p_stream_id_mask,
+         p_reach_id_mask,
+         p_stream_type_id_mask,
+         p_comments_mask,
+         p_office_id_mask);
+   end cat_stream_reaches;
+
+   --------------------------------------------------------------------------------
+   -- function cat_stream_reaches_f
+   --
+   -- catalog has the following fields, sorted by first 3 fields
+   --
+   --    office_id            varchar2(16)
+   --    stream_id            varchar2(49)
+   --    stream_reach_id      varchar2(64)
+   --    upstream_station     binary_double
+   --    downstream_station   binary_double
+   --    stream_type_id       varchar2(4)
+   --    comments             varchar2(256)
+   --------------------------------------------------------------------------------
+   function cat_stream_reaches_f(
+      p_stream_id_mask      in varchar2 default '*',
+      p_reach_id_mask       in varchar2 default '*',
+      p_stream_type_id_mask in varchar2 default '*',
+      p_comments_mask       in varchar2 default '*',
+      p_office_id_mask      in varchar2 default null)
+      return sys_refcursor
+   is
+   begin
+      return cwms_stream.cat_stream_reaches_f(
+         p_stream_id_mask,
+         p_reach_id_mask,
+         p_stream_type_id_mask,
+         p_comments_mask,
+         p_office_id_mask);
+   end cat_stream_reaches_f;      
+      
+   --------------------------------------------------------------------------------
+   -- procedure cat_stream_locations
+   --
+   -- catalog includes, sorted by office_id, stream_id, station, location_id
+   --
+   --    office_id               varchar2(16)
+   --    stream_id               varchar2(49)
+   --    location_id             varchar2(49)
+   --    station                 binary_double
+   --    bank                    varchar2(1)
+   --    lowest_measurable_stage binary_double
+   --    drainage_area           binary_double
+   --    ungaged_area            binary_double
+   --    station_unit            varchar2(16)
+   --    stage_unit              varchar2(16)
+   --    area_unit               varchar2(16)
+   --
+   --------------------------------------------------------------------------------
+   procedure cat_stream_locations(
+      p_stream_location_catalog out sys_refcursor,
+      p_stream_id_mask          in  varchar2 default '*',
+      p_location_id_mask        in  varchar2 default '*',
+      p_station_unit            in  varchar2 default null,
+      p_stage_unit              in  varchar2 default null,
+      p_area_unit               in  varchar2 default null,
+      p_office_id_mask          in  varchar2 default null)
+   is
+   begin
+      cwms_stream.cat_stream_locations(
+         p_stream_location_catalog,
+         p_stream_id_mask,
+         p_location_id_mask,
+         p_station_unit,
+         p_stage_unit,
+         p_area_unit,
+         p_office_id_mask);
+   end cat_stream_locations;      
+      
+   --------------------------------------------------------------------------------
+   -- function cat_stream_locations_f   
+   --
+   -- catalog includes, sorted by office_id, stream_id, station, location_id
+   --
+   --    office_id               varchar2(16)
+   --    stream_id               varchar2(49)
+   --    location_id             varchar2(49)
+   --    station                 binary_double
+   --    bank                    varchar2(1)
+   --    lowest_measurable_stage binary_double
+   --    drainage_area           binary_double
+   --    ungaged_area            binary_double
+   --    station_unit            varchar2(16)
+   --    stage_unit              varchar2(16)
+   --    area_unit               varchar2(16)
+   --
+   --------------------------------------------------------------------------------
+   function cat_stream_locations_f(
+      p_stream_id_mask   in  varchar2 default '*',
+      p_location_id_mask in  varchar2 default '*',
+      p_station_unit     in  varchar2 default null,
+      p_stage_unit       in  varchar2 default null,
+      p_area_unit        in  varchar2 default null,
+      p_office_id_mask   in  varchar2 default null)
+      return sys_refcursor
+   is
+   begin
+      return cwms_stream.cat_stream_locations_f(
+         p_stream_id_mask,
+         p_location_id_mask,
+         p_station_unit,
+         p_stage_unit,
+         p_area_unit,
+         p_office_id_mask);
+   end cat_stream_locations_f;      
     
 END cwms_cat;
 /
