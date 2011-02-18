@@ -55,6 +55,9 @@
 @@cwms_rating_pkg
 @@cwms_rating_pkg_body
 
+@@cwms_stream_pkg
+@@cwms_stream_pkg_body
+
 -- HOST pwd
 
 @@cwms_project_pkg
