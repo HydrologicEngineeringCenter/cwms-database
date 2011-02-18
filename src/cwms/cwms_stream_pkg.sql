@@ -407,4 +407,5 @@ function get_ds_locations_f(
    return str_tab_t;
 
 end cwms_stream;
+/
 show errors;
