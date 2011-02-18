@@ -3845,6 +3845,71 @@ IS
          p_area_unit,
          p_office_id_mask);
    end cat_stream_locations_f;      
+
+   --------------------------------------------------------------------------------
+   -- procedure cat_basins
+   --
+   -- the catalog contains the following fields, sorted by the first 4
+   --
+   --    office_id                  varchar2(16)
+   --    basin_id                   varchar2(49)
+   --    parent_basin_id            varchar2(49)
+   --    sort_order                 binary_double
+   --    primary_stream_id          varchar2(49)
+   --    total_drainage_area        binary_double
+   --    contributing_drainage_area binary_double
+   --    area_unit                  varchar2(16)
+   --
+   --------------------------------------------------------------------------------
+   procedure cat_basins(
+      p_basins_catalog         out sys_refcursor,
+      p_basin_id_mask          in  varchar2 default '*',
+      p_parent_basin_id_mask   in  varchar2 default '*',
+      p_primary_stream_id_mask in  varchar2 default '*',
+      p_area_unit              in  varchar2 default null,
+      p_office_id_mask         in  varchar2 default null)
+   is
+   begin
+      cwms_basin.cat_basins(
+         p_basins_catalog,
+         p_basin_id_mask,
+         p_parent_basin_id_mask,
+         p_primary_stream_id_mask,
+         p_area_unit,
+         p_office_id_mask);
+   end cat_basins;
+
+   --------------------------------------------------------------------------------
+   -- function cat_basins_f
+   --
+   -- the catalog contains the following fields, sorted by the first 4
+   --
+   --    office_id                  varchar2(16)
+   --    basin_id                   varchar2(49)
+   --    parent_basin_id            varchar2(49)
+   --    sort_order                 binary_double
+   --    primary_stream_id          varchar2(49)
+   --    total_drainage_area        binary_double
+   --    contributing_drainage_area binary_double
+   --    area_unit                  varchar2(16)
+   --
+   --------------------------------------------------------------------------------
+   function cat_basins_f(
+      p_basin_id_mask          in varchar2 default '*',
+      p_parent_basin_id_mask   in varchar2 default '*',
+      p_primary_stream_id_mask in varchar2 default '*',
+      p_area_unit              in varchar2 default null,
+      p_office_id_mask         in varchar2 default null)
+      return sys_refcursor
+   is
+   begin
+      return cwms_basin.cat_basins_f(
+         p_basin_id_mask,
+         p_parent_basin_id_mask,
+         p_primary_stream_id_mask,
+         p_area_unit,
+         p_office_id_mask);
+   end cat_basins_f;
     
 END cwms_cat;
 /

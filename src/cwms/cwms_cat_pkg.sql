@@ -1523,6 +1523,52 @@ procedure set_lookup_table(
       p_area_unit        in  varchar2 default null,
       p_office_id_mask   in  varchar2 default null)
       return sys_refcursor;
+
+   --------------------------------------------------------------------------------
+   -- procedure cat_basins
+   --
+   -- the catalog contains the following fields, sorted by the first 4
+   --
+   --    office_id                  varchar2(16)
+   --    basin_id                   varchar2(49)
+   --    parent_basin_id            varchar2(49)
+   --    sort_order                 binary_double
+   --    primary_stream_id          varchar2(49)
+   --    total_drainage_area        binary_double
+   --    contributing_drainage_area binary_double
+   --    area_unit                  varchar2(16)
+   --
+   --------------------------------------------------------------------------------
+   procedure cat_basins(
+      p_basins_catalog         out sys_refcursor,
+      p_basin_id_mask          in  varchar2 default '*',
+      p_parent_basin_id_mask   in  varchar2 default '*',
+      p_primary_stream_id_mask in  varchar2 default '*',
+      p_area_unit              in  varchar2 default null,
+      p_office_id_mask         in  varchar2 default null);
+
+   --------------------------------------------------------------------------------
+   -- function cat_basins_f
+   --
+   -- the catalog contains the following fields, sorted by the first 4
+   --
+   --    office_id                  varchar2(16)
+   --    basin_id                   varchar2(49)
+   --    parent_basin_id            varchar2(49)
+   --    sort_order                 binary_double
+   --    primary_stream_id          varchar2(49)
+   --    total_drainage_area        binary_double
+   --    contributing_drainage_area binary_double
+   --    area_unit                  varchar2(16)
+   --
+   --------------------------------------------------------------------------------
+   function cat_basins_f(
+      p_basin_id_mask          in varchar2 default '*',
+      p_parent_basin_id_mask   in varchar2 default '*',
+      p_primary_stream_id_mask in varchar2 default '*',
+      p_area_unit              in varchar2 default null,
+      p_office_id_mask         in varchar2 default null)
+      return sys_refcursor;
    
 END cwms_cat;
 /

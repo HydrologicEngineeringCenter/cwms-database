@@ -58,6 +58,9 @@
 @@cwms_stream_pkg
 @@cwms_stream_pkg_body
 
+@@cwms_basin_pkg
+@@cwms_basin_pkg_body
+
 -- HOST pwd
 
 @@cwms_project_pkg
