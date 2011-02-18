@@ -1039,7 +1039,6 @@ CREATE TABLE AT_BASIN
   BASIN_LOCATION_CODE        NUMBER(10)    NOT NULL,
   TOTAL_DRAINAGE_AREA        BINARY_DOUBLE,
   CONTRIBUTING_DRAINAGE_AREA BINARY_DOUBLE,
-  UNIT_RUNOFF                BINARY_DOUBLE,
   PRIMARY_STREAM_CODE        NUMBER(10),
   PARENT_BASIN_CODE          NUMBER(10),
   SORT_ORDER                 BINARY_DOUBLE
@@ -1068,7 +1067,6 @@ COMMENT ON TABLE  AT_BASIN                              IS 'Contains non-geograp
 COMMENT ON COLUMN AT_BASIN.BASIN_LOCATION_CODE          IS 'References basin location.';
 COMMENT ON COLUMN AT_BASIN.TOTAL_DRAINAGE_AREA          IS 'Total area of basin';
 COMMENT ON COLUMN AT_BASIN.CONTRIBUTING_DRAINAGE_AREA   IS 'Contributing drainage area of basin';
-COMMENT ON COLUMN AT_BASIN.UNIT_RUNOFF                  IS 'Volume resulting from 1 mm of runoff over entire basin';
 COMMENT ON COLUMN AT_BASIN.PRIMARY_STREAM_CODE          IS 'Reference to the stream record that the impoundment lies on';
 COMMENT ON COLUMN AT_BASIN.PARENT_BASIN_CODE            IS 'Reference to containing basin';
 COMMENT ON COLUMN AT_BASIN.SORT_ORDER                   IS 'Sorting order for application use';
