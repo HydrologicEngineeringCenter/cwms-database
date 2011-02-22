@@ -1108,23 +1108,37 @@ BEGIN
                   'UTC'
               ) xfer_date,
             acct_tab.accounting_remarks remarks
-        from table (cast (p_accounting_tab as wat_usr_contract_acct_tab_t)) acct_tab,
-            at_physical_transfer_type ptt,
-            cwms_office o,
-            at_water_user_contract wuc,
-            at_water_user wu
-        where wuc.water_user_code = wu.water_user_code
-        and wuc.water_user_contract_code = l_contract_code
-        and cwms_loc.get_location_code(acct_tab.water_user_contract_ref.water_user.project_location_ref.office_id,
-              acct_tab.water_user_contract_ref.water_user.project_location_ref.base_location_id
-              || substr ('-', 1, length (acct_tab.water_user_contract_ref.water_user.project_location_ref.sub_location_id))
-              || acct_tab.water_user_contract_ref.water_user.project_location_ref.sub_location_id
-            ) = l_project_loc_code
-        and upper(acct_tab.water_user_contract_ref.contract_name) = upper(wuc.contract_name)
-        AND upper(acct_tab.water_user_contract_ref.water_user.entity_name) = upper(wu.entity_name)
-        and acct_tab.physical_transfer_type.office_id = o.office_id
-        and acct_tab.physical_transfer_type.display_value = ptt.phys_trans_type_display_value
-        and ptt.db_office_code = o.office_code;
+        from table (cast (p_accounting_tab as wat_usr_contract_acct_tab_t)) acct_tab
+            left outer join cwms_office o on (o.office_id = acct_tab.physical_transfer_type.office_id)
+            left outer join at_physical_transfer_type ptt on (
+                ptt.phys_trans_type_display_value = acct_tab.physical_transfer_type.display_value 
+                and ptt.db_office_code = o.office_code
+            )
+            left outer join at_water_user_contract wuc on (
+                upper(acct_tab.water_user_contract_ref.contract_name) = upper(wuc.contract_name) 
+                and wuc.water_user_contract_code = l_contract_code
+            )
+            left outer join at_water_user wu on (
+                upper(acct_tab.water_user_contract_ref.water_user.entity_name) = upper(wu.entity_name) 
+                and cwms_loc.get_location_code(acct_tab.water_user_contract_ref.water_user.project_location_ref.office_id,
+                      acct_tab.water_user_contract_ref.water_user.project_location_ref.base_location_id
+                      || substr ('-', 1, length (acct_tab.water_user_contract_ref.water_user.project_location_ref.sub_location_id))
+                      || acct_tab.water_user_contract_ref.water_user.project_location_ref.sub_location_id
+                    ) = l_project_loc_code
+                and wuc.water_user_code = wu.water_user_code
+            );
+        -- where wuc.water_user_code = wu.water_user_code
+        -- and wuc.water_user_contract_code = l_contract_code
+--        and cwms_loc.get_location_code(acct_tab.water_user_contract_ref.water_user.project_location_ref.office_id,
+--              acct_tab.water_user_contract_ref.water_user.project_location_ref.base_location_id
+--              || substr ('-', 1, length (acct_tab.water_user_contract_ref.water_user.project_location_ref.sub_location_id))
+--              || acct_tab.water_user_contract_ref.water_user.project_location_ref.sub_location_id
+--            ) = l_project_loc_code
+--        and upper(acct_tab.water_user_contract_ref.contract_name) = upper(wuc.contract_name)
+--        AND upper(acct_tab.water_user_contract_ref.water_user.entity_name) = upper(wu.entity_name)
+--        and acct_tab.physical_transfer_type.office_id = o.office_id
+--        and acct_tab.physical_transfer_type.display_value = ptt.phys_trans_type_display_value
+--        and ptt.db_office_code = o.office_code;
 
 END store_accounting_set;
 
