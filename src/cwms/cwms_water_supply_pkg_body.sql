@@ -729,15 +729,150 @@ END set_contract_types;
 -- water supply accounting
 --------------------------------------------------------------------------------
 
+
+PROCEDURE retrieve_accounting_set(
+    -- the retrieved set of water user contract accountings
+    p_accounting_set out wat_usr_contract_acct_tab_t,
+    -- the water user contract ref
+    p_contract_ref IN water_user_contract_ref_t,
+    -- the units to return the volume as.
+    p_units IN VARCHAR2,
+    --time window stuff
+    -- the transfer start date time
+    p_start_time IN DATE,
+    -- the transfer end date time
+    p_end_time IN DATE,
+    -- the time zone of returned date time data.
+    p_time_zone IN VARCHAR2 DEFAULT NULL,
+    -- if the start time is inclusive.
+    p_start_inclusive IN VARCHAR2 DEFAULT 'T',
+    -- if the end time is inclusive
+    p_end_inclusive IN VARCHAR2 DEFAULT 'T',
+    -- a boolean flag indicating if the returned data should be the head or tail
+    -- of the set, i.e. the first n values or last n values.
+    p_ascending_flag IN VARCHAR2 DEFAULT 'T',
+    -- limit on the number of rows returned
+    p_row_limit IN integer DEFAULT NULL,
+    -- a mask for the transfer type.
+    -- if null, return all transfers.
+    -- do we need this?
+    p_transfer_type IN VARCHAR2 DEFAULT NULL
+  )
+is
+    l_contract_code          NUMBER(10);
+    l_project_location_code  number(10);
+    
+    l_pump_out_code number(10);
+    l_pump_out_below_code number(10);
+    l_pump_in_code number(10);    
+    
+    l_pump_out_set wat_usr_contract_acct_tab_t;
+    l_pump_out_below_set wat_usr_contract_acct_tab_t;
+    l_pump_in_set wat_usr_contract_acct_tab_t;
+begin
+
+    -- null check the contract.
+    IF p_contract_ref IS NULL THEN
+      --error, the contract is null.
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Water User Contract Reference');
+    END IF;
+    
+    --grab the project loc code.
+    l_project_location_code :=  p_contract_ref.water_user.project_location_ref.get_location_code('F');
+
+    -- get the contract code and pump locs
+    select water_user_contract_code, withdrawal_location_code, supply_location_code, pump_in_location_code
+    INTO l_contract_code, l_pump_out_code, l_pump_out_below_code, l_pump_in_code
+    FROM at_water_user_contract wuc,
+        at_water_user wu
+    WHERE wuc.water_user_code = wu.water_user_code
+        AND upper(wuc.contract_name) = upper(p_contract_ref.contract_name)
+        AND upper(wu.entity_name) = upper(p_contract_ref.water_user.entity_name)
+        AND wu.project_location_code = l_project_location_code;
+    
+    --build the aggregate accting set
+    p_accounting_set := wat_usr_contract_acct_tab_t();
+    
+    --get the pump out recs    
+    IF l_pump_out_code IS NOT NULL THEN
+        retrieve_pump_accounting(l_pump_out_set,
+            l_contract_code,
+            p_contract_ref,
+            l_pump_out_code,
+            p_units,
+            p_start_time,
+            p_end_time,
+            p_time_zone,
+            p_start_inclusive,
+            p_end_inclusive,
+            p_ascending_flag,
+            p_row_limit,
+            p_transfer_type);
+        --add the recs to the aggregate.
+        FOR i IN 1..l_pump_out_set.count loop
+            p_accounting_set.extend;
+            p_accounting_set(p_accounting_set.count) := l_pump_out_set(i);            
+        end loop;
+    END IF;
+    --get the pump out below recs
+    IF l_pump_out_below_code IS NOT NULL THEN
+        retrieve_pump_accounting(l_pump_out_below_set,
+            l_contract_code,
+            p_contract_ref,
+            l_pump_out_below_code,
+            p_units,
+            p_start_time,
+            p_end_time,
+            p_time_zone,
+            p_start_inclusive,
+            p_end_inclusive,
+            p_ascending_flag,
+            p_row_limit,
+            p_transfer_type);
+        --add the recs to the aggregate.
+        FOR i IN 1..l_pump_out_below_set.count loop
+            p_accounting_set.extend;
+            p_accounting_set(p_accounting_set.count) := l_pump_out_below_set(i);            
+        end loop;        
+    END IF;
+    --pump in recs...
+    IF l_pump_in_code IS NOT NULL THEN
+        retrieve_pump_accounting(l_pump_in_set,
+            l_contract_code,
+            p_contract_ref,
+            l_pump_in_code,
+            p_units,
+            p_start_time,
+            p_end_time,
+            p_time_zone,
+            p_start_inclusive,
+            p_end_inclusive,
+            p_ascending_flag,
+            p_row_limit,
+            p_transfer_type);
+        FOR i IN 1..l_pump_in_set.count loop
+            p_accounting_set.extend;
+            p_accounting_set(p_accounting_set.count) := l_pump_in_set(i);            
+        end loop;            
+    END IF;
+    
+end retrieve_accounting_set;
+  
 --------------------------------------------------------------------------------
 -- retrieve a water user contract accounting set.
 --------------------------------------------------------------------------------
-PROCEDURE retrieve_accounting_set(
+PROCEDURE retrieve_pump_accounting(
     -- the retrieved set of water user contract accountings
     p_accounting_set out wat_usr_contract_acct_tab_t,
 
     -- the water user contract ref
+    p_contract_code in number,
+    -- the water user contract ref
     p_contract_ref IN water_user_contract_ref_t,
+    
+    p_pump_loc_code IN number,
     
     -- the units to return the volume as.
     p_units IN VARCHAR2,
@@ -766,32 +901,18 @@ PROCEDURE retrieve_accounting_set(
     p_transfer_type IN VARCHAR2 DEFAULT NULL
   )
   IS
-    l_contract_code          NUMBER(10);
-    l_project_location_code  number(10);
+    l_pump_loc_ref    location_ref_t;
     l_unit_code              number(10);
     l_adjusted_start_time    DATE;
     l_adjusted_end_time      DATE;
     l_start_time_inclusive   boolean;
     l_end_time_inclusive     boolean;
-    l_time_zone_code         NUMBER(10);
-    l_location_ref         location_ref_t;
-    l_pump_location_ref        location_ref_t;
     l_time_zone              VARCHAR2(28) := nvl(p_time_zone, 'UTC');
+    l_time_zone_code         number(10);
     l_orderby_mod     NUMBER(1);
    
 BEGIN
-    -- instantiate a table array to hold the output records.
-    p_accounting_set := wat_usr_contract_acct_tab_t();
-    -- null check the contract.
-    IF p_contract_ref IS NULL THEN
-      --error, the contract is null.
-      cwms_err.raise(
-            'NULL_ARGUMENT',
-            'Water User Contract Reference');
-    END IF;
-    
-    
-    
+
     cwms_util.check_inputs(str_tab_t(
        p_units,
        l_time_zone,
@@ -800,6 +921,13 @@ BEGIN
        p_ascending_flag,
        p_transfer_type
        ));
+        
+    -- get the out going unit code.
+    select unit_code 
+    into l_unit_code 
+    from cwms_unit
+    where unit_id = nvl(p_units,'m3');
+    
     --------------------------------
     -- prepare selection criteria --
     --------------------------------
@@ -809,27 +937,7 @@ BEGIN
     ELSE
         -- reverse order to desc
         l_orderby_mod := -1; 
-    END IF;
-    
-
-    --grab the project loc code.
-    l_project_location_code :=  p_contract_ref.water_user.project_location_ref.get_location_code('F');
-    
-    -- get the out going unit code.
-    select unit_code 
-    into l_unit_code 
-    from cwms_unit
-    where unit_id = nvl(p_units,'m3');
-    
-    -- get the contract code
-    SELECT water_user_contract_code 
-    INTO l_contract_code
-    FROM at_water_user_contract wuc,
-        at_water_user wu
-    WHERE wuc.water_user_code = wu.water_user_code
-        AND upper(wuc.contract_name) = upper(p_contract_ref.contract_name)
-        AND upper(wu.entity_name) = upper(p_contract_ref.water_user.entity_name)
-        AND wu.project_location_code = l_project_location_code;
+    end if;
     
     l_start_time_inclusive := cwms_util.is_true(p_start_inclusive);
     l_end_time_inclusive   := cwms_util.is_true(p_end_inclusive);
@@ -855,9 +963,13 @@ BEGIN
        SELECT tz.time_zone_code
          INTO l_time_zone_code
          FROM cwms_time_zone tz
-        WHERE upper(tz.time_zone_name) = upper(l_time_zone);
-    END IF;
-   
+        where upper(tz.time_zone_name) = upper(l_time_zone);
+    END IF;    
+    
+    l_pump_loc_ref := new location_ref_t(p_pump_loc_code);
+    
+       -- instantiate a table array to hold the output records.
+    p_accounting_set := wat_usr_contract_acct_tab_t();
     ----------------------------------------
     -- select records and populate output --
     ----------------------------------------
@@ -872,8 +984,9 @@ BEGIN
             accounting_volume,
             transfer_start_datetime,
             accounting_remarks
-          FROM at_wat_usr_contract_accounting
-          WHERE water_user_contract_code = l_contract_code
+          from at_wat_usr_contract_accounting
+          where water_user_contract_code = p_contract_code
+          and pump_location_code = p_pump_loc_code
           AND transfer_start_datetime BETWEEN l_adjusted_start_time AND l_adjusted_end_time
            ORDER BY cwms_util.to_millis(transfer_start_datetime) * l_orderby_mod),
           limited_wuca AS
@@ -914,13 +1027,10 @@ BEGIN
       --extend the array.
       p_accounting_set.EXTEND;
       
-      --dont need full pump location, just ref.
-      l_pump_location_ref := NEW location_ref_t(rec.pump_location_code);
-      
       p_accounting_set(p_accounting_set.count) := wat_usr_contract_acct_obj_t(
          --re-use arg contract ref
         p_contract_ref,
-        l_pump_location_ref,  -- the pump location
+        l_pump_loc_ref,  -- the pump location
         lookup_type_obj_t(
           rec.transfer_type_office_id,
           rec.phys_trans_type_display_value,
@@ -934,7 +1044,7 @@ BEGIN
            l_time_zone),
         rec.accounting_remarks);
    END loop;      
-END retrieve_accounting_set;
+END retrieve_pump_accounting;
 
 --------------------------------------------------------------------------------
 -- store a water user contract accounting set.

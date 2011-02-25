@@ -228,6 +228,44 @@ PROCEDURE retrieve_accounting_set(
     -- if null, return all transfers.
     p_transfer_type IN VARCHAR2 DEFAULT NULL
   );
+
+PROCEDURE retrieve_pump_accounting(
+    -- the retrieved set of water user contract accountings
+    p_accounting_set out wat_usr_contract_acct_tab_t,
+
+    -- the water user contract ref
+    p_contract_code in number,
+    -- the water user contract ref
+    p_contract_ref IN water_user_contract_ref_t,
+    
+    p_pump_loc_code IN number,
+    
+    -- the units to return the volume as.
+    p_units IN VARCHAR2,
+    --time window stuff
+    -- the transfer start date time
+    p_start_time IN DATE,
+    -- the transfer end date time
+    p_end_time IN DATE,
+    -- the time zone of returned date time data.
+    p_time_zone IN VARCHAR2 DEFAULT NULL,
+    -- if the start time is inclusive.
+    p_start_inclusive IN VARCHAR2 DEFAULT 'T',
+    -- if the end time is inclusive
+    p_end_inclusive IN VARCHAR2 DEFAULT 'T',
+    
+    -- a boolean flag indicating if the returned data should be the head or tail
+    -- of the set, i.e. the first n values or last n values.
+    p_ascending_flag IN VARCHAR2 DEFAULT 'T',
+    
+    -- limit on the number of rows returned
+    p_row_limit IN integer DEFAULT NULL,
+    
+    -- a mask for the transfer type.
+    -- if null, return all transfers.
+    -- do we need this?
+    p_transfer_type IN VARCHAR2 DEFAULT NULL
+  );
   
   --------------------------------------------------------------------------------
   -- store a water user contract accounting set.
