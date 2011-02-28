@@ -1160,7 +1160,7 @@ begin
                   end if;
                   l_tsv_array(l_tsv_array.count) := new tsv_type(
                      from_tz(cast(l_ts_rec15.date_time as timestamp), 'UTC'),
-                     cast(l_ts_rec15.value as binary_integer),
+                     cast(l_ts_rec15.value as binary_double),
                      l_quality);
                end loop;
             else
@@ -1233,7 +1233,7 @@ is
    l_offices_processed  integer;
    l_tsids_processed    integer;
    l_values_retrieved   integer;
-   l_end_time_utc       date := nvl(p_end_time_utc, sysdate); 
+   l_end_time_utc       date := nvl(p_end_time_utc, cast(systimestamp at time zone 'UTC' as date)); 
 begin
    cwms_msg.log_db_message(
       'retrieve timeseries', 
@@ -1278,7 +1278,7 @@ procedure retrieve_and_log(
    p_office_id_masks  in varchar2,
    p_days_to_retrieve in number)
 is
-   l_end_time   date := sysdate;
+   l_end_time   date := cast(systimestamp at time zone 'UTC' as date);
    l_start_time date := l_end_time - p_days_to_retrieve;
 begin
    retrieve_and_log(p_office_id_masks, l_start_time, l_end_time);
@@ -1286,7 +1286,7 @@ end retrieve_and_log;
    
 procedure retrieve_job
 is
-   l_now date := sysdate;
+   l_now date := cast(systimestamp at time zone 'UTC' as date);
 begin
    retrieve_and_log('%', l_now - &retrieve_ts_minutes / 1440, l_now);
 end retrieve_job;   
