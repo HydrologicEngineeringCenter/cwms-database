@@ -199,6 +199,7 @@ comment on table  at_log_message                      is 'CWMS log messages';
 comment on column at_log_message.msg_id               is 'Unique ID of message, includes timestamp and sequence';
 comment on column at_log_message.office_code          is 'Office code of user';
 comment on column at_log_message.log_timestamp_utc    is 'Timestamp of when the message was logged (set by database)';
+comment on column at_log_message.msg_level            is 'Detail level of message';
 comment on column at_log_message.component            is 'Reporting component';
 comment on column at_log_message.instance             is 'Instance of reporting component, if applicable';
 comment on column at_log_message.host                 is 'Host on which reporting component is executing';
@@ -217,6 +218,7 @@ comment on column at_log_message.msg_text             is 'Main text of message, 
 --
 alter table at_log_message add constraint at_log_message_fk1 foreign key (msg_type) references cwms_log_message_types (message_type_code);
 alter table at_log_message add constraint at_log_message_fk2 foreign key (office_code) references cwms_office (office_code);
+alter table at_log_message add constraint at_log_message_ck2 check (msg_level between 1 and 7);
 alter table at_log_message add constraint at_log_message_pk  primary key (msg_id)
     using index 
     TABLESPACE CWMS_20AT_DATA
@@ -230,6 +232,25 @@ alter table at_log_message add constraint at_log_message_pk  primary key (msg_id
                 pctincrease      0
                );
 
+-----------------------------
+-- AT_LOG_MESSAGE indicies
+--
+create index at_log_message_ndx1 on at_log_message
+(log_timestamp_utc, msg_level)
+logging
+TABLESPACE CWMS_20AT_DATA
+pctfree    10
+initrans   2
+maxtrans   255
+storage    (
+            initial          64k
+            minextents       1
+            maxextents       2147483645
+            pctincrease      0
+            buffer_pool      default
+           )
+noparallel;
+commit;
 -----------------------------
 -- AT_LOG_MESSAGE_PROPERTIES table
 --
