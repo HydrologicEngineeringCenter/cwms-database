@@ -3,11 +3,19 @@ as
 
 exc_no_subscribers exception; pragma exception_init(exc_no_subscribers, -24033);
 
+------------------------------
+-- message level contstants --
+------------------------------
 msg_level_none     constant integer :=  0;
 msg_level_basic    constant integer :=  1;
 msg_level_normal   constant integer :=  3;
 msg_level_detailed constant integer :=  5;
 msg_level_verbose  constant integer :=  7;
+--------------------------
+-- message id variables --
+--------------------------
+last_millis integer := 0;
+last_seq    integer := 0;
 
 -------------------------------------------------------------------------------
 --
