@@ -80,7 +80,7 @@ cwmsTableSpaceName = "CWMS_20DATA"
 
 cwmsSequences = [
 #    NAME             START  INCREMENT  MINIMUM  MAXIMUM  CYCLE  CACHE
-    ["CWMS_LOG_MSG_SEQ",  0,        1,         0,          999,   True, 20],
+    #["CWMS_LOG_MSG_SEQ",  0,        1,         0,          999,   True, 20],
 ]
 
 #------------------------------------------------------------------------------#
