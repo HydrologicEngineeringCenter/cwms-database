@@ -8,12 +8,52 @@ as
 --
 function get_msg_id (p_millis in integer default null) return varchar2
 is
+   pragma autonomous_transaction;
    l_millis  integer := p_millis;
-   seq       integer;
+   l_seq     integer;
+   l_handle  varchar2(128);
+   l_result  integer;
 begin
-   if l_millis is null then l_millis := cwms_util.current_millis; end if;
-   select cwms_log_msg_seq.nextval into seq from dual;
-   return '' || l_millis || '_' || seq;
+   -------------------------
+   -- syncronize the code --
+   -------------------------
+   dbms_lock.allocate_unique('CWMS_MSG.GET_MSG_ID', l_handle);
+   l_result := dbms_lock.request(
+      lockhandle        => l_handle,
+      lockmode          => dbms_lock.x_mode,
+      timeout           => 2,
+      release_on_commit => true);
+   if l_result != 0 then
+      cwms_err.raise(
+        'ERROR',
+        'Cannot get message id lock, error = '
+        ||case l_result
+             when 1 then 'timeout'
+             when 2 then 'deadlock'
+             when 3 then 'parameter error'
+             when 4 then 'already owned by requestor'
+             when 5 then 'illegal handle'
+             else        'unknown error ('||l_result||')'
+          end);
+   end if;
+   ------------------------
+   -- perform the action --
+   ------------------------      
+   if l_millis is null then 
+      l_millis := cwms_util.current_millis; 
+   end if;
+   if l_millis = last_millis then
+      l_seq := last_seq + 1;
+   else
+      l_seq := 0;
+   end if;
+   last_millis := l_millis;
+   last_seq    := l_seq;
+   ---------------------------------
+   -- release the lock and return --
+   ---------------------------------
+   commit;
+   return to_char(l_millis)||'_'||to_char(l_seq, '000');
 end;
 
 -------------------------------------------------------------------------------
@@ -23,14 +63,6 @@ function get_queue_prefix return varchar2
 is
    l_db_office_id   varchar2(16);
 begin
-   /*
-   select co2.office_id
-     into l_db_office_id
-     from cwms_office co1,
-          cwms_office co2
-    where co1.office_code = cwms_util.user_office_code
-      and co2.office_code = co1.db_host_office_code;
-   */
    l_db_office_id := cwms_util.user_office_id;   
    return l_db_office_id;       
 end get_queue_prefix;
@@ -573,7 +605,7 @@ begin
       null,
       null,
       null,
-      systimestamp,
+      systimestamp at time zone 'UTC',
       '<cwms_message type="Status">' || lf
       || '  <property name="procedure" type="String">' || p_procedure || '</property>' || lf
       || '  <text>' || lf
