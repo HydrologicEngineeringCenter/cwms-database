@@ -1365,7 +1365,6 @@ begin
    -------------------------------------------------------
    -- default the time zone to the location's time zone --
    -------------------------------------------------------
-   cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'p_timezone_id = '||p_timezone_id);
    if p_timezone_id is null then
       select time_zone_name
         into l_timezone_id
@@ -1374,16 +1373,13 @@ begin
    else     
       l_timezone_id := p_timezone_id;
    end if;  
-   cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'l_timezone_id = '||l_timezone_id);
    ---------------------------------
    -- get the codes for input ids --
    ---------------------------------
-   cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'p_effective_date = '||to_char(p_effective_date, 'yyyy/mm/dd hh24:mi:ss'));
    l_effective_date := cwms_util.change_timezone(
       nvl(p_effective_date, '01-JAN-1900'),
       l_timezone_id, 
       'UTC');
-   cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'l_effective_date = '||to_char(l_effective_date, 'yyyy/mm/dd hh24:mi:ss'));
    get_location_level_codes(
       l_location_level_code,
       l_spec_level_code,
@@ -1465,7 +1461,6 @@ begin
          -- set the interval origin for the seaonal values --
          -- (always stored in UTC in the database)         --
          ----------------------------------------------------
-         cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'p_interval_origin = '||to_char(p_interval_origin, 'yyyy/mm/dd hh24:mi:ss'));
          if p_interval_origin is null then
             l_interval_origin := to_date('01JAN2000 0000', 'ddmonyyyy hh24mi');
          else
@@ -1473,7 +1468,6 @@ begin
                from_tz(cast(p_interval_origin as timestamp), l_timezone_id)
                at time zone 'UTC' as date);
          end if;
-         cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'l_interval_origin = '||to_char(l_interval_origin, 'yyyy/mm/dd hh24:mi:ss'));
          if l_calendar_interval is null then
             -------------------
             -- time interval --
@@ -1572,7 +1566,6 @@ begin
          -- set the interval origin for the seaonal values --
          -- (always stored in UTC in the database)         --
          ----------------------------------------------------
-         cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'p_interval_origin = '||to_char(p_interval_origin, 'yyyy/mm/dd hh24:mi:ss'));
          if p_interval_origin is null then
             l_interval_origin := to_date('01JAN2000 0000', 'ddmonyyyy hh24mi');
          else
@@ -1580,7 +1573,6 @@ begin
                from_tz(cast(p_interval_origin as timestamp), l_timezone_id)
                at time zone 'UTC' as date);
          end if;
-         cwms_msg.log_db_message('create_location_level', cwms_msg.msg_level_verbose, 'l_interval_origin = '||to_char(l_interval_origin, 'yyyy/mm/dd hh24:mi:ss'));
          update at_location_level
             set location_level_value = p_level_value * l_level_factor + l_level_offset,
                 location_level_comment = p_level_comment,
@@ -4185,10 +4177,8 @@ begin
    ----------------------------------    
    -- delete associated indicators --
    ----------------------------------
-   -- cwms_msg.log_db_message('delete_location_level_ex', 7, 'p_delete_indicators = '||p_delete_indicators);    
    if l_delete_indicators then
       begin
-         -- cwms_msg.log_db_message('delete_location_level_ex', 7, 'level code = '||l_location_level_code);    
          select location_code,
                 parameter_code,
                 parameter_type_code,
@@ -4209,18 +4199,6 @@ begin
                 l_attribute_value
            from at_location_level           
           where location_level_code = l_location_level_code;
-         /* 
-         cwms_msg.log_db_message('delete_location_level_ex', 7, 'location code = '||l_location_code);    
-         cwms_msg.log_db_message('delete_location_level_ex', 7, 'parameter code = '||l_parameter_code);    
-         cwms_msg.log_db_message('delete_location_level_ex', 7, 'parametertype code = '||l_parameter_type_code);    
-         cwms_msg.log_db_message('delete_location_level_ex', 7, 'duration code = '||l_duration_code);    
-         cwms_msg.log_db_message('delete_location_level_ex', 7, 'specified level code = '||l_specified_level_code);    
-         cwms_msg.log_db_message('delete_location_level_ex', 7, 'attribute parameter code = '||l_attribute_parameter_code);    
-         cwms_msg.log_db_message('delete_location_level_ex', 7, 'attribute parameter type code = '||l_attribute_param_type_code);    
-         cwms_msg.log_db_message('delete_location_level_ex', 7, 'attribute duration code = '||l_attribute_duration_code);    
-         cwms_msg.log_db_message('delete_location_level_ex', 7, 'attribute value = '||l_attribute_value);    
-         cwms_msg.log_db_message('delete_location_level_ex', 7, 'deleting conditions');
-         */    
          delete
            from at_loc_lvl_indicator_cond
           where level_indicator_code in 
@@ -4235,7 +4213,6 @@ begin
                       and nvl(attr_duration_code, -1) = nvl(l_attribute_duration_code, -1)
                       and nvl(to_char(attr_value), '@') = nvl(to_char(l_attribute_value), '@')
                 );
-         -- cwms_msg.log_db_message('delete_location_level_ex', 7, 'deleting indicators');    
          delete
            from at_loc_lvl_indicator
           where location_code = l_location_code
@@ -4945,25 +4922,6 @@ begin
       l_rec.description                := p_description;
    end if;  
    l_rec.level_indicator_code := p_level_indicator_code;
-   /*
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'level_indicator_value = '||l_rec.level_indicator_value);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'expression = '||l_rec.expression);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'comparison_operator_1 = '||l_rec.comparison_operator_1);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'comparison_value_1 = '||l_rec.comparison_value_1);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'comparison_unit = '||l_rec.comparison_unit);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'connector = '||l_rec.connector);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'comparison_operator_2 = '||l_rec.comparison_operator_2);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'comparison_value_2 = '||l_rec.comparison_value_2);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_expression = '||l_rec.rate_expression);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_comparison_operator_1 = '||l_rec.rate_comparison_operator_1);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_comparison_value_1 = '||l_rec.rate_comparison_value_1);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_comparison_unit = '||l_rec.rate_comparison_unit);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_connector = '||l_rec.rate_connector);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_comparison_operator_2 = '||l_rec.rate_comparison_operator_2);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_comparison_value_2 = '||l_rec.rate_comparison_value_2);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'rate_interval = '||l_rec.rate_interval);
-   cwms_msg.log_db_message('store_loc_lvl_indicator_cond', 7, 'description = '||l_rec.description);
-   */
    --------------------------------------
    -- sanity check on comparison units --
    --------------------------------------
@@ -6713,12 +6671,6 @@ begin
       l_ts(l_ts.count) := ztsv_type(l_ts_date_time, l_ts_value, l_ts_quality);   
    end loop;
    close l_ts_crsr;
-   /*       
-   cwms_msg.log_db_message('z', 7, 'retrieved '||l_ts.count||' values from '||p_tsid);
-   for i in 1..l_ts.count loop
-      cwms_msg.log_db_message('z', 7, ''||i||' = ('||l_ts(i).date_time||', '||l_ts(i).value||')');
-   end loop;
-   */       
    -----------------------                     
    -- return the cursor --
    -----------------------
