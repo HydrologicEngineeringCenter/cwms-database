@@ -4175,7 +4175,7 @@ end retrieve_ts_multi;
                from_tz(cast(l_first_time as timestamp), 'UTC')));
             l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(
                from_tz(cast(l_last_time as timestamp), 'UTC')));
-            i := cwms_msg.publish_message(l_msg, l_msgid, l_office_id||'ts_stored');
+            i := cwms_msg.publish_message(l_msg, l_msgid, l_office_id||'_ts_stored');
 
             dbms_output.put_line('CASE 8: delete-insert TRUE Completed.');
             
@@ -4566,7 +4566,7 @@ BEGIN
          l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
          l_msg.set_string(l_msgid, 'office_id', l_db_office_id);
          l_msg.set_long(l_msgid, 'ts_code', l_ts_code);
-         i := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id||'ts_stored');
+         i := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id||'_ts_stored');
       ELSE
          cwms_err.RAISE ('GENERIC_ERROR',
                             'cwms_ts_id: '
@@ -4637,7 +4637,7 @@ BEGIN
          from_tz(cast(l_first_time as timestamp), 'UTC')));
       l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(
          from_tz(cast(l_last_time as timestamp), 'UTC')));
-      i := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id||'ts_stored');
+      i := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id||'_ts_stored');
       if l_delete_action = cwms_util.delete_ts_cascade then
          ------------------------------- 
          -- Publish TSDeleted message --
@@ -4646,7 +4646,7 @@ BEGIN
          l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
          l_msg.set_string(l_msgid, 'office_id', l_db_office_id);
          l_msg.set_long(l_msgid, 'ts_code', l_ts_code);
-         i := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id||'ts_stored');
+         i := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id||'_ts_stored');
       end if;
    --
    ELSE
@@ -4996,7 +4996,7 @@ END delete_ts;
       l_msg.set_string(l_msgid, 'new_ts_id', p_cwms_ts_id_new);
       l_msg.set_string(l_msgid, 'office_id', l_office_id);
       l_msg.set_long(l_msgid, 'ts_code', l_ts_code_old);
-      i := cwms_msg.publish_message(l_msg, l_msgid, l_office_id||'ts_stored');
+      i := cwms_msg.publish_message(l_msg, l_msgid, l_office_id||'_ts_stored');
    end;
    --
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
