@@ -13,14 +13,14 @@ begin
    for i in 1..9999999 loop
       l_node := cwms_util.get_xml_node(p_xml, '//rating-template['||i||']');
       exit when l_node is null;
-      l_template := rating_template_t(l_node);
       cwms_msg.log_db_message(
          'cwms_rating.store_templates', 
          cwms_msg.msg_level_detailed,
          'Storing rating template '
-         ||l_template.office_id
-         ||'/'||l_template.parameters_id
-         ||'.'||l_template.version);
+         ||cwms_util.get_xml_text(l_node, '/rating-template/@office-id')
+         ||'/'||regexp_replace(cwms_util.get_xml_text(l_node, '/rating-template/parameters-id'), '\s', '', 1, 0)
+         ||'.'||regexp_replace(cwms_util.get_xml_text(l_node, '/rating-template/version'), '\s', '', 1, 0));
+      l_template := rating_template_t(l_node);
       l_template.store(p_fail_if_exists);
    end loop;
 end store_templates;   
@@ -307,15 +307,13 @@ begin
    for i in 1..9999999 loop
       l_node := cwms_util.get_xml_node(p_xml, '//rating-spec['||i||']');
       exit when l_node is null;
-      l_spec := rating_spec_t(l_node);
       cwms_msg.log_db_message(
          'cwms_rating.store_specs', 
          cwms_msg.msg_level_detailed,
          'Storing rating specification '
-         ||l_spec.office_id
-         ||'/'||l_spec.location_id
-         ||'.'||l_spec.template_id
-         ||'.'||l_spec.version);
+         ||cwms_util.get_xml_text(l_node, '/rating-spec/@office-id')
+         ||'/'||regexp_replace(cwms_util.get_xml_text(l_node, '/rating-spec/rating-spec-id'), '\s', '', 1, 0));
+      l_spec := rating_spec_t(l_node);
       l_spec.store(p_fail_if_exists);
    end loop;
 end store_specs;   
@@ -690,27 +688,28 @@ begin
       l_node := cwms_util.get_xml_node(p_xml, '(//rating | //usgs-stream-rating)['||i||']');
       exit when l_node is null;
       if l_node.existsnode('/rating') = 1 then
-         l_rating := rating_t(l_node);
          cwms_msg.log_db_message(
             'cwms_rating.store_ratings', 
             cwms_msg.msg_level_detailed,
             'Storing rating '
-            ||l_rating.rating_spec_id
+            ||cwms_util.get_xml_text(l_node, '/rating/@office-id')
+            ||'/'||regexp_replace(cwms_util.get_xml_text(l_node, '/rating/rating-spec-id'), '\s', '', 1, 0)
             ||' ('
-            ||to_char(l_rating.effective_date, 'yyyy/mm/dd hh24mi')
+            ||regexp_replace(cwms_util.get_xml_text(l_node, '/rating/effective-date'), '\s', '', 1, 0)
             ||')');
+         l_rating := rating_t(l_node);
          l_rating.store(p_fail_if_exists);
       elsif l_node.existsnode('/usgs-stream-rating') = 1 then
-         l_stream_rating := stream_rating_t(l_node);
          cwms_msg.log_db_message(
             'cwms_rating.store_ratings', 
             cwms_msg.msg_level_detailed,
             'Storing rating '
-            ||l_stream_rating.rating_spec_id
+            ||cwms_util.get_xml_text(l_node, '/usgs-stream-rating/@office-id')
+            ||'/'||regexp_replace(cwms_util.get_xml_text(l_node, '/usgs-stream-rating/rating-spec-id'), '\s', '', 1, 0)
             ||' ('
-            ||to_char(l_stream_rating.effective_date, 'yyyy/mm/dd hh24mi')
+            ||regexp_replace(cwms_util.get_xml_text(l_node, '/usgs-stream-rating/effective-date'), '\s', '', 1, 0)
             ||')');
-         l_stream_rating.store(p_fail_if_exists);
+         l_stream_rating := stream_rating_t(l_node);
          l_stream_rating.store(p_fail_if_exists);
       else
          cwms_err.raise(
