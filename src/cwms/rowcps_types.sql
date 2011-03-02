@@ -429,6 +429,7 @@ is
   TABLE OF turbine_change_obj_t;
   /
   show errors
+/*
 --
 --
 SET echo ON
@@ -495,3 +496,4 @@ begin
    end loop;    
 end;
 /
+*/

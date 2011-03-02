@@ -484,12 +484,12 @@ IS
       RETURN cat_dss_xchg_ts_map_obj_t;
 
    FUNCTION cat_dss_xchg_ts_map_tab2obj (t IN cat_dss_xchg_ts_map_tab_t)
-      RETURN cat_dss_xchg_ts_map_otab_t;
+      RETURN cat_dss_xchg_tsmap_otab_t;
 
    FUNCTION cat_dss_xchg_ts_map_obj2rec (o IN cat_dss_xchg_ts_map_obj_t)
       RETURN cat_dss_xchg_ts_map_rec_t;
 
-   FUNCTION cat_dss_xchg_ts_map_obj2tab (o IN cat_dss_xchg_ts_map_otab_t)
+   FUNCTION cat_dss_xchg_ts_map_obj2tab (o IN cat_dss_xchg_tsmap_otab_t)
       RETURN cat_dss_xchg_ts_map_tab_t;
 
 -------------------------------------------------------------------------------

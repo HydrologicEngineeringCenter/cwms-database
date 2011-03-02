@@ -1068,9 +1068,9 @@ IS
 	-- CAT_DSS_XCHG_TS_MAP table-to-object conversion function
 	--
 	FUNCTION cat_dss_xchg_ts_map_tab2obj (t IN cat_dss_xchg_ts_map_tab_t)
-		RETURN cat_dss_xchg_ts_map_otab_t
+		RETURN cat_dss_xchg_tsmap_otab_t
 	IS
-		o	 cat_dss_xchg_ts_map_otab_t;
+		o	 cat_dss_xchg_tsmap_otab_t;
 	BEGIN
 		FOR i IN 1 .. t.LAST
 		LOOP
@@ -1105,7 +1105,7 @@ IS
 	-------------------------------------------------------------------------------
 	-- CAT_DSS_XCHG_TS_MAP object-to-table conversion function
 	--
-	FUNCTION cat_dss_xchg_ts_map_obj2tab (o IN cat_dss_xchg_ts_map_otab_t)
+	FUNCTION cat_dss_xchg_ts_map_obj2tab (o IN cat_dss_xchg_tsmap_otab_t)
 		RETURN cat_dss_xchg_ts_map_tab_t
 	IS
 		t	 cat_dss_xchg_ts_map_tab_t;

@@ -144,7 +144,7 @@ AS
                                    b.prop_text
                               FROM at_log_message_properties b
                              WHERE b.msg_id = a.msg_id
-                          ORDER BY b.prop_name) AS log_message_properties_tab_t))
+                          ORDER BY b.prop_name) AS log_message_props_tab_t))
              AS properties
      FROM at_log_message a, cwms_office c, cwms_log_message_types d
     WHERE c.office_code = a.office_code AND d.message_type_code = a.msg_type;

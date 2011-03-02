@@ -1243,7 +1243,7 @@ AS
 /
 show errors;
 
-CREATE OR REPLACE FORCE VIEW av_location_level_indicator
+CREATE OR REPLACE FORCE VIEW av_loc_lvl_indicator
 AS
    with 
       llic as (
@@ -1402,7 +1402,7 @@ AS
 /                  
 show errors;
 
-CREATE OR REPLACE FORCE VIEW av_location_level_indicator_2
+CREATE OR REPLACE FORCE VIEW av_loc_lvl_indicator_2
 AS
    with
          llic1 as (

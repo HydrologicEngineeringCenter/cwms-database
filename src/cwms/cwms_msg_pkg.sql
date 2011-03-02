@@ -180,7 +180,7 @@ function log_message_server_message(
 -- FUNCTION PARSE_LOG_MSG_PROP_TAB(...)
 --
 function parse_log_msg_prop_tab (
-   p_tab in log_message_properties_tab_t)
+   p_tab in log_message_props_tab_t)
    return varchar2;
    
 -------------------------------------------------------------------------------

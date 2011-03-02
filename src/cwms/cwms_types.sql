@@ -139,6 +139,7 @@ AS
 
 CREATE OR REPLACE TYPE ztimeseries_array IS TABLE OF ztimeseries_type;
 /
+/*
 -- This type represents a row in the time series value table.
 -- BINARY_INTEGER or PLS_INTEGER should be used instead of NUMBER, which is better?
 -- Also creating a type using either of those datatypes issues an error...
@@ -154,6 +155,7 @@ CREATE TYPE at_tsv_type AS OBJECT (
 
 CREATE TYPE at_tsv_array IS TABLE OF at_tsv_type;
 /
+*/
 
 -- 16 character id array.
 
@@ -572,7 +574,7 @@ CREATE TYPE cat_dss_xchg_ts_map_obj_t AS OBJECT (
 );
 /
 
-CREATE TYPE cat_dss_xchg_ts_map_otab_t AS TABLE OF cat_dss_xchg_ts_map_obj_t;
+CREATE TYPE cat_dss_xchg_tsmap_otab_t AS TABLE OF cat_dss_xchg_ts_map_obj_t;
 /
 
 CREATE OR REPLACE TYPE screen_assign_t AS OBJECT (
@@ -669,7 +671,7 @@ create or replace type log_message_properties_t as object (
 )
 /
 
-create or replace type log_message_properties_tab_t as table of log_message_properties_t
+create or replace type log_message_props_tab_t as table of log_message_properties_t
 /
 
 create type location_ref_t is object(
@@ -1555,7 +1557,7 @@ end;
 /
 show errors;
 
-create or replace type loc_lvl_indicator_cond_tab_t is table of loc_lvl_indicator_cond_t
+create or replace type loc_lvl_ind_cond_tab_t is table of loc_lvl_indicator_cond_t
 /
 
 create or replace type zloc_lvl_indicator_t is object
@@ -1575,7 +1577,7 @@ create or replace type zloc_lvl_indicator_t is object
    level_indicator_id       varchar2(32),
    minimum_duration         interval day to second,
    maximum_age              interval day to second,
-   conditions               loc_lvl_indicator_cond_tab_t,
+   conditions               loc_lvl_ind_cond_tab_t,
 
    constructor function zloc_lvl_indicator_t
       return self as result,
@@ -1604,7 +1606,7 @@ as
    is
       l_level_indicator_code number(10);
    begin
-      conditions := new loc_lvl_indicator_cond_tab_t();
+      conditions := new loc_lvl_ind_cond_tab_t();
       select level_indicator_code,
              location_code,
              specified_level_code,
@@ -1742,7 +1744,7 @@ create or replace type loc_lvl_indicator_t is object
    ref_attr_value         number,
    minimum_duration       interval day to second,
    maximum_age            interval day to second,
-   conditions             loc_lvl_indicator_cond_tab_t,
+   conditions             loc_lvl_ind_cond_tab_t,
 
    constructor function loc_lvl_indicator_t(
       p_obj in zloc_lvl_indicator_t)
@@ -2274,7 +2276,7 @@ create or replace type seasonal_location_level_t is object
 )
 /
 
-create or replace type seasonal_location_level_tab_t is table of seasonal_location_level_t
+create or replace type seasonal_loc_lvl_tab_t is table of seasonal_location_level_t
 /
 
 create or replace type zlocation_level_t is object(
@@ -2296,7 +2298,7 @@ create or replace type zlocation_level_t is object(
    calendar_interval             interval year(2) to month,
    time_interval                 interval day(3) to second(0),
    interpolate                   varchar2(1),
-   seasonal_level_values         seasonal_location_level_tab_t,
+   seasonal_level_values         seasonal_loc_lvl_tab_t,
    indicators                    loc_lvl_indicator_tab_t,
 
 
@@ -2319,7 +2321,7 @@ create or replace type zlocation_level_t is object(
       p_calendar_interval             in interval year to month,
       p_time_interval                 in interval day to second,
       p_interpolate                   in varchar2,
-      p_seasonal_values               in seasonal_location_level_tab_t,
+      p_seasonal_values               in seasonal_loc_lvl_tab_t,
       p_indicators                    in loc_lvl_indicator_tab_t)
       return self as result,
 
@@ -2349,7 +2351,7 @@ create or replace type zlocation_level_t is object(
       p_calendar_interval             in interval year to month,
       p_time_interval                 in interval day to second,
       p_interpolate                   in varchar2,
-      p_seasonal_values               in seasonal_location_level_tab_t,
+      p_seasonal_values               in seasonal_loc_lvl_tab_t,
       p_indicators                    in loc_lvl_indicator_tab_t),
 
    member procedure store
@@ -2377,7 +2379,7 @@ as
       p_calendar_interval             in interval year to month,
       p_time_interval                 in interval day to second,
       p_interpolate                   in varchar2,
-      p_seasonal_values               in seasonal_location_level_tab_t,
+      p_seasonal_values               in seasonal_loc_lvl_tab_t,
       p_indicators                    in loc_lvl_indicator_tab_t)
       return self as result
    as
@@ -2411,7 +2413,7 @@ as
       return self as result
    as
       l_rec             at_location_level%rowtype;
-      l_seasonal_values seasonal_location_level_tab_t := new seasonal_location_level_tab_t();
+      l_seasonal_values seasonal_loc_lvl_tab_t := new seasonal_loc_lvl_tab_t();
       l_indicators      loc_lvl_indicator_tab_t := new loc_lvl_indicator_tab_t();
    begin
       -------------------------
@@ -2511,7 +2513,7 @@ as
       p_calendar_interval             in interval year to month,
       p_time_interval                 in interval day to second,
       p_interpolate                   in varchar2,
-      p_seasonal_values               in seasonal_location_level_tab_t,
+      p_seasonal_values               in seasonal_loc_lvl_tab_t,
       p_indicators                    in loc_lvl_indicator_tab_t)
    as
       indicator zloc_lvl_indicator_t;
@@ -2973,7 +2975,7 @@ as
       l_attribute_duration_code       number(10);
       l_calendar_interval             interval year(2) to month;
       l_time_interval                 interval day(3) to second(0);
-      l_seasonal_level_values         seasonal_location_level_tab_t;
+      l_seasonal_level_values         seasonal_loc_lvl_tab_t;
       l_obj                           zlocation_level_t;
       l_parameter_type_id             parameter_type_id%type := parameter_type_id;
       l_duration_id                   duration_id%type := duration_id;
@@ -3054,7 +3056,7 @@ as
       l_time_interval     := cwms_util.minutes_to_dsinterval(interval_minutes);
 
       if seasonal_values is not null then
-         l_seasonal_level_values := new seasonal_location_level_tab_t();
+         l_seasonal_level_values := new seasonal_loc_lvl_tab_t();
          for i in 1..seasonal_values.count loop
             l_seasonal_level_values.extend;
             l_seasonal_level_values(i) := seasonal_location_level_t(

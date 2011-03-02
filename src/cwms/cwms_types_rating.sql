@@ -2,18 +2,18 @@
 drop type stream_rating_t;
 drop type rating_tab_t;
 drop type rating_t;
-drop type rating_ind_parameter_tab_t;
+drop type rating_ind_param_tab_t;
 drop type rating_ind_parameter_t;
 drop type rating_value_tab_t;
 drop type rating_value_t;
-drop type abs_rating_ind_parameter_t;
+drop type abs_rating_ind_param_t;
 drop type rating_value_note_tab_t;
 drop type rating_value_note_t;
 drop type rating_spec_tab_t;
 drop type rating_spec_t;
 drop type rating_template_tab_t;
 drop type rating_template_t;
-drop type rating_ind_param_spec_tab_t;
+drop type rating_ind_par_spec_tab_t;
 drop type rating_ind_param_spec_t;
 */
 create type rating_ind_param_spec_t as object(
@@ -374,7 +374,7 @@ end;
 /
 show errors;
 
-create type rating_ind_param_spec_tab_t as table of rating_ind_param_spec_t;
+create type rating_ind_par_spec_tab_t as table of rating_ind_param_spec_t;
 /
 show errors;
  
@@ -382,14 +382,14 @@ create type rating_template_t as object(
    office_id         varchar2(16),
    parameters_id     varchar2(256),
    version           varchar2(32),
-   ind_parameters    rating_ind_param_spec_tab_t,
+   ind_parameters    rating_ind_par_spec_tab_t,
    dep_parameter_id  varchar2(49),
    description       varchar2(256),
    
    constructor function rating_template_t(
       p_office_id         in varchar2,
       p_version           in varchar2,
-      p_ind_parameters    in rating_ind_param_spec_tab_t,
+      p_ind_parameters    in rating_ind_par_spec_tab_t,
       p_dep_parameter_id  in varchar2,
       p_description       in varchar2)
    return self as result,
@@ -472,7 +472,7 @@ as
    constructor function rating_template_t(
       p_office_id         in varchar2,
       p_version           in varchar2,
-      p_ind_parameters    in rating_ind_param_spec_tab_t,
+      p_ind_parameters    in rating_ind_par_spec_tab_t,
       p_dep_parameter_id  in varchar2,
       p_description       in varchar2)
    return self as result
@@ -580,7 +580,7 @@ as
          l_node := get_node(l_xml, '/rating-template/ind-parameter-specs/ind-parameter-spec['||i||']');
          exit when l_node is null;
          if i = 1 then
-            self.ind_parameters := rating_ind_param_spec_tab_t();
+            self.ind_parameters := rating_ind_par_spec_tab_t();
          end if;
          self.ind_parameters.extend;
          self.ind_parameters(i) := rating_ind_param_spec_t(l_node);
@@ -603,7 +603,7 @@ as
             where template_code = p_template_code
          ) 
       loop
-         self.ind_parameters    := rating_ind_param_spec_tab_t();
+         self.ind_parameters    := rating_ind_par_spec_tab_t();
          self.parameters_id     := rec.parameters_id;
          self.version           := rec.version;        
          self.dep_parameter_id  := cwms_util.get_parameter_id(rec.dep_parameter_code);
@@ -1946,7 +1946,7 @@ create type rating_value_note_tab_t is table of rating_value_note_t;
 show errors;
 
 
-create type abs_rating_ind_parameter_t as object(
+create type abs_rating_ind_param_t as object(
    constructed varchar2(1),
    
    member procedure init(
@@ -1986,7 +1986,7 @@ create type abs_rating_ind_parameter_t as object(
    member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
-      p_param_specs in out nocopy rating_ind_param_spec_tab_t)
+      p_param_specs in out nocopy rating_ind_par_spec_tab_t)
    return binary_double
       
 ) not final
@@ -1994,7 +1994,7 @@ create type abs_rating_ind_parameter_t as object(
 /
 show errors;
 
-create type body abs_rating_ind_parameter_t
+create type body abs_rating_ind_param_t
 as
 
    member procedure init(
@@ -2042,7 +2042,7 @@ as
    member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
-      p_param_specs in out nocopy rating_ind_param_spec_tab_t)
+      p_param_specs in out nocopy rating_ind_par_spec_tab_t)
    return binary_double
    is begin null; end;      
    
@@ -2053,7 +2053,7 @@ show errors;
 create type rating_value_t as object(
    ind_value            binary_double,
    dep_value            binary_double,
-   dep_rating_ind_param abs_rating_ind_parameter_t,
+   dep_rating_ind_param abs_rating_ind_param_t,
    note_id              varchar2(16),
    
    constructor function rating_value_t
@@ -2084,7 +2084,7 @@ create type rating_value_tab_t as table of rating_value_t;
 /
 show errors;
 
-create type rating_ind_parameter_t under abs_rating_ind_parameter_t(
+create type rating_ind_parameter_t under abs_rating_ind_param_t(
    rating_values      rating_value_tab_t,
    extension_values   rating_value_tab_t,
    
@@ -2147,7 +2147,7 @@ create type rating_ind_parameter_t under abs_rating_ind_parameter_t(
    overriding member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
-      p_param_specs in out nocopy rating_ind_param_spec_tab_t)
+      p_param_specs in out nocopy rating_ind_par_spec_tab_t)
    return binary_double,
       
    static function get_rating_ind_parameter_code(
@@ -2284,7 +2284,7 @@ as
                l_rating(l_rating.count).ind_value := rec.ind_value;
                -------------------------------------------------------------------------------- 
                -- create a temporary rating_ind_parameter_t object since the rating_values   --
-               -- field is not addressable from the more abstract abs_rating_ind_parameter_t --
+               -- field is not addressable from the more abstract abs_rating_ind_param_t     --
                -- field in l_rating(l_rating.count)                                          --
                -------------------------------------------------------------------------------- 
                l_rating_param := rating_ind_parameter_t();
@@ -2311,7 +2311,7 @@ as
                   l_rating_param.constructed := 'T';
                -----------------------------------------------------------------------------------
                -- assign the newly-populated rating_ind_parameter_t to the dep_rating_ind_param --
-               -- abs_rating_ind_parameter_t field of l_rating(l_rating.count)                  --
+               -- abs_rating_ind_param_t field of l_rating(l_rating.count)                      --
                -----------------------------------------------------------------------------------
                l_rating(l_rating.count).dep_rating_ind_param := l_rating_param;
             end if;         
@@ -3040,7 +3040,7 @@ as
    overriding member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
-      p_param_specs in out nocopy rating_ind_param_spec_tab_t)
+      p_param_specs in out nocopy rating_ind_par_spec_tab_t)
    return binary_double
    is             
       type int_tab_t is table of pls_integer;
@@ -3360,7 +3360,7 @@ end;
 /
 show errors;
 
-create type rating_ind_parameter_tab_t as table of rating_ind_parameter_t;
+create type rating_ind_param_tab_t as table of rating_ind_parameter_t;
 /
 show errors;
 
@@ -5759,7 +5759,7 @@ as
             self.office_id,
             l_ind_param||';'||l_ind_param||'-Shift',
             l_template_version,
-            rating_ind_param_spec_tab_t(
+            rating_ind_par_spec_tab_t(
                rating_ind_param_spec_t(
                   1,
                   l_ind_param,
@@ -5798,7 +5798,7 @@ as
             self.office_id,
             l_ind_param||';'||l_ind_param||'-Offset',
             l_template_version,
-            rating_ind_param_spec_tab_t(
+            rating_ind_par_spec_tab_t(
                rating_ind_param_spec_t(
                   1,
                   l_ind_param,

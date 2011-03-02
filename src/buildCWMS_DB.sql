@@ -101,107 +101,143 @@ set echo on
 -- exclude any package or view named like %_SEC_%
 --
 declare 
-   type str_tab_t is table of varchar2(32);
-   package_names str_tab_t := str_tab_t();
-   view_names str_tab_t := str_tab_t();
-   type_names str_tab_t := str_tab_t();
-   sql_statement varchar2(128);
-   view_synonym varchar2(32);
+   name_already_used exception;
+   pragma exception_init(name_already_used, -955);
+   type str_tab_t is table of varchar2(30);
+   l_package_names   str_tab_t;
+   l_view_names      str_tab_t;
+   l_type_names      str_tab_t;
+   l_public_synonyms str_tab_t;
+   l_sql_statement varchar2(128);
+   l_synonym varchar2(40);
 begin
+   --
+   -- collect public synonyms for CWMS items 
+   --
+   select synonym_name bulk collect
+     into l_public_synonyms
+     from dba_synonyms
+    where owner = 'PUBLIC'
+      and substr(synonym_name, 1, 5) = 'CWMS_';
    --
    -- collect CWMS schema packages except for security
    --
-   for rec in (
-      select object_name 
-        from dba_objects 
-       where owner = '&cwms_schema' 
-         and object_type = 'PACKAGE')
-   loop
-      if instr(rec.object_name, '_SEC_') = 0 then
-         package_names.extend;
-         package_names(package_names.last) := rec.object_name;
-      end if;
-   end loop;
+   select object_name bulk collect
+     into l_package_names      
+     from dba_objects 
+    where owner = '&cwms_schema' 
+      and object_type = 'PACKAGE'
+      and object_name not like '%_SEC_%';
    --
    -- collect CWMS schema views except for security
    --
-   for rec in (
-      select object_name 
-        from dba_objects 
-       where owner = '&cwms_schema'
-         and object_type like '%VIEW'
-         and regexp_like(object_name, '^[AM]V_')) 
-   loop
-      if instr(rec.object_name, '_SEC_') = 0 then
-         view_names.extend;
-         view_names(view_names.last) := rec.object_name;
-      end if;
-   end loop;
+   select object_name bulk collect
+     into l_view_names 
+     from dba_objects 
+    where owner = '&cwms_schema'
+      and object_type like '%VIEW'
+      and object_name not like '%_SEC_%' 
+      and regexp_like(object_name, '^[AM]V_');
    --
    -- collect CWMS schema object types
    --
-   for rec in (
-      select object_name 
-        from dba_objects 
-       where owner = '&cwms_schema'
-         and object_type = 'TYPE'
-         and object_name not like 'SYS_%')
-   loop
-      type_names.extend;
-      type_names(type_names.last) := rec.object_name;
-   end loop;
-   
-
+   select object_name bulk collect
+     into l_type_names 
+     from dba_objects
+    where owner = '&cwms_schema'
+      and object_type = 'TYPE'
+      and object_name not like 'SYS_%';
+   --
+   -- drop collected public synonyms
+   --
+   dbms_output.put_line('--');
+   for i in 1..l_public_synonyms.count loop
+      l_sql_statement := 'DROP PUBLIC SYNONYM '||l_public_synonyms(i);
+      dbms_output.put_line('-- ' || l_sql_statement);
+      execute immediate l_sql_statement;
+   end loop;      
    --
    -- create public synonyms for collected packages
    --
-   for i in 1..package_names.count loop
-      sql_statement := 'CREATE OR REPLACE PUBLIC SYNONYM '||package_names(i)||' FOR &cwms_schema'||'.'||package_names(i);
-      dbms_output.put_line('-- ' || sql_statement);
-      execute immediate sql_statement;
+   dbms_output.put_line('--');
+   for i in 1..l_package_names.count loop
+      l_sql_statement := 'CREATE PUBLIC SYNONYM '||l_package_names(i)||' FOR &cwms_schema'||'.'||l_package_names(i);
+      dbms_output.put_line('-- ' || l_sql_statement);
+      execute immediate l_sql_statement;
    end loop;
    --
    -- create public synonyms for collected views
    --
-   for i in 1..view_names.count loop
-   	begin
-	      view_synonym := regexp_replace(view_names(i), '^[AM]V_(CWMS_)*', 'CWMS_V_');
-		exception
-			when others then
-				-- view name is too long to be expanded by replacement!
-				dbms_output.put_line('-- ERROR CREATING SYN)NYM FOR VIEW ' || view_names(i));
-				continue;
-		end;
-      sql_statement := 'CREATE OR REPLACE PUBLIC SYNONYM '||view_synonym||' FOR &cwms_schema'||'.'||view_names(i);
-      dbms_output.put_line('-- ' || sql_statement);
-      execute immediate sql_statement;
+   dbms_output.put_line('--');
+   for i in 1..l_view_names.count loop
+      l_synonym := regexp_replace(l_view_names(i), '^(Z)?(A|(M))V_(CWMS_)*', 'CWMS_V_\3\1');
+      if length(l_synonym) > 30 then
+         raise_application_error(
+            -20999, 
+            'Synonym ('
+            ||l_synonym
+            ||') for type &cwms_schema..'
+            ||l_view_names(i)
+            ||' is too long');
+      end if;
+      l_sql_statement := 'CREATE PUBLIC SYNONYM '||l_synonym||' FOR &cwms_schema'||'.'||l_view_names(i);
+      dbms_output.put_line('-- ' || l_sql_statement);
+      execute immediate l_sql_statement;
+   end loop;
+   --
+   -- create public synonyms for collected types
+   --
+   dbms_output.put_line('--');
+   for i in 1..l_type_names.count loop
+      l_synonym := regexp_replace(l_type_names(i), '^((AT|CWMS)_)?(\w+?)(_T(YPE)?)?$', 'CWMS_T_\3');
+      if length(l_synonym) > 30 then
+         dbms_output.put_line(
+            '-- Synonym ('
+            ||l_synonym
+            ||') for type &cwms_schema..'
+            ||l_type_names(i)
+            ||' is too long');
+         continue;            
+      end if;
+      for j in 2..999999 loop
+         l_sql_statement := 'CREATE PUBLIC SYNONYM '||l_synonym||' FOR &cwms_schema'||'.'||l_type_names(i);
+         dbms_output.put_line('-- ' || l_sql_statement);
+         begin
+            execute immediate l_sql_statement;
+            exit;
+         exception
+            when name_already_used then
+               dbms_output.put_line('--  name already used!');
+               l_synonym := substr(l_synonym, 1, 29)||j;
+         end;
+      end loop;
    end loop;
    --
    -- grant execute on collected packages to CWMS_USER role
    --
    dbms_output.put_line('--');
-   for i in 1..package_names.count loop
-      sql_statement := 'GRANT EXECUTE ON &cwms_schema'||'.'||package_names(i)||' TO CWMS_USER';
-      dbms_output.put_line('-- ' || sql_statement);
-      execute immediate sql_statement;
+   for i in 1..l_package_names.count loop
+      l_sql_statement := 'GRANT EXECUTE ON &cwms_schema'||'.'||l_package_names(i)||' TO CWMS_USER';
+      dbms_output.put_line('-- ' || l_sql_statement);
+      execute immediate l_sql_statement;
    end loop;
    --
-   -- grant execute on COLLECTED types to CWMS_USER role
+   -- grant execute on collected types to CWMS_USER role
    --
    dbms_output.put_line('--');
-   for i in 1..type_names.count loop
-      sql_statement := 'GRANT EXECUTE ON &cwms_schema'||'.'||type_names(i)||' TO CWMS_USER';
-      dbms_output.put_line('-- ' || sql_statement);
-      execute immediate sql_statement;
+   for i in 1..l_type_names.count loop
+      l_sql_statement := 'GRANT EXECUTE ON &cwms_schema'||'.'||l_type_names(i)||' TO CWMS_USER';
+      dbms_output.put_line('-- ' || l_sql_statement);
+      execute immediate l_sql_statement;
    end loop;
    --
-   -- grant select on collected packages to CWMS_USER role
+   -- grant select on collected views to CWMS_USER role
    --
    dbms_output.put_line('--');
-   for i in 1..view_names.count loop
-      sql_statement := 'GRANT SELECT ON &cwms_schema'||'.'||view_names(i)||' TO CWMS_USER';
-      dbms_output.put_line('-- ' || sql_statement);
-      execute immediate sql_statement;
+   for i in 1..l_view_names.count loop
+      l_sql_statement := 'GRANT SELECT ON &cwms_schema'||'.'||l_view_names(i)||' TO CWMS_USER';
+      dbms_output.put_line('-- ' || l_sql_statement);
+      execute immediate l_sql_statement;
    end loop;
 end;
 /
