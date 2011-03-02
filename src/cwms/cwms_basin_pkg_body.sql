@@ -465,12 +465,20 @@ begin
              ) primary_stream 
              on primary_stream.location_code = basin.primary_stream_code
              
-       where nvl(parent_basin.basin_id, '.') like l_parent_basin_id_mask escape '\'
-         and nvl(primary_stream.stream_id, '.') like l_primary_stream_id_mask escape '\'
+       where ( parent_basin.basin_id like l_parent_basin_id_mask escape '\'
+               or (  parent_basin.basin_id is null -- this clause allows '%' to match null values 
+                     and l_parent_basin_id_mask = '%'
+                  )
+             )
+         and ( primary_stream.stream_id like l_primary_stream_id_mask escape '\'
+               or (  primary_stream.stream_id is null -- this clause allows '%' to match null values
+                     and l_primary_stream_id_mask = '%'
+                  )
+             )
     order by basin.office_id,
              basin.basin_id,
              parent_basin.basin_id,
-             basin.sort_order;                                                        
+             basin.sort_order nulls first;                                                        
 end cat_basins;   
 
 --------------------------------------------------------------------------------
