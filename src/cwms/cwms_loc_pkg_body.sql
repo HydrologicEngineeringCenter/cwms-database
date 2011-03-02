@@ -2303,6 +2303,86 @@ AS
 											  FROM	at_physical_location apl
 											 WHERE	apl.base_location_code =
 															l_base_location_code);
+                 UPDATE   at_basin
+                    SET   parent_basin_code = NULL
+                  WHERE   parent_basin_code IN (
+                          SELECT   location_code
+                            FROM   at_physical_location
+                           WHERE   base_location_code = l_base_location_code);
+                  
+                 UPDATE   at_basin
+                    SET   primary_stream_code = NULL
+                  WHERE   primary_stream_code IN (
+                          SELECT   location_code
+                            FROM   at_physical_location
+                           WHERE   base_location_code = l_base_location_code);
+                  
+            DELETE FROM   at_basin
+                  WHERE   basin_location_code IN (
+                          SELECT   location_code
+                            FROM   at_physical_location
+                           WHERE   base_location_code = l_base_location_code);
+                   
+                 UPDATE   at_stream
+                    SET   diverting_stream_code = NULL
+                  WHERE   diverting_stream_code IN (
+                          SELECT   location_code
+                            FROM   at_physical_location
+                           WHERE   base_location_code = l_base_location_code);
+                   
+                 UPDATE   at_stream
+                    SET   receiving_stream_code = NULL
+                  WHERE   receiving_stream_code IN (
+                          SELECT   location_code
+                            FROM   at_physical_location
+                           WHERE   base_location_code = l_base_location_code);
+                  
+            DELETE FROM   at_stream_reach
+                  WHERE   stream_location_code IN (
+                          SELECT   location_code
+                            FROM   at_physical_location
+                           WHERE   base_location_code = l_base_location_code);
+                  
+            DELETE FROM   at_stream_location
+                  WHERE   stream_location_code IN (
+                          SELECT   location_code
+                            FROM   at_physical_location
+                           WHERE   base_location_code = l_base_location_code)
+                     OR   location_code IN (
+                          SELECT   location_code
+                            FROM   at_physical_location
+                           WHERE   base_location_code = l_base_location_code);
+                  
+            DELETE FROM   at_stream
+                  WHERE   stream_location_code  IN (
+                          SELECT   location_code
+                            FROM   at_physical_location
+                           WHERE   base_location_code = l_base_location_code);
+                  
+            DELETE FROM   at_gage_sensor
+                  WHERE   gage_code IN (
+                          SELECT   gage_code
+                            FROM   at_gage
+                           WHERE   gage_location_code  IN (
+                                   SELECT   location_code
+                                     FROM   at_physical_location
+                                    WHERE   base_location_code = l_base_location_code));
+                  
+            DELETE FROM   at_goes
+                  WHERE   gage_code IN (
+                          SELECT   gage_code
+                            FROM   at_gage
+                           WHERE   gage_location_code  IN (
+                                   SELECT   location_code
+                                     FROM   at_physical_location
+                                    WHERE   base_location_code = l_base_location_code));
+                  
+            DELETE FROM   at_gage
+                  WHERE   gage_location_code  IN (
+                          SELECT   location_code
+                            FROM   at_physical_location
+                           WHERE   base_location_code = l_base_location_code);
+                            
 
 				DELETE FROM   at_physical_location apl
 						WHERE   apl.base_location_code = l_base_location_code;
@@ -2312,6 +2392,50 @@ AS
 
 				COMMIT;
 			ELSE										 -- Deleting a single Sub Location -
+                 UPDATE   at_basin
+                    SET   parent_basin_code = NULL
+                  WHERE   parent_basin_code = l_location_code;
+                  
+                 UPDATE   at_basin
+                    SET   primary_stream_code = NULL
+                  WHERE   primary_stream_code = l_location_code;
+                  
+            DELETE FROM   at_basin
+                  WHERE   basin_location_code = l_location_code;
+                   
+                 UPDATE   at_stream
+                    SET   diverting_stream_code = NULL
+                  WHERE   diverting_stream_code = l_location_code;
+                   
+                 UPDATE   at_stream
+                    SET   receiving_stream_code = NULL
+                  WHERE   receiving_stream_code = l_location_code;
+                  
+            DELETE FROM   at_stream_reach
+                  WHERE   stream_location_code = l_location_code;
+                  
+            DELETE FROM   at_stream_location
+                  WHERE   stream_location_code = l_location_code
+                     OR   location_code = l_location_code;
+                  
+            DELETE FROM   at_stream
+                  WHERE   stream_location_code = l_location_code;
+                  
+            DELETE FROM   at_gage_sensor
+                  WHERE   gage_code IN (
+                          SELECT   gage_code
+                            FROM   at_gage
+                           WHERE   gage_location_code = l_location_code);
+                  
+            DELETE FROM   at_goes
+                  WHERE   gage_code IN (
+                          SELECT   gage_code
+                            FROM   at_gage
+                           WHERE   gage_location_code = l_location_code);
+                  
+            DELETE FROM   at_gage
+                  WHERE   gage_location_code = l_location_code;
+                            
 				DELETE FROM   at_loc_group_assignment atlga
 						WHERE   atlga.location_code = l_location_code;
 
