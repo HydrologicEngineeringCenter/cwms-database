@@ -1210,9 +1210,9 @@ begin
    ----------------------------------------------
    -- normalize the wildcards (handle * and ?) --
    ----------------------------------------------
-   l_level_id_mask  := cwms_util.normalize_wildcards(upper(p_level_id_mask),  true);
+   l_level_id_mask  := cwms_util.normalize_wildcards(upper(p_level_id_mask));
    l_office_id_mask := nvl(upper(p_office_id_mask), cwms_util.user_office_id);
-   l_office_id_mask := cwms_util.normalize_wildcards(l_office_id_mask, true);
+   l_office_id_mask := cwms_util.normalize_wildcards(l_office_id_mask);
    -----------------------------
    -- get the matching levels --
    -----------------------------
@@ -4311,14 +4311,14 @@ begin
    -------------------------------------------------------
    -- process the office id mask (NULL = user's office) --
    -------------------------------------------------------
-   l_office_id_mask := cwms_util.normalize_wildcards(upper(p_office_id_mask), true);
+   l_office_id_mask := cwms_util.normalize_wildcards(upper(p_office_id_mask));
    if l_office_id_mask is null then
       l_office_id_mask := cwms_util.user_office_id;
    end if;  
    ---------------------------------------------------------------
    -- process the location level id mask into constituent parts --
    ---------------------------------------------------------------
-   l_location_level_id_mask := cwms_util.normalize_wildcards(p_location_level_id_mask, true);
+   l_location_level_id_mask := cwms_util.normalize_wildcards(p_location_level_id_mask);
    l_parts := cwms_util.split_text(l_location_level_id_mask, '.');
    l_count := l_parts.count;
    if l_count < 5 then
@@ -4332,16 +4332,16 @@ begin
          p_location_level_id_mask,
          'location level identifier mask (too many parts).');
    end if;  
-   l_location_mask        := cwms_util.normalize_wildcards(upper(l_parts(1)), true);
-   l_parameter_mask       := cwms_util.normalize_wildcards(upper(l_parts(2)), true);
-   l_parameter_type_mask  := cwms_util.normalize_wildcards(upper(l_parts(3)), true);
-   l_duration_mask        := cwms_util.normalize_wildcards(upper(l_parts(4)), true);
-   l_specified_level_mask := cwms_util.normalize_wildcards(upper(l_parts(5)), true);
+   l_location_mask        := cwms_util.normalize_wildcards(upper(l_parts(1)));
+   l_parameter_mask       := cwms_util.normalize_wildcards(upper(l_parts(2)));
+   l_parameter_type_mask  := cwms_util.normalize_wildcards(upper(l_parts(3)));
+   l_duration_mask        := cwms_util.normalize_wildcards(upper(l_parts(4)));
+   l_specified_level_mask := cwms_util.normalize_wildcards(upper(l_parts(5)));
    ----------------------------------------------------------
    -- process the attribute id mask into constituent parts --
    ----------------------------------------------------------
    if p_attribute_id_mask is not null then
-      l_attribute_id_mask := cwms_util.normalize_wildcards(p_attribute_id_mask, true);
+      l_attribute_id_mask := cwms_util.normalize_wildcards(p_attribute_id_mask);
       l_parts := cwms_util.split_text(l_attribute_id_mask, '.');
       l_count := l_parts.count;
       if l_count < 3 then
@@ -4355,9 +4355,9 @@ begin
             p_attribute_id_mask,
             'attribute identifier mask (too many parts).');
       end if;  
-      l_attr_parameter_mask      := cwms_util.normalize_wildcards(upper(l_parts(1)), true);
-      l_attr_parameter_type_mask := cwms_util.normalize_wildcards(upper(l_parts(2)), true);
-      l_attr_duration_mask       := cwms_util.normalize_wildcards(upper(l_parts(3)), true);
+      l_attr_parameter_mask      := cwms_util.normalize_wildcards(upper(l_parts(1)));
+      l_attr_parameter_type_mask := cwms_util.normalize_wildcards(upper(l_parts(2)));
+      l_attr_duration_mask       := cwms_util.normalize_wildcards(upper(l_parts(3)));
    end if;
    ---------------------
    -- build the query --
@@ -5415,16 +5415,16 @@ begin
       l_attr_param_type_id_mask,
       l_attr_duration_id_mask,
       l_attribute_id_mask);
-   l_office_id_mask          := upper(cwms_util.normalize_wildcards(l_office_id_mask,          true));      
-   l_location_id_mask        := upper(cwms_util.normalize_wildcards(l_location_id_mask,        true));      
-   l_parameter_id_mask       := upper(cwms_util.normalize_wildcards(l_parameter_id_mask,       true));      
-   l_param_type_id_mask      := upper(cwms_util.normalize_wildcards(l_param_type_id_mask,      true));      
-   l_duration_id_mask        := upper(cwms_util.normalize_wildcards(l_duration_id_mask,        true));      
-   l_spec_level_id_mask      := upper(cwms_util.normalize_wildcards(l_spec_level_id_mask,      true));      
-   l_level_indicator_id_mask := upper(cwms_util.normalize_wildcards(l_level_indicator_id_mask, true));      
-   l_attr_parameter_id_mask  := upper(cwms_util.normalize_wildcards(l_attr_parameter_id_mask,  true));      
-   l_attr_param_type_id_mask := upper(cwms_util.normalize_wildcards(l_attr_param_type_id_mask, true));      
-   l_attr_duration_id_mask   := upper(cwms_util.normalize_wildcards(l_attr_duration_id_mask,   true));
+   l_office_id_mask          := upper(cwms_util.normalize_wildcards(l_office_id_mask));      
+   l_location_id_mask        := upper(cwms_util.normalize_wildcards(l_location_id_mask));      
+   l_parameter_id_mask       := upper(cwms_util.normalize_wildcards(l_parameter_id_mask));      
+   l_param_type_id_mask      := upper(cwms_util.normalize_wildcards(l_param_type_id_mask));      
+   l_duration_id_mask        := upper(cwms_util.normalize_wildcards(l_duration_id_mask));      
+   l_spec_level_id_mask      := upper(cwms_util.normalize_wildcards(l_spec_level_id_mask));      
+   l_level_indicator_id_mask := upper(cwms_util.normalize_wildcards(l_level_indicator_id_mask));      
+   l_attr_parameter_id_mask  := upper(cwms_util.normalize_wildcards(l_attr_parameter_id_mask));      
+   l_attr_param_type_id_mask := upper(cwms_util.normalize_wildcards(l_attr_param_type_id_mask));      
+   l_attr_duration_id_mask   := upper(cwms_util.normalize_wildcards(l_attr_duration_id_mask));
             
    if l_attribute_id_mask is null then
       open p_cursor for 
@@ -5744,7 +5744,7 @@ is
    l_attr_parameter_id_mask      varchar2(49);
    l_attr_parameter_type_id_mask varchar2(16);
    l_attr_duration_id_mask       varchar2(16);
-   l_office_id_mask              varchar2(16) := cwms_util.normalize_wildcards(nvl(p_office_id_mask, cwms_util.user_office_id), true);
+   l_office_id_mask              varchar2(16) := cwms_util.normalize_wildcards(nvl(p_office_id_mask, cwms_util.user_office_id));
    l_cwms_office_code            number(10)   := cwms_util.get_office_code('CWMS');
 begin       
    cwms_level.parse_location_level_id(
@@ -5753,12 +5753,12 @@ begin
       l_parameter_type_id_mask,
       l_duration_id_mask,
       l_specified_level_id_mask,
-      cwms_util.normalize_wildcards(p_location_level_id_mask, true));
+      cwms_util.normalize_wildcards(p_location_level_id_mask));
    cwms_level.parse_attribute_id(
       l_attr_parameter_id_mask,
       l_attr_parameter_type_id_mask,
       l_attr_duration_id_mask,
-      cwms_util.normalize_wildcards(p_attribute_id_mask, true));
+      cwms_util.normalize_wildcards(p_attribute_id_mask));
             
    open p_cursor for
       with  
