@@ -119,7 +119,8 @@ begin
              at_base_location bl
        where upper(bl.base_location_id) = upper(l_base_loc_id)
          and pl.base_location_code = bl.base_location_code
-         and upper(nvl(pl.sub_location_id, '-')) = upper(nvl(l_sub_loc_id, '-'));
+         and upper(nvl(pl.sub_location_id, '-')) = upper(nvl(l_sub_loc_id, '-'))
+         and bl.db_office_code = l_db_office_code;
    exception
       when no_data_found then
          cwms_err.raise('INVALID_ITEM', p_project_id, 'location id');
