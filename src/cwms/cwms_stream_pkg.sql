@@ -236,6 +236,8 @@ procedure store_stream_location(
    p_ignore_nulls            in varchar2,
    p_station                 in binary_double,
    p_station_unit            in varchar2,
+   p_published_station       in binary_double default null,
+   p_navigation_station      in binary_double default null,
    p_bank                    in varchar2 default null,
    p_lowest_measurable_stage in binary_double default null,
    p_stage_unit              in varchar2 default null,
@@ -249,6 +251,8 @@ procedure store_stream_location(
 --------------------------------------------------------------------------------
 procedure retrieve_stream_location(
    p_station                 out binary_double,
+   p_published_station       out binary_double,
+   p_navigation_station      out binary_double,
    p_bank                    out varchar2,
    p_lowest_measurable_stage out binary_double,
    p_drainage_area           out binary_double,
@@ -277,6 +281,8 @@ procedure delete_stream_location(
 --    stream_id               varchar2(49)
 --    location_id             varchar2(49)
 --    station                 binary_double
+--    published_station       binary_double
+--    navigation_station      binary_double
 --    bank                    varchar2(1)
 --    lowest_measurable_stage binary_double
 --    drainage_area           binary_double
@@ -304,6 +310,8 @@ procedure cat_stream_locations(
 --    stream_id               varchar2(49)
 --    location_id             varchar2(49)
 --    station                 binary_double
+--    published_station       binary_double
+--    navigation_station      binary_double
 --    bank                    varchar2(1)
 --    lowest_measurable_stage binary_double
 --    drainage_area           binary_double

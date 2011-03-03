@@ -906,6 +906,8 @@ procedure store_stream_location(
    p_ignore_nulls            in varchar2,
    p_station                 in binary_double,
    p_station_unit            in varchar2,
+   p_published_station       in binary_double default null,
+   p_navigation_station      in binary_double default null,
    p_bank                    in varchar2 default null,
    p_lowest_measurable_stage in binary_double default null,
    p_stage_unit              in varchar2 default null,
@@ -994,6 +996,12 @@ begin
    if p_station is not null or not l_ignore_nulls then
       l_rec.station := cwms_util.convert_units(p_station, l_station_unit, 'km');
    end if;
+   if p_published_station is not null or not l_ignore_nulls then
+      l_rec.published_station := cwms_util.convert_units(p_published_station, l_station_unit, 'km');
+   end if;
+   if p_navigation_station is not null or not l_ignore_nulls then
+      l_rec.navigation_station := cwms_util.convert_units(p_navigation_station, l_station_unit, 'km');
+   end if;
    if p_bank is not null or not l_ignore_nulls then
       l_rec.bank := upper(p_bank);
    end if;
@@ -1026,6 +1034,8 @@ end store_stream_location;
 --------------------------------------------------------------------------------
 procedure retrieve_stream_location(
    p_station                 out binary_double,
+   p_published_station       out binary_double,
+   p_navigation_station      out binary_double,
    p_bank                    out varchar2,
    p_lowest_measurable_stage out binary_double,
    p_drainage_area           out binary_double,
@@ -1081,11 +1091,15 @@ begin
    l_stream_location_code := get_stream_code(l_office_id, p_stream_id);
    begin
       select cwms_util.convert_units(station, 'km', l_station_unit),
+             cwms_util.convert_units(published_station, 'km', l_station_unit),
+             cwms_util.convert_units(navigation_station, 'km', l_station_unit),
              bank,
              cwms_util.convert_units(lowest_measurable_stage, 'm', l_stage_unit),
              cwms_util.convert_units(drainage_area, 'm2', l_area_unit),
              cwms_util.convert_units(ungaged_area, 'm2', l_area_unit)
         into p_station,
+             p_published_station,
+             p_navigation_station,
              p_bank,
              p_lowest_measurable_stage,
              p_drainage_area,
@@ -1188,6 +1202,8 @@ begin
              ||substr('-', 1, length(pl2.sub_location_id))
              ||pl2.sub_location_id as location_id,
              cwms_util.convert_units(sl.station, 'km', cwms_util.get_unit_id(l_station_unit, o.office_id)) as station,
+             cwms_util.convert_units(sl.published_station, 'km', cwms_util.get_unit_id(l_station_unit, o.office_id)) as pulished_station,
+             cwms_util.convert_units(sl.navigation_station, 'km', cwms_util.get_unit_id(l_station_unit, o.office_id)) as navigation_station,
              sl.bank,
              cwms_util.convert_units(sl.lowest_measurable_stage, 'm', cwms_util.get_unit_id(l_stage_unit, o.office_id)) as lowest_measurable_stage,
              cwms_util.convert_units(sl.drainage_area, 'm2', cwms_util.get_unit_id(l_area_unit, o.office_id)) as drainage_area,
