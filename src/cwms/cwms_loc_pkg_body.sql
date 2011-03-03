@@ -2172,31 +2172,78 @@ AS
 		p_db_office_id 	IN VARCHAR2 DEFAULT NULL
 	)
 	IS
+      type cat_loc_lvl_rec_t is record (
+         office_id           varchar2(16),
+         location_level_id   varchar2(390),
+         attribute_id        varchar2(83),
+         attribute_value     binary_double,
+         attribute_unit      varchar2(16),
+         location_level_date date);
+         
 		l_count					  NUMBER;
-		l_base_location_id at_base_location.base_location_id%TYPE
-				:= cwms_util.get_base_id (p_location_id) ;
+		l_base_location_id at_base_location.base_location_id%TYPE;
 		--
-		l_sub_location_id at_physical_location.sub_location_id%TYPE
-				:= cwms_util.get_sub_id (p_location_id) ;
+		l_sub_location_id at_physical_location.sub_location_id%TYPE;
 		--
 		l_base_location_code   NUMBER;
 		l_location_code		  NUMBER;
 		l_db_office_code		  NUMBER;
 		--l_db_office_id VARCHAR2 (16);
-		l_delete_action VARCHAR2 (22)
-				:= NVL (UPPER (TRIM (p_delete_action)), cwms_util.delete_loc) ;
-		l_ts_ids_cur			  sys_refcursor;
+		l_delete_action VARCHAR2 (22);
+		l_cursor    			  sys_refcursor;
 		l_this_is_a_base_loc   BOOLEAN := FALSE;
 		--
 		l_count_ts				  NUMBER := 0;
 		l_cwms_ts_id			  VARCHAR2 (183);
 		l_ts_code				  NUMBER;
+      --
+      l_location_codes       number_tab_t;
+      l_location_ids         str_tab_t;
+      cat_loc_lvl_rec        cat_loc_lvl_rec_t;
 	--
 	BEGIN
-		l_db_office_code := cwms_util.get_office_code (p_db_office_id);
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_location_id,
+         p_delete_action,
+         p_db_office_id));
+         
+      IF p_location_id IS NULL THEN
+         cwms_err.raise(
+            'ERROR',
+            'Location identifier must not be null.');
+      END IF;         
+      IF p_delete_action IS NULL THEN
+         cwms_err.raise(
+            'ERROR',
+            'Delete action must not be null.');
+      END IF;
+               
+      l_delete_action := NVL(UPPER(TRIM(p_delete_action)), cwms_util.delete_loc);
+      IF l_delete_action NOT IN
+         (  cwms_util.delete_key,         -- delete loc only
+            cwms_util.delete_data,        -- delete all children only
+            cwms_util.delete_all,         -- delete loc and all children
+            cwms_util.delete_loc,         -- delete loc only
+            cwms_util.delete_loc_cascade, -- delete loc and all children
+            cwms_util.delete_ts_id,       -- delete child ts ids only
+            cwms_util.delete_ts_data,     -- delete child ts data only
+            cwms_util.delete_ts_cascade   -- delete child ts data and ids only
+         )
+      THEN
+         cwms_err.raise(
+            'INVALID_DELETE_ACTION',
+            p_delete_action);
+      END IF;
+               
+      l_base_location_id := cwms_util.get_base_id (p_location_id);
+      l_sub_location_id  := cwms_util.get_sub_id (p_location_id) ;
+		l_db_office_code   := cwms_util.get_office_code (p_db_office_id);
 
 		-- You can only delete a location if that location does not have
-		-- any time series identifiers associated with it.
+		-- any child records.
 		BEGIN
 			SELECT	base_location_code
 			  INTO	l_base_location_code
@@ -2216,19 +2263,13 @@ AS
 		THEN
 			l_this_is_a_base_loc := TRUE;
 		END IF;
-
-		--
-		-- Process Depricated delete_actions -
-		IF l_delete_action = cwms_util.delete_key
-		THEN
-			l_delete_action := cwms_util.delete_loc;
-		END IF;
-
-		--
-		-- Retrieve cwms_ts_ids for this location...
+      ----------------------------------------------------------------
+      -- Handle the times series separately since there are special --
+      -- delete actions just for time series                        --
+      ----------------------------------------------------------------
 		IF l_this_is_a_base_loc
 		THEN
-			OPEN l_ts_ids_cur FOR
+			OPEN l_cursor FOR
 				SELECT	cwms_ts_id
               FROM mv_cwms_ts_id
              WHERE location_code IN (
@@ -2237,26 +2278,31 @@ AS
 									  WHERE	 base_location_code =
 													 l_base_location_code);
 		ELSE
-			OPEN l_ts_ids_cur FOR
+			OPEN l_cursor FOR
 				SELECT	cwms_ts_id
               FROM mv_cwms_ts_id
 				 WHERE	location_code = l_location_code;
 		END IF;
 
 		LOOP
-         FETCH l_ts_ids_cur
+         FETCH l_cursor
           INTO l_cwms_ts_id;
 
-			EXIT WHEN l_ts_ids_cur%NOTFOUND;
+			EXIT WHEN l_cursor%NOTFOUND;
 
-			IF l_delete_action = cwms_util.delete_loc
-			THEN
+			IF l_delete_action IN (cwms_util.delete_key, cwms_util.delete_loc)
+			THEN  
+            CLOSE l_cursor;
             cwms_err.RAISE ('CAN_NOT_DELETE_LOC_1', p_location_id);
 			END IF;
 
 			CASE
-            WHEN l_delete_action = cwms_util.delete_loc_cascade
-             OR l_delete_action = cwms_util.delete_ts_cascade
+            WHEN l_delete_action IN
+               (  cwms_util.delete_data,
+                  cwms_util.delete_all,
+                  cwms_util.delete_loc_cascade,
+                  cwms_util.delete_ts_cascade
+               )
 				THEN
 					cwms_ts.delete_ts (l_cwms_ts_id,
 											 cwms_util.delete_ts_cascade,
@@ -2287,111 +2333,147 @@ AS
 			--
 			l_count_ts := l_count_ts + 1;
 		END LOOP;
-
 		--
-		CLOSE l_ts_ids_cur;
-
-		--
-		IF l_delete_action = cwms_util.delete_loc_cascade
-			OR l_delete_action = cwms_util.delete_loc
-		THEN
+		CLOSE l_cursor;
+      ---------------------------------------------
+      -- delete other child records if specified --
+      ---------------------------------------------
+      IF l_delete_action IN 
+         (  cwms_util.delete_data,
+            cwms_util.delete_all,
+            cwms_util.delete_loc_cascade
+         )
+      THEN
 			IF l_this_is_a_base_loc
-			THEN													-- Deleting Base Location -
-				DELETE FROM   at_loc_group_assignment atlga
-                  WHERE atlga.location_code IN (
-                           SELECT location_code
-											  FROM	at_physical_location apl
-											 WHERE	apl.base_location_code =
-															l_base_location_code);
+			THEN -- Deleting Base Location ----------------------------------------
+            ----------------------------------------------------------------
+            -- collect all location ids and codes with this base location --
+            ----------------------------------------------------------------
+            SELECT location_code,
+                   p_location_id
+                   ||SUBSTR('-', LENGTH(sub_location_id))
+                   ||sub_location_id
+                   BULK COLLECT
+              INTO l_location_codes,
+                   l_location_ids
+              FROM at_physical_location
+             WHERE base_location_code = l_base_location_code;
+            ------------
+            -- basins --
+            ------------
                  UPDATE   at_basin
                     SET   parent_basin_code = NULL
-                  WHERE   parent_basin_code IN (
-                          SELECT   location_code
-                            FROM   at_physical_location
-                           WHERE   base_location_code = l_base_location_code);
+                  WHERE   parent_basin_code IN (select * from table(l_location_codes));
                   
                  UPDATE   at_basin
                     SET   primary_stream_code = NULL
-                  WHERE   primary_stream_code IN (
-                          SELECT   location_code
-                            FROM   at_physical_location
-                           WHERE   base_location_code = l_base_location_code);
+                  WHERE   primary_stream_code IN (select * from table(l_location_codes));
                   
             DELETE FROM   at_basin
-                  WHERE   basin_location_code IN (
-                          SELECT   location_code
-                            FROM   at_physical_location
-                           WHERE   base_location_code = l_base_location_code);
-                   
+                  WHERE   basin_location_code IN (select * from table(l_location_codes));
+            -------------                   
+            -- streams --
+            -------------                   
                  UPDATE   at_stream
                     SET   diverting_stream_code = NULL
-                  WHERE   diverting_stream_code IN (
-                          SELECT   location_code
-                            FROM   at_physical_location
-                           WHERE   base_location_code = l_base_location_code);
+                  WHERE   diverting_stream_code IN (select * from table(l_location_codes));
                    
                  UPDATE   at_stream
                     SET   receiving_stream_code = NULL
-                  WHERE   receiving_stream_code IN (
-                          SELECT   location_code
-                            FROM   at_physical_location
-                           WHERE   base_location_code = l_base_location_code);
+                  WHERE   receiving_stream_code IN (select * from table(l_location_codes));
                   
             DELETE FROM   at_stream_reach
-                  WHERE   stream_location_code IN (
-                          SELECT   location_code
-                            FROM   at_physical_location
-                           WHERE   base_location_code = l_base_location_code);
+                  WHERE   stream_location_code IN (select * from table(l_location_codes));
                   
             DELETE FROM   at_stream_location
-                  WHERE   stream_location_code IN (
-                          SELECT   location_code
-                            FROM   at_physical_location
-                           WHERE   base_location_code = l_base_location_code)
-                     OR   location_code IN (
-                          SELECT   location_code
-                            FROM   at_physical_location
-                           WHERE   base_location_code = l_base_location_code);
+                  WHERE   stream_location_code IN (select * from table(l_location_codes))
+                     OR   location_code IN (select * from table(l_location_codes));
                   
             DELETE FROM   at_stream
-                  WHERE   stream_location_code  IN (
-                          SELECT   location_code
-                            FROM   at_physical_location
-                           WHERE   base_location_code = l_base_location_code);
-                  
+                  WHERE   stream_location_code  IN (select * from table(l_location_codes));
+            -----------                  
+            -- gages --
+            -----------                  
             DELETE FROM   at_gage_sensor
                   WHERE   gage_code IN (
                           SELECT   gage_code
                             FROM   at_gage
-                           WHERE   gage_location_code  IN (
-                                   SELECT   location_code
-                                     FROM   at_physical_location
-                                    WHERE   base_location_code = l_base_location_code));
+                           WHERE   gage_location_code  IN (select * from table(l_location_codes)));
                   
             DELETE FROM   at_goes
                   WHERE   gage_code IN (
                           SELECT   gage_code
                             FROM   at_gage
-                           WHERE   gage_location_code  IN (
-                                   SELECT   location_code
-                                     FROM   at_physical_location
-                                    WHERE   base_location_code = l_base_location_code));
+                           WHERE   gage_location_code  IN (select * from table(l_location_codes)));
                   
             DELETE FROM   at_gage
-                  WHERE   gage_location_code  IN (
-                          SELECT   location_code
-                            FROM   at_physical_location
-                           WHERE   base_location_code = l_base_location_code);
-                            
-
-				DELETE FROM   at_physical_location apl
-						WHERE   apl.base_location_code = l_base_location_code;
-
-				DELETE FROM   at_base_location abl
-						WHERE   abl.base_location_code = l_base_location_code;
-
-				COMMIT;
-			ELSE										 -- Deleting a single Sub Location -
+                  WHERE   gage_location_code  IN (select * from table(l_location_codes));
+            ---------------
+            -- documents --
+            ---------------
+            DELETE FROM   at_document
+                  WHERE   document_location_code  IN (select * from table(l_location_codes));
+            --------------------------                  
+            -- geographic locations --
+            --------------------------
+            DELETE FROM   at_geographic_location
+                  WHERE   location_code  IN (select * from table(l_location_codes));
+            --------------                  
+            -- projects --
+            --------------
+            FOR i in 1..l_location_codes.COUNT LOOP
+               FOR rec IN -- will match only 0 or 1 record 
+                  (  SELECT project_location_code
+                       FROM at_project
+                      WHERE project_location_code = l_location_codes(i)
+                  )
+               LOOP
+                  cwms_project.delete_project(
+                     l_location_ids(i), 
+                     cwms_util.delete_all, 
+                     p_db_office_id);
+               END LOOP;
+            END LOOP;
+            -------------
+            -- ratings --
+            -------------
+            FOR i in 1..l_location_ids.COUNT LOOP
+               cwms_rating.delete_specs(
+                  l_location_ids(i)||'.*',
+                  cwms_util.delete_all,
+                  p_db_office_id);
+            END LOOP;
+            ---------------------            
+            -- location levels --
+            ---------------------
+            FOR i in 1..l_location_ids.COUNT LOOP
+               cwms_level.catalog_location_levels(
+                  p_cursor                 => l_cursor,
+                  p_location_level_id_mask => l_location_ids(i)||'.*',
+                  p_office_id_mask         => p_db_office_id,
+                  p_timezone_id            => 'UTC');
+               LOOP
+                  FETCH l_cursor INTO cat_loc_lvl_rec;
+                  EXIT WHEN l_cursor%NOTFOUND;
+                  cwms_level.delete_location_level_ex(
+                     cat_loc_lvl_rec.location_level_id,
+                     cat_loc_lvl_rec.location_level_date,
+                     'UTC',
+                     cat_loc_lvl_rec.attribute_id,
+                     cat_loc_lvl_rec.attribute_value,
+                     cat_loc_lvl_rec.attribute_unit,
+                     'T',
+                     'T',
+                     cat_loc_lvl_rec.office_id);
+                     
+               END LOOP;
+               CLOSE l_cursor;               
+            END LOOP;
+                  
+			ELSE -- Deleting a single Sub Location --------------------------------
+            ------------
+            -- basins --
+            ------------
                  UPDATE   at_basin
                     SET   parent_basin_code = NULL
                   WHERE   parent_basin_code = l_location_code;
@@ -2402,7 +2484,9 @@ AS
                   
             DELETE FROM   at_basin
                   WHERE   basin_location_code = l_location_code;
-                   
+            -------------                   
+            -- streams --
+            -------------                   
                  UPDATE   at_stream
                     SET   diverting_stream_code = NULL
                   WHERE   diverting_stream_code = l_location_code;
@@ -2417,10 +2501,12 @@ AS
             DELETE FROM   at_stream_location
                   WHERE   stream_location_code = l_location_code
                      OR   location_code = l_location_code;
-                  
+                   
             DELETE FROM   at_stream
                   WHERE   stream_location_code = l_location_code;
-                  
+            -----------                  
+            -- gages --
+            -----------                  
             DELETE FROM   at_gage_sensor
                   WHERE   gage_code IN (
                           SELECT   gage_code
@@ -2435,16 +2521,97 @@ AS
                   
             DELETE FROM   at_gage
                   WHERE   gage_location_code = l_location_code;
-                            
-				DELETE FROM   at_loc_group_assignment atlga
-						WHERE   atlga.location_code = l_location_code;
-
-				DELETE FROM   at_physical_location apl
-						WHERE   apl.location_code = l_location_code;
-
-				COMMIT;
+            --------------                  
+            -- projects --
+            --------------
+            FOR rec IN -- will match only 0 or 1 record 
+               (  SELECT project_location_code
+                    FROM at_project
+                   WHERE project_location_code = l_location_code
+               )
+            LOOP
+               cwms_project.delete_project(
+                  p_location_id, 
+                  cwms_util.delete_all, 
+                  p_db_office_id);
+            END LOOP;
+            -------------
+            -- ratings --
+            -------------
+            cwms_rating.delete_specs(
+               p_location_id||'.*',
+               cwms_util.delete_all,
+               p_db_office_id);
+            ---------------------            
+            -- location levels --
+            ---------------------
+            cwms_level.catalog_location_levels(
+               p_cursor                 => l_cursor,
+               p_location_level_id_mask => p_location_id||'.*',
+               p_office_id_mask         => p_db_office_id,
+               p_timezone_id            => 'UTC');
+            LOOP
+               FETCH l_cursor INTO cat_loc_lvl_rec;
+               EXIT WHEN l_cursor%NOTFOUND;
+               cwms_level.delete_location_level_ex(
+                  cat_loc_lvl_rec.location_level_id,
+                  cat_loc_lvl_rec.location_level_date,
+                  'UTC',
+                  cat_loc_lvl_rec.attribute_id,
+                  cat_loc_lvl_rec.attribute_value,
+                  cat_loc_lvl_rec.attribute_unit,
+                  'T',
+                  'T',
+                  cat_loc_lvl_rec.office_id);
+                  
+            END LOOP;
+            CLOSE l_cursor;               
 			END IF;
 		END IF;
+      --------------------------------------------------------------
+      -- finally, delete the actual location records if specified --
+      --------------------------------------------------------------
+      IF l_delete_action IN 
+         (  cwms_util.delete_key,
+            cwms_util.delete_all,
+            cwms_util.delete_loc,
+            cwms_util.delete_loc_cascade
+         )
+      THEN
+         IF l_this_is_a_base_loc
+         THEN -- Deleting Base Location ----------------------------------------
+            -----------------------                           
+            -- group assignments --
+            -----------------------                           
+            DELETE FROM   at_loc_group_assignment atlga
+                  WHERE atlga.location_code IN (
+                           SELECT location_code
+                                   FROM   at_physical_location apl
+                                  WHERE   apl.base_location_code =
+                                             l_base_location_code);
+            ----------------------                  
+            -- actual locations --
+            ----------------------                  
+            DELETE FROM   at_physical_location apl
+                  WHERE   apl.base_location_code = l_base_location_code;
+
+            DELETE FROM   at_base_location abl
+                  WHERE   abl.base_location_code = l_base_location_code;
+         ELSE -- Deleting a single Sub Location --------------------------------
+            -----------------------                            
+            -- group assignments --
+            -----------------------                            
+            DELETE FROM   at_loc_group_assignment atlga
+                  WHERE   atlga.location_code = l_location_code;
+            ---------------------                  
+            -- actual location --
+            ---------------------                  
+            DELETE FROM   at_physical_location apl
+                  WHERE   apl.location_code = l_location_code;
+         END IF;
+      END IF;
+   --
+      COMMIT;
 	--
 	END delete_location;
 
@@ -2468,115 +2635,11 @@ AS
 		p_db_office_id   IN VARCHAR2 DEFAULT NULL
 	)
 	IS
-		l_count					  NUMBER;
-		l_base_location_id at_base_location.base_location_id%TYPE
-				:= cwms_util.get_base_id (p_location_id) ;
-		--
-		l_sub_location_id at_physical_location.sub_location_id%TYPE
-				:= cwms_util.get_sub_id (p_location_id) ;
-		--
-		l_base_location_code   NUMBER;
-		l_location_code		  NUMBER;
-		l_db_office_code		  NUMBER;
-		l_delete_date			  DATE := SYSDATE;
 	BEGIN
-		SELECT	office_code
-		  INTO	l_db_office_code
-		  FROM	cwms_office
-		 WHERE	office_id = UPPER (p_db_office_id);
-
-		--
-		--
-		BEGIN
-			SELECT	base_location_code
-			  INTO	l_base_location_code
-			  FROM	at_base_location abl
-			 WHERE	UPPER (abl.base_location_id) = UPPER (l_base_location_id)
-						AND abl.db_office_code = l_db_office_code;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-            cwms_err.RAISE ('LOCATION_ID_NOT_FOUND', p_location_id);
-		END;
-
-		IF l_sub_location_id IS NOT NULL
-		THEN
-			BEGIN
-				SELECT	location_code
-				  INTO	l_location_code
-				  FROM	at_physical_location
-				 WHERE	base_location_code = l_base_location_code
-							AND UPPER (sub_location_id) = UPPER (l_sub_location_id);
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-               cwms_err.RAISE ('LOCATION_ID_NOT_FOUND', p_location_id);
-			END;
-		END IF;
-
-		IF l_sub_location_id IS NULL
-		THEN														-- Deleting Base Location -
-			BEGIN
-				UPDATE	at_cwms_ts_spec acts
-               SET location_code = 0,
-                   delete_date = l_delete_date
-             WHERE ts_code IN (
-                      SELECT ts_code
-										FROM	 at_cwms_ts_spec
-                       WHERE location_code IN (
-                                SELECT location_code
-															 FROM   at_physical_location
-															WHERE   base_location_code =
-																		  l_base_location_code));
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-					NULL;
-				WHEN OTHERS
-				THEN
-					NULL;
-			END;
-
-			DELETE FROM   at_loc_group_assignment atlga
-               WHERE atlga.location_code IN (
-                           SELECT location_code
-										  FROM	at_physical_location apl
-										 WHERE	apl.base_location_code =
-														l_base_location_code);
-
-			DELETE FROM   at_physical_location apl
-					WHERE   apl.base_location_code = l_base_location_code;
-
-			DELETE FROM   at_base_location abl
-					WHERE   abl.base_location_code = l_base_location_code;
-
-			COMMIT;
-		ELSE													  -- Deleting a Sub Location -
-			BEGIN
-				UPDATE	at_cwms_ts_spec acts
-               SET location_code = 0,
-                   delete_date = l_delete_date
-				 WHERE	ts_code IN (SELECT	ts_code
-											  FROM	at_cwms_ts_spec
-											 WHERE	location_code = l_location_code);
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-					NULL;
-				WHEN OTHERS
-				THEN
-					NULL;
-			END;
-
-			DELETE FROM   at_loc_group_assignment atlga
-					WHERE   atlga.location_code = l_base_location_code;
-
-			DELETE FROM   at_physical_location apl
-					WHERE   apl.location_code = l_location_code;
-
-			COMMIT;
-		END IF;
-	--
+      delete_location(
+         p_location_id,
+         cwms_util.delete_all,
+         p_db_office_id);
 	END delete_location_cascade;
 
 	--********************************************************************** -
