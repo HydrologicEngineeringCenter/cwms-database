@@ -637,5 +637,20 @@ AS
       p_location       IN location_obj_t,
       p_fail_if_exists IN VARCHAR2 default 'T'
    );
+   
+   function get_location_id_from_alias(
+      p_alias_id    in varchar2,
+      p_group_id    in varchar2 default null,
+      p_category_id in varchar2 default null,
+      p_office_id   in varchar2 default null)
+      return varchar2;
+   
+   function get_location_code_from_alias(
+      p_alias_id    in varchar2,
+      p_group_id    in varchar2 default null,
+      p_category_id in varchar2 default null,
+      p_office_id   in varchar2 default null)
+      return number;
 END cwms_loc;
 /
+show errors;

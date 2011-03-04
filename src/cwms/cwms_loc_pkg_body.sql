@@ -4972,6 +4972,72 @@ AS
          p_location.location_ref.get_office_id);
    END store_location;
    
+   
+   function get_location_id_from_alias(
+      p_alias_id    in varchar2,
+      p_group_id    in varchar2 default null,
+      p_category_id in varchar2 default null,
+      p_office_id   in varchar2 default null)
+      return varchar2
+   is
+      l_location_id varchar2(49);
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_alias_id,
+         p_group_id,
+         p_category_id,
+         p_office_id));
+      -----------------------------------------
+      -- retrieve and return the location id --
+      -----------------------------------------
+      select distinct
+             location_id
+        into l_location_id
+        from cwms_v_loc_grp_assgn
+       where upper(alias_id) = upper(trim(p_alias_id))
+         and upper(group_id) = upper(nvl(trim(p_group_id), group_id)) 
+         and upper(category_id) = upper(nvl(trim(p_category_id), category_id))
+         and db_office_id = nvl(upper(trim(p_office_id)), cwms_util.user_office_id); 
+         
+      return l_location_id;         
+   end get_location_id_from_alias;
+         
+   
+   function get_location_code_from_alias(
+      p_alias_id    in varchar2,
+      p_group_id    in varchar2 default null,
+      p_category_id in varchar2 default null,
+      p_office_id   in varchar2 default null)
+      return number
+   is
+      l_location_code number(10);
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_alias_id,
+         p_group_id,
+         p_category_id,
+         p_office_id));
+      -----------------------------------------
+      -- retrieve and return the location id --
+      -----------------------------------------
+      select distinct
+             location_code
+        into l_location_code
+        from cwms_v_loc_grp_assgn
+       where upper(alias_id) = upper(trim(p_alias_id))
+         and upper(group_id) = upper(nvl(trim(p_group_id), group_id)) 
+         and upper(category_id) = upper(nvl(trim(p_category_id), category_id))
+         and db_office_id = nvl(upper(trim(p_office_id)), cwms_util.user_office_id); 
+         
+      return l_location_code;         
+   end get_location_code_from_alias;
+      
 END cwms_loc;
 /
 show errors
