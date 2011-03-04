@@ -66,6 +66,9 @@ procedure store_gage(
    p_assoc_loc_id    in varchar2 default null,
    p_discontinued    in varchar2 default 'F',
    p_out_of_service  in varchar2 default 'F',
+   p_manufacturer    in varchar2 default null,
+   p_model_number    in varchar2 default null,
+   p_serial_number   in varchar2 default null,
    p_phone_number    in varchar2 default null,
    p_internet_addr   in varchar2 default null,
    p_other_access_id in varchar2 default null,
@@ -90,6 +93,9 @@ begin
       p_assoc_loc_id,
       p_discontinued,
       p_out_of_service,
+      p_manufacturer,
+      p_model_number,
+      p_serial_number,
       p_phone_number,
       p_internet_addr,
       p_other_access_id,
@@ -160,6 +166,15 @@ begin
    if p_out_of_service is not null or not l_ignore_nulls then
       l_rec.out_of_service := upper(trim(p_out_of_service));
    end if;
+   if p_manufacturer is not null or not l_ignore_nulls then
+      l_rec.manufacturer := trim(p_manufacturer);
+   end if;
+   if p_model_number is not null or not l_ignore_nulls then
+      l_rec.model_number := trim(p_model_number);
+   end if;
+   if p_serial_number is not null or not l_ignore_nulls then
+      l_rec.serial_number := trim(p_serial_number);
+   end if;
    if p_internet_addr is not null or not l_ignore_nulls then
       l_rec.internet_address := p_internet_addr;
    end if;
@@ -206,6 +221,9 @@ procedure retrieve_gage(
    p_assoc_loc_id    out varchar2,
    p_discontinued    out varchar2,
    p_out_of_service  out varchar2,
+   p_manufacturer    out varchar2,
+   p_model_number    out varchar2,
+   p_serial_number   out varchar2,
    p_phone_number    out varchar2,
    p_internet_addr   out varchar2,
    p_other_access_id out varchar2,
@@ -259,6 +277,9 @@ begin
    end if;
    p_discontinued    := l_rec.discontinued;
    p_out_of_service  := l_rec.out_of_service;
+   p_manufacturer    := l_rec.manufacturer;
+   p_model_number    := l_rec.model_number;
+   p_serial_number   := l_rec.serial_number;
    p_phone_number    := l_rec.phone_number;
    p_internet_addr   := l_rec.internet_address;
    p_other_access_id := l_rec.other_access_id;      
@@ -378,6 +399,9 @@ procedure cat_gages(
    p_gage_type_mask         in  varchar2 default '*',
    p_discontinued_mask      in  varchar2 default '*',
    p_out_of_service_mask    in  varchar2 default '*',
+   p_manufacturer_mask      in  varchar2 default '*',
+   p_model_number_mask      in  varchar2 default '*',
+   p_serial_number_mask     in  varchar2 default '*',
    p_phone_number_mask      in  varchar2 default '*',
    p_internet_addr_mask     in  varchar2 default '*',
    p_other_access_id_mask   in  varchar2 default '*',
@@ -390,6 +414,9 @@ is
    l_gage_type_mask         varchar2(32);
    l_discontinued_mask      varchar2(1);
    l_out_of_service_mask    varchar2(1);
+   l_manufacturer_mask      varchar2(32);
+   l_model_number_mask      varchar2(32);
+   l_serial_number_mask     varchar2(32);
    l_phone_number_mask      varchar2(16);
    l_internet_addr_mask     varchar2(32);
    l_other_access_id_mask   varchar2(32);
@@ -406,6 +433,9 @@ begin
       p_gage_type_mask,
       p_discontinued_mask,
       p_out_of_service_mask,
+      p_manufacturer_mask,
+      p_model_number_mask,
+      p_serial_number_mask,
       p_phone_number_mask,
       p_internet_addr_mask,
       p_other_access_id_mask,
@@ -420,6 +450,9 @@ begin
    l_gage_type_mask         := cwms_util.normalize_wildcards(upper(p_gage_type_mask));
    l_discontinued_mask      := cwms_util.normalize_wildcards(upper(p_discontinued_mask));
    l_out_of_service_mask    := cwms_util.normalize_wildcards(upper(p_out_of_service_mask));
+   l_manufacturer_mask      := cwms_util.normalize_wildcards(upper(p_manufacturer_mask));
+   l_model_number_mask      := cwms_util.normalize_wildcards(upper(p_model_number_mask));
+   l_serial_number_mask     := cwms_util.normalize_wildcards(upper(p_serial_number_mask));
    l_phone_number_mask      := cwms_util.normalize_wildcards(upper(p_phone_number_mask));
    l_internet_addr_mask     := cwms_util.normalize_wildcards(upper(p_internet_addr_mask));
    l_other_access_id_mask   := cwms_util.normalize_wildcards(upper(p_other_access_id_mask));
@@ -435,7 +468,10 @@ begin
              gage.gage_id,
              gage.gage_type,
              gage.discontinued,
-             gage.out_of_service,
+             gage.out_of_service, 
+             gage.manufacturer,
+             gage.model_number,
+             gage.serial_number,
              gage.phone_number,
              gage.internet_address,
              gage.other_access_id,
@@ -449,6 +485,9 @@ begin
                       gt.gage_type_id as gage_type,
                       g.discontinued,
                       g.out_of_service,
+                      g.manufacturer,
+                      g.model_number,
+                      g.serial_number,
                       g.phone_number,
                       g.internet_address,
                       g.other_access_id,
@@ -468,7 +507,10 @@ begin
                   and g.gage_location_code = pl.location_code
                   and upper(g.gage_id) like l_gage_id_mask escape '\'
                   and upper(g.discontinued) like l_discontinued_mask escape '\'
-                  and upper(g.out_of_service) like l_out_of_service_mask escape '\'
+                  and upper(g.out_of_service) like l_out_of_service_mask escape '\'  
+                  and upper(g.manufacturer) like l_manufacturer_mask escape '\'
+                  and upper(g.model_number) like l_model_number_mask escape '\'
+                  and upper(g.serial_number) like l_serial_number_mask escape '\'
                       -- * matches null phone number, use *? or ?* to match only non-nulls
                   and ( upper(g.phone_number) like l_phone_number_mask escape '\' 
                         or 
@@ -526,6 +568,9 @@ function cat_gages_f(
    p_gage_type_mask         in varchar2 default '*',
    p_discontinued_mask      in varchar2 default '*',
    p_out_of_service_mask    in varchar2 default '*',
+   p_manufacturer_mask      in varchar2 default '*',
+   p_model_number_mask      in varchar2 default '*',
+   p_serial_number_mask     in varchar2 default '*',
    p_phone_number_mask      in varchar2 default '*',
    p_internet_addr_mask     in varchar2 default '*',
    p_other_access_id_mask   in varchar2 default '*',
@@ -543,6 +588,9 @@ begin
       p_gage_type_mask,
       p_discontinued_mask,
       p_out_of_service_mask,
+      p_manufacturer_mask,
+      p_model_number_mask,
+      p_serial_number_mask,
       p_phone_number_mask,
       p_internet_addr_mask,
       p_other_access_id_mask,
@@ -564,11 +612,14 @@ procedure store_gage_sensor(
    p_ignore_nulls     in varchar2,
    p_parameter_id     in varchar2,
    p_report_unit_id   in varchar2 default null,
-   p_out_of_service   in varchar2 default 'F',
    p_valid_range_min  in binary_double default null,
    p_valid_range_max  in binary_double default null,
    p_zero_reading_val in binary_double default null,
    p_values_unit      in varchar2 default null,
+   p_out_of_service   in varchar2 default 'F',
+   p_manufacturer     in varchar2 default null,
+   p_model_number     in varchar2 default null,
+   p_serial_number    in varchar2 default null,
    p_comments         in varchar2 default null,
    p_office_id        in varchar2 default null)
 is
@@ -700,6 +751,15 @@ begin
    else
       l_rec.out_of_service := p_out_of_service;      
    end if;      
+   if p_manufacturer is not null or not l_ignore_nulls then
+      l_rec.manufacturer := trim(p_manufacturer);
+   end if;
+   if p_model_number is not null or not l_ignore_nulls then
+      l_rec.model_number := trim(p_model_number);
+   end if;
+   if p_serial_number is not null or not l_ignore_nulls then
+      l_rec.serial_number := trim(p_serial_number);
+   end if;
    if p_comments is not null or not l_ignore_nulls then
       l_rec.comments := p_comments;
    end if; 
@@ -725,10 +785,13 @@ end store_gage_sensor;
 procedure retrieve_gage_sensor(
    p_parameter_id     out varchar2,
    p_report_unit_id   out varchar2,
-   p_out_of_service   out varchar2,
    p_valid_range_min  out binary_double,
    p_valid_range_max  out binary_double,
    p_zero_reading_val out binary_double,
+   p_out_of_service   out varchar2,
+   p_manufacturer     out varchar2,
+   p_model_number     out varchar2,
+   p_serial_number    out varchar2,
    p_comments         out varchar2,
    p_location_id      in  varchar2,
    p_gage_id          in  varchar2,
@@ -800,10 +863,13 @@ begin
         from cwms_unit
        where unit_code = l_rec.unit_code;
    end if;
-   p_out_of_service   := l_rec.out_of_service;
    p_valid_range_min  := cwms_util.convert_units(l_rec.valid_range_min, l_param_unit_code, l_value_unit_code);
    p_valid_range_max  := cwms_util.convert_units(l_rec.valid_range_max, l_param_unit_code, l_value_unit_code);
    p_zero_reading_val := cwms_util.convert_units(l_rec.zero_reading_value, l_param_unit_code, l_value_unit_code);
+   p_out_of_service   := l_rec.out_of_service;
+   p_manufacturer     := l_rec.manufacturer;
+   p_model_number     := l_rec.model_number;
+   p_serial_number    := l_rec.serial_number;
    p_comments         := l_rec.comments;      
 exception
    when no_data_found then
@@ -950,6 +1016,9 @@ procedure cat_gage_sensors(
    p_parameter_id_mask      in  varchar2 default '*',
    p_reporting_unit_id_mask in  varchar2 default '*',
    p_out_of_service_mask    in  varchar2 default '*',
+   p_manufacturer_mask      in  varchar2 default '*',
+   p_model_number_mask      in  varchar2 default '*',
+   p_serial_number_mask     in  varchar2 default '*',
    p_comments_mask          in  varchar2 default '*',
    p_unit_system            in  varchar2 default 'SI',
    p_office_id_mask      in  varchar2 default null)
@@ -960,6 +1029,9 @@ is
    l_parameter_id_mask      varchar2(49);
    l_reporting_unit_id_mask varchar2(16);
    l_out_of_service_mask    varchar2(1);
+   l_manufacturer_mask      varchar2(32);
+   l_model_number_mask      varchar2(32);
+   l_serial_number_mask     varchar2(32);
    l_comments_mask          varchar2(256);
    l_office_id_mask         varchar2(16);
    l_unit_system            varchar2(2);
@@ -968,15 +1040,18 @@ begin
    -- sanity checks --
    -------------------
    cwms_util.check_inputs(str_tab_t(   
-      l_location_id_mask,
-      l_gage_id_mask,
-      l_sensor_id_mask,
-      l_parameter_id_mask,
-      l_reporting_unit_id_mask,
-      l_out_of_service_mask,
-      l_comments_mask,
-      l_unit_system,
-      l_office_id_mask));
+      p_location_id_mask,
+      p_gage_id_mask,
+      p_sensor_id_mask,
+      p_parameter_id_mask,
+      p_reporting_unit_id_mask,
+      p_out_of_service_mask,
+      p_manufacturer_mask,
+      p_model_number_mask,
+      p_serial_number_mask,
+      p_comments_mask,
+      p_unit_system,
+      p_office_id_mask));
    if p_unit_system not in ('EN', 'SI') then
       cwms_err.raise(
          'INVALID_ITEM',
@@ -992,6 +1067,9 @@ begin
    l_parameter_id_mask      := cwms_util.normalize_wildcards(upper(p_parameter_id_mask));
    l_reporting_unit_id_mask := cwms_util.normalize_wildcards(upper(p_reporting_unit_id_mask));
    l_out_of_service_mask    := cwms_util.normalize_wildcards(upper(p_out_of_service_mask));
+   l_manufacturer_mask      := cwms_util.normalize_wildcards(upper(p_manufacturer_mask));
+   l_model_number_mask      := cwms_util.normalize_wildcards(upper(p_model_number_mask));
+   l_serial_number_mask     := cwms_util.normalize_wildcards(upper(p_serial_number_mask));
    l_comments_mask          := cwms_util.normalize_wildcards(upper(p_comments_mask));
    l_office_id_mask         := cwms_util.normalize_wildcards(upper(nvl(p_office_id_mask, cwms_util.user_office_id)));
    -----------------------
@@ -1009,6 +1087,9 @@ begin
              sensor.zero_reading_value,
              sensor.value_units,
              sensor.out_of_service,
+             sensor.manufacturer,
+             sensor.model_number,
+             sensor.serial_number,
              sensor.comments
         from ( select o.office_id,
                       bl.base_location_id
@@ -1032,6 +1113,9 @@ begin
                          cwms_util.get_default_units(cwms_util.get_parameter_id(gs.parameter_code), p_unit_system)) as zero_reading_value,
                       cwms_util.get_default_units(cwms_util.get_parameter_id(gs.parameter_code), p_unit_system) as value_units,
                       gs.out_of_service,
+                      gs.manufacturer,
+                      gs.model_number,
+                      gs.serial_number,
                       gs.comments
                  from at_gage_sensor gs,
                       at_gage g,
@@ -1049,6 +1133,9 @@ begin
                   and gs.gage_code = g.gage_code
                   and upper(gs.sensor_id) like l_sensor_id_mask escape '\'
                   and gs.out_of_service like l_out_of_service_mask escape '\'
+                  and upper(gs.manufacturer) like l_manufacturer_mask escape '\'
+                  and upper(gs.model_number) like l_model_number_mask escape '\'
+                  and upper(gs.serial_number) like l_serial_number_mask escape '\'
                   -- * matches null comments, use *? or ?* to match only non-nulls
                   and ( upper(gs.comments) like l_comments_mask escape '\'
                         or
@@ -1076,15 +1163,18 @@ begin
    
 end cat_gage_sensors;
 --------------------------------------------------------------------------------
--- function cat_gage_sensors
+-- function cat_gage_sensors_f
 --------------------------------------------------------------------------------
-function cat_gage_sensors(
+function cat_gage_sensors_f(
    p_location_id_mask       in varchar2 default '*',
    p_gage_id_mask           in varchar2 default '*',
    p_sensor_id_mask         in varchar2 default '*',
    p_parameter_id_mask      in varchar2 default '*',
    p_reporting_unit_id_mask in varchar2 default '*',
    p_out_of_service_mask    in varchar2 default '*',
+   p_manufacturer_mask      in varchar2 default '*',
+   p_model_number_mask      in varchar2 default '*',
+   p_serial_number_mask     in varchar2 default '*',
    p_comments_mask          in varchar2 default '*',
    p_unit_system            in varchar2 default 'SI',
    p_office_id_mask      in varchar2 default null)
@@ -1099,12 +1189,473 @@ begin
       p_parameter_id_mask,
       p_reporting_unit_id_mask,
       p_out_of_service_mask,
+      p_manufacturer_mask,
+      p_model_number_mask,
+      p_serial_number_mask,
       p_comments_mask,
       p_unit_system,
       p_office_id_mask);
       
    return l_cursor;      
-end cat_gage_sensors;      
+end cat_gage_sensors_f;      
+
+--------------------------------------------------------------------------------
+-- procedure store_goes
+--------------------------------------------------------------------------------
+procedure store_goes(
+   p_location_id        in varchar2,
+   p_gage_id            in varchar2,
+   p_fail_if_exists     in varchar2,
+   p_ignore_nulls       in varchar2,
+   p_goes_id            in varchar2 default null,
+   p_goes_satellite     in varchar2 default null,
+   p_selftimed_channel  in number   default null,
+   p_selftimed_rate     in number   default null, -- bits/s
+   p_selftimed_interval in number   default null, -- minutes
+   p_selftimed_offset   in number   default null, -- minutes
+   p_selftimed_length   in number   default null, -- seconds
+   p_random_channel     in number   default null,
+   p_random_rate        in number   default null, -- bits/s
+   p_random_interval    in number   default null, -- minutes
+   p_random_offset      in number   default null, -- minutes
+   p_office_id          in varchar2 default null)
+is
+   item_does_not_exist exception; pragma exception_init(item_does_not_exist, -20034);
+   item_already_exists exception; pragma exception_init(item_already_exists, -20020);
+   l_rec            at_goes%rowtype;
+   l_fail_if_exists boolean;
+   l_ignore_nulls   boolean;
+   l_exists         boolean;
+   l_group_id       varchar2(32)  := upper(p_gage_id);
+   l_group_desc     varchar2(128) := goes_group_desc_prefix || l_group_id;
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_location_id,
+      p_gage_id,
+      p_goes_id,
+      p_fail_if_exists,
+      p_ignore_nulls,
+      p_goes_satellite,
+      p_office_id));
+   if p_location_id is null then
+      cwms_err.raise('ERROR', 'Location identifier must not be null.');
+   end if;      
+   if p_gage_id is null then
+      cwms_err.raise('ERROR', 'Gage identifier must not be null.');
+   end if;      
+   l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
+   l_ignore_nulls   := cwms_util.is_true(p_ignore_nulls);
+   ------------------------------
+   -- see if the record exists --
+   ------------------------------
+   l_rec.gage_code := get_gage_code(p_office_id, p_location_id, p_gage_id);
+   begin
+      select *
+        into l_rec
+        from at_goes
+       where gage_code = l_rec.gage_code;
+       l_exists := true;
+   exception
+      when others then
+         l_exists := false;
+   end;
+   if l_exists then
+      if l_fail_if_exists then
+         cwms_err.raise(
+            'ITEM_ALREADY_EXISTS',
+            'GOES record for CWMS gage',
+            nvl(upper(p_office_id), cwms_util.user_office_id)
+            ||'/'
+            ||p_location_id
+            ||'/'
+            ||p_gage_id);
+      end if;      
+   else
+      if p_goes_id is null then
+         cwms_err.raise('ERROR', 'GOES identifier must not be null on new record');
+      end if;
+   end if;
+   ---------------------------------------------------------
+   -- create the location alias group if it doesn't exist --
+   ---------------------------------------------------------
+   begin
+      cwms_loc.create_loc_category(
+         goes_category_id, 
+         goes_category_desc, 
+         p_office_id);
+   exception 
+      when item_already_exists then null;
+   end;    
+   begin
+      cwms_loc.create_loc_group(
+         goes_category_id, 
+         l_group_id,
+         l_group_desc, 
+         p_office_id);
+   exception 
+      when item_already_exists then null;
+   end;    
+   -------------------------------------
+   -- set the GOES alias for the gage --
+   -------------------------------------
+   cwms_loc.assign_loc_group(
+      goes_category_id, 
+      l_group_id, 
+      p_location_id, 
+      p_goes_id, 
+      p_office_id);
+   -------------------------
+   -- populate the record --
+   ------------------------- 
+   if p_goes_satellite is not null or not l_ignore_nulls then
+      l_rec.goes_satellite := upper(p_goes_satellite);
+   end if;
+   if p_selftimed_channel is not null or not l_ignore_nulls then
+      l_rec.selftimed_channel := p_selftimed_channel;
+   end if;      
+   if p_selftimed_rate is not null or not l_ignore_nulls then
+      l_rec.selftimed_data_rate := p_selftimed_rate;
+   end if;      
+   if p_selftimed_interval is not null or not l_ignore_nulls then
+      l_rec.selftimed_interval := numtodsinterval(p_selftimed_interval, 'minute');
+   end if;      
+   if p_selftimed_offset is not null or not l_ignore_nulls then
+      l_rec.selftimed_offset := numtodsinterval(p_selftimed_offset, 'minute');
+   end if;      
+   if p_selftimed_length is not null or not l_ignore_nulls then
+      l_rec.selftimed_length := numtodsinterval(p_selftimed_length, 'second');
+   end if;      
+   if p_random_channel is not null or not l_ignore_nulls then
+      l_rec.random_channel := p_random_channel;
+   end if;      
+   if p_random_rate is not null or not l_ignore_nulls then
+      l_rec.random_data_rate := p_random_rate;
+   end if;      
+   if p_random_interval is not null or not l_ignore_nulls then
+      l_rec.random_interval := numtodsinterval(p_random_interval, 'minute');
+   end if;      
+   if p_random_offset is not null or not l_ignore_nulls then
+      l_rec.random_offset := numtodsinterval(p_random_offset, 'minute');
+   end if;      
+   ---------------------------------      
+   -- insert or update the record --
+   ---------------------------------
+   if l_exists then
+      update at_goes
+         set row = l_rec
+       where gage_code = l_rec.gage_code;
+   else
+      insert
+        into at_goes
+      values l_rec;
+   end if;      
+
+end store_goes;   
+
+--------------------------------------------------------------------------------
+-- procedure retrieve_goes
+--------------------------------------------------------------------------------
+procedure retrieve_goes(
+   p_goes_id            out varchar2,
+   p_goes_satellite     out varchar2,
+   p_selftimed_channel  out number,
+   p_selftimed_rate     out number, -- bits/s
+   p_selftimed_interval out number, -- minutes
+   p_selftimed_offset   out number, -- minutes
+   p_selftimed_length   out number, -- seconds
+   p_random_channel     out number,
+   p_random_rate        out number, -- bits/s
+   p_random_interval    out number, -- minutes
+   p_random_offset      out number, -- minutes
+   p_location_id        in  varchar2,
+   p_gage_id            in  varchar2,
+   p_office_id          in  varchar2 default null)
+is
+   l_rec at_goes%rowtype;
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_location_id,
+      p_gage_id,
+      p_office_id));
+   if p_location_id is null then
+      cwms_err.raise('ERROR', 'Location identifier must not be null.');
+   end if;      
+   if p_gage_id is null then
+      cwms_err.raise('ERROR', 'Gage identifier must not be null.');
+   end if;
+   -------------------------
+   -- retrieve the record --
+   -------------------------      
+   l_rec.gage_code := get_gage_code(p_office_id, p_location_id, p_gage_id);
+   begin
+      select *
+        into l_rec
+        from at_goes
+       where gage_code = l_rec.gage_code;
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'GOES record for CWMS gage',
+            nvl(upper(p_office_id), cwms_util.user_office_id)
+            ||'/'
+            ||p_location_id
+            ||'/'
+            ||p_gage_id);
+   end;
+   --------------------------------
+   -- populate the out variables --
+   --------------------------------
+   select alias_id
+     into p_goes_id
+     from cwms_v_loc_grp_assgn
+    where db_office_id = nvl(upper(p_office_id), cwms_util.user_office_id)
+      and category_id = goes_category_id
+      and group_id = upper(p_gage_id)
+      and upper(location_id) = upper(p_location_id); 
+      
+   p_goes_satellite     := l_rec.goes_satellite;
+   p_selftimed_channel  := l_rec.selftimed_channel;
+   p_selftimed_rate     := l_rec.selftimed_data_rate;
+   p_selftimed_interval := extract(day    from l_rec.selftimed_interval) * 1440 +        
+                           extract(hour   from l_rec.selftimed_interval) * 60 +
+                           extract(minute from l_rec.selftimed_interval); 
+   p_selftimed_offset   := extract(day    from l_rec.selftimed_offset) * 1440 +        
+                           extract(hour   from l_rec.selftimed_offset) * 60 +
+                           extract(minute from l_rec.selftimed_offset); 
+   p_selftimed_length   := extract(day    from l_rec.selftimed_length) * 86400 +        
+                           extract(hour   from l_rec.selftimed_length) * 3600 +
+                           extract(minute from l_rec.selftimed_length) * 60 +
+                           extract(second from l_rec.selftimed_length);
+   p_random_channel     := l_rec.random_channel;
+   p_random_rate        := l_rec.random_data_rate;
+   p_random_interval    := extract(day    from l_rec.random_interval) * 1440 +        
+                           extract(hour   from l_rec.random_interval) * 60 +
+                           extract(minute from l_rec.random_interval); 
+   p_random_offset      := extract(day    from l_rec.random_offset) * 1440 +        
+                           extract(hour   from l_rec.random_offset) * 60 +
+                           extract(minute from l_rec.random_offset); 
+end retrieve_goes;   
+
+--------------------------------------------------------------------------------
+-- procedure delete_goes
+--------------------------------------------------------------------------------
+procedure delete_goes(
+   p_location_id in varchar2,
+   p_gage_id     in varchar2,
+   p_office_id   in varchar2 default null)
+is
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_location_id,
+      p_gage_id,
+      p_office_id));
+   if p_location_id is null then
+      cwms_err.raise('ERROR', 'Location identifier must not be null.');
+   end if;      
+   if p_gage_id is null then
+      cwms_err.raise('ERROR', 'Gage identifier must not be null.');
+   end if;
+   ----------------------------------------
+   -- delete the GOES alias for the gage --
+   ----------------------------------------
+   cwms_loc.unassign_loc_group(
+      goes_category_id, 
+      upper(p_gage_id), 
+      p_location_id, 
+      'F', 
+      p_office_id);
+   -----------------------
+   -- delete the record --
+   -----------------------
+   delete 
+     from at_goes 
+    where gage_code = get_gage_code(p_office_id, p_location_id, p_gage_id);
+end delete_goes;   
+
+--------------------------------------------------------------------------------
+-- procedure rename_goes
+--------------------------------------------------------------------------------
+procedure rename_goes(
+   p_location_id in varchar2,
+   p_gage_id     in varchar2,
+   p_new_goes_id in varchar2,
+   p_office_id   in varchar2 default null)
+is
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_location_id,
+      p_gage_id,
+      p_new_goes_id,
+      p_office_id));
+   if p_location_id is null then
+      cwms_err.raise('ERROR', 'Location identifier must not be null.');
+   end if;      
+   if p_gage_id is null then
+      cwms_err.raise('ERROR', 'Gage identifier must not be null.');
+   end if;
+   if p_new_goes_id is null then
+      cwms_err.raise('ERROR', 'GOES identifier must not be null.');
+   end if;
+   ----------------------------------------
+   -- delete the GOES alias for the gage --
+   ----------------------------------------
+   cwms_loc.unassign_loc_group(
+      goes_category_id, 
+      upper(p_gage_id), 
+      p_location_id, 
+      'F', 
+      p_office_id);
+   -------------------------------------
+   -- set the GOES alias for the gage --
+   -------------------------------------
+   cwms_loc.assign_loc_group(
+      goes_category_id, 
+      upper(p_gage_id), 
+      p_location_id, 
+      p_new_goes_id, 
+      p_office_id);
+end rename_goes;   
+
+--------------------------------------------------------------------------------
+-- procedure cat_goes
+--------------------------------------------------------------------------------
+procedure cat_goes(
+   p_goes_catalog          out sys_refcursor,
+   p_location_id_mask      in  varchar2 default '*',
+   p_gage_id_mask          in  varchar2 default '*',
+   p_goes_id_mask          in  varchar2 default '*',
+   p_satellite_mask        in  varchar2 default '*',
+   p_min_selftimed_channel in  number default 0,
+   p_max_selftimed_channel in  number default 999999,
+   p_min_random_channel    in  number default 0,
+   p_max_random_channel    in  number default 999999,
+   p_office_id_mask        in  varchar2 default null)
+is
+   l_location_id_mask varchar2(49);
+   l_gage_id_mask     varchar2(32);
+   l_goes_id_mask     varchar2(32);
+   l_satellite_mask   varchar2(1);
+   l_office_id_mask   varchar2(16);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_location_id_mask,
+      p_gage_id_mask,
+      p_goes_id_mask,
+      p_satellite_mask, 
+      p_office_id_mask));
+   ----------------------
+   -- set up the masks --
+   ----------------------
+   l_location_id_mask := cwms_util.normalize_wildcards(upper(p_location_id_mask));
+   l_gage_id_mask     := cwms_util.normalize_wildcards(upper(p_gage_id_mask));
+   l_goes_id_mask     := cwms_util.normalize_wildcards(upper(p_goes_id_mask));
+   l_satellite_mask   := cwms_util.normalize_wildcards(upper(p_satellite_mask));
+   l_office_id_mask   := cwms_util.normalize_wildcards(upper(nvl(p_office_id_mask, cwms_util.user_office_id)));
+   ----------------------
+   -- peform the query --
+   ----------------------
+   open p_goes_catalog for
+      select o.office_id,
+             bl.base_location_id
+             ||substr('-', 1, length(pl.sub_location_id))
+             ||pl.sub_location_id as location_id,
+             gage.gage_id,
+             v.alias_id as goes_id,
+             goes.goes_satellite,
+             goes.selftimed_channel,
+             goes.selftimed_data_rate as selftimed_rate,
+             extract(day    from goes.selftimed_interval) * 1440 +        
+             extract(hour   from goes.selftimed_interval) * 60 +
+             extract(minute from goes.selftimed_interval) as selftimed_interval,  
+             extract(day    from goes.selftimed_offset) * 1440 +        
+             extract(hour   from goes.selftimed_offset) * 60 +
+             extract(minute from goes.selftimed_offset) as selftimed_offset,  
+             extract(day    from goes.selftimed_length) * 86400 +        
+             extract(hour   from goes.selftimed_length) * 3600 +
+             extract(minute from goes.selftimed_length) * 60 +  
+             extract(second from goes.selftimed_length) as selftimed_length,  
+             goes.random_channel,
+             goes.random_data_rate as random_rate,
+             extract(day    from goes.random_interval) * 1440 +        
+             extract(hour   from goes.random_interval) * 60 +
+             extract(minute from goes.random_interval) as random_interval,  
+             extract(day    from goes.random_offset) * 1440 +        
+             extract(hour   from goes.random_offset) * 60 +
+             extract(minute from goes.random_offset) as random_offset
+        from at_goes goes,
+             at_gage gage,
+             at_physical_location pl,
+             at_base_location bl,
+             cwms_office o,
+             cwms_v_loc_grp_assgn v
+       where o.office_id like l_office_id_mask escape '\'
+         and bl.db_office_code = o.office_code
+         and pl.base_location_code = bl.base_location_code
+         and upper(bl.base_location_code
+                   ||substr('-', 1, length(pl.sub_location_id))
+                   ||pl.sub_location_id) like l_location_id_mask escape '\'
+         and gage.gage_location_code = pl.location_code
+         and upper(gage.gage_id) like l_gage_id_mask escape '\'
+         and goes.gage_code = gage.gage_code
+         and goes.goes_satellite like l_satellite_mask escape '\'
+         and goes.selftimed_channel between p_min_selftimed_channel and p_max_selftimed_channel    
+         and goes.random_channel between p_min_random_channel and p_max_random_channel
+         and v.category_id = goes_category_id
+         and v.group_id = upper(gage.gage_id)
+         and v.db_office_id = o.office_id
+         and v.base_location_id = bl.base_location_id
+         and nvl(v.sub_location_id, '.') = nvl(pl.sub_location_id, '.')
+         and v.alias_id like l_goes_id_mask escape '\';    
+             
+end cat_goes;      
+
+--------------------------------------------------------------------------------
+-- function cat_goes_f
+--------------------------------------------------------------------------------
+function cat_goes_f(
+   p_location_id_mask      in varchar2 default '*',
+   p_gage_id_mask          in varchar2 default '*',
+   p_goes_id_mask          in varchar2 default '*',
+   p_satellite_mask        in varchar2 default '*',
+   p_min_selftimed_channel in number default 0,
+   p_max_selftimed_channel in number default 999999,
+   p_min_random_channel    in number default 0,
+   p_max_random_channel    in number default 999999,
+   p_office_id_mask        in varchar2 default null)
+   return sys_refcursor
+is
+   l_cursor sys_refcursor;
+begin
+   cat_goes(
+      l_cursor,
+      p_location_id_mask,
+      p_gage_id_mask,
+      p_goes_id_mask,
+      p_satellite_mask,
+      p_min_selftimed_channel,
+      p_max_selftimed_channel,
+      p_min_random_channel,
+      p_max_random_channel,
+      p_office_id_mask);
+
+   return l_cursor;
+end cat_goes_f;      
    
 end cwms_gage;
 /
