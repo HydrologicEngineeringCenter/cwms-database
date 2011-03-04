@@ -449,8 +449,14 @@ begin
                       ||substr('-', 1, length(pl.sub_location_id))
                       ||pl.sub_location_id as basin_id
                  from at_physical_location pl,
-                      at_base_location bl
-                where bl.base_location_code = pl.base_location_code
+                      at_base_location bl,
+                      cwms_office o
+                where o.office_id like l_office_id_mask escape '\'
+                  and bl.db_office_code = o.office_code
+                  and pl.base_location_code = bl.base_location_code
+                  and upper(bl.base_location_id
+                      ||substr('-', 1, length(pl.sub_location_id))
+                      ||pl.sub_location_id) like l_parent_basin_id_mask 
              ) parent_basin
              on parent_basin.location_code = basin.parent_basin_code
 
@@ -460,20 +466,24 @@ begin
                       ||substr('-', 1, length(pl.sub_location_id))
                       ||pl.sub_location_id as stream_id
                  from at_physical_location pl,
-                      at_base_location bl
-                where bl.base_location_code = pl.base_location_code
+                      at_base_location bl,
+                      cwms_office o
+                where o.office_id like l_office_id_mask escape '\'
+                  and bl.db_office_code = o.office_code
+                  and pl.base_location_code = bl.base_location_code
+                  and upper(bl.base_location_id
+                      ||substr('-', 1, length(pl.sub_location_id))
+                      ||pl.sub_location_id) like l_primary_stream_id_mask
              ) primary_stream 
              on primary_stream.location_code = basin.primary_stream_code
              
        where ( parent_basin.basin_id like l_parent_basin_id_mask escape '\'
-               or (  parent_basin.basin_id is null -- this clause allows '%' to match null values 
-                     and l_parent_basin_id_mask = '%'
-                  )
+               or 
+               (basin.parent_basin_code is null and l_parent_basin_id_mask = '%')
              )
          and ( primary_stream.stream_id like l_primary_stream_id_mask escape '\'
-               or (  primary_stream.stream_id is null -- this clause allows '%' to match null values
-                     and l_primary_stream_id_mask = '%'
-                  )
+               or 
+               (basin.primary_stream_code is null and l_primary_stream_id_mask = '%')
              )
     order by basin.office_id,
              basin.basin_id,
