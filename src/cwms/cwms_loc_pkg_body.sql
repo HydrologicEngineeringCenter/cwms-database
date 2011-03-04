@@ -2447,27 +2447,31 @@ AS
             -- location levels --
             ---------------------
             FOR i in 1..l_location_ids.COUNT LOOP
-               cwms_level.catalog_location_levels(
-                  p_cursor                 => l_cursor,
-                  p_location_level_id_mask => l_location_ids(i)||'.*',
-                  p_office_id_mask         => p_db_office_id,
-                  p_timezone_id            => 'UTC');
-               LOOP
-                  FETCH l_cursor INTO cat_loc_lvl_rec;
-                  EXIT WHEN l_cursor%NOTFOUND;
+               for rec in
+                  (  select distinct
+                            office_id,
+                            location_level_id,
+                            level_date,
+                            attribute_id,
+                            attribute_value,
+                            attribute_unit
+                       from cwms_v_location_level
+                      where office_id = nvl(upper(trim(p_db_office_id)), cwms_util.user_office_id)
+                        and location_level_id like l_location_ids(i)||'.%' 
+                        and unit_system = 'SI'
+                  )
+               loop
                   cwms_level.delete_location_level_ex(
-                     cat_loc_lvl_rec.location_level_id,
-                     cat_loc_lvl_rec.location_level_date,
+                     rec.location_level_id,
+                     rec.level_date,
                      'UTC',
-                     cat_loc_lvl_rec.attribute_id,
-                     cat_loc_lvl_rec.attribute_value,
-                     cat_loc_lvl_rec.attribute_unit,
+                     rec.attribute_id,
+                     rec.attribute_value,
+                     rec.attribute_unit,
                      'T',
                      'T',
-                     cat_loc_lvl_rec.office_id);
-                     
-               END LOOP;
-               CLOSE l_cursor;               
+                     rec.office_id);
+               end loop;
             END LOOP;
                   
 			ELSE -- Deleting a single Sub Location --------------------------------
@@ -2545,27 +2549,31 @@ AS
             ---------------------            
             -- location levels --
             ---------------------
-            cwms_level.catalog_location_levels(
-               p_cursor                 => l_cursor,
-               p_location_level_id_mask => p_location_id||'.*',
-               p_office_id_mask         => p_db_office_id,
-               p_timezone_id            => 'UTC');
-            LOOP
-               FETCH l_cursor INTO cat_loc_lvl_rec;
-               EXIT WHEN l_cursor%NOTFOUND;
+            for rec in
+               (  select distinct
+                         office_id,
+                         location_level_id,
+                         level_date,
+                         attribute_id,
+                         attribute_value,
+                         attribute_unit
+                    from cwms_v_location_level
+                   where office_id = nvl(upper(trim(p_db_office_id)), cwms_util.user_office_id)
+                     and location_level_id like p_location_id||'.%' 
+                     and unit_system = 'SI'
+               )
+            loop
                cwms_level.delete_location_level_ex(
-                  cat_loc_lvl_rec.location_level_id,
-                  cat_loc_lvl_rec.location_level_date,
+                  rec.location_level_id,
+                  rec.level_date,
                   'UTC',
-                  cat_loc_lvl_rec.attribute_id,
-                  cat_loc_lvl_rec.attribute_value,
-                  cat_loc_lvl_rec.attribute_unit,
+                  rec.attribute_id,
+                  rec.attribute_value,
+                  rec.attribute_unit,
                   'T',
                   'T',
-                  cat_loc_lvl_rec.office_id);
-                  
-            END LOOP;
-            CLOSE l_cursor;               
+                  rec.office_id);
+            end loop;
 			END IF;
 		END IF;
       --------------------------------------------------------------
