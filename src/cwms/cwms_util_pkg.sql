@@ -449,7 +449,15 @@ AS
 										 p_unit_system 	IN VARCHAR2 DEFAULT 'SI'
 										)
 		RETURN VARCHAR2;
-      
+                  
+   function get_db_unit_code(
+      p_parameter_id in varchar2)
+      return number;
+                  
+   function get_db_unit_code(
+      p_parameter_code in number)
+      return number;
+            
    function convert_to_db_units(
       p_value        in binary_double,
       p_parameter_id in varchar2,
@@ -460,6 +468,24 @@ AS
       p_value        in binary_double,
       p_from_unit_id in varchar2,
       p_to_unit_id   in varchar2)
+   return binary_double result_cache;   
+                             
+   function convert_units(
+      p_value          in binary_double,
+      p_from_unit_code in number,
+      p_to_unit_code   in number)
+   return binary_double result_cache;   
+                             
+   function convert_units(
+      p_value          in binary_double,
+      p_from_unit_code in number,
+      p_to_unit_id     in varchar2)
+   return binary_double result_cache;   
+                             
+   function convert_units(
+      p_value        in binary_double,
+      p_from_unit_id in varchar2,
+      p_to_unit_code in number)
    return binary_double result_cache;   
 	--
 	-- sign-extends 32-bit integers so they can be retrieved by

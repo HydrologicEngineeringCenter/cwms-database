@@ -2470,6 +2470,36 @@ AS
 
 		RETURN l_default_units;
 	END;
+                  
+   function get_db_unit_code(
+      p_parameter_id in varchar2)
+      return number
+   is      
+      l_unit_code number(10);
+   begin
+      select unit_code
+        into l_unit_code
+        from cwms_base_parameter
+       where base_parameter_id = get_base_id(p_parameter_id);
+         
+      return l_unit_code;
+   end;      
+                  
+   function get_db_unit_code(
+      p_parameter_code in number)
+      return number
+   is
+      l_unit_code number(10);
+   begin
+      select bp.unit_code
+        into l_unit_code
+        from cwms_base_parameter bp,
+             at_parameter p
+       where p.parameter_code = p_parameter_code
+         and bp.base_parameter_code = p.base_parameter_code;
+         
+      return l_unit_code;
+   end;      
       
    function convert_to_db_units(
       p_value        in binary_double,
@@ -2512,6 +2542,66 @@ AS
          
       return p_value * l_factor + l_offset;         
    end;   
+                             
+   function convert_units(
+      p_value          in binary_double,
+      p_from_unit_code in number,
+      p_to_unit_code   in number)
+   return binary_double result_cache
+   is
+      l_factor binary_double;
+      l_offset binary_double;
+   begin
+      select factor,
+             offset
+        into l_factor,
+             l_offset
+        from cwms_unit_conversion
+       where from_unit_code = p_from_unit_code
+         and to_unit_code = p_to_unit_code;
+         
+      return p_value * l_factor + l_offset;         
+   end convert_units;   
+                             
+   function convert_units(
+      p_value          in binary_double,
+      p_from_unit_code in number,
+      p_to_unit_id     in varchar2)
+   return binary_double result_cache
+   is
+      l_factor binary_double;
+      l_offset binary_double;
+   begin
+      select factor,
+             offset
+        into l_factor,
+             l_offset
+        from cwms_unit_conversion
+       where from_unit_code = p_from_unit_code
+         and to_unit_id = p_to_unit_id;
+         
+      return p_value * l_factor + l_offset;         
+   end convert_units;   
+                             
+   function convert_units(
+      p_value        in binary_double,
+      p_from_unit_id in varchar2,
+      p_to_unit_code in number)
+   return binary_double result_cache
+   is
+      l_factor binary_double;
+      l_offset binary_double;
+   begin
+      select factor,
+             offset
+        into l_factor,
+             l_offset
+        from cwms_unit_conversion
+       where from_unit_id = p_from_unit_id
+         and to_unit_code = p_to_unit_code;
+         
+      return p_value * l_factor + l_offset;         
+   end convert_units;   
 
 	--
 	-- sign-extends 32-bit integers so they can be retrieved by
