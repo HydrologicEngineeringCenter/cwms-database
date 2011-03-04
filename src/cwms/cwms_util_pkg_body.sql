@@ -3361,7 +3361,32 @@ AS
       return to_number(get_xml_text(p_xml, p_path));
    end;
 
-               
+/* Formatted on 3/4/2011 7:31:44 AM (QP5 v5.163.1008.3004) */
+FUNCTION x_minus_y (p_list_1		 IN VARCHAR2,
+						  p_list_2		 IN VARCHAR2,
+						  p_separator	 IN VARCHAR2 DEFAULT NULL
+						 )
+	RETURN VARCHAR2
+IS
+	l_list_1   str_tab_t;
+	l_list_2   str_tab_t;
+	l_list_3   str_tab_t;
+BEGIN
+	l_list_1 := split_text (p_text => p_list_1, p_separator => p_separator);
+	l_list_2 := split_text (p_text => p_list_2, p_separator => p_separator);
+
+	SELECT	*
+	  BULK	COLLECT INTO l_list_3
+	  FROM	(SELECT	 *
+					FROM	 TABLE (l_list_1)
+				 MINUS
+				 SELECT	 *
+					FROM	 TABLE (l_list_2));
+
+	RETURN cwms_util.join_text (p_text_tab 	=> l_list_3,
+										 p_separator	=> p_separator
+										);
+END;
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call

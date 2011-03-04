@@ -1,4 +1,4 @@
-/* Formatted on 3/29/2010 3:04:35 PM (QP5 v5.139.911.3011) */
+/* Formatted on 3/4/2011 5:52:07 AM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE cwms_util
 AS
 	/******************************************************************************
@@ -439,17 +439,12 @@ AS
 	FUNCTION get_interval_string (p_interval IN NUMBER)
 		RETURN VARCHAR2;
 
-   function get_user_display_unit(
-      p_parameter_id in varchar2,
-      p_user_id      in varchar2 default null,
-      p_office_id    in varchar2 default null)
-   return varchar2;
    
 	FUNCTION get_default_units (p_parameter_id	IN VARCHAR2,
 										 p_unit_system 	IN VARCHAR2 DEFAULT 'SI'
 										)
 		RETURN VARCHAR2;
-                  
+      
    function get_db_unit_code(
       p_parameter_id in varchar2)
       return number;
@@ -464,11 +459,6 @@ AS
       p_unit_id      in varchar2)
    return binary_double;      
                              
-   function convert_units(
-      p_value        in binary_double,
-      p_from_unit_id in varchar2,
-      p_to_unit_id   in varchar2)
-   return binary_double result_cache;   
                              
    function convert_units(
       p_value          in binary_double,
@@ -698,12 +688,27 @@ AS
       p_path in varchar)
    return varchar2;
       
-   function get_xml_number(
-      p_xml  in xmltype,
-      p_path in varchar)
-   return number;
+	FUNCTION get_xml_number (p_xml IN XMLTYPE, p_path IN VARCHAR)
+		RETURN NUMBER;
+    --------------------------------------------------------------------------------
+    -- x_minus_y
+    --
+    -- Uses the MINUS operator between delimited list x and list y, which returns
+    -- only unique elements found in the first list and not in the second. The
+    -- returned list is delimited with the same separator used to delimit lists
+    -- x and y
+    --
+    -- Sequential delimiters in the source string result in null fields in the table,
+    -- except that if no delimiter is supplied, sequential whitespace characters are
+    -- treated as a single delimiter.
+    --
       
+	FUNCTION x_minus_y (p_list_1		 IN VARCHAR2,
+							  p_list_2		 IN VARCHAR2,
+							  p_separator	 IN VARCHAR2 DEFAULT NULL
+							 )
+		RETURN VARCHAR2;
 END cwms_util;
 /
 
-SHOW errors;
+SHOW ERRORS;
