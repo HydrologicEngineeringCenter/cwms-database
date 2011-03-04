@@ -50,7 +50,63 @@ AS
                                           l_db_office_code);
 	END;
 
-	--loc_cat_grp_rec_tab_t IS TABLE OF loc_cat_grp_rec_t
+	--loc_cat_grp_rec_tab_t IS TABLE OF loc_cat_grp_rec_t  
+   
+   function get_location_id(
+      p_location_id_or_alias varchar2,
+      p_office_id            varchar2 default null)
+      return varchar2
+   is
+      l_office_id varchar2(16);
+   begin
+      cwms_util.check_inputs(str_tab_t(p_location_id_or_alias, p_office_id));
+      l_office_id := nvl(upper(trim(p_office_id)), cwms_util.user_office_id);
+      
+      for rec in
+         (  select bl.base_location_id
+                   ||substr('-', 1, length(pl.sub_location_id))
+                   ||pl.sub_location_id as location_id
+              from at_physical_location pl,
+                   at_base_location bl,
+                   cwms_office o
+             where o.office_id = l_office_id
+               and bl.db_office_code = o.office_code
+               and pl.base_location_code = bl.base_location_code
+               and upper(bl.base_location_id) = upper(cwms_util.get_base_id(p_location_id_or_alias))
+               and nvl(upper(pl.sub_location_id), '.') = nvl(upper(cwms_util.get_sub_id(p_location_id_or_alias)), '.')
+         )
+      loop
+         return trim(rec.location_id);
+      end loop;
+      ------------------------------------------------
+      -- if we get here we didn't find the location --
+      ------------------------------------------------
+      begin
+         return get_location_id_from_alias(
+            p_alias_id  => p_location_id_or_alias,
+            p_office_id => l_office_id);
+      exception
+         when no_data_found then
+            cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id_or_alias);
+      end;
+   end get_location_id;
+
+   function get_location_id(
+      p_location_id_or_alias varchar2,
+      p_office_code          number)
+      return varchar2
+   is
+      l_office_id varchar2(16);
+   begin
+      select office_id
+        into l_office_id
+        from cwms_office
+       where office_code = p_office_code;
+       
+      return get_location_id(p_location_id_or_alias, l_office_id);       
+   end get_location_id;
+
+
 	--********************************************************************** -
 	--********************************************************************** -
 	--********************************************************************** -
@@ -99,7 +155,23 @@ AS
     --
     EXCEPTION
         WHEN NO_DATA_FOUND
-        THEN
+        THEN 
+            declare
+               l_office_id varchar2(16);           
+            begin
+               select office_id
+                 into l_office_id
+                 from cwms_office
+                where office_code = p_db_office_code;
+            
+               l_location_code := get_location_code_from_alias(
+                  p_alias_id  => p_location_id,
+                  p_office_id => l_office_id);
+                    
+               return l_location_code;                                
+            exception
+               when others then null; -- continue on to cwms_err.raise() call below
+            end;
             cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id);
         WHEN OTHERS
         THEN
@@ -5010,7 +5082,14 @@ AS
          and upper(category_id) = upper(nvl(trim(p_category_id), category_id))
          and db_office_id = nvl(upper(trim(p_office_id)), cwms_util.user_office_id); 
          
-      return l_location_id;         
+      return l_location_id;
+   exception
+      when too_many_rows then
+         cwms_err.raise(
+            'ERROR',
+            'Alias ('
+            ||p_alias_id
+            ||') matches more than one location.');               
    end get_location_id_from_alias;
          
    
