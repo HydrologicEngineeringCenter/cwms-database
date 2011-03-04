@@ -943,22 +943,26 @@ end rename_gage_sensor;
 -- procedure cat_gage_sensors
 --------------------------------------------------------------------------------
 procedure cat_gage_sensors(
-   p_sensor_catalog      out sys_refcursor,
-   p_location_id_mask    in  varchar2 default '*',
-   p_gage_id_mask        in  varchar2 default '*',
-   p_sensor_id_mask      in  varchar2 default '*',
-   p_unit_system         in  varchar2 default 'SI',
-   p_out_of_service_mask in  varchar2 default '*',
-   p_comments_mask       in  varchar2 default '*',
+   p_sensor_catalog         out sys_refcursor,
+   p_location_id_mask       in  varchar2 default '*',
+   p_gage_id_mask           in  varchar2 default '*',
+   p_sensor_id_mask         in  varchar2 default '*',
+   p_parameter_id_mask      in  varchar2 default '*',
+   p_reporting_unit_id_mask in  varchar2 default '*',
+   p_out_of_service_mask    in  varchar2 default '*',
+   p_comments_mask          in  varchar2 default '*',
+   p_unit_system            in  varchar2 default 'SI',
    p_office_id_mask      in  varchar2 default null)
 is
-   l_location_id_mask    varchar2(49);
-   l_gage_id_mask        varchar2(32);
-   l_sensor_id_mask      varchar2(32);
-   l_unit_system         varchar2(2);
-   l_out_of_service_mask varchar2(1);
-   l_comments_mask       varchar2(256);
-   l_office_id_mask      varchar2(16);
+   l_location_id_mask       varchar2(49);
+   l_gage_id_mask           varchar2(32);
+   l_sensor_id_mask         varchar2(32);
+   l_parameter_id_mask      varchar2(49);
+   l_reporting_unit_id_mask varchar2(16);
+   l_out_of_service_mask    varchar2(1);
+   l_comments_mask          varchar2(256);
+   l_office_id_mask         varchar2(16);
+   l_unit_system            varchar2(2);
 begin
    -------------------   
    -- sanity checks --
@@ -967,9 +971,11 @@ begin
       l_location_id_mask,
       l_gage_id_mask,
       l_sensor_id_mask,
-      l_unit_system,
+      l_parameter_id_mask,
+      l_reporting_unit_id_mask,
       l_out_of_service_mask,
       l_comments_mask,
+      l_unit_system,
       l_office_id_mask));
    if p_unit_system not in ('EN', 'SI') then
       cwms_err.raise(
@@ -980,12 +986,14 @@ begin
    ----------------------      
    -- set up the masks --
    ----------------------      
-   l_location_id_mask    := cwms_util.normalize_wildcards(upper(p_location_id_mask));
-   l_gage_id_mask        := cwms_util.normalize_wildcards(upper(p_gage_id_mask));
-   l_sensor_id_mask      := cwms_util.normalize_wildcards(upper(p_sensor_id_mask));
-   l_out_of_service_mask := cwms_util.normalize_wildcards(upper(p_out_of_service_mask));
-   l_comments_mask       := cwms_util.normalize_wildcards(upper(p_comments_mask));
-   l_office_id_mask      := cwms_util.normalize_wildcards(upper(nvl(p_office_id_mask, cwms_util.user_office_id)));
+   l_location_id_mask       := cwms_util.normalize_wildcards(upper(p_location_id_mask));
+   l_gage_id_mask           := cwms_util.normalize_wildcards(upper(p_gage_id_mask));
+   l_sensor_id_mask         := cwms_util.normalize_wildcards(upper(p_sensor_id_mask));
+   l_parameter_id_mask      := cwms_util.normalize_wildcards(upper(p_parameter_id_mask));
+   l_reporting_unit_id_mask := cwms_util.normalize_wildcards(upper(p_reporting_unit_id_mask));
+   l_out_of_service_mask    := cwms_util.normalize_wildcards(upper(p_out_of_service_mask));
+   l_comments_mask          := cwms_util.normalize_wildcards(upper(p_comments_mask));
+   l_office_id_mask         := cwms_util.normalize_wildcards(upper(nvl(p_office_id_mask, cwms_util.user_office_id)));
    -----------------------
    -- perform the query --
    -----------------------
@@ -1041,7 +1049,11 @@ begin
                   and gs.gage_code = g.gage_code
                   and upper(gs.sensor_id) like l_sensor_id_mask escape '\'
                   and gs.out_of_service like l_out_of_service_mask escape '\'
-                  and upper(gs.comments) like l_comments_mask escape '\'
+                  -- * matches null comments, use *? or ?* to match only non-nulls
+                  and ( upper(gs.comments) like l_comments_mask escape '\'
+                        or
+                        (gs.comments is null and l_comments_mask = '%')
+                      )
              ) sensor
              
              left outer join
@@ -1049,23 +1061,32 @@ begin
                       unit_id
                  from cwms_unit
              ) unit
-             on unit.unit_code = sensor.unit_code
-    order by office_id,
-             location_id,
-             gage_id,
-             sensor_id;                                               
+             on unit.unit_code = sensor.unit_code  
+             
+       where sensor.parameter_id like l_parameter_id_mask escape '\' 
+         -- * matches null unit id, use *? or ?* to match only non-nulls
+         and ( unit.unit_id like l_reporting_unit_id_mask escape '\'
+               or
+               (sensor.unit_code is null and l_reporting_unit_id_mask = '%')
+             )        
+    order by sensor.office_id,
+             sensor.location_id,
+             sensor.gage_id,
+             sensor.sensor_id;                                               
    
 end cat_gage_sensors;
 --------------------------------------------------------------------------------
 -- function cat_gage_sensors
 --------------------------------------------------------------------------------
 function cat_gage_sensors(
-   p_location_id_mask    in varchar2 default '*',
-   p_gage_id_mask        in varchar2 default '*',
-   p_sensor_id_mask      in varchar2 default '*',
-   p_unit_system         in varchar2 default 'SI',
-   p_out_of_service_mask in varchar2 default '*',
-   p_comments_mask       in varchar2 default '*',
+   p_location_id_mask       in varchar2 default '*',
+   p_gage_id_mask           in varchar2 default '*',
+   p_sensor_id_mask         in varchar2 default '*',
+   p_parameter_id_mask      in varchar2 default '*',
+   p_reporting_unit_id_mask in varchar2 default '*',
+   p_out_of_service_mask    in varchar2 default '*',
+   p_comments_mask          in varchar2 default '*',
+   p_unit_system            in varchar2 default 'SI',
    p_office_id_mask      in varchar2 default null)
    return sys_refcursor
 is
@@ -1073,12 +1094,13 @@ is
 begin
    cat_gage_sensors(
       l_cursor,
-      p_location_id_mask,
       p_gage_id_mask,
       p_sensor_id_mask,
-      p_unit_system,
+      p_parameter_id_mask,
+      p_reporting_unit_id_mask,
       p_out_of_service_mask,
       p_comments_mask,
+      p_unit_system,
       p_office_id_mask);
       
    return l_cursor;      

@@ -182,26 +182,30 @@ procedure rename_gage_sensor(
 -- procedure cat_gage_sensors
 --------------------------------------------------------------------------------
 procedure cat_gage_sensors(
-   p_sensor_catalog      out sys_refcursor,
-   p_location_id_mask    in  varchar2 default '*',
-   p_gage_id_mask        in  varchar2 default '*',
-   p_sensor_id_mask      in  varchar2 default '*',
-   p_unit_system         in  varchar2 default 'SI',
-   p_out_of_service_mask in  varchar2 default '*',
-   p_comments_mask       in  varchar2 default '*',
-   p_office_id_mask      in  varchar2 default null);
+   p_sensor_catalog         out sys_refcursor,
+   p_location_id_mask       in  varchar2 default '*',
+   p_gage_id_mask           in  varchar2 default '*',
+   p_sensor_id_mask         in  varchar2 default '*',
+   p_parameter_id_mask      in  varchar2 default '*',
+   p_reporting_unit_id_mask in  varchar2 default '*',
+   p_out_of_service_mask    in  varchar2 default '*',
+   p_comments_mask          in  varchar2 default '*',
+   p_unit_system            in  varchar2 default 'SI',
+   p_office_id_mask         in  varchar2 default null);
 
 --------------------------------------------------------------------------------
 -- function cat_gage_sensors
 --------------------------------------------------------------------------------
 function cat_gage_sensors(
-   p_location_id_mask    in varchar2 default '*',
-   p_gage_id_mask        in varchar2 default '*',
-   p_sensor_id_mask      in varchar2 default '*',
-   p_unit_system         in varchar2 default 'SI',
-   p_out_of_service_mask in varchar2 default '*',
-   p_comments_mask       in varchar2 default '*',
-   p_office_id_mask      in varchar2 default null)
+   p_location_id_mask       in varchar2 default '*',
+   p_gage_id_mask           in varchar2 default '*',
+   p_sensor_id_mask         in varchar2 default '*',
+   p_parameter_id_mask      in varchar2 default '*',
+   p_reporting_unit_id_mask in varchar2 default '*',
+   p_out_of_service_mask    in varchar2 default '*',
+   p_comments_mask          in varchar2 default '*',
+   p_unit_system            in varchar2 default 'SI',
+   p_office_id_mask         in varchar2 default null)
    return sys_refcursor;
 
 end cwms_gage;
