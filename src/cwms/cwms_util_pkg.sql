@@ -461,6 +461,12 @@ AS
                              
                              
    function convert_units(
+      p_value        in binary_double,
+      p_from_unit_id in varchar2,
+      p_to_unit_id   in varchar2)
+   return binary_double result_cache;   
+                             
+   function convert_units(
       p_value          in binary_double,
       p_from_unit_code in number,
       p_to_unit_code   in number)
