@@ -4083,6 +4083,15 @@ AS
 				);
 		END;
 
+            
+      for i in 1..p_loc_alias_array.count loop
+         check_alias_id(
+            p_loc_alias_array(i).loc_alias_id, 
+            p_loc_alias_array(i).location_id, 
+            l_db_office_id);
+         null;  
+      end loop; 
+        
 		MERGE INTO	 at_loc_group_assignment a
 			  USING	 (SELECT   get_location_code (l_db_office_id,
 																plaa.location_id
@@ -4162,6 +4171,14 @@ AS
 							 );
 	END;
 
+            
+        for i in 1..p_loc_alias_array.count loop
+           check_alias_id(
+              p_loc_alias_array(i).loc_alias_id, 
+              p_loc_alias_array(i).location_id, 
+              l_db_office_id);  
+        end loop; 
+        
       MERGE INTO at_loc_group_assignment a
          USING (SELECT get_location_code (l_db_office_id,
                                           plaa.location_id
@@ -4248,7 +4265,14 @@ AS
                     || ' category.'
                 );
         END;
-
+            
+        for i in 1..p_loc_alias_array.count loop
+           check_alias_id(
+              p_loc_alias_array(i).loc_alias_id, 
+              p_loc_alias_array(i).location_id, 
+              l_db_office_id);  
+        end loop; 
+        
         MERGE INTO	 at_loc_group_assignment a
               USING	 (SELECT   get_location_code (
                                           p_db_office_id	 => l_db_office_id,
@@ -5073,23 +5097,28 @@ AS
       -----------------------------------------
       -- retrieve and return the location id --
       -----------------------------------------
-      select distinct
-             location_id
-        into l_location_id
-        from cwms_v_loc_grp_assgn
-       where upper(alias_id) = upper(trim(p_alias_id))
-         and upper(group_id) = upper(nvl(trim(p_group_id), group_id)) 
-         and upper(category_id) = upper(nvl(trim(p_category_id), category_id))
-         and db_office_id = nvl(upper(trim(p_office_id)), cwms_util.user_office_id); 
-         
+      begin
+         select distinct
+                location_id
+           into l_location_id
+           from cwms_v_loc_grp_assgn
+          where upper(alias_id) = upper(trim(p_alias_id))
+            and upper(group_id) = upper(nvl(trim(p_group_id), group_id)) 
+            and upper(category_id) = upper(nvl(trim(p_category_id), category_id))
+            and db_office_id = nvl(upper(trim(p_office_id)), cwms_util.user_office_id); 
+      exception
+         when no_data_found then
+            null;
+            
+         when too_many_rows then
+            cwms_err.raise(
+               'ERROR',
+               'Alias ('
+               ||p_alias_id
+               ||') matches more than one location.');                 
+      end;               
+            
       return l_location_id;
-   exception
-      when too_many_rows then
-         cwms_err.raise(
-            'ERROR',
-            'Alias ('
-            ||p_alias_id
-            ||') matches more than one location.');               
    end get_location_id_from_alias;
          
    
@@ -5110,20 +5139,80 @@ AS
          p_group_id,
          p_category_id,
          p_office_id));
-      -----------------------------------------
-      -- retrieve and return the location id --
-      -----------------------------------------
-      select distinct
-             location_code
-        into l_location_code
-        from cwms_v_loc_grp_assgn
-       where upper(alias_id) = upper(trim(p_alias_id))
-         and upper(group_id) = upper(nvl(trim(p_group_id), group_id)) 
-         and upper(category_id) = upper(nvl(trim(p_category_id), category_id))
-         and db_office_id = nvl(upper(trim(p_office_id)), cwms_util.user_office_id); 
-         
+      -------------------------------------------
+      -- retrieve and return the location code --
+      -------------------------------------------
+      begin
+         select distinct
+                location_code
+           into l_location_code
+           from cwms_v_loc_grp_assgn
+          where upper(alias_id) = upper(trim(p_alias_id))
+            and upper(group_id) = upper(nvl(trim(p_group_id), group_id)) 
+            and upper(category_id) = upper(nvl(trim(p_category_id), category_id))
+            and db_office_id = nvl(upper(trim(p_office_id)), cwms_util.user_office_id); 
+      exception
+         when no_data_found then
+            null;
+            
+         when too_many_rows then
+            cwms_err.raise(
+               'ERROR',
+               'Alias ('
+               ||p_alias_id
+               ||') matches more than one location.');                 
+      end;
+      
       return l_location_code;         
    end get_location_code_from_alias;
+   
+   procedure check_alias_id(
+      p_alias_id    in varchar2,
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+   is
+      l_location_id varchar2(49);
+      l_office_id   varchar2(16);
+      l_multiple_ids boolean;
+   begin
+      cwms_util.check_inputs(str_tab_t(
+         p_alias_id,
+         p_location_id,
+         p_office_id));
+     l_office_id := nvl(upper(trim(p_office_id)), cwms_util.user_office_id);         
+      begin
+         l_location_id  := get_location_id_from_alias(p_alias_id, null, null, p_office_id);
+         l_multiple_ids := l_location_id is not null and upper(l_location_id) != upper(p_location_id);
+      exception
+         when too_many_rows then
+            l_multiple_ids := true;
+      end;
+      if l_multiple_ids then
+         if not cwms_util.is_true(cwms_properties.get_property(
+            'CWMSDB',
+            'Allow_multiple_locations_for_alias', 
+            'F', 
+            p_office_id))
+         then
+            cwms_err.raise(
+               'ERROR',
+               'Alias ('||p_alias_id||') would reference multiple locations.  '
+               ||'If you want to allow this, set the CWMSDB/Allow_multiple_locations_for_alias '
+               ||'property to ''T'' for office id '||l_office_id);
+         end if;
+      end if;
+   end check_alias_id;      
+   
+   function check_alias_id_f(
+      p_alias_id    in varchar2,
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2
+   is
+   begin
+      check_alias_id(p_alias_id, p_location_id, p_office_id);
+      return p_alias_id;               
+   end check_alias_id_f;      
       
 END cwms_loc;
 /

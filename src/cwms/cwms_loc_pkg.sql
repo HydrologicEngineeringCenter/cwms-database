@@ -660,6 +660,18 @@ AS
       p_category_id in varchar2 default null,
       p_office_id   in varchar2 default null)
       return number;
+   
+   procedure check_alias_id(
+      p_alias_id    in varchar2,
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null);      
+   
+   function check_alias_id_f(
+      p_alias_id    in varchar2,
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2;
+            
 END cwms_loc;
 /
 show errors;
