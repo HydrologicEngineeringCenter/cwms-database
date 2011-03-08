@@ -74,6 +74,17 @@ AS
 			:= STANDARD.TO_TIMESTAMP ('1970/01/01/ 00:00:00',
 											  'yyyy/mm/dd hh24:mi:ss'
 											 ) ;
+                                  
+   ------------------------------------
+   -- mathematical expression tokens --
+   ------------------------------------
+   expression_constants str_tab_t := str_tab_t('E','PI');
+                                     
+   expression_operators str_tab_t := str_tab_t('+','-','*','/','//','%','^');
+
+   expression_functions str_tab_t := str_tab_t(
+      'ABS','ACOS','ASIN','ATAN','CEIL','COS','EXP','FLOOR',
+      'INV','LN','LOG','NEG','ROUND','SIGN','SIN','SQRT','TAN','TRUNC');
 
 	-- table of rows with string fields
 	TYPE cat_unit_rec_t IS RECORD (unit_id VARCHAR2 (16));
@@ -517,7 +528,11 @@ AS
    function parse_odbc_ts_or_d_string(
       p_odbc_str in varchar2)
       return date;
-   
+
+   function is_expression_constant(p_token in varchar2) return boolean;   
+   function is_expression_operator(p_token in varchar2) return boolean;   
+   function is_expression_function(p_token in varchar2) return boolean;
+      
    -----------------------------------------------------------------------------
    -- FUNCTION tokenize_algebraic
    -- 
@@ -560,6 +575,30 @@ AS
    -----------------------------------------------------------------------------
    function tokenize_RPN(
       p_RPN_expr  in varchar2)
+      return str_tab_t result_cache;
+
+   -----------------------------------------------------------------------------
+   -- FUNCTION tokenize_expression
+   -- 
+   -- Returns a table of RPN tokens for a specified algebraic or RPN expression
+   --
+   -- The expression is not case sensitive
+   --
+   -- The operators supported are +, -, *, /, //, %, and ^
+   --
+   -- The constants supported are pi and e
+   --
+   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
+   --                             ln, log, sign, sin, tan, trunc
+   --
+   -- Standard operator precedence (order of operations) applies and can be
+   -- overridden by parentheses
+   --
+   -- All numbers, arguments and operators must be separated by whitespace,
+   -- except than no space is required adjacent to parentheses
+   -----------------------------------------------------------------------------
+   function tokenize_expression(      
+      p_expr in varchar2)
       return str_tab_t result_cache;
       
    -----------------------------------------------------------------------------
@@ -636,6 +675,38 @@ AS
    -----------------------------------------------------------------------------
    function eval_RPN_expression(
       p_RPN_expr    in varchar2,
+      p_args        in double_tab_t,
+      p_args_offset in integer default 0)
+      return number;      
+      
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_expression
+   -- 
+   -- Returns the result of evaluating an algebraic or RPN expression against 
+   -- specified arguments
+   --
+   -- The expression is not case sensitive
+   --
+   -- The operators supported are +, -, *, /, //, %, and ^
+   --
+   -- The constants supported are pi and e
+   --
+   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
+   --                             ln, log, sign, sin, tan, trunc
+   --
+   -- Standard operator precedence (order of operations) applies and can be
+   -- overridden by parentheses
+   --
+   -- All numbers, arguments and operators must be separated by whitespace,
+   -- except than no space is required adjacent to parentheses
+   --
+   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
+   -- are accepted
+   --
+   -- p_args_offset is the offset into the args table for arg1
+   -----------------------------------------------------------------------------
+   function eval_expression(
+      p_expr        in varchar2,
       p_args        in double_tab_t,
       p_args_offset in integer default 0)
       return number;      
