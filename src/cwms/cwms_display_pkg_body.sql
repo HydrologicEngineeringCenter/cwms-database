@@ -789,6 +789,138 @@ begin
    return l_cursor;      
 end catalog_unit_f;
 
+--------------------------------------------------------------------------------
+-- procedure retrieve_status_indicators
+--------------------------------------------------------------------------------
+procedure retrieve_status_indicators(
+   p_indicators   out tsv_array,
+   p_tsid         in  varchar2,
+   p_level_id     in  varchar2,
+   p_indicator_id in  varchar2,
+   p_start_time   in  date,
+   p_end_time     in  date,
+   p_time_zone    in  varchar2 default 'UTC',
+   p_expression   in  varchar2 default null,
+   p_office_id    in  varchar2 default null)
+is
+   type l_cursor_rec_t is record (
+      indicator_id     varchar2(423),
+      attribute_id     varchar2(83),
+      attribute_value  number,
+      attribute_units  varchar2(16),
+      indicator_values ztsv_array);  
+
+   l_cursor sys_refcursor;
+   l_rec    l_cursor_rec_t;
+   l_tokens str_tab_t;   
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_tsid,
+      p_level_id,
+      p_indicator_id,
+      p_time_zone,
+      p_expression,
+      p_office_id));
+   if p_tsid is null then
+      cwms_err.raise(
+         'ERROR',
+         'Time series identifier must not be null.');
+   end if;
+   if p_level_id is null then
+      cwms_err.raise(
+         'ERROR',
+         'Specified level identifier must not be null.');
+   end if;
+   if p_indicator_id is null then
+      cwms_err.raise(
+         'ERROR',
+         'Level indicator identifier must not be null.');
+   end if;
+   if p_start_time is null then
+      cwms_err.raise(
+         'ERROR',
+         'Start time must not be null.');
+   end if;
+   ---------------------------------------      
+   -- retrieve the indicator max values --
+   ---------------------------------------      
+   cwms_level.get_level_indicator_max_values(
+      p_cursor               => l_cursor,
+      p_tsid                 => p_tsid,
+      p_start_time           => p_start_time,
+      p_end_time             => p_end_time,
+      p_time_zone            => p_time_zone,
+      p_specified_level_mask => p_level_id,
+      p_indicator_id_mask    => p_indicator_id,
+      p_office_id            => p_office_id);
+   loop
+      fetch l_cursor into l_rec;
+      exit when l_cursor%notfound; 
+      if l_rec.attribute_id is null then
+         p_indicators := tsv_array();
+         p_indicators.extend(l_rec.indicator_values.count);
+         for i in 1..l_rec.indicator_values.count loop
+            p_indicators(i).date_time    := from_tz(cast(l_rec.indicator_values(i).date_time as timestamp), p_time_zone);
+            p_indicators(i).value        := l_rec.indicator_values(i).value;
+            p_indicators(i).quality_code := l_rec.indicator_values(i).quality_code;
+         end loop;
+         exit;
+      end if;
+   end loop;
+   close l_cursor;
+   ---------------------------------------------------      
+   -- modify the indicator values by the expression --
+   ---------------------------------------------------
+   if p_expression is not null then
+      -------------------------------
+      -- tokenize algebraic or RPN --
+      -------------------------------
+      l_tokens := cwms_util.tokenize_expression(p_expression);
+      --------------------------------------------------
+      -- apply the expression to each indicator value --
+      --------------------------------------------------
+      for i in 1..p_indicators.count loop
+         p_indicators(i).value := cwms_util.eval_tokenized_expression(
+            l_tokens,
+            double_tab_t(p_indicators(i).value));
+      end loop;
+   end if;
+         
+end retrieve_status_indicators;   
+
+--------------------------------------------------------------------------------
+-- function retrieve_status_indicators_f
+--------------------------------------------------------------------------------
+function retrieve_status_indicators_f(
+   p_tsid         in varchar2,
+   p_level_id     in varchar2,
+   p_indicator_id in varchar2,
+   p_start_time   in date,
+   p_end_time     in date,
+   p_time_zone    in varchar2 default 'UTC',
+   p_expression   in varchar2 default null,
+   p_office_id    in varchar2 default null)
+   return tsv_array
+is
+   l_indicators tsv_array;
+begin
+   retrieve_status_indicators(
+      l_indicators,
+      p_tsid,
+      p_level_id,
+      p_indicator_id,
+      p_start_time,
+      p_end_time,
+      p_time_zone,
+      p_expression,
+      p_office_id);
+      
+   return l_indicators;      
+end retrieve_status_indicators_f;   
+
 end cwms_display;
 /
 show errors;
