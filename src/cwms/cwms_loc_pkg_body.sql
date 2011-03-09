@@ -2490,6 +2490,22 @@ AS
             --------------------------
             DELETE FROM   at_geographic_location
                   WHERE   location_code  IN (select * from table(l_location_codes));
+            -----------
+            -- urls --
+            -----------
+            DELETE FROM   at_location_url
+                  WHERE   location_code IN (select * from table(l_location_codes));
+            -------------------
+            -- display scale --
+            -------------------
+            DELETE FROM   at_display_scale
+                  WHERE   location_code IN (select * from table(l_location_codes));
+            ---------------
+            -- forecasts --
+            ---------------
+            DELETE FROM   at_forecast
+                  WHERE   location_code IN (select * from table(l_location_codes))
+                     OR   forecast_location IN (select * from table(l_location_codes));
             --------------                  
             -- projects --
             --------------
@@ -2597,6 +2613,32 @@ AS
                   
             DELETE FROM   at_gage
                   WHERE   gage_location_code = l_location_code;
+            ---------------
+            -- documents --
+            ---------------
+            DELETE FROM   at_document
+                  WHERE   document_location_code = l_location_code;
+            --------------------------                  
+            -- geographic locations --
+            --------------------------
+            DELETE FROM   at_geographic_location
+                  WHERE   location_code  = l_location_code;
+            -----------
+            -- urls --
+            -----------
+            DELETE FROM   at_location_url
+                  WHERE   location_code = l_location_code;
+            -------------------
+            -- display scale --
+            -------------------
+            DELETE FROM   at_display_scale
+                  WHERE   location_code = l_location_code;
+            ---------------
+            -- forecasts --
+            ---------------
+            DELETE FROM   at_forecast
+                  WHERE   location_code= l_location_code
+                     OR   forecast_location = l_location_code;
             --------------                  
             -- projects --
             --------------
@@ -5453,7 +5495,7 @@ AS
       end;
    end rename_url;
       
-   procedure catalog_urls(
+   procedure cat_urls(
       p_url_catalog      out sys_refcursor,
       p_location_id_mask in  varchar2 default '*',
       p_url_id_mask      in  varchar2 default '*',
@@ -5513,9 +5555,9 @@ AS
                 bl.base_location_id,
                 pl.sub_location_id nulls first,
                 lu.url_id;
-   end catalog_urls;
+   end cat_urls;
       
-   function catalog_urls_f(
+   function cat_urls_f(
       p_location_id_mask in  varchar2 default '*',
       p_url_id_mask      in  varchar2 default '*',
       p_url_address_mask in  varchar2 default '*',
@@ -5525,7 +5567,7 @@ AS
    is
       l_cursor sys_refcursor;
    begin
-      catalog_urls(
+      cat_urls(
          l_cursor,
          p_location_id_mask,
          p_url_id_mask,
@@ -5534,7 +5576,7 @@ AS
          p_office_id_mask);
          
       return l_cursor;         
-   end catalog_urls_f;
+   end cat_urls_f;
       
 END cwms_loc;
 /

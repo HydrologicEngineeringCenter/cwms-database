@@ -707,7 +707,7 @@ AS
    --    url_address varchar2(1024)
    --    url_title   varchar2(256)
    --   
-   procedure catalog_urls(
+   procedure cat_urls(
       p_url_catalog      out sys_refcursor,
       p_location_id_mask in  varchar2 default '*',
       p_url_id_mask      in  varchar2 default '*',
@@ -723,7 +723,7 @@ AS
    --    url_address varchar2(1024)
    --    url_title   varchar2(256)
    --   
-   function catalog_urls_f(
+   function cat_urls_f(
       p_location_id_mask in  varchar2 default '*',
       p_url_id_mask      in  varchar2 default '*',
       p_url_address_mask in  varchar2 default '*',
