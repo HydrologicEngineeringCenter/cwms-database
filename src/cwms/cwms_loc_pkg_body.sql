@@ -5214,6 +5214,328 @@ AS
       return p_alias_id;               
    end check_alias_id_f;      
       
+   procedure store_url(
+      p_location_id    in varchar2,
+      p_url_id         in varchar2,
+      p_url_address    in varchar2,
+      p_fail_if_exists in varchar2,
+      p_ignore_nulls   in varchar2,
+      p_url_title      in varchar2 default null,
+      p_office_id      in varchar2 default null)
+   is
+      l_fail_if_exists boolean;
+      l_ignore_nulls   boolean;
+      l_exists         boolean;
+      l_rec            at_location_url%rowtype;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_location_id,
+         p_url_id,
+         p_url_address,
+         p_fail_if_exists,
+         p_ignore_nulls,
+         p_url_title,
+         p_office_id));
+      if p_location_id is null then
+         cwms_err.raise(
+            'ERROR',
+            'Location identifier must not be null.');
+      end if;         
+      if p_url_id is null then
+         cwms_err.raise(
+            'ERROR',
+            'URL identifier must not be null.');
+      end if;         
+      ------------------------------         
+      -- see if the record exists --
+      ------------------------------
+      l_rec.location_code := get_location_code(p_office_id, p_location_id);
+      l_rec.url_id := p_url_id;
+      begin
+         select *
+           into l_rec
+           from at_location_url
+          where location_code = l_rec.location_code
+            and url_id = l_rec.url_id;
+            
+         l_exists := true;                 
+      exception
+         when no_data_found then
+            l_exists := false;
+      end;
+      if l_exists then
+         if l_fail_if_exists then
+            cwms_err.raise(
+               'ITEM_ALREADY_EXISTS',
+               'CWMS Location URL',
+               nvl(upper(p_office_id), cwms_util.user_office_id)
+               ||'/'
+               ||p_location_id
+               ||'/'
+               ||p_url_id);
+         end if;
+      else
+         if p_url_address is null then
+            cwms_err.raise(
+               'ERROR',
+               'URL address must not be null on new record.');
+         end if;
+      end if;
+      -------------------------         
+      -- populate the record --
+      -------------------------
+      if p_url_address is not null then
+         l_rec.url_address := p_url_address;
+      end if;
+      if p_url_title is not null or not l_ignore_nulls then
+         l_rec.url_title := p_url_title;
+      end if;
+      ---------------------------------         
+      -- insert or update the record --
+      ---------------------------------
+      if l_exists then
+         update at_location_url
+            set row = l_rec
+          where location_code = l_rec.location_code
+            and url_id = l_rec.url_id;
+      else
+         insert
+           into at_location_url
+         values l_rec;
+      end if;         
+   end store_url;      
+      
+   procedure retrieve_url(
+      p_url_address    out varchar2,
+      p_url_title      out varchar2,
+      p_location_id    in  varchar2,
+      p_url_id         in  varchar2,
+      p_office_id      in  varchar2 default null)
+   is
+      l_rec at_location_url%rowtype;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_location_id,
+         p_url_id,
+         p_office_id));
+      if p_location_id is null then
+         cwms_err.raise(
+            'ERROR',
+            'Location identifier must not be null.');
+      end if;         
+      if p_url_id is null then
+         cwms_err.raise(
+            'ERROR',
+            'URL identifier must not be null.');
+      end if;
+      -------------------------         
+      -- retrieve the record --
+      -------------------------         
+      l_rec.location_code := get_location_code(p_office_id, p_location_id);
+      l_rec.url_id := p_url_id;
+      begin
+         select *
+           into l_rec
+           from at_location_url
+          where location_code = l_rec.location_code
+            and url_id = l_rec.url_id;
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'CWMS Location URL',
+               nvl(upper(p_office_id), cwms_util.user_office_id)
+               ||'/'
+               ||p_location_id
+               ||'/'
+               ||p_url_id);
+      end;
+      ---------------------------
+      -- set the out variables --
+      ---------------------------
+      p_url_address := l_rec.url_address;
+      p_url_title   := l_rec.url_title;
+   end retrieve_url;
+      
+   procedure delete_url(
+      p_location_id in varchar2,
+      p_url_id      in varchar2,-- NULL = all urls
+      p_office_id   in varchar2 default null)
+   is
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_location_id,
+         p_url_id,
+         p_office_id));
+      if p_location_id is null then
+         cwms_err.raise(
+            'ERROR',
+            'Location identifier must not be null.');
+      end if;
+      ---------------------          
+      -- delete the urls --
+      ---------------------   
+      begin
+         delete
+           from at_location_url
+          where location_code = get_location_code(p_office_id, p_location_id)
+            and url_id = nvl(p_url_id, url_id);          
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'CWMS Location URL',
+               nvl(upper(p_office_id), cwms_util.user_office_id)
+               ||'/'
+               ||p_location_id
+               ||'/'
+               ||nvl(p_url_id, '<any>'));
+      end;
+   end delete_url;
+      
+   procedure rename_url(
+      p_location_id in varchar2,
+      p_old_url_id  in varchar2,
+      p_new_url_id  in varchar2,
+      p_office_id   in varchar2 default null)
+   is
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_location_id,
+         p_old_url_id,
+         p_new_url_id,
+         p_office_id));
+      if p_location_id is null then
+         cwms_err.raise(
+            'ERROR',
+            'Location identifier must not be null.');
+      end if;         
+      if p_old_url_id is null then
+         cwms_err.raise(
+            'ERROR',
+            'Existing URL identifier must not be null.');
+      end if;
+      if p_new_url_id is null then
+         cwms_err.raise(
+            'ERROR',
+            'New URL identifier must not be null.');
+      end if;
+      --------------------
+      -- rename the url --
+      --------------------
+      begin
+         update at_location_url
+            set url_id = p_new_url_id          
+          where location_code = get_location_code(p_office_id, p_location_id)
+            and url_id = p_old_url_id;          
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'CWMS Location URL',
+               nvl(upper(p_office_id), cwms_util.user_office_id)
+               ||'/'
+               ||p_location_id
+               ||'/'
+               ||p_old_url_id);
+      end;
+   end rename_url;
+      
+   procedure catalog_urls(
+      p_url_catalog      out sys_refcursor,
+      p_location_id_mask in  varchar2 default '*',
+      p_url_id_mask      in  varchar2 default '*',
+      p_url_address_mask in  varchar2 default '*',
+      p_url_title_mask   in  varchar2 default '*',
+      p_office_id_mask   in  varchar2 default null)
+   is
+      l_location_id_mask varchar2(49);
+      l_url_id_mask      varchar2(32);
+      l_url_address_mask varchar2(1024);
+      l_url_title_mask   varchar2(256);
+      l_office_id_mask   varchar2(16);
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_location_id_mask,
+         p_url_id_mask,
+         p_url_address_mask,
+         p_url_title_mask,
+         p_office_id_mask));
+      ----------------------
+      -- set up the masks --
+      ----------------------         
+      l_location_id_mask := cwms_util.normalize_wildcards(upper(p_location_id_mask));
+      l_url_id_mask      := cwms_util.normalize_wildcards(upper(p_url_id_mask));
+      l_url_address_mask := cwms_util.normalize_wildcards(upper(p_url_address_mask));
+      l_url_title_mask   := cwms_util.normalize_wildcards(upper(p_url_title_mask));
+      l_office_id_mask   := cwms_util.normalize_wildcards(upper(nvl(p_url_address_mask, cwms_util.user_office_id)));
+      -----------------------
+      -- perform the query --
+      -----------------------
+      open p_url_catalog for
+         select o.office_id,
+                bl.base_location_id
+                ||substr('-', 1, length(pl.sub_location_id))
+                ||pl.sub_location_id as location_id,
+                lu.url_id,
+                lu.url_address,
+                lu.url_title
+           from at_location_url lu,
+                at_physical_location pl,
+                at_base_location bl,
+                cwms_office o
+          where o.office_id like l_office_id_mask escape '\'
+            and bl.db_office_code = o.office_code
+            and pl.base_location_code = bl.base_location_code
+            and upper(bl.base_location_id
+                ||substr('-', 1, length(pl.sub_location_id))
+                ||pl.sub_location_id) like l_location_id_mask escape '\'
+            and lu.location_code = pl.location_code
+            and upper(lu.url_id) like l_url_id_mask escape '\'
+            and upper(lu.url_address) like l_url_address_mask escape '\'
+            and upper(lu.url_title) like l_url_title_mask escape '\'
+       order by o.office_id,
+                bl.base_location_id,
+                pl.sub_location_id nulls first,
+                lu.url_id;
+   end catalog_urls;
+      
+   function catalog_urls_f(
+      p_location_id_mask in  varchar2 default '*',
+      p_url_id_mask      in  varchar2 default '*',
+      p_url_address_mask in  varchar2 default '*',
+      p_url_title_mask   in  varchar2 default '*',
+      p_office_id_mask   in  varchar2 default null)
+      return sys_refcursor
+   is
+      l_cursor sys_refcursor;
+   begin
+      catalog_urls(
+         l_cursor,
+         p_location_id_mask,
+         p_url_id_mask,
+         p_url_address_mask,
+         p_url_title_mask,
+         p_office_id_mask);
+         
+      return l_cursor;         
+   end catalog_urls_f;
+      
 END cwms_loc;
 /
 show errors

@@ -671,6 +671,65 @@ AS
       p_location_id in varchar2,
       p_office_id   in varchar2 default null)
       return varchar2;
+      
+   procedure store_url(
+      p_location_id    in varchar2,
+      p_url_id         in varchar2,
+      p_url_address    in varchar2,
+      p_fail_if_exists in varchar2,
+      p_ignore_nulls   in varchar2,
+      p_url_title      in varchar2 default null,
+      p_office_id      in varchar2 default null);
+      
+   procedure retrieve_url(
+      p_url_address    out varchar2,
+      p_url_title      out varchar2,
+      p_location_id    in  varchar2,
+      p_url_id         in  varchar2,
+      p_office_id      in  varchar2 default null);
+      
+   procedure delete_url(
+      p_location_id in varchar2,
+      p_url_id      in varchar2,-- NULL = all urls
+      p_office_id   in varchar2 default null);
+      
+   procedure rename_url(
+      p_location_id in varchar2,
+      p_old_url_id  in varchar2,
+      p_new_url_id  in varchar2,
+      p_office_id   in varchar2 default null);
+
+   -- cursor contains:
+   --
+   --    office_id   varchar2(16)   sort column 1
+   --    location_id varchar2(49)   sort column 2
+   --    url_id      varchar2(32)   sort column 3
+   --    url_address varchar2(1024)
+   --    url_title   varchar2(256)
+   --   
+   procedure catalog_urls(
+      p_url_catalog      out sys_refcursor,
+      p_location_id_mask in  varchar2 default '*',
+      p_url_id_mask      in  varchar2 default '*',
+      p_url_address_mask in  varchar2 default '*',
+      p_url_title_mask   in  varchar2 default '*',
+      p_office_id_mask   in  varchar2 default null);
+      
+   -- cursor contains:
+   --
+   --    office_id   varchar2(16)   sort column 1
+   --    location_id varchar2(49)   sort column 2
+   --    url_id      varchar2(32)   sort column 3
+   --    url_address varchar2(1024)
+   --    url_title   varchar2(256)
+   --   
+   function catalog_urls_f(
+      p_location_id_mask in  varchar2 default '*',
+      p_url_id_mask      in  varchar2 default '*',
+      p_url_address_mask in  varchar2 default '*',
+      p_url_title_mask   in  varchar2 default '*',
+      p_office_id_mask   in  varchar2 default null)
+      return sys_refcursor;
             
 END cwms_loc;
 /
