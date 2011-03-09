@@ -1189,7 +1189,7 @@ begin
 end delete_specified_level;   
             
 --------------------------------------------------------------------------------
--- PROCEDURE catalog_specified_levels
+-- PROCEDURE cat_specified_levels
 --          
 -- The cursor returned by this routine contains three fields:
 --    1 : office_id          varchar(16)
@@ -1199,7 +1199,7 @@ end delete_specified_level;
 -- Calling this routine with no parameters returns all specified
 -- levels for the calling user's office.
 --------------------------------------------------------------------------------
-procedure catalog_specified_levels(
+procedure cat_specified_levels(
    p_level_cursor   out sys_refcursor,
    p_level_id_mask  in  varchar2,
    p_office_id_mask in  varchar2 default null)
@@ -1225,10 +1225,10 @@ begin
          where upper(o.office_id) like l_office_id_mask
            and l.office_code = o.office_code
            and upper(l.specified_level_id) like l_level_id_mask;
-end catalog_specified_levels;
+end cat_specified_levels;
             
 --------------------------------------------------------------------------------
--- FUNCTION catalog_specified_levels
+-- FUNCTION cat_specified_levels
 --          
 -- The cursor returned by this routine contains three fields:
 --    1 : office_id          varchar(16)
@@ -1238,20 +1238,20 @@ end catalog_specified_levels;
 -- Calling this routine with no parameters returns all specified
 -- levels for the calling user's office.
 --------------------------------------------------------------------------------
-function catalog_specified_levels(
+function cat_specified_levels(
    p_level_id_mask  in  varchar2,
    p_office_id_mask in  varchar2 default null)
    return sys_refcursor
 is          
    l_level_cursor sys_refcursor;
 begin       
-   catalog_specified_levels(
+   cat_specified_levels(
       l_level_cursor,
       p_level_id_mask,
       p_office_id_mask);
             
    return l_level_cursor;
-end catalog_specified_levels;
+end cat_specified_levels;
             
 --------------------------------------------------------------------------------
 -- PROCEDURE create_location_level
@@ -4237,7 +4237,7 @@ begin
 end delete_location_level_ex;
             
 --------------------------------------------------------------------------------
--- PROCEDURE catalog_location_levels
+-- PROCEDURE cat_location_levels
 --
 -- in this procedure SQL- (%, _) or glob-style (*, ?) wildcards can be used
 -- in masks, and all masks are case insensitive
@@ -4285,7 +4285,7 @@ end delete_location_level_ex;
 -- Calling this routine with no parameters returns all specified
 -- levels for the calling user's office.
 --------------------------------------------------------------------------------
-procedure catalog_location_levels(
+procedure cat_location_levels(
    p_cursor                 out sys_refcursor,
    p_location_level_id_mask in  varchar2 default '*',
    p_attribute_id_mask      in  varchar2 default '*',
@@ -4490,7 +4490,7 @@ begin
         l_attr_duration_mask,
         p_unit_system;
         
-end catalog_location_levels;   
+end cat_location_levels;   
             
 --------------------------------------------------------------------------------
 -- FUNCTION get_loc_lvl_indicator_code

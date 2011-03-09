@@ -71,7 +71,7 @@ procedure delete_scale_limits(
    p_office_id      in varchar2 default null);
 
 --------------------------------------------------------------------------------
--- procedure catalog_scale_limits
+-- procedure cat_scale_limits
 --
 -- p_limits_catalog
 --    cursor with catalog records that match input with the following fields,
@@ -85,7 +85,7 @@ procedure delete_scale_limits(
 --    scale_max     number
 --
 --------------------------------------------------------------------------------
-procedure catalog_scale_limits(
+procedure cat_scale_limits(
    p_limits_catalog    out sys_refcursor,
    p_location_id_mask  in  varchar2 default '*',
    p_parameter_id_mask in  varchar2 default '*', 
@@ -93,7 +93,7 @@ procedure catalog_scale_limits(
    p_office_id_mask    in  varchar2 default null);
 
 --------------------------------------------------------------------------------
--- function catalog_scale_limits_f
+-- function cat_scale_limits_f
 --
 -- returned cursor contains records that match input with the following fields,
 -- sorted by the first 3
@@ -106,7 +106,7 @@ procedure catalog_scale_limits(
 --    scale_max     number
 --
 --------------------------------------------------------------------------------
-function catalog_scale_limits_f(
+function cat_scale_limits_f(
    p_location_id_mask  in  varchar2 default '*',
    p_parameter_id_mask in  varchar2 default '*', 
    p_unit_id_mask      in  varchar2 default '*',
@@ -146,7 +146,7 @@ procedure delete_unit(
    p_office_id      in varchar2 default null);
 
 --------------------------------------------------------------------------------
--- procedure catalog_unit
+-- procedure cat_unit
 --
 -- p_unit_catalog
 --    cursor with catalog records that match input with the following fields,
@@ -158,14 +158,14 @@ procedure delete_unit(
 --    unit_id       varchar2(16)
 --
 --------------------------------------------------------------------------------
-procedure catalog_unit(
+procedure cat_unit(
    p_unit_catalog      out sys_refcursor,
    p_parameter_id_mask in  varchar2 default '*',
    p_unit_system_mask  in  varchar2 default '*',
    p_office_id_mask    in  varchar2 default null);
 
 --------------------------------------------------------------------------------
--- function catalog_unit_f
+-- function cat_unit_f
 --
 -- returned cursor contains records that match input with the following fields,
 -- sorted by the first 3
@@ -176,7 +176,7 @@ procedure catalog_unit(
 --    unit_id       varchar2(16)
 --
 --------------------------------------------------------------------------------
-function catalog_unit_f(
+function cat_unit_f(
    p_parameter_id_mask in varchar2 default '*',
    p_unit_system_mask  in varchar2 default '*',
    p_office_id_mask    in varchar2 default null)

@@ -404,9 +404,9 @@ begin
 end delete_scale_limits;
 
 --------------------------------------------------------------------------------
--- procedure catalog_scale_limits
+-- procedure cat_scale_limits
 --------------------------------------------------------------------------------
-procedure catalog_scale_limits(
+procedure cat_scale_limits(
    p_limits_catalog    out sys_refcursor,
    p_location_id_mask  in  varchar2 default '*',
    p_parameter_id_mask in  varchar2 default '*', 
@@ -475,12 +475,12 @@ begin
              p.sub_parameter_id nulls first,
              u.unit_id;         
    
-end catalog_scale_limits;
+end cat_scale_limits;
 
 --------------------------------------------------------------------------------
--- function catalog_scale_limits_f
+-- function cat_scale_limits_f
 --------------------------------------------------------------------------------
-function catalog_scale_limits_f(
+function cat_scale_limits_f(
    p_location_id_mask  in  varchar2 default '*',
    p_parameter_id_mask in  varchar2 default '*', 
    p_unit_id_mask      in  varchar2 default '*',
@@ -489,7 +489,7 @@ function catalog_scale_limits_f(
 is
    l_cursor sys_refcursor;
 begin
-   catalog_scale_limits(
+   cat_scale_limits(
       l_cursor,
       p_location_id_mask,
       p_parameter_id_mask, 
@@ -497,7 +497,7 @@ begin
       p_office_id_mask);
       
    return l_cursor;      
-end catalog_scale_limits_f;
+end cat_scale_limits_f;
 
 --------------------------------------------------------------------------------
 -- procedure store_unit
@@ -713,9 +713,9 @@ exception
 end delete_unit;
 
 --------------------------------------------------------------------------------
--- procedure catalog_unit
+-- procedure cat_unit
 --------------------------------------------------------------------------------
-procedure catalog_unit(
+procedure cat_unit(
    p_unit_catalog      out sys_refcursor,
    p_parameter_id_mask in  varchar2 default '*',
    p_unit_system_mask  in  varchar2 default '*',
@@ -767,12 +767,12 @@ begin
              p.sub_parameter_id nulls first,         
              du.unit_system;
              
-end catalog_unit;
+end cat_unit;
 
 --------------------------------------------------------------------------------
--- function catalog_unit_f
+-- function cat_unit_f
 --------------------------------------------------------------------------------
-function catalog_unit_f(
+function cat_unit_f(
    p_parameter_id_mask in varchar2 default '*',
    p_unit_system_mask  in varchar2 default '*',
    p_office_id_mask    in varchar2 default null)
@@ -780,14 +780,14 @@ function catalog_unit_f(
 is
    l_cursor sys_refcursor;
 begin
-   catalog_unit(
+   cat_unit(
       l_cursor,
       p_parameter_id_mask,
       p_unit_system_mask,
       p_office_id_mask);
       
    return l_cursor;      
-end catalog_unit_f;
+end cat_unit_f;
 
 --------------------------------------------------------------------------------
 -- procedure retrieve_status_indicators
