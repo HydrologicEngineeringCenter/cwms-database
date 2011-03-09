@@ -2504,8 +2504,8 @@ AS
             -- forecasts --
             ---------------
             DELETE FROM   at_forecast
-                  WHERE   location_code IN (select * from table(l_location_codes))
-                     OR   forecast_location IN (select * from table(l_location_codes));
+                  WHERE   target_location_code IN (select * from table(l_location_codes))
+                     OR   source_location_code IN (select * from table(l_location_codes));
             --------------                  
             -- projects --
             --------------
@@ -2637,8 +2637,8 @@ AS
             -- forecasts --
             ---------------
             DELETE FROM   at_forecast
-                  WHERE   location_code= l_location_code
-                     OR   forecast_location = l_location_code;
+                  WHERE   target_location_code = l_location_code
+                     OR   source_location_code = l_location_code;
             --------------                  
             -- projects --
             --------------
