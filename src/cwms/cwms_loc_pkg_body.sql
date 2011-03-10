@@ -167,12 +167,12 @@ AS
                l_location_code := get_location_code_from_alias(
                   p_alias_id  => p_location_id,
                   p_office_id => l_office_id);
-                    
+            
+               if l_location_code is null then
+                  cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id);
+               end if;
                return l_location_code;                                
-            exception
-               when others then null; -- continue on to cwms_err.raise() call below
             end;
-            cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id);
         WHEN OTHERS
         THEN
             RAISE;
