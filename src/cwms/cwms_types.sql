@@ -1980,7 +1980,7 @@ as
             and sl.office_code in (
                 select office_code
                   from cwms_office
-                 where office_id in (office_id, 'CWMS'));
+                 where office_id in (self.office_id, 'CWMS'));
       end if;
 
       l_obj.level_indicator_id := level_indicator_id;
@@ -2047,14 +2047,14 @@ as
                   (extract(hour   from minimum_duration) / 24) +
                   (extract(minute from minimum_duration) / 1440) +
                   (extract(second from minimum_duration) / 86400);
-      -------------------------------------
+      -------------------------------------                  
       -- determine whether we need rates --
       -------------------------------------
       for i in 1..conditions.count loop
          if not l_rate_of_change and conditions(i).rate_expression is not null then
             l_rate_of_change := true;
          end if;
-         exit when l_rate_of_change;
+         exit when l_rate_of_change;          
       end loop;
       ----------------------------------------------------------------
       -- find the last valid value on or before the evaluation time --
@@ -2085,7 +2085,7 @@ as
                l_rate_values_array(i) :=
                   (p_ts(i).value - p_ts(j).value) /
                   ((p_ts(i).date_time - p_ts(j).date_time) * 24);
-               -- cwms_msg.log_db_message('z', 7, ''||i||', '||j||': '||l_rate_values_array(i));
+               -- cwms_msg.log_db_message('z', 7, ''||i||', '||j||': '||l_rate_values_array(i));                  
             end loop;
          end if;
          --------------------------------------------------
@@ -2152,29 +2152,29 @@ as
                l_level_values_array_2(i) := l_level_values_2(j).value;
             end loop;
          end if;
-      end if;
-      -----------------------------
-      -- evaluate each condition --
-      -----------------------------
-      for i in 1..conditions.count loop
-         l_set := false;
-         for j in reverse 1..l_last loop
-            continue when bitand(p_ts(j).quality_code, 20) != 0; --not is_valid(p_ts(j).quality_code);
-            exit when not conditions(i).is_set(
-               p_ts(j).value,
-               l_level_values_array_1(j),
-               l_level_values_array_2(j),
-               l_rate_values_array(j));
-            if (p_ts(l_last).date_time - p_ts(j).date_time) >= l_min_dur then
-               l_set := true;
-               exit;
+         -----------------------------
+         -- evaluate each condition --
+         -----------------------------
+         for i in 1..conditions.count loop
+            l_set := false;
+            for j in reverse 1..l_last loop
+               continue when bitand(p_ts(j).quality_code, 20) != 0; --not is_valid(p_ts(j).quality_code);
+               exit when not conditions(i).is_set(
+                  p_ts(j).value,
+                  l_level_values_array_1(j),
+                  l_level_values_array_2(j),
+                  l_rate_values_array(j));
+               if (p_ts(l_last).date_time - p_ts(j).date_time) >= l_min_dur then
+                  l_set := true;
+                  exit;
+               end if;
+            end loop;
+            if l_set then
+               l_indicator_values.extend;
+               l_indicator_values(l_indicator_values.count) := conditions(i).indicator_value;
             end if;
          end loop;
-         if l_set then
-            l_indicator_values.extend;
-            l_indicator_values(l_indicator_values.count) := conditions(i).indicator_value;
-         end if;
-      end loop;
+      end if;
       return l_indicator_values;
    end get_indicator_values;
 
@@ -2190,7 +2190,7 @@ as
                 when true then  l_indicator_values(l_indicator_values.count)
                 when false then 0
              end;
-   end get_max_indicator_value;
+   end get_max_indicator_value;      
 
    member function get_max_indicator_values(
       p_ts         in ztsv_array,
@@ -2209,7 +2209,7 @@ as
       end loop;
       return l_results;
    end get_max_indicator_values;
-
+   
 end;
 /
 show errors;

@@ -5370,7 +5370,7 @@ end store_loc_lvl_indicator2;
 --------------------------------------------------------------------------------
 procedure cat_loc_lvl_indicator_codes(
    p_cursor                     out sys_refcursor,
-   p_loc_lvl_indicator_id_mask  in  varchar2 default null,  -- '%.%.%.%.%.%' if null
+   p_loc_lvl_indicator_id_mask  in  varchar2 default null,  -- '*.*.*.*.*.*' if null
    p_attribute_id_mask          in  varchar2 default null,
    p_office_id_mask             in  varchar2 default null) -- user's office if null
 is          
@@ -5390,15 +5390,16 @@ is
    l_include_null_attrs        boolean := false;
 begin       
    if l_loc_lvl_indicator_id_mask is null or 
-      l_loc_lvl_indicator_id_mask in ('%', '*')
+      l_loc_lvl_indicator_id_mask = '*'
    then     
-      l_loc_lvl_indicator_id_mask := nvl(p_loc_lvl_indicator_id_mask, '%.%.%.%.%.%');
+      l_loc_lvl_indicator_id_mask := '*.*.*.*.*.*';
    end if;  
-   if l_attribute_id_mask in ('%', '*')
+   if l_attribute_id_mask is null or
+      l_attribute_id_mask = '*'
    then     
-      l_attribute_id_mask := nvl(p_attribute_id_mask, '%.%.%');
+      l_attribute_id_mask := '*.*.*';
    end if;  
-   if l_attribute_id_mask in ('%.%.%', '*.*.*')
+   if l_attribute_id_mask = '*.*.*'
    then     
       l_include_null_attrs := true;
    end if;  
@@ -5426,18 +5427,134 @@ begin
    l_attr_param_type_id_mask := upper(cwms_util.normalize_wildcards(l_attr_param_type_id_mask));      
    l_attr_duration_id_mask   := upper(cwms_util.normalize_wildcards(l_attr_duration_id_mask));
             
-   if l_attribute_id_mask is null then
+   if l_include_null_attrs then
+      open p_cursor for
+         select level_indicator_code from ( 
+            select lli.level_indicator_code as level_indicator_code,
+                   o.office_id as office_id,
+                   upper(bl.base_location_id
+                         || substr('-', 1, length(pl.sub_location_id))
+                         || pl.sub_location_id) as location_id,         
+                   upper(bp.base_parameter_id
+                         || substr('-', 1, length(p.sub_parameter_id))
+                         || p.sub_parameter_id) as parameter_id,
+                   upper(pt.parameter_type_id) as parameter_type_id,
+                   upper(d.duration_id) as duration_id,
+                   upper(sl.specified_level_id) as specified_level_id,
+                   upper(lli.level_indicator_id) as level_indicator_id,
+                   null as attr_parameter_id,
+                   null as attr_parameter_type_id,
+                   null as attr_duration_id
+               from at_loc_lvl_indicator lli,
+                    at_physical_location pl,
+                    at_base_location bl,
+                    cwms_office o,
+                    at_parameter p,
+                    cwms_base_parameter bp,
+                    cwms_parameter_type pt,
+                    cwms_duration d,
+                    at_specified_level sl
+              where o.office_id like l_office_id_mask escape '\'
+                and bl.db_office_code = o.office_code
+                and upper(bl.base_location_id
+                          || substr('-', 1, length(pl.sub_location_id))
+                          || pl.sub_location_id) like l_location_id_mask escape '\'
+                and pl.base_location_code = bl.base_location_code
+                and lli.location_code = pl.location_code
+                and upper(bp.base_parameter_id
+                          || substr('-', 1, length(p.sub_parameter_id))
+                          || p.sub_parameter_id) like l_parameter_id_mask escape '\'
+                and bp.base_parameter_code = p.base_parameter_code
+                and p.db_office_code in (o.office_code, l_cwms_office_code)
+                and lli.parameter_code = p.parameter_code
+                and upper(pt.parameter_type_id) like l_param_type_id_mask escape '\'
+                and lli.parameter_type_code = pt.parameter_type_code
+                and upper(d.duration_id) like l_duration_id_mask escape '\'
+                and lli.duration_code = d.duration_code
+                and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
+                and lli.specified_level_code = sl.specified_level_code
+                and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
+                and lli.attr_parameter_code is null
+            union
+            select distinct 
+                   lli.level_indicator_code as level_indicator_code,
+                   o.office_id as office_id,
+                   upper(bl.base_location_id
+                         || substr('-', 1, length(pl.sub_location_id))
+                         || pl.sub_location_id) as location_id,         
+                   upper(bp1.base_parameter_id
+                         || substr('-', 1, length(p1.sub_parameter_id))
+                         || p1.sub_parameter_id) as parameter_id,
+                   upper(pt1.parameter_type_id) as parameter_type_id,
+                   upper(d1.duration_id) as duration_id,
+                   upper(sl.specified_level_id) as specified_level_id,
+                   upper(lli.level_indicator_id) as level_indicator_id,
+                   upper(bp2.base_parameter_id
+                         || substr('-', 1, length(p2.sub_parameter_id))
+                         || p2.sub_parameter_id) as attr_parameter_id,
+                   upper(pt2.parameter_type_id) as attr_parameter_type_id,
+                   upper(d2.duration_id) as attr_duration_id
+               from at_loc_lvl_indicator lli,
+                    at_physical_location pl,
+                    at_base_location bl,
+                    cwms_office o,
+                    at_parameter p1,
+                    cwms_base_parameter bp1,
+                    cwms_parameter_type pt1,
+                    cwms_duration d1,
+                    at_specified_level sl,
+                    at_parameter p2,
+                    cwms_base_parameter bp2,
+                    cwms_parameter_type pt2,
+                    cwms_duration d2
+              where o.office_id like l_office_id_mask escape '\'
+                and bl.db_office_code = o.office_code
+                and upper(bl.base_location_id
+                          || substr('-', 1, length(pl.sub_location_id))
+                          || pl.sub_location_id) like l_location_id_mask escape '\'
+                and pl.base_location_code = bl.base_location_code
+                and lli.location_code = pl.location_code
+                and upper(bp1.base_parameter_id
+                          || substr('-', 1, length(p1.sub_parameter_id))
+                          || p1.sub_parameter_id) like l_parameter_id_mask escape '\'
+                and bp1.base_parameter_code = p1.base_parameter_code
+                and p1.db_office_code in (o.office_code, l_cwms_office_code)
+                and lli.parameter_code = p1.parameter_code
+                and upper(pt1.parameter_type_id) like l_param_type_id_mask escape '\'
+                and lli.parameter_type_code = pt1.parameter_type_code
+                and upper(d1.duration_id) like l_duration_id_mask escape '\'
+                and lli.duration_code = d1.duration_code
+                and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
+                and lli.specified_level_code = sl.specified_level_code
+                and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
+                and upper(bp2.base_parameter_id
+                          || substr('-', 1, length(p2.sub_parameter_id))
+                          || p2.sub_parameter_id) like l_attr_parameter_id_mask escape '\'
+                and bp2.base_parameter_code = p2.base_parameter_code
+                and p2.db_office_code in (o.office_code, l_cwms_office_code)
+                and lli.attr_parameter_code = p2.parameter_code
+                and upper(pt2.parameter_type_id) like l_attr_param_type_id_mask escape '\'
+                and lli.attr_parameter_type_code = pt2.parameter_type_code
+                and upper(d2.duration_id) like l_attr_duration_id_mask escape '\'
+                and lli.attr_duration_code = d2.duration_code
+           order by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
+   else  
       open p_cursor for 
-         select lli.level_indicator_code as level_indicator_code
+         select distinct 
+                lli.level_indicator_code as level_indicator_code
            from at_loc_lvl_indicator lli,
                 at_physical_location pl,
                 at_base_location bl,
                 cwms_office o,
-                at_parameter p,
-                cwms_base_parameter bp,
-                cwms_parameter_type pt,
-                cwms_duration d,
-                at_specified_level sl
+                at_parameter p1,
+                cwms_base_parameter bp1,
+                cwms_parameter_type pt1,
+                cwms_duration d1,
+                at_specified_level sl,
+                at_parameter p2,
+                cwms_base_parameter bp2,
+                cwms_parameter_type pt2,
+                cwms_duration d2
           where o.office_id like l_office_id_mask escape '\'
             and bl.db_office_code = o.office_code
             and upper(bl.base_location_id
@@ -5445,208 +5562,46 @@ begin
                       || pl.sub_location_id) like l_location_id_mask escape '\'
             and pl.base_location_code = bl.base_location_code
             and lli.location_code = pl.location_code
-            and upper(bp.base_parameter_id
-                      || substr('-', 1, length(p.sub_parameter_id))
-                      || p.sub_parameter_id) like l_parameter_id_mask escape '\'
-            and bp.base_parameter_code = p.base_parameter_code
-            and p.db_office_code in (o.office_code, l_cwms_office_code)
-            and lli.parameter_code = p.parameter_code
-            and upper(pt.parameter_type_id) like l_param_type_id_mask escape '\'
-            and lli.parameter_type_code = pt.parameter_type_code
-            and upper(d.duration_id) like l_duration_id_mask escape '\'
-            and lli.duration_code = d.duration_code
+            and upper(bp1.base_parameter_id
+                      || substr('-', 1, length(p1.sub_parameter_id))
+                      || p1.sub_parameter_id) like l_parameter_id_mask escape '\'
+            and bp1.base_parameter_code = p1.base_parameter_code
+            and p1.db_office_code in (o.office_code, l_cwms_office_code)
+            and lli.parameter_code = p1.parameter_code
+            and upper(pt1.parameter_type_id) like l_param_type_id_mask escape '\'
+            and lli.parameter_type_code = pt1.parameter_type_code
+            and upper(d1.duration_id) like l_duration_id_mask escape '\'
+            and lli.duration_code = d1.duration_code
             and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
             and lli.specified_level_code = sl.specified_level_code
             and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
-            and lli.attr_parameter_code is null
+            and upper(bp2.base_parameter_id
+                      || substr('-', 1, length(p2.sub_parameter_id))
+                      || p2.sub_parameter_id) like l_attr_parameter_id_mask escape '\'
+            and bp2.base_parameter_code = p2.base_parameter_code
+            and p2.db_office_code in (o.office_code, l_cwms_office_code)
+            and lli.attr_parameter_code = p2.parameter_code
+            and upper(pt2.parameter_type_id) like l_attr_param_type_id_mask escape '\'
+            and lli.attr_parameter_type_code = pt2.parameter_type_code
+            and upper(d2.duration_id) like l_attr_duration_id_mask escape '\'
+            and lli.attr_duration_code = d2.duration_code
        order by o.office_id,
                 upper(bl.base_location_id
                       || substr('-', 1, length(pl.sub_location_id))
                       || pl.sub_location_id),         
-                upper(bp.base_parameter_id
-                      || substr('-', 1, length(p.sub_parameter_id))
-                      || p.sub_parameter_id),
-                upper(pt.parameter_type_id),
-                upper(d.duration_id),
+                upper(bp1.base_parameter_id
+                      || substr('-', 1, length(p1.sub_parameter_id))
+                      || p1.sub_parameter_id),
+                upper(pt1.parameter_type_id),
+                upper(d1.duration_id),
                 upper(sl.specified_level_id),
-                upper(lli.level_indicator_id);
-   else     
-      if l_include_null_attrs then
-         open p_cursor for
-            select level_indicator_code from ( 
-               select lli.level_indicator_code as level_indicator_code,
-                      o.office_id as office_id,
-                      upper(bl.base_location_id
-                            || substr('-', 1, length(pl.sub_location_id))
-                            || pl.sub_location_id) as location_id,         
-                      upper(bp.base_parameter_id
-                            || substr('-', 1, length(p.sub_parameter_id))
-                            || p.sub_parameter_id) as parameter_id,
-                      upper(pt.parameter_type_id) as parameter_type_id,
-                      upper(d.duration_id) as duration_id,
-                      upper(sl.specified_level_id) as specified_level_id,
-                      upper(lli.level_indicator_id) as level_indicator_id,
-                      null as attr_parameter_id,
-                      null as attr_parameter_type_id,
-                      null as attr_duration_id
-                  from at_loc_lvl_indicator lli,
-                       at_physical_location pl,
-                       at_base_location bl,
-                       cwms_office o,
-                       at_parameter p,
-                       cwms_base_parameter bp,
-                       cwms_parameter_type pt,
-                       cwms_duration d,
-                       at_specified_level sl
-                 where o.office_id like l_office_id_mask escape '\'
-                   and bl.db_office_code = o.office_code
-                   and upper(bl.base_location_id
-                             || substr('-', 1, length(pl.sub_location_id))
-                             || pl.sub_location_id) like l_location_id_mask escape '\'
-                   and pl.base_location_code = bl.base_location_code
-                   and lli.location_code = pl.location_code
-                   and upper(bp.base_parameter_id
-                             || substr('-', 1, length(p.sub_parameter_id))
-                             || p.sub_parameter_id) like l_parameter_id_mask escape '\'
-                   and bp.base_parameter_code = p.base_parameter_code
-                   and p.db_office_code in (o.office_code, l_cwms_office_code)
-                   and lli.parameter_code = p.parameter_code
-                   and upper(pt.parameter_type_id) like l_param_type_id_mask escape '\'
-                   and lli.parameter_type_code = pt.parameter_type_code
-                   and upper(d.duration_id) like l_duration_id_mask escape '\'
-                   and lli.duration_code = d.duration_code
-                   and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
-                   and lli.specified_level_code = sl.specified_level_code
-                   and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
-                   and lli.attr_parameter_code is null
-               union
-               select distinct 
-                      lli.level_indicator_code as level_indicator_code,
-                      o.office_id as office_id,
-                      upper(bl.base_location_id
-                            || substr('-', 1, length(pl.sub_location_id))
-                            || pl.sub_location_id) as location_id,         
-                      upper(bp1.base_parameter_id
-                            || substr('-', 1, length(p1.sub_parameter_id))
-                            || p1.sub_parameter_id) as parameter_id,
-                      upper(pt1.parameter_type_id) as parameter_type_id,
-                      upper(d1.duration_id) as duration_id,
-                      upper(sl.specified_level_id) as specified_level_id,
-                      upper(lli.level_indicator_id) as level_indicator_id,
-                      upper(bp2.base_parameter_id
-                            || substr('-', 1, length(p2.sub_parameter_id))
-                            || p2.sub_parameter_id) as attr_parameter_id,
-                      upper(pt2.parameter_type_id) as attr_parameter_type_id,
-                      upper(d2.duration_id) as attr_duration_id
-                  from at_loc_lvl_indicator lli,
-                       at_physical_location pl,
-                       at_base_location bl,
-                       cwms_office o,
-                       at_parameter p1,
-                       cwms_base_parameter bp1,
-                       cwms_parameter_type pt1,
-                       cwms_duration d1,
-                       at_specified_level sl,
-                       at_parameter p2,
-                       cwms_base_parameter bp2,
-                       cwms_parameter_type pt2,
-                       cwms_duration d2
-                 where o.office_id like l_office_id_mask escape '\'
-                   and bl.db_office_code = o.office_code
-                   and upper(bl.base_location_id
-                             || substr('-', 1, length(pl.sub_location_id))
-                             || pl.sub_location_id) like l_location_id_mask escape '\'
-                   and pl.base_location_code = bl.base_location_code
-                   and lli.location_code = pl.location_code
-                   and upper(bp1.base_parameter_id
-                             || substr('-', 1, length(p1.sub_parameter_id))
-                             || p1.sub_parameter_id) like l_parameter_id_mask escape '\'
-                   and bp1.base_parameter_code = p1.base_parameter_code
-                   and p1.db_office_code in (o.office_code, l_cwms_office_code)
-                   and lli.parameter_code = p1.parameter_code
-                   and upper(pt1.parameter_type_id) like l_param_type_id_mask escape '\'
-                   and lli.parameter_type_code = pt1.parameter_type_code
-                   and upper(d1.duration_id) like l_duration_id_mask escape '\'
-                   and lli.duration_code = d1.duration_code
-                   and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
-                   and lli.specified_level_code = sl.specified_level_code
-                   and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
-                   and upper(bp2.base_parameter_id
-                             || substr('-', 1, length(p2.sub_parameter_id))
-                             || p2.sub_parameter_id) like l_attr_parameter_id_mask escape '\'
-                   and bp2.base_parameter_code = p2.base_parameter_code
-                   and p2.db_office_code in (o.office_code, l_cwms_office_code)
-                   and lli.attr_parameter_code = p2.parameter_code
-                   and upper(pt2.parameter_type_id) like l_attr_param_type_id_mask escape '\'
-                   and lli.attr_parameter_type_code = pt2.parameter_type_code
-                   and upper(d2.duration_id) like l_attr_duration_id_mask escape '\'
-                   and lli.attr_duration_code = d2.duration_code
-              order by 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11);
-      else  
-         open p_cursor for 
-            select distinct 
-                   lli.level_indicator_code as level_indicator_code
-              from at_loc_lvl_indicator lli,
-                   at_physical_location pl,
-                   at_base_location bl,
-                   cwms_office o,
-                   at_parameter p1,
-                   cwms_base_parameter bp1,
-                   cwms_parameter_type pt1,
-                   cwms_duration d1,
-                   at_specified_level sl,
-                   at_parameter p2,
-                   cwms_base_parameter bp2,
-                   cwms_parameter_type pt2,
-                   cwms_duration d2
-             where o.office_id like l_office_id_mask escape '\'
-               and bl.db_office_code = o.office_code
-               and upper(bl.base_location_id
-                         || substr('-', 1, length(pl.sub_location_id))
-                         || pl.sub_location_id) like l_location_id_mask escape '\'
-               and pl.base_location_code = bl.base_location_code
-               and lli.location_code = pl.location_code
-               and upper(bp1.base_parameter_id
-                         || substr('-', 1, length(p1.sub_parameter_id))
-                         || p1.sub_parameter_id) like l_parameter_id_mask escape '\'
-               and bp1.base_parameter_code = p1.base_parameter_code
-               and p1.db_office_code in (o.office_code, l_cwms_office_code)
-               and lli.parameter_code = p1.parameter_code
-               and upper(pt1.parameter_type_id) like l_param_type_id_mask escape '\'
-               and lli.parameter_type_code = pt1.parameter_type_code
-               and upper(d1.duration_id) like l_duration_id_mask escape '\'
-               and lli.duration_code = d1.duration_code
-               and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
-               and lli.specified_level_code = sl.specified_level_code
-               and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
-               and upper(bp2.base_parameter_id
-                         || substr('-', 1, length(p2.sub_parameter_id))
-                         || p2.sub_parameter_id) like l_attr_parameter_id_mask escape '\'
-               and bp2.base_parameter_code = p2.base_parameter_code
-               and p2.db_office_code in (o.office_code, l_cwms_office_code)
-               and lli.attr_parameter_code = p2.parameter_code
-               and upper(pt2.parameter_type_id) like l_attr_param_type_id_mask escape '\'
-               and lli.attr_parameter_type_code = pt2.parameter_type_code
-               and upper(d2.duration_id) like l_attr_duration_id_mask escape '\'
-               and lli.attr_duration_code = d2.duration_code
-          order by o.office_id,
-                   upper(bl.base_location_id
-                         || substr('-', 1, length(pl.sub_location_id))
-                         || pl.sub_location_id),         
-                   upper(bp1.base_parameter_id
-                         || substr('-', 1, length(p1.sub_parameter_id))
-                         || p1.sub_parameter_id),
-                   upper(pt1.parameter_type_id),
-                   upper(d1.duration_id),
-                   upper(sl.specified_level_id),
-                   upper(lli.level_indicator_id),
-                   upper(bp2.base_parameter_id
-                         || substr('-', 1, length(p2.sub_parameter_id))
-                         || p2.sub_parameter_id),
-                   upper(pt2.parameter_type_id),
-                   upper(d2.duration_id);
-      end if;             
-   end if;  
+                upper(lli.level_indicator_id),
+                upper(bp2.base_parameter_id
+                      || substr('-', 1, length(p2.sub_parameter_id))
+                      || p2.sub_parameter_id),
+                upper(pt2.parameter_type_id),
+                upper(d2.duration_id);
+   end if;             
                           
 end cat_loc_lvl_indicator_codes;   
             
@@ -5657,7 +5612,7 @@ end cat_loc_lvl_indicator_codes;
 --          
 --------------------------------------------------------------------------------
 function cat_loc_lvl_indicator_codes(
-   p_loc_lvl_indicator_id_mask in  varchar2 default null, -- '%.%.%.%.%.%' if null
+   p_loc_lvl_indicator_id_mask in  varchar2 default null, -- '*.*.*.*.*.*' if null
    p_attribute_id_mask         in  varchar2 default null,
    p_office_id_mask            in  varchar2 default null) -- user's office if null
    return sys_refcursor
@@ -6566,10 +6521,10 @@ procedure get_level_indicator_values(
    p_unit_system          in  varchar2 default null,   -- 'SI' if null
    p_office_id            in  varchar2 default null)   -- user's office if null 
 is          
-   l_tsid                   varchar2(183) := replace(p_tsid, '\%', '%');
+   l_tsid                   varchar2(183) := p_tsid;
    l_office_id              varchar2(16)  := nvl(upper(p_office_id), cwms_util.user_office_id);
-   l_specified_level_mask   varchar2(256) := nvl(p_specified_level_mask, '%');
-   l_indicator_id_mask      varchar2(256) := nvl(p_indicator_id_mask, '%');
+   l_specified_level_mask   varchar2(256) := nvl(p_specified_level_mask, '*');
+   l_indicator_id_mask      varchar2(256) := nvl(p_indicator_id_mask, '*');
    l_unit_system            varchar2(2)   := nvl(p_unit_system, 'SI');
    l_location_level_id_mask varchar2(423);
    l_base_location_id       varchar2(16);
@@ -6618,7 +6573,7 @@ begin
          l_duration_id,
          l_specified_level_mask,
          l_indicator_id_mask),
-      '%.%.%',
+      '*.*.*',
       l_office_id);
    --------------------------------------------------               
    -- build a table of loc_lvl_indicator_t objects --
@@ -6763,10 +6718,10 @@ procedure get_level_indicator_max_values(
    p_unit_system          in  varchar2 default null,   -- 'SI' if null
    p_office_id            in  varchar2 default null)   -- user's office if null
 is          
-   l_tsid                   varchar2(183) := replace(p_tsid, '\%', '%');
+   l_tsid                   varchar2(183) := p_tsid;
    l_office_id              varchar2(16)  := nvl(upper(p_office_id), cwms_util.user_office_id);
-   l_specified_level_mask   varchar2(256) := nvl(p_specified_level_mask, '%');
-   l_indicator_id_mask      varchar2(256) := nvl(p_indicator_id_mask, '%');
+   l_specified_level_mask   varchar2(256) := nvl(p_specified_level_mask, '*');
+   l_indicator_id_mask      varchar2(256) := nvl(p_indicator_id_mask, '*');
    l_unit_system            varchar2(2)   := nvl(p_unit_system, 'SI');
    l_location_level_id_mask varchar2(423);
    l_base_location_id       varchar2(16);
@@ -6819,7 +6774,7 @@ begin
          l_duration_id,
          l_specified_level_mask,
          l_indicator_id_mask),
-      '%.%.%',
+      '*.*.*',
       l_office_id);
    --------------------------------------------------               
    -- build a table of loc_lvl_indicator_t objects --
