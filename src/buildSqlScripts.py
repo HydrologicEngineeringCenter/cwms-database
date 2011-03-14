@@ -4679,7 +4679,9 @@ dssParameterTypes = [
     {"ID" : "PER-AVER", "DB_TYPE" : "Ave",   "DESCRIPTION" : "Average over a period"              },
     {"ID" : "PER-CUM",  "DB_TYPE" : "Total", "DESCRIPTION" : "Accumulation over a period"         },
     {"ID" : "INST-VAL", "DB_TYPE" : "Inst",  "DESCRIPTION" : "Value observed at an instant"       },
-    {"ID" : "INST-CUM", "DB_TYPE" : "Inst",  "DESCRIPTION" : "Accumulation observed at an instant"}
+    {"ID" : "INST-CUM", "DB_TYPE" : "Inst",  "DESCRIPTION" : "Accumulation observed at an instant"},
+    {"ID" : "PER-MIN",  "DB_TYPE" : "Min",   "DESCRIPTION" : "Minumum over a period"              },
+    {"ID" : "PER-MAX",  "DB_TYPE" : "Max",   "DESCRIPTION" : "Maximum over a period"              }
 ]
 
 #-------------------------#
