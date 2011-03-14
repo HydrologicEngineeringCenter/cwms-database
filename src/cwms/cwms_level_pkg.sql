@@ -53,7 +53,7 @@ function get_attribute_id(
    p_parameter_id       in varchar2,
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2)
-   return varchar2 result_cache;
+   return varchar2 /*result_cache*/;
 
 --------------------------------------------------------------------------------
 -- PROCEDURE parse_location_level_id
@@ -71,7 +71,7 @@ procedure parse_location_level_id(
 --------------------------------------------------------------------------------
 function get_location_level_id(
    p_location_level_code in number)
-   return varchar2 result_cache;
+   return varchar2 /*result_cache*/;
 
 --------------------------------------------------------------------------------
 -- FUNCTION get_location_level_id
@@ -82,7 +82,7 @@ function get_location_level_id(
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2)
-   return varchar2 result_cache;
+   return varchar2 /*result_cache*/;
    
 --------------------------------------------------------------------------------
 -- PROCEDURE parse_loc_lvl_indicator_id
@@ -106,7 +106,7 @@ function get_loc_lvl_indicator_id(
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2,
    p_level_indicator_id in varchar2)
-   return varchar2 result_cache;
+   return varchar2 /*result_cache*/;
    
 --------------------------------------------------------------------------------
 -- PROCEDURE create_specified_level_out

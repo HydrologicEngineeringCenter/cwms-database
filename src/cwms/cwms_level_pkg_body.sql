@@ -727,7 +727,7 @@ function get_attribute_id(
    p_parameter_id       in varchar2,
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2)
-   return varchar2 result_cache
+   return varchar2 /*result_cache*/
 is          
    l_attribute_id varchar2(83);
 begin       
@@ -775,7 +775,7 @@ end parse_location_level_id;
 --------------------------------------------------------------------------------
 function get_location_level_id(
    p_location_level_code in number)
-   return varchar2 result_cache
+   return varchar2 /*result_cache*/
 is          
    l_location_level_id varchar2(422);
    l_office_id         varchar2(16);
@@ -838,7 +838,7 @@ function get_location_level_id(
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2)
-   return varchar2  result_cache
+   return varchar2  /*result_cache*/
 is          
    l_location_level_id varchar2(390);
 begin       
@@ -889,7 +889,7 @@ function get_loc_lvl_indicator_id(
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2,
    p_level_indicator_id in varchar2)
-   return varchar2 result_cache
+   return varchar2 /*result_cache*/
 is          
    l_location_level_id varchar2(374);
 begin       
@@ -2358,14 +2358,14 @@ is
    --------------------
    -- local routines --
    --------------------
-   function encode_date(p_date in date) return binary_integer result_cache
+   function encode_date(p_date in date) return binary_integer /*result_cache*/
    is       
       l_origin constant date := to_date('01Jan2000 0000', 'ddMonyyyy hh24mi');
    begin    
       return (p_date - l_origin) * 1440;
    end;     
             
-   function decode_date(p_int in binary_integer) return date result_cache
+   function decode_date(p_int in binary_integer) return date /*result_cache*/
    is       
       l_origin constant date := to_date('01Jan2000 0000', 'ddMonyyyy hh24mi');
    begin    
@@ -5475,7 +5475,7 @@ begin
                 and lli.specified_level_code = sl.specified_level_code
                 and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
                 and lli.attr_parameter_code is null
-            union
+            union all
             select distinct 
                    lli.level_indicator_code as level_indicator_code,
                    o.office_id as office_id,
@@ -5527,6 +5527,7 @@ begin
                 and upper(sl.specified_level_id) like l_spec_level_id_mask escape '\'
                 and lli.specified_level_code = sl.specified_level_code
                 and upper(lli.level_indicator_id) like l_level_indicator_id_mask escape '\'
+                and lli.attr_parameter_code is not null
                 and upper(bp2.base_parameter_id
                           || substr('-', 1, length(p2.sub_parameter_id))
                           || p2.sub_parameter_id) like l_attr_parameter_id_mask escape '\'
