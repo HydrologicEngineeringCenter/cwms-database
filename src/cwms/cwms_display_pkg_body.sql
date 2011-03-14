@@ -793,15 +793,18 @@ end cat_unit_f;
 -- procedure retrieve_status_indicators
 --------------------------------------------------------------------------------
 procedure retrieve_status_indicators(
-   p_indicators   out tsv_array,
-   p_tsid         in  varchar2,
-   p_level_id     in  varchar2,
-   p_indicator_id in  varchar2,
-   p_start_time   in  date,
-   p_end_time     in  date,
-   p_time_zone    in  varchar2 default 'UTC',
-   p_expression   in  varchar2 default null,
-   p_office_id    in  varchar2 default null)
+   p_indicators      out tsv_array,
+   p_tsid            in  varchar2,
+   p_level_id        in  varchar2,
+   p_indicator_id    in  varchar2,
+   p_start_time      in  date,
+   p_end_time        in  date,
+   p_attribute_id    in  varchar2 default null,
+   p_attribute_value in  number   default null,
+   p_attribute_unit  in  varchar2 default null,
+   p_time_zone       in  varchar2 default 'UTC',
+   p_expression      in  varchar2 default null,
+   p_office_id       in  varchar2 default null)
 is
    type l_cursor_rec_t is record (
       indicator_id     varchar2(423),
@@ -813,6 +816,8 @@ is
    l_cursor sys_refcursor;
    l_rec    l_cursor_rec_t;
    l_tokens str_tab_t;   
+   l_parts  str_tab_t;
+   l_match  boolean := false;   
 begin
    -------------------
    -- sanity checks --
@@ -821,6 +826,8 @@ begin
       p_tsid,
       p_level_id,
       p_indicator_id,
+      p_attribute_id,
+      p_attribute_unit,
       p_time_zone,
       p_expression,
       p_office_id));
@@ -844,6 +851,13 @@ begin
          'ERROR',
          'Start time must not be null.');
    end if;
+   l_parts := cwms_util.split_text(p_level_id, '.');
+   if l_parts.count != 5 then
+      cwms_err.raise(
+         'INVALID_ITEM',
+         p_level_id,
+         'CWMS location level identifier');
+   end if;
    ---------------------------------------      
    -- retrieve the indicator max values --
    ---------------------------------------      
@@ -853,20 +867,34 @@ begin
       p_start_time           => p_start_time,
       p_end_time             => p_end_time,
       p_time_zone            => p_time_zone,
-      p_specified_level_mask => p_level_id,
+      p_specified_level_mask => l_parts(5),
       p_indicator_id_mask    => p_indicator_id,
       p_office_id            => p_office_id);
    loop
       fetch l_cursor into l_rec;
-      exit when l_cursor%notfound; 
-      if l_rec.attribute_id is null then
-         p_indicators := tsv_array();
-         p_indicators.extend(l_rec.indicator_values.count);
-         for i in 1..l_rec.indicator_values.count loop
-            p_indicators(i).date_time    := from_tz(cast(l_rec.indicator_values(i).date_time as timestamp), p_time_zone);
-            p_indicators(i).value        := l_rec.indicator_values(i).value;
-            p_indicators(i).quality_code := l_rec.indicator_values(i).quality_code;
-         end loop;
+      exit when l_cursor%notfound;
+      if p_attribute_id is null then
+         if l_rec.attribute_id is null then
+            l_match := true;
+         end if;
+      else
+         if upper(l_rec.attribute_id) = upper(p_attribute_id) and
+            cwms_util.convert_units(l_rec.attribute_value, l_rec.attribute_units, p_attribute_unit) = p_attribute_value
+         then
+            l_match := true;
+         end if;
+      end if;
+      if l_match then 
+         if l_rec.indicator_values is not null and l_rec.indicator_values.count > 0 then
+            p_indicators := tsv_array();
+            p_indicators.extend(l_rec.indicator_values.count);
+            for i in 1..l_rec.indicator_values.count loop
+               p_indicators(i) := tsv_type(  
+                  from_tz(cast(l_rec.indicator_values(i).date_time as timestamp), p_time_zone),
+                  l_rec.indicator_values(i).value,
+                  l_rec.indicator_values(i).quality_code);
+            end loop;
+         end if;
          exit;
       end if;
    end loop;
@@ -874,7 +902,7 @@ begin
    ---------------------------------------------------      
    -- modify the indicator values by the expression --
    ---------------------------------------------------
-   if p_expression is not null then
+   if p_expression is not null and p_indicators is not null then
       -------------------------------
       -- tokenize algebraic or RPN --
       -------------------------------
@@ -883,9 +911,11 @@ begin
       -- apply the expression to each indicator value --
       --------------------------------------------------
       for i in 1..p_indicators.count loop
-         p_indicators(i).value := cwms_util.eval_tokenized_expression(
-            l_tokens,
-            double_tab_t(p_indicators(i).value));
+         if p_indicators(i).value > 0 then
+            p_indicators(i).value := cwms_util.eval_tokenized_expression(
+               l_tokens,
+               double_tab_t(p_indicators(i).value));
+         end if;
       end loop;
    end if;
          
@@ -895,14 +925,17 @@ end retrieve_status_indicators;
 -- function retrieve_status_indicators_f
 --------------------------------------------------------------------------------
 function retrieve_status_indicators_f(
-   p_tsid         in varchar2,
-   p_level_id     in varchar2,
-   p_indicator_id in varchar2,
-   p_start_time   in date,
-   p_end_time     in date,
-   p_time_zone    in varchar2 default 'UTC',
-   p_expression   in varchar2 default null,
-   p_office_id    in varchar2 default null)
+   p_tsid            in varchar2,
+   p_level_id        in varchar2,
+   p_indicator_id    in varchar2,
+   p_start_time      in date,
+   p_end_time        in date,
+   p_attribute_id    in varchar2 default null,
+   p_attribute_value in number   default null,
+   p_attribute_unit  in varchar2 default null,
+   p_time_zone       in varchar2 default 'UTC',
+   p_expression      in varchar2 default null,
+   p_office_id       in varchar2 default null)
    return tsv_array
 is
    l_indicators tsv_array;
@@ -914,12 +947,126 @@ begin
       p_indicator_id,
       p_start_time,
       p_end_time,
+      p_attribute_id,
+      p_attribute_value,
+      p_attribute_unit,
       p_time_zone,
       p_expression,
       p_office_id);
       
    return l_indicators;      
 end retrieve_status_indicators_f;   
+
+--------------------------------------------------------------------------------
+-- function retrieve_status_indicators_f
+--
+-- p_expression
+--    an algebraic or RPN expression to map the integer values of 1..5 onto
+--    a different range, the indicator value to be mapped is specified as ARG1
+--
+--    the following expressions can be used to map the values onto the integer
+--    range of 1..3 in various ways:
+--
+--    'TRUNC((ARG1 + 2) / 2)'              skinny bottom : 1,2,2,3,3
+--    'TRUNC((ARG1 + 1) / 2)'              skinny top    : 1,1,2,2,3
+--    'ROUND((ARG1 / 5) ^ 3 * 2 + 1)'      fat bottom    : 1,1,1,2,3
+--    'TRUNC((ARG1 - 2) / 3 + 2)',         fat middle    : 1,2,2,2,3 
+--    'ROUND((ARG1 - 1) ^ .3 * 1.25 + 1)'  fat top       : 1,2,3,3,3
+--
+--------------------------------------------------------------------------------
+function retrieve_status_indicator_f(
+   p_tsid            in varchar2,
+   p_level_id        in varchar2,
+   p_indicator_id    in varchar2,
+   p_eval_time       in date     default sysdate,
+   p_attribute_id    in varchar2 default null,
+   p_attribute_value in number   default null,
+   p_attribute_unit  in varchar2 default null,
+   p_time_zone       in varchar2 default 'UTC',
+   p_expression      in varchar2 default null,
+   p_office_id       in varchar2 default null)
+   return integer
+is
+   type l_rec_t is record(
+      indicator_id     varchar2(423),
+      attribute_id     varchar2(83),
+      attribute_value  number,           
+      attribute_units  varchar2(16),
+      indicator_values number_tab_t);
+   l_cursor sys_refcursor;
+   l_parts  str_tab_t;
+   l_rec    l_rec_t;
+   l_value  integer := 0;
+   l_match  boolean := false;
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_tsid,
+      p_level_id,
+      p_indicator_id,
+      p_time_zone,
+      p_office_id));
+   if p_tsid is null then
+      cwms_err.raise(
+         'ERROR',
+         'Time series identifier must not be null.');
+   end if;
+   if p_level_id is null then
+      cwms_err.raise(
+         'ERROR',
+         'Specified level identifier must not be null.');
+   end if;
+   if p_indicator_id is null then
+      cwms_err.raise(
+         'ERROR',
+         'Level indicator identifier must not be null.');
+   end if;
+   l_parts := cwms_util.split_text(p_level_id, '.');
+   if l_parts.count != 5 then
+      cwms_err.raise(
+         'INVALID_ITEM',
+         p_level_id,
+         'CWMS location level identifier');
+   end if;
+   ------------------------------   
+   -- get the indicator values --
+   ------------------------------   
+   cwms_level.get_level_indicator_values(
+      l_cursor,
+      p_tsid,
+      p_eval_time,
+      p_time_zone,
+      l_parts(5),
+      p_indicator_id,
+      'SI',
+      p_office_id);
+   loop
+      fetch l_cursor into l_rec;
+      exit when l_cursor%notfound;
+      if p_attribute_id is null then
+         if l_rec.attribute_id is null then
+            l_match := true;
+         end if;
+      else
+         if upper(l_rec.attribute_id) = upper(p_attribute_id) and
+            cwms_util.convert_units(l_rec.attribute_value, l_rec.attribute_units, p_attribute_unit) = p_attribute_value
+         then
+            l_match := true;
+         end if;
+      end if;
+      if l_match then
+         if l_rec.indicator_values is not null and l_rec.indicator_values.count > 0 then
+            l_value := l_rec.indicator_values(l_rec.indicator_values.count);
+         end if;
+         exit;
+      end if;      
+   end loop;
+   close l_cursor;
+   
+   return l_value;            
+end retrieve_status_indicator_f;   
 
 end cwms_display;
 /

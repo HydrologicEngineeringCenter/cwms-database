@@ -200,15 +200,18 @@ function cat_unit_f(
 --
 --------------------------------------------------------------------------------
 procedure retrieve_status_indicators(
-   p_indicators   out tsv_array,
-   p_tsid         in  varchar2,
-   p_level_id     in  varchar2,
-   p_indicator_id in  varchar2,
-   p_start_time   in  date,
-   p_end_time     in  date,
-   p_time_zone    in  varchar2 default 'UTC',
-   p_expression   in  varchar2 default null,
-   p_office_id    in  varchar2 default null);
+   p_indicators      out tsv_array,
+   p_tsid            in  varchar2,
+   p_level_id        in  varchar2,
+   p_indicator_id    in  varchar2,
+   p_start_time      in  date,
+   p_end_time        in  date,
+   p_attribute_id    in  varchar2 default null,
+   p_attribute_value in  number   default null,
+   p_attribute_unit  in  varchar2 default null,
+   p_time_zone       in  varchar2 default 'UTC',
+   p_expression      in  varchar2 default null,
+   p_office_id       in  varchar2 default null);
 
 --------------------------------------------------------------------------------
 -- function retrieve_status_indicators_f
@@ -228,15 +231,47 @@ procedure retrieve_status_indicators(
 --
 --------------------------------------------------------------------------------
 function retrieve_status_indicators_f(
-   p_tsid         in varchar2,
-   p_level_id     in varchar2,
-   p_indicator_id in varchar2,
-   p_start_time   in date,
-   p_end_time     in date,
-   p_time_zone    in varchar2 default 'UTC',
-   p_expression   in varchar2 default null,
-   p_office_id    in varchar2 default null)
-   return tsv_array;
+   p_tsid            in varchar2,
+   p_level_id        in varchar2,
+   p_indicator_id    in varchar2,
+   p_start_time      in date,
+   p_end_time        in date,
+   p_attribute_id    in varchar2 default null,
+   p_attribute_value in number   default null,
+   p_attribute_unit  in varchar2 default null,
+   p_time_zone       in varchar2 default 'UTC',
+   p_expression      in varchar2 default null,
+   p_office_id       in varchar2 default null)
+   return tsv_array;   
+--------------------------------------------------------------------------------
+-- function retrieve_status_indicator_f
+--
+-- p_expression
+--    an algebraic or RPN expression to map the integer values of 1..5 onto
+--    a different range, the indicator value to be mapped is specified as ARG1
+--
+--    the following expressions can be used to map the values onto the integer
+--    range of 1..3 in various ways:
+--
+--    'TRUNC((ARG1 + 2) / 2)'              skinny bottom : 1,2,2,3,3
+--    'TRUNC((ARG1 + 1) / 2)'              skinny top    : 1,1,2,2,3
+--    'ROUND((ARG1 / 5) ^ 3 * 2 + 1)'      fat bottom    : 1,1,1,2,3
+--    'TRUNC((ARG1 - 2) / 3 + 2)',         fat middle    : 1,2,2,2,3 
+--    'ROUND((ARG1 - 1) ^ .3 * 1.25 + 1)'  fat top       : 1,2,3,3,3
+--
+--------------------------------------------------------------------------------
+function retrieve_status_indicator_f(
+   p_tsid            in varchar2,
+   p_level_id        in varchar2,
+   p_indicator_id    in varchar2,
+   p_eval_time       in date     default sysdate,
+   p_attribute_id    in varchar2 default null,
+   p_attribute_value in number   default null,
+   p_attribute_unit  in varchar2 default null,
+   p_time_zone       in varchar2 default 'UTC',
+   p_expression      in varchar2 default null,
+   p_office_id       in varchar2 default null)
+   return integer;
    
 end cwms_display;
 /
