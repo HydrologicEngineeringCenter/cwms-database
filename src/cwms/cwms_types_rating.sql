@@ -4424,9 +4424,14 @@ as
       p_ind_values in double_tab_t)
    return binary_double
    is
-      l_results double_tab_t;
+      l_results    double_tab_t;
+      l_ind_values double_tab_tab_t := double_tab_tab_t();
    begin
-      l_results := rate(double_tab_tab_t(p_ind_values));
+      l_ind_values.extend(p_ind_values.count);
+      for i in 1..p_ind_values.count loop
+         l_ind_values(i) := double_tab_t(p_ind_values(i));
+      end loop;
+      l_results := rate(l_ind_values);
       return l_results(1);
    end;
                      
