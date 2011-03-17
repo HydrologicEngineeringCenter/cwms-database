@@ -38,9 +38,9 @@ begin
    end if;
    ------------------------
    -- perform the action --
-   ------------------------      
-   if l_millis is null then 
-      l_millis := cwms_util.current_millis; 
+   ------------------------
+   if l_millis is null then
+      l_millis := cwms_util.current_millis;
    end if;
    if l_millis = last_millis then
       l_seq := last_seq + 1;
@@ -63,8 +63,8 @@ function get_queue_prefix return varchar2
 is
    l_db_office_id   varchar2(16);
 begin
-   l_db_office_id := cwms_util.user_office_id;   
-   return l_db_office_id;       
+   l_db_office_id := cwms_util.user_office_id;
+   return l_db_office_id;
 end get_queue_prefix;
 
 -------------------------------------------------------------------------------
@@ -87,20 +87,20 @@ begin
                and queue_type = 'NORMAL_QUEUE';
             l_found := true;
          exception
-            when no_data_found then 
+            when no_data_found then
                l_queuename := get_queue_prefix || '_' || l_queuename;
          end;
       end if;
    end loop;
-   
+
    if not l_found then
       l_queuename := null;
    else
       l_queuename := '&cwms_schema'||'.'|| l_queuename;
    end if;
-   
+
    return l_queuename;
-   
+
 end get_queue_name;
 
 -------------------------------------------------------------------------------
@@ -127,10 +127,10 @@ function publish_message(
    return integer
 is
    l_message_properties dbms_aq.message_properties_t;
-   l_enqueue_options    dbms_aq.enqueue_options_t;      
+   l_enqueue_options    dbms_aq.enqueue_options_t;
    l_msgid              raw(16);
    l_queuename          varchar2(32);
-   l_now                integer := cwms_util.current_millis;           
+   l_now                integer := cwms_util.current_millis;
    l_expiration_time    constant binary_integer := 300; -- 5 minutes
 begin
    l_queuename := get_queue_name(p_msg_queue);
@@ -140,11 +140,11 @@ begin
    -------------------------
    -- enqueue the message --
    -------------------------
-   l_message_properties.expiration := l_expiration_time; 
+   l_message_properties.expiration := l_expiration_time;
    p_message.set_long(p_messageid, 'millis', l_now);
    p_message.flush(p_messageid);
    p_message.clean(p_messageid);
-    
+
    dbms_aq.enqueue(
       l_queuename,
       l_enqueue_options,
@@ -161,7 +161,7 @@ exception
    ---------------------------------------
    when exc_no_subscribers then return l_now;
    when others then raise;
-   
+
 end publish_message;
 
 -------------------------------------------------------------------------------
@@ -199,7 +199,7 @@ begin
          case l_type
             when 'boolean' then
                l_type := lower(cwms_util.strip(l_node.getstringval()));
-               l_bool := 
+               l_bool :=
                   case l_type
                      when 't'     then true
                      when 'true'  then true
@@ -244,7 +244,7 @@ begin
    end if;
 
    return publish_message(l_msg, l_msgid, p_msg_queue);
-   
+
 end publish_message;
 
 -------------------------------------------------------------------------------
@@ -278,7 +278,7 @@ end publish_message;
 --
 function publish_status_message(
    p_message   in out nocopy sys.aq$_jms_map_message,
-   p_messageid in     pls_integer) 
+   p_messageid in     pls_integer)
    return integer
 is
 begin
@@ -336,7 +336,7 @@ begin
       null,
       p_msg_level,
       p_publish);
-end log_message;   
+end log_message;
 
 -------------------------------------------------------------------------------
 -- FUNCTION LOG_LONG_MESSAGE(...)
@@ -355,7 +355,7 @@ function log_long_message(
    return integer
 is
    pragma autonomous_transaction;
-   
+
    l_now         integer;
    l_now_ts      timestamp;
    l_msg_id      varchar2(32);
@@ -403,50 +403,50 @@ begin
       -- first the short message... --
       --------------------------------
       begin
-         select message_type_code 
-           into l_typeid 
-           from cwms_log_message_types 
+         select message_type_code
+           into l_typeid
+           from cwms_log_message_types
           where message_type_id = l_msgtype;
       exception
          when no_data_found then
             cwms_err.raise('INVALID_ITEM', l_type, 'log message type');
-      end;       
+      end;
 
-      select username, 
-             osuser, 
-             process, 
-             program, 
+      select username,
+             osuser,
+             process,
+             program,
              machine
         into l_username,
              l_osuser,
              l_process,
              l_program,
-             l_machine             
-        from v$session 
+             l_machine
+        from v$session
        where audsid = userenv('sessionid');
-       
+
       insert
         into at_log_message
       values (
                 l_msg_id,
-                l_office_code, 
+                l_office_code,
                 l_now_ts,
-                l_msg_level, 
-                p_component, 
-                p_instance, 
-                p_host, 
-                p_port, 
-                p_reported, 
+                l_msg_level,
+                p_component,
+                p_instance,
+                p_host,
+                p_port,
+                p_reported,
                 l_username,
                 l_osuser,
                 l_process,
                 l_program,
                 l_machine,
-                l_typeid, 
+                l_typeid,
                 l_message
-             );   
+             );
 
-      -------------------------------   
+      -------------------------------
       -- ... next the long message --
       -------------------------------
       if p_long_msg is not null then
@@ -454,10 +454,10 @@ begin
             p_long_msg,
             '/message_id/'||l_msg_id,
             to_char(l_now_ts));
-      end if;   
-      -------------------------------------   
+      end if;
+      -------------------------------------
       -- ... then the message properties --
-      -------------------------------------   
+      -------------------------------------
       l_nodes := l_document.extract('/cwms_message/property');
       if l_nodes is not null then
          i := 0;
@@ -472,8 +472,8 @@ begin
                l_node   := l_node.extract('*/node()');
                if l_node is null then
                   cwms_err.raise(
-                     'INVALID_ITEM', 
-                     'NULL', 
+                     'INVALID_ITEM',
+                     'NULL',
                      'CWMS message property value (type='
                      || l_msgtype
                      || ', property='
@@ -492,22 +492,22 @@ begin
             end if;
 
             begin
-               select prop_type_code 
-                 into l_prop_type 
-                 from cwms_log_message_prop_types 
+               select prop_type_code
+                 into l_prop_type
+                 from cwms_log_message_prop_types
                 where prop_type_id = l_type;
             exception
                when no_data_found then
                   cwms_err.raise('INVALID_ITEM', l_type, 'log message property type');
             end;
-                   
-            insert 
-              into at_log_message_properties 
+
+            insert
+              into at_log_message_properties
             values (
-                     l_msg_id, 
-                     l_name, 
-                     l_prop_type, 
-                     l_number, 
+                     l_msg_id,
+                     l_name,
+                     l_prop_type,
+                     l_number,
                      l_text
                    );
          end loop;
@@ -515,7 +515,7 @@ begin
    end if;
    p_message_id := l_msg_id;
    commit;
-   
+
    if l_publish then
       -------------------------
       -- publish the message --
@@ -571,7 +571,7 @@ begin
    else
       return 0;
    end if;
-                                          
+
 end log_long_message;
 
 -------------------------------------------------------------------------------
@@ -584,7 +584,7 @@ is
    l_clob clob := null;
 begin
    return cwms_text.retrieve_text('/message_id/'||p_message_id);
-end get_message_clob;   
+end get_message_clob;
 
 -------------------------------------------------------------------------------
 -- PROCEDURE LOG_DB_MESSAGE(...)
@@ -614,7 +614,7 @@ begin
       || '</cwms_message>',
       l_msg_level,
       false);
-end log_db_message;    
+end log_db_message;
 -------------------------------------------------------------------------------
 -- FUNCTION LOG_MESSAGE_SERVER_MESSAGE(...)
 --
@@ -659,7 +659,7 @@ begin
       ------------------------
       l_message := cwms_util.strip(p_message);
       if instr(l_message, 'GMT >> Heartbeat') != 20 then
-         cwms_err.raise('ERROR', 'Unrecognized message server message: ' || l_message); 
+         cwms_err.raise('ERROR', 'Unrecognized message server message: ' || l_message);
       end if;
       --------------------------
       -- set the message type --
@@ -703,8 +703,8 @@ begin
       l_parts := cwms_util.split_text(substr(l_message, 27));
       l_parts.delete(6,7);
       for i in l_parts.first..l_parts.last loop
-         if l_parts.exists(i) then 
-            l_msg_text := l_msg_text || l_parts(i) || ' '; 
+         if l_parts.exists(i) then
+            l_msg_text := l_msg_text || l_parts(i) || ' ';
          end if;
       end loop;
       l_msg_text := l_msg_text || lf || '  </text>'  || lf;
@@ -759,16 +759,16 @@ begin
                   declare
                      l_typeid integer;
                   begin
-                     select message_type_code 
-                       into l_typeid 
-                       from cwms_log_message_types 
+                     select message_type_code
+                       into l_typeid
+                       from cwms_log_message_types
                       where message_type_id = l_parts(2);
                      l_msg_text := replace(l_msg_text, '$msgtype', l_msg_type);
                   exception
                      when no_data_found then
                         l_msg_type := 'Status';
                         l_msg_text := replace(l_msg_text, '$msgtype', l_msg_type);
-                        l_msg_text := l_msg_text 
+                        l_msg_text := l_msg_text
                                    || '  <property name="subtype" type="String">'
                                    || l_parts(2)
                                    || '</property>' || lf;
@@ -784,20 +784,20 @@ begin
                      when 'StatusIntervalMinutes' then msg_level_detailed
                      when 'Terminated'            then msg_level_basic
                      else                              msg_level_normal
-                  end;       
+                  end;
                when 'Message' then
                   ---------------------------------
                   -- get message body from value --
                   ---------------------------------
                   if l_msg_type = 'State' and substr(l_parts(2), 1, 7) = 'Server=' then
-                     l_msg_text := l_msg_text 
+                     l_msg_text := l_msg_text
                                 || '  <property name="state" type="String">'
                                 || substr(l_parts(2), 8)
                                 || '</property>' || lf;
                   else
-                     l_msg_text := l_msg_text 
-                                 || '  <text>'  || lf 
-                                 || l_parts(2)  || lf 
+                     l_msg_text := l_msg_text
+                                 || '  <text>'  || lf
+                                 || l_parts(2)  || lf
                                  || '  </text>' || lf;
                   end if;
                else
@@ -827,7 +827,7 @@ begin
                         end;
                      end if;
                   exception
-                     when others then 
+                     when others then
                         case lower(l_parts(2))
                            when 'true'  then l_prop_type := 'boolean';
                            when 't'     then l_prop_type := 'boolean';
@@ -843,10 +843,10 @@ begin
                         end case;
 
                   end;
-                  l_msg_text := l_msg_text 
+                  l_msg_text := l_msg_text
                              || '  <property name="'
                              || l_parts(1)
-                             || '" type="' 
+                             || '" type="'
                              || l_prop_type || '">'
                              || l_parts(2)
                              || '</property>' || lf;
@@ -856,7 +856,7 @@ begin
    end if;
    l_msg_text := l_msg_text || '</cwms_message>';
    return log_message(l_component, l_instance, l_host, l_port, l_report_time, l_msg_text, l_msg_level);
-end log_message_server_message;   
+end log_message_server_message;
 
 
 -------------------------------------------------------------------------------
@@ -899,7 +899,7 @@ begin
       end if;
    end loop;
    return l_text || '; ';
-end parse_log_msg_prop_tab;         
+end parse_log_msg_prop_tab;
 
 -------------------------------------------------------------------------------
 -- PROCEDURE TRIM_LOG
@@ -911,173 +911,60 @@ end parse_log_msg_prop_tab;
 --
 procedure trim_log
 is
-   type refcur is ref cursor;
-   type rec_t  is record (msg_id at_log_message.msg_id%type);
-   l_cur               refcur;
-   l_rec               rec_t;
-   l_property_value    varchar2(256);
-   l_property_comment  varchar2(256);
-   l_max_age_in_days   integer := -1;
-   l_max_table_entries integer := -1;
-   l_entry_count       integer;
-   l_oldest_timestamp  timestamp;
-   l_now               timestamp := systimestamp;
-   l_oldest_in_days    integer;
-   l_db_office_id      varchar2(16) := cwms_util.get_db_office_id; 
-   l_interval          interval day (5) to second;
-   l_sql_text          varchar2(4000) := 
-      'select msg_id from (
-         select msg_id, num, row_number() over (order by num desc) rn from (
-            select t1.msg_id, count(t2.msg_id) num 
-            from at_log_message t1, at_log_message t2
-            where t2.msg_id >= t1.msg_id
-            group by t1.msg_id)
-         where num <= :max_entries
-         order by num)
-      where rn = 1';
+   l_msg_id_count varchar2(32) := '0';
+   l_msg_id_date  varchar2(32) := '0';
+   l_count        number;
+   l_max_count    number;
+   l_max_days     number;
+   l_office_id    varchar2(16) := cwms_util.user_office_id;
 begin
-   log_db_message(
-      'CWMS_MSG.TRIM_LOG', 
-      msg_level_basic, 
-      'Beginning trimming of log entries');
-   select count(*) into l_entry_count from at_log_message;
-   select min(log_timestamp_utc) into l_oldest_timestamp from at_log_message;
-   l_oldest_in_days := extract(day from (l_now - l_oldest_timestamp) day to second);
-   log_db_message(
-      'CWMS_MSG.TRIM_LOG', 
-      msg_level_verbose, 
-      'Log table has ' || l_entry_count || ' entries');
-   log_db_message(
-      'CWMS_MSG.TRIM_LOG', 
-      msg_level_verbose, 
-      'Oldest log entry is ' || l_oldest_timestamp || ' (' || l_oldest_in_days || ' days)');
-   --------------------------------------------------------------------------------
-   -- set l_max_table_entries from the CWMSDB/logging.table.max_entries property --
-   --------------------------------------------------------------------------------
-   cwms_properties.get_property(
-      l_property_value,
-      l_property_comment,
-      'CWMSDB',
-      'logging.table.max_entries',
-      null,
-      l_db_office_id);
-   if l_property_value is null then
-      log_db_message(
-         'CWMS_MSG.TRIM_LOG', 
-         msg_level_detailed, 
-         'Property CWMSDB/logging.table.max_entries is not set for user ' 
-         || l_db_office_id
-         || ', table will not be trimmed by entry count');
-   else
-      begin
-         l_max_table_entries := to_number(l_property_value);
-         log_db_message(
-            'CWMS_MSG.TRIM_LOG', 
-            msg_level_verbose,
-            l_db_office_id
-            || '/CWMSDB/logging.table.max_entries =  ' 
-            || l_max_table_entries);
-      exception
-         when others then
-            log_db_message(
-               'CWMS_MSG.TRIM_LOG', 
-               msg_level_basic,
-               l_db_office_id
-               || '/CWMSDB/logging.table.max_entries is not an integer value: ' 
-               || l_property_value
-               || ', table will not be trimmed by entry count');
-      end;
+   log_db_message('TRIM_LOG', msg_level_basic, 'Start trimming log entries');
+   ---------------------------------------
+   -- get the count and date properties --
+   ---------------------------------------
+   l_max_count := to_number(cwms_properties.get_property('CWMSDB','logging.table.max_entries','100000',l_office_id));
+   l_max_days  := to_number(cwms_properties.get_property('CWMSDB','logging.table.max_age','120',l_office_id));
+   -------------------------------------------
+   -- determine the msg_id cutoff for count --
+   -------------------------------------------
+   select count(*)
+     into l_count
+     from at_log_message;
+   log_db_message('TRIM_LOG', msg_level_detailed, 'AT_LOG_MESSAGE has '||l_count||' records.');
+   if l_count > l_max_count then
+      select msg_id
+        into l_msg_id_count
+        from ( select msg_id,
+                      rownum as rn
+                 from at_log_message
+             order by msg_id desc
+             )
+       where rn = trunc(l_max_count);
    end if;
-   --------------------------------------------------------------------------
-   -- set l_max_age_in_days from the CWMSDB/logging.entry.max_age property --
-   --------------------------------------------------------------------------
-   cwms_properties.get_property(
-      l_property_value,
-      l_property_comment,
-      'CWMSDB',
-      'logging.entry.max_age',
-      null,
-      l_db_office_id);
-   if l_property_value is null then
-      log_db_message(
-         'CWMS_MSG.TRIM_LOG', 
-         msg_level_detailed, 
-         'Property CWMSDB/logging.entry.max_age is not set for user ' 
-         || l_db_office_id
-         || ', table will not be trimmed by entry age');
-   else
-      begin
-         l_max_age_in_days := to_number(l_property_value);
-         log_db_message(
-            'CWMS_MSG.TRIM_LOG', 
-            msg_level_verbose,
-            l_db_office_id
-            || '/CWMSDB/logging.entry.max_age =  ' 
-            || l_max_age_in_days);
-         l_interval := numtodsinterval(l_max_age_in_days, 'day');
-      exception
-         when others then
-            log_db_message(
-               'CWMS_MSG.TRIM_LOG', 
-               msg_level_basic,
-               l_db_office_id
-               || '/CWMSDB/logging.entry.max_age is not an integer value: ' 
-               || l_property_value
-               || ', table will not be trimmed by entry age');
-      end;
-   end if;
-   ---------------------------
-   -- trim the table by age --
-   ---------------------------
-   if l_max_age_in_days > 0 then
-      if l_oldest_in_days > l_max_age_in_days then
-         log_db_message(
-            'CWMS_MSG.TRIM_LOG', 
-            msg_level_detailed,
-            'Trimming table by entry age');
-         delete from at_log_message_properties
-               where msg_id in (select msg_id 
-                                  from at_log_message
-                                 where log_timestamp_utc < l_now - l_interval);
-         delete from at_log_message
-               where log_timestamp_utc < l_now - l_interval;
-         select count(*) into l_entry_count from at_log_message;
-         log_db_message(
-            'CWMS_MSG.TRIM_LOG', 
-            msg_level_verbose, 
-            'Log table now has ' || l_entry_count || ' entries');
-      end if;
-   end if;
-   -----------------------------------
-   -- trim the table by entry count --
-   -----------------------------------
-   if l_max_table_entries > 0 then
-      if l_entry_count > l_max_table_entries then
-         log_db_message(
-            'CWMS_MSG.TRIM_LOG', 
-            msg_level_detailed,
-            'Trimming table by entry count');
-         open l_cur for l_sql_text using l_max_table_entries;
-         fetch l_cur into l_rec;
-         close l_cur;
-         delete from at_log_message_properties
-               where msg_id in (select msg_id from at_log_message
-                                      where msg_id < l_rec.msg_id); 
-         delete from at_log_message
-               where msg_id < l_rec.msg_id;
-         select count(*) into l_entry_count from at_log_message;
-         log_db_message(
-            'CWMS_MSG.TRIM_LOG', 
-            msg_level_verbose, 
-            'Log table now has ' || l_entry_count || ' entries');
-      end if;
-   end if;
-   log_db_message(
-      'CWMS_MSG.TRIM_LOG', 
-      msg_level_basic, 
-      'Ending trimming of log entries');
+   ------------------------------------------
+   -- determine the msg_id cutoff for date --
+   ------------------------------------------
+   l_msg_id_date := cwms_util.to_millis(systimestamp at time zone 'UTC' - numtodsinterval(l_max_days, 'DAY'))||'_000';
+   -------------------------
+   -- trim the log tables --
+   -------------------------
+   delete
+     from at_log_message_properties
+    where msg_id < greatest(l_msg_id_count, l_msg_id_date)
+returning count(*)
+     into l_count;
+   log_db_message('TRIM_LOG', msg_level_detailed, 'Deleted '||l_count||' records from AT_LOG_MESSAGE_PROPERTIES');
+
+   delete
+     from at_log_message
+    where msg_id < greatest(l_msg_id_count, l_msg_id_date)
+returning count(*)
+     into l_count;
+   log_db_message('TRIM_LOG', msg_level_detailed, 'Deleted '||l_count||' records from AT_LOG_MESSAGE');
+
+   log_db_message('TRIM_LOG', msg_level_basic, 'Done trimming log entries');
 end trim_log;
-   
+
 --------------------------------------------------------------------------------
 -- procedure start_trim_log_job
 --
@@ -1141,11 +1028,11 @@ begin
          -- restart the job --
          ---------------------
          cwms_properties.get_property(
-				l_run_interval, 
-				l_comment, 
-				'CWMSDB', 
-				'logging.auto_trim.interval', 
-				'120', 
+				l_run_interval,
+				l_comment,
+				'CWMSDB',
+				'logging.auto_trim.interval',
+				'120',
 				'CWMS');
          dbms_scheduler.create_job
             (job_name             => l_job_id,
@@ -1200,20 +1087,20 @@ is
 begin
    l_purge_options.block := true;
    for rec in (
-      select object_name 
-        from dba_objects 
-       where object_type = 'QUEUE' 
-         and owner = '&cwms_schema' 
+      select object_name
+        from dba_objects
+       where object_type = 'QUEUE'
+         and owner = '&cwms_schema'
          and object_name not like 'AQ$%')
    loop
       ---------------------------------------
       -- first kill any zombie subscribers --
       ---------------------------------------
       open l_cursor for
-         'select consumer_name as subscriber, 
-                 max(deq_timestamp) as last_dequeue_time 
-            from AQ$'||rec.object_name||'_TABLE 
-           where msg_state != ''READY'' 
+         'select consumer_name as subscriber,
+                 max(deq_timestamp) as last_dequeue_time
+            from AQ$'||rec.object_name||'_TABLE
+           where msg_state != ''READY''
         group by consumer_name';
       loop
          fetch l_cursor into l_subscriber_name, l_last_dequeue;
@@ -1223,8 +1110,8 @@ begin
             -- zombie --
             ------------
             cwms_msg.log_db_message(
-               'purge_queues', 
-               cwms_msg.msg_level_normal, 
+               'purge_queues',
+               cwms_msg.msg_level_normal,
                'Killing zombie subsciber '
                   || l_subscriber_name
                   || ' for queue '
@@ -1242,15 +1129,15 @@ begin
                      into l_subscriber.address,
                           l_subscriber.protocol
                     using rec.object_name,
-                          l_subscriber.name;         
+                          l_subscriber.name;
                dbms_aqadm.remove_subscriber(
                   rec.object_name,
                   l_subscriber);
             exception
                when others then
                   cwms_msg.log_db_message(
-                     'purge_queues', 
-                     cwms_msg.msg_level_normal, 
+                     'purge_queues',
+                     cwms_msg.msg_level_normal,
                      'Error killing zombie subsciber '
                         || l_subscriber_name
                         || ' for queue '
@@ -1259,23 +1146,23 @@ begin
                         || sqlcode
                         || ' - '
                         || sqlerrm);
-            end;                                              
+            end;
          end if;
       end loop;
-      close l_cursor;      
+      close l_cursor;
       ----------------------------------------------------------------
       -- next purge queues of any expired or undeliverable messages --
       ----------------------------------------------------------------
-      l_sql := 'select count(*) 
+      l_sql := 'select count(*)
                   from AQ$'
                      || rec.object_name
-                     || '_TABLE 
+                     || '_TABLE
                  where msg_state in (''UNDELIVERABLE'',''EXPIRED'')';
       execute immediate l_sql into l_expired_count;
       if l_expired_count > l_max_purge_count then
          cwms_msg.log_db_message(
-            'purge_queues', 
-            cwms_msg.msg_level_normal, 
+            'purge_queues',
+            cwms_msg.msg_level_normal,
             'Purging '
                || l_max_purge_count
                || ' of '
@@ -1284,28 +1171,28 @@ begin
                || rec.object_name);
       elsif l_expired_count > 0 then
          cwms_msg.log_db_message(
-            'purge_queues', 
-            cwms_msg.msg_level_normal, 
+            'purge_queues',
+            cwms_msg.msg_level_normal,
             'Purging '
                || l_expired_count
                || ' expired messages from queue: '
                || rec.object_name);
       end if;
       if l_expired_count > 0 then
-         l_purged := true;         
+         l_purged := true;
          dbms_aqadm.purge_queue_table(
             rec.object_name||'_TABLE',
             'MSG_STATE IN (''UNDELIVERABLE'',''EXPIRED'') AND ROWNUM <= '
                || l_max_purge_count,
             l_purge_options);
-      end if;                     
+      end if;
    end loop;
-   if l_purged then 
+   if l_purged then
       cwms_msg.log_db_message(
-         'purge_queues', 
-         cwms_msg.msg_level_normal, 
+         'purge_queues',
+         cwms_msg.msg_level_normal,
          'Done purging expired messages from queues');
-   end if;         
+   end if;
 end purge_queues;
 
 --------------------------------------------------------------------------------
@@ -1448,7 +1335,7 @@ begin
            into l_office_id
            from cwms_office
           where office_id = upper(l_parts(1));
-         l_queue_name := l_parts(2);          
+         l_queue_name := l_parts(2);
       exception
          when no_data_found then
             l_office_id := cwms_util.user_office_id;
