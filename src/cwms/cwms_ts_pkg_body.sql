@@ -4698,9 +4698,17 @@ procedure change_version_date (
    p_start_time_utc       in date,
    p_end_time_utc         in date)
 is
-   l_start_time date := nvl(p_start_time_utc, date '0001-01-01');
-   l_end_time   date := nvl(p_end_time_utc, date '9999-12-31');
+   l_is_versioned varchar2(1);
+   l_start_time   date := nvl(p_start_time_utc, date '0001-01-01');
+   l_end_time     date := nvl(p_end_time_utc, date '9999-12-31');
 begin
+   ------------------
+   -- sanity check --
+   ------------------
+   is_ts_versioned(l_is_versioned, p_ts_code);
+   if cwms_util.is_false(l_is_versioned) then
+      cwms_err.raise('ERROR', 'Cannot change version date on non-versioned data.');
+   end if;
    for rec in (select * from at_ts_table_properties) loop
       continue when rec.start_date > l_end_time;
       continue when rec.end_date < l_start_time;
