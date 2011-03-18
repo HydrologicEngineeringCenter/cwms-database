@@ -139,7 +139,20 @@ AS
 		p_cwms_ts_id		 IN VARCHAR2,
 		p_delete_action	 IN VARCHAR2,
 		p_db_office_code	 IN NUMBER
-	);
+	); 
+   
+   procedure purge_ts_data(
+      p_ts_code          in number,
+      p_version_date_utc in date,
+      p_start_time_utc   in date,
+      p_end_time_utc     in date);
+   
+   procedure change_version_date (
+      p_ts_code              in number,
+      p_old_version_date_utc in date,
+      p_new_version_date_utc in date,
+      p_start_time_utc       in date,
+      p_end_time_utc         in date);
 
 	--
 	--******************************************************************* --

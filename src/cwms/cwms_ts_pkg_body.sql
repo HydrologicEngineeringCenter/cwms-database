@@ -4664,6 +4664,56 @@ BEGIN
 --
 --
 END delete_ts;
+
+   
+procedure purge_ts_data(
+   p_ts_code         in number,
+   p_version_date_utc in date,
+   p_start_time_utc   in date,
+   p_end_time_utc     in date)
+is
+   l_start_time date := nvl(p_start_time_utc, date '0001-01-01');
+   l_end_time   date := nvl(p_end_time_utc, date '9999-12-31');
+begin
+   for rec in (select * from at_ts_table_properties) loop
+      continue when rec.start_date > l_end_time;
+      continue when rec.end_date < l_start_time;
+      if p_version_date_utc is null then
+         execute immediate 
+            'delete from '||rec.table_name||' where ts_code = :1' 
+            using p_ts_code;
+      else
+         execute immediate 
+            'delete from '||rec.table_name||' where ts_code = :1 and version_date = :2' 
+            using p_ts_code, p_version_date_utc;
+      end if;
+   end loop;   
+end purge_ts_data;
+
+   
+procedure change_version_date (
+   p_ts_code              in number,
+   p_old_version_date_utc in date,
+   p_new_version_date_utc in date,
+   p_start_time_utc       in date,
+   p_end_time_utc         in date)
+is
+   l_start_time date := nvl(p_start_time_utc, date '0001-01-01');
+   l_end_time   date := nvl(p_end_time_utc, date '9999-12-31');
+begin
+   for rec in (select * from at_ts_table_properties) loop
+      continue when rec.start_date > l_end_time;
+      continue when rec.end_date < l_start_time;
+      execute immediate
+         'update '||rec.table_name||'
+             set version_date = :1
+           where ts_code = :2
+             and version_date = :3'
+         using p_new_version_date_utc, p_ts_code, p_old_version_date_utc;              
+   end loop;   
+end change_version_date;
+   
+
 --
 --*******************************************************************   --
 --*******************************************************************   --
