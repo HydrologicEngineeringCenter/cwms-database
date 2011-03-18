@@ -22,7 +22,11 @@ AS
    function get_location_id(
       p_location_id_or_alias varchar2,
       p_office_code          number)
-      return varchar2;
+      return varchar2; 
+      
+   function get_location_id(
+      p_location_code in number)
+      return varchar2;      
 
    FUNCTION get_location_code (
       p_db_office_id   IN   VARCHAR2,

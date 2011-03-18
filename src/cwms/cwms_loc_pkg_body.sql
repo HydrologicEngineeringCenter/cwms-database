@@ -51,6 +51,25 @@ AS
 	END;
 
 	--loc_cat_grp_rec_tab_t IS TABLE OF loc_cat_grp_rec_t  
+      
+   function get_location_id(
+      p_location_code in number)
+      return varchar2
+   is  
+      l_location_id varchar2(49);
+   begin
+      if p_location_code is not null then
+         select bl.base_location_id
+                ||substr('_', 1, length(pl.sub_location_id))
+                ||pl.sub_location_id
+           into l_location_id
+           from at_physical_location pl,
+                at_base_location bl
+          where pl.location_code = p_location_code
+            and bl.base_location_code = pl.base_location_code;
+      end if;
+      return l_location_id;             
+   end get_location_id;            
    
    function get_location_id(
       p_location_id_or_alias varchar2,
