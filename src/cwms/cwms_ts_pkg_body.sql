@@ -75,6 +75,7 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
                   FROM   zav_cwms_ts_id
                  WHERE   ts_code = p_ts_code;
         END;
+        RETURN l_cwms_ts_id;
     END;
  --******************************************************************************/   
    --

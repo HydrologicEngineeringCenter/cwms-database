@@ -29,6 +29,8 @@ AS
 		RETURN NUMBER;
 
 
+   FUNCTION get_ts_id (p_ts_code IN NUMBER)
+      RETURN VARCHAR2;
 
 	FUNCTION get_cwms_ts_id (p_cwms_ts_id	 IN VARCHAR2,
 									 p_office_id	 IN VARCHAR2
