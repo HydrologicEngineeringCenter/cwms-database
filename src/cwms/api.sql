@@ -64,6 +64,9 @@
 @@cwms_display_pkg
 @@cwms_display_pkg_body
 
+@@cwms_forecast_pkg
+@@cwms_forecast_pkg_body
+
 -- HOST pwd
 
 @@cwms_project_pkg
