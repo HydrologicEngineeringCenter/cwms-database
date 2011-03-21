@@ -824,6 +824,7 @@ select db_office_id,
        ( select nvl(time_zone_name, 'UTC') as local_tz,
                 location_code
            from av_loc
+          where unit_system = 'SI'
        ) loc
        on loc.location_code = tsid.location_code
        join 
