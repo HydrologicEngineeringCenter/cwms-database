@@ -186,6 +186,7 @@ begin
       validate_rounding_spec(p_rounding_spec);
       l_max_places := to_number(substr(p_rounding_spec, 10));
       for i in 1..p_values.count loop
+         continue when p_values(i) is null or p_values(i) = 0;
          l_value      := p_values(i);
          l_magnitude  := trunc(log(10, abs(l_value)));
          l_spec_pos   := least(5, greatest(-3, l_magnitude)) + 4;
@@ -216,6 +217,7 @@ begin
       validate_rounding_spec(p_rounding_spec);
       l_max_places := to_number(substr(p_rounding_spec, 10));
       for i in 1..p_values.count loop
+         continue when p_values(i) is null or p_values(i) = 0;
          l_value      := p_values(i);
          l_magnitude  := trunc(log(10, abs(l_value)));
          l_spec_pos   := least(5, greatest(-3, l_magnitude)) + 4;
@@ -247,6 +249,7 @@ begin
       l_max_places := to_number(substr(p_rounding_spec, 10));
       for i in 1..p_values.count loop
          l_value      := to_number(p_values(i));
+         continue when l_value is null or l_value = 0;
          l_magnitude  := trunc(log(10, abs(l_value)));
          l_spec_pos   := least(5, greatest(-3, l_magnitude)) + 4;
          l_sig_digits := to_number(substr(p_rounding_spec, l_spec_pos, 1));
@@ -276,6 +279,7 @@ begin
       validate_rounding_spec(p_rounding_spec);
       l_max_places := to_number(substr(p_rounding_spec, 10));
       for i in 1..p_values.count loop
+         continue when p_values(i).value is null or p_values(i).value = 0;
          l_value      := p_values(i).value;
          l_magnitude  := trunc(log(10, abs(l_value)));
          l_spec_pos   := least(5, greatest(-3, l_magnitude)) + 4;
@@ -306,6 +310,7 @@ begin
       validate_rounding_spec(p_rounding_spec);
       l_max_places := to_number(substr(p_rounding_spec, 10));
       for i in 1..p_values.count loop
+         continue when p_values(i).value is null or p_values(i).value = 0;
          l_value      := p_values(i).value;
          l_magnitude  := trunc(log(10, abs(l_value)));
          l_spec_pos   := least(5, greatest(-3, l_magnitude)) + 4;
