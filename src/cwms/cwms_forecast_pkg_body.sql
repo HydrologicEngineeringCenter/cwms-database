@@ -967,8 +967,8 @@ begin
                       cwms_util.change_timezone(fts.issue_date, 'UTC', l_time_zone) as issue_date,
                       cwms_ts.get_ts_id(fts.ts_code) as cwms_ts_id,
                       cwms_util.change_timezone(fts.version_date, 'UTC', l_time_zone) as version_date,
-                      cwms_util.change_timezone(min(v.date_time), 'UTC', l_time_zone) as min_time,
-                      cwms_util.change_timezone(max(v.date_time), 'UTC', l_time_zone) as max_time
+                      cwms_util.change_timezone(cwms_ts.get_ts_min_date_utc(fts.ts_code, fts.version_date), 'UTC', l_time_zone) as min_time,
+                      cwms_util.change_timezone(cwms_ts.get_ts_max_date_utc(fts.ts_code, fts.version_date), 'UTC', l_time_zone) as max_time
                  from at_forecast_ts fts,
                       at_physical_location pl,
                       at_base_location bl,
@@ -982,8 +982,6 @@ begin
                   and fts.ts_code = cts.ts_code
                   and fts.forecast_spec_code = get_forecast_spec_code(p_location_id, p_forecast_id, p_office_id)
                   and upper(cwms_ts.get_ts_id(fts.ts_code)) like l_cwms_ts_id_mask escape '\'
-                  and v.ts_code = fts.ts_code
-                  and v.version_date = fts.version_date
              )
     order by office_id,
              forecast_date,

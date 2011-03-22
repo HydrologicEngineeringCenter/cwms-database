@@ -741,6 +741,49 @@ AS
    function quality_is_rejected(
       p_value in ztsv_type)
       return boolean;
+   
+   ----------------------------------      
+   -- time series extents routines --
+   ----------------------------------      
+   function get_ts_min_date_utc(
+      p_ts_code          in number,
+      p_version_date_utc in date default cwms_util.non_versioned)
+      return date;
+      
+   function get_ts_min_date(
+      p_cwms_ts_id   in varchar2,
+      p_time_zone    in varchar2 default 'UTC',
+      p_version_date in date     default cwms_util.non_versioned,
+      p_office_id    in varchar2 default null)
+      return date;
+      
+   function get_ts_max_date_utc(
+      p_ts_code          in number,
+      p_version_date_utc in date default cwms_util.non_versioned)
+      return date;
+      
+   function get_ts_max_date(
+      p_cwms_ts_id   in varchar2,
+      p_time_zone    in varchar2 default 'UTC',
+      p_version_date in date     default cwms_util.non_versioned,
+      p_office_id    in varchar2 default null)
+      return date;
+      
+   procedure get_ts_extents_utc(
+      p_min_date_utc     out date,
+      p_max_date_utc     out date,
+      p_ts_code          in  number,
+      p_version_date_utc in  date default cwms_util.non_versioned);
+      
+   procedure get_ts_extents(
+      p_min_date     out date,
+      p_max_date     out date,
+      p_cwms_ts_id   in  varchar2,
+      p_time_zone    in  varchar2 default 'UTC',
+      p_version_date in  date     default cwms_util.non_versioned,
+      p_office_id    in  varchar2 default null);
+      
+            
 END;
 /
 
