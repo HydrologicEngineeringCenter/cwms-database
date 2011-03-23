@@ -19,7 +19,7 @@ begin
          'Storing rating template '
          ||cwms_util.get_xml_text(l_node, '/rating-template/@office-id')
          ||'/'||regexp_replace(cwms_util.get_xml_text(l_node, '/rating-template/parameters-id'), '\s', '', 1, 0)
-         ||'.'||regexp_replace(cwms_util.get_xml_text(l_node, '/rating-template/version'), '\s', '', 1, 0));
+         ||separator1||regexp_replace(cwms_util.get_xml_text(l_node, '/rating-template/version'), '\s', '', 1, 0));
       l_template := rating_template_t(l_node);
       l_template.store(p_fail_if_exists);
    end loop;
@@ -76,7 +76,7 @@ is
    l_version_mask       varchar2(32);
    l_office_id_mask     varchar2(16);
 begin
-   l_parts := cwms_util.split_text(p_template_id_mask, '.');
+   l_parts := cwms_util.split_text(p_template_id_mask, separator1);
    case l_parts.count
       when 1 then
          l_parameters_id_mask := l_parts(1);
@@ -96,7 +96,7 @@ begin
    open p_cat_cursor for
       select o.office_id,
              rt.parameters_id
-             ||'.'||rt.version as template_id,
+             ||separator1||rt.version as template_id,
              rt.parameters_id,
              rt.version
         from at_rating_template rt,
@@ -141,7 +141,7 @@ is
    l_version_mask       varchar2(32);
    l_office_id_mask     varchar2(16);
 begin
-   l_parts := cwms_util.split_text(p_template_id_mask, '.');
+   l_parts := cwms_util.split_text(p_template_id_mask, separator1);
    case l_parts.count
       when 1 then
          l_parameters_id_mask := l_parts(1);
@@ -371,7 +371,7 @@ is
    l_spec_version_mask     varchar2(32);
    l_office_id_mask        varchar2(16) := nvl(p_office_id_mask, cwms_util.user_office_id);
 begin
-   l_parts := cwms_util.split_text(p_spec_id_mask, '.');
+   l_parts := cwms_util.split_text(p_spec_id_mask, separator1);
    case l_parts.count
       when 1 then
          l_location_id_mask      := l_parts(1);
@@ -409,14 +409,14 @@ begin
              bl.base_location_id
              ||substr('-', 1, length(pl.sub_location_id))
              ||pl.sub_location_id
-             ||'.'||rt.parameters_id
-             ||'.'||rt.version
-             ||'.'||rs.version as specification_id,
+             ||separator1||rt.parameters_id
+             ||separator1||rt.version
+             ||separator1||rs.version as specification_id,
              bl.base_location_id
              ||substr('-', 1, length(pl.sub_location_id))
              ||pl.sub_location_id as location_id,
              rt.parameters_id
-             ||'.'||rt.version as template_id,
+             ||separator1||rt.version as template_id,
              rs.version
         from at_rating_spec rs,
              at_rating_template rt,
@@ -475,7 +475,7 @@ is
    l_spec_version_mask     varchar2(32);
    l_office_id_mask        varchar2(16) := nvl(p_office_id_mask, cwms_util.user_office_id);
 begin
-   l_parts := cwms_util.split_text(p_spec_id_mask, '.');
+   l_parts := cwms_util.split_text(p_spec_id_mask, separator1);
    case l_parts.count
       when 1 then
          l_location_id_mask      := l_parts(1);
@@ -778,7 +778,7 @@ is
    l_spec_version_mask     varchar2(32);
    l_office_id_mask        varchar2(16) := nvl(p_office_id_mask, cwms_util.user_office_id);
 begin
-   l_parts := cwms_util.split_text(p_spec_id_mask, '.');
+   l_parts := cwms_util.split_text(p_spec_id_mask, separator1);
    case l_parts.count
       when 1 then
          l_location_id_mask      := l_parts(1);
@@ -816,9 +816,9 @@ begin
              bl.base_location_id
              ||substr('-', 1, length(pl.sub_location_id))
              ||pl.sub_location_id
-             ||'.'||rt.parameters_id
-             ||'.'||rt.version
-             ||'.'||rs.version as specification_id,
+             ||separator1||rt.parameters_id
+             ||separator1||rt.version
+             ||separator1||rs.version as specification_id,
              cwms_util.change_timezone(r.effective_date, 'UTC', tz2.time_zone_name) as effective_date,
              cwms_util.change_timezone(r.create_date, 'UTC', tz2.time_zone_name) as create_date
         from at_rating r,
@@ -915,7 +915,7 @@ is
    l_office_id_mask        varchar2(16) := nvl(p_office_id_mask, cwms_util.user_office_id);
    l_count                 simple_integer := 0;
 begin
-   l_parts := cwms_util.split_text(p_spec_id_mask, '.');
+   l_parts := cwms_util.split_text(p_spec_id_mask, separator1);
    case l_parts.count
       when 1 then
          l_location_id_mask      := l_parts(1);
@@ -1344,7 +1344,7 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(cwms_util.split_text(p_rating_spec, ';'));
+   cwms_util.check_inputs(cwms_util.split_text(p_rating_spec, separator2));
    cwms_util.check_input(p_time_zone);
    cwms_util.check_input(p_office_id);
    cwms_util.check_inputs(p_units);
@@ -1388,7 +1388,7 @@ begin
    ------------------------------------------------------------------------
    -- get the location, parameters, template version, and rating version --
    ------------------------------------------------------------------------
-   l_parts := cwms_util.split_text(p_rating_spec, '.');
+   l_parts := cwms_util.split_text(p_rating_spec, separator1);
    if l_parts.count != 4 then
       cwms_err.raise(
          'INVALID_ITEM',
@@ -1410,7 +1410,7 @@ begin
        where upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_parts(1)))
          and bl.db_office_code = cwms_util.get_db_office_code(l_office_id)
          and pl.base_location_code = bl.base_location_code
-         and nvl(pl.sub_location_id, '.') = nvl(cwms_util.get_sub_id(l_parts(1)), '.')
+         and nvl(pl.sub_location_id, separator1) = nvl(cwms_util.get_sub_id(l_parts(1)), separator1)
          and tz.time_zone_code = nvl(pl.time_zone_code, 0);
          
       if l_time_zone = 'Unknown or Not Applicable' then
@@ -1634,7 +1634,7 @@ begin
             if l_ratings(l_hi_index) is null then  
                l_ratings(l_hi_index) := get_rating(l_rating_codes(l_hi_index));
                l_ratings(l_hi_index).convert_to_native_units;
-               l_rating_units(l_hi_index) := cwms_util.split_text(replace(l_ratings(l_hi_index).native_units, ';', ','), ',');
+               l_rating_units(l_hi_index) := cwms_util.split_text(replace(l_ratings(l_hi_index).native_units, separator2, separator3), separator3);
                if l_rating_units(l_hi_index).count != p_units.count then
                   cwms_err.raise(
                      'ERROR',
@@ -1666,7 +1666,7 @@ begin
             if l_ratings(l_hi_index-1) is null then
                l_ratings(l_hi_index-1) := get_rating(l_rating_codes(l_hi_index-1));
                l_ratings(l_hi_index-1).convert_to_native_units;
-               l_rating_units(l_hi_index-1) := cwms_util.split_text(replace(l_ratings(l_hi_index-1).native_units, ';', ','), ',');
+               l_rating_units(l_hi_index-1) := cwms_util.split_text(replace(l_ratings(l_hi_index-1).native_units, separator2, separator3), separator3);
                if l_rating_units(l_hi_index-1).count != p_units.count then
                   cwms_err.raise(
                      'ERROR',
@@ -2321,7 +2321,7 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(cwms_util.split_text(p_rating_spec, ';'));
+   cwms_util.check_inputs(cwms_util.split_text(p_rating_spec, separator2));
    cwms_util.check_input(p_time_zone);
    cwms_util.check_input(p_office_id);
    cwms_util.check_inputs(p_units);
@@ -2346,7 +2346,7 @@ begin
    ------------------------------------------------------------------------
    -- get the location, parameters, template version, and rating version --
    ------------------------------------------------------------------------
-   l_parts := cwms_util.split_text(p_rating_spec, '.');
+   l_parts := cwms_util.split_text(p_rating_spec, separator1);
    if l_parts.count != 4 then
       cwms_err.raise(
          'INVALID_ITEM',
@@ -2368,7 +2368,7 @@ begin
        where upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_parts(1)))
          and bl.db_office_code = cwms_util.get_db_office_code(l_office_id)
          and pl.base_location_code = bl.base_location_code
-         and nvl(pl.sub_location_id, '.') = nvl(cwms_util.get_sub_id(l_parts(1)), '.')
+         and nvl(pl.sub_location_id, separator1) = nvl(cwms_util.get_sub_id(l_parts(1)), separator1)
          and tz.time_zone_code = nvl(pl.time_zone_code, 0);
          
       if l_time_zone = 'Unknown or Not Applicable' then
@@ -2584,7 +2584,7 @@ begin
             if l_ratings(l_hi_index) is null then  
                l_ratings(l_hi_index) := get_rating(l_rating_codes(l_hi_index));
                l_ratings(l_hi_index).convert_to_native_units;
-               l_rating_units(l_hi_index) := cwms_util.split_text(replace(l_ratings(l_hi_index).native_units, ';', ','), ',');
+               l_rating_units(l_hi_index) := cwms_util.split_text(replace(l_ratings(l_hi_index).native_units, separator2, separator3), separator3);
                if l_rating_units(l_hi_index).count != p_units.count then
                   cwms_err.raise(
                      'ERROR',
@@ -2617,7 +2617,7 @@ begin
             if l_ratings(l_hi_index-1) is null then
                l_ratings(l_hi_index-1) := get_rating(l_rating_codes(l_hi_index-1));
                l_ratings(l_hi_index-1).convert_to_native_units;
-               l_rating_units(l_hi_index-1) := cwms_util.split_text(replace(l_ratings(l_hi_index-1).native_units, ';', ','), ',');
+               l_rating_units(l_hi_index-1) := cwms_util.split_text(replace(l_ratings(l_hi_index-1).native_units, separator2, separator3), separator3);
                if l_rating_units(l_hi_index-1).count != p_units.count then
                   cwms_err.raise(
                      'ERROR',
@@ -2788,7 +2788,7 @@ begin
       -- set up the parameters --
       ---------------------------
       if p_time_zone is null then
-         l_parts := cwms_util.split_text(p_rating_spec, '.');
+         l_parts := cwms_util.split_text(p_rating_spec, separator1);
          select tz.time_zone_name
            into l_time_zone
            from at_physical_location pl,
@@ -3179,14 +3179,14 @@ begin
       -------------------
       -- sanity checks --
       -------------------
-      l_parts := cwms_util.split_text(p_rating_id, '.');
+      l_parts := cwms_util.split_text(p_rating_id, separator1);
       if l_parts.count != 4 then
          cwms_err.raise(
             'INVALID_ITEM',
             p_rating_id,
             'CWMS rating identifier');
       end if;
-      l_units := cwms_util.split_text(replace(l_parts(1), ';', ','), ',');
+      l_units := cwms_util.split_text(replace(l_parts(1), separator2, separator3), separator3);
       if l_units.count != p_independent_ids.count + 1 then
          cwms_err.raise(
             'ERROR',
@@ -3200,7 +3200,7 @@ begin
       end if;
       l_units(l_units.count) := p_units;
       for i in 1..p_independent_ids.count loop
-         l_parts := cwms_util.split_text(p_independent_ids(i), '.');
+         l_parts := cwms_util.split_text(p_independent_ids(i), separator1);
          if l_parts.count != 6 then
             cwms_err.raise(
                'INVALID_ITEM',
@@ -3233,7 +3233,7 @@ begin
           where upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_location))
             and bl.db_office_code = cwms_util.get_db_office_code(p_ts_office_id)
             and pl.base_location_code = bl.base_location_code
-            and nvl(pl.sub_location_id, '.') = nvl(cwms_util.get_sub_id(l_location), '.')
+            and nvl(pl.sub_location_id, separator1) = nvl(cwms_util.get_sub_id(l_location), separator1)
             and tz.time_zone_code = nvl(pl.time_zone_code, 0);
             
          if l_time_zone = 'Unknown or Not Applicable' then
@@ -3416,7 +3416,7 @@ begin
       -------------------
       -- sanity checks --
       -------------------
-      l_parts := cwms_util.split_text(p_independent_ids(1), '.');
+      l_parts := cwms_util.split_text(p_independent_ids(1), separator1);
       if l_parts.count != 6 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -3424,7 +3424,7 @@ begin
             'CWMS time series identifier');
       end if;
       l_interval := l_parts(4);
-      l_parts := cwms_util.split_text(p_dependent_id, '.');
+      l_parts := cwms_util.split_text(p_dependent_id, separator1);
       if l_parts.count != 6 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -3564,14 +3564,14 @@ begin
       -------------------
       -- sanity checks --
       -------------------
-      l_parts := cwms_util.split_text(p_rating_id, '.');
+      l_parts := cwms_util.split_text(p_rating_id, separator1);
       if l_parts.count != 4 then
          cwms_err.raise(
             'INVALID_ITEM',
             p_rating_id,
             'CWMS rating identifier');
       end if;
-      l_units := cwms_util.split_text(replace(l_parts(1), ';', ','), ',');
+      l_units := cwms_util.split_text(replace(l_parts(1), separator2, separator3), separator3);
       if l_units.count != 2 then
          cwms_err.raise(
             'ERROR',
@@ -3582,7 +3582,7 @@ begin
             ||' independent parameters, 2 specified');
       end if;
       l_units(l_units.count) := p_units;
-      l_parts := cwms_util.split_text(p_dependent_id, '.');
+      l_parts := cwms_util.split_text(p_dependent_id, separator1);
       if l_parts.count != 6 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -3606,7 +3606,7 @@ begin
           where upper(bl.base_location_id) = upper(cwms_util.get_base_id(l_location))
             and bl.db_office_code = cwms_util.get_db_office_code(p_ts_office_id)
             and pl.base_location_code = bl.base_location_code
-            and nvl(pl.sub_location_id, '.') = nvl(cwms_util.get_sub_id(l_location), '.')
+            and nvl(pl.sub_location_id, separator1) = nvl(cwms_util.get_sub_id(l_location), separator1)
             and tz.time_zone_code = nvl(pl.time_zone_code, 0);
             
          if l_time_zone = 'Unknown or Not Applicable' then
@@ -3734,7 +3734,7 @@ begin
       -------------------
       -- sanity checks --
       -------------------
-      l_parts := cwms_util.split_text(p_independent_id, '.');
+      l_parts := cwms_util.split_text(p_independent_id, separator1);
       if l_parts.count != 6 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -3742,7 +3742,7 @@ begin
             'CWMS time series identifier');
       end if;
       l_interval := l_parts(4);
-      l_parts := cwms_util.split_text(p_dependent_id, '.');
+      l_parts := cwms_util.split_text(p_dependent_id, separator1);
       if l_parts.count != 6 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -3811,9 +3811,9 @@ is
 begin
    if p_independent is not null then
       l_rating_spec := rating_spec_t(p_rating_id, cwms_util.get_db_office_id(p_office_id));
-      l_parts := cwms_util.split_text(l_rating_spec.template_id, '.');
-      l_parts := cwms_util.split_text(l_parts(1), ';');
-      l_parts := cwms_util.split_text(l_parts(1), ',');
+      l_parts := cwms_util.split_text(l_rating_spec.template_id, separator1);
+      l_parts := cwms_util.split_text(l_parts(1), separator2);
+      l_parts := cwms_util.split_text(l_parts(1), separator3);
       l_ind_param_count := l_parts.count;
       if l_ind_param_count != p_independent.count then
          cwms_err.raise(

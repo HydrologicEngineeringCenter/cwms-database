@@ -324,7 +324,7 @@ as
                l_office_id 
                || '/' 
                || l_parameters_id
-               || '.'
+               || cwms_rating.separator1
                || l_version 
                || ' parameter ' 
                || self.parameter_position);
@@ -486,10 +486,10 @@ as
       for i in 1..ind_parameters.count  loop
          self.parameters_id := self.parameters_id || ind_parameters(i).parameter_id;
          if i < ind_parameters.count then
-            self.parameters_id := self.parameters_id || ',';
+            self.parameters_id := self.parameters_id || cwms_rating.separator3;
          end if;
       end loop;
-      self.parameters_id := self.parameters_id || ';' || dep_parameter_id;
+      self.parameters_id := self.parameters_id || cwms_rating.separator2 || dep_parameter_id;
    end;
    
    constructor function rating_template_t(
@@ -510,7 +510,7 @@ as
    is
       l_parts str_tab_t;
    begin
-      l_parts := cwms_util.split_text(p_template_id, '.');
+      l_parts := cwms_util.split_text(p_template_id, cwms_rating.separator1);
       if l_parts.count != 2 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -689,7 +689,7 @@ as
       -------------------
       -- parameters_id --
       -------------------
-      l_parts := cwms_util.split_text(self.parameters_id, ';');
+      l_parts := cwms_util.split_text(self.parameters_id, cwms_rating.separator2);
       if l_parts.count != 2 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -705,7 +705,7 @@ as
             ||self.parameters_id
             ||')');
       end if;
-      l_parts := cwms_util.split_text(l_parts(1), ',');
+      l_parts := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
       if l_parts.count != self.ind_parameters.count then
          cwms_err.raise(
             'ERROR',
@@ -775,7 +775,7 @@ as
          cwms_err.raise(
             'ITEM_ALREADY_EXISTS',
             'Rating template',
-            self.office_id || '/' || self.parameters_id || '.' || self.version);
+            self.office_id || '/' || self.parameters_id || cwms_rating.separator1 || self.version);
       end if;
       
       l_rec.dep_parameter_code := self.get_dep_parameter_code;
@@ -886,7 +886,7 @@ as
                l_office_id 
                || '/' 
                || p_parameters_id 
-               || '.' 
+               || cwms_rating.separator1 
                || p_version);
          end;
    end;      
@@ -898,7 +898,7 @@ as
    is
       l_parts str_tab_t;
    begin
-      l_parts := cwms_util.split_text(p_template_id, '.');
+      l_parts := cwms_util.split_text(p_template_id, cwms_rating.separator1);
       if l_parts.count != 2 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -1043,14 +1043,14 @@ as
    is
       l_parts str_tab_t;
    begin
-      l_parts := cwms_util.split_text(p_rating_id, '.');
+      l_parts := cwms_util.split_text(p_rating_id, cwms_rating.separator1);
       if l_parts.count != 4 then
          cwms_err.raise(
             'INVALID_ITEM',
             p_rating_id,
             'rating specification');
       end if;
-      init(l_parts(1), l_parts(2)||'.'||l_parts(3), l_parts(4), p_office_id);
+      init(l_parts(1), l_parts(2)||cwms_rating.separator1||l_parts(3), l_parts(4), p_office_id);
       return;
    end;
 
@@ -1233,7 +1233,7 @@ as
             'Missing <dep-rounding-spec> element under <rating-spec> element');
       end if;
       self.description := get_text(l_xml, '/rating-spec/description');
-      l_parts := cwms_util.split_text(l_rating_spec_id, '.');
+      l_parts := cwms_util.split_text(l_rating_spec_id, cwms_rating.separator1);
       if l_parts.count != 4 then
          cwms_err.raise('ERROR', 'Invalid value for <rating-spec-id> element');
       end if;
@@ -1242,7 +1242,7 @@ as
             'ERROR',
             '<rating-spec-id> and <location-id> elements do not agree');
       end if;
-      if l_parts(2)||'.'||l_parts(3) != self.template_id then
+      if l_parts(2)||cwms_rating.separator1||l_parts(3) != self.template_id then
          cwms_err.raise(
             'ERROR',
             '<rating-spec-id> and <template-id> elements do not agree');
@@ -1291,7 +1291,7 @@ as
           where lt.template_code = rec.template_code
             and o.office_code = lt.office_code;
             
-         self.template_id := l_template_parameters_id || '.' || l_template_version;             
+         self.template_id := l_template_parameters_id || cwms_rating.separator1 || l_template_version;             
          
          if rec.source_agency_code is not null then
             select loc_group_id
@@ -1516,7 +1516,7 @@ as
       l_template_code number;
       l_parts         str_tab_t;
    begin
-      l_parts := cwms_util.split_text(self.template_id, '.');
+      l_parts := cwms_util.split_text(self.template_id, cwms_rating.separator1);
       select template_code
         into l_template_code
         from at_rating_template
@@ -1611,8 +1611,8 @@ as
                'Rating template',
                self.office_id||'/'||self.template_id);
       end;
-      l_parts := cwms_util.split_text(self.template_id, ';');
-      l_parts := cwms_util.split_text(l_parts(1), ',');
+      l_parts := cwms_util.split_text(self.template_id, cwms_rating.separator2);
+      l_parts := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
       if self.ind_rounding_specs is null then
          self.ind_rounding_specs := str_tab_t();
          self.ind_rounding_specs.extend(l_parts.count);
@@ -1655,7 +1655,7 @@ as
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'Rating specification',
-               self.office_id||'/'||self.location_id||'.'||self.template_id||'.'||self.version);
+               self.office_id||'/'||self.location_id||cwms_rating.separator1||self.template_id||cwms_rating.separator1||self.version);
          end if;
          if source_agency_id is not null then
             l_rec.source_agency_code := self.get_source_agency_code;            
@@ -1724,7 +1724,7 @@ as
       dbms_lob.createtemporary(l_text, true);
       dbms_lob.open(l_text, dbms_lob.lob_readwrite);
       cwms_util.append(l_text, '<rating-spec office-id="'||self.office_id||'">'
-         ||'<rating-spec-id>'||self.location_id||'.'||self.template_id||'.'||self.version||'</rating-spec-id>'
+         ||'<rating-spec-id>'||self.location_id||cwms_rating.separator1||self.template_id||cwms_rating.separator1||self.version||'</rating-spec-id>'
          ||'<template-id>'||self.template_id||'</template-id>'
          ||'<location-id>'||self.location_id||'</location-id>'
          ||'<version>'||self.version||'</version>'
@@ -1773,7 +1773,7 @@ as
       l_rating_spec_code number(10);
       l_parts            str_tab_t;
    begin
-      l_parts := cwms_util.split_text(p_template_id, '.');
+      l_parts := cwms_util.split_text(p_template_id, cwms_rating.separator1);
       if l_parts.count != 2 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -1794,7 +1794,7 @@ as
          cwms_err.raise(
             'ITEM_DOES_NOT_EXIST',
             'Rating specification',
-            l_office_id||'/'||p_location_id||'.'||p_template_id||'.'||p_version);
+            l_office_id||'/'||p_location_id||cwms_rating.separator1||p_template_id||cwms_rating.separator1||p_version);
    end;      
          
    static function get_rating_spec_code(
@@ -1804,7 +1804,7 @@ as
    is
       l_parts str_tab_t;
    begin
-      l_parts := cwms_util.split_text(p_rating_id, '.');
+      l_parts := cwms_util.split_text(p_rating_id, cwms_rating.separator1);
       if l_parts.count != 4 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -1813,7 +1813,7 @@ as
       end if;
       return rating_spec_t.get_rating_spec_code( 
          l_parts(1),
-         l_parts(2) || '.' || l_parts(3),
+         l_parts(2) || cwms_rating.separator1 || l_parts(3),
          l_parts(4),
          p_office_id);
    end;
@@ -2295,7 +2295,7 @@ as
                if p_position = 1 then
                   l_rating_value_tab_id := p_parent_id || rec.ind_value;
                else
-                  l_rating_value_tab_id := p_parent_id || ',' || rec.ind_value;
+                  l_rating_value_tab_id := p_parent_id || cwms_rating.separator3 || rec.ind_value;
                end if;
                if l_rating_value_tab.exists(l_rating_value_tab_id) then
                   -------------------------------------------------------
@@ -2320,16 +2320,16 @@ as
       end;       
    begin
       begin
-         l_parts := cwms_util.split_text(get_text(p_xml, '/rating/rating-spec-id'), '.');
-         l_parts := cwms_util.split_text(l_parts(2), ';');
-         l_ind_params := cwms_util.split_text(l_parts(1), ',');
+         l_parts := cwms_util.split_text(get_text(p_xml, '/rating/rating-spec-id'), cwms_rating.separator1);
+         l_parts := cwms_util.split_text(l_parts(2), cwms_rating.separator2);
+         l_ind_params := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
       exception
          when others then
             cwms_err.raise('ERROR', 'Cannot determine rating independent parameter(s)');
       end;
       begin
-         l_parts := cwms_util.split_text(get_text(p_xml, '/rating/units-id'), ';');
-         l_ind_units := cwms_util.split_text(l_parts(1), ',');
+         l_parts := cwms_util.split_text(get_text(p_xml, '/rating/units-id'), cwms_rating.separator2);
+         l_ind_units := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
       exception
          when others then
             cwms_err.raise('ERROR', 'Cannot determine rating independent unit(s)');
@@ -2408,7 +2408,7 @@ as
                -- to index in-memory tables constructed from <point> elements below)         --
                --------------------------------------------------------------------------------
                if l_position > 1 then
-                  l_rating_value_tab_id := l_rating_value_tab_id || ',' || l_value_at_pos(l_position);
+                  l_rating_value_tab_id := l_rating_value_tab_id || cwms_rating.separator3 || l_value_at_pos(l_position);
                else
                   l_rating_value_tab_id := l_rating_value_tab_id || l_value_at_pos(l_position);
                end if;
@@ -2672,12 +2672,12 @@ as
       l_remaining_units_id      varchar2(256);
    begin
       if self.constructed = 'T' then
-         l_deepest := instr(p_parameters_id, ',') = 0;
+         l_deepest := instr(p_parameters_id, cwms_rating.separator3) = 0;
          if l_deepest then
-            l_parts := cwms_util.split_text(p_parameters_id, ';');
+            l_parts := cwms_util.split_text(p_parameters_id, cwms_rating.separator2);
             l_ind_param_id := l_parts(1);
             l_dep_param_id := l_parts(2);
-            l_parts := cwms_util.split_text(p_units_id, ';');
+            l_parts := cwms_util.split_text(p_units_id, cwms_rating.separator2);
             l_ind_unit_id := l_parts(1);
             l_dep_unit_id := l_parts(2);
             select factor,
@@ -2690,12 +2690,12 @@ as
                and uc.to_unit_code = bp.unit_code
                and uc.from_unit_id = l_dep_unit_id;
          else
-            l_parts := cwms_util.split_text(p_parameters_id, ',');
+            l_parts := cwms_util.split_text(p_parameters_id, cwms_rating.separator3);
             l_ind_param_id := l_parts(1);             
-            l_parts := cwms_util.split_text(p_units_id, ',');
+            l_parts := cwms_util.split_text(p_units_id, cwms_rating.separator3);
             l_ind_unit_id := l_parts(1);
-            l_remaining_parameters_id := substr(p_parameters_id, instr(p_parameters_id, ',') + 1);
-            l_remaining_units_id := substr(p_units_id, instr(p_units_id, ',') + 1);
+            l_remaining_parameters_id := substr(p_parameters_id, instr(p_parameters_id, cwms_rating.separator3) + 1);
+            l_remaining_units_id := substr(p_units_id, instr(p_units_id, cwms_rating.separator3) + 1);
          end if;
          select factor,
                 offset
@@ -2756,12 +2756,12 @@ as
       l_remaining_units_id      varchar2(256);
    begin
       if self.constructed = 'T' then
-         l_deepest := instr(p_parameters_id, ',') = 0;
+         l_deepest := instr(p_parameters_id, cwms_rating.separator3) = 0;
          if l_deepest then
-            l_parts := cwms_util.split_text(p_parameters_id, ';');
+            l_parts := cwms_util.split_text(p_parameters_id, cwms_rating.separator2);
             l_ind_param_id := l_parts(1);
             l_dep_param_id := l_parts(2);
-            l_parts := cwms_util.split_text(p_units_id, ';');
+            l_parts := cwms_util.split_text(p_units_id, cwms_rating.separator2);
             l_ind_unit_id := l_parts(1);
             l_dep_unit_id := l_parts(2);
             select factor,
@@ -2774,12 +2774,12 @@ as
                and uc.from_unit_code = bp.unit_code
                and uc.to_unit_id = l_dep_unit_id;
          else
-            l_parts := cwms_util.split_text(p_parameters_id, ',');
+            l_parts := cwms_util.split_text(p_parameters_id, cwms_rating.separator3);
             l_ind_param_id := l_parts(1);             
-            l_parts := cwms_util.split_text(p_units_id, ',');
+            l_parts := cwms_util.split_text(p_units_id, cwms_rating.separator3);
             l_ind_unit_id := l_parts(1);
-            l_remaining_parameters_id := substr(p_parameters_id, instr(p_parameters_id, ',') + 1);
-            l_remaining_units_id := substr(p_units_id, instr(p_units_id, ',') + 1);
+            l_remaining_parameters_id := substr(p_parameters_id, instr(p_parameters_id, cwms_rating.separator3) + 1);
+            l_remaining_units_id := substr(p_units_id, instr(p_units_id, cwms_rating.separator3) + 1);
          end if;
          select factor,
                 offset
@@ -3816,14 +3816,14 @@ as
                 
                self.rating_spec_id := 
                   cwms_util.get_location_id(rec2.location_code, 'F')
-                  ||'.'
+                  ||cwms_rating.separator1
                   ||rec3.parameters_id
-                  ||'.'
+                  ||cwms_rating.separator1
                   ||rec3.version
-                  ||'.'
+                  ||cwms_rating.separator1
                   ||rec2.version;
                   
-               l_ind_param_count := cwms_util.split_text(rec3.parameters_id, ',').count;
+               l_ind_param_count := cwms_util.split_text(rec3.parameters_id, cwms_rating.separator3).count;
                
                select ind_param_spec_code bulk collect
                  into l_ind_param_spec_codes
@@ -3904,7 +3904,7 @@ as
             'ERROR',
             'Rating specification identifier not found');
       end if;
-      l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+      l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
       if l_parts.count != 4 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -3934,13 +3934,13 @@ as
       -------------------
       -- ...parameters --
       -------------------
-      l_parts := cwms_util.split_text(l_parts(2), ';');
+      l_parts := cwms_util.split_text(l_parts(2), cwms_rating.separator2);
       if l_parts.count != 2 then
          cwms_err.raise(
             'ERROR',
             'Rating specification identifier contains invalid template parameters identifier');
       end if;
-      l_params := cwms_util.split_text(l_parts(1), ',');
+      l_params := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
       for i in 1..l_params.count loop
          begin
             select base_parameter_code
@@ -3971,14 +3971,14 @@ as
       -- native units --
       ------------------
       if self.native_units is not null then
-         l_parts := cwms_util.split_text(self.native_units, ';');
+         l_parts := cwms_util.split_text(self.native_units, cwms_rating.separator2);
          if l_parts.count != 2 then
             cwms_err.raise(
                'INVALID_ITEM',
                self.rating_spec_id,
                'Rating native units identifier');
          end if;
-         l_units := cwms_util.split_text(l_parts(1), ',');
+         l_units := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
          if l_units.count != l_params.count - 1 then
             cwms_err.raise(
                'ERROR',
@@ -4048,8 +4048,8 @@ as
                   l_tokens := cwms_util.tokenize_rpn(self.formula);
                   if l_tokens.count > 1 and
                      l_tokens(l_tokens.count) not in
-                     ('+','-','*','/','//','%','^','ABS','ACOS','ASIN','ATAN','CEIL','COS',
-                     'EXP','FLOOR','INV','LN','LOG','NEG', 'SIGN','SIN','SQRT','TAN','TRUNC')
+                     ('+cwms_rating.separator3-cwms_rating.separator3*cwms_rating.separator3/cwms_rating.separator3//cwms_rating.separator3%cwms_rating.separator3^cwms_rating.separator3ABScwms_rating.separator3ACOScwms_rating.separator3ASINcwms_rating.separator3ATANcwms_rating.separator3CEILcwms_rating.separator3COS',
+                     'EXPcwms_rating.separator3FLOORcwms_rating.separator3INVcwms_rating.separator3LNcwms_rating.separator3LOGcwms_rating.separator3NEG', 'SIGNcwms_rating.separator3SINcwms_rating.separator3SQRTcwms_rating.separator3TANcwms_rating.separator3TRUNC')
                   then
                      l_tokens := cwms_util.tokenize_algebraic(self.formula);
                   end if;            
@@ -4101,7 +4101,7 @@ as
          when 'D' then 
             null;
          when 'N' then
-            l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+            l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
             self.rating_info.convert_to_database_units(l_parts(2), self.native_units);
             self.current_units := 'D';
          else
@@ -4115,7 +4115,7 @@ as
    begin
       case self.current_units
          when 'D' then 
-            l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+            l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
             self.rating_info.convert_to_native_units(l_parts(2), self.native_units);
             self.current_units := 'N';
          when 'N' then
@@ -4134,7 +4134,7 @@ as
          when 'D' then
             null;
          when 'L' then
-            l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+            l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
             select tz.time_zone_name
               into l_local_timezone
               from at_physical_location pl,
@@ -4158,7 +4158,7 @@ as
    begin
       case self.current_time
          when 'D' then
-            l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+            l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
             select tz.time_zone_name
               into l_local_timezone
               from at_physical_location pl,
@@ -4294,7 +4294,7 @@ as
          l_clone.convert_to_local_time;
          return l_clone.to_clob;
       end if;
-      l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+      l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
       select tz.time_zone_name
         into l_time_zone
         from at_physical_location pl,
@@ -4816,7 +4816,7 @@ as
               when '+' then '-' || to_number(l_timestr, 2, 2) 
               when '-' then '+' || to_number(l_timestr, 2, 2)
            end;
-         l_parts := cwms_util.split_text(self.rating_spec_id, '.');              
+         l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);              
          select tz.time_zone_name
            into l_timezone
            from at_base_location bl,
@@ -4826,7 +4826,7 @@ as
           where o.office_id = upper(self.office_id)
                 and bl.db_office_code = o.office_code
                 and bl.base_location_id = cwms_util.get_base_id(l_parts(1))
-                and nvl(pl.sub_location_id, '.') = nvl(cwms_util.get_sub_id(l_parts(1)), '.') 
+                and nvl(pl.sub_location_id, cwms_rating.separator1) = nvl(cwms_util.get_sub_id(l_parts(1)), cwms_rating.separator1) 
                 and tz.time_zone_code = nvl(pl.time_zone_code, 0);
          if l_timezone = 'Unknown or Not Applicable' then
             l_timezone := 'UTC';
@@ -4841,8 +4841,8 @@ as
    is 
       l_parts str_tab_t;
    begin
-      l_parts := cwms_util.split_text(rating_spec_id, '.');
-      l_parts := cwms_util.split_text(l_parts(2), ',');
+      l_parts := cwms_util.split_text(rating_spec_id, cwms_rating.separator1);
+      l_parts := cwms_util.split_text(l_parts(2), cwms_rating.separator3);
       return l_parts.count;
    end;
       
@@ -4868,7 +4868,7 @@ as
    begin
       l_office_id := nvl(p_office_id, cwms_util.user_office_id);
       l_office_code := cwms_util.get_office_code(l_office_id);
-      l_parts := cwms_util.split_text(p_rating_spec_id, '.');
+      l_parts := cwms_util.split_text(p_rating_spec_id, cwms_rating.separator1);
       if l_parts.count != 4 then
          cwms_err.raise(
             'INVALID_ITEM',
@@ -5164,11 +5164,11 @@ as
       if self.rating_spec_id is null then
          cwms_err.raise('ERROR', 'Required <rating-spec-id> element not found');
       end if;
-      l_parts             := cwms_util.split_text(self.rating_spec_id, '.');
+      l_parts             := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
       l_location_id       := l_parts(1);
       l_template_version  := l_parts(3);
       l_rating_version    := l_parts(4);
-      l_parts             := cwms_util.split_text(l_parts(2), ';');
+      l_parts             := cwms_util.split_text(l_parts(2), cwms_rating.separator2);
       l_ind_param         := cwms_util.get_base_id(l_parts(1));
       ----------------------------
       -- get the effective date --
@@ -5229,10 +5229,10 @@ as
          self.shifts(i-l_skipped) := rating_t(
             self.office_id,              -- office_id
             l_location_id
-            ||'.'||l_ind_param
-            ||';'||l_ind_param||'-Shift'
-            ||'.'||l_template_version
-            ||'.'||l_rating_version,     -- rating_spec_id
+            ||cwms_rating.separator1||l_ind_param
+            ||cwms_rating.separator2||l_ind_param||'-Shift'
+            ||cwms_rating.separator1||l_template_version
+            ||cwms_rating.separator1||l_rating_version,     -- rating_spec_id
             null,                        -- effective_date
             null,                        -- create_date
             null,                        -- active_flag
@@ -5278,8 +5278,8 @@ as
          ----------------------------
          -- get the shift units id --
          ----------------------------            
-         l_parts := cwms_util.split_text(self.native_units, ';');
-         self.shifts(i-l_skipped).native_units := l_parts(1) || ';' || l_parts(1);
+         l_parts := cwms_util.split_text(self.native_units, cwms_rating.separator2);
+         self.shifts(i-l_skipped).native_units := l_parts(1) || cwms_rating.separator2 || l_parts(1);
          -------------------------------
          -- get the shift description --
          ------------------------------- 
@@ -5327,10 +5327,10 @@ as
          self.offsets := rating_t(
             self.office_id,                      -- office_id
             l_location_id
-            ||'.'||l_ind_param
-            ||';'||l_ind_param||'-Offset'
-            ||'.'||l_template_version
-            ||'.'||l_rating_version,             -- rating_spec_id
+            ||cwms_rating.separator1||l_ind_param
+            ||cwms_rating.separator2||l_ind_param||'-Offset'
+            ||cwms_rating.separator1||l_template_version
+            ||cwms_rating.separator1||l_rating_version,             -- rating_spec_id
             self.effective_date,                 -- effective_date
             self.create_date,                    -- create_date
             self.active_flag,                    -- active_flag
@@ -5344,8 +5344,8 @@ as
          ----------------------------
          -- get the offset units id --
          ----------------------------            
-         l_parts := cwms_util.split_text(self.native_units, ';');
-         self.offsets.native_units := l_parts(1) || ';' || l_parts(1);
+         l_parts := cwms_util.split_text(self.native_units, cwms_rating.separator2);
+         self.offsets.native_units := l_parts(1) || cwms_rating.separator2 || l_parts(1);
          --------------------------
          -- for each offset point --
          --------------------------
@@ -5502,16 +5502,16 @@ as
       ------------------------------------------------------
       -- validate Stage;Flow or Elev;Flow base parameters --
       ------------------------------------------------------
-      l_parts := cwms_util.split_text(self.rating_spec_id, '.');
-      l_parts := cwms_util.split_text(l_parts(2), ';');
+      l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+      l_parts := cwms_util.split_text(l_parts(2), cwms_rating.separator2);
       l_ind_param := l_parts(1);
       l_dep_param := l_parts(2);
-      if instr(l_ind_param, ',') != 0 or
+      if instr(l_ind_param, cwms_rating.separator3) != 0 or
          (cwms_util.get_base_id(l_ind_param) != 'Stage' and
           cwms_util.get_base_id(l_ind_param) != 'Elev') or
           cwms_util.get_base_id(l_dep_param) != 'Flow'
       then
-         l_parts := cwms_util.split_text(self.rating_spec_id, '.');
+         l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
          cwms_err.raise(
             'ERROR',
             'Invalid parameters identifier for stream rating: '||l_parts(2)); 
@@ -5526,10 +5526,10 @@ as
             if self.offsets.office_id != self.office_id then
                cwms_err.raise('ERROR', 'Offsets office does not match rating office');
             end if;
-            l_parts := cwms_util.split_text(self.offsets.rating_spec_id, '.');
+            l_parts := cwms_util.split_text(self.offsets.rating_spec_id, cwms_rating.separator1);
             l_parameters_id := l_parts(2);
-            if l_parameters_id != l_ind_param || ';' || l_ind_param || '-Offset' then
-               cwms_err.raise('ERROR', 'Invalid offsets parameter id - should be '||l_ind_param||';'||l_ind_param||'-Offset');
+            if l_parameters_id != l_ind_param || cwms_rating.separator2 || l_ind_param || '-Offset' then
+               cwms_err.raise('ERROR', 'Invalid offsets parameter id - should be '||l_ind_param||cwms_rating.separator2||l_ind_param||'-Offset');
             end if;
             if self.offsets.effective_date != self.effective_date then
                cwms_err.raise('ERROR', 'Offsets effective date does not match rating effective date');
@@ -5548,11 +5548,11 @@ as
             if self.offsets.native_units is null then
                cwms_err.raise('ERROR', 'Offsets must use same unit as rating stage or elevation unit');
             end if;
-            l_parts := cwms_util.split_text(self.offsets.native_units, ';');
+            l_parts := cwms_util.split_text(self.offsets.native_units, cwms_rating.separator2);
             if l_parts.count != 2 or l_parts(1) != l_parts(2) then
                cwms_err.raise('ERROR', 'Invalid native units for offsets');
             end if;
-            if substr(self.native_units, 1, instr(self.native_units, ';') - 1) != l_parts(1) then
+            if substr(self.native_units, 1, instr(self.native_units, cwms_rating.separator2) - 1) != l_parts(1) then
                cwms_err.raise('ERROR', 'Offsets must use same unit as rating stage or elevation unit');
             end if;
             if self.offsets.rating_info.extension_values is not null then
@@ -5597,10 +5597,10 @@ as
                if self.shifts(i).office_id != self.office_id then
                   cwms_err.raise('ERROR', 'Shifts office does not match rating office');
                end if;
-               l_parts := cwms_util.split_text(self.shifts(i).rating_spec_id, '.');
+               l_parts := cwms_util.split_text(self.shifts(i).rating_spec_id, cwms_rating.separator1);
                l_parameters_id := l_parts(2);
-               if l_parameters_id != l_ind_param || ';' || l_ind_param || '-Shift' then
-                  cwms_err.raise('ERROR', 'Invalid shift parameter id - should be '||l_ind_param||';'||l_ind_param||'-Shift');
+               if l_parameters_id != l_ind_param || cwms_rating.separator2 || l_ind_param || '-Shift' then
+                  cwms_err.raise('ERROR', 'Invalid shift parameter id - should be '||l_ind_param||cwms_rating.separator2||l_ind_param||'-Shift');
                end if;
                if self.shifts(i).effective_date < self.effective_date then
                   cwms_err.raise(
@@ -5628,11 +5628,11 @@ as
                if self.shifts(i).native_units is null then
                   cwms_err.raise('ERROR', 'Shifts must use same unit as rating stage or elevation unit');
                end if;
-               l_parts := cwms_util.split_text(self.shifts(i).native_units, ';');
+               l_parts := cwms_util.split_text(self.shifts(i).native_units, cwms_rating.separator2);
                if l_parts.count != 2 or l_parts(1) != l_parts(2) then
                   cwms_err.raise('ERROR', 'Invalid native units for shifts');
                end if;
-               if substr(self.native_units, 1, instr(self.native_units, ';') - 1) != l_parts(1) then
+               if substr(self.native_units, 1, instr(self.native_units, cwms_rating.separator2) - 1) != l_parts(1) then
                   cwms_err.raise('ERROR', 'Shifts must use same unit as rating stage or elevation unit');
                end if;
                if self.shifts(i).rating_info.extension_values is not null then
@@ -5751,18 +5751,18 @@ as
          l_clone.store(p_fail_if_exists);
          return;
       end if;
-      l_parts             := cwms_util.split_text(self.rating_spec_id, '.');
+      l_parts             := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
       l_location_id       := l_parts(1);
       l_template_version  := l_parts(3);
       l_spec_version      := l_parts(4);
-      l_parts             := cwms_util.split_text(l_parts(2), ';');
+      l_parts             := cwms_util.split_text(l_parts(2), cwms_rating.separator2);
       l_ind_param         := cwms_util.get_base_id(l_parts(1));
       l_rating_spec       := rating_spec_t(self.rating_spec_id, self.office_id);
       (self as rating_t).store(l_ref_rating_code, p_fail_if_exists);
       if self.shifts is not null then
         l_template := rating_template_t(
             self.office_id,
-            l_ind_param||';'||l_ind_param||'-Shift',
+            l_ind_param||cwms_rating.separator2||l_ind_param||'-Shift',
             l_template_version,
             rating_ind_par_spec_tab_t(
                rating_ind_param_spec_t(
@@ -5777,7 +5777,7 @@ as
          l_spec := rating_spec_t(
             self.office_id,
             l_location_id,
-            l_template.parameters_id||'.'||l_template.version,
+            l_template.parameters_id||cwms_rating.separator1||l_template.version,
             l_spec_version,
             l_rating_spec.source_agency_id,
             'LINEAR',
@@ -5801,7 +5801,7 @@ as
       if self.offsets is not null then
          l_template := rating_template_t(
             self.office_id,
-            l_ind_param||';'||l_ind_param||'-Offset',
+            l_ind_param||cwms_rating.separator2||l_ind_param||'-Offset',
             l_template_version,
             rating_ind_par_spec_tab_t(
                rating_ind_param_spec_t(
@@ -5816,7 +5816,7 @@ as
          l_spec := rating_spec_t(
             self.office_id,
             l_location_id,
-            l_template.parameters_id||'.'||l_template.version,
+            l_template.parameters_id||cwms_rating.separator1||l_template.version,
             l_spec_version,
             l_rating_spec.source_agency_id,
             'NEAREST',

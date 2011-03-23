@@ -2,6 +2,13 @@ create or replace package cwms_rating
 as
 
 --------------------------------------------------------------------------------
+-- CONSTANTS
+--------------------------------------------------------------------------------
+separator1 constant varchar2(1) := '.'; -- Separates location, parameters, template version, and version
+separator2 constant varchar2(1) := ';'; -- Separates independent parameter(s) from dependent parameter
+separator3 constant varchar2(1) := ','; -- Separates multiple independent parameters
+
+--------------------------------------------------------------------------------
 -- STORE TEMPLATES
 --
 -- p_xml
