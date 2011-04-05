@@ -160,11 +160,22 @@ PROCEDURE retrieve_gate_changes(
     -- if the start time is inclusive.
     p_start_inclusive IN VARCHAR2 DEFAULT 'T',
     -- if the end time is inclusive
-    p_end_inclusive in varchar2 default 'T',
+    p_end_inclusive IN VARCHAR2 DEFAULT 'T',
+    
     -- determines the unit system that returned data is in.
     -- opening can be a variety of units across a given project, 
     -- so the return units are not parameterized.
-    p_unit_system in varchar2 default null
+    p_unit_system IN VARCHAR2 DEFAULT NULL
+    
+    -- a boolean flag indicating if the returned data should be the head or tail
+    -- of the set, i.e. the first n values or last n values.
+    p_ascending_flag IN VARCHAR2 DEFAULT 'T',
+    
+    -- a limit on the number of rows returned for each individual outlet
+    -- i.e. if 20, then 20 records should be returned for KEYS-TG1, 20 for KEYS-TG2,
+    -- 20 for KEYS-SG1, etc.
+    p_row_limit IN INTEGER DEFAULT NULL
+    
   );
 
   --
