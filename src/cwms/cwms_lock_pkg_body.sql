@@ -442,29 +442,36 @@ procedure delete_lock(
     p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key, --
     p_db_office_id  IN VARCHAR2 DEFAULT NULL)                 -- defaults to the connected user's office if null  
 is
-   l_lock_location_code number(10) := cwms_loc.get_location_code(p_db_office_id, p_lock_id);
-   -------------------------------------------------------------------------------
-   -- declare a local procedure to handle deletion of non-timeseries child data --
-   -------------------------------------------------------------------------------
-   procedure del_non_ts_child_data(
-      p_lock_location_code in number)
-   is
-   begin
-      -- whenever there are lockage records or other child data of locks,
-      -- put the code here to delete it. 
-      null;
-   end;
+   l_child_loc_code NUMBER;
 begin
-   if p_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
-      del_non_ts_child_data(l_lock_location_code);
-   end if;
-   if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
+
+  cwms_util.check_inputs(str_tab_t(p_lock_id, p_delete_action,p_db_office_id));
+  IF NOT p_delete_action IN (cwms_util.delete_key, cwms_util.delete_all ) THEN
+    cwms_err.raise(
+       'ERROR',
+       'P_DELETE_ACTION must be '''
+       || cwms_util.delete_key
+       || ''' or '''
+       || cwms_util.delete_all
+       || '');
+  END IF;
+  
+  l_child_loc_code := cwms_loc.get_location_code(p_db_office_id,p_lock_id);
    
-      delete
-        from at_lock
-        where lock_location_code = l_lock_location_code;
-      cwms_loc.delete_location(p_lock_id, p_delete_action, p_db_office_id);
-   end if;
+  IF p_delete_action = cwms_util.delete_all THEN
+      -- delete settings
+      DELETE
+        FROM at_lockage
+       WHERE lockage_location_code = l_child_loc_code;
+       
+   END IF; -- delete all
+   
+   -- delete from at_lock
+   DELETE
+     FROM at_lock
+    WHERE lock_location_code = l_child_loc_code;
+    
+
 end delete_lock;
 
 END CWMS_LOCK;

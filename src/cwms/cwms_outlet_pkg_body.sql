@@ -241,7 +241,7 @@ PROCEDURE rename_outlet(
     p_db_office_id IN VARCHAR2 DEFAULT NULL )
 AS
 BEGIN
-  NULL;
+  cwms_loc.rename_location(p_outlet_id_old,p_outlet_id_new,p_db_office_id);
 END rename_outlet;
 --
 --
@@ -259,9 +259,35 @@ PROCEDURE delete_outlet(
     p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key,
     p_db_office_id  IN VARCHAR2 DEFAULT NULL -- defaults to the connected user's office if null
   )
-AS
+IS
+  l_child_loc_code NUMBER;
 BEGIN
-  NULL;
+  cwms_util.check_inputs(str_tab_t(p_outlet_id, p_delete_action,p_db_office_id));
+  IF NOT p_delete_action IN (cwms_util.delete_key, cwms_util.delete_all ) THEN
+    cwms_err.raise(
+       'ERROR',
+       'P_DELETE_ACTION must be '''
+       || cwms_util.delete_key
+       || ''' or '''
+       || cwms_util.delete_all
+       || '');
+  END IF;
+   
+  l_child_loc_code := cwms_loc.get_location_code(p_db_office_id,p_outlet_id);
+   
+  IF p_delete_action = cwms_util.delete_all THEN
+      -- delete settings
+      DELETE
+        FROM at_gate_setting
+       WHERE outlet_location_code = l_child_loc_code;
+       
+   END IF; -- delete all
+   
+   -- delete from at_outlet
+   DELETE
+     FROM at_outlet
+    WHERE outlet_location_code = l_child_loc_code;
+    
 END delete_outlet;
 --
 --
