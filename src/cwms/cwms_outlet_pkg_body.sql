@@ -50,8 +50,38 @@ PROCEDURE retrieve_outlet(
     -- the office id if null will default to the connected user's office
     p_outlet_location_ref IN location_ref_t )
 AS
+  l_proj_loc_code NUMBER;
+  l_child_loc_code NUMBER;
+  l_proj_loc_ref location_ref_t;
+  l_child_location location_obj_t;
 BEGIN
-  NULL;
+  IF p_outlet_location_ref IS NULL THEN
+    --error, the contract is null.
+    cwms_err.raise(
+          'NULL_ARGUMENT',
+          'Outlet Location Reference');
+  END IF;   
+  
+  l_child_loc_code := p_outlet_location_ref.get_location_code;
+  IF l_child_loc_code IS NULL THEN
+    --error, the contract is null.
+    cwms_err.raise(
+          'NULL_ARGUMENT',
+          'Outlet Location Code');
+  END IF;   
+
+  SELECT project_location_code      
+  into l_proj_loc_code
+  FROM at_outlet
+  WHERE outlet_location_code = l_child_loc_code;
+
+  l_child_location := cwms_loc.retrieve_location(l_child_loc_code);
+  l_proj_loc_ref := new location_ref_t(l_proj_loc_code);
+  p_outlet := project_structure_obj_t(
+      l_proj_loc_ref,
+      l_child_location,
+      NULL);
+
 END retrieve_outlet;
 --
 --
@@ -72,8 +102,27 @@ PROCEDURE retrieve_outlets(
     -- the office id if null will default to the connected user's office
     p_project_location_ref IN location_ref_t )
 AS
+  l_child_location location_obj_t;
 BEGIN
-  NULL;
+  IF p_project_location_ref IS NULL THEN
+    --error, the contract is null.
+    cwms_err.raise(
+          'NULL_ARGUMENT',
+          'Outlet Project Location Reference');
+  END IF;    
+  p_outlets := project_structure_tab_t();
+  FOR rec IN (
+    SELECT outlet_location_code      
+    FROM at_outlet
+    WHERE project_location_code = p_project_location_ref.get_location_code)
+  loop
+    p_outlets.EXTEND;
+    l_child_location := cwms_loc.retrieve_location(rec.outlet_location_code);
+    p_outlets(p_outlets.count) := project_structure_obj_t(
+      p_project_location_ref,
+      l_child_location,
+      null);
+  END loop;
 END retrieve_outlets;
 --
 --
@@ -94,8 +143,88 @@ PROCEDURE store_outlets(
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' )
 AS
 BEGIN
-  NULL;
+    --check inputs
+    IF p_outlets IS NOT NULL THEN
+      FOR i IN 1..p_outlets.count loop
+         store_outlet(p_outlets(i), p_fail_if_exists);
+      END loop;
+    END IF;    
 END store_outlets;
+
+
+PROCEDURE store_outlet(
+    -- a populated outlet object type.
+    p_outlet IN project_structure_obj_t,
+    -- a flag that will cause the procedure to fail if the object already exists
+    p_fail_if_exists IN VARCHAR2 DEFAULT 'T' )
+AS
+  l_proj_loc_code NUMBER;
+  l_child_loc_code NUMBER;
+  --  l_characteristic_ref_code NUMBER;
+  
+  l_rec_count NUMBER;
+  l_rec at_outlet%rowtype;
+
+BEGIN
+    cwms_util.check_input(p_fail_if_exists);
+    -- null checks.
+    IF p_outlet IS NULL THEN
+      --error, the contract is null.
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Outlet');
+    END IF;    
+--    project_location_ref location_ref_t,           --The project this structure is a child of
+--    structure_location location_obj_t,                  --The location for this structure
+--    characteristic_ref characteristic_ref_t   -- the characteristic for this structure.    
+    IF p_outlet.project_location_ref IS NULL THEN
+      --error, the contract is null.
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Outlet Project Location Reference');
+    END IF;    
+    IF p_outlet.structure_location IS NULL THEN
+      --error, the contract is null.
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Outlet Location');
+    END IF;    
+--    IF p_outlet.characteristic_ref IS NULL THEN
+--      --error, the contract is null.
+--      cwms_err.raise(
+--            'NULL_ARGUMENT',
+--            'Outlet Characteristic');
+--    END IF;    
+    
+    --get codes
+    -- do not create the project location.
+    l_proj_loc_code := p_outlet.project_location_ref.get_location_code('F');
+    if l_proj_loc_code IS NULL THEN
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Outlet Project Location Code');
+    end if;
+    --outlet loc code
+    l_child_loc_code := cwms_loc.store_location_f(p_outlet.structure_location,p_fail_if_exists);
+    
+    --characteristic will be managed in at_properties and at_loc_group
+
+    --see if this record already exists
+    select count(*) 
+    into l_rec_count 
+    from at_outlet
+    WHERE project_location_code = l_proj_loc_code
+    and outlet_location_code = l_child_loc_code;
+    
+    if l_rec_count = 0 then
+      -- it doesnt exist, insert new rec.
+      l_rec.project_location_code := l_proj_loc_code;
+      l_rec.outlet_location_code := l_child_loc_code;
+      insert into at_outlet
+        values l_rec;
+    end if;
+    
+END;
 --
 --
 --

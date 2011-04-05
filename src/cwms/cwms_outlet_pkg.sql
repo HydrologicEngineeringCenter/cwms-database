@@ -76,6 +76,13 @@ PROCEDURE store_outlets(
     p_outlets IN project_structure_tab_t,
     -- a flag that will cause the procedure to fail if the object already exists
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
+
+PROCEDURE store_outlet(
+    -- a populated outlet object type.
+    p_outlet IN project_structure_obj_t,
+    -- a flag that will cause the procedure to fail if the object already exists
+    p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
+
   --
   --
   --
