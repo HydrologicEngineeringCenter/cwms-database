@@ -650,7 +650,13 @@ AS
       p_location       IN location_obj_t,
       p_fail_if_exists IN VARCHAR2 default 'T'
    );
-   
+
+  FUNCTION store_location_f (
+    p_location       IN location_obj_t,
+    p_fail_if_exists IN VARCHAR2 default 'T'
+  )
+    RETURN NUMBER;
+
    function get_location_id_from_alias(
       p_alias_id    in varchar2,
       p_group_id    in varchar2 default null,

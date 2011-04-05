@@ -5085,57 +5085,74 @@ AS
    BEGIN
       return retrieve_location(get_location_code(p_db_office_id, p_location_id));
    END retrieve_location;      
-      
+   
    PROCEDURE store_location (
       p_location       IN location_obj_t,
       p_fail_if_exists IN VARCHAR2 default 'T'
    )
    IS
-      l_location_code       number;
-      location_id_not_found exception; pragma exception_init (location_id_not_found, -20025);
+    l_location_code       NUMBER;
    BEGIN
-      begin
-         l_location_code := cwms_loc.get_location_code(
-            p_location.location_ref.get_office_id, 
-            p_location.location_ref.get_location_id);
-      exception
-         when location_id_not_found then null;
-      end;
-      if l_location_code is not null then
-         if cwms_util.is_true(p_fail_if_exists) then
-            cwms_err.raise(
-               'LOCATION_ID_ALREADY_EXISTS',
-               p_location.location_ref.get_office_id,
-               p_location.location_ref.get_location_id);
-               
-         end if;
-      end if;
-      cwms_loc.store_location2(
-         p_location.location_ref.get_location_id,
-         p_location.location_type,
-         p_location.elevation,
-         p_location.elev_unit_id,
-         p_location.vertical_datum,
-         p_location.latitude,
-         p_location.longitude,
-         p_location.horizontal_datum,
-         p_location.public_name,
-         p_location.long_name,
-         p_location.description,
-         p_location.time_zone_name,
-         p_location.county_name,
-         p_location.state_initial,
-         p_location.active_flag,
-         p_location.location_kind_id,
-         p_location.map_label,
-         p_location.published_latitude,
-         p_location.published_longitude,
-         p_location.bounding_office_id,
-         p_location.nation_id,
-         p_location.nearest_city,
-         'T',
-         p_location.location_ref.get_office_id);
+      l_location_code := store_location_f(p_location,p_fail_if_exists);
    END store_location;
+   
+  FUNCTION store_location_f (
+    p_location       IN location_obj_t,
+    p_fail_if_exists IN VARCHAR2 default 'T'
+  )
+    RETURN NUMBER
+  IS
+    l_location_code       number;
+    location_id_not_found exception; pragma exception_init (location_id_not_found, -20025);
+  BEGIN
+    begin
+      l_location_code := cwms_loc.get_location_code(
+      p_location.location_ref.get_office_id, 
+      p_location.location_ref.get_location_id);
+    exception
+      when location_id_not_found then null;
+    end;
+    if l_location_code is not null then
+      if cwms_util.is_true(p_fail_if_exists) then
+        cwms_err.raise(
+          'LOCATION_ID_ALREADY_EXISTS',
+          p_location.location_ref.get_office_id,
+          p_location.location_ref.get_location_id);
+      end if;
+    end if;
+    
+    cwms_loc.store_location2(
+      p_location.location_ref.get_location_id,
+      p_location.location_type,
+      p_location.elevation,
+      p_location.elev_unit_id,
+      p_location.vertical_datum,
+      p_location.latitude,
+      p_location.longitude,
+      p_location.horizontal_datum,
+      p_location.public_name,
+      p_location.long_name,
+      p_location.description,
+      p_location.time_zone_name,
+      p_location.county_name,
+      p_location.state_initial,
+      p_location.active_flag,
+      p_location.location_kind_id,
+      p_location.map_label,
+      p_location.published_latitude,
+      p_location.published_longitude,
+      p_location.bounding_office_id,
+      p_location.nation_id,
+      p_location.nearest_city,
+      'T',
+      p_location.location_ref.get_office_id);
+    
+    l_location_code := cwms_loc.get_location_code(
+      p_location.location_ref.get_office_id, 
+      p_location.location_ref.get_location_id);
+    
+    return l_location_code;
+  END store_location_f;
    
    
    function get_location_id_from_alias(
