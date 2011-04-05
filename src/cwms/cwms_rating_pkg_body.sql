@@ -2337,6 +2337,8 @@ begin
    end if; 
    if p_values is null or p_values.count = 0 then
       return;
+   else
+      l_values_count := p_values.count;
    end if;
    if p_units is null or p_units.count != 2 then  
       cwms_err.raise(
