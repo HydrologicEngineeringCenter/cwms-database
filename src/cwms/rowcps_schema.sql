@@ -1950,8 +1950,8 @@ NOPARALLEL
 CREATE TABLE at_outlet
 (
   outlet_location_code              NUMBER(10)      NOT NULL,
-  project_location_code                         NUMBER(10)      NOT NULL,
-  outlet_characteristic_code        NUMBER(10)                      NOT NULL
+  project_location_code                         NUMBER(10)      NOT NULL
+--  outlet_characteristic_code        NUMBER(10)                      NOT NULL
   --outlet_description                            VARCHAR2(255 BYTE)   
 )
 TABLESPACE cwms_20at_data
@@ -1974,7 +1974,7 @@ MONITORING
 /
 COMMENT ON COLUMN at_outlet.outlet_location_code IS 'The unique outlet this record is. Also in AT_OUTLET';
 COMMENT ON COLUMN at_outlet.project_location_code IS 'The project where this outlet is located. ';
-COMMENT ON COLUMN at_outlet.outlet_characteristic_code IS 'The code for the foreign key record in the AT_OUTLET_CHARACTERISTIC table which describe outlet geometry, features, and hydraulic equation parameters.';
+--COMMENT ON COLUMN at_outlet.outlet_characteristic_code IS 'The code for the foreign key record in the AT_OUTLET_CHARACTERISTIC table which describe outlet geometry, features, and hydraulic equation parameters.';
 --COMMENT ON COLUMN at_outlet.outlet_description IS 'The specific description for this outlet structure.';
 
 ALTER TABLE at_outlet ADD (
@@ -1994,7 +1994,7 @@ ALTER TABLE at_outlet ADD (
                ))
 /
 CREATE UNIQUE INDEX at_outlet_idx_1 ON at_outlet
-(outlet_location_code,project_location_code,outlet_characteristic_code)
+(outlet_location_code,project_location_code)--,outlet_characteristic_code)
 /
 
 ALTER TABLE at_outlet ADD (
@@ -2009,11 +2009,11 @@ ALTER TABLE at_outlet ADD (
  REFERENCES at_project (project_location_code))
 /
 
-ALTER TABLE at_outlet ADD (
-  CONSTRAINT at_outlet_fk3
- FOREIGN KEY (outlet_characteristic_code)
- REFERENCES at_outlet_characteristic (outlet_characteristic_code))
-/
+--ALTER TABLE at_outlet ADD (
+--  CONSTRAINT at_outlet_fk3
+-- FOREIGN KEY (outlet_characteristic_code)
+-- REFERENCES at_outlet_characteristic (outlet_characteristic_code))
+--/
 
 --------
 --------
