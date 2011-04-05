@@ -347,7 +347,7 @@ PROCEDURE retrieve_gate_changes(
     -- determines the unit system that returned data is in.
     -- opening can be a variety of units across a given project, 
     -- so the return units are not parameterized.
-    p_unit_system IN VARCHAR2 DEFAULT NULL
+    p_unit_system IN VARCHAR2 DEFAULT NULL,
     
     -- a boolean flag indicating if the returned data should be the head or tail
     -- of the set, i.e. the first n values or last n values.
