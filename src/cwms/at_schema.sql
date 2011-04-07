@@ -1414,7 +1414,7 @@ CREATE TABLE at_loc_group
 (
   loc_group_code      NUMBER,
   loc_category_code   NUMBER                     NOT NULL,
-  loc_group_id        VARCHAR2(32 BYTE)          NOT NULL,
+  loc_group_id        VARCHAR2(65 BYTE)          NOT NULL,
   loc_group_desc      VARCHAR2(128 BYTE),
   db_office_code      NUMBER                     NOT NULL,
   shared_loc_alias_id VARCHAR2(128 BYTE),
@@ -1874,7 +1874,7 @@ CREATE TABLE at_ts_group
 (
   ts_group_code      NUMBER,
   ts_category_code   NUMBER                     NOT NULL,
-  ts_group_id        VARCHAR2(32 BYTE)          NOT NULL,
+  ts_group_id        VARCHAR2(65 BYTE)          NOT NULL,
   ts_group_desc      VARCHAR2(128 BYTE),
   db_office_code     NUMBER                     NOT NULL,
   shared_ts_alias_id VARCHAR2(128 BYTE),
