@@ -425,8 +425,37 @@ AS
     
     PROCEDURE refresh_mv_cwms_ts_id
     IS
+     FUNCTION is_refresh_needed
+            RETURN BOOLEAN
+      IS
+            rowcount   INTEGER := 0;
+      BEGIN
+            SELECT      COUNT (*)
+              INTO      rowcount
+              FROM      (SELECT     m_row$$
+                                    FROM  mlog$_at_base_location
+                              UNION ALL
+                              SELECT     m_row$$
+                                    FROM  mlog$_at_cwms_ts_spec
+                              UNION ALL
+                              SELECT     m_row$$
+                                    FROM  mlog$_at_parameter
+                              UNION ALL
+                              SELECT     m_row$$
+                                    FROM  mlog$_at_physical_location);
+
+            RETURN rowcount > 0;
+      END;
+--    l_staleness                 VARCHAR2(19);
     BEGIN
-      
+--        SELECT staleness
+--          INTO l_staleness
+--          FROM user_mviews
+--          WHERE mview_name = 'MV_CWMS_TS_ID';
+--       IF l_staleness <> 'FRESH'
+         IF is_refresh_needed
+         THEN
+         BEGIN
             dbms_mview.refresh('mv_cwms_ts_id');
          EXCEPTION
             WHEN OTHERS
@@ -436,7 +465,8 @@ AS
                 -- on the materialized views are changed from unique to non unique (to fix broken
                 -- materialized view after renaming the time series)
                 DBMS_MVIEW.refresh('mv_cwms_ts_id',method => 'C');
-          
+             END;
+         END IF;
     END refresh_mv_cwms_ts_id;
    --------------------------------------------------------
    -- Return the current session user's primary office id
@@ -562,7 +592,7 @@ AS
          SELECT   office_code
            INTO   l_office_code
            FROM   cwms_office
-          WHERE   UPPER (office_id) = UPPER (p_office_id);
+          WHERE    (office_id) = UPPER (p_office_id);
       END IF;
 
       RETURN l_office_code;
@@ -599,7 +629,7 @@ AS
          SELECT   office_id
            INTO   l_db_office_id
            FROM   cwms_office
-          WHERE   UPPER (office_id) = UPPER (p_db_office_id);
+          WHERE    (office_id) = UPPER (p_db_office_id);
       END IF;
 
       RETURN l_db_office_id;
