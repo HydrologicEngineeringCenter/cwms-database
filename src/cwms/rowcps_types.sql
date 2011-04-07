@@ -326,13 +326,8 @@ AS
   --required
   outlet_location_ref location_ref_t,
   opening binary_double,
-  opening_units varchar2(16),
-
-  --not required
-  old_discharge binary_double,
-  new_discharge binary_double,
-  discharge_units  varchar2(16)
-);
+  opening_units varchar2(16)
+  );
   /
   show errors
   --

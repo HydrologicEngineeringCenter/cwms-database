@@ -2023,9 +2023,7 @@ CREATE TABLE at_gate_setting
   gate_setting_code                   NUMBER(10)      NOT NULL,
   gate_change_code                  NUMBER(10)      NOT NULL,
   outlet_location_code                        NUMBER(10)      NOT NULL,
-  gate_opening              BINARY_DOUBLE     NOT NULL,
-  old_discharge             BINARY_DOUBLE,
-  new_discharge             BINARY_DOUBLE
+  gate_opening              BINARY_DOUBLE     NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2050,8 +2048,6 @@ COMMENT ON COLUMN at_gate_setting.gate_setting_code IS 'The unique record for th
 COMMENT ON COLUMN at_gate_setting.gate_change_code IS 'The gate change record to which this setting is associated.  See AT_GATE_CHANGE.';
 COMMENT ON COLUMN at_gate_setting.outlet_location_code IS 'The unique gate that is being set. This location code also in AT_PHYSICAL_LOCATION';
 COMMENT ON COLUMN at_gate_setting.gate_opening IS 'The new gate opening.  This may be a dial opening rather than an actual opening';
-COMMENT ON COLUMN at_gate_setting.old_discharge IS 'The old discharge rate prior to the gate setting';
-COMMENT ON COLUMN at_gate_setting.new_discharge IS 'The new discharge rate after the new gate setting';
 
 ALTER TABLE at_gate_setting ADD (
   CONSTRAINT at_gate_setting_pk
