@@ -76,6 +76,14 @@ PROCEDURE store_turbines(
     p_turbines IN project_structure_tab_t,
     -- a flag that will cause the procedure to fail if the object already exists
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
+    
+--
+--
+PROCEDURE store_turbine(
+    -- a populated turbine object type.
+    p_turbine IN project_structure_obj_t,
+    -- a flag that will cause the procedure to fail if the object already exists
+    p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );    
   --
   --
   --
@@ -157,7 +165,17 @@ PROCEDURE retrieve_turbine_changes(
     -- determines the unit system that returned data is in.
     -- opening can be a variety of units across a given project, 
     -- so the return units are not parameterized.
-    p_unit_system in varchar2 default null
+    p_unit_system in varchar2 default null,
+    
+        
+    -- a boolean flag indicating if the returned data should be the head or tail
+    -- of the set, i.e. the first n values or last n values.
+    p_ascending_flag IN VARCHAR2 DEFAULT 'T',
+    
+    -- a limit on the number of rows returned for each individual outlet
+    -- i.e. if 20, then 20 records should be returned for KEYS-TG1, 20 for KEYS-TG2,
+    -- 20 for KEYS-SG1, etc.
+    p_row_limit IN INTEGER DEFAULT NULL
   );
 
   --

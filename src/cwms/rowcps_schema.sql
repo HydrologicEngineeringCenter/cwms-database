@@ -1452,8 +1452,8 @@ NOPARALLEL
 CREATE TABLE at_turbine
 (
   turbine_location_code     NUMBER(10)      NOT NULL,
-  project_location_code                 NUMBER(10)      NOT NULL,
-  turbine_characteristic_code           NUMBER(10)                      NOT NULL
+  project_location_code                 NUMBER(10)      NOT NULL
+--  turbine_characteristic_code           NUMBER(10)                      NOT NULL
 --  turbine_description     VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
@@ -1476,7 +1476,7 @@ MONITORING
 /
 COMMENT ON COLUMN at_turbine.turbine_location_code IS 'The actual turbine this record refers to.  The location_code also in AT_PHYSICAL_LOCATION';
 COMMENT ON COLUMN at_turbine.project_location_code IS 'The project this turbine is part of.  See AT_PROJECT.project_location_code';
-COMMENT ON COLUMN at_turbine.turbine_characteristic_code IS 'The code for the foreign key record in the AT_TURBINE_CHARACTERISTIC table which describes turbine geometry and features.';
+--COMMENT ON COLUMN at_turbine.turbine_characteristic_code IS 'The code for the foreign key record in the AT_TURBINE_CHARACTERISTIC table which describes turbine geometry and features.';
 -- COMMENT ON COLUMN at_turbine.turbine_description IS 'The description of the turbine';
 
 ALTER TABLE at_turbine ADD (
@@ -1496,7 +1496,7 @@ ALTER TABLE at_turbine ADD (
                ))
 /
 CREATE UNIQUE INDEX at_turbine_idx_1 ON at_turbine
-(turbine_location_code,project_location_code,turbine_characteristic_code)
+(turbine_location_code,project_location_code)--,turbine_characteristic_code)
 /
 ALTER TABLE at_turbine ADD (
   CONSTRAINT at_turbine_fk1
@@ -1510,11 +1510,11 @@ ALTER TABLE at_turbine ADD (
  REFERENCES at_project (project_location_code))
 /
 
-ALTER TABLE at_turbine ADD (
-  CONSTRAINT at_turbine_fk3
- FOREIGN KEY (turbine_characteristic_code)
- REFERENCES at_turbine_characteristic (turbine_characteristic_code))
-/
+--ALTER TABLE at_turbine ADD (
+--  CONSTRAINT at_turbine_fk3
+-- FOREIGN KEY (turbine_characteristic_code)
+-- REFERENCES at_turbine_characteristic (turbine_characteristic_code))
+--/
 
 --------
 --------
