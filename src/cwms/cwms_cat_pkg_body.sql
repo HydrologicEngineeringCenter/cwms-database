@@ -1,3 +1,4 @@
+/* Formatted on 4/8/2011 8:39:45 AM (QP5 v5.139.911.3011) */
 SET define off
 CREATE OR REPLACE PACKAGE BODY cwms_cat
 IS
@@ -1339,44 +1340,78 @@ IS
 														l_db_office_code
 													  );
 		END IF;
-      OPEN p_cwms_cat FOR
-          SELECT DISTINCT
-                 b.db_office_id, 
-                 b.base_location_id,
-                 b.cwms_ts_id, 
-                 b.interval_utc_offset,
-                 z.time_zone_name lrts_timezone, 
-                 b.ts_active_flag,
-                 b.user_privileges
-           FROM  (   SELECT a.ts_code, 
-                            v.location_code,
-                            v.db_office_id,
-                            v.base_location_id,
-                            v.cwms_ts_id,
-                            v.interval_utc_offset,
-                            v.ts_active_flag,
-                            a.user_privileges
-                       FROM mv_cwms_ts_id v,
-                            (   SELECT ts_code,
-                                       net_privilege_bit user_privileges
-                                  FROM av_sec_ts_privileges
-                                 WHERE username = cwms_util.get_user_id
-                            ) a
-                      WHERE v.ts_code = a.ts_code
-                        AND  (v.db_office_code = l_db_office_code OR p_db_office_id IS NULL)
-                 ) b,
-                 (   SELECT location_code
-                       FROM at_loc_group_assignment
-                      WHERE loc_group_code = nvl(l_loc_group_code, loc_group_code)
-                 ) c,
-                 at_cwms_ts_spec s,
-                 cwms_time_zone z
-            WHERE(( b.location_code = c.location_code) OR (p_loc_group_id is NULL))
-              AND b.ts_code = s.ts_code
-              AND s.time_zone_code = z.time_zone_code(+)
-              AND UPPER(b.cwms_ts_id) LIKE UPPER(l_ts_subselect_string)
-         ORDER BY UPPER(b.cwms_ts_id), UPPER(b.db_office_id) ASC;
-	END cat_ts_id;
+      --
+    ---- Revised Select 11Mar2011
+    --
+    IF p_db_office_id IS NULL
+    THEN
+        l_db_office_code := NULL;            -- i.e., return ts_id's for all offices
+    END IF;
+
+    OPEN p_cwms_cat FOR
+        SELECT      v.db_office_id, v.base_location_id, v.cwms_ts_id,
+                      v.interval_utc_offset, z.time_zone_name lrts_timezone,
+                      v.ts_active_flag, a.user_privileges
+             FROM   mv_cwms_ts_id v
+                      JOIN (SELECT   ts_code, net_privilege_bit user_privileges
+                                 FROM   av_sec_ts_privileges
+                                WHERE   username = cwms_util.get_user_id) a
+                          USING (ts_code)
+                      JOIN at_cwms_ts_spec s
+                          USING (ts_code)
+                      LEFT OUTER JOIN cwms_time_zone z
+                          USING (time_zone_code)
+            WHERE   (l_loc_group_code IS NULL
+                        OR v.location_code IN
+                                (SELECT     location_code
+                                    FROM     at_loc_group_assignment
+                                  WHERE     loc_group_code = l_loc_group_code))
+                      AND (l_db_office_code IS NULL
+                             OR v.db_office_code = l_db_office_code)
+                      AND UPPER (v.cwms_ts_id) LIKE UPPER (l_ts_subselect_string)
+        ORDER BY   UPPER (v.cwms_ts_id), UPPER (v.db_office_id) ASC;
+--
+---- Original Released Select...
+--
+--       OPEN p_cwms_cat FOR
+--             SELECT DISTINCT
+--                      b.db_office_id,
+--                      b.base_location_id,
+--                      b.cwms_ts_id,
+--                      b.interval_utc_offset,
+--                      z.time_zone_name lrts_timezone,
+--                      b.ts_active_flag,
+--                      b.user_privileges
+--              FROM  (   SELECT a.ts_code,
+--                                     v.location_code,
+--                                     v.db_office_id,
+--                                     v.base_location_id,
+--                                     v.cwms_ts_id,
+--                                     v.interval_utc_offset,
+--                                     v.ts_active_flag,
+--                                     a.user_privileges
+--                              FROM mv_cwms_ts_id v,
+--                                     (     SELECT ts_code,
+--                                                   net_privilege_bit user_privileges
+--                                             FROM av_sec_ts_privileges
+--                                           WHERE username = cwms_util.get_user_id
+--                                     ) a
+--                             WHERE v.ts_code = a.ts_code
+--                               AND v.db_office_code = l_db_office_code
+--                      ) b,
+--                      (   SELECT location_code
+--                              FROM at_loc_group_assignment
+--                             WHERE loc_group_code = nvl(l_loc_group_code, loc_group_code)
+--                      ) c,
+--                      at_cwms_ts_spec s,
+--                      cwms_time_zone z
+--              WHERE (l_loc_group_code IS NULL OR (b.location_code = c.location_code))
+--                 AND b.ts_code = s.ts_code
+--                 AND s.time_zone_code = z.time_zone_code(+)
+--                 AND UPPER(b.cwms_ts_id) LIKE UPPER(l_ts_subselect_string)
+--          ORDER BY UPPER(b.cwms_ts_id), UPPER(b.db_office_id) ASC;
+--
+END cat_ts_id;
 
 	FUNCTION cat_ts_id_tab (p_ts_subselect_string	IN VARCHAR2 DEFAULT NULL ,
 									p_loc_category_id 		IN VARCHAR2 DEFAULT NULL ,
