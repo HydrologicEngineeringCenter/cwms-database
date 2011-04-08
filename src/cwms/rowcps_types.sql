@@ -260,7 +260,7 @@ AS
   OBJECT
   (
     office_id         VARCHAR2 (16), -- the office id for this ref
-    characteristic_id VARCHAR2 (32)  -- the id of this characteristic.
+    characteristic_id VARCHAR2 (64)  -- the id of this characteristic.
   );
   /
   show errors
