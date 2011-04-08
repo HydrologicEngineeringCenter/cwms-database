@@ -1761,16 +1761,17 @@ ALTER TABLE at_project_congress_district ADD (
 
 CREATE TABLE at_gate_change
 (
-  gate_change_code        NUMBER(10)      NOT NULL,
-  project_location_code                         NUMBER(10)      NOT NULL,
-  gate_change_date        DATE        NOT NULL,
-  elev_pool         BINARY_DOUBLE                      NOT NULL,
-  elev_tailwater            BINARY_DOUBLE,
-  old_total_discharge_override                  BINARY_DOUBLE,
-  new_total_discharge_override                  BINARY_DOUBLE,
-  discharge_computation_code        NUMBER(10)      NOT NULL,
-  release_reason_code               NUMBER(10)      NOT NULL,
-  gate_change_notes       VARCHAR2(255 BYTE)
+  gate_change_code             NUMBER(10)    NOT NULL,
+  project_location_code        NUMBER(10)    NOT NULL,
+  gate_change_date             DATE          NOT NULL,
+  elev_pool                    BINARY_DOUBLE NOT NULL,
+  elev_tailwater               BINARY_DOUBLE,
+  old_total_discharge_override BINARY_DOUBLE,
+  new_total_discharge_override BINARY_DOUBLE,
+  discharge_computation_code   NUMBER(10)    NOT NULL,
+  release_reason_code          NUMBER(10)    NOT NULL,
+  gate_change_notes            VARCHAR2(255 BYTE),
+  protected                    VARCHAR2(1)   NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1800,6 +1801,7 @@ COMMENT ON COLUMN at_gate_change.new_total_discharge_override IS 'The total disc
 COMMENT ON COLUMN at_gate_change.discharge_computation_code IS 'The code for the discharge computation method for the gate change. Values are restricted by a foreign key to a lookup table.';
 COMMENT ON COLUMN at_gate_change.release_reason_code IS 'The code for the release reason (or purpose) issued for the gate change.  Values are restricted by a foreign key to a lookup table.';
 COMMENT ON COLUMN at_gate_change.gate_change_notes IS 'Any notes pertinent to this gate change';
+COMMENT ON COLUMN at_gate_change.gate_change_notes IS 'Specifies whether this gate change is protected from inadvertent overwrites';
 
 ALTER TABLE at_gate_change ADD (
   CONSTRAINT at_gate_change_pk
@@ -1834,6 +1836,8 @@ STORAGE    (
            )
 NOPARALLEL
 /
+
+alter table at_gate_change add constraint at_gate_change_ck1 check (protected in ('T', 'F'));
 
 ALTER TABLE at_gate_change ADD (
   CONSTRAINT at_gate_change_fk1
