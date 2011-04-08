@@ -355,7 +355,8 @@ AS
       old_total_discharge_override binary_double, --OLD_TOTAL_DISCHARGE_OVERRIDE
       new_total_discharge_override binary_double, --NEW_TOTAL_DISCHARGE_OVERRIDE
       discharge_units  varchar2(16), 
-      change_notes VARCHAR2(255 BYTE) --GATE_CHANGE_NOTES
+      change_notes VARCHAR2(255 BYTE), --GATE_CHANGE_NOTES
+      protected varchar2(1) --PROTECTED_FLAG
 );
   /
   show errors
