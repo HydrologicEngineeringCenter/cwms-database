@@ -75,9 +75,6 @@ PROCEDURE retrieve_project(
 AS
    l_db_office_code                 number := cwms_util.get_db_office_code(p_db_office_id);
    l_project_loc_code               number;
-   l_parts                          str_tab_t;
-   l_base_loc_id                    varchar2(16);
-   l_sub_loc_id                     varchar2(32);
    l_project                        at_project%rowtype;
    l_project_location               location_obj_t := null;
    l_db_office_id                   varchar2(16);
@@ -105,26 +102,7 @@ begin
    --
    -- get the location code
    --
-   l_parts := cwms_util.split_text(p_project_id, '-', 1);
-   l_base_loc_id := l_parts(1);
-   l_sub_loc_id :=
-      case l_parts.count = 1
-         when true  then null
-         when false then l_parts(2)
-      end;
-   begin
-      select location_code
-        into l_project_loc_code
-        from at_physical_location pl,
-             at_base_location bl
-       where upper(bl.base_location_id) = upper(l_base_loc_id)
-         and pl.base_location_code = bl.base_location_code
-         and upper(nvl(pl.sub_location_id, '-')) = upper(nvl(l_sub_loc_id, '-'))
-         and bl.db_office_code = l_db_office_code;
-   exception
-      when no_data_found then
-         cwms_err.raise('INVALID_ITEM', p_project_id, 'location id');
-   end;
+   l_project_loc_code := cwms_loc.get_location_code(p_db_office_id, p_project_id);
    --
    -- get the project record
    --
@@ -135,7 +113,12 @@ begin
        where project_location_code = l_project_loc_code;
    exception
       when no_data_found then
-         cwms_err.raise('INVALID_ITEM', p_project_id, 'project id');
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'CWMS project location '
+            ||cwms_util.get_db_office_id(p_db_office_id)
+            ||'/'
+            ||p_project_id);
    end;
    --
    -- get the display elevation unit and conversion factor
