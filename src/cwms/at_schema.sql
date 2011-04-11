@@ -1326,7 +1326,7 @@ CREATE TABLE at_loc_category
   loc_category_code  NUMBER,
   loc_category_id    VARCHAR2(32 BYTE)          NOT NULL,
   db_office_code     NUMBER                     NOT NULL,
-  loc_category_desc  VARCHAR2(128 BYTE)
+  loc_category_desc  VARCHAR2(256 BYTE)
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -1415,9 +1415,9 @@ CREATE TABLE at_loc_group
   loc_group_code      NUMBER,
   loc_category_code   NUMBER                     NOT NULL,
   loc_group_id        VARCHAR2(65 BYTE)          NOT NULL,
-  loc_group_desc      VARCHAR2(128 BYTE),
+  loc_group_desc      VARCHAR2(256 BYTE),
   db_office_code      NUMBER                     NOT NULL,
-  shared_loc_alias_id VARCHAR2(128 BYTE),
+  shared_loc_alias_id VARCHAR2(256 BYTE),
   shared_loc_ref_code NUMBER
 )
 TABLESPACE CWMS_20AT_DATA
@@ -1531,7 +1531,7 @@ CREATE TABLE at_loc_group_assignment
   location_code   NUMBER,
   loc_group_code  NUMBER,
   loc_attribute   NUMBER,
-  loc_alias_id    VARCHAR2(128 BYTE),
+  loc_alias_id    VARCHAR2(256 BYTE),
   loc_ref_code    NUMBER
 )
 TABLESPACE CWMS_20AT_DATA
@@ -1790,7 +1790,7 @@ CREATE TABLE at_ts_category
   ts_category_code  NUMBER,
   ts_category_id    VARCHAR2(32 BYTE)          NOT NULL,
   db_office_code    NUMBER                     NOT NULL,
-  ts_category_desc  VARCHAR2(128 BYTE)
+  ts_category_desc  VARCHAR2(256 BYTE)
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -1875,9 +1875,9 @@ CREATE TABLE at_ts_group
   ts_group_code      NUMBER,
   ts_category_code   NUMBER                     NOT NULL,
   ts_group_id        VARCHAR2(65 BYTE)          NOT NULL,
-  ts_group_desc      VARCHAR2(128 BYTE),
+  ts_group_desc      VARCHAR2(256 BYTE),
   db_office_code     NUMBER                     NOT NULL,
-  shared_ts_alias_id VARCHAR2(128 BYTE),
+  shared_ts_alias_id VARCHAR2(256 BYTE),
   shared_ts_ref_code NUMBER
 )
 TABLESPACE CWMS_20AT_DATA
@@ -1983,7 +1983,7 @@ CREATE TABLE at_ts_group_assignment
   ts_code        NUMBER,
   ts_group_code  NUMBER,
   ts_attribute   NUMBER,
-  ts_alias_id    VARCHAR2(183 BYTE),
+  ts_alias_id    VARCHAR2(256 BYTE),
   ts_ref_code    NUMBER
 )
 TABLESPACE CWMS_20AT_DATA
