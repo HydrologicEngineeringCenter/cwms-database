@@ -140,7 +140,25 @@ begin
       p_gate_change.discharge_units,
       p_gate_change.change_notes,
       p_gate_change.protected));
-end check_gate_change;   
+end check_gate_change;
+--------------------------------------------------------------------------------
+-- function get_office_from_outlet
+--------------------------------------------------------------------------------
+function get_office_from_outlet(
+   p_outlet_location_code in number)
+   return number
+is
+   l_office_code number(10);
+begin
+   select bl.db_office_code
+     into l_office_code
+     from at_physical_location pl,
+          at_base_location bl
+    where pl.location_code = p_outlet_location_code
+      and bl.base_location_code = pl.base_location_code;
+      
+   return l_office_code;                 
+end get_office_from_outlet;   
 --------------------------------------------------------------------------------
 -- function get_outlet_opening_param
 --------------------------------------------------------------------------------
@@ -149,8 +167,9 @@ function get_outlet_opening_param(
    return varchar2
 is
    l_ind_params str_tab_t;
-   l_param      varchar2(16);
-   l_alias      varchar2(256); -- shared alias id is rating spec
+   l_param       varchar2(16);
+   l_alias       varchar2(256); -- shared alias id is rating spec
+   l_office_code number(10) := get_office_from_outlet(p_outlet_location_code); 
 begin
    ------------------------------------------
    -- get the rating spec for the location --
@@ -162,7 +181,9 @@ begin
              at_loc_group g,
              at_loc_group_assignment a
        where c.loc_category_id = 'RATING'
+         and c.db_office_code = l_office_code
          and g.loc_category_code = c.loc_category_code
+         and g.db_office_code = c.db_office_code
          and a.loc_group_code = g.loc_group_code
          and a.location_code = p_outlet_location_code;          
    exception
@@ -195,6 +216,82 @@ begin
       'No opening parameter found in '
       ||l_alias);
 end get_outlet_opening_param;   
+--------------------------------------------------------------------------------
+-- procedure assign_to_rating_group
+--------------------------------------------------------------------------------
+procedure assign_to_rating_group(
+   p_outlet_location_code in number,
+   p_rating_group_id      in varchar2)
+is
+   l_category_rec   at_loc_category%rowtype;
+   l_group_rec      at_loc_group%rowtype;
+   l_assignment_rec at_loc_group_assignment%rowtype;     
+begin
+   --------------------------------------------
+   -- retrieve or create the rating category --
+   --------------------------------------------
+   l_category_rec.loc_category_id := 'RATING';
+   l_category_rec.db_office_code  := get_office_from_outlet(p_outlet_location_code);
+   begin
+      select *
+        into l_category_rec
+        from at_loc_category
+       where db_office_code = l_category_rec.db_office_code
+         and loc_category_id = l_category_rec.loc_category_id;
+   exception
+      when no_data_found then
+         l_category_rec.loc_category_code := cwms_seq.nextval;
+         l_category_rec.loc_category_desc := 'Contains groups the relate outlets to ratings';
+         insert into at_loc_category values l_category_rec;
+   end;
+   --------------------------------------------------          
+   -- retrieve or create the assigned rating group --
+   --------------------------------------------------
+   l_group_rec.loc_category_code := l_category_rec.loc_category_code;
+   l_group_rec.db_office_code    := l_category_rec.db_office_code;
+   l_group_rec.loc_group_id      := p_rating_group_id;
+   begin
+      select *
+        into l_group_rec
+        from at_loc_group
+       where loc_category_code = l_group_rec.loc_category_code
+         and db_office_code = l_group_rec.db_office_code
+         and upper(loc_group_id) = upper(l_group_rec.loc_group_id);
+   exception
+      when no_data_found then
+         l_group_rec.loc_group_code := cwms_seq.nextval;
+         l_group_rec.loc_group_desc := 'Shared alias contains rating spec for assigned outlets.';
+         -- shared alias will have to be entered later
+         insert into at_loc_group values l_group_rec;
+   end;
+   ---------------------------------------
+   -- unassign from other rating groups --
+   ---------------------------------------
+   delete
+     from at_loc_group_assignment
+    where location_code = p_outlet_location_code
+      and loc_group_code in
+          ( select loc_group_code 
+              from at_loc_group
+             where loc_category_code = l_group_rec.loc_category_code
+               and loc_group_code != l_group_rec.loc_group_code
+          );
+   ------------------------------------------------          
+   -- assign the location to the specified group --
+   ------------------------------------------------
+   l_assignment_rec.location_code  := p_outlet_location_code;
+   l_assignment_rec.loc_group_code := l_group_rec.loc_group_code;
+   begin
+      select *
+        into l_assignment_rec
+        from at_loc_group_assignment
+       where location_code  = l_assignment_rec.location_code
+         and loc_group_code = l_assignment_rec.loc_group_code;
+   exception
+      when no_data_found then
+         insert into at_loc_group_assignment values l_assignment_rec;
+   end;
+end assign_to_rating_group;   
 --------------------------------------------------------------------------------
 -- procedure retrieve_outlet
 --------------------------------------------------------------------------------
@@ -324,23 +421,26 @@ end retrieve_outlets_f;
 -- procedure store_outlet
 --------------------------------------------------------------------------------
 procedure store_outlet(
-    p_outlet         in project_structure_obj_t,
-    p_fail_if_exists in varchar2 default 'T')
+   p_outlet         in project_structure_obj_t,
+   p_rating_group   in varchar2 default null,
+   p_fail_if_exists in varchar2 default 'T')
 is
 begin
-   store_outlets(project_structure_tab_t(p_outlet), p_fail_if_exists);
+   store_outlets(project_structure_tab_t(p_outlet), p_rating_group, p_fail_if_exists);
 end store_outlet;
 --------------------------------------------------------------------------------
 -- procedure store_outlets
 --------------------------------------------------------------------------------
 procedure store_outlets(
    p_outlets        in project_structure_tab_t,
+   p_rating_group   in varchar2 default null,
    p_fail_if_exists in varchar2 default 'T')
 is
    l_fail_if_exists boolean;
    l_exists         boolean;
-   l_project project_obj_t;
-   l_rec at_outlet%rowtype;
+   l_project        project_obj_t;
+   l_rec            at_outlet%rowtype;
+   l_rating_group   varchar2(65);
 begin
    -------------------
    -- sanity checks --
@@ -348,7 +448,7 @@ begin
    if p_outlets is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_outlets');
    end if;
-   cwms_util.check_input(p_fail_if_exists);
+   cwms_util.check_inputs(str_tab_t(p_rating_group, p_fail_if_exists));
    l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
    for i in 1..p_outlets.count loop
       ------------------------
@@ -360,6 +460,12 @@ begin
          l_project,
          p_outlets(i).project_location_ref.get_location_id,
          p_outlets(i).project_location_ref.get_office_id);
+      -----------------------------------------------         
+      -- create a rating group id if not specified --
+      -----------------------------------------------
+      if i = 1 then
+         l_rating_group := nvl(p_rating_group, p_outlets(i).project_location_ref.get_location_id);  
+      end if;         
       -----------------------------------------------
       -- see if the outlet location already exists --
       -----------------------------------------------
@@ -399,10 +505,12 @@ begin
       if not l_exists then
          l_rec.outlet_location_code := p_outlets(i).structure_location.location_ref.get_location_code('T');
          l_rec.project_location_code := l_project.project_location.location_ref.get_location_code('F');
-         insert 
-           into at_outlet
-         values l_rec; 
+         insert into at_outlet values l_rec; 
       end if;
+      -----------------------------------------------------
+      -- assign the record to the specified rating group --
+      -----------------------------------------------------
+      assign_to_rating_group(l_rec.outlet_location_code, l_rating_group);
    end loop;
 end store_outlets;
 --------------------------------------------------------------------------------
@@ -503,6 +611,44 @@ begin
          l_outlet.structure_location.location_ref.get_location_id);
    end if;       
 end delete_outlet;
+--------------------------------------------------------------------------------
+-- procedure assign_to_rating_group
+--------------------------------------------------------------------------------
+procedure assign_to_rating_group(
+   p_outlet         in project_structure_obj_t,
+   p_rating_group   in varchar2 default null)
+is
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   if p_outlet is null then
+      cwms_err.raise('NULL_ARGUMENT', 'p_outlet');
+   end if;
+   assign_to_rating_group(project_structure_tab_t(p_outlet), p_rating_group);
+end assign_to_rating_group;   
+--------------------------------------------------------------------------------
+-- procedure assign_to_rating_group
+--------------------------------------------------------------------------------
+procedure assign_to_rating_group(
+   p_outlets        in project_structure_tab_t,
+   p_rating_group   in varchar2 default null)
+is
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   if p_outlets is null then
+      cwms_err.raise('NULL_ARGUMENT', 'p_outlets');
+   end if;
+   cwms_util.check_input(p_rating_group);
+   for i in 1..p_outlets.count loop
+      check_project_structure(p_outlets(i));
+      assign_to_rating_group(
+         p_outlets(i).structure_location.location_ref.get_location_code,
+         p_rating_group);
+   end loop;
+end assign_to_rating_group;   
 --------------------------------------------------------------------------------
 -- procedure store_gate_changes
 --------------------------------------------------------------------------------

@@ -87,6 +87,13 @@ function retrieve_outlets_f(
  * 
  * @param p_outlet the outlet information to store. The outlet will be created
  *        if it doesn't already exist in the database 
+ * @param p_rating_group rating location group id. the location group id (under the 
+ *        'RATING' location category) through which the outlet will be connected to
+ *        its rating table(s).<p>If <code><big>NULL</big></code> a location group
+ *        identifier will be generated based on the outlet location identifier.<p>
+ *        If the location group does not exist in the database it will be created.<p>
+ *        If the outlet already exists in the database, it will be removed from any
+ *        previously assigned location group under the 'RATING' location category.      
  * @param p_fail_if_exists specifies whether to fail if the specified outlet
  *        already exists in the database.
  *        </ul>
@@ -103,13 +110,21 @@ function retrieve_outlets_f(
  *         existing location is not identified as an outlet                                
  */ 
 procedure store_outlet(
-    p_outlet         in project_structure_obj_t,
-    p_fail_if_exists in varchar2 default 'T');
+   p_outlet         in project_structure_obj_t,
+   p_rating_group   in varchar2 default null,
+   p_fail_if_exists in varchar2 default 'T');
 /**
- * Stores information about a multiple specified outlets in the database.
+ * Stores information about a multiple related outlets in the database.
  * 
  * @param p_outlets the outlet information to store. Each outlet will be created
- *        if it doesn't already exist in the database 
+ *        if it doesn't already exist in the database
+ * @param p_rating_group rating location group id. the location group id (under the 
+ *        'RATING' location category) through which each outlet will be connected to
+ *        common rating table(s).<p>If <code><big>NULL</big></code> a location group
+ *        identifier will be generated based on the first outlet's location identifier.<p>
+ *        If the location group does not exist in the database it will be created.<p>
+ *        If any outlet already exists in the database, it will be removed from any
+ *        previously assigned location group under the 'RATING' location category.      
  * @param p_fail_if_exists specifies whether to fail if the specifies outlet
  *        already exists in the database.
  *        </ul>
@@ -127,6 +142,7 @@ procedure store_outlet(
  */ 
 procedure store_outlets(
    p_outlets        in project_structure_tab_t,
+   p_rating_group   in varchar2 default null,
    p_fail_if_exists in varchar2 default 'T');
 /**
  * Renames an existing outlet
@@ -181,6 +197,46 @@ procedure delete_outlet(
    p_outlet_id     in varchar,
    p_delete_action in varchar2 default cwms_util.delete_key,
    p_office_id     in varchar2 default null);
+/**
+ * Assigns a single outlet to a rating group.
+ * 
+ * @param p_outlet the outlet to assign. 
+ * @param p_rating_group rating location group id. the location group id (under the 
+ *        'RATING' location category) through which the outlet will be connected to
+ *        its rating table(s).<p>If <code><big>NULL</big></code> a location group
+ *        identifier will be generated based on the outlet location identifier.<p>
+ *        If the location group does not exist in the database it will be created.<p>
+ *        If the outlet already exists in the database, it will be removed from any
+ *        previously assigned location group under the 'RATING' location category.
+ *               
+ * @throws LOCATION_ID_NOT_FOUND if the location specified by <code><big>p_outlet</big></code>
+ *         does not exist in the database.
+ * @throws ITEM_DOES_NOT_EXIST if the location specified by <code><big>p_outlet</big></code>
+ *         exists in the database but is not identified as an outlet.
+ */ 
+procedure assign_to_rating_group(
+   p_outlet         in project_structure_obj_t,
+   p_rating_group   in varchar2 default null);
+/**
+ * Assigns multiple outlets to a rating group.
+ * 
+ * @param p_outlets the outlets to assign. 
+ * @param p_rating_group rating location group id. the location group id (under the 
+ *        'RATING' location category) through which the outlet will be connected to
+ *        its rating table(s).<p>If <code><big>NULL</big></code> a location group
+ *        identifier will be generated based on the outlet location identifier.<p>
+ *        If the location group does not exist in the database it will be created.<p>
+ *        If the outlet already exists in the database, it will be removed from any
+ *        previously assigned location group under the 'RATING' location category.
+ *               
+ * @throws LOCATION_ID_NOT_FOUND if the location specified by any outlet in <code><big>p_outlets</big></code>
+ *         does not exist in the database.
+ * @throws ITEM_DOES_NOT_EXIST if the location specified by any outlet in <code><big>p_outlets</big></code>
+ *         exists in the database but is not identified as an outlet.
+ */ 
+procedure assign_to_rating_group(
+   p_outlets        in project_structure_tab_t,
+   p_rating_group   in varchar2 default null);
 /**
  * Store one or more gate changes.  Any gate changes in the (implicit or explicit)
  * time window already in the database will be deleted before the specified 
