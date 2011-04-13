@@ -981,7 +981,7 @@ BEGIN
             water_user_contract_code,
             pump_location_code,
             phys_trans_type_code,
-            accounting_volume,
+            pump_flow,
             transfer_start_datetime,
             accounting_remarks
           from at_wat_usr_contract_accounting
@@ -994,7 +994,7 @@ BEGIN
             water_user_contract_code,
             pump_location_code,
             phys_trans_type_code,
-            accounting_volume,
+            pump_flow,
             transfer_start_datetime,
             accounting_remarks
             
@@ -1003,7 +1003,7 @@ BEGIN
           )
         SELECT limited_wuca.pump_location_code,
           limited_wuca.transfer_start_datetime,
-          limited_wuca.accounting_volume,
+          limited_wuca.pump_flow,
           -- u.unit_id AS units_id,
           uc.factor,
           uc.offset,
@@ -1036,7 +1036,7 @@ BEGIN
           rec.phys_trans_type_display_value,
           rec.phys_trans_type_tooltip,
           rec.phys_trans_type_active),
-        rec.accounting_volume * rec.factor + rec.offset,
+        rec.pump_flow * rec.factor + rec.offset,
         -- rec.units_id,
         cwms_util.change_timezone(
            rec.transfer_start_datetime, 
@@ -1203,7 +1203,7 @@ BEGIN
         water_user_contract_code,
         pump_location_code,
         phys_trans_type_code,
-        accounting_volume,
+        pump_flow,
         transfer_start_datetime,
         accounting_remarks )
 
@@ -1211,7 +1211,7 @@ BEGIN
             l_contract_code contract_code,
             acct_tab.pump_location_ref.get_location_code('F') pump_code,
             ptt.phys_trans_type_code xfer_code,
-            acct_tab.accounting_volume * l_factor + l_offset volume,
+            acct_tab.pump_flow * l_factor + l_offset volume,
             cwms_util.change_timezone(
                   acct_tab.transfer_start_datetime, 
                   l_time_zone, 
@@ -1273,14 +1273,14 @@ END store_accounting_set;
 --      --PUMP_LOCATION_CODE id part
 --      
 --      --phys_trans_type
---      --ACCOUNTING_VOLUME
+--      --pump_flow
 --      --TRANSFER_START_DATETIME
 --      --ACCOUNTING_REMARKS
 --      p_rec.water_user_contract_code := l_contract_code;
 --      --create the loc if it doesnt exist?
 --      p_rec.pump_location_code := p_obj.pump_location_ref.get_location_code('T');
 --      p_rec.phys_trans_type_code := l_xfer_type_code;
---      p_rec.accounting_volume := p_obj.accounting_volume * l_factor + l_offset;
+--      p_rec.pump_flow := p_obj.pump_flow * l_factor + l_offset;
 --      p_rec.transfer_start_datetime := 
 --         cwms_util.change_timezone(
 --            p_obj.transfer_start_datetime, 

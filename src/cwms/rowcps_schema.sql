@@ -2416,7 +2416,7 @@ CREATE TABLE at_wat_usr_contract_accounting
   pump_location_code NUMBER(10) NOT NULL,
   phys_trans_type_code  NUMBER(10)      NOT NULL,
   -- accounting_credit_debit    VARCHAR2(6 BYTE)  NOT NULL,
-  accounting_volume       BINARY_DOUBLE     NOT NULL,
+  pump_flow       BINARY_DOUBLE     NOT NULL,
   transfer_start_datetime   DATE        NOT NULL,
   -- transfer_end_datetime      DATE        NOT NULL,
   accounting_remarks      VARCHAR2(255 BYTE)      
@@ -2446,7 +2446,7 @@ COMMENT ON COLUMN at_wat_usr_contract_accounting.phys_trans_type_code IS 'The ty
 COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_start_datetime IS 'The date this water movement began, the end date is defined as the start date of the next accounting.';
 -- COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_end_datetime IS 'the date this water movement ended';
 -- COMMENT ON COLUMN at_wat_usr_contract_accounting.accounting_credit_debit IS 'Whether this water movement is a credit or a debit to the contract';
-COMMENT ON COLUMN at_wat_usr_contract_accounting.accounting_volume IS 'The volume associated with the water movement, this value will always be positive.';
+COMMENT ON COLUMN at_wat_usr_contract_accounting.pump_flow IS 'The flow associated with the water accounting record, this value will always be positive.';
 COMMENT ON COLUMN at_wat_usr_contract_accounting.accounting_remarks IS 'Any comments regarding this water accounting movement';
 
 ALTER TABLE at_wat_usr_contract_accounting ADD (
