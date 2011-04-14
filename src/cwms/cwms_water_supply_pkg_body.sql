@@ -368,8 +368,8 @@ BEGIN
              wuc.future_use_allocation * uc.factor + uc.offset AS future_use_allocation,
              wuc.future_use_percent_activated,
              wuc.total_alloc_percent_activated,
-             wuc.withdrawal_location_code,
-             wuc.supply_location_code,
+             wuc.pump_out_location_code,
+             wuc.pump_out_below_location_code,
              wuc.pump_in_location_code,
              o.office_id,
              wct.ws_contract_type_display_value,
@@ -415,8 +415,8 @@ BEGIN
          rec.storage_unit_id,
          rec.future_use_percent_activated,
          rec.total_alloc_percent_activated,
-         cwms_loc.retrieve_location(rec.withdrawal_location_code),
-         cwms_loc.retrieve_location(rec.supply_location_code),
+         cwms_loc.retrieve_location(rec.pump_out_location_code),
+         cwms_loc.retrieve_location(rec.pump_out_below_location_code),
          cwms_loc.retrieve_location(rec.pump_in_location_code));
    END loop;
 END retrieve_contracts;
@@ -481,19 +481,19 @@ IS
       p_rec.future_use_allocation := p_obj.future_use_allocation * l_factor + l_offset;
       p_rec.future_use_percent_activated := p_obj.future_use_percent_activated;
       p_rec.total_alloc_percent_activated := p_obj.total_alloc_percent_activated;
-      IF p_obj.withdraw_location IS NOT NULL
+      IF p_obj.pump_out_location IS NOT NULL
       THEN
         --store location data
-        cwms_loc.store_location(p_obj.withdraw_location,'F');
+        cwms_loc.store_location(p_obj.pump_out_location,'F');
         --get location code
-        p_rec.withdrawal_location_code := p_obj.withdraw_location.location_ref.get_location_code('F');
+        p_rec.pump_out_location_code := p_obj.pump_out_location.location_ref.get_location_code('F');
       END IF;
-      IF p_obj.supply_location IS NOT NULL
+      IF p_obj.pump_out_below_location IS NOT NULL
       THEN
         --store location data
-        cwms_loc.store_location(p_obj.supply_location,'F');
+        cwms_loc.store_location(p_obj.pump_out_below_location,'F');
         --get location code
-        p_rec.supply_location_code := p_obj.supply_location.location_ref.get_location_code('F');
+        p_rec.pump_out_below_location_code := p_obj.pump_out_below_location.location_ref.get_location_code('F');
       END IF;
       IF p_obj.pump_in_location IS NOT NULL
       THEN
@@ -783,7 +783,7 @@ begin
     l_project_location_code :=  p_contract_ref.water_user.project_location_ref.get_location_code('F');
 
     -- get the contract code and pump locs
-    select water_user_contract_code, withdrawal_location_code, supply_location_code, pump_in_location_code
+    select water_user_contract_code, pump_out_location_code, pump_out_below_location_code, pump_in_location_code
     INTO l_contract_code, l_pump_out_code, l_pump_out_below_code, l_pump_in_code
     FROM at_water_user_contract wuc,
         at_water_user wu

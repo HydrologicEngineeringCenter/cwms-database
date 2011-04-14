@@ -2298,8 +2298,8 @@ CREATE TABLE at_water_user_contract
    future_use_allocation         BINARY_DOUBLE,
    future_use_percent_activated  BINARY_DOUBLE,
    total_alloc_percent_activated BINARY_DOUBLE,
-   withdrawal_location_code      NUMBER(10), --pump-out
-   supply_location_code          NUMBER(10), --pump-out below
+   pump_out_location_code      NUMBER(10), --pump-out
+   pump_out_below_location_code          NUMBER(10), --pump-out below
    pump_in_location_code         NUMBER(10),
    storage_unit_code             NUMBER(10)
 )
@@ -2333,8 +2333,8 @@ COMMENT ON COLUMN at_water_user_contract.initial_use_allocation IS 'The initial 
 COMMENT ON COLUMN at_water_user_contract.future_use_allocation IS 'The future contracted allocation for this water user contract';
 COMMENT ON COLUMN at_water_user_contract.future_use_percent_activated IS 'The percent allocated future use for this water user contract';
 COMMENT ON COLUMN at_water_user_contract.total_alloc_percent_activated IS 'The percentage of total allocation for this water user contract';
-COMMENT ON COLUMN at_water_user_contract.withdrawal_location_code IS 'The code for the AT_PHYSICAL_LOCATION record which is the location where this water with be withdrawn from the permanent pool';
-COMMENT ON COLUMN at_water_user_contract.supply_location_code IS 'The AT_PHYSICAL_LOCATION record which is the location where this water will be obtained below the dam or within the outlet works';
+COMMENT ON COLUMN at_water_user_contract.pump_out_location_code IS 'The code for the AT_PHYSICAL_LOCATION record which is the location where this water with be withdrawn from the permanent pool';
+COMMENT ON COLUMN at_water_user_contract.pump_out_below_location_code IS 'The AT_PHYSICAL_LOCATION record which is the location where this water will be obtained below the dam or within the outlet works';
 COMMENT ON COLUMN at_water_user_contract.pump_in_location_code IS 'The AT_PHYSICAL_LOCATION record that identifies the project sub location where water is released into the permanent pool by pumping or gravity flow';
 COMMENT ON COLUMN at_water_user_contract.storage_unit_code IS 'The unit of storage for this water user contract';
 
@@ -2380,12 +2380,12 @@ ALTER TABLE at_water_user_contract ADD (
 
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk3
- FOREIGN KEY (withdrawal_location_code)
+ FOREIGN KEY (pump_out_location_code)
  REFERENCES at_physical_location (location_code))
 /
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk1
- FOREIGN KEY (supply_location_code)
+ FOREIGN KEY (pump_out_below_location_code)
  REFERENCES at_physical_location (location_code))
 /
 ALTER TABLE at_water_user_contract ADD (
@@ -2441,7 +2441,7 @@ MONITORING
 /
 COMMENT ON COLUMN at_wat_usr_contract_accounting.wat_usr_contract_acct_code IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
 COMMENT ON COLUMN at_wat_usr_contract_accounting.water_user_contract_code IS 'The contract identification number for this water movement. SEE AT_WATER_USER_CONTRACT.';
-COMMENT ON COLUMN at_wat_usr_contract_accounting.pump_location_code IS 'The AT_PHYSICAL_LOCATION location_code of the pump as referred to in the contract (withdraw, supply, pump in) used for this water movement.';
+COMMENT ON COLUMN at_wat_usr_contract_accounting.pump_location_code IS 'The AT_PHYSICAL_LOCATION location_code of the pump as referred to in the contract (pump out, pump out below, pump in) used for this water movement.';
 COMMENT ON COLUMN at_wat_usr_contract_accounting.phys_trans_type_code IS 'The type of transfer for this water movement.  See AT_phys_trans_type_CODE.';
 COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_start_datetime IS 'The date this water movement began, the end date is defined as the start date of the next accounting.';
 -- COMMENT ON COLUMN at_wat_usr_contract_accounting.transfer_end_datetime IS 'the date this water movement ended';

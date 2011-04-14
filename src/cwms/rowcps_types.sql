@@ -173,9 +173,9 @@ AS
     storage_units_id VARCHAR2(15),                -- the units used for contracted storage and allocations.
     future_use_percent_activated BINARY_DOUBLE,   --Param: ??. The percent allocated future use for this water user contract
     total_alloc_percent_activated BINARY_DOUBLE,  --Param: ??. The percentage of total allocation for this water user contract
-    withdraw_location location_obj_t,             --The code for the AT_PHYSICAL_LOCATION record which is the location where this water with be withdrawn from the permanent pool
-    supply_location location_obj_t,                --The AT_PHYSICAL_LOCATION record which is the location where this water will be obtained below the dam or within the outlet works
-    pump_in_location location_obj_t                --The AT_PHYSICAL_LOCATION record which is the location where this water will be obtained below the dam or within the outlet works
+    pump_out_location location_obj_t,             -- used to be withdrawal
+    pump_out_below_location location_obj_t,       -- used to be supply
+    pump_in_location location_obj_t               
   );
   /
   show errors
