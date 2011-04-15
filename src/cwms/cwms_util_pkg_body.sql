@@ -269,7 +269,7 @@ AS
          THEN
             cwms_err.raise ('INVALID_ITEM',
                             p_synonym,
-                            'materialized view name'
+                            'schema item name'
                            );
          WHEN NO_DATA_FOUND
          THEN
@@ -685,7 +685,7 @@ AS
          WHEN NO_DATA_FOUND
          THEN
             cwms_err.raise (
-               'GENERIC_ERROR',
+               'ERROR',
                p_parameter_code || ' is not a valid parameter_code.'
             );
       END;
@@ -693,43 +693,43 @@ AS
       RETURN l_parameter_id;
    END get_parameter_id;
 
-   /*
-      --------------------------------------------------------
-    -- Replace filename wildcard chars (?,*) with SQL ones
-      -- (_,%), using '\' as an escape character.
-     --
-    --  A null input generates a result of '%'.
-     --
-   +--------------+-------------------------------------------------------------------------+
-   |                               Output String                               |
-   |            +------------------------------------------------------------+------------+
-   |               |                             Recognize SQL                   |            |
-   |               |                              Wildcards?                      |            |
-   |               +------+---------------------------+-----+-------------------+            |
-   | Input String | No : comments           | Yes : comments          | Different? |
-   +--------------+------+---------------------------+-----+-------------------+------------+
-   | %              | \% : literal '%'         | %   : multi-wildcard     | Yes        |
-   | _            | \_ : literal '_'         | _   : single-wildcard    | Yes        |
-   | *            | %   : multi-wildcard       | %    : multi-wildcard     | No         |
-   | ?            | _  : single-wildcard      | _   : single-wildcard     | No         |
-   | \%   |       : not allowed               | \%  : literal '%'       | Yes        |
-   | \_   |       : not allowed               | \_  : literal '_'       | Yes        |
-   | \*   | *    : literal '*'               | *   : literal '*'       | No         |
-   | \?   | ?    : literal '?'               | ?   : literal '?'       | No         |
-   | \\%   | \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
-   | \\_   | \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
-   | \\*   | \\% : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
-   | \\?   | \\_ : literal '\' + swc         | \\_ : literal '\' + swc | No         |
-   +--------------+------+---------------------------+-----+-------------------+------------+
-       */
-   FUNCTION normalize_wildcards (p_string          IN VARCHAR2,
-                                 p_recognize_sql   IN BOOLEAN DEFAULT FALSE
-                                )
+   --------------------------------------------------------
+   -- Replace filename wildcard chars (?,*) with SQL ones
+   -- (_,%), using '\' as an escape character.
+   --
+   --  A null input generates a result of '%'.
+   --
+   -- +--------------+-------------------------------------------------------------------------+
+   -- |              |                Output String                                            |
+   -- |              +------------------------------------------------------------+------------+
+   -- |              |                             Recognize SQL                  |            |
+   -- |              |                              Wildcards?                    |            |
+   -- |              +------+---------------------------+-----+-------------------+            |
+   -- | Input String | No   : comments                  | Yes : comments          | Different? |
+   -- +--------------+------+---------------------------+-----+-------------------+------------+
+   -- | %            | \%   : literal '%'               | %   : multi-wildcard    | Yes        |
+   -- | _            | \_   : literal '_'               | _   : single-wildcard   | Yes        |
+   -- | *            | %    : multi-wildcard            | %   : multi-wildcard    | No         |
+   -- | ?            | _    : single-wildcard           | _   : single-wildcard   | No         |
+   -- | \%           |      : not allowed               | \%  : literal '%'       | Yes        |
+   -- | \_           |      : not allowed               | \_  : literal '_'       | Yes        |
+   -- | \*           | *    : literal '*'               | *   : literal '*'       | No         |
+   -- | \?           | ?    : literal '?'               | ?   : literal '?'       | No         |
+   -- | \\%          | \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
+   -- | \\_          | \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
+   -- | \\*          | \\%  : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
+   -- | \\?          | \\_  : literal '\' + swc         | \\_ : literal '\' + swc | No         |
+   -- +--------------+------+---------------------------+-----+-------------------+------------+
+   --
+   FUNCTION normalize_wildcards(
+      p_string          IN VARCHAR2,
+      p_recognize_sql   IN BOOLEAN DEFAULT FALSE)
       RETURN VARCHAR2
    IS
-      l_result                      VARCHAR2 (32767);
-      l_char                        VARCHAR2 (1);
-      l_skip                        BOOLEAN := FALSE;
+      l_result   varchar2 (32767);
+      c_slash    constant varchar2(1) := chr(1);
+      c_star     constant varchar2(1) := chr(2);
+      c_question constant varchar2(1) := chr(3);
    BEGIN
       --------------------------------
       -- default null string to '%' --
@@ -738,158 +738,43 @@ AS
       THEN
          RETURN '%';
       END IF;
-
-      l_result := NULL;
-
-      FOR i IN 1 .. LENGTH (p_string)
-      LOOP
-         IF l_skip
-         THEN
-            l_skip := FALSE;
-         ELSE
-            l_char := SUBSTR (p_string, i, 1);
-
-            CASE l_char
-               WHEN '\'
-               THEN
-                  IF i = LENGTH (p_string)
-                  THEN
-                     cwms_err.raise (
-                        'ERROR',
-                        'Escape character ''\'' cannot end a match string.'
-                     );
-                  END IF;
-
-                  l_skip := TRUE;
-
-                  IF REGEXP_INSTR (NVL (SUBSTR (p_string, i + 1), ' '),
-                                   '\\[*?%_]'
-                                  ) = 1
-                  THEN
-                     l_result := l_result || '\\';
-                  ELSE
-                     l_char := SUBSTR (p_string, i + 1, 1);
-
-                     IF p_recognize_sql
-                     THEN
-                        CASE l_char
-                           WHEN '\'
-                           THEN
-                              l_result := l_result || '\';
-                           WHEN '*'
-                           THEN
-                              l_result := l_result || '*';
-                           WHEN '?'
-                           THEN
-                              l_result := l_result || '?';
-                           WHEN '%'
-                           THEN
-                              l_result := l_result || '\%';
-                           WHEN '_'
-                           THEN
-                              l_result := l_result || '\_';
-                           ELSE
-                              cwms_err.raise ('INVALID_ITEM',
-                                              p_string,
-                                              'match string'
-                                             );
-                        END CASE;
-                     ELSE
-                        CASE l_char
-                           WHEN '\'
-                           THEN
-                              l_result := l_result || '\';
-                           WHEN '*'
-                           THEN
-                              l_result := l_result || '*';
-                           WHEN '?'
-                           THEN
-                              l_result := l_result || '?';
-                           WHEN '%'
-                           THEN
-                              cwms_err.raise (
-                                 'ERROR',
-                                 'Escape sequence ''\%'' is not valid when p_recognize_sql is FALSE.'
-                              );
-                           WHEN '_'
-                           THEN
-                              cwms_err.raise (
-                                 'ERROR',
-                                 'Escape sequence ''\_'' is not valid when p_recognize_sql is FALSE.'
-                              );
-                           ELSE
-                              cwms_err.raise ('INVALID_ITEM',
-                                              p_string,
-                                              'match string'
-                                             );
-                        END CASE;
-                     END IF;
-                  END IF;
-               WHEN '*'
-               THEN
-                  l_result := l_result || '%';
-               WHEN '?'
-               THEN
-                  l_result := l_result || '_';
-               WHEN '%'
-               THEN
-                  IF NOT p_recognize_sql
-                  THEN
-                     l_result := l_result || '\';
-                  END IF;
-
-                  l_result := l_result || '%';
-               WHEN '_'
-               THEN
-                  IF NOT p_recognize_sql
-                  THEN
-                     l_result := l_result || '\';
-                  END IF;
-
-                  l_result := l_result || '_';
-               ELSE
-                  l_result := l_result || l_char;
-            END CASE;
-         END IF;
-      END LOOP;
-
-      RETURN l_result;
+      
+      l_result := replace(p_string, '\\', c_slash);
+      l_result := replace(l_result, '\*', c_star);
+      l_result := replace(l_result, '\?', c_question);
+      if substr(l_result, length(l_result), 1) = '\' then
+         cwms_err.raise(
+            'ERROR',
+            'Escape characater ''\'' cannot be the last character.');
+      end if;
+      if not p_recognize_sql then
+         if instr(l_result, '\%') + instr(l_result, '\_')!= 0 then
+            cwms_err.raise(
+               'ERROR',
+               'Cannot have ''\%'' or ''\_'' if p_recognize_sql is false.');
+         end if;
+         l_result := regexp_replace(l_result, '%', '\%');
+         l_result := regexp_replace(l_result, '_', '\_');
+      end if;
+      l_result := replace(l_result, '*', '%');
+      l_result := replace(l_result, '?', '_');
+      l_result := replace(l_result, c_slash, '\\');
+      l_result := replace(l_result, c_star,  '*');
+      l_result := replace(l_result, c_question,  '?');
+            
+      return l_result;      
    END normalize_wildcards;
 
    --------------------------------------------------------
    -- Replace SQL ones (_,%) with filename wildcard chars (?,*),
    -- using '\' as an escape character.
-   --
-   --  A null input generates a result of '*'.
-   --
-   -- +--------------+-------------------------------------------------------------------------+
-   -- |         |                                         Output String                                          |
-   -- |         +------------------------------------------------------------+------------+
-   -- |         |                                       Recognize SQL                          |               |
-   -- |         |                                         Wildcards?                             |               |
-   -- |         +------+---------------------------+-----+-------------------+               |
-   -- | Input String | No : comments              | Yes : comments             | Different? |
-   -- +--------------+------+---------------------------+-----+-------------------+------------+
-   -- | %    | \%     : literal '%'               | %   : multi-wildcard    | Yes        |
-   -- | _    | \_     : literal '_'               | _   : single-wildcard   | Yes        |
-   -- | *    | %      : multi-wildcard                | %    : multi-wildcard     | No           |
-   -- | ?    | _      : single-wildcard              | _    : single-wildcard     | No           |
-   -- | \%     |         : not allowed                    | \%  : literal '%'       | Yes        |
-   -- | \_     |         : not allowed                    | \_  : literal '_'       | Yes        |
-   -- | \*     | *     : literal '*'               | *   : literal '*'       | No         |
-   -- | \?     | ?     : literal '?'               | ?   : literal '?'       | No         |
-   -- | \\%   | \\\% : literal '\' + literal '%' | \\% : literal '\' + mwc | Yes        |
-   -- | \\_   | \\\_ : literal '\' + literal '\' | \\_ : literal '\' + swc | Yes        |
-   -- | \\*   | \\% : literal '\' + mwc         | \\% : literal '\' + mwc | No         |
-   -- | \\?   | \\_ : literal '\' + swc         | \\_ : literal '\' + swc | No         |
-   -- +--------------+------+---------------------------+-----+-------------------+------------+
-
    FUNCTION denormalize_wildcards (p_string IN VARCHAR2)
       RETURN VARCHAR2
-   IS
-      l_result                      VARCHAR2 (32767);
-      l_char                        VARCHAR2 (1);
-      l_skip                        BOOLEAN := FALSE;
+   IS      
+      l_result   varchar2 (32767);
+      c_slash    constant varchar2(1) := chr(1);
+      c_percent  constant varchar2(1) := chr(2);
+      c_underbar constant varchar2(1) := chr(3);
    BEGIN
       --------------------------------
       -- default null string to '*' --
@@ -898,78 +783,24 @@ AS
       THEN
          RETURN '*';
       END IF;
-
-      l_result := NULL;
-
-      FOR i IN 1 .. LENGTH (p_string)
-      LOOP
-         IF l_skip
-         THEN
-            l_skip := FALSE;
-         ELSE
-            l_char := SUBSTR (p_string, i, 1);
-
-            CASE l_char
-               WHEN '\'
-               THEN
-                  IF i = LENGTH (p_string)
-                  THEN
-                     cwms_err.raise (
-                        'ERROR',
-                        'Escape character ''\'' cannot end a match string.'
-                     );
-                  END IF;
-
-                  l_skip := TRUE;
-
-                  IF REGEXP_INSTR (NVL (SUBSTR (p_string, i + 1), ' '),
-                                   '\\[*?%_]'
-                                  ) = 1
-                  THEN
-                     l_result := l_result || '\\';
-                  ELSE
-                     l_char := SUBSTR (p_string, i + 1, 1);
-
-
-                     CASE l_char
-                        WHEN '\'
-                        THEN
-                           l_result := l_result || '\';
-                        WHEN '*'
-                        THEN
-                           l_result := l_result || '*';
-                        WHEN '?'
-                        THEN
-                           l_result := l_result || '?';
-                        WHEN '%'
-                        THEN
-                           l_result := l_result || '%';
-                        WHEN '_'
-                        THEN
-                           l_result := l_result || '_';
-                        ELSE
-                           cwms_err.raise ('INVALID_ITEM',
-                                           p_string,
-                                           'match string'
-                                          );
-                     END CASE;
-                  END IF;
-               WHEN '%'
-               THEN
-                  l_result := l_result || '*';
-               WHEN '_'
-               THEN
-                  l_result := l_result || '?';
-
-               ELSE
-                  l_result := l_result || l_char;
-            END CASE;
-         END IF;
-      END LOOP;
-
-      RETURN l_result;
-   END denormalize_wildcards;
-
+      
+      l_result := replace(p_string, '\\', c_slash);
+      l_result := replace(l_result, '\%', c_percent);
+      l_result := replace(l_result, '\_', c_underbar);
+      if substr(l_result, length(l_result), 1) = '\' then
+         cwms_err.raise(
+            'ERROR',
+            'Escape characater ''\'' cannot be the last character.');
+      end if;
+      l_result := replace(l_result, '%', '*');
+      l_result := replace(l_result, '_', '?');
+      l_result := replace(l_result, c_slash, '\\');
+      l_result := replace(l_result, c_percent, '%');
+      l_result := replace(l_result, c_underbar, '_');
+            
+      return l_result;      
+   END;
+   
    PROCEDURE parse_ts_id (p_base_location_id       OUT VARCHAR2,
                           p_sub_location_id         OUT VARCHAR2,
                           p_base_parameter_id      OUT VARCHAR2,
@@ -1341,7 +1172,7 @@ AS
       l_text                        VARCHAR2 (32767);
    BEGIN
       l_text :=
-         REGEXP_REPLACE (p_text, '^[[:space:]]*(.*)[[:space:]]*$', '\1');
+         REGEXP_REPLACE (p_text, '^[[:space:]]*(.*)[[:space:]]*$', '\1', 'n');
       RETURN l_text;
    END strip;
 
@@ -1408,19 +1239,23 @@ AS
       IF l_parameter_type_id = 'Inst' AND l_duration_id != '0'
       THEN
          cwms_err.raise (
-            'GENERIC_ERROR',
+            'ERROR',
                'The Duration Id for an "Inst" record cannot be "'
             || l_duration_id
             || '". The Duration Id must be "0".'
          );
-      ELSIF l_parameter_type_id IN ('Ave', 'Max', 'Min', 'Total') AND l_duration_id = '0'
-      THEN
-         cwms_err.raise (
-            'GENERIC_ERROR',
-               'A Parameter Type of "'
-            || l_parameter_type_id
-            || '" cannot have a "0" Duration Id.'
-         );
+      -----------------------------------------------------------------
+      -- This condition is no longer true. A "0" duration indicates  --
+      -- a duration from the last irregular value to the current one --
+      -----------------------------------------------------------------
+      -- ELSIF l_parameter_type_id IN ('Ave', 'Max', 'Min', 'Total') AND l_duration_id = '0'
+      -- THEN
+      --    cwms_err.raise (
+      --       'ERROR',
+      --          'A Parameter Type of "'
+      --       || l_parameter_type_id
+      --       || '" cannot have a "0" Duration Id.'
+      --    );
       END IF;
 
       RETURN    l_base_location_id
@@ -2373,7 +2208,7 @@ AS
       p_user_id      in  varchar2 default null,
       p_office_id    in  varchar2 default null)
    is
-      l_unit_system         varchar2(2)  := 'SI';
+      l_unit_system         varchar2(2);
       l_user_id             varchar2(31) := upper(nvl(p_user_id, get_user_id));
       l_office_id           varchar2(16) := get_db_office_id(p_office_id);
       l_base_parameter_id   varchar2(16) := get_base_id(p_parameter_id);
@@ -2384,17 +2219,17 @@ AS
       p_unit_id := null;
       p_value_out := null;
       --
-      -- get preferred unit system
+      -- get preferred unit system or default to 'SI'
       --
-      begin
-         select display_unit_system
-           into l_unit_system
-           from at_user_preferences
-          where db_office_code = l_office_code
-            and username = l_user_id;
-      exception
-         when no_data_found then null;
-      end;
+      l_unit_system := cwms_properties.get_property(
+         'Pref_User.'||l_user_id, 
+         'Unit_System', 
+         cwms_properties.get_property(
+            'Pref_Office',
+            'Unit_System',
+            'SI',
+            l_office_id), 
+         l_office_id);
       --
       -- get display unit for parameter in preferred unit system
       --
