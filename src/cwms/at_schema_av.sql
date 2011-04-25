@@ -2532,6 +2532,7 @@ show errors;
 -- AV_TS_ASSOCIATION--
 -----------------------------
 CREATE OR REPLACE FORCE VIEW AV_TS_ASSOCIATION (
+  OFFICE_ID,
   ASSOCIATION_TYPE,
   USAGE_CATEGORY_ID, 
   USAGE_ID, 
@@ -2539,14 +2540,22 @@ CREATE OR REPLACE FORCE VIEW AV_TS_ASSOCIATION (
   TIMESERIES_ID, 
   USAGE_DESCRIPTION) 
 AS 
-  select prop_category ASSOCIATION_TYPE,
+  SELECT 
+  o.office_id OFFICE_ID,
+  p.prop_category ASSOCIATION_TYPE,
   cwms_util.split_text(p.prop_id,1,'.') USAGE_CATEGORY_ID,
   cwms_util.split_text(p.prop_id,2,'.') USAGE_ID,
   cwms_util.split_text(p.prop_id,3,'.') ASSOCIATION_ID,
   p.prop_value TIMESERIES_ID,
   p.prop_comment USAGE_DESCRIPTION
-from at_properties p
-where prop_category in ('LOCATION TIME SERIES ASSOCIATION', 'LOCATION GROUP TIME SERIES ASSOCIATION');
+FROM at_properties p
+INNER JOIN at_properties ip ON (
+  p.office_code = ip.office_code 
+  AND p.prop_category = ip.prop_category
+  AND p.prop_id = ip.prop_id
+  AND p.prop_category in ('LOCATION TIME SERIES ASSOCIATION', 'LOCATION GROUP TIME SERIES ASSOCIATION'))
+INNER JOIN cwms_office o ON p.office_code = o.office_code
+--where prop_category in ('LOCATION TIME SERIES ASSOCIATION', 'LOCATION GROUP TIME SERIES ASSOCIATION');
 /
 show errors;
 
