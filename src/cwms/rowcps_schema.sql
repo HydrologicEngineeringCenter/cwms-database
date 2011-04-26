@@ -13,24 +13,24 @@ DECLARE
    TYPE id_array_t IS TABLE OF VARCHAR2 (32);
 
    table_names       id_array_t
-      := id_array_t ('AT_CONSTRUCTION_HISTORY',                                       
-           'AT_DOCUMENT',                                                   
-           'AT_EMBANKMENT',                                                 
+      := id_array_t ('AT_CONSTRUCTION_HISTORY',
+           'AT_DOCUMENT',
+           'AT_EMBANKMENT',
            'AT_GATE_SETTING',
-           'AT_LOCK',                                                 
-           'AT_LOCKAGE',                                                
-           'AT_GATE_CHANGE',                                                
-           'AT_TURBINE_CHANGE',                                                
-           'AT_OUTLET',                                      
-           'AT_PROJECT',                                                    
-           'AT_PROJECT_AGREEMENT',                                          
-           'AT_PROJECT_CONGRESS_DISTRICT',                                  
-           'AT_PROJECT_PURPOSES',                                            
-           'AT_TURBINE',                                     
-           'AT_TURBINE_SETTING',                                     
+           'AT_LOCK',
+           'AT_LOCKAGE',
+           'AT_GATE_CHANGE',
+           'AT_TURBINE_CHANGE',
+           'AT_OUTLET',
+           'AT_PROJECT',
+           'AT_PROJECT_AGREEMENT',
+           'AT_PROJECT_CONGRESS_DISTRICT',
+           'AT_PROJECT_PURPOSES',
+           'AT_TURBINE',
+           'AT_TURBINE_SETTING',
            'AT_WAT_USR_CONTRACT_ACCOUNTING',
-           'AT_WATER_USER_CONTRACT',                                      
-           'AT_WATER_USER', 
+           'AT_WATER_USER_CONTRACT',
+           'AT_WATER_USER',
            'AT_XREF_WAT_USR_CONTRACT_DOCS',
            'AT_DOCUMENT_TYPE',
            'AT_EMBANK_PROTECTION_TYPE',
@@ -41,10 +41,10 @@ DECLARE
            'AT_PROJECT_PURPOSE',
            'AT_TURBINE_SETTING_REASON',
            'AT_TURBINE_COMPUTATION_CODE',
-                                         'AT_WS_CONTRACT_TYPE',
-                                         'AT_OPERATIONAL_STATUS_CODE',
-                                         'AT_OUTLET_CHARACTERISTIC',                               
-           'AT_TURBINE_CHARACTERISTIC'  
+           'AT_WS_CONTRACT_TYPE',
+           'AT_OPERATIONAL_STATUS_CODE',
+           'AT_OUTLET_CHARACTERISTIC',
+           'AT_TURBINE_CHARACTERISTIC'
                     );
    mview_log_names   id_array_t
       := id_array_t (' '
@@ -93,7 +93,7 @@ CREATE TABLE at_gate_ch_computation_code
   db_office_code      NUMBER                    NOT NULL,
   discharge_comp_display_value          VARCHAR2(25 BYTE)   NOT NULL,
   discharge_comp_tooltip      VARCHAR2(255 BYTE)    NOT NULL,
-  discharge_comp_active     VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL 
+  discharge_comp_active     VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -163,7 +163,7 @@ ALTER TABLE at_gate_ch_computation_code ADD (
 /
 
 ALTER TABLE at_gate_ch_computation_code ADD (
-CONSTRAINT at_gccc_active_ck 
+CONSTRAINT at_gccc_active_ck
 CHECK ( discharge_comp_active = 'T' OR discharge_comp_active = 'F'))
 /
 
@@ -178,7 +178,7 @@ CREATE TABLE at_gate_release_reason_code
   db_office_code      NUMBER                    NOT NULL,
   release_reason_display_value  VARCHAR2(25 BYTE)       NOT NULL,
   release_reason_tooltip    VARCHAR2(255 BYTE)        NOT NULL,
-  release_reason_active     VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL 
+  release_reason_active     VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -247,7 +247,7 @@ ALTER TABLE at_gate_release_reason_code ADD (
 /
 
 ALTER TABLE at_gate_release_reason_code ADD (
-CONSTRAINT at_grrc_active_ck 
+CONSTRAINT at_grrc_active_ck
 CHECK ( release_reason_active = 'T' OR release_reason_active = 'F'))
 /
 
@@ -263,7 +263,7 @@ CREATE TABLE at_project_purposes
   db_office_code      NUMBER                    NOT NULL,
   purpose_display_value           VARCHAR2(25 BYTE)     NOT NULL,
   purpose_tooltip     VARCHAR2(255 BYTE)      NOT NULL,
-  purpose_active      VARCHAR2(1 BYTE) DEFAULT 'T'          NOT NULL 
+  purpose_active      VARCHAR2(1 BYTE) DEFAULT 'T'          NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -332,7 +332,7 @@ ALTER TABLE at_project_purposes ADD (
 /
 
 ALTER TABLE at_project_purposes ADD (
-CONSTRAINT at_proj_purpose_active_ck 
+CONSTRAINT at_proj_purpose_active_ck
 CHECK ( purpose_active = 'T' OR purpose_active = 'F'))
 /
 
@@ -347,7 +347,7 @@ CREATE TABLE at_document_type
   db_office_code      NUMBER                    NOT NULL,
   document_type_display_value           VARCHAR2(25 BYTE)         NOT NULL,
   document_type_tooltip       VARCHAR2(255 BYTE)    NOT NULL,
-  document_type_active        VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL 
+  document_type_active        VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -416,7 +416,7 @@ ALTER TABLE at_document_type ADD (
 /
 
 ALTER TABLE at_document_type ADD (
-CONSTRAINT at_dt_active_ck 
+CONSTRAINT at_dt_active_ck
 CHECK ( document_type_active = 'T' OR document_type_active = 'F'))
 /
 
@@ -431,7 +431,7 @@ CREATE TABLE at_embank_structure_type
   db_office_code      NUMBER                    NOT NULL,
   structure_type_display_value    VARCHAR2(50 BYTE)       NOT NULL,
   structure_type_tooltip      VARCHAR2(255 BYTE)        NOT NULL,
-  structure_type_active       VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL 
+  structure_type_active       VARCHAR2(1 BYTE) DEFAULT 'T'  NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -500,7 +500,7 @@ ALTER TABLE at_embank_structure_type ADD (
 /
 
 ALTER TABLE at_embank_structure_type ADD (
-CONSTRAINT at_est_active_ck 
+CONSTRAINT at_est_active_ck
 CHECK ( structure_type_active = 'T' OR structure_type_active = 'F'))
 /
 -- INSERT INTO at_embank_structure_type VALUES (0, 53, 'Default', 'Default', 'T');
@@ -514,7 +514,7 @@ CREATE TABLE at_embank_protection_type
   db_office_code      NUMBER                    NOT NULL,
   protection_type_display_value   VARCHAR2(50 BYTE)   NOT NULL,
   protection_type_tooltip     VARCHAR2(255 BYTE)    NOT NULL,
-  protection_type_active      VARCHAR2(1) DEFAULT 'T' NOT NULL 
+  protection_type_active      VARCHAR2(1) DEFAULT 'T' NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -583,7 +583,7 @@ ALTER TABLE at_embank_protection_type ADD (
 /
 
 ALTER TABLE at_embank_protection_type ADD (
-CONSTRAINT at_ept_active_ck 
+CONSTRAINT at_ept_active_ck
 CHECK ( protection_type_active = 'T' OR protection_type_active = 'F'))
 /
 
@@ -598,7 +598,7 @@ CREATE TABLE at_turbine_setting_reason
   db_office_code      NUMBER                    NOT NULL,
   turb_set_reason_display_value     VARCHAR2(25 BYTE)   NOT NULL,
   turb_set_reason_tooltip    VARCHAR2(255 BYTE)    NOT NULL,
-  turb_set_reason_active     VARCHAR2(1) DEFAULT 'T' NOT NULL 
+  turb_set_reason_active     VARCHAR2(1) DEFAULT 'T' NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -667,7 +667,7 @@ ALTER TABLE at_turbine_setting_reason ADD (
 /
 
 ALTER TABLE at_turbine_setting_reason ADD (
-CONSTRAINT at_tst_active_ck 
+CONSTRAINT at_tst_active_ck
 CHECK ( turb_set_reason_active = 'T' OR turb_set_reason_active = 'F'))
 /
 
@@ -753,7 +753,7 @@ ALTER TABLE at_turbine_computation_code ADD (
 /
 
 ALTER TABLE at_turbine_computation_code ADD (
-CONSTRAINT at_tcc_active_ck 
+CONSTRAINT at_tcc_active_ck
 CHECK ( turbine_comp_active = 'T' OR turbine_comp_active = 'F'))
 /
 
@@ -768,7 +768,7 @@ CREATE TABLE at_physical_transfer_type
   db_office_code      NUMBER                    NOT NULL,
   phys_trans_type_display_value     VARCHAR2(25 BYTE)   NOT NULL,
   phys_trans_type_tooltip   VARCHAR2(255 BYTE)    NOT NULL,
-  phys_trans_type_active      VARCHAR2(1) DEFAULT 'T' NOT NULL 
+  phys_trans_type_active      VARCHAR2(1) DEFAULT 'T' NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -837,7 +837,7 @@ ALTER TABLE at_physical_transfer_type ADD (
 /
 
 ALTER TABLE at_physical_transfer_type ADD (
-CONSTRAINT at_ptt_active_ck 
+CONSTRAINT at_ptt_active_ck
 CHECK ( phys_trans_type_active = 'T' OR phys_trans_type_active = 'F'))
 /
 
@@ -852,7 +852,7 @@ CREATE TABLE at_operational_status_code
   db_office_code      NUMBER                    NOT NULL,
   oper_status_display_value   VARCHAR2(25 BYTE)   NOT NULL,
   operational_status_tooltip            VARCHAR2(255 BYTE)    NOT NULL,
-  operational_status_active     VARCHAR2(1) DEFAULT 'T' NOT NULL 
+  operational_status_active     VARCHAR2(1) DEFAULT 'T' NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -921,7 +921,7 @@ ALTER TABLE at_operational_status_code ADD (
 /
 
 ALTER TABLE at_operational_status_code ADD (
-CONSTRAINT at_oper_status_active_ck 
+CONSTRAINT at_oper_status_active_ck
 CHECK (operational_status_active = 'T' OR operational_status_active = 'F'))
 /
 
@@ -937,7 +937,7 @@ CREATE TABLE at_ws_contract_type
   db_office_code      NUMBER                    NOT NULL,
   ws_contract_type_display_value  VARCHAR2(25 BYTE)   NOT NULL,
   ws_contract_type_tooltip    VARCHAR2(255 BYTE)    NOT NULL,
-  ws_contract_type_active   VARCHAR2(1) DEFAULT 'T' NOT NULL 
+  ws_contract_type_active   VARCHAR2(1) DEFAULT 'T' NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1007,7 +1007,7 @@ ALTER TABLE at_ws_contract_type ADD (
 /
 
 ALTER TABLE at_ws_contract_type ADD (
-CONSTRAINT at_ws_cntrct_typ_activ_ck 
+CONSTRAINT at_ws_cntrct_typ_activ_ck
 CHECK ( ws_contract_type_active = 'T' OR ws_contract_type_active = 'F'))
 /
 
@@ -1033,7 +1033,7 @@ CREATE TABLE at_project
   pump_back_location_code     NUMBER(10),
   near_gage_location_code     NUMBER(10),
   yield_time_frame_start      DATE,
-  yield_time_frame_end        DATE, 
+  yield_time_frame_end        DATE,
   project_remarks       VARCHAR2(1000 BYTE)
   )
 TABLESPACE cwms_20at_data
@@ -1354,11 +1354,11 @@ ALTER TABLE at_lockage ADD (
  REFERENCES at_lock (lock_location_code))
 /
 ALTER TABLE at_lockage ADD (
-CONSTRAINT at_lockage_is_tow_upbound_ck 
+CONSTRAINT at_lockage_is_tow_upbound_ck
 CHECK ( is_tow_upbound = 'T' OR is_tow_upbound = 'F'))
 /
 ALTER TABLE at_lockage ADD (
-CONSTRAINT at_lockage_is_lock_emptying_ck 
+CONSTRAINT at_lockage_is_lock_emptying_ck
 CHECK ( is_lock_chamber_emptying = 'T' OR is_lock_chamber_emptying = 'F'))
 /
 
@@ -1521,14 +1521,14 @@ ALTER TABLE at_turbine ADD (
 
 CREATE TABLE at_turbine_change
 (
-  turbine_change_code     NUMBER(10)      NOT NULL,
-  project_location_code                 NUMBER(10)      NOT NULL,
-  turbine_change_datetime   DATE        NOT NULL,
-  turbine_setting_reason_code           NUMBER(10)                      NOT NULL,
-  turbine_discharge_comp_code   NUMBER(10)      NOT NULL,
-  old_total_discharge_override    BINARY_DOUBLE,
-  new_total_discharge_override    BINARY_DOUBLE,
-  turbine_change_notes      VARCHAR2(255 BYTE)
+  turbine_change_code             NUMBER(10)     NOT NULL,
+  project_location_code           NUMBER(10)     NOT NULL,
+  turbine_change_datetime         DATE           NOT NULL,
+  turbine_setting_reason_code     NUMBER(10)     NOT NULL,
+  turbine_discharge_comp_code     NUMBER(10)     NOT NULL,
+  old_total_discharge_override    BINARY_DOUBLE  NOT NULL,
+  new_total_discharge_override    BINARY_DOUBLE  NOT NULL,
+  turbine_change_notes            VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1615,12 +1615,11 @@ ALTER TABLE at_turbine_change ADD (
 
 CREATE TABLE at_turbine_setting
 (
-  turbine_setting_code      NUMBER(10)      NOT NULL,
-  turbine_change_code                 NUMBER(10)      NOT NULL,
-  turbine_location_code                 NUMBER(10)      NOT NULL,
-  load          BINARY_DOUBLE,
-  power_factor        BINARY_DOUBLE,
-  energy_rate       BINARY_DOUBLE
+  turbine_setting_code  NUMBER(10)      NOT NULL,
+  turbine_change_code   NUMBER(10)      NOT NULL,
+  turbine_location_code NUMBER(10)      NOT NULL,
+  load                  BINARY_DOUBLE,
+  energy_rate           BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1645,7 +1644,6 @@ COMMENT ON COLUMN at_turbine_setting.turbine_setting_code IS 'The surrogate key 
 COMMENT ON COLUMN at_turbine_setting.turbine_change_code IS 'The turbine change record to which this setting is associated.  See AT_TURBINE_CHANGE';
 COMMENT ON COLUMN at_turbine_setting.turbine_location_code IS 'The unique individual turbine that is being changed';
 COMMENT ON COLUMN at_turbine_setting.load IS 'The load for the new turbine setting';
-COMMENT ON COLUMN at_turbine_setting.power_factor IS 'The instantaneous power factor for the new turbine setting';
 COMMENT ON COLUMN at_turbine_setting.energy_rate IS 'The energy rate for the new turbine setting';
 
 ALTER TABLE at_turbine_setting ADD (
@@ -1956,7 +1954,7 @@ CREATE TABLE at_outlet
   outlet_location_code              NUMBER(10)      NOT NULL,
   project_location_code                         NUMBER(10)      NOT NULL
 --  outlet_characteristic_code        NUMBER(10)                      NOT NULL
-  --outlet_description                            VARCHAR2(255 BYTE)   
+  --outlet_description                            VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2214,7 +2212,7 @@ CREATE TABLE at_water_user
    water_user_code       NUMBER(10)        NOT NULL,
    project_location_code NUMBER(10)        NOT NULL,
    entity_name           VARCHAR2(64 BYTE) NOT NULL,
-   water_right           VARCHAR2(255 BYTE) 
+   water_right           VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2419,7 +2417,7 @@ CREATE TABLE at_wat_usr_contract_accounting
   pump_flow       BINARY_DOUBLE     NOT NULL,
   transfer_start_datetime   DATE        NOT NULL,
   -- transfer_end_datetime      DATE        NOT NULL,
-  accounting_remarks      VARCHAR2(255 BYTE)      
+  accounting_remarks      VARCHAR2(255 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2496,7 +2494,7 @@ ALTER TABLE at_wat_usr_contract_accounting ADD (
 /
 
 --ALTER TABLE at_wat_usr_contract_accounting ADD (
---CONSTRAINT acct_credit_or_debit_check 
+--CONSTRAINT acct_credit_or_debit_check
 --CHECK ( upper(ACCOUNTING_CREDIT_DEBIT) = 'CREDIT' OR upper(ACCOUNTING_CREDIT_DEBIT) = 'DEBIT'))
 --/
 
@@ -2648,7 +2646,7 @@ ALTER TABLE at_project_purpose ADD (
 /
 
 ALTER TABLE at_project_purpose ADD (
-CONSTRAINT at_purpose_auth_or_oper_ck 
+CONSTRAINT at_purpose_auth_or_oper_ck
 CHECK ( upper(PURPOSE_TYPE) = 'OPERATING' OR upper(PURPOSE_TYPE) = 'AUTHORIZED'))
 /
 
@@ -2659,7 +2657,7 @@ CREATE TABLE at_project_agreement
 (
   project_agreement_loc_code          NUMBER(10)      NOT NULL,
   external_agency_or_stakeholder        VARCHAR2(64 BYTE)         NOT NULL,
-  project_agreement_doc_code          NUMBER(10)      
+  project_agreement_doc_code          NUMBER(10)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
