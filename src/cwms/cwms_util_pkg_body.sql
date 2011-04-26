@@ -1169,11 +1169,8 @@ AS
    FUNCTION strip (p_text IN VARCHAR2)
       RETURN VARCHAR2
    IS
-      l_text                        VARCHAR2 (32767);
    BEGIN
-      l_text :=
-         REGEXP_REPLACE (p_text, '^[[:space:]]*(.*)[[:space:]]*$', '\1', 'n');
-      RETURN l_text;
+      return regexp_substr(p_text, '^\s*(.*?)\s*$', 1, 1, 'n', 1);
    END strip;
 
    --------------------------------------------------------------------------------
