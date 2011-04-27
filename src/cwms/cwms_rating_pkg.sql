@@ -192,6 +192,33 @@ procedure delete_templates(
    p_office_id_mask   in varchar2 default null);
 
 --------------------------------------------------------------------------------
+-- GET_OPENING_PARAMETER
+--    returns the "opening" parameter of the rating template
+-- 
+-- p_template
+--    the template text
+--
+function get_opening_parameter(
+   p_template in varchar2)
+   return varchar2;
+
+--------------------------------------------------------------------------------
+-- GET_OPENING_UNIT
+--    returns the default "opening" unit of the rating template in the
+--    specified unit system
+-- 
+-- p_template
+--    the template text
+--
+-- p_unit_system
+--    the desired unit system of the opening
+--
+function get_opening_unit(
+   p_template    in varchar2,
+   p_unit_system in varchar2 default 'SI')
+   return varchar2;
+
+--------------------------------------------------------------------------------
 -- STORE_SPECS
 --
 -- p_xml
@@ -374,6 +401,17 @@ procedure delete_specs(
    p_spec_id_mask   in varchar2 default '*',
    p_delete_action  in varchar2 default cwms_util.delete_key,      
    p_office_id_mask in varchar2 default null);
+   
+--------------------------------------------------------------------------------
+-- GET_TEMPLATE
+--    returns the template portion of a rating specification identifer
+--
+-- p_spec_id
+--    the rating spec text
+--
+function get_template(
+   p_spec_id in varchar2)
+   return varchar2;   
          
 --------------------------------------------------------------------------------
 -- STORE RATINGS

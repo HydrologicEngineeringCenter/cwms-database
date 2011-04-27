@@ -293,6 +293,50 @@ begin
       end if;         
    end loop;       
 end delete_templates;    
+
+--------------------------------------------------------------------------------
+-- GET_OPENING_PARAMETER
+--    returns the "opening" parameter of the rating template
+-- 
+-- p_template
+--    the template text
+--
+function get_opening_parameter(
+   p_template in varchar2)
+   return varchar2
+is
+   l_params str_tab_t;
+begin
+   l_params := cwms_util.split_text(cwms_util.split_text(p_template, 1, separator2, 1), separator3);
+   for i in 1..l_params.count loop
+      if cwms_util.get_base_id(l_params(i)) not in ('Elev', 'Count') then
+         return l_params(i);
+      end if;
+   end loop;
+   cwms_err.raise(
+      'ERROR',
+      '"Opening" parameter not found in rating template: '||p_template);
+end get_opening_parameter;   
+
+--------------------------------------------------------------------------------
+-- GET_OPENING_UNIT
+--    returns the default "opening" unit of the rating template in the
+--    specified unit system
+-- 
+-- p_template
+--    the template text
+--
+-- p_unit_system
+--    the desired unit system of the opening
+--
+function get_opening_unit(
+   p_template    in varchar2,
+   p_unit_system in varchar2 default 'SI')
+   return varchar2
+is
+begin
+   return cwms_util.get_default_units(get_opening_parameter(p_template), p_unit_system);
+end get_opening_unit;   
      
 --------------------------------------------------------------------------------
 -- STORE_SPECS
@@ -672,6 +716,21 @@ begin
       end if;
    end loop;      
 end delete_specs;   
+   
+--------------------------------------------------------------------------------
+-- GET_TEMPLATE
+--    returns the template portion of a rating specification identifer
+--
+-- p_spec_id
+--    the rating spec text
+--
+function get_template(
+   p_spec_id in varchar2)
+   return varchar2   
+is
+begin
+   return cwms_util.split_text(p_spec_id, 2, separator1);
+end get_template;
 
 --------------------------------------------------------------------------------
 -- STORE RATINGS
