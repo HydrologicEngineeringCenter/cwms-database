@@ -928,8 +928,14 @@ create or replace type body location_obj_t as
       return self as result
    is
    begin
-      self.init(p_location_ref.get_location_code);
-   end;      
+      begin
+         self.init(p_location_ref.get_location_code);
+      exception
+         when no_data_found then
+            self.location_ref := p_location_ref;
+      end;
+      return;
+   end;
    
    constructor function location_obj_t(
       p_location_code in number)
@@ -937,6 +943,7 @@ create or replace type body location_obj_t as
    is
    begin
       self.init(p_location_code);
+      return;
    end;      
 
    member procedure init(
