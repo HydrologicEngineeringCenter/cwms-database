@@ -3598,10 +3598,10 @@ AS
    begin
       select vl.time_zone_name
         into l_local_tz
-        from av_loc vl,
-             at_physical_location atp
+        from av_loc vl
        where vl.location_id = p_location_id
-         and vl.db_office_id = p_office_id;
+         and vl.db_office_id = p_office_id
+         and vl.unit_system = 'SI';
       if l_local_tz = 'Unknown or Not Applicable' then
          l_local_tz := 'UTC';
       end if;
@@ -3848,14 +3848,16 @@ AS
          p_loc_category_id, 
          p_loc_group_id, 
          cwms_util.get_office_code(p_db_office_id));        
-		if p_shared_alias_id is not null or p_shared_loc_ref_id is not null then
+		if p_shared_alias_id is not null then
 			update at_loc_group
-			   set shared_loc_alias_id = p_shared_alias_id,
-				    shared_loc_ref_code = get_location_code(
-					 							     p_db_office_id, 
-													  p_shared_loc_ref_id)
+			   set shared_loc_alias_id = p_shared_alias_id
 			 where loc_group_code = l_loc_group_code; 	      
 		end if;	      
+      if p_shared_loc_ref_id is not null then
+         update at_loc_group
+            set shared_loc_ref_code = get_location_code(p_db_office_id, p_shared_loc_ref_id)
+          where loc_group_code = l_loc_group_code;          
+      end if;         
    END create_loc_group2;
    
 	PROCEDURE rename_loc_group (
