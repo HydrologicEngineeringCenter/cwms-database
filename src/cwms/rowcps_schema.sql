@@ -2824,3 +2824,256 @@ ALTER TABLE at_construction_history ADD (
  FOREIGN KEY (operational_status_code)
  REFERENCES at_operational_status_code (operational_status_code))
 /
+
+create or replace force view av_project
+(
+   office_id,
+   project_id,
+   federal_cost,
+   nonfederal_cost,
+   authorizing_law,
+   project_owner,
+   hydropower_description,
+   sedimentation_description,
+   downstream_urban_description,
+   bank_full_capacity_description,
+   pump_back_location_id,
+   near_gage_location_id,
+   yield_time_frame_start,
+   yield_time_frame_end,
+   project_remarks
+)
+as
+select project.office_id,
+       project.location_id as project_id,
+       project.federal_cost,
+       project.nonfederal_cost,authorizing_law,
+       project.project_owner,
+       project.hydropower_description,
+       project.sedimentation_description,
+       project.downstream_urban_description,
+       project.bank_full_capacity_description,
+       pumpback.location_id as pump_back_location_id,
+       neargage.location_id as near_gage_location_id,
+       project.yield_time_frame_start,
+       project.yield_time_frame_end,
+       project.project_remarks
+  from ( select o.office_id as office_id,
+                bl.base_location_id
+                ||substr('-', 1, length(pl.sub_location_id))
+                ||pl.sub_location_id as location_id,
+                p.federal_cost,
+                p.nonfederal_cost,authorizing_law,
+                p.project_owner,
+                p.hydropower_description,
+                p.sedimentation_description,
+                p.downstream_urban_description,
+                p.bank_full_capacity_description,
+                p.pump_back_location_code,
+                p.near_gage_location_code,
+                p.yield_time_frame_start,
+                p.yield_time_frame_end,
+                p.project_remarks
+           from cwms_office o,
+                at_base_location bl,
+                at_physical_location pl,
+                at_project p
+          where bl.db_office_code = o.office_code
+            and pl.base_location_code = bl.base_location_code
+            and p.project_location_code = pl.location_code
+       ) project
+       left outer join
+       ( select pl.location_code,
+                bl.base_location_id
+                ||substr('-', 1, length(pl.sub_location_id))
+                ||pl.sub_location_id as location_id
+           from at_base_location bl,
+                at_physical_location pl,
+                at_project p
+          where pl.base_location_code = bl.base_location_code
+            and p.project_location_code = pl.location_code
+       ) pumpback on pumpback.location_code = project.pump_back_location_code
+       left outer join
+       ( select pl.location_code,
+                bl.base_location_id
+                ||substr('-', 1, length(pl.sub_location_id))
+                ||pl.sub_location_id as location_id
+           from at_base_location bl,
+                at_physical_location pl,
+                at_project p
+          where pl.base_location_code = bl.base_location_code
+            and p.project_location_code = pl.location_code
+       ) neargage on neargage.location_code = project.near_gage_location_code
+/       
+create or replace force view av_outlet
+(
+   office_id,
+   project_id,
+   outlet_id,
+   rating_group_id,
+   rating_spec,
+   opening_unit_en,
+   opening_unit_si
+)
+as
+select o.office_id as office_id,
+       bl1.base_location_id
+       ||substr('-', 1, length(pl1.sub_location_id))
+       ||pl1.sub_location_id as project_id,
+       bl2.base_location_id
+       ||substr('_', 1, length(pl2.sub_location_id))
+       ||pl2.sub_location_id as outlet_id,
+       lg.loc_group_id as rating_group_id,
+       lg.shared_loc_alias_id as rating_spec,
+       cwms_rating.get_opening_unit(cwms_rating.get_template(lg.shared_loc_alias_id), 'EN') as opening_unit_en,
+       cwms_rating.get_opening_unit(cwms_rating.get_template(lg.shared_loc_alias_id), 'SI') as opening_unit_si
+  from cwms_office o,
+       at_base_location bl1,
+       at_physical_location pl1,
+       at_base_location bl2,
+       at_physical_location pl2,
+       at_project p,
+       at_outlet ou,
+       at_loc_category lc, 
+       at_loc_group lg,
+       at_loc_group_assignment lga
+ where bl1.db_office_code = o.office_code
+   and pl1.base_location_code = bl1.base_location_code
+   and p.project_location_code = pl1.location_code
+   and pl2.base_location_code = bl2.base_location_code
+   and ou.outlet_location_code = pl2.location_code
+   and ou.project_location_code = p.project_location_code
+   and lga.location_code = ou.outlet_location_code
+   and lg.loc_group_code = lga.loc_group_code
+   and lc.loc_category_code = lg.loc_category_code
+   and lc.loc_category_id = 'RATING'
+/            
+create or replace force view av_gate_change
+(
+   gate_change_code,
+   office_id,
+   project_id,
+   gate_change_date,
+   time_zone,
+   elev_pool_en,
+   elev_tailwater_en,
+   elev_unit_en,
+   elev_pool_si,
+   elev_tailwater_si,
+   elev_unit_si,
+   old_discharge_override_en,
+   new_discharge_override_en,
+   discharge_unit_en,
+   old_discharg_override_si,
+   new_discharge_override_si,
+   discharge_unit_si,
+   discharge_comp,
+   discharge_comp_descr,
+   release_reason,
+   release_reason_descr,
+   gate_change_notes,
+   protected
+)
+as
+select gc.gate_change_code,
+       o.office_id as office_id,
+       bl.base_location_id
+       ||substr('-', 1, length(pl.sub_location_id))
+       ||pl.sub_location_id as project_id,
+       cwms_util.change_timezone(
+          gc.gate_change_date, 
+          'UTC', 
+          cwms_loc.get_local_timezone(gc.project_location_code)) as gate_change_date,
+       cwms_loc.get_local_timezone(gc.project_location_code) as time_zone,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(gc.elev_pool, 'm', 'ft'), 
+          '9999999999') as elev_pool_en,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(gc.elev_tailwater, 'm', 'ft'), 
+          '9999999999') as elev_tailwater_en,
+       'ft' as elev_unit_en,
+       cwms_rounding.round_dd_f(gc.elev_pool, '9999999999') as elev_pool_si,
+       cwms_rounding.round_dd_f(gc.elev_tailwater, '9999999999') as elev_tailwater_si,
+       'm' as elev_unit_si,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(gc.old_total_discharge_override, 'cms', 'cfs'), 
+          '9999999999') as old_discharge_override_en,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(gc.new_total_discharge_override, 'cms', 'cfs'), 
+          '9999999999') as new_discharge_override_en,
+       'cfs' as discharge_unit_en,
+       cwms_rounding.round_dd_f(
+          gc.old_total_discharge_override, 
+          '9999999999') as old_discharg_override_si,
+       cwms_rounding.round_dd_f(
+          gc.new_total_discharge_override, 
+          '9999999999') as new_discharge_override_si,
+       'cms' as discharge_unit_si,
+       gcc.discharge_comp_display_value as discharge_comp,
+       gcc.discharge_comp_tooltip as discharge_comp_descr,
+       grr.release_reason_display_value as release_reason,
+       grr.release_reason_tooltip as release_reason_descr,
+       gc.gate_change_notes,
+       gc.protected
+  from cwms_office o,
+       at_base_location bl,
+       at_physical_location pl,
+       at_gate_change gc,
+       at_gate_ch_computation_code gcc,
+       at_gate_release_reason_code grr
+ where bl.db_office_code = o.office_code
+   and pl.base_location_code = bl.base_location_code
+   and gc.project_location_code = pl.location_code 
+   and gcc.discharge_comp_code = gc.discharge_computation_code
+   and grr.release_reason_code = gc.release_reason_code
+/   
+create or replace force view av_gate_setting
+(
+   gate_change_code,
+   office_id,
+   outlet_id,
+   gate_opening_en,
+   opening_unit_en,
+   gate_opening_si,
+   opening_unit_si
+)
+as
+select gs.gate_change_code,
+       o.office_id as office_id,
+       bl.base_location_id
+       ||substr('-', 1, length(pl.sub_location_id))
+       ||pl.sub_location_id as outlet_id,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(
+             gs.gate_opening,
+             cwms_rating.get_opening_unit(
+                cwms_rating.get_template(lg.shared_loc_alias_id), 
+                'SI'),
+             cwms_rating.get_opening_unit(
+                cwms_rating.get_template(lg.shared_loc_alias_id), 
+                'EN')),
+          '9999999999') as gate_opening_en,
+       cwms_rating.get_opening_unit(
+          cwms_rating.get_template(lg.shared_loc_alias_id), 
+          'EN') as opening_unit_en,
+       cwms_rounding.round_dd_f(
+          gs.gate_opening, 
+          '9999999999') as gate_opening_si,
+       cwms_rating.get_opening_unit(
+          cwms_rating.get_template(lg.shared_loc_alias_id), 
+          'SI') as opening_unit_si
+  from at_gate_setting gs,
+       at_physical_location pl,
+       at_base_location bl,
+       cwms_office o,
+       at_loc_category lc,
+       at_loc_group lg,
+       at_loc_group_assignment lga
+ where pl.location_code = gs.outlet_location_code
+   and bl.base_location_code = pl.base_location_code
+   and o.office_code = bl.db_office_code
+   and lga.location_code = gs.outlet_location_code
+   and lg.loc_group_code = lga.loc_group_code
+   and lc.loc_category_code = lg.loc_category_code
+   and lc.loc_category_id = 'RATING'        
+/
