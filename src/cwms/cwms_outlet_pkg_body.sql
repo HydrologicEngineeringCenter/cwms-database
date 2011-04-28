@@ -590,7 +590,7 @@ begin
              );
       delete
         from at_gate_setting
-       where outlet_location_code = l_outlet_location_code;
+       where gate_change_code in (select * from table(l_gate_change_codes));  
       delete
         from at_gate_change
        where gate_change_code in (select * from table(l_gate_change_codes));  
@@ -608,7 +608,7 @@ begin
       cwms_loc.delete_location(
          l_outlet.structure_location.location_ref.get_location_id,
          p_delete_action,
-         l_outlet.structure_location.location_ref.get_location_id);
+         p_office_id);
    end if;       
 end delete_outlet;
 --------------------------------------------------------------------------------
@@ -991,25 +991,19 @@ begin
          p_gate_changes(i) := gate_change_obj_t(
             location_ref_t(l_gate_changes(i).project_location_code),
             cwms_util.change_timezone(l_gate_changes(i).gate_change_date, 'UTC', l_time_zone),
-            cwms_util.convert_units(
-               l_gate_changes(i).elev_pool, 
-               cwms_util.get_default_units('Elev', l_unit_system), 
-               l_elev_unit),
+            cwms_util.convert_units(l_gate_changes(i).elev_pool, 'm', l_elev_unit),
             null, -- discharge_computation, set below
             null, -- release_reason, set below
             null, -- settings, set below 
-            cwms_util.convert_units(
-               l_gate_changes(i).elev_pool, 
-               cwms_util.get_default_units('Elev', l_unit_system), 
-               l_elev_unit),
+            cwms_util.convert_units(l_gate_changes(i).elev_tailwater, 'm', l_elev_unit),
             l_elev_unit,
             cwms_util.convert_units(
                l_gate_changes(i).old_total_discharge_override, 
-               cwms_util.get_default_units('Flow', l_unit_system), 
+               'cms', 
                l_flow_unit),
             cwms_util.convert_units(
                l_gate_changes(i).new_total_discharge_override, 
-               cwms_util.get_default_units('Flow', l_unit_system), 
+               'cms', 
                l_flow_unit),
             l_flow_unit,
             l_gate_changes(i).gate_change_notes,
@@ -1057,8 +1051,8 @@ begin
                p_gate_changes(i).settings(j) := gate_setting_obj_t(
                   location_ref_t(l_gate_settings(j).outlet_location_code),
                   cwms_util.convert_units(
-                     l_gate_settings(i).gate_opening, 
-                     cwms_util.get_default_units(l_opening_param, l_unit_system), 
+                     l_gate_settings(j).gate_opening, 
+                     cwms_util.get_default_units(l_opening_param, 'SI'), 
                      l_opening_unit),
                   l_opening_unit);                  
             end loop;
