@@ -2921,7 +2921,7 @@ select o.office_id as office_id,
        ||substr('-', 1, length(pl1.sub_location_id))
        ||pl1.sub_location_id as project_id,
        bl2.base_location_id
-       ||substr('_', 1, length(pl2.sub_location_id))
+       ||substr('-', 1, length(pl2.sub_location_id))
        ||pl2.sub_location_id as outlet_id,
        lg.loc_group_id as rating_group_id,
        lg.shared_loc_alias_id as rating_spec,
