@@ -371,7 +371,8 @@ is
 --
 -- turbines
 --
-CREATE OR REPLACE type turbine_setting_obj_t
+CREATE OR REPLACE
+type TURBINE_SETTING_OBJ_T
 AS
   object
   (
@@ -379,14 +380,13 @@ AS
   turbine_location_ref location_ref_t,
   --setting lookup?
   --discharge lookup?
-  
+
   --not required
   energy_rate binary_double,
   load binary_double,
-  generation_units varchar2(16),
-  power_factor binary_double -- unitless
+  generation_units varchar2(16)
 );
-  /
+/
   show errors
   --
 CREATE OR REPLACE TYPE turbine_setting_tab_t
@@ -412,7 +412,8 @@ AS
       old_total_discharge_override binary_double, --OLD_TOTAL_DISCHARGE_OVERRIDE
       new_total_discharge_override binary_double, --NEW_TOTAL_DISCHARGE_OVERRIDE
       discharge_units  varchar2(16), 
-      change_notes VARCHAR2(255 BYTE) --GATE_CHANGE_NOTES
+      change_notes VARCHAR2(255 BYTE), --GATE_CHANGE_NOTES
+      protected varchar2(1) --PROTECTED_FLAG
 );
   /
   show errors
