@@ -1528,7 +1528,8 @@ CREATE TABLE at_turbine_change
   turbine_discharge_comp_code     NUMBER(10)     NOT NULL,
   old_total_discharge_override    BINARY_DOUBLE  NOT NULL,
   new_total_discharge_override    BINARY_DOUBLE  NOT NULL,
-  turbine_change_notes            VARCHAR2(255 BYTE)
+  turbine_change_notes            VARCHAR2(255 BYTE),
+  protected                       VARCHAR2(1)    NOT NULL
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
