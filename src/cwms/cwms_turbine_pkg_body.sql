@@ -820,7 +820,7 @@ begin
                p_turbine_changes(i).settings(j) := turbine_setting_obj_t(
                   location_ref_t(l_turbine_settings(j).turbine_location_code),
                   l_turbine_settings(i).energy_rate,
-                  l_turbine_settings(i).load,
+                  l_turbine_settings(i).scheduled_load,
                   'MW');                  
             end loop;
          end if;          

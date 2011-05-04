@@ -1619,7 +1619,7 @@ CREATE TABLE at_turbine_setting
   turbine_setting_code  NUMBER(10)      NOT NULL,
   turbine_change_code   NUMBER(10)      NOT NULL,
   turbine_location_code NUMBER(10)      NOT NULL,
-  load                  BINARY_DOUBLE,
+  scheduled_load        BINARY_DOUBLE,
   energy_rate           BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
@@ -1644,7 +1644,7 @@ MONITORING
 COMMENT ON COLUMN at_turbine_setting.turbine_setting_code IS 'The surrogate key for this individual turbine change event.  Automatically generated surrogate key.';
 COMMENT ON COLUMN at_turbine_setting.turbine_change_code IS 'The turbine change record to which this setting is associated.  See AT_TURBINE_CHANGE';
 COMMENT ON COLUMN at_turbine_setting.turbine_location_code IS 'The unique individual turbine that is being changed';
-COMMENT ON COLUMN at_turbine_setting.load IS 'The load for the new turbine setting';
+COMMENT ON COLUMN at_turbine_setting.scheduled_load IS 'The scheduled load for the new turbine setting';
 COMMENT ON COLUMN at_turbine_setting.energy_rate IS 'The energy rate for the new turbine setting';
 
 ALTER TABLE at_turbine_setting ADD (

@@ -383,7 +383,7 @@ AS
 
   --not required
   energy_rate binary_double,
-  load binary_double,
+  scheduled_load binary_double,
   generation_units varchar2(16)
 );
 /
