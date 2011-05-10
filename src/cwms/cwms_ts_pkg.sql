@@ -651,6 +651,13 @@ AS
 		p_max_version			IN 	 VARCHAR2 DEFAULT 'T',
 		p_db_office_id 		IN 	 VARCHAR2 DEFAULT NULL
 	);
+	
+	procedure collect_deleted_times (
+		p_deleted_time in timestamp,
+		p_ts_code      in number,
+		p_version_date in date,
+		p_start_time   in date,
+		p_end_time     in date);	
 
 	PROCEDURE create_parameter_id (p_parameter_id	IN VARCHAR2,
 											 p_db_office_id	IN VARCHAR2 DEFAULT NULL
@@ -783,6 +790,9 @@ AS
       p_version_date in  date     default cwms_util.non_versioned,
       p_office_id    in  varchar2 default null);
       
+   procedure trim_ts_deleted_times;
+   
+   procedure start_trim_ts_deleted_job;
             
 END;
 /

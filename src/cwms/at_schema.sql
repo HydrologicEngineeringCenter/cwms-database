@@ -2698,6 +2698,27 @@ INSERT INTO at_properties values(
    '240',
    'Interval in minutes for job TRIM_LOG_JOB to execute.');
 
+INSERT INTO at_properties values(
+   (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+   'CWMSDB',
+   'ts_deleted.table.max_entries',
+   '1000000',
+   'Max number of rows to keep when trimming AT_TS_DELETED_TIMES.');
+   
+INSERT INTO at_properties values(
+   (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+   'CWMSDB',
+   'ts_deleted.entry.max_age',
+   '5',
+   'Max entry age in days to keep when trimming AT_TS_DELETED_TIMES.');
+   
+INSERT INTO at_properties values(
+   (SELECT office_code FROM cwms_office WHERE office_id = 'CWMS'),
+   'CWMSDB',
+   'ts_deleted.auto_trim.interval',
+   '15',
+   'Interval in minutes for job TRIM_LOG_JOB to execute.');
+
 -----------------------------
 -- AT_REPORT_TEMPLATES table
 --
@@ -3069,6 +3090,23 @@ COMMENT ON COLUMN AT_FORECAST_TEXT.CLOB_CODE          IS 'References text';
 ALTER TABLE AT_FORECAST_TEXT ADD CONSTRAINT AT_FORECAST_TEXT_PK  PRIMARY KEY (FORECAST_SPEC_CODE, FORECAST_DATE, ISSUE_DATE);
 ALTER TABLE AT_FORECAST_TEXT ADD CONSTRAINT AT_FORECAST_TEXT_FK1 FOREIGN KEY (FORECAST_SPEC_CODE) REFERENCES AT_FORECAST_SPEC (FORECAST_SPEC_CODE);
 ALTER TABLE AT_FORECAST_TEXT ADD CONSTRAINT AT_FORECAST_TEXT_FK2 FOREIGN KEY (CLOB_CODE) REFERENCES AT_CLOB (CLOB_CODE);
+
+CREATE TABLE AT_TS_DELETED_TIMES (
+   DELETED_TIME NUMBER(14) NOT NULL,
+   TS_CODE      NUMBER(10) NOT NULL,
+   VERSION_DATE DATE       NOT NULL,
+   DATE_TIME    DATE       NOT NULL,
+   PRIMARY KEY (DELETED_TIME, TS_CODE, VERSION_DATE, DATE_TIME)
+) 
+ORGANIZATION INDEX 
+TABLESPACE CWMS_20AT_DATA
+/
+
+COMMENT ON TABLE  AT_TS_DELETED_TIMES              IS 'Contains times of recently deleted time series data in Java milliseconds';
+COMMENT ON COLUMN AT_TS_DELETED_TIMES.DELETED_TIME IS 'Time at which the data were deleted';
+COMMENT ON COLUMN AT_TS_DELETED_TIMES.TS_CODE      IS 'TS_CODE of the deleted data';
+COMMENT ON COLUMN AT_TS_DELETED_TIMES.VERSION_DATE IS 'VERSION_DATE of the deleted data';
+COMMENT ON COLUMN AT_TS_DELETED_TIMES.DATE_TIME    IS 'DATE_TIME of the deleted data';
 
 --                 
 -- CWMS_APEX_ROLES  (Table) 

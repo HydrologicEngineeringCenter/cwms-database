@@ -123,7 +123,8 @@ end new_message;
 function publish_message(
    p_message   in out nocopy sys.aq$_jms_map_message,
    p_messageid in pls_integer,
-   p_msg_queue in varchar2)
+   p_msg_queue in varchar2,
+	p_immediate in boolean default false)
    return integer
 is
    l_message_properties dbms_aq.message_properties_t;
@@ -140,6 +141,11 @@ begin
    -------------------------
    -- enqueue the message --
    -------------------------
+   if p_immediate then
+      l_enqueue_options.visibility := dbms_aq.immediate;
+   else
+      l_enqueue_options.visibility := dbms_aq.on_commit;
+   end if;
    l_message_properties.expiration := l_expiration_time;
    p_message.set_long(p_messageid, 'millis', l_now);
    p_message.flush(p_messageid);
@@ -152,7 +158,6 @@ begin
       p_message,
       l_msgid);
 
-   commit;
    return l_now;
 
 exception
@@ -169,7 +174,8 @@ end publish_message;
 --
 function publish_message(
    p_properties in out nocopy xmltype,
-   p_msg_queue  in varchar2)
+   p_msg_queue  in varchar2,
+	p_immediate  in boolean default false)
    return integer
 is
    l_msg   sys.aq$_jms_map_message;
@@ -243,7 +249,7 @@ begin
       l_msg.set_string(l_msgid, 'body', cwms_util.strip(l_node.extract('*/node()').getstringval()));
    end if;
 
-   return publish_message(l_msg, l_msgid, p_msg_queue);
+   return publish_message(l_msg, l_msgid, p_msg_queue, p_immediate);
 
 end publish_message;
 
@@ -252,12 +258,13 @@ end publish_message;
 --
 function publish_message(
    p_properties in varchar2,
-   p_msg_queue  in varchar2)
+   p_msg_queue  in varchar2,
+	p_immediate  in boolean default false)
    return integer
 is
    l_properties xmltype := xmltype(p_properties);
 begin
-   return publish_message(l_properties, p_msg_queue);
+   return publish_message(l_properties, p_msg_queue, p_immediate);
 end publish_message;
 
 -------------------------------------------------------------------------------
@@ -265,12 +272,13 @@ end publish_message;
 --
 function publish_message(
    p_properties in out nocopy clob,
-   p_msg_queue  in varchar2)
+   p_msg_queue  in varchar2,
+	p_immediate  in boolean default false)
    return integer
 is
    l_properties xmltype := xmltype(p_properties);
 begin
-   return publish_message(l_properties, p_msg_queue);
+   return publish_message(l_properties, p_msg_queue, p_immediate);
 end publish_message;
 
 -------------------------------------------------------------------------------
@@ -278,35 +286,38 @@ end publish_message;
 --
 function publish_status_message(
    p_message   in out nocopy sys.aq$_jms_map_message,
-   p_messageid in     pls_integer)
+   p_messageid in pls_integer,
+	p_immediate in boolean default false)
    return integer
 is
 begin
-   return publish_message(p_message, p_messageid, 'STATUS');
+   return publish_message(p_message, p_messageid, 'STATUS', p_immediate);
 end publish_status_message;
 
 -------------------------------------------------------------------------------
 -- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
 function publish_status_message(
-   p_properties in varchar2)
+   p_properties in varchar2,
+	p_immediate  in boolean default false)
    return integer
 is
    l_properties xmltype := xmltype(p_properties);
 begin
-   return publish_message(l_properties, 'STATUS');
+   return publish_message(l_properties, 'STATUS', p_immediate);
 end publish_status_message;
 
 -------------------------------------------------------------------------------
 -- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
 function publish_status_message(
-   p_properties in out nocopy clob)
+   p_properties in out nocopy clob,
+	p_immediate  in boolean default false)
    return integer
 is
    l_properties xmltype := xmltype(p_properties);
 begin
-   return publish_message(l_properties, 'STATUS');
+   return publish_message(l_properties, 'STATUS', p_immediate);
 end publish_status_message;
 
 -------------------------------------------------------------------------------
@@ -320,7 +331,8 @@ function log_message(
    p_reported  in timestamp,
    p_message   in varchar2,
    p_msg_level in integer,
-   p_publish   in boolean)
+   p_publish   in boolean,
+   p_immediate in boolean default false)
    return integer
 is
    l_message_id varchar2(32);
@@ -351,7 +363,8 @@ function log_long_message(
    p_short_msg  in  varchar2,
    p_long_msg   in  clob,
    p_msg_level  in  integer default msg_level_normal,
-   p_publish    in  boolean default true)
+   p_publish    in  boolean default true,
+	p_immediate  in  boolean default false) -- affects publishing only
    return integer
 is
    pragma autonomous_transaction;
@@ -567,7 +580,7 @@ begin
                  || lf;
 
       l_pos := instr(p_short_msg, '>');
-      return publish_status_message(substr(p_short_msg, 1, l_pos) || l_extra || substr(p_short_msg, l_pos+1));
+      return publish_status_message(substr(p_short_msg, 1, l_pos) || l_extra || substr(p_short_msg, l_pos+1), p_immediate);
    else
       return 0;
    end if;

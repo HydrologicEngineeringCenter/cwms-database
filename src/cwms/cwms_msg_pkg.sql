@@ -76,7 +76,8 @@ procedure new_message(
 function publish_message(
    p_message   in out nocopy sys.aq$_jms_map_message,
    p_messageid in pls_integer,
-   p_msg_queue in varchar2)
+   p_msg_queue in varchar2,
+	p_immediate in boolean default false)
    return integer;
 
 -------------------------------------------------------------------------------
@@ -84,7 +85,8 @@ function publish_message(
 --
 function publish_message(
    p_properties in varchar2,
-   p_msg_queue  in varchar2)
+   p_msg_queue  in varchar2,
+	p_immediate  in boolean default false)
    return integer;
 
 -------------------------------------------------------------------------------
@@ -92,7 +94,8 @@ function publish_message(
 --
 function publish_message(
    p_properties in out nocopy clob,
-   p_msg_queue  in varchar2)
+   p_msg_queue  in varchar2,
+	p_immediate  in boolean default false)
    return integer;
 
 -------------------------------------------------------------------------------
@@ -100,21 +103,24 @@ function publish_message(
 --
 function publish_status_message(
    p_message   in out nocopy sys.aq$_jms_map_message,
-   p_messageid in     pls_integer)
+   p_messageid in pls_integer,
+	p_immediate in boolean default false)
    return integer;
 
 -------------------------------------------------------------------------------
 -- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
 function publish_status_message(
-   p_properties in varchar2)
+   p_properties in varchar2,
+	p_immediate  in boolean default false)
    return integer;
 
 -------------------------------------------------------------------------------
 -- FUNCTION PUBLISH_STATUS_MESSAGE(...)
 --
 function publish_status_message(
-   p_properties in out nocopy clob)
+   p_properties in out nocopy clob,
+	p_immediate  in boolean default false)
    return integer;
 
 -------------------------------------------------------------------------------
@@ -128,7 +134,8 @@ function log_message(
    p_reported  in timestamp,
    p_message   in varchar2,
    p_msg_level in integer default msg_level_normal,
-   p_publish   in boolean default true)
+   p_publish   in boolean default true,
+	p_immediate in boolean default false)
    return integer;
 
 -------------------------------------------------------------------------------
@@ -144,7 +151,8 @@ function log_long_message(
    p_short_msg  in  varchar2,
    p_long_msg   in  clob,
    p_msg_level  in  integer default msg_level_normal,
-   p_publish    in  boolean default true)
+   p_publish    in  boolean default true,
+   p_immediate  in boolean default false)
    return integer;
 
 -------------------------------------------------------------------------------
