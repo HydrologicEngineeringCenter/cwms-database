@@ -1871,7 +1871,7 @@ AS
       RETURN NUMBER
    IS
    BEGIN
-      RETURN to_millis (SYS_EXTRACT_UTC (SYSTIMESTAMP));
+      RETURN to_millis(systimestamp at time zone 'UTC');
    END current_millis;
 
 
