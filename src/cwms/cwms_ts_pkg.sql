@@ -658,6 +658,18 @@ AS
 		p_version_date in date,
 		p_start_time   in date,
 		p_end_time     in date);	
+   
+   procedure retrieve_deleted_times (
+      p_deleted_times out date_table_type,
+      p_deleted_time  in  number,
+      p_ts_code       in  number,
+      p_version_date  in  number);   
+   
+   function retrieve_deleted_times_f (
+      p_deleted_time  in number,
+      p_ts_code       in number,
+      p_version_date  in number)
+      return date_table_type;   
 
 	PROCEDURE create_parameter_id (p_parameter_id	IN VARCHAR2,
 											 p_db_office_id	IN VARCHAR2 DEFAULT NULL

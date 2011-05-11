@@ -4185,9 +4185,9 @@ IS
    
    l_msg             sys.aq$_jms_map_message;
    l_msgid           pls_integer;
+   i                 integer;
    l_first_time      date;
    l_last_time       date;
-   i                 integer;
    l_deleted_time    timestamp;
 --
 BEGIN
@@ -4295,12 +4295,10 @@ BEGIN
               from cwms_v_tsv
              where ts_code = l_ts_code
          )
-      loop
+      loop    
          for rec2 in
-            (  select min(date_time),
-                      max(date_time)
-                 into l_first_time,
-                      l_last_time
+            (  select min(date_time) as start_time,
+                      max(date_time) as end_time
                  from av_tsv
                 where ts_code = l_ts_code
                   and version_date = rec1.version_date
@@ -4311,8 +4309,8 @@ BEGIN
                l_deleted_time,
                l_ts_code,
                rec1.version_date,
-               l_first_time,
-               l_last_time);
+               rec2.start_time,
+               rec2.end_time);
             ----------------------------------- 
             -- Publish TSDataDeleted message --
             ----------------------------------- 
@@ -4320,12 +4318,9 @@ BEGIN
             l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
             l_msg.set_string(l_msgid, 'office_id', l_db_office_id);
             l_msg.set_long(l_msgid, 'ts_code', l_ts_code);
-            l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(
-               from_tz(cast(l_first_time as timestamp), 'UTC')));
-            l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(
-               from_tz(cast(l_last_time as timestamp), 'UTC')));
-            l_msg.set_long(l_msgid, 'version_date', cwms_util.to_millis(
-               from_tz(cast(rec1.version_date as timestamp), 'UTC')));              
+            l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(cast(rec2.start_time as timestamp)));
+            l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(cast(rec2.end_time as timestamp)));
+            l_msg.set_long(l_msgid, 'version_date', cwms_util.to_millis(cast(rec1.version_date as timestamp)));              
             l_msg.set_long(l_msgid, 'deleted_time', cwms_util.to_millis(l_deleted_time));             
             i := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id||'_ts_stored');
          end loop;
@@ -4338,7 +4333,7 @@ BEGIN
              max(date_time)
         into l_first_time,
              l_last_time
-        from av_tsv
+        from cwms_v_tsv
        where ts_code = l_ts_code;
        
       -- If deleting the data only, then a new replacement ts_code must --
@@ -4453,12 +4448,9 @@ begin
    l_msg.set_string(l_msgid, 'ts_id', l_tsid);
    l_msg.set_string(l_msgid, 'office_id', l_office_id);
    l_msg.set_long(l_msgid, 'ts_code', p_ts_code);
-   l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(
-      from_tz(cast(p_start_time_utc as timestamp), 'UTC')));
-   l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(
-      from_tz(cast(p_end_time_utc as timestamp), 'UTC')));
-   l_msg.set_long(l_msgid, 'version_date', cwms_util.to_millis(
-      from_tz(cast(p_version_date_utc as timestamp), 'UTC')));              
+   l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(cast(p_start_time_utc as timestamp)));
+   l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(cast(p_end_time_utc as timestamp)));
+   l_msg.set_long(l_msgid, 'version_date', cwms_util.to_millis(cast(p_version_date_utc as timestamp)));              
    l_msg.set_long(l_msgid, 'deleted_time', cwms_util.to_millis(l_deleted_time));             
    i := cwms_msg.publish_message(l_msg, l_msgid, l_office_id||'_ts_stored');
    ------------------------------
@@ -5543,9 +5535,9 @@ begin
                     :version_date,
                     date_time
                from table_name
-              where ts_code = :p_ts_code
-                and version_date = :p_version_date
-                and date_time between :p_start_time and :p_end_time',
+              where ts_code = :ts_code
+                and version_date = :version_date
+                and date_time between :start_time and :end_time',
              'table_name',
             l_table_names(i))
          using l_millis,
@@ -5557,6 +5549,39 @@ begin
                p_end_time;
    end loop;      
 end collect_deleted_times;    
+   
+procedure retrieve_deleted_times (
+   p_deleted_times out date_table_type,
+   p_deleted_time  in  number,
+   p_ts_code       in  number,
+   p_version_date  in  number)
+is
+begin
+   select date_time bulk collect
+     into p_deleted_times
+     from at_ts_deleted_times
+    where deleted_time = deleted_time
+      and ts_code = p_ts_code
+      and version_date = cast(cwms_util.to_timestamp(p_version_date) as date)
+ order by date_time;      
+end retrieve_deleted_times;      
+   
+function retrieve_deleted_times_f (
+   p_deleted_time  in number,
+   p_ts_code       in number,
+   p_version_date  in number)
+   return date_table_type
+is
+   l_deleted_times date_table_type;
+begin
+   retrieve_deleted_times(
+      l_deleted_times,
+      p_deleted_time,
+      p_ts_code,
+      p_version_date);
+      
+   return l_deleted_times;      
+end retrieve_deleted_times_f;      
 
 -- p_fail_if_exists 'T' will throw an exception if the parameter_id already    -
 --                        exists.                                              -
