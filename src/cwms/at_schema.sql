@@ -1647,7 +1647,7 @@ CREATE TABLE at_cwms_ts_spec
   version_flag         VARCHAR2(1 BYTE),
   migrate_ver_flag     VARCHAR2(1 BYTE),
   active_flag          VARCHAR2(1 BYTE),
-  delete_date          DATE,
+  delete_date          TIMESTAMP(9),
   data_source          VARCHAR2(16 BYTE)
 )
 TABLESPACE CWMS_20AT_DATA
