@@ -1524,6 +1524,8 @@ CREATE TABLE at_turbine_change
   turbine_change_code             NUMBER(10)     NOT NULL,
   project_location_code           NUMBER(10)     NOT NULL,
   turbine_change_datetime         DATE           NOT NULL,
+  elev_pool                       BINARY_DOUBLE,
+  elev_tailwater                  BINARY_DOUBLE,
   turbine_setting_reason_code     NUMBER(10)     NOT NULL,
   turbine_discharge_comp_code     NUMBER(10)     NOT NULL,
   old_total_discharge_override    BINARY_DOUBLE  NOT NULL,
@@ -1552,6 +1554,8 @@ MONITORING
 COMMENT ON COLUMN at_turbine_change.turbine_change_code IS 'Unique record identifier for every turbine change on a project.  IS automatically created';
 COMMENT ON COLUMN at_turbine_change.project_location_code IS 'The project this turbine change refers to';
 COMMENT ON COLUMN at_turbine_change.turbine_change_datetime IS 'The date and time of the turbine change';
+COMMENT ON COLUMN at_turbine_change.elev_pool IS 'The headwater pool elevation at the time of the turbine change';
+COMMENT ON COLUMN at_turbine_change.elev_tailwater IS 'The tailwater elevation at the time of the turbine change';
 COMMENT ON COLUMN at_turbine_change.turbine_setting_reason_code IS 'The new turbine setting reason lookup code.  Examples of reasons are spin-noload, overload, dump energy, peaking, testing, etc.';
 COMMENT ON COLUMN at_turbine_change.turbine_discharge_comp_code IS 'The new turbine setting discharge computation lookup code';
 COMMENT ON COLUMN at_turbine_change.old_total_discharge_override IS 'The total Q rate before the turbine change.  This value is from a manual entry or other external data source and overrides the calculated Q for the group of turbines.';
@@ -1619,8 +1623,10 @@ CREATE TABLE at_turbine_setting
   turbine_setting_code  NUMBER(10)      NOT NULL,
   turbine_change_code   NUMBER(10)      NOT NULL,
   turbine_location_code NUMBER(10)      NOT NULL,
+  old_discharge         BINARY_DOUBLE   NOT NULL,
+  new_discharge         BINARY_DOUBLE   NOT NULL,
   scheduled_load        BINARY_DOUBLE,
-  energy_rate           BINARY_DOUBLE
+  real_power            BINARY_DOUBLE
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -1645,7 +1651,9 @@ COMMENT ON COLUMN at_turbine_setting.turbine_setting_code IS 'The surrogate key 
 COMMENT ON COLUMN at_turbine_setting.turbine_change_code IS 'The turbine change record to which this setting is associated.  See AT_TURBINE_CHANGE';
 COMMENT ON COLUMN at_turbine_setting.turbine_location_code IS 'The unique individual turbine that is being changed';
 COMMENT ON COLUMN at_turbine_setting.scheduled_load IS 'The scheduled load for the new turbine setting';
-COMMENT ON COLUMN at_turbine_setting.energy_rate IS 'The energy rate for the new turbine setting';
+COMMENT ON COLUMN at_turbine_setting.old_discharge IS 'The discharge prior to the new turbine setting';
+COMMENT ON COLUMN at_turbine_setting.new_discharge IS 'The discharge after the new turbine setting';
+COMMENT ON COLUMN at_turbine_setting.real_power IS 'The real power generation for the new turbine setting';
 
 ALTER TABLE at_turbine_setting ADD (
   CONSTRAINT at_turbine_setting_pk
@@ -3078,3 +3086,158 @@ select gs.gate_change_code,
    and lc.loc_category_code = lg.loc_category_code
    and lc.loc_category_id = 'RATING'        
 /
+create or replace force view av_turbine
+(
+   office_id,
+   project_id,
+   turbine_id
+)
+as
+select o.office_id,
+       bl1.base_location_id
+       ||substr('-', 1, length(pl1.sub_location_id))
+       ||pl1.sub_location_id as project_id, 
+       bl2.base_location_id
+       ||substr('-', 1, length(pl2.sub_location_id))
+       ||pl2.sub_location_id as turbine_id 
+  from at_turbine t,
+       at_physical_location pl1,
+       at_base_location bl1,
+       cwms_office o,
+       at_physical_location pl2,
+       at_base_location bl2
+ where pl1.location_code = t.project_location_code
+   and bl1.base_location_code = pl1.base_location_code
+   and o.office_code = bl1.db_office_code
+   and pl2.location_code = t.turbine_location_code
+   and bl2.base_location_code = pl2.base_location_code;
+/
+create or replace force view av_turbine_change
+(
+   turbine_change_code,
+   office_id,
+   project_id,
+   turbine_change_date,
+   time_zone,
+   elev_pool_en,
+   elev_tailwater_en,
+   elev_unit_en,
+   elev_pool_si,
+   elev_tailwater_si,
+   elev_unit_si,
+   old_discharge_override_en,
+   new_discharge_override_en,
+   discharge_unit_en,
+   old_discharge_override_si,
+   new_discharge_override_si,
+   discharge_unit_si,
+   discharge_comp,
+   discharge_comp_descr,
+   setting_reason,
+   setting_reason_descr,
+   turbine_change_notes,
+   protected
+)
+as
+select tc.turbine_change_code,
+       o.office_id as office_id,
+       bl.base_location_id
+       ||substr('-', 1, length(pl.sub_location_id))
+       ||pl.sub_location_id as project_id,
+       cwms_util.change_timezone(
+          tc.turbine_change_datetime, 
+          'UTC', 
+          cwms_loc.get_local_timezone(tc.project_location_code)) as turbine_change_date,
+       cwms_loc.get_local_timezone(tc.project_location_code) as time_zone,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(tc.elev_pool, 'm', 'ft'), 
+          '9999999999') as elev_pool_en,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(tc.elev_tailwater, 'm', 'ft'), 
+          '9999999999') as elev_tailwater_en,
+       'ft' as elev_unit_en,
+       cwms_rounding.round_dd_f(tc.elev_pool, '9999999999') as elev_pool_si,
+       cwms_rounding.round_dd_f(tc.elev_tailwater, '9999999999') as elev_tailwater_si,
+       'm' as elev_unit_si,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(tc.old_total_discharge_override, 'cms', 'cfs'), 
+          '9999999999') as old_discharge_override_en,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(tc.new_total_discharge_override, 'cms', 'cfs'), 
+          '9999999999') as new_discharge_override_en,
+       'cfs' as discharge_unit_en,
+       cwms_rounding.round_dd_f(
+          tc.old_total_discharge_override, 
+          '9999999999') as old_discharge_override_si,
+       cwms_rounding.round_dd_f(
+          tc.new_total_discharge_override, 
+          '9999999999') as new_discharge_override_si,
+       'cms' as discharge_unit_si,
+       tcc.turbine_comp_display_value as discharge_comp,
+       tcc.turbine_comp_tooltip as discharge_comp_descr,
+       tsr.turb_set_reason_display_value as setting_reason,
+       tsr.turb_set_reason_tooltip as setting_reason_descr,
+       tc.turbine_change_notes,
+       tc.protected
+  from cwms_office o,
+       at_base_location bl,
+       at_physical_location pl,
+       at_turbine_change tc,
+       at_turbine_computation_code tcc,
+       at_turbine_setting_reason tsr
+ where bl.db_office_code = o.office_code
+   and pl.base_location_code = bl.base_location_code
+   and tc.project_location_code = pl.location_code 
+   and tcc.turbine_comp_code = tc.turbine_discharge_comp_code
+   and tsr.turb_set_reason_code = tc.turbine_setting_reason_code;
+/
+create or replace force view av_turbine_setting
+(
+   turbine_change_code,
+   office_id,
+   turbine_id,
+   old_discharge_en,
+   new_discharge_en,
+   discharge_unit_en,
+   old_discharge_si,
+   new_discharge_si,
+   discharge_unit_si,
+   scheduled_load,
+   real_power,
+   power_unit
+)
+as
+select ts.turbine_change_code,
+       o.office_id as office_id,
+       bl.base_location_id
+       ||substr('-', 1, length(pl.sub_location_id))
+       ||pl.sub_location_id as turbine_id,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(ts.old_discharge, 'cms', 'cfs'), 
+          '9999999999') as old_discharge_en,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(ts.new_discharge, 'cms', 'cfs'), 
+          '9999999999') as new_discharge_en,
+       'cfs' as discharge_unit_en,
+       cwms_rounding.round_dd_f(
+          ts.old_discharge, 
+          '9999999999') as old_discharge_si,
+       cwms_rounding.round_dd_f(
+          ts.new_discharge, 
+          '9999999999') as new_discharge_si,
+       'cms' as discharge_unit_si,
+       cwms_rounding.round_dd_f(
+          ts.scheduled_load, 
+          '9999999999') as scheduled_load,
+       cwms_rounding.round_dd_f(
+          ts.real_power, 
+          '9999999999') as real_power,
+      'MW' as power_unit          
+  from at_turbine_setting ts,
+       at_physical_location pl,
+       at_base_location bl,
+       cwms_office o
+ where pl.location_code = ts.turbine_location_code
+   and bl.base_location_code = pl.base_location_code
+   and o.office_code = bl.db_office_code;
+/   

@@ -378,11 +378,14 @@ AS
   (
   --required
   turbine_location_ref location_ref_t,
+  old_discharge binary_double,
+  new_discharge binary_double,
   --setting lookup?
   --discharge lookup?
 
   --not required
-  energy_rate binary_double,
+  discharge_units varchar2(16),
+  real_power binary_double,
   scheduled_load binary_double,
   generation_units varchar2(16)
 );
@@ -408,7 +411,10 @@ AS
       setting_reason lookup_type_obj_t, --turbine_setting_reason_code
       
       settings turbine_setting_tab_t,
-      --not required
+      --not required 
+      elev_pool binary_double,
+      elev_tailwater binary_double,
+      elev_units varchar2(16),
       old_total_discharge_override binary_double, --OLD_TOTAL_DISCHARGE_OVERRIDE
       new_total_discharge_override binary_double, --NEW_TOTAL_DISCHARGE_OVERRIDE
       discharge_units  varchar2(16), 

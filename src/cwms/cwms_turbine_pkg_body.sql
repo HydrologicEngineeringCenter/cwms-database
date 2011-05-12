@@ -118,6 +118,16 @@ procedure check_turbine_setting(
 is
 begin
    check_location_ref(p_turbine_setting.turbine_location_ref);
+   if p_turbine_setting.old_discharge is null then
+      cwms_err.raise(
+         'ERROR',
+         'The old_flow member of a p_turbine_setting object cannot be null.');
+   end if;
+   if p_turbine_setting.new_discharge is null then
+      cwms_err.raise(
+         'ERROR',
+         'The new_flow member of a p_turbine_setting object cannot be null.');
+   end if;
    cwms_util.check_input(p_turbine_setting.generation_units);
 end check_turbine_setting;   
 --------------------------------------------------------------------------------
@@ -565,6 +575,14 @@ begin
       l_change_rec.turbine_change_code := cwms_seq.nextval;
       l_change_rec.project_location_code := l_proj_loc_code;
       l_change_rec.turbine_change_datetime := cwms_util.change_timezone(p_turbine_changes(i).change_date, l_time_zone, 'UTC');
+      l_change_rec.elev_pool := cwms_util.convert_units(
+         p_turbine_changes(i).elev_pool,
+         p_turbine_changes(i).elev_units,
+         cwms_util.get_default_units('Elev'));
+      l_change_rec.elev_tailwater := cwms_util.convert_units(
+         p_turbine_changes(i).elev_tailwater,
+         p_turbine_changes(i).elev_units,
+         cwms_util.get_default_units('Elev'));
       l_change_rec.old_total_discharge_override := cwms_util.convert_units(
          p_turbine_changes(i).old_total_discharge_override,
          p_turbine_changes(i).discharge_units,
@@ -626,6 +644,16 @@ begin
             l_setting_rec.turbine_setting_code := cwms_seq.nextval;
             l_setting_rec.turbine_change_code := l_change_rec.turbine_change_code;
             l_setting_rec.turbine_location_code := p_turbine_changes(i).settings(j).turbine_location_ref.get_location_code;
+            l_setting_rec.old_discharge := cwms_util.convert_units(
+               p_turbine_changes(i).settings(j).old_discharge,
+               p_turbine_changes(i).settings(j).discharge_units,
+               cwms_util.get_default_units('Flow'));
+            l_setting_rec.new_discharge := cwms_util.convert_units(
+               p_turbine_changes(i).settings(j).new_discharge,
+               p_turbine_changes(i).settings(j).discharge_units,
+               cwms_util.get_default_units('Flow'));  
+            l_setting_rec.scheduled_load := p_turbine_changes(i).settings(j).scheduled_load;                
+            l_setting_rec.real_power := p_turbine_changes(i).settings(j).real_power;                
             insert into at_turbine_setting values l_setting_rec;               
          end loop;         
       end if;
@@ -657,6 +685,10 @@ is
    l_turbine_changes  turbine_change_db_tab_t;
    l_turbine_settings turbine_setting_db_tab_t;
    l_flow_unit        varchar2(16);
+   l_elev_unit        varchar2(16);
+   l_db_flow_unit     varchar2(16);
+   l_db_elev_unit     varchar2(16);
+   l_db_power_unit    varchar2(16);
    l_sql              varchar2(1024) := '
         select *
           from ( select *
@@ -760,6 +792,10 @@ begin
    ----------------------------
    if l_turbine_changes is not null and l_turbine_changes.count > 0 then
       cwms_display.retrieve_unit(l_flow_unit, 'Flow', l_unit_system, p_project_location.get_office_id);
+      cwms_display.retrieve_unit(l_elev_unit, 'Elev', l_unit_system, p_project_location.get_office_id);
+      l_db_elev_unit := cwms_util.get_default_units('Elev');
+      l_db_flow_unit := cwms_util.get_default_units('Flow');
+      l_db_power_unit := cwms_util.get_default_units('Power');
       p_turbine_changes := turbine_change_tab_t();
       p_turbine_changes.extend(l_turbine_changes.count);
       for i in 1..l_turbine_changes.count loop
@@ -773,12 +809,21 @@ begin
             null, -- setting_reason, set below
             null, -- settings, set below 
             cwms_util.convert_units(
+               l_turbine_changes(i).elev_pool, 
+               l_db_elev_unit, 
+               l_elev_unit),
+            cwms_util.convert_units(
+               l_turbine_changes(i).elev_tailwater, 
+               l_db_elev_unit, 
+               l_elev_unit),   
+            l_elev_unit,
+            cwms_util.convert_units(
                l_turbine_changes(i).old_total_discharge_override, 
-               'cms', 
+               l_db_flow_unit, 
                l_flow_unit),
             cwms_util.convert_units(
                l_turbine_changes(i).new_total_discharge_override, 
-               'cms', 
+               l_db_flow_unit, 
                l_flow_unit),
             l_flow_unit,
             l_turbine_changes(i).turbine_change_notes,
@@ -819,9 +864,18 @@ begin
             for j in 1..l_turbine_settings.count loop
                p_turbine_changes(i).settings(j) := turbine_setting_obj_t(
                   location_ref_t(l_turbine_settings(j).turbine_location_code),
-                  l_turbine_settings(i).energy_rate,
+                  cwms_util.convert_units(
+                     l_turbine_settings(j).old_discharge, 
+                     l_db_flow_unit, 
+                     l_flow_unit),
+                  cwms_util.convert_units(
+                     l_turbine_settings(j).new_discharge, 
+                     l_db_flow_unit, 
+                     l_flow_unit),
+                  l_flow_unit,
+                  l_turbine_settings(i).real_power,
                   l_turbine_settings(i).scheduled_load,
-                  'MW');                  
+                  l_db_power_unit);                  
             end loop;
          end if;          
                                  
