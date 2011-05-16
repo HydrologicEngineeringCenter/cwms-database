@@ -3894,8 +3894,10 @@ end retrieve_ts_multi;
                            SET t1.VALUE = t2.VALUE, 
                                t1.quality_code = t2.quality_code,
                                t1.data_entry_date = :store_date
-                         WHERE t1.value != t2.value
-                            OR t1.quality_code != t2.quality_code)', 
+                         WHERE ( t1.value != t2.value
+                                 OR 
+                                 t1.quality_code != t2.quality_code
+                               )',
                'table_name',
                x.table_name)
             using p_timeseries_data, 
