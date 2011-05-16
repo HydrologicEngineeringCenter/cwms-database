@@ -873,8 +873,8 @@ begin
                      l_db_flow_unit, 
                      l_flow_unit),
                   l_flow_unit,
-                  l_turbine_settings(i).real_power,
-                  l_turbine_settings(i).scheduled_load,
+                  l_turbine_settings(j).real_power,
+                  l_turbine_settings(j).scheduled_load,
                   l_db_power_unit);                  
             end loop;
          end if;          
