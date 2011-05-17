@@ -325,6 +325,7 @@ AS
   --required
   outlet_location_ref location_ref_t,
   opening binary_double,
+  opening_parameter varchar2(49),
   opening_units varchar2(16)
   );
   /

@@ -1051,9 +1051,10 @@ begin
                p_gate_changes(i).settings(j) := gate_setting_obj_t(
                   location_ref_t(l_gate_settings(j).outlet_location_code),
                   cwms_util.convert_units(
-                     l_gate_settings(j).gate_opening, 
+                     l_gate_settings(j).gate_opening,
                      cwms_util.get_default_units(l_opening_param, 'SI'), 
                      l_opening_unit),
+                  l_opening_param, 
                   l_opening_unit);                  
             end loop;
          end if;          
