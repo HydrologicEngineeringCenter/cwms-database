@@ -3838,26 +3838,28 @@ AS
    )
    IS
       l_loc_group_code NUMBER;
+      l_shared_loc_ref_code NUMBER;
    BEGIN
-   	create_loc_group (
-	      p_loc_category_id,
-	      p_loc_group_id,
-	      p_loc_group_desc,
-	      p_db_office_id);
+      create_loc_group (
+         p_loc_category_id,
+         p_loc_group_id,
+         p_loc_group_desc,
+         p_db_office_id);
       l_loc_group_code := get_loc_group_code(
-         p_loc_category_id, 
-         p_loc_group_id, 
-         cwms_util.get_office_code(p_db_office_id));        
-		if p_shared_alias_id is not null then
-			update at_loc_group
-			   set shared_loc_alias_id = p_shared_alias_id
-			 where loc_group_code = l_loc_group_code; 	      
-		end if;	      
-      if p_shared_loc_ref_id is not null then
+         p_loc_category_id,
+         p_loc_group_id,
+         cwms_util.get_office_code(p_db_office_id));
+      if p_shared_alias_id is not null then
          update at_loc_group
-            set shared_loc_ref_code = get_location_code(p_db_office_id, p_shared_loc_ref_id)
-          where loc_group_code = l_loc_group_code;          
-      end if;         
+            set shared_loc_alias_id = p_shared_alias_id
+          where loc_group_code = l_loc_group_code;
+      end if;
+      if p_shared_loc_ref_id is not null then
+         l_shared_loc_ref_code := get_location_code(p_db_office_id, p_shared_loc_ref_id);
+         update at_loc_group
+            set shared_loc_ref_code = l_shared_loc_ref_code
+          where loc_group_code = l_loc_group_code;
+      end if;
    END create_loc_group2;
    
 	PROCEDURE rename_loc_group (
