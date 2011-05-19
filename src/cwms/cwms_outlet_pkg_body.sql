@@ -180,7 +180,7 @@ begin
         from at_loc_category c,
              at_loc_group g,
              at_loc_group_assignment a
-       where c.loc_category_id = 'RATING'
+       where upper(c.loc_category_id) = 'RATING'
          and c.db_office_code = l_office_code
          and g.loc_category_code = c.loc_category_code
          and g.db_office_code = c.db_office_code
@@ -217,11 +217,62 @@ begin
       ||l_alias);
 end get_outlet_opening_param;   
 --------------------------------------------------------------------------------
+-- function get_rating_spec
+--------------------------------------------------------------------------------
+function get_rating_spec(
+   p_outlet_location_code  in number,
+   p_project_location_code in number)
+   return varchar2
+is
+   l_gate_type varchar2(32);
+   l_rating_template_template varchar2(24);
+   l_rating_spec varchar2(372); 
+begin
+   select sub_location_id
+     into l_gate_type
+     from at_physical_location
+    where location_code = p_outlet_location_code;
+            
+   l_gate_type := upper(regexp_substr(l_gate_type, '^(\D+).?$', 1, 1, 'i', 1));
+   case
+      when l_gate_type = 'SG'                     then l_gate_type := 'Sluice';  
+      when substr(l_gate_type, 1, 6) = 'SLUICE'   then l_gate_type := 'Sluice';  
+      when l_gate_type = 'CG'                     then l_gate_type := 'Conduit';
+      when substr(l_gate_type, 1, 7) = 'CONDUIT'  then l_gate_type := 'Conduit';
+      when l_gate_type = 'TG'                     then l_gate_type := 'Spillway';
+      when substr(l_gate_type, 1, 7) = 'TAINTER'  then l_gate_type := 'Spillway';
+      when substr(l_gate_type, 1, 8) = 'SPILLWAY' then l_gate_type := 'Spillway';
+      when l_gate_type = 'LF'                     then l_gate_type := 'Low_Flow';
+      when substr(l_gate_type, 1, 8) = 'LOW_FLOW' then l_gate_type := 'Low_Flow';
+   end case;
+   l_rating_template_template := replace('%'||cwms_rating.separator2||'Flow-$_Gates.%', '$', l_gate_type);
+   begin
+      select rating_id
+        into l_rating_spec 
+        from cwms_v_rating_spec v,
+             at_physical_location pl,
+             at_base_location bl,
+             cwms_office o 
+       where v.office_id = o.office_id
+         and v.location_id = bl.base_location_id
+                             ||substr('-', 1, length(pl.sub_location_id))
+                             ||pl.sub_location_id
+         and v.template_id like l_rating_template_template
+         and pl.location_code = p_project_location_code
+         and bl.base_location_code = pl.base_location_code
+         and o.office_code = bl.db_office_code;
+   exception
+      when no_data_found then null;
+   end;
+   return l_rating_spec;               
+end;
+--------------------------------------------------------------------------------
 -- procedure assign_to_rating_group
 --------------------------------------------------------------------------------
 procedure assign_to_rating_group(
-   p_outlet_location_code in number,
-   p_rating_group_id      in varchar2)
+   p_outlet_location_code  in number,
+   p_project_location_code in number,
+   p_rating_group_id       in varchar2)
 is
    l_category_rec   at_loc_category%rowtype;
    l_group_rec      at_loc_group%rowtype;
@@ -230,14 +281,14 @@ begin
    --------------------------------------------
    -- retrieve or create the rating category --
    --------------------------------------------
-   l_category_rec.loc_category_id := 'RATING';
+   l_category_rec.loc_category_id := 'Rating';
    l_category_rec.db_office_code  := get_office_from_outlet(p_outlet_location_code);
    begin
       select *
         into l_category_rec
         from at_loc_category
        where db_office_code = l_category_rec.db_office_code
-         and loc_category_id = l_category_rec.loc_category_id;
+         and upper(loc_category_id) = upper(l_category_rec.loc_category_id);
    exception
       when no_data_found then
          l_category_rec.loc_category_code := cwms_seq.nextval;
@@ -257,11 +308,20 @@ begin
        where loc_category_code = l_group_rec.loc_category_code
          and db_office_code = l_group_rec.db_office_code
          and upper(loc_group_id) = upper(l_group_rec.loc_group_id);
+      ------------------------------------------------------         
+      -- verify we have the correct project location code --
+      ------------------------------------------------------
+      if l_group_rec.shared_loc_ref_code != p_project_location_code then
+         cwms_err.raise(
+            'ERROR',
+            'Shared location references (project locations) do not match.');
+      end if;         
    exception
       when no_data_found then
-         l_group_rec.loc_group_code := cwms_seq.nextval;
-         l_group_rec.loc_group_desc := 'Shared alias contains rating spec for assigned outlets.';
-         -- shared alias will have to be entered later
+         l_group_rec.loc_group_code      := cwms_seq.nextval;
+         l_group_rec.loc_group_desc      := 'Shared alias contains rating spec for assigned outlets.';
+         l_group_rec.shared_loc_alias_id := get_rating_spec(p_outlet_location_code, p_project_location_code);
+         l_group_rec.shared_loc_ref_code := p_project_location_code;
          insert into at_loc_group values l_group_rec;
    end;
    ---------------------------------------
@@ -510,7 +570,10 @@ begin
       -----------------------------------------------------
       -- assign the record to the specified rating group --
       -----------------------------------------------------
-      assign_to_rating_group(l_rec.outlet_location_code, l_rating_group);
+      assign_to_rating_group(
+      l_rec.outlet_location_code,
+      l_rec.project_location_code,
+      l_rating_group);
    end loop;
 end store_outlets;
 --------------------------------------------------------------------------------
@@ -646,6 +709,7 @@ begin
       check_project_structure(p_outlets(i));
       assign_to_rating_group(
          p_outlets(i).structure_location.location_ref.get_location_code,
+         p_outlets(i).project_location_ref.get_location_code,
          p_rating_group);
    end loop;
 end assign_to_rating_group;   
