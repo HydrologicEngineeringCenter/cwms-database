@@ -3668,19 +3668,112 @@ AS
 		RETURN l_loc_group_code;
 	END get_loc_group_code;
 
+   procedure store_loc_category (
+      p_loc_category_id     in   varchar2,
+      p_loc_category_desc   in   varchar2 default null,
+      p_fail_if_exists      in   varchar2 default 'F',
+      p_ignore_null         in   varchar2 default 'T',
+      p_db_office_id        in   varchar2 default null)
+   is
+      l_tmp number;
+   begin
+      l_tmp := store_loc_category_f (
+         p_loc_category_id,
+         p_loc_category_desc,
+         p_fail_if_exists,
+         p_ignore_null,
+         p_db_office_id);
+   end;
+
+   function store_loc_category_f (
+      p_loc_category_id     in   varchar2,
+      p_loc_category_desc   in   varchar2 default null,
+      p_fail_if_exists      in   varchar2 default 'F',
+      p_ignore_null         in   varchar2 default 'T',
+      p_db_office_id        in   varchar2 default null)
+      return number
+   is
+      l_db_office_id        varchar2 (16);
+      l_db_office_code      number;
+      l_loc_category_id     varchar2 (32) := trim (p_loc_category_id);
+      l_loc_category_desc   varchar2 (128) := trim (p_loc_category_desc);
+      l_fail_if_exists      boolean := cwms_util.is_true(p_fail_if_exists);
+      l_ignore_null         boolean := cwms_util.is_true(p_ignore_null);
+      l_rec                 at_loc_category%rowtype;
+      l_exists              boolean;
+   begin
+      l_db_office_id := nvl(upper(p_db_office_id), cwms_util.user_office_id);
+      l_db_office_code := cwms_util.get_office_code (l_db_office_id);
+      -------------------------------------------
+      -- determine whether the category exists --
+      -------------------------------------------
+      begin
+         select *
+           into l_rec
+           from at_loc_category
+          where upper(loc_category_id) = upper(l_loc_category_id)
+            and db_office_code in (l_db_office_code, cwms_util.db_office_code_all);
+            
+         l_exists := true;
+      exception
+         when no_data_found then
+            l_exists := false;
+      end;
+      --------------------------------
+      -- fail if conditions warrant --
+      --------------------------------
+      if l_exists then
+         if l_fail_if_exists then
+            cwms_err.raise(
+               'ITEM_ALREADY_EXISTS',
+               l_db_office_id
+               ||'/'
+               ||l_loc_category_id
+               ||' already exists.');
+         end if;
+         if l_rec.db_office_code = cwms_util.db_office_code_all then
+            cwms_err.raise(
+               'ITEM_ALREADY_EXISTS',
+               'Cannot store the '
+               || l_loc_category_id
+               || ' category because it already exists as a system category.');
+         end if;
+      end if;
+      ---------------------------------            
+      -- insert or update the record --
+      ---------------------------------            
+      if l_exists then
+         if not (l_ignore_null and p_loc_category_desc is null) then
+            l_rec.loc_category_desc := p_loc_category_desc;
+         end if;
+         update at_loc_category
+            set row = l_rec
+          where loc_category_code = l_rec.loc_category_code;
+      else
+         l_rec.loc_category_code := cwms_seq.nextval;
+         l_rec.loc_category_id   := p_loc_category_id;
+         l_rec.loc_category_desc := p_loc_category_desc;
+         l_rec.db_office_code    := l_db_office_code;
+         insert 
+           into at_loc_category
+         values l_rec;
+      end if;
+      return l_rec.loc_category_code;
+   end;
+
 	PROCEDURE create_loc_category (
 		p_loc_category_id 	 IN VARCHAR2,
 		p_loc_category_desc	 IN VARCHAR2 DEFAULT NULL ,
 		p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
 	)
 	IS
-		l_tmp   NUMBER;
 	BEGIN
-		l_tmp :=
-			create_loc_category_f (p_loc_category_id		=> p_loc_category_id,
-										  p_loc_category_desc	=> p_loc_category_desc,
-										  p_db_office_id			=> p_db_office_id
-										 );
+      store_loc_category(
+         p_loc_category_id,
+         p_loc_category_desc,
+         'T',
+         'F',
+         p_db_office_id);
 	END;
 
 	FUNCTION create_loc_category_f (
@@ -3690,70 +3783,104 @@ AS
 	)
 		RETURN NUMBER
 	IS
-		l_db_office_id 		 VARCHAR2 (16);
-		l_db_office_code		 NUMBER;
-		l_cat_is_cwms_cat 	 BOOLEAN;
-		l_tmp 					 NUMBER;
-		l_loc_category_id 	 VARCHAR2 (32) := TRIM (p_loc_category_id);
-		l_loc_category_desc	 VARCHAR2 (128) := TRIM (p_loc_category_desc);
 	BEGIN
-		IF p_db_office_id IS NULL
-		THEN
-			l_db_office_id := cwms_util.user_office_id;
-		ELSE
-			l_db_office_id := UPPER (p_db_office_id);
-		END IF;
-
-		l_db_office_code := cwms_util.get_office_code (l_db_office_id);
-
-		-- Confirm that the new category is not a system/cwms category..
-		--
-		BEGIN
-			SELECT	atlc.loc_category_code
-			  INTO	l_tmp
-			  FROM	at_loc_category atlc
-			 WHERE	UPPER (loc_category_id) = UPPER (l_loc_category_id)
-						AND db_office_code = (SELECT	 office_code
-														FROM	 cwms_office
-													  WHERE	 office_id = 'CWMS');
-
-			l_cat_is_cwms_cat := TRUE;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				l_cat_is_cwms_cat := FALSE;
-		END;
-
-		IF l_cat_is_cwms_cat
-		THEN
-         cwms_err.RAISE
-                 ('ITEM_ALREADY_EXISTS',
-					'Cannot create the '
-				|| l_loc_category_id
-				|| ' category because it already exists as a system category.'
-			);
-		end if;
-  
-    l_tmp := cwms_seq.nextval;
-    BEGIN
-		     INSERT INTO at_loc_category
-                     (loc_category_code, loc_category_id, db_office_code,
-													  loc_category_desc
-						  )
-              VALUES (l_tmp, l_loc_category_id, l_db_office_code,
-								p_loc_category_desc
-						  );
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-            cwms_err.RAISE ('ITEM_ALREADY_EXISTS',
-						'Cannot create the '
-					|| l_loc_category_id
-					|| ' category as it already exists.'
-				);
-		END;
-		RETURN l_tmp;
+      return store_loc_category_f(
+                p_loc_category_id,
+                p_loc_category_desc,
+                'T',
+                'F',
+                p_db_office_id);
 	END;
+   
+   procedure store_loc_group (
+      p_loc_category_id   in   varchar2,
+      p_loc_group_id      in   varchar2,
+      p_loc_group_desc    in   varchar2 default null,
+      p_fail_if_exists    in   varchar2 default 'F',
+      p_ignore_nulls      in   varchar2 default 'T',
+      p_shared_alias_id   in   varchar2 default null,
+      p_shared_loc_ref_id in   varchar2 default null,
+      p_db_office_id      in   varchar2 default null)
+   is                   
+      l_rec            at_loc_group%rowtype;
+      l_office_code    number(10) := cwms_util.get_db_office_code(p_db_office_id);
+      l_fail_if_exists boolean := cwms_util.is_true(p_fail_if_exists);
+      l_ignore_nulls   boolean := cwms_util.is_true(p_ignore_nulls);
+      l_exists         boolean;
+   begin               
+      -----------------------------------------
+      -- determine whether the record exists --
+      -----------------------------------------
+      begin               
+         select g.loc_group_code,
+                g.loc_category_code,
+                g.loc_group_id,
+                g.loc_group_desc,
+                g.db_office_code,
+                g.shared_loc_alias_id,
+                g.shared_loc_ref_code
+           into l_rec
+           from at_loc_group g,
+                at_loc_category c
+          where upper(c.loc_category_id) = upper(p_loc_category_id)
+            and g.loc_category_code = c.loc_category_code
+            and upper(g.loc_group_id) = upper(p_loc_group_id)
+            and g.db_office_code in (l_office_code, cwms_util.db_office_code_all); 
+      
+         l_exists := true;
+      exception
+         when no_data_found then l_exists := false;
+      end;
+      --------------------------------
+      -- fail if conditions warrant --
+      --------------------------------
+      if l_exists then
+         if l_fail_if_exists then
+            cwms_err.raise(
+               'ITEM_ALREADY_EXISTS',
+               'CWMS location group '
+               ||nvl(upper(p_db_office_id), cwms_util.user_office_id)
+               ||'/'
+               ||p_loc_category_id
+               ||'/'
+               ||p_loc_group_id);
+         end if;
+         if l_rec.db_office_code = cwms_util.db_office_code_all then
+            cwms_err.raise(
+               'ITEM_ALREADY_EXISTS',
+               'Cannot store location group because it is a CWMS system item.');
+         end if;
+      end if;
+      ---------------------------------
+      -- insert or update the record --
+      ---------------------------------
+      if l_exists then
+         if not (l_ignore_nulls and p_loc_group_desc is null) then
+            l_rec.loc_group_desc := p_loc_group_desc;
+         end if;
+         if not (l_ignore_nulls and p_shared_alias_id is null) then
+            l_rec.shared_loc_alias_id := p_shared_alias_id;
+         end if;
+         if not (l_ignore_nulls and p_shared_loc_ref_id is null) then
+            l_rec.shared_loc_ref_code := cwms_loc.get_location_code(l_office_code, p_shared_loc_ref_id);
+         end if;
+         update at_loc_group
+            set row = l_rec
+          where loc_group_code = l_rec.loc_group_code;
+      else
+         l_rec.loc_group_code      := cwms_seq.nextval;
+         l_rec.loc_category_code   := store_loc_category_f(p_loc_category_id, null, p_db_office_id);
+         l_rec.loc_group_id        := p_loc_group_id;
+         l_rec.loc_group_desc      := p_loc_group_desc;
+         l_rec.db_office_code      := l_office_code;
+         l_rec.shared_loc_alias_id := p_shared_alias_id;
+         if p_shared_loc_ref_id is not null then
+            l_rec.shared_loc_ref_code := cwms_loc.get_location_code(l_office_code, p_shared_loc_ref_id);
+         end if;
+         insert into at_loc_group
+              values l_rec;
+      end if;
+   end store_loc_group;      
 
    PROCEDURE create_loc_group (
       p_loc_category_id IN   VARCHAR2,
@@ -3762,69 +3889,17 @@ AS
 		p_db_office_id		IN VARCHAR2 DEFAULT NULL
 	)
 	IS
-		l_db_office_id 			 VARCHAR2 (16);
-		l_db_office_code			 NUMBER;
-		l_loc_category_code		 NUMBER;
-		l_loc_group_code			 NUMBER;
-		l_group_already_exists	 BOOLEAN := FALSE;
-		l_loc_category_id 		 VARCHAR2 (32) := TRIM (p_loc_category_id);
-		l_loc_group_id 			 VARCHAR2 (32) := TRIM (p_loc_group_id);
 	BEGIN
-		IF p_db_office_id IS NULL
-		THEN
-			l_db_office_id := cwms_util.user_office_id;
-		ELSE
-			l_db_office_id := UPPER (p_db_office_id);
-		END IF;
-
-		l_db_office_code := cwms_util.get_office_code (l_db_office_id);
-
-		-- Does Category exist?.
-		--
-		BEGIN
-			l_loc_category_code :=
-				get_loc_category_code (p_loc_category_id	 => p_loc_category_id,
-											  p_db_office_code	 => l_db_office_code
-											 );
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-				-- need to add new category.
-				l_loc_category_code :=
-               create_loc_category_f (p_loc_category_id        => l_loc_category_id,
-						p_loc_category_desc	 => NULL,
-						p_db_office_id 		 => l_db_office_id
-					);
-		END;
-
-		--
-		-- Does Group already exist?.
-		BEGIN
-			SELECT	loc_group_code
-			  INTO	l_loc_group_code
-			  FROM	at_loc_group atlg
-			 WHERE	atlg.loc_category_code = l_loc_category_code
-						AND UPPER (atlg.loc_group_id) = UPPER (p_loc_group_id);
-
-			l_group_already_exists := TRUE;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-            INSERT INTO at_loc_group
-                        (loc_group_code, loc_category_code,
-                         loc_group_id, loc_group_desc, db_office_code,
-                         shared_loc_alias_id, shared_loc_ref_code
-							  )
-                 VALUES (cwms_seq.NEXTVAL, l_loc_category_code,
-                         p_loc_group_id, p_loc_group_desc, l_db_office_code,
-                         NULL, NULL
-							  );
-		END;
-
-		IF l_group_already_exists
-		THEN
-         cwms_err.RAISE ('ITEM_ALREADY_EXISTS', 'Group id: ', p_loc_group_id);
-		END IF;
+      cwms_loc.store_loc_group(
+         p_loc_category_id,
+         p_loc_group_id,
+         p_loc_group_desc,
+         'T',
+         'F',
+         null,
+         null,
+         p_db_office_id);
+         
 	END create_loc_group;
 
 
@@ -3837,29 +3912,16 @@ AS
       p_shared_loc_ref_id IN   VARCHAR2 DEFAULT NULL
    )
    IS
-      l_loc_group_code NUMBER;
-      l_shared_loc_ref_code NUMBER;
    BEGIN
-      create_loc_group (
+      store_loc_group(
          p_loc_category_id,
          p_loc_group_id,
          p_loc_group_desc,
+         'T',
+         'F',
+         p_shared_alias_id,
+         p_shared_loc_ref_id,
          p_db_office_id);
-      l_loc_group_code := get_loc_group_code(
-         p_loc_category_id,
-         p_loc_group_id,
-         cwms_util.get_office_code(p_db_office_id));
-      if p_shared_alias_id is not null then
-         update at_loc_group
-            set shared_loc_alias_id = p_shared_alias_id
-          where loc_group_code = l_loc_group_code;
-      end if;
-      if p_shared_loc_ref_id is not null then
-         l_shared_loc_ref_code := get_location_code(p_db_office_id, p_shared_loc_ref_id);
-         update at_loc_group
-            set shared_loc_ref_code = l_shared_loc_ref_code
-          where loc_group_code = l_loc_group_code;
-      end if;
    END create_loc_group2;
    
 	PROCEDURE rename_loc_group (

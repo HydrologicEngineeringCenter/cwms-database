@@ -488,6 +488,17 @@ AS
       p_shared_loc_ref_id IN   VARCHAR2 DEFAULT NULL
    );
 
+   PROCEDURE store_loc_group (
+      p_loc_category_id   IN   VARCHAR2,
+      p_loc_group_id      IN   VARCHAR2,
+      p_loc_group_desc    IN   VARCHAR2 DEFAULT NULL,
+      p_fail_if_exists    IN   VARCHAR2 DEFAULT 'F',
+      p_ignore_nulls      IN   VARCHAR2 DEFAULT 'T',
+      p_shared_alias_id   IN   VARCHAR2 DEFAULT NULL,
+      p_shared_loc_ref_id IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id      IN   VARCHAR2 DEFAULT NULL
+   );
+
    PROCEDURE rename_loc_group (
       p_loc_category_id    IN   VARCHAR2,
       p_loc_group_id_old   IN   VARCHAR2,
@@ -506,6 +517,23 @@ AS
    FUNCTION create_loc_category_f (
       p_loc_category_id     IN   VARCHAR2,
       p_loc_category_desc   IN   VARCHAR2 DEFAULT NULL,
+      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+   )
+      RETURN NUMBER;
+
+   PROCEDURE store_loc_category (
+      p_loc_category_id     IN   VARCHAR2,
+      p_loc_category_desc   IN   VARCHAR2 DEFAULT NULL,
+      p_fail_if_exists      IN   VARCHAR2 DEFAULT 'F',
+      p_ignore_null         IN   VARCHAR2 DEFAULT 'T',
+      p_db_office_id        IN   VARCHAR2 DEFAULT NULL
+   );
+
+   FUNCTION store_loc_category_f (
+      p_loc_category_id     IN   VARCHAR2,
+      p_loc_category_desc   IN   VARCHAR2 DEFAULT NULL,
+      p_fail_if_exists      IN   VARCHAR2 DEFAULT 'F',
+      p_ignore_null         IN   VARCHAR2 DEFAULT 'T',
       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER;
