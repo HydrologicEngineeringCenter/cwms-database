@@ -5603,7 +5603,7 @@ begin
    select date_time bulk collect
      into p_deleted_times
      from at_ts_deleted_times
-    where deleted_time = deleted_time
+    where deleted_time = p_deleted_time
       and ts_code = p_ts_code
       and version_date = cast(cwms_util.to_timestamp(p_version_date) as date)
  order by date_time;      
