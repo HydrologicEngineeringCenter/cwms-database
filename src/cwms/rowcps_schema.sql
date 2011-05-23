@@ -3084,7 +3084,7 @@ select gs.gate_change_code,
    and lga.location_code = gs.outlet_location_code
    and lg.loc_group_code = lga.loc_group_code
    and lc.loc_category_code = lg.loc_category_code
-   and lc.loc_category_id = 'RATING'        
+   and upper(lc.loc_category_id) = 'RATING'        
 /
 create or replace force view av_turbine
 (
