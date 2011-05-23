@@ -1942,7 +1942,24 @@ AS
          end;
       end if;
       return l_unit_id;
-   end get_unit_id;      
+   end get_unit_id;
+   
+   function get_unit_id2(
+      p_unit_code in varchar2)
+      return varchar2 result_cache
+   is
+      l_unit_id varchar2(16);
+   begin                       
+      select unit_id
+        into l_unit_id
+        from cwms_unit
+       where unit_code = p_unit_code;
+       
+      return l_unit_id;
+   exception
+      when no_data_found then
+         cwms_err.raise('INVALID_ITEM', p_unit_code, 'CWMS unit');
+   end get_unit_id2;     
                            
    PROCEDURE get_valid_units (p_valid_units        OUT sys_refcursor,
                               p_parameter_id   IN      VARCHAR2 DEFAULT NULL
@@ -2382,7 +2399,16 @@ AS
          and uc.to_unit_code = bp.unit_code
          and uc.from_unit_id = p_unit_id;
          
-      return p_value * l_factor + l_offset;         
+      return p_value * l_factor + l_offset;
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot convert parameter '
+            ||p_parameter_id
+            ||' in unit '
+            ||p_unit_id
+            ||' to database unit.');               
    end;      
                              
    function convert_units(
@@ -2399,10 +2425,18 @@ AS
         into l_factor,
              l_offset
         from cwms_unit_conversion
-       where from_unit_id = p_from_unit_id
-         and to_unit_id = p_to_unit_id;
+       where from_unit_id = get_unit_id(p_from_unit_id)
+         and to_unit_id = get_unit_id(p_to_unit_id);
          
       return p_value * l_factor + l_offset;         
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot convert from unit '
+            ||p_from_unit_id
+            ||' to unit '
+            ||p_to_unit_id);
    end;   
                              
    function convert_units(
@@ -2423,6 +2457,14 @@ AS
          and to_unit_code = p_to_unit_code;
          
       return p_value * l_factor + l_offset;         
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot convert from unit '
+            ||get_unit_id2(p_from_unit_code)
+            ||' to unit '
+            ||get_unit_id2(p_to_unit_code));
    end convert_units;   
                              
    function convert_units(
@@ -2440,9 +2482,17 @@ AS
              l_offset
         from cwms_unit_conversion
        where from_unit_code = p_from_unit_code
-         and to_unit_id = p_to_unit_id;
+         and to_unit_id = get_unit_id(p_to_unit_id);
          
       return p_value * l_factor + l_offset;         
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot convert from unit '
+            ||get_unit_id2(p_from_unit_code)
+            ||' to unit '
+            ||p_to_unit_id);
    end convert_units;   
                              
    function convert_units(
@@ -2459,10 +2509,18 @@ AS
         into l_factor,
              l_offset
         from cwms_unit_conversion
-       where from_unit_id = p_from_unit_id
+       where from_unit_id = get_unit_id(p_from_unit_id)
          and to_unit_code = p_to_unit_code;
          
       return p_value * l_factor + l_offset;         
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot convert from unit '
+            ||p_from_unit_id
+            ||' to unit '
+            ||get_unit_id2(p_to_unit_code));
    end convert_units;   
 
    --

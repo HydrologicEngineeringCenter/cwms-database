@@ -852,6 +852,18 @@ AS
       p_unit_or_alias in varchar2,
       p_office_id     in varchar2 default null)
       return varchar2 result_cache;
+      
+   /**
+    * Retrieves the unit identifier for a specified unit code
+    * 
+    * @param p_unit_code the unit code to retrieve the identifier for    
+    *        
+    * @return the unit identifier corresponding to the input                                            
+    */       
+   function get_unit_id2(
+      p_unit_code in varchar2)
+      return varchar2 result_cache;
+      
    /**
     * Retrieves a cursor of all valid units in the database for an optionally
     * specified parameter.  The cursor has a single column named 'UNIT_ID'.
