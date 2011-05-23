@@ -244,8 +244,16 @@ begin
       when substr(l_gate_type, 1, 8) = 'SPILLWAY' then l_gate_type := 'Spillway';
       when l_gate_type = 'LF'                     then l_gate_type := 'Low_Flow';
       when substr(l_gate_type, 1, 8) = 'LOW_FLOW' then l_gate_type := 'Low_Flow';
+      else null;
    end case;
-   l_rating_template_template := replace('%'||cwms_rating.separator2||'Flow-$_Gates.%', '$', l_gate_type);
+   l_rating_template_template := replace(
+      '%'
+      ||cwms_rating.separator2
+      ||'Flow-$_Gates'
+      ||cwms_rating.separator1
+      ||'%',
+      '$', 
+      l_gate_type);
    begin
       select rating_id
         into l_rating_spec 
