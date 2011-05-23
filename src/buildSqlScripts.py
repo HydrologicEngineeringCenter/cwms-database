@@ -20,7 +20,7 @@ def uniqueCombinations(items):
     count = len(items)
     results = []
     for i in xrange(count) :
-        for comb in uniqueCombinationsGenerator(items, i) :
+        for comb in uniqueCombinationsGenerator(items, i+1) :
             results.append(comb)
     return results
                 
