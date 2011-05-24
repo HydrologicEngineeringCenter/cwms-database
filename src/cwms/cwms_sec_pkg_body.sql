@@ -1,8 +1,48 @@
 SET define on
 @@defines.sql
+--define cwms_schema=CWMS_20
 /* Formatted on 7/13/2009 5:29:15 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_sec
 AS
+    FUNCTION is_user_cwms_locked (p_db_office_code IN number)
+        RETURN BOOLEAN
+    IS
+        l_is_locked   VARCHAR2 (1);
+        l_username      VARCHAR2 (31) := cwms_util.get_user_id;
+    BEGIN
+        --
+        -- cwms_20, system, sys are ok
+        --
+        IF l_username IN ('&cwms_schema', 'SYSTEM', 'SYS')
+        THEN
+            RETURN FALSE;
+        END IF;
+
+        --
+        -- Check if user's account is locked for the p_db_office_code
+        -- portion of the database...
+        --
+
+        BEGIN
+            SELECT    atslu.is_locked
+              INTO    l_is_locked
+              FROM    "&cwms_schema"."AT_SEC_LOCKED_USERS" atslu
+             WHERE    atslu.db_office_code = p_db_office_code
+                        AND atslu.username = UPPER (l_username);
+        EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+                RETURN TRUE;
+        END;
+
+        IF l_is_locked = 'T'
+        THEN
+            RETURN TRUE;
+        ELSE
+            RETURN FALSE;
+        END IF;
+
+    END;
 
     FUNCTION is_user_admin (p_db_office_code IN NUMBER)
         RETURN BOOLEAN
@@ -12,35 +52,14 @@ AS
         l_username	  VARCHAR2 (31) := cwms_util.get_user_id;
     BEGIN
         --
-        -- cwms_20, system, sys are ok
-        --
-		IF l_username IN ('&cwms_schema', 'SYSTEM', 'SYS', 'GERHARD', 'ART')
-        THEN
-            RETURN TRUE;
-        END IF;
-
-        --
         -- Check if user's account is locked for the p_db_office_code
         -- portion of the database...
         --
 
-        BEGIN
-            SELECT	atslu.is_locked
-              INTO	l_is_locked
-			  FROM	"&cwms_schema"."AT_SEC_LOCKED_USERS" atslu
-             WHERE	atslu.db_office_code = p_db_office_code
-                        AND atslu.username = UPPER (l_username);
-        EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-                l_is_locked := 'F';
-        END;
-
-        IF l_is_locked = 'T'
+        IF is_user_cwms_locked (p_db_office_code)
         THEN
             RETURN FALSE;
         END IF;
-
 
         --
         -- Check if user's account has either "dba" or "CWMS User Admins"

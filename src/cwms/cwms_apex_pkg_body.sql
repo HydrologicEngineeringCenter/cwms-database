@@ -1,6 +1,6 @@
-SET define on
-@@defines.sql
---define cwms_schema=CWMS_20
+--SET define on
+--@@defines.sql
+define cwms_schema=CWMS_20
 /* Formatted on 4/21/2009 11:15:31 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_apex
 AS
@@ -969,7 +969,7 @@ end hex_to_decimal;
                 -- in minutes.
                 p_snap_forward_minutes      => TO_NUMBER (l_int_forward),
                 p_snap_backward_minutes   => TO_NUMBER (l_int_backward),
-                p_ts_active_flag              => NULL,
+                p_ignore_shef_spec              => NULL,
                 p_db_office_id               => p_db_office_id
             );
         END LOOP;
@@ -1170,7 +1170,7 @@ end hex_to_decimal;
                 -- in minutes.
                 p_snap_forward_minutes      => TO_NUMBER (TRIM (l_int_forward)),
                 p_snap_backward_minutes   => TO_NUMBER (TRIM (l_int_backward)),
-                p_ts_active_flag              => l_active,
+                p_ignore_shef_spec             => l_active,
                 p_db_office_id               => p_db_office_id
             );
         END LOOP;

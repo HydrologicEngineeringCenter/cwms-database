@@ -1,6 +1,7 @@
-SET define on
+/* Formatted on 3/3/2011 8:05:07 AM (QP5 v5.163.1008.3004) */
+SET DEFINE ON
 @@defines.sql
-/* Formatted on 2007/01/08 15:21 (Formatter Plus v4.8.8) */
+
 CREATE OR REPLACE PACKAGE BODY cwms_sec_policy
 AS
 /******************************************************************************
@@ -45,5 +46,29 @@ AS
 
       RETURN l_predicate;
    END;
+   
+      FUNCTION da_role_office_codes (ns IN VARCHAR2, na IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+      l_predicate   VARCHAR2 (2000);
+   BEGIN
+      IF SYS_CONTEXT ('USERENV', 'SESSION_USER') = '&cwms_schema'
+      THEN
+         l_predicate := '1=1';
+      ELSE
+         l_predicate :=                       
+            'db_office_code in (SELECT db_office_code
+                                 FROM at_sec_users 
+                                 JOIN at_sec_locked_users 
+                                USING (username, db_office_code)
+                                WHERE is_locked = ''F'' 
+                                  AND user_group_code = 3 
+                                  AND username = cwms_util.get_user_id
+                                )';
+      END IF;
+
+      RETURN l_predicate;
+   END;
+
 END cwms_sec_policy;
 /
