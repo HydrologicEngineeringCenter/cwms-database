@@ -51,6 +51,15 @@ AS
         l_is_locked   VARCHAR2 (1);
         l_username	  VARCHAR2 (31) := cwms_util.get_user_id;
     BEGIN
+        
+        --
+        -- cwms_20, system, sys are ok
+        --
+        IF l_username IN ('&cwms_schema', 'SYSTEM', 'SYS')
+        THEN
+            RETURN TRUE;
+        END IF;
+
         --
         -- Check if user's account is locked for the p_db_office_code
         -- portion of the database...
