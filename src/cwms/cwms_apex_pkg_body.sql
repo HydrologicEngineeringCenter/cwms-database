@@ -1,6 +1,6 @@
---SET define on
---@@defines.sql
-define cwms_schema=CWMS_20
+SET define on
+@@defines.sql
+--define cwms_schema=CWMS_20
 /* Formatted on 4/21/2009 11:15:31 AM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE BODY cwms_apex
 AS
