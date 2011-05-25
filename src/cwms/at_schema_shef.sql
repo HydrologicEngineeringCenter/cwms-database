@@ -247,27 +247,35 @@ ALTER TABLE CWMS_SHEF_PE_CODES ADD (
 
 
 --------------------------------------------------------------------------------
--------------------------
--- AT_DATA_STREAM_ID table.
--- 
-
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--
+-- AT_DATA_STREAM_ID  (Table) 
+--
+--  Dependencies: 
+--   CWMS_OFFICE (Table)
+--
+--   Row count:20
 CREATE TABLE AT_DATA_STREAM_ID
 (
-  DATA_STREAM_CODE  NUMBER,
-  DB_OFFICE_CODE    NUMBER                      NOT NULL,
-  DATA_STREAM_ID    VARCHAR2(16 BYTE)           NOT NULL,
-  DATA_STREAM_DESC  VARCHAR2(128 BYTE),
-  ACTIVE_FLAG       VARCHAR2(1 BYTE)
+  DATA_STREAM_CODE       NUMBER,
+  DB_OFFICE_CODE         NUMBER                 NOT NULL,
+  DATA_STREAM_ID         VARCHAR2(16 BYTE)      NOT NULL,
+  DATA_STREAM_DESC       VARCHAR2(128 BYTE),
+  ACTIVE_FLAG            VARCHAR2(1 BYTE),
+  DELETE_DATE            DATE,
+  DATA_STREAM_MGT_STYLE  VARCHAR2(32 BYTE)
 )
-tablespace CWMS_20DATA
+TABLESPACE CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
             INITIAL          64K
+            NEXT             1M
             MINEXTENTS       1
-            MAXEXTENTS       2147483645
+            MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
@@ -278,18 +286,47 @@ NOPARALLEL
 MONITORING
 /
 
+COMMENT ON COLUMN AT_DATA_STREAM_ID.DATA_STREAM_CODE IS 'Unique code for each Data Stream.'
+/
 
+COMMENT ON COLUMN AT_DATA_STREAM_ID.DB_OFFICE_CODE IS 'Identifies the office that owns this data Stream. One must have the CWMS DA Privilege for this office in order to create or modify data Streams for this office.'
+/
+
+COMMENT ON COLUMN AT_DATA_STREAM_ID.DATA_STREAM_ID IS 'Office unique name for the data Stream. This name is often used in the Version portion of a TS ID.'
+/
+
+COMMENT ON COLUMN AT_DATA_STREAM_ID.DATA_STREAM_DESC IS 'This is a verbose DESCription of the Data Stream.'
+/
+
+COMMENT ON COLUMN AT_DATA_STREAM_ID.ACTIVE_FLAG IS 'This T or F Flag indicates whether or not the Data Stream is active and will accept data from processSHEFIT.'
+/
+
+COMMENT ON COLUMN AT_DATA_STREAM_ID.DELETE_DATE IS 'A Delete Data is set to indicate a deleted Data Stream. This allows for recovery of past Crit Files.'
+/
+
+COMMENT ON COLUMN AT_DATA_STREAM_ID.DATA_STREAM_MGT_STYLE IS 'Indicates whether this Data Stream uses the traditional DATA STREAM management style or the NWD-Portland DATA FEED management style.'
+/
+
+
+
+--
+-- AT_DATA_STREAM_ID_PK  (Index) 
+--
+--  Dependencies: 
+--   AT_DATA_STREAM_ID (Table)
+--
 CREATE UNIQUE INDEX AT_DATA_STREAM_ID_PK ON AT_DATA_STREAM_ID
 (DATA_STREAM_CODE)
 LOGGING
-tablespace CWMS_20DATA
+TABLESPACE CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
             INITIAL          64K
+            NEXT             1M
             MINEXTENTS       1
-            MAXEXTENTS       2147483645
+            MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
@@ -297,17 +334,24 @@ NOPARALLEL
 /
 
 
+--
+-- AT_DATA_STREAM_ID_U01  (Index) 
+--
+--  Dependencies: 
+--   AT_DATA_STREAM_ID (Table)
+--
 CREATE UNIQUE INDEX AT_DATA_STREAM_ID_U01 ON AT_DATA_STREAM_ID
 (DATA_STREAM_ID, DB_OFFICE_CODE)
 LOGGING
-tablespace CWMS_20DATA
+TABLESPACE CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
             INITIAL          64K
+            NEXT             1M
             MINEXTENTS       1
-            MAXEXTENTS       2147483645
+            MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
@@ -315,47 +359,272 @@ NOPARALLEL
 /
 
 
+-- 
+-- Non Foreign Key Constraints for Table AT_DATA_STREAM_ID 
+-- 
 ALTER TABLE AT_DATA_STREAM_ID ADD (
   CONSTRAINT AT_DATA_STREAM_ID_PK
- PRIMARY KEY
- (DATA_STREAM_CODE)
-    USING INDEX 
-    tablespace CWMS_20DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-
-ALTER TABLE AT_DATA_STREAM_ID ADD (
+  PRIMARY KEY
+  (DATA_STREAM_CODE)
+  USING INDEX AT_DATA_STREAM_ID_PK,
   CONSTRAINT AT_DATA_STREAM_ID_U01
- UNIQUE (DATA_STREAM_ID, DB_OFFICE_CODE)
-    USING INDEX 
-    tablespace CWMS_20DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
+  UNIQUE (DATA_STREAM_ID, DB_OFFICE_CODE)
+  USING INDEX AT_DATA_STREAM_ID_U01)
 /
 
-
+-- 
+-- Foreign Key Constraints for Table AT_DATA_STREAM_ID 
+-- 
 ALTER TABLE AT_DATA_STREAM_ID ADD (
   CONSTRAINT AT_DATA_STREAM_ID_R01 
- FOREIGN KEY (DB_OFFICE_CODE) 
- REFERENCES CWMS_OFFICE (OFFICE_CODE))
+  FOREIGN KEY (DB_OFFICE_CODE) 
+  REFERENCES CWMS_OFFICE (OFFICE_CODE))
 /
 
 --------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--
+-- AT_DATA_FEED_ID  (Table) 
+--
+--  Dependencies: 
+--   CWMS_OFFICE (Table)
+--   AT_DATA_STREAM_ID (Table)
+--
+--   Row count:3
+CREATE TABLE AT_DATA_FEED_ID
+(
+  DATA_FEED_CODE    NUMBER,
+  DATA_FEED_ID      VARCHAR2(32 BYTE),
+  DB_OFFICE_CODE    NUMBER,
+  DATA_FEED_PREFIX  VARCHAR2(3 BYTE),
+  DATA_STREAM_CODE  NUMBER,
+  DATA_FEED_DESC    VARCHAR2(128 BYTE)
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+COMMENT ON COLUMN AT_DATA_FEED_ID.DATA_FEED_CODE IS 'Unique code for each data Feed.'
+/
+
+COMMENT ON COLUMN AT_DATA_FEED_ID.DATA_FEED_ID IS 'Office unique name for the data Feed. This name is often used in the Version portion of a TS ID.'
+/
+
+COMMENT ON COLUMN AT_DATA_FEED_ID.DB_OFFICE_CODE IS 'Identifies the office that owns this data Feed. One must have the CWMS DA Privilege for this office in order to create or modify data Feeds for this office.'
+/
+
+COMMENT ON COLUMN AT_DATA_FEED_ID.DATA_FEED_PREFIX IS 'This is a unique prefix that is prepended to all of the SHEF ID''s associated with this data Feed.'
+/
+
+--
+-- AT_DATA_FEED_ID_I01  (Index) 
+--
+--  Dependencies: 
+--   AT_DATA_FEED_ID (Table)
+--
+CREATE UNIQUE INDEX AT_DATA_FEED_ID_I01 ON AT_DATA_FEED_ID
+(UPPER("DATA_FEED_ID"), DB_OFFICE_CODE)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+--
+-- AT_DATA_FEED_ID_PK  (Index) 
+--
+--  Dependencies: 
+--   AT_DATA_FEED_ID (Table)
+--
+CREATE UNIQUE INDEX AT_DATA_FEED_ID_PK ON AT_DATA_FEED_ID
+(DATA_FEED_CODE)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+-- 
+-- Non Foreign Key Constraints for Table AT_DATA_FEED_ID 
+-- 
+ALTER TABLE AT_DATA_FEED_ID ADD (
+  CONSTRAINT AT_DATA_FEED_CODE_PK
+  PRIMARY KEY
+  (DATA_FEED_CODE)
+  USING INDEX AT_DATA_FEED_ID_PK)
+/
+
+-- 
+-- Foreign Key Constraints for Table AT_DATA_FEED_ID 
+-- 
+ALTER TABLE AT_DATA_FEED_ID ADD (
+  CONSTRAINT AT_DATA_FEED_ID_R01 
+  FOREIGN KEY (DB_OFFICE_CODE) 
+  REFERENCES CWMS_OFFICE (OFFICE_CODE),
+  CONSTRAINT AT_DATA_FEED_ID_R02 
+  FOREIGN KEY (DATA_STREAM_CODE) 
+  REFERENCES AT_DATA_STREAM_ID (DATA_STREAM_CODE))
+/
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--
+-- AT_SHEF_IGNORE  (Table) 
+--
+--  Dependencies: 
+--   AT_DATA_STREAM_ID (Table)
+--   AT_DATA_FEED_ID (Table)
+--
+--   Row count:3
+CREATE TABLE AT_SHEF_IGNORE
+(
+  DATA_STREAM_CODE       NUMBER,
+  DATA_FEED_CODE         NUMBER,
+  SHEF_PE_CODE           VARCHAR2(2 BYTE)       NOT NULL,
+  SHEF_TSE_CODE          VARCHAR2(3 BYTE)       NOT NULL,
+  SHEF_DURATION_NUMERIC  VARCHAR2(4 BYTE)       NOT NULL,
+  SHEF_LOC_ID            VARCHAR2(128 BYTE)     NOT NULL
+)
+TABLESPACE CWMS_20DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
+NOCACHE
+NOPARALLEL
+MONITORING
+/
+
+COMMENT ON COLUMN AT_SHEF_IGNORE.DATA_STREAM_CODE IS 'Unique code indicating the affected Data Stream.'
+/
+
+COMMENT ON COLUMN AT_SHEF_IGNORE.DATA_FEED_CODE IS 'Unique code indicating the affected Data Feed, if the DATA FEED Managment style is being used.'
+/
+
+COMMENT ON COLUMN AT_SHEF_IGNORE.SHEF_PE_CODE IS 'The PE code portion of the SHEF Spec to be ignored.'
+/
+
+COMMENT ON COLUMN AT_SHEF_IGNORE.SHEF_TSE_CODE IS 'The TSE code portion of the SHEF Spec to be ignored.'
+/
+
+COMMENT ON COLUMN AT_SHEF_IGNORE.SHEF_DURATION_NUMERIC IS 'The SHEF Duration Numeric code portion of the SHEF Spec to be ignored.'
+/
+
+COMMENT ON COLUMN AT_SHEF_IGNORE.SHEF_LOC_ID IS 'The SHEF Location ID portion of the SHEF Spec to be ignored.'
+/
+
+
+--
+-- AT_SHEF_IGNORE_U01  (Index) 
+--
+--  Dependencies: 
+--   AT_SHEF_IGNORE (Table)
+--
+CREATE UNIQUE INDEX AT_SHEF_IGNORE_U01 ON AT_SHEF_IGNORE
+(DATA_STREAM_CODE, DATA_FEED_CODE, SHEF_LOC_ID, SHEF_PE_CODE, SHEF_TSE_CODE, 
+SHEF_DURATION_NUMERIC)
+LOGGING
+TABLESPACE CWMS_20DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL
+/
+
+
+-- 
+-- Non Foreign Key Constraints for Table AT_SHEF_IGNORE 
+-- 
+ALTER TABLE AT_SHEF_IGNORE ADD (
+  CONSTRAINT AT_SHEF_IGNORE_C01
+  CHECK (data_stream_code is not null or data_feed_code is not null))
+/
+
+-- 
+-- Foreign Key Constraints for Table AT_SHEF_IGNORE 
+-- 
+ALTER TABLE AT_SHEF_IGNORE ADD (
+  CONSTRAINT AT_SHEF_IGNORE_R01 
+  FOREIGN KEY (DATA_STREAM_CODE) 
+  REFERENCES AT_DATA_STREAM_ID (DATA_STREAM_CODE),
+  CONSTRAINT AT_SHEF_IGNORE_R02 
+  FOREIGN KEY (DATA_FEED_CODE) 
+  REFERENCES AT_DATA_FEED_ID (DATA_FEED_CODE))
+/
+
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+--
+-- AT_SHEF_DECODE  (Table) 
+--
+--  Dependencies: 
+--   CWMS_SHEF_TIME_ZONE (Table)
+--   CWMS_UNIT (Table)
+--   CWMS_SHEF_DURATION (Table)
+--   AT_DATA_STREAM_ID (Table)
+--   AT_CWMS_TS_SPEC (Table)
+--   AT_DATA_FEED_ID (Table)
+--
+--   Row count:4501
 CREATE TABLE AT_SHEF_DECODE
 (
   TS_CODE                NUMBER,
@@ -369,17 +638,20 @@ CREATE TABLE AT_SHEF_DECODE
   LOCATION_CODE          NUMBER                 NOT NULL,
   LOC_GROUP_CODE         NUMBER                 NOT NULL,
   SHEF_DURATION_CODE     VARCHAR2(1 BYTE)       NOT NULL,
-  SHEF_LOC_ID            VARCHAR2(128 BYTE)     NOT NULL
+  SHEF_LOC_ID            VARCHAR2(128 BYTE)     NOT NULL,
+  DATA_FEED_CODE         NUMBER,
+  IGNORE_SHEF_SPEC       VARCHAR2(1 BYTE)       NOT NULL
 )
-tablespace CWMS_20DATA
+TABLESPACE CWMS_20DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
 MAXTRANS   255
 STORAGE    (
             INITIAL          64K
+            NEXT             1M
             MINEXTENTS       1
-            MAXEXTENTS       2147483645
+            MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
@@ -391,35 +663,24 @@ MONITORING
 /
 
 
+--
+-- AT_SHEF_DECODE_PK  (Index) 
+--
+--  Dependencies: 
+--   AT_SHEF_DECODE (Table)
+--
 CREATE UNIQUE INDEX AT_SHEF_DECODE_PK ON AT_SHEF_DECODE
-(TS_CODE, DATA_STREAM_CODE)
-LOGGING
-tablespace CWMS_20DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
-
-CREATE UNIQUE INDEX AT_SHEF_DECODE_U01 ON AT_SHEF_DECODE
 (TS_CODE)
 LOGGING
-tablespace CWMS_20DATA
+TABLESPACE CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
             INITIAL          64K
+            NEXT             1M
             MINEXTENTS       1
-            MAXEXTENTS       2147483645
+            MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
@@ -427,17 +688,25 @@ NOPARALLEL
 /
 
 
+--
+-- AT_SHEF_DECODE_U03  (Index) 
+--
+--  Dependencies: 
+--   AT_SHEF_DECODE (Table)
+--
 CREATE UNIQUE INDEX AT_SHEF_DECODE_U03 ON AT_SHEF_DECODE
-(DATA_STREAM_CODE, SHEF_LOC_ID, SHEF_PE_CODE, SHEF_TSE_CODE, SHEF_DURATION_NUMERIC)
+(DATA_STREAM_CODE, SHEF_LOC_ID, SHEF_PE_CODE, SHEF_TSE_CODE, SHEF_DURATION_NUMERIC, 
+DATA_FEED_CODE)
 LOGGING
-tablespace CWMS_20DATA
+TABLESPACE CWMS_20DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
 STORAGE    (
             INITIAL          64K
+            NEXT             1M
             MINEXTENTS       1
-            MAXEXTENTS       2147483645
+            MAXEXTENTS       UNLIMITED
             PCTINCREASE      0
             BUFFER_POOL      DEFAULT
            )
@@ -445,55 +714,45 @@ NOPARALLEL
 /
 
 
+-- 
+-- Non Foreign Key Constraints for Table AT_SHEF_DECODE 
+-- 
 ALTER TABLE AT_SHEF_DECODE ADD (
+  CONSTRAINT AT_SHEF_DECODE_C01
+  CHECK (data_stream_code is not null or data_feed_code is not null),
   CONSTRAINT AT_SHEF_DECODE_PK
- PRIMARY KEY
- (TS_CODE, DATA_STREAM_CODE)
-    USING INDEX 
-    tablespace CWMS_20DATA
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
+  PRIMARY KEY
+  (TS_CODE)
+  USING INDEX AT_SHEF_DECODE_PK)
 /
 
-
-ALTER TABLE AT_SHEF_DECODE ADD (
-  CONSTRAINT AT_SHEF_DECODE_R05 
- FOREIGN KEY (SHEF_TIME_ZONE_CODE) 
- REFERENCES CWMS_SHEF_TIME_ZONE (SHEF_TIME_ZONE_CODE))
-/
-
-ALTER TABLE AT_SHEF_DECODE ADD (
-  CONSTRAINT AT_SHEF_DECODE_R03 
- FOREIGN KEY (SHEF_UNIT_CODE) 
- REFERENCES CWMS_UNIT (UNIT_CODE))
-/
-
-ALTER TABLE AT_SHEF_DECODE ADD (
-  CONSTRAINT AT_SHEF_DECODE_R04 
- FOREIGN KEY (SHEF_DURATION_CODE) 
- REFERENCES CWMS_SHEF_DURATION (SHEF_DURATION_CODE))
-/
-
-ALTER TABLE AT_SHEF_DECODE ADD (
-  CONSTRAINT AT_SHEF_DECODE_R02 
- FOREIGN KEY (DATA_STREAM_CODE) 
- REFERENCES AT_DATA_STREAM_ID (DATA_STREAM_CODE) DISABLE)
-/
-
+-- 
+-- Foreign Key Constraints for Table AT_SHEF_DECODE 
+-- 
 ALTER TABLE AT_SHEF_DECODE ADD (
   CONSTRAINT AT_SHEF_DECODE_R01 
- FOREIGN KEY (TS_CODE) 
- REFERENCES AT_CWMS_TS_SPEC (TS_CODE))
+  FOREIGN KEY (TS_CODE) 
+  REFERENCES AT_CWMS_TS_SPEC (TS_CODE),
+  CONSTRAINT AT_SHEF_DECODE_R02 
+  FOREIGN KEY (DATA_STREAM_CODE) 
+  REFERENCES AT_DATA_STREAM_ID (DATA_STREAM_CODE)  DISABLE,
+  CONSTRAINT AT_SHEF_DECODE_R03 
+  FOREIGN KEY (SHEF_UNIT_CODE) 
+  REFERENCES CWMS_UNIT (UNIT_CODE),
+  CONSTRAINT AT_SHEF_DECODE_R04 
+  FOREIGN KEY (SHEF_DURATION_CODE) 
+  REFERENCES CWMS_SHEF_DURATION (SHEF_DURATION_CODE),
+  CONSTRAINT AT_SHEF_DECODE_R05 
+  FOREIGN KEY (SHEF_TIME_ZONE_CODE) 
+  REFERENCES CWMS_SHEF_TIME_ZONE (SHEF_TIME_ZONE_CODE),
+  CONSTRAINT AT_SHEF_DECODE_R06 
+  FOREIGN KEY (DATA_FEED_CODE) 
+  REFERENCES AT_DATA_FEED_ID (DATA_FEED_CODE))
 /
 
 
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 --------------------------------------------------------------------------------
 CREATE TABLE AT_SHEF_CRIT_FILE
 (
