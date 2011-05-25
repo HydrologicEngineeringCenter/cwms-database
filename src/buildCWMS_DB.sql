@@ -51,6 +51,7 @@ alter session set current_schema = &cwms_schema;
 @@py_BuildCwms
 @@cwms/cwms_types
 @@cwms/at_schema
+@@cwms/at_schema_crrel
 @@cwms/at_schema_shef
 @@cwms/at_schema_alarm
 @@cwms/at_schema_screening

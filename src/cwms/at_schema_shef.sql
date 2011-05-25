@@ -9,7 +9,7 @@ DECLARE
    TYPE id_array_t IS TABLE OF VARCHAR2 (32);
 
    table_names       id_array_t
-      := id_array_t ('cwms_shef_time_zone',
+      := id_array_t ('CWMS_SHEF_TIME_ZONE',
                      'CWMS_SHEF_PE_CODES',
                      'AT_DATA_STREAM_ID',
                      'AT_SHEF_DECODE',
@@ -34,58 +34,7 @@ BEGIN
 
 END;
 /
------------------------------------------
 
-CREATE TABLE GT_SHEF_DECODES
-(
-  LINE_NUMBER          NUMBER,
-  SHEF_LOC_ID          VARCHAR2(8 BYTE),
-  SHEF_PE_CODE         VARCHAR2(2 BYTE),
-  SHEF_TSE_CODE        VARCHAR2(3 BYTE),
-  SHEF_DUR_NUMERIC     VARCHAR2(4 BYTE),
-  SHEF_SPEC            VARCHAR2(20 BYTE),
-  LOCATION_ID          VARCHAR2(49 BYTE),
-  PARAMETER_ID         VARCHAR2(49 BYTE),
-  BASE_PARAMETER_CODE  NUMBER,
-  PARAMETER_TYPE_ID    VARCHAR2(16 BYTE),
-  PARAMETER_TYPE_CODE  NUMBER,
-  INTERVAL_ID          VARCHAR2(16 BYTE),
-  INTERVAL_CODE        NUMBER,
-  DURATION_ID          VARCHAR2(16 BYTE),
-  DURATION_CODE        NUMBER,
-  VERSION              VARCHAR2(32 BYTE),
-  CWMS_TS_ID           VARCHAR2(183 BYTE),
-  CWMS_TS_CODE         NUMBER,
-  UNIT_SYSTEM          VARCHAR2(2 BYTE),
-  UNITS                VARCHAR2(16 BYTE),
-  UNIT_CODE            NUMBER,
-  SHEF_TZ              VARCHAR2(3 BYTE),
-  SHEF_DL_TIME         VARCHAR2(1 BYTE),
-  INTERVA_UTC_OFFSET   NUMBER,
-  INTERVAL_FORWARD     NUMBER,
-  INTERVAL_BACKWARD    NUMBER,
-  ACTIVE_FLAG          VARCHAR2(1 BYTE),
-  UNPARSED_LINE        VARCHAR2(512 BYTE),
-  ERROR_MSG            VARCHAR2(512 BYTE)
-)
-tablespace CWMS_20DATA
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          200K
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING
-/
 
 ---------------------------------------------
 
