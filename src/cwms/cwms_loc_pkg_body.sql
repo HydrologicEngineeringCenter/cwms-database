@@ -3730,8 +3730,18 @@ AS
                ||'/'
                ||l_loc_category_id
                ||' already exists.');
-         end if;
-         if l_rec.db_office_code = cwms_util.db_office_code_all then
+         elsif l_rec.db_office_code = cwms_util.db_office_code_all then
+            -------------------------------------------------------
+            -- this is OK if we're not trying to update anything --
+            -------------------------------------------------------
+            if (l_ignore_null and p_loc_category_desc is null) or
+               (p_loc_category_desc = l_rec.loc_category_desc) 
+            then
+               return l_rec.loc_category_code;
+            end if;
+            ----------------------------------
+            -- can't change a CWMS category --
+            ----------------------------------
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'Cannot store the '
@@ -3869,7 +3879,7 @@ AS
           where loc_group_code = l_rec.loc_group_code;
       else
          l_rec.loc_group_code      := cwms_seq.nextval;
-         l_rec.loc_category_code   := store_loc_category_f(p_loc_category_id, null, p_db_office_id);
+         l_rec.loc_category_code   := store_loc_category_f(p_loc_category_id, null, 'F', 'T', p_db_office_id);
          l_rec.loc_group_id        := p_loc_group_id;
          l_rec.loc_group_desc      := p_loc_group_desc;
          l_rec.db_office_code      := l_office_code;
