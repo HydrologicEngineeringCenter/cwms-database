@@ -292,7 +292,30 @@ begin
           where template_code = l_template_code;
       end if;         
    end loop;       
-end delete_templates;    
+end delete_templates;
+    
+--------------------------------------------------------------------------------
+-- GET_OPENING_PARAMETER
+--
+procedure get_opening_parameter(
+   p_parameter out varchar2,
+   p_position  out integer,
+   p_template  in  varchar2)
+is
+   l_params str_tab_t;
+begin
+   l_params := cwms_util.split_text(cwms_util.split_text(p_template, 1, separator2, 1), separator3);
+   for i in 1..l_params.count loop
+      if cwms_util.get_base_id(l_params(i)) not in ('Elev', 'Count') then
+         p_position  := i;
+         p_parameter := l_params(i);
+         return;
+      end if;
+   end loop;
+   cwms_err.raise(
+      'ERROR',
+      '"Opening" parameter not found in rating template: '||p_template);
+end get_opening_parameter;   
 
 --------------------------------------------------------------------------------
 -- GET_OPENING_PARAMETER
@@ -305,18 +328,31 @@ function get_opening_parameter(
    p_template in varchar2)
    return varchar2
 is
-   l_params str_tab_t;
+   l_param varchar2(49);
+   l_pos   integer;
 begin
-   l_params := cwms_util.split_text(cwms_util.split_text(p_template, 1, separator2, 1), separator3);
-   for i in 1..l_params.count loop
-      if cwms_util.get_base_id(l_params(i)) not in ('Elev', 'Count') then
-         return l_params(i);
-      end if;
-   end loop;
-   cwms_err.raise(
-      'ERROR',
-      '"Opening" parameter not found in rating template: '||p_template);
+   get_opening_parameter(l_param, l_pos, p_template);
+   return l_param;
 end get_opening_parameter;   
+
+--------------------------------------------------------------------------------
+-- GET_OPENING_PARAMETER_POSITION
+--    returns indepenent parameter position of the "opening" parameter of the 
+--    rating template
+-- 
+-- p_template
+--    the template text
+--
+function get_opening_parameter_position(
+   p_template in varchar2)
+   return integer
+is
+   l_param varchar2(49);
+   l_pos   integer;
+begin
+   get_opening_parameter(l_param, l_pos, p_template);
+   return l_pos;
+end get_opening_parameter_position;   
 
 --------------------------------------------------------------------------------
 -- GET_OPENING_UNIT
@@ -3848,13 +3884,13 @@ begin
       -- store the rated time series --
       ---------------------------------
       cwms_ts.zstore_ts(
-         p_cwms_ts_id		=> p_dependent_id,
-         p_units				=> l_dep_unit,
+         p_cwms_ts_id      => p_dependent_id,
+         p_units            => l_dep_unit,
          p_timeseries_data => l_dep_ts,
-         p_store_rule		=> null,
-         p_override_prot	=> 'F',
-         p_version_date 	=> p_version_date,
-         p_office_id 		=> p_ts_office_id);            
+         p_store_rule      => null,
+         p_override_prot   => 'F',
+         p_version_date    => p_version_date,
+         p_office_id       => p_ts_office_id);            
    end if;
 end reverse_rate;   
     
@@ -4035,6 +4071,226 @@ begin
       p_independent.value := l_values(1)(1);
    end if;
 end round_independent;      
+
+
+--------------------------------------------------------------------------------
+-- GET_RATING_EXTENTS
+--
+-- Gets the min and max of each independent and depentent parameter for the 
+-- specified rating
+--
+-- p_values
+--    The min and max values for each parameter.  The outer (first) dimension
+--    will be 2, with the first containing min values and the second containing
+--    max values.  The inner (second) dimension will be the number of independent
+--    parameters for the rating plus one.  The first value will be the extent
+--    for the first independent parameter, and the last value will be the extent
+--    for the dependent parameter.
+--
+-- p_parameters
+--    The names for each parameter.  The  dimension will be the number of 
+--    independent parameters for the rating plus one.  The first name is for the
+--    first independent parameter, and the last name is for the dependent parameter.
+--
+-- p_units
+--    The units for each parameter.  The  dimension will be the number of 
+--    independent parameters for the rating plus one.  The first unit is for the
+--    first independent parameter, and the last unit is for the dependent parameter.
+--
+-- p_rating_id
+--    The rating id of the rating specification to use
+--
+-- p_native_units
+--    'T' to get values in units native to rating, 'F' to get database units
+--
+-- p_rating_time
+--    The time to use in determining the rating from the rating spec - defaults
+--    to the current time
+--
+-- p_time_zone
+--    The time zone to use if p_rating_time is specified - defaults to UTC
+--
+-- p_office_id
+--    The office id to use in determining the rating from the rating spec -
+--    defaults to the session user's office 
+--
+procedure get_rating_extents(
+   p_values       out double_tab_tab_t,
+   p_parameters   out str_tab_t,
+   p_units        out str_tab_t,
+   p_rating_id    in  varchar2,
+   p_native_units in  varchar2 default 'T',
+   p_rating_time  in  date     default null,
+   p_time_zone    in  varchar2 default 'UTC',
+   p_office_id    in  varchar2 default null)
+is
+   l_native_units    boolean;
+   l_office_id       varchar2(16);
+   l_rating_time_utc date;
+   l_rating_code     number(10);
+   l_effective_date  date;
+   l_view_name       varchar2(30)  := 'cwms_v_rating_values';
+   l_column_name     varchar2(30);
+   l_sql constant    varchar2(256) :=
+      'select min(column_name),
+              max(column_name)
+         into :min_value,
+              :max_value
+         from view_name 
+        where rating_code = :rating_code';
+
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      replace(p_rating_id, ';', '~'),
+      p_native_units,
+      p_time_zone,
+      p_office_id));
+   -----------      
+   -- setup --
+   -----------
+   l_native_units := cwms_util.is_true(p_native_units);
+   if p_rating_time is null then
+      l_rating_time_utc := cast(systimestamp at time zone 'UTC' as date);
+   else
+      l_rating_time_utc := cwms_util.change_timezone(p_rating_time, p_time_zone, 'UTC');
+   end if;
+   l_office_id := cwms_util.get_db_office_id(p_office_id);
+   -------------------------   
+   -- get the rating code --
+   -------------------------
+   select rating_code,
+          last_value(effective_date) over (order by effective_date)
+     into l_rating_code,
+          l_effective_date
+     from cwms_v_rating
+    where office_id = upper(l_office_id)
+      and upper(rating_id) = upper(p_rating_id)
+      and effective_date <= l_rating_time_utc;
+   ---------------------------------------
+   -- get the parameter names and units --
+   ---------------------------------------
+   p_parameters := cwms_util.split_text(
+      replace(
+         cwms_util.split_text(p_rating_id, 2, separator1), 
+         separator2, 
+         separator3),
+      separator3);
+   if l_native_units then
+      declare
+         l_units varchar2(256);
+      begin
+         select native_units
+           into l_units
+           from cwms_v_rating
+          where rating_code = l_rating_code;
+         p_units := cwms_util.split_text(replace(l_units, separator2, separator3), separator3);
+      end; 
+   else
+      p_units := str_tab_t();
+      p_units.extend(p_parameters.count);
+      for i in 1..p_parameters.count loop
+         select unit_id
+           into p_units(i)
+           from cwms_unit
+          where unit_code = cwms_util.get_db_unit_code(p_parameters(i));
+      end loop;
+   end if;
+   ----------------------------
+   -- get the rating extents --
+   ----------------------------
+   p_values := double_tab_tab_t();
+   p_values.extend(2);
+   for i in 1..2 loop
+      p_values(i) := double_tab_t();
+      p_values(i).extend(p_parameters.count);
+   end loop;
+   if l_native_units then
+      l_view_name := l_view_name || '_native';
+   end if;
+   for i in 1..p_parameters.count loop
+      l_column_name := case i = p_parameters.count
+                          when true  then 'dep_value'
+                          when false then 'ind_value_'||i
+                       end;
+      execute immediate
+         replace(replace(l_sql, 'column_name', l_column_name), 'view_name', l_view_name)
+         into p_values(1)(i),
+              p_values(2)(i)
+         using l_rating_code;
+   end loop;
+end get_rating_extents;   
+   
+--------------------------------------------------------------------------------
+-- GET_MIN_OPENING
+--
+-- Gets the minmum value of the "opening" parameter for the specified rating
+-- in the specified unit.
+--
+-- p_rating_id
+--    The rating specification to use
+--
+-- p_unit
+--    The unit to retrieve the minimum "opening" in - defaults to the native
+--    "opening" unit of the rating
+--
+-- p_rating_time
+--    The time to use in determining the rating from the rating spec - defaults
+--    to the current time
+--
+-- p_time_zone
+--    The time zone to use if p_rating_time is specified - defaults to UTC
+--
+-- p_office_id
+--    The office id to use in determining the rating from the rating spec -
+--    defaults to the session user's office 
+--
+function get_min_opening(
+   p_rating_id   in varchar2,
+   p_unit        in varchar2  default null,
+   p_rating_time in  date     default null,
+   p_time_zone   in  varchar2 default 'UTC',
+   p_office_id   in  varchar2 default null)
+   return binary_double   
+is
+   l_values        double_tab_tab_t;
+   l_parameters    str_tab_t;
+   l_units         str_tab_t;
+   l_opening_index pls_integer;
+   l_opening_pos   pls_integer;
+   l_min_opening   binary_double;
+begin
+   --------------------------------------------------------
+   -- sanity check (others happen in get_rating_extents) --
+   --------------------------------------------------------
+   cwms_util.check_input(p_unit);
+   ----------------------------
+   -- get the rating extents --
+   ----------------------------
+   get_rating_extents(
+      l_values,
+      l_parameters,
+      l_units,
+      p_rating_id,
+      case p_unit is null
+         when true  then 'T'
+         when false then 'F'
+      end,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+   ------------------------------------------------------------      
+   -- get the minimum opening and convert units if necessary --
+   ------------------------------------------------------------      
+   l_opening_pos := get_opening_parameter_position(cwms_util.split_text(p_rating_id, 2, separator1));      
+   l_min_opening := l_values(1)(l_opening_pos);
+   if p_unit is not null then
+      l_min_opening := cwms_util.convert_units(l_min_opening, l_units(l_opening_pos), p_unit);
+   end if; 
+   return l_min_opening;     
+end get_min_opening;      
 
 end;
 /

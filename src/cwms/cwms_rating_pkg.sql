@@ -203,6 +203,18 @@ function get_opening_parameter(
    return varchar2;
 
 --------------------------------------------------------------------------------
+-- GET_OPENING_PARAMETER_POSITION
+--    returns indepenent parameter position of the "opening" parameter of the 
+--    rating template
+-- 
+-- p_template
+--    the template text
+--
+function get_opening_parameter_position(
+   p_template in varchar2)
+   return integer;
+
+--------------------------------------------------------------------------------
 -- GET_OPENING_UNIT
 --    returns the default "opening" unit of the rating template in the
 --    specified unit system
@@ -3270,7 +3282,91 @@ procedure round_independent(
    p_independent in out nocopy ztsv_type,
    p_rating_id   in            varchar2,
    p_office_id   in            varchar2 default null);   
+
+--------------------------------------------------------------------------------
+-- GET_RATING_EXTENTS
+--
+-- Gets the min and max of each independent and depentent parameter for the 
+-- specified rating
+--
+-- p_values
+--    The min and max values for each parameter.  The outer (first) dimension
+--    will be 2, with the first containing min values and the second containing
+--    max values.  The inner (second) dimension will be the number of independent
+--    parameters for the rating plus one.  The first value will be the extent
+--    for the first independent parameter, and the last value will be the extent
+--    for the dependent parameter.
+--
+-- p_parameters
+--    The names for each parameter.  The  dimension will be the number of 
+--    independent parameters for the rating plus one.  The first name is for the
+--    first independent parameter, and the last name is for the dependent parameter.
+--
+-- p_units
+--    The units for each parameter.  The  dimension will be the number of 
+--    independent parameters for the rating plus one.  The first unit is for the
+--    first independent parameter, and the last unit is for the dependent parameter.
+--
+-- p_rating_id
+--    The rating id of the rating specification to use
+--
+-- p_native_units
+--    'T' to get values in units native to rating, 'F' to get database units
+--
+-- p_rating_time
+--    The time to use in determining the rating from the rating spec - defaults
+--    to the current time
+--
+-- p_time_zone
+--    The time zone to use if p_rating_time is specified - defaults to UTC
+--
+-- p_office_id
+--    The office id to use in determining the rating from the rating spec -
+--    defaults to the session user's office 
+--
+procedure get_rating_extents(
+   p_values       out double_tab_tab_t,
+   p_parameters   out str_tab_t,
+   p_units        out str_tab_t,
+   p_rating_id    in  varchar2,
+   p_native_units in  varchar2 default 'T',
+   p_rating_time  in  date     default null,
+   p_time_zone    in  varchar2 default 'UTC',
+   p_office_id    in  varchar2 default null);
+   
+--------------------------------------------------------------------------------
+-- GET_MIN_OPENING
+--
+-- Gets the minmum value of the "opening" parameter for the specified rating
+-- in the specified unit.
+--
+-- p_rating_id
+--    The rating specification to use
+--
+-- p_unit
+--    The unit to retrieve the minimum "opening" in - defaults to the native
+--    "opening" unit of the rating
+--
+-- p_rating_time
+--    The time to use in determining the rating from the rating spec - defaults
+--    to the current time
+--
+-- p_time_zone
+--    The time zone to use if p_rating_time is specified - defaults to UTC
+--
+-- p_office_id
+--    The office id to use in determining the rating from the rating spec -
+--    defaults to the session user's office 
+--
+function get_min_opening(
+   p_rating_id   in varchar2,
+   p_unit        in varchar2  default null,
+   p_rating_time in  date     default null,
+   p_time_zone   in  varchar2 default 'UTC',
+   p_office_id   in  varchar2 default null)
+   return binary_double;   
       
 end;
+   
 /                                                       
 show errors;
