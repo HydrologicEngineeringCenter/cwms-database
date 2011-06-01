@@ -533,8 +533,10 @@ begin
    l_start_time := nvl(p_start_time, p_turbine_changes(1).change_date);
    l_end_time   := nvl(p_end_time,   p_turbine_changes(p_turbine_changes.count).change_date);
    l_time_zone  := nvl(p_time_zone, cwms_loc.get_local_timezone(l_proj_loc_code));
-   l_start_time := cwms_util.change_timezone(l_start_time, l_time_zone, 'UTC');
-   l_end_time   := cwms_util.change_timezone(l_end_time,   l_time_zone, 'UTC');
+   if l_time_zone is not null then
+      l_start_time := cwms_util.change_timezone(l_start_time, l_time_zone, 'UTC');
+      l_end_time   := cwms_util.change_timezone(l_end_time,   l_time_zone, 'UTC');
+   end if;
    ------------------------------------------------------------
    -- delete any existing turbine changes in the time window --
    ------------------------------------------------------------
