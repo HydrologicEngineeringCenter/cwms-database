@@ -306,7 +306,7 @@ is
 begin
    l_params := cwms_util.split_text(cwms_util.split_text(p_template, 1, separator2, 1), separator3);
    for i in 1..l_params.count loop
-      if cwms_util.get_base_id(l_params(i)) not in ('Elev', 'Count') then
+      if cwms_util.get_base_id(l_params(i)) not in ('Count', 'Elev', 'Stage') then
          p_position  := i;
          p_parameter := l_params(i);
          return;
