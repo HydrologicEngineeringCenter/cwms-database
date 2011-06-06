@@ -12,6 +12,7 @@ DECLARE
       := id_array_t ('CWMS_SHEF_TIME_ZONE',
                      'CWMS_SHEF_PE_CODES',
                      'AT_DATA_STREAM_ID',
+                     'AT_DATA_FEED_ID',
                      'AT_SHEF_DECODE',
                      'AT_SHEF_CRIT_FILE',
                      'AT_SHEF_PE_CODES'
@@ -204,7 +205,6 @@ ALTER TABLE CWMS_SHEF_PE_CODES ADD (
 --  Dependencies: 
 --   CWMS_OFFICE (Table)
 --
---   Row count:20
 CREATE TABLE AT_DATA_STREAM_ID
 (
   DATA_STREAM_CODE       NUMBER,
@@ -213,7 +213,8 @@ CREATE TABLE AT_DATA_STREAM_ID
   DATA_STREAM_DESC       VARCHAR2(128 BYTE),
   ACTIVE_FLAG            VARCHAR2(1 BYTE),
   DELETE_DATE            DATE,
-  DATA_STREAM_MGT_STYLE  VARCHAR2(32 BYTE)
+  DATA_STREAM_MGT_STYLE  VARCHAR2(32 BYTE),
+  UPDATE_CRIT_FILE       VARCHAR2(1 BYTE)
 )
 TABLESPACE CWMS_20DATA
 PCTUSED    0
@@ -234,28 +235,6 @@ NOCACHE
 NOPARALLEL
 MONITORING
 /
-
-COMMENT ON COLUMN AT_DATA_STREAM_ID.DATA_STREAM_CODE IS 'Unique code for each Data Stream.'
-/
-
-COMMENT ON COLUMN AT_DATA_STREAM_ID.DB_OFFICE_CODE IS 'Identifies the office that owns this data Stream. One must have the CWMS DA Privilege for this office in order to create or modify data Streams for this office.'
-/
-
-COMMENT ON COLUMN AT_DATA_STREAM_ID.DATA_STREAM_ID IS 'Office unique name for the data Stream. This name is often used in the Version portion of a TS ID.'
-/
-
-COMMENT ON COLUMN AT_DATA_STREAM_ID.DATA_STREAM_DESC IS 'This is a verbose DESCription of the Data Stream.'
-/
-
-COMMENT ON COLUMN AT_DATA_STREAM_ID.ACTIVE_FLAG IS 'This T or F Flag indicates whether or not the Data Stream is active and will accept data from processSHEFIT.'
-/
-
-COMMENT ON COLUMN AT_DATA_STREAM_ID.DELETE_DATE IS 'A Delete Data is set to indicate a deleted Data Stream. This allows for recovery of past Crit Files.'
-/
-
-COMMENT ON COLUMN AT_DATA_STREAM_ID.DATA_STREAM_MGT_STYLE IS 'Indicates whether this Data Stream uses the traditional DATA STREAM management style or the NWD-Portland DATA FEED management style.'
-/
-
 
 
 --
@@ -329,6 +308,7 @@ ALTER TABLE AT_DATA_STREAM_ID ADD (
   FOREIGN KEY (DB_OFFICE_CODE) 
   REFERENCES CWMS_OFFICE (OFFICE_CODE))
 /
+
 
 --------------------------------------------------------------------------------
 --------------------------------------------------------------------------------

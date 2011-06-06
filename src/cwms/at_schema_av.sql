@@ -2617,15 +2617,46 @@ AS
                     ON (e.office_code = d.db_office_code)
 /
 
-begin
-   execute immediate 'DROP PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC';
-exception
-   when others then null;
-end;     
+/* Formatted on 6/3/2011 11:21:26 AM (QP5 v5.163.1008.3004) */
+--
+-- AV_DATA_STREAMS  (View)
+--
+--  Dependencies:
+--   CWMS_OFFICE (Table)
+--   AT_SHEF_CRIT_FILE (Table)
+--   AT_DATA_STREAM_ID (Table)
+--
+
+CREATE OR REPLACE FORCE VIEW av_data_streams
+(
+    data_stream_id,
+    db_office_id,
+    data_stream_desc,
+    active_flag,
+    update_crit_file_flag,
+    date_of_last_crit_file,
+    data_stream_code,
+    db_office_code
+)
+AS
+    SELECT      data_stream_id, c.office_id db_office_id, a.data_stream_desc,
+                  a.active_flag,
+                  NVL (a.update_crit_file, 'F') "UPDATE_CRIT_FILE_FLAG",
+                  date_of_last_crit_file, data_stream_code, db_office_code
+         FROM   at_data_stream_id a
+                  JOIN (SELECT      data_stream_code,
+                                         MAX (b.creation_date) date_of_last_crit_file
+                                FROM         at_data_stream_id a
+                                         LEFT JOIN
+                                             at_shef_crit_file b
+                                         USING (data_stream_code)
+                          GROUP BY     data_stream_code) b
+                      USING (data_stream_code)
+                  JOIN cwms_office c
+                      ON (a.db_office_code = c.office_code)
+        WHERE   a.delete_date IS NULL
+    ORDER BY   UPPER (data_stream_id)
 /
-CREATE PUBLIC SYNONYM CWMS_V_SHEF_DECODE_SPEC FOR AV_SHEF_DECODE_SPEC
-/
-GRANT SELECT ON AV_SHEF_DECODE_SPEC TO CWMS_USER
-/
+
 
 show errors;              
