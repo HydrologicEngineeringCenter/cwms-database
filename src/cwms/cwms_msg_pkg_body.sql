@@ -395,6 +395,7 @@ is
    l_process     varchar2(24);
    l_program     varchar2(64);
    l_machine     varchar2(64);
+   l_result      integer;
 begin
    if l_msg_level > msg_level_none then
       -----------------------------------------
@@ -527,7 +528,6 @@ begin
       end if;
    end if;
    p_message_id := l_msg_id;
-   commit;
 
    if l_publish then
       -------------------------
@@ -580,11 +580,12 @@ begin
                  || lf;
 
       l_pos := instr(p_short_msg, '>');
-      return publish_status_message(substr(p_short_msg, 1, l_pos) || l_extra || substr(p_short_msg, l_pos+1), p_immediate);
+      l_result := publish_status_message(substr(p_short_msg, 1, l_pos) || l_extra || substr(p_short_msg, l_pos+1), p_immediate);
    else
-      return 0;
+      l_result := 0;
    end if;
-
+   commit;
+   return l_result;
 end log_long_message;
 
 -------------------------------------------------------------------------------
