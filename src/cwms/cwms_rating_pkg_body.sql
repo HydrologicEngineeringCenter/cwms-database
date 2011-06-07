@@ -4291,6 +4291,51 @@ begin
    end if; 
    return l_min_opening;     
 end get_min_opening;      
+   
+--------------------------------------------------------------------------------
+-- GET_MIN_OPENING2
+--
+-- Gets the minmum value of the "opening" parameter for the specified rating
+-- in the specified unit.  The value is returned as the single element in a
+-- double_tab_t table.
+--
+-- p_rating_id
+--    The rating specification to use
+--
+-- p_unit
+--    The unit to retrieve the minimum "opening" in - defaults to the native
+--    "opening" unit of the rating
+--
+-- p_rating_time
+--    The time to use in determining the rating from the rating spec - defaults
+--    to the current time
+--
+-- p_time_zone
+--    The time zone to use if p_rating_time is specified - defaults to UTC
+--
+-- p_office_id
+--    The office id to use in determining the rating from the rating spec -
+--    defaults to the session user's office 
+--
+function get_min_opening2(
+   p_rating_id   in varchar2,
+   p_unit        in varchar2  default null,
+   p_rating_time in  date     default null,
+   p_time_zone   in  varchar2 default 'UTC',
+   p_office_id   in  varchar2 default null)
+   return double_tab_t
+is
+   l_result double_tab_t := double_tab_t();
+begin
+   l_result(1) := get_min_opening(
+      p_rating_id,
+      p_unit,
+      p_rating_time,
+      p_time_zone,
+      p_office_id);
+      
+   return l_result;       
+end get_min_opening2;      
 
 end;
 /

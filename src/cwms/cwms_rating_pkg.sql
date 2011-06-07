@@ -3365,6 +3365,39 @@ function get_min_opening(
    p_time_zone   in  varchar2 default 'UTC',
    p_office_id   in  varchar2 default null)
    return binary_double;   
+   
+--------------------------------------------------------------------------------
+-- GET_MIN_OPENING2
+--
+-- Gets the minmum value of the "opening" parameter for the specified rating
+-- in the specified unit.  The value is returned as the single element in a
+-- double_tab_t table.
+--
+-- p_rating_id
+--    The rating specification to use
+--
+-- p_unit
+--    The unit to retrieve the minimum "opening" in - defaults to the native
+--    "opening" unit of the rating
+--
+-- p_rating_time
+--    The time to use in determining the rating from the rating spec - defaults
+--    to the current time
+--
+-- p_time_zone
+--    The time zone to use if p_rating_time is specified - defaults to UTC
+--
+-- p_office_id
+--    The office id to use in determining the rating from the rating spec -
+--    defaults to the session user's office 
+--
+function get_min_opening2(
+   p_rating_id   in varchar2,
+   p_unit        in varchar2  default null,
+   p_rating_time in  date     default null,
+   p_time_zone   in  varchar2 default 'UTC',
+   p_office_id   in  varchar2 default null)
+   return double_tab_t;   
       
 end;
    
