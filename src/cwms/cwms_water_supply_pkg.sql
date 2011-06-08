@@ -203,7 +203,7 @@ PROCEDURE retrieve_accounting_set(
     -- the water user contract ref, does this need to be the project instead?
     p_contract_ref IN water_user_contract_ref_t,
     
-    -- the units to return the volume as.
+    -- the units to return the flow as.
     p_units IN VARCHAR2,
     --time window stuff
     -- the transfer start date time
@@ -240,7 +240,7 @@ PROCEDURE retrieve_pump_accounting(
     
     p_pump_loc_code IN number,
     
-    -- the units to return the volume as.
+    -- the units to return the flow as.
     p_units IN VARCHAR2,
     --time window stuff
     -- the transfer start date time
@@ -284,8 +284,8 @@ PROCEDURE store_accounting_set(
     -- the time zone of all of the incoming data.
     p_time_zone IN VARCHAR2 DEFAULT NULL,    
     
-    -- the units of the incoming accounting volume data
-    p_volume_unit_id IN VARCHAR2 DEFAULT NULL,    
+    -- the units of the incoming accounting flow data
+    p_flow_unit_id IN VARCHAR2 DEFAULT NULL,    
 
 		-- store rule, this variable is not supported. 
     -- only delete insert initially supported.
