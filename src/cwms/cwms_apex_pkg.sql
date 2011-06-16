@@ -1,8 +1,12 @@
-/* Formatted on 5/25/2011 2:43:57 PM (QP5 v5.163.1008.3004) */
+/* Formatted on 6/16/2011 12:31:38 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE cwms_apex
 AS
 	c_app_logic_yes	VARCHAR2 (1) DEFAULT 'T';
 	c_app_logic_no 	VARCHAR2 (1) DEFAULT 'F';
+
+
+	FUNCTION get_steps_per_status_update (p_count IN NUMBER)
+		RETURN NUMBER;
 
 	FUNCTION calc_seasonal_mn_offset (f_005 IN VARCHAR2)
 		RETURN NUMBER;
@@ -189,16 +193,16 @@ AS
 
 
 	/* PROCEDURE parse_crit_file ( --{{{
-	  p_file_name	IN VARCHAR2,
+	  p_file_name IN VARCHAR2,
 	  p_collection_name IN VARCHAR2,
 	  p_error_collection_name IN VARCHAR2,
 	  p_headings_item   IN VARCHAR2,
-	  p_columns_item IN	VARCHAR2,
+	  p_columns_item IN VARCHAR2,
 	  p_ddl_item IN  VARCHAR2,
 	  p_number_of_records OUT NUMBER,
 	  p_number_of_columns OUT NUMBER,
-	  p_is_csv IN	VARCHAR2 DEFAULT 'T',
-	  p_db_office_id IN	VARCHAR2,
+	  p_is_csv IN VARCHAR2 DEFAULT 'T',
+	  p_db_office_id IN VARCHAR2,
 	  p_process_id  IN VARCHAR2
 	 );
 

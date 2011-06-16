@@ -1,4 +1,4 @@
-/* Formatted on 5/27/2011 2:52:20 PM (QP5 v5.163.1008.3004) */
+/* Formatted on 6/16/2011 12:32:09 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE BODY cwms_apex
 AS
 	TYPE varchar2_t IS TABLE OF VARCHAR2 (32767)
@@ -6,6 +6,33 @@ AS
 
 	g_bad_chars   VARCHAR2 (256);
 
+
+	FUNCTION get_steps_per_status_update (p_count IN NUMBER)
+		RETURN NUMBER
+	IS
+	BEGIN
+		IF (p_count < 100)
+		THEN
+			RETURN 0;
+		ELSIF (p_count < 200)
+		THEN
+			RETURN 10;
+		ELSIF (p_count < 500)
+		THEN
+			RETURN 25;
+		ELSIF (p_count < 1000)
+		THEN
+			RETURN 50;
+		ELSIF (p_count < 2000)
+		THEN
+			RETURN 100;
+		ELSIF (p_count < 5000)
+		THEN
+			RETURN 250;
+		ELSE
+			RETURN 500;
+		END IF;
+	END;
 
 	--this function is based on one by Connor McDonald
 	--http://www.jlcomp.demon.co.uk/faq/base_convert.html
@@ -33,11 +60,11 @@ AS
 	PROCEDURE aa1 (p_string IN VARCHAR2)
 	IS
 	BEGIN
-		-- 	INSERT INTO aa1 (stringstuff)
-		-- 	VALUES (p_string
-		-- 		 );
+		--  INSERT INTO aa1 (stringstuff)
+		--  VALUES (p_string
+		-- 	);
 		--
-		-- 	COMMIT;
+		--  COMMIT;
 		NULL;
 	END;
 
@@ -1048,24 +1075,24 @@ AS
 		temp_var 			c_app_logic_no%TYPE DEFAULT c_app_logic_no;
 		temp_header_val	VARCHAR2 (1999);
 	/******************************************************************************
-	 NAME:	f_valid_csv_header
+	 NAME: f_valid_csv_header
 	 PURPOSE:
 
 	 REVISIONS:
-	 Ver	  Date	 Author		Description
-	 ---------	----------	---------------  ------------------------------------
-	 1.0	  7/6/2010	JDK		1. Created this function.
-	 1.1	  10NOV2010  JDK		 1. Operationalized function into package
-						 2. Made case insensitive per APABST request
+	 Ver	 Date  Author	Description
+	 --------- ---------- ---------------	------------------------------------
+	 1.0	 7/6/2010 JDK	1. Created this function.
+	 1.1	 10NOV2010	JDK	1. Operationalized function into package
+			2. Made case insensitive per APABST request
 
 	 NOTES:
 
 	 Automatically available Auto Replace Keywords:
 	  Object Name:   f_valid_csv_header
-	  Sysdate:		7/6/2010
-	  Date and Time:	 7/6/2010, 10:50:48 AM, and 7/6/2010 10:50:48 AM
+	  Sysdate:	7/6/2010
+	  Date and Time:	7/6/2010, 10:50:48 AM, and 7/6/2010 10:50:48 AM
 	  Username:   (set in TOAD Options, Procedure Editor)
-	  Table Name:	 (set in the "New PL/SQL Object" dialog)
+	  Table Name:	(set in the "New PL/SQL Object" dialog)
 
 	******************************************************************************/
 	BEGIN
@@ -1969,7 +1996,7 @@ AS
 
 		l_cmt 							VARCHAR2 (256);
 		l_steps_per_commit			NUMBER;
-		-- 	l_scrn_data 		  SCREEN_CRIT_ARRAY
+		--  l_scrn_data	  SCREEN_CRIT_ARRAY
 
 		l_scrn_data 					screen_crit_array := screen_crit_array ();
 		l_d_m_data						screen_dur_mag_array
@@ -2170,776 +2197,776 @@ AS
 	--=============================================================================
 	--=============================================================================
 	--=============================================================================
-	/*  PROCEDURE parse_crit_file (						  --{{{
-		 p_file_name		  IN	 VARCHAR2,
-		 p_collection_name	 IN	 VARCHAR2,
-		 p_error_collection_name  IN	  VARCHAR2,
-		 p_headings_item		 IN	 VARCHAR2,
-		 p_columns_item		IN 	VARCHAR2,
-		 p_ddl_item 		 IN	 VARCHAR2,
-		 p_number_of_records 	  OUT NUMBER,
-		 p_number_of_columns 	  OUT NUMBER,
-		 p_is_csv		  IN	  VARCHAR2 DEFAULT 'T' ,
-		 p_db_office_id		IN 	VARCHAR2,
-		 p_process_id			IN   VARCHAR2
+	/*  PROCEDURE parse_crit_file (			--{{{
+	  p_file_name	  IN	VARCHAR2,
+	  p_collection_name	IN  VARCHAR2,
+	  p_error_collection_name	IN   VARCHAR2,
+	  p_headings_item   IN	VARCHAR2,
+	  p_columns_item	IN  VARCHAR2,
+	  p_ddl_item	 IN  VARCHAR2,
+	  p_number_of_records	 OUT NUMBER,
+	  p_number_of_columns	 OUT NUMBER,
+	  p_is_csv	  IN	 VARCHAR2 DEFAULT 'T' ,
+	  p_db_office_id	IN  VARCHAR2,
+	  p_process_id   IN	 VARCHAR2
 	  )
 	  IS
-		 l_blob				 BLOB;
-		 l_records			  varchar2_t;
-		 l_record			 wwv_flow_global.vc_arr2;
-		 l_idx				NUMBER := 1;
-		 l_datatypes			 wwv_flow_global.vc_arr2;
-		 l_headings 			VARCHAR2 (4000);
-		 l_columns			  VARCHAR2 (4000);
-		 l_seq_id			 NUMBER;
-		 l_num_columns 		 INTEGER;
-		 l_ddl				VARCHAR2 (4000);
-		 l_is_csv			 BOOLEAN;
-		 l_error_message			VARCHAR2 (512);
+	  l_blob 	 BLOB;
+	  l_records 	 varchar2_t;
+	  l_record	  wwv_flow_global.vc_arr2;
+	  l_idx	  NUMBER := 1;
+	  l_datatypes	  wwv_flow_global.vc_arr2;
+	  l_headings	 VARCHAR2 (4000);
+	  l_columns 	 VARCHAR2 (4000);
+	  l_seq_id	  NUMBER;
+	  l_num_columns	 INTEGER;
+	  l_ddl	  VARCHAR2 (4000);
+	  l_is_csv	  BOOLEAN;
+	  l_error_message   VARCHAR2 (512);
 
-		 l_tmp				NUMBER;
-		 l_comment			  VARCHAR2 (128) := NULL;
-		 l_datastream			  VARCHAR2 (16);
-		 l_cwms_seq 			NUMBER;
-		 l_len				NUMBER;
-		 l_first_record		  NUMBER := 2;
-		 --
-		 l_rc 			  sys_refcursor;
-		 l_cwms_id_dup 		 VARCHAR2 (183);
-		 l_shef_id_dup 		 VARCHAR2 (183);
-		 --
-		 l_rc_rows			  sys_refcursor;
-		 l_row_num			  NUMBER;
-		 l_rows_msg 			VARCHAR2 (1000);
-		 l_cmt				VARCHAR2 (256);
-		 l_steps_per_commit		 NUMBER;
-		 l_cwms_ts_id			  VARCHAR2 (183);
-		 l_cwms_ts_code		  NUMBER;
+	  l_tmp	  NUMBER;
+	  l_comment 	 VARCHAR2 (128) := NULL;
+	  l_datastream 	 VARCHAR2 (16);
+	  l_cwms_seq	 NUMBER;
+	  l_len	  NUMBER;
+	  l_first_record	  NUMBER := 2;
+	  --
+	  l_rc		sys_refcursor;
+	  l_cwms_id_dup	 VARCHAR2 (183);
+	  l_shef_id_dup	 VARCHAR2 (183);
+	  --
+	  l_rc_rows 	 sys_refcursor;
+	  l_row_num 	 NUMBER;
+	  l_rows_msg	 VARCHAR2 (1000);
+	  l_cmt	  VARCHAR2 (256);
+	  l_steps_per_commit   NUMBER;
+	  l_cwms_ts_id 	 VARCHAR2 (183);
+	  l_cwms_ts_code	  NUMBER;
 
-		 l_unit_code			 NUMBER;
-		 l_base_parameter_code		 NUMBER;
-		 l_base_parameter_id 	  VARCHAR2 (50);
-		 l_parameter_type_code		 NUMBER;
-		 l_interval_code			NUMBER;
-		 l_duration_code			NUMBER;
-		 l_db_office_id		  VARCHAR2 (16)
-			:= cwms_util.get_db_office_id (p_db_office_id) ;
-		 l_abstract_param_id 	  VARCHAR2 (16);
-		 l_abstract_param_code		 NUMBER;
-		 l_abstract_param_code_user  NUMBER;
-		 l_unit_code_en		  NUMBER;
-		 l_unit_code_si		  NUMBER;
-		 l_unit_id_en			  VARCHAR2 (16);
-		 l_unit_id_si			  VARCHAR2 (16);
+	  l_unit_code	  NUMBER;
+	  l_base_parameter_code   NUMBER;
+	  l_base_parameter_id	 VARCHAR2 (50);
+	  l_parameter_type_code   NUMBER;
+	  l_interval_code   NUMBER;
+	  l_duration_code   NUMBER;
+	  l_db_office_id	  VARCHAR2 (16)
+	  := cwms_util.get_db_office_id (p_db_office_id) ;
+	  l_abstract_param_id	 VARCHAR2 (16);
+	  l_abstract_param_code   NUMBER;
+	  l_abstract_param_code_user	NUMBER;
+	  l_unit_code_en	  NUMBER;
+	  l_unit_code_si	  NUMBER;
+	  l_unit_id_en 	 VARCHAR2 (16);
+	  l_unit_id_si 	 VARCHAR2 (16);
 	  BEGIN
-		 DELETE FROM  gt_shef_decodes1;
+	  DELETE FROM	gt_shef_decodes1;
 
-		 IF cwms_util.is_true (NVL (p_is_csv, 'T'))
-		 THEN
-		 l_is_csv := TRUE;
-		 ELSE
-		 l_is_csv := FALSE;
-		 l_first_record := 1;
-		 END IF;
+	  IF cwms_util.is_true (NVL (p_is_csv, 'T'))
+	  THEN
+	  l_is_csv := TRUE;
+	  ELSE
+	  l_is_csv := FALSE;
+	  l_first_record := 1;
+	  END IF;
 
-		 aa1 ('>>parse_crit_file<< parse collection name: ' || p_collection_name
-		  );
+	  aa1 ('>>parse_crit_file<< parse collection name: ' || p_collection_name
+		);
 
-		 BEGIN
-		 SELECT	blob_content
-			INTO	l_blob
-			FROM	wwv_flow_files
-		  WHERE	name = p_file_name;
-		 EXCEPTION
-		 WHEN NO_DATA_FOUND
-		 THEN
-			raise_application_error (-20000,
-						  'File not found, id=' || p_file_name
-						 );
-		 END;
-
-		 aa1 ('>>parse_crit_file<< blob w/filename read: ' || p_file_name);
-		 get_records (l_blob, l_records);
-
-		 p_number_of_records := l_records.COUNT;
-		 aa1('>>parse_crit_file<< number of records read in: '
-		  || p_number_of_records);
-
-		 IF (l_is_csv AND p_number_of_records < 2)
-		 THEN
-		 raise_application_error (
-			-20000,
-			'Your csv crit file contains less than two rows.
-			  A valid csv file must consist of a header row and
-			  at least one crit line. File read: '
-			|| p_file_name
-		 );
-		 ELSIF (p_number_of_records < 1)
-		 THEN
-		 raise_application_error (
-			-20000,
-			'Your crit file appears to be empty. File read: ' || p_file_name
-		 );
-		 END IF;
-
-
-		 -- Get column headings and datatypes
-		 IF NOT l_is_csv
-		 THEN
-		 cwms_apex.aa1 ('Get column headings and datatypes');
-		 l_record (1) := 'Line No.';
-		 l_record (2) := 'cwms_ts_id';
-		 l_record (3) := 'shef_id';
-		 l_record (4) := 'pe_code';
-		 l_record (5) := 'tse_code';
-		 l_record (6) := 'dur_code';
-		 l_record (7) := 'units';
-		 l_record (8) := 'unit_system';
-		 l_record (9) := 'tz';
-		 l_record (10) := 'dltime';
-		 l_record (11) := 'int_offset';
-		 l_record (12) := 'int_backward';
-		 l_record (13) := 'int_forward';
-		 ELSE
-		 csv_to_array (l_records (1), l_record);
-		 END IF;
-
-		 l_num_columns := l_record.COUNT;
-		 aa1 ('>>parse_crit_file<< number of columns read in: ' || l_num_columns
-		  );
-
-		 IF (l_num_columns > 50)
-		 THEN
-		 raise_application_error (
-			-20000,
-			'Max. of 50 columns allowed, id=' || p_file_name
-		 );
-		 END IF;
-
-		 p_number_of_columns := l_num_columns;
-
-		 -- Get column headings and names
-		 FOR i IN 1 .. l_record.COUNT
-		 LOOP
-		 l_headings := l_headings || ':' || l_record (i);
-		 l_columns := l_columns || ',c' || LPAD (i, 3, '0');
-		 END LOOP;
-
-		 l_headings := LTRIM (l_headings, ':');
-		 l_columns := LTRIM (l_columns, ',');
-		 apex_util.set_session_state (p_headings_item, l_headings);
-		 apex_util.set_session_state (p_columns_item, l_columns);
-
-
-		 aa1 ('>>parse_crit_file<< entering grand loop');
-
-		 FOR i IN 2 .. p_number_of_records
-		 LOOP
-		 aa1 ('>>parse_crit_file<< l_records: ' || l_records (i));
-		 l_error_message := NULL;
-		 l_idx := l_idx + 1;
-
-		 IF (l_steps_per_commit > 0)
-		 THEN
-			IF (i - TRUNC (i / l_steps_per_commit) * l_steps_per_commit = 0)
-			THEN
-			  cwms_properties.set_property (
-			  'PROCESS_STATUS',
-			  p_process_id,
-			  'Processing: ' || i || ' of ' || p_number_of_records,
-			  l_cmt || LOCALTIMESTAMP,
-			  p_db_office_id
-			  );
-			  COMMIT;
-			END IF;
-		 END IF;
-
-		 IF l_is_csv
-		 THEN
-			csv_to_array (l_records (l_idx), l_record);
-		 ELSE
-			crit_to_array (l_records (l_idx), l_comment, l_record);
-		 END IF;
-
-		 IF INSTR (l_comment, 'ERROR') = 1
-		 THEN
-			l_seq_id :=
-			  apex_collection.add_member (p_error_collection_name, 'dummy');
-			apex_collection.update_member_attribute (
-			  p_collection_name	=> p_error_collection_name,
-			  p_seq			=> l_seq_id,
-			  p_attr_number	 => 1,
-			  p_attr_value 	=> i
+	  BEGIN
+	  SELECT blob_content
+	  INTO l_blob
+	  FROM wwv_flow_files
+		WHERE name = p_file_name;
+	  EXCEPTION
+	  WHEN NO_DATA_FOUND
+	  THEN
+	  raise_application_error (-20000,
+			 'File not found, id=' || p_file_name
 			);
-			apex_collection.update_member_attribute (
-			  p_collection_name	=> p_error_collection_name,
-			  p_seq			=> l_seq_id,
-			  p_attr_number	 => 2,
-			  p_attr_value 	=> l_comment
-			);
-			apex_collection.update_member_attribute (
-			  p_collection_name	=> p_error_collection_name,
-			  p_seq			=> l_seq_id,
-			  p_attr_number	 => 3,
-			  p_attr_value 	=> l_records (l_idx)
-			);
-		 ELSIF INSTR (l_comment, 'COMMENT') = 1
-		 THEN
-			NULL; 					-- comment, so throw away.
-		 ELSE
-			-- l_seq_id :=
-			-- apex_collection.add_member (p_collection_name, 'dummy');
-			-- apex_collection.update_member_attribute (
-			-- p_collection_name => p_collection_name,
-			-- p_seq => l_seq_id,
-			-- p_attr_number => 1,
-			-- p_attr_value => i
-			-- );
+	  END;
 
-			-- FOR j IN 1 .. l_record.COUNT
-			-- LOOP
-			-- apex_collection.update_member_attribute (
-			-- p_collection_name => p_collection_name,
-			-- p_seq => l_seq_id,
-			-- p_attr_number => j + 1,
-			-- p_attr_value => l_record (j)
-			-- );
-			-- END LOOP;
-			l_cwms_ts_id :=
-			  l_record (5)
-			  || '.'
-			  || l_record (6)
-			  || '.'
-			  || l_record (7)
-			  || '.'
-			  || l_record (8)
-			  || '.'
-			  || l_record (9)
-			  || '.'
-			  || l_record (10);
+	  aa1 ('>>parse_crit_file<< blob w/filename read: ' || p_file_name);
+	  get_records (l_blob, l_records);
 
-			BEGIN
-			  l_cwms_ts_code :=
-			  cwms_ts.get_ts_code (
-				 p_cwms_ts_id => l_cwms_ts_id,
-				 p_db_office_code => cwms_util.get_db_office_code (p_db_office_id)
-			  );
-			EXCEPTION
-			  WHEN OTHERS
-			  THEN
-			  l_cwms_ts_code := NULL;
-			END;
+	  p_number_of_records := l_records.COUNT;
+	  aa1('>>parse_crit_file<< number of records read in: '
+		|| p_number_of_records);
 
-			--
-			---
-			---- Is the unit_id valid?...
-			--
-			BEGIN
-			  l_unit_code := cwms_util.get_unit_code (l_record (12), NULL);
-
-			  SELECT  a.abstract_param_code
-			  INTO  l_abstract_param_code_user
-			  FROM  cwms_unit a
-			 WHERE  a.unit_code = l_unit_code;
-			EXCEPTION
-			  WHEN OTHERS
-			  THEN
-			  l_error_message :=
-					l_error_message
-				 || ' **ERROR: Unrecognized Unit Id: '
-				 || l_record (12);
-			END;
-
-			--
-			---
-			---- Is the base parameter valid?...
-			--
-			BEGIN
-			  l_base_parameter_id := cwms_util.get_base_id (l_record (6));
-			  l_base_parameter_code :=
-			  cwms_ts.get_parameter_code (l_base_parameter_id,
-								NULL,
-								p_db_office_id,
-								'F'
-							  );
-			EXCEPTION
-			  WHEN OTHERS
-			  THEN
-			  l_error_message :=
-				 l_error_message
-				 || ' **ERROR: The Parameter Id''s Base Parameter is not Recognized: '
-				 || l_base_parameter_id;
-			END;
-
-			--
-			---
-			---- Is the parameter type valid?...
-			BEGIN
-			  l_parameter_type_code :=
-			  cwms_ts.get_parameter_type_code (l_record (7));
-			EXCEPTION
-			  WHEN OTHERS
-			  THEN
-			  l_error_message :=
-					l_error_message
-				 || ' **ERROR: The Parameter Type Id is not Recognized: '
-				 || l_record (7);
-			END;
-
-			--
-			---
-			---- Is the interval_id valid?"...
-			BEGIN
-			  SELECT  interval_code
-			  INTO  l_interval_code
-			  FROM  cwms_interval a
-			 WHERE  UPPER (a.interval_id) = UPPER (TRIM (l_record (8)));
-			EXCEPTION
-			  WHEN NO_DATA_FOUND
-			  THEN
-			  l_error_message :=
-					l_error_message
-				 || ' **ERROR: The Interval Id is not Recognized: '
-				 || l_record (8);
-			END;
+	  IF (l_is_csv AND p_number_of_records < 2)
+	  THEN
+	  raise_application_error (
+	  -20000,
+	  'Your csv crit file contains less than two rows.
+		 A valid csv file must consist of a header row and
+		 at least one crit line. File read: '
+	  || p_file_name
+	  );
+	  ELSIF (p_number_of_records < 1)
+	  THEN
+	  raise_application_error (
+	  -20000,
+	  'Your crit file appears to be empty. File read: ' || p_file_name
+	  );
+	  END IF;
 
 
-			--
-			---
-			---- Is the PE Code valid?...
-			BEGIN
-			  SELECT  abstract_param_code, abstract_param_id, unit_code_en,
-					unit_code_si, unit_id_en, unit_id_si
-			  INTO  l_abstract_param_code, l_abstract_param_id,
-					l_unit_code_en, l_unit_code_si, l_unit_id_en,
-					l_unit_id_si
-			  FROM  av_shef_pe_codes a
-			 WHERE  shef_pe_code = UPPER (TRIM (l_record (4)))
-					AND db_office_id IN (l_db_office_id, 'CWMS');
+	  -- Get column headings and datatypes
+	  IF NOT l_is_csv
+	  THEN
+	  cwms_apex.aa1 ('Get column headings and datatypes');
+	  l_record (1) := 'Line No.';
+	  l_record (2) := 'cwms_ts_id';
+	  l_record (3) := 'shef_id';
+	  l_record (4) := 'pe_code';
+	  l_record (5) := 'tse_code';
+	  l_record (6) := 'dur_code';
+	  l_record (7) := 'units';
+	  l_record (8) := 'unit_system';
+	  l_record (9) := 'tz';
+	  l_record (10) := 'dltime';
+	  l_record (11) := 'int_offset';
+	  l_record (12) := 'int_backward';
+	  l_record (13) := 'int_forward';
+	  ELSE
+	  csv_to_array (l_records (1), l_record);
+	  END IF;
 
-			  IF l_abstract_param_code != l_abstract_param_code_user
-			  THEN
-			  l_error_message :=
-					l_error_message
-				 || ' **ERROR: The unit you specified: '
-				 || l_record (12)
-				 || ' needs to be a unit of type '
-				 || l_abstract_param_id
-				 || '. Default units for this SHEF PE Code are either: '
-				 || l_unit_id_en
-				 || ' or '
-				 || l_unit_id_si
-				 || '.';
-			  ELSIF l_unit_code NOT IN (l_unit_code_en, l_unit_code_si)
-			  THEN
-			  l_error_message :=
-					l_error_message
-				 || ' **WARNING: The unit you specified: '
-				 || l_record (12)
-				 || ' is not a default unit for this SHEF PE Code, namely: '
-				 || l_unit_id_en
-				 || ' or '
-				 || l_unit_id_si
-				 || '. Please be sure your data is being recieved with this non-standard unit.';
-			  END IF;
-			EXCEPTION
-			  WHEN NO_DATA_FOUND
-			  THEN
-			  l_error_message :=
-					l_error_message
-				 || ' **ERROR: The SHEF PE Code:
-		 '
-				 || l_record (4)
-				 || ' is not Recognized';
-			END;
+	  l_num_columns := l_record.COUNT;
+	  aa1 ('>>parse_crit_file<< number of columns read in: ' || l_num_columns
+		);
 
-			--
-			---
-			---- Is the duration_id valid?...
-			BEGIN
-			  SELECT  duration_code
-			  INTO  l_duration_code
-			  FROM  cwms_duration a
-			 WHERE  UPPER (a.duration_id) = UPPER (TRIM (l_record (9)));
-			EXCEPTION
-			  WHEN NO_DATA_FOUND
-			  THEN
-			  l_error_message :=
-				 l_error_message
-				 || '                       **ERROR: The Duration Id is not Recognized:
-	  '
-				 || l_record (9);
-			END;
+	  IF (l_num_columns > 50)
+	  THEN
+	  raise_application_error (
+	  -20000,
+	  'Max. of 50 columns allowed, id=' || p_file_name
+	  );
+	  END IF;
 
-			--
-			---
-			---- Is the shef_loc_id of proper length?"...
-			l_len := LENGTH (l_record (1));
+	  p_number_of_columns := l_num_columns;
 
-			IF l_len < 3 OR l_len > 8
-			THEN
-			  l_error_message :=
-			  l_error_message
-			  || '                     **ERROR: The SHEF Location Id is
-		 '
-			  || l_len
-			  || '                    characters long. It must be between 3 and 8 characters in
-		 length.
-	  ';
-			END IF;
+	  -- Get column headings and names
+	  FOR i IN 1 .. l_record.COUNT
+	  LOOP
+	  l_headings := l_headings || ':' || l_record (i);
+	  l_columns := l_columns || ',c' || LPAD (i, 3, '0');
+	  END LOOP;
 
-			BEGIN
-			  INSERT INTO gt_shef_decodes1 (
-								 line_number,
-								 shef_loc_id,
-								 shef_pe_code,
-								 shef_tse_code,
-								 shef_dur_numeric,
-								 shef_spec,
-								 location_id,
-								 parameter_id,
-								 base_parameter_code,
-								 parameter_type_id,
-								 parameter_type_code,
-								 interval_id,
-								 interval_code,
-								 duration_id,
-								 duration_code,
-								 version,
-								 cwms_ts_id,
-								 cwms_ts_code,
-								 --unit_system,
-								 units,
-								 unit_code,
-								 shef_tz,
-								 shef_dl_time,
-								 interva_utc_offset,
-								 interval_forward,
-								 interval_backward,
-								 active_flag,
-								 unparsed_line
-					)
-			  VALUES  (
-					  l_idx,
-					  l_record (1),		  -- shef_location_id
-					  l_record (2),			 -- shef_pe_code
-					  l_record (3),			 -- shef_tse_code
-					  l_record (4),		  -- shef_dur_numeric
-					  UPPER(   l_record (1)
-						 || '.'
-						 || l_record (2)
-						 || '.'
-						 || l_record (3)
-						 || '.'
-						 || l_record (4)),		 -- shef_spec
-					  l_record (5),			  -- location_id
-					  l_record (6),			 -- parameter_id
-					  l_base_parameter_code,	 -- base_parameter_code
-					  l_record (7),			-- parameter_type_id
-					  l_parameter_type_code,	 -- parameter_type_code
-					  l_record (8),			  -- interval_id
-					  l_interval_code,		  -- interval_code
-					  l_record (9),			  -- duration_id
-					  l_duration_code,		  -- duration_code
-					  l_record (10),				-- version
-					  l_cwms_ts_id,				-- cwms_ts_id
-					  l_cwms_ts_code, 		  -- cwms_ts_code
-					  l_record (11),			  -- unit_system
-					  l_unit_code, 			 -- unit_code
-					  l_record (12),				-- unit_id
-					  l_record (13),				-- shef_tz
-					  l_record (14),		  -- shef_dl_time T/F
-					  l_record (15),		-- interval_utc_offset
-					  l_record (16),		  -- interval_forward
-					  l_record (17),		 -- interval_backward
-	-- 				 l_record (18),			 -- active_flag
-					  l_records (l_idx)		  -- unparsed line
-					);
-			EXCEPTION
-			  WHEN OTHERS
-			  THEN
-			  aa1('                      >>parse_crit_file<< failed to store:
-	  '
-				  || l_records (l_idx));
-			  aa1('                        >>parse_crit_file<<
-	  '
-				  || SQLERRM);
-			  l_error_message := SQLERRM;
+	  l_headings := LTRIM (l_headings, ':');
+	  l_columns := LTRIM (l_columns, ',');
+	  apex_util.set_session_state (p_headings_item, l_headings);
+	  apex_util.set_session_state (p_columns_item, l_columns);
 
-			  INSERT INTO gt_shef_decodes1 (
-								 line_number,
-								 unparsed_line,
-								 error_msg
-					  )
-				 VALUES	 (l_idx, l_records (l_idx),	  -- unparsed line
-									 l_error_message
-					  );
-			-- INSERT INTO gt_parse_errors (
-			-- 				 line_number,
-			-- 				 error_msg,
-			-- 				 unparsed_line
-			--   )
-			-- VALUES (l_idx, l_error_message, l_records (l_idx)
-			--   );
-			END;
-		 END IF;
-		 END LOOP;
 
-		 SELECT	COUNT ( * )
-		 INTO  l_idx
-		 FROM  gt_shef_decodes1;
+	  aa1 ('>>parse_crit_file<< entering grand loop');
 
-		 aa1(   '                >>parse_crit_file<< gt_shef_decodes1 has: '
-		  || l_idx
-		  || ' rows.
-	  ');
+	  FOR i IN 2 .. p_number_of_records
+	  LOOP
+	  aa1 ('>>parse_crit_file<< l_records: ' || l_records (i));
+	  l_error_message := NULL;
+	  l_idx := l_idx + 1;
 
-		 IF NOT l_is_csv
-		 THEN
-		 BEGIN
-			OPEN l_rc FOR
-			  SELECT  cwms_id
-			  FROM  (	SELECT  UPPER (c002) cwms_id,
-						 COUNT (UPPER (c002)) count_id
-					  FROM  apex_collections
-					 WHERE  collection_name = UPPER (p_collection_name)
-				  GROUP BY	UPPER (c002))
-			 WHERE  count_id > 1;
-		 EXCEPTION
-			WHEN OTHERS
-			THEN
-			  l_tmp := 3;
-		 END;
-
-		 IF l_tmp != 3
-		 THEN
-			LOOP
-			  FETCH l_rc INTO 			  l_cwms_id_dup;
-
-			  EXIT WHEN l_rc%NOTFOUND;
-
-			  OPEN l_rc_rows FOR
-			  SELECT  c001
-				 FROM  apex_collections
-				WHERE  collection_name = UPPER (p_collection_name)
-					AND UPPER (c002) = l_cwms_id_dup;
-
-			  l_rows_msg := NULL;
-			  l_tmp := 0;
-
-			  LOOP
-			  FETCH l_rc_rows INTO				 l_row_num;
-
-			  EXIT WHEN l_rc_rows%NOTFOUND;
-
-			  IF l_tmp = 1
-			  THEN
-				 l_rows_msg :=
-					l_rows_msg
-					|| '                                                                        ,
-	  ';
-			  END IF;
-
-			  l_rows_msg := l_rows_msg || TO_CHAR (l_row_num);
-			  l_tmp := 1;
-			  END LOOP;
-
-			  l_seq_id :=
-			  apex_collection.add_member (
-				 p_error_collection_name,
-				 '                                  dummy
-	  '
-			  );
-			  apex_collection.update_member_attribute (
-			  p_collection_name	 => p_error_collection_name,
-			  p_seq		  => l_seq_id,
-			  p_attr_number	  => 1,
-			  p_attr_value 	=> l_rows_msg
-			  );
-			  apex_collection.update_member_attribute (
-			  p_collection_name	 => p_error_collection_name,
-			  p_seq		  => l_seq_id,
-			  p_attr_number	  => 2,
-			  p_attr_value 	=> '                                                    ERROR: cwms ts id is
-		 defined on multiple lines.
-	  '
-			  );
-			  apex_collection.update_member_attribute (
-			  p_collection_name	 => p_error_collection_name,
-			  p_seq		  => l_seq_id,
-			  p_attr_number	  => 3,
-			  p_attr_value 	=> l_cwms_id_dup
-			  );
-			END LOOP;
-
-			--
-			--
-			CLOSE l_rc;
-
-			CLOSE l_rc_rows;
-
-			OPEN l_rc FOR
-			  SELECT  shef_id
-			  FROM  (	SELECT  UPPER(c003
-							  || '                                    .
-		 '
-							  || c004
-							  || '                                    .
-		 '
-							  || c005
-							  || '                                    .
-	  '
-							  || c006)
-							shef_id,
-						 COUNT(UPPER(c003
-								 || '                                        .
-		 '
-								 || c004
-								 || '                                        .
-		 '
-								 || c005
-								 || '                                        .
-	  '
-								 || c006))
-							count_id
-					  FROM  apex_collections
-					 WHERE  collection_name = UPPER (p_collection_name)
-				  GROUP BY	UPPER(c003
-							  || '                                    .
-		 '
-							  || c004
-							  || '                                    .
-		 '
-							  || c005
-							  || '                                    .
-	  '
-							  || c006))
-			 WHERE  count_id > 1;
-
-			LOOP
-			  FETCH l_rc INTO 			  l_shef_id_dup;
-
-			  EXIT WHEN l_rc%NOTFOUND;
-
-			  OPEN l_rc_rows FOR
-			  SELECT  c001
-				 FROM  apex_collections
-				WHERE  collection_name = UPPER (p_collection_name)
-					AND UPPER(	c003
-						  || '                                  .'
-						  || c004
-						  || '                                  .'
-						  || c005
-						  || '                                  .
-	  '
-						  || c006) = l_shef_id_dup;
-
-			  l_rows_msg := NULL;
-			  l_tmp := 0;
-
-			  LOOP
-			  FETCH l_rc_rows INTO				 l_row_num;
-
-			  EXIT WHEN l_rc_rows%NOTFOUND;
-
-			  IF l_tmp = 1
-			  THEN
-				 l_rows_msg :=
-					l_rows_msg
-					|| '                                                                        ,
-	  ';
-			  END IF;
-
-			  l_rows_msg := l_rows_msg || l_row_num;
-			  l_tmp := 1;
-			  END LOOP;
-
-			  l_seq_id :=
-			  apex_collection.add_member (
-				 p_error_collection_name,
-				 '                                  dummy
-	  '
-			  );
-			  apex_collection.update_member_attribute (
-			  p_collection_name	 => p_error_collection_name,
-			  p_seq		  => l_seq_id,
-			  p_attr_number	  => 1,
-			  p_attr_value 	=> l_rows_msg
-			  );
-			  apex_collection.update_member_attribute (
-			  p_collection_name	 => p_error_collection_name,
-			  p_seq		  => l_seq_id,
-			  p_attr_number	  => 2,
-			  p_attr_value 	=> '                                                    ERROR: SHEF id is defined
-		 on multiple lines.
-	  '
-			  );
-			  apex_collection.update_member_attribute (
-			  p_collection_name	 => p_error_collection_name,
-			  p_seq		  => l_seq_id,
-			  p_attr_number	  => 3,
-			  p_attr_value 	=> l_shef_id_dup
-			  );
-			END LOOP;
-		 END IF;
-		 END IF;
-
-		 --  IF l_is_crit_file
-		 --  THEN
-		 --  cwms_shef.delete_data_stream (l_datastream, '                                                                                                       T
-		 -- ', 'CWMS  ');
-		 --  END IF;
-
-		 --  DELETE FROM wwv_flow_files
-		 --  WHERE NAME = p_file_name;
-		 SELECT	COUNT ( * )
-		 INTO  l_seq_id
-		 FROM  apex_collections
-		WHERE  collection_name = p_collection_name;
-
+	  IF (l_steps_per_commit > 0)
+	  THEN
+	  IF (i - TRUNC (i / l_steps_per_commit) * l_steps_per_commit = 0)
+	  THEN
 		 cwms_properties.set_property (
-		 '        PROCESS_STATUS',
+		 'PROCESS_STATUS',
 		 p_process_id,
-		 '        Completed ' || p_number_of_records || ' records
-	  ',
+		 'Processing: ' || i || ' of ' || p_number_of_records,
 		 l_cmt || LOCALTIMESTAMP,
 		 p_db_office_id
 		 );
+		 COMMIT;
+	  END IF;
+	  END IF;
 
-		 aa1(   '                  parse collection name: '
-		  || p_collection_name
-		  || '                 Row count:
+	  IF l_is_csv
+	  THEN
+	  csv_to_array (l_records (l_idx), l_record);
+	  ELSE
+	  crit_to_array (l_records (l_idx), l_comment, l_record);
+	  END IF;
+
+	  IF INSTR (l_comment, 'ERROR') = 1
+	  THEN
+	  l_seq_id :=
+		 apex_collection.add_member (p_error_collection_name, 'dummy');
+	  apex_collection.update_member_attribute (
+		 p_collection_name => p_error_collection_name,
+		 p_seq	=> l_seq_id,
+		 p_attr_number  => 1,
+		 p_attr_value	=> i
+	  );
+	  apex_collection.update_member_attribute (
+		 p_collection_name => p_error_collection_name,
+		 p_seq	=> l_seq_id,
+		 p_attr_number  => 2,
+		 p_attr_value	=> l_comment
+	  );
+	  apex_collection.update_member_attribute (
+		 p_collection_name => p_error_collection_name,
+		 p_seq	=> l_seq_id,
+		 p_attr_number  => 3,
+		 p_attr_value	=> l_records (l_idx)
+	  );
+	  ELSIF INSTR (l_comment, 'COMMENT') = 1
+	  THEN
+	  NULL;		 -- comment, so throw away.
+	  ELSE
+	  -- l_seq_id :=
+	  -- apex_collection.add_member (p_collection_name, 'dummy');
+	  -- apex_collection.update_member_attribute (
+	  -- p_collection_name => p_collection_name,
+	  -- p_seq => l_seq_id,
+	  -- p_attr_number => 1,
+	  -- p_attr_value => i
+	  -- );
+
+	  -- FOR j IN 1 .. l_record.COUNT
+	  -- LOOP
+	  -- apex_collection.update_member_attribute (
+	  -- p_collection_name => p_collection_name,
+	  -- p_seq => l_seq_id,
+	  -- p_attr_number => j + 1,
+	  -- p_attr_value => l_record (j)
+	  -- );
+	  -- END LOOP;
+	  l_cwms_ts_id :=
+		 l_record (5)
+		 || '.'
+		 || l_record (6)
+		 || '.'
+		 || l_record (7)
+		 || '.'
+		 || l_record (8)
+		 || '.'
+		 || l_record (9)
+		 || '.'
+		 || l_record (10);
+
+	  BEGIN
+		 l_cwms_ts_code :=
+		 cwms_ts.get_ts_code (
+		 p_cwms_ts_id => l_cwms_ts_id,
+		 p_db_office_code => cwms_util.get_db_office_code (p_db_office_id)
+		 );
+	  EXCEPTION
+		 WHEN OTHERS
+		 THEN
+		 l_cwms_ts_code := NULL;
+	  END;
+
+	  --
+	  ---
+	  ---- Is the unit_id valid?...
+	  --
+	  BEGIN
+		 l_unit_code := cwms_util.get_unit_code (l_record (12), NULL);
+
+		 SELECT	a.abstract_param_code
+		 INTO  l_abstract_param_code_user
+		 FROM  cwms_unit a
+		WHERE  a.unit_code = l_unit_code;
+	  EXCEPTION
+		 WHEN OTHERS
+		 THEN
+		 l_error_message :=
+		 l_error_message
+		 || ' **ERROR: Unrecognized Unit Id: '
+		 || l_record (12);
+	  END;
+
+	  --
+	  ---
+	  ---- Is the base parameter valid?...
+	  --
+	  BEGIN
+		 l_base_parameter_id := cwms_util.get_base_id (l_record (6));
+		 l_base_parameter_code :=
+		 cwms_ts.get_parameter_code (l_base_parameter_id,
+			 NULL,
+			 p_db_office_id,
+			 'F'
+			  );
+	  EXCEPTION
+		 WHEN OTHERS
+		 THEN
+		 l_error_message :=
+		 l_error_message
+		 || ' **ERROR: The Parameter Id''s Base Parameter is not Recognized: '
+		 || l_base_parameter_id;
+	  END;
+
+	  --
+	  ---
+	  ---- Is the parameter type valid?...
+	  BEGIN
+		 l_parameter_type_code :=
+		 cwms_ts.get_parameter_type_code (l_record (7));
+	  EXCEPTION
+		 WHEN OTHERS
+		 THEN
+		 l_error_message :=
+		 l_error_message
+		 || ' **ERROR: The Parameter Type Id is not Recognized: '
+		 || l_record (7);
+	  END;
+
+	  --
+	  ---
+	  ---- Is the interval_id valid?"...
+	  BEGIN
+		 SELECT	interval_code
+		 INTO  l_interval_code
+		 FROM  cwms_interval a
+		WHERE  UPPER (a.interval_id) = UPPER (TRIM (l_record (8)));
+	  EXCEPTION
+		 WHEN NO_DATA_FOUND
+		 THEN
+		 l_error_message :=
+		 l_error_message
+		 || ' **ERROR: The Interval Id is not Recognized: '
+		 || l_record (8);
+	  END;
+
+
+	  --
+	  ---
+	  ---- Is the PE Code valid?...
+	  BEGIN
+		 SELECT	abstract_param_code, abstract_param_id, unit_code_en,
+		 unit_code_si, unit_id_en, unit_id_si
+		 INTO  l_abstract_param_code, l_abstract_param_id,
+		 l_unit_code_en, l_unit_code_si, l_unit_id_en,
+		 l_unit_id_si
+		 FROM  av_shef_pe_codes a
+		WHERE  shef_pe_code = UPPER (TRIM (l_record (4)))
+		 AND db_office_id IN (l_db_office_id, 'CWMS');
+
+		 IF l_abstract_param_code != l_abstract_param_code_user
+		 THEN
+		 l_error_message :=
+		 l_error_message
+		 || ' **ERROR: The unit you specified: '
+		 || l_record (12)
+		 || ' needs to be a unit of type '
+		 || l_abstract_param_id
+		 || '. Default units for this SHEF PE Code are either: '
+		 || l_unit_id_en
+		 || ' or '
+		 || l_unit_id_si
+		 || '.';
+		 ELSIF l_unit_code NOT IN (l_unit_code_en, l_unit_code_si)
+		 THEN
+		 l_error_message :=
+		 l_error_message
+		 || ' **WARNING: The unit you specified: '
+		 || l_record (12)
+		 || ' is not a default unit for this SHEF PE Code, namely: '
+		 || l_unit_id_en
+		 || ' or '
+		 || l_unit_id_si
+		 || '. Please be sure your data is being recieved with this non-standard unit.';
+		 END IF;
+	  EXCEPTION
+		 WHEN NO_DATA_FOUND
+		 THEN
+		 l_error_message :=
+		 l_error_message
+		 || ' **ERROR: The SHEF PE Code:
 	  '
-		  || l_seq_id);
+		 || l_record (4)
+		 || ' is not Recognized';
+	  END;
+
+	  --
+	  ---
+	  ---- Is the duration_id valid?...
+	  BEGIN
+		 SELECT	duration_code
+		 INTO  l_duration_code
+		 FROM  cwms_duration a
+		WHERE  UPPER (a.duration_id) = UPPER (TRIM (l_record (9)));
+	  EXCEPTION
+		 WHEN NO_DATA_FOUND
+		 THEN
+		 l_error_message :=
+		 l_error_message
+		 || '                       **ERROR: The Duration Id is not Recognized:
+	  '
+		 || l_record (9);
+	  END;
+
+	  --
+	  ---
+	  ---- Is the shef_loc_id of proper length?"...
+	  l_len := LENGTH (l_record (1));
+
+	  IF l_len < 3 OR l_len > 8
+	  THEN
+		 l_error_message :=
+		 l_error_message
+		 || '                     **ERROR: The SHEF Location Id is
+	  '
+		 || l_len
+		 || '                    characters long. It must be between 3 and 8 characters in
+	  length.
+	  ';
+	  END IF;
+
+	  BEGIN
+		 INSERT INTO gt_shef_decodes1 (
+			  line_number,
+			  shef_loc_id,
+			  shef_pe_code,
+			  shef_tse_code,
+			  shef_dur_numeric,
+			  shef_spec,
+			  location_id,
+			  parameter_id,
+			  base_parameter_code,
+			  parameter_type_id,
+			  parameter_type_code,
+			  interval_id,
+			  interval_code,
+			  duration_id,
+			  duration_code,
+			  version,
+			  cwms_ts_id,
+			  cwms_ts_code,
+			  --unit_system,
+			  units,
+			  unit_code,
+			  shef_tz,
+			  shef_dl_time,
+			  interva_utc_offset,
+			  interval_forward,
+			  interval_backward,
+			  active_flag,
+			  unparsed_line
+		 )
+		 VALUES	(
+			l_idx,
+			l_record (1),	  -- shef_location_id
+			l_record (2),	  -- shef_pe_code
+			l_record (3),	  -- shef_tse_code
+			l_record (4),	  -- shef_dur_numeric
+			UPPER(	l_record (1)
+			|| '.'
+			|| l_record (2)
+			|| '.'
+			|| l_record (3)
+			|| '.'
+			|| l_record (4)),   -- shef_spec
+			l_record (5),		-- location_id
+			l_record (6),	  -- parameter_id
+			l_base_parameter_code,	-- base_parameter_code
+			l_record (7),	 -- parameter_type_id
+			l_parameter_type_code,	-- parameter_type_code
+			l_record (8),		-- interval_id
+			l_interval_code,	  -- interval_code
+			l_record (9),		-- duration_id
+			l_duration_code,	  -- duration_code
+			l_record (10), 	-- version
+			l_cwms_ts_id,	  -- cwms_ts_id
+			l_cwms_ts_code,	  -- cwms_ts_code
+			l_record (11), 	 -- unit_system
+			l_unit_code,	  -- unit_code
+			l_record (12), 	-- unit_id
+			l_record (13), 	-- shef_tz
+			l_record (14), 	-- shef_dl_time T/F
+			l_record (15),  -- interval_utc_offset
+			l_record (16), 	-- interval_forward
+			l_record (17),   -- interval_backward
+	-- 	  l_record (18),	  -- active_flag
+			l_records (l_idx) 	-- unparsed line
+		 );
+	  EXCEPTION
+		 WHEN OTHERS
+		 THEN
+		 aa1('                      >>parse_crit_file<< failed to store:
+	  '
+		  || l_records (l_idx));
+		 aa1('                        >>parse_crit_file<<
+	  '
+		  || SQLERRM);
+		 l_error_message := SQLERRM;
+
+		 INSERT INTO gt_shef_decodes1 (
+			  line_number,
+			  unparsed_line,
+			  error_msg
+			)
+		 VALUES	(l_idx, l_records (l_idx),   -- unparsed line
+				l_error_message
+			);
+	  -- INSERT INTO gt_parse_errors (
+	  --		 line_number,
+	  --		 error_msg,
+	  --		 unparsed_line
+	  --	 )
+	  -- VALUES (l_idx, l_error_message, l_records (l_idx)
+	  --	 );
+	  END;
+	  END IF;
+	  END LOOP;
+
+	  SELECT COUNT ( * )
+	  INTO  l_idx
+	  FROM  gt_shef_decodes1;
+
+	  aa1(	'                >>parse_crit_file<< gt_shef_decodes1 has: '
+		|| l_idx
+		|| ' rows.
+	  ');
+
+	  IF NOT l_is_csv
+	  THEN
+	  BEGIN
+	  OPEN l_rc FOR
+		 SELECT	cwms_id
+		 FROM  ( SELECT  UPPER (c002) cwms_id,
+			COUNT (UPPER (c002)) count_id
+			FROM	apex_collections
+		  WHERE	collection_name = UPPER (p_collection_name)
+		  GROUP BY UPPER (c002))
+		WHERE  count_id > 1;
+	  EXCEPTION
+	  WHEN OTHERS
+	  THEN
+		 l_tmp := 3;
+	  END;
+
+	  IF l_tmp != 3
+	  THEN
+	  LOOP
+		 FETCH l_rc INTO		 l_cwms_id_dup;
+
+		 EXIT WHEN l_rc%NOTFOUND;
+
+		 OPEN l_rc_rows FOR
+		 SELECT	c001
+		 FROM  apex_collections
+		WHERE  collection_name = UPPER (p_collection_name)
+		 AND UPPER (c002) = l_cwms_id_dup;
+
+		 l_rows_msg := NULL;
+		 l_tmp := 0;
+
+		 LOOP
+		 FETCH l_rc_rows INTO	  l_row_num;
+
+		 EXIT WHEN l_rc_rows%NOTFOUND;
+
+		 IF l_tmp = 1
+		 THEN
+		 l_rows_msg :=
+		 l_rows_msg
+		 || '                                                                        ,
+	  ';
+		 END IF;
+
+		 l_rows_msg := l_rows_msg || TO_CHAR (l_row_num);
+		 l_tmp := 1;
+		 END LOOP;
+
+		 l_seq_id :=
+		 apex_collection.add_member (
+		 p_error_collection_name,
+		 '                                  dummy
+	  '
+		 );
+		 apex_collection.update_member_attribute (
+		 p_collection_name  => p_error_collection_name,
+		 p_seq	 => l_seq_id,
+		 p_attr_number   => 1,
+		 p_attr_value	=> l_rows_msg
+		 );
+		 apex_collection.update_member_attribute (
+		 p_collection_name  => p_error_collection_name,
+		 p_seq	 => l_seq_id,
+		 p_attr_number   => 2,
+		 p_attr_value	=> '                                                    ERROR: cwms ts id is
+	  defined on multiple lines.
+	  '
+		 );
+		 apex_collection.update_member_attribute (
+		 p_collection_name  => p_error_collection_name,
+		 p_seq	 => l_seq_id,
+		 p_attr_number   => 3,
+		 p_attr_value	=> l_cwms_id_dup
+		 );
+	  END LOOP;
+
+	  --
+	  --
+	  CLOSE l_rc;
+
+	  CLOSE l_rc_rows;
+
+	  OPEN l_rc FOR
+		 SELECT	shef_id
+		 FROM  ( SELECT  UPPER(c003
+			  || '                                    .
+	  '
+			  || c004
+			  || '                                    .
+	  '
+			  || c005
+			  || '                                    .
+	  '
+			  || c006)
+			shef_id,
+			COUNT(UPPER(c003
+			  || '                                        .
+	  '
+			  || c004
+			  || '                                        .
+	  '
+			  || c005
+			  || '                                        .
+	  '
+			  || c006))
+			count_id
+			FROM	apex_collections
+		  WHERE	collection_name = UPPER (p_collection_name)
+		  GROUP BY UPPER(c003
+			  || '                                    .
+	  '
+			  || c004
+			  || '                                    .
+	  '
+			  || c005
+			  || '                                    .
+	  '
+			  || c006))
+		WHERE  count_id > 1;
+
+	  LOOP
+		 FETCH l_rc INTO		 l_shef_id_dup;
+
+		 EXIT WHEN l_rc%NOTFOUND;
+
+		 OPEN l_rc_rows FOR
+		 SELECT	c001
+		 FROM  apex_collections
+		WHERE  collection_name = UPPER (p_collection_name)
+		 AND UPPER( c003
+			 || '                                  .'
+			 || c004
+			 || '                                  .'
+			 || c005
+			 || '                                  .
+	  '
+			 || c006) = l_shef_id_dup;
+
+		 l_rows_msg := NULL;
+		 l_tmp := 0;
+
+		 LOOP
+		 FETCH l_rc_rows INTO	  l_row_num;
+
+		 EXIT WHEN l_rc_rows%NOTFOUND;
+
+		 IF l_tmp = 1
+		 THEN
+		 l_rows_msg :=
+		 l_rows_msg
+		 || '                                                                        ,
+	  ';
+		 END IF;
+
+		 l_rows_msg := l_rows_msg || l_row_num;
+		 l_tmp := 1;
+		 END LOOP;
+
+		 l_seq_id :=
+		 apex_collection.add_member (
+		 p_error_collection_name,
+		 '                                  dummy
+	  '
+		 );
+		 apex_collection.update_member_attribute (
+		 p_collection_name  => p_error_collection_name,
+		 p_seq	 => l_seq_id,
+		 p_attr_number   => 1,
+		 p_attr_value	=> l_rows_msg
+		 );
+		 apex_collection.update_member_attribute (
+		 p_collection_name  => p_error_collection_name,
+		 p_seq	 => l_seq_id,
+		 p_attr_number   => 2,
+		 p_attr_value	=> '                                                    ERROR: SHEF id is defined
+	  on multiple lines.
+	  '
+		 );
+		 apex_collection.update_member_attribute (
+		 p_collection_name  => p_error_collection_name,
+		 p_seq	 => l_seq_id,
+		 p_attr_number   => 3,
+		 p_attr_value	=> l_shef_id_dup
+		 );
+	  END LOOP;
+	  END IF;
+	  END IF;
+
+	  --	IF l_is_crit_file
+	  --	THEN
+	  --	cwms_shef.delete_data_stream (l_datastream, '                                                                                                       T
+	  -- ', 'CWMS  ');
+	  --	END IF;
+
+	  --	DELETE FROM wwv_flow_files
+	  --	WHERE NAME = p_file_name;
+	  SELECT COUNT ( * )
+	  INTO  l_seq_id
+	  FROM  apex_collections
+	 WHERE  collection_name = p_collection_name;
+
+	  cwms_properties.set_property (
+	  '        PROCESS_STATUS',
+	  p_process_id,
+	  '        Completed ' || p_number_of_records || ' records
+	  ',
+	  l_cmt || LOCALTIMESTAMP,
+	  p_db_office_id
+	  );
+
+	  aa1(	'                  parse collection name: '
+		|| p_collection_name
+		|| '                 Row count:
+	  '
+		|| l_seq_id);
 	  END;
 
 	  PROCEDURE error_check_crit_data (
-		 p_db_store_rule	 IN VARCHAR2,
-		 p_data_stream_id   IN VARCHAR2,
-		 p_db_office_id	IN VARCHAR2 DEFAULT NULL
+	  p_db_store_rule  IN VARCHAR2,
+	  p_data_stream_id	IN VARCHAR2,
+	  p_db_office_id IN VARCHAR2 DEFAULT NULL
 	  )
 	  AS
 	  BEGIN
-		 IF (p_db_store_rule =
-			 '                                                  ADD
+	  IF (p_db_store_rule =
+		'                                                  ADD
 	  ')
-		 THEN
-		 INSERT INTO gt_shef_decodes1 (shef_loc_id, shef_pe_code, shef_tse_code, shef_dur_numeric, shef_spec, location_id, parameter_id, base_parameter_code, parameter_type_id, parameter_type_code, interval_id, interval_code, duration_id, duration_code, version, cwms_ts_id, cwms_ts_code, unit_system, units, unit_code, shef_tz, shef_dl_time, interva_utc_offset, interval_forward, interval_backward, active_flag, unparsed_line
-						  )
-			SELECT	shef_loc_id, shef_pe_code, shef_tse_code,
-				 shef_duration_numeric, shef_spec, location_id,
-				 parameter_id, 11, parameter_type_id, 11, interval_id, 11,
-				 duration_id, 11, version_id, cwms_ts_id, ts_code,
-				 unit_system, unit_id, 11, shef_time_zone_id, dl_time,
-				 interval_utc_offset, interval_forward, interval_backward,
-				 active_flag,
-				 '                                          This SHEF Spec is currently defined
-		 in DB
+	  THEN
+	  INSERT INTO gt_shef_decodes1 (shef_loc_id, shef_pe_code, shef_tse_code, shef_dur_numeric, shef_spec, location_id, parameter_id, base_parameter_code, parameter_type_id, parameter_type_code, interval_id, interval_code, duration_id, duration_code, version, cwms_ts_id, cwms_ts_code, unit_system, units, unit_code, shef_tz, shef_dl_time, interva_utc_offset, interval_forward, interval_backward, active_flag, unparsed_line
+			 )
+	  SELECT shef_loc_id, shef_pe_code, shef_tse_code,
+		 shef_duration_numeric, shef_spec, location_id,
+		 parameter_id, 11, parameter_type_id, 11, interval_id, 11,
+		 duration_id, 11, version_id, cwms_ts_id, ts_code,
+		 unit_system, unit_id, 11, shef_time_zone_id, dl_time,
+		 interval_utc_offset, interval_forward, interval_backward,
+		 active_flag,
+		 '                                          This SHEF Spec is currently defined
+	  in DB
 	  '
-			FROM	 av_shef_decode_spec
-			 WHERE	data_stream_id = p_data_stream_id
-				 AND db_office_id = p_db_office_id;
-		 END IF;
+	  FROM  av_shef_decode_spec
+		WHERE data_stream_id = p_data_stream_id
+		 AND db_office_id = p_db_office_id;
+	  END IF;
 	  END;
 	*/
 	PROCEDURE download_file (p_file_id IN uploaded_xls_files_t.id%TYPE)
@@ -2992,7 +3019,7 @@ AS
 		tmpvar := 0;
 
 		--If the constant level (column 2 IS NOT NULL then it is a non-seasonal record
-		-- 	INSERT
+		--  INSERT
 		-- ELSE
 		--  it is a seasonal record, build the seasonal string
 
@@ -3008,11 +3035,11 @@ AS
 				 ORDER BY	c001 ASC)
 		LOOP
 			cwms_level.store_location_level2 (
-				p_location_level_id	 => x.c002						 --	in varchar2,
+				p_location_level_id	 => x.c002							-- in varchar2,
 														 ,
-				p_level_value			 => x.c003						-- 	 in  number,
+				p_level_value			 => x.c003						  --	 in  number,
 														 ,
-				p_level_units			 => x.c004					  --		in varchar2,
+				p_level_units			 => x.c004						  --	in varchar2,
 														 ,
 				p_office_id 			 => x.c008,
 				p_fail_if_exists		 => p_fail_if_exists
@@ -3035,10 +3062,10 @@ AS
 
 		procedure store_location_level2(
 		 p_location_level_id => ‘Elev.Inst.0.Base Flood Control’,
-		 p_level_value 	=> null,
-		 p_level_units 	=> ‘ft’,
-		 p_seasonal_values	=> ‘0,0,723/6,0,723/6,14,723/7,0,723/8,0,723/11,30,723’,
-		 p_office_id	  => ‘SWT’)
+		 p_level_value  => null,
+		 p_level_units  => ‘ft’,
+		 p_seasonal_values => ‘0,0,723/6,0,723/6,14,723/7,0,723/8,0,723/11,30,723’,
+		 p_office_id	=> ‘SWT’)
 
 		*/
 
@@ -3096,11 +3123,11 @@ AS
 
 
 			cwms_level.store_location_level2 (
-				p_location_level_id	 => x.c002						 --	in varchar2,
+				p_location_level_id	 => x.c002							-- in varchar2,
 														 ,
-				p_level_value			 => NULL 						-- 	 in  number,
+				p_level_value			 => NULL 						  --	 in  number,
 													  ,
-				p_level_units			 => x.c004 --v_data_array(4) --	  in	varchar2,
+				p_level_units			 => x.c004 --v_data_array(4) --	 in varchar2,
 														 ,
 				p_interval_months 	 => 12,
 				p_fail_if_exists		 => p_fail_if_exists 		--p_fail_if_exists
@@ -3119,9 +3146,9 @@ AS
 				p_attr_value		  => x.c002
 			);
 		--  INSERT INTO TEMP_COLLECTION_API_FIRE_TBL
-		-- 		 (collection, user_id_fired, plsql_fired, seasonal_value)
-		-- 		 VALUES
-		-- 		 (p_collection_name, 'JEREMY after fire', NULL, p_seasonal_String);
+		-- 	(collection, user_id_fired, plsql_fired, seasonal_value)
+		-- 	VALUES
+		-- 	(p_collection_name, 'JEREMY after fire', NULL, p_seasonal_String);
 
 
 
@@ -3186,7 +3213,7 @@ AS
 		l_specified_level_id 			  VARCHAR2 (256);
 		l_location_level_id				  VARCHAR2 (390);
 
-		-- l_na	  VARCHAR2(3) DEFAULT 'n/a';
+		-- l_na	 VARCHAR2(3) DEFAULT 'n/a';
 		l_na									  VARCHAR2 (3) DEFAULT NULL;
 
 		-- insert variables (unsure)
@@ -3447,7 +3474,7 @@ AS
 								WHEN 9
 								THEN
 									t_md_p3 := y.col_val;							  --md p3
-								-- 					t_minimum_duration  := t_md_p1 || ':' || t_md_p2 || ':' || t_md_p3;
+								-- 	  t_minimum_duration  := t_md_p1 || ':' || t_md_p2 || ':' || t_md_p3;
 								WHEN 10
 								THEN
 									t_ma_p1 := y.col_val;							  --ma p1
@@ -3457,7 +3484,7 @@ AS
 								WHEN 12
 								THEN
 									t_ma_p3 := y.col_val;							  --ma p3
-								-- 				  t_maximum_age  := t_ma_p1 || ':' || t_ma_p2 || ':' || t_ma_p3;
+								-- 		t_maximum_age	:= t_ma_p1 || ':' || t_ma_p2 || ':' || t_ma_p3;
 								WHEN 13
 								THEN
 									t1_expression := y.col_val;
@@ -3621,10 +3648,10 @@ AS
 																			 p_file_id
 																			);
 								--Set_Log_Row (p_error_text  =>'setting t4_comparison unit to "' || t4_comparison_unit || '"'
-								-- 			|| ' from '  || y.col_val
-								-- 	  ,p_file_id	=> p_file_id
-								-- 	  ,p_pl_sql_text => ' WHEN 14 THEN t4_comparison_unit       := Get_unit_code_from_code_id(y.col_val);'
-								-- 	  );
+								-- 	|| ' from '  || y.col_val
+								-- 	,p_file_id => p_file_id
+								-- 	,p_pl_sql_text => ' WHEN 14 THEN t4_comparison_unit       := Get_unit_code_from_code_id(y.col_val);'
+								-- 	);
 
 								WHEN 63
 								THEN
@@ -5182,7 +5209,7 @@ AS
 							l_line_no2 || ':' || l_base_location_id2
 						);
 					END;
-			END; --==================	 Trap Errors ==========================================
+			END; --==================	Trap Errors ==========================================
 		END LOOP;
 
 		cwms_properties.set_property (
