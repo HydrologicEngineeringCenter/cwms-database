@@ -1528,8 +1528,8 @@ CREATE TABLE at_turbine_change
   elev_tailwater                  BINARY_DOUBLE,
   turbine_setting_reason_code     NUMBER(10)     NOT NULL,
   turbine_discharge_comp_code     NUMBER(10)     NOT NULL,
-  old_total_discharge_override    BINARY_DOUBLE  NOT NULL,
-  new_total_discharge_override    BINARY_DOUBLE  NOT NULL,
+  old_total_discharge_override    BINARY_DOUBLE,
+  new_total_discharge_override    BINARY_DOUBLE,
   turbine_change_notes            VARCHAR2(255 BYTE),
   protected                       VARCHAR2(1)    NOT NULL
 )
