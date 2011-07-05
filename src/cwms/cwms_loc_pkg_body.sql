@@ -4169,7 +4169,7 @@ AS
 	--   loc_alias_id 			  VARCHAR2 (16),
 	--
    PROCEDURE assign_loc_groups (
-      p_loc_category_id  IN   VARCHAR2,
+      p_loc_category_id  IN VARCHAR2,
 		p_loc_group_id		 IN VARCHAR2,
 		p_loc_alias_array	 IN loc_alias_array,
 		p_db_office_id		 IN VARCHAR2 DEFAULT NULL
@@ -4224,10 +4224,11 @@ AS
       for i in 1..p_loc_alias_array.count loop
          check_alias_id(
             p_loc_alias_array(i).loc_alias_id, 
-            p_loc_alias_array(i).location_id, 
+            p_loc_alias_array(i).location_id,
+            p_loc_category_id,
+            p_loc_group_id,
             l_db_office_id);
-         null;  
-      end loop; 
+      end loop;
         
 		MERGE INTO	 at_loc_group_assignment a
 			  USING	 (SELECT   get_location_code (l_db_office_id,
@@ -4312,7 +4313,9 @@ AS
         for i in 1..p_loc_alias_array.count loop
            check_alias_id(
               p_loc_alias_array(i).loc_alias_id, 
-              p_loc_alias_array(i).location_id, 
+              p_loc_alias_array(i).location_id,
+              p_loc_category_id,
+              p_loc_group_id,
               l_db_office_id);  
         end loop; 
         
@@ -4406,7 +4409,9 @@ AS
         for i in 1..p_loc_alias_array.count loop
            check_alias_id(
               p_loc_alias_array(i).loc_alias_id, 
-              p_loc_alias_array(i).location_id, 
+              p_loc_alias_array(i).location_id,
+              p_loc_category_id,
+              p_loc_group_id,
               l_db_office_id);  
         end loop; 
         
@@ -5323,17 +5328,56 @@ AS
    procedure check_alias_id(
       p_alias_id    in varchar2,
       p_location_id in varchar2,
+      p_category_id in varchar2,
+      p_group_id    in varchar2,
       p_office_id   in varchar2 default null)
    is
-      l_location_id varchar2(49);
-      l_office_id   varchar2(16);
+      l_location_id  varchar2(49);
+      l_office_id    varchar2(16);
+      l_count        pls_integer;
       l_multiple_ids boolean;
+      l_property_id  varchar2(256);
    begin
       cwms_util.check_inputs(str_tab_t(
          p_alias_id,
          p_location_id,
          p_office_id));
-     l_office_id := nvl(upper(trim(p_office_id)), cwms_util.user_office_id);         
+      l_office_id := nvl(upper(trim(p_office_id)), cwms_util.user_office_id);
+      ---------------------------------------------------
+      -- first, check for duplicate aliases in a group --
+      ---------------------------------------------------
+      if p_alias_id is not null then
+         begin
+            select count(*)
+              into l_count
+              from at_loc_category c,
+                   at_loc_group g,
+                   at_loc_group_assignment a
+             where upper(c.loc_category_id) = upper(p_category_id)
+               and upper(g.loc_group_id) = upper(p_group_id)
+               and upper(a.loc_alias_id) = upper(p_alias_id)
+               and a.location_code != get_location_code(l_office_id, p_location_id)
+               and g.loc_category_code = c.loc_category_code
+               and a.loc_group_code = g.loc_group_code;
+         exception
+            when no_data_found then l_count := 0;
+         end;
+         if l_count > 0 then
+            cwms_err.raise(
+               'ERROR',
+               'Alias '
+               ||p_alias_id
+               ||' is already in use in location office/category/group ('
+               ||l_office_id
+               ||'/'
+               ||p_category_id
+               ||'/'
+               ||p_group_id||').');
+         end if;
+      end if;
+      ----------------------------------------
+      -- next, check for multiple locations --
+      ----------------------------------------
       begin
          l_location_id  := get_location_id_from_alias(p_alias_id, null, null, p_office_id);
          l_multiple_ids := l_location_id is not null and upper(l_location_id) != upper(p_location_id);
@@ -5342,17 +5386,20 @@ AS
             l_multiple_ids := true;
       end;
       if l_multiple_ids then
+         l_property_id := 'Allow_multiple_locations_for_alias'; 
          if not cwms_util.is_true(cwms_properties.get_property(
             'CWMSDB',
-            'Allow_multiple_locations_for_alias', 
+            l_property_id, 
             'F', 
             p_office_id))
          then
             cwms_err.raise(
                'ERROR',
                'Alias ('||p_alias_id||') would reference multiple locations.  '
-               ||'If you want to allow this, set the CWMSDB/Allow_multiple_locations_for_alias '
-               ||'property to ''T'' for office id '||l_office_id);
+               ||'If you want to allow this, set the CWMSDB/'||l_property_id||' '
+               ||'property to ''T'' for office id '||l_office_id||'.  Note that this action will '
+               ||'eliminate the ability to look up a location using the alias or any others that '
+               ||'reference multiple locations.');
          end if;
       end if;
    end check_alias_id;      
@@ -5360,11 +5407,13 @@ AS
    function check_alias_id_f(
       p_alias_id    in varchar2,
       p_location_id in varchar2,
+      p_category_id in varchar2,
+      p_group_id    in varchar2,
       p_office_id   in varchar2 default null)
       return varchar2
    is
    begin
-      check_alias_id(p_alias_id, p_location_id, p_office_id);
+      check_alias_id(p_alias_id, p_location_id, p_category_id, p_group_id, p_office_id);
       return p_alias_id;               
    end check_alias_id_f;      
       
