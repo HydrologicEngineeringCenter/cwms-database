@@ -6038,6 +6038,158 @@ BEGIN
    null;
 END refresh_ts_catalog;
 
+-------------------------------
+-- Timeseries group routines --
+-------------------------------
+procedure store_ts_category(
+   p_ts_category_id   in varchar2,
+   p_ts_category_desc in varchar2 default null,
+   p_fail_if_exists   in varchar2 default 'F',
+   p_ignore_null      in varchar2 default 'T',
+   p_db_office_id     in varchar2 default null
+)
+is
+begin
+   null;
+end store_ts_category;
+      
+function store_ts_category_f(
+   p_ts_category_id   in varchar2,
+   p_ts_category_desc in varchar2 default null,
+   p_fail_if_exists   in varchar2 default 'F',
+   p_ignore_null      in varchar2 default 'T',
+   p_db_office_id     in varchar2 default null
+)  return number
+is
+begin
+   return null;
+end store_ts_category_f;
+
+procedure rename_ts_category (
+   p_ts_category_id_old   in   varchar2,
+   p_ts_category_id_new   in   varchar2,
+   p_ts_category_desc     in   varchar2 default null,
+   p_ignore_null          in   varchar2 default 'T',
+   p_db_office_id         in   varchar2 default null
+)
+is
+begin
+   null;
+end rename_ts_category;
+
+procedure delete_ts_category (
+   p_ts_category_id in varchar2,
+   p_cascade        in varchar2 default 'F' ,
+   p_db_office_id   in varchar2 default null
+)
+is
+begin
+   null;
+end delete_ts_category;
+
+procedure store_ts_group (
+   p_ts_category_id   in   varchar2,
+   p_ts_group_id      in   varchar2,
+   p_ts_group_desc    in   varchar2 default null,
+   p_fail_if_exists   in   varchar2 default 'F',
+   p_ignore_nulls     in   varchar2 default 'T',
+   p_shared_alias_id  in   varchar2 default null,
+   p_shared_ts_ref_id in   varchar2 default null,
+   p_db_office_id     in   varchar2 default null
+)
+is
+begin
+   null;
+end store_ts_group;
+
+function store_ts_group_f (
+   p_ts_category_id   in   varchar2,
+   p_ts_group_id      in   varchar2,
+   p_ts_group_desc    in   varchar2 default null,
+   p_fail_if_exists   in   varchar2 default 'F',
+   p_ignore_nulls     in   varchar2 default 'T',
+   p_shared_alias_id  in   varchar2 default null,
+   p_shared_ts_ref_id in   varchar2 default null,
+   p_db_office_id     in   varchar2 default null
+)  return number
+is
+begin
+   null;
+end store_ts_group_f;
+
+procedure rename_ts_group (
+   p_ts_category_id    in   varchar2,
+   p_ts_group_id_old   in   varchar2,
+   p_ts_group_id_new   in   varchar2,
+   p_ts_group_desc     in   varchar2 default null,
+   p_ignore_null       in   varchar2 default 'T',
+   p_db_office_id      in   varchar2 default null
+)
+is
+begin
+   null;
+end rename_ts_group;
+      
+procedure delete_ts_group (
+   p_ts_category_id   in varchar2,
+   p_ts_group_id      in varchar2,
+   p_db_office_id     in varchar2 default null
+)
+is
+begin
+   null;
+end delete_ts_group;
+
+procedure assign_ts_group (
+   p_ts_category_id   in   varchar2,
+   p_ts_group_id      in   varchar2,
+   p_ts_id            in   varchar2,
+   p_ts_attribute     in   number   default null,
+   p_ts_alias_id      in   varchar2 default null,
+   p_ref_ts_id        in   varchar2 default null,
+   p_db_office_id     in   varchar2 default null
+)
+is
+begin
+   null;
+end assign_ts_group;
+
+procedure unassign_ts_group (
+   p_ts_category_id   in   varchar2,
+   p_ts_group_id      in   varchar2,
+   p_ts_id            in   varchar2,
+   p_unassign_all     in   varchar2 default 'F',
+   p_db_office_id     in   varchar2 default null
+)
+is
+begin
+   null;
+end unassign_ts_group;
+
+procedure assign_ts_groups (
+   p_ts_category_id   in   varchar2,
+   p_ts_group_id      in   varchar2,
+   p_ts_alias_array   in   ts_alias_tab_t,
+   p_db_office_id     in   varchar2 default null
+)
+is
+begin
+   null;
+end assign_ts_groups;
+
+procedure unassign_ts_groups (
+   p_ts_category_id   in   varchar2,
+   p_ts_group_id      in   varchar2,
+   p_ts_array         in   char_183_array_type,
+   p_unassign_all     in   varchar2 default 'F',
+   p_db_office_id     in   varchar2 default null
+)
+is
+begin
+   null;
+end unassign_ts_groups;
+
+
 ---------------------------
 -- Data quality routines --
 ---------------------------

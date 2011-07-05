@@ -646,6 +646,36 @@ CREATE OR REPLACE TYPE group_cat_t AS OBJECT (
 CREATE OR REPLACE TYPE group_cat_tab_t IS TABLE OF group_cat_t
 /
 
+CREATE OR REPLACE TYPE ts_alias_t AS OBJECT (
+   ts_id         VARCHAR2 (183),
+   ts_attribute  NUMBER,
+   ts_alias_id   VARCHAR2 (256),
+   ts_ref_id     VARCHAR2 (183)
+)
+/
+
+CREATE OR REPLACE TYPE ts_alias_tab_t IS TABLE OF ts_alias_t
+/
+
+CREATE OR REPLACE TYPE TS_GROUP_T AS OBJECT (
+   GROUP_ID          VARCHAR2 (32),
+   group_desc        VARCHAR2 (128),
+   shared_alias_id   VARCHAR2 (256),
+   shared_loc_ref_id VARCHAR2 (183)
+);
+/
+
+CREATE OR REPLACE TYPE TS_GROUP_TAB_T IS TABLE OF ts_group_t
+/
+
+CREATE OR REPLACE TYPE ts_group_cat_t AS OBJECT (
+   ts_category_id   VARCHAR2 (32),
+   ts_group_id      VARCHAR2 (32)
+)
+/
+
+CREATE OR REPLACE TYPE ts_group_cat_tab_t IS TABLE OF ts_group_cat_t
+/
 
 create or replace type str_tab_t is table of varchar2(32767)
 /
