@@ -6049,8 +6049,14 @@ procedure store_ts_category(
    p_db_office_id     in varchar2 default null
 )
 is
+   l_code number(10);
 begin
-   null;
+   l_code := store_ts_category_f(
+      p_ts_category_id,
+      p_ts_category_desc,
+      p_fail_if_exists,
+      p_ignore_null,
+      p_db_office_id);
 end store_ts_category;
       
 function store_ts_category_f(
@@ -6061,20 +6067,149 @@ function store_ts_category_f(
    p_db_office_id     in varchar2 default null
 )  return number
 is
+   l_office_code    number;
+   l_ignore_null    boolean;
+   l_fail_if_exists boolean;
+   l_exists         boolean;
+   l_rec            at_ts_category%rowtype;
 begin
-   return null;
+   --------------------
+   -- santity checks --
+   --------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_ts_category_id,
+      p_ts_category_desc,
+      p_fail_if_exists,
+      p_ignore_null,
+      p_db_office_id));
+   l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
+   l_ignore_null := cwms_util.is_true(p_ignore_null);
+   l_office_code := cwms_util.get_db_office_code(p_db_office_id);
+   ----------------------------------
+   -- determine if category exists --
+   ----------------------------------
+   l_rec.ts_category_id   := upper(p_ts_category_id);
+   begin
+      select *
+        into l_rec
+        from at_ts_category
+       where db_office_code in (l_office_code, cwms_util.db_office_code_all)
+         and upper(ts_category_id) = l_rec.ts_category_id;
+         
+      l_exists := true;
+   exception
+      when no_data_found then l_exists := false ;
+   end;         
+   ----------------------------------------
+   -- raise exceptions on invalid states --
+   ----------------------------------------
+   if l_exists then
+      if l_fail_if_exists then
+         cwms_err.raise(
+            'ITEM_ALREADY_EXISTS',
+            'Time series category',
+            p_ts_category_id);
+      else
+         if l_rec.db_office_code = cwms_util.db_office_code_all and
+            l_office_code != cwms_util.db_office_code_all
+         then
+            cwms_err.raise(
+               'ERROR',
+               'CWMS time series category '
+               ||p_ts_category_id
+               ||' can only be updated by owner.');
+         end if;      
+      end if;
+   end if;
+   -----------------------------------
+   -- insert or update the category --
+   -----------------------------------
+   if not l_exists or p_ts_category_desc is not null or not l_ignore_null then
+      l_rec.ts_category_desc := p_ts_category_desc;
+   end if;
+   if l_exists then
+      update at_ts_category
+         set row = l_rec
+       where ts_category_code = l_rec.ts_category_code;
+   else
+      l_rec.ts_category_code := cwms_seq.nextval;
+      l_rec.db_office_code   := l_office_code;
+      insert
+        into at_ts_category
+      values l_rec;
+   end if; 
+   return l_rec.ts_category_code;
 end store_ts_category_f;
 
 procedure rename_ts_category (
    p_ts_category_id_old   in   varchar2,
    p_ts_category_id_new   in   varchar2,
-   p_ts_category_desc     in   varchar2 default null,
-   p_ignore_null          in   varchar2 default 'T',
    p_db_office_id         in   varchar2 default null
 )
 is
+   l_office_code  number;
+   l_category_rec at_ts_category%rowtype;
 begin
-   null;
+   --------------------
+   -- santity checks --
+   --------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_ts_category_id_old,
+      p_ts_category_id_old,
+      p_db_office_id));
+   l_office_code := cwms_util.get_db_office_code(p_db_office_id);
+   --------------------------------------
+   -- determine if old category exists --
+   --------------------------------------
+   begin
+      select *
+        into l_category_rec
+        from at_ts_category
+       where db_office_code in (l_office_code, cwms_util.db_office_code_all)
+         and upper(ts_category_id) = upper(p_ts_category_id_old);
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'Time series location category',
+            p_ts_category_id_old);
+   end;         
+   --------------------------------------
+   -- determine if new category exists --
+   --------------------------------------
+   begin
+      select *
+        into l_category_rec
+        from at_ts_category
+       where db_office_code in (l_office_code, cwms_util.db_office_code_all)
+         and upper(ts_category_id) = upper(p_ts_category_id_new);
+         
+      cwms_err.raise(
+         'ITEM_ALREADY_EXISTS',
+         'Time series location category',
+         p_ts_category_id_new);
+         
+   exception
+      when no_data_found then null;
+   end;         
+   ----------------------------------------
+   -- raise exceptions on invalid states --
+   ----------------------------------------
+   if l_category_rec.db_office_code = cwms_util.db_office_code_all and
+      l_office_code != cwms_util.db_office_code_all
+   then
+      cwms_err.raise(
+         'ERROR',
+         'CWMS time series category '
+         ||p_ts_category_id_old
+         ||' can only be renamed by owner.');
+   end if; 
+   -------------------------     
+   -- rename the category --
+   -------------------------
+   update at_ts_category
+      set ts_category_id = p_ts_category_id_new 
+    where ts_category_code = l_category_rec.ts_category_code;     
 end rename_ts_category;
 
 procedure delete_ts_category (
@@ -6083,8 +6218,102 @@ procedure delete_ts_category (
    p_db_office_id   in varchar2 default null
 )
 is
+   l_office_code  number;
+   l_cascade      boolean;
+   l_category_rec at_ts_category%rowtype;
 begin
-   null;
+   --------------------
+   -- santity checks --
+   --------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_ts_category_id,
+      p_cascade,
+      p_db_office_id));
+   l_cascade     := cwms_util.is_true(p_cascade);
+   l_office_code := cwms_util.get_db_office_code(p_db_office_id);
+   ----------------------------------
+   -- determine if category exists --
+   ----------------------------------
+   begin
+      select *
+        into l_category_rec
+        from at_ts_category
+       where db_office_code in (l_office_code, cwms_util.db_office_code_all)
+         and upper(ts_category_id) = upper(p_ts_category_id);
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'Time series location category',
+            p_ts_category_id);
+   end;         
+   ----------------------------------------
+   -- raise exceptions on invalid states --
+   ----------------------------------------
+   if l_category_rec.db_office_code = cwms_util.db_office_code_all and
+      l_office_code != cwms_util.db_office_code_all
+   then
+      cwms_err.raise(
+         'ERROR',
+         'CWMS time series category '
+         ||p_ts_category_id
+         ||' can only be deleted by owner');
+   end if; 
+   -----------------     
+   -- do the work --
+   -----------------
+   if l_cascade then
+      ----------------------------------------------------------------------------
+      -- delete any groups in the category (will fail if there are assignments) --
+      ----------------------------------------------------------------------------
+      for group_rec in 
+         (  select ts_group_code
+              from at_ts_group
+             where ts_category_code = l_category_rec.ts_category_code
+         )
+      loop
+         for assign_rec in
+            (  select ts_code
+                 from at_ts_group_assignment
+                where ts_group_code = group_rec.ts_group_code
+            )
+         loop
+            cwms_err.raise(
+               'ERROR',
+               'Cannot delete time series category '
+               ||p_ts_category_id
+               ||' because at least one of its groups is not empty.');
+         end loop;
+         ----------------------          
+         -- delete the group --
+         ----------------------          
+         delete
+           from at_ts_group
+          where ts_group_code = group_rec.ts_group_code;
+      end loop;
+   else
+      ------------------------------
+      -- test for existing groups --
+      ------------------------------
+      for group_rec in 
+         (  select ts_group_code
+              from at_ts_group
+             where ts_category_code = l_category_rec.ts_category_code
+         )
+      loop
+         cwms_err.raise(
+            'ERROR',
+            'Cannot delete time series category '
+            ||p_ts_category_id
+            ||' because it is not empty.');
+      end loop;
+   end if;
+   -------------------------     
+   -- delete the category --
+   -------------------------
+   delete 
+     from at_ts_category 
+    where ts_category_code = l_category_rec.ts_category_code;     
 end delete_ts_category;
 
 procedure store_ts_group (
@@ -6098,8 +6327,17 @@ procedure store_ts_group (
    p_db_office_id     in   varchar2 default null
 )
 is
+   l_code number(10);
 begin
-   null;
+   l_code := store_ts_group_f(
+      p_ts_category_id,
+      p_ts_group_id,
+      p_ts_group_desc,
+      p_fail_if_exists,
+      p_ignore_nulls,
+      p_shared_alias_id,
+      p_shared_ts_ref_id,
+      p_db_office_id);
 end store_ts_group;
 
 function store_ts_group_f (
@@ -6113,21 +6351,173 @@ function store_ts_group_f (
    p_db_office_id     in   varchar2 default null
 )  return number
 is
+   l_office_code    number(10);
+   l_fail_if_exists boolean;
+   l_exists         boolean;
+   l_ignore_nulls   boolean;
+   l_rec            at_ts_group%rowtype;
 begin
-   null;
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_ts_category_id,
+      p_ts_group_id,
+      p_ts_group_desc,
+      p_fail_if_exists,
+      p_ignore_nulls,
+      p_shared_alias_id,
+      p_shared_ts_ref_id,
+      p_db_office_id));
+   l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
+   l_ignore_nulls   := cwms_util.is_true(p_ignore_nulls);      
+   l_office_code    := cwms_util.get_db_office_code(p_db_office_id);
+   --------------------------------------------------      
+   -- get the category code, creating if necessary --
+   --------------------------------------------------      
+   l_rec.ts_category_code := cwms_ts.store_ts_category_f(
+      p_ts_category_id   => p_ts_category_id,
+      p_ts_category_desc => null,
+      p_fail_if_exists   => 'F',
+      p_ignore_null      => 'T',
+      p_db_office_id     => p_db_office_id);      
+   -----------------------------------      
+   -- determine if the group exists --
+   -----------------------------------
+   l_rec.ts_group_id := p_ts_group_id;
+   begin
+      select *
+        into l_rec
+        from at_ts_group
+       where upper(ts_group_id) = upper(l_rec.ts_group_id)
+         and ts_category_code = l_rec.ts_category_code
+         and db_office_code in (l_office_code, cwms_util.db_office_code_all);
+      l_exists := true;         
+   exception
+      when no_data_found then l_exists := false;
+   end;
+   ----------------------------------------
+   -- raise exceptions on invalid states --
+   ----------------------------------------
+   if l_exists then
+      if l_fail_if_exists then
+         cwms_err.raise(
+            'ITEM_ALREADY_EXISTS',
+            'Time series group',
+            p_ts_category_id
+            ||'/'
+            ||p_ts_group_id);
+      else
+         if l_rec.db_office_code = cwms_util.db_office_code_all and
+            l_office_code != cwms_util.db_office_code_all
+         then
+            cwms_err.raise(
+               'ERROR',
+               'CWMS time series group '
+               ||p_ts_category_id
+               ||'/'
+               ||p_ts_group_id
+               ||' can only be updated by owner.');
+         end if;      
+      end if;
+   end if;
+   ------------------------
+   -- prepare the record --
+   ------------------------
+   l_rec.db_office_code := l_office_code;
+   if not l_exists or p_ts_group_desc is not null or not l_ignore_nulls then
+      l_rec.ts_group_desc := p_ts_group_desc;
+   end if;
+   if not l_exists or p_shared_alias_id is not null or not l_ignore_nulls then
+      l_rec.shared_ts_alias_id := p_shared_alias_id;
+   end if;
+   if not l_exists or p_shared_ts_ref_id is not null or not l_ignore_nulls then
+      if p_shared_ts_ref_id is not null then
+         l_rec.shared_ts_ref_code := cwms_ts.get_ts_code(p_shared_ts_ref_id, l_office_code);
+      end if;
+   end if;
+   ---------------------------------
+   -- update or insert the record --
+   ---------------------------------
+   if l_exists then
+      update at_ts_group
+         set row = l_rec
+       where ts_group_code = l_rec.ts_group_code;
+   else
+      l_rec.ts_group_code := cwms_seq.nextval;
+      insert
+        into at_ts_group
+      values l_rec;
+   end if;
+   return l_rec.ts_group_code;
 end store_ts_group_f;
 
 procedure rename_ts_group (
    p_ts_category_id    in   varchar2,
    p_ts_group_id_old   in   varchar2,
    p_ts_group_id_new   in   varchar2,
-   p_ts_group_desc     in   varchar2 default null,
-   p_ignore_null       in   varchar2 default 'T',
    p_db_office_id      in   varchar2 default null
 )
 is
+   l_office_code    number(10);
+   l_rec            at_ts_group%rowtype;
 begin
-   null;
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_ts_category_id,
+      p_ts_group_id_old,
+      p_ts_group_id_new,
+      p_db_office_id));
+   l_office_code := cwms_util.get_db_office_code(p_db_office_id);
+   -----------------------------------      
+   -- determine if the group exists --
+   -----------------------------------
+   begin
+      select g.ts_group_code,
+             g.ts_category_code,
+             g.ts_group_id,
+             g.ts_group_desc,
+             g.db_office_code,
+             g.shared_ts_alias_id,
+             g.shared_ts_ref_code
+        into l_rec
+        from at_ts_category c,
+             at_ts_group g
+       where upper(c.ts_category_id) = upper(p_ts_category_id)
+         and upper(g.ts_group_id) = upper(p_ts_group_id_old)
+         and g.ts_category_code = c.ts_category_code
+         and g.db_office_code in (l_office_code, cwms_util.db_office_code_all);
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'Time series group',
+            p_ts_category_id
+            ||'/'
+            ||p_ts_group_id_old);
+   end;
+   ----------------------------------------
+   -- raise exceptions on invalid states --
+   ----------------------------------------
+   if l_rec.db_office_code = cwms_util.db_office_code_all and
+      l_office_code != cwms_util.db_office_code_all
+   then
+      cwms_err.raise(
+         'ERROR',
+         'CWMS time series group '
+         ||p_ts_category_id
+         ||'/'
+         ||p_ts_group_id_old
+         ||' can only be renamed by owner.');
+   end if;
+   ----------------------   
+   -- rename the group --
+   ----------------------
+   update at_ts_group
+      set ts_group_id = p_ts_group_id_new
+    where ts_group_code = l_rec.ts_group_code;   
 end rename_ts_group;
       
 procedure delete_ts_group (
@@ -6136,8 +6526,78 @@ procedure delete_ts_group (
    p_db_office_id     in varchar2 default null
 )
 is
+   l_office_code    number(10);
+   l_rec            at_ts_group%rowtype;
 begin
-   null;
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_ts_category_id,
+      p_ts_group_id,
+      p_db_office_id));
+   l_office_code := cwms_util.get_db_office_code(p_db_office_id);
+   -----------------------------------      
+   -- determine if the group exists --
+   -----------------------------------
+   begin
+      select g.ts_group_code,
+             g.ts_category_code,
+             g.ts_group_id,
+             g.ts_group_desc,
+             g.db_office_code,
+             g.shared_ts_alias_id,
+             g.shared_ts_ref_code
+        into l_rec
+        from at_ts_category c,
+             at_ts_group g
+       where upper(c.ts_category_id) = upper(p_ts_category_id)
+         and upper(g.ts_group_id) = upper(p_ts_group_id)
+         and g.ts_category_code = c.ts_category_code
+         and g.db_office_code in (l_office_code, cwms_util.db_office_code_all);
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'Time series group',
+            p_ts_category_id
+            ||'/'
+            ||p_ts_group_id);
+   end;
+   ----------------------------------------
+   -- raise exceptions on invalid states --
+   ----------------------------------------
+   if l_rec.db_office_code = cwms_util.db_office_code_all and
+      l_office_code != cwms_util.db_office_code_all
+   then
+      cwms_err.raise(
+         'ERROR',
+         'CWMS time series group '
+         ||p_ts_category_id
+         ||'/'
+         ||p_ts_group_id
+         ||' can only be deleted by owner.');
+   end if;
+   for rec in 
+      (  select ts_code
+           from at_ts_group_assignment
+          where ts_group_code = l_rec.ts_group_code
+      )
+   loop
+      cwms_err.raise(
+         'ERROR',
+         'Cannot delete time series group '
+         ||p_ts_category_id
+         ||'/'
+         ||p_ts_group_id
+         ||' because it is not empty.');
+   end loop;      
+   ----------------------   
+   -- delete the group --
+   ----------------------
+   delete
+     from at_ts_group
+    where ts_group_code = l_rec.ts_group_code;   
 end delete_ts_group;
 
 procedure assign_ts_group (
@@ -6150,8 +6610,81 @@ procedure assign_ts_group (
    p_db_office_id     in   varchar2 default null
 )
 is
+   l_office_code   number(10);
+   l_ts_group_code number(10);
+   l_ts_code       number(10);
+   l_ts_ref_code   number(10);
+   l_rec           at_ts_group_assignment%rowtype;
+   l_exists        boolean;
 begin
-   null;
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_ts_category_id,
+      p_ts_group_id,
+      p_ts_id,
+      p_ts_alias_id,
+      p_ref_ts_id,
+      p_db_office_id));
+   ------------------------      
+   -- get the group code --
+   ------------------------      
+   begin
+      select ts_group_code
+        into l_ts_group_code
+        from at_ts_category c,
+             at_ts_group g
+       where upper(c.ts_category_id) = upper(p_ts_category_id)
+         and upper(g.ts_group_id) = upper(p_ts_group_id)
+         and g.ts_category_code = c.ts_category_code
+         and g.db_office_code in (l_office_code, cwms_util.db_office_code_all);
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'Time series group',
+            p_ts_category_id
+            ||'/'
+            ||p_ts_group_id);
+   end;
+   -----------------------------------------------
+   -- determine if an assignment already exists --
+   -----------------------------------------------
+   l_ts_code := get_ts_code(p_ts_id, l_office_code);
+   if p_ref_ts_id is not null then
+      l_ts_ref_code := get_ts_code(p_ref_ts_id, l_office_code);
+   end if;
+   begin
+      select *
+        into l_rec
+        from at_ts_group_assignment
+       where ts_code = l_ts_code
+         and ts_group_code = l_ts_group_code;
+      l_exists := true;         
+   exception
+      when no_data_found then l_exists := false;
+   end;
+   ------------------------
+   -- prepare the record --
+   ------------------------
+   l_rec.ts_attribute := nvl(p_ts_attribute, l_rec.ts_attribute);
+   l_rec.ts_alias_id  := nvl(p_ts_alias_id, l_rec.ts_alias_id);
+   l_rec.ts_ref_code  := nvl(l_ts_ref_code, l_rec.ts_ref_code);
+   ---------------------------------
+   -- insert or update the record --
+   ---------------------------------
+   if l_exists then
+      update at_ts_group_assignment
+         set row = l_rec
+       where ts_code = l_rec.ts_code
+         and ts_group_code = l_rec.ts_group_code;
+   else
+      l_rec.ts_group_code := l_ts_group_code;
+      insert
+        into at_ts_group_assignment
+      values l_rec;
+   end if;
 end assign_ts_group;
 
 procedure unassign_ts_group (
@@ -6162,8 +6695,55 @@ procedure unassign_ts_group (
    p_db_office_id     in   varchar2 default null
 )
 is
+   l_office_code   number(10);
+   l_ts_group_code number(10);
+   l_ts_code       number(10);
+   l_exists        boolean;
 begin
-   null;
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_ts_category_id,
+      p_ts_group_id,
+      p_ts_id,
+      p_unassign_all,
+      p_db_office_id));
+   ------------------------      
+   -- get the group code --
+   ------------------------      
+   begin
+      select ts_group_code
+        into l_ts_group_code
+        from at_ts_category c,
+             at_ts_group g
+       where upper(c.ts_category_id) = upper(p_ts_category_id)
+         and upper(g.ts_group_id) = upper(p_ts_group_id)
+         and g.ts_category_code = c.ts_category_code
+         and g.db_office_code in (l_office_code, cwms_util.db_office_code_all);
+   exception
+      when no_data_found then
+         cwms_err.raise(
+            'ITEM_DOES_NOT_EXIST',
+            'Time series group',
+            p_ts_category_id
+            ||'/'
+            ||p_ts_group_id);
+   end;
+   ------------------------------
+   -- delete the assignment(s) --
+   ------------------------------
+   if cwms_util.is_true(p_unassign_all) then
+      delete 
+        from at_ts_group_assignment
+       where ts_group_code = l_ts_group_code;
+   else
+      l_ts_code := get_ts_code(p_ts_id, l_office_code);
+      delete 
+        from at_ts_group_assignment
+       where ts_group_code = l_ts_group_code
+         and ts_code = l_ts_code;
+   end if;
 end unassign_ts_group;
 
 procedure assign_ts_groups (
@@ -6174,21 +6754,154 @@ procedure assign_ts_groups (
 )
 is
 begin
-   null;
+   if p_ts_alias_array is not null then
+      for i in 1..p_ts_alias_array.count loop
+         cwms_ts.assign_ts_group(
+            p_ts_category_id,
+            p_ts_group_id,
+            p_ts_alias_array(i).ts_id,
+            p_ts_alias_array(i).ts_attribute,
+            p_ts_alias_array(i).ts_alias_id,
+            p_ts_alias_array(i).ts_ref_id,
+            p_db_office_id);
+      end loop;
+   end if;
 end assign_ts_groups;
 
 procedure unassign_ts_groups (
    p_ts_category_id   in   varchar2,
    p_ts_group_id      in   varchar2,
-   p_ts_array         in   char_183_array_type,
+   p_ts_array         in   str_tab_t,
    p_unassign_all     in   varchar2 default 'F',
    p_db_office_id     in   varchar2 default null
 )
 is
 begin
-   null;
+   if p_ts_array is null then
+      cwms_ts.unassign_ts_group(
+         p_ts_category_id,
+         p_ts_group_id,
+         null,
+         p_unassign_all,
+         p_db_office_id);
+   else
+      for i in 1..p_ts_array.count loop
+         cwms_ts.unassign_ts_group(
+            p_ts_category_id,
+            p_ts_group_id,
+            p_ts_array(i),
+            p_unassign_all,
+            p_db_office_id);
+      end loop;
+   end if;
 end unassign_ts_groups;
-
+   
+function get_ts_id_from_alias(
+   p_alias_id    in varchar2,
+   p_group_id    in varchar2 default null,
+   p_category_id in varchar2 default null,
+   p_office_id   in varchar2 default null
+)  return varchar2
+is
+   l_ts_code number(10);
+   l_ts_id   varchar2(183);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_alias_id,
+      p_group_id,
+      p_category_id,
+      p_office_id));
+   -----------------------------------
+   -- retrieve and return the ts id --
+   -----------------------------------
+   begin
+      select distinct
+             ts_code
+        into l_ts_code
+        from at_ts_group_assignment a,
+             at_ts_group g,
+             at_ts_category c
+       where upper(c.ts_category_id) = upper(nvl(p_category_id, c.ts_category_id))
+         and upper(g.ts_group_id) = upper(nvl(p_group_id, g.ts_group_id))
+         and upper(a.ts_alias_id) = upper(p_alias_id)
+         and g.ts_category_code = c.ts_category_code
+         and a.ts_group_code = g.ts_group_code;
+   exception
+      when no_data_found then
+         null;
+            
+      when too_many_rows then
+         cwms_err.raise(
+            'ERROR',
+            'Alias ('
+            ||p_alias_id
+            ||') matches more than one time series.');                 
+   end;               
+   if l_ts_code is not null then
+      l_ts_id := get_ts_id(l_ts_code);
+   end if;
+   return l_ts_id;
+end get_ts_id_from_alias;   
+      
+   
+function get_ts_code_from_alias(
+   p_alias_id    in varchar2,
+   p_group_id    in varchar2 default null,
+   p_category_id in varchar2 default null,
+   p_office_id   in varchar2 default null
+)  return number
+is
+begin
+   return get_ts_code(
+      get_ts_id_from_alias(
+         p_alias_id,
+         p_group_id,
+         p_category_id,
+         p_office_id),
+      p_office_id);
+end get_ts_code_from_alias;
+   
+function get_ts_id(
+   p_ts_id_or_alias in varchar2,
+   p_office_id      in varchar2
+)  return varchar2
+is
+   ts_id_not_found exception; pragma exception_init(ts_id_not_found, -20001);
+   l_ts_code number(10);
+   l_ts_id   varchar2(183);
+begin
+   begin
+      l_ts_code := get_ts_code(p_ts_id_or_alias, p_office_id);
+   exception
+      when ts_id_not_found then
+         begin
+            l_ts_code := get_ts_code_from_alias(p_ts_id_or_alias, p_office_id);
+         exception
+            when no_data_found then null;
+         end;
+   end;
+   if l_ts_code is not null then
+      l_ts_id := get_ts_id(l_ts_code);
+   end if;
+   return l_ts_id;
+end get_ts_id;
+   
+function get_ts_id(
+   p_ts_id_or_alias in varchar2,
+   p_office_code    in number
+)  return varchar2
+is
+   l_office_id varchar2(16);
+begin
+   select office_id
+     into l_office_id
+     from cwms_office
+    where office_code = p_office_code;
+   return get_ts_id(p_ts_id_or_alias, l_office_id);
+end get_ts_id;
 
 ---------------------------
 -- Data quality routines --

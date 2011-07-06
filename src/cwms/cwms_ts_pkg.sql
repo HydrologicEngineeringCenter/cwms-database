@@ -720,8 +720,6 @@ AS
    procedure rename_ts_category (
       p_ts_category_id_old   in   varchar2,
       p_ts_category_id_new   in   varchar2,
-      p_ts_category_desc     in   varchar2 default null,
-      p_ignore_null          in   varchar2 default 'T',
       p_db_office_id         in   varchar2 default null
    );
 
@@ -757,8 +755,6 @@ AS
       p_ts_category_id    in   varchar2,
       p_ts_group_id_old   in   varchar2,
       p_ts_group_id_new   in   varchar2,
-      p_ts_group_desc     in   varchar2 default null,
-      p_ignore_null       in   varchar2 default 'T',
       p_db_office_id      in   varchar2 default null
    );
       
@@ -796,11 +792,36 @@ AS
    procedure unassign_ts_groups (
       p_ts_category_id   in   varchar2,
       p_ts_group_id      in   varchar2,
-      p_ts_array         in   char_183_array_type,
+      p_ts_array         in   str_tab_t,
       p_unassign_all     in   varchar2 default 'F',
       p_db_office_id     in   varchar2 default null
    );
+   
+   function get_ts_id_from_alias(
+      p_alias_id    in varchar2,
+      p_group_id    in varchar2 default null,
+      p_category_id in varchar2 default null,
+      p_office_id   in varchar2 default null
+   )  return varchar2;
       
+   
+   function get_ts_code_from_alias(
+      p_alias_id    in varchar2,
+      p_group_id    in varchar2 default null,
+      p_category_id in varchar2 default null,
+      p_office_id   in varchar2 default null
+   )  return number;
+   
+   function get_ts_id(
+      p_ts_id_or_alias in varchar2,
+      p_office_id      in varchar2
+   )  return varchar2;
+
+   function get_ts_id(
+      p_ts_id_or_alias in varchar2,
+      p_office_code    in number
+   )  return varchar2;
+   
    ---------------------------
    -- Data quality routines --
    ---------------------------
