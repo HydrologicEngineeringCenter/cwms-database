@@ -1,4 +1,4 @@
-/* Formatted on 6/2/2011 10:52:34 AM (QP5 v5.163.1008.3004) */
+/* Formatted on 7/7/2011 3:27:47 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE cwms_shef
 AS
 	data_stream_mgt_style	CONSTANT VARCHAR2 (16) := 'DATA STREAMS';
@@ -172,6 +172,11 @@ AS
 		p_db_office_id 		  IN VARCHAR2 DEFAULT NULL
 	);
 
+	PROCEDURE delete_data_feed_shef_specs (
+		p_data_feed_id   IN VARCHAR2,
+		p_db_office_id   IN VARCHAR2 DEFAULT NULL
+	);
+
 	PROCEDURE delete_data_stream_shef_specs (
 		p_data_stream_id	 IN VARCHAR2,
 		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
@@ -215,6 +220,12 @@ AS
 		RETURN cat_shef_pe_codes_tab_t
 		PIPELINED;
 
+	FUNCTION get_shef_crit_file (p_data_stream_id	  IN VARCHAR2,
+										  p_utc_version_date   IN DATE DEFAULT NULL,
+										  p_db_office_id		  IN VARCHAR2 DEFAULT NULL
+										 )
+		RETURN CLOB;
+
 	FUNCTION get_shef_duration_numeric (p_shef_duration_code IN VARCHAR2)
 		RETURN VARCHAR2;
 
@@ -256,6 +267,11 @@ AS
 											 p_db_office_id	  IN VARCHAR2 DEFAULT NULL
 											)
 		RETURN NUMBER;
+
+	FUNCTION is_crit_file_current (p_data_stream_id   IN VARCHAR2,
+											 p_db_office_id	  IN VARCHAR2 DEFAULT NULL
+											)
+		RETURN BOOLEAN;
 
 	FUNCTION is_data_stream_active (
 		p_data_stream_id	 IN VARCHAR2,

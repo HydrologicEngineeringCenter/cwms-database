@@ -1,0 +1,28 @@
+CREATE OR REPLACE VIEW av_loc_cat_grp
+(
+    cat_db_office_id,
+    loc_category_id,
+    loc_category_desc,
+    grp_db_office_id,
+    loc_group_id,
+    loc_group_desc,
+    shared_loc_alias_id,
+    shared_ref_location_id
+)
+AS
+    SELECT    co.office_id cat_db_office_id, loc_category_id, loc_category_desc,
+                coo.office_id grp_db_office_id, loc_group_id, loc_group_desc,
+                shared_loc_alias_id,
+                abl.base_location_id || SUBSTR ('-', 1, LENGTH (atpl.sub_location_id)) || atpl.sub_location_id shared_ref_location_id
+      FROM    cwms_office co,
+                cwms_office coo,
+                at_loc_category atlc,
+                at_loc_group atlg,
+                at_physical_location atpl,
+                at_base_location abl
+     WHERE         atlc.db_office_code = co.office_code
+                AND atlg.db_office_code = coo.office_code(+)
+                AND atlc.loc_category_code = atlg.loc_category_code(+)
+                AND atpl.location_code(+) = atlg.shared_loc_ref_code
+                AND atpl.base_location_code = abl.base_location_code(+)
+/

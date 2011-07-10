@@ -1318,7 +1318,7 @@ IS
 		l_ts_subselect_string VARCHAR2 (512)
 				:= nvl(cwms_util.normalize_wildcards(TRIM (p_ts_subselect_string)), '%') ;
 	BEGIN
-        cwms_util.refresh_mv_cwms_ts_id;
+        
 		l_db_office_id := cwms_util.get_db_office_id (p_db_office_id);
 		l_db_office_code := cwms_util.get_db_office_code (l_db_office_id);
 

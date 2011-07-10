@@ -60,11 +60,11 @@ AS
 	PROCEDURE aa1 (p_string IN VARCHAR2)
 	IS
 	BEGIN
-		--  INSERT INTO aa1 (stringstuff)
-		--  VALUES (p_string
-		-- 	);
-		--
-		--  COMMIT;
+--		  INSERT INTO aa1 (stringstuff)
+--		  VALUES (p_string
+--		 	);
+--		
+--		  COMMIT;
 		NULL;
 	END;
 

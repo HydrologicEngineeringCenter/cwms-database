@@ -2024,7 +2024,6 @@ begin
              WHERE   UPPER(db_office_id) = UPPER (l_office_id)
                         AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
                         
-        CWMS_UTIL.REFRESH_MV_CWMS_TS_ID;
     END;
 
    set_action('Handle start and end times');
@@ -4264,17 +4263,17 @@ BEGIN
             END;
     END;
 
-   BEGIN
-      SELECT ts_code
-        INTO l_ts_code
-        FROM at_cwms_ts_spec a
-       WHERE a.TS_CODE = l_ts_code
-         AND a.DELETE_DATE is null;
-   EXCEPTION
-      WHEN NO_DATA_FOUND
-      THEN
-         cwms_err.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
-   END;
+--   BEGIN
+--      SELECT ts_code
+--        INTO l_ts_code
+--        FROM at_cwms_ts_spec a
+--       WHERE a.TS_CODE = l_ts_code
+--         AND a.DELETE_DATE is null;
+--   EXCEPTION
+--      WHEN NO_DATA_FOUND
+--      THEN
+--         cwms_err.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
+--   END;
    
    select office_id
      into l_db_office_id
@@ -4292,11 +4291,12 @@ BEGIN
    THEN
       l_delete_action := cwms_util.delete_ts_cascade;
    END IF;
+   --
    IF l_delete_action = cwms_util.delete_data
    THEN
       l_delete_action := cwms_util.delete_ts_data;
    END IF;
-
+   --
    IF l_delete_action = cwms_util.delete_ts_id
    THEN
       SELECT COUNT (*)
@@ -4407,6 +4407,9 @@ BEGIN
          SET location_code = 0,
              delete_date = l_delete_date
        WHERE ts_code = l_ts_code;
+       --
+       COMMIT;
+       --
 
       IF l_delete_action = cwms_util.delete_ts_data
       THEN
@@ -4439,14 +4442,7 @@ BEGIN
       cwms_err.RAISE ('INVALID_DELETE_ACTION', p_delete_action);
    END IF;
 
-   --
-   COMMIT;
-   --
    delete_ts_cleanup (l_ts_code, l_ts_code_new, l_delete_action);
-   
-    -- Refresh the catalog to prevent selecting old ts_code when the data is deleted from
-   -- a time series
-   cwms_util.refresh_mv_cwms_ts_id;
 --
 --
 END delete_ts;

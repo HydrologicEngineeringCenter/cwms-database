@@ -1,7 +1,19 @@
-/* Formatted on 2006/12/19 11:53 (Formatter Plus v4.8.8) */
--------------------------
--- AV_LOC view.
--- 
+--
+-- AV_LOC  (View)
+--
+--  Dependencies:
+--   AT_LOCATION_KIND (Table)
+--   CWMS_NATION (Table)
+--   CWMS_OFFICE (Table)
+--   CWMS_STATE (Table)
+--   CWMS_TIME_ZONE (Table)
+--   CWMS_UNIT_CONVERSION (Table)
+--   CWMS_COUNTY (Table)
+--   AT_BASE_LOCATION (Table)
+--   AT_DISPLAY_UNITS (Table)
+--   AT_PHYSICAL_LOCATION (Table)
+--
+
 CREATE OR REPLACE FORCE VIEW av_loc
 (
     location_code,
@@ -24,7 +36,8 @@ CREATE OR REPLACE FORCE VIEW av_loc
     public_name,
     long_name,
     description,
-    active_flag,
+    base_loc_active_flag,
+    loc_active_flag,
     location_kind_id,
     map_label,
     published_latitude,
@@ -39,20 +52,19 @@ AS
                 (elevation * factor + offset) elevation, to_unit_id unit_id,
                 vertical_datum, longitude, latitude, horizontal_datum,
                 time_zone_name, county_name, state_initial, public_name,
-                long_name, description, active_flag, location_kind_id, map_label,
-                published_latitude, published_longitude, bounding_office_id,
-                nation_id, nearest_city
+                long_name, description, base_loc_active_flag, loc_active_flag,
+                location_kind_id, map_label, published_latitude,
+                published_longitude, bounding_office_id, nation_id, nearest_city
       FROM        (SELECT     c.office_code db_office_code, location_code,
                                  base_location_code, c.office_id db_office_id,
                                  base_location_id, sub_location_id,
-                                     base_location_id
-                                 || SUBSTR ('-', 1, LENGTH (sub_location_id))
-                                 || sub_location_id
-                                     location_id, location_type, elevation,
-                                 vertical_datum, longitude, latitude,
-                                 horizontal_datum, time_zone_name, county_name,
-                                 state_initial, a.public_name, a.long_name,
-                                 a.description, a.active_flag, location_kind_id,
+                                 base_location_id || SUBSTR ('-', 1, LENGTH (sub_location_id)) || sub_location_id location_id,
+                                 location_type, elevation, vertical_datum, longitude,
+                                 latitude, horizontal_datum, time_zone_name,
+                                 county_name, state_initial, a.public_name,
+                                 a.long_name, a.description,
+                                 b.active_flag base_loc_active_flag,
+                                 a.active_flag loc_active_flag, location_kind_id,
                                  map_label, published_latitude, published_longitude,
                                  d.office_id bounding_office_id, nation_id,
                                  nearest_city
@@ -90,8 +102,23 @@ AS
                         FROM     at_display_units adu, cwms_unit_conversion cuc
                       WHERE          adu.parameter_code = 10
                                  AND adu.display_unit_code = cuc.to_unit_code
-                                 AND cuc.from_unit_code = 39) bb;
+                                 AND cuc.from_unit_code = 39) bb
 /
+
+
+--
+-- CWMS_V_LOC  (Synonym) 
+--
+--  Dependencies: 
+--   AV_LOC (View)
+--
+CREATE PUBLIC SYNONYM CWMS_V_LOC FOR AV_LOC
+/
+
+
+GRANT SELECT ON AV_LOC TO CWMS_USER
+/
+
 SHOW ERRORS;
 
 -------------------------

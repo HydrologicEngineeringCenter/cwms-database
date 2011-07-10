@@ -1,6 +1,17 @@
-/* Formatted on 6/2/2011 3:37:08 PM (QP5 v5.163.1008.3004) */
+/* Formatted on 7/8/2011 11:52:45 AM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE BODY cwms_shef
 AS
+	PROCEDURE cat_shef_crit_lines (p_shef_crit_lines		 OUT SYS_REFCURSOR,
+											 p_data_stream_code	 IN	  NUMBER
+											)
+	IS
+	BEGIN
+		OPEN p_shef_crit_lines FOR
+			SELECT	a.shef_crit_line
+			  FROM	av_shef_decode_spec a
+			 WHERE	a.data_stream_code = p_data_stream_code;
+	END cat_shef_crit_lines;
+
 	FUNCTION get_update_crit_file_flag (p_data_stream_id	 IN VARCHAR2,
 													p_db_office_id 	 IN VARCHAR2
 												  )
@@ -60,6 +71,8 @@ AS
 			  INTO	l_data_stream_code
 			  FROM	at_data_feed_id
 			 WHERE	data_feed_code = p_data_feed_code;
+
+			RETURN l_data_stream_code;
 		EXCEPTION
 			WHEN NO_DATA_FOUND
 			THEN
@@ -147,6 +160,66 @@ AS
 		END IF;
 	END;
 
+	FUNCTION get_crit_file_code (p_data_stream_code   IN NUMBER,
+										  p_utc_version_date   IN DATE DEFAULT NULL
+										 )
+		RETURN NUMBER
+	IS
+		l_crit_file_code	 NUMBER;
+	BEGIN
+		BEGIN
+			IF p_utc_version_date IS NULL
+			THEN
+				SELECT	crit_file_code
+				  INTO	l_crit_file_code
+				  FROM	zv_current_crit_file_code
+				 WHERE	data_stream_code = p_data_stream_code;
+			ELSE
+				SELECT	crit_file_code
+				  INTO	l_crit_file_code
+				  FROM	at_shef_crit_file_rec
+				 WHERE	data_stream_code = p_data_stream_code
+							AND crit_file_creation_date = p_utc_version_date;
+			END IF;
+		EXCEPTION
+			WHEN NO_DATA_FOUND
+			THEN
+				l_crit_file_code := NULL;
+		END;
+
+		RETURN l_crit_file_code;
+	END;
+
+	FUNCTION is_crit_file_current (p_data_stream_id   IN VARCHAR2,
+											 p_db_office_id	  IN VARCHAR2 DEFAULT NULL
+											)
+		RETURN BOOLEAN
+	IS
+		l_data_stream_code	 NUMBER
+			:= get_data_stream_code (p_data_stream_id   => p_data_stream_id,
+											 p_db_office_id	  => p_db_office_id
+											);
+		l_data_stream_state	 VARCHAR2 (16);
+	BEGIN
+		BEGIN
+			SELECT	crit_file_state
+			  INTO	l_data_stream_state
+			  FROM	av_data_streams_current
+			 WHERE	data_stream_code = l_data_stream_code;
+		EXCEPTION
+			WHEN NO_DATA_FOUND
+			THEN
+				RETURN FALSE;
+		END;
+
+		IF l_data_stream_state = 'CURRENT'
+		THEN
+			RETURN TRUE;
+		ELSE
+			RETURN FALSE;
+		END IF;
+	END;
+
 	FUNCTION get_loc_category_code (p_loc_category_id	 IN VARCHAR2,
 											  p_db_office_code	 IN NUMBER
 											 )
@@ -197,7 +270,8 @@ AS
 			  INTO	l_data_stream_code
 			  FROM	at_data_stream_id a
 			 WHERE	UPPER (a.data_stream_id) = UPPER (TRIM (p_data_stream_id))
-						AND a.db_office_code = p_db_office_code;
+						AND a.db_office_code = p_db_office_code
+						AND a.delete_date IS NULL;
 
 			RETURN l_data_stream_code;
 		EXCEPTION
@@ -486,6 +560,7 @@ AS
 		--==
 		--====
 		--======
+
 		IF p_data_stream_id IS NULL AND p_data_feed_id IS NULL
 		THEN
 			cwms_err.raise (
@@ -995,6 +1070,7 @@ AS
 				|| ':'
 				|| p_cwms_ts_id
 			);
+
 			--
 			-- CASE 1 - Perform the INSERT of the new SHEF Spec...
 			--
@@ -1496,39 +1572,6 @@ AS
 						l_loc_group_code,
 						l_shef_duration_code
 					);
-	-- EXCEPTION
-	--  WHEN OTHERS
-	--  THEN
-	--   DECLARE
-	--  ERROR_CODE NUMBER := SQLCODE;
-	--   BEGIN
-	--  IF ERROR_CODE = -1
-	--  THEN
-	--   cwms_err.raise ('SHEF_DUP_TS_ID', p_cwms_ts_id);
-	--  ELSE
-	--   cwms_apex.aa1 (
-	--  'store_shef_spec - trying to update into at_shef_decode'
-	--   );
-	--   cwms_apex.aa1 (
-	--  'store_shef_spec - tse code is:' || l_shef_tse_code
-	--   );
-	--
-	--   UPDATE at_shef_decode
-	--  SET shef_loc_id = l_shef_id,
-	--  shef_pe_code = l_shef_pe_code,
-	--  shef_tse_code = l_shef_tse_code,
-	--  shef_duration_numeric = l_shef_duration_numeric,
-	--  shef_unit_code = l_shef_unit_code,
-	--  shef_time_zone_code = l_shef_time_zone_code,
-	--  dl_time = l_dl_time,
-	--  location_code = l_location_code,
-	--  loc_group_code = l_loc_group_code,
-	--  shef_duration_code = l_shef_duration_code
-	--  WHERE ts_code = l_ts_code
-	--  AND data_feed_code = l_data_feed_code;
-	--  END IF;
-	--   END;
-	-- END;
 	END;
 
 	-- ****************************************************************************
@@ -1816,6 +1859,39 @@ AS
 		END IF;
 	END;
 
+	PROCEDURE delete_data_feed_shef_specs (p_data_feed_code IN NUMBER)
+	IS
+	BEGIN
+		DELETE FROM   at_shef_decode
+				WHERE   data_feed_code = p_data_feed_code;
+	END;
+
+	PROCEDURE delete_data_feed_shef_specs (
+		p_data_feed_id   IN VARCHAR2,
+		p_db_office_id   IN VARCHAR2 DEFAULT NULL
+	)
+	IS
+		l_db_office_code	 NUMBER
+									 := cwms_util.get_db_office_code (p_db_office_id);
+		l_data_feed_code	 NUMBER;
+	BEGIN
+		-- Check if data_stream already exists...
+		BEGIN
+			l_data_feed_code :=
+				get_data_feed_code (p_data_feed_id		=> p_data_feed_id,
+										  p_db_office_code	=> l_db_office_code
+										 );
+		EXCEPTION
+			WHEN OTHERS
+			THEN
+				cwms_err.raise ('DATA_FEED_NOT_FOUND', TRIM (p_data_feed_id));
+		END;
+
+		delete_data_feed_shef_specs (p_data_feed_code => l_data_feed_code);
+	END;
+
+
+
 	-- ****************************************************************************
 	-- cwms_shef.delete_data_stream is used to delete an existing data stream id.
 	--
@@ -1827,7 +1903,10 @@ AS
 	--   SHEF specs assigned to it. You can force a deletion by setting
 	--   p_cascade_all to "T", which will delete all SHEF specs associated
 	--   with this data stream. WARNING - this is a very powerfull option -
-	--   all SHEF specs are permanently deleted!!
+	--   all SHEF specs are permanently deleted!! This parameter is meaningless,
+	--  i.e., has no affect, when data feeds are used because in that
+	--  scenario the datastream is deleted and the datafeeds are simply
+	--   dissasciated from any stream - no shefspecs are deleted.
 	--
 	-- p_db_office_id (varchar2(16) - optional parameter) is the database office
 	--   id that this data stream will be/is assigned too. Normally this is
@@ -1860,10 +1939,17 @@ AS
 				cwms_err.raise ('DATA_STREAM_NOT_FOUND', TRIM (p_data_stream_id));
 		END;
 
-		IF l_cascade_all = 'T'
-		THEN						-- delete all shef criteria for this data stream...
-			DELETE FROM   at_shef_decode
-					WHERE   data_stream_code = l_data_stream_code;
+		IF get_data_stream_mgt_style = data_feed_mgt_style
+		THEN
+			UPDATE	at_data_feed_id a
+				SET	a.data_stream_code = NULL
+			 WHERE	data_stream_code = l_data_stream_code;
+		ELSE
+			IF l_cascade_all = 'T'
+			THEN					-- delete all shef criteria for this data stream...
+				DELETE FROM   at_shef_decode
+						WHERE   data_stream_code = l_data_stream_code;
+			END IF;
 		END IF;
 
 		-- delete data stream from database...
@@ -1871,8 +1957,7 @@ AS
 			UPDATE	at_data_stream_id a
 				SET	a.delete_date = SYSDATE
 			 WHERE	data_stream_code = l_data_stream_code;
-		--  DELETE FROM at_data_stream_id
-		--  WHERE data_stream_code = l_data_stream_code;
+
 		EXCEPTION
 			WHEN OTHERS
 			THEN
@@ -1890,12 +1975,13 @@ AS
 		l_db_office_code	 NUMBER
 									 := cwms_util.get_db_office_code (p_db_office_id);
 	BEGIN
-		OPEN p_shef_data_streams FOR
-			SELECT	data_stream_id, db_office_id, data_stream_desc,
-              active_flag, UPDATE_CRIT_FILE_FLAG,
-              date_of_last_crit_file
-			  FROM	av_data_streams
-              where db_office_code = l_db_office_code;
+		--  OPEN p_shef_data_streams FOR
+		--   SELECT data_stream_id, db_office_id, data_stream_desc,
+		--  ds_active_flag, a.num_ignore_recs, a.num_process_recs,
+		--  a.num_total_recs, date_of_last_crit_file
+		--   FROM av_data_streams a
+		--  WHERE db_office_code = l_db_office_code;
+		NULL;
 	END cat_shef_data_streams;
 
 	FUNCTION cat_shef_data_streams_tab (
@@ -2629,27 +2715,25 @@ AS
 		p_unit_sys := l_unit_sys;
 	END;
 
-	PROCEDURE store_shef_crit_file (
-		p_data_stream_id	 IN VARCHAR2,
-		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
-	)
+
+	FUNCTION get_shef_crit_file (p_data_stream_code   IN NUMBER,
+										  p_utc_version_date   IN DATE
+										 )
+		RETURN CLOB
 	IS
-		output_row				  VARCHAR2 (400);
-		l_shef_crit_lines_rc   SYS_REFCURSOR;
 		l_crit_file_clob		  CLOB;
+		l_shef_crit_lines_rc   SYS_REFCURSOR;
 		amount					  BINARY_INTEGER := 0;
-		l_data_stream_code	  NUMBER;
-		l_tmp 					  NUMBER;
+		output_row				  at_shef_crit_file.shef_crit_line%TYPE;
 	BEGIN
-		cat_shef_crit_lines (p_shef_crit_lines   => l_shef_crit_lines_rc,
-									p_data_stream_id	  => p_data_stream_id,
-									p_db_office_id 	  => p_db_office_id
+		cat_shef_crit_lines (p_shef_crit_lines 	=> l_shef_crit_lines_rc,
+									p_data_stream_code	=> p_data_stream_code
 								  );
 		DBMS_LOB.createtemporary (l_crit_file_clob, TRUE, DBMS_LOB.session);
-		/* Opening the temporary LOB is optional: */
+		-- Opening the temporary LOB is optional:
 		DBMS_LOB.open (l_crit_file_clob, DBMS_LOB.lob_readwrite);
 
-		/* Append the data from the buffer to the end of the LOB: */
+		-- Append the data from the buffer to the end of the LOB:
 		LOOP
 			FETCH l_shef_crit_lines_rc
 			INTO output_row;
@@ -2662,30 +2746,168 @@ AS
 										);
 		END LOOP;
 
-		IF amount > 0
-		THEN
-			l_data_stream_code :=
-				get_data_stream_code (p_data_stream_id   => p_data_stream_id,
+		DBMS_LOB.close (l_crit_file_clob);
+		RETURN l_crit_file_clob;
+	END;
+
+	FUNCTION get_shef_crit_file (p_data_stream_id	  IN VARCHAR2,
+										  p_utc_version_date   IN DATE DEFAULT NULL,
+										  p_db_office_id		  IN VARCHAR2 DEFAULT NULL
+										 )
+		RETURN CLOB
+	IS
+		l_data_stream_code	NUMBER
+			:= get_data_stream_code (p_data_stream_id   => p_data_stream_id,
 											 p_db_office_id	  => p_db_office_id
 											);
-			clean_at_shef_crit_file (
-				p_data_stream_code	=> l_data_stream_code,
-				p_action 				=> cwms_shef.ten_file_limit
-			);
-
-			INSERT
-			  INTO	at_shef_crit_file (data_stream_code,
-												 creation_date,
-												 shef_crit_file
-												)
-			VALUES	(l_data_stream_code, SYSDATE, l_crit_file_clob);
-		END IF;
-
-		DBMS_LOB.close (l_crit_file_clob);
-		DBMS_LOB.freetemporary (l_crit_file_clob);
-
-		CLOSE l_shef_crit_lines_rc;
+	BEGIN
+		RETURN get_shef_crit_file (p_data_stream_code	=> l_data_stream_code,
+											p_utc_version_date	=> p_utc_version_date
+										  );
 	END;
+
+	/*   PROCEDURE store_shef_crit_file (
+	 p_data_stream_id IN VARCHAR2,
+	 p_db_office_id IN VARCHAR2 DEFAULT NULL
+	 )
+	 IS
+	 output_row VARCHAR2 (400);
+	 l_shef_crit_lines_rc SYS_REFCURSOR;
+	 l_crit_file_clob CLOB;
+	 amount BINARY_INTEGER := 0;
+	 l_data_stream_code NUMBER;
+	 l_crit_file_code number;
+	 l_tmp NUMBER;
+	 BEGIN
+	 cat_shef_crit_lines (p_shef_crit_lines => l_shef_crit_lines_rc,
+	 p_data_stream_id => p_data_stream_id,
+	 p_db_office_id => p_db_office_id
+	 );
+	 DBMS_LOB.createtemporary (l_crit_file_clob, TRUE, DBMS_LOB.session);
+	 -- Opening the temporary LOB is optional:
+	 DBMS_LOB.open (l_crit_file_clob, DBMS_LOB.lob_readwrite);
+
+	 -- Append the data from the buffer to the end of the LOB:
+	 LOOP
+	 FETCH l_shef_crit_lines_rc
+	 INTO output_row;
+
+	 EXIT WHEN l_shef_crit_lines_rc%NOTFOUND;
+	 amount := LENGTH (output_row) + 1;
+	 DBMS_LOB.writeappend (l_crit_file_clob,
+	  amount,
+	  output_row || CHR (10)
+	 );
+	 END LOOP;
+
+	 IF amount > 0
+	 THEN
+	 l_data_stream_code :=
+	 get_data_stream_code (p_data_stream_id => p_data_stream_id,
+	  p_db_office_id => p_db_office_id
+	 );
+	 clean_at_shef_crit_file (
+	 p_data_stream_code => l_data_stream_code,
+	 p_action  => cwms_shef.ten_file_limit
+	 );
+	  INSERT
+	  INTO at_shef_crit_file (data_stream_code,
+	  creation_date,
+	  shef_crit_file
+	  )
+	  VALUES (l_data_stream_code, SYSDATE, l_crit_file_clob);
+	 END IF;
+
+	 DBMS_LOB.close (l_crit_file_clob);
+	 DBMS_LOB.freetemporary (l_crit_file_clob);
+
+	 CLOSE l_shef_crit_lines_rc;
+	 END; */
+
+
+
+	PROCEDURE store_shef_crit_file (
+		p_data_stream_id	 IN VARCHAR2,
+		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
+	)
+	IS
+		output_row						 VARCHAR2 (4000);
+		l_shef_crit_lines_rc 		 SYS_REFCURSOR;
+		l_crit_file_code				 NUMBER;
+		l_num_decode_ignore_recs	 NUMBER;
+		l_num_decode_process_recs	 NUMBER;
+		l_num_ignore_recs 			 NUMBER;
+		l_data_stream_code			 NUMBER
+			:= get_data_stream_code (p_data_stream_id   => p_data_stream_id,
+											 p_db_office_id	  => p_db_office_id
+											);
+	BEGIN
+		SELECT	NVL (d.num_ignore_recs, 0) num_decode_ignore_recs,
+					NVL (e.num_process_recs, 0) num_decode_process_recs,
+					NVL (f.num_ignore_recs, 0) num_ignore_recs
+		  INTO	l_num_decode_ignore_recs, l_num_decode_process_recs,
+					l_num_ignore_recs
+		  FROM	(SELECT	 COUNT (*) num_ignore_recs
+						FROM		 at_shef_decode a
+								 JOIN
+									 at_cwms_ts_id b
+								 USING (ts_code)
+					  WHERE	 a.ignore_shef_spec = 'T'
+								 AND data_stream_code = l_data_stream_code) d,
+					(SELECT	 COUNT (*) num_process_recs
+						FROM		 at_shef_decode a
+								 JOIN
+									 at_cwms_ts_id b
+								 USING (ts_code)
+					  WHERE	 a.ignore_shef_spec = 'F'
+								 AND data_stream_code = l_data_stream_code) e,
+					(SELECT	 COUNT (*) num_ignore_recs
+						FROM	 at_shef_ignore a
+					  WHERE	 data_stream_code = l_data_stream_code) f;
+
+		INSERT
+			  INTO	at_shef_crit_file_rec (crit_file_code,
+													  data_stream_code,
+													  crit_file_creation_date,
+													  num_decode_process_recs,
+													  num_decode_ignore_recs,
+													  num_ignore_recs
+													 )
+			VALUES	(
+							cwms_seq.NEXTVAL,
+							l_data_stream_code,
+							SYSDATE,
+							l_num_decode_ignore_recs,
+							l_num_decode_process_recs,
+							l_num_ignore_recs
+						)
+		RETURNING	crit_file_code
+			  INTO	l_crit_file_code;
+
+		IF (	l_num_decode_ignore_recs
+			 + l_num_decode_process_recs
+			 + l_num_ignore_recs) > 0
+		THEN
+			cat_shef_crit_lines (p_shef_crit_lines   => l_shef_crit_lines_rc,
+										p_data_stream_id	  => p_data_stream_id,
+										p_db_office_id 	  => p_db_office_id
+									  );
+
+			LOOP
+				FETCH l_shef_crit_lines_rc
+				INTO output_row;
+
+				EXIT WHEN l_shef_crit_lines_rc%NOTFOUND;
+
+				INSERT INTO   at_shef_crit_file
+					  VALUES   (l_crit_file_code, output_row);
+			END LOOP;
+
+			CLOSE l_shef_crit_lines_rc;
+		END IF;
+	END;
+
+
 
 	PROCEDURE cat_shef_crit_lines (
 		p_shef_crit_lines 	  OUT SYS_REFCURSOR,
@@ -2698,86 +2920,9 @@ AS
 		l_data_stream_code	NUMBER
 			:= get_data_stream_code (p_data_stream_id, l_db_office_code);
 	BEGIN
-		OPEN p_shef_crit_lines FOR
-			SELECT	CASE
-							WHEN a.ignore_shef_spec = 'T'
-							THEN
-								cwms_shef.ignore_shef_spec
-							ELSE
-								NULL
-						END
-						|| a.shef_loc_id
-						|| '.'
-						|| a.shef_pe_code
-						|| '.'
-						|| a.shef_tse_code
-						|| '.'
-						|| a.shef_duration_numeric
-						|| '='
-						|| b.cwms_ts_id
-						|| CASE
-								WHEN a.shef_unit_code IS NOT NULL
-								THEN
-									';Units=' || c.unit_id
-							END
-						|| CASE
-								WHEN a.shef_time_zone_code IS NOT NULL
-								THEN
-									';TZ=' || d.shef_time_zone_id
-							END
-						|| ';DLTime='
-						|| CASE WHEN a.dl_time = 'T' THEN 'true' ELSE 'false' END
-						|| CASE
-								WHEN e.interval_offset_id NOT IN
-										  (cwms_util.utc_offset_irregular,
-											cwms_util.utc_offset_undefined)
-								THEN
-									';IntervalOffset='
-									|| cwms_util.get_interval_string (
-											e.interval_utc_offset
-										)
-									|| CASE
-											WHEN e.interval_forward IS NOT NULL
-											THEN
-												';IntervalForward='
-												|| cwms_util.get_interval_string (
-														e.interval_forward
-													)
-										END
-									|| CASE
-											WHEN e.interval_backward IS NOT NULL
-											THEN
-												';IntervalBackward='
-												|| cwms_util.get_interval_string (
-														e.interval_backward
-													)
-										END
-							END
-							shef_crit_line
-			  FROM	at_shef_decode a,
-						mv_cwms_ts_id b,
-						cwms_unit c,
-						cwms_shef_time_zone d,
-						at_cwms_ts_spec e,
-						at_base_location f
-			 WHERE		 a.ts_code = b.ts_code
-						AND a.shef_unit_code = c.unit_code
-						AND a.shef_time_zone_code = d.shef_time_zone_code
-						AND a.ts_code = e.ts_code
-						AND b.base_location_code = f.base_location_code
-						AND b.net_ts_active_flag = 'T'
-						AND a.data_stream_code = l_data_stream_code
-			UNION
-			SELECT		cwms_shef.ignore_shef_spec
-						|| a.shef_loc_id
-						|| '.'
-						|| a.shef_pe_code
-						|| '.'
-						|| a.shef_tse_code
-						|| '.'
-						|| a.shef_duration_numeric
-			  FROM	at_shef_ignore a
-			 WHERE	a.data_stream_code = l_data_stream_code;
+		cat_shef_crit_lines (p_shef_crit_lines 	=> p_shef_crit_lines,
+									p_data_stream_code	=> l_data_stream_code
+								  );
 	END cat_shef_crit_lines;
 
 	FUNCTION cat_shef_crit_lines_tab (
@@ -2877,7 +3022,7 @@ AS
 		l_cascade_all		 BOOLEAN := FALSE;
 		l_num 				 NUMBER;
 	BEGIN
-		IF UPPER (TRIM (p_db_office_id)) IN ('T', 'TRUE')
+		IF UPPER (TRIM (p_cascade_all)) IN ('T', 'TRUE')
 		THEN
 			l_cascade_all := TRUE;
 		END IF;
@@ -2891,8 +3036,7 @@ AS
 		THEN
 			IF l_cascade_all
 			THEN
-				DELETE FROM   at_shef_decode
-						WHERE   data_feed_code = l_data_feed_code;
+				delete_data_feed_shef_specs (p_data_feed_code => l_data_feed_code);
 			ELSE
 				cwms_err.raise (
 					'ERROR',
