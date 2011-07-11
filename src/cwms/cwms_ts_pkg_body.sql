@@ -4307,10 +4307,20 @@ BEGIN
       --
       IF l_count = 0
       THEN
-         UPDATE at_cwms_ts_spec
-            SET location_code = 0,
-                delete_date = l_delete_date
-          WHERE ts_code = l_ts_code;
+         loop
+            begin
+               update at_cwms_ts_spec
+                  set location_code = 0,
+                      delete_date = l_delete_date
+                where ts_code = l_ts_code;
+               exit;
+            exception
+               when others then
+                  if sqlcode = -1 then
+                     l_delete_date := systimestamp;
+                  end if;
+            end;                
+         end loop;             
          -- Publish TSDeleted message --
          cwms_msg.new_message(l_msg, l_msgid, 'TSDeleted');
          l_msg.set_string(l_msgid, 'ts_id', p_cwms_ts_id);
@@ -6623,6 +6633,7 @@ begin
       p_ts_alias_id,
       p_ref_ts_id,
       p_db_office_id));
+   l_office_code := cwms_util.get_db_office_code(p_db_office_id);      
    ------------------------      
    -- get the group code --
    ------------------------      
@@ -6676,6 +6687,7 @@ begin
        where ts_code = l_rec.ts_code
          and ts_group_code = l_rec.ts_group_code;
    else
+      l_rec.ts_code := l_ts_code;
       l_rec.ts_group_code := l_ts_group_code;
       insert
         into at_ts_group_assignment
@@ -6705,6 +6717,7 @@ begin
       p_ts_id,
       p_unassign_all,
       p_db_office_id));
+   l_office_code := cwms_util.get_db_office_code(p_db_office_id); 
    ------------------------      
    -- get the group code --
    ------------------------      
