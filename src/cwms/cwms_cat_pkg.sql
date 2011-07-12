@@ -142,7 +142,7 @@ IS
 
    TYPE cat_loc_alias_tab_t IS TABLE OF cat_loc_alias_rec_t;
 
-   TYPE cat_loc_alias_abrev_rec_t IS RECORD (
+   TYPE cat_loc_alias_abbrev_rec_t IS RECORD (
       office_id     VARCHAR2 (16),
       location_id   VARCHAR2 (49),
       agency_id     VARCHAR2 (16),
@@ -150,7 +150,37 @@ IS
 		loc_ref_id    VARCHAR2 (49)
    );
 
-   TYPE cat_loc_alias_abrev_tab_t IS TABLE OF cat_loc_alias_abrev_rec_t;
+   TYPE cat_loc_alias_abbrev_tab_t IS TABLE OF cat_loc_alias_abbrev_rec_t;
+
+   TYPE cat_ts_grp_rec_t IS RECORD (
+      cat_db_office_id   VARCHAR2 (16),
+      ts_category_id     VARCHAR2 (32),
+      ts_category_desc   VARCHAR2 (128),
+      grp_db_office_id   VARCHAR2 (16),
+      ts_group_id        VARCHAR2 (32),
+      ts_group_desc      VARCHAR2 (128),
+      shared_ts_alias_id VARCHAR2 (256),
+      shared_ts_ref_id   VARCHAR2 (256)
+   );
+
+   TYPE cat_ts_grp_tab_t IS TABLE OF cat_ts_grp_rec_t;
+
+   TYPE cat_ts_alias_rec_t IS RECORD (
+      db_office_id       VARCHAR2 (16),
+      ts_id              VARCHAR2 (183),
+      cat_db_office_id   VARCHAR2 (16),
+      ts_category_id     VARCHAR2 (32),
+      grp_db_office_id   VARCHAR2 (16),
+      ts_group_id        VARCHAR2 (32),
+      ts_group_desc      VARCHAR2 (128),
+      ts_alias_id        VARCHAR2 (256),
+      ts_ref_id          VARCHAR2 (183),
+      shared_ts_alias_id VARCHAR2 (256),
+      shared_ts_ref_id   VARCHAR2 (183),
+      attribute          NUMBER
+   );
+
+   TYPE cat_ts_alias_tab_t IS TABLE OF cat_ts_alias_rec_t;
 
    TYPE cat_base_param_rec_t IS RECORD (
       parameter_id        VARCHAR2 (16),
@@ -576,6 +606,38 @@ IS
    )
       RETURN cat_ts_id_tab_t PIPELINED;
 
+
+   procedure cat_ts_alias (
+      p_cwms_cat     out sys_refcursor,
+      p_cwms_ts_id   in  varchar2 default null,
+      p_db_office_id in  varchar2 default null
+   );
+
+   procedure cat_ts_aliases (
+      p_cwms_cat       out sys_refcursor,
+      p_ts_id          in  varchar2 default null,
+      p_ts_category_id in  varchar2 default null,
+      p_ts_group_id    in  varchar2 default null,
+      p_abbreviated    in  varchar2 default 'T',
+      p_db_office_id   in  varchar2 default null
+   );
+
+   function cat_ts_aliases_tab (
+      p_ts_id          in varchar2 default null,
+      p_ts_category_id in varchar2 default null,
+      p_ts_group_id    in varchar2 default null,
+      p_abbreviated    in varchar2 default 'T',
+      p_db_office_id   in varchar2 default null
+   )  return cat_ts_alias_tab_t pipelined;
+
+   procedure cat_ts_group (
+      p_cwms_cat     out      sys_refcursor,
+      p_db_office_id in       varchar2 default null
+   );
+
+   function cat_ts_group_tab (p_db_office_id in varchar2 default null)
+      return cat_ts_grp_tab_t pipelined;
+
 -------------------------------------------------------------------------------
 -- CAT_LOC
 --
@@ -661,7 +723,7 @@ IS
       p_location_id       IN   VARCHAR2 DEFAULT NULL,
       p_loc_category_id   IN   VARCHAR2 DEFAULT NULL,
       p_loc_group_id      IN   VARCHAR2 DEFAULT NULL,
-      p_abreviated        IN   VARCHAR2 DEFAULT 'T',
+      p_abbreviated       IN   VARCHAR2 default 'T',
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_loc_alias_tab_t PIPELINED;
@@ -1048,7 +1110,7 @@ IS
 --      p_location_id       IN       VARCHAR2 DEFAULT NULL,
 --      p_loc_category_id   IN       VARCHAR2 DEFAULT NULL,
 --      p_loc_group_id      IN       VARCHAR2 DEFAULT NULL,
---      p_abreviated        IN       VARCHAR2 DEFAULT 'T',
+--      p_abbreviated       IN       VARCHAR2 default 'T',
 --      p_db_office_id      IN       VARCHAR2 DEFAULT NULL
 -- The returned cursor contains the following columns...
 --
@@ -1072,15 +1134,15 @@ IS
 --
 --
 -------------------------------------------------------------------------------
--- function cat_loc_alias_abrev_tab(...)
+-- function cat_loc_alias_abbrev_tab(...)
 --
 --
---   FUNCTION cat_loc_alias_abrev_tab (
+--   FUNCTION cat_loc_alias_abbrev_tab (
 --      p_location_id   IN   VARCHAR2 DEFAULT NULL,
 --      p_agency_id     IN   VARCHAR2 DEFAULT NULL,
 --      p_office_id     IN   VARCHAR2 DEFAULT NULL
 --   )
---      RETURN cat_loc_alias_abrev_tab_t PIPELINED;
+--      RETURN cat_loc_alias_abbrev_tab_t PIPELINED;
    -------------------------------------------------------------------------------
 -- procedure cat_loc_aliases(...)
 --
@@ -1090,7 +1152,7 @@ IS
       p_location_id       IN  VARCHAR2 DEFAULT NULL,
       p_loc_category_id   IN  VARCHAR2 DEFAULT NULL,
       p_loc_group_id      IN  VARCHAR2 DEFAULT NULL,
-      p_abreviated        IN  VARCHAR2 DEFAULT 'T',
+      p_abbreviated       IN  VARCHAR2 DEFAULT 'T',
       p_db_office_id      IN  VARCHAR2 DEFAULT NULL
    );
 
@@ -1100,7 +1162,7 @@ IS
       p_location_id       IN       VARCHAR2 DEFAULT NULL,
       p_loc_category_id   IN       VARCHAR2 DEFAULT NULL,
       p_loc_group_id      IN       VARCHAR2 DEFAULT NULL,
-      p_abreviated        IN       VARCHAR2 DEFAULT 'T',
+      P_ABBREVIATED       IN       VARCHAR2 DEFAULT 'T',
       p_db_office_id      IN       VARCHAR2 DEFAULT NULL
    );
 

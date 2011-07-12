@@ -3571,7 +3571,7 @@ AS
 										  p_location_id		 => p_location_id,
 										  p_loc_category_id	 => NULL,
 										  p_loc_group_id		 => NULL,
-										  p_abreviated 		 => 'T',
+										  p_abbreviated 		 => 'T',
 										  p_db_office_id		 => l_office_id
 										 );
 	--
