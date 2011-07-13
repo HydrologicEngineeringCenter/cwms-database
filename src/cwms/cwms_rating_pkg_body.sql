@@ -1,5 +1,21 @@
 create or replace package body cwms_rating
 as
+
+
+function get_rating_method_code(
+   p_rating_method_id in varchar2) 
+   return number result_cache
+is
+   l_code number(10);
+begin
+   select rating_method_code
+     into l_code
+     from cwms_rating_method
+    where rating_method_id = upper(p_rating_method_id);
+    
+   return l_code;    
+end;   
+
 --------------------------------------------------------------------------------
 -- STORE TEMPLATES
 --

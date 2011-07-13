@@ -130,7 +130,7 @@ AS
 	END;
 
 	FUNCTION get_base_id (p_full_id IN VARCHAR2)
-		RETURN VARCHAR2
+		RETURN VARCHAR2 result_cache
 	IS
 		l_num 			NUMBER := INSTR (p_full_id, '-', 1, 1);
 		l_length 		NUMBER := LENGTH (p_full_id);
@@ -154,21 +154,28 @@ AS
 		END IF;
 	END;
 
-	FUNCTION get_base_param_code (p_base_param_id IN VARCHAR2)
-		RETURN NUMBER
-	IS
-		l_base_param_code   NUMBER;
-	BEGIN
-		SELECT	a.base_parameter_code
-		  INTO	l_base_param_code
-		  FROM	cwms_base_parameter a
-		 WHERE	UPPER (a.base_parameter_id) = UPPER (TRIM (p_base_param_id));
+	function get_base_param_code (
+      p_param_id   in varchar2, 
+      p_is_full_id in varchar2 default 'F')
+		return number result_cache
+	is
+		l_base_param_code number(10);
+      l_base_param_id   varchar2(16);
+	begin
+      case cwms_util.is_true(p_is_full_id)
+         when true  then l_base_param_id := get_base_id(p_param_id);
+         when false then l_base_param_id := p_param_id;
+      end case;
+		select base_parameter_code
+		  into l_base_param_code
+		  from cwms_base_parameter
+		 where upper (base_parameter_id) = upper(trim(l_base_param_id));
 
-		RETURN l_base_param_code;
-	END;
+		return l_base_param_code;
+	end;
 
 	FUNCTION get_sub_id (p_full_id IN VARCHAR2)
-		RETURN VARCHAR2
+		RETURN VARCHAR2 result_cache
 	IS
 		l_num 			NUMBER := INSTR (p_full_id, '-', 1, 1);
 		l_length 		NUMBER := LENGTH (p_full_id);
@@ -553,7 +560,7 @@ AS
 	-- or the user's primary office if the office id is null
 	--
 	FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
-		RETURN NUMBER
+		RETURN NUMBER result_cache
 	IS
 		l_office_code	 NUMBER := NULL;
 	BEGIN
@@ -640,7 +647,7 @@ AS
 	--------------------------------------------------------
 	--------------------------------------------------------
 	FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
-		RETURN VARCHAR2
+		RETURN VARCHAR2  result_cache
 	IS
 		l_parameter_id   VARCHAR2 (49);
 	BEGIN
@@ -1168,7 +1175,7 @@ AS
 	END;
 
 	FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
-		RETURN VARCHAR2
+		RETURN VARCHAR2 result_cache
 	IS
 	BEGIN
 		RETURN	 p_base_id
@@ -1405,68 +1412,51 @@ AS
 	-- function split_text(...)
 	--
 	--
-	FUNCTION split_text (p_text		  IN VARCHAR2,
-								p_separator   IN VARCHAR2 DEFAULT NULL,
-								p_max_split   IN INTEGER DEFAULT NULL
-							  )
-		RETURN str_tab_t
-	IS
-		l_str_tab		  str_tab_t := str_tab_t ();
-		l_str 			  VARCHAR2 (32767);
-		l_field			  VARCHAR2 (32767);
-		l_pos 			  PLS_INTEGER;
-		l_sep 			  VARCHAR2 (32767);
-		l_sep_len		  PLS_INTEGER;
-		l_split_count	  PLS_INTEGER := 0;
-		l_count_splits   BOOLEAN;
-	BEGIN
-		IF p_max_split IS NULL
-		THEN
-			l_count_splits := FALSE;
-		ELSE
-			l_count_splits := TRUE;
-		END IF;
-
-		IF p_separator IS NULL
-		THEN
-			l_str := REGEXP_REPLACE (p_text, '\s+', ' ');
-			l_sep := ' ';
-		ELSE
-			l_str := p_text;
-			l_sep := p_separator;
-		END IF;
-
-		l_sep_len := LENGTH (l_sep);
-
-		LOOP
-			l_pos := NVL (INSTR (l_str, l_sep), 0);
-
-			IF l_count_splits
-			THEN
-				IF l_split_count = p_max_split
-				THEN
-					l_pos := 0;
-				END IF;
-			END IF;
-
-			IF l_pos = 0
-			THEN
-				l_field := l_str;
-				l_str := NULL;
-			ELSE
-				l_split_count := l_split_count + 1;
-				l_field := SUBSTR (l_str, 1, l_pos - 1);
-				l_str := SUBSTR (l_str, l_pos + l_sep_len);
-			-- null if > length(l_str)
-			END IF;
-
-			l_str_tab.EXTEND;
-			l_str_tab (l_str_tab.LAST) := l_field;
-			EXIT WHEN l_pos = 0;
-		END LOOP;
-
-		RETURN l_str_tab;
-	END split_text;
+	function split_text (
+      p_text		in varchar2,
+		p_separator in varchar2 default null,
+		p_max_split in integer  default null)
+		return str_tab_t result_cache
+	is
+		l_str_tab		 str_tab_t := str_tab_t ();
+		l_str 			 varchar2 (32767);
+		l_field			 varchar2 (32767);
+		l_pos 			 pls_integer;
+		l_sep 			 varchar2 (32767);
+		l_sep_len		 pls_integer;
+		l_split_count	 pls_integer := 0;
+		l_count_splits  boolean;
+	begin
+      if p_text is not null then
+         l_count_splits := p_max_split is not null;
+         if p_separator is null then
+            l_str := regexp_replace(p_text, '\s+', ' ');
+            l_sep := ' ';
+         else
+            l_str := p_text;
+            l_sep := p_separator;
+         end if;
+         l_sep_len := length(l_sep);
+         loop
+            l_pos := instr(l_str, l_sep);
+            if l_count_splits and l_split_count = p_max_split then
+               l_pos := 0;
+            end if;
+            if l_pos = 0 then
+               l_field := l_str;
+               l_str := null;
+            else
+               l_split_count := l_split_count + 1;
+               l_field := substr (l_str, 1, l_pos - 1);
+               l_str := substr (l_str, l_pos + l_sep_len);
+            end if;
+            l_str_tab.extend;
+            l_str_tab (l_str_tab.last) := l_field;
+            exit when l_pos = 0 or l_str = null;
+         end loop;
+      end if;
+		return l_str_tab;
+	end split_text;
 
 	-------------------------------------------------------------------------------
 	-- function split_text(...)
@@ -1861,7 +1851,7 @@ AS
 
 
 	FUNCTION get_ts_interval (p_cwms_ts_code IN NUMBER)
-		RETURN NUMBER
+		RETURN NUMBER  result_cache
 	IS
 		l_ts_interval	 NUMBER;
 	BEGIN
@@ -2416,6 +2406,24 @@ AS
 			);
 	END;
 
+   function get_factor_and_offset(
+      p_from_unit_id in varchar2,
+      p_to_unit_id   in varchar2)
+      return double_tab_t result_cache
+   is
+      l_factor_and_offset double_tab_t := double_tab_t();
+   begin
+      l_factor_and_offset.extend(2);
+      select factor, 
+             offset
+        into l_factor_and_offset(1),
+             l_factor_and_offset(2)
+        from cwms_unit_conversion
+       where from_unit_id = get_unit_id (p_from_unit_id)
+             and to_unit_id = get_unit_id (p_to_unit_id);
+      return l_factor_and_offset;             
+   end get_factor_and_offset;
+      
 	FUNCTION convert_units (p_value			  IN BINARY_DOUBLE,
 									p_from_unit_id   IN VARCHAR2,
 									p_to_unit_id	  IN VARCHAR2
@@ -2423,16 +2431,10 @@ AS
 		RETURN BINARY_DOUBLE
 		RESULT_CACHE
 	IS
-		l_factor   BINARY_DOUBLE;
-		l_offset   BINARY_DOUBLE;
+      l_factor_and_offset double_tab_t;
 	BEGIN
-		SELECT	factor, offset
-		  INTO	l_factor, l_offset
-		  FROM	cwms_unit_conversion
-		 WHERE	from_unit_id = get_unit_id (p_from_unit_id)
-					AND to_unit_id = get_unit_id (p_to_unit_id);
-
-		RETURN p_value * l_factor + l_offset;
+      l_factor_and_offset := get_factor_and_offset(p_from_unit_id, p_to_unit_id);
+		RETURN p_value * l_factor_and_offset(1) + l_factor_and_offset(2);
 	EXCEPTION
 		WHEN NO_DATA_FOUND
 		THEN

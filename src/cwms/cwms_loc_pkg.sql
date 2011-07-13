@@ -32,13 +32,13 @@ AS
       p_db_office_id   IN   VARCHAR2,
       p_location_id    IN   VARCHAR2
    )
-      RETURN NUMBER;
+      RETURN NUMBER result_cache;
 
    FUNCTION get_location_code (
       p_db_office_code   IN   NUMBER,
       p_location_id      IN   VARCHAR2
    )
-      RETURN NUMBER;
+      RETURN NUMBER result_cache;
 
 
 

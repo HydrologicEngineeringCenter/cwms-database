@@ -157,7 +157,7 @@ AS
 	FUNCTION get_location_code (p_db_office_id	IN VARCHAR2,
 										 p_location_id 	IN VARCHAR2
 										)
-		RETURN NUMBER
+		RETURN NUMBER result_cache
 	IS
 		l_db_office_code	 NUMBER := cwms_util.get_office_code (p_db_office_id);
 	BEGIN
@@ -170,7 +170,7 @@ AS
 	FUNCTION get_location_code (p_db_office_code   IN NUMBER,
 										 p_location_id 	  IN VARCHAR2
 										)
-		RETURN NUMBER
+		RETURN NUMBER result_cache
 	IS
 		l_location_code	NUMBER;
 	BEGIN

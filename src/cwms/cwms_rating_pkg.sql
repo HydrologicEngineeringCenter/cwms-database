@@ -8,6 +8,10 @@ separator1 constant varchar2(1) := '.'; -- Separates location, parameters, templ
 separator2 constant varchar2(1) := ';'; -- Separates independent parameter(s) from dependent parameter
 separator3 constant varchar2(1) := ','; -- Separates multiple independent parameters
 
+function get_rating_method_code(
+   p_rating_method_id in varchar2) 
+   return number result_cache;
+
 --------------------------------------------------------------------------------
 -- STORE TEMPLATES
 --

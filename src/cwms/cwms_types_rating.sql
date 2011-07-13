@@ -180,10 +180,7 @@ as
       -- parameter_id --
       ------------------
       begin
-         select base_parameter_code
-           into l_code
-           from cwms_base_parameter
-          where base_parameter_id = cwms_util.get_base_id(self.parameter_id);
+         l_code := cwms_util.get_base_param_code(self.parameter_id, 'T');
       exception
          when no_data_found then
             cwms_err.raise(
@@ -194,10 +191,7 @@ as
       -- in_range_rating_method --
       ----------------------------
       begin
-         select rating_method_code
-           into l_code
-           from cwms_rating_method
-          where rating_method_id = upper(self.in_range_rating_method);
+         l_code := cwms_rating.get_rating_method_code(self.in_range_rating_method);
       exception
          when no_data_found then
             cwms_err.raise(
@@ -209,10 +203,7 @@ as
       -- out_range_low_rating_method --
       ---------------------------------
       begin
-         select rating_method_code
-           into l_code
-           from cwms_rating_method
-          where rating_method_id = upper(self.out_range_low_rating_method);
+         l_code := cwms_rating.get_rating_method_code(self.out_range_low_rating_method);
       exception
          when no_data_found then
             cwms_err.raise(
@@ -224,10 +215,7 @@ as
       -- out_range_high_rating_method --
       ----------------------------------
       begin
-         select rating_method_code
-           into l_code
-           from cwms_rating_method
-          where rating_method_id = upper(self.out_range_high_rating_method);
+         l_code := cwms_rating.get_rating_method_code(self.out_range_high_rating_method);
       exception
          when no_data_found then
             cwms_err.raise(
@@ -251,14 +239,8 @@ as
       p_rating_id in varchar2)
    return number 
    is
-      l_rating_code number;
    begin
-      select rating_method_code
-        into l_rating_code
-        from cwms_rating_method
-       where rating_method_id = upper(p_rating_id);
-       
-      return l_rating_code;
+      return cwms_rating.get_rating_method_code(p_rating_id);
    exception
       when no_data_found then
          cwms_err.raise(
@@ -442,18 +424,18 @@ create type rating_template_t as object(
       p_parameters_id in varchar2,
       p_version       in varchar2,
       p_office_id     in varchar2 default null)
-   return number,      
+   return number result_cache,      
 
    static function get_template_code(
       p_parameters_id in varchar2,
       p_version       in varchar2,
       p_office_code   in number)
-   return number,      
+   return number result_cache,      
       
    static function get_template_code(
       p_template_id in varchar2,
       p_office_code in number)
-   return number      
+   return number result_cache      
 );
 /
 show errors;
@@ -676,10 +658,7 @@ as
       -- dep_parameter_id --
       ----------------------
       begin
-         select base_parameter_code
-           into l_code
-           from cwms_base_parameter
-          where base_parameter_id = cwms_util.get_base_id(self.dep_parameter_id);
+         l_code := cwms_util.get_base_param_code(self.dep_parameter_id, 'T');
       exception
          when no_data_found then
             cwms_err.raise(
@@ -845,7 +824,7 @@ as
       p_parameters_id in varchar2,
       p_version       in varchar2,
       p_office_id     in varchar2 default null)
-   return number
+   return number result_cache
    is
    begin
       return get_template_code(
@@ -858,7 +837,7 @@ as
       p_parameters_id in varchar2,
       p_version       in varchar2,
       p_office_code   in number)
-   return number
+   return number result_cache
    is
       l_template_code number(10);
    begin
@@ -894,7 +873,7 @@ as
    static function get_template_code(
       p_template_id in varchar2,
       p_office_code in number)
-   return number
+   return number result_cache
    is
       l_parts str_tab_t;
    begin
@@ -1441,10 +1420,7 @@ as
       -- in_range_rating_method --
       ----------------------------
       begin
-         select rating_method_code
-           into l_code
-           from cwms_rating_method
-          where rating_method_id = upper(self.in_range_rating_method);
+         l_code := cwms_rating.get_rating_method_code(self.in_range_rating_method);
       exception
          when no_data_found then
             cwms_err.raise(
@@ -1456,10 +1432,7 @@ as
       -- out_range_low_rating_method --
       ---------------------------------
       begin
-         select rating_method_code
-           into l_code
-           from cwms_rating_method
-          where rating_method_id = upper(self.out_range_low_rating_method);
+         l_code := cwms_rating.get_rating_method_code(self.out_range_low_rating_method);
       exception
          when no_data_found then
             cwms_err.raise(
@@ -1471,10 +1444,7 @@ as
       -- out_range_high_rating_method --
       ----------------------------------
       begin
-         select rating_method_code
-           into l_code
-           from cwms_rating_method
-          where rating_method_id = upper(self.out_range_high_rating_method);
+         l_code := cwms_rating.get_rating_method_code(self.out_range_high_rating_method);
       exception
          when no_data_found then
             cwms_err.raise(
@@ -1555,14 +1525,8 @@ as
       p_rating_id in varchar2)
    return number 
    is
-      l_rating_code number;
    begin
-      select rating_method_code
-        into l_rating_code
-        from cwms_rating_method
-       where rating_method_id = upper(p_rating_id);
-       
-      return l_rating_code;
+      return cwms_rating.get_rating_method_code(p_rating_id);
    exception
       when no_data_found then
          cwms_err.raise(
@@ -3943,10 +3907,7 @@ as
       l_params := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
       for i in 1..l_params.count loop
          begin
-            select base_parameter_code
-              into l_code
-              from cwms_base_parameter
-             where base_parameter_id = cwms_util.get_base_id(l_params(i));
+            l_code := cwms_util.get_base_param_code(l_params(i), 'T');
          exception
             when no_data_found then
                cwms_err.raise(
@@ -3955,10 +3916,7 @@ as
          end;
       end loop;
       begin
-         select base_parameter_code
-           into l_code
-           from cwms_base_parameter
-          where base_parameter_id = cwms_util.get_base_id(l_parts(2));
+         l_code := cwms_util.get_base_param_code(l_parts(2), 'T');
       exception
          when no_data_found then
             cwms_err.raise(

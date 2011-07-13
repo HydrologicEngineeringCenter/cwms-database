@@ -243,7 +243,7 @@ AS
                         p_separator   IN VARCHAR2 DEFAULT NULL ,
                         p_max_split   IN INTEGER DEFAULT NULL
                        )
-      RETURN str_tab_t;
+      RETURN str_tab_t result_cache;
    /**
       Splits string into a table of strings using the specified delimiter.
       If no delmiter is specified, the string is split around whitespace.
@@ -443,7 +443,7 @@ AS
     * @return the base portion of the identifier            
     */       
    FUNCTION get_base_id (p_full_id IN VARCHAR2)
-      RETURN VARCHAR2;
+      RETURN VARCHAR2 result_cache;
    /**
     * Retrieves the (possibly null) sub portion of a base-sub identifier
     * 
@@ -452,7 +452,19 @@ AS
     * @return the (possibly null) sub portion of the identifier            
     */       
    FUNCTION get_sub_id (p_full_id IN VARCHAR2)
-      RETURN VARCHAR2;
+      RETURN VARCHAR2 result_cache;
+   /**
+    * Retrieves the base parameter code of a full parameter identifier
+    * 
+    * @param p_param_id the identifier for which to return the base parameter code
+    * @param p_is_full_id flag specifying whether <code><big>p_param_id</big></code> is a full id or base id
+    *     
+    * @return the base parameter code            
+    */       
+   FUNCTION get_base_param_code (
+      p_param_id   IN VARCHAR2, 
+      p_is_full_id IN VARCHAR2 DEFAULT 'F')
+      return number result_cache;
    /**
     * Retrieves the interval minutes of a time series
     * 
@@ -462,7 +474,7 @@ AS
     * @return the interval minutes of the time series                    
     */       
    FUNCTION get_ts_interval (p_cwms_ts_code IN NUMBER)
-      RETURN NUMBER;
+      RETURN NUMBER result_cache;
    /**
     * Creates a full identifier from base and sub identifier portions
     * 
@@ -475,7 +487,7 @@ AS
     *         ('-') followed by the sub portion.                                
     */       
    FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
-      RETURN VARCHAR2;
+      RETURN VARCHAR2 result_cache;
    /**
     * Creates a fill time series identifier from the portions. The base parameter,
     * parameter type, interval, and duration portions are verified in the process.
@@ -526,7 +538,7 @@ AS
     * @throws INVALID_OFFICE_ID if the specified office identifier is invalid                             
     */       
    FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL )
-      RETURN NUMBER;
+      RETURN NUMBER result_cache;
    /**
     * Returns the specified or default office identifier
     * 
@@ -564,7 +576,7 @@ AS
     * @return the paramter identifier associated with the specified code                
     */       
    FUNCTION get_parameter_id (p_parameter_code IN NUMBER)
-      RETURN VARCHAR2;
+      RETURN VARCHAR2 result_cache;
    /**
     * Retrieves a time zone code based on a time zone name
     * 
