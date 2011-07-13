@@ -100,13 +100,20 @@ CREATE OR REPLACE PACKAGE BODY cwms_ts AS
         EXCEPTION
             WHEN NO_DATA_FOUND
             THEN
+            BEGIN
                 SELECT   cwms_ts_id
                   INTO   l_cwms_ts_id
                   FROM   zav_cwms_ts_id mcti
                  WHERE   UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
                             AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
+             
+               EXCEPTION
+                    WHEN NO_DATA_FOUND
+                    THEN
+                        CWMS_ERR.RAISE('TS_ID_NOT_FOUND',p_cwms_ts_id);
+               END;
         END;
-
+       
         --
         RETURN l_cwms_ts_id;
     END;
