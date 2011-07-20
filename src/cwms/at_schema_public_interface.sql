@@ -130,12 +130,6 @@ BEGIN
 		EXECUTE IMMEDIATE l_sql_statement;
 	END LOOP;
 
-	l_sql_statement :=
-		'CREATE PUBLIC SYNONYM MV_CWMS_TS_ID FOR &cwms_schema'
-		|| '.AT_CWMS_TS_ID';
-
-	EXECUTE IMMEDIATE l_sql_statement;
-
 	--
 	-- create public synonyms for collected types
 	--
