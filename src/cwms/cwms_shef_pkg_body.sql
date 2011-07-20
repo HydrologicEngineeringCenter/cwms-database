@@ -1,4 +1,4 @@
-/* Formatted on 7/8/2011 11:52:45 AM (QP5 v5.163.1008.3004) */
+/* Formatted on 7/12/2011 3:01:44 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE BODY cwms_shef
 AS
 	PROCEDURE cat_shef_crit_lines (p_shef_crit_lines		 OUT SYS_REFCURSOR,
@@ -1957,7 +1957,6 @@ AS
 			UPDATE	at_data_stream_id a
 				SET	a.delete_date = SYSDATE
 			 WHERE	data_stream_code = l_data_stream_code;
-
 		EXCEPTION
 			WHEN OTHERS
 			THEN
@@ -2834,6 +2833,7 @@ AS
 		output_row						 VARCHAR2 (4000);
 		l_shef_crit_lines_rc 		 SYS_REFCURSOR;
 		l_crit_file_code				 NUMBER;
+		l_crit_file_hash				 NUMBER := 0;
 		l_num_decode_ignore_recs	 NUMBER;
 		l_num_decode_process_recs	 NUMBER;
 		l_num_ignore_recs 			 NUMBER;
@@ -2877,8 +2877,8 @@ AS
 							cwms_seq.NEXTVAL,
 							l_data_stream_code,
 							SYSDATE,
-							l_num_decode_ignore_recs,
 							l_num_decode_process_recs,
+							l_num_decode_ignore_recs,
 							l_num_ignore_recs
 						)
 		RETURNING	crit_file_code
@@ -2904,7 +2904,19 @@ AS
 			END LOOP;
 
 			CLOSE l_shef_crit_lines_rc;
+
+			SELECT	  a.crit_file_code, SUM (ORA_HASH (a.shef_crit_line))
+				 INTO   l_crit_file_code, l_crit_file_hash
+				 FROM   at_shef_crit_file a
+				WHERE   crit_file_code = l_crit_file_code
+			GROUP BY   crit_file_code;
 		END IF;
+
+		UPDATE	at_shef_crit_file_rec
+			SET	crit_file_hash = l_crit_file_hash
+		 WHERE	crit_file_code = l_crit_file_code;
+
+		COMMIT;
 	END;
 
 
