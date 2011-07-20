@@ -2646,6 +2646,7 @@ is
    type val_tab_t  is table of binary_double;
    type qual_tab_t is table of number;
    
+   TS_ID_NOT_FOUND exception; pragma exception_init(TS_ID_NOT_FOUND, -20001);
    date_tab    date_tab_t := date_tab_t();
    val_tab     val_tab_t  := val_tab_t();
    qual_tab    qual_tab_t := qual_tab_t();
@@ -2654,6 +2655,8 @@ is
    t           nested_ts_table  := nested_ts_table();
    rec         sys_refcursor;
    l_time_zone varchar2(28) := nvl(p_time_zone, 'UTC');
+   must_exist  boolean;
+   tsid        varchar2(183);
    
 begin
 
@@ -2669,42 +2672,54 @@ begin
    -- 01 May 2008
    -- 
    for i in 1..p_timeseries_info.count loop
+      tsid := p_timeseries_info(i).tsid;
+      if substr(tsid, 1, 1) = '?' then
+         tsid := substr(tsid, 1);
+         must_exist := false;
+      else
+         must_exist := true;
+      end if;
       t.extend;
       t(i) := nested_ts_type(
          i,
-         p_timeseries_info(i).tsid,
+         tsid,
          p_timeseries_info(i).unit,
          p_timeseries_info(i).start_time,
          p_timeseries_info(i).end_time,
          tsv_array());
-      retrieve_ts_out(
-         rec,
-         t(i).tsid,
-         t(i).units,
-         p_timeseries_info(i).tsid,
-         p_timeseries_info(i).unit,
-         p_timeseries_info(i).start_time,
-         p_timeseries_info(i).end_time,
-         p_time_zone,
-         p_trim,
-         p_start_inclusive,
-         p_end_inclusive,
-         p_previous,
-         p_next,
-         p_version_date,
-         p_max_version,
-         p_office_id);
+      begin         
+         retrieve_ts_out(
+            rec,
+            t(i).tsid,
+            t(i).units,
+            p_timeseries_info(i).tsid,
+            p_timeseries_info(i).unit,
+            p_timeseries_info(i).start_time,
+            p_timeseries_info(i).end_time,
+            p_time_zone,
+            p_trim,
+            p_start_inclusive,
+            p_end_inclusive,
+            p_previous,
+            p_next,
+            p_version_date,
+            p_max_version,
+            p_office_id);
+            
+         date_tab.delete;
+         val_tab.delete;
+         qual_tab.delete;
+            
+         fetch rec bulk collect into date_tab, val_tab, qual_tab;
          
-      date_tab.delete;
-      val_tab.delete;
-      qual_tab.delete;
-         
-      fetch rec bulk collect into date_tab, val_tab, qual_tab;
-      
-      t(i).data.extend(rec%rowcount);
-      for j in 1..rec%rowcount loop
-         t(i).data(j) := tsv_type(from_tz(cast(date_tab(j) as timestamp), 'UTC'), val_tab(j), qual_tab(j));
-      end loop;
+         t(i).data.extend(rec%rowcount);
+         for j in 1..rec%rowcount loop
+            t(i).data(j) := tsv_type(from_tz(cast(date_tab(j) as timestamp), 'UTC'), val_tab(j), qual_tab(j));
+         end loop;
+      exception
+         when TS_ID_NOT_FOUND then
+            if not must_exist then null; end if;
+      end;
       
    end loop;
       
