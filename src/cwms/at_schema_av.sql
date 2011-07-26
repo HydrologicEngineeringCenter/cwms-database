@@ -90,6 +90,17 @@ END;
 
 @@cwms/views/av_data_streams.sql
 @@cwms/views/av_data_streams_current.sql
-@@cwms_views/av_state.sql
+@@cwms/views/av_state.sql
+
+@@cwms/views/av_data_quality.sql
+@@cwms/views/av_data_q_changed.sql
+@@cwms/views/av_data_q_protection.sql
+@@cwms/views/av_data_q_range.sql
+@@cwms/views/av_data_q_repl_cause.sql
+@@cwms/views/av_data_q_repl_method.sql
+@@cwms/views/av_data_q_screened.sql
+@@cwms/views/av_data_q_test_failed.sql
+@@cwms/views/av_data_q_validity.sql
+
 --------------------------------------------------------------------------------
 SHOW ERRORS;
