@@ -72,6 +72,9 @@
 @@cwms_forecast_pkg
 @@cwms_forecast_pkg_body
 
+@@cwms_gage_pkg
+@@cwms_gage_pkg_body
+
 -- HOST pwd
 
 @@cwms_project_pkg
