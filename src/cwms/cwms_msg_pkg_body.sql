@@ -9,51 +9,36 @@ as
 function get_msg_id (p_millis in integer default null) return varchar2
 is
    pragma autonomous_transaction;
-   l_millis  integer := p_millis;
-   l_seq     integer;
-   l_handle  varchar2(128);
-   l_result  integer;
+   l_millis      integer := p_millis;
+   l_seq         integer;
+   l_last_millis integer;
+   l_last_seq    integer;
+   l_msg_id      varchar2(17);
 begin
-   -------------------------
-   -- syncronize the code --
-   -------------------------
-   dbms_lock.allocate_unique('CWMS_MSG.GET_MSG_ID', l_handle);
-   l_result := dbms_lock.request(
-      lockhandle        => l_handle,
-      lockmode          => dbms_lock.x_mode,
-      timeout           => 2,
-      release_on_commit => true);
-   if l_result != 0 then
-      cwms_err.raise(
-        'ERROR',
-        'Cannot get message id lock, error = '
-        ||case l_result
-             when 1 then 'timeout'
-             when 2 then 'deadlock'
-             when 3 then 'parameter error'
-             when 4 then 'already owned by requestor'
-             when 5 then 'illegal handle'
-             else        'unknown error ('||l_result||')'
-          end);
-   end if;
+   --------------------------
+   -- synchronize the code --
+   --------------------------
+   lock table cwms_msg_id in exclusive mode wait 2;
    ------------------------
    -- perform the action --
    ------------------------
    if l_millis is null then
       l_millis := cwms_util.current_millis;
    end if;
-   if l_millis = last_millis then
-      l_seq := last_seq + 1;
+   select last_millis, last_seq into l_last_millis, l_last_seq from cwms_msg_id;
+   if l_millis = l_last_millis then
+      l_seq := l_last_seq + 1;
    else
       l_seq := 0;
    end if;
-   last_millis := l_millis;
-   last_seq    := l_seq;
+   update cwms_msg_id set last_millis = l_millis, last_seq = l_seq;
+   l_msg_id := replace(to_char(l_millis)||'_'||to_char(l_seq, '000'), ' ', '');
    ---------------------------------
    -- release the lock and return --
    ---------------------------------
    commit;
-   return to_char(l_millis)||'_'||to_char(l_seq, '000');
+   dbms_output.put_line(l_msg_id);
+   return l_msg_id;
 end;
 
 -------------------------------------------------------------------------------
@@ -1406,13 +1391,21 @@ procedure unregister_msg_callback (
    p_queue_name      in varchar2,
    p_subscriber_name in varchar2)
 is
+   registr_not_found exception; pragma exception_init(registr_not_found, -24950);
+   not_a_subscriber  exception; pragma exception_init(not_a_subscriber,  -24035);
    l_reg_info        sys.aq$_reg_info_list;
    l_parts           str_tab_t;
    l_subscriber_name varchar2(30);
    l_queue_name      varchar2(61);
+   l_procedure_name  varchar2(61);
 begin
+   if instr(p_procedure_name, '.') = 0 then
+      l_procedure_name := cwms_util.get_user_id||'.'||p_procedure_name;
+   else
+      l_procedure_name := p_procedure_name;
+   end if;
    l_reg_info := get_registration_info(
-      p_procedure_name,
+      l_procedure_name,
       p_queue_name,
       p_subscriber_name);
    l_parts := cwms_util.split_text(l_reg_info(1).name ,':');
@@ -1421,21 +1414,15 @@ begin
    begin
       dbms_aq.unregister(l_reg_info, l_reg_info.count);
    exception
-      when others then
-         if instr(sqlerrm, 'registration not found') > 0 then
-            dbms_output.put_line(sqlerrm);
-         end if;
+      when registr_not_found then null; -- this is thrown even when it succeeds!!!
    end;
    begin
       dbms_aqadm.remove_subscriber(
          queue_name => l_queue_name,
          subscriber => sys.aq$_agent(l_subscriber_name, null, null));
    exception
-      when others then
-         if instr(sqlerrm, 'is not a subscriber for queue') > 0 then
-            dbms_output.put_line(sqlerrm);
-         end if;
-   end;
+      when not_a_subscriber then dbms_output.put_line(sqlerrm); -- harmless
+   end;         
 end unregister_msg_callback;
 
 end cwms_msg;
