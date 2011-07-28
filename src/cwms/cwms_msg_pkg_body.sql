@@ -1418,10 +1418,24 @@ begin
    l_parts := cwms_util.split_text(l_reg_info(1).name ,':');
    l_queue_name := l_parts(1);
    l_subscriber_name := l_parts(2);
-   dbms_aq.unregister(l_reg_info, l_reg_info.count);
-   dbms_aqadm.remove_subscriber(
-      queue_name => l_queue_name,
-      subscriber => sys.aq$_agent(l_subscriber_name, null, null));
+   begin
+      dbms_aq.unregister(l_reg_info, l_reg_info.count);
+   exception
+      when others then
+         if instr(sqlerrm, 'registration not found') > 0 then
+            dbms_output.put_line(sqlerrm);
+         end if;
+   end;
+   begin
+      dbms_aqadm.remove_subscriber(
+         queue_name => l_queue_name,
+         subscriber => sys.aq$_agent(l_subscriber_name, null, null));
+   exception
+      when others then
+         if instr(sqlerrm, 'is not a subscriber for queue') > 0 then
+            dbms_output.put_line(sqlerrm);
+         end if;
+   end;
 end unregister_msg_callback;
 
 end cwms_msg;
