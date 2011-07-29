@@ -1,4 +1,4 @@
-/* Formatted on 7/28/2011 12:51:30 PM (QP5 v5.163.1008.3004) */
+/* Formatted on 7/29/2011 12:25:57 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 	--
@@ -4522,8 +4522,8 @@ AS
 	--
 	--  MERGE INTO  at_loc_group_assignment a
 	--  USING  (SELECT get_location_code (l_db_office_id, plaa.location_id) location_code,
-	-- 	plaa.loc_alias_id
-	--   FROM	TABLE (p_loc_alias_array) plaa) b
+	--  plaa.loc_alias_id
+	--   FROM TABLE (p_loc_alias_array) plaa) b
 	--  ON  (a.loc_group_code = l_loc_group_code
 	--  AND a.location_code = b.location_code)
 	--  WHEN MATCHED
@@ -4535,10 +4535,10 @@ AS
 	--  WHEN NOT MATCHED
 	--  THEN
 	--  INSERT (location_code,
-	-- 	loc_group_code,
-	-- 	loc_attribute,
-	-- 	loc_alias_id,
-	-- 	loc_ref_code
+	--  loc_group_code,
+	--  loc_attribute,
+	--  loc_alias_id,
+	--  loc_ref_code
 	--   )
 	--   VALUES  (
 	--   b.location_code,
@@ -4929,10 +4929,31 @@ AS
 								  );
 	END;
 
-	-- can only delete if there are no assignments to this group.
+	PROCEDURE delete_loc_group (p_loc_group_code   IN NUMBER,
+										 p_cascade			  IN VARCHAR2 DEFAULT 'F'
+										)
+	IS
+	BEGIN
+		IF cwms_util.is_true (p_cascade)
+		THEN
+			DELETE FROM   at_loc_group_assignment
+					WHERE   loc_group_code = p_loc_group_code;
+
+			UPDATE	at_rating_spec
+				SET	source_agency_code = NULL
+			 WHERE	source_agency_code = p_loc_group_code;
+		END IF;
+
+		--------------------------------------------------------------------
+		-- delete the group (will fail if there are location assignments) --
+		--------------------------------------------------------------------
+		DELETE FROM   at_loc_group
+				WHERE   loc_group_code = p_loc_group_code;
+	END;
+
 	PROCEDURE delete_loc_group (p_loc_category_id	IN VARCHAR2,
 										 p_loc_group_id		IN VARCHAR2,
-										 p_delete_action		IN VARCHAR2 DEFAULT NULL,
+										 p_cascade				IN VARCHAR2 DEFAULT 'F',
 										 p_db_office_id		IN VARCHAR2 DEFAULT NULL
 										)
 	IS
@@ -4947,11 +4968,6 @@ AS
 			);
 		END IF;
 
-		IF UPPER (p_delete_action) = cwms_util.delete_all
-		THEN
-			NULL;
-		END IF;
-
 		------------------------------------------
 		-- get the the category and group codes --
 		------------------------------------------
@@ -4960,13 +4976,9 @@ AS
 									  p_loc_group_id		 => p_loc_group_id,
 									  p_db_office_code	 => l_db_office_code
 									 );
-
-
-		--------------------------------------------------------------------
-		-- delete the group (will fail if there are location assignments) --
-		--------------------------------------------------------------------
-		DELETE FROM   at_loc_group
-				WHERE   loc_group_code = l_loc_group_code;
+		delete_loc_group (p_loc_group_code	 => l_loc_group_code,
+								p_cascade			 => p_cascade
+							  );
 	END;
 
 	-- can only delete if there are no assignments to this group.
@@ -4978,29 +4990,11 @@ AS
 		l_loc_group_code	 NUMBER (10);
 		l_db_office_code	 NUMBER := cwms_util.get_office_code (p_db_office_id);
 	BEGIN
-		IF l_db_office_code = cwms_util.db_office_code_all
-		THEN
-			cwms_err.raise (
-				'ERROR',
-				'Groups owned by the CWMS office id can not be deleted.'
-			);
-		ELSE
-			------------------------------------------
-			-- get the the category and group codes --
-			------------------------------------------
-			l_loc_group_code :=
-				get_loc_group_code (p_loc_category_id	 => p_loc_category_id,
-										  p_loc_group_id		 => p_loc_group_id,
-										  p_db_office_code	 => l_db_office_code
-										 );
-
-
-			--------------------------------------------------------------------
-			-- delete the group (will fail if there are location assignments) --
-			--------------------------------------------------------------------
-			DELETE FROM   at_loc_group
-					WHERE   loc_group_code = l_loc_group_code;
-		END IF;
+		delete_loc_group (p_loc_category_id   => p_loc_category_id,
+								p_loc_group_id 	  => p_loc_group_id,
+								p_cascade			  => 'F',
+								p_db_office_id 	  => p_db_office_id
+							  );
 	END delete_loc_group;
 
 	PROCEDURE delete_loc_cat (p_loc_category_id	 IN VARCHAR2,
@@ -5014,24 +5008,12 @@ AS
 		---------------------------
 		-- get the category code --
 		---------------------------
-		BEGIN
-			SELECT	loc_category_code
-			  INTO	l_loc_category_code
-			  FROM	at_loc_category
-			 WHERE	UPPER (loc_category_id) = UPPER (p_loc_category_id)
-						AND db_office_code =
-								 cwms_util.get_office_code (p_db_office_id);
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				cwms_err.raise (
-					'ITEM_DOES_NOT_EXIST',
-					'Location category ',
-						cwms_util.get_db_office_id (p_db_office_id)
-					|| '/'
-					|| p_loc_category_id
-				);
-		END;
+
+		l_loc_category_code :=
+			get_loc_category_code (
+				p_loc_category_id   => p_loc_category_id,
+				p_db_office_code	  => cwms_util.get_office_code (p_db_office_id)
+			);
 
 		---------------------------------------------------
 		-- delete groups in this caegory if specified  --
@@ -5039,8 +5021,18 @@ AS
 		---------------------------------------------------
 		IF cwms_util.is_true (p_cascade)
 		THEN
-			DELETE FROM   at_loc_group
-					WHERE   loc_category_code = l_loc_category_code;
+			NULL;
+
+			FOR loc_group_code_rec
+				IN (SELECT	 loc_group_code
+						FROM	 at_loc_group
+					  WHERE	 loc_category_code = l_loc_category_code)
+			LOOP
+				delete_loc_group (
+					p_loc_group_code	 => loc_group_code_rec.loc_group_code,
+					p_cascade				 => 'T'
+				);
+			END LOOP;
 		END IF;
 
 		---------------------------------------------------------------
