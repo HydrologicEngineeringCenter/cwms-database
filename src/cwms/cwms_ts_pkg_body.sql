@@ -2674,7 +2674,7 @@ begin
    for i in 1..p_timeseries_info.count loop
       tsid := p_timeseries_info(i).tsid;
       if substr(tsid, 1, 1) = '?' then
-         tsid := substr(tsid, 1);
+         tsid := substr(tsid, 2);
          must_exist := false;
       else
          must_exist := true;
@@ -2692,7 +2692,7 @@ begin
             rec,
             t(i).tsid,
             t(i).units,
-            p_timeseries_info(i).tsid,
+            t(i).tsid,
             p_timeseries_info(i).unit,
             p_timeseries_info(i).start_time,
             p_timeseries_info(i).end_time,
