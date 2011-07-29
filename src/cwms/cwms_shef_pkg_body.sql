@@ -1,4 +1,4 @@
-/* Formatted on 7/12/2011 3:01:44 PM (QP5 v5.163.1008.3004) */
+/* Formatted on 7/29/2011 10:41:36 AM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE BODY cwms_shef
 AS
 	PROCEDURE cat_shef_crit_lines (p_shef_crit_lines		 OUT SYS_REFCURSOR,
@@ -356,7 +356,29 @@ AS
 		NULL;
 	END;
 
+	FUNCTION get_data_feed_prefix_length (p_data_feed_code IN NUMBER)
+		RETURN NUMBER
+	IS
+		l_data_feed_prefix	at_data_feed_id.data_feed_prefix%TYPE;
+	BEGIN
+		BEGIN
+			SELECT	data_feed_prefix
+			  INTO	l_data_feed_prefix
+			  FROM	at_data_feed_id
+			 WHERE	data_feed_code = p_data_feed_code;
 
+			RETURN NVL (LENGTH (l_data_feed_prefix), 0);
+		EXCEPTION
+			WHEN NO_DATA_FOUND
+			THEN
+				cwms_err.raise (
+					'ERROR',
+						'NO_DATA_FOUND for data_feed_code: '
+					|| p_data_feed_code
+					|| ' Unable to retrieve data_feed_prefix.'
+				);
+		END;
+	END;
 
 	----------------------------------------------------
 	-- This call can only be called if the office's data stream managment is
@@ -544,14 +566,6 @@ AS
 		--
 		cwms_apex.aa1 ('in store_shef_spec.');
 
-		IF l_data_stream_mgt_style = data_stream_mgt_style
-		THEN
-			l_data_stream_mgt_param := 'p_data_stream_id';
-			l_max_len_shef_loc_id := 8;
-		ELSE
-			l_data_stream_mgt_param := 'p_data_feed_id';
-			l_max_len_shef_loc_id := 6;
-		END IF;
 
 		--======
 		--====
@@ -626,9 +640,24 @@ AS
 			END IF;
 		END IF;
 
+		IF l_data_stream_mgt_style = data_stream_mgt_style
+		THEN
+			l_data_stream_mgt_param := 'p_data_stream_id';
+			l_max_len_shef_loc_id := 8;
+		ELSE
+			l_data_stream_mgt_param := 'p_data_feed_id';
+			l_max_len_shef_loc_id :=
+				8
+				- get_data_feed_prefix_length (
+					  p_data_feed_code => l_data_feed_code
+				  );
+		END IF;
+
+
 		IF p_cwms_ts_id IS NULL
 		THEN
 			l_ts_code := NULL;
+			l_ts_id_exists := FALSE;
 
 			IF p_shef_loc_id IS NULL
 			THEN
@@ -926,37 +955,41 @@ AS
 		l_shef_duration_numeric :=
 			get_shef_duration_numeric (p_shef_duration_code);
 
-		BEGIN
-			SELECT	shef_duration_code
-			  INTO	l_shef_duration_code
-			  FROM	cwms_shef_duration
-			 WHERE	shef_duration_numeric = l_shef_duration_numeric;
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				l_shef_duration_code := 'V';
-		END;
+		IF l_ts_code IS NOT NULL
+		THEN
+			BEGIN
+				SELECT	shef_duration_code
+				  INTO	l_shef_duration_code
+				  FROM	cwms_shef_duration
+				 WHERE	shef_duration_numeric = l_shef_duration_numeric;
+			EXCEPTION
+				WHEN NO_DATA_FOUND
+				THEN
+					l_shef_duration_code := 'V';
+			END;
 
-		cwms_apex.aa1 (
-				'in store_shef_spec - duration: .'
-			|| l_shef_duration_numeric
-			|| ' - '
-			|| l_shef_duration_code
-		);
+			cwms_apex.aa1 (
+					'in store_shef_spec - duration: .'
+				|| l_shef_duration_numeric
+				|| ' - '
+				|| l_shef_duration_code
+			);
 
-		SELECT	a.unit_code
-		  INTO	l_shef_unit_code
-		  FROM	cwms_unit a
-		 WHERE	a.unit_id = p_shef_unit_id;
 
-		cwms_apex.aa1 (
-			'store_shef_spec - shef_unit_coded: ' || l_shef_unit_code
-		);
+			SELECT	a.unit_code
+			  INTO	l_shef_unit_code
+			  FROM	cwms_unit a
+			 WHERE	a.unit_id = p_shef_unit_id;
 
-		SELECT	shef_time_zone_code
-		  INTO	l_shef_time_zone_code
-		  FROM	cwms_shef_time_zone a
-		 WHERE	UPPER (a.shef_time_zone_id) = UPPER (l_time_zone_id);
+			cwms_apex.aa1 (
+				'store_shef_spec - shef_unit_coded: ' || l_shef_unit_code
+			);
+
+			SELECT	shef_time_zone_code
+			  INTO	l_shef_time_zone_code
+			  FROM	cwms_shef_time_zone a
+			 WHERE	UPPER (a.shef_time_zone_id) = UPPER (l_time_zone_id);
+		END IF;
 
 		--===
 		--======
@@ -3252,6 +3285,10 @@ AS
 			SET	data_feed_code = l_data_feed_code, data_stream_code = NULL
 		 WHERE	data_stream_code = l_data_stream_code;
 
+		UPDATE	at_shef_ignore
+			SET	data_feed_code = l_data_feed_code, data_stream_code = NULL
+		 WHERE	data_stream_code = l_data_stream_code;
+
 		UPDATE	at_data_stream_id
 			SET	active_flag = 'F', delete_date = SYSDATE
 		 WHERE	data_stream_code = l_data_stream_code;
@@ -3379,7 +3416,7 @@ AS
 
 			UPDATE	at_data_stream_id
 				SET	delete_date = l_delete_date
-			 WHERE	db_office_code = l_db_office_code;
+			 WHERE	db_office_code = l_db_office_code AND delete_date IS NULL;
 
 			DELETE FROM   at_data_feed_id
 					WHERE   db_office_code = l_db_office_code;
