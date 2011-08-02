@@ -1,1 +1,1 @@
-create or replace view av_data_quality as select * from cwms_data_quality; 
+create materialized view using index av_data_quality as select * from cwms_data_quality; 
