@@ -2117,6 +2117,58 @@ AS
 
 		RETURN l_unit_code;
 	END;
+    FUNCTION get_ts_group_code (p_ts_category_id     IN VARCHAR2,
+                                          p_ts_group_id         IN VARCHAR2,
+                                          p_db_office_code     IN NUMBER
+                                         )
+        RETURN NUMBER
+    IS
+        l_ts_group_code     NUMBER;
+    BEGIN
+        IF p_db_office_code IS NULL
+        THEN
+            cwms_err.raise ('ERROR', 'p_db_office_code cannot be null.');
+        END IF;
+
+        --
+        IF p_ts_category_id IS NOT NULL AND p_ts_group_id IS NOT NULL
+        THEN
+            BEGIN
+                SELECT    ts_group_code
+                  INTO    l_ts_group_code
+                  FROM    at_ts_group a, at_ts_category b
+                 WHERE    a.ts_category_code = b.ts_category_code
+                            AND UPPER (b.ts_category_id) =
+                                     UPPER (TRIM (p_ts_category_id))
+                            AND b.db_office_code IN
+                                     (p_db_office_code, cwms_util.db_office_code_all)
+                            AND UPPER (a.ts_group_id) =
+                                     UPPER (TRIM (p_ts_group_id))
+                            AND a.db_office_code IN
+                                     (p_db_office_code, cwms_util.db_office_code_all);
+            EXCEPTION
+                WHEN NO_DATA_FOUND
+                THEN
+                    cwms_err.raise (
+                        'ERROR',
+                            'Could not find '
+                        || TRIM (p_ts_category_id)
+                        || '-'
+                        || TRIM (p_ts_group_id)
+                        || ' category-group combination'
+                    );
+            END;
+        ELSIF (p_ts_category_id IS NOT NULL AND p_ts_group_id IS NULL)
+                OR (p_ts_category_id IS NULL AND p_ts_group_id IS NOT NULL)
+        THEN
+            cwms_err.raise (
+                'ERROR',
+                'The ts_category_id and ts_group_id is not a valid combination'
+            );
+        END IF;
+
+        RETURN l_ts_group_code;
+    END get_ts_group_code;
 
 	FUNCTION get_loc_group_code (p_loc_category_id	 IN VARCHAR2,
 										  p_loc_group_id		 IN VARCHAR2,

@@ -595,6 +595,8 @@ IS
       p_ts_subselect_string   IN       VARCHAR2 DEFAULT NULL,
       p_loc_category_id       IN       VARCHAR2 DEFAULT NULL,
       p_loc_group_id          IN       VARCHAR2 DEFAULT NULL,
+       p_ts_category_id       IN       VARCHAR2 DEFAULT NULL,
+      p_ts_group_id          IN       VARCHAR2 DEFAULT NULL,
       p_db_office_id          IN       VARCHAR2 DEFAULT NULL
    );
 
@@ -602,6 +604,8 @@ IS
       p_ts_subselect_string   IN   VARCHAR2 DEFAULT NULL,
       p_loc_category_id       IN   VARCHAR2 DEFAULT NULL,
       p_loc_group_id          IN   VARCHAR2 DEFAULT NULL,
+       p_ts_category_id       IN       VARCHAR2 DEFAULT NULL,
+      p_ts_group_id          IN       VARCHAR2 DEFAULT NULL,
       p_db_office_id          IN   VARCHAR2 DEFAULT NULL
    )
       RETURN cat_ts_id_tab_t PIPELINED;

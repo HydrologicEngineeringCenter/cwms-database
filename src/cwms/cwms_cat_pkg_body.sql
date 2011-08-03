@@ -1304,21 +1304,24 @@ IS
 
        end cat_ts_id
      */
-   PROCEDURE cat_ts_id (
+  PROCEDURE cat_ts_id (
       p_cwms_cat                  OUT sys_refcursor,
       p_ts_subselect_string   IN     VARCHAR2 DEFAULT NULL ,
       p_loc_category_id       IN     VARCHAR2 DEFAULT NULL ,
       p_loc_group_id          IN     VARCHAR2 DEFAULT NULL ,
+      p_ts_category_id       IN     VARCHAR2 DEFAULT NULL ,
+      p_ts_group_id          IN     VARCHAR2 DEFAULT NULL ,
       p_db_office_id          IN     VARCHAR2 DEFAULT NULL
    )
    IS
       l_db_office_id     VARCHAR2 (16);
       l_db_office_code    NUMBER;
       l_loc_group_code    NUMBER := NULL;
+       l_ts_group_code    NUMBER := NULL;
       l_ts_subselect_string VARCHAR2 (512)
             := nvl(cwms_util.normalize_wildcards(TRIM (p_ts_subselect_string)), '%') ;
    BEGIN
-        
+
       l_db_office_id := cwms_util.get_db_office_id (p_db_office_id);
       l_db_office_code := cwms_util.get_db_office_code (l_db_office_id);
 
@@ -1337,6 +1340,25 @@ IS
          l_loc_group_code :=
             cwms_util.get_loc_group_code (p_loc_category_id,
                                           p_loc_group_id,
+                                          l_db_office_code
+                                         );
+      END IF;
+      
+       ---------------------------------------------------
+      -- get the ts_group_code if cat/group passed in --
+      ---------------------------------------------------
+      IF (p_ts_category_id IS NULL) != (p_ts_group_id IS NULL)
+      THEN
+         cwms_err.raise (
+            'ERROR',
+            'The ts_category_id and ts_group_id is not a valid combination'
+         );
+      END IF;
+      IF p_ts_group_id IS NOT NULL
+      THEN
+         l_ts_group_code :=
+            cwms_util.get_ts_group_code (p_ts_category_id,
+                                          p_ts_group_id,
                                           l_db_office_code
                                          );
       END IF;
@@ -1366,7 +1388,12 @@ IS
                                 (SELECT     location_code
                                     FROM     at_loc_group_assignment
                                   WHERE     loc_group_code = l_loc_group_code))
-                      AND (l_db_office_code IS NULL
+                     AND(l_ts_group_code IS NULL
+                     OR ts_code IN 
+                        (SELECT ts_code
+                            FROM at_ts_group_assignment
+                                WHERE ts_group_code=l_ts_group_code))
+                     AND  (l_db_office_code IS NULL
                              OR v.db_office_code = l_db_office_code)
                       AND UPPER (v.cwms_ts_id) LIKE UPPER (l_ts_subselect_string)
         ORDER BY   UPPER (v.cwms_ts_id), UPPER (v.db_office_id) ASC;
@@ -1416,6 +1443,8 @@ END cat_ts_id;
    FUNCTION cat_ts_id_tab (p_ts_subselect_string   IN VARCHAR2 DEFAULT NULL ,
                            p_loc_category_id       IN VARCHAR2 DEFAULT NULL ,
                            p_loc_group_id          IN VARCHAR2 DEFAULT NULL ,
+                           p_ts_category_id       IN     VARCHAR2 DEFAULT NULL ,
+                           p_ts_group_id          IN     VARCHAR2 DEFAULT NULL ,
                            p_db_office_id          IN VARCHAR2 DEFAULT NULL
                           )
       RETURN cat_ts_id_tab_t
@@ -1428,6 +1457,8 @@ END cat_ts_id;
                  p_ts_subselect_string,
                  p_loc_category_id,
                  p_loc_group_id,
+                 p_ts_category_id,
+                 p_ts_group_id,
                  p_db_office_id
                 );
 

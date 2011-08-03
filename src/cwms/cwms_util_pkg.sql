@@ -967,6 +967,23 @@ AS
                            p_db_office_id        IN VARCHAR2 DEFAULT NULL
                           )
       RETURN NUMBER;
+        /**
+    * Retrieves the timeseries group code for a specified timeseries group
+    *
+    * @param p_ts_category_id the timeseries category identifier that the timeseries
+    *        group belongs to
+    * @param p_ts_group_id the timeseries group identifier
+    * @param p_db_office_code the office to locate the group code for
+    *
+    * @return the timeseries group code for the inputs
+    *
+    * @throws ERROR if no timeseries group matches the inputs
+    */
+   FUNCTION get_ts_group_code (p_ts_category_id   IN VARCHAR2,
+                                p_ts_group_id      IN VARCHAR2,
+                                p_db_office_code    IN NUMBER
+                               )
+      RETURN NUMBER;
    /**
     * Retrieves the location group code for a specified location group
     * 
