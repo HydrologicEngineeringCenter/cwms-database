@@ -7516,52 +7516,88 @@ begin
    -----------------------                 
    -- perform the query --
    -----------------------
-   select ztsv_type(
-             date_time, 
-             cwms_util.convert_units(value, l_unit, p_criteria.unit), 
-             quality_code) bulk collect
-     into l_results
-     from av_tsv
-    where ts_code = l_ts_code
-      and date_time >= l_min_date
-      and date_time <= l_max_date
-      and value >= l_min_value
-      and value <= l_max_value;
-   for rec in
-      (  select table_name,
-                start_date,
-                end_date
-           from at_ts_table_properties
-       order by start_date
-      )
-   loop
-      continue when rec.start_date > l_max_date or rec.end_date < l_min_date;
+   if p_criteria.minimum_value is null and p_criteria.maximum_value is null then
+      -----------------------------
+      -- just call retrieve_ts() --
+      -----------------------------
+      declare 
+         l_cursor    sys_refcursor;
+         l_dates     date_table_type;
+         l_values    double_tab_t;
+         l_qualities number_tab_t;
       begin
-         execute immediate '
-            select ztsv_type(date_time, value, quality_code) 
-              from '||rec.table_name||'
-             where ts_code = :1
-               and date_time between :1 and :2
-               and value between :3 and :4' bulk collect 
-            into l_table_results
-           using l_ts_code,
-                 l_min_date,
-                 l_max_date,
-                 l_min_value, 
-                 l_max_value;
-         if l_results is null then
+         retrieve_ts(
+            p_at_tsv_rc       => l_cursor,
+            p_cwms_ts_id      => p_criteria.time_series_id,
+            p_units           => l_unit,
+            p_start_time      => l_min_date,
+            p_end_time        => l_max_date,
+            p_time_zone       => 'UTC',
+            p_trim            => 'T',
+            p_start_inclusive => 'T',
+            p_end_inclusive   => 'T',
+            p_previous        => 'F',
+            p_next            => 'F',
+            p_version_date    => null,
+            p_max_version     => 'T',
+            p_office_id       => l_office_id);
+         fetch l_cursor bulk collect
+          into l_dates,
+               l_values,
+               l_qualities;
+         close l_cursor;
+         if l_dates is not null and l_dates.count > 0 then
             l_results := ztsv_array();
-         end if;
-         l_results.extend(l_table_results.count);
-         for i in 1..l_table_results.count loop
-            l_table_results(i).value := cwms_util.convert_units(l_table_results(i).value, l_unit, p_criteria.unit);
-            l_results(l_results.count - l_table_results.count + i) := l_table_results(i);
-         end loop;
-         l_table_results.delete;                 
-      exception
-         when no_data_found then null;
-      end;
-   end loop;
+            l_results.extend(l_dates.count);
+            for i in 1.. l_dates.count loop
+               l_results(i) := ztsv_type(
+                  cwms_util.change_timezone(l_dates(i), 'UTC', l_time_zone), 
+                  l_values(i), 
+                  l_qualities(i));
+            end loop;
+         end if;                           
+      end;         
+   else
+      ---------------------------------------
+      -- find the values that are in range --
+      ---------------------------------------
+      for rec in
+         (  select table_name,
+                   start_date,
+                   end_date
+              from at_ts_table_properties
+          order by start_date
+         )
+      loop
+         continue when rec.start_date > l_max_date or rec.end_date < l_min_date;
+         begin
+            execute immediate '
+               select ztsv_type(date_time, value, quality_code) 
+                 from '||rec.table_name||'
+                where ts_code = :1
+                  and date_time between :1 and :2
+                  and value between :3 and :4' bulk collect 
+               into l_table_results
+              using l_ts_code,
+                    l_min_date,
+                    l_max_date,
+                    l_min_value, 
+                    l_max_value;
+            if l_results is null then
+               l_results := ztsv_array();
+            end if;
+            l_results.extend(l_table_results.count);
+            for i in 1..l_table_results.count loop
+               l_table_results(i).date_time := cwms_util.change_timezone(l_table_results(i).date_time, 'UTC', l_time_zone);
+               l_table_results(i).value := cwms_util.convert_units(l_table_results(i).value, l_unit, p_criteria.unit);
+               l_results(l_results.count - l_table_results.count + i) := l_table_results(i);
+            end loop;
+            l_table_results.delete;                 
+         exception
+            when no_data_found then null;
+         end;
+      end loop;
+   end if;
       
    return l_results;                    
 end get_values_in_range;      
@@ -7573,6 +7609,7 @@ is
    type index_by_date_t is table of integer index by varchar(12);
    type index_by_date_tab_t is table of index_by_date_t;
    c_date_fmt constant varchar2(14) := 'yyyymmddhh24mi';
+   l_criteria          time_series_range_tab_t := p_criteria;
    l_original_results  ztsv_array_tab := ztsv_array_tab();
    l_results           ztsv_array_tab := ztsv_array_tab();
    l_common_dates      index_by_date_t;
@@ -7580,9 +7617,11 @@ is
    l_count             pls_integer;
    l_date              varchar2(12);
    l_dates             date_table_type := date_table_type();
+   l_min_date          date;
+   l_max_date          date;
 begin
-   if p_criteria is not null then
-      l_count := p_criteria.count;
+   if l_criteria is not null then
+      l_count := l_criteria.count;
       l_individual_dates.extend(l_count);
       l_original_results.extend(l_count);
       l_results.extend(l_count);
@@ -7590,12 +7629,26 @@ begin
       -- get the data for each individual criteria object --
       ------------------------------------------------------
       for i in 1..l_count loop
-         l_original_results(i) := get_values_in_range(p_criteria(i));
-         for j in 1..l_original_results(i).count loop
-            l_date := to_char(l_original_results(i)(j).date_time, c_date_fmt);
-            l_common_dates(l_date) := 0;
-            l_individual_dates(i)(l_date) := j;
-         end loop;
+         if l_min_date is not null then
+            l_criteria(i).start_time := greatest(l_criteria(i).start_time, l_min_date);
+         end if;
+         if l_max_date is not null then
+            l_criteria(i).start_time := least(l_criteria(i).start_time, l_max_date);
+         end if;
+         l_original_results(i) := get_values_in_range(l_criteria(i));
+         if l_original_results(i) is not null and l_original_results(i).count > 0 then
+            if l_original_results(i)(1).date_time > l_min_date then
+               l_min_date := l_original_results(i)(1).date_time; 
+            end if;
+            if l_original_results(i)(l_original_results(i).count).date_time < l_max_date then
+               l_max_date := l_original_results(i)(l_original_results(i).count).date_time; 
+            end if;
+            for j in 1..l_original_results(i).count loop
+               l_date := to_char(l_original_results(i)(j).date_time, c_date_fmt);
+               l_common_dates(l_date) := 0;
+               l_individual_dates(i)(l_date) := j;
+            end loop;
+         end if;
       end loop;
       --------------------------------------------------------
       -- determine the times that are common to all results --
