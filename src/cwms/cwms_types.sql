@@ -93,6 +93,57 @@ END;
 
 CREATE OR REPLACE
 TYPE SHEF_SPEC_TYPE
+/**
+ * Object type representing SHEF processing for a CWMS time series
+ *
+ * @member cwms_ts_id the CWMS time series identifier
+ *
+ * @member shef_location_id the SHEF location identifier
+ *
+ * @member shef_pe_code the SHEF physical element identifier
+ *
+ * @member shef_tse_code the SHEF identifiers for type, source, and extremum
+ *
+ * @member shef_duration the SHEF duration identifier
+ *
+ * @member shef_incoming_units the unit of the incoming data. This is necessary
+ *         in case incoming data is not in the SHEF standard unit.
+ *
+ * @member shef_time_zone_id the time zone of the incoming data. This is necessary
+ *         in case incoming data is not in UTC.
+ *
+ * @member daylight_savings specifies whether the <code><big>shef_time_zone_id</big></code>
+ *         observes daylight savings.
+ *         <ul>
+ *         <li><code><big>'T'</big></code> - specifies daylight savings is observed
+ *         <li><code><big>'F'</big></code> - specifies daylight savings is not observed
+ *         </ul>
+ *
+ * @member interval_utc_offset data offset from start of UTC interval, in minutes.
+ *         Valid only for regular time series.
+ *         <ul>
+ *         <li><code><big><a href="cwms_util#const=utc_offset_irregular">cwms_util.utc_offset_irregular</a></big></code> - value used for irregular time series
+ *         <li><code><big><a href="cwms_util#const=utc_offset_undefined">cwms_util.utc_offset_undefined</a></big></code> - value indicating offset has not yet been defined for regular time sereies
+ *         </ul>
+ *
+ * @member snap_forward_minutes number of minutes before the expected time to accept a regular time series value.
+ *         The value specifies the number of minutes before the <code><big>interval_utc_offset</big></code>
+ *         within which to accept data as being at the specified offset.
+ *
+ * @member snap_backward_minutes number of minutes after the expected time to accept a regular time series value.
+ *         The value specifies the number of minutes after the <code><big>interval_utc_offset</big></code>
+ *         within which to accept data as being at the specified offset.
+ *
+ * @member ts_active_flag flag specifying whether to process the indicated time series.
+ *         Allows turning the processing of a specific time series on and off.
+ *         <ul>
+ *         <li><code><big>'T'</big></code> - specifies the time series is to be processed
+ *         <li><code><big>'F'</big></code> - specifies the time series is not to be processed
+ *         </ul>
+ *
+ * @see constant cwms_util.utc_offset_irregular
+ * @see constant cwms_util.utc_offset_undefined
+ */
 AS
    OBJECT (
       cwms_ts_id VARCHAR2 (132),
@@ -111,33 +162,119 @@ AS
 /
 
 CREATE OR REPLACE
-TYPE  SHEF_SPEC_ARRAY IS TABLE OF shef_spec_type;
+TYPE  SHEF_SPEC_ARRAY
+/**
+ * Table of <code><big>shef_spec_type</big></code> records.  This collection usually
+ * comprises the entire SHEF decoding criteria set for a single CWMS data stream.
+ *
+ * @see type shef_spec_type
+ */
+IS TABLE OF shef_spec_type;
 /
 
-CREATE TYPE tsv_type AS OBJECT (
+CREATE TYPE tsv_type
+/**
+ * Object type representing a single time series value.  This type carries time zone
+ * information, so any usage of it should not explicitly declare the time zone.
+ * External specification of time series attributes is also required for proper usage.
+ *
+ * @member date_time the time of the value, including time zone
+ *
+ * @member value the actual time series value
+ *
+ * @member quality_code the quality assigned to the time series value.
+ *
+ * @see type ztsv_type
+ * @see view av_data_quality
+ */
+AS OBJECT (
    date_time      TIMESTAMP WITH TIME ZONE,
    VALUE          BINARY_DOUBLE,
    quality_code   NUMBER
 );
 /
 
-CREATE TYPE tsv_array IS TABLE OF tsv_type;
+CREATE TYPE tsv_array
+/**
+ * Table of <code><big>tsv_type</big></code> records. This collection specifies
+ * a time series of values for a certain time range.  This type carries time zone
+ * information, so any usage of it should not explicitly declare the time zone.
+ * External specification of time series attributes is also required for proper usage.
+ *
+ * @see type tsv_type
+ * @see type ztsv_array
+ */
+IS TABLE OF tsv_type;
 /
 
 CREATE OR REPLACE TYPE ztsv_type
+/**
+ * Object type representing a single time series value. This type does not carry
+ * time zone information, so any usage of it needs to explicitly declare the time zone.
+ * External specification of time series attributes is also required for proper usage.
+ *
+ * @member date_time the time of the value, not including time zone
+ *
+ * @member value the actual time series value
+ *
+ * @member quality_code the quality assigned to the time series value.
+ *
+ * @see type ztsv_type
+ * @see view av_data_quality
+ */
 AS
    OBJECT (date_time DATE, VALUE BINARY_DOUBLE, quality_code NUMBER);
 /
 
-CREATE OR REPLACE TYPE ztsv_array IS TABLE OF ztsv_type;
+CREATE OR REPLACE TYPE ztsv_array
+/**
+ * Table of <code><big>ztsv_type</big></code> records. This collection specifies
+ * a time series of values for a certain time range.  This type does not carry
+ * time zone information, so any usage of it should explicitly declare the time zone.
+ * External specification of time series attributes is also required for proper usage.
+ *
+ * @see type tsv_type
+ * @see type ztsv_array
+ */
+IS TABLE OF ztsv_type;
+/
+
+CREATE OR REPLACE TYPE ztsv_array_tab as table of ztsv_array;
 /
 
 CREATE OR REPLACE TYPE ztimeseries_type
+/**
+ * Object type representing time series values with attributes. This type does not carry
+ * time zone information, so any usage of it should explicitly declare the time zone.
+ *
+ * @member tsid CWMS time series identifier. This identifier includes six parts separated
+ *         by the period (.) character:
+ *         <ol>
+ *         <li>location and optionally sub-location</li>
+ *         <li>parameter and optionally sub-parameter</li>
+ *         <li>parameter type</li>
+ *         <li>interval (recurrance period)</li>
+ *         <li>duration (coverage period)</li>
+ *         <li>version</li>
+ *         </ol>
+ *
+ * @memeber unit the unit of the value member of each record in the <code><big>data</big></code>
+ *          member.
+ *
+ * @member data the time series values
+ *
+ * @see type ztsv_array
+ */
 AS
    OBJECT (tsid VARCHAR2 (183), unit VARCHAR2 (16), data ztsv_array);
 /
 
-CREATE OR REPLACE TYPE ztimeseries_array IS TABLE OF ztimeseries_type;
+CREATE OR REPLACE TYPE ztimeseries_array
+/**
+ * Table of <code><big>ztimeseries_type</big></code> records. This type does not carry
+ * time zone information, so any usage of it should explicitly declare the time zone.
+ */
+IS TABLE OF ztimeseries_type;
 /
 /*
 -- This type represents a row in the time series value table.
@@ -704,7 +841,19 @@ create or replace type log_message_properties_t as object (
 create or replace type log_message_props_tab_t as table of log_message_properties_t
 /
 
-create type location_ref_t is object(
+create type location_ref_t
+/**
+ * Object type representing a location reference.
+ *
+ * @member base_location_id specifies the base location portion
+ *
+ * @member sub_location_id specifies the sub-location portion
+ *
+ * @member office_id specifies the office which owns the referenced location
+ *
+ * @see type location_obj_t
+ */
+is object(
    base_location_id varchar2(16),
    sub_location_id  varchar2(32),
    office_id        varchar2(16),
@@ -3314,6 +3463,20 @@ create or replace type property_info2_t as object (
 /
 
 create or replace type property_info2_tab_t as table of property_info2_t;
+/
+
+create or replace type time_series_range_t as object (
+   office_id      varchar2(16),
+   time_series_id varchar2(183),
+   start_time     date,
+   end_time       date,
+   time_zone      varchar2(28),
+   minimum_value  binary_double,
+   maximum_value  binary_double,
+   unit           varchar2(16));
+/
+
+create or replace type time_series_range_tab_t as table of time_series_range_t;
 /
 
 -- HOST pwd

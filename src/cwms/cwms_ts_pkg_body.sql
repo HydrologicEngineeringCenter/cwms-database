@@ -7201,6 +7201,435 @@ begin
    p_max_date := cwms_util.change_timezone(l_max_date_utc, 'UTC', p_time_zone);      
 end get_ts_extents;   
 
+procedure get_value_extents(
+   p_min_value out binary_double,
+   p_max_value out binary_double,
+   p_ts_id     in  varchar2,
+   p_unit      in  varchar2,
+   p_min_date  in  date     default null,
+   p_max_date  in  date     default null,
+   p_time_zone in  varchar2 default null,
+   p_office_id in  varchar2 default null)
+is
+   l_min_value    binary_double;
+   l_max_value    binary_double;
+   l_temp_min     binary_double;
+   l_temp_max     binary_double;
+   l_office_id    varchar2(16);
+   l_unit         varchar2(16);
+   l_time_zone    varchar2(28);
+   l_min_date     date;
+   l_max_date     date;
+   l_ts_code      number(10);
+   l_parts        str_tab_t;
+   l_location_id  varchar2(49);
+   l_parameter_id varchar2(49);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_ts_id,
+      p_unit,
+      p_time_zone,
+      p_office_id));
+   ----------------------------      
+   -- set values from inputs --
+   ----------------------------      
+   l_office_id    := cwms_util.get_db_office_id(p_office_id);
+   l_ts_code      := cwms_ts.get_ts_code(p_ts_id, l_office_id);
+   l_parts        := cwms_util.split_text(p_ts_id, '.');
+   l_location_id  := l_parts(1);
+   l_parameter_id := l_parts(2);
+   l_unit         := cwms_util.get_default_units(l_parameter_id);
+   l_time_zone := case p_time_zone is null
+                     when true  then cwms_loc.get_local_timezone(l_location_id , l_office_id)
+                     when false then p_time_zone 
+                  end;
+   l_min_date := case p_min_date is null
+                    when true  then date '1700-01-01'
+                    when false then cwms_util.change_timezone(p_min_date, l_time_zone, 'UTC')
+                 end;         
+   l_max_date := case p_max_date is null
+                    when true  then date '2100-01-01'
+                    when false then cwms_util.change_timezone(p_max_date, l_time_zone, 'UTC')
+                 end;
+   -----------------------                          
+   -- perform the query --
+   -----------------------
+   for rec in
+      (  select table_name,
+                start_date,
+                end_date
+           from at_ts_table_properties
+       order by start_date
+      )
+   loop
+      continue when rec.start_date > l_max_date or rec.end_date < l_min_date;
+      begin
+         execute immediate '
+            select min(value),
+                   max(value)
+              from '||rec.table_name||'
+             where ts_code = :1
+               and date_time between :2 and :3' 
+            into l_temp_min,
+                 l_temp_max
+           using l_ts_code,
+                 l_min_date,
+                 l_max_date;
+      if l_min_value is null or l_temp_min < l_min_value then
+         l_min_value := l_temp_min;
+      end if;                 
+      if l_max_value is null or l_temp_max > l_max_value then
+         l_max_value := l_temp_max;
+      end if;                 
+      exception
+         when no_data_found then null;
+      end;
+   end loop;
+   if l_min_value is not null then
+      p_min_value := cwms_util.convert_units(l_min_value, l_unit, p_unit);
+   end if;
+   if l_max_value is not null then
+      p_max_value := cwms_util.convert_units(l_max_value, l_unit, p_unit);
+   end if;
+end get_value_extents;   
+
+procedure get_value_extents(
+   p_min_value      out binary_double,
+   p_max_value      out binary_double,
+   p_min_value_date out date,
+   p_max_value_date out date,
+   p_ts_id          in  varchar2,
+   p_unit           in  varchar2,
+   p_min_date       in  date default null,
+   p_max_date       in  date default null,
+   p_time_zone      in  varchar2 default null,
+   p_office_id      in  varchar2 default null)
+is
+   l_min_value      binary_double;
+   l_max_value      binary_double;
+   l_temp_min       binary_double;
+   l_temp_max       binary_double;
+   l_min_value_date date;
+   l_max_value_date date;
+   l_temp_min_date  date;
+   l_temp_max_date  date;
+   l_office_id      varchar2(16);
+   l_unit           varchar2(16);
+   l_time_zone      varchar2(28);
+   l_min_date       date;
+   l_max_date       date;
+   l_ts_code        number(10);
+   l_parts          str_tab_t;
+   l_location_id    varchar2(49);
+   l_parameter_id   varchar2(49);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_ts_id,
+      p_unit,
+      p_time_zone,
+      p_office_id));
+   ----------------------------      
+   -- set values from inputs --
+   ----------------------------      
+   l_office_id    := cwms_util.get_db_office_id(p_office_id);
+   l_ts_code      := cwms_ts.get_ts_code(p_ts_id, l_office_id);
+   l_parts        := cwms_util.split_text(p_ts_id, '.');
+   l_location_id  := l_parts(1);
+   l_parameter_id := l_parts(2);
+   l_unit         := cwms_util.get_default_units(l_parameter_id);
+   l_time_zone := case p_time_zone is null
+                     when true  then cwms_loc.get_local_timezone(l_location_id , l_office_id)
+                     when false then p_time_zone 
+                  end;
+   l_min_date := case p_min_date is null
+                    when true  then date '1700-01-01'
+                    when false then cwms_util.change_timezone(p_min_date, l_time_zone, 'UTC')
+                 end;         
+   l_max_date := case p_max_date is null
+                    when true  then date '2100-01-01'
+                    when false then cwms_util.change_timezone(p_max_date, l_time_zone, 'UTC')
+                 end;
+   -----------------------                          
+   -- perform the query --
+   -----------------------
+   for rec in
+      (  select table_name,
+                start_date,
+                end_date
+           from at_ts_table_properties
+       order by start_date
+      )
+   loop
+      continue when rec.start_date > l_max_date or rec.end_date < l_min_date;
+      begin
+         execute immediate '
+            select date_time, 
+                   value 
+              from '||rec.table_name||'
+             where ts_code = :1
+               and date_time between :2 and :3 
+               and value = (  select min(value) 
+                                from '||rec.table_name||'
+                               where ts_code = :4
+                                 and date_time between :5 and :6 
+                           ) 
+               and rownum = 1'
+            into l_temp_min_date,
+                 l_temp_min
+           using l_ts_code,
+                 l_min_date,
+                 l_max_date,
+                 l_ts_code,
+                 l_min_date,
+                 l_max_date;
+      if l_min_value is null or l_temp_min < l_min_value then
+         l_min_value_date := l_temp_min_date;
+         l_min_value      := l_temp_min;
+      end if;                 
+      exception
+         when no_data_found then null;
+      end;
+      begin
+         execute immediate '
+            select date_time, 
+                   value 
+              from '||rec.table_name||'
+             where ts_code = :1
+               and date_time between :2 and :3 
+               and value = (  select max(value) 
+                                from '||rec.table_name||'
+                               where ts_code = :4
+                                 and date_time between :5 and :6 
+                           ) 
+               and rownum = 1'
+            into l_temp_max_date,
+                 l_temp_max
+           using l_ts_code,
+                 l_min_date,
+                 l_max_date,
+                 l_ts_code,
+                 l_min_date,
+                 l_max_date;
+      if l_max_value is null or l_temp_max > l_max_value then
+         l_max_value_date := l_temp_max_date;
+         l_max_value      := l_temp_max;
+      end if;                 
+      exception
+         when no_data_found then null;
+      end;
+   end loop;
+   if l_min_value is not null then
+      p_min_value      := cwms_util.convert_units(l_min_value, l_unit, p_unit);
+      p_min_value_date := cwms_util.change_timezone(l_min_value_date, 'UTC', l_time_zone);
+   end if;
+   if l_max_value is not null then
+      p_max_value      := cwms_util.convert_units(l_max_value, l_unit, p_unit);
+      p_max_value_date := cwms_util.change_timezone(l_max_value_date, 'UTC', l_time_zone);
+   end if;
+end get_value_extents;   
+      
+function get_values_in_range(
+   p_ts_id     in varchar2,
+   p_min_value in binary_double,
+   p_max_value in binary_double,
+   p_unit      in varchar2,
+   p_min_date  in date default null,
+   p_max_date  in date default null,
+   p_time_zone in varchar2 default null,
+   p_office_id in varchar2 default null)
+   return ztsv_array
+is
+begin
+   return get_values_in_range(
+      time_series_range_t(
+         p_office_id,
+         p_ts_id,
+         p_min_date,
+         p_max_date,
+         p_time_zone,
+         p_min_value,
+         p_max_value,
+         p_unit));
+end;   
+      
+function get_values_in_range(
+   p_criteria in time_series_range_t)
+   return ztsv_array
+is
+   l_results       ztsv_array;
+   l_table_results ztsv_array;
+   l_office_id     varchar2(16);
+   l_unit          varchar2(16);
+   l_time_zone     varchar2(28);
+   l_min_value     binary_double;
+   l_max_value     binary_double;
+   l_min_date      date;
+   l_max_date      date;
+   l_ts_code       number(10);
+   l_parts         str_tab_t;
+   l_location_id   varchar2(49);
+   l_parameter_id  varchar2(49);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_criteria.office_id,
+      p_criteria.time_series_id,
+      p_criteria.time_zone,
+      p_criteria.unit));
+   ----------------------------      
+   -- set values from inputs --
+   ----------------------------      
+   l_office_id    := cwms_util.get_db_office_id(p_criteria.office_id);
+   l_ts_code      := cwms_ts.get_ts_code(p_criteria.time_series_id, l_office_id);
+   l_parts        := cwms_util.split_text(p_criteria.time_series_id, '.');
+   l_location_id  := l_parts(1);
+   l_parameter_id := l_parts(2);
+   l_unit      := cwms_util.get_default_units(l_parameter_id);
+   l_min_value := case p_criteria.minimum_value is null
+                     when true  then -binary_double_max_normal
+                     when false then cwms_util.convert_units(p_criteria.minimum_value, p_criteria.unit, l_unit)
+                  end;                     
+   l_max_value := case p_criteria.maximum_value is null
+                     when true  then binary_double_max_normal
+                     when false then cwms_util.convert_units(p_criteria.maximum_value, p_criteria.unit, l_unit)
+                  end;                     
+   l_time_zone := case p_criteria.time_zone is null
+                     when true  then cwms_loc.get_local_timezone(l_location_id , l_office_id)
+                     when false then p_criteria.time_zone 
+                  end;
+   l_min_date := case p_criteria.start_time is null
+                    when true  then date '1700-01-01'
+                    when false then cwms_util.change_timezone(p_criteria.start_time, l_time_zone, 'UTC')
+                 end;         
+   l_max_date := case p_criteria.end_time is null
+                    when true  then date '2100-01-01'
+                    when false then cwms_util.change_timezone(p_criteria.end_time, l_time_zone, 'UTC')
+                 end;
+   -----------------------                 
+   -- perform the query --
+   -----------------------
+   select ztsv_type(
+             date_time, 
+             cwms_util.convert_units(value, l_unit, p_criteria.unit), 
+             quality_code) bulk collect
+     into l_results
+     from av_tsv
+    where ts_code = l_ts_code
+      and date_time >= l_min_date
+      and date_time <= l_max_date
+      and value >= l_min_value
+      and value <= l_max_value;
+   for rec in
+      (  select table_name,
+                start_date,
+                end_date
+           from at_ts_table_properties
+       order by start_date
+      )
+   loop
+      continue when rec.start_date > l_max_date or rec.end_date < l_min_date;
+      begin
+         execute immediate '
+            select ztsv_type(date_time, value, quality_code) 
+              from '||rec.table_name||'
+             where ts_code = :1
+               and date_time between :1 and :2
+               and value between :3 and :4' bulk collect 
+            into l_table_results
+           using l_ts_code,
+                 l_min_date,
+                 l_max_date,
+                 l_min_value, 
+                 l_max_value;
+         if l_results is null then
+            l_results := ztsv_array();
+         end if;
+         l_results.extend(l_table_results.count);
+         for i in 1..l_table_results.count loop
+            l_table_results(i).value := cwms_util.convert_units(l_table_results(i).value, l_unit, p_criteria.unit);
+            l_results(l_results.count - l_table_results.count + i) := l_table_results(i);
+         end loop;
+         l_table_results.delete;                 
+      exception
+         when no_data_found then null;
+      end;
+   end loop;
+      
+   return l_results;                    
+end get_values_in_range;      
+      
+function get_values_in_range(
+   p_criteria in time_series_range_tab_t)
+   return ztsv_array_tab
+is
+   type index_by_date_t is table of integer index by varchar(12);
+   type index_by_date_tab_t is table of index_by_date_t;
+   c_date_fmt constant varchar2(14) := 'yyyymmddhh24mi';
+   l_original_results  ztsv_array_tab := ztsv_array_tab();
+   l_results           ztsv_array_tab := ztsv_array_tab();
+   l_common_dates      index_by_date_t;
+   l_individual_dates  index_by_date_tab_t := index_by_date_tab_t();
+   l_count             pls_integer;
+   l_date              varchar2(12);
+   l_dates             date_table_type := date_table_type();
+begin
+   if p_criteria is not null then
+      l_count := p_criteria.count;
+      l_individual_dates.extend(l_count);
+      l_original_results.extend(l_count);
+      l_results.extend(l_count);
+      ------------------------------------------------------
+      -- get the data for each individual criteria object --
+      ------------------------------------------------------
+      for i in 1..l_count loop
+         l_original_results(i) := get_values_in_range(p_criteria(i));
+         for j in 1..l_original_results(i).count loop
+            l_date := to_char(l_original_results(i)(j).date_time, c_date_fmt);
+            l_common_dates(l_date) := 0;
+            l_individual_dates(i)(l_date) := j;
+         end loop;
+      end loop;
+      --------------------------------------------------------
+      -- determine the times that are common to all results --
+      --------------------------------------------------------
+      for i in 1..l_count loop
+         exit when l_common_dates.count = 0;
+         l_date := l_common_dates.last;
+         loop
+            exit when l_date is null;
+            if not l_individual_dates(i).exists(l_date) then
+               l_common_dates.delete(l_date);
+            end if;
+            l_date := l_common_dates.prior(l_date);
+         end loop;
+      end loop;
+      ------------------------------------------------
+      -- build the result set from the common times --
+      ------------------------------------------------
+      if l_common_dates.count > 0 then
+         for i in 1..l_count loop
+            l_results(i) := ztsv_array();
+            l_date := l_common_dates.first;
+            loop
+               exit when l_date is null;
+               l_results(i).extend;
+               l_results(i)(l_results(i).count) := l_original_results(i)(l_individual_dates(i)(l_date));
+               l_date := l_common_dates.next(l_date);
+            end loop;
+         end loop;
+      end if;
+   end if;
+   return l_results;
+end get_values_in_range;         
+
 procedure trim_ts_deleted_times
 is
    l_millis_count number(14);

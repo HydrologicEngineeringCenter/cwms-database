@@ -925,6 +925,47 @@ AS
       p_time_zone    in  varchar2 default 'UTC',
       p_version_date in  date     default cwms_util.non_versioned,
       p_office_id    in  varchar2 default null);
+
+   procedure get_value_extents(
+      p_min_value out binary_double,
+      p_max_value out binary_double,
+      p_ts_id     in  varchar2,
+      p_unit      in  varchar2,
+      p_min_date  in  date default null,
+      p_max_date  in  date default null,
+      p_time_zone in  varchar2 default null,
+      p_office_id in  varchar2 default null);
+
+   procedure get_value_extents(
+      p_min_value      out binary_double,
+      p_max_value      out binary_double,
+      p_min_value_date out date,
+      p_max_value_date out date,
+      p_ts_id          in  varchar2,
+      p_unit           in  varchar2,
+      p_min_date       in  date default null,
+      p_max_date       in  date default null,
+      p_time_zone      in  varchar2 default null,
+      p_office_id      in  varchar2 default null);
+      
+   function get_values_in_range(
+      p_ts_id     in varchar2,
+      p_min_value in binary_double,
+      p_max_value in binary_double,
+      p_unit      in varchar2,
+      p_min_date  in date default null,
+      p_max_date  in date default null,
+      p_time_zone in varchar2 default null,
+      p_office_id in varchar2 default null)
+      return ztsv_array;
+
+   function get_values_in_range(
+      p_criteria in time_series_range_t)
+      return ztsv_array;      
+      
+   function get_values_in_range(
+      p_criteria in time_series_range_tab_t)
+      return ztsv_array_tab;      
       
    procedure trim_ts_deleted_times;
    
