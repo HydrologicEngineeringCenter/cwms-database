@@ -7063,7 +7063,47 @@ is
 begin
    return quality_is_rejected(p_value.quality_code);
 end quality_is_rejected;   
-   
+
+function get_quality_description(
+   p_quality_code in number)
+   return varchar2 result_cache
+is
+   l_description varchar2(4000);
+   l_rec cwms_data_quality%rowtype;
+begin
+   select *
+     into l_rec
+     from cwms_data_quality
+    where quality_code = p_quality_code;
+
+   if l_rec.screened_id = 'UNSCREENED' then
+      l_description := l_rec.screened_id;
+   else
+      l_description := l_rec.screened_id||', validity='||l_rec.validity_id;
+      if l_rec.range_id != 'NO_RANGE' then
+         l_description := l_description||', range='||l_rec.range_id;
+      end if;
+      if l_rec.changed_id != 'ORIGINAL' then
+         l_description := l_description
+            ||', '
+            ||l_rec.changed_id
+            ||' (cause='
+            ||l_rec.repl_cause_id
+            ||', method='
+            ||l_rec.repl_method_id
+            ||')';
+      end if;
+      if l_rec.test_failed_id != 'NONE' then
+         l_description := l_description||', failed='||l_rec.test_failed_id;
+      end if;
+      if l_rec.protection_id != 'UNPROTECTED' then
+         l_description := l_description||', '||l_rec.protection_id;
+      end if;
+   end if;
+   l_description := initcap(l_description);
+   return l_description;
+end get_quality_description;
+
 function get_ts_min_date_utc(
    p_ts_code          in number,
    p_version_date_utc in date default cwms_util.non_versioned)
