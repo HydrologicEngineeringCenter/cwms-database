@@ -1,1 +1,1 @@
-create materialized view av_data_q_screened as select * from cwms_data_q_screened;
+create materialized view mv_data_q_screened as select * from cwms_data_q_screened;
