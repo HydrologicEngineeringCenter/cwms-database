@@ -1,6 +1,16 @@
 /* Formatted on 7/7/2011 3:27:47 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE cwms_shef
 AS
+   data_stream_state_startup  constant varchar2(7)  := 'Startup';
+   data_stream_state_shutdown constant varchar2(8)  := 'Shutdown';
+   data_stream_state_active   constant varchar2(6)  := 'Active';
+   data_stream_state_inactive constant varchar2(8)  := 'Inactive';
+   data_stream_states         constant str_tab_t := str_tab_t(
+      data_stream_state_startup,
+      data_stream_state_shutdown,
+      data_stream_state_active,
+      data_stream_state_inactive);
+      
 	data_stream_mgt_style	CONSTANT VARCHAR2 (16) := 'DATA STREAMS';
 	data_feed_mgt_style		CONSTANT VARCHAR2 (16) := 'DATA FEEDS';
 	--
@@ -351,5 +361,37 @@ AS
 		p_data_stream_mgt_style   IN VARCHAR2,
 		p_db_office_id 			  IN VARCHAR2 DEFAULT NULL
 	);
+   
+   -----------------------------------------------------------------------------
+   -- Messaging Routines
+   -----------------------------------------------------------------------------
+   procedure notify_data_stream_state(
+      p_data_stream_id in varchar2,
+      p_new_state      in varchar2,
+      p_old_state      in varchar2 default null,
+      p_office_id      in varchar2 default null);
+
+   procedure confirm_data_stream_state(
+      p_component      in varchar2,
+      p_instance       in varchar2,
+      p_host           in varchar2,
+      p_port           in integer,
+      p_data_stream_id in varchar2,
+      p_new_state      in varchar2,
+      p_old_state      in varchar2 default null,
+      p_office_id      in varchar2 default null);
+         
+   procedure notify_criteria_modified(
+      p_data_stream_id in varchar2,
+      p_office_id      in varchar2 default null);       
+      
+   procedure confirm_criteria_reloaded(
+      p_component      in varchar2,
+      p_instance       in varchar2,
+      p_host           in varchar2,
+      p_port           in integer,
+      p_data_stream_id in varchar2,
+      p_office_id      in varchar2 default null);       
+   
 END cwms_shef;
 /

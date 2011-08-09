@@ -3436,6 +3436,295 @@ AS
 			);
 		END IF;
 	END;
+   -----------------------------------------------------------------------------
+   -- Messaging Routines
+   -----------------------------------------------------------------------------
+   procedure notify_data_stream_state(
+      p_data_stream_id in varchar2,
+      p_new_state      in varchar2,
+      p_old_state      in varchar2 default null,
+      p_office_id      in varchar2 default null)
+   is
+      l_new_state      varchar2(32);
+      l_old_state      varchar2(32) := 'Unknown';
+      l_data_stream_id varchar2(16);
+      l_office_id      varchar2(16);
+      l_message        varchar2(4000);
+      i                integer;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_data_stream_id,
+         p_new_state,
+         p_old_state,
+         p_office_id));
+      l_office_id := cwms_util.get_db_office_id(p_office_id);      
+      begin
+         select column_value
+           into l_new_state
+           from table(data_stream_states)
+          where upper(column_value) = upper(p_new_state);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'INVALID_ITEM',
+               p_new_state,
+               'CWMS data stream state');
+      end;
+      if p_old_state is not null then
+         begin
+            select column_value
+              into l_old_state
+              from table(data_stream_states)
+             where upper(column_value) = upper(p_old_state);
+         exception
+            when no_data_found then
+               cwms_err.raise(
+                  'INVALID_ITEM',
+                  p_old_state,
+                  'CWMS data stream state');
+         end;
+      end if;
+      begin
+         select data_stream_id
+           into l_data_stream_id
+           from at_data_stream_id
+          where upper(data_stream_id) = upper(p_data_stream_id);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'DATA_STREAM_NOT_FOUND',
+               l_office_id||'/'||p_data_stream_id);
+      end;
+
+      ---------------------------------            
+      -- log and publish the message --
+      ---------------------------------
+      l_message := '<cwms_message type="State">'
+                   ||'<property name="subtype" type="String">ChangeNotification</property>'
+                   ||l_office_id
+                   ||'<property name="office_id" type="String">'
+                   ||l_office_id
+                   ||'</property><property name="data_stream_name" type="String">'
+                   ||l_data_stream_id
+                   ||'</property><property name="new_state" type="String">'
+                   ||l_new_state
+                   ||'</property><property name="old_state" type="String">'
+                   ||l_old_state
+                   ||'</property></cwms_message>';
+                      
+      i := cwms_msg.log_message(            
+         p_component => 'CWMSDataStream',
+         p_instance  => null,
+         p_host      => null,
+         p_port      => null,
+         p_reported  => systimestamp at time zone 'UTC',
+         p_message   => l_message,
+         p_msg_level => cwms_msg.msg_level_normal,
+         p_publish   => true,
+         p_immediate => false); -- commit required to actually enqueue message
+   end notify_data_stream_state;      
+
+   procedure confirm_data_stream_state(
+      p_component      in varchar2,
+      p_instance       in varchar2,
+      p_host           in varchar2,
+      p_port           in integer,
+      p_data_stream_id in varchar2,
+      p_new_state      in varchar2,
+      p_old_state      in varchar2 default null,
+      p_office_id      in varchar2 default null)
+   is
+      l_new_state      varchar2(32);
+      l_old_state      varchar2(32) := 'Unknown';
+      l_data_stream_id varchar2(16);
+      l_office_id      varchar2(16);
+      l_message        varchar2(4000);
+      i                integer;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_component,
+         p_instance,
+         p_host,
+         p_data_stream_id,
+         p_new_state,
+         p_old_state,
+         p_office_id));
+      l_office_id := cwms_util.get_db_office_id(p_office_id);      
+      begin
+         select column_value
+           into l_new_state
+           from table(data_stream_states)
+          where upper(column_value) = upper(p_new_state);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'INVALID_ITEM',
+               p_new_state,
+               'CWMS data stream state');
+      end;
+      if p_old_state is not null and upper(p_old_state) != 'UNKNOWN' then
+         begin
+            select column_value
+              into l_old_state
+              from table(data_stream_states)
+             where upper(column_value) = upper(p_old_state);
+         exception
+            when no_data_found then
+               cwms_err.raise(
+                  'INVALID_ITEM',
+                  p_old_state,
+                  'CWMS data stream state');
+         end;
+      end if;
+      begin
+         select data_stream_id
+           into l_data_stream_id
+           from at_data_stream_id
+          where upper(data_stream_id) = upper(p_data_stream_id);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'DATA_STREAM_NOT_FOUND',
+               l_office_id||'/'||p_data_stream_id);
+      end;
+
+      ---------------------------------            
+      -- log and publish the message --
+      ---------------------------------
+      l_message := '<cwms_message type="State">'
+                   ||'<property name="subtype" type="String">ChangeConfirmation</property>'
+                   ||'<property name="office_id" type="String">'
+                   ||l_office_id
+                   ||'</property><property name="data_stream_name" type="String">'
+                   ||l_data_stream_id
+                   ||'</property><property name="new_state" type="String">'
+                   ||l_new_state
+                   ||'</property><property name="old_state" type="String">'
+                   ||l_old_state
+                   ||'</property></cwms_message>';
+                      
+      i := cwms_msg.log_message(            
+         p_component => p_component,
+         p_instance  => p_instance,
+         p_host      => p_host,
+         p_port      => p_port,
+         p_reported  => systimestamp at time zone 'UTC',
+         p_message   => l_message,
+         p_msg_level => cwms_msg.msg_level_normal,
+         p_publish   => true,
+         p_immediate => true); -- forces commit to enqueue message
+   end confirm_data_stream_state; 
+         
+   procedure notify_criteria_modified(
+      p_data_stream_id in varchar2,
+      p_office_id      in varchar2 default null)
+   is
+      l_data_stream_id varchar2(16);
+      l_office_id      varchar2(16);
+      l_message        varchar2(4000);
+      i                integer;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_data_stream_id,
+         p_office_id));
+      l_office_id := cwms_util.get_db_office_id(p_office_id);      
+      begin
+         select data_stream_id
+           into l_data_stream_id
+           from at_data_stream_id
+          where upper(data_stream_id) = upper(p_data_stream_id);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'DATA_STREAM_NOT_FOUND',
+               l_office_id||'/'||p_data_stream_id);
+      end;
+      ---------------------------------            
+      -- log and publish the message --
+      ---------------------------------
+      l_message := '<cwms_message type="Status">'
+                   ||'<property name="subtype" type="String">CriteriaModified</property><property name="office_id" type="String">'
+                   ||l_office_id
+                   ||'</property><property name="data_stream_name" type="String">'
+                   ||l_data_stream_id
+                   ||'</property></cwms_message>';
+                   
+      i := cwms_msg.log_message(            
+         p_component => 'CWMSDataStream',
+         p_instance  => null,
+         p_host      => null,
+         p_port      => null,
+         p_reported  => systimestamp at time zone 'UTC',
+         p_message   => l_message,
+         p_msg_level => cwms_msg.msg_level_normal,
+         p_publish   => true,
+         p_immediate => false); -- commit required to actually enqueue message
+   end notify_criteria_modified;             
+      
+   procedure confirm_criteria_reloaded(
+      p_component      in varchar2,
+      p_instance       in varchar2,
+      p_host           in varchar2,
+      p_port           in integer,
+      p_data_stream_id in varchar2,
+      p_office_id      in varchar2 default null)
+   is
+      l_data_stream_id varchar2(16);
+      l_office_id      varchar2(16);
+      l_message        varchar2(4000);
+      i                integer;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_component,
+         p_instance,
+         p_host,
+         p_data_stream_id,
+         p_office_id));
+      l_office_id := cwms_util.get_db_office_id(p_office_id);      
+      begin
+         select data_stream_id
+           into l_data_stream_id
+           from at_data_stream_id
+          where upper(data_stream_id) = upper(p_data_stream_id);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'DATA_STREAM_NOT_FOUND',
+               l_office_id||'/'||p_data_stream_id);
+      end;
+      ---------------------------------            
+      -- log and publish the message --
+      ---------------------------------
+      l_message := '<cwms_message type="Status">'
+                   ||'<property name="subtype" type="String">CriteriaReloaded</property><property name="office_id" type="String">'
+                   ||l_office_id
+                   ||'</property><property name="data_stream_name" type="String">'
+                   ||l_data_stream_id
+                   ||'</property></cwms_message>';
+                   
+      i := cwms_msg.log_message(            
+         p_component => p_component,
+         p_instance  => p_instance,
+         p_host      => p_host,
+         p_port      => p_port,
+         p_reported  => systimestamp at time zone 'UTC',
+         p_message   => l_message,
+         p_msg_level => cwms_msg.msg_level_normal,
+         p_publish   => true,
+         p_immediate => true); -- forces commit to enqueue message
+   end confirm_criteria_reloaded;             
 --
 END cwms_shef;
 /
