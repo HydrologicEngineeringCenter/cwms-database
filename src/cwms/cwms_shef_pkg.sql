@@ -1,4 +1,4 @@
-/* Formatted on 7/7/2011 3:27:47 PM (QP5 v5.163.1008.3004) */
+/* Formatted on 8/10/2011 12:59:06 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE cwms_shef
 AS
    data_stream_state_startup  constant varchar2(7)  := 'Startup';
@@ -19,6 +19,7 @@ AS
 	ten_file_limit 			CONSTANT VARCHAR2 (32) := 'TEN FILE LIMIT';
 	-- default value.
 	delete_all					CONSTANT VARCHAR2 (32) := 'DELETE ALL';
+	max_shef_loc_length		CONSTANT NUMBER := 8;
 
 	TYPE cat_data_stream_rec_t IS RECORD
 	(
@@ -356,6 +357,11 @@ AS
 	)
 		RETURN VARCHAR2;
 
+	FUNCTION get_data_stream_state (
+		p_data_stream_id	 IN VARCHAR2,
+		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
+	)
+		RETURN VARCHAR2;
 
 	PROCEDURE set_data_stream_mgt_style (
 		p_data_stream_mgt_style   IN VARCHAR2,

@@ -1,4 +1,4 @@
-/* Formatted on 7/29/2011 10:41:36 AM (QP5 v5.163.1008.3004) */
+/* Formatted on 8/10/2011 1:01:04 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE BODY cwms_shef
 AS
 	PROCEDURE cat_shef_crit_lines (p_shef_crit_lines		 OUT SYS_REFCURSOR,
@@ -1048,10 +1048,12 @@ AS
 								AND shef_pe_code = l_shef_pe_code
 								AND shef_tse_code = l_shef_tse_code
 								AND shef_duration_numeric = l_shef_duration_numeric;
+
+					l_shef_spec_ignored_exists := TRUE;
 				EXCEPTION
 					WHEN NO_DATA_FOUND
 					THEN
-						l_shef_spec_ignored_exists := TRUE;
+						l_shef_spec_ignored_exists := FALSE;
 				END;
 		END;
 
@@ -1061,7 +1063,7 @@ AS
 			THEN
 				-- Do nothing - SHEF Spec is already ignored
 				RETURN;
-			ELSIF l_shef_spec_exists
+			ELSIF l_shef_spec_exists				-- i.e., exists in at_shef_decode
 			THEN
 				IF l_update_allowed
 				THEN
@@ -1094,6 +1096,25 @@ AS
 						|| ' to be ignored because p_update_allowed is FALSE.'
 					);
 				END IF;
+			ELSE
+				INSERT
+				  INTO	at_shef_ignore (data_stream_code,
+												 data_feed_code,
+												 shef_loc_id,
+												 shef_pe_code,
+												 shef_tse_code,
+												 shef_duration_numeric
+												)
+				VALUES	(
+								l_data_stream_code,
+								l_data_feed_code,
+								l_shef_id,
+								l_shef_pe_code,
+								l_shef_tse_code,
+								l_shef_duration_numeric
+							);
+
+				RETURN;
 			END IF;
 		ELSIF NOT l_shef_spec_exists AND NOT l_ts_id_exists
 		THEN
@@ -1607,6 +1628,42 @@ AS
 					);
 	END;
 
+	PROCEDURE delete_shef_spec (
+		p_cwms_ts_id			  IN VARCHAR2 DEFAULT NULL,
+		p_data_stream_id		  IN VARCHAR2 DEFAULT NULL,
+		p_data_feed_id 		  IN VARCHAR2 DEFAULT NULL,
+		p_shef_loc_id			  IN VARCHAR2 DEFAULT NULL,
+		-- normally use loc_group_id
+		p_shef_pe_code 		  IN VARCHAR2,
+		p_shef_tse_code		  IN VARCHAR2,
+		p_shef_duration_code   IN VARCHAR2,
+		-- e.g., V5002 or simply L   -
+		p_db_office_id 		  IN VARCHAR2 DEFAULT NULL
+	)
+	IS
+		l_cwms_ts_code 			  NUMBER;
+		l_db_office_code			  NUMBER
+			:= cwms_util.get_db_office_code (p_office_id => p_db_office_id);
+		l_data_stream_mgt_style   VARCHAR2 (32)
+			:= get_data_stream_mgt_style (p_db_office_id);
+	BEGIN
+		IF p_cwms_ts_id IS NOT NULL
+		THEN
+			BEGIN
+				l_cwms_ts_code :=
+					cwms_ts.get_ts_code (p_cwms_ts_id		 => p_cwms_ts_id,
+												p_db_office_code	 => l_db_office_code
+											  );
+			EXCEPTION
+				WHEN OTHERS
+				THEN
+					NULL;
+			END;
+		ELSE
+			l_cwms_ts_code := NULL;
+		END IF;
+	END;
+
 	-- ****************************************************************************
 	-- cwms_shef.delete_shef_spec is used to delete an existing SHEF spec. SHEF
 	-- specs are assigned to pairs of cwms_ts_id and data stream.
@@ -1619,6 +1676,7 @@ AS
 	--   id that this data stream will be/is assigned too. Normally this is
 	--   left null and the user's default database office id is used.
 	--
+
 	PROCEDURE delete_shef_spec (p_cwms_ts_id		  IN VARCHAR2,
 										 p_data_stream_id   IN VARCHAR2,
 										 p_db_office_id	  IN VARCHAR2 DEFAULT NULL
@@ -1955,11 +2013,6 @@ AS
 		l_data_stream_code	NUMBER;
 		l_cascade_all			VARCHAR2 (1) := NVL (UPPER (p_cascade_all), 'F');
 	BEGIN
-		IF l_cascade_all NOT IN ('T', 'F')
-		THEN
-			cwms_err.raise ('INVALID_T_F_FLAG', 'p_cascade_all');
-		END IF;
-
 		-- Check if data_stream already exists...
 		BEGIN
 			l_data_stream_code :=
@@ -1978,9 +2031,12 @@ AS
 				SET	a.data_stream_code = NULL
 			 WHERE	data_stream_code = l_data_stream_code;
 		ELSE
-			IF l_cascade_all = 'T'
+			IF cwms_util.is_true (l_cascade_all)
 			THEN					-- delete all shef criteria for this data stream...
 				DELETE FROM   at_shef_decode
+						WHERE   data_stream_code = l_data_stream_code;
+
+				DELETE FROM   at_shef_ignore
 						WHERE   data_stream_code = l_data_stream_code;
 			END IF;
 		END IF;
@@ -3217,7 +3273,22 @@ AS
 		p_db_office_id 		IN VARCHAR2 DEFAULT NULL
 	)
 	IS
+		l_max_allowed_shef_loc_id	 NUMBER
+			:= max_shef_loc_length - LENGTH (TRIM (p_data_feed_prefix));
+	-- 			  l_data_feed_code number :=get_data_feed_code (p_data_feed_id 		 => p_data_feed_id,
+	-- 																 p_db_office_code 	=> l_db_office_code
+	-- 																);
 	BEGIN
+		-- Check/confirm that the data_feed_prefix + shef_loc_id does not exceed
+		-- the max/legal shef_loc_id length of eihgt  (8)
+		--  SELECT COUNT (*)
+		-- 	INTO l_decode_specs
+		-- 	FROM at_shef_decode
+		--   WHERE data_feed_code =
+		-- 	  get_data_feed_code (p_data_feed_id  => p_data_feed_id,
+		-- 				 p_db_office_code => l_db_office_code
+		-- 				);
+
 		UPDATE	at_data_feed_id
 			SET	data_feed_prefix = p_data_feed_prefix
 		 WHERE	UPPER (data_feed_id) = UPPER (TRIM (p_data_feed_id))
@@ -3301,21 +3372,32 @@ AS
 	)
 		RETURN VARCHAR2
 	IS
-		l_data_stream_mgt_style   VARCHAR2 (32);
 		l_db_office_id 			  VARCHAR2 (16)
 			:= cwms_util.get_db_office_id (p_db_office_id);
-		l_db_office_code			  NUMBER
-			:= cwms_util.get_db_office_code (l_db_office_id);
 	BEGIN
 		RETURN cwms_properties.get_property (
 					 p_category 	=> 'Office_Pref.' || l_db_office_id,
 					 p_id 			=> 'DATA_STREAM_MGT_STYLE',
 					 p_default		=> 'DATA STREAMS',
-					 p_office_id	=> p_db_office_id
+					 p_office_id	=> l_db_office_id
 				 );
 	END;
 
 
+    FUNCTION get_data_stream_state (
+        p_data_stream_id     IN VARCHAR2,
+        p_db_office_id      IN VARCHAR2 DEFAULT NULL
+    )
+        RETURN VARCHAR2
+    IS
+    BEGIN
+        IF p_data_stream_id = 'ACTIVE'
+        THEN
+            RETURN 'ACTIVE';
+        ELSE
+            RETURN 'INACTIVE';
+        END IF;
+    END;
 
 	PROCEDURE set_data_stream_mgt_style (
 		p_data_stream_mgt_style   IN VARCHAR2,
@@ -3403,6 +3485,12 @@ AS
 
 
 			DELETE FROM   at_shef_decode
+					WHERE   data_feed_code IN
+								  (SELECT	data_feed_code
+									  FROM	at_data_feed_id
+									 WHERE	db_office_code = l_db_office_code);
+
+			DELETE FROM   at_shef_ignore
 					WHERE   data_feed_code IN
 								  (SELECT	data_feed_code
 									  FROM	at_data_feed_id
@@ -3725,6 +3813,7 @@ AS
          p_publish   => true,
          p_immediate => true); -- forces commit to enqueue message
    end confirm_criteria_reloaded;             
+
 --
 END cwms_shef;
 /
