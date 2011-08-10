@@ -1452,7 +1452,12 @@ AS
             end if;
             l_str_tab.extend;
             l_str_tab (l_str_tab.last) := l_field;
-            exit when l_pos = 0 or l_str = null;
+            exit when l_pos = 0;
+            if l_str is null then
+               l_str_tab.extend;
+               l_str_tab (l_str_tab.last) := l_str;
+               exit;
+            end if;
          end loop;
       end if;
 		return l_str_tab;
