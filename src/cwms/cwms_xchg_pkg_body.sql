@@ -2446,7 +2446,25 @@ begin
        where xchg_set_code = p_xchg_set_code
          and cwms_ts_code = p_cwms_ts_code;
    exception
-      when no_data_found then null;
+      when no_data_found then 
+         begin
+            select time_zone_code
+              into l_time_zone
+              from cwms_time_zone
+             where upper(time_zone_name) = upper(p_time_zone);
+         exception
+            when no_data_found then
+               cwms_err.raise('INVALID_TIME_ZONE', p_time_zone);
+         end;
+         begin    
+            select tz_usage_code
+              into l_tz_usage
+              from cwms_tz_usage
+             where upper(tz_usage_id) = upper(p_tz_usage);
+         exception             
+            when no_data_found then
+               cwms_err.raise('INVALID_ITEM', p_tz_usage, 'CWMS time zone usage');
+         end;
    end;
    if l_mapping_code is not null and l_fail_if_exists then
       declare
