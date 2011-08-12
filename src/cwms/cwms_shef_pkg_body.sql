@@ -1,4 +1,4 @@
-/* Formatted on 8/12/2011 1:35:57 PM (QP5 v5.163.1008.3004) */
+/* Formatted on 8/12/2011 2:31:59 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE BODY cwms_shef
 AS
 	PROCEDURE cat_shef_crit_lines (p_shef_crit_lines		 OUT SYS_REFCURSOR,
@@ -1739,19 +1739,23 @@ AS
 	--   left null and the user's default database office id is used.
 	--
 	PROCEDURE store_data_stream (
-		p_data_stream_id		IN VARCHAR2,
-		p_data_stream_desc	IN VARCHAR2 DEFAULT NULL,
-		p_active_flag			IN VARCHAR2 DEFAULT 'T',
-		p_ignore_nulls 		IN VARCHAR2 DEFAULT 'T',
-		p_db_office_id 		IN VARCHAR2 DEFAULT NULL
+		p_data_stream_id				  IN VARCHAR2,
+		p_data_stream_desc			  IN VARCHAR2 DEFAULT NULL,
+		p_active_flag					  IN VARCHAR2 DEFAULT 'T',
+		p_use_db_shef_spec_mapping   IN VARCHAR2 DEFAULT 'T',
+		p_ignore_nulls 				  IN VARCHAR2 DEFAULT 'T',
+		p_db_office_id 				  IN VARCHAR2 DEFAULT NULL
 	)
 	IS
-		l_db_office_code		NUMBER
-										:= cwms_util.get_db_office_code (p_db_office_id);
-		l_data_stream_code	NUMBER;
-		l_active_flag			VARCHAR2 (1) := NVL (UPPER (p_active_flag), 'T');
-		l_ignore_nulls 		VARCHAR2 (1) := NVL (UPPER (p_ignore_nulls), 'T');
-		l_data_stream_id		VARCHAR2 (16) := TRIM (p_data_stream_id);
+		l_db_office_code				  NUMBER
+												  := cwms_util.get_db_office_code (p_db_office_id);
+		l_data_stream_code			  NUMBER;
+		l_active_flag					  VARCHAR2 (1) := NVL (UPPER (p_active_flag), 'T');
+		l_use_db_shef_spec_mapping   VARCHAR2 (1)
+			:= NVL (UPPER (p_use_db_shef_spec_mapping), 'T');
+		l_ignore_nulls 				  VARCHAR2 (1)
+												  := NVL (UPPER (p_ignore_nulls), 'T');
+		l_data_stream_id				  VARCHAR2 (16) := TRIM (p_data_stream_id);
 	BEGIN
 		IF l_data_stream_id IS NULL
 		THEN
@@ -1761,6 +1765,11 @@ AS
 		IF l_active_flag NOT IN ('T', 'F')
 		THEN
 			cwms_err.raise ('INVALID_T_F_FLAG', 'p_active_flag');
+		END IF;
+
+		IF l_use_db_shef_spec_mapping NOT IN ('T', 'F')
+		THEN
+			cwms_err.raise ('INVALID_T_F_FLAG', 'p_use_db_shef_spec_mapping ');
 		END IF;
 
 		IF l_ignore_nulls NOT IN ('T', 'F')
@@ -1788,6 +1797,7 @@ AS
 												 data_stream_id,
 												 data_stream_desc,
 												 active_flag,
+												 use_db_shef_spec_mapping,
 												 data_stream_mgt_style
 												)
 			VALUES	(
@@ -1796,6 +1806,7 @@ AS
 							l_data_stream_id,
 							TRIM (p_data_stream_desc),
 							l_active_flag,
+							l_use_db_shef_spec_mapping,
 							get_data_stream_mgt_style (p_db_office_id)
 						);
 		ELSE										 -- updating an existing data stream...
@@ -1803,13 +1814,15 @@ AS
 			THEN					  -- update that ignores a null data_stream_desc...
 				UPDATE	at_data_stream_id
 					SET	data_stream_id = l_data_stream_id,
-							active_flag = l_active_flag
+							active_flag = l_active_flag,
+							use_db_shef_spec_mapping = l_use_db_shef_spec_mapping
 				 WHERE	data_stream_code = l_data_stream_code;
 			ELSE			-- update that does not ignore a null data_stream_desc...
 				UPDATE	at_data_stream_id
 					SET	data_stream_id = l_data_stream_id,
 							data_stream_desc = TRIM (p_data_stream_desc),
-							active_flag = l_active_flag
+							active_flag = l_active_flag,
+							use_db_shef_spec_mapping = l_use_db_shef_spec_mapping
 				 WHERE	data_stream_code = l_data_stream_code;
 			END IF;
 		END IF;
@@ -3863,8 +3876,8 @@ AS
 			); 										 -- forces commit to enqueue message
 	END confirm_criteria_reloaded;
 
-	FUNCTION use_db_shef_spec_mapping (p_data_stream_code IN NUMBER)
-		RETURN VARCHAR2
+	FUNCTION get_use_db_shef_spec_mapping (p_data_stream_code IN NUMBER)
+		RETURN BOOLEAN
 	IS
 		l_use_db_shef_spec_mapping   at_data_stream_id.use_db_shef_spec_mapping%TYPE;
 	BEGIN
@@ -3873,7 +3886,57 @@ AS
 		  FROM	at_data_stream_id
 		 WHERE	data_stream_code = p_data_stream_code;
 
-		RETURN p_data_stream_code;
+		RETURN cwms_util.is_true (l_use_db_shef_spec_mapping);
+	END;
+
+	FUNCTION get_use_db_shef_spec_mapping (
+		p_data_stream_id	 IN VARCHAR2,
+		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
+	)
+		RETURN BOOLEAN
+	IS
+		l_data_stream_code	NUMBER
+			:= get_data_stream_code (p_data_stream_id   => p_data_stream_id,
+											 p_db_office_id	  => p_db_office_id
+											);
+	BEGIN
+		RETURN get_use_db_shef_spec_mapping (
+					 p_data_stream_code => l_data_stream_code
+				 );
+	END;
+
+	PROCEDURE set_use_db_shef_spec_mapping (p_boolean				 IN BOOLEAN,
+														 p_data_stream_code	 IN NUMBER
+														)
+	IS
+		l_use_db_shef_spec_mapping   at_data_stream_id.use_db_shef_spec_mapping%TYPE;
+	BEGIN
+		IF p_boolean
+		THEN
+			l_use_db_shef_spec_mapping := 'T';
+		ELSE
+			l_use_db_shef_spec_mapping := 'F';
+		END IF;
+
+		UPDATE	at_data_stream_id
+			SET	use_db_shef_spec_mapping = l_use_db_shef_spec_mapping
+		 WHERE	data_stream_code = p_data_stream_code;
+	END;
+
+	PROCEDURE set_use_db_shef_spec_mapping (
+		p_boolean			 IN BOOLEAN,
+		p_data_stream_id	 IN VARCHAR2,
+		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
+	)
+	IS
+		l_data_stream_code	NUMBER
+			:= get_data_stream_code (p_data_stream_id   => p_data_stream_id,
+											 p_db_office_id	  => p_db_office_id
+											);
+	BEGIN
+		set_use_db_shef_spec_mapping (p_boolean				=> p_boolean,
+												p_data_stream_code	=> l_data_stream_code
+											  );
 	END;
 
 	PROCEDURE get_process_shefit_files (
@@ -3885,8 +3948,7 @@ AS
 		p_db_office_id 	 IN	  VARCHAR2 DEFAULT NULL
 	)
 	IS
-		l_use_db_shef_spec_mapping   varchar2(1);
-		l_data_stream_code			  NUMBER
+		l_data_stream_code	NUMBER
 			:= get_data_stream_code (p_data_stream_id   => p_data_stream_id,
 											 p_db_office_id	  => p_db_office_id
 											);
@@ -3896,16 +3958,9 @@ AS
 		p_use_db_crit := 'F';
 		p_use_db_otf := 'F';
 
-		BEGIN
-			l_use_db_shef_spec_mapping :=
-				 use_db_shef_spec_mapping (l_data_stream_code);
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-				l_use_db_shef_spec_mapping := 'F';
-		END;
-
-		IF l_use_db_shef_spec_mapping = 'T'
+		IF get_use_db_shef_spec_mapping (
+				p_data_stream_code => l_data_stream_code
+			)
 		THEN
 			BEGIN
 				p_crit_file :=

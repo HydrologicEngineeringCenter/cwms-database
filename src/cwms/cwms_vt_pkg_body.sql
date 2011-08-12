@@ -4,18 +4,20 @@ set define off
 /* Formatted on 2008/07/17 07:58 (Formatter Plus v4.8.8) */
 
 /* Formatted on 7/7/2011 3:34:16 PM (QP5 v5.163.1008.3004) */
+
+/* Formatted on 8/12/2011 2:24:32 PM (QP5 v5.163.1008.3004) */
 /*<TOAD_FILE_CHUNK>*/
 
 CREATE OR REPLACE PACKAGE BODY cwms_vt
 AS
 	/******************************************************************************
-	 NAME:	CWMS_VAL
+	 NAME: CWMS_VAL
 	 PURPOSE:
 
 	 REVISIONS:
-	 Ver	  Date	 Author		Description
-	 ---------	----------	---------------  ------------------------------------
-	 1.0	  12/11/2006	  1. Created this package body.
+	 Ver	 Date  Author	Description
+	 --------- ---------- ---------------	------------------------------------
+	 1.0	 12/11/2006   1. Created this package body.
 	******************************************************************************/
 	PROCEDURE store_screening_control (
 		p_screening_code					IN NUMBER,
@@ -638,22 +640,22 @@ AS
 	--********************************************************************** -
 	--********************************************************************** -
 	--
-	-- STORE_ALIASES							-
+	-- STORE_ALIASES		  -
 	--
-	-- p_store_rule - Valid store rules are:				 -
-	-- 	  Delete Insert - This will delete all existing aliases	-
-	-- 			  and insert the new set of aliases   -
-	-- 			  in your p_alias_array. This is the	-
-	-- 			  Default.				-
-	-- 	  Replace All	 - This will update any pre-existing	-
-	-- 			  aliases and insert new ones 	 -
+	-- p_store_rule - Valid store rules are:		-
+	-- 	Delete Insert - This will delete all existing aliases -
+	-- 	  and insert the new set of aliases   -
+	-- 	  in your p_alias_array. This is the -
+	-- 	  Default.	  -
+	-- 	Replace All  - This will update any pre-existing -
+	-- 	  aliases and insert new ones   -
 	--
 	-- p_ignorenulls - is only valid when the "Replace All" store rull is    -
-	-- 		envoked.
-	-- 		if 'T' then do not update a pre-existing value        -
-	-- 		with a newly passed-in null value.		  -
-	-- 		if 'F' then update a pre-existing value               -
-	-- 		with a newly passed-in null value.		  -
+	--   envoked.
+	--   if 'T' then do not update a pre-existing value        -
+	--   with a newly passed-in null value.	 -
+	--   if 'F' then update a pre-existing value               -
+	--   with a newly passed-in null value.	 -
 	--*--------------------------------------------------------------------- -
 	--
 	PROCEDURE copy_screening_criteria (
@@ -1017,19 +1019,19 @@ AS
 	--------------------------------------------------------------------------------
 	--
 	-- get_process_shefit_files is normally called by processSHEFIT. The call lets -
-	-- 	 processSHEFIT know if it should use the criteria file and/or OTF -
-	-- 	 file passed back in place of any files found (and/or specified) on -
-	-- 	 the file system. If the specified DataStream has not been defined in -
-	-- 	 the database, then nulls are returned and the "use_db" psuedo-booleans -
-	-- 	 return 'F'. processSHEFIT would then default to cirt and OTF files
-	-- 	 found on the file system.
+	--   processSHEFIT know if it should use the criteria file and/or OTF -
+	--   file passed back in place of any files found (and/or specified) on -
+	--   the file system. If the specified DataStream has not been defined in -
+	--   the database, then nulls are returned and the "use_db" psuedo-booleans -
+	--   return 'F'. processSHEFIT would then default to cirt and OTF files
+	--   found on the file system.
 	--
 	-- Parameters:
 	-- p_use_db_crit - OUT - returns a varchar2(1). The returned parameter will be -
-	-- 	"T" if processSHEFIT should use the DB's crit file. "F" indicates that -
-	-- 	processSHEFIT should use the crit file found on the file system.
+	--  "T" if processSHEFIT should use the DB's crit file. "F" indicates that -
+	--  processSHEFIT should use the crit file found on the file system.
 	-- p_crit_file - OUT - returns a CLOB. This is the processSHEFIT criteria file -
-	-- 	provided by the database.
+	--  provided by the database.
 	-- p_use_db_otf - OUT - returns a varchar2(1). The returned parameter will be
 	--   "T" if processSHEFIT should use the DB's otf file. "F" indicates that
 	--   processSHEFIT should use the otf file found on the file system.
@@ -1052,40 +1054,14 @@ AS
 	IS
 		l_is_data_stream_active   BOOLEAN;
 	BEGIN
-		p_crit_file := NULL;
-		p_otf_file := NULL;
-		p_use_db_crit := 'F';
-		p_use_db_otf := 'F';
-
-		BEGIN
-			l_is_data_stream_active :=
-				cwms_shef.is_data_stream_active (p_data_stream_id,
-															p_db_office_id
-														  );
-		EXCEPTION
-			WHEN OTHERS
-			THEN
-				l_is_data_stream_active := FALSE;
-		END;
-
-		IF l_is_data_stream_active
-		THEN
-			BEGIN
-				p_crit_file :=
-					cwms_shef.get_shef_crit_file (
-						p_data_stream_id		=> p_data_stream_id,
-						p_utc_version_date	=> NULL,
-						p_db_office_id 		=> p_db_office_id
-					);
-
-				p_use_db_crit := 'T';
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-					p_use_db_crit := 'F';
-			--cwms_err.RAISE ('NO_CRIT_FILE_FOUND', p_data_stream_id);
-			END;
-		END IF;
+		cwms_shef.get_process_shefit_files (
+			p_use_db_crit		 => p_use_db_crit,
+			p_crit_file 		 => p_crit_file,
+			p_use_db_otf		 => p_use_db_otf,
+			p_otf_file			 => p_otf_file,
+			p_data_stream_id	 => p_data_stream_id,
+			p_db_office_id 	 => p_db_office_id
+		);
 	--
 	END;
 
@@ -1404,10 +1380,10 @@ AS
 	--
 	-- intended to provide a listing of an office's templates.
 	-- The cursor returns the following four columns:
-	-- 	template_id 	 VARCHAR2 (32),
-	-- 	description 	 VARCHAR2 (256),
-	-- 	primary_ind_param_id  VARCHAR2 (16),
-	-- 	dep_param_id	  VARCHAR2 (16)
+	--  template_id	VARCHAR2 (32),
+	--  description	VARCHAR2 (256),
+	--  primary_ind_param_id  VARCHAR2 (16),
+	--  dep_param_id	 VARCHAR2 (16)
 	PROCEDURE cat_tr_templates (p_query_cursor		  OUT SYS_REFCURSOR,
 										 p_db_office_code   IN		NUMBER
 										)

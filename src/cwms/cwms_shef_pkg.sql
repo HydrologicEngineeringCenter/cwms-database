@@ -1,4 +1,4 @@
-/* Formatted on 8/12/2011 1:40:30 PM (QP5 v5.163.1008.3004) */
+/* Formatted on 8/12/2011 2:16:08 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE cwms_shef
 AS
 	data_stream_state_startup	  CONSTANT VARCHAR2 (7) := 'Startup';
@@ -170,13 +170,14 @@ AS
 										);
 
 	-- left kernal must be unique.
-	PROCEDURE store_data_stream (
-		p_data_stream_id		IN VARCHAR2,
-		p_data_stream_desc	IN VARCHAR2 DEFAULT NULL,
-		p_active_flag			IN VARCHAR2 DEFAULT 'T',
-		p_ignore_nulls 		IN VARCHAR2 DEFAULT 'T',
-		p_db_office_id 		IN VARCHAR2 DEFAULT NULL
-	);
+    PROCEDURE store_data_stream (
+        p_data_stream_id                  IN VARCHAR2,
+        p_data_stream_desc              IN VARCHAR2 DEFAULT NULL,
+        p_active_flag                      IN VARCHAR2 DEFAULT 'T',
+        p_use_db_shef_spec_mapping   IN VARCHAR2 DEFAULT 'T',
+        p_ignore_nulls                   IN VARCHAR2 DEFAULT 'T',
+        p_db_office_id                   IN VARCHAR2 DEFAULT NULL
+    );
 
 	PROCEDURE rename_data_stream (
 		p_data_stream_id_old   IN VARCHAR2,
@@ -402,6 +403,18 @@ AS
 		p_port				 IN INTEGER,
 		p_data_stream_id	 IN VARCHAR2,
 		p_office_id 		 IN VARCHAR2 DEFAULT NULL
+	);
+
+	FUNCTION get_use_db_shef_spec_mapping (
+		p_data_stream_id	 IN VARCHAR2,
+		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
+	)
+		RETURN BOOLEAN;
+
+	PROCEDURE set_use_db_shef_spec_mapping (
+		p_boolean			 IN BOOLEAN,
+		p_data_stream_id	 IN VARCHAR2,
+		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
 	);
 
 	PROCEDURE get_process_shefit_files (
