@@ -1,25 +1,26 @@
-/* Formatted on 8/10/2011 12:59:06 PM (QP5 v5.163.1008.3004) */
+/* Formatted on 8/12/2011 1:40:30 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE cwms_shef
 AS
-   data_stream_state_startup  constant varchar2(7)  := 'Startup';
-   data_stream_state_shutdown constant varchar2(8)  := 'Shutdown';
-   data_stream_state_active   constant varchar2(6)  := 'Active';
-   data_stream_state_inactive constant varchar2(8)  := 'Inactive';
-   data_stream_states         constant str_tab_t := str_tab_t(
-      data_stream_state_startup,
-      data_stream_state_shutdown,
-      data_stream_state_active,
-      data_stream_state_inactive);
-      
-	data_stream_mgt_style	CONSTANT VARCHAR2 (16) := 'DATA STREAMS';
-	data_feed_mgt_style		CONSTANT VARCHAR2 (16) := 'DATA FEEDS';
+	data_stream_state_startup	  CONSTANT VARCHAR2 (7) := 'Startup';
+	data_stream_state_shutdown   CONSTANT VARCHAR2 (8) := 'Shutdown';
+	data_stream_state_active	  CONSTANT VARCHAR2 (6) := 'Active';
+	data_stream_state_inactive   CONSTANT VARCHAR2 (8) := 'Inactive';
+	data_stream_states			  CONSTANT str_tab_t
+		:= str_tab_t (data_stream_state_startup,
+						  data_stream_state_shutdown,
+						  data_stream_state_active,
+						  data_stream_state_inactive
+						 ) ;
+
+	data_stream_mgt_style		  CONSTANT VARCHAR2 (16) := 'DATA STREAMS';
+	data_feed_mgt_style			  CONSTANT VARCHAR2 (16) := 'DATA FEEDS';
 	--
-	ignore_shef_spec			CONSTANT VARCHAR2 (2) := '//';
+	ignore_shef_spec				  CONSTANT VARCHAR2 (2) := '//';
 	-- PROCEDURE clean_at_shef_crit_file p_action constants.
-	ten_file_limit 			CONSTANT VARCHAR2 (32) := 'TEN FILE LIMIT';
+	ten_file_limit 				  CONSTANT VARCHAR2 (32) := 'TEN FILE LIMIT';
 	-- default value.
-	delete_all					CONSTANT VARCHAR2 (32) := 'DELETE ALL';
-	max_shef_loc_length		CONSTANT NUMBER := 8;
+	delete_all						  CONSTANT VARCHAR2 (32) := 'DELETE ALL';
+	max_shef_loc_length			  CONSTANT NUMBER := 8;
 
 	TYPE cat_data_stream_rec_t IS RECORD
 	(
@@ -367,37 +368,49 @@ AS
 		p_data_stream_mgt_style   IN VARCHAR2,
 		p_db_office_id 			  IN VARCHAR2 DEFAULT NULL
 	);
-   
-   -----------------------------------------------------------------------------
-   -- Messaging Routines
-   -----------------------------------------------------------------------------
-   procedure notify_data_stream_state(
-      p_data_stream_id in varchar2,
-      p_new_state      in varchar2,
-      p_old_state      in varchar2 default null,
-      p_office_id      in varchar2 default null);
 
-   procedure confirm_data_stream_state(
-      p_component      in varchar2,
-      p_instance       in varchar2,
-      p_host           in varchar2,
-      p_port           in integer,
-      p_data_stream_id in varchar2,
-      p_new_state      in varchar2,
-      p_old_state      in varchar2 default null,
-      p_office_id      in varchar2 default null);
-         
-   procedure notify_criteria_modified(
-      p_data_stream_id in varchar2,
-      p_office_id      in varchar2 default null);       
-      
-   procedure confirm_criteria_reloaded(
-      p_component      in varchar2,
-      p_instance       in varchar2,
-      p_host           in varchar2,
-      p_port           in integer,
-      p_data_stream_id in varchar2,
-      p_office_id      in varchar2 default null);       
-   
+	-----------------------------------------------------------------------------
+	-- Messaging Routines
+	-----------------------------------------------------------------------------
+	PROCEDURE notify_data_stream_state (
+		p_data_stream_id	 IN VARCHAR2,
+		p_new_state 		 IN VARCHAR2,
+		p_old_state 		 IN VARCHAR2 DEFAULT NULL,
+		p_office_id 		 IN VARCHAR2 DEFAULT NULL
+	);
+
+	PROCEDURE confirm_data_stream_state (
+		p_component 		 IN VARCHAR2,
+		p_instance			 IN VARCHAR2,
+		p_host				 IN VARCHAR2,
+		p_port				 IN INTEGER,
+		p_data_stream_id	 IN VARCHAR2,
+		p_new_state 		 IN VARCHAR2,
+		p_old_state 		 IN VARCHAR2 DEFAULT NULL,
+		p_office_id 		 IN VARCHAR2 DEFAULT NULL
+	);
+
+	PROCEDURE notify_criteria_modified (
+		p_data_stream_id	 IN VARCHAR2,
+		p_office_id 		 IN VARCHAR2 DEFAULT NULL
+	);
+
+	PROCEDURE confirm_criteria_reloaded (
+		p_component 		 IN VARCHAR2,
+		p_instance			 IN VARCHAR2,
+		p_host				 IN VARCHAR2,
+		p_port				 IN INTEGER,
+		p_data_stream_id	 IN VARCHAR2,
+		p_office_id 		 IN VARCHAR2 DEFAULT NULL
+	);
+
+	PROCEDURE get_process_shefit_files (
+		p_use_db_crit			 OUT VARCHAR2,
+		p_crit_file 			 OUT CLOB,
+		p_use_db_otf			 OUT VARCHAR2,
+		p_otf_file				 OUT CLOB,
+		p_data_stream_id	 IN	  VARCHAR2,
+		p_db_office_id 	 IN	  VARCHAR2 DEFAULT NULL
+	);
 END cwms_shef;
 /
