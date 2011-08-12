@@ -4087,7 +4087,7 @@ end retrieve_ts_multi;
     )
     IS
         l_timeseries     timeseries_type;
-        l_err_msg        VARCHAR2 (512) := NULL;
+        l_err_msg        VARCHAR2 (722) := NULL;
         l_all_err_msgs    VARCHAR2 (2048) := NULL;
         l_len            NUMBER := 0;
         l_total_len      NUMBER := 0;
@@ -5945,7 +5945,7 @@ PROCEDURE zstore_ts_multi (
 )
 IS
    l_timeseries     ztimeseries_type;
-   l_err_msg        VARCHAR2 (512) := NULL;
+   l_err_msg        VARCHAR2 (722) := NULL;
    l_all_err_msgs   VARCHAR2 (2048) := NULL;
    l_len            NUMBER := 0;
    l_total_len      NUMBER := 0;
@@ -5995,7 +5995,7 @@ BEGIN
             END IF;
       END;
    END LOOP;
-
+   
    IF l_all_err_msgs IS NOT NULL
    THEN
       l_all_err_msgs :=
