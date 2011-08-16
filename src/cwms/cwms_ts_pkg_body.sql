@@ -982,7 +982,7 @@ begin
       begin
          select time_zone_code
            into l_time_zone_code
-           from cwms_time_zone
+           from mv_time_zone
           where upper(time_zone_name) = upper(p_time_zone_name);
       exception
          when no_data_found then

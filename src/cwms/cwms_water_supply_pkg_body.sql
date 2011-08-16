@@ -962,7 +962,7 @@ BEGIN
     IF l_time_zone IS NOT NULL THEN
        SELECT tz.time_zone_code
          INTO l_time_zone_code
-         FROM cwms_time_zone tz
+         FROM mv_time_zone tz
         where upper(tz.time_zone_name) = upper(l_time_zone);
     END IF;    
     

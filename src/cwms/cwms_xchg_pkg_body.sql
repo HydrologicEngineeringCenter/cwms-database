@@ -1442,7 +1442,7 @@ CREATE OR REPLACE package body cwms_xchg as
                                                      where upper(dss_parameter_type_id) = upper(l_map_1.param_type)),
                          unit_id = l_map_1.units,
                          time_zone_code = (select time_zone_code
-                                             from cwms_time_zone
+                                             from mv_time_zone
                                             where upper(time_zone_name) = upper(l_map_1.time_zone)),
                          tz_usage_code = (select tz_usage_code
                                             from cwms_tz_usage
@@ -2450,7 +2450,7 @@ begin
          begin
             select time_zone_code
               into l_time_zone
-              from cwms_time_zone
+              from mv_time_zone
              where upper(time_zone_name) = upper(p_time_zone);
          exception
             when no_data_found then
@@ -2510,7 +2510,7 @@ begin
                 where upper(dss_parameter_type_id) = upper(p_parameter_type)),
               p_units,
               (select time_zone_code
-                 from cwms_time_zone
+                 from mv_time_zone
                 where upper(time_zone_name) = upper(p_time_zone)),
               (select tz_usage_code
                  from cwms_tz_usage
@@ -2522,7 +2522,7 @@ begin
        where upper(dss_parameter_type_id) = upper(p_parameter_type);
       select time_zone_code
         into l_time_zone
-        from cwms_time_zone
+        from mv_time_zone
        where upper(time_zone_name) = upper(p_time_zone);
       select tz_usage_code
         into l_tz_usage

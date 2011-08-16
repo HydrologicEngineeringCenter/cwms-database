@@ -4139,10 +4139,13 @@ as
       p_rating_code    out number,
       p_fail_if_exists in  varchar2)
    is
-      l_rec          at_rating%rowtype;
-      l_time_zone    varchar2(28);
-      l_exists       boolean := true;
-      l_clone        rating_t;
+      l_rec       at_rating%rowtype;
+      l_time_zone varchar2(28);
+      l_exists    boolean := true;
+      l_clone     rating_t;
+      l_msg       sys.aq$_jms_map_message;
+      l_msgid     pls_integer;
+      i           integer;
    begin
       if self.current_units = 'N' or self.current_time = 'L' then
          l_clone := self;
@@ -4197,7 +4200,7 @@ as
       end;
 
       l_rec.ref_rating_code := null;
-      l_rec.create_date     := nvl(cwms_util.change_timezone(self.create_date, l_time_zone, 'UTC'), sysdate);
+      l_rec.create_date     := nvl(cwms_util.change_timezone(self.create_date, l_time_zone, 'UTC'), cast(systimestamp at time zone 'UTC' as date));
       l_rec.active_flag     := self.active_flag;
       l_rec.formula         := self.formula;
       l_rec.native_units    := self.native_units;
@@ -4218,6 +4221,15 @@ as
       end if;
       
       p_rating_code := l_rec.rating_code;
+      
+      cwms_msg.new_message(l_msg, l_msgid, 'RatingStored');
+      l_msg.set_string(l_msgid, 'office_id', self.office_id);
+      l_msg.set_string(l_msgid, 'rating_id', self.rating_spec_id);
+      l_msg.set_string(l_msgid, 'active',    self.active_flag);
+      l_msg.set_long(l_msgid, 'create_date',    cwms_util.to_millis(l_rec.create_date));
+      l_msg.set_long(l_msgid, 'effective_date', cwms_util.to_millis(l_rec.effective_date));
+      i := cwms_msg.publish_message(l_msg, l_msgid, self.office_id||'_ts_stored');
+      i := cwms_msg.publish_message(l_msg, l_msgid, self.office_id||'_realtime_ops');
    end;
    
    member procedure store(

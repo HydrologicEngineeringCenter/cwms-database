@@ -13,7 +13,8 @@ DECLARE
                                        	'mv_data_q_repl_method',
                                        	'mv_data_q_screened',
                                        	'mv_data_q_test_failed',
-                                       	'mv_data_q_validity');
+                                       	'mv_data_q_validity',
+                                          'mv_time_zone');
 
 BEGIN
 	FOR i IN table_names.FIRST .. table_names.LAST
@@ -51,3 +52,4 @@ END;
 @@cwms/views/mv_data_q_test_failed.sql
 @@cwms/views/mv_data_q_validity.sql
 @@cwms/views/mv_data_quality.sql
+@@cwms/views/mv_time_zone.sql

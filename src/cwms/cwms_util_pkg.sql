@@ -586,6 +586,15 @@ AS
     */       
    FUNCTION get_time_zone_code (p_time_zone_name IN VARCHAR2)
       RETURN NUMBER;
+   /**
+    * Retrieves a proper time zone name based on a time zone name or alias
+    *
+    * @param p_time_zone_name the time zone name or alias for which to find the proper name
+    *
+    * @return the proper time zone name associated with the time zone name or alias
+    */
+   FUNCTION get_time_zone_name (p_time_zone_name IN VARCHAR2)
+      RETURN VARCHAR2;
    --------------------------------------------------------------------------------
    -- function get_tz_usage_code
    --

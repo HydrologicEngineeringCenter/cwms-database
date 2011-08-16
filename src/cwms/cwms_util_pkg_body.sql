@@ -1272,7 +1272,7 @@ AS
 	BEGIN
 		SELECT	time_zone_code
 		  INTO	l_time_zone_code
-		  FROM	cwms_time_zone
+		  FROM	mv_time_zone
 		 WHERE	UPPER (time_zone_name) = UPPER (NVL (p_time_zone_name, 'UTC'));
 
 		RETURN l_time_zone_code;
@@ -1281,6 +1281,23 @@ AS
 		THEN
 			cwms_err.raise ('INVALID_TIME_ZONE', p_time_zone_name);
 	END get_time_zone_code;
+
+	--------------------------------------------------------------------------------
+	-- function get_time_zone_name
+	--
+   FUNCTION get_time_zone_name (p_time_zone_name IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+      l_time_zone_name varchar2(28);
+   BEGIN
+      select z.time_zone_name
+        into l_time_zone_name
+        from mv_time_zone v,
+             cwms_time_zone z
+       where upper(v.time_zone_name) = upper(p_time_zone_name)
+         and z.time_zone_code = v.time_zone_code;
+      return l_time_zone_name;
+   END get_time_zone_name;
 
 	--------------------------------------------------------------------------------
 	-- function get_tz_usage_code

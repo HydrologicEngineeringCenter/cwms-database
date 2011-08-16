@@ -335,7 +335,7 @@ AS
 		--dbms_output.put_line('function: get_county_code');
 		SELECT	time_zone_code
 		  INTO	l_zone_code
-		  FROM	cwms_time_zone
+		  FROM	mv_time_zone
 		 WHERE	UPPER (time_zone_name) = UPPER (p_time_zone_id);
 
 		RETURN l_zone_code;

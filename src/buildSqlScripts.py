@@ -98,6 +98,7 @@ tableInfo = [
 #   {"ID" : "errorMessage",       "TABLE" : "CWMS_ERROR_MSG",             "SCHEMA" : "CWMS", "USERACCESS" : False},
     {"ID" : "errorMessageNew",    "TABLE" : "CWMS_ERROR",                 "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "timezone",           "TABLE" : "CWMS_TIME_ZONE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "timezoneAlias",      "TABLE" : "CWMS_TIME_ZONE_ALIAS",       "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "tzUsage",            "TABLE" : "CWMS_TZ_USAGE",              "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "interval",           "TABLE" : "CWMS_INTERVAL",              "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "duration",           "TABLE" : "CWMS_DURATION",              "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -7576,6 +7577,67 @@ BEGIN LOAD_@TABLE; END;
  COMMIT;
 
 '''
+
+sys.stderr.write("Building timezoneAliasCreationTemplate\n")
+timezoneAliasCreationTemplate = \
+'''
+-- ## TABLE ###############################################
+-- ## @TABLE
+-- ##
+CREATE TABLE @TABLE
+   (
+       TIME_ZONE_ALIAS VARCHAR2(9)  NOT NULL,
+       TIME_ZONE_NAME  VARCHAR2(28) NOT NULL
+   )
+       PCTFREE 10
+       PCTUSED 40
+       INITRANS 1
+       MAXTRANS 255
+       TABLESPACE @DATASPACE
+       STORAGE
+       (
+          INITIAL 20K
+          NEXT 20K
+          MINEXTENTS 1
+          MAXEXTENTS 200
+          PCTINCREASE 25
+          FREELISTS 1
+          FREELIST GROUPS 1
+          BUFFER_POOL DEFAULT
+       );
+
+-----------------------------
+-- @TABLE constraints
+--
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (TIME_ZONE_ALIAS);
+ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (TIME_ZONE_NAME) REFERENCES @timezoneTableName (TIME_ZONE_NAME);
+
+-----------------------------
+-- @TABLE comments
+--
+COMMENT ON TABLE @TABLE IS 'Contains timezone aliases for Java custom time zones.';
+COMMENT ON COLUMN @TABLE.TIME_ZONE_ALIAS IS 'Time zone alias.';
+COMMENT ON COLUMN @TABLE.TIME_ZONE_NAME IS 'References propert time zone name.';
+COMMIT;
+
+'''
+sys.stderr.write("Building timezoneAliasLoadTemplate\n")
+timezoneAliasLoadTemplate = ''
+base_tzs = ['GMT', 'UTC']
+signs    = ['-', '+']
+seps     = [':', '']
+for base_tz in range(len(base_tzs)) :
+   for hour in range(13) :
+      for sign in range(len(signs)) :
+         oppositeSign = signs[(sign+1) % len(signs)]
+         tz = 'Etc/GMT%s%d' % (oppositeSign, hour)
+         for sep in range(len(seps)) :
+            alias = '%s%s%2.2d%s00' % (base_tzs[base_tz], signs[sign], hour, seps[sep])
+            timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('%s', '%s');\n" % (timezoneAliasTableName, alias, tz))
+            if hour < 10 :
+               alias = '%s%s%d%s00' % (base_tzs[base_tz], signs[sign], hour, seps[sep])
+               timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('%s', '%s');\n" % (timezoneAliasTableName, alias, tz))
+timezoneAliasLoadTemplate += 'COMMIT;\n'
 
 sys.stderr.write("Building tzUsageCreationTemplate\n")
 tzUsageCreationTemplate = \
