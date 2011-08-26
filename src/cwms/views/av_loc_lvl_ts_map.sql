@@ -1,3 +1,17 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_TS_MAP', null,
+'
+/**
+ * Displays mappings from time series to location levels and indicators
+ *
+ * @since CWMS 2.1
+ *
+ * @field office_id          The office that owns the time series
+ * @field cwms_ts_id         The time series
+ * @field location_level_id  The location level that maps to the time series
+ * @field level_indicator_id The location level indicator
+ * @field attribute_id       The attribute, if any
+ * @field attribute_value    The value of any specified attribute
+ */');
 create or replace force view av_loc_lvl_ts_map as
 select office_id,
        cwms_ts_id,

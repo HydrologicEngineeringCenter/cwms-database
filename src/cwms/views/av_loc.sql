@@ -14,6 +14,44 @@
 --   AT_PHYSICAL_LOCATION (Table)
 --
 
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC', null,
+'
+/**
+ * Displays CWMS Time Locations
+ *
+ * @since CWMS 2.0 (modified in CWMS 2.1)
+ *
+ * @field location_code        Unique number identifying location
+ * @field base_location_code   Unique number identifying base location
+ * @field db_office_id         The office that owns the location
+ * @field base_location_id     The base location
+ * @field sub_location_id      The sub-location, if any
+ * @field location_id          The full location
+ * @field location_type        User-defined type for location
+ * @field unit_system          Unit system for elevation
+ * @field elevation            Elevation of location
+ * @field unit_id              Unit of elevation
+ * @field vertical_datum       Datum used for elevation
+ * @field longitude            Actual longitude of location
+ * @field latitude             Actual latitude of location
+ * @field horizontal_datum     Datum used for actual latitude and longitude
+ * @field time_zone_name       Location''s local time zone
+ * @field county_name          County encompassing location
+ * @field state_initial        State encompassing location
+ * @field public_name          Public name for location
+ * @field long_name            Long name for location
+ * @field description          Description of location
+ * @field base_loc_active_flag Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code> specifying whether the base location is marked as active
+ * @field loc_active_flag      Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code> specifying whether the location is marked as active
+ * @field location_kind_id     The geographic type of the location
+ * @field map_label            Label to be used on maps for location
+ * @field published_latitude   Published latitude of location
+ * @field published_longitude  Published longitude of location
+ * @field bounding_office_id   Office whose boundary encompasses location
+ * @field nation_id            Nation encompassing location
+ * @field nearest_city         City nearest to location
+ */
+');
 CREATE OR REPLACE FORCE VIEW av_loc
 (
     location_code,

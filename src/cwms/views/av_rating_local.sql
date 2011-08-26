@@ -1,8 +1,30 @@
-SHOW ERRORS;
-
 ---------------------
 -- AV_RATING_LOCAL --
 ---------------------
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_LOCAL', null,
+'
+/**
+ * Displays information on ratings in the local time zone of the rating''s location
+ *
+ * @since CWMS 2.1
+ *
+ * @see CWMS_ROUNDING
+ *
+ * @field rating_code        Unique numeric code identifying the rating
+ * @field parent_rating_code Unique numeric code identifying the parent of this rating, if any
+ * @field office_id          The office owning the rating
+ * @field rating_id          The rating identifier
+ * @field location_id        The location for the rating
+ * @field template_id        The rating template identifier for this rating
+ * @field version            The version identifier for this rating
+ * @field native_units       The native units for each parameter for this rating
+ * @field effective_date     The date/time that this rating goes/went into effect in the local time zone of the rating''s location
+ * @field create_date        The date/time that this rating was loaded into the database in the local time zone of the rating''s location
+ * @field active_flag        Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether this rating is active
+ * @field formula            The formula for this rating if it is formula-based
+ * @field description        The description for this rating
+ */
+');
 
 CREATE OR REPLACE FORCE VIEW av_rating_local
 (

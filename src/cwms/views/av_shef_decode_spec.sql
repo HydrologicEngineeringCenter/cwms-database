@@ -17,6 +17,50 @@
 --   AT_SHEF_IGNORE (Table)
 --
 
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SHEF_DECODE_SPEC', null,
+'
+/**
+ * [description needed]
+ *
+ * @since CWMS 2.1
+ *
+ * @field ts_code               [description needed]
+ * @field cwms_ts_id            [description needed]
+ * @field db_office_id          [description needed]
+ * @field data_stream_id        [description needed]
+ * @field stream_db_office_id   [description needed]
+ * @field data_feed_id          [description needed]
+ * @field feed_db_office_id     [description needed]
+ * @field data_feed_prefix      [description needed]
+ * @field loc_group_id          [description needed]
+ * @field loc_category_id       [description needed]
+ * @field loc_alias_id          [description needed]
+ * @field shef_loc_id           [description needed]
+ * @field shef_pe_code          [description needed]
+ * @field shef_tse_code         [description needed]
+ * @field shef_duration_code    [description needed]
+ * @field shef_duration_numeric [description needed]
+ * @field shef_time_zone_id     [description needed]
+ * @field dl_time               [description needed]
+ * @field unit_id               [description needed]
+ * @field unit_system           [description needed]
+ * @field interval_utc_offset   [description needed]
+ * @field interval_forward      [description needed]
+ * @field interval_backward     [description needed]
+ * @field ts_active_flag        [description needed]
+ * @field net_ts_active_flag    [description needed]
+ * @field ignore_shef_spec      [description needed]
+ * @field shef_spec             [description needed]
+ * @field location_id           [description needed]
+ * @field parameter_id          [description needed]
+ * @field parameter_type_id     [description needed]
+ * @field interval_id           [description needed]
+ * @field duration_id           [description needed]
+ * @field version_id            [description needed]
+ * @field data_stream_code      [description needed]
+ * @field shef_crit_line        [description needed]
+ */
+');
 CREATE OR REPLACE FORCE VIEW av_shef_decode_spec
 (
     ts_code,

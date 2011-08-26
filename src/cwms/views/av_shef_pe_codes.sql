@@ -1,3 +1,26 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SHEF_PE_CODES', null,
+'
+/**
+ * [description needed]
+ *
+ * @since CWMS 2.1
+ *
+ * @field shef_pe_code          [description needed]
+ * @field base_parameter_id     [description needed]
+ * @field sub_parameter_id      [description needed]
+ * @field parameter_type_id     [description needed]
+ * @field abstract_param_id     [description needed]
+ * @field unit_id_en            [description needed]
+ * @field unit_id_si            [description needed]
+ * @field shef_duration_numeric [description needed]
+ * @field shef_tse_code         [description needed]
+ * @field description           [description needed]
+ * @field db_office_id          [description needed]
+ * @field abstract_param_code   [description needed]
+ * @field unit_code_en          [description needed]
+ * @field unit_code_si          [description needed]
+ */
+');
 CREATE OR REPLACE FORCE VIEW av_shef_pe_codes
 (
     shef_pe_code,

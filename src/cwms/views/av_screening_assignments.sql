@@ -1,3 +1,30 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SCREENING_ASSIGNMENTS', null,
+'
+/**
+ * [description needed]
+ *
+ * @since CWMS 2.1
+ *
+ * @field     screening_code     [description needed]
+ * @field     ts_code            [description needed]
+ * @field     base_location_code [description needed]
+ * @field     location_code      [description needed]
+ * @field     db_office_id       [description needed]
+ * @field     screening_id       [description needed]
+ * @field     active_flag        [description needed]
+ * @field     resultant_ts_code  [description needed]
+ * @field     screening_id_desc  [description needed]
+ * @field     cwms_ts_id         [description needed]
+ * @field     base_location_id   [description needed]
+ * @field     sub_location_id    [description needed]
+ * @field     location_id        [description needed]
+ * @field     base_parameter_id  [description needed]
+ * @field     sub_parameter_id   [description needed]
+ * @field     parameter_id       [description needed]
+ * @field     parameter_type_id  [description needed]
+ * @field     duration_id        [description needed]
+ */
+');
 CREATE OR REPLACE VIEW av_screening_assignments
 (
     screening_code,

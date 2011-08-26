@@ -1,3 +1,21 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_ALIAS', null,
+'
+/**
+ * Displays information about location aliases
+ *
+ * @since CWMS 2.0
+ *
+ * @field category_id      Location category (parent of location group)
+ * @field group_id         Location group (child of location category)
+ * @field location_code    Unique number identifying the location
+ * @field db_office_id     Office owning the location
+ * @field base_location_id Base location of the location
+ * @field sub_location_id  Sub-location of the location, if any
+ * @field location_id      The location
+ * @field alias_id         The alias for the location in this category/group
+ */
+');
+
 CREATE OR REPLACE VIEW av_loc_alias
 (
     category_id,

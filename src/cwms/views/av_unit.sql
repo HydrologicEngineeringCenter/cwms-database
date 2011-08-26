@@ -1,3 +1,21 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_UNIT', null,
+'
+/**
+ * Displays information about units
+ *
+ * @since CWMS 2.0
+ *
+ * @field unit_system         The unit system (EN or SI) that the unit is associated with
+ * @field unit_id             The unit identifier
+ * @field abstract_param_id   The abstract parameter associated with the unit
+ * @field long_name           A longer name for the unit
+ * @field description         Describes the unit
+ * @field db_office_id        Office that owns the unit
+ * @field unit_code           Unique numeric value that identifies the unit
+ * @field abstract_param_code Unique numeric value that identifies the abstract parameter associated with the unit
+ * @field db_office_code      Unique numeric value that identifies the office that owns the unit
+ */
+');
 CREATE OR REPLACE FORCE VIEW av_unit
 (
     unit_system,

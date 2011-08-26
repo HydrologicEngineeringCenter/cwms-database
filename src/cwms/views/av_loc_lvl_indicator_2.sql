@@ -1,4 +1,107 @@
-SHOW ERRORS;
+--
+-- The documentation is too big to fit in a sql string literal (4000 chars max)
+--
+declare
+   doc_clob clob;
+   doc_text varchar2(32767) := '
+      /**
+       * Displays information about location level indicators with each indicator condition in its own set of columns
+       *
+       * @since CWMS 2.1
+       *
+       * @field office_id                 Office that owns the indicator
+       * @field level_indicator_id        Identifies the indicator
+       * @field reference_level_id        Identifies the referenced location level, if any
+       * @field attribute_id              Identifies the location level attribute, if any
+       * @field unit_system               Species the unit system (EN or SI) used for the expressions
+       * @field attribute_value           The value of the attribute, if any
+       * @field reference_attribute_value The value of the attribute, if any, of the referenced location level, if any
+       * @field attribute_units           The unit that attributes are displayed in
+       * @field minimum_duration          The minimum amount of time that the expression(s) must continuously evaluate to TRUE for condition to be set
+       * @field maximum_age               The maximum amount of time that the condition can be considered current
+       * @field unit_id                   The unit for the condition expressions
+       * @field rate_unit_id              The unit for the condition rate expressions, if any
+       * @field cond_1_name               The name of the indicator condition 1
+       * @field cond_1_expr               The mathematical expression for condition 1. If a rate expression is present, this expression is used to determine if the rate expression will be evaluated; otherwise it is used to determine if condition 1 will be set.
+       * @field cond_1_op_1               The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the expression with value 1 for condition 1
+       * @field cond_1_val_1              The value used with operator 1 to compare with the result of the expression for condition 1
+       * @field cond_1_connector          The logical connector (AND, OR) used to combine the results of the two comparisons, if two comparisons are used for condition 1
+       * @field cond_1_op_2               The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the expression with value 2, if two comparisons are used for condition 1
+       * @field cond_1_val_2              The value used with operator 2 to compare with the result of the expression, if two comparisons are used for condition 1
+       * @field cond_1_rate_expr          The mathematical rate-of-change expression for condition 1
+       * @field cond_1_rate_op_1          The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the rate expression with rate value 1 for condition 1
+       * @field cond_1_rate_val_1         The value used with rate operator 1 to compare with the result of the rate expression for condition 1
+       * @field cond_1_rate_connector     The logical connector (AND, OR) used to combine the results of the two rate comparisons, if two rate comparisons are used for condition 1
+       * @field cond_1_rate_op_2          The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the rate expression with value 2, if two rate comparisons are used for condition 1
+       * @field cond_1_rate_val_2         The value used with rate operator 2 to compare with the result of the rate expression, if two rate comparisons are used for condition 1
+       * @field cond_1_rate_interval      The time interval used to compute the rate value for condition 1
+       * @field cond_2_name               The name of the indicator condition 2
+       * @field cond_2_expr               The mathematical expression for condition 2. If a rate expression is present, this expression is used to determine if the rate expression will be evaluated; otherwise it is used to determine if condition 2 will be set.
+       * @field cond_2_op_1               The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the expression with value 1 for condition 2
+       * @field cond_2_val_1              The value used with operator 1 to compare with the result of the expression for condition 2
+       * @field cond_2_connector          The logical connector (AND, OR) used to combine the results of the two comparisons, if two comparisons are used for condition 2
+       * @field cond_2_op_2               The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the expression with value 2, if two comparisons are used for condition 2
+       * @field cond_2_val_2              The value used with operator 2 to compare with the result of the expression, if two comparisons are used for condition 2
+       * @field cond_2_rate_expr          The mathematical rate-of-change expression for condition 2
+       * @field cond_2_rate_op_1          The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the rate expression with rate value 1 for condition 2
+       * @field cond_2_rate_val_1         The value used with rate operator 1 to compare with the result of the rate expression for condition 2
+       * @field cond_2_rate_connector     The logical connector (AND, OR) used to combine the results of the two rate comparisons, if two rate comparisons are used for condition 2
+       * @field cond_2_rate_op_2          The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the rate expression with value 2, if two rate comparisons are used for condition 2
+       * @field cond_2_rate_val_2         The value used with rate operator 2 to compare with the result of the rate expression, if two rate comparisons are used for condition 2
+       * @field cond_2_rate_interval      The time interval used to compute the rate value for condition 2
+       * @field cond_3_name               The name of the indicator condition 3
+       * @field cond_3_expr               The mathematical expression for condition 3. If a rate expression is present, this expression is used to determine if the rate expression will be evaluated; otherwise it is used to determine if condition 3 will be set.
+       * @field cond_3_op_1               The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the expression with value 1 for condition 3
+       * @field cond_3_val_1              The value used with operator 1 to compare with the result of the expression for condition 3
+       * @field cond_3_connector          The logical connector (AND, OR) used to combine the results of the two comparisons, if two comparisons are used for condition 3
+       * @field cond_3_op_2               The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the expression with value 2, if two comparisons are used for condition 3
+       * @field cond_3_val_2              The value used with operator 2 to compare with the result of the expression, if two comparisons are used for condition 3
+       * @field cond_3_rate_expr          The mathematical rate-of-change expression for condition 3
+       * @field cond_3_rate_op_1          The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the rate expression with rate value 1 for condition 3
+       * @field cond_3_rate_val_1         The value used with rate operator 1 to compare with the result of the rate expression for condition 3
+       * @field cond_3_rate_connector     The logical connector (AND, OR) used to combine the results of the two rate comparisons, if two rate comparisons are used for condition 3
+       * @field cond_3_rate_op_2          The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the rate expression with value 2, if two rate comparisons are used for condition 3
+       * @field cond_3_rate_val_2         The value used with rate operator 2 to compare with the result of the rate expression, if two rate comparisons are used for condition 3
+       * @field cond_3_rate_interval      The time interval used to compute the rate value for condition 3
+       * @field cond_4_name               The name of the indicator condition 4
+       * @field cond_4_expr               The mathematical expression for condition 4. If a rate expression is present, this expression is used to determine if the rate expression will be evaluated; otherwise it is used to determine if condition 4 will be set.
+       * @field cond_4_op_1               The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the expression with value 1 for condition 4
+       * @field cond_4_val_1              The value used with operator 1 to compare with the result of the expression for condition 4
+       * @field cond_4_connector          The logical connector (AND, OR) used to combine the results of the two comparisons, if two comparisons are used for condition 4
+       * @field cond_4_op_2               The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the expression with value 2, if two comparisons are used for condition 4
+       * @field cond_4_val_2              The value used with operator 2 to compare with the result of the expression, if two comparisons are used for condition 4
+       * @field cond_4_rate_expr          The mathematical rate-of-change expression for condition 4
+       * @field cond_4_rate_op_1          The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the rate expression with rate value 1 for condition 4
+       * @field cond_4_rate_val_1         The value used with rate operator 1 to compare with the result of the rate expression for condition 4
+       * @field cond_4_rate_connector     The logical connector (AND, OR) used to combine the results of the two rate comparisons, if two rate comparisons are used for condition 4
+       * @field cond_4_rate_op_2          The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the rate expression with value 2, if two rate comparisons are used for condition 4
+       * @field cond_4_rate_val_2         The value used with rate operator 2 to compare with the result of the rate expression, if two rate comparisons are used for condition 4
+       * @field cond_4_rate_interval      The time interval used to compute the rate value for condition 4
+       * @field cond_5_name               The name of the indicator condition 5
+       * @field cond_5_expr               The mathematical expression for condition 5. If a rate expression is present, this expression is used to determine if the rate expression will be evaluated; otherwise it is used to determine if condition 5 will be set.
+       * @field cond_5_op_1               The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the expression with value 1 for condition 5
+       * @field cond_5_val_1              The value used with operator 1 to compare with the result of the expression for condition 5
+       * @field cond_5_connector          The logical connector (AND, OR) used to combine the results of the two comparisons, if two comparisons are used for condition 5
+       * @field cond_5_op_2               The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the expression with value 2, if two comparisons are used for condition 5
+       * @field cond_5_val_2              The value used with operator 2 to compare with the result of the expression, if two comparisons are used for condition 5
+       * @field cond_5_rate_expr          The mathematical rate-of-change expression for condition 5
+       * @field cond_5_rate_op_1          The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the rate expression with rate value 1 for condition 5
+       * @field cond_5_rate_val_1         The value used with rate operator 1 to compare with the result of the rate expression for condition 5
+       * @field cond_5_rate_connector     The logical connector (AND, OR) used to combine the results of the two rate comparisons, if two rate comparisons are used for condition 5
+       * @field cond_5_rate_op_2          The operator (LT, LE, EQ, NE, GE, GT) used to compare the result of the rate expression with value 2, if two rate comparisons are used for condition 5
+       * @field cond_5_rate_val_2         The value used with rate operator 2 to compare with the result of the rate expression, if two rate comparisons are used for condition 5
+       * @field cond_5_rate_interval      The time interval used to compute the rate value for condition 5
+       */';
+begin
+   dbms_lob.createtemporary(doc_clob, true);
+   dbms_lob.open(doc_clob, dbms_lob.lob_readwrite);
+   dbms_lob.writeappend(doc_clob, length(doc_text), doc_text);
+   dbms_lob.close(doc_clob);
+   insert
+     into at_clob
+   values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_INDICATOR_2', null, doc_clob);
+end;
+/
 
 CREATE OR REPLACE FORCE VIEW av_loc_lvl_indicator_2
 AS

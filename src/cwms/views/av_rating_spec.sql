@@ -1,8 +1,31 @@
-SHOW ERRORS;
-
 --------------------
 -- AV_RATING_SPEC --
 --------------------
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_SPEC', null,
+'
+/**
+ * Displays information on ratings specifications
+ *
+ * @since CWMS 2.1
+ *
+ * @see CWMS_ROUNDING
+ *
+ * @field office_id             The office owning the rating spec
+ * @field rating_id             The rating spec identifier
+ * @field location_id           The location for the rating spec
+ * @field template_id           The rating template identifier for this rating spec
+ * @field source_agency         The agency that supplies ratings for this rating spec
+ * @field version               The version identifier for this rating spec
+ * @field active_flag           Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether this rating spec is active
+ * @field auto_update_flag      Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether new ratings under this spec automatically be loaded
+ * @field auto_activate_flag    Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether newly loaded ratings under this spec should automatically be activated
+ * @field auto_migrate_ext_flag Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether newly loaded ratings under this spec should automatically inherit rating extenions from a previous rating
+ * @field date_methods,         Specifies behavior rating methods will use when rating values with times before the earliest effective date, between first and last effective dates, and after last effective date
+ * @field ind_rounding_specs    Specifies USGS-style rounding specification(s) for displaying independent parameter(s)
+ * @field dep_rounding_spec     Specifies USGS-style rounding specification for displaying dependent parameter
+ * @field description           The description for this rating specification
+ */
+');
 
 CREATE OR REPLACE FORCE VIEW av_rating_spec
 (

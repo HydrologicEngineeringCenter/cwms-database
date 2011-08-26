@@ -8,6 +8,17 @@
 --   CWMS_COUNTY (Table)
 --   AT_PHYSICAL_LOCATION (Table)
 --
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STATE', null,
+'
+/**
+ * [description needed]
+ *
+ * @since CWMS 2.1
+ *
+ * @field state_initial [description needed]
+ * @field db_office_id  [description needed]
+ */
+');
 
 CREATE OR REPLACE FORCE VIEW av_state
 (

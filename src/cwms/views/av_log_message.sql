@@ -2,6 +2,27 @@
 -- AV_LOG_MESSAGE view.
 --
 
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOG_MESSAGE', null,
+'
+/**
+ * Displays messages logged to the database
+ *
+ * @since CWMS 2.1
+ *
+ * @field msg_id               Unique message identifier, composed of a timestamp in java milliseconds and sequence within that millisecond
+ * @field log_timestamp_utc    Time that the message was inserted in the log
+ * @field report_timestamp_utc Time that the message was created by the reporting entity
+ * @field office_id            Office of the reporting entity
+ * @field component            CWMS component of the reporting entity
+ * @field instance             Specific instance of component
+ * @field host                 Internet address of reporting entity
+ * @field port                 Internet port at which reporting entity resides on host
+ * @field msg_level            The message level, viewers can filter on this to see more or less detail
+ * @field msg_type             The message type (category)
+ * @field msg_text             The text of the message
+ * @field properties           Any properties associated with the message
+ */
+');
 CREATE OR REPLACE FORCE VIEW av_log_message
 (
 	msg_id,

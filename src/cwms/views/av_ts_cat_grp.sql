@@ -1,3 +1,20 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_CAT_GRP', null,
+'
+/**
+ * Displays information about time series categories and groups
+ *
+ * @since CWMS 2.1
+ *
+ * @field cat_db_office_id   Office that owns the time series category
+ * @field ts_category_id     Time series category (parent of time series group)
+ * @field ts_category_desc   Description of time series category
+ * @field grp_db_office_id   Office that owns the time series group
+ * @field ts_group_id        Time series group identifier
+ * @field ts_group_desc      Description of the time series group
+ * @field shared_ts_alias_id The alias, if any, shared by all members of the time series group
+ * @field shared_ref_ts_id   The referenced time series, if any, shared by all members of the time series group
+ */
+');
 CREATE OR REPLACE VIEW av_ts_cat_grp
 (
 	cat_db_office_id,

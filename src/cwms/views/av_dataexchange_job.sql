@@ -1,5 +1,24 @@
-SHOW ERRORS;
-
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATAEXCHANGE_JOB', null,
+'
+/**
+ * Displays information on dataexchange batch jobs
+ *
+ * @since CWMS 2.1
+ *
+ * @field job_id         Unique job identifier created by requester
+ * @field requested_from Entity requesting job
+ * @field set_id         Identifies data exchange set for job
+ * @field direction      Identifies direction of data exchange
+ * @field request_time   Time that request was generated
+ * @field start_time     Time that execution was started
+ * @field end_time       Time that execution completed
+ * @field start_delay    Time between request and start of execution
+ * @field execution_time Time between execution start and end
+ * @field total_time     Time between request and execution end
+ * @field processed_by   Entity that executed data exchange
+ * @field results        Text describing result of job execution
+ */
+');
 CREATE OR REPLACE FORCE VIEW av_dataexchange_job
 AS
     WITH request$

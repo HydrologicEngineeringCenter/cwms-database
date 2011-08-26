@@ -1,3 +1,16 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_TIME_ZONE', null,
+'
+/**
+ * Displays CWMS time zones and time zone aliases
+ *
+ * @since CWMS 2.1
+ *
+ * @field time_zone_code  Unique numeric value identifying the time zone
+ * @field time_zone_name  Time zone name or time zone alias
+ * @field utc_offset      Offset from UTC
+ * @field dst_offset      Offset for Daylight Saving Time
+*/
+');
 create materialized view mv_time_zone as
    select * from
       (

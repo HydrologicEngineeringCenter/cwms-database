@@ -1,5 +1,26 @@
-SHOW ERRORS;
-
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_LVL_INDICATOR', null,
+'
+/**
+ * Displays information about location level indicators with each indicator condition in its own row
+ *
+ * @since CWMS 2.1
+ *
+ * @field office_id                 Office that owns the indicator
+ * @field level_indicator_id        Identifies the indicator
+ * @field reference_level_id        Identifies the referenced location level, if any
+ * @field attribute_id              Identifies the location level attribute, if any
+ * @field unit_system               Species the unit system (EN or SI) used for the expressions
+ * @field attribute_value           The value of the attribute, if any
+ * @field reference_attribute_value The value of the attribute, if any, of the referenced location level, if any
+ * @field attribute_units           The unit that attributes are displayed in
+ * @field name                      The name of the indicator condition
+ * @field value                     The value (1..5) of the indicator condition
+ * @field expression                The mathematical expression that must evalutate to TRUE for the condition to be set (or for the rate epxression, if present, to be evaluated)
+ * @field rate_expression           The mathematical expression that must evalutate to TRUE for the condition to be set if this is a rate-of-change condition
+ * @field minimum_duration          The minimum amount of time that the expression(s) must continuously evaluate to TRUE for condition to be set
+ * @field maximum_age               The maximum amount of time that the condition can be considered current
+ */
+');
 CREATE OR REPLACE FORCE VIEW av_loc_lvl_indicator
 AS
     WITH llic

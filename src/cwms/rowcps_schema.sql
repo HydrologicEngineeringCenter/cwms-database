@@ -2834,6 +2834,30 @@ ALTER TABLE at_construction_history ADD (
  REFERENCES at_operational_status_code (operational_status_code))
 /
 
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PROJECT', null,
+'
+/**
+ * Displays information on CWMS projects
+ *
+ * @since CWMS 2.1
+ *
+ * @field office_id                      Office owning the project
+ * @field project_id                     Location identifier of the project
+ * @field federal_cost                   Federal cost to construct
+ * @field nonfederal_cost                Non-federal cost to construct
+ * @field authorizing_law                Law authorizing construction
+ * @field project_owner                  Owner of project
+ * @field hydropower_description         Description of hydropower for project, if applicable
+ * @field sedimentation_description      Description of sedimentation for project, if applicable
+ * @field downstream_urban_description   Description of downstream urbanization for project, if applicable
+ * @field bank_full_capacity_description Description of bank-full capacity of project, if applicable
+ * @field pump_back_location_id          Location identifier of pump-back into project, if applicable
+ * @field near_gage_location_id          Location identifier of gaging station nearest to project
+ * @field yield_time_frame_start         Beginning of critical period for yield analysis, if applicable
+ * @field yield_time_frame_end           End of critical period for yield analysis, if applicable
+ * @field project_remarks                General remarks for project
+ */
+');
 create or replace force view av_project
 (
    office_id,
@@ -2914,6 +2938,22 @@ select project.office_id,
             and p.project_location_code = pl.location_code
        ) neargage on neargage.location_code = project.near_gage_location_code
 /       
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_OUTLET', null,
+'
+/**
+ * Displays information about outlets at CWMS projects
+ *
+ * @since CWMS 2.1
+ *
+ * @field office_id       Office owning project
+ * @field project_id      Location identifier of project
+ * @field outlet_id       Outlet identifier
+ * @field rating_group_id Identifier of rating group outlet belongs to
+ * @field rating_spec     Rating specification used for outlet
+ * @field opening_unit_en Opening unit in English unit system
+ * @field opening_unit_si Opening unit in SI unit system
+ */
+');
 create or replace force view av_outlet
 (
    office_id,
@@ -2957,6 +2997,38 @@ select o.office_id as office_id,
    and lc.loc_category_code = lg.loc_category_code
    and lc.loc_category_id = 'RATING'
 /            
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GATE_CHANGE', null,
+'
+/**
+ * Displays information on changes to gate settings at CWMS projects
+ *
+ * @since CWMS 2.1
+ *
+ * @field gate_change_code          Unique numeric value identifying gate change
+ * @field office_id                 Office owning project
+ * @field project_id                Location identifier of project
+ * @field gate_change_date          Date/time gate change was made
+ * @field time_zone                 Time zone associated with gate change date/time
+ * @field elev_pool_en              Pool elevation in English unit at the time of the gate change
+ * @field elev_tailwater_en         Tailwater elevation in English unit at the time of the gate change
+ * @field elev_unit_en              English unit used for elevations
+ * @field elev_pool_si              Pool elevation in SI unit at the time of the gate change
+ * @field elev_tailwater_si         Tailwater elevation in SI unit at the time of the gate change
+ * @field elev_unit_si              SI unit used for elevations
+ * @field old_discharge_override_en Overerride of computed dicharge before the gate change in English unit
+ * @field new_discharge_override_en Overerride of computed dicharge after the gate change in English unit
+ * @field discharge_unit_en         English unit used for discharge
+ * @field old_discharg_override_si  Overerride of computed dicharge before the gate change in SI unit
+ * @field new_discharge_override_si Overerride of computed dicharge after the gate change in SI unit
+ * @field discharge_unit_si         SI unit used for discharge
+ * @field discharge_comp            Discharge computation used for the gate change
+ * @field discharge_comp_descr      Description of the discharge computation
+ * @field release_reason            Release reason for the gate change
+ * @field release_reason_descr      Description of the release reason
+ * @field gate_change_notes         Notes about the gate change
+ * @field protected                 Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the gate change is protected from future updates
+ */
+');
 create or replace force view av_gate_change
 (
    gate_change_code,
@@ -3036,6 +3108,22 @@ select gc.gate_change_code,
    and gcc.discharge_comp_code = gc.discharge_computation_code
    and grr.release_reason_code = gc.release_reason_code
 /   
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GATE_SETTING', null,
+'
+/**
+ * Displays information on gate settings at CWMS projects
+ *
+ * @since CWMS 2.1
+ *
+ * @field gate_change_code  Unique numeric value identifying gate change
+ * @field office_id         Office owning project
+ * @field outlet_id         Outlet identifier
+ * @field gate_opening_en   Gate opening in English unit
+ * @field opening_unit_en   Opening unit in English unit system
+ * @field gate_opening_si   Gate opening in SI unit
+ * @field opening_unit_si   Opening unit in SI unit system
+  */
+');
 create or replace force view av_gate_setting
 (
    gate_change_code,
@@ -3086,6 +3174,18 @@ select gs.gate_change_code,
    and lc.loc_category_code = lg.loc_category_code
    and upper(lc.loc_category_id) = 'RATING'        
 /
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TURBINE', null,
+'
+/**
+ * Displays information about turbines at CWMS projects
+ *
+ * @since CWMS 2.1
+ *
+ * @field office_id       Office owning project
+ * @field project_id      Location identifier of project
+ * @field turbine_id      Turbine identifier
+ */
+');
 create or replace force view av_turbine
 (
    office_id,
@@ -3112,6 +3212,38 @@ select o.office_id,
    and pl2.location_code = t.turbine_location_code
    and bl2.base_location_code = pl2.base_location_code;
 /
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TURBINE_CHANGE', null,
+'
+/**
+ * Displays information on changes to power turbine settings at CWMS projects
+ *
+ * @since CWMS 2.1
+ *
+ * @field turbine_change_code       Unique numeric value identifying turbine change
+ * @field office_id                 Office owning project
+ * @field project_id                Location identifier of project
+ * @field turbine_change_date       Date/time turbine change was made
+ * @field time_zone                 Time zone associated with turbine change date/time
+ * @field elev_pool_en              Pool elevation in English unit at the time of the turbine change
+ * @field elev_tailwater_en         Tailwater elevation in English unit at the time of the turbine change
+ * @field elev_unit_en              English unit used for elevations
+ * @field elev_pool_si              Pool elevation in SI unit at the time of the turbine change
+ * @field elev_tailwater_si         Tailwater elevation in SI unit at the time of the turbine change
+ * @field elev_unit_si              SI unit used for elevations
+ * @field old_discharge_override_en Overerride of computed dicharge before the turbine change in English unit
+ * @field new_discharge_override_en Overerride of computed dicharge after the turbine change in English unit
+ * @field discharge_unit_en         English unit used for discharge
+ * @field old_discharg_override_si  Overerride of computed dicharge before the turbine change in SI unit
+ * @field new_discharge_override_si Overerride of computed dicharge after the turbine change in SI unit
+ * @field discharge_unit_si         SI unit used for discharge
+ * @field discharge_comp            Discharge computation used for the turbine change
+ * @field discharge_comp_descr      Description of the discharge computation
+ * @field setting_reason            Reason for the turbine change
+ * @field release_reason_descr      Description of the setting reason
+ * @field turbine_change_notes      Notes about the turbine change
+ * @field protected                 Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the turbine change is protected from future updates
+ */
+');
 create or replace force view av_turbine_change
 (
    turbine_change_code,
@@ -3191,6 +3323,27 @@ select tc.turbine_change_code,
    and tcc.turbine_comp_code = tc.turbine_discharge_comp_code
    and tsr.turb_set_reason_code = tc.turbine_setting_reason_code;
 /
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TURBINE_SETTING', null,
+'
+/**
+ * Displays information on turbine settings at CWMS projects
+ *
+ * @since CWMS 2.1
+ *
+ * @field turbine_change_code  Unique numeric value identifying turbine change
+ * @field office_id            Office owning project
+ * @field turbine_id           Turbine identifier
+ * @field old_discharge_en     Turbine discharge in English unit before the setting
+ * @field new_discharge_en     Turbine discharge in English unit after the setting
+ * @field discharge_unit_en    Discharge unit in English unit system
+ * @field old_discharge_si     Tturbine discharge in SI unit before the setting
+ * @field new_discharge_si     Turbine discharge in SI unit after the setting
+ * @field discharge_unit_si    Discharge unit in SI unit system
+ * @field scheduled_load       Scheduled load for the turbine at the time of the setting, in power unit
+ * @field real_power           The actual power generated at the time of the setting, in power unit
+ * @field power_unit           The unit of scheduled load and real power
+ */
+');
 create or replace force view av_turbine_setting
 (
    turbine_change_code,

@@ -11,6 +11,32 @@
 --   AT_SHEF_CRIT_FILE (Table)
 --   AT_SHEF_CRIT_FILE_REC (Table)
 --
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_STREAMS_CURRENT', null,
+'
+/**
+ * Displays info about CWMS data streams
+ *
+ * @since CWMS 2.1
+ *
+ * @field db_office_id              [description needed]
+ * @field data_stream_id            [description needed]
+ * @field data_stream_desc          [description needed]
+ * @field ds_active_flag            [description needed]
+ * @field use_db_shef_spec_mapping  [description needed]
+ * @field num_crit_files            [description needed]
+ * @field crit_file_exists          [description needed]
+ * @field crit_file_creation_date   [description needed]
+ * @field crit_file_state           [description needed]
+ * @field num_decode_process_recs   [description needed]
+ * @field num_decode_ignore_recs    [description needed]
+ * @field num_spec_only_ignore_recs [description needed]
+ * @field total_ignore_recs         [description needed]
+ * @field total_crit_file_recs      [description needed]
+ * @field crit_file_code            [description needed]
+ * @field data_stream_code          [description needed]
+ * @field db_office_code            [description needed]
+ */
+');
 
 CREATE OR REPLACE FORCE VIEW av_data_streams_current
 (

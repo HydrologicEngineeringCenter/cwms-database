@@ -1,8 +1,25 @@
-SHOW ERRORS;
-
 ------------------------
 -- AV_RATING_TEMPLATE --
 ------------------------
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_TEMPLATE', null,
+'
+/**
+ * Displays information about rating templates
+ *
+ * @since CWMS 2.1
+ *
+ * @see view av_rating_spec
+ *
+ * @field office_id              Office that owns the template
+ * @field template_id            The rating template identifier
+ * @field parameters_id          The parameters used by the template
+ * @field independent_parameters The independent parameter(s) used by the template
+ * @field dependent_parameter    The dependent parameter used by the template
+ * @field version                The template version
+ * @field description            A description for the template
+ * @field rating_methods         Specifies the behavior of any rating associated with this template when looking up independent parameters
+ */
+');
 
 CREATE OR REPLACE FORCE VIEW av_rating_template
 (

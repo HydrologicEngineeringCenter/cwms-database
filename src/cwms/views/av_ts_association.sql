@@ -1,9 +1,22 @@
-SHOW ERRORS;
-
-
 -----------------------------
 -- AV_TS_ASSOCIATION--
 -----------------------------
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_ASSOCIATION', null,
+'
+/**
+ * Displays information about time series associations
+ *
+ * @since CWMS 2.1
+ *
+ * @field office_id         Office for which the association applies
+ * @field association_type  Indicates whether the association is for a location or location group
+ * @field usage_category_id The general usage for the association
+ * @field usage_id          The specific usage for the association
+ * @field association_id    The location or location group
+ * @field timeseries_id     The associated time series
+ * @field usage_description The description of the association
+ */
+');
 
 CREATE OR REPLACE FORCE VIEW av_ts_association
 (

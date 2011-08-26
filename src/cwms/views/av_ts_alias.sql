@@ -1,3 +1,18 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_TS_ALIAS', null,
+'
+/**
+ * Displays information about time series aliases
+ *
+ * @since CWMS 2.1
+ *
+ * @field category_id   Time series category (parent of time series group)
+ * @field group_id      Time series group (child of time series category)
+ * @field ts_code       Unique number identifying the time series
+ * @field db_office_id  Office owning the time series
+ * @field ts_id         The time series
+ * @field alias_id      The alias for the time series in this category/group
+ */
+');
 CREATE OR REPLACE VIEW av_ts_alias
 (
 	category_id,

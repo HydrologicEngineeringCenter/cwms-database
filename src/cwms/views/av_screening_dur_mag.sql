@@ -1,3 +1,30 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_SCREENING_DUR_MAG', null,
+'
+/**
+ * [description needed]
+ *
+ * @since CWMS 2.1
+ *
+ * @field screening_code      [description needed]
+ * @field db_office_id        [description needed]
+ * @field screening_id        [description needed]
+ * @field screening_id_desc   [description needed]
+ * @field base_parameter_id   [description needed]
+ * @field sub_parameter_id    [description needed]
+ * @field parameter_id        [description needed]
+ * @field parameter_type_id   [description needed]
+ * @field duration_id         [description needed]
+ * @field season_start_day    [description needed]
+ * @field season_start_month  [description needed]
+ * @field unit_system         [description needed]
+ * @field unit_id             [description needed]
+ * @field dur_mag_duration_id [description needed]
+ * @field reject_lo           [description needed]
+ * @field reject_hi           [description needed]
+ * @field question_lo         [description needed]
+ * @field question_hi         [description needed]
+ */
+');
 CREATE OR REPLACE VIEW av_screening_dur_mag
 (
     screening_code,

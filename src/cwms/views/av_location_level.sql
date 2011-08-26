@@ -1,4 +1,30 @@
-SHOW ERRORS;
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL', null,
+'
+/**
+ * Displays information about location levels
+ *
+ * @since CWMS 2.1
+ *
+ * @field office_id         Office that owns the location level
+ * @field location_level_id The location level identifier
+ * @field attribute_id      The attribute identifier, if any, for the location level
+ * @field level_date        The effective data for the location level
+ * @field unit_system       The unit system (SI or EN) that units are displayed in
+ * @field attribute_unit    The unit of the attribute, if any
+ * @field level_unit        The unit of the level
+ * @field attribute_value   The value of the attribute, if any
+ * @field constant_level    The value of the location level, if it is a constant value
+ * @field interval_origin   The beginning of one interval, if the location level is a recurring pattern
+ * @field calendar_interval The length of the interval if expressed in months or years (cannot be used with time_interval)
+ * @field time_interval     The length of the interval if expressed in days or less (cannot be used with calendar_interval)
+ * @field interpolate       Flag <code><big>''T''</big></code> or <code><big>''F''</big></code> specifying whether to interpolate between pattern breakpoints
+ * @field calendar_offset   Years and months into the interval for the seasonal level (combined with time_offset)
+ * @field time_offset       Days, hours, and minutes into the interval for the seasonal level (combined with calendar_offset)
+ * @field seasonal_level    The level value at the offset into the interval specified by calendar_offset and time_offset
+ * @field level_comment     Comment about the location level
+ * @field attribute_comment Comment about the attribute, if any
+ */
+');
 
 CREATE OR REPLACE FORCE VIEW av_location_level
 AS

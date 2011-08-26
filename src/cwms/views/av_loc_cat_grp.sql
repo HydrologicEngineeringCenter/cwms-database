@@ -1,3 +1,20 @@
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC_CAT_GRP', null,
+'
+/**
+ * Displays information about location categories and groups
+ *
+ * @since CWMS 2.0
+ *
+ * @field cat_db_office_id       Office that owns the location category
+ * @field loc_category_id        Location category (parent of location group)
+ * @field loc_category_desc      Description of location category
+ * @field grp_db_office_id       Office that owns the location group
+ * @field loc_group_id           Location group
+ * @field loc_group_desc         Description of the loction group
+ * @field shared_loc_alias_id    The alias, if any, shared by all members of the location group
+ * @field shared_ref_location_id The referenced location, if any, shared by all members of the location group
+ */
+');
 CREATE OR REPLACE VIEW av_loc_cat_grp
 (
     cat_db_office_id,

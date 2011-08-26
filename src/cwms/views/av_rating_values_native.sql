@@ -1,8 +1,26 @@
-SHOW ERRORS;
-
 -----------------------------
 -- AV_RATING_VALUES_NATIVE --
 -----------------------------
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_VALUES_NATIVE', null,
+'
+/**
+ * Displays rating values in native rating units
+ *
+ * @since CWMS 2.1
+ *
+ * @see view av_rating
+ * @see view av_rating_local
+ * @see view av_rating_values
+ *
+ * @field rating_code Unique numeric code identifying rating
+ * @field ind_value_1 The value for the first independent parameter in native rating unit
+ * @field ind_value_2 The value for the second independent parameter, if any, in native rating unit
+ * @field ind_value_3 The value for the third independent parameter, if any, in native rating unit
+ * @field ind_value_4 The value for the fourth independent parameter, if any, in native rating unit
+ * @field ind_value_5 The value for the fifth independent parameter, if any, in native rating unit
+ * @field dep_value   The value for the dependent parameter in native rating unit
+ */
+');
 
 CREATE OR REPLACE FORCE VIEW av_rating_values_native
 (
