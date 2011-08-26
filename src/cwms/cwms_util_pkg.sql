@@ -840,7 +840,7 @@ AS
     * to output the lines
     * 
     * @param p_str the string to output
-    * @param p_len the maximum line length. If <code><big>p_str</bid></code> is 
+    * @param p_len the maximum line length. If <code><big>p_str</big></code> is 
     *        longer than this it will be broken into multiple lines                     
     */       
    PROCEDURE DUMP (p_str IN VARCHAR2, p_len IN PLS_INTEGER DEFAULT 80 );
