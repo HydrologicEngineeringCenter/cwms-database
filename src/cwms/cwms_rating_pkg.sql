@@ -1,391 +1,877 @@
 create or replace package cwms_rating
+/**
+ * Provides routines dealing with ratings.
+ *
+ * @since CWMS 2.1
+ *
+ * @author Mike Perryman
+ */
 as
 
---------------------------------------------------------------------------------
--- CONSTANTS
---------------------------------------------------------------------------------
-separator1 constant varchar2(1) := '.'; -- Separates location, parameters, template version, and version
-separator2 constant varchar2(1) := ';'; -- Separates independent parameter(s) from dependent parameter
-separator3 constant varchar2(1) := ','; -- Separates multiple independent parameters
-
+/**
+ * Top-level separator. Separates location, parameters, template version, and version
+ *
+ * @see constant separator2
+ * @see constant separator3
+ */
+separator1 constant varchar2(1) := '.';
+/**
+ * Mid-level separator. Separates independent parameter(s) from dependent parameter
+ *
+ * @see constant separator1
+ * @see constant separator3
+ */
+separator2 constant varchar2(1) := ';';
+/**
+ * Low-level separator. Separates multiple independent parameters
+ *
+ * @see constant separator1
+ * @see constant separator2
+ */
+separator3 constant varchar2(1) := ',';
+-- not documented
 function get_rating_method_code(
    p_rating_method_id in varchar2) 
    return number result_cache;
-
---------------------------------------------------------------------------------
--- STORE TEMPLATES
---
--- p_xml
---    contains zero or more <rating-template> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores rating templates to the database.
+ *
+ * @see type rating_template_t
+ *
+ * @param p_xml The rating templates to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating-template">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the rating templates already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates
+ * already exists
+ */
 procedure store_templates(
    p_xml            in xmltype,
    p_fail_if_exists in varchar2);
-
---------------------------------------------------------------------------------
--- STORE TEMPLATES
---
--- p_xml
---    contains zero or more <rating-template> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores rating templates to the database.
+ *
+ * @see type rating_template_t
+ *
+ * @param p_xml The rating templates to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating-template">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the rating templates already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates
+ * already exists
+ */
 procedure store_templates(
    p_xml            in varchar2,
    p_fail_if_exists in varchar2);
-
---------------------------------------------------------------------------------
--- STORE TEMPLATES
---
--- p_xml
---    contains zero or more <rating-template> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores rating templates to the database.
+ *
+ * @see type rating_template_t
+ *
+ * @param p_xml The rating templates to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating-template">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the rating templates already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates
+ * already exists
+ */
 procedure store_templates(
    p_xml            in clob,
    p_fail_if_exists in varchar2);
-
---------------------------------------------------------------------------------
--- STORE TEMPLATES
---
--- p_templates
---    contains zero or more rating_template_t objects
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores rating templates to the database.
+ *
+ * @see type rating_template_tab_t
+ * @see type rating_template_t
+ *
+ * @param p_templates The rating templates to store
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the rating templates already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates
+ * already exists
+ */
 procedure store_templates(
    p_templates      in rating_template_tab_t,
    p_fail_if_exists in varchar2);
-                         
---------------------------------------------------------------------------------
--- CAT_TEMPLATE_IDS
---
--- p_cat_cursor
---    cursor containing all matched rating templates in the following fields,
---    sorted ascending in the following order:
---       office_id     varchar2(16)  office id
---       template_id   varchar2(289) full rating template id
---       parameters_id varchar2(256) parameters portion of template id
---       version       varchar2(32)  version portion of template id
---
--- p_template_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
---
+/**
+ * Catalogs stored rating templates that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cat_cursor A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">template_id</td>
+ *     <td style="border:1px solid black;">varchar2(289)</td>
+ *     <td style="border:1px solid black;">The rating template</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">parameters_id</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">The parameters used by the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">version</td>
+ *     <td style="border:1px solid black;">varchar2(32)</td>
+ *     <td style="border:1px solid black;">The template version</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_template_id_mask The rating template pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure cat_template_ids(
    p_cat_cursor       out sys_refcursor,
    p_template_id_mask in  varchar2 default '*',
    p_office_id_mask   in  varchar2 default null);      
-
---------------------------------------------------------------------------------
--- CAT_TEMPLATE_IDS_F
---
--- same as above except that cursor is returned from the function
---
+/**
+ * Catalogs stored rating templates that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_template_id_mask The rating template pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">template_id</td>
+ *     <td style="border:1px solid black;">varchar2(289)</td>
+ *     <td style="border:1px solid black;">The rating template</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">parameters_id</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">The parameters used by the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">version</td>
+ *     <td style="border:1px solid black;">varchar2(32)</td>
+ *     <td style="border:1px solid black;">The template version</td></tr>
+ * </table>
+ */
 function cat_template_ids_f(
    p_template_id_mask in varchar2 default '*',
    p_office_id_mask   in varchar2 default null)
    return sys_refcursor;      
-   
---------------------------------------------------------------------------------
--- RETRIEVE_TEMPLATES_OBJ
---
--- p_templates
---    a rating_template_tab_t object containing the rating_template_t
---    objects that match the input parameters
---
--- p_template_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
---
+/**
+ * Retrieve rating templates matching input parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @see type rating_template_tab_t
+ *
+ * @param p_templates A collection of templates that match the input parameters
+ *
+ * @param p_template_id_mask The rating template pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure retrieve_templates_obj(
    p_templates        out rating_template_tab_t,
    p_template_id_mask in  varchar2 default '*',
    p_office_id_mask   in  varchar2 default null);      
-   
---------------------------------------------------------------------------------
--- RETRIEVE_TEMPLATES_OBJ_F
---
--- same as above except that rating_template_tab_t object is returned from the
--- function
---
+/**
+ * Retrieve rating templates matching input parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @see type rating_template_tab_t
+ *
+ * @param p_template_id_mask The rating template pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return A collection of templates that match the input parameters
+ */
 function retrieve_templates_obj_f(
    p_template_id_mask in varchar2 default '*',
    p_office_id_mask   in varchar2 default null)
    return rating_template_tab_t;      
-   
---------------------------------------------------------------------------------
--- RETRIEVE_TEMPLATES_XML
---
--- p_templates
---    a clob containing the xml of the matching rating templates
---
--- p_template_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
---
+/**
+ * Retrieve rating templates matching input parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_templates An XML instance of templates that match the input parameters
+ * in a CLOB
+ *
+ * @param p_template_id_mask The rating template pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure retrieve_templates_xml(
    p_templates        out clob,
    p_template_id_mask in  varchar2 default '*',
    p_office_id_mask   in  varchar2 default null);      
-   
---------------------------------------------------------------------------------
--- RETRIEVE_TEMPLATES_XML_F
---
--- same as above except that clob is returned from the function
---
+/**
+ * Retrieve rating templates matching input parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_template_id_mask The rating template pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return An XML instance of templates that match the input parameters
+ * in a CLOB
+ */
 function retrieve_templates_xml_f(
    p_template_id_mask in varchar2 default '*',
    p_office_id_mask   in varchar2 default null)
    return clob;
-   
---------------------------------------------------------------------------------
--- DELETE_TEMPLATES
---
--- p_template_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_delete_action
---    cwms_util.delete_key
---       deletes only the templates, and only then if they are not referenced
---       by any rating specifications
---    cwms_util.delete_data
---       deletes only the specifications that reference the templates
---    cwms_util.delete_all
---       deletes the templates and the specifications that reference them
---
--- p_office_id_mask
---    wildcard pattern to match for rating template id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
---
+/**
+ * Delete rating templates matching input parameters from the database. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @see constant cwms_util.delete_key
+ * @see constant cwms_util.delete_data
+ * @see constant cwms_util.delete_all
+ *
+ * @param p_template_id_mask The rating template pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_delete_action Specifies what to delete.  Actions are as follows:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_delete_action</th>
+ *     <th style="border:1px solid black;">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_key</td>
+ *     <td style="border:1px solid black;">deletes only the matching templates, and only then if they are not referenced by any rating specifications</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_data</td>
+ *     <td style="border:1px solid black;">deletes only the rating specifications that reference the matching templates</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_all</td>
+ *     <td style="border:1px solid black;">deletes the matching templates, as well as any rating specifications that reference them</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure delete_templates(
    p_template_id_mask in varchar2 default '*',
    p_delete_action    in varchar2 default cwms_util.delete_key,      
    p_office_id_mask   in varchar2 default null);
-
---------------------------------------------------------------------------------
--- GET_OPENING_PARAMETER
---    returns the "opening" parameter of the rating template
--- 
--- p_template
---    the template text
---
+/**
+ * Retrieves the "opening" parameter for the specified gate rating template. Gate ratings
+ * have multiple independent parameters (pool elevation, gate opening, and possibly
+ * tailwater elevation or others), with no standard order in which to specify them. Also,
+ * the CWMS database is very strict in its parameter usage, requiring a parameter of
+ * "Opening" to have units of length. However, for many gate ratings the "opening" is
+ * specified in terms of percent of maximum opening, revolutions of a valve handle, etc...
+ * Thus the need to locate the actual "opening" parameter, its unit, and its position in the
+ * independent parameter specifications.
+ *
+ * @param p_template The rating template to retrieve the "opening" parameter for
+ *
+ * @return The formal CWMS parameter used to specify the gate opening.
+ */
 function get_opening_parameter(
    p_template in varchar2)
    return varchar2;
-
---------------------------------------------------------------------------------
--- GET_OPENING_PARAMETER_POSITION
---    returns indepenent parameter position of the "opening" parameter of the 
---    rating template
--- 
--- p_template
---    the template text
---
+/**
+ * Retrieves the "opening" parameter position for the specified gate rating template. Gate ratings
+ * have multiple independent parameters (pool elevation, gate opening, and possibly
+ * tailwater elevation or others), with no standard order in which to specify them. Also,
+ * the CWMS database is very strict in its parameter usage, requiring a parameter of
+ * "Opening" to have units of length. However, for many gate ratings the "opening" is
+ * specified in terms of percent of maximum opening, revolutions of a valve handle, etc...
+ * Thus the need to locate the actual "opening" parameter, its unit, and its position in the
+ * independent parameter specifications.
+ *
+ * @param p_template The rating template to retrieve position of the "opening" parameter for
+ *
+ * @return The position of the parameter used to specify the gate opening in the
+ * list of independent parameters.
+ */
 function get_opening_parameter_position(
    p_template in varchar2)
    return integer;
-
---------------------------------------------------------------------------------
--- GET_OPENING_UNIT
---    returns the default "opening" unit of the rating template in the
---    specified unit system
--- 
--- p_template
---    the template text
---
--- p_unit_system
---    the desired unit system of the opening
---
+/**
+ * Retrieves the unit of "opening" parameter for the specified gate rating template.
+ * in the specified unit system Gate ratings have multiple independent parameters
+ * (pool elevation, gate opening, and possibly tailwater elevation or others), with
+ * no standard order in which to specify them. Also, the CWMS database is very strict
+ * in its parameter usage, requiring a parameter of "Opening" to have units of length.
+ * However, for many gate ratings the "opening" is specified in terms of percent of
+ * maximum opening, revolutions of a valve handle, etc... Thus the need to locate the
+ * actual "opening" parameter, its unit, and its position in the independent parameter
+ * specifications.
+ *
+ * @param p_template The rating template to retrieve the unit of the "opening" parameter for
+ *
+ * @param p_unit_system The unit system ('EN' or 'SI') to retrieve the unit of the
+ * "opening" parameter for
+ *
+ * @return The unit of the formal CWMS parameter used to specify the gate opening
+ * for the specified unit system
+ */
 function get_opening_unit(
    p_template    in varchar2,
    p_unit_system in varchar2 default 'SI')
    return varchar2;
-
---------------------------------------------------------------------------------
--- STORE_SPECS
---
--- p_xml
---    contains zero or more <rating-specification> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores rating specifications to the database.
+ *
+ * @see type rating_spec_t
+ *
+ * @param p_xml The rating specifications to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating-spec">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the rating specifications already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the specifications
+ * already exists
+ */
 procedure store_specs(
    p_xml            in xmltype,
    p_fail_if_exists in varchar2);
-
---------------------------------------------------------------------------------
--- STORE_SPECS
---
--- p_xml
---    contains zero or more <rating-specification> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores rating specifications to the database.
+ *
+ * @see type rating_spec_t
+ *
+ * @param p_xml The rating specifications to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating-spec">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the rating specifications already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the specifications
+ * already exists
+ */
 procedure store_specs(
    p_xml            in varchar2,
    p_fail_if_exists in varchar2);
-
---------------------------------------------------------------------------------
--- STORE_SPECS
---
--- p_xml
---    contains zero or more <rating-specification> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores rating specifications to the database.
+ *
+ * @see type rating_spec_t
+ *
+ * @param p_xml The rating specifications to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating-spec">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the rating specifications already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the specifications
+ * already exists
+ */
 procedure store_specs(
    p_xml            in clob,
    p_fail_if_exists in varchar2);
-
---------------------------------------------------------------------------------
--- STORE_SPECS
---
--- p_xml
---    contains zero or more rating_spec_t objects
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores rating specifications to the database.
+ *
+ * @see type rating_spec_tab_t
+ *
+ * @param p_specs The collection of rating specifications to store
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the rating specifications already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the specifications
+ * already exists
+ */
 procedure store_specs(
    p_specs          in rating_spec_tab_t,
    p_fail_if_exists in varchar2);
-      
---------------------------------------------------------------------------------
--- CAT_SPEC_IDS
---
--- p_cat_cursor
---    cursor containing all matched rating specifications in the following fields,
---    sorted ascending in the following order:
---       office_id        varchar2(16)  office id
---       specification_id varchar2(372) rating spec id
---       location_id      varchar2(49)  location portion of spec id
---       template_id      varchar2(289) template id portion of spec id
---       version          varchar2(32)  version portion of spec id
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
---
+/**
+ * Catalogs stored rating specifications that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cat_cursor A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">specification_id</td>
+ *     <td style="border:1px solid black;">varchar2(372)</td>
+ *     <td style="border:1px solid black;">The rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">location_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location portion of the rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">template_id</td>
+ *     <td style="border:1px solid black;">varchar2(289)</td>
+ *     <td style="border:1px solid black;">The template portion of the rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">version</td>
+ *     <td style="border:1px solid black;">varchar2(32)</td>
+ *     <td style="border:1px solid black;">The version portion of the rating specification</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure cat_spec_ids(
    p_cat_cursor     out sys_refcursor,
    p_spec_id_mask   in  varchar2 default '*',
    p_office_id_mask in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- CAT_SPEC_IDS_F
---
--- same as above except that cursor is returned from the function
---
+/**
+ * Catalogs stored rating specifications that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">specification_id</td>
+ *     <td style="border:1px solid black;">varchar2(372)</td>
+ *     <td style="border:1px solid black;">The rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">location_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location portion of the rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">template_id</td>
+ *     <td style="border:1px solid black;">varchar2(289)</td>
+ *     <td style="border:1px solid black;">The template portion of the rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">version</td>
+ *     <td style="border:1px solid black;">varchar2(32)</td>
+ *     <td style="border:1px solid black;">The version portion of the rating specification</td>
+ *   </tr>
+ * </table>
+ */
 function cat_spec_ids_f(
    p_spec_id_mask   in  varchar2 default '*',
    p_office_id_mask in  varchar2 default null)
    return sys_refcursor;      
-   
---------------------------------------------------------------------------------
--- RETRIEVE_SPECS_OBJ
---
--- p_specs
---    a rating_spec_tab_t object containing the rating_spec_t
---    objects that match the input parameters
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
---
+/**
+ * Retrieves rating specifications that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_specs The rating specifications that match the input parameters
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure retrieve_specs_obj(
    p_specs          out rating_spec_tab_t,
    p_spec_id_mask   in  varchar2 default '*',
    p_office_id_mask in  varchar2 default null);      
-   
---------------------------------------------------------------------------------
--- RETRIEVE_SPECS_OBJ_F
---
--- same as above except that rating_spec_tab_t object is returned from the
--- function
---
+/**
+ * Retrieves rating specifications that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return The rating specifications that match the input parameters
+ */
 function retrieve_specs_obj_f(
    p_spec_id_mask   in varchar2 default '*',
    p_office_id_mask in varchar2 default null)
    return rating_spec_tab_t;      
-   
---------------------------------------------------------------------------------
--- RETRIEVE_SPECS_XML
---
--- p_specs
---    a clob containing the xml of the matching rating specifications
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
---
+/**
+ * Retrieves rating specifications that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_specs The rating specifications that match the input parameters as an XML instance
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure retrieve_specs_xml(
    p_specs          out clob,
    p_spec_id_mask   in  varchar2 default '*',
    p_office_id_mask in  varchar2 default null);      
-   
---------------------------------------------------------------------------------
--- RETRIEVE_SPECS_XML_F
---
--- same as above except that clob is returned from the function
---
+/**
+ * Retrieves rating specifications that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return The rating specifications that match the input parameters as an XML instance
+ */
 function retrieve_specs_xml_f(
    p_spec_id_mask   in varchar2 default '*',
    p_office_id_mask in varchar2 default null)
@@ -413,109 +899,233 @@ function retrieve_specs_xml_f(
 --       use '*' and '?' instead of '%' and '_'
 --       null input defaults to current user's office id
 --
+/**
+ * Delete rating templates matching input parameters from the database. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @see constant cwms_util.delete_key
+ * @see constant cwms_util.delete_data
+ * @see constant cwms_util.delete_all
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_delete_action Specifies what to delete.  Actions are as follows:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_delete_action</th>
+ *     <th style="border:1px solid black;">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_key</td>
+ *     <td style="border:1px solid black;">deletes only the matching specifications, and only then if they are not referenced by any ratings</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_data</td>
+ *     <td style="border:1px solid black;">deletes only the ratings that reference the matching specifications</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_all</td>
+ *     <td style="border:1px solid black;">deletes the matching specifications, as well as any ratings that reference them</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure delete_specs(
    p_spec_id_mask   in varchar2 default '*',
    p_delete_action  in varchar2 default cwms_util.delete_key,      
    p_office_id_mask in varchar2 default null);
-   
---------------------------------------------------------------------------------
--- GET_TEMPLATE
---    returns the template portion of a rating specification identifer
---
--- p_spec_id
---    the rating spec text
---
+/**
+ * Retrieves the rating template portion of a rating specification
+ *
+ * @param p_spec_id the rating specification
+ *
+ * @return the rating template portion of the rating specification
+ */
 function get_template(
    p_spec_id in varchar2)
    return varchar2;   
-         
---------------------------------------------------------------------------------
--- STORE RATINGS
---
--- p_xml
---    contains zero or more <rating> or <usgs-stream-rating> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores ratings to the database.
+ *
+ * @see type rating_t
+ * @see type stream_rating_t
+ *
+ * @param p_xml The ratings to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating">documented here</a>
+ *  <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_usgs-stream-rating">and here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the ratings already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
+ * already exists
+ */
 procedure store_ratings(
    p_xml            in xmltype,
    p_fail_if_exists in varchar2);
-
---------------------------------------------------------------------------------
--- STORE RATINGS
---
--- p_xml
---    contains zero or more <rating> or <usgs-stream-rating> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores ratings to the database.
+ *
+ * @see type rating_t
+ * @see type stream_rating_t
+ *
+ * @param p_xml The ratings to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating">documented here</a>
+ *  <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_usgs-stream-rating">and here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the ratings already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
+ * already exists
+ */
 procedure store_ratings(
    p_xml            in varchar2,
    p_fail_if_exists in varchar2);
-
---------------------------------------------------------------------------------
--- STORE RATINGS
---
--- p_xml
---    contains zero or more <rating> or <usgs-stream-rating> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores ratings to the database.
+ *
+ * @see type rating_t
+ * @see type stream_rating_t
+ *
+ * @param p_xml The ratings to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating">documented here</a>
+ *  <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_usgs-stream-rating">and here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the ratings already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
+ * already exists
+ */
 procedure store_ratings(
    p_xml            in clob,
    p_fail_if_exists in varchar2);
-   
---------------------------------------------------------------------------------
--- STORE RATINGS
---
--- p_ratings
---    contains zero or more rating_t (possibly stream_rating_t) objects
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores ratings to the database.
+ *
+ * @see type rating_tab_t
+ * @see type rating_t
+ * @see type stream_rating_t
+ *
+ * @param p_ratings The collection of ratings to store. Contains one or more rating_t and/or
+ * stream_rating_t objects.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the ratings already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the ratings
+ * already exists
+ */
 procedure store_ratings(
    p_ratings        in rating_tab_t,
    p_fail_if_exists in varchar2);   
-      
---------------------------------------------------------------------------------
--- CAT_RATINGS
---
--- p_cat_cursor
---    cursor containing all matched rating specifications in the following fields,
---    sorted ascending in the following order:
---       office_id        varchar2(16)  office id
---       specification_id varchar2(372) rating spec id
---       effective_date   date
---       create_date      date
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_effective_date_start
---    start of time window for matching ratings (in specified time zone)
---
--- p_effective_date_end
---    end of time window for matching ratings (in specified time zone)
---
--- p_time_zone
---    time zone to use for interpreting time window and for outputting dates
---    null specifies to default to location's time zone
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
---
+/**
+ * Catalogs stored ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cat_cursor A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">specification_id</td>
+ *     <td style="border:1px solid black;">varchar2(372)</td>
+ *     <td style="border:1px solid black;">The rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">effective_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">create_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_effective_date_start The start time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.
+ * If not specified or NULL, no lower bound for effecive date matching will be used.
+ *
+ * @param p_effective_date_end The end time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates later than this date/time.
+ * If not specified or NULL, no upper bound for effecive date matching will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective date time window.  If not
+ * specified or NULL, the effective data time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure cat_ratings(
    p_cat_cursor           out sys_refcursor,
    p_spec_id_mask         in  varchar2 default '*',
@@ -523,12 +1133,85 @@ procedure cat_ratings(
    p_effective_date_end   in  date     default null,
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null);
-   
---------------------------------------------------------------------------------
--- CAT_RATINGS_F
---
--- same as above except that cursor is returned from the function
---
+/**
+ * Catalogs stored ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_effective_date_start The start time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.
+ * If not specified or NULL, no lower bound for effecive date matching will be used.
+ *
+ * @param p_effective_date_end The end time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates later than this date/time.
+ * If not specified or NULL, no upper bound for effecive date matching will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective date time window.  If not
+ * specified or NULL, the effective data time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return A cursor containing all matching rating templates.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the template</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">specification_id</td>
+ *     <td style="border:1px solid black;">varchar2(372)</td>
+ *     <td style="border:1px solid black;">The rating specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">effective_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">create_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *   </tr>
+ * </table>
+ */
 function cat_ratings_f(
    p_spec_id_mask         in varchar2 default '*',
    p_effective_date_start in date     default null,
@@ -536,34 +1219,56 @@ function cat_ratings_f(
    p_time_zone            in varchar2 default null,
    p_office_id_mask       in varchar2 default null)
    return sys_refcursor;
-
---------------------------------------------------------------------------------
--- RETRIEVE_RATINGS_OBJ
---
--- p_ratings
---    rating_tab_t object that contains rating_t objects (possibly including
---    stream_rating_t objects) that match the input parameters
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_effective_date_start
---    start of time window for matching ratings (in specified time zone)
---
--- p_effective_date_end
---    end of time window for matching ratings (in specified time zone)
---
--- p_time_zone
---    time zone to use for interpreting time window and for outputting dates
---    null specifies to default to location's time zone
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
---
+/**
+ * Retrieves ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @see type rating_tab_t
+ * @see type rating_t
+ * @see type stream_rating_t
+ *
+ * @param p_ratings The ratings that match the input parameters.  May contain rating_t
+ * and/or stream_rating_t objects
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_effective_date_start The start time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.
+ * If not specified or NULL, no lower bound for effecive date matching will be used.
+ *
+ * @param p_effective_date_end The end time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates later than this date/time.
+ * If not specified or NULL, no upper bound for effecive date matching will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective date time window.  If not
+ * specified or NULL, the effective data time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure retrieve_ratings_obj(
    p_ratings              out rating_tab_t,
    p_spec_id_mask         in  varchar2 default '*',
@@ -571,12 +1276,56 @@ procedure retrieve_ratings_obj(
    p_effective_date_end   in  date     default null,
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null);
-   
---------------------------------------------------------------------------------
--- RETRIEVE_RATINGS_OBJ_F
---
--- same as above except that cursor is returned from the function
---
+/**
+ * Retrieves ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @see type rating_tab_t
+ * @see type rating_t
+ * @see type stream_rating_t
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_effective_date_start The start time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.
+ * If not specified or NULL, no lower bound for effecive date matching will be used.
+ *
+ * @param p_effective_date_end The end time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates later than this date/time.
+ * If not specified or NULL, no upper bound for effecive date matching will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective date time window.  If not
+ * specified or NULL, the effective data time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return The ratings that match the input parameters.  May contain rating_t
+ * and/or stream_rating_t objects
+ */
 function retrieve_ratings_obj_f(
    p_spec_id_mask         in  varchar2 default '*',
    p_effective_date_start in  date     default null,
@@ -584,34 +1333,51 @@ function retrieve_ratings_obj_f(
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null)
    return rating_tab_t;
-   
---------------------------------------------------------------------------------
--- RETRIEVE_RATINGS_XML
---
--- p_ratings
---    a clob that contains the xml for ratings (possibly including stream
---    ratings) that match the input parameters
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_effective_date_start
---    start of time window for matching ratings (in specified time zone)
---
--- p_effective_date_end
---    end of time window for matching ratings (in specified time zone)
---
--- p_time_zone
---    time zone to use for interpreting time window and for outputting dates
---    null specifies to default to location's time zone
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
---
+/**
+ * Retrieves ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_ratings The ratings that match the input parameters, in XML format as a CLOB
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_effective_date_start The start time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.
+ * If not specified or NULL, no lower bound for effecive date matching will be used.
+ *
+ * @param p_effective_date_end The end time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates later than this date/time.
+ * If not specified or NULL, no upper bound for effecive date matching will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective date time window.  If not
+ * specified or NULL, the effective data time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure retrieve_ratings_xml(
    p_ratings              out clob,
    p_spec_id_mask         in  varchar2 default '*',
@@ -619,12 +1385,51 @@ procedure retrieve_ratings_xml(
    p_effective_date_end   in  date     default null,
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null);
-   
---------------------------------------------------------------------------------
--- RETRIEVE_RATINGS_XML_F
---
--- same as above except that cursor is returned from the function
---
+/**
+ * Retrieves ratings that match specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_effective_date_start The start time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.
+ * If not specified or NULL, no lower bound for effecive date matching will be used.
+ *
+ * @param p_effective_date_end The end time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates later than this date/time.
+ * If not specified or NULL, no upper bound for effecive date matching will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective date time window.  If not
+ * specified or NULL, the effective data time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return The ratings that match the input parameters, in XML format as a CLOB
+ */
 function retrieve_ratings_xml_f(
    p_spec_id_mask         in  varchar2 default '*',
    p_effective_date_start in  date     default null,
@@ -632,151 +1437,116 @@ function retrieve_ratings_xml_f(
    p_time_zone            in  varchar2 default null,
    p_office_id_mask       in  varchar2 default null)
    return clob;
-   
---------------------------------------------------------------------------------
--- DELETE_RATINGS
---
--- p_spec_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to '*'
---
--- p_effective_date_start
---    start of time window for matching ratings (in specified time zone)
---
--- p_effective_date_end
---    end of time window for matching ratings (in specified time zone)
---
--- p_time_zone
---    time zone to use for interpreting time window and for outputting dates
---    null specifies to default to location's time zone
---
--- p_office_id_mask
---    wildcard pattern to match for rating spec id 
---       use '*' and '?' instead of '%' and '_'
---       null input defaults to current user's office id
---
+/**
+ * Deletes ratings that match specified parameters from the database.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_effective_date_start The start time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.
+ * If not specified or NULL, no lower bound for effecive date matching will be used.
+ *
+ * @param p_effective_date_end The end time of the effective date time window. If specified
+ * and not NULL, no ratings will be matched that have effective dates later than this date/time.
+ * If not specified or NULL, no upper bound for effecive date matching will be used.
+ *
+ * @param p_time_zone The time zone in which to intepret the effective date time window.  If not
+ * specified or NULL, the effective data time window for each rating specification will be the
+ * local time zone of that specification's location.  The output effective and create dates will
+ * also be in this time zone, or in each specification's local time zone if not specified or NULL.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure delete_ratings(
    p_spec_id_mask         in varchar2 default '*',
    p_effective_date_start in date     default null,
    p_effective_date_end   in date     default null,
    p_time_zone            in varchar2 default null,
    p_office_id_mask       in varchar2 default null);
-   
---------------------------------------------------------------------------------
--- STORE_RATINGS_XML 
---
--- Stores rating templates, rating specifications, and ratings from an single
--- XML instance
---
--- p_xml
---    contains zero or more <rating> or <usgs-stream-rating> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
+ *
+ * @param p_xml The ratings to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_ratings">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the templates, specifications, or ratings already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
+ * specifications, or ratings already exists
+ */
 procedure store_ratings_xml(
    p_xml            in xmltype,
    p_fail_if_exists in varchar2);  
-   
---------------------------------------------------------------------------------
--- STORE_RATINGS_XML 
---
--- Stores rating templates, rating specifications, and ratings from an single
--- XML instance
---
--- p_xml
---    contains zero or more <rating> or <usgs-stream-rating> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
+ *
+ * @param p_xml The ratings to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_ratings">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the templates, specifications, or ratings already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
+ * specifications, or ratings already exists
+ */
 procedure store_ratings_xml(
    p_xml            in varchar2,
    p_fail_if_exists in varchar2);  
-   
---------------------------------------------------------------------------------
--- STORE_RATINGS_XML 
---
--- Stores rating templates, rating specifications, and ratings from an single
--- XML instance
---
--- p_xml
---    contains zero or more <rating> or <usgs-stream-rating> elements
---
--- p_fail_if_exists
---    'T' to fail if item to be stored already exists
---    'F' to update existing item if it already exists
---
+/**
+ * Stores rating templates, rating specifications, and ratings to the database from a single XML instance.
+ *
+ * @param p_xml The ratings to store, in XML.  The XML instance must conform to
+ * the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+ *  The specific format is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_ratings">documented here</a>.
+ *
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the procedure should
+ * fail if one of the templates, specifications, or ratings already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the templates,
+ * specifications, or ratings already exists
+ */
 procedure store_ratings_xml(
    p_xml            in clob,
    p_fail_if_exists in varchar2);  
-   
---------------------------------------------------------------------------------
--- RATE
---
--- Rates input values with ratings stored in database.
---
--- p_results
---    The output values of the ratings
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameters as a table of tables of values.  Each
---    item of the table is a table of one of the input parameters.  Each item
---    must be the same length, with the 1st value of each of the items
---    comprising the 1st set of inputs, the 2nd value of each comprising the 2nd
---    set of inputs, etc... 
---
--- p_units
---    The units for the input (independent) parameters and output (dependent)
---    parameter, as a table of varchar2(16).  The length of the table must be
---    one greater than the length of the p_values table.  The 1st value is the
---    unit of the 1st, indpendent parameter, etc....  The last value is the unit
---    of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_value_times
---    The times corresponding to the parameters.  If specified, it must be as a
---    table of date types, of the same length as each item of the p_values
---    parameter.  The 1st value in the table specifies the time of the first 
---    value of each of the independent parameters, as well as the time of the
---    first dependent parameter.  If null, all times are assumed to be the 
---    current time.  Times are interpreted according to the p_time_zone
---    parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates input values with ratings stored in the database.
+ *
+ * @param p_results     The rated (dependent) values
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input (independent) values. Each element of the table contains values for one of the independent parameters, in position order. Each element must be of the same length.
+ * @param p_units       The units of each of the independent parameters, in position order, plus the desired output unit.  The length must be one greater that the length of p_values.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_times The date/time for each set of independent parameter values. Must be of the same length as each element of p_values.
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure rate(
    p_results     out double_tab_t,
    p_rating_spec in  varchar2,
@@ -787,65 +1557,19 @@ procedure rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- RATE
---
--- Rates input values of one parameter with ratings stored in database.
---
--- p_results
---    The output values of the ratings
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of values. Each item of the 
---    table specifies a value for the one and only input parameter.
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_value_times
---    The times corresponding to the parameters. If specified, it must be as a 
---    table of date types, of the same length as the p_values parameter. The 
---    1st value in the table specifies the time of the first value of each of 
---    the independent and dependent parameters. If null, all times are assumed 
---    to be the current time. Times are interpreted according to the 
---    p_time_zone parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates input values with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_results     The rated (dependent) values
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input (independent) values.
+ * @param p_units       The unit of independent parameter, and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_times The date/time for each independent parameter value. Must be of the same length as p_values.
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure rate(
    p_results     out double_tab_t,
    p_rating_spec in  varchar2,
@@ -856,61 +1580,19 @@ procedure rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- RATE
---
--- Rates a single input value of one parameter with ratings stored in database.
---
--- p_result
---    The output value of the rating
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter.
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned value according to the rounding
---    specification contained in the rating specification.
---
--- p_value_time
---    The time of the parameters. If specified, it must be as a date type. The 
---    If null, the time is assumed to be the current time. Time is interpreted 
---    according to the p_time_zone parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a single input value with a rating stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_result      The rated (dependent) value
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input (independent) value.
+ * @param p_units       The unit of independent parameter, and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_time  The date/time of the independent parameter value.
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure rate(
    p_result      out binary_double,
    p_rating_spec in  varchar2,
@@ -921,64 +1603,19 @@ procedure rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- RATE_ONE
---
--- Rates a single input value of more than one parameter with ratings 
--- stored in database.
---
--- p_result
---    The output value of the rating
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameters a table of values.  Each item in the 
---    table specifies one of the independent parameters.
---
--- p_units
---    The units for the input (independent) parameters and output (dependent)
---    parameter, as a table of varchar2(16).  The length of the table must be
---    one greater than the length of the p_values table.  The 1st value is the
---    unit of the 1st, indpendent parameter, etc....  The last value is the unit
---    of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned value according to the rounding
---    specification contained in the rating specification.
---
--- p_value_time
---    The time of the parameters. If specified, it must be as a date type. The 
---    If null, the time is assumed to be the current time. Time is interpreted 
---    according to the p_time_zone parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a single input value with a rating stored in the database.
+ *
+ * @param p_result      The rated (dependent) value
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input (independent) parameter values.  Each element is a single value for an independent parameter, in position order.
+ * @param p_units       The units of independent parameters, and the desired unit of the output. The length must be one greater that the length of p_values.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_time  The date/time of the independent parameter value.
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure rate_one(
    p_result      out binary_double,
    p_rating_spec in  varchar2,
@@ -989,66 +1626,18 @@ procedure rate_one(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- RATE
---
--- Rates input values of one parameter with ratings stored in database.
---
--- p_results
---    The output values of the ratings. The date_time component of each item 
---    in the table will be the same as for the corresponding input value. The 
---    quality_code component of each item in the table will be set to 0 
---    (unscreened) unless the value component is null, at which time it will 
---    be set set to 5 (screened, missing)
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of tsv_type. The value 
---    component of each item of the table specifies the value for the one and 
---    only input parameter. The date_time component of each item in the table includes
---    its own time zone information, so it is not interpreted according to the 
---    p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used.  The date_time component of each item in the p_values parameter
---    already has a time zone associated with it, so this parameter is not used to
---    interpret those times 
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a time series with a rating stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_results     The rated (dependent) values
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input (independent) parameter values.
+ * @param p_units       The units of independent parameters, and the desired unit of the output. The length must be 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the p_ratings_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used. As each element of the p_values parameter carries its own time zone, this parameter is not used to interpret those times.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure rate(
    p_results     out tsv_array,
    p_rating_spec in  varchar2,
@@ -1058,64 +1647,18 @@ procedure rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- RATE
---
--- Rates input values of one parameter with ratings stored in database.
---
--- p_results
---    The output values of the ratings. The date_time component of each item 
---    in the table will be the same as for the corresponding input value. The 
---    quality_code component of each item in the table will be set to 0 
---    (unscreened) unless the value component is null, at which time it will 
---    be set set to 5 (screened, missing)
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of ztsv_type. The value 
---    component of each item of the table specifies the value for the one and 
---    only input parameter. The date_time component of each item in the table 
---    is interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the date_time component of the 
---    items in the p_values table and the p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a time series with a rating stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_results     The rated (dependent) values
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input (independent) parameter values.
+ * @param p_units       The units of independent parameters, and the desired unit of the output. The length must be 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date_time fields of each element of the p_values parameter, as well as p_ratings_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure rate(
    p_results     out ztsv_array,
    p_rating_spec in  varchar2,
@@ -1125,64 +1668,18 @@ procedure rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- RATE
---
--- Rates a single input value of one parameter with ratings stored in database.
---
--- p_result
---    The output value of the ratings. The date_time component of the value 
---    will be the same as that of input value. The quality_code component will 
---    be set to 0 (unscreened) unless the value component is null, at which 
---    time it will be set set to 5 (screened, missing)
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter as a tsv_type. The value component 
---    specifies the value for the one and only input parameter. The date_time 
---    component includes its own time zone information, so it is not 
---    interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used. The date_time component of the p_value parameter 
---    already has a time zone associated with it, so this parameter is not 
---    used to interpret that time
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a single time series value with a rating stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_result      The rated (dependent) value
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input (independent) parameter value.
+ * @param p_units       The units of independent parameter, and the desired unit of the output. The length must be 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the p_ratings_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used. As the p_value parameter carries its own time zone, this parameter is not used to interpret that times.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure rate(
    p_result      out tsv_type,
    p_rating_spec in  varchar2,
@@ -1192,61 +1689,18 @@ procedure rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- RATE
---
--- Rates a single input value of one parameter with ratings stored in database.
---
--- p_result
---    The output value of the ratings. The date_time component will be the 
---    same as for the input value. The quality_code component will be set to 0 
---    (unscreened) unless the value component is null, at which time it will 
---    be set set to 5 (screened, missing)
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter as a ztsv_type. The value component 
---    specifies the value for the one and only input parameter. The date_time 
---    component is interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the date_time component of the 
---    p_value parameter and the p_rating_time parameter. If null, the time 
---    zone associated with the location in the p_rating_spec parameter will be 
---    used. If no time zone is associated with the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a single time series value with a rating stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_result      The rated (dependent) value
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input (independent) parameter value.
+ * @param p_units       The units of independent parameter, and the desired unit of the output. The length must be 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date_time field of each element of the p_value parameter, as well as the p_ratings_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used. As the p_value parameter carries its own time zone, this parameter is not used to interpret that times.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure rate(
    p_result      out ztsv_type,
    p_rating_spec in  varchar2,
@@ -1256,67 +1710,20 @@ procedure rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);
-   
---------------------------------------------------------------------------------
--- RATE_F
---
--- Rates input values with ratings stored in database, returning the results.
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameters as a table of tables of values.  Each
---    item of the table is a table of one of the input parameters.  Each item
---    must be the same length, with the 1st value of each of the items
---    comprising the 1st set of inputs, the 2nd value of each comprising the 2nd
---    set of inputs, etc... 
---
--- p_units
---    The units for the input (independent) parameters and output (dependent)
---    parameter, as a table of varchar2(16).  The length of the table must be
---    one greater than the length of the p_values table.  The 1st value is the
---    unit of the 1st, indpendent parameter, etc....  The last value is the unit
---    of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_value_times
---    The times corresponding to the parameters.  If specified, it must be as a
---    table of date types, of the same length as each item of the p_values
---    parameter.  The 1st value in the table specifies the time of the first 
---    value of each of the independent parameters, as well as the time of the
---    first dependent parameter.  If null, all times are assumed to be the 
---    current time.  Times are interpreted according to the p_time_zone
---    parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates input values with ratings stored in the database.
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input (independent) values. Each element of the table contains values for one of the independent parameters, in position order. Each element must be of the same length.
+ * @param p_units       The units of each of the independent parameters, in position order, plus the desired output unit.  The length must be one greater that the length of p_values.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_times The date/time for each set of independent parameter values. Must be of the same length as each element of p_values.
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated (dependent) values
+ */
 function rate_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_tab_t,
@@ -1327,63 +1734,20 @@ function rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return double_tab_t;   
-
---------------------------------------------------------------------------------
--- RATE_F
---
--- Rates input values of one parameter with ratings stored in database,
--- returning the results
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of values. Each item of the 
---    table specifies a value for the one and only input parameter.
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_value_times
---    The times corresponding to the parameters. If specified, it must be as a 
---    table of date types, of the same length as the p_values parameter. The 
---    1st value in the table specifies the time of the first value of each of 
---    the independent and dependent parameters. If null, all times are assumed 
---    to be the current time. Times are interpreted according to the 
---    p_time_zone parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates input values with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input (independent) values.
+ * @param p_units       The unit of independent parameter, and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_times The date/time for each independent parameter value. Must be of the same length as p_values.
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated (dependent) values
+ */
 function rate_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_t,
@@ -1394,59 +1758,20 @@ function rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return double_tab_t;   
-   
---------------------------------------------------------------------------------
--- RATE_F
---
--- Rates a single input value of one parameter with ratings stored in database,
--- returning the result.
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter.
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned value according to the rounding
---    specification contained in the rating specification.
---
--- p_value_time
---    The time of the parameters. If specified, it must be as a date type. The 
---    If null, the time is assumed to be the current time. Time is interpreted 
---    according to the p_time_zone parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a single input value with a rating stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input (independent) value.
+ * @param p_units       The unit of independent parameter, and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_time  The date/time of the independent parameter value.
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated (dependent) value
+ */
 function rate_f(
    p_rating_spec in varchar2,
    p_value       in binary_double,
@@ -1457,61 +1782,20 @@ function rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return binary_double;   
-   
---------------------------------------------------------------------------------
--- RATE_ONE_F
---
--- Rates a single input value of more than one parameter with ratings 
--- stored in database, returning the result.
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameters a table of values.  Each item in the 
---    table specifies one of the independent parameters.
---
--- p_units
---    The units for the input (independent) parameters and output (dependent)
---    parameter, as a table of varchar2(16).  The length of the table must be
---    one greater than the length of the p_values table.  The 1st value is the
---    unit of the 1st, indpendent parameter, etc....  The last value is the unit
---    of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned value according to the rounding
---    specification contained in the rating specification.
---
--- p_value_time
---    The time of the parameters. If specified, it must be as a date type. The 
---    If null, the time is assumed to be the current time. Time is interpreted 
---    according to the p_time_zone parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a single input value with a rating stored in the database.
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input (independent) parameter values.  Each element is a single value for an independent parameter, in position order.
+ * @param p_units       The units of independent parameters, and the desired unit of the output. The length must be one greater that the length of p_values.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_time  The date/time of the independent parameter value.
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated (dependent) value
+ */
 function rate_one_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_t,
@@ -1522,60 +1806,19 @@ function rate_one_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return binary_double;   
-   
---------------------------------------------------------------------------------
--- RATE_F
---
--- Rates input values of one parameter with ratings stored in database,
--- returning the results
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of tsv_type. The value 
---    component of each item of the table specifies the value for the one and 
---    only input parameter. The date_time component of each item in the table includes
---    its own time zone information, so it is not interpreted according to the 
---    p_time_zone parameter
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used.  The date_time component of each item in the p_values parameter
---    already has a time zone associated with it, so this parameter is not used to
---    interpret those times 
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a time series with a rating stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input (independent) parameter values.
+ * @param p_units       The units of independent parameters, and the desired unit of the output. The length must be 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the p_ratings_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used. As each element of the p_values parameter carries its own time zone, this parameter is not used to interpret those times.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated (dependent) values
+ */
 function rate_f(
    p_rating_spec in varchar2,
    p_values      in tsv_array,
@@ -1585,58 +1828,19 @@ function rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return tsv_array;   
-   
---------------------------------------------------------------------------------
--- RATE_F
---
--- Rates input values of one parameter with ratings stored in database,
--- returning the results.
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of ztsv_type. The value 
---    component of each item of the table specifies the value for the one and 
---    only input parameter. The date_time component of each item in the table 
---    is interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the date_time component of the 
---    items in the p_values table and the p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a time series with a rating stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input (independent) parameter values.
+ * @param p_units       The units of independent parameters, and the desired unit of the output. The length must be 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date_time fields of each element of the p_values parameter, as well as p_ratings_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated (dependent) values
+ */
 function rate_f(
    p_rating_spec in varchar2,
    p_values      in ztsv_array,
@@ -1646,59 +1850,19 @@ function rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return ztsv_array;   
-   
---------------------------------------------------------------------------------
--- RATE
---
--- Rates a single input value of one parameter with ratings stored in database,
--- returning the result.
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter as a tsv_type. The value component 
---    specifies the value for the one and only input parameter. The date_time 
---    component includes its own time zone information, so it is not 
---    interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned value according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used. The date_time component of the p_value parameter 
---    already has a time zone associated with it, so this parameter is not 
---    used to interpret that time
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a single time series value with a rating stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input (independent) parameter value.
+ * @param p_units       The units of independent parameter, and the desired unit of the output. The length must be 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the p_ratings_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used. As the p_value parameter carries its own time zone, this parameter is not used to interpret that times.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated (dependent) value
+ */
 function rate_f(
    p_rating_spec in varchar2,
    p_value       in tsv_type,
@@ -1708,56 +1872,19 @@ function rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return tsv_type;   
-   
---------------------------------------------------------------------------------
--- RATE_F
---
--- Rates a single input value of one parameter with ratings stored in database,
--- returning the result.
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter as a ztsv_type. The value component 
---    specifies the value for the one and only input parameter. The date_time 
---    component is interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the date_time component of the 
---    p_value parameter and the p_rating_time parameter. If null, the time 
---    zone associated with the location in the p_rating_spec parameter will be 
---    used. If no time zone is associated with the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Rates a single time series value with a rating stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input (independent) parameter value.
+ * @param p_units       The units of independent parameter, and the desired unit of the output. The length must be 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date_time field of each element of the p_value parameter, as well as the p_ratings_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used. As the p_value parameter carries its own time zone, this parameter is not used to interpret that times.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated (dependent) value
+ */
 function rate_f(
    p_rating_spec in varchar2,
    p_value       in ztsv_type,
@@ -1767,65 +1894,19 @@ function rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return ztsv_type;   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE
---
--- Reverse rates input values of one parameter with ratings stored in database.
---
--- p_results
---    The output values of the ratings
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of values. Each item of the 
---    table specifies a value for the one and only input parameter.
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_value_times
---    The times corresponding to the parameters. If specified, it must be as a 
---    table of date types, of the same length as the p_values parameter. The 
---    1st value in the table specifies the time of the first value of each of 
---    the independent and dependent parameters. If null, all times are assumed 
---    to be the current time. Times are interpreted according to the 
---    p_time_zone parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates input values with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_results     The rated values
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input values.
+ * @param p_units       The unit of input values and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_times The date/time for each independent parameter value. Must be of the same length as p_values.
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure reverse_rate(
    p_results     out double_tab_t,
    p_rating_spec in  varchar2,
@@ -1836,62 +1917,19 @@ procedure reverse_rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE
---
--- Reverse rates a single input value of one parameter with ratings stored in 
--- database.
---
--- p_result
---    The output value of the rating
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter.
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned value according to the rounding
---    specification contained in the rating specification.
---
--- p_value_time
---    The time of the parameters. If specified, it must be as a date type. The 
---    If null, the time is assumed to be the current time. Time is interpreted 
---    according to the p_time_zone parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates an input value with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_result      The rated value
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input value
+ * @param p_units       The unit of input value and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_time  The date/time for the input value
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure reverse_rate(
    p_result      out binary_double,
    p_rating_spec in  varchar2,
@@ -1902,66 +1940,18 @@ procedure reverse_rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE
---
--- Reverse rates input values of one parameter with ratings stored in database.
---
--- p_results
---    The output values of the ratings. The date_time component of each item 
---    in the table will be the same as for the corresponding input value. The 
---    quality_code component of each item in the table will be set to 0 
---    (unscreened) unless the value component is null, at which time it will 
---    be set set to 5 (screened, missing)
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of tsv_type. The value 
---    component of each item of the table specifies the value for the one and 
---    only input parameter. The date_time component of each item in the table includes
---    its own time zone information, so it is not interpreted according to the 
---    p_time_zone parameter
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used.  The date_time component of each item in the p_values parameter
---    already has a time zone associated with it, so this parameter is not used to
---    interpret those times 
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates a time series with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_results     The rated values
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input values.
+ * @param p_units       The unit of input values and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the p_rating_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used. As each element of the p_values parameter carries its own time zone, this parameter is not used to interpret those times.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure reverse_rate(
    p_results     out tsv_array,
    p_rating_spec in  varchar2,
@@ -1971,64 +1961,18 @@ procedure reverse_rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE
---
--- Reverse rates input values of one parameter with ratings stored in database.
---
--- p_results
---    The output values of the ratings. The date_time component of each item 
---    in the table will be the same as for the corresponding input value. The 
---    quality_code component of each item in the table will be set to 0 
---    (unscreened) unless the value component is null, at which time it will 
---    be set set to 5 (screened, missing)
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of ztsv_type. The value 
---    component of each item of the table specifies the value for the one and 
---    only input parameter. The date_time component of each item in the table 
---    is interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the date_time component of the 
---    items in the p_values table and the p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates a time series with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_results     The rated values
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input values.
+ * @param p_units       The unit of input values and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret date_time fields of each element of the p_values parameter, as well as the p_rating_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure reverse_rate(
    p_results     out ztsv_array,
    p_rating_spec in  varchar2,
@@ -2038,64 +1982,18 @@ procedure reverse_rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE
---
--- Reverse rates a single input value of one parameter with ratings stored in database.
---
--- p_result
---    The output value of the ratings. The date_time component of the value 
---    will be the same as that of input value. The quality_code component will 
---    be set to 0 (unscreened) unless the value component is null, at which 
---    time it will be set set to 5 (screened, missing)
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter as a tsv_type. The value component 
---    specifies the value for the one and only input parameter. The date_time 
---    component includes its own time zone information, so it is not 
---    interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used. The date_time component of the p_value parameter 
---    already has a time zone associated with it, so this parameter is not 
---    used to interpret that time
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates a single time series value with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_result      The rated value
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input values.
+ * @param p_units       The unit of input values and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the p_rating_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used. As the p_value parameter carries its own time zone, this parameter is not used to interpret that time.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure reverse_rate(
    p_result      out tsv_type,
    p_rating_spec in  varchar2,
@@ -2105,61 +2003,18 @@ procedure reverse_rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE
---
--- Reverse rates a single input value of one parameter with ratings stored in database.
---
--- p_result
---    The output value of the ratings. The date_time component will be the 
---    same as for the input value. The quality_code component will be set to 0 
---    (unscreened) unless the value component is null, at which time it will 
---    be set set to 5 (screened, missing)
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter as a ztsv_type. The value component 
---    specifies the value for the one and only input parameter. The date_time 
---    component is interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the date_time component of the 
---    p_value parameter and the p_rating_time parameter. If null, the time 
---    zone associated with the location in the p_rating_spec parameter will be 
---    used. If no time zone is associated with the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates a single time series value with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_result      The rated value
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input value .
+ * @param p_units       The unit of input values and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret date_time field the p_value parameter, as well as the p_rating_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure reverse_rate(
    p_result      out ztsv_type,
    p_rating_spec in  varchar2,
@@ -2169,63 +2024,20 @@ procedure reverse_rate(
    p_rating_time in  date default null,
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null);   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE_F
---
--- Reverse rates input values of one parameter with ratings stored in database,
--- returning the results
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of values. Each item of the 
---    table specifies a value for the one and only input parameter.
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_value_times
---    The times corresponding to the parameters. If specified, it must be as a 
---    table of date types, of the same length as the p_values parameter. The 
---    1st value in the table specifies the time of the first value of each of 
---    the independent and dependent parameters. If null, all times are assumed 
---    to be the current time. Times are interpreted according to the 
---    p_time_zone parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates input values with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input values.
+ * @param p_units       The unit of input values and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_times The date/time for each independent parameter value. Must be of the same length as p_values.
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated values
+ */
 function reverse_rate_f(
    p_rating_spec in varchar2,
    p_values      in double_tab_t,
@@ -2236,60 +2048,20 @@ function reverse_rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return double_tab_t;   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE_F
---
--- Reverse rates a single input value of one parameter with ratings stored in 
--- database,
--- returning the result.
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter.
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_value_time
---    The time of the parameters. If specified, it must be as a date type. The 
---    If null, the time is assumed to be the current time. Time is interpreted 
---    according to the p_time_zone parameter.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the p_value_times and p_rating_time
---    parameters.  If null, the time zone associated with the location in the
---    p_rating_spec parameter will be used.  If no time zone is associated with
---    the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates an input value with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input value
+ * @param p_units       The unit of input value and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_value_time  The date/time for the input value
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated value
+ */
 function reverse_rate_f(
    p_rating_spec in varchar2,
    p_value       in binary_double,
@@ -2300,60 +2072,19 @@ function reverse_rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return binary_double;   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE_F
---
--- Reverse rates input values of one parameter with ratings stored in database,
--- returning the results
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of tsv_type. The value 
---    component of each item of the table specifies the value for the one and 
---    only input parameter. The date_time component of each item in the table includes
---    its own time zone information, so it is not interpreted according to the 
---    p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used.  The date_time component of each item in the p_values parameter
---    already has a time zone associated with it, so this parameter is not used to
---    interpret those times 
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates a time series with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input values.
+ * @param p_units       The unit of input values and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the p_rating_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used. As each element of the p_values parameter carries its own time zone, this parameter is not used to interpret those times.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated values
+ */
 function reverse_rate_f(
    p_rating_spec in varchar2,
    p_values      in tsv_array,
@@ -2363,58 +2094,19 @@ function reverse_rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return tsv_array;   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE_F
---
--- Reverse rates input values of one parameter with ratings stored in database,
--- returning the results.
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_values
---    The input (independent) parameter as a table of ztsv_type. The value 
---    component of each item of the table specifies the value for the one and 
---    only input parameter. The date_time component of each item in the table 
---    is interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the date_time component of the 
---    items in the p_values table and the p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates a time series with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_values      The input values.
+ * @param p_units       The unit of input values and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret date_time fields of each element of the p_values parameter, as well as the p_rating_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated values
+ */
 function reverse_rate_f(
    p_rating_spec in varchar2,
    p_values      in ztsv_array,
@@ -2424,59 +2116,19 @@ function reverse_rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return ztsv_array;   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE_F
---
---    Reverse rates a single input value of one parameter with ratings stored 
---    in database, returning the result.
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter as a tsv_type. The value component 
---    specifies the value for the one and only input parameter. The date_time 
---    component includes its own time zone information, so it is not 
---    interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret p_rating_time parameter. If null, 
---    the time zone associated with the location in the p_rating_spec 
---    parameter will be used. If no time zone is associated with the location, 
---    UTC will be used. The date_time component of the p_value parameter 
---    already has a time zone associated with it, so this parameter is not 
---    used to interpret that time
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates a single time series value with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input values.
+ * @param p_units       The unit of input values and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret the p_rating_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used. As the p_value parameter carries its own time zone, this parameter is not used to interpret that time.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated value
+ */
 function reverse_rate_f(
    p_rating_spec in varchar2,
    p_value       in tsv_type,
@@ -2486,56 +2138,19 @@ function reverse_rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return tsv_type;   
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE_F
---
---    Reverse rates a single input value of one parameter with ratings stored 
---    in database, returning the result.
---
--- p_rating_spec
---    The rating specification to use.  Rating specifications have four parts
---    separated by the period (.) character.  The parts are:
---       Location ID
---       Rating Template Parameters
---       Rating Template Version
---       Rating Version
---    The rating template parameters are specified as a comma (,) separated list
---    of independent parameters separated from the dependent parameter by a 
---    semi-colon (;)
---
--- p_value
---    The input (independent) parameter as a ztsv_type. The value component 
---    specifies the value for the one and only input parameter. The date_time 
---    component is interpreted according to the p_time_zone parameter
---
--- p_units
---    The units for the input (independent) parameter and output (dependent) 
---    parameter, as a table of varchar2(16). The length of the table must be 
---    2. The 1st value is the unit of the indpendent parameter; the 2nd value 
---    is the unit of the dependent parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret the date_time component of the 
---    p_value parameter and the p_rating_time parameter. If null, the time 
---    zone associated with the location in the p_rating_spec parameter will be 
---    used. If no time zone is associated with the location, UTC will be used.
---
--- p_office_id
---    The office that owns the rating specified in the p_rating_spec parameter.
---    If null, the office of current session user us used.
---   
+/**
+ * Reverse rates a single time series value with ratings stored in the database. Restricted to ratings with a single independent parameter
+ *
+ * @param p_rating_spec The rating specification to use
+ * @param p_value       The input value .
+ * @param p_units       The unit of input values and the desired unit of the output.  Must be of length 2.
+ * @param p_round       A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_rating_time A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone   The time zone in which to interpret date_time field the p_value parameter, as well as the p_rating_time parameter. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_office_id   The office that owns the rating specification and associated ratings.  If not specified or NULL, the session user's default office will be used.
+ *
+ * @return The rated value
+ */
 function reverse_rate_f(
    p_rating_spec in varchar2,
    p_value       in ztsv_type,
@@ -2545,85 +2160,32 @@ function reverse_rate_f(
    p_time_zone   in varchar2 default null,
    p_office_id   in varchar2 default null)
    return ztsv_type;   
-   
---------------------------------------------------------------------------------
--- RETRIEVE_RATED_TS
---
--- Retrieves a time series that is the result of rating the specified time 
--- series with the specified rating.
---
--- p_independent_ids
---    The independent time series to be rated with the specified rating
---
--- p_rating_id
---    The rating to use
---
--- p_units
---    The unit in which to return the rated time series
---
--- p_start_time
---    The beginning of time window for the time series
---
--- p_end_time
---    The end of time window for the time series
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret all date parameters, and in which 
---    to return the data times. If null, the time zone associated with the 
---    location in the p_rating_spec parameter will be used. If no time zone is 
---    associated with the location, UTC will be used. The location is taken 
---    from the first item in the p_independent_ids parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_trim
---    Specifies whether to trim null values from the beginning and end of the
---    returned time series.  'T' = true, 'F' = false.
---
--- p_start_inclusive
---    Specifies whether p_start_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_end_inclusive
---    Specifies whether p_end_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_previous
---    Specifies whether to retrieve the latest value before the beginning of
---    the time window.  'T' = true, 'F' = false.
---
--- p_next
---    Specifies whether to retrieve the earliest value after the end of
---    the time window.  'T' = true, 'F' = false.
---
--- p_version_date
---    If not null, specifies the version date for versioned data. If null, the 
---    earliest or latest version date is used depending on the value of the 
---    p_max_version parameter.
---
--- p_max_version
---    Used only if the p_version_date parameter is null.  'T' = use the latest
---    version date for versioned data.  'F' = use the earliest version date
---    for versioned data.  Retrieving non-versioned data is not affected by
---    this parameter.
---
--- p_ts_office_id
---    The office id to be used with the time series identifiers. If null, the 
---    current session user is used.
---
--- p_rating_office_id
---    The office id to be used with the rating identifier. If null, the 
---    current session user is used.
---
+/**
+ * Rates one or more input time series stored in the database with ratings stored in
+ * the database to generate a rated time series, which is returned
+ *
+ * @see cwms_ts.retrieve_ts
+ *
+ * @param p_independent_ids  A collection of time series identifiers of the time series to rate, in position order of the independent parameters of the rating
+ * @param p_rating_id        The rating specification to use
+ * @param p_units            The desired unit of the rated time series
+ * @param p_start_time       The start of the time window to rate
+ * @param p_end_time         The end of the time window to rate
+ * @param p_rating_time      A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone        The time zone in which to interpret date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_round            A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_trim             Parameter for cwms_ts.retrieve_ts. Specifies whether to trim missing values from the ends of the retrieved time series
+ * @param p_start_inclusive  Parameter for cwms_ts.retrieve_ts. Specifies whether the time window starts on or after the specified time
+ * @param p_end_inclusive    Parameter for cwms_ts.retrieve_ts. Specifies whether the time window ends on or before the specified time
+ * @param p_previous         Parameter for cwms_ts.retrieve_ts. Specifies whether to retrieve the latest value before the start of the time window
+ * @param p_next             Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the earliest value after the end of the time window
+ * @param p_version_date     Parameter for cwms_ts.retrieve_ts. Specifies the version date of the retrieve time series
+ * @param p_max_version      Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the max or min version data of the time sereies if p_version_date is NULL
+ * @param p_ts_office_id     Office owning the time series.  If not specified or NULL the session user's default office is used.
+ * @param p_rating_office_id Office owning the ratings.  If not specified or NULL the session user's default office is used.
+ *
+ * @return The rated time series
+ */
 function retrieve_rated_ts(
    p_independent_ids  in str_tab_t,
    p_rating_id        in varchar2,
@@ -2643,85 +2205,32 @@ function retrieve_rated_ts(
    p_ts_office_id     in varchar2 default null,
    p_rating_office_id in varchar2 default null)
    return ztsv_array;
-   
---------------------------------------------------------------------------------
--- RETRIEVE_RATED_TS
---
--- Retrieves a time series that is the result of rating the specified time 
--- series with the specified rating.
---
--- p_independent_id
---    The independent time series to be rated with the specified rating
---
--- p_rating_id
---    The rating to use
---
--- p_units
---    The unit in which to return the rated time series
---
--- p_start_time
---    The beginning of time window for the time series
---
--- p_end_time
---    The end of time window for the time series
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret all date parameters, and in which 
---    to return the data times. If null, the time zone associated with the 
---    location in the p_rating_spec parameter will be used. If no time zone is 
---    associated with the location, UTC will be used. The location is taken 
---    from the p_independent_id parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_trim
---    Specifies whether to trim null values from the beginning and end of the
---    returned time series.  'T' = true, 'F' = false.
---
--- p_start_inclusive
---    Specifies whether p_start_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_end_inclusive
---    Specifies whether p_end_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_previous
---    Specifies whether to retrieve the latest value before the beginning of
---    the time window.  'T' = true, 'F' = false.
---
--- p_next
---    Specifies whether to retrieve the earliest value after the end of
---    the time window.  'T' = true, 'F' = false.
---
--- p_version_date
---    If not null, specifies the version date for versioned data. If null, the 
---    earliest or latest version date is used depending on the value of the 
---    p_max_version parameter.
---
--- p_max_version
---    Used only if the p_version_date parameter is null.  'T' = use the latest
---    version date for versioned data.  'F' = use the earliest version date
---    for versioned data.  Retrieving non-versioned data is not affected by
---    this parameter.
---
--- p_ts_office_id
---    The office id to be used with the time series identifier. If null, the 
---    current session user is used.
---
--- p_rating_office_id
---    The office id to be used with the rating identifier. If null, the 
---    current session user is used.
---
+/**
+ * Rates a single input time series stored in the database with ratings stored in
+ * the database to generate a rated time series, which is returned
+ *
+ * @see cwms_ts.retrieve_ts
+ *
+ * @param p_independent_id   The time series identifier of the time series to rate
+ * @param p_rating_id        The rating specification to use
+ * @param p_units            The desired unit of the rated time series
+ * @param p_start_time       The start of the time window to rate
+ * @param p_end_time         The end of the time window to rate
+ * @param p_rating_time      A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone        The time zone in which to interpret date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_round            A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_trim             Parameter for cwms_ts.retrieve_ts. Specifies whether to trim missing values from the ends of the retrieved time series
+ * @param p_start_inclusive  Parameter for cwms_ts.retrieve_ts. Specifies whether the time window starts on or after the specified time
+ * @param p_end_inclusive    Parameter for cwms_ts.retrieve_ts. Specifies whether the time window ends on or before the specified time
+ * @param p_previous         Parameter for cwms_ts.retrieve_ts. Specifies whether to retrieve the latest value before the start of the time window
+ * @param p_next             Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the earliest value after the end of the time window
+ * @param p_version_date     Parameter for cwms_ts.retrieve_ts. Specifies the version date of the retrieve time series
+ * @param p_max_version      Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the max or min version data of the time sereies if p_version_date is NULL
+ * @param p_ts_office_id     Office owning the time series.  If not specified or NULL the session user's default office is used.
+ * @param p_rating_office_id Office owning the ratings.  If not specified or NULL the session user's default office is used.
+ *
+ * @return The rated time series
+ */
 function retrieve_rated_ts(
    p_independent_id   in varchar2,
    p_rating_id        in varchar2,
@@ -2741,81 +2250,31 @@ function retrieve_rated_ts(
    p_ts_office_id     in varchar2 default null,
    p_rating_office_id in varchar2 default null)
    return ztsv_array;
-   
---------------------------------------------------------------------------------
--- RATE
---
--- Rates the specified independent time series with the specified rating 
--- and stores the results in the specified dependent time series.
---
--- p_independent_ids
---    The independent time series to be rated with the specified rating
---
--- p_dependent_id
---    The dependent (rated) time series to be stored 
---
--- p_rating_id
---    The rating to use
---
--- p_start_time
---    The beginning of time window for the time series
---
--- p_end_time
---    The end of time window for the time series
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret all date parameters. If null, the 
---    time zone associated with the location in the p_rating_spec parameter 
---    will be used. If no time zone is associated with the location, UTC will 
---    be used. The location is taken from the first item in the 
---    p_independent_ids parameter.
---
--- p_trim
---    Specifies whether to trim null values from the beginning and end of the
---    rated time series.  'T' = true, 'F' = false.
---
--- p_start_inclusive
---    Specifies whether p_start_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_end_inclusive
---    Specifies whether p_end_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_previous
---    Specifies whether to retrieve the latest value before the beginning of
---    the time window.  'T' = true, 'F' = false.
---
--- p_next
---    Specifies whether to retrieve the earliest value after the end of
---    the time window.  'T' = true, 'F' = false.
---
--- p_version_date
---    If not null, specifies the version date for versioned data. If null, the 
---    earliest or latest version date is used depending on the value of the 
---    p_max_version parameter.
---
--- p_max_version
---    Used only if the p_version_date parameter is null.  'T' = use the latest
---    version date for versioned data.  'F' = use the earliest version date
---    for versioned data.  Retrieving non-versioned data is not affected by
---    this parameter.
---
--- p_ts_office_id
---    The office id to be used with the time series identifiers. If null, the 
---    current session user is used.
---
--- p_rating_office_id
---    The office id to be used with the rating identifier. If null, the 
---    current session user is used.
---
+/**
+ * Rates one or more input time series stored in the database with ratings stored in
+ * the database to generate a rated time series, which is stored to the database
+ *
+ * @see cwms_ts.retrieve_ts
+ *
+ * @param p_independent_ids  A collection of time series identifiers of the time series to rate, in position order of the independent parameters of the rating
+ * @param p_dependent_id     The time series identifiers of the rated time series
+ * @param p_rating_id        The rating specification to use
+ * @param p_units            The desired unit of the rated time series
+ * @param p_start_time       The start of the time window to rate
+ * @param p_end_time         The end of the time window to rate
+ * @param p_rating_time      A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone        The time zone in which to interpret date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_round            A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_trim             Parameter for cwms_ts.retrieve_ts. Specifies whether to trim missing values from the ends of the retrieved time series
+ * @param p_start_inclusive  Parameter for cwms_ts.retrieve_ts. Specifies whether the time window starts on or after the specified time
+ * @param p_end_inclusive    Parameter for cwms_ts.retrieve_ts. Specifies whether the time window ends on or before the specified time
+ * @param p_previous         Parameter for cwms_ts.retrieve_ts. Specifies whether to retrieve the latest value before the start of the time window
+ * @param p_next             Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the earliest value after the end of the time window
+ * @param p_version_date     Parameter for cwms_ts.retrieve_ts. Specifies the version date of the retrieve time series
+ * @param p_max_version      Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the max or min version data of the time sereies if p_version_date is NULL
+ * @param p_ts_office_id     Office owning the time series.  If not specified or NULL the session user's default office is used.
+ * @param p_rating_office_id Office owning the ratings.  If not specified or NULL the session user's default office is used.
+ */
 procedure rate(
    p_independent_ids  in str_tab_t,
    p_dependent_id     in varchar2,
@@ -2833,80 +2292,31 @@ procedure rate(
    p_max_version      in varchar2 default 'T',
    p_ts_office_id     in varchar2 default null,
    p_rating_office_id in varchar2 default null);
-   
---------------------------------------------------------------------------------
--- RATE
---
--- Rates the specified independent time series with the specified rating 
--- and stores the results in the specified dependent time series.
---
--- p_independent_id
---    The independent time series to be rated with the specified rating
---
--- p_dependent_id
---    The dependent (rated) time series to be stored 
---
--- p_rating_id
---    The rating to use
---
--- p_start_time
---    The beginning of time window for the time series
---
--- p_end_time
---    The end of time window for the time series
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret all date parameters. If null, the 
---    time zone associated with the location in the p_rating_spec parameter 
---    will be used. If no time zone is associated with the location, UTC will 
---    be used. The location is taken from the p_independent_id parameter.
---
--- p_trim
---    Specifies whether to trim null values from the beginning and end of the
---    rated time series.  'T' = true, 'F' = false.
---
--- p_start_inclusive
---    Specifies whether p_start_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_end_inclusive
---    Specifies whether p_end_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_previous
---    Specifies whether to retrieve the latest value before the beginning of
---    the time window.  'T' = true, 'F' = false.
---
--- p_next
---    Specifies whether to retrieve the earliest value after the end of
---    the time window.  'T' = true, 'F' = false.
---
--- p_version_date
---    If not null, specifies the version date for versioned data. If null, the 
---    earliest or latest version date is used depending on the value of the 
---    p_max_version parameter.
---
--- p_max_version
---    Used only if the p_version_date parameter is null.  'T' = use the latest
---    version date for versioned data.  'F' = use the earliest version date
---    for versioned data.  Retrieving non-versioned data is not affected by
---    this parameter.
---
--- p_ts_office_id
---    The office id to be used with the time series identifiers. If null, the 
---    current session user is used.
---
--- p_rating_office_id
---    The office id to be used with the rating identifier. If null, the 
---    current session user is used.
---
+/**
+ * Rates a single input time series stored in the database with ratings stored in
+ * the database to generate a rated time series, which is stored to the database
+ *
+ * @see cwms_ts.retrieve_ts
+ *
+ * @param p_independent_id   The time series identifier of the time series to rate
+ * @param p_dependent_id     The time series identifiers of the rated time series which is stored to the database
+ * @param p_rating_id        The rating specification to use
+ * @param p_units            The desired unit of the rated time series
+ * @param p_start_time       The start of the time window to rate
+ * @param p_end_time         The end of the time window to rate
+ * @param p_rating_time      A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone        The time zone in which to interpret date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_round            A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_trim             Parameter for cwms_ts.retrieve_ts. Specifies whether to trim missing values from the ends of the retrieved time series
+ * @param p_start_inclusive  Parameter for cwms_ts.retrieve_ts. Specifies whether the time window starts on or after the specified time
+ * @param p_end_inclusive    Parameter for cwms_ts.retrieve_ts. Specifies whether the time window ends on or before the specified time
+ * @param p_previous         Parameter for cwms_ts.retrieve_ts. Specifies whether to retrieve the latest value before the start of the time window
+ * @param p_next             Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the earliest value after the end of the time window
+ * @param p_version_date     Parameter for cwms_ts.retrieve_ts. Specifies the version date of the retrieve time series
+ * @param p_max_version      Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the max or min version data of the time sereies if p_version_date is NULL
+ * @param p_ts_office_id     Office owning the time series.  If not specified or NULL the session user's default office is used.
+ * @param p_rating_office_id Office owning the ratings.  If not specified or NULL the session user's default office is used.
+ */
 procedure rate(
    p_independent_id   in varchar2,
    p_dependent_id     in varchar2,
@@ -2924,89 +2334,34 @@ procedure rate(
    p_max_version      in varchar2 default 'T',
    p_ts_office_id     in varchar2 default null,
    p_rating_office_id in varchar2 default null);
-
---------------------------------------------------------------------------------
--- RETRIEVE_REVERSE_RATED_TS
---
--- Retrieves a time series that is the result of reverse rating the 
--- specified time series with the specified rating.
---
--- p_dependent_id
---    The dependent time series to be reverse rated with the specified 
---    rating.
---
--- p_rating_id
---    The rating to use
---
--- p_units
---    The unit in which to return the rated time series
---
--- p_start_time
---    The beginning of time window for the time series
---
--- p_end_time
---    The end of time window for the time series
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret all date parameters, and in which 
---    to return the data times. If null, the time zone associated with the 
---    location in the p_rating_spec parameter will be used. If no time zone is 
---    associated with the location, UTC will be used. The location is taken 
---    from the p_independent_id parameter.
---
--- p_round
---    Specifies whether to round the returned values according to the rounding
---    specification contained in the rating specification.
---
--- p_trim
---    Specifies whether to trim null values from the beginning and end of the
---    returned time series.  'T' = true, 'F' = false.
---
--- p_start_inclusive
---    Specifies whether p_start_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_end_inclusive
---    Specifies whether p_end_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_previous
---    Specifies whether to retrieve the latest value before the beginning of
---    the time window.  'T' = true, 'F' = false.
---
--- p_next
---    Specifies whether to retrieve the earliest value after the end of
---    the time window.  'T' = true, 'F' = false.
---
--- p_version_date
---    If not null, specifies the version date for versioned data. If null, the 
---    earliest or latest version date is used depending on the value of the 
---    p_max_version parameter.
---
--- p_max_version
---    Used only if the p_version_date parameter is null.  'T' = use the latest
---    version date for versioned data.  'F' = use the earliest version date
---    for versioned data.  Retrieving non-versioned data is not affected by
---    this parameter.
---
--- p_ts_office_id
---    The office id to be used with the time series identifier. If null, the 
---    current session user is used.
---
--- p_rating_office_id
---    The office id to be used with the rating identifier. If null, the 
---    current session user is used.
---
---
+/**
+ * Reverse rates a single input time series stored in the database with ratings stored in
+ * the database to generate a rated time series, which is returned
+ *
+ * @see cwms_ts.retrieve_ts
+ *
+ * @param p_input_id         The time series identifier of the time series to rate
+ * @param p_rating_id        The rating specification to use
+ * @param p_units            The desired unit of the rated time series
+ * @param p_start_time       The start of the time window to rate
+ * @param p_end_time         The end of the time window to rate
+ * @param p_rating_time      A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone        The time zone in which to interpret date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_round            A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_trim             Parameter for cwms_ts.retrieve_ts. Specifies whether to trim missing values from the ends of the retrieved time series
+ * @param p_start_inclusive  Parameter for cwms_ts.retrieve_ts. Specifies whether the time window starts on or after the specified time
+ * @param p_end_inclusive    Parameter for cwms_ts.retrieve_ts. Specifies whether the time window ends on or before the specified time
+ * @param p_previous         Parameter for cwms_ts.retrieve_ts. Specifies whether to retrieve the latest value before the start of the time window
+ * @param p_next             Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the earliest value after the end of the time window
+ * @param p_version_date     Parameter for cwms_ts.retrieve_ts. Specifies the version date of the retrieve time series
+ * @param p_max_version      Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the max or min version data of the time sereies if p_version_date is NULL
+ * @param p_ts_office_id     Office owning the time series.  If not specified or NULL the session user's default office is used.
+ * @param p_rating_office_id Office owning the ratings.  If not specified or NULL the session user's default office is used.
+ *
+ * @return The rated time series
+ */
 function retrieve_reverse_rated_ts(
-   p_dependent_id     in varchar2,
+   p_input_id         in varchar2,
    p_rating_id        in varchar2,
    p_units            in varchar2,
    p_start_time       in date,
@@ -3024,84 +2379,36 @@ function retrieve_reverse_rated_ts(
    p_ts_office_id     in varchar2 default null,
    p_rating_office_id in varchar2 default null)
    return ztsv_array;
-   
---------------------------------------------------------------------------------
--- REVERSE_RATE
---
--- Reverse rates the specified dependent time series with the specified 
--- rating and stores the results in the specified independent time series.
---
--- p_independent_id
---    The independent time series to be reverse rated with the specified 
---    rating and stored.
---
--- p_dependent_id
---    The dependent time series to be reverse rated 
---
--- p_rating_id
---    The rating to use
---
--- p_start_time
---    The beginning of time window for the time series
---
--- p_end_time
---    The end of time window for the time series
---
--- p_rating_time
---    The "current time" of the rating operation.  If specified, this is the
---    historical time at which to perform the rating operation.  No ratings with
---    a creation date later than this time will be used so that ratings can be
---    performed according only to information that was known at the time.  If 
---    null, the current time is used. 
---
--- p_time_zone
---    The time zone with which to interpret all date parameters. If null, the 
---    time zone associated with the location in the p_rating_spec parameter 
---    will be used. If no time zone is associated with the location, UTC will 
---    be used. The location is taken from the p_independent_ids parameter.
---
--- p_trim
---    Specifies whether to trim null values from the beginning and end of the
---    rated time series.  'T' = true, 'F' = false.
---
--- p_start_inclusive
---    Specifies whether p_start_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_end_inclusive
---    Specifies whether p_end_time is included in the time_window. 'T' = true,
---    'F' = false
---
--- p_previous
---    Specifies whether to retrieve the latest value before the beginning of
---    the time window.  'T' = true, 'F' = false.
---
--- p_next
---    Specifies whether to retrieve the earliest value after the end of
---    the time window.  'T' = true, 'F' = false.
---
--- p_version_date
---    If not null, specifies the version date for versioned data. If null, the 
---    earliest or latest version date is used depending on the value of the 
---    p_max_version parameter.
---
--- p_max_version
---    Used only if the p_version_date parameter is null.  'T' = use the latest
---    version date for versioned data.  'F' = use the earliest version date
---    for versioned data.  Retrieving non-versioned data is not affected by
---    this parameter.
---
--- p_ts_office_id
---    The office id to be used with the time series identifiers. If null, the 
---    current session user is used.
---
--- p_rating_office_id
---    The office id to be used with the rating identifier. If null, the 
---    current session user is used.
---
+/**
+ * Reverse rates a single input time series stored in the database with ratings stored in
+ * the database to generate a rated time series, which is stored to the database
+ *
+ * @see cwms_ts.retrieve_ts
+ *
+ * @param p_input_id         The time series identifier of the time series to rate
+ * @param p_output_id        The time series identifier of the rated time series stored to the databse
+ * @param p_rating_id        The rating specification to use
+ * @param p_units            The desired unit of the rated time series
+ * @param p_start_time       The start of the time window to rate
+ * @param p_end_time         The end of the time window to rate
+ * @param p_rating_time      A specific date/time to use as the "current time" of the rating.  No ratings with a create date later than this will be used. Useful for performing historical ratings. If not specified or NULL, the current time is use.
+ * @param p_time_zone        The time zone in which to interpret date/time parameters. If not specified or NULL, the location time zone for the location in the rating specification will be used.
+ * @param p_round            A flag ('T' or 'F') specifying whether to round the rated values according to the rounding spec contained in the rating specification
+ * @param p_trim             Parameter for cwms_ts.retrieve_ts. Specifies whether to trim missing values from the ends of the retrieved time series
+ * @param p_start_inclusive  Parameter for cwms_ts.retrieve_ts. Specifies whether the time window starts on or after the specified time
+ * @param p_end_inclusive    Parameter for cwms_ts.retrieve_ts. Specifies whether the time window ends on or before the specified time
+ * @param p_previous         Parameter for cwms_ts.retrieve_ts. Specifies whether to retrieve the latest value before the start of the time window
+ * @param p_next             Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the earliest value after the end of the time window
+ * @param p_version_date     Parameter for cwms_ts.retrieve_ts. Specifies the version date of the retrieve time series
+ * @param p_max_version      Parameter for cwms_ts.retrieve_ts  Specifies whether to retrieve the max or min version data of the time sereies if p_version_date is NULL
+ * @param p_ts_office_id     Office owning the time series.  If not specified or NULL the session user's default office is used.
+ * @param p_rating_office_id Office owning the ratings.  If not specified or NULL the session user's default office is used.
+ *
+ * @return The rated time series
+ */
 procedure reverse_rate(
-   p_independent_id   in varchar2,
-   p_dependent_id     in varchar2,
+   p_input_id         in varchar2,
+   p_output_id        in varchar2,
    p_rating_id        in varchar2,
    p_start_time       in date,
    p_end_time         in date,
@@ -3116,218 +2423,131 @@ procedure reverse_rate(
    p_max_version      in varchar2 default 'T',
    p_ts_office_id     in varchar2 default null,
    p_rating_office_id in varchar2 default null);
-    
---------------------------------------------------------------------------------
--- ROUND_INDEPENDENT
---
--- Rounds independent values accoring to the rounding specifications contained
--- in the rating specification
---
--- p_independent
---    The values to round: one or more values of one or more independent 
---    parameters
---
--- p_rating_id
---    The rating id of the rating specification to use
---
--- p_office_id
---    The owning office of the rating specification to use.  If null, then the
---    current session user is used.
---
+/**
+ * Rounds independent values according e to the rounding specifications contained in
+ * the rating specification
+ *
+ * @param p_independent The values to round/rounded values
+ * @param p_rating_id   The rating specification
+ * @param p_office_id   The office owning the rating specification
+ */
 procedure round_independent(
    p_independent in out nocopy double_tab_tab_t,
    p_rating_id   in            varchar2,
    p_office_id   in            varchar2 default null);   
-    
---------------------------------------------------------------------------------
--- ROUND_INDEPENDENT
---
--- Rounds independent values accoring to the rounding specifications contained
--- in the rating specification
---
--- p_independent
---    The values to round: one or more values of a single independent parameter
---
--- p_rating_id
---    The rating id of the rating specification to use
---
--- p_office_id
---    The owning office of the rating specification to use.  If null, then the
---    current session user is used.
---
+/**
+ * Rounds independent values according e to the rounding specifications contained in
+ * the rating specification. Restricted to ratings with a single independent parameter
+ *
+ * @param p_independent The values to round/rounded values
+ * @param p_rating_id   The rating specification
+ * @param p_office_id   The office owning the rating specification
+ */
 procedure round_independent(
    p_independent in out nocopy double_tab_t,
    p_rating_id   in            varchar2,
    p_office_id   in            varchar2 default null);   
-    
---------------------------------------------------------------------------------
--- ROUND_INDEPENDENT
---
--- Rounds independent values accoring to the rounding specifications contained
--- in the rating specification
---
--- p_independent
---    The values to round: one or more values of a single independent parameter
---
--- p_rating_id
---    The rating id of the rating specification to use
---
--- p_office_id
---    The owning office of the rating specification to use.  If null, then the
---    current session user is used.
---
+/**
+ * Rounds independent time series values according e to the rounding specifications contained in
+ * the rating specification. Restricted to ratings with a single independent parameter
+ *
+ * @param p_independent The values to round/rounded values
+ * @param p_rating_id   The rating specification
+ * @param p_office_id   The office owning the rating specification
+ */
 procedure round_independent(
    p_independent in out nocopy tsv_array,
    p_rating_id   in            varchar2,
    p_office_id   in            varchar2 default null);   
-    
---------------------------------------------------------------------------------
--- ROUND_INDEPENDENT
---
--- Rounds independent values accoring to the rounding specifications contained
--- in the rating specification
---
--- p_independent
---    The values to round: one or more values of a single independent parameter
---
--- p_rating_id
---    The rating id of the rating specification to use
---
--- p_office_id
---    The owning office of the rating specification to use.  If null, then the
---    current session user is used.
---
+/**
+ * Rounds independent time series values according e to the rounding specifications contained in
+ * the rating specification. Restricted to ratings with a single independent parameter
+ *
+ * @param p_independent The values to round/rounded values
+ * @param p_rating_id   The rating specification
+ * @param p_office_id   The office owning the rating specification
+ */
 procedure round_independent(
    p_independent in out nocopy ztsv_array,
    p_rating_id   in            varchar2,
    p_office_id   in            varchar2 default null);   
-    
---------------------------------------------------------------------------------
--- ROUND_ONE_INDEPENDENT
---
--- Rounds independent values accoring to the rounding specifications contained
--- in the rating specification
---
--- p_independent
---    The values to round: a single set of values for one or more independent
---    parameters
---
--- p_rating_id
---    The rating id of the rating specification to use
---
--- p_office_id
---    The owning office of the rating specification to use.  If null, then the
---    current session user is used.
---
+/**
+ * Rounds a single independent value set according e to the rounding specifications contained in
+ * the rating specification. Restricted to ratings with a single independent parameter
+ *
+ * @param p_independent The values to round/rounded values
+ * @param p_rating_id   The rating specification
+ * @param p_office_id   The office owning the rating specification
+ */
 procedure round_one_independent(
    p_independent in out nocopy double_tab_t,
    p_rating_id   in            varchar2,
    p_office_id   in            varchar2 default null);
-    
---------------------------------------------------------------------------------
--- ROUND_INDEPENDENT
---
--- Rounds independent values accoring to the rounding specifications contained
--- in the rating specification
---
--- p_independent
---    The value to round: a single value for a single independent parameter
---
--- p_rating_id
---    The rating id of the rating specification to use
---
--- p_office_id
---    The owning office of the rating specification to use.  If null, then the
---    current session user is used.
---
+/**
+ * Rounds a single independent value according e to the rounding specifications contained in
+ * the rating specification. Restricted to ratings with a single independent parameter
+ *
+ * @param p_independent The value to round/rounded value
+ * @param p_rating_id   The rating specification
+ * @param p_office_id   The office owning the rating specification
+ */
 procedure round_independent(
    p_independent in out nocopy binary_double,
    p_rating_id   in            varchar2,
    p_office_id   in            varchar2 default null);   
-    
---------------------------------------------------------------------------------
--- ROUND_INDEPENDENT
---
--- Rounds independent values accoring to the rounding specifications contained
--- in the rating specification
---
--- p_independent
---    The value to round: a single value for a single independent parameter
---
--- p_rating_id
---    The rating id of the rating specification to use
---
--- p_office_id
---    The owning office of the rating specification to use.  If null, then the
---    current session user is used.
---
+/**
+ * Rounds a single independent time series value according e to the rounding specifications contained in
+ * the rating specification. Restricted to ratings with a single independent parameter
+ *
+ * @param p_independent The value to round/rounded value
+ * @param p_rating_id   The rating specification
+ * @param p_office_id   The office owning the rating specification
+ */
 procedure round_independent(
    p_independent in out nocopy tsv_type,
    p_rating_id   in            varchar2,
    p_office_id   in            varchar2 default null);   
-    
---------------------------------------------------------------------------------
--- ROUND_INDEPENDENT
---
--- Rounds independent values accoring to the rounding specifications contained
--- in the rating specification
---
--- p_independent
---    The value to round: a single value for a single independent parameter
---
--- p_rating_id
---    The rating id of the rating specification to use
---
--- p_office_id
---    The owning office of the rating specification to use.  If null, then the
---    current session user is used.
---
+/**
+ * Rounds a single independent time series value according e to the rounding specifications contained in
+ * the rating specification. Restricted to ratings with a single independent parameter
+ *
+ * @param p_independent The value to round/rounded value
+ * @param p_rating_id   The rating specification
+ * @param p_office_id   The office owning the rating specification
+ */
 procedure round_independent(
    p_independent in out nocopy ztsv_type,
    p_rating_id   in            varchar2,
    p_office_id   in            varchar2 default null);   
-
---------------------------------------------------------------------------------
--- GET_RATING_EXTENTS
---
--- Gets the min and max of each independent and depentent parameter for the 
--- specified rating
---
--- p_values
---    The min and max values for each parameter.  The outer (first) dimension
---    will be 2, with the first containing min values and the second containing
---    max values.  The inner (second) dimension will be the number of independent
---    parameters for the rating plus one.  The first value will be the extent
---    for the first independent parameter, and the last value will be the extent
---    for the dependent parameter.
---
--- p_parameters
---    The names for each parameter.  The  dimension will be the number of 
---    independent parameters for the rating plus one.  The first name is for the
---    first independent parameter, and the last name is for the dependent parameter.
---
--- p_units
---    The units for each parameter.  The  dimension will be the number of 
---    independent parameters for the rating plus one.  The first unit is for the
---    first independent parameter, and the last unit is for the dependent parameter.
---
--- p_rating_id
---    The rating id of the rating specification to use
---
--- p_native_units
---    'T' to get values in units native to rating, 'F' to get database units
---
--- p_rating_time
---    The time to use in determining the rating from the rating spec - defaults
---    to the current time
---
--- p_time_zone
---    The time zone to use if p_rating_time is specified - defaults to UTC
---
--- p_office_id
---    The office id to use in determining the rating from the rating spec -
---    defaults to the session user's office 
---
+/**
+ * Gets the min and max of each independent and dependent parameter for the specified rating
+ *
+ * @param p_values  The min and max values for each parameter.  The outer (first) dimension
+ * will be 2, with the first containing min values and the second containing
+ * max values.  The inner (second) dimension will be the number of independent
+ * parameters for the rating plus one.  The first value will be the extent
+ * for the first independent parameter, and the last value will be the extent
+ * for the dependent parameter.
+ *
+ * @param p_parameters The names for each parameter.  The  dimension will be the number of
+ * independent parameters for the rating plus one.  The first name is for the
+ * first independent parameter, and the last name is for the dependent parameter.
+ *
+ * @param p_units The units for each parameter.  The  dimension will be the number of
+ * independent parameters for the rating plus one.  The first unit is for the
+ * first independent parameter, and the last unit is for the dependent parameter.
+ *
+ * @param p_rating_id  The rating id of the rating specification to use
+ *
+ * @param p_native_units 'T' to get values in units native to rating, 'F' to get database units
+ *
+ * @param p_rating_time  The time to use in determining the rating from the rating spec - defaults
+ * to the current time
+ *
+ * @param p_time_zone  The time zone to use if p_rating_time is specified. Defaults to UTC
+ * @param p_office_id  The office that owns the rating. If not specified or NULL the
+ * session user's default office is used
+ */
 procedure get_rating_extents(
    p_values       out double_tab_tab_t,
    p_parameters   out str_tab_t,
@@ -3337,31 +2557,22 @@ procedure get_rating_extents(
    p_rating_time  in  date     default null,
    p_time_zone    in  varchar2 default 'UTC',
    p_office_id    in  varchar2 default null);
-   
---------------------------------------------------------------------------------
--- GET_MIN_OPENING
---
--- Gets the minmum value of the "opening" parameter for the specified rating
--- in the specified unit.
---
--- p_rating_id
---    The rating specification to use
---
--- p_unit
---    The unit to retrieve the minimum "opening" in - defaults to the native
---    "opening" unit of the rating
---
--- p_rating_time
---    The time to use in determining the rating from the rating spec - defaults
---    to the current time
---
--- p_time_zone
---    The time zone to use if p_rating_time is specified - defaults to UTC
---
--- p_office_id
---    The office id to use in determining the rating from the rating spec -
---    defaults to the session user's office 
---
+/**
+ * Retrieves the minimum value of the "opening" parmeter for the specified gate rating.
+ * Gate ratings have multiple independent parameters (pool elevation, gate opening, and possibly
+ * tailwater elevation or others), with no standard order in which to specify them. Also,
+ * the CWMS database is very strict in its parameter usage, requiring a parameter of
+ * "Opening" to have units of length. However, for many gate ratings the "opening" is
+ * specified in terms of percent of maximum opening, revolutions of a valve handle, etc...
+ *
+ * @param p_rating_id   The rating specification
+ * @param p_unit        The unit to return the minimum "opening" value in
+ * @param p_rating_time The time to use when choosing a rating from rating specification.  If not specified or NULL, the current time is used.
+ * @param p_time_zone   The time zone to use in interpreting the p_rating_time parameter.  If not specified or NULL, UTC is used.
+ * @param p_office_id   The office that owns the ratings.  If not specified or NULL, the session user's default office is used.
+ *
+ * @return the minimum value of the "opening" parmeter for the specified gate rating.
+ */
 function get_min_opening(
    p_rating_id   in varchar2,
    p_unit        in varchar2  default null,
@@ -3369,32 +2580,22 @@ function get_min_opening(
    p_time_zone   in  varchar2 default 'UTC',
    p_office_id   in  varchar2 default null)
    return binary_double;   
-   
---------------------------------------------------------------------------------
--- GET_MIN_OPENING2
---
--- Gets the minmum value of the "opening" parameter for the specified rating
--- in the specified unit.  The value is returned as the single element in a
--- double_tab_t table.
---
--- p_rating_id
---    The rating specification to use
---
--- p_unit
---    The unit to retrieve the minimum "opening" in - defaults to the native
---    "opening" unit of the rating
---
--- p_rating_time
---    The time to use in determining the rating from the rating spec - defaults
---    to the current time
---
--- p_time_zone
---    The time zone to use if p_rating_time is specified - defaults to UTC
---
--- p_office_id
---    The office id to use in determining the rating from the rating spec -
---    defaults to the session user's office 
---
+/**
+ * Retrieves the minimum value of the "opening" parmeter for the specified gate rating.
+ * Gate ratings have multiple independent parameters (pool elevation, gate opening, and possibly
+ * tailwater elevation or others), with no standard order in which to specify them. Also,
+ * the CWMS database is very strict in its parameter usage, requiring a parameter of
+ * "Opening" to have units of length. However, for many gate ratings the "opening" is
+ * specified in terms of percent of maximum opening, revolutions of a valve handle, etc...
+ *
+ * @param p_rating_id   The rating specification
+ * @param p_unit        The unit to return the minimum "opening" value in
+ * @param p_rating_time The time to use when choosing a rating from rating specification.  If not specified or NULL, the current time is used.
+ * @param p_time_zone   The time zone to use in interpreting the p_rating_time parameter.  If not specified or NULL, UTC is used.
+ * @param p_office_id   The office that owns the ratings.  If not specified or NULL, the session user's default office is used.
+ *
+ * @return the minimum value of the "opening" parmeter for the specified gate rating. The value is wrapped in a double_tab_t for Java access through JPublisher
+ */
 function get_min_opening2(
    p_rating_id   in varchar2,
    p_unit        in varchar2  default null,

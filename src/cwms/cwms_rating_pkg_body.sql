@@ -3637,7 +3637,7 @@ end rate;
 -- RETRIEVE_REVERSE_RATED_TS
 --
 function retrieve_reverse_rated_ts(
-   p_dependent_id     in varchar2,
+   p_input_id         in varchar2,
    p_rating_id        in varchar2,
    p_units            in varchar2,
    p_start_time       in date,
@@ -3673,7 +3673,7 @@ is
    l_last_valid   pls_integer;
    j              pls_integer;
 begin   
-   if p_dependent_id is not null then
+   if p_input_id is not null then
       -------------------
       -- sanity checks --
       -------------------
@@ -3695,11 +3695,11 @@ begin
             ||' independent parameters, 2 specified');
       end if;
       l_units(l_units.count) := p_units;
-      l_parts := cwms_util.split_text(p_dependent_id, separator1);
+      l_parts := cwms_util.split_text(p_input_id, separator1);
       if l_parts.count != 6 then
          cwms_err.raise(
             'INVALID_ITEM',
-            p_dependent_id,
+            p_input_id,
             'CWMS time series identifier');
       end if;
       l_location := l_parts(1);
@@ -3738,7 +3738,7 @@ begin
       l_times := date_table_type();
       cwms_ts.retrieve_ts(
          l_cursor,
-         p_dependent_id,
+         p_input_id,
          l_units(1),
          p_start_time,
          p_end_time,
@@ -3821,8 +3821,8 @@ end retrieve_reverse_rated_ts;
 -- REVERSE_RATE
 --
 procedure reverse_rate(
-   p_independent_id   in varchar2,
-   p_dependent_id     in varchar2,
+   p_input_id         in varchar2,
+   p_output_id        in varchar2,
    p_rating_id        in varchar2,
    p_start_time       in date,
    p_end_time         in date,
@@ -3843,23 +3843,23 @@ is
    l_parts    str_tab_t;
    l_interval varchar2(16);
 begin
-   if p_independent_id is not null then
+   if p_input_id is not null then
       -------------------
       -- sanity checks --
       -------------------
-      l_parts := cwms_util.split_text(p_independent_id, separator1);
+      l_parts := cwms_util.split_text(p_input_id, separator1);
       if l_parts.count != 6 then
          cwms_err.raise(
             'INVALID_ITEM',
-            p_independent_id,
+            p_input_id,
             'CWMS time series identifier');
       end if;
       l_interval := l_parts(4);
-      l_parts := cwms_util.split_text(p_dependent_id, separator1);
+      l_parts := cwms_util.split_text(p_output_id, separator1);
       if l_parts.count != 6 then
          cwms_err.raise(
             'INVALID_ITEM',
-            p_dependent_id,
+            p_output_id,
             'CWMS time series identifier');
       end if;
       if l_parts(4) = l_interval then
@@ -3880,7 +3880,7 @@ begin
       -- retrieve the rated time series --
       ------------------------------------
       l_dep_ts := retrieve_reverse_rated_ts(
-         p_independent_id,
+         p_input_id,
          p_rating_id,
          l_dep_unit,
          p_start_time,
@@ -3900,7 +3900,7 @@ begin
       -- store the rated time series --
       ---------------------------------
       cwms_ts.zstore_ts(
-         p_cwms_ts_id      => p_dependent_id,
+         p_cwms_ts_id      => p_output_id,
          p_units            => l_dep_unit,
          p_timeseries_data => l_dep_ts,
          p_store_rule      => null,
