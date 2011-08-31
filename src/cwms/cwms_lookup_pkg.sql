@@ -17,6 +17,15 @@ as
 --------------------------------------------------------------------------------
 /**
  * Holds important properties about an ordered sequence of values. 
+ *
+ * @member null_value Specifies whether the sequence contains any <big><code>NULL</code></big>
+ *         elememts
+ * @member increasing_range Specifies whether the sequence has any adjacent elements
+ *         in which the one with the greater position also a greater value
+ * @member increasing_range Specifies whether the sequence has any adjacent elements
+ *         in which the one with the greater position has a lesser value
+ * @member increasing_range Specifies whether the sequence has any adjacent elements
+ *         of the same value
  */
 type sequence_properties_t is record(
    null_value       boolean,
