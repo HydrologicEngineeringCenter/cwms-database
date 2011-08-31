@@ -16,47 +16,86 @@ drop type rating_template_t;
 drop type rating_ind_par_spec_tab_t;
 drop type rating_ind_param_spec_t;
 */
-create type rating_ind_param_spec_t as object(
+create type rating_ind_param_spec_t
+/**
+ * Holds information about an independent parameter for ratings
+ *
+ * @see cwms_lookup.method_null
+ * @see cwms_lookup.method_error
+ * @see cwms_lookup.method_linear
+ * @see cwms_lookup.method_logarithmic
+ * @see cwms_lookup.method_lin_log
+ * @see cwms_lookup.method_log_lin
+ * @see cwms_lookup.method_previous
+ * @see cwms_lookup.method_next
+ * @see cwms_lookup.method_nearest
+ * @see cwms_lookup.method_lower
+ * @see cwms_lookup.method_higher
+ * @see cwms_lookup.method_closest
+ * @see type rating_ind_param_spec_tab_t
+ *
+ * @member parameter_position           The parameter position for this independent parameter. 1 specifies the first (or only) independent parameter, etc...
+ * @member parameter_id                 The CWMS parameter identifier for this independent parameter
+ * @member in_range_rating_method       The rating behavior when a table of values for this independent parameter encompasses the value to be looked up
+ * @member out_range_low_rating_method  The rating behavior when the least value in a table of values for this independent parameter is greater than the value to be looked up
+ * @member out_range_high_rating_method The rating behavior when the greatest value in a table of values for this independent parameter is less than the value to be looked up
+ */
+as object(
    parameter_position           number(1),
    parameter_id                 varchar2(49),
    in_range_rating_method       varchar2(32),
    out_range_low_rating_method  varchar2(32),
    out_range_high_rating_method varchar2(32),
    
+   /**
+    * Constructs a rating_ind_param_spec_t object from a record in the AT_RATING_IND_PARAM_SPEC table
+    *
+    * @param p_ind_param_spec_code The primary key for the record
+    */
    constructor function rating_ind_param_spec_t(
       p_ind_param_spec_code in number)
    return self as result,
-   
+   /**
+    * Constructs a rating_ind_param_spec_t object from an XML instance.  The XML
+    * instance must conform to the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+    * The instance structure is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating">documented here</a>.
+    *
+    * @param p_xml The XML instance
+    */
    constructor function rating_ind_param_spec_t(
       p_xml in xmltype)
    return self as result,
-   
+   -- not documented
    member procedure validate_obj,
-            
+   /**
+    * Retrieves the CWMS parameter code for this independent parameter
+    *
+    * @param p_office_id Specifies the office for which to retrieve the parameter code
+    */
    member function get_parameter_code(
       p_office_id in varchar2)
    return number,
-   
+   -- not documented
    member function get_rating_code(
       p_rating_id in varchar2)
    return number,
-    
+   -- not documented
    member function get_in_range_rating_code
    return number,
-   
+   -- not documented
    member function get_out_range_low_rating_code
    return number,
-   
+   -- not documented
    member function get_out_range_high_rating_code
    return number,
-   
+   -- not documented
    member procedure store(
       p_template_code  in number,
       p_fail_if_exists in varchar2),
-      
+   -- not documented
    member function to_xml
    return xmltype,      
-      
+   -- not documented
    member function to_clob
    return clob      
 );
@@ -356,18 +395,49 @@ end;
 /
 show errors;
 
-create type rating_ind_par_spec_tab_t as table of rating_ind_param_spec_t;
+create type rating_ind_par_spec_tab_t
+/**
+ * Holds information about the independent parameters for a rating
+ *
+ * @see type rating_ind_param_spec
+ */
+as table of rating_ind_param_spec_t;
 /
 show errors;
  
-create type rating_template_t as object(
+create type rating_template_t
+/**
+ * Holds information about a rating template.  Rating templates specify "classes"
+ * of ratings by specifying the parameters and lookup behaviors. Templates are
+ * then incorporated into rating specifications which add additional information
+ * such as specific locations.
+ *
+ * @see type rating_ind_par_spec_tab_t
+ * @see type rating_template_tab_t
+ *
+ * @member office_id         The office that owns the rating template
+ * @member parameters_id     The parameters used by the rating template. Multiple independent parameters are separated by <a href="pkg_cwms_rating.html#separator3">','</a>, the dependent parameter is separated by <a href="pkg_cwms_rating.html#separator2">';'</a>
+ * @member version           The version for this parameter. Used to differentiate this template from others with the same parameters
+ * @member ind_parameters    The independent parameter(s) specification for this rating template
+ * @member dep_parameter_id  The dependent parameter for this rating template
+ * @member description       A description of the rating template
+ */
+as object(
    office_id         varchar2(16),
    parameters_id     varchar2(256),
    version           varchar2(32),
    ind_parameters    rating_ind_par_spec_tab_t,
    dep_parameter_id  varchar2(49),
    description       varchar2(256),
-   
+   /**
+    * Constructs a rating_template_t object from unique parameters. The parameters_id field is generated from the p_ind_parameters and p_dep_parmeter_id arguments.
+    *
+    * @param p_office_id         The office that owns the rating template
+    * @param p_version           The version for this parameter. Used to differentiate this template from others with the same parameters
+    * @param p_ind_parameters    The independent parameter(s) specification for this rating template
+    * @param p_dep_parameter_id  The dependent parameter for this rating template
+    * @param p_description       A description of the rating template
+    */
    constructor function rating_template_t(
       p_office_id         in varchar2,
       p_version           in varchar2,
@@ -375,63 +445,100 @@ create type rating_template_t as object(
       p_dep_parameter_id  in varchar2,
       p_description       in varchar2)
    return self as result,
-   
+   /**
+    * Constructs a rating_template_t object from a row in the AT_RATING_TEMPLATE table
+    *
+    * @param p_template_code the primary key of the table record
+    */
    constructor function rating_template_t(
       p_template_code in number)
    return self as result,
-   
+   /**
+    * Constructs a rating_template_t object from a row in the AT_RATING_TEMPLATE table
+    *
+    * @param p_office_id     The office that owns the rating template
+    * @param p_parameters_id The parameters used by the rating template. Multiple independent parameters are separated by <a href="pkg_cwms_rating.html#separator3">','</a>, the dependent parameter is separated by <a href="pkg_cwms_rating.html#separator2">';'</a>
+    * @param p_version       The version for this parameter. Used to differentiate this template from others with the same parameters
+    */
    constructor function rating_template_t(
       p_office_id     in varchar2,
       p_parameters_id in varchar2,
       p_version       in varchar2)
    return self as result,
-   
+   /**
+    * Constructs a rating_template_t object from a row in the AT_RATING_TEMPLATE table
+    *
+    * @param p_office_id   The office that owns the rating template
+    * @param p_template_id The template identifier.  The parameters_id, comprised of the parameters_id and verssion, separated by <a href="pkg_cwms_rating.html#separator1">'.'</a>
+    */
    constructor function rating_template_t(
       p_office_id   in varchar2,
       p_template_id in varchar2)
    return self as result,
-   
+   /**
+    * Constructs a rating_template_t object from an XML instance. The XML instance
+    * must conform to the <a href="https://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Rating XML Schema</a>. The rating template
+    * portion is <a href="https://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating-template">documented here</a>.
+    *
+    * @param p_xml The XML instance
+    */
    constructor function rating_template_t(
       p_xml in xmltype)
    return self as result,      
-   
+   -- not documented
    member procedure init(
       p_template_code in number),
-   
+   -- not documented
    member procedure init(
       p_office_id     in varchar2,
       p_parameters_id in varchar2,
       p_version       in varchar2),
-      
+   -- not documented
    member procedure validate_obj,
-         
+   -- not documented
    member function get_office_code
    return number,
-   
+   -- not documented
    member function get_dep_parameter_code
    return number,
-   
+   /**
+    * Stores the rating template to the database
+    *
+    * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the function
+    *        should fail if the rating template already exists in the database
+    *
+    * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is set to 'T' and the
+    *            rating template already exists
+    */
    member procedure store(
       p_fail_if_exists in varchar2),
-      
+   /**
+    * Retrieves the rating template as an XML instance in an XMLTYPE object
+    *
+    * @return the rating template as an XML instance in an XMLTYPE object
+    */
    member function to_xml
    return xmltype,      
-      
+   /**
+    * Retrieves the rating template as an XML instance in a CLOB object
+    *
+    * @return the rating template as an XML instance in a CLOB object
+    */
    member function to_clob
    return clob,      
-
+   -- not documented
    static function get_template_code(
       p_parameters_id in varchar2,
       p_version       in varchar2,
       p_office_id     in varchar2 default null)
    return number result_cache,      
-
+   -- not documented
    static function get_template_code(
       p_parameters_id in varchar2,
       p_version       in varchar2,
       p_office_code   in number)
    return number result_cache,      
-      
+   -- not documented
    static function get_template_code(
       p_template_id in varchar2,
       p_office_code in number)
@@ -894,11 +1001,54 @@ end;
 /
 show errors;
 
-create type rating_template_tab_t as table of rating_template_t;
+create type rating_template_tab_t
+/**
+ * Holds a collection of rating templates
+ *
+ * @see type rating_template_t
+ */
+as table of rating_template_t;
 /
 show errors;
 
-create type rating_spec_t as object(
+create type rating_spec_t
+/**
+ * Holds a rating specification. A rating specification is identified by a location,
+ * a rating template, and a version. It also contains information about
+ * <ul>
+ *   <li>rating behaviors for when the date of a rated value falls before, within, or after the range of rating effective dates</li>
+ *   <li>flags for whether the the specification is active and for automated updating procedures</li>
+ *   <li>how values for independent and dependent parameters are rounded for public display</li>
+ * </ul>
+ *
+ * @see cwms_lookup.method_null
+ * @see cwms_lookup.method_error
+ * @see cwms_lookup.method_linear
+ * @see cwms_lookup.method_previous
+ * @see cwms_lookup.method_next
+ * @see cwms_lookup.method_nearest
+ * @see cwms_lookup.method_lower
+ * @see cwms_lookup.method_higher
+ * @see cwms_lookup.method_closest
+ * @see type cwms_rating_spec_tab_t
+ *
+ * @member office_id                    The office that owns the rating spec
+ * @member location_id                  The location for the rating spec
+ * @member template_id                  The rating template for the rating spec
+ * @member version                      The version of the rating spec
+ * @member source_agency_id             The agency that provides ratings for the rating spec
+ * @member in_range_rating_method       The rating behavior when the effective dates of the ratings encompass the date of a value being rated
+ * @member out_range_low_rating_method  The rating behavior when the earliest of effective dates of the ratings is later than the date of a value being rated
+ * @member out_range_high_rating_method The rating behavior when the latest of effective dates of the ratings is earlier than the date of a value being rated
+ * @member active_flag                  A flag ('T' or 'F') specifying whether this rating spec is active
+ * @member auto_update_flag             A flag ('T' or 'F') specifying whether new ratings with this rating spec should automatically be loaded into the database
+ * @member auto_activate_flag           A flag ('T' or 'F') specifying whether newly-loaded ratings with this rating spec should automatically be marked as active
+ * @member auto_migrate_ext_flag        A flag ('T' or 'F') specifying whether newly-loaded ratings with this rating spec should automatically have previously-defined rating extensions applied
+ * @member ind_rounding_specs           USGS-style rounding specifications for each of the independent parameters. Used for public display of data rated by ratings under this rating spec.  Multiple rounding specs are separated by <a href="pkg_cwms_rating.html#separator3">','</a>
+ * @member dep_rounding_spec            USGS-style rounding specifications for each of the dependent parameter. Used for public display of data rated by ratings under this rating spec.
+ * @member description                  A description of this rating spec
+ */
+as object(
    office_id                    varchar2(16),
    location_id                  varchar2(49),
    template_id                  varchar2(289), -- template.parameters_id + template.version
@@ -914,76 +1064,114 @@ create type rating_spec_t as object(
    ind_rounding_specs           str_tab_t,
    dep_rounding_spec            varchar2(10),
    description                  varchar2(256),
-   
+   /**
+    * Constructs a rating_spec_t object from a record in the AT_RATING_SPEC table
+    *
+    * @param p_rating_spec_code The primary key for the table record
+    */
    constructor function rating_spec_t(
       p_rating_spec_code in number)
    return self as result,
-         
+   /**
+    * Constructs a rating_spec_t object from a record in the AT_RATING_SPEC table
+    *
+    * @param p_location_id The location for the rating spec
+    * @param p_template_id The rating template for the rating spec
+    * @param p_version     The version of the rating spec
+    * @param p_office_id   The office that owns the rating spec. If NULL or not specified, the session user's default office will be used.
+    */
    constructor function rating_spec_t(
       p_location_id in varchar2,
       p_template_id in varchar2,
       p_version     in varchar2,
       p_office_id   in varchar2 default null)
    return self as result,      
-         
+   /**
+    * Constructs a rating_spec_t object from a record in the AT_RATING_SPEC table
+    *
+    * @param p_rating_id The rating identifier. A rating identifier is comprised of the location_id, template_id, and version, separated by <a href="pkg_cwms_rating.html#separator1">'.'</a>
+    * @param p_office_id The office that owns the rating spec. If NULL or not specified, the session user's default office will be used.
+    */
    constructor function rating_spec_t(
       p_rating_id in varchar2,
       p_office_id in varchar2 default null)
    return self as result,
-   
+   /**
+    * Constructs a rating_spec_t object from an XML instance. The XML instance
+    * must conform to the <a href="https://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Rating XML Schema</a>. The rating spec
+    * portion is <a href="https://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating-spec">documented here</a>.
+    *
+    * @param p_xml The XML instance
+    */
    constructor function rating_spec_t(
       p_xml in xmltype)
    return self as result,
-   
+   -- not documented
    member procedure init(
       p_rating_spec_code in number),
-      
+   -- not documented
    member procedure init(
       p_location_id in varchar2,
       p_template_id in varchar2,
       p_version     in varchar2,
       p_office_id   in varchar2 default null),
-            
+   -- not documented
    member procedure validate_obj,
-         
+   -- not documented
    member function get_location_code
    return number,
-   
+   -- not documented
    member function get_template_code
    return number,
-   
+   -- not documented
    member function get_source_agency_code
    return number,
-   
+   -- not documented
    member function get_rating_code(
       p_rating_id in varchar2)
    return number,
-   
+   -- not documented
    member function get_in_range_rating_code
    return number,     
-   
+   -- not documented
    member function get_out_range_low_rating_code
    return number,     
-   
+   -- not documented
    member function get_out_range_high_rating_code
    return number,
-   
+   /**
+    * Stores the rating specification to the database
+    *
+    * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the function
+    *        should fail if the rating specification already exists in the database
+    *
+    * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is set to 'T' and the
+    *            rating specification already exists
+    */
    member procedure store(
       p_fail_if_exists in varchar2),     
-
+   /**
+    * Retrieves the rating specification as an XML instance in a CLOB object
+    *
+    * @return the rating specification as an XML instance in a CLOB object
+    */
    member function to_clob
    return clob,
-   
+   /**
+    * Retrieves the rating specification as an XML instance in an XMLTYPE object
+    *
+    * @return the rating specification as an XML instance in an XMLTYPE object
+    */
    member function to_xml
    return xmltype,
-            
+   -- not documented
    static function get_rating_spec_code(
       p_location_id in varchar2,
       p_template_id in varchar2,
       p_version     in varchar2,
       p_office_id   in varchar2 default null)
    return number,      
-         
+   -- not documented
    static function get_rating_spec_code(
       p_rating_id in varchar2,
       p_office_id in varchar2 default null)
@@ -1785,22 +1973,47 @@ end;
 /
 show errors;
 
-create type rating_spec_tab_t as table of rating_spec_t;
+create type rating_spec_tab_t
+/**
+ * Holds a collection of rating specifications
+ *
+ * @see type rating_spec_t
+ */
+as table of rating_spec_t;
 /
 show errors;
 
-create type rating_value_note_t as object(
+create type rating_value_note_t
+/**
+ * Hold a not about a rating value. Rating value notes can apply to multiple rating
+ * values.
+ *
+ * @see type rating_value_note_tab_t
+ *
+ * @member office_id   The office owning the note
+ * @member note_id     The identifier of the note
+ * @member description The text of the note
+ */
+as object(
    office_id   varchar2(16),
    note_id     varchar2(16),
    description varchar2(256),
-   
+   -- not documented
    constructor function rating_value_note_t(
       p_note_code in number)
    return self as result,      
-   
+   -- not documented
    member function get_note_code
    return number,
-   
+   /**
+    * Stores a rating value not to the databse
+    *
+    * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the function
+    *        should fail if the rating value note already exists in the database
+    *
+    * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is set to 'T' and the
+    *            rating value note already exists
+    */
    member procedure store(
       p_fail_if_exists in varchar)
 );
@@ -1905,48 +2118,80 @@ end;
 /
 show errors;
 
-create type rating_value_note_tab_t is table of rating_value_note_t;
+create type rating_value_note_tab_t
+/**
+ * Holds a collection of rating value notes
+ *
+ * @see type rating_value_note_t
+ */
+is table of rating_value_note_t;
 /
 show errors;
 
 
-create type abs_rating_ind_param_t as object(
+create type abs_rating_ind_param_t
+/**
+ * Abstract base type for type rating_ind_parameter_t.  This type is necessary to
+ * allow ratings to rating_ind_parameter_t objects to have recursive self references
+ * through the rating_value_tab_t and rating_value_t types.
+ *
+ * @see type rating_value_t
+ * @see type rating_ind_parameter_t
+ *
+ * @member constructed A flag ('T' or 'F') specifying whether the construction of
+ *         the object has been completed
+ */
+as object(
    constructed varchar2(1),
-   
+   -- not documented
    member procedure init(
       p_rating_ind_parameter_code in number,
       p_other_ind                 in double_tab_t),
-      
+   -- not documented
    member procedure validate_obj(
       p_parameter_position in number),
-
+   /**
+    * Declaration forcing implemenation in sub-type
+    */
    member procedure convert_to_database_units(
       p_parameters_id in varchar2,
       p_units_id      in varchar2),
-
+   /**
+    * Declaration forcing implemenation in sub-type
+    */
    member procedure convert_to_native_units(
       p_parameters_id in varchar2,
       p_units_id      in varchar2),
-               
+   /**
+    * Declaration forcing implemenation in sub-type
+    */
    member procedure store(
       p_rating_ind_param_code out number,
       p_rating_code           in  number,
       p_other_ind             in  double_tab_t,
       p_fail_if_exists        in  varchar2),
-      
+   /**
+    * Declaration forcing implemenation in sub-type
+    */
    member procedure store(
       p_rating_code           in  number,
       p_other_ind             in  double_tab_t,
       p_fail_if_exists        in  varchar2),
-      
+   /**
+    * Declaration forcing implemenation in sub-type
+    */
    member function to_clob(
       p_ind_params   in double_tab_t default null,
       p_is_extension in boolean default false)
    return clob,
-   
+   /**
+    * Declaration forcing implemenation in sub-type
+    */
    member function to_xml
    return xmltype,
-   
+   /**
+    * Declaration forcing implemenation in sub-type
+    */
    member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
@@ -2014,15 +2259,38 @@ end;
 /   
 show errors;
 
-create type rating_value_t as object(
+create type rating_value_t
+/**
+ * Holds one lookup value for an independent parameter for a rating, as well as the
+ * associated dependent value or dependent rating sub-table.
+ *
+ * @see type abs_rating_ind_param_t
+ * @see type rating_value_tab_t
+ *
+ * @member ind_value            The independent value
+ * @member dep_value            The dependent value if the independent value is for the highest-position (or only) independent parameter
+ * @member dep_rating_ind_param The dependent value if the independent value is not for the highest-position independent parameter
+ * @member note_id              The identifier of a rating value note, if any
+ */
+as object(
    ind_value            binary_double,
    dep_value            binary_double,
    dep_rating_ind_param abs_rating_ind_param_t,
    note_id              varchar2(16),
-   
+   /**
+    * Zero-parameter constructor. Constructs an object with all fields set to NULL.
+    */
    constructor function rating_value_t
    return self as result,
-   
+   /**
+    * Normal constructor.
+    *
+    * @param p_rating_ind_param_code The CWMS parameter code for the independent parameter represented by this lookup value
+    * @param p_other_ind             A collection of the values of all lower-position independent parameters, if any, that lead to this independent parameter value
+    * @param p_other_ind_hash        A hash value used to identify the collection held in the p_other_ind parameter
+    * @param p_ind_value             The independent lookup value for this independent parameter
+    * @param p_is_extension          A flag ('T' or 'F') that specifies whether this lookup value belongs to a rating ('F') or to a rating extension ('T')
+    */
    constructor function rating_value_t(
       p_rating_ind_param_code in number,
       p_other_ind             in double_tab_t,
@@ -2030,13 +2298,26 @@ create type rating_value_t as object(
       p_ind_value             in binary_double,
       p_is_extension          in varchar2)
    return self as result,
-   
+   /**
+    * Stores this rating_value_t object to the databse
+    *
+    * @param p_rating_ind_param_code The CWMS parameter code for the independent parameter represented by this lookup value
+    * @param p_other_ind             A collection of the values of all lower-position independent parameters, if any, that lead to this independent parameter value
+    * @param p_is_extension          A flag ('T' or 'F') that specifies whether this lookup value belongs to a rating ('F') or to a rating extension ('T')
+    * @param p_office_id             The office owning the rating value
+    */
    member procedure store(
       p_rating_ind_param_code in number,
       p_other_ind             in double_tab_t,
       p_is_extension          in varchar2,
       p_office_id             in varchar2),
-      
+   /**
+    * Generates a unique hash code to identify the specified collection of values
+    *
+    * @param p_other_ind A collection of the values
+    *
+    * @return a unique hash code to identify the specified collection of values
+    */
    static function hash_other_ind(
       p_other_ind in double_tab_t)
    return varchar2      
@@ -2044,76 +2325,103 @@ create type rating_value_t as object(
 /
 show errors;
 
-create type rating_value_tab_t as table of rating_value_t;
+create type rating_value_tab_t
+/**
+ * Holds a collection of rating lookup values
+ *
+ * @see type rating_value_t
+ */
+as table of rating_value_t;
 /
 show errors;
-
-create type rating_ind_parameter_t under abs_rating_ind_param_t(
+create type rating_ind_parameter_t
+/**
+ * Holds rating lookup values and optionally extension lookup values for an independent parameter
+ *
+ * @member rating_values    The rating lookup values that apply to this independent parameter
+ * @member extension_values The rating extension, if any, that applies to this independent parameter
+ */
+under abs_rating_ind_param_t(
    rating_values      rating_value_tab_t,
    extension_values   rating_value_tab_t,
-   
+   /**
+    * Zero-parameter constructor.  Constructs a rating_ind_parameter_t object with all fields NULL
+    */
    constructor function rating_ind_parameter_t
    return self as result,
-   
+   /**
+    * Constructs a rating_ind_parameter_t object from a record in the AT_RATING_IND_PARAMETER table.
+    * The object will be for the lowest-position (or only) independent parameter for the
+    * specified rating code.
+    *
+    * @param p_rating_code.  The CWMS rating code for which to create the object.
+    */
    constructor function rating_ind_parameter_t(
       p_rating_code in number)
    return self as result,
-   
+   /**
+    * Constructs a rating_ind_parameter_t object from a record in the AT_RATING_IND_PARAMETER table.
+    * The object will be for the independent parameter position that is one greater than the
+    * length of the p_other_ind parameter and will be for the specific independent parameter
+    * values specified in the p_other_ind paramter
+    *
+    * @param p_rating_code The CWMS rating code for which to create the object.
+    * @param p_other_ind   The lower-position independent paramter values for which to construct the object
+    */
    constructor function rating_ind_parameter_t(
       p_rating_code in number,
       p_other_ind   in double_tab_t)
    return self as result,
-   
+   -- not documented
    constructor function rating_ind_parameter_t(
       p_rating_ind_parameter_code in number,
       p_other_ind                 in double_tab_t,
       p_additional_ind            in binary_double)
    return self as result,
-   
+   -- not documented
    constructor function rating_ind_parameter_t(
       p_xml in xmltype)
    return self as result,
-   
+   -- not documented
    overriding member procedure init(
       p_rating_ind_parameter_code in number,
       p_other_ind                 in double_tab_t),
-      
+   -- not documented
    overriding member procedure validate_obj(
       p_parameter_position in number),
-
+   -- not documented
    overriding member procedure convert_to_database_units(
       p_parameters_id in varchar2,
       p_units_id      in varchar2),
-
+   -- not documented
    overriding member procedure convert_to_native_units(
       p_parameters_id in varchar2,
       p_units_id      in varchar2),
-               
+   -- not documented
    overriding member procedure store(
       p_rating_ind_param_code out number,
       p_rating_code           in  number,
       p_other_ind             in  double_tab_t,
       p_fail_if_exists        in  varchar2),
-      
+   -- not documented
    overriding member procedure store(
       p_rating_code           in  number,
       p_other_ind             in  double_tab_t,
       p_fail_if_exists        in  varchar2),
-      
    overriding member function to_clob(
       p_ind_params   in double_tab_t default null,
       p_is_extension in boolean default false)
    return clob,
-   
+   -- not documented
    overriding member function to_xml
    return xmltype,
-         
+   -- not documented
    overriding member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
       p_param_specs in out nocopy rating_ind_par_spec_tab_t)
    return binary_double,
-      
+   -- not documented
    static function get_rating_ind_parameter_code(
       p_rating_code in number)
    return number      
@@ -3324,7 +3632,13 @@ end;
 /
 show errors;
 
-create type rating_ind_param_tab_t as table of rating_ind_parameter_t;
+create type rating_ind_param_tab_t
+/**
+ * Holds a collection of rating_ind_parameter_t objects
+ *
+ * @see type rating_ind_parameter_t
+ */
+as table of rating_ind_parameter_t;
 /
 show errors;
 
@@ -3494,7 +3808,29 @@ end;
 /
 show errors;
 
-create type rating_t as object(
+create type rating_t
+/**
+ * Holds a rating
+ *
+ * @see type rating_ind_parameter_t
+ * @see type rating_spec_t
+ * @see type stream_rating_t
+ * @see type rating_tab_t
+ *
+ * @member office_id      The office that owns the rating
+ * @member rating_spec_id The rating specification identifier
+ * @member effective_date The earliest date/time that the rating is to be in effect
+ * @member create_date    The date/time that the rating was loaded into the datbase
+ * @member active_flag    A flag ('T' or 'F') specifying whether the rating is active
+ * @member formula        The formula (algebraic or RPN) for the rating if the rating is formula-based
+ * @member native_units   The native units for the rating
+ * @member description    The description of the rating
+ * @member rating_info    The rating lookup values if the rating is lookup-based
+ * @member current_units  A flag ('D' or 'N') specfying whether the lookup values are currently in database storage ('D') or native ('N') units
+ * @member current_time   A flag ('D' or 'L') specifying whether the times are currently in database ('D') (=UTC) or rating location local ('L') time zone
+ * @member formula_tokens A collection of formula tokens if the rating is formula-based
+ */
+as object(
    office_id      varchar2(16),
    rating_spec_id varchar2(372),
    effective_date date,
@@ -3507,11 +3843,23 @@ create type rating_t as object(
    current_units  varchar2(1), -- 'D' = database, 'N' = native, other = don't know
    current_time   varchar2(2), -- 'D' = database, 'L' = native, other = don't know
    formula_tokens str_tab_t,
-   
+   /**
+    * Construct a rating_t object from data in the database.
+    *
+    * @param p_rating_code The primary key of the AT_RATING table
+    */
    constructor function rating_t(
       p_rating_code in number)
    return self as result,
-   
+   /**
+    * Construct a rating_t object from data in the database.
+    *
+    * @param p_rating_spec_id The rating specification of the rating to construct
+    * @param p_effective_date The effective date
+    * @param p_match_date     A flag ('T' or 'F') specifying whether the p_effective_date parameter is to be matched exactly.  If 'F', the latest effective date on or before p_effective_date will be used.
+    * @param p_time_zone      The time zone for p_effective_date.  If NULL, the local time zone of the rating's location will be used.
+    * @param p_office_id      The office owning the rating.  If NULL, the session user's default office will be used
+    */
    constructor function rating_t(
       p_rating_spec_id in varchar2,
       p_effective_date in date     default null,
@@ -3519,107 +3867,231 @@ create type rating_t as object(
       p_time_zone      in varchar2 default null,
       p_office_id      in varchar2 default null)
    return self as result,
-      
+   /**
+    * Constructs a rating_t object from an XML instance.  The XML
+    * instance must conform to the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+    * The instance structure is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating">documented here</a>.
+    *
+    * @param p_xml The XML instance
+    */
    constructor function rating_t(
       p_xml in xmltype)
    return self as result,
-   
+   -- not documented
    member procedure init(
       p_rating_code in number),
-   
+   -- not documented
    member procedure init(
       p_rating_spec_id in varchar2,
       p_effective_date in date     default null,
       p_match_date     in varchar2 default 'F',
       p_time_zone      in varchar2 default null,
       p_office_id      in varchar2 default null),
-      
+   -- not documented
    member procedure validate_obj,
-         
+   /**
+    * Sets all rating values of this rating to database storage units, converting if necessary
+    */
    member procedure convert_to_database_units,
-   
+   /**
+    * Sets all rating values of this rating to native units, converting if necessary
+    */
    member procedure convert_to_native_units,
-   
+   /**
+    * Sets the times of this rating to UTC, converting if necessary
+    */
    member procedure convert_to_database_time,
-   
+   /**
+    * Sets the times of this rating to the local time of the rating's location, converting if necessary
+    */
    member procedure convert_to_local_time,
-   
+   -- not documented
    member procedure store(
       p_rating_code    out number,
       p_fail_if_exists in  varchar2),
-   
+   /**
+    * Stores the rating to the database
+    *
+    * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the function
+    *        should fail if the rating already exists in the database
+    *
+    * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is set to 'T' and the
+    *            rating already exists
+    */
    member procedure store(
       p_fail_if_exists in varchar2),
-      
+   /**
+    * Retrieves the rating as an XML instance in an CLOB object
+    *
+    * @return the rating as an XML instance in an CLOB object
+    */
    member function to_clob
    return clob,
-   
+   /**
+    * Retrieves the rating as an XML instance in an XMLTYPE object
+    *
+    * @return the rating as an XML instance in an XMLTYPE object
+    */
    member function to_xml
    return xmltype,
-   
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    member function rate(
       p_ind_values in double_tab_tab_t)
    return double_tab_t,
-   
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    member function rate(
       p_ind_values in double_tab_t)
    return double_tab_t,
-   
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    member function rate_one(
       p_ind_values in double_tab_t)
    return binary_double,
-                     
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    member function rate(
       p_ind_value in binary_double)
    return binary_double,
-   
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    member function rate(
       p_ind_values in tsv_array)
    return tsv_array,
-   
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    member function rate(
       p_ind_values in ztsv_array)
    return ztsv_array,
-   
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    member function rate(
       p_ind_value in tsv_type)
    return tsv_type,      
-   
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    member function rate(
       p_ind_value in ztsv_type)
    return ztsv_type,     
-   
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    member function reverse_rate(
       p_dep_values in double_tab_t)
    return double_tab_t,
-   
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    member function reverse_rate(
       p_dep_value in binary_double)
    return binary_double,
-   
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    member function reverse_rate(
       p_dep_values in tsv_array)
    return tsv_array,
-   
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    member function reverse_rate(
       p_dep_values in ztsv_array)
    return ztsv_array,
-   
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    member function reverse_rate(
       p_dep_value in tsv_type)
    return tsv_type,      
-   
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    member function reverse_rate(
       p_dep_value in ztsv_type)
    return ztsv_type,     
-         
+   -- not documented
    member function get_date(
       p_timestr in varchar2) 
    return date,
-                
+   /**
+    * Returns the number of independent paramters for this rating
+    *
+    * @return the number of independent paramters for this rating
+    */
    member function get_ind_parameter_count
    return pls_integer,
-   
+   -- not documented
    static function get_rating_code(         
       p_rating_spec_id in varchar2,
       p_effective_date in date     default null,
@@ -4919,11 +5391,26 @@ end;
 /
 show errors;
 
-create type rating_tab_t as table of rating_t;
+create type rating_tab_t
+/**
+ * Holds a collection of ratings
+ *
+ * @see type rating_t
+ */
+as table of rating_t;
 /
 show errors;
 
-create type stream_rating_t under rating_t (
+create type stream_rating_t
+/**
+ * Holds a USGS-style stream rating with shifts and offsets
+ *
+ * @see type rating_t
+ *
+ * @member offsets The logarithmic stage interpolation offsets, if any to use with the rating
+ * @member shifts  The stage shifts, if any, to use with the rating
+ */
+under rating_t (
 -- office_id      varchar2(16),
 -- rating_spec_id varchar2(372),
 -- effective_date date,
@@ -4938,10 +5425,23 @@ create type stream_rating_t under rating_t (
    offsets        rating_t,
    shifts         rating_tab_t,
    
+   /**
+    * Construct a stream_rating_t object from data in the database.
+    *
+    * @param p_rating_code The primary key of the AT_RATING table
+    */
    constructor function stream_rating_t(
       p_rating_code in number)
    return self as result,
-   
+   /**
+    * Construct a stream_rating_t object from data in the database.
+    *
+    * @param p_rating_spec_id The rating specification of the rating to construct
+    * @param p_effective_date The effective date
+    * @param p_match_date     A flag ('T' or 'F') specifying whether the p_effective_date parameter is to be matched exactly.  If 'F', the latest effective date on or before p_effective_date will be used.
+    * @param p_time_zone      The time zone for p_effective_date.  If NULL, the local time zone of the rating's location will be used.
+    * @param p_office_id      The office owning the rating.  If NULL, the session user's default office will be used
+    */
    constructor function stream_rating_t(
       p_rating_id      in varchar2,
       p_effective_date in date     default null,
@@ -4949,95 +5449,209 @@ create type stream_rating_t under rating_t (
       p_time_zone      in varchar2 default null,
       p_office_id      in varchar2 default null)
    return self as result,
-   
+   /**
+    * Constructs a rating_t object from an XML instance.  The XML
+    * instance must conform to the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+    * The instance structure is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_usgs-stream-rating">documented here</a>.
+    *
+    * @param p_xml The XML instance
+    */
    constructor function stream_rating_t(
       p_xml in xmltype)
    return self as result,
-   
+   -- not documented
    overriding member procedure init(
       p_rating_code in number),
-   
+   -- not documented
    overriding member procedure validate_obj,
-   
+   /**
+    * Sets all rating values of this rating to database storage units, converting if necessary
+    */
    overriding member procedure convert_to_database_units,
-   
+   /**
+    * Sets all rating values of this rating to native units, converting if necessary
+    */
    overriding member procedure convert_to_native_units,
-   
+   /**
+    * Sets the times of this rating to UTC, converting if necessary
+    */
    overriding member procedure convert_to_database_time,
-   
+   /**
+    * Sets the times of this rating to the local time of the rating's location, converting if necessary
+    */
    overriding member procedure convert_to_local_time,
-   
+   /**
+    * Stores the rating to the database
+    *
+    * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the function
+    *        should fail if the rating already exists in the database
+    *
+    * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is set to 'T' and the
+    *            rating already exists
+    */
    overriding member procedure store(
       p_fail_if_exists in varchar2),
-      
+   /**
+    * Retrieves the rating as an XML instance in an CLOB object
+    *
+    * @return the rating as an XML instance in an CLOB object
+    */
    overriding member function to_clob
    return clob,
-   
+   /**
+    * Retrieves the rating as an XML instance in an XMLTYPE object
+    *
+    * @return the rating as an XML instance in an XMLTYPE object
+    */
    overriding member function to_xml
    return xmltype,
-   
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function rate(
       p_ind_values in double_tab_tab_t)
    return double_tab_t,
-   
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function rate(
       p_ind_values in double_tab_t)
    return double_tab_t,
-   
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function rate_one(
       p_ind_values in double_tab_t)
    return binary_double,
-                     
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function rate(
       p_ind_value in binary_double)
    return binary_double,
-         
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function rate(
       p_ind_values in tsv_array)
    return tsv_array,
-         
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function rate(
       p_ind_values in ztsv_array)
    return ztsv_array,
-         
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function rate(
       p_ind_value in tsv_type)
    return tsv_type,
-         
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function rate(
       p_ind_value in ztsv_type)
    return ztsv_type,
-   
+   /**
+    * Reverse rate the specified dependent values
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function reverse_rate(
       p_dep_values in double_tab_t)
    return double_tab_t,
-   
+   /**
+    * Reverse rate the specified dependent values
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function reverse_rate(
       p_dep_value in binary_double)
    return binary_double,
-   
+   /**
+    * Reverse rate the specified dependent values
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function reverse_rate(
       p_dep_values in tsv_array)
    return tsv_array,
-   
+   /**
+    * Reverse rate the specified dependent values
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function reverse_rate(
       p_dep_values in ztsv_array)
    return ztsv_array,
-   
+   /**
+    * Reverse rate the specified dependent values
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function reverse_rate(
       p_dep_value in tsv_type)
    return tsv_type,      
-   
+   /**
+    * Reverse rate the specified dependent values
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
    overriding member function reverse_rate(
       p_dep_value in ztsv_type)
    return ztsv_type,     
-   
+   -- not documented
    member procedure trim_to_effective_date(
       p_date_time in date),
-   
+   -- not documented
    member procedure trim_to_create_date(
       p_date_time in date),
-      
+   -- not documented
    member function latest_shift_date
    return date      
 );
