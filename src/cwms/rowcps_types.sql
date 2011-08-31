@@ -8,6 +8,17 @@ SET serveroutput ON
 --location objects are defined in cwms_types.
 --location_ref_t and location_obj_t.
 CREATE OR REPLACE TYPE lookup_type_obj_t
+/**
+ * Holds data from one of several similarly-structured tables in the database.
+ * Primarily used to hold brief names and descriptions for REGI/ROWCPS application.
+ *
+ * @see type lookup_table_tab_t
+ *
+ * @member office_id     The office that owns the information
+ * @member display_value The brief name or identifier
+ * @member tooltip       The longer description, often targeted for a tooltip
+ * @member active        A flag ('T' or 'F') that specifies whether this item is active
+ */
 AS
   OBJECT
   (
@@ -22,6 +33,11 @@ AS
   --
   --
 CREATE OR REPLACE TYPE lookup_type_tab_t
+/**
+ * Holds a collection of lookup_type_obj_t objects
+ *
+ * @see type lookup_type_obj_t
+ */
 IS
   TABLE OF lookup_type_obj_t;
   /
@@ -30,6 +46,14 @@ IS
   --
   --
 CREATE OR REPLACE TYPE document_obj_t
+/**
+ * Holds a document identifier
+ *
+ * @see type document_tab_t
+ *
+ * @member office_id   The office that owns the document
+ * @member document_id The document identifier
+ */
 AS
   OBJECT
   (
@@ -42,6 +66,11 @@ AS
   --
   --
 CREATE OR REPLACE TYPE document_tab_t
+/**
+ * Holds a collection of document identifiers
+ *
+ * @see type document_obj_t
+ */
 IS
   TABLE OF document_obj_t;
   /
@@ -51,6 +80,28 @@ IS
   --
   --
 CREATE OR REPLACE TYPE project_obj_t
+/**
+ * Holds information about a CWMS project
+ *
+ * @member project_location               Location identifier of project
+ * @member pump_back_location             Location identifier of pump-back to this project, if any
+ * @member near_gage_location             Location identifier of the nearest gage to the project
+ * @member authorizing_law                The law that authorized construction of the project
+ * @member cost_year                      Year that costs are indexed to
+ * @member federal_cost                   Federal cost to construct the project
+ * @member nonfederal_cost                Non-federal cost to construct the project
+ * @member federal_om_cost                Federal cost of annual operation and maintenance
+ * @member nonfederal_om_cost             Non-federal cost of annual operation and maintenance
+ * @member cost_units_id                  Unit of costs
+ * @member remarks                        General remarks about project
+ * @member project_owner                  Owner of the project
+ * @member hydropower_description         Description of the hydopower at this project, if applicable
+ * @member sedimentation_description      Description of the sedimentation at this project, if applicable
+ * @member downstream_urban_description   Description of urbanization downstream of this project, if applicable
+ * @member bank_full_capacity_description Description of the bank-full capacity at th is project, if applicable
+ * @member yield_time_frame_start         Beginning of time window for critical period for this project
+ * @member yield_time_frame_end           End of time window for critical period for this project
+ */
 AS
   OBJECT
   (
@@ -97,6 +148,23 @@ AS
   --
   --
 CREATE OR REPLACE TYPE embankment_obj_t
+  /**
+   * Holds information about an embankment at a CWMS project
+   *
+   * @see type embankment_tab_t
+   *
+   * @member project_location_ref Identifies the CWMS project
+   * @member embankment_location  Location information about the embankment
+   * @member structure_type       The type of the embankment structure
+   * @member upstream_prot_type   The type of upstream protection of the embankment
+   * @member downstream_prot_type The type of downstream protection of the embankment
+   * @member upstream_sideslope   The slope of the upstream side of the embankment
+   * @member downstream_sideslope The slope of the downstream side of the embankment
+   * @member structure_length     The length of the embankment
+   * @member height_max           The maximum height of the embankment
+   * @member top_width            The top width of the embankment
+   * @member units_id             The unit of length, height, and width
+   */
 AS
   OBJECT
   (
@@ -118,6 +186,11 @@ AS
   --
   --
 CREATE OR REPLACE TYPE embankment_tab_t
+/**
+ * Holds a collection of embankment_obj_t objects
+ *
+ * @see type embankment_obj_t
+ */
 IS
   TABLE OF embankment_obj_t;
   /
@@ -126,6 +199,15 @@ IS
   --
   --
 CREATE OR REPLACE TYPE water_user_obj_t
+/**
+ * Holds information about a water user for a CWMS project
+ *
+ * @see type water_user_tab_t
+ *
+ * @member project_location_ref Identifies the CWMS project
+ * @member entity_name          The name of the water user
+ * @member water_right          The water right for the water user at this project
+ */
 AS
   OBJECT
   (
@@ -139,6 +221,11 @@ AS
   --
   --
 CREATE OR REPLACE TYPE water_user_tab_t
+/**
+ * Hold a collection of water_user_obj_t objects
+ *
+ * @see type water_uer_obj_t
+ */
 IS
   TABLE OF water_user_obj_t;
   /
@@ -147,6 +234,14 @@ IS
   --
   --
 CREATE OR REPLACE TYPE water_user_contract_ref_t
+/**
+ * Holds minimal information about a water user contract
+ *
+ * @see water_user_contract_obj_t
+ *
+ * @member water_user    The water user
+ * @member contract_name The identifier for the water user contract
+ */
 AS
   OBJECT
   (
@@ -159,6 +254,26 @@ AS
   --
   --
 CREATE OR REPLACE type water_user_contract_obj_t
+/**
+ * Holds information about a water user contract
+ *
+ * @see type water_user_contract_ref_t
+ * @see type water_user_contract_tab_t
+ *
+ * @member water_user_contract_ref       Identifies the water user and contract
+ * @member water_supply_contract_type    The type of water supply contract
+ * @member ws_contract_effective_date    The effective date of the contract
+ * @member ws_contract_expiration_date   The expiration date of the contract
+ * @member contracted_storage            The storage under contract
+ * @member initial_use_allocation        The initial storage allocation for this contract
+ * @member future_use_allocation         The future storage allocation for this contract
+ * @member storage_units_id              The unit for storage
+ * @member future_use_percent_activated  The percentage of the future storage allocation that has been utilized
+ * @member total_alloc_percent_activated The percentage of the total storage allocation that has been utilized
+ * @member pump_out_location             The location where water is withrawn from the project, if any
+ * @member pump_out_below_location       The location where water is withdrawn below the project, if any
+ * @member pump_in_location              The location where water is pumped in to the project, if any
+ */
 AS
   object
   (
@@ -183,6 +298,11 @@ AS
   --
   --
 CREATE OR REPLACE TYPE water_user_contract_tab_t
+/**
+ * Holds a collection of water_user_contract_obj_t objects
+ *
+ * @see type water_user_contract_obj_t
+ */
 IS
   TABLE OF water_user_contract_obj_t;
   /
@@ -191,6 +311,18 @@ IS
   --
   --
 CREATE OR REPLACE type wat_usr_contract_acct_obj_t
+/**
+ * Holds a water user contract accounting record
+ *
+ * @see type wat_usr_contract_acct_tab_t
+ *
+ * @member water_user_contract_ref Identifies the water user contract
+ * @member pump_location_ref       The location of the pump for this accounting record
+ * @member physical_transfer_type  Identifies the type of water transfer for this accounting record
+ * @member pump_flow               The pump flow for this accounting record
+ * @member transfer_start_datetime The beginning time for the water transfer for this accounting record
+ * @member accounting_remarks      Remarks for this accounting record
+ */
 AS
   object
   (
@@ -207,12 +339,24 @@ AS
   --
   --
 CREATE OR REPLACE TYPE wat_usr_contract_acct_tab_t
+/**
+ * Holds a collection of water user accounting records
+ */
 IS
   TABLE OF wat_usr_contract_acct_obj_t;
   /
   show errors
   
 CREATE OR REPLACE type loc_ref_time_window_obj_t
+/**
+ * Holds a time window for a location
+ *
+ * @see type loc_ref_time_window_tab_t
+ *
+ * @member location_ref Identifies the location
+ * @member start_date   The beginning of the time window
+ * @member end_dete     The end of the time window
+ */
 AS
   object
   (
@@ -224,6 +368,9 @@ AS
 show errors
 
 CREATE OR REPLACE TYPE loc_ref_time_window_tab_t
+/**
+ * Holds a collection of location time windows
+ */
 IS
   TABLE OF loc_ref_time_window_obj_t;
   /
@@ -234,6 +381,19 @@ IS
   --
   --
 CREATE OR REPLACE TYPE lock_obj_t
+/**
+ * Holds information about a lock at a CWMS project
+ *
+ * @member project_location_ref Identifies the CWMS project
+ * @member lock_location        The location information about the locak
+ * @member volume_per_lockage   The volume of water released for each lockage
+ * @member volume_units_id      The unit for lockage volume
+ * @member lock_width           The width of the lock
+ * @member lock_length          The length of the lock
+ * @member minimum_draft        The minimum draft for the lock
+ * @member normal_lock_lift     The elevation difference between upstream and downstream pools
+ * @member units_id             The unit of length, width, draft, and lift
+ */
 AS
   OBJECT
   (
@@ -255,6 +415,12 @@ AS
   --
   --
 CREATE OR REPLACE TYPE characteristic_ref_t
+/**
+ * Identifies a characteristic
+ *
+ * @member office_id         The office that owns the characteristic
+ * @member characteristic_id The characteristic identifier
+ */
 AS
   OBJECT
   (
@@ -267,6 +433,15 @@ AS
   --
   --
 CREATE OR REPLACE TYPE project_structure_obj_t
+/**
+ * Holds information about a structure at a CWMS project
+ *
+ * @see type project_structure_tab_t
+ *
+ * @member project_location_ref Identifies the project
+ * @member structure_location   The location information about structure
+ * @member characteristic_ref   Identifies the characteristic
+ */
 AS
   OBJECT
   (
@@ -280,6 +455,11 @@ AS
   --
   --
 CREATE OR REPLACE TYPE project_structure_tab_t
+/**
+ * Holds a collection of project_structure_obj_t objects
+ *
+ * @see type project_structure_obj_t
+ */
 IS
   TABLE OF project_structure_obj_t;
   /
@@ -288,6 +468,15 @@ IS
   --
   --
 CREATE OR REPLACE TYPE characteristic_obj_t
+/**
+ * Holds information about a characteristic
+ *
+ * @see type characteristic_ref_t
+ * @see type characteristic_tab_t
+ *
+ * @member characteristic_ref  Identifies the characteristic
+ * @member general_description Describes the characteristic
+ */
 AS
   OBJECT
   (
@@ -311,6 +500,11 @@ AS
   --
   --
 CREATE OR REPLACE TYPE characteristic_tab_t
+/**
+ * Holds a table of characteristics
+ *
+ * @see type characteristic_obj_t
+ */
 IS
   TABLE OF characteristic_obj_t;
   /
@@ -319,6 +513,17 @@ IS
 -- gate calc
 -- 
 CREATE OR REPLACE type gate_setting_obj_t
+/**
+ * Holds information about a gate setting
+ *
+ * @see type gate_setting_tab_t
+ * @see type gate_change_obj_t
+ *
+ * @member outlet_location_ref Identifies the gate
+ * @member opening             The opening value
+ * @member opening_parameter   The opening parameter
+ * @member opening_units       The opening unit
+ */
 AS
   object
   (
@@ -332,6 +537,12 @@ AS
   show errors
   --
 CREATE OR REPLACE TYPE gate_setting_tab_t
+/**
+ * Holds a collection of gate settings
+ *
+ * @see type gate_setting_obj_t
+ * @see type gate_change_obj_t
+ */
 is
   TABLE OF gate_setting_obj_t;
   /
@@ -339,6 +550,25 @@ is
 --
 --
 CREATE OR REPLACE type gate_change_obj_t
+/**
+ * Holds information about a gate change at a CWMS project
+ *
+ * @see type gate_change_tab_t
+ *
+ * @member project_location_ref         Identifies the project
+ * @member change_date                  The date/time of the gate change
+ * @member elev_pool                    The pool elevation at the time of the gate change
+ * @member discharge_computation        The type of discharge computation used
+ * @member release_reason               The reason for the gate change
+ * @member settings                     Settings of individual gates
+ * @member elev_tailwater               The tailwater elevation at the time of the gate change
+ * @member elev_units                   The elevation unit
+ * @member old_total_discharge_override The discharge before the gate change
+ * @member new_total_discharge_override The discharge after the gate change
+ * @member discharge_units              The discharge unit
+ * @member change_notes                 Notes about the gate change
+ * @member protected                    A flag ('T' or 'F') specifying whether this gate change is protected from future updates
+ */
 AS
   object
   (
@@ -364,6 +594,11 @@ AS
   --
   --
 CREATE OR REPLACE TYPE gate_change_tab_t
+/**
+ * Holds information on a collection of gate changes
+ *
+ * @see type gate_change_obj_t
+ */
 is
   TABLE OF gate_change_obj_t;
   /
@@ -375,6 +610,20 @@ is
 CREATE OR REPLACE
 type TURBINE_SETTING_OBJ_T
 AS
+/**
+ * Holds information about a turbine setting at a CWMS project
+ *
+ * @see type turbine_setting_tab_t
+ * @see type turbine_change_obj_t
+ *
+ * @member turbine_location_ref Identifies the turbine
+ * @member old_discharge        The discharge through the turbine before the setting
+ * @member new_discharge        The discharge through the turbine after the setting
+ * @member discharge_units      The discharge unit
+ * @member real_power           The actual power generated by the turbine after the setting
+ * @member scheduled_load       The scheduled load for the turbine at the time of the setting
+ * @member generation_units     The unit of power generation and load
+ */
   object
   (
   --required
@@ -394,6 +643,12 @@ AS
   show errors
   --
 CREATE OR REPLACE TYPE turbine_setting_tab_t
+/**
+ * Holds information about a collection of turbine settings
+ *
+ * @see type turbine_setting_obj_t
+ * @see type turbine_change_obj_t
+ */
 is
   TABLE OF turbine_setting_obj_t;
   /
@@ -401,6 +656,25 @@ is
 --
 --
 CREATE OR REPLACE type turbine_change_obj_t
+/**
+ * Holds information about a turbine change at a CWMS project
+ *
+ * @see type tubine_change_tab_t
+ *
+ * @member project_location_ref         Identifies the project
+ * @member change_date                  The date/time of the turbine change
+ * @member discharge_computation        The discharge computation used for the turbine change
+ * @member setting_reason               The reason for the turbine change
+ * @member settings                     The individual turbine settings
+ * @member elev_pool                    The pool elevation at the time of the turbine change
+ * @member elev_tailwater               The tailwater elevation at the time of the turbine change
+ * @member elev_units                   The elevation unit
+ * @member old_total_discharge_override The total discharge before the turbine change
+ * @member new_total_discharge_override The total discharge after the turbine change
+ * @member discharge_units              The discharge unit
+ * @member change_notes                 Notes about the turbine change
+ * @member protected                    A flag ('T' or 'F') specifying whether the turbine change is protected from future updates
+ */
 AS
   object
   (
@@ -428,6 +702,11 @@ AS
   --
   --
 CREATE OR REPLACE TYPE turbine_change_tab_t
+/**
+ * Holds a collection of turbine changes
+ *
+ * @see type turbine_change_obj_t
+ */
 is
   TABLE OF turbine_change_obj_t;
   /
