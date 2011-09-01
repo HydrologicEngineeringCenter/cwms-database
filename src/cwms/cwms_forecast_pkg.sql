@@ -1,17 +1,34 @@
-create or replace package cwms_forecast as
-
---------------------------------------------------------------------------------
--- function get_forecast_spec_code
---------------------------------------------------------------------------------
+create or replace package cwms_forecast
+/**
+ * Routines for dealing with forecasts or other model runs
+ *
+ * @since CWMS 2.1
+ *
+ * @author Mike Perryman
+ */
+as
+-- not documented
 function get_forecast_spec_code(
    p_location_id in varchar2,
    p_forecast_id in varchar2,
    p_office_id   in varchar2 default null) -- null = user's office id
    return number;
-
---------------------------------------------------------------------------------
--- procedure store_spec
---------------------------------------------------------------------------------
+/**
+ * Stores (inserts or updates) a forecast specification to the database
+ *
+ * @param p_location_id    The forecast location identifier
+ * @param p_forecast_id    The forecast identifier
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if the forecast specification already exists in the database
+ * @param p_ignore_nulls   A flag ('T' or 'F') that specifies whether to ignore NULL values when updating an existing forecast specification.  If 'T' no data will be overwritten by a NULL
+ * @param p_source_agency  The agency that supplies forecasts under this spcecification
+ * @param p_source_office  The office within the source agency that supplies forecasts under this spcecification
+ * @param p_valid_lifetime The number of hours that a forecast under this specification is considered to be current
+ * @param p_forecast_type  The forecast type as determined by the source agency, if applicable
+ * @param p_source_loc_id  The location that is the source for forecasts under this specification, if applicable
+ * @param p_office_id      The office that owns the forecast specification.  If not specified or NULL, the session user's default office is used.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the forecast specification already exists in the database
+ */
 procedure store_spec(
    p_location_id    in varchar2,
    p_forecast_id    in varchar2,
@@ -23,10 +40,18 @@ procedure store_spec(
    p_forecast_type  in varchar2 default null,  -- null = null
    p_source_loc_id  in varchar2 default null,  -- null = null
    p_office_id      in varchar2 default null); -- null = user's office id
-
---------------------------------------------------------------------------------
--- procedure retrieve_spec
---------------------------------------------------------------------------------
+/**
+ * Retieves a forecast specification from the database
+ *
+ * @param p_source_agency  The agency that supplies forecasts under this spcecification
+ * @param p_source_office  The office within the source agency that supplies forecasts under this spcecification
+ * @param p_valid_lifetime The number of hours that a forecast under this specification is considered to be current
+ * @param p_forecast_type  The forecast type as determined by the source agency, if applicable
+ * @param p_source_loc_id  The location that is the source for forecasts under this specification, if applicable
+ * @param p_location_id    The forecast location identifier
+ * @param p_forecast_id    The forecast identifier
+ * @param p_office_id      The office that owns the forecast specification.  If not specified or NULL, the session user's default office is used.
+ */
 procedure retrieve_spec(
    p_source_agency  out varchar2,
    p_source_office  out varchar2,
@@ -36,40 +61,161 @@ procedure retrieve_spec(
    p_location_id    in  varchar2,
    p_forecast_id    in  varchar2,
    p_office_id      in  varchar2 default null); -- null = user's office id
-
---------------------------------------------------------------------------------
--- procedure delete_spec
---------------------------------------------------------------------------------
+/**
+ * Deletes a forecast specification from the database
+ *
+ * @param p_location_id    The forecast location identifier
+ * @param p_forecast_id    The forecast identifier
+ * @param p_delete_action  Specifies what to delete. Actions are as follows:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_delete_action</th>
+ *     <th style="border:1px solid black;">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_key</td>
+ *     <td style="border:1px solid black;">deletes only the forcast specification, and then only if it has no forecast time series or text</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_data</td>
+ *     <td style="border:1px solid black;">deletes only the forecast time series and text under this forecast specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_all</td>
+ *     <td style="border:1px solid black;">deletes the forecast specification and all forecast timeseries and text under it</td>
+ *   </tr>
+ * </table>
+ * @param p_office_id      The office that owns the forecast specification.  If not specified or NULL, the session user's default office is used.
+ */
 procedure delete_spec(
    p_location_id    in varchar2,
    p_forecast_id    in varchar2,
    p_delete_action  in varchar2 default cwms_util.delete_key,
    p_office_id      in varchar2 default null); -- null = user's office id
-
---------------------------------------------------------------------------------
--- procedure rename_spec
---------------------------------------------------------------------------------
+/**
+ * Renames an existing forecast specification from the database
+ *
+ * @param p_location_id      The forecast location identifier
+ * @param p_old_forecast_id  The existing forecast identifier
+ * @param p_new_forecast_id  The new forecast identifier
+ * @param p_office_id        The office that owns the forecast specification.  If not specified or NULL, the session user's default office is used.
+ */
 procedure rename_spec(
    p_location_id     in varchar2,
    p_old_forecast_id in varchar2,
    p_new_forecast_id in varchar2,
    p_office_id       in varchar2 default null); -- null = user's office id
-
---------------------------------------------------------------------------------
--- procedure cat_specs
---
--- cursor contains the following field, ordered by the first 3:
---
---    office_id      varchar2(16)
---    location_id    varchar2(49)
---    forecast_id    varchar2(32)
---    source_agency  varchar2(16)
---    source_office  varchar2(16)
---    valid_lifetime number
---    forecast_type  varchar2(5)
---    source_loc_id  varchar2(49)
---
---------------------------------------------------------------------------------
+/**
+ * Catalogs forecast specifications that match the specified parameters.Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_spec_catalog A cursor containing all matching forecast specifications.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the forecast specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">location_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier of the forecast specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">forecast_id</td>
+ *     <td style="border:1px solid black;">varchar2(32)</td>
+ *     <td style="border:1px solid black;">The forecast identifier of the forecast specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">source_agency</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The agency that supplies forecasts under this spcecification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">source_office</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office within the source agency that supplies forecasts under this spcecification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">valid_lifetime</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The number of hours that a forecast under this specification is considered current</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">7</td>
+ *     <td style="border:1px solid black;">forecast_type</td>
+ *     <td style="border:1px solid black;">varchar2(5)</td>
+ *     <td style="border:1px solid black;">The forecast type as determined by the source agency</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">8</td>
+ *     <td style="border:1px solid black;">source_loc_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location that is the source for forecasts under this specification</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_location_id_mask  The location identifier pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_forecast_id_mask  The forecast identifier pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_source_agency_mask  The source agency pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_source_office_mask  The source office pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_forecast_type_mask  The forecast type pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_source_loc_id_mask  The source location identifier pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure cat_specs(
    p_spec_catalog       out sys_refcursor,
    p_location_id_mask   in  varchar2 default '*',
@@ -79,10 +225,116 @@ procedure cat_specs(
    p_forecast_type_mask in  varchar2 default '*',
    p_source_loc_id_mask in  varchar2 default '*',
    p_office_id_mask     in  varchar2 default null); -- null = user's office id
-
---------------------------------------------------------------------------------
--- function cat_specs_f
---------------------------------------------------------------------------------
+/**
+ * Catalogs forecast specifications that match the specified parameters.Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_location_id_mask  The location identifier pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_forecast_id_mask  The forecast identifier pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_source_agency_mask  The source agency pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_source_office_mask  The source office pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_forecast_type_mask  The forecast type pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_source_loc_id_mask  The source location identifier pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return A cursor containing all matching forecast specifications.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the forecast specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">location_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier of the forecast specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">forecast_id</td>
+ *     <td style="border:1px solid black;">varchar2(32)</td>
+ *     <td style="border:1px solid black;">The forecast identifier of the forecast specification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">source_agency</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The agency that supplies forecasts under this spcecification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">source_office</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office within the source agency that supplies forecasts under this spcecification</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">valid_lifetime</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The number of hours that a forecast under this specification is considered current</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">7</td>
+ *     <td style="border:1px solid black;">forecast_type</td>
+ *     <td style="border:1px solid black;">varchar2(5)</td>
+ *     <td style="border:1px solid black;">The forecast type as determined by the source agency</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">8</td>
+ *     <td style="border:1px solid black;">source_loc_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location that is the source for forecasts under this specification</td>
+ *   </tr>
+ * </table>
+ */
 function cat_specs_f(
    p_location_id_mask   in varchar2 default '*',
    p_forecast_id_mask   in varchar2 default '*',
@@ -92,10 +344,24 @@ function cat_specs_f(
    p_source_loc_id_mask in varchar2 default '*',
    p_office_id_mask     in varchar2 default null) -- null = user's office id
    return sys_refcursor;
-
---------------------------------------------------------------------------------
--- procedure store_ts
---------------------------------------------------------------------------------
+/**
+ * Stores (inserts or updates) a single time series for a forecast to the database
+ *
+ * @param p_location_id     The forecast location identifier
+ * @param p_forecast_id     The forecast identifier
+ * @param p_cwms_ts_id      The time series identifier
+ * @param p_units           The unit of the time series values
+ * @param p_forecast_time   The forecast time
+ * @param p_issue_time      The time the forecast was issued
+ * @param p_version_date    The version date for the time series
+ * @param p_time_zone       The time zone for p_forecast_time, p_issue_time, p_verion_date, and p_timeseries_data
+ * @param p_timeseries_data The time series data to store
+ * @param p_fail_if_exists  A flag ('T' or 'F') that specifies whether the routine should fail if the forecast time series already exists in the database
+ * @param p_store_rule      The store rule to use.  Same as for <a href="pkg_cwms_ts.html#procedure store_ts(p_cwms_ts_id in varchar2, p_units in varchar2, p_timeseries_data in tsv_array, p_store_rule in varchar2, p_override_prot in varchar2, p_version_date in date, p_office_id in varchar2)">cwms_ts.store_ts</a>
+ * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the forecast time series exists in the database
+ */
 procedure store_ts(
    p_location_id     in varchar2,
    p_forecast_id     in varchar2,
@@ -109,10 +375,55 @@ procedure store_ts(
    p_fail_if_exists  in varchar2,
    p_store_rule      in varchar2 default null,  -- null = DELETE INSERT
    p_office_id       in varchar2 default null); -- null = user's office id   
-
---------------------------------------------------------------------------------
--- procedure retrieve_ts
---------------------------------------------------------------------------------
+/**
+ * Retrieves a single time series for a forecast from the database
+ *
+ * @param p_ts_cursor       The cursor of time series data. The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">date_time</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The date/time of the value, in the specified time zone</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">value</td>
+ *     <td style="border:1px solid black;">binary_double</td>
+ *     <td style="border:1px solid black;">The time series value in the specified unit</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">quality_code</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The quality code of the time series value</td>
+ *   </tr>
+ * </table>
+ * @param p_version_date    The version date for the time series
+ * @param p_location_id     The forecast location identifier
+ * @param p_forecast_id     The forecast identifier
+ * @param p_cwms_ts_id      The time series identifier
+ * @param p_units           The unit of the time series values
+ * @param p_forecast_time   The forecast time
+ * @param p_issue_time      The time the forecast was issued
+ * @param p_start_time      The start of the time window to retrieve. If not specified or NULL, the start of the time window is the start of the forecast time series
+ * @param p_end_time        The end of the time window to retrieve. If not specified or NULL, the end of the time window is the end of the forecast time series
+ * @param p_time_zone       The time zone for p_forecast_time, p_issue_time, p_start_time, and p_end_time, as well as for the retrieved time series data
+ * @param p_trim            A flag ('T' or 'F') that specifies whether to trim missing values from the beginning and end of the time series data
+ * @param p_start_inclusive A flag ('T' or 'F') that specifies whether the time window starts on or after p_start_time
+ * @param p_end_inclusive   A flag ('T' or 'F') that specifies whether the time window ends on or before p_end_time
+ * @param p_preivous        A flag ('T' or 'F') that specifies whether to retrieve the latest time series value before the start of the time window
+ * @param p_next            A flag ('T' or 'F') that specifies whether to retrieve the earliest time series value after the end of the time window
+ * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
+ */
 procedure retrieve_ts(
    p_ts_cursor       out sys_refcursor,
    p_version_date    out date,
@@ -131,10 +442,17 @@ procedure retrieve_ts(
    p_previous        in  varchar2 default 'F',
    p_next            in  varchar2 default 'F',
    p_office_id       in  varchar2 default null); -- null = user's office id   
-
---------------------------------------------------------------------------------
--- procedure delete_ts
---------------------------------------------------------------------------------
+/**
+ * Deletes forecast time series from the database
+ *
+ * @param p_location_id     The forecast location identifier
+ * @param p_forecast_id     The forecast identifier
+ * @param p_cwms_ts_id      The time series identifier. If not specified or NULL, time series for all time series identifiers is deleted
+ * @param p_forecast_time   The forecast time. If not specified or NULL, time series for all forecast times is deleted
+ * @param p_issue_time      The time the forecast was issued. If not specified or NULL, time series for all issue times is deleted
+ * @param p_time_zone       The time zone for p_forecast_time and p_issue_time. If not specified or NULL, the local time zone for the location is used
+ * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
+ */
 procedure delete_ts(
    p_location_id   in varchar2,
    p_forecast_id   in varchar2,
@@ -152,7 +470,7 @@ procedure delete_ts(
 --    office_id      varchar2(16)
 --    forecast_date  date          
 --    issue_date     date          
---    cwm_ts_id      varchar2(183)
+--    cwms_ts_id      varchar2(183)
 --    version_date   date          
 --    min_time       date          
 --    max_time       date
@@ -162,6 +480,104 @@ procedure delete_ts(
 -- the time series extents are indicated in min_time, max_time
 --
 --------------------------------------------------------------------------------
+/**
+ * Catalogs forecast time series that match the specified parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_ts_catalog A cursor containing all matching forecast specifications.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the forecast time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">forecast_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The forecast date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">issue_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The issue date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">cwms_ts_id</td>
+ *     <td style="border:1px solid black;">varchar2(183)</td>
+ *     <td style="border:1px solid black;">The time series identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">version_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The version date of the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">min_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The earliest date/time for the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">7</td>
+ *     <td style="border:1px solid black;">max_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The latest date/time for the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">8</td>
+ *     <td style="border:1px solid black;">time_zone_name</td>
+ *     <td style="border:1px solid black;">varchar2(28)</td>
+ *     <td style="border:1px solid black;">The time zone for the date/time columns</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_location_id  The forecast location identifier.
+ *
+ * @param p_forecast_id  The forecast identifier.
+ *
+ * @param p_source_agency_mask  The source agency pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_cwms_ts_id_mask  The time series identifier pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_time_zone  The time zone to retrieve the catalog in
+ *
+ * @param p_office_id  The office that owns the forecast.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used.
+ */
 procedure cat_ts(
    p_ts_catalog      out sys_refcursor,
    p_location_id     in  varchar2,
@@ -169,25 +585,104 @@ procedure cat_ts(
    p_cwms_ts_id_mask in  varchar2 default '*',
    p_time_zone       in  varchar2 default null,  -- null = location time zone
    p_office_id       in  varchar2 default null); -- null = user's office id   
-
---------------------------------------------------------------------------------
--- function cat_ts_f
---
--- cursor contains the following field, ordered by the first 4:
---
---    office_id      varchar2(16)
---    forecast_date  date          
---    issue_date     date          
---    cwm_ts_id      varchar2(183)
---    version_date   date          
---    min_time       date          
---    max_time       date
---    time_zone_name varchar2(28)  
---
--- all dates are in the indicated time zone (passed in or location default) and
--- the time series extents are indicated in min_time, max_time
---
---------------------------------------------------------------------------------
+/**
+ * Catalogs forecast time series that match the specified parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_location_id  The forecast location identifier.
+ *
+ * @param p_forecast_id  The forecast identifier.
+ *
+ * @param p_source_agency_mask  The source agency pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return  The time series identifier pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_time_zone  The time zone to retrieve the catalog in
+ *
+ * @param p_office_id  The office that owns the forecast.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used.
+ *
+ * @param p_ts_catalog A cursor containing all matching forecast specifications.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the forecast time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">forecast_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The forecast date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">issue_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The issue date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">cwms_ts_id</td>
+ *     <td style="border:1px solid black;">varchar2(183)</td>
+ *     <td style="border:1px solid black;">The time series identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">version_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The version date of the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">min_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The earliest date/time for the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">7</td>
+ *     <td style="border:1px solid black;">max_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The latest date/time for the time series</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">8</td>
+ *     <td style="border:1px solid black;">time_zone_name</td>
+ *     <td style="border:1px solid black;">varchar2(28)</td>
+ *     <td style="border:1px solid black;">The time zone for the date/time columns</td>
+ *   </tr>
+ * </table>
+ */
 function cat_ts_f(
    p_location_id     in varchar2,
    p_forecast_id     in varchar2,
@@ -195,10 +690,20 @@ function cat_ts_f(
    p_time_zone       in varchar2 default null, -- null = location time zone
    p_office_id       in varchar2 default null) -- null = user's office id   
    return sys_refcursor;   
-
---------------------------------------------------------------------------------
--- procedure store_text
---------------------------------------------------------------------------------
+/**
+ * Stores (inserts or updates) text for a forecast to the database
+ *
+ * @param p_location_id     The forecast location identifier
+ * @param p_forecast_id     The forecast identifier
+ * @param p_forecast_time   The forecast time
+ * @param p_issue_time      The time the forecast was issued
+ * @param p_time_zone       The time zone for p_forecast_time and p_issue_time
+ * @param p_text            The text to store
+ * @param p_fail_if_exists  A flag ('T' or 'F') that specifies whether the routine should fail if the forecast text already exists in the database
+ * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the forecast text exists in the database
+ */
 procedure store_text(
    p_location_id     in varchar2,
    p_forecast_id     in varchar2,
@@ -208,10 +713,17 @@ procedure store_text(
    p_text            in clob,
    p_fail_if_exists  in varchar2,
    p_office_id       in varchar2 default null); -- null = user's office id   
-
---------------------------------------------------------------------------------
--- procedure retrieve_text
---------------------------------------------------------------------------------
+/**
+ * Retrieves text for a forecast from the database
+ *
+ * @param p_text            The forecast text
+ * @param p_location_id     The forecast location identifier
+ * @param p_forecast_id     The forecast identifier
+ * @param p_forecast_time   The forecast time
+ * @param p_issue_time      The time the forecast was issued
+ * @param p_time_zone       The time zone for p_forecast_time and p_issue_time
+ * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
+ */
 procedure retrieve_text(
    p_text            out clob,
    p_location_id     in  varchar2,
@@ -220,10 +732,16 @@ procedure retrieve_text(
    p_issue_time      in  date,
    p_time_zone       in  varchar2 default null,  -- null = location time zone
    p_office_id       in  varchar2 default null); -- null = user's office id   
-
---------------------------------------------------------------------------------
--- procedure delete_text
---------------------------------------------------------------------------------
+/**
+ * Deletes text for a forecast from the database
+ *
+ * @param p_location_id     The forecast location identifier
+ * @param p_forecast_id     The forecast identifier
+ * @param p_forecast_time   The forecast time. If not specified or NULL, text for all forecast times is deleted
+ * @param p_issue_time      The time the forecast was issued. If not specified or NULL, text for all issue times is deleted
+ * @param p_time_zone       The time zone for p_forecast_time and p_issue_time
+ * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
+ */
 procedure delete_text(
    p_location_id     in varchar2,
    p_forecast_id     in varchar2,
@@ -231,56 +749,131 @@ procedure delete_text(
    p_issue_time      in date,                   -- null = all issue times
    p_time_zone       in varchar2 default null,  -- null = location time zone
    p_office_id       in varchar2 default null); -- null = user's office id   
-
---------------------------------------------------------------------------------
--- procedure cat_text
---
--- cursor contains the following field, ordered by the first 4:
---
---    office_id      varchar2(16)
---    forecast_date  date          
---    issue_date     date
---    text_id        varchar2(256)          
---    time_zone_name varchar2(28)  
---
--- all dates are in the indicated time zone (passed in or location default)
---
--- office_id and text_id can be used in CWMS_TEXT.RETRIEVE_TEXT
---
---------------------------------------------------------------------------------
+/**
+ * Catalogs all forecast text for a forecast specification
+ *
+ * @param p_text_catalog A cursor containging the following columns, sorted by the first four:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the forecast text</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">forecast_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The forecast date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">issue_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The issue date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">text_id</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">The text identifier. Can be used with <a href="pkg_cwms_text.html#procedure retrieve_text(p_text out clob,p_id in varchar2,p_office_id in varchar2)">cwms_text.retieve_text</a> to retrieve the actual text</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">time_zone_name</td>
+ *     <td style="border:1px solid black;">varchar2(28)</td>
+ *     <td style="border:1px solid black;">The time zone for the forecast and issue dates</td>
+ *   </tr>
+ * </table>
+ * @param p_location_id  The forecast location identifier
+ * @param p_forecast_id  The forecast identifier
+ * @param p_time_zone    The time zone for p_forecast_time and p_issue_time
+ * @param p_office_id    The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
+ */
 procedure cat_text(
    p_text_catalog out sys_refcursor,
    p_location_id  in  varchar2,
    p_forecast_id  in  varchar2,
    p_time_zone    in  varchar2 default null,  -- null = location time zone
    p_office_id    in  varchar2 default null); -- null = user's office id   
-            
---------------------------------------------------------------------------------
--- function cat_text_f
---
--- cursor contains the following field, ordered by the first 4:
---
---    office_id      varchar2(16)
---    forecast_date  date          
---    issue_date     date
---    text_id        varchar2(256)          
---    time_zone_name varchar2(28)  
---
--- all dates are in the indicated time zone (passed in or location default)
---
--- office_id and text_id can be used in CWMS_TEXT.RETRIEVE_TEXT
---
---------------------------------------------------------------------------------
+/**
+ * Catalogs all forecast text for a forecast specification
+ *
+ * @param p_location_id  The forecast location identifier
+ * @param p_forecast_id  The forecast identifier
+ * @param p_time_zone    The time zone for p_forecast_time and p_issue_time
+ * @param p_office_id    The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
+ *
+ * @return A cursor containging the following columns, sorted by the first four:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the forecast text</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">forecast_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The forecast date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">issue_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The issue date of the forecast</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">text_id</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">The text identifier. Can be used with <a href="pkg_cwms_text.html#procedure retrieve_text(p_text out clob,p_id in varchar2,p_office_id in varchar2)">cwms_text.retieve_text</a> to retrieve the actual text</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">time_zone_name</td>
+ *     <td style="border:1px solid black;">varchar2(28)</td>
+ *     <td style="border:1px solid black;">The time zone for the forecast and issue dates</td>
+ *   </tr>
+ * </table>
+ */
 function cat_text_f (
    p_location_id  in varchar2,
    p_forecast_id  in varchar2,
    p_time_zone    in varchar2 default null, -- null = location time zone
    p_office_id    in varchar2 default null) -- null = user's office id   
    return sys_refcursor;   
-
---------------------------------------------------------------------------------
--- procedure store_forecast
---------------------------------------------------------------------------------
+/**
+ * Stores time series and text for a forecast to the database
+ *
+ * @param p_location_id     The forecast location identifier
+ * @param p_forecast_id     The forecast identifier
+ * @param p_forecast_time   The forecast time
+ * @param p_issue_time      The time the forecast was issued
+ * @param p_time_zone       The time zone for p_forecast_time, p_issue_time, p_verion_date, and p_timeseries_data
+ * @param p_fail_if_exists  A flag ('T' or 'F') that specifies whether the routine should fail if any of the forecast time series or the forecast text already exists in the database
+ * @param p_text            The time series text to store
+ * @param p_timeseries      The time series data to store
+ * @param p_store_rule      The store rule to use.  Same as for <a href="pkg_cwms_ts.html#procedure store_ts(p_cwms_ts_id in varchar2, p_units in varchar2, p_timeseries_data in tsv_array, p_store_rule in varchar2, p_override_prot in varchar2, p_version_date in date, p_office_id in varchar2)">cwms_ts.store_ts</a>
+ * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and any of the forecast time series or the forecast text already exists in the database
+ */
 procedure store_forecast(
    p_location_id     in varchar2,
    p_forecast_id     in varchar2,
@@ -292,10 +885,19 @@ procedure store_forecast(
    p_time_series     in ztimeseries_array,
    p_store_rule      in varchar2 default null,  -- null = DELETE INSERT
    p_office_id       in varchar2 default null); -- null = user's office id   
-
---------------------------------------------------------------------------------
--- procedure retrieve_forecast
---------------------------------------------------------------------------------
+/**
+ * Retrieves time series and text for a forecast from the database
+ *
+ * @param p_timeseries      The time series data to store
+ * @param p_text            The time series text to store
+ * @param p_location_id     The forecast location identifier
+ * @param p_forecast_id     The forecast identifier
+ * @param p_unit_system     The unit system ('EN' or 'SI') to return the time series values in
+ * @param p_forecast_time   The forecast time
+ * @param p_issue_time      The time the forecast was issued
+ * @param p_time_zone       The time zone for p_forecast_time, p_issue_time, p_verion_date, and p_timeseries_data
+ * @param p_office_id       The office that owns the forecast specification and time series.  If not specified or NULL, the session user's default office is used.
+ */
 procedure retrieve_forecast(
    p_time_series     out ztimeseries_array,
    p_text            out clob,

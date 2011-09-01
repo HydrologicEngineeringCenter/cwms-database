@@ -1,15 +1,34 @@
-create or replace package cwms_basin as
---------------------------------------------------------------------------------
--- function get_basin_code
---------------------------------------------------------------------------------
+create or replace package cwms_basin
+/**
+ * Routines to work with CWMS basins
+ *
+ * @author Mike Perryman
+ *
+ * @since CWMS 2.1
+ */
+as
+-- not documented
 function get_basin_code(
    p_basin_id  in varchar2,
    p_office_id in varchar2 default null)
    return number;
-      
---------------------------------------------------------------------------------
--- procedure store_basin
---------------------------------------------------------------------------------
+/**
+ * Stores a basin to the database
+ *
+ * @param p_basin_id                   The location identifier of the basin
+ * @param p_fail_if_exists             A flag ('T' or 'F') that specifies whether the routine should fail if the specified basin already exists.  If 'F' and the basin already exists, it will be updated with the specified parameters.
+ * @param p_ignore_nulls               A flag ('T' or 'F') that specifies whether NULL parameters should be ignored when updating a basin.  If 'T', no existing information will be overwritten by a NULL value.
+ * @param p_parent_basin_id            The location identifier of the parent basin if this is a sub-basin
+ * @param p_sort_order                 A number to be used in sorting the sub-basins of the parent basin
+ * @param p_primary_stream_id          The location identifier of the primary stream that drains the basin
+ * @param p_total_drainage_area        The total area of the basin, including non-contributing drainage area
+ * @param p_contributing_drainage_area The area of the basin that contributes flow to the primary stream
+ * @param p_area_unit                  The unit of the area parameters
+ * @param p_office_id                  The office that owns the basin location
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the basin location already exists
+ * @exception ERROR if the basin location identifier already exists and is not a CWMS basin
+ */
 procedure store_basin(
    p_basin_id                   in varchar2,
    p_fail_if_exists             in varchar2,
@@ -21,10 +40,20 @@ procedure store_basin(
    p_contributing_drainage_area in binary_double default null,
    p_area_unit                  in varchar2 default null,
    p_office_id                  in varchar2 default null);
-      
---------------------------------------------------------------------------------
--- procedure retrieve_basin
---------------------------------------------------------------------------------
+/**
+ * Retrieves a basin from the database
+ *
+ * @param p_parent_basin_id            The location identifier of the parent basin if this is a sub-basin
+ * @param p_sort_order                 A number to be used in sorting the sub-basins of the parent basin
+ * @param p_primary_stream_id          The location identifier of the primary stream that drains the basin
+ * @param p_total_drainage_area        The total area of the basin, including non-contributing drainage area
+ * @param p_contributing_drainage_area The area of the basin that contributes flow to the primary stream
+ * @param p_basin_id                   The location identifier of the basin
+ * @param p_area_unit                  The unit to return areas in
+ * @param p_office_id                  The office that owns the basin location
+ *
+ * @exception ITEM_DOES_NOT_EXIST if no such basin location exists
+ */
 procedure retrieve_basin(
    p_parent_basin_id            out varchar2,
    p_sort_order                 out binary_double,
@@ -34,38 +63,156 @@ procedure retrieve_basin(
    p_basin_id                   in  varchar2,
    p_area_unit                  in  varchar2,
    p_office_id                  in  varchar2 default null);
-      
---------------------------------------------------------------------------------
--- procedure delete_basin
---------------------------------------------------------------------------------
+/**
+ * Deletes a basin from the database
+ *
+ * @see constant cwms_util.delete_key
+ * @see constant cwms_util.delete_data
+ * @see constant cwms_util.delete_all
+ *
+ * @param p_basin_id The location identifier of the basin
+ *
+ * @param p_delete_action Specifies what to delete.  Actions are as follows:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_delete_action</th>
+ *     <th style="border:1px solid black;">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_key</td>
+ *     <td style="border:1px solid black;">deletes only this basin, and then only if it has no sub-basins</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_data</td>
+ *     <td style="border:1px solid black;">deletes only sub-basins of this basin, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_all</td>
+ *     <td style="border:1px solid black;">deletes this basin and its sub-basins, if any</td>
+ *   </tr>
+ * </table>
+ * @param p_office_id The office that owns the basin location
+ *
+ * @exception ITEM_DOES_NOT_EXIST if no such basin location exists
+ */
 procedure delete_basin(
    p_basin_id      in varchar2,
    p_delete_action in varchar2 default cwms_util.delete_key,
    p_office_id     in varchar2 default null);
-      
---------------------------------------------------------------------------------
--- procedure rename_basin
---------------------------------------------------------------------------------
+/**
+ * Renames an existing basin
+ *
+ * @param p_old_basin_id The existing location identifier of the basin
+ * @param p_new_basin_id The new location identifier of the basin
+ * @param p_office_id        The office that owns the basin location
+ *
+ * @exception ITEM_DOES_NOT_EXIST if no such basin location exists
+ */
 procedure rename_basin(
    p_old_basin_id in varchar2,
    p_new_basin_id in varchar2,
    p_office_id    in varchar2 default null);
-
---------------------------------------------------------------------------------
--- procedure cat_basins
---
--- the catalog contains the following fields, sorted by the first 4
---
---    office_id                  varchar2(16)
---    basin_id                   varchar2(49)
---    parent_basin_id            varchar2(49)
---    sort_order                 binary_double
---    primary_stream_id          varchar2(49)
---    total_drainage_area        binary_double
---    contributing_drainage_area binary_double
---    area_unit                  varchar2(16)
---
---------------------------------------------------------------------------------
+/**
+ * Catalogs basins in the database that match input parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_basins_catalog A cursor containing all matching basins.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the basin</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">basin_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier of the basin</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">parent_basin_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier of the parent basin, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">sort_order</td>
+ *     <td style="border:1px solid black;">binary_double</td>
+ *     <td style="border:1px solid black;">The sort order of the basin within it parent basin</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">primary_stream_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier of the primary stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">total_drainage_area</td>
+ *     <td style="border:1px solid black;">binary_double</td>
+ *     <td style="border:1px solid black;">The total drainage area of the basin</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">7</td>
+ *     <td style="border:1px solid black;">contributing_drainage_area</td>
+ *     <td style="border:1px solid black;">binary_double</td>
+ *     <td style="border:1px solid black;">The contributing area of the basin</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">8</td>
+ *     <td style="border:1px solid black;">area_unit</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The unit of the total and contributing drainage areas</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_basin_id_mask  The basin location pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_parent_basin_id_mask  The parent basin location pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_primary_stream_id_mask   The primary stream location pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_area_unit The unit in which to list areas
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure cat_basins(
    p_basins_catalog         out sys_refcursor,
    p_basin_id_mask          in  varchar2 default '*',
@@ -73,22 +220,106 @@ procedure cat_basins(
    p_primary_stream_id_mask in  varchar2 default '*',
    p_area_unit              in  varchar2 default null,
    p_office_id_mask         in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- function cat_basins_f
---
--- the catalog contains the following fields, sorted by the first 4
---
---    office_id                  varchar2(16)
---    basin_id                   varchar2(49)
---    parent_basin_id            varchar2(49)
---    sort_order                 binary_double
---    primary_stream_id          varchar2(49)
---    total_drainage_area        binary_double
---    contributing_drainage_area binary_double
---    area_unit                  varchar2(16)
---
---------------------------------------------------------------------------------
+/**
+ * Catalogs basins in the database that match input parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_basin_id_mask  The basin location pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_parent_basin_id_mask  The parent basin location pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_primary_stream_id_mask   The primary stream location pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_area_unit The unit in which to list areas
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return A cursor containing all matching basins.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the basin</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">basin_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier of the basin</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">parent_basin_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier of the parent basin, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">sort_order</td>
+ *     <td style="border:1px solid black;">binary_double</td>
+ *     <td style="border:1px solid black;">The sort order of the basin within it parent basin</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">primary_stream_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier of the primary stream</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">total_drainage_area</td>
+ *     <td style="border:1px solid black;">binary_double</td>
+ *     <td style="border:1px solid black;">The total drainage area of the basin</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">7</td>
+ *     <td style="border:1px solid black;">contributing_drainage_area</td>
+ *     <td style="border:1px solid black;">binary_double</td>
+ *     <td style="border:1px solid black;">The contributing area of the basin</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">8</td>
+ *     <td style="border:1px solid black;">area_unit</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The unit of the total and contributing drainage areas</td>
+ *   </tr>
+ * </table>
+ */
 function cat_basins_f(
    p_basin_id_mask          in varchar2 default '*',
    p_parent_basin_id_mask   in varchar2 default '*',
@@ -96,10 +327,18 @@ function cat_basins_f(
    p_area_unit              in varchar2 default null,
    p_office_id_mask         in varchar2 default null)
    return sys_refcursor;
-
---------------------------------------------------------------------------------
--- procedure get_runoff_volume
---------------------------------------------------------------------------------
+/**
+ * Retrieves the volume of runoff from a depth of excess precipitation
+ *
+ * @param p_runoff_volume       The volume of runoff in the specified unit
+ * @param p_basin_id            The location identifier of the basin
+ * @param p_precip_excess_depth The excess depth of precipitation in the specified unit
+ * @param p_precip_unit         The precipitation unit
+ * @param p_volume_unit         The volume unit
+ * @param p_office_id           The office that owns the basin
+ *
+ * @exception ITEM_DOES_NOT_EXIST if no such basin location exists
+ */
 procedure get_runoff_volume(
    p_runoff_volume       out binary_double,
    p_basin_id            in  varchar2,
@@ -107,10 +346,19 @@ procedure get_runoff_volume(
    p_precip_unit         in  varchar2,
    p_volume_unit         in  varchar2,
    p_office_id           in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- function get_runoff_volume_f
---------------------------------------------------------------------------------
+/**
+ * Retrieves the volume of runoff from a depth of excess precipitation
+ *
+ * @param p_basin_id            The location identifier of the basin
+ * @param p_precip_excess_depth The excess depth of precipitation in the specified unit
+ * @param p_precip_unit         The precipitation unit
+ * @param p_volume_unit         The volume unit
+ * @param p_office_id           The office that owns the basin
+ *
+ * @return The volume of runoff in the specified unit
+ *
+ * @exception ITEM_DOES_NOT_EXIST if no such basin location exists
+ */
 function get_runoff_volume_f(
    p_basin_id            in varchar2,
    p_precip_excess_depth in binary_double,
