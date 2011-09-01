@@ -55,8 +55,8 @@ begin
       end if;
       l_max_value := l_min_value + l_diff2 * l_interval;
       
-      if l_max_value < p_max_value then
-         if l_diff2 = 2 then l_diff2 :=5; 
+      while l_max_value < p_max_value loop
+         if l_diff2 = 2 then l_diff2 := 5;
          else                l_diff2 := l_diff2 * 2;
          end if;
          
@@ -65,7 +65,7 @@ begin
             l_min_value := l_min_value - mod(l_min_value, l_diff2 * l_interval);
          end if;
          l_max_value := l_min_value + l_diff2 * l_interval;
-      end if;
+      end loop;
    
       p_min_value := l_min_value;
       p_max_value := l_max_value;
