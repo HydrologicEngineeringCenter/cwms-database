@@ -72,6 +72,7 @@ procedure store_gage(
    p_phone_number    in varchar2 default null,
    p_internet_addr   in varchar2 default null,
    p_other_access_id in varchar2 default null,
+   p_gage_comments   in varchar2 default null,
    p_office_id       in varchar2 default null)
 is
    item_does_not_exist exception; 
@@ -99,6 +100,7 @@ begin
       p_phone_number,
       p_internet_addr,
       p_other_access_id,
+      p_comments,
       p_office_id));
    if p_location_id is null then
       cwms_err.raise(
@@ -181,6 +183,9 @@ begin
    if p_other_access_id is not null or not l_ignore_nulls then
       l_rec.other_access_id := p_other_access_id;
    end if;
+   if p_comments is not null or not l_ignore_nulls then
+      l_rec.comments := p_comments;
+   end if;
    if p_assoc_loc_id is not null or not l_ignore_nulls then
       l_rec.associated_location_code := 
          case p_assoc_loc_id is null
@@ -227,6 +232,7 @@ procedure retrieve_gage(
    p_phone_number    out varchar2,
    p_internet_addr   out varchar2,
    p_other_access_id out varchar2,
+   p_comments        out varchar2,
    p_location_id     in  varchar2,
    p_gage_id         in  varchar2,
    p_office_id       in  varchar2 default null)
@@ -282,7 +288,8 @@ begin
    p_serial_number   := l_rec.serial_number;
    p_phone_number    := l_rec.phone_number;
    p_internet_addr   := l_rec.internet_address;
-   p_other_access_id := l_rec.other_access_id;      
+   p_other_access_id := l_rec.other_access_id;
+   p_comments        := l_rec.comments;
 end retrieve_gage;
 
 --------------------------------------------------------------------------------
