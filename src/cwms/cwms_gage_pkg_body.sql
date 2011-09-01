@@ -72,7 +72,7 @@ procedure store_gage(
    p_phone_number    in varchar2 default null,
    p_internet_addr   in varchar2 default null,
    p_other_access_id in varchar2 default null,
-   p_gage_comments   in varchar2 default null,
+   p_comments        in varchar2 default null,
    p_office_id       in varchar2 default null)
 is
    item_does_not_exist exception; 
