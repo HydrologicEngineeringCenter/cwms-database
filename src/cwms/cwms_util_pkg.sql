@@ -145,7 +145,7 @@ AS
     */       
    read_privilege CONSTANT                   NUMBER := 4;
    /**
-    * Database privilige for storing data
+    * Database privilege for storing data
     */       
    write_privilege CONSTANT                  NUMBER := 2;
    dba_users CONSTANT                        NUMBER := 1;
@@ -1362,7 +1362,11 @@ AS
       return number;      
    /**
     * Evaluates an arithmetic expression in infix (algebraic) notation and computes
-    * a value based on specified variables.    
+    * a value based on specified variables.
+    *
+    * @see expression_constants
+    * @see expression_operators
+    * @see expression_function
     * 
     * @param p_algebraic_expr a mathematical expression in infix (algebraic) notation.
     *        Standard algebraic operator precedence (order of operations) applies
@@ -1387,7 +1391,11 @@ AS
    /**
     * Evaluates an arithmetic expression in postfix (reverse Polish) notation (RPN)
     * and computes a value based on specified variables.    
-    * 
+    *
+    * @see expression_constants
+    * @see expression_operators
+    * @see expression_function
+    *
     * @param p_RPN_expr a mathematical expression in postfix (reverse Polish) notation (RPN).
     *        All tokens in the expression (numbers, variables, operators, constants, 
     *        functions) must be separated from adjacent tokens by whitespace. Parentheses
@@ -1409,7 +1417,11 @@ AS
    /**
     * Evaluates an arithmetic expression in infix (algebraic) notation or in postfix 
     * (reverse Polish) notation (RPN) and computes a value based on specified variables.    
-    * 
+    *
+    * @see expression_constants
+    * @see expression_operators
+    * @see expression_functions
+    *
     * @param p_expr a mathematical expression in infix (algebraic) notation or
     *        in postfix (reverse Polish) notation (RPN). Standard algebraic operator
     *        precedence (order of operations) applies for infix notation and can be
