@@ -404,6 +404,7 @@ AS
    l_rec            cat_rec_t;
    l_wu_rec         cat_wu_rec_t;
    l_location_ref   location_ref_t := location_ref_t(p_project_id, p_db_office_id);
+   l_office_id      varchar2(16) := cwms_util.get_db_office_id(p_db_office_id);
    
    function make_location_id (
       p_base_location_id in varchar2,
@@ -452,35 +453,55 @@ begin
       -------------
       -- outlets --
       -------------
-      null;
+      for rec in
+         (  select outlet_location_code
+              from at_outlet
+             where project_location_code = l_proj_loc_code
+         )
+      loop
+         cwms_outlet.delete_outlet(
+            cwms_loc.get_location_id(rec.outlet_location_code),
+            cwms_util.delete_all,
+            l_office_id);
+      end loop;
       --------------
       -- turbines --
       --------------
-      null;
-      ---------------------
-      -- turbine changes --
-      ---------------------
-      null;
-      ------------------
-      -- gate changes --
-      ------------------
-      null;
+      for rec in
+         (  select turbine_location_code
+              from at_turbine
+             where project_location_code = l_proj_loc_code
+         )
+      loop
+         cwms_turbine.delete_turbine(
+            cwms_loc.get_location_id(rec.turbine_location_code),
+            cwms_util.delete_all,
+            l_office_id);
+      end loop;
       ----------------------------
       -- construction histories --
       ----------------------------
-      null;
+      delete
+        from at_construction_history
+       where project_location_code = l_proj_loc_code;
       ------------------------
       -- project agreements --
       ------------------------
-      null;
+      delete
+        from at_project_agreement
+       where project_agreement_loc_code = l_proj_loc_code;
       -------------------------------------
       -- project congressional districts --
       -------------------------------------
-      null;
+      delete
+        from at_project_congress_district
+       where project_congress_location_code = l_proj_loc_code;
       ----------------------
       -- project purposes --
       ----------------------
-      null;
+      delete
+        from at_project_purpose
+       where project_location_code = l_proj_loc_code;
       -----------------
       -- water users --
       -----------------
