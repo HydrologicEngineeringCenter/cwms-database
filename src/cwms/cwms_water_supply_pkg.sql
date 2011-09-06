@@ -1,38 +1,79 @@
-WHENEVER sqlerror EXIT sql.sqlcode
-  --------------------------------------------------------------------------------
-  -- package cwms_water_supply.
-  -- used to manipulate the tables at_water_user, at_water_user_contract,
-  -- at_wat_usr_contract_accounting, at_xref_wat_usr_contract_docs.
-  -- also manipulates at_document.
-  --------------------------------------------------------------------------------
-CREATE OR REPLACE
-PACKAGE cwms_water_supply
+CREATE OR REPLACE PACKAGE cwms_water_supply
+/**
+ * Facilities for working with water supply users, contracts, and accounting
+ *
+ * @author Peter Morris
+ *
+ * @since CWMS 2.1
+ */
 IS
-
-
-
-
-  --------------------------------------------------------------------------------
-  -- procedure cat_water_user
-  -- returns a catalog of water users.
-  --
-  -- security: can be called by user and dba group.
-  --
-  -- NOTE THAT THE COLUMN NAMES SHOULD NOT BE CHANGED AFTER BEING DEVELOPED.
-  -- Changing them will end up breaking external code (so make any changes prior
-  -- to development).
-  -- The returned records contain the following columns:
-  --
-  --    Name                      Datatype      Description
-  --    ------------------------ ------------- ----------------------------
-  --    project_office_id         varchar2(16)  the office id of the parent project.
-  --    project_id                varchar2(49)  the identification (id) of the parent project.
-  --    entity_name               varchar2
-  --    water_right               varchar2
-  --
-  --------------------------------------------------------------------------------
-  -- errors will be thrown as exceptions
-  --
+/**
+ * Retrieves a catalog of all water users matching specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cursor  A cursor containing all matching water users.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">project_office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the project</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">project_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier of the project</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">entity_name</td>
+ *     <td style="border:1px solid black;">varchar2(64)</td>
+ *     <td style="border:1px solid black;">The water user</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">water_right</td>
+ *     <td style="border:1px solid black;">varchar2(255)</td>
+ *     <td style="border:1px solid black;">The water right for the water user</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_project_id_mask  The project location pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_db_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ */
 PROCEDURE cat_water_user(
     -- described above
     p_cursor OUT sys_refcursor,
@@ -41,29 +82,89 @@ PROCEDURE cat_water_user(
     -- defaults to the connected user's office if null
     -- the office id can use sql masks for retrieval of additional offices.
     p_db_office_id_mask IN VARCHAR2 DEFAULT NULL );
-  --------------------------------------------------------------------------------
-  -- procedure cat_water_user_contract
-  -- returns a catalog of water user contracts.
-  --
-  -- security: can be called by user and dba group.
-  --
-  -- NOTE THAT THE COLUMN NAMES SHOULD NOT BE CHANGED AFTER BEING DEVELOPED.
-  -- Changing them will end up breaking external code (so make any changes prior
-  -- to development).
-  -- The returned records contain the following columns:
-  --
-  --    Name                      Datatype      Description
-  --    ------------------------ ------------- ----------------------------
-  --    project_office_id         varchar2(16)  the office id of the parent project.
-  --    project_id                varchar2(49)  the identification (id) of the parent project.
-  --    entity_name               varchar2
-  --    contract_name             varchar2
-  --    contracted_storage        binary_double
-  --    contract_type             varchar2      the display value of the lookup.
-  --
-  --------------------------------------------------------------------------------
-  -- errors will be thrown as exceptions
-  --
+/**
+ * Retrieves a catalog of all water user contracts matching specified parameters.  Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cursor  A cursor containing all matching water user contracts.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">project_office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the project</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">project_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier of the project</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">entity_name</td>
+ *     <td style="border:1px solid black;">varchar2(64)</td>
+ *     <td style="border:1px solid black;">The water user</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">contract name</td>
+ *     <td style="border:1px solid black;">varchar2(255)</td>
+ *     <td style="border:1px solid black;">The water right for the water user</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">contracted storage</td>
+ *     <td style="border:1px solid black;">binary double</td>
+ *     <td style="border:1px solid black;">The amount of storage under contract</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">contract type</td>
+ *     <td style="border:1px solid black;">varchar2(25)</td>
+ *     <td style="border:1px solid black;">The water supply contract type</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_project_id_mask  The project location pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_entity_name_mask  The water user pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_db_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ */
 PROCEDURE cat_water_user_contract(
     -- described above
     p_cursor OUT sys_refcursor,
@@ -74,14 +175,13 @@ PROCEDURE cat_water_user_contract(
     -- defaults to the connected user's office if null
     -- the office id can use sql masks for retrieval of additional offices.
     p_db_office_id_mask IN VARCHAR2 DEFAULT NULL );
-  --------------------------------------------------------------------------------
-  -- Returns a set of water users for a given project. Returned data is encapsulated
-  -- in a table of water user oracle types.
-  --
-  -- security: can be called by user and dba group.
-  --
-  -- errors preventing the return of data will be issued as a thrown exception
-  --
+/**
+ * Retrieve water users for a specified project
+ *
+ * @param p_water_users The collection of water users for the specified project
+ *
+ * @param p_project_location_ref The project to retieve the water users for
+ */
 PROCEDURE retrieve_water_users(
     --returns a filled set of objects including location ref data
     p_water_users OUT water_user_tab_t,
@@ -89,26 +189,60 @@ PROCEDURE retrieve_water_users(
     -- includes the location id (base location + '-' + sublocation)
     -- the office id if null will default to the connected user's office
     p_project_location_ref IN location_ref_t );
-  --------------------------------------------------------------------------------
-  -- store a water user.
-  -- errors preventing the return of data will be issued as a thrown exception
-  --------------------------------------------------------------------------------
+/**
+ * Stores (inserts or updates) a water user
+ *
+ * @param p_water_user     The water user to store
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if the specified water user already exists
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the specified water user already exists
+ */
 PROCEDURE store_water_user(
     p_water_user IN water_user_obj_t,
     -- a flag that will cause the procedure to fail if the object already exists
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
-  --------------------------------------------------------------------------------
-  -- store a set of water users.
-  -- errors preventing the return of data will be issued as a thrown exception
-  --------------------------------------------------------------------------------
+/**
+ * Stores (inserts or updates) a collection of water users
+ *
+ * @param p_water_user     The water users to store
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if one of the specified water user already exists
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the one of specified water user already exists
+ */
 PROCEDURE store_water_users(
     p_water_users IN water_user_tab_t,
     -- a flag that will cause the procedure to fail if the object already exists
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
-  --------------------------------------------------------------------------------
-  --deletes the water user identified by the project location ref and entity name.
-  -- errors preventing the return of data will be issued as a thrown exception
-  --------------------------------------------------------------------------------
+/**
+ * Deletes a water user from a specified project
+ *
+ * @see constant cwms_util.delete_key
+ * @see constant cwms_util.delete_data
+ * @see constant cwms_util.delete_all
+ *
+ * @param p_project_location_ref The project to delete the water user from
+ * @param p_entity_name          The water user to delete
+ * @param p_delete_action        Specifies what to delete.  Actions are as follows:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_delete_action</th>
+ *     <th style="border:1px solid black;">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_key</td>
+ *     <td style="border:1px solid black;">deletes only the water user, and then only if it has no other data refers to it</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_data</td>
+ *     <td style="border:1px solid black;">deletes only data that refers to the water user, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_all</td>
+ *     <td style="border:1px solid black;">deletes the water user and all data that refers to it, if any</td>
+ *   </tr>
+ * </table>
+ */
 PROCEDURE delete_water_user(
     -- project location ref.
     -- includes the location id (base location + '-' + sublocation)
@@ -119,9 +253,13 @@ PROCEDURE delete_water_user(
     -- delete key will fail if there are references.
     -- delete all will also delete the referring children.
     p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key );
-  --------------------------------------------------------------------------------
-  -- errors preventing the return of data will be issued as a thrown exception
-  --------------------------------------------------------------------------------
+/**
+ * Renames a water user for a specified project
+ *
+ * @param p_project_location_ref The project to rename the water user for
+ * @param p_entity_old_name      The existing water user name
+ * @param p_entity_new_name      The new water user name
+ */
 PROCEDURE rename_water_user(
     -- project location ref.
     -- includes the location id (base location + '-' + sublocation)
@@ -129,10 +267,13 @@ PROCEDURE rename_water_user(
     p_project_location_ref IN location_ref_t,
     p_entity_name_old      IN VARCHAR2,
     p_entity_name_new      IN VARCHAR2 );
-  --------------------------------------------------------------------------------
-  -- errors preventing the return of data will be issued as a thrown exception
-  --------------------------------------------------------------------------------
-  -- water user contract procedures.
+/**
+ * Retrieves all water supply contracts for a specified project and water user
+ *
+ * @param p_contracts            The retrieved water supply contracts
+ * @param p_project_location_ref The project to retrieve contracts for
+ * @param p_entity_name          The water user to retrieve contracts for
+ */
 PROCEDURE retrieve_contracts(
     p_contracts OUT water_user_contract_tab_t,
     -- a project location refs that identify the objects we want to retrieve.
@@ -140,62 +281,102 @@ PROCEDURE retrieve_contracts(
     -- the office id if null will default to the connected user's office
     p_project_location_ref IN location_ref_t,
     p_entity_name          IN VARCHAR2 );
-  --------------------------------------------------------------------------------
-  -- stores a set of water user contracts.
-  -- errors preventing the return of data will be issued as a thrown exception
-  --------------------------------------------------------------------------------
+/**
+ * Stores a set of water supply contracts to the database
+ *
+ * @param p_contracts      The contracts to store
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if one of the contracts already exists
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the contracts already exists
+ */
 PROCEDURE store_contracts(
     p_contracts IN water_user_contract_tab_t,
     -- a flag that will cause the procedure to fail if the objects already exist
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
---------------------------------------------------------------------------------
--- deletes the water user contract associated with the argument ref.
--- errors preventing the return of data will be issued as a thrown exception
---------------------------------------------------------------------------------
+/**
+ * Deletes a water supply contract from the database
+ *
+ * @see constant cwms_util.delete_key
+ * @see constant cwms_util.delete_data
+ * @see constant cwms_util.delete_all
+ *
+ * @param p_contract_ref  The contract to delete
+ *
+ * @param p_delete_action        Specifies what to delete.  Actions are as follows:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_delete_action</th>
+ *     <th style="border:1px solid black;">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_key</td>
+ *     <td style="border:1px solid black;">deletes only the water user, and then only if it has no other data refers to it</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_data</td>
+ *     <td style="border:1px solid black;">deletes only data that refers to the water user, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_all</td>
+ *     <td style="border:1px solid black;">deletes the water user and all data that refers to it, if any</td>
+ *   </tr>
+ * </table>
+ */
 PROCEDURE delete_contract(
     -- contains the identifying parts of the contract to delete.
     p_contract_ref IN water_user_contract_ref_t,
     -- delete key will fail if there are references.
     -- delete all will also delete the referring children.
     p_delete_action IN VARCHAR2 DEFAULT cwms_util.delete_key );
-  --------------------------------------------------------------------------------
-  -- renames the water user contract associated with the contract arg from
-  -- the old contract name to the new contract name.
-  -- errors preventing the return of data will be issued as a thrown exception
-  --------------------------------------------------------------------------------
+/**
+ * Renames a water supply contract in the database
+ *
+ * @param p_water_user_contract The water supply contract to rename
+ * @param p_old_contract_name   The existing contract name
+ * @param p_new_contract_name   The new contract name
+ */
 PROCEDURE rename_contract(
     p_water_user_contract IN water_user_contract_ref_t,
     p_old_contract_name   IN VARCHAR2,
     p_new_contract_name   IN VARCHAR2 );
-  --------------------------------------------------------------------------------
-  -- errors preventing the return of data will be issued as a thrown exception
-  --------------------------------------------------------------------------------
-  -- look up procedures.
-  -- returns a listing of lookup objects.
+/**
+ * Retrieves the set of water supply contract types for the specified office
+ *
+ * @param p_contract_types The retrieved contract
+ * @param p_db_office_id   The office to retrieve the contract types for. If not specified or NULL, the session user's default office will be used.
+ */
 PROCEDURE get_contract_types(
     p_contract_types OUT lookup_type_tab_t,
     -- defaults to the connected user's office if null
     p_db_office_id IN VARCHAR2 DEFAULT NULL );
-  --------------------------------------------------------------------------------
-  -- errors preventing the return of data will be issued as a thrown exception
-  --------------------------------------------------------------------------------
-  -- inserts or updates a set of lookups.
-  -- if a lookup does not exist it will be inserted.
-  -- if a lookup already exists and p_fail_if_exists is false, the existing
-  -- lookup will be updated.
-  --
-  -- a failure will cause the whole set of lookups to not be stored.
+/**
+ * Stores (inserts or updates) a set of contract types
+ *
+ * @param p_contract_types The contract types to store
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies that the routine should fail if one of the contract types already exists
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and one of the contract types already exists
+ */
 PROCEDURE set_contract_types(
     p_contract_types IN lookup_type_tab_t,
     -- a flag that will cause the procedure to fail if the objects already exist
     p_fail_if_exists IN VARCHAR2 DEFAULT 'T' );
-  --------------------------------------------------------------------------------
-  -- water supply accounting
-  --------------------------------------------------------------------------------
-
-  --------------------------------------------------------------------------------
-  -- retrieve a water user contract accounting set.
-  --------------------------------------------------------------------------------
+/**
+ * Retrieves water supply accounting records for a specified contract and time winow
+ *
+ * @param p_accounting_set  The retrieved accounting records
+ * @param p_contract_ref    The contract to retrieve the records for
+ * @param p_units           The flow unit to use in the retreived accounting records
+ * @param p_start_time      The beginning of the time window
+ * @param p_end_time        The end of the time window
+ * @param p_time_zone       The time zone to use for the parameters and account records
+ * @param p_start_inclusive A flag ('T' or 'F') specifying whether the time window begins on ('T') or after ('F') p_start_time
+ * @param p_end_inclusive   A flag ('T' or 'F') specifying whether the time window ends on ('T') or before ('F') p_end_time
+ * @param p_ascending_flag  A flag ('T' or 'F') specifying whether the accounting records are sorted in ascending date order
+ * @param p_row_limit       The maximum number of records to retrieve even if the time window is not filled
+ * @param p_transfer type   Reserved for future use. Not implemented
+ */
 PROCEDURE retrieve_accounting_set(
     -- the retrieved set of water user contract accountings
     p_accounting_set out wat_usr_contract_acct_tab_t,
@@ -228,7 +409,7 @@ PROCEDURE retrieve_accounting_set(
     -- if null, return all transfers.
     p_transfer_type IN VARCHAR2 DEFAULT NULL
   );
-
+-- not documented
 PROCEDURE retrieve_pump_accounting(
     -- the retrieved set of water user contract accountings
     p_accounting_set out wat_usr_contract_acct_tab_t,
@@ -266,10 +447,17 @@ PROCEDURE retrieve_pump_accounting(
     -- do we need this?
     p_transfer_type IN VARCHAR2 DEFAULT NULL
   );
-  
-  --------------------------------------------------------------------------------
-  -- store a water user contract accounting set.
-  --------------------------------------------------------------------------------
+/**
+ * Stores a set of water supply account records to the database
+ *
+ * @param p_accounting_tab       The water accounting records to store
+ * @param p_contract_ref         The contract to store the accounting records for
+ * @param p_pump_time_window_tab The time window to clear of all accounting records before storing
+ * @param p_time_zone            The time zone for the time window and accounting records
+ * @param p_flow_unit_id         The flow unit for the accounting records
+ * @param p_store_rule           Reserved for future use   Not implemented
+ * @param p_override_prot        Reserved for future use.  Not implemented
+ */
 PROCEDURE store_accounting_set(
     -- the set of water user contract accountings to store to the database.
     p_accounting_tab IN wat_usr_contract_acct_tab_t,

@@ -1,3 +1,4 @@
+set define on
 CREATE OR REPLACE PACKAGE BODY cwms_ts AS
 
    function get_max_open_cursors return integer
@@ -7826,8 +7827,10 @@ begin
    --------------------------------------
    l_user_id := cwms_util.get_user_id;
 
-   if l_user_id != '&cwms_schema'
+   if upper(l_user_id) != upper('&cwms_schema')
    then
+      dbms_output.put_line('User ID = '||l_user_id);
+      dbms_output.put_line('Must be : '||'&cwms_schema');
       raise_application_error (-20999,
                                   'Must be &cwms_schema user to start job '
                                || l_job_id,

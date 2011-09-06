@@ -1,55 +1,17 @@
-WHENEVER sqlerror exit sql.sqlcode
-SET serveroutput on
-
-
-create or replace PACKAGE CWMS_PROJECT IS
-
--------------------------------------------------------------------------------
--- CWMS_PROJECT
---
--- These procedures and functions query and manipulate projects in the CWMS/ROWCPS
--- database. 
-
----Note on DB_OFFICE_ID. DB_OFFICEID in addtion to location id is required to 
--- uniquely identify a location code, so it will be included in all of these calls.
---
--- defaults to the connected user's office if null.
--- p_db_office_id		IN		VARCHAR2 DEFAULT NULL
--- CWMS has a package proceudure that can be used to determine the office id for
--- a given user.
-
---type definitions. 
--- utilize location object from cwms_types.sql. 
--- utilize project object from rowcps_types.sql
-
--- security
--- cwms (cwms_sec?) allows definitions of user groups and assigned privileges to 
--- control access package procedures. 
--- Need to determine how these are going to be implemented into the ROWCPS API.
--- Talk to Perryman on this.
--- Initial thought is to use two cwms groups. a user level group and a dba level
--- group. I dont recall the names of these at the moment.
--------------------------------------------------------------------------------
-
-
-
-
-
--------------------------------------------------------------------------------
--- procedure: cat_project
--- returns a listing of project identifying and geopositional data. 
--- if a better design is returning a table of project_obj_t, that is fine.
--- at a minimum the columns below need to be returned.
---
--- security: can be called by user and dba group.
---
--- NOTE THAT THE COLUMN NAMES SHOULD NOT BE CHANGED AFTER BEING DEVELOPED.
--- Changing them will end up breaking external code (so make any changes prior
--- to development).
--- The returned records contain the following columns:
---
---    Name                      Datatype      Description
---    ------------------------ ------------- ----------------------------
+create or replace PACKAGE CWMS_PROJECT
+/**
+ * Facilities for working with CWMS projects
+ *
+ * @author Peter Morris
+ *
+ * @since CWMS 2.1
+ */
+IS
+/**
+ * Retrieve information on all project locations owned by an office
+ *
+ * @param p_project_cat A cursor containing the project locations, ordered by
+ * project location identifier.  The columns are:
 --    db_office_id             varchar2(16)   owning office of location
 --    base_location_id         varchar2(16)   base location id
 --    sub_location_id          varchar2(32)   sub-location id, if any
@@ -64,30 +26,118 @@ create or replace PACKAGE CWMS_PROJECT IS
 --    long_name                varchar2(80)   location long name
 --    description              varchar2(512)  location description
 --    active_flag              varchar2(1)    'T' if active, else 'F'
---
--------------------------------------------------------------------------------
---
--- p_basin_cat
--- returns a listing of assigned project locations for all "Basin" category location 
--- groups described by the p_db_office_id parameter. 
---
--- security: can be called by user and dba group.
---
--- NOTE THAT THE COLUMN NAMES SHOULD NOT BE CHANGED AFTER BEING DEVELOPED.
--- Changing them will end up breaking external code (so make any changes prior
--- to development).
--- The returned records contain the following columns:
---    Name                      Datatype      Description
---    ------------------------ ------------- ----------------------------
---    group_office_id          varchar2(16)   owning office of location group
---    loc_group_id             VARCHAR2(32)   the location group id
---    loc_group_desc           VARCHAR2(128)  the location group description
---    location_office_id       varchar2(16)   owning office of location
---    base_location_id         varchar2(16)   base location id
---    sub_location_id          varchar2(32)   sub-location id, if any
---
--- errors will be issued as thrown exceptions. 
---
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">db_office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the project</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">base_location_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The base location identifier of the project</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">sub_location_id</td>
+ *     <td style="border:1px solid black;">varchar2(32)</td>
+ *     <td style="border:1px solid black;">The sub-location identifier of the project, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">time_zone_name</td>
+ *     <td style="border:1px solid black;">varchar2(28)</td>
+ *     <td style="border:1px solid black;">The local time zone of the office</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">latitude</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The actual latitude of the project location</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">longitude</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The actual longitude of the project location</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">7</td>
+ *     <td style="border:1px solid black;">horizontal_datum</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The datum of the actual latitude and longitude</td>
+ *   </tr>
+--   1 db_office_id             varchar2(16)   owning office of location
+--   2 base_location_id         varchar2(16)   base location id
+--   3 sub_location_id          varchar2(32)   sub-location id, if any
+--   4 time_zone_name           varchar2(28)   local time zone name for location
+--   5 latitude                 number         location latitude
+--   6 longitude                number         location longitude
+--   7 horizontal_datum         varchar2(16)   horizontal datrum of lat/lon
+--   8 elevation                number         location elevation
+--   9 elev_unit_id             varchar2(16)   location elevation units
+--   0 vertical_datum           varchar2(16)   veritcal datum of elevation
+--   1 public_name              varchar2(32)   location public name
+--   2 long_name                varchar2(80)   location long name
+--   3 description              varchar2(512)  location description
+--   4 active_flag              varchar2(1)    'T' if active, else 'F'
+ *   <tr>
+ *     <td style="border:1px solid black;">8</td>
+ *     <td style="border:1px solid black;">elevation</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The elevation of the project location</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">9</td>
+ *     <td style="border:1px solid black;">elev_unit_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The unit of elevation</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">10</td>
+ *     <td style="border:1px solid black;">vertical_datum</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The datum for the elevation</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">11</td>
+ *     <td style="border:1px solid black;">public_name</td>
+ *     <td style="border:1px solid black;">varchar2(32)</td>
+ *     <td style="border:1px solid black;">The public name of the project location</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">12</td>
+ *     <td style="border:1px solid black;">long_name</td>
+ *     <td style="border:1px solid black;">varchar2(80)</td>
+ *     <td style="border:1px solid black;">The long name of the project location</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">13</td>
+ *     <td style="border:1px solid black;">description</td>
+ *     <td style="border:1px solid black;">varchar2(512)</td>
+ *     <td style="border:1px solid black;">A description of the project location</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">14</td>
+ *     <td style="border:1px solid black;">active_flag</td>
+ *     <td style="border:1px solid black;">varchar2(1)</td>
+ *     <td style="border:1px solid black;">A flag ('T' or 'F') that specifies whether the project location is marked as active</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_basin_cat Reserved for future use. Currently returns NULL
+ *
+ * @param p_db_office_id The office that owns the project locations
+ */
 PROCEDURE cat_project (
 	--described above.
 	p_project_cat		OUT		sys_refcursor,
@@ -100,16 +150,13 @@ PROCEDURE cat_project (
   p_db_office_id IN    VARCHAR2 DEFAULT NULL
                                                 
 );
-
-   
--- Returns project data for a given project id. Returned data is encapsulated
--- in a project oracle type. This includes the location data for the project (
--- see the referenced location object types in the project type).
--- 
--- security: can be called by user and dba group.
--- 
--- errors preventing the return of data will be issued as a thrown exception
---
+/**
+ * Retrieve information about a specified project
+ *
+ * @param p_project      The retrieved project information
+ * @param p_project_id   The location identifier of the project to retrieve information for
+ * @param p_db_office_id The office that owns the project. If not specified or NULL, the session user's default office will be used.
+ */
 PROCEDURE retrieve_project(
 	--returns a filled in project object including location data
 	p_project					OUT		project_obj_t,
@@ -121,48 +168,27 @@ PROCEDURE retrieve_project(
 	p_db_office_id				IN		VARCHAR2 DEFAULT NULL 
 	
 );
-
--- Stores the data contained within the project object into the database schema.
--- Also stores location data for the project's referenced locations.
--- 
--- security: can only be called by dba group.
--- 
--- This procedure performs both insert and update functionality. Use the 
--- connected user's office id if any of the office id args are null. 
--- 
--- If any of the location codes are undef for the corresponding location id and 
--- office id pairs, then create the location codes codes using cwms_loc.
---
--- if the project location code was created, insert the project data, otherwise
--- update the project data.
---
--- if any referenced location codes were created, insert their data, otherwise 
--- update the location data. cwms_loc might already take care of this via
--- cwms_loc.store_location.
---
--- errors will be issued as thrown exceptions.
--- 
+/**
+ * Stores (inserts or updates) a project to the database
+ *
+ * @param p_project        The project to be stored
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies if the routine should fail if the specified project already exists.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the specified project already exists
+ */
 procedure store_project(
 	-- a populated project object type.
 	p_project					IN		project_obj_t,
   -- fail the store if the project already exists.
   p_fail_if_exists      IN       VARCHAR2 DEFAULT 'T'
 );
-
-
--- Renames a project from one id to a new id.
--- 
--- security: can only be called by dba group.
--- 
--- This should probably just call cwms_loc.rename_location().
--- Discussion has occurred on whether or not to just call cwms_loc.rename directly.
--- This depends on whether loc package is actively used, so unknown for right now
--- and rename_project will be developed. 
--- 
--- Note that a project's office id is not allowed to change.
---
--- errors will be issued as thrown exceptions.
--- 
+/**
+ * Renames a project in the database
+ *
+ * @param p_project_id_old The existing location identifier of the project
+ * @param p_project_id_new The new location identifier of the project
+ * @param p_db_office_id   The office that owns the project.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure rename_project(
 	-- base location id + "-" + sub-loc id (if it exists)
 	p_project_id_old	IN	VARCHAR2,
@@ -171,18 +197,36 @@ procedure rename_project(
 	-- defaults to the connected user's office if null
 	p_db_office_id		IN	VARCHAR2 DEFAULT NULL
 );
-
--- Performs a cascading delete on the project that will remove the project from 
--- the project table and all referenced tables.
--- 
--- security: can only be called by dba group.
--- 
--- This delete does not affect any of the location tables, only project tables.
--- AT_PHYSICAL_LOCATION will not be touched.
--- delete will only delete from the project down. 
--- 
--- errors will be issued as thrown exceptions. 
---
+/**
+ * Deletes a project location from the database
+  *
+ * @see constant cwms_util.delete_key
+ * @see constant cwms_util.delete_data
+ * @see constant cwms_util.delete_all
+*
+ * @param p_project_id The location identifier of the project to delete
+ * @param p_delete_action Specifies what to delete.  Actions are as follows:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_delete_action</th>
+ *     <th style="border:1px solid black;">Action</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_key</td>
+ *     <td style="border:1px solid black;">deletes only the project location, and then only if it has no associated data</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_data</td>
+ *     <td style="border:1px solid black;">deletes only data associated with the project, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_util.delete_all</td>
+ *     <td style="border:1px solid black;">deletes the project and all associated data</td>
+ *   </tr>
+ * </table>
+ * @param p_db_office_id The office that owns the project.  If not specified or NULL, the session user's default office will be used.
+ */
 procedure delete_project(
 	-- base location id + "-" + sub-loc id (if it exists)
   p_project_id		IN   VARCHAR2,

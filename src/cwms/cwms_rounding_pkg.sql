@@ -1,103 +1,168 @@
 create or replace package cwms_rounding
+/**
+ * Facilities for numerical rounding based on magnitude of number.<p>
+ * This package
+ * uses USGS-style rounding arrays (called rounding specifications in this package)
+ * to specify the number of significant digits to display for various magnitudes
+ * of numbers. The full description of using rounding arrays can be found in
+ * Section 3.5 (Data Rounding Convention) of the <a href="http://pubs.usgs.gov/of/2003/ofr03123/">ADAPS Section
+ * of the National Water Information System User's Manual</a>.
+ *
+ * @author Mike Perryman
+ *
+ * @since CWMS 2.1
+ */
 as
---------------------------------------------------------------------------------
--- This package contains routines that implement the USGS rounding operation
--- described in Section 3.5 of the ADAPS manual at:
---    http://pubs.usgs.gov/of/2003/ofr03123/
---
--- The rounding information can be found at:
---    http://pubs.usgs.gov/of/2003/ofr03123/3.overview.pdf#rounding
---------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------
--- round_nn_f
+/**
+ * Returns a number rounded according to a rounding specification.
+ *
+ * @param p_value         The value to be rounded
+ * @param p_rounding_spec The USGS-style rounding specification
+ *
+ * @return The rounded value
+ */
 function round_nn_f(
    p_value         in  number,
    p_rounding_spec in  varchar2)
 return number;   
-
---------------------------------------------------------------------------------
--- round_nd_f
+/**
+ * Returns a number rounded according to a rounding specification.
+ *
+ * @param p_value         The value to be rounded
+ * @param p_rounding_spec The USGS-style rounding specification
+ *
+ * @return The rounded value
+ */
 function round_nd_f(
    p_value         in  number,
    p_rounding_spec in  varchar2)
 return binary_double;   
-
---------------------------------------------------------------------------------
--- round_nt_f
+/**
+ * Returns a number rounded according to a rounding specification.
+ *
+ * @param p_value         The value to be rounded
+ * @param p_rounding_spec The USGS-style rounding specification
+ *
+ * @return The rounded value
+ */
 function round_nt_f(
    p_value         in  number,
    p_rounding_spec in  varchar2)
 return varchar2;   
-
---------------------------------------------------------------------------------
--- round_dd_f
+/**
+ * Returns a number rounded according to a rounding specification.
+ *
+ * @param p_value         The value to be rounded
+ * @param p_rounding_spec The USGS-style rounding specification
+ *
+ * @return The rounded value
+ */
 function round_dd_f(
    p_value         in  binary_double,
    p_rounding_spec in  varchar2)
 return binary_double;   
-
---------------------------------------------------------------------------------
--- round_dn_f
+/**
+ * Returns a number rounded according to a rounding specification.
+ *
+ * @param p_value         The value to be rounded
+ * @param p_rounding_spec The USGS-style rounding specification
+ *
+ * @return The rounded value
+ */
 function round_dn_f(
    p_value         in  binary_double,
    p_rounding_spec in  varchar2)
 return number;   
-
---------------------------------------------------------------------------------
--- round_dt_f
+/**
+ * Returns a number rounded according to a rounding specification.
+ *
+ * @param p_value         The value to be rounded
+ * @param p_rounding_spec The USGS-style rounding specification
+ *
+ * @return The rounded value
+ */
 function round_dt_f(
    p_value         in  binary_double,
    p_rounding_spec in  varchar2)
 return varchar2;   
-
---------------------------------------------------------------------------------
--- round_td_f
+/**
+ * Returns a number rounded according to a rounding specification.
+ *
+ * @param p_value         The value to be rounded
+ * @param p_rounding_spec The USGS-style rounding specification
+ *
+ * @return The rounded value
+ */
 function round_td_f(
    p_value         in  varchar2,
    p_rounding_spec in  varchar2)
 return binary_double;   
-
---------------------------------------------------------------------------------
--- round_tn_f
+/**
+ * Returns a number rounded according to a rounding specification.
+ *
+ * @param p_value         The value to be rounded
+ * @param p_rounding_spec The USGS-style rounding specification
+ *
+ * @return The rounded value
+ */
 function round_tn_f(
    p_value         in  varchar2,
    p_rounding_spec in  varchar2)
 return number;   
-
---------------------------------------------------------------------------------
--- round_tt_f
+/**
+ * Returns a number rounded according to a rounding specification.
+ *
+ * @param p_value         The value to be rounded
+ * @param p_rounding_spec The USGS-style rounding specification
+ *
+ * @return The rounded value
+ */
 function round_tt_f(
    p_value         in  varchar2,
    p_rounding_spec in  varchar2)
 return varchar2;   
-
---------------------------------------------------------------------------------
--- round_n_tab
+/**
+ * Rounds a collection of values according to a rounding specification
+ *
+ * @param p_values        The values. On input the values to be rounded. On output the rounded values.
+ * @param p_rounding_spec The USGS-style rounding specification
+ */
 procedure round_n_tab(
    p_values        in out nocopy number_tab_t,
    p_rounding_spec in            varchar2);
-
---------------------------------------------------------------------------------
--- round_d_tab
+/**
+ * Rounds a collection of values according to a rounding specification
+ *
+ * @param p_values        The values. On input the values to be rounded. On output the rounded values.
+ * @param p_rounding_spec The USGS-style rounding specification
+ */
 procedure round_d_tab(
    p_values        in out nocopy double_tab_t,
    p_rounding_spec in            varchar2);
-
---------------------------------------------------------------------------------
--- round_t_tab
+/**
+ * Rounds a collection of values according to a rounding specification
+ *
+ * @param p_values        The values. On input the values to be rounded. On output the rounded values.
+ * @param p_rounding_spec The USGS-style rounding specification
+ */
 procedure round_t_tab(
    p_values        in out nocopy str_tab_t,
    p_rounding_spec in            varchar2);
-
---------------------------------------------------------------------------------
--- round_tsv_array
+/**
+ * Rounds values of a time series according to a rounding specification
+ *
+ * @param p_values        The time series. On input the values to be rounded. On output the rounded values.
+ * @param p_rounding_spec The USGS-style rounding specification
+ */
 procedure round_tsv_array(
    p_values        in out nocopy tsv_array,
    p_rounding_spec in            varchar2);
-
---------------------------------------------------------------------------------
--- round_ztsv_array
+/**
+ * Rounds values of a time series according to a rounding specification
+ *
+ * @param p_values        The time series. On input the values to be rounded. On output the rounded values.
+ * @param p_rounding_spec The USGS-style rounding specification
+ */
 procedure round_ztsv_array(
    p_values        in out nocopy ztsv_array,
    p_rounding_spec in            varchar2);
@@ -105,4 +170,3 @@ procedure round_ztsv_array(
 end cwms_rounding;
 /
 show errors;
-grant execute on cwms_rounding to cwms_user;
