@@ -3277,32 +3277,9 @@ create type zlocation_level_t is object(
    calendar_interval             interval year(2) to month,
    time_interval                 interval day(3) to second(0),
    interpolate                   varchar2(1),
+   ts_code                       number(10),
    seasonal_level_values         seasonal_loc_lvl_tab_t,
    indicators                    loc_lvl_indicator_tab_t,
-
-
-   constructor function zlocation_level_t(
-      p_location_level_code           in number,
-      p_location_code                 in number,
-      p_specified_level_code          in number,
-      p_parameter_code                in number,
-      p_parameter_type_code           in number,
-      p_duration_code                 in number,
-      p_location_level_date           in date,
-      p_location_level_value          in number,
-      p_location_level_comment        in varchar2,
-      p_attribute_value               in number,
-      p_attribute_parameter_code      in number,
-      p_attribute_param_type_code     in number,
-      p_attribute_duration_code       in number,
-      p_attribute_comment             in varchar2,
-      p_interval_origin               in date,
-      p_calendar_interval             in interval year to month,
-      p_time_interval                 in interval day to second,
-      p_interpolate                   in varchar2,
-      p_seasonal_values               in seasonal_loc_lvl_tab_t,
-      p_indicators                    in loc_lvl_indicator_tab_t)
-      return self as result,
 
    constructor function zlocation_level_t(
       p_location_level_code           in number)
@@ -3330,6 +3307,7 @@ create type zlocation_level_t is object(
       p_calendar_interval             in interval year to month,
       p_time_interval                 in interval day to second,
       p_interpolate                   in varchar2,
+      p_ts_code                       number,
       p_seasonal_values               in seasonal_loc_lvl_tab_t,
       p_indicators                    in loc_lvl_indicator_tab_t),
 
@@ -3339,54 +3317,6 @@ create type zlocation_level_t is object(
 
 create type body zlocation_level_t
 as
-   constructor function zlocation_level_t(
-      p_location_level_code           in number,
-      p_location_code                 in number,
-      p_specified_level_code          in number,
-      p_parameter_code                in number,
-      p_parameter_type_code           in number,
-      p_duration_code                 in number,
-      p_location_level_date           in date,
-      p_location_level_value          in number,
-      p_location_level_comment        in varchar2,
-      p_attribute_value               in number,
-      p_attribute_parameter_code      in number,
-      p_attribute_param_type_code     in number,
-      p_attribute_duration_code       in number,
-      p_attribute_comment             in varchar2,
-      p_interval_origin               in date,
-      p_calendar_interval             in interval year to month,
-      p_time_interval                 in interval day to second,
-      p_interpolate                   in varchar2,
-      p_seasonal_values               in seasonal_loc_lvl_tab_t,
-      p_indicators                    in loc_lvl_indicator_tab_t)
-      return self as result
-   as
-   begin
-      init(
-         p_location_level_code,
-         p_location_code,
-         p_specified_level_code,
-         p_parameter_code,
-         p_parameter_type_code,
-         p_duration_code,
-         p_location_level_date,
-         p_location_level_value,
-         p_location_level_comment,
-         p_attribute_value,
-         p_attribute_parameter_code,
-         p_attribute_param_type_code,
-         p_attribute_duration_code,
-         p_attribute_comment,
-         p_interval_origin,
-         p_calendar_interval,
-         p_time_interval,
-         p_interpolate,
-         p_seasonal_values,
-         p_indicators);
-      return;
-   end zlocation_level_t;
-
    constructor function zlocation_level_t(
       p_location_level_code in number)
       return self as result
@@ -3458,6 +3388,7 @@ as
          l_rec.calendar_interval,
          l_rec.time_interval,
          l_rec.interpolate,
+         l_rec.ts_code,
          l_seasonal_values,
          l_indicators);
       return;
@@ -3492,6 +3423,7 @@ as
       p_calendar_interval             in interval year to month,
       p_time_interval                 in interval day to second,
       p_interpolate                   in varchar2,
+      p_ts_code                       number,
       p_seasonal_values               in seasonal_loc_lvl_tab_t,
       p_indicators                    in loc_lvl_indicator_tab_t)
    as
@@ -3539,6 +3471,7 @@ as
       calendar_interval             := p_calendar_interval;
       time_interval                 := p_time_interval;
       interpolate                   := p_interpolate;
+      ts_code                       :=  p_ts_code;
       seasonal_level_values         := p_seasonal_values;
       indicators                    := p_indicators;
    end init;
@@ -3582,6 +3515,7 @@ as
       l_rec.calendar_interval             := calendar_interval;
       l_rec.time_interval                 := time_interval;
       l_rec.interpolate                   := interpolate;
+      l_rec.ts_code                       := ts_code;
       --------------------------------------
       -- insert or update the main record --
       --------------------------------------
@@ -3652,28 +3586,29 @@ create type location_level_t
  * @see type loc_lvl_indicator_tab_t
  * @see type location_level_tab_t
  *
- * member office_id                   The office that owns the location and specified level
- * member location_id                 The location component of the location level
- * member parameter_id                The parameter component of the location level
- * member parameter_type_id           The parameter type component of the location level
- * member duration_id                 The duration component of the location level
- * member specified_level_id          The specified level component of the location level
- * member level_date                  The effective date of the location level
- * member level_value                 The value of the location level if it is a constant value
- * member level_units_id              The unit used for the constant or varying location level value
- * member level_comment               A comment about the location level
- * member attribute_parameter_id      The parameter component of the location level attribute, if any
- * member attribute_parameter_type_id The parameter type component of the location level attribute, if any
- * member attribute_duration_id       The duration component of the location level attribute, if any
- * member attribute_value             The value of the location level attribute, if any
- * member attribute_units_id          The unit of the location level attribute value, if any
- * member attribute_comment           A comment about the location level attribute
- * member interval_origin             The start time of any of the recurring intervals if the location level is a recurring pattern of values
- * member interval_months             The recurring interval duration if the location level is a recurring pattern and is described in units of months and/or years
- * member interval_minutes            The recurring interval duration if the location level is a recurring pattern and is described in units of days or less
- * member interpolate                 A flag ('T' or 'F') specifying whether to interpolate for level values at offsets between the specified offsets into the interval
- * member seasonal_values             The values of the location level if it is a recurring pattern of values
- * member indicators                  The location level indicators associated with this location level
+ * @member office_id                   The office that owns the location and specified level
+ * @member location_id                 The location component of the location level
+ * @member parameter_id                The parameter component of the location level
+ * @member parameter_type_id           The parameter type component of the location level
+ * @member duration_id                 The duration component of the location level
+ * @member specified_level_id          The specified level component of the location level
+ * @member level_date                  The effective date of the location level
+ * @member level_value                 The value of the location level if it is a constant value (not recurring pattern or time series)
+ * @member level_units_id              The unit used for the constant or varying location level value
+ * @member level_comment               A comment about the location level
+ * @member attribute_parameter_id      The parameter component of the location level attribute, if any
+ * @member attribute_parameter_type_id The parameter type component of the location level attribute, if any
+ * @member attribute_duration_id       The duration component of the location level attribute, if any
+ * @member attribute_value             The value of the location level attribute, if any
+ * @member attribute_units_id          The unit of the location level attribute value, if any
+ * @member attribute_comment           A comment about the location level attribute
+ * @member interval_origin             The start time of any of the recurring intervals if the location level is a recurring pattern of values
+ * @member interval_months             The recurring interval duration if the location level is a recurring pattern and is described in units of months and/or years
+ * @member interval_minutes            The recurring interval duration if the location level is a recurring pattern and is described in units of days or less
+ * @member interpolate                 A flag ('T' or 'F') specifying whether to interpolate for level values at offsets between the specified offsets into the interval
+ * @member seasonal_values             The values of the location level if it is a recurring pattern of values (not constant value or time series)
+ * @member tsid                        The time series identifier representing the location level if it is a time series (not constant value or recurring pattern)
+ * @member indicators                  The location level indicators associated with this location level
  */
 is object (
    office_id                   varchar2(16),
@@ -3696,6 +3631,7 @@ is object (
    interval_months             integer,
    interval_minutes            integer,
    interpolate                 varchar2(1),
+   tsid                        varchar2(183),
    seasonal_values             seasonal_value_tab_t,
    indicators                  loc_lvl_indicator_tab_t,
    -- not documented
@@ -3792,6 +3728,8 @@ as
       interval_origin  := p_obj.interval_origin;
       interval_months  := cwms_util.yminterval_to_months(p_obj.calendar_interval);
       interval_minutes := cwms_util.dsinterval_to_minutes(p_obj.time_interval);
+      interpolate      := p_obj.interpolate;
+      tsid             := cwms_ts.get_ts_id(p_obj.ts_code);
       if p_obj.seasonal_level_values is not null then
          seasonal_values := new seasonal_value_tab_t();
          for i in 1..p_obj.seasonal_level_values.count loop
@@ -3802,8 +3740,7 @@ as
                p_obj.seasonal_level_values(i).level_value);
          end loop;
       end if;
-      interpolate := p_obj.interpolate;
-      indicators  := p_obj.indicators;
+      indicators := p_obj.indicators;
       return;
    end location_level_t;
 
@@ -3965,6 +3902,10 @@ as
             l_calendar_interval,
             l_time_interval,
             interpolate,
+            case tsid is null
+               when true  then null
+               when false then cwms_ts.get_ts_code(tsid, l_office_code)
+            end,
             l_seasonal_level_values,
             indicators);
       else

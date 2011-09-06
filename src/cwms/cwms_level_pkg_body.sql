@@ -1279,6 +1279,7 @@ procedure create_location_level(
    p_interval_months         in  integer default null,
    p_interval_minutes        in  integer default null,
    p_interpolate             in  varchar2 default 'T',
+   p_tsid                    in  varchar2 default null,
    p_seasonal_values         in  seasonal_value_tab_t default null,
    p_office_id               in  varchar2 default null)
 is          
@@ -1309,6 +1310,9 @@ is
    l_attribute_duration_code   number(10);
    l_calendar_interval         interval year to month;
    l_time_interval             interval day to second;
+   l_ts_code                   number(10);
+   l_count                     pls_integer;
+   l_interpolate               varchar2(1);
 begin       
    l_fail_if_exists := cwms_util.return_true_or_false(p_fail_if_exists);
    if p_interval_months is not null then
@@ -1320,6 +1324,19 @@ begin
    -------------------
    -- sanity checks --
    -------------------
+   l_count :=
+      case p_level_value is null
+         when true  then 0
+         when false then 1
+      end +
+      case p_seasonal_values is null
+         when true  then 0
+         when false then 1
+      end +
+      case p_tsid is null
+         when true  then 0
+         when false then 1
+      end;
    validate_specified_level_input(l_office_code, p_office_id, p_spec_level_id);
    l_location_code := cwms_loc.get_location_code(l_office_code, p_location_id);
    select time_zone_code
@@ -1338,18 +1355,14 @@ begin
          'ERROR',
          'Must specify attribute parameter id with attribute value '
          || 'in CREATE_LOCATION_LEVEL');
-   end if;  
-   if p_level_value is null and p_seasonal_values is null then
+   end if;
+   if l_count != 1 then
       cwms_err.raise(
          'ERROR',
-         'Must specify either seasonal values or '
-         || 'non-seasonal value to CREATE_LOCATION_LEVEL');
-   elsif p_level_value is not null and p_seasonal_values is not null then
-      cwms_err.raise(
-         'ERROR',
-         'Cannot specify both seasonal values and '
-         || 'non-seasonal value to CREATE_LOCATION_LEVEL');
-   elsif p_seasonal_values is not null then
+         'Must specify exactly one of p_level_value, p_seasonal_values, and p_tsid '
+         || 'in CREATE_LOCATION_LEVEL');
+   end if;
+   if p_seasonal_values is not null then
       if l_calendar_interval is null and l_time_interval is null then
          cwms_err.raise(
             'ERROR',
@@ -1361,7 +1374,10 @@ begin
             'seasonal values cannot have months interval and minutes interval '
             || 'in CREATE_LOCATION_LEVEL');
       end if;
-   end if;  
+   end if;
+   if p_level_value is null then
+      l_interpolate := p_interpolate;
+   end if;
    -------------------------------------------------------
    -- default the time zone to the location's time zone --
    -------------------------------------------------------
@@ -1404,6 +1420,9 @@ begin
       p_attribute_param_type_id,
       p_attribute_duration_id,
       p_office_id);
+   if p_tsid is not null then
+      l_ts_code := cwms_ts.get_ts_code(p_tsid, l_office_code);
+   end if;
    -------------------------------
    -- get the units conversions --
    -------------------------------
@@ -1433,9 +1452,9 @@ begin
       ------------------------------------
       l_location_level_code := cwms_seq.nextval;
       if p_seasonal_values is null then
-         --------------------
-         -- constant value --
-         --------------------
+         -----------------------------------
+         -- constant value or time series --
+         -----------------------------------
          insert
            into at_location_level
          values(l_location_level_code,
@@ -1452,7 +1471,9 @@ begin
                 l_attribute_param_type_code,
                 l_attribute_duration_code,
                 p_attribute_comment,
-                null, null, null, null);
+                null, null, null,
+                l_interpolate,
+                l_ts_code);
       else  
          ---------------------
          -- seasonal values --
@@ -1491,7 +1512,8 @@ begin
                    l_interval_origin,
                    null,
                    l_time_interval,
-                   p_interpolate);
+                   l_interpolate,
+                   l_ts_code);
          else
             -----------------------
             -- calendar interval --
@@ -1515,7 +1537,8 @@ begin
                    l_interval_origin,
                    l_calendar_interval,
                    null,
-                   p_interpolate);
+                   l_interpolate,
+                   l_ts_code);
          end if;
          for i in 1..p_seasonal_values.count loop
             insert
@@ -1540,9 +1563,9 @@ begin
       -- update the existing level --
       -------------------------------
       if p_seasonal_values is null then
-         --------------------
-         -- constant value --
-         --------------------
+         -----------------------------------
+         -- constant value or time series --
+         -----------------------------------
          update at_location_level
             set location_level_value = p_level_value * l_level_factor + l_level_offset,
                 location_level_comment = p_level_comment,
@@ -1553,7 +1576,8 @@ begin
                 interval_origin = null,
                 calendar_interval = null,
                 time_interval = null,
-                interpolate = null
+                interpolate = l_interpolate,
+                ts_code = l_ts_code
           where location_level_code = l_location_level_code;
          delete
            from at_seasonal_location_level
@@ -1583,7 +1607,7 @@ begin
                 interval_origin = l_interval_origin,
                 calendar_interval = l_calendar_interval,
                 time_interval = l_time_interval,
-                interpolate = p_interpolate
+                interpolate = l_interpolate
           where location_level_code = l_location_level_code;
          delete
            from at_seasonal_location_level
@@ -1674,11 +1698,85 @@ begin
       p_interval_months,
       p_interval_minutes,
       p_interpolate,
+      null,
       p_seasonal_values,
       p_office_id);               
             
-end store_location_level;   
-            
+end store_location_level;
+   
+procedure store_location_level3(
+   p_location_level_id       in  varchar2,
+   p_level_value             in  number,
+   p_level_units             in  varchar2,
+   p_level_comment           in  varchar2 default null,
+   p_effective_date          in  date     default null,
+   p_timezone_id             in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_comment       in  varchar2 default null,
+   p_interval_origin         in  date     default null,
+   p_interval_months         in  integer  default null,
+   p_interval_minutes        in  integer  default null,
+   p_interpolate             in  varchar2 default 'T',
+   p_tsid                    in  varchar2 default null,
+   p_seasonal_values         in  seasonal_value_tab_t default null,
+   p_fail_if_exists          in  varchar2 default 'T',
+   p_office_id               in  varchar2 default null)
+is
+   l_location_level_code     number(10);
+   l_location_id             varchar2(49);
+   l_parameter_id            varchar2(49);
+   l_parameter_type_id       varchar2(16);
+   l_duration_id             varchar2(16);
+   l_specified_level_id      varchar2(256);
+   l_attribute_parameter_id  varchar2(49);
+   l_attribute_param_type_id varchar2(16);
+   l_attribute_duration_id   varchar2(16);
+begin
+   parse_location_level_id(
+      l_location_id,
+      l_parameter_id,
+      l_parameter_type_id,
+      l_duration_id,
+      l_specified_level_id,
+      p_location_level_id);
+
+   parse_attribute_id(
+      l_attribute_parameter_id,
+      l_attribute_param_type_id,
+      l_attribute_duration_id,
+      p_attribute_id);
+
+   create_location_level(
+      l_location_level_code,
+      p_fail_if_exists,
+      l_specified_level_id,
+      l_location_id,
+      l_parameter_id,
+      l_parameter_type_id,
+      l_duration_id,
+      p_level_value,
+      p_level_units,
+      p_level_comment,
+      p_effective_date,
+      p_timezone_id,
+      p_attribute_value,
+      p_attribute_units,
+      l_attribute_parameter_id,
+      l_attribute_param_type_id,
+      l_attribute_duration_id,
+      p_attribute_comment,
+      p_interval_origin,
+      p_interval_months,
+      p_interval_minutes,
+      p_interpolate,
+      p_tsid,
+      p_seasonal_values,
+      p_office_id);
+
+end store_location_level3;
+
 --------------------------------------------------------------------------------
 -- PROCEDURE store_location_level
 --          
@@ -1814,100 +1912,161 @@ begin
       p_fail_if_exists,
       p_office_id);
 end store_location_level2;   
-            
---------------------------------------------------------------------------------
--- PROCEDURE update_location_level
---------------------------------------------------------------------------------
-procedure update_location_level(
+
+procedure retrieve_location_level3(
+   p_level_value             out number,
+   p_level_comment           out varchar2,
+   p_effective_date          out date,
+   p_interval_origin         out date,
+   p_interval_months         out integer,
+   p_interval_minutes        out integer,
+   p_interpolate             out varchar2,
+   p_tsid                    out varchar2,
+   p_seasonal_values         out seasonal_value_tab_t,
    p_spec_level_id           in  varchar2,
    p_location_id             in  varchar2,
    p_parameter_id            in  varchar2,
    p_parameter_type_id       in  varchar2,
    p_duration_id             in  varchar2,
-   p_level_value             in  number,
    p_level_units             in  varchar2,
-   p_level_comment           in  varchar2 default null,
-   p_effective_date          in  date default null,
+   p_date                    in  date,
    p_timezone_id             in  varchar2 default 'UTC',
-   p_attribute_value         in  number,
-   p_attribute_units         in  varchar2,
-   p_attribute_parameter_id  in  varchar2,
-   p_attribute_param_type_id in  varchar2,
-   p_attribute_duration_id   in  varchar2,
-   p_attribute_comment       in  varchar2,
-   p_interval_origin         in  date default null,
-   p_interval_months         in  integer default null,
-   p_interval_minutes        in  integer default null,
-   p_interpolate             in  varchar2 default 'T',
-   p_seasonal_values         in  seasonal_value_tab_t default null,
+   p_attribute_value         in  number default null,
+   p_attribute_units         in  varchar2 default null,
+   p_attribute_parameter_id  in  varchar2 default null,
+   p_attribute_param_type_id in  varchar2 default null,
+   p_attribute_duration_id   in  varchar2 default null,
+   p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
-is          
-   l_location_level_code number(10);
-   l_date                date;
-begin       
-   l_date := cast(
-      from_tz(cast(p_effective_date as timestamp), p_timezone_id)
-      at time zone 'UTC' as date);
-   -----------------------------
-   -- verify the level exists --
-   -----------------------------
-   l_location_level_code := get_location_level_code(
+is
+   l_rec                       at_location_level%rowtype;
+   l_spec_level_code           number(10);
+   l_location_level_code       number(10);
+   l_interval_origin           date;
+   l_location_code             number(10);
+   l_parts                     str_tab_t;
+   l_base_parameter_id         varchar2(16);
+   l_sub_parameter_id          varchar2(32);
+   l_parameter_code            number(10);
+   l_parameter_type_code       number(10);
+   l_duration_code             number(10);
+   l_factor                    binary_double;
+   l_offset                    binary_double;
+   l_date                      date;
+   l_match_date                boolean := cwms_util.return_true_or_false(p_match_date);
+   l_office_code               number := cwms_util.get_office_code(p_office_id);
+   l_office_id                 varchar2(16);
+   l_attribute_parameter_code  number(10);
+   l_attribute_param_type_code number(10);
+   l_attribute_duration_code   number(10);
+begin
+   ----------------------------
+   -- get the specified date --
+   ----------------------------
+   if p_date is null then
+      l_date := cast(systimestamp at time zone 'UTC' as date);
+   else
+      l_date := cast(
+         from_tz(cast(p_date as timestamp), p_timezone_id)
+         at time zone 'UTC' as date);
+   end if;
+   ---------------------------------
+   -- get the codes for input ids --
+   ---------------------------------
+   get_location_level_codes(
+      l_location_level_code,
+      l_spec_level_code,
+      l_location_code,
+      l_parameter_code,
+      l_parameter_type_code,
+      l_duration_code,
+      l_date,
+      l_attribute_parameter_code,
+      l_attribute_param_type_code,
+      l_attribute_duration_code,
       p_location_id,
       p_parameter_id,
       p_parameter_type_id,
       p_duration_id,
       p_spec_level_id,
       l_date,
-      true, 
-      p_attribute_value,
-      p_attribute_units,
-      p_attribute_parameter_id,
-      p_attribute_param_type_id,
-      p_attribute_parameter_id,
-      p_office_id);
-            
-   if l_location_level_code is null then
-      cwms_err.raise(
-         'ITEM_DOES_NOT_EXIST',
-         'Location level',
-         nvl(p_office_id, cwms_util.user_office_id)
-         || '/' || p_location_id
-         || '.' || p_parameter_id
-         || '.' || p_parameter_type_id
-         || '.' || p_duration_id
-         || '.' || p_spec_level_id
-         || '@' || p_effective_date);
-   end if;  
-   ----------------------------------------
-   -- use the create procedure to update --
-   ----------------------------------------
-   create_location_level(
-      l_location_level_code,
-      'F',  
-      p_spec_level_id,
-      p_location_id,
-      p_parameter_id,
-      p_parameter_type_id,
-      p_duration_id,
-      p_level_value,
-      p_level_units,
-      p_level_comment,
-      p_effective_date,
-      p_timezone_id,
+      l_match_date,
       p_attribute_value,
       p_attribute_units,
       p_attribute_parameter_id,
       p_attribute_param_type_id,
       p_attribute_duration_id,
-      p_attribute_comment,
-      p_interval_origin,
-      p_interval_months,
-      p_interval_minutes,
-      p_interpolate,
-      p_seasonal_values,
       p_office_id);
-end update_location_level;
-            
+
+   if l_location_level_code is null then
+      select office_id
+        into l_office_id
+        from cwms_office
+       where office_code = l_office_code;
+      cwms_err.raise(
+         'ITEM_DOES_NOT_EXIST',
+         'Location level',
+         l_office_id
+         || '/' || p_location_id
+         || '.' || p_parameter_id
+         || '.' || p_parameter_type_id
+         || '.' || p_duration_id
+         || '.' || p_spec_level_id
+         || '@' || l_date);
+   end if;
+   ------------------------------
+   -- get the units conversion --
+   ------------------------------
+   get_units_conversion(
+      l_factor,
+      l_offset,
+      'FROM_CWMS',
+      p_level_units,
+      l_parameter_code);
+   --------------------------------------
+   -- get the at_location_level record --
+   --------------------------------------
+   select *
+     into l_rec
+     from at_location_level
+    where location_level_code = l_location_level_code;
+   p_level_comment        := l_rec.location_level_comment;
+   p_effective_date       := l_rec.location_level_date;
+   p_interval_months      := cwms_util.yminterval_to_months(l_rec.calendar_interval);
+   p_interval_minutes     := cwms_util.dsinterval_to_minutes(l_rec.time_interval);
+   p_interval_origin      := l_rec.interval_origin;
+   p_interpolate          := l_rec.interpolate;
+   p_tsid                 := case l_rec.ts_code is null
+                                when true  then null
+                                when false then cwms_ts.get_ts_id(l_rec.ts_code)
+                             end;
+   if l_rec.location_level_value is null then
+      ---------------------
+      -- seasonal values --
+      ---------------------
+      p_level_value     := null;
+      p_seasonal_values := new seasonal_value_tab_t();
+      for rec in (select *
+                    from at_seasonal_location_level
+                   where location_level_code = l_rec.location_level_code
+                order by l_rec.interval_origin + calendar_offset + time_offset)
+      loop
+         p_seasonal_values.extend;
+         p_seasonal_values(p_seasonal_values.count) :=
+            new seasonal_value_t(
+               cwms_util.yminterval_to_months(rec.calendar_offset),
+               cwms_util.dsinterval_to_minutes(rec.time_offset),
+               rec.value * l_factor + l_offset);
+      end loop;
+   else
+      --------------------
+      -- constant value --
+      --------------------
+      p_seasonal_values := null;
+      p_level_value := l_rec.location_level_value * l_factor + l_offset;
+   end if;
+end retrieve_location_level3;
+
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level
 --          
@@ -1943,131 +2102,36 @@ procedure retrieve_location_level(
    p_attribute_duration_id   in  varchar2 default null,
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
-is          
-   l_rec                       at_location_level%rowtype;
-   l_spec_level_code           number(10);
-   l_location_level_code       number(10);
-   l_interval_origin           date;
-   l_location_code             number(10);
-   l_parts                     str_tab_t;
-   l_base_parameter_id         varchar2(16);
-   l_sub_parameter_id          varchar2(32);
-   l_parameter_code            number(10);
-   l_parameter_type_code       number(10);
-   l_duration_code             number(10);
-   l_factor                    binary_double;
-   l_offset                    binary_double;
-   l_date                      date;
-   l_match_date                boolean := cwms_util.return_true_or_false(p_match_date);
-   l_office_code               number := cwms_util.get_office_code(p_office_id);
-   l_office_id                 varchar2(16);
-   l_attribute_parameter_code  number(10);
-   l_attribute_param_type_code number(10);
-   l_attribute_duration_code   number(10);
-begin       
-   ----------------------------
-   -- get the specified date --
-   ----------------------------
-   if p_date is null then
-      l_date := cast(systimestamp at time zone 'UTC' as date);
-   else     
-      l_date := cast(
-         from_tz(cast(p_date as timestamp), p_timezone_id)
-         at time zone 'UTC' as date);
-   end if;  
-   ---------------------------------
-   -- get the codes for input ids --
-   ---------------------------------
-   get_location_level_codes(
-      l_location_level_code,
-      l_spec_level_code,
-      l_location_code,
-      l_parameter_code,
-      l_parameter_type_code,
-      l_duration_code,
-      l_date,
-      l_attribute_parameter_code,
-      l_attribute_param_type_code,
-      l_attribute_duration_code,
+is
+   l_tsid varchar2(183);
+begin
+   retrieve_location_level3(
+      p_level_value,
+      p_level_comment,
+      p_effective_date,
+      p_interval_origin,
+      p_interval_months,
+      p_interval_minutes,
+      p_interpolate,
+      l_tsid,
+      p_seasonal_values,
+      p_spec_level_id,
       p_location_id,
       p_parameter_id,
       p_parameter_type_id,
       p_duration_id,
-      p_spec_level_id,
-      l_date,
-      l_match_date,
+      p_level_units,
+      p_date,
+      p_timezone_id,
       p_attribute_value,
       p_attribute_units,
       p_attribute_parameter_id,
       p_attribute_param_type_id,
       p_attribute_duration_id,
+      p_match_date,
       p_office_id);
-            
-   if l_location_level_code is null then
-      select office_id
-        into l_office_id
-        from cwms_office
-       where office_code = l_office_code;
-      cwms_err.raise(
-         'ITEM_DOES_NOT_EXIST',
-         'Location level',
-         l_office_id
-         || '/' || p_location_id
-         || '.' || p_parameter_id
-         || '.' || p_parameter_type_id
-         || '.' || p_duration_id
-         || '.' || p_spec_level_id
-         || '@' || l_date);
-   end if;  
-   ------------------------------
-   -- get the units conversion --
-   ------------------------------
-   get_units_conversion(
-      l_factor,
-      l_offset,
-      'FROM_CWMS',
-      p_level_units,
-      l_parameter_code);
-   --------------------------------------
-   -- get the at_location_level record --
-   --------------------------------------
-   select * 
-     into l_rec
-     from at_location_level
-    where location_level_code = l_location_level_code;
-   p_level_comment        := l_rec.location_level_comment;
-   p_effective_date       := l_rec.location_level_date;
-   p_interval_months      := cwms_util.yminterval_to_months(l_rec.calendar_interval);
-   p_interval_minutes     := cwms_util.dsinterval_to_minutes(l_rec.time_interval);
-   p_interval_origin      := l_rec.interval_origin;
-   p_interpolate          := l_rec.interpolate;
-   if l_rec.location_level_value is null then
-      ---------------------
-      -- seasonal values --
-      ---------------------
-      p_level_value     := null;
-      p_seasonal_values := new seasonal_value_tab_t();
-      for rec in (select *
-                    from at_seasonal_location_level
-                   where location_level_code = l_rec.location_level_code
-                order by l_rec.interval_origin + calendar_offset + time_offset)
-      loop  
-         p_seasonal_values.extend;
-         p_seasonal_values(p_seasonal_values.count) :=
-            new seasonal_value_t(
-               cwms_util.yminterval_to_months(rec.calendar_offset),
-               cwms_util.dsinterval_to_minutes(rec.time_offset),
-               rec.value * l_factor + l_offset);
-      end loop;
-   else     
-      --------------------
-      -- constant value --
-      --------------------
-      p_seasonal_values := null;
-      p_level_value := l_rec.location_level_value * l_factor + l_offset;
-   end if;  
 end retrieve_location_level;
-            
+
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level
 --          
@@ -2095,7 +2159,7 @@ procedure retrieve_location_level(
    p_attribute_units         in  varchar2 default null,
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
-is          
+is
    l_location_id             varchar2(49);
    l_parameter_id            varchar2(49);
    l_parameter_type_id       varchar2(16);
@@ -2142,7 +2206,75 @@ begin
       p_match_date,
       p_office_id);
 end retrieve_location_level;
-            
+
+procedure retrieve_location_level3(
+   p_level_value             out number,
+   p_level_comment           out varchar2,
+   p_effective_date          out date,
+   p_interval_origin         out date,
+   p_interval_months         out integer,
+   p_interval_minutes        out integer,
+   p_interpolate             out varchar2,
+   p_tsid                    out varchar2,
+   p_seasonal_values         out seasonal_value_tab_t,
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_date                    in  date,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_match_date              in  varchar2 default 'F',
+   p_office_id               in  varchar2 default null)
+is
+   l_location_id             varchar2(49);
+   l_parameter_id            varchar2(49);
+   l_parameter_type_id       varchar2(16);
+   l_duration_id             varchar2(16);
+   l_specified_level_id      varchar2(256);
+   l_attribute_parameter_id  varchar2(49);
+   l_attribute_param_type_id varchar2(16);
+   l_attribute_duration_id   varchar2(16);
+begin
+   parse_location_level_id(
+      l_location_id,
+      l_parameter_id,
+      l_parameter_type_id,
+      l_duration_id,
+      l_specified_level_id,
+      p_location_level_id);
+   parse_attribute_id(
+      l_attribute_parameter_id,
+      l_attribute_param_type_id,
+      l_attribute_duration_id,
+      p_attribute_id);
+   retrieve_location_level3(
+      p_level_value,
+      p_level_comment,
+      p_effective_date,
+      p_interval_origin,
+      p_interval_months,
+      p_interval_minutes,
+      p_interpolate,
+      p_tsid,
+      p_seasonal_values,
+      l_specified_level_id,
+      l_location_id,
+      l_parameter_id,
+      l_parameter_type_id,
+      l_duration_id,
+      p_level_units,
+      p_date,
+      p_timezone_id,
+      p_attribute_value,
+      p_attribute_units,
+      l_attribute_parameter_id,
+      l_attribute_param_type_id,
+      l_attribute_duration_id,
+      p_match_date,
+      p_office_id);
+end retrieve_location_level3;
+
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level2
 --          
@@ -2340,7 +2472,7 @@ is
    l_factor                    binary_double;
    l_offset                    binary_double;
    l_office_code               number := cwms_util.get_office_code(p_office_id);
-   l_office_id                 varchar2(16);
+   l_office_id                 varchar2(16) := cwms_util.get_db_office_id(p_office_id);
    l_date                      date;
    l_date_prev                 date;
    l_date_next                 date;
@@ -2418,10 +2550,6 @@ begin
          p_attribute_duration_id,
          p_office_id);
       if l_location_level_code is null then
-         select office_id
-           into l_office_id
-           from cwms_office
-          where office_code = l_office_code;
          cwms_err.raise(
             'ITEM_DOES_NOT_EXIST',
             'Location level',
@@ -2460,10 +2588,6 @@ begin
             p_attribute_duration_id,
             p_office_id);
          if l_location_level_code is null then
-            select office_id
-              into l_office_id
-              from cwms_office
-             where office_code = l_office_code;
             cwms_err.raise(
                'ITEM_DOES_NOT_EXIST',
                'Location level',
@@ -2506,10 +2630,6 @@ begin
          p_attribute_duration_id,
          p_office_id);
       if l_location_level_code is null then
-         select office_id
-           into l_office_id
-           from cwms_office
-          where office_code = l_office_code;
          cwms_err.raise(
             'ITEM_DOES_NOT_EXIST',
             'Location level',
@@ -2622,10 +2742,6 @@ begin
                                           and location_level_date <= l_start_time);
       exception
          when no_data_found then
-            select office_id
-              into l_office_id
-              from cwms_office
-             where office_code = l_office_code;
             cwms_err.raise(
                'ITEM_DOES_NOT_EXIST',
                'Location level',
@@ -2646,7 +2762,7 @@ begin
       ----------------------------
       -- fill out the tsv array --
       ----------------------------
-      if l_rec.location_level_value is null then
+      if l_rec.location_level_value is null and l_rec.ts_code is null then
          ---------------------
          -- seasonal values --
          ---------------------
@@ -2748,7 +2864,76 @@ begin
                end if;
             end loop;
          end if;
-      else  
+      elsif l_rec.location_level_value is null then
+         -----------------
+         -- time series --
+         -----------------
+         declare
+            l_ts_cur sys_refcursor;
+            l_ts     ztsv_array;
+            l_first  pls_integer;
+            l_last   pls_integer;
+            a        pls_integer;
+            b        pls_integer;
+         begin
+            cwms_ts.retrieve_ts(
+               p_at_tsv_rc       => l_ts_cur,
+               p_cwms_ts_id      => cwms_ts.get_ts_id(l_rec.ts_code),
+               p_units           => p_level_units,
+               p_start_time      => l_start_time,
+               p_end_time        => l_end_time,
+               p_time_zone       => 'UTC',
+               p_start_inclusive => 'T',
+               p_end_inclusive   => 'T',
+               p_previous        => 'T',
+               p_next            => 'T',
+               p_version_date    => cwms_util.non_versioned,
+               p_max_version     => 'T',
+               p_office_id       => l_office_id);
+            fetch l_ts_cur bulk collect into l_ts;
+            close l_ts_cur;
+            if l_ts is not null and l_ts.count > 0 then
+               if l_ts(1).date_time < l_start_time then
+                  l_first := 2;
+                  if l_ts(2).date_time > l_start_time then
+                     p_level_values.extend;
+                     p_level_values(1) := ztsv_type(l_start_time, null, 0);
+                     if l_rec.interpolate = 'T' then
+                        a := 1;
+                        b := 2;
+                        p_level_values(1).value := l_ts(a).value + (l_start_time  - l_ts(a).date_time) / (l_ts(b).date_time - l_ts(a).date_time) * (l_ts(b).value - l_ts(a).value);
+                     else
+                        p_level_values(1).value := l_ts(1).value;
+                     end if;
+                  end if;
+               else
+                  l_first := 1;
+               end if;
+               if l_ts(l_ts.count).date_time > l_end_time then
+                  l_last := l_ts.count - 1;
+               else
+                  l_last := l_ts.count;
+               end if;
+               for i in l_first..l_last loop
+                  p_level_values.extend;
+                  p_level_values(p_level_values.count) := l_ts(i);
+               end loop;
+               if l_ts(l_ts.count).date_time > l_end_time then
+                  if l_ts(l_ts.count - 1).date_time < l_end_time then
+                     p_level_values.extend;
+                     p_level_values(p_level_values.count) := ztsv_type(l_end_time, null, 0);
+                     if l_rec.interpolate = 'T' then
+                        a := l_ts.count - 1;
+                        b := l_ts.count;
+                        p_level_values(p_level_values.count).value := l_ts(a).value + (l_end_time  - l_ts(a).date_time) / (l_ts(b).date_time - l_ts(a).date_time) * (l_ts(b).value - l_ts(a).value);
+                     else
+                        p_level_values(p_level_values.count).value := l_ts(l_ts.count - 1).value;
+                     end if;
+                  end if;
+               end if;
+            end if;
+         end;
+      else
          --------------------
          -- constant value --
          --------------------
@@ -2759,11 +2944,7 @@ begin
       end if;
       if p_timezone_id != 'UTC' then
          for i in 1..p_level_values.count loop
-            p_level_values(i).date_time :=
-               cast(
-                  from_tz(cast(p_level_values(i).date_time as timestamp), 'UTC')
-                  at time zone p_timezone_id
-                  as date);
+            p_level_values(i).date_time := cwms_util.change_timezone(p_level_values(i).date_time, 'UTC', p_timezone_id);
          end loop;
       end if;
    end if;  

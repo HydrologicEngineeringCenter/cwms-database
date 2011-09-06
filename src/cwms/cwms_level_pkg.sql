@@ -278,6 +278,27 @@ procedure store_location_level2(
    p_fail_if_exists          in  varchar2 default 'T',
    p_office_id               in  varchar2 default null);
 
+
+procedure store_location_level3(
+   p_location_level_id       in  varchar2,
+   p_level_value             in  number,
+   p_level_units             in  varchar2,
+   p_level_comment           in  varchar2 default null,
+   p_effective_date          in  date     default null,
+   p_timezone_id             in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_comment       in  varchar2 default null,
+   p_interval_origin         in  date     default null,
+   p_interval_months         in  integer  default null,
+   p_interval_minutes        in  integer  default null,
+   p_interpolate             in  varchar2 default 'T',
+   p_tsid                    in  varchar2 default null,
+   p_seasonal_values         in  seasonal_value_tab_t default null,
+   p_fail_if_exists          in  varchar2 default 'T',
+   p_office_id               in  varchar2 default null);
+
 --------------------------------------------------------------------------------
 -- PROCEDURE retrieve_location_level
 --
@@ -342,6 +363,26 @@ procedure retrieve_location_level2(
    p_location_level_id       in  varchar2,
    p_level_units             in  varchar2,
    p_date                    in  varchar2 default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_match_date              in  varchar2 default 'F',
+   p_office_id               in  varchar2 default null);
+
+procedure retrieve_location_level3(
+   p_level_value             out number,
+   p_level_comment           out varchar2,
+   p_effective_date          out date,
+   p_interval_origin         out date,
+   p_interval_months         out integer,
+   p_interval_minutes        out integer,
+   p_interpolate             out varchar2,
+   p_tsid                    out varchar2,
+   p_seasonal_values         out seasonal_value_tab_t,
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_date                    in  date,
    p_timezone_id             in  varchar2 default 'UTC',
    p_attribute_id            in  varchar2 default null,
    p_attribute_value         in  number   default null,
