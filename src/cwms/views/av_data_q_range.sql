@@ -1,4 +1,4 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_DATA_Q_RANGE', null,
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_Q_RANGE', null,
 '
 /**
  * Displays information about the range_id component of data quality codes
@@ -11,4 +11,4 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_DATA_Q_RANGE', n
  * @field description Describes the specified value
  */
 ');
-create materialized view mv_data_q_range as select * from cwms_data_q_range;
+create view av_data_q_range as select * from cwms_data_q_range;

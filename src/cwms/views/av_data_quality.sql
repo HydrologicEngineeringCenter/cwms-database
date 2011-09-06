@@ -1,4 +1,4 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_DATA_QUALITY', null,
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_QUALITY', null,
 '
 /**
  * Displays information about data quality codes
@@ -25,4 +25,4 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_DATA_QUALITY', n
  * @field protection_id  Specifies whether the value is protected from further change
  */
 ');
-create materialized view mv_data_quality as select * from cwms_data_quality;
+create view av_data_quality as select * from cwms_data_quality;

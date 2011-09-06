@@ -1,4 +1,4 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_DATA_Q_TEST_FAILED', null,
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_Q_TEST_FAILED', null,
 '
 /**
  * Displays information about the test_failed_id component of data quality codes
@@ -11,4 +11,4 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_DATA_Q_TEST_FAIL
  * @field description     Describes the specified value
  */
 ');
-create materialized view mv_data_q_test_failed as select * from cwms_data_q_test_failed;
+create view av_data_q_test_failed as select * from cwms_data_q_test_failed;

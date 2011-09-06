@@ -1,4 +1,4 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_DATA_Q_CHANGED', null,
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_Q_CHANGED', null,
 '
 /**
  * Displays information about the changed_id component of data quality codes
@@ -11,4 +11,4 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/MV_DATA_Q_CHANGED',
  * @field description Describes the specified value
  */
 ');
-create materialized view mv_data_q_changed as select * from cwms_data_q_changed;
+create view av_data_q_changed as select * from cwms_data_q_changed;
