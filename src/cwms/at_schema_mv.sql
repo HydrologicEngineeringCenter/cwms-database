@@ -42,14 +42,4 @@ END;
 /
 
 @@cwms/tables/at_cwms_ts_id.sql
-
-@@cwms/views/mv_data_q_changed.sql
-@@cwms/views/mv_data_q_protection.sql
-@@cwms/views/mv_data_q_range.sql
-@@cwms/views/mv_data_q_repl_cause.sql
-@@cwms/views/mv_data_q_repl_method.sql
-@@cwms/views/mv_data_q_screened.sql
-@@cwms/views/mv_data_q_test_failed.sql
-@@cwms/views/mv_data_q_validity.sql
-@@cwms/views/mv_data_quality.sql
 @@cwms/views/mv_time_zone.sql
