@@ -1,63 +1,52 @@
 CREATE OR REPLACE PACKAGE cwms_level
+/**
+ * Facilities for working with location levels.<p>
+ *
+ * General information about CWMS location levels can be found <a href="CWMS LOCATION LEVELS.pdf">here</a>.
+ *
+ * @author Mike Perryman
+ *
+ * @since CWMS 2.1
+ */
 AS
-
---------------------------------------------------------------------------------
--- This package makes use of the following identifiers:
--- 
---    location_level_id
---    loc_lvl_indicator_id
---    attribute_id
---    
--- These types follow the time series identifier convention of concatenating
--- multiple identifiers together, separated by the '.' characater.
--- 
--- The location_level_id is contains (in order):
---    location_id
---    parameter_id
---    parameter_type_id
---    duration_id
---    specified_level_id
--- 
--- The loc_lvl_indicator_id is contains (in order):
---    location_id
---    parameter_id
---    parameter_type_id
---    duration_id
---    specified_level_id
---    level_indicator_id
---    
--- The attribute_id is contains (in order):
---    attribute_parameter_id
---    attribute_param_type_id
---    attribute_duration_id
---    
--- This package includes functions to create each of these identifiers from 
--- their constituent parts and procedures to decompose each of them into their
--- constituent parts.
---------------------------------------------------------------------------------
-
-
---------------------------------------------------------------------------------
--- PROCEDURE parse_attribute_id
---------------------------------------------------------------------------------
+/**
+ * Parses an attribute identifier into its components
+ *
+ * @param p_parameter_id     The parameter component
+ * @param p_paramter_type_id The paramter type comonent
+ * @param p_duration_id      The duration component
+ * @param p_attribute_id     The attribute identifier to parse
+ *
+ */
 procedure parse_attribute_id(
    p_parameter_id       out varchar2,
    p_parameter_type_id  out varchar2,
    p_duration_id        out varchar2,
    p_attribute_id       in  varchar2);
-
---------------------------------------------------------------------------------
--- FUNCTION get_attribute_id
---------------------------------------------------------------------------------
+/**
+ * Constructs an attribute identifier from its components
+ *
+ * @param p_parameter_id     The parameter component
+ * @param p_paramter_type_id The paramter type comonent
+ * @param p_duration_id      The duration component
+ *
+ * @return The attribute identifier
+ */
 function get_attribute_id(
    p_parameter_id       in varchar2,
    p_parameter_type_id  in varchar2,
    p_duration_id        in varchar2)
-   return varchar2 /*result_cache*/;
-
---------------------------------------------------------------------------------
--- PROCEDURE parse_location_level_id
---------------------------------------------------------------------------------
+   return varchar2;
+/**
+ * Parses a location level identifier into its components
+ *
+ * @param p_location_id        The location component
+ * @param p_parameter_id       The parameter component
+ * @param p_paramter_type_id   The paramter type comonent
+ * @param p_duration_id        The duration component
+ * @param p_specified_level_id The specified level component
+ * @param p_location_level_id  The location level identifier to parse
+ */
 procedure parse_location_level_id(
    p_location_id        out varchar2,
    p_parameter_id       out varchar2,
@@ -65,17 +54,27 @@ procedure parse_location_level_id(
    p_duration_id        out varchar2,
    p_specified_level_id out varchar2,
    p_location_level_id  in  varchar2);
-
---------------------------------------------------------------------------------
--- FUNCTION get_location_level_id
---------------------------------------------------------------------------------
+/**
+ * Retrieves a location level identifier based on its unique numeric code
+ *
+ * @param p_location_level_code The unique numeric code that identifies the location level
+ *
+ * @return The location level identifier
+ */
 function get_location_level_id(
    p_location_level_code in number)
-   return varchar2 /*result_cache*/;
-
---------------------------------------------------------------------------------
--- FUNCTION get_location_level_id
---------------------------------------------------------------------------------
+   return varchar2;
+/**
+ * Constructs a location level identifier from its components
+ *
+ * @param p_location_id        The location component
+ * @param p_parameter_id       The parameter component
+ * @param p_paramter_type_id   The paramter type comonent
+ * @param p_duration_id        The duration component
+ * @param p_specified_level_id The specified level component
+ *
+ * @return The location level identifier
+ */
 function get_location_level_id(
    p_location_id        in varchar2,
    p_parameter_id       in varchar2,
@@ -83,10 +82,17 @@ function get_location_level_id(
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2)
    return varchar2 /*result_cache*/;
-   
---------------------------------------------------------------------------------
--- PROCEDURE parse_loc_lvl_indicator_id
---------------------------------------------------------------------------------
+/**
+ * Parses a location level indicator identifier into its components
+ *
+ * @param p_location_id          The location component
+ * @param p_parameter_id         The parameter component
+ * @param p_paramter_type_id     The paramter type comonent
+ * @param p_duration_id          The duration component
+ * @param p_specified_level_id   The specified level component
+ * @param p_level_indicator_id   The incidator component
+ * @param p_loc_lvl_indicator_id The location level indicator identifier to parse
+ */
 procedure parse_loc_lvl_indicator_id(
    p_location_id          out varchar2,
    p_parameter_id         out varchar2,
@@ -95,10 +101,18 @@ procedure parse_loc_lvl_indicator_id(
    p_specified_level_id   out varchar2,
    p_level_indicator_id   out varchar2,
    p_loc_lvl_indicator_id in  varchar2);
-   
---------------------------------------------------------------------------------
--- FUNCTION get_loc_lvl_indicator_id
---------------------------------------------------------------------------------
+/**
+ * Constructs a location level indicator identifier from its components
+ *
+ * @param p_location_id          The location component
+ * @param p_parameter_id         The parameter component
+ * @param p_paramter_type_id     The paramter type comonent
+ * @param p_duration_id          The duration component
+ * @param p_specified_level_id   The specified level component
+ * @param p_level_indicator_id   The incidator component
+ *
+ * @return The location level indicator identifier
+ */
 function get_loc_lvl_indicator_id(
    p_location_id        in varchar2,
    p_parameter_id       in varchar2,
@@ -106,115 +120,265 @@ function get_loc_lvl_indicator_id(
    p_duration_id        in varchar2,
    p_specified_level_id in varchar2,
    p_level_indicator_id in varchar2)
-   return varchar2 /*result_cache*/;
-   
---------------------------------------------------------------------------------
--- PROCEDURE create_specified_level_out
---------------------------------------------------------------------------------
+   return varchar2;
+/**
+ * Stores (inserts or update) a specified level to the database, returning its numeric code
+ *
+ * @param p_level_code     The unique numeric code that identifies the specified level
+ * @param p_level_id       The specified level identifier
+ * @param p_description    A description of the specified level
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if the specified level already exists. If 'F' the existing numeric code is returned
+ * @param p_office_id      The office that owns the specified level. If not specified or NULL, the session user's default office is used
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the specified level already exists
+ */
 procedure create_specified_level_out(
    p_level_code     out number,
    p_level_id       in  varchar2,
    p_description    in  varchar2,
    p_fail_if_exists in  varchar2 default 'T',
    p_office_id      in  varchar2 default null);
-   
---------------------------------------------------------------------------------
--- PROCEDURE store_specified_level
---------------------------------------------------------------------------------
+/**
+ * Stores (inserts or update) a specified level to the database
+ *
+ * @param p_level_id       The specified level identifier
+ * @param p_description    A description of the specified level
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if the specified level already exists. If 'F' the existing numeric code is returned
+ * @param p_office_id      The office that owns the specified level. If not specified or NULL, the session user's default office is used
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the specified level already exists
+ */
 procedure store_specified_level(
    p_level_id       in varchar2,
    p_description    in varchar2,
    p_fail_if_exists in varchar2 default 'T',
    p_office_id      in varchar2 default null);
-   
---------------------------------------------------------------------------------
--- PROCEDURE store_specified_level
---------------------------------------------------------------------------------
+/**
+ * Stores (inserts or update) a specified level to the database
+ *
+ * @param p_obj            The specified level to store
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if the specified level already exists. If 'F' the existing numeric code is returned
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the specified level already exists
+ */
 procedure store_specified_level(
    p_obj            in specified_level_t,
    p_fail_if_exists in varchar2 default 'T');
-
---------------------------------------------------------------------------------
--- FUNCTION get_specified_level_code
---------------------------------------------------------------------------------
+/**
+ * Retrieves the unique numeric code that identifies a specified level
+ *
+ * @param p_level_id          The specified level identifier
+ * @param p_fail_if_not_found A flag ('T' or 'F') that specifies whether the routine should fail if no such specified level exists in the database. If 'F' NULL is returned
+ * @param p_office_id         The office that owns the specified level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The unique numeric code that identifies the specified level
+ *
+ * @exception ITEM_DOES_NOT_EXIST if p_fail_if_not_found is 'T' and the specified level does not exist
+ */
 function get_specified_level_code(
    p_level_id          in  varchar2,
    p_fail_if_not_found in  varchar2 default 'T',
    p_office_id         in  varchar2 default null)
    return number;
-   
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_specified_level
---------------------------------------------------------------------------------
+/**
+ * Retrieves the description for a specified level
+ *
+ * @param p_description The description for the specified level
+ * @param p_level_id    The specified level identifier
+ * @param p_office_id   The office that owns the specified level. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_specified_level(
    p_description    out varchar2,
    p_level_id       in  varchar2,
    p_office_id      in  varchar2 default null);
-   
---------------------------------------------------------------------------------
--- FUNCTION retrieve_specified_level
---------------------------------------------------------------------------------
+/**
+ * Retrieves a specified level
+ *
+ * @param p_level_id   The specified level identifier
+ * @param p_office_id  The office that owns the specified level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The specified level
+ */
 function retrieve_specified_level(
    p_level_id       in  varchar2,
    p_office_id      in  varchar2 default null)
    return specified_level_t;
-
---------------------------------------------------------------------------------
--- PROCEDURE delete_specified_level
---------------------------------------------------------------------------------
+/**
+ * Deletes a specified level
+ *
+ * @param p_level_id          The specified level identifier
+ * @param p_fail_if_not_found A flag ('T' or 'F') that specifies whether the routine should fail if no such specified level exists in the database
+ * @param p_office_id         The office that owns the specified level. If not specified or NULL, the session user's default office is used
+ *
+ * @exception ITEM_DOES_NOT_EXIST if p_fail_if_not_found is 'T' and the specified level does not exist
+ */
 procedure delete_specified_level(
    p_level_id          in  varchar2,
    p_fail_if_not_found in  varchar2 default 'T',
    p_office_id         in  varchar2 default null);
-   
---------------------------------------------------------------------------------
--- PROCEDURE rename_specified_level
---------------------------------------------------------------------------------
+/**
+ * Renames a specified level
+ *
+ * @param old_p_level_id The existing specified level identifier
+ * @param new_p_level_id The new specified level identifier
+ * @param p_office_id    The office that owns the specified level. If not specified or NULL, the session user's default office is used
+ */
 procedure rename_specified_level(
    p_old_level_id in varchar2,
    p_new_level_id in varchar2,
    p_office_id    in varchar2 default null);
-
---------------------------------------------------------------------------------
--- PROCEDURE cat_specified_levels
---
--- The cursor returned by this routine contains three fields:
---    1 : office_id          varchar(16)
---    2 : specified_level_id varchar2(256)
---    3 : description        varchar2(256)
---
--- Calling this routine with no parameters returns all specified
--- levels for the calling user's office.
---------------------------------------------------------------------------------
+/**
+ * Catalogs specified levels in the database that match input parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_level_cursor A cursor containing all matching specified levels.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the specified level</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">specified_level_id</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">The identifier of the specified level</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">description</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">A description, if any, of the specified level</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_level_id_mask  The specified level pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ */
 procedure cat_specified_levels(
    p_level_cursor   out sys_refcursor,
    p_level_id_mask  in  varchar2,
    p_office_id_mask in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION cat_specified_levels
---
--- The cursor returned by this routine contains three fields:
---    1 : office_id          varchar(16)
---    2 : specified_level_id varchar2(256)
---    3 : description        varchar2(256)
---
--- Calling this routine with no parameters returns all specified
--- levels for the calling user's office.
---------------------------------------------------------------------------------
+/**
+ * Catalogs specified levels in the database that match input parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_level_id_mask  The specified level pattern to match. Use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @return A cursor containing all matching specified levels.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the specified level</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">specified_level_id</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">The identifier of the specified level</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">description</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">A description, if any, of the specified level</td>
+ *   </tr>
+ * </table>
+ */
 function cat_specified_levels(
    p_level_id_mask  in  varchar2,
    p_office_id_mask in  varchar2 default null)
    return sys_refcursor;
-
---------------------------------------------------------------------------------
--- PROCEDURE store_location_level
---
--- Creates or updates a Location Level in the database
---
--- Only one of p_interval_months and p_interval_minutes can be specified for
--- seasonal levels
---------------------------------------------------------------------------------
+/**
+ * Stores (inserts or updates) a location level to the database. To specify an irregularly varying level
+ * using a time series, use <a href="store_location_level3">store_location_level3</a>.
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_value        The level value, if the level is constant
+ * @param p_level_units        The value unit of p_level_value or p_seasonal_values
+ * @param p_level_comment      A comment about the location level
+ * @param p_effective_date     The effective date for the location level. Applies from this time forward
+ * @param p_timezone_id        The time zone of p_effective_date and p_interval_origin, if applicable
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_comment  A comment about the attribute, if applicable
+ * @param p_interval_origin    The start of any pattern interval, if the level varies in a recurring pattern
+ * @param p_interval_months    The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in months and/or years
+ * @param p_interval_minutes   The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in hours and/or days
+ * @param p_interpolate        A flag ('T' or 'F') that specifies whether the level value changes linearly from one pattern value to the next ('T') or takes on the preceding value ('F'), if the level varies in a recurring pattern
+ * @param p_seasonal_values    The recurring pattern values, if the level varies in a recurring pattern
+ * @param p_fail_if_exists     A flag ('T' or 'F') that specifies whether the routine should fail if the location level already exists in the database
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the location level already exists in the database
+ */
 procedure store_location_level(
    p_location_level_id       in  varchar2,
    p_level_value             in  number,
@@ -233,32 +397,42 @@ procedure store_location_level(
    p_seasonal_values         in  seasonal_value_tab_t default null,
    p_fail_if_exists          in  varchar2 default 'T',
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- PROCEDURE store_location_level
---
--- Creates or updates a Location Level in the database
---------------------------------------------------------------------------------
+/**
+ * Stores (inserts or updates) a location level to the database. To specify an irregularly varying level
+ * using a time series, use <a href="store_location_level3">store_location_level3</a>.
+ *
+ * @param p_location_level  The location level to store
+ */
 procedure store_location_level(
    p_location_level in  location_level_t);
-
---------------------------------------------------------------------------------
--- PROCEDURE store_location_level2
---
--- Creates or updates a Location Level in the database using only text and 
--- numeric parameters
---
--- Only one of p_interval_months and p_interval_minutes can be specified for
--- seasonal levels
---
--- p_effective_date should be specified as ‘yyyy/mm/dd hh:mm:ss’
---
--- p_interval_origin should be specified as ‘yyyy/mm/dd hh:mm:ss’
---
--- p_seasonal_values should be specified as text records separated by the RS
--- character (chr(30)) with each record containing offset_months, offset_minutes
--- and offset_value, each separated by the GS character (chr(29))
---------------------------------------------------------------------------------
+/**
+ * Stores (inserts or updates) a location level to the database using simple data types. To specify an irregularly varying level
+ * using a time series, use <a href="#store_location_level3">store_location_level3</a>.
+ *
+ * @see cwms_util.parse_string_recordset
+ * @see constant cwms_util.field_separator
+ * @see constant cwms_util.record_separator
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_value        The level value, if the level is constant
+ * @param p_level_units        The value unit of p_level_value or p_seasonal_values
+ * @param p_level_comment      A comment about the location level
+ * @param p_effective_date     The effective date for the location level. Format is 'yyyy/mm/dd hh:mm:ss'. Applies from this time forward
+ * @param p_timezone_id        The time zone of p_effective_date and p_interval_origin, if applicable
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_comment  A comment about the attribute, if applicable
+ * @param p_interval_origin    The start of any pattern interval, if the level varies in a recurring pattern. Format is 'yyyy/mm/dd hh:mm:ss'
+ * @param p_interval_months    The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in months and/or years
+ * @param p_interval_minutes   The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in hours and/or days
+ * @param p_interpolate        A flag ('T' or 'F') that specifies whether the level value changes linearly from one pattern value to the next ('T') or takes on the preceding value ('F'), if the level varies in a recurring pattern
+ * @param p_seasonal_values    The recurring pattern values, if the level varies in a recurring pattern, as a text recordset. Each record should contain offset_months, offset_minutes, and offset_value.
+ * @param p_fail_if_exists     A flag ('T' or 'F') that specifies whether the routine should fail if the location level already exists in the database
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the location level already exists in the database
+ */
 procedure store_location_level2(
    p_location_level_id       in  varchar2,
    p_level_value             in  number,
@@ -277,8 +451,30 @@ procedure store_location_level2(
    p_seasonal_values         in  varchar2 default null,
    p_fail_if_exists          in  varchar2 default 'T',
    p_office_id               in  varchar2 default null);
-
-
+/**
+ * Stores (inserts or updates) a location level to the database
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_value        The level value, if the level is constant
+ * @param p_level_units        The value unit of p_level_value or p_seasonal_values
+ * @param p_level_comment      A comment about the location level
+ * @param p_effective_date     The effective date for the location level. Applies from this time forward
+ * @param p_timezone_id        The time zone of p_effective_date and p_interval_origin, if applicable
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_comment  A comment about the attribute, if applicable
+ * @param p_interval_origin    The start of any pattern interval, if the level varies in a recurring pattern
+ * @param p_interval_months    The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in months and/or years
+ * @param p_interval_minutes   The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in hours and/or days
+ * @param p_interpolate        A flag ('T' or 'F') that specifies whether the level value changes linearly from one pattern or time series value to the next ('T') or takes on the preceding value ('F'), if the level varies in a recurring pattern
+ * @param p_tsid               The time series identifier that represents the location level, if the level varies irregularly
+ * @param p_seasonal_values    The recurring pattern values, if the level varies in a recurring pattern
+ * @param p_fail_if_exists     A flag ('T' or 'F') that specifies whether the routine should fail if the location level already exists in the database
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the location level already exists in the database
+ */
 procedure store_location_level3(
    p_location_level_id       in  varchar2,
    p_level_value             in  number,
@@ -298,18 +494,46 @@ procedure store_location_level3(
    p_seasonal_values         in  seasonal_value_tab_t default null,
    p_fail_if_exists          in  varchar2 default 'T',
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_location_level
---
--- Retrieves the Location Level in effect at a specified time
---
--- If p_match_date is false ('F'), then the location level that has the latest
--- effective date on or before p_date is returned.
---
--- If p_match_date is true ('T'), then a location level is returned only if
--- it has an effective date matching p_date.
---------------------------------------------------------------------------------
+/**
+ * Retrieves a location level from the database. To retrieve an irregularly varying level
+ * using a time series, use <a href="retrieve_location_level3">store_location_level3</a>.
+ *
+ * @param p_level_value        The level value, if the level is constant
+ * @param p_level_comment      A comment about the location level
+ * @param p_effective_date     The effective date for the location level. Applies from this time forward
+ * @param p_interval_origin    The start of any pattern interval, if the level varies in a recurring pattern
+ * @param p_interval_months    The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in months and/or years
+ * @param p_interval_minutes   The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in hours and/or days
+ * @param p_interpolate        A flag ('T' or 'F') that specifies whether the level value changes linearly from one pattern value to the next ('T') or takes on the preceding value ('F'), if the level varies in a recurring pattern
+ * @param p_seasonal_values    The recurring pattern values, if the level varies in a recurring pattern
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit of p_level_value or p_seasonal_values
+ * @param p_date               The date for which to retrieve the level
+ * @param p_timezone_id        The time zone of p_date. Retrieved dates are also in this time zone
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_match_date         A flag ('T' or 'F') that specifies whether p_date is interpreted as an effective date.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_match_date</th>
+ *     <th style="border:1px solid black;">If p_date matches an effective date</th>
+ *     <th style="border:1px solid black;">If p_date does not match an effective date</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">'T'</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
+ *     <td style="border:1px solid black;">Retrieves NULL</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">'F'</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the latest effecitve date before p_date</td>
+ *   </tr>
+ * </table>
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_location_level(
    p_level_value             out number,
    p_level_comment           out varchar2,
@@ -328,29 +552,50 @@ procedure retrieve_location_level(
    p_attribute_units         in  varchar2 default null,
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_location_level2
---
--- Retrieves the Location Level in effect at a specified time using only text
--- and numeric parameters
---
--- p_date should be specified as ‘yyyy/mm/dd hh:mm:ss’
---
--- If p_match_date is false ('F'), then the location level that has the latest
--- effective date on or before p_date is returned.
---
--- If p_match_date is true ('T'), then a location level is returned only if
--- it has an effective date matching p_date.
---
--- p_effective_date is returned as ‘yyyy/mm/dd hh:mm:ss’
---
--- p_interval_origin is returned as ‘yyyy/mm/dd hh:mm:ss’
---
--- p_seasonal_values is returned as as text records separated by the RS
--- character (chr(30)) with each record containing offset_months, offset_minutes
--- and offset_value, each separated by the GS character (chr(29))
---------------------------------------------------------------------------------
+/**
+ * Retrieves a location level from the database using simple data types. To retrieve an irregularly varying level
+ * using a time series, use <a href="retrieve_location_level3">store_location_level3</a>.
+ *
+ * @see cwms_util.parse_string_recordset
+ * @see constant cwms_util.field_separator
+ * @see constant cwms_util.record_separator
+ *
+ * @param p_level_value        The level value, if the level is constant
+ * @param p_level_comment      A comment about the location level
+ * @param p_effective_date     The effective date for the location level. Format is 'yyyy/mm/dd hh:mm:ss'. Applies from this time forward
+ * @param p_interval_origin    The start of any pattern interval, if the level varies in a recurring pattern. Format is 'yyyy/mm/dd hh:mm:ss'
+ * @param p_interval_months    The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in months and/or years
+ * @param p_interval_minutes   The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in hours and/or days
+ * @param p_interpolate        A flag ('T' or 'F') that specifies whether the level value changes linearly from one pattern value to the next ('T') or takes on the preceding value ('F'), if the level varies in a recurring pattern
+ * @param p_seasonal_values    The recurring pattern values, if the level varies in a recurring pattern. See <a href="cwms_util.parse_string_recordset">cwms_util.parse_string_recordset</a>.
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit of p_level_value or p_seasonal_values
+ * @param p_date               The date for which to retrieve the level. Format is 'yyyy/mm/dd hh:mm:ss'
+ * @param p_timezone_id        The time zone of p_date. Retrieved dates are also in this time zone
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_match_date         A flag ('T' or 'F') that specifies whether p_date is interpreted as an effective date.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_match_date</th>
+ *     <th style="border:1px solid black;">If p_date matches an effective date</th>
+ *     <th style="border:1px solid black;">If p_date does not match an effective date</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">'T'</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
+ *     <td style="border:1px solid black;">Retrieves NULL</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">'F'</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the latest effecitve date before p_date</td>
+ *   </tr>
+ * </table>
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_location_level2(
    p_level_value             out number,
    p_level_comment           out varchar2,
@@ -369,7 +614,46 @@ procedure retrieve_location_level2(
    p_attribute_units         in  varchar2 default null,
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null);
-
+/**
+ * Retrieves a location level from the database
+ *
+ * @param p_level_value        The level value, if the level is constant
+ * @param p_level_comment      A comment about the location level
+ * @param p_effective_date     The effective date for the location level. Applies from this time forward
+ * @param p_interval_origin    The start of any pattern interval, if the level varies in a recurring pattern
+ * @param p_interval_months    The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in months and/or years
+ * @param p_interval_minutes   The length of the pattern interval, if the level varies in a recurring pattern and the interval is expressed in hours and/or days
+ * @param p_interpolate        A flag ('T' or 'F') that specifies whether the level value changes linearly from one pattern value to the next ('T') or takes on the preceding value ('F'), if the level varies in a recurring pattern
+ * @param p_tsid               The time series identifier that represents the location level, if the level varies irregularly
+ * @param p_seasonal_values    The recurring pattern values, if the level varies in a recurring pattern
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit of p_level_value or p_seasonal_values
+ * @param p_date               The date for which to retrieve the level
+ * @param p_timezone_id        The time zone of p_date. Retrieved dates are also in this time zone
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_match_date         A flag ('T' or 'F') that specifies whether p_date is interpreted as an effective date.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_match_date</th>
+ *     <th style="border:1px solid black;">If p_date matches an effective date</th>
+ *     <th style="border:1px solid black;">If p_date does not match an effective date</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">'T'</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
+ *     <td style="border:1px solid black;">Retrieves NULL</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">'F'</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the latest effecitve date before p_date</td>
+ *   </tr>
+ * </table>
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_location_level3(
    p_level_value             out number,
    p_level_comment           out varchar2,
@@ -389,18 +673,39 @@ procedure retrieve_location_level3(
    p_attribute_units         in  varchar2 default null,
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION retrieve_location_level
---
--- Returns the Location Level in effect at a specified time
---
--- If p_match_date is false ('F'), then the location level that has the latest
--- effective date on or before p_date is returned.
---
--- If p_match_date is true ('T'), then a location level is returned only if
--- it has an effective date matching p_date.
---------------------------------------------------------------------------------
+/**
+ * Retrieves a location level from the database
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit of p_level_value or p_seasonal_values
+ * @param p_date               The date for which to retrieve the level
+ * @param p_timezone_id        The time zone of p_date. Retrieved dates are also in this time zone
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_match_date         A flag ('T' or 'F') that specifies whether p_date is interpreted as an effective date.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_match_date</th>
+ *     <th style="border:1px solid black;">If p_date matches an effective date</th>
+ *     <th style="border:1px solid black;">If p_date does not match an effective date</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">'T'</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
+ *     <td style="border:1px solid black;">Retrieves NULL</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">'F'</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
+ *     <td style="border:1px solid black;">Retrieves the level with the latest effecitve date before p_date</td>
+ *   </tr>
+ * </table>
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The location level
+ */
 function retrieve_location_level(
    p_location_level_id       in  varchar2,
    p_level_units             in  varchar2,
@@ -412,14 +717,28 @@ function retrieve_location_level(
    p_match_date              in  varchar2 default 'F',
    p_office_id               in  varchar2 default null)
    return location_level_t;
-      
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_location_level_values
---
--- Retreives a time series of Location Level values for a specified time window
---
--- The returned QUALITY_CODE values of the time series will be zero.
---------------------------------------------------------------------------------
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * and a time window
+ *
+ * @param p_level_values       The location level values. The time series contains
+ * values at the spcified start and end times of the time window and may contain
+ * values at intermediate times.
+ * <ul>
+ *   <li>If the level <b>is constant</b>, the time series will be of length 2 and the quality_codes of both elements will be zero</li>
+ *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
+ *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
+ * </ul>
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_start_time         The start of the time window
+ * @param p_end_time           The end of the time window
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
    p_location_level_id       in  varchar2,
@@ -431,14 +750,28 @@ procedure retrieve_location_level_values(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION retrieve_location_level_values
---
--- Returns a time series of Location Level values for a specified time window
---
--- The returned QUALITY_CODE values of the time series will be zero.
---------------------------------------------------------------------------------
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * and a time window
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_start_time         The start of the time window
+ * @param p_end_time           The end of the time window
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The location level values. The time series contains values at the spcified
+ * start and end times of the time window and may contain values at intermediate times.
+ * <ul>
+ *   <li>If the level <b>is constant</b>, the time series will be of length 2 and the quality_codes of both elements will be zero</li>
+ *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
+ *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
+ * </ul>
+ */
 function retrieve_location_level_values(
    p_location_level_id       in  varchar2,
    p_level_units             in  varchar2,
@@ -450,21 +783,30 @@ function retrieve_location_level_values(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
    return ztsv_array;
-
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_loc_lvl_values2
---
--- Retreives a time series of Location Level values for a specified time window
--- using only text and numeric parameters
---
--- p_start_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
---
--- p_end_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
---
--- p_level_values is returned as as text records separated by the RS
--- character (chr(30)) with each record containing date-time and value
--- separated by the GS character (chr(29))
---------------------------------------------------------------------------------
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * and a time window, using simple types
+ *
+ * @see cwms_util.parse_string_recordset
+ *
+ * @param p_level_values       The location level values as a string recordset. The time series contains
+ * values at the spcified start and end times of the time window and may contain
+ * values at intermediate times. Each record in the recordset contains fields for date/time, value, and quality code. See <a href="cwms_util.parse_string_recordset">cwms_util.parse_string_recordset</a>.
+ * <ul>
+ *   <li>If the level <b>is constant</b>, the time series will be of length 2 and the quality_codes of both elements will be zero</li>
+ *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
+ *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
+ * </ul>
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_start_time         The start of the time window. Format is 'yyyy/mm/dd hh:mm:ss'
+ * @param p_end_time           The end of the time window. Format is 'yyyy/mm/dd hh:mm:ss'
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_loc_lvl_values2(
    p_level_values            out varchar2,
    p_location_level_id       in  varchar2,
@@ -476,21 +818,30 @@ procedure retrieve_loc_lvl_values2(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION retrieve_loc_lvl_values2
---
--- Returns a time series of Location Level values for a specified time window
--- using only text and numeric parameters
---
--- p_start_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
---
--- p_end_time should be specified as ‘yyyy/mm/dd hh:mm:ss’
---
--- p_level_values is returned as as text records separated by the RS
--- character (chr(30)) with each record containing date-time and value
--- separated by the GS character (chr(29))
---------------------------------------------------------------------------------
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * and a time window, using simple types
+ *
+ * @see cwms_util.parse_string_recordset
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_start_time         The start of the time window. Format is 'yyyy/mm/dd hh:mm:ss'
+ * @param p_end_time           The end of the time window. Format is 'yyyy/mm/dd hh:mm:ss'
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The location level values as a string recordset. The time series contains
+ * values at the spcified start and end times of the time window and may contain
+ * values at intermediate times. Each record in the recordset contains fields for date/time, value, and quality code. See <a href="cwms_util.parse_string_recordset">cwms_util.parse_string_recordset</a>.
+ * <ul>
+ *   <li>If the level <b>is constant</b>, the time series will be of length 2 and the quality_codes of both elements will be zero</li>
+ *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
+ *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
+ * </ul>
+ */
 function retrieve_loc_lvl_values2(
    p_location_level_id       in  varchar2,
    p_level_units             in  varchar2,
@@ -502,17 +853,32 @@ function retrieve_loc_lvl_values2(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
    return varchar2;
-
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_location_level_values
---
--- Retreives a time series of Location Level values for a specified time window
--- for a specified Time Series Identifier and Specified Level Identifier
---
--- The Location Level Identifier is computed from p_ts_id and p_spec_level_id
---
--- The returned QUALITY_CODE values of the time series will be zero.
---------------------------------------------------------------------------------
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * time series, specified level, and time window.  The location level identifier
+ * is generated from p_ts_id and p_spec_level_id
+ *
+ * @param p_level_values       The location level values. The time series contains
+ * values at the spcified start and end times of the time window and may contain
+ * values at intermediate times.
+ * <ul>
+ *   <li>If the level <b>is constant</b>, the time series will be of length 2 and the quality_codes of both elements will be zero</li>
+ *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
+ *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
+ * </ul>
+ * @param p_ts_id                       The time series identifier
+ * @param p_spec_level_id               The specified level identifier
+ * @param p_level_units                 The value unit to retrieve the level values in
+ * @param p_start_time                  The start of the time window
+ * @param p_end_time                    The end of the time window
+ * @param p_attribute_value             The value of the attribute, if applicable
+ * @param p_attribute_units             The unit of the attribute, if applicable
+ * @param p_attribute_parameter_id      The parameter identifier of the attribute, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_parameter_type_id The parameter type identifier of the attribute, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_duration_id       The duratino identifier of the attribute, if applicable. Format is parameter.parameter_type.duration
+ * @param p_timezone_id                 The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id                   The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_location_level_values(
    p_level_values            out ztsv_array,
    p_ts_id                   in  varchar2,
@@ -527,17 +893,33 @@ procedure retrieve_location_level_values(
    p_attribute_duration_id   in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION retrieve_location_level_values
---
--- Returns a time series of Location Level values for a specified time window
--- for a specified Time Series Identifier and Specified Level Identifier
---
--- The Location Level Identifier is computed from p_ts_id and p_spec_level_id
---
--- The returned QUALITY_CODE values of the time series will be zero.
---------------------------------------------------------------------------------
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * time series, specified level, and time window.  The location level identifier
+ * is generated from p_ts_id and p_spec_level_id
+ *
+ * @param p_ts_id                       The time series identifier
+ * @param p_spec_level_id               The specified level identifier
+ * @param p_level_units                 The value unit to retrieve the level values in
+ * @param p_start_time                  The start of the time window
+ * @param p_end_time                    The end of the time window
+ * @param p_attribute_value             The value of the attribute, if applicable
+ * @param p_attribute_units             The unit of the attribute, if applicable
+ * @param p_attribute_parameter_id      The parameter identifier of the attribute, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_parameter_type_id The parameter type identifier of the attribute, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_duration_id       The duratino identifier of the attribute, if applicable. Format is parameter.parameter_type.duration
+ * @param p_timezone_id                 The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id                   The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The location level values. The time series contains
+ * values at the spcified start and end times of the time window and may contain
+ * values at intermediate times.
+ * <ul>
+ *   <li>If the level <b>is constant</b>, the time series will be of length 2 and the quality_codes of both elements will be zero</li>
+ *   <li>If the level <b>varies in a recurring pattern</b>, the time series will include values at any pattern breakpoints in the time window. The quality_codes of all elements will be zero</li>
+ *   <li>If the level <b>varies irregularly</b>, the time series will include values of at any times of the representing time series that are in the time window.  The quality codes of times within the time window will be the quality codes of the representing time series. The quality codes of the elements at the beginning and end of the time window may be zero</li>
+ * </ul>
+ */
 function retrieve_location_level_values(
    p_ts_id                   in  varchar2,
    p_spec_level_id           in  varchar2,
@@ -552,12 +934,20 @@ function retrieve_location_level_values(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
    return ztsv_array;
-
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_location_level_value
---
--- Retreives a Location Level value for a specified time
---------------------------------------------------------------------------------
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * and a time
+ *
+ * @param p_level_value        The location level value
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level value in
+ * @param p_date               The date/time to retrieve the level for
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of p_date
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_location_level_value(
    p_level_value             out number,
    p_location_level_id       in  varchar2,
@@ -568,12 +958,21 @@ procedure retrieve_location_level_value(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION retrieve_location_level_value
---
--- Returns a Location Level value for a specified time
---------------------------------------------------------------------------------
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * and a time
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level value in
+ * @param p_date               The date/time to retrieve the level for
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The location level value
+ */
 function retrieve_location_level_value(
    p_location_level_id       in  varchar2,
    p_level_units             in  varchar2,
@@ -584,15 +983,22 @@ function retrieve_location_level_value(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
    return number;
-
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_location_level_value
---
--- Retreives a Location Level value for a specified time for a specified Time
--- Series Identifier and Specified Level Identifier
---
--- The Location Level Identifier is computed from p_ts_id and p_spec_level_id
---------------------------------------------------------------------------------
+/**
+ * Retrieves a location level value for a specified location level
+ * time series, specified level, and time.  The location level identifier
+ * is generated from p_ts_id and p_spec_level_id
+ *
+ * @param p_level_value        The location level value
+ * @param p_ts_id              The time series identifier
+ * @param p_spec_level_id      The specified level identifier
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_date               The date/time to retrieve the level for
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of p_date
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_location_level_value(
    p_level_value             out number,
    p_ts_id                   in  varchar2,
@@ -604,15 +1010,23 @@ procedure retrieve_location_level_value(
    p_attribute_units         in  varchar2 default null,
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION retrieve_location_level_value
---
--- Retrurns a Location Level value for a specified time for a specified Time
--- Series Identifier and Specified Level Identifier
---
--- The Location Level Identifier is computed from p_ts_id and p_spec_level_id
---------------------------------------------------------------------------------
+/**
+ * Retrieves a location level value for a specified location level
+ * time series, specified level, and time.  The location level identifier
+ * is generated from p_ts_id and p_spec_level_id
+ *
+ * @param p_ts_id              The time series identifier
+ * @param p_spec_level_id      The specified level identifier
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_date               The date/time to retrieve the level for
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of p_date
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The location level value
+ */
 function retrieve_location_level_value(
    p_ts_id                   in  varchar2,
    p_spec_level_id           in  varchar2,
@@ -624,15 +1038,17 @@ function retrieve_location_level_value(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
    return number;
-
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_location_level_attrs
---
--- Retrieves a table of attribute values for a Location Level in effect at a
--- specified time
---
--- The attribute values are returned in the units specified
---------------------------------------------------------------------------------
+/**
+ * Retrieves all the attribute values for a Location Level in effect at a specified time
+ *
+ * @param p_attribute_values   The retrieved attribute values
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the p_date
+ * @param p_date               The date/time to retrieve the attribute values for
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_location_level_attrs(
    p_attribute_values        out number_tab_t,
    p_location_level_id       in  varchar2,
@@ -641,15 +1057,18 @@ procedure retrieve_location_level_attrs(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION retrieve_location_level_attrs
---
--- Returns a table of attribute values for a Location Level in effect at a
--- specified time
---
--- The attribute values are returned in the units specified
---------------------------------------------------------------------------------
+/**
+ * Retrieves all the attribute values for a Location Level in effect at a specified time
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the p_date
+ * @param p_date               The date/time to retrieve the attribute values for
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The retrieved attribute values
+ */
 function retrieve_location_level_attrs(
    p_location_level_id       in  varchar2,
    p_attribute_id            in  varchar2,
@@ -658,19 +1077,17 @@ function retrieve_location_level_attrs(
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
    return number_tab_t;
-
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_location_level_attrs2
---
--- Retrieves a table of attribute values for a Location Level in effect at a
--- specified time using only text and numeric parameters
---
--- p_date should be specifed as 'yyyy/mm/dd hh:mm:ss'
---
--- p_attribute_values is returned as text records separated by the RS character
--- (chr(30)) with each record containing an attribute value in the units 
--- specified
---------------------------------------------------------------------------------
+/**
+ * Retrieves all the attribute values for a Location Level in effect at a specified time using simple types
+ *
+ * @param p_attribute_values   The retrieved attribute values
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the p_date
+ * @param p_date               The date/time to retrieve the attribute values for. Format is 'yyyy/mm/dd hh:mm:ss'
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_location_level_attrs2(
    p_attribute_values        out varchar2,
    p_location_level_id       in  varchar2,
@@ -679,19 +1096,18 @@ procedure retrieve_location_level_attrs2(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  varchar2 default null,
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION retrieve_location_level_attrs2
---
--- Returns a table of attribute values for a Location Level in effect at a
--- specified time using only text and numeric parameters
---
--- p_date should be specifed as 'yyyy/mm/dd hh:mm:ss'
---
--- The attribute values are returned as text records separated by the RS
--- character (chr(30)) with each record containing an attribute value in the 
--- units specified
---------------------------------------------------------------------------------
+/**
+ * Retrieves all the attribute values for a Location Level in effect at a specified time using simple types
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the p_date
+ * @param p_date               The date/time to retrieve the attribute values for. Format is 'yyyy/mm/dd hh:mm:ss'
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The retrieved attribute values
+ */
 function retrieve_location_level_attrs2(
    p_location_level_id       in  varchar2,
    p_attribute_id            in  varchar2,
@@ -700,40 +1116,111 @@ function retrieve_location_level_attrs2(
    p_date                    in  varchar2 default null,
    p_office_id               in  varchar2 default null)
    return varchar2;
-
---------------------------------------------------------------------------------
--- PROCEDURE lookup_level_by_attribute
---
--- Retrieves the level value of a Location Level that corresponds to a specified
--- attribute value and date
---
--- p_in_range_behavior specifies how the lookup is performed when the specified
--- attribute value is within the range of attributes for the Location Level and
--- is specified as one of the following constants from the CWMS_LOOKUP package:
---
--- CWMS_LOOKUP.METHOD_NULL        Return null if between values                                             
--- CWMS_LOOKUP.METHOD_ERROR       Raise an exception if between values                                      
--- CWMS_LOOKUP.METHOD_LINEAR      Linear interpolation of attribute and level values                  
--- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic interpolation of attribute and level values             
--- CWMS_LOOKUP.METHOD_LIN_LOG     Linear interpolation of attribute values, Logarithmic of level values 
--- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic interpolation of attribute values, Linear of level values 
--- CWMS_LOOKUP.METHOD_LOWER       Return the value that is lower in magnitude                                                
--- CWMS_LOOKUP.METHOD_HIGHER      Return the value that is higher in magnitude                                               
--- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude                                              
---
--- p_out_range_behavior specifies how the lookup is performed when the specified
--- attribute value is outside the range of attributes for the Location Level and
--- is specified as one of the following constants from the CWMS_LOOKUP package:
---
--- CWMS_LOOKUP.METHOD_NULL        Return null if outside range                                             
--- CWMS_LOOKUP.METHOD_ERROR       Raise an exception outside range                                      
--- CWMS_LOOKUP.METHOD_LINEAR      Linear extrapolation of attribute and level values                  
--- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic extrapolation of attribute and level values             
--- CWMS_LOOKUP.METHOD_LIN_LOG     Linear extrapoloation of attribute values, Logarithmic of level values 
--- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic extrapoloation of attribute values, Linear of level values 
--- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude
---                                              
---------------------------------------------------------------------------------
+/**
+ * Retrieves the level value of a Location Level that corresponds to a specified attribute value and date
+ *
+ * @see constant cwms_lookup.method_closest
+ * @see constant cwms_lookup.method_error
+ * @see constant cwms_lookup.method_higher
+ * @see constant cwms_lookup.method_lin_log
+ * @see constant cwms_lookup.method_linear
+ * @see constant cwms_lookup.method_log_lin
+ * @see constant cwms_lookup.method_logarithmic
+ * @see constant cwms_lookup.method_lower
+ * @see constant cwms_lookup.method_null
+ *
+ * @param p_level              The retrieved location level value
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_attribute_id       The attribute identifier. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute
+ * @param p_attribute_units    The unit of the attribute
+ * @param p_level_units        The value unit to retrieve the level value in
+ * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
+ * Valid values are
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_in_range_behavior</th>
+ *     <th style="border:1px solid black;">lookup behavior</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
+ *     <td style="border:1px solid black;">Return null if between values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
+ *     <td style="border:1px solid black;">Raise an exception if between values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
+ *     <td style="border:1px solid black;">Linear interpolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
+ *     <td style="border:1px solid black;">Logarithmic interpolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
+ *     <td style="border:1px solid black;">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
+ *     <td style="border:1px solid black;">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lower</td>
+ *     <td style="border:1px solid black;">Return the value that is lower in magnitude</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_higher</td>
+ *     <td style="border:1px solid black;">Return the value that is higher in magnitude</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
+ *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *   </tr>
+ * </table>
+ * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
+ * Valid values are
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_out_range_behavior</th>
+ *     <th style="border:1px solid black;">lookup behavior</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
+ *     <td style="border:1px solid black;">Return null if outside range</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
+ *     <td style="border:1px solid black;">Raise an exception outside range</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
+ *     <td style="border:1px solid black;">Linear extrapolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
+ *     <td style="border:1px solid black;">Logarithmic extrapolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
+ *     <td style="border:1px solid black;">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
+ *     <td style="border:1px solid black;">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
+ *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *   </tr>
+ * </table>
+ * @param p_timezone_id        The time zone of p_date
+ * @param p_date               The date/time to retrieve the attribute value for
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure lookup_level_by_attribute(
    p_level                   out number,
    p_location_level_id       in  varchar2,
@@ -746,40 +1233,112 @@ procedure lookup_level_by_attribute(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION lookup_level_by_attribute
---
--- Returns the level value of a Location Level that corresponds to a specified
--- attribute value and date
---
--- p_in_range_behavior specifies how the lookup is performed when the specified
--- attribute value is within the range of attributes for the Location Level and
--- is specified as one of the following constants from the CWMS_LOOKUP package:
---
--- CWMS_LOOKUP.METHOD_NULL        Return null if between values                                             
--- CWMS_LOOKUP.METHOD_ERROR       Raise an exception if between values                                      
--- CWMS_LOOKUP.METHOD_LINEAR      Linear interpolation of attribute and level values                  
--- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic interpolation of attribute and level values             
--- CWMS_LOOKUP.METHOD_LIN_LOG     Linear interpolation of attribute values, Logarithmic of level values 
--- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic interpolation of attribute values, Linear of level values 
--- CWMS_LOOKUP.METHOD_LOWER       Return the value that is lower in magnitude                                                
--- CWMS_LOOKUP.METHOD_HIGHER      Return the value that is higher in magnitude                                               
--- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude                                              
---
--- p_out_range_behavior specifies how the lookup is performed when the specified
--- attribute value is outside the range of attributes for the Location Level and
--- is specified as one of the following constants from the CWMS_LOOKUP package:
---
--- CWMS_LOOKUP.METHOD_NULL        Return null if outside range                                             
--- CWMS_LOOKUP.METHOD_ERROR       Raise an exception outside range                                      
--- CWMS_LOOKUP.METHOD_LINEAR      Linear extrapolation of attribute and level values                  
--- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic extrapolation of attribute and level values             
--- CWMS_LOOKUP.METHOD_LIN_LOG     Linear extrapoloation of attribute values, Logarithmic of level values 
--- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic extrapoloation of attribute values, Linear of level values 
--- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude
---                                              
---------------------------------------------------------------------------------
+/**
+ * Retrieves the level value of a Location Level that corresponds to a specified attribute value and date
+ *
+ * @see constant cwms_lookup.method_closest
+ * @see constant cwms_lookup.method_error
+ * @see constant cwms_lookup.method_higher
+ * @see constant cwms_lookup.method_lin_log
+ * @see constant cwms_lookup.method_linear
+ * @see constant cwms_lookup.method_log_lin
+ * @see constant cwms_lookup.method_logarithmic
+ * @see constant cwms_lookup.method_lower
+ * @see constant cwms_lookup.method_null
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_attribute_id       The attribute identifier. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute
+ * @param p_attribute_units    The unit of the attribute
+ * @param p_level_units        The value unit to retrieve the level value in
+ * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
+ * Valid values are
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_in_range_behavior</th>
+ *     <th style="border:1px solid black;">lookup behavior</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
+ *     <td style="border:1px solid black;">Return null if between values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
+ *     <td style="border:1px solid black;">Raise an exception if between values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
+ *     <td style="border:1px solid black;">Linear interpolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
+ *     <td style="border:1px solid black;">Logarithmic interpolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
+ *     <td style="border:1px solid black;">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
+ *     <td style="border:1px solid black;">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lower</td>
+ *     <td style="border:1px solid black;">Return the value that is lower in magnitude</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_higher</td>
+ *     <td style="border:1px solid black;">Return the value that is higher in magnitude</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
+ *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *   </tr>
+ * </table>
+ * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
+ * Valid values are
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_out_range_behavior</th>
+ *     <th style="border:1px solid black;">lookup behavior</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
+ *     <td style="border:1px solid black;">Return null if outside range</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
+ *     <td style="border:1px solid black;">Raise an exception outside range</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
+ *     <td style="border:1px solid black;">Linear extrapolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
+ *     <td style="border:1px solid black;">Logarithmic extrapolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
+ *     <td style="border:1px solid black;">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
+ *     <td style="border:1px solid black;">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
+ *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *   </tr>
+ * </table>
+ * @param p_timezone_id        The time zone of p_date
+ * @param p_date               The date/time to retrieve the attribute value for
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The retrieved location level value
+ */
 function lookup_level_by_attribute(
    p_location_level_id       in  varchar2,
    p_attribute_id            in  varchar2,
@@ -792,42 +1351,111 @@ function lookup_level_by_attribute(
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
    return number;
-
---------------------------------------------------------------------------------
--- PROCEDURE lookup_attribute_by_level
---
--- Retrieves the attribute value of a Location Level that corresponds to a 
--- specified level value and date
---
--- p_in_range_behavior specifies how the lookup is performed when the specified
--- level value is within the range of levels associated attributes for the
--- Location Level and is specified as one of the following constants from the
--- CWMS_LOOKUP package:
---
--- CWMS_LOOKUP.METHOD_NULL        Return null if between values                                             
--- CWMS_LOOKUP.METHOD_ERROR       Raise an exception if between values                                      
--- CWMS_LOOKUP.METHOD_LINEAR      Linear interpolation of level and attribute values                  
--- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic interpolation of level and attribute values             
--- CWMS_LOOKUP.METHOD_LIN_LOG     Linear interpolation of level values, Logarithmic of attribute values 
--- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic interpolation of level values, Linear of attribute values 
--- CWMS_LOOKUP.METHOD_LOWER       Return the value that is lower in magnitude                                                
--- CWMS_LOOKUP.METHOD_HIGHER      Return the value that is higher in magnitude                                               
--- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude                                              
---
--- p_out_range_behavior specifies how the lookup is performed when the specified
--- level value is outside the range of levels associated attributes for the
--- Location Level and is specified as one of the following constants from the
--- CWMS_LOOKUP package:
---
--- CWMS_LOOKUP.METHOD_NULL        Return null if outside range                                             
--- CWMS_LOOKUP.METHOD_ERROR       Raise an exception outside range                                      
--- CWMS_LOOKUP.METHOD_LINEAR      Linear extrapolation of level and attribute values                  
--- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic extrapolation of level and attribute values             
--- CWMS_LOOKUP.METHOD_LIN_LOG     Linear extrapoloation of level values, Logarithmic of attribute values 
--- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic extrapoloation of level values, Linear of attribute values 
--- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude
---                                              
---------------------------------------------------------------------------------
+/**
+ * Retrieves the attribute value of a Location Level that corresponds to a specified level value and date
+ *
+ * @see constant cwms_lookup.method_closest
+ * @see constant cwms_lookup.method_error
+ * @see constant cwms_lookup.method_higher
+ * @see constant cwms_lookup.method_lin_log
+ * @see constant cwms_lookup.method_linear
+ * @see constant cwms_lookup.method_log_lin
+ * @see constant cwms_lookup.method_logarithmic
+ * @see constant cwms_lookup.method_lower
+ * @see constant cwms_lookup.method_null
+ *
+ * @param p_attribute          The retrieved attribute level value
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_attribute_id       The attribute identifier. Format is parameter.parameter_type.duration
+ * @param p_level_value        The level value
+ * @param p_level_units        The unit of the level value
+ * @param p_attribute_units    The unit of the attribute to return the attribute in
+ * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
+ * Valid values are
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_in_range_behavior</th>
+ *     <th style="border:1px solid black;">lookup behavior</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
+ *     <td style="border:1px solid black;">Return null if between values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
+ *     <td style="border:1px solid black;">Raise an exception if between values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
+ *     <td style="border:1px solid black;">Linear interpolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
+ *     <td style="border:1px solid black;">Logarithmic interpolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
+ *     <td style="border:1px solid black;">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
+ *     <td style="border:1px solid black;">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lower</td>
+ *     <td style="border:1px solid black;">Return the value that is lower in magnitude</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_higher</td>
+ *     <td style="border:1px solid black;">Return the value that is higher in magnitude</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
+ *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *   </tr>
+ * </table>
+ * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
+ * Valid values are
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_out_range_behavior</th>
+ *     <th style="border:1px solid black;">lookup behavior</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
+ *     <td style="border:1px solid black;">Return null if outside range</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
+ *     <td style="border:1px solid black;">Raise an exception outside range</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
+ *     <td style="border:1px solid black;">Linear extrapolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
+ *     <td style="border:1px solid black;">Logarithmic extrapolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
+ *     <td style="border:1px solid black;">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
+ *     <td style="border:1px solid black;">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
+ *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *   </tr>
+ * </table>
+ * @param p_timezone_id        The time zone of p_date
+ * @param p_date               The date/time to retrieve the attribute value for
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure lookup_attribute_by_level(
    p_attribute               out number,
    p_location_level_id       in  varchar2,
@@ -840,42 +1468,112 @@ procedure lookup_attribute_by_level(
    p_timezone_id             in  varchar2 default null,
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION lookup_attribute_by_level
---
--- Returns the attribute value of a Location Level that corresponds to a 
--- specified level value and date
---
--- p_in_range_behavior specifies how the lookup is performed when the specified
--- level value is within the range of levels associated attributes for the
--- Location Level and is specified as one of the following constants from the
--- CWMS_LOOKUP package:
---
--- CWMS_LOOKUP.METHOD_NULL        Return null if between values                                             
--- CWMS_LOOKUP.METHOD_ERROR       Raise an exception if between values                                      
--- CWMS_LOOKUP.METHOD_LINEAR      Linear interpolation of level and attribute values                  
--- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic interpolation of level and attribute values             
--- CWMS_LOOKUP.METHOD_LIN_LOG     Linear interpolation of level values, Logarithmic of attribute values 
--- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic interpolation of level values, Linear of attribute values 
--- CWMS_LOOKUP.METHOD_LOWER       Return the value that is lower in magnitude                                                
--- CWMS_LOOKUP.METHOD_HIGHER      Return the value that is higher in magnitude                                               
--- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude                                              
---
--- p_out_range_behavior specifies how the lookup is performed when the specified
--- level value is outside the range of levels associated attributes for the
--- Location Level and is specified as one of the following constants from the
--- CWMS_LOOKUP package:
---
--- CWMS_LOOKUP.METHOD_NULL        Return null if outside range                                             
--- CWMS_LOOKUP.METHOD_ERROR       Raise an exception outside range                                      
--- CWMS_LOOKUP.METHOD_LINEAR      Linear extrapolation of level and attribute values                  
--- CWMS_LOOKUP.METHOD_LOGARITHMIC Logarithmic extrapolation of level and attribute values             
--- CWMS_LOOKUP.METHOD_LIN_LOG     Linear extrapoloation of level values, Logarithmic of attribute values 
--- CWMS_LOOKUP.METHOD_LOG_LIN     Logarithmic extrapoloation of level values, Linear of attribute values 
--- CWMS_LOOKUP.METHOD_CLOSEST     Return the value that is closest in magnitude
---                                              
---------------------------------------------------------------------------------
+/**
+ * Retrieves the attribute value of a Location Level that corresponds to a specified level value and date
+ *
+ * @see constant cwms_lookup.method_closest
+ * @see constant cwms_lookup.method_error
+ * @see constant cwms_lookup.method_higher
+ * @see constant cwms_lookup.method_lin_log
+ * @see constant cwms_lookup.method_linear
+ * @see constant cwms_lookup.method_log_lin
+ * @see constant cwms_lookup.method_logarithmic
+ * @see constant cwms_lookup.method_lower
+ * @see constant cwms_lookup.method_null
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_attribute_id       The attribute identifier. Format is parameter.parameter_type.duration
+ * @param p_level_value        The level value
+ * @param p_level_units        The unit of the level value
+ * @param p_attribute_units    The unit of the attribute to return the attribute in
+ * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
+ * Valid values are
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_in_range_behavior</th>
+ *     <th style="border:1px solid black;">lookup behavior</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
+ *     <td style="border:1px solid black;">Return null if between values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
+ *     <td style="border:1px solid black;">Raise an exception if between values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
+ *     <td style="border:1px solid black;">Linear interpolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
+ *     <td style="border:1px solid black;">Logarithmic interpolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
+ *     <td style="border:1px solid black;">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
+ *     <td style="border:1px solid black;">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lower</td>
+ *     <td style="border:1px solid black;">Return the value that is lower in magnitude</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_higher</td>
+ *     <td style="border:1px solid black;">Return the value that is higher in magnitude</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
+ *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *   </tr>
+ * </table>
+ * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
+ * Valid values are
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">p_out_range_behavior</th>
+ *     <th style="border:1px solid black;">lookup behavior</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
+ *     <td style="border:1px solid black;">Return null if outside range</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
+ *     <td style="border:1px solid black;">Raise an exception outside range</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
+ *     <td style="border:1px solid black;">Linear extrapolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
+ *     <td style="border:1px solid black;">Logarithmic extrapolation of attribute and level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
+ *     <td style="border:1px solid black;">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
+ *     <td style="border:1px solid black;">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
+ *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *   </tr>
+ * </table>
+ * @param p_timezone_id        The time zone of p_date
+ * @param p_date               The date/time to retrieve the attribute value for
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The retrieved attribute level value
+ */
 function lookup_attribute_by_level(
    p_location_level_id       in  varchar2,
    p_attribute_id            in  varchar2,
@@ -888,22 +1586,29 @@ function lookup_attribute_by_level(
    p_date                    in  date     default null,
    p_office_id               in  varchar2 default null)
    return number;
-
---------------------------------------------------------------------------------
--- PROCEDURE rename_location_level
---
--- Renames a location level
---------------------------------------------------------------------------------
+/**
+ * Renames a location level in the database
+ *
+ * param p_old_location_level_id The existing location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * param p_new_location_level_id The existing location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * param p_office_id             The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure rename_location_level(
    p_old_location_level_id in  varchar2,
    p_new_location_level_id in  varchar2,
    p_office_id             in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- PROCEDURE delete_location_level
---
--- Deletes the specified Location Level from the database
---------------------------------------------------------------------------------
+/**
+ * Deletes a location level, optionally deleting any recurring pattern records
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_effective_date     The effective date of the level to delete
+ * @param p_timezone_id        The time zone of p_effective_date
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_cascade            A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure delete_location_level(
    p_location_level_id       in  varchar2,
    p_effective_date          in  date     default null,
@@ -913,13 +1618,19 @@ procedure delete_location_level(
    p_attribute_units         in  varchar2 default null,
    p_cascade                 in  varchar2 default ('F'),
    p_office_id               in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- PROCEDURE delete_location_level_ex
---
--- Deletes the specified Location Level from the database, and optionally any 
--- associated location level indicators and conditions
---------------------------------------------------------------------------------
+/**
+ * Deletes a location level, optionally deleting any recurring pattern records
+ *
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_effective_date     The effective date of the level to delete
+ * @param p_timezone_id        The time zone of p_effective_date
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_cascade            A flag ('T' or 'F') that specifies whether to delete any recurring pattern records. If 'F' and such records exist, the routine will fail
+ * @param p_delete_indicators  A flag ('T' or 'F') that specifies whether to delete any location level indicators associated with the location level
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
 procedure delete_location_level_ex(
    p_location_level_id       in  varchar2,
    p_effective_date          in  date     default null,
@@ -980,6 +1691,87 @@ procedure delete_location_level_ex(
 -- Calling this routine with no parameters returns all specified
 -- levels for the calling user's office.
 --------------------------------------------------------------------------------
+/**
+ * Catalogs location levels in the database that match input parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below, SQL-style wildcards can also be used.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cursor A cursor containing all matching basins.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the location levels</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">location_level_id</td>
+ *     <td style="border:1px solid black;">varchar2(390)</td>
+ *     <td style="border:1px solid black;">The location level identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">attribute_id</td>
+ *     <td style="border:1px solid black;">varchar2(83)</td>
+ *     <td style="border:1px solid black;">The attribute identifier, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">attribute_value</td>
+ *     <td style="border:1px solid black;">binary_double</td>
+ *     <td style="border:1px solid black;">The attribue value, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">attribute_unit</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The unit of the attribute, if any</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">location_level_date</td>
+ *     <td style="border:1px solid black;">date</td>
+ *     <td style="border:1px solid black;">The effective date of the location level</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_location_level_id_mask  The location level identifier pattern to match.
+ *
+ * @param p_attribute_id_mask  The attribute identifier pattern to match.
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used. For matching multiple office, use glob-style
+ * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+ * matching.
+ *
+ * @param p_timezone_id The time zone to retrieve dates/times in
+ *
+ * @param p_unit_system The unit system ('EN' or 'SI') to retrieve values in
+ */
 procedure cat_location_levels(
    p_cursor                 out sys_refcursor,
    p_location_level_id_mask in  varchar2 default '*',
@@ -987,10 +1779,7 @@ procedure cat_location_levels(
    p_office_id_mask         in  varchar2 default null,
    p_timezone_id            in  varchar2 default 'UTC',
    p_unit_system            in  varchar2 default 'SI');
-   
---------------------------------------------------------------------------------
--- FUNCTION get_loc_lvl_indciator_code
---------------------------------------------------------------------------------
+-- not documented
 function get_loc_lvl_indicator_code(
    p_loc_lvl_indicator_id   in  varchar2,
    p_attr_value             in  number   default null,
@@ -1000,10 +1789,7 @@ function get_loc_lvl_indicator_code(
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null)
    return number;
-   
---------------------------------------------------------------------------------
--- PROCEDURE store_loc_lvl_indicator_cond
---------------------------------------------------------------------------------
+-- not documented
 procedure store_loc_lvl_indicator_cond(
    p_level_indicator_code        in number,
    p_level_indicator_value       in number,
@@ -1025,14 +1811,66 @@ procedure store_loc_lvl_indicator_cond(
    p_description                 in varchar2               default null,
    p_fail_if_exists              in varchar2               default 'F',
    p_ignore_nulls_on_update      in varchar2               default 'T');
-
---------------------------------------------------------------------------------
--- PROCEDURE store_loc_lvl_indicator_cond
---
--- Creates or updates a Location Level Indicator Condition in the database
---
--- p_rate_interval is specified as 'ddd hh:mm:ss'
---------------------------------------------------------------------------------
+/**
+ * Stores (inserts or updates) a location level indicator condition to the database
+ *
+ * @param p_loc_lvl_indicator_id        The location level indicator identifier
+ * @param p_level_indicator_value       The value (1..5) of the indicator condition
+ * @param p_expression                  The arithmetic expression for value comparisons. This can be an algebraic or RPN expression with the following variables
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Variable</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">V</td>
+ *     <td style="border:1px solid black;">The value (specified explicitly or in a time series) to use in the comparison</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">L or L1</td>
+ *     <td style="border:1px solid black;">The location level value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">L2</td>
+ *     <td style="border:1px solid black;">The location level value of the referenced (secondary) location level</td>
+ *   </tr>
+ * </table>
+ * @param p_comparison_operator_1       The comparison operator ('LT', 'LE', 'EQ', 'NE', 'GE', 'GT') to use in comparing the result of the expression evalutaion with p_comparison_value_1
+ * @param p_comparison_value_1          The first or only value to compare against the result of the expression evaluation via p_comparison_operator_1
+ * @param p_comparison_unit_id          The unit of p_comparison_value_1 and p_comparison_value_2, if appilcable
+ * @param p_connector                   The logical operator ('AND', 'OR') used to connect the first and second value comparisons, if two value comparisons are used.
+ * @param p_comparison_operator_2       The comparison operator ('LT', 'LE', 'EQ', 'NE', 'GE', 'GT') to use in comparing the result of the expression evalutaion with p_comparison_value_2, if two value comparisons are used
+ * @param p_comparison_value_2          The second value to compare against the result of the expression evaluation via p_comparison_operator_2, if two value comparisons are used
+ * @param p_rate_expression             The arithmetic expression for rate-of-change comparisons, if rate-of-change comparisons are used. This can be an algebraic or RPN expression with the following variables
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Variable</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">R</td>
+ *     <td style="border:1px solid black;">The rate-of-change value to use in the comparison. Computed by the difference of two time series values divided by the interval</td>
+ *   </tr>
+ * </table>
+ * @param p_rate_comparison_operator_1  The comparison operator ('LT', 'LE', 'EQ', 'NE', 'GE', 'GT') to use in comparing the result of the expression evalutaion with p_rate_comparison_value_1, if rate comparisons are used
+ * @param p_rate_comparison_value_1     The first or only value to compare against the result of the expression evaluation via p_rate_comparison_operator_1 if rate comparisons are used
+ * @param p_rate_comparison_unit_id     The unit of p_rate_comparison_value_1 and p_rate_comparison_value_2, if appilcable
+ * @param p_rate_connector              The logical operator ('AND', 'OR') used to connect the first and second rate comparisons, if two rate comparisons are used.
+ * @param p_rate_comparison_operator_2  The comparison operator ('LT', 'LE', 'EQ', 'NE', 'GE', 'GT') to use in comparing the result of the expression evalutaion with p_rate_comparison_value_2, if two rate comparisons are used
+ * @param p_rate_comparison_value_2     The second value to compare against the result of the expression evaluation via p_rate_comparison_operator_2, if two rate comparisons are used
+ * @param p_rate_interval               The time interval to use in rate comparisons if rate comparisons are used, regardless of the time series interval
+ * @param p_description                 A description of the location level indicator condition
+ * @param p_attr_value                  The attribute value of the location indicator, if applicable
+ * @param p_attr_units_id               The attribute unit if attribute value(s) is/are specified
+ * @param p_attr_id                     The attribute identifier of the location level indidcator, if applicable
+ * @param p_ref_specified_level_id      The specified level identifier of the referenced (secondary) location level, if any
+ * @param p_ref_attr_value              The attribute value of the referenced location level, if any
+ * @param p_fail_if_exists              A flag ('T' or 'F') that specifies whether the routine should fail if the location level indicator condition already exists
+ * @param p_ignore_nulls_on_update      A flag ('T' or 'F') that specifies whether NULL parameters should be ignored when updating
+ * @param p_office_id                   The office that owns the location level indicator. If not specified or NULL, the session user's default office is used.
+ */
 procedure store_loc_lvl_indicator_cond(
    p_loc_lvl_indicator_id        in varchar2,
    p_level_indicator_value       in number,
@@ -1060,10 +1898,7 @@ procedure store_loc_lvl_indicator_cond(
    p_fail_if_exists              in varchar2 default 'F',
    p_ignore_nulls_on_update      in varchar2 default 'T',
    p_office_id                   in varchar2 default null);
-
---------------------------------------------------------------------------------
--- PROCEDURE store_loc_lvl_indicator_out
---------------------------------------------------------------------------------
+-- not documented
 procedure store_loc_lvl_indicator_out(
    p_level_indicator_code     out number,
    p_location_code            in  number,
@@ -1082,12 +1917,21 @@ procedure store_loc_lvl_indicator_out(
    p_maximum_age              in  interval day to second default null,
    p_fail_if_exists           in  varchar2 default 'F',
    p_ignore_nulls_on_update   in  varchar2 default 'T');
-   
---------------------------------------------------------------------------------
--- PROCEDURE store_loc_lvl_indicator
---
--- Creates or updates a Location Level Indicator in the database
---------------------------------------------------------------------------------
+/**
+ * Stores (inserts or updates) a location level indicator to the database
+ *
+ * @param p_loc_lvl_indicator_id   The location level indicator identifier
+ * @param p_attr_value             The attribute value, if applicable
+ * @param p_attr_units_id          The attribute unit, if applicable
+ * @param p_attribute_id           The attribute identifier, if applicable
+ * @param p_ref_specified_level_id The specified level identifier of the referenced location level, if applicable
+ * @param p_ref_attr_value         The attribute value of the referenced location level, if applicable
+ * @param p_minimum_duration       The minumum amount of time that a condition must evalutate to TRUE for the indicator value to be considered to be set
+ * @param p_maximum_age            The amount of time beyond which data is not considered current enough to evaluate indicator conditions
+ * @param p_fail_if_exists         A flag ('T' or 'F') that specifies whether the routine should fail if the location level indicator already exists
+ * @param p_ignore_nulls_on_update A flag ('T' or 'F') that specifies whether the routine should ignore NULL parameters when updating an existing location level indicator
+ * @param p_office_id              The office that owns the location level indicator. If not specified or NULL, the session user's default office will be used
+ */
 procedure store_loc_lvl_indicator(
    p_loc_lvl_indicator_id   in  varchar2,
    p_attr_value             in  number   default null,
@@ -1100,13 +1944,21 @@ procedure store_loc_lvl_indicator(
    p_fail_if_exists         in  varchar2 default 'F',
    p_ignore_nulls_on_update in  varchar2 default 'T',
    p_office_id              in  varchar2 default null);
-   
---------------------------------------------------------------------------------
--- PROCEDURE store_loc_lvl_indicator2
---
--- Creates or updates a Location Level Indicator in the database using only text
--- and numeric parameters
---------------------------------------------------------------------------------
+/**
+ * Stores (inserts or updates) a location level indicator to the database using simple types
+ *
+ * @param p_loc_lvl_indicator_id   The location level indicator identifier
+ * @param p_attr_value             The attribute value, if applicable
+ * @param p_attr_units_id          The attribute unit, if applicable
+ * @param p_attribute_id           The attribute identifier, if applicable
+ * @param p_ref_specified_level_id The specified level identifier of the referenced location level, if applicable
+ * @param p_ref_attr_value         The attribute value of the referenced location level, if applicable
+ * @param p_minimum_duration       The minumum amount of time that a condition must evalutate to TRUE for the indicator value to be considered to be set. Format is 'ddd hh:mm:ss'
+ * @param p_maximum_age            The amount of time beyond which data is not considered current enough to evaluate indicator conditions. Format is 'ddd hh:mm:ss'
+ * @param p_fail_if_exists         A flag ('T' or 'F') that specifies whether the routine should fail if the location level indicator already exists
+ * @param p_ignore_nulls_on_update A flag ('T' or 'F') that specifies whether the routine should ignore NULL parameters when updating an existing location level indicator
+ * @param p_office_id              The office that owns the location level indicator. If not specified or NULL, the session user's default office will be used
+ */
 procedure store_loc_lvl_indicator2(
    p_loc_lvl_indicator_id   in  varchar2,
    p_attr_value             in  number   default null,
@@ -1119,185 +1971,680 @@ procedure store_loc_lvl_indicator2(
    p_fail_if_exists         in  varchar2 default 'F',
    p_ignore_nulls_on_update in  varchar2 default 'T',
    p_office_id              in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- PROCEDURE cat_loc_lvl_indicator_codes
---
--- The returned cursor contains only the matching location_level_code
---------------------------------------------------------------------------------
+-- not documented
 procedure cat_loc_lvl_indicator_codes(
    p_cursor                     out sys_refcursor,
    p_loc_lvl_indicator_id_mask  in  varchar2 default null,  -- '%.%.%.%.%.%' if null
    p_attribute_id_mask          in  varchar2 default null,
    p_office_id_mask             in  varchar2 default null); -- user's office if null
-
---------------------------------------------------------------------------------
--- FUNCTION cat_loc_lvl_indicator_codes
---
--- The returned cursor contains only the matching location_level_code
---------------------------------------------------------------------------------
+-- not documented
 function cat_loc_lvl_indicator_codes(
    p_loc_lvl_indicator_id_mask in  varchar2 default null, -- '%.%.%.%.%.%' if null
    p_attribute_id_mask         in  varchar2 default null,
    p_office_id_mask            in  varchar2 default null) -- user's office if null
    return sys_refcursor;
-
---------------------------------------------------------------------------------
--- PROCEDURE cat_loc_lvl_indicator
---
--- Retrieves a cursor of Location Level Indicators and associated Conditions
--- that match the input masks
---
--- p_location_level_id_mask - Location Level Identifier that can contain SQL
--- wildcards (%, _) or filename wildcards (*, ?), cannot be NULL
---
--- p_attribute_id_mask - Attribute Identifier that can contain wildcards, cannot
--- be NULL
---
--- p_office_id_mask - Office Identifier that can contain wildcards, if NULL, the
--- user's office id is used
---
--- p_unit_system is 'EN' or 'SI'
---
--- p_cursor contains 18 fields:
---   1 : office_id              varchar2(16)
---   2 : location_id            varchar2(49)
---   3 : parameter_id           varchar2(49)
---   4 : parameter_type_id      varchar2(16)
---   5 : duration_id            varchar2(16)
---   6 : specified_level_id     varchar2(256)
---   7 : level_indicator_id     varchar2(32)
---   8 : level_units_id         varchar2(16)
---   9 : attr_parameter_id      varchar2(49)
---  10 : attr_parameter_type_id varchar2(16)
---  11 : attr_duration_id       varchar2(16)
---  12 : attr_units_id          varchar2(16)
---  13 : attr_value             number
---  14 : minimum_duration       interval day(3) to second(0)
---  15 : maximum_age            interval day(3) to second(0)
---  16 : ref_specified_level_id varchar2(256)
---  17 : ref_attribute_value    number
---  18 : conditions             sys_refcursor
---
--- The cursor returned in field 18 contains 17 fields:
---   1 : indicator_value             integer  (1..5)
---   2 : expression                  varchar2(64)
---   3 : comparison_operator_1       varchar2(2) (LT,LE,EQ,NE,GE,GT)
---   4 : comparison_value_1          number
---   5 : comparison_unit_id          varchar2(16)
---   6 : connector                   varchar2(3) (AND,OR) 
---   7 : comparison_operator_2       varchar2(2) (LT,LE,EQ,NE,GE,GT)
---   8 : comparison_value_2          number  
---   9 : rate_expression             varchar2(64)
---  10 : rate_comparison_operator_1  varchar2(2) (LT,LE,EQ,NE,GE,GT)
---  11 : rate_comparison_value_1     number
---  12 : rate_comparison_unit_id     varchar2(16)
---  13 : rate_connector              varchar2(3) (AND,OR) 
---  14 : rate_comparison_operator_2  varchar2(2) (LT,LE,EQ,NE,GE,GT)
---  15 : rate_comparison_value_2     number  
---  16 : rate_interval               interval day(3) to second(0)
---  17 : description                 varchar2(256)  
---------------------------------------------------------------------------------
+/**
+ * Catalogs location level indicators in the database that match input parameters. Matching is
+ * accomplished with glob-style wildcards, as shown below. SQL-style wildcards may also be used.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_level_cursor A cursor containing all matching location level indicators.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the location level indicator</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">location_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">parameter_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The parameter identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">parameter_type_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The parameter type identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">duration_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The duration identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">specified_level_id</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">The specified level identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">7</td>
+ *     <td style="border:1px solid black;">level_indicator_id</td>
+ *     <td style="border:1px solid black;">varchar2(32)</td>
+ *     <td style="border:1px solid black;">The indicator identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">8</td>
+ *     <td style="border:1px solid black;">level_units_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The level value unit</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">9</td>
+ *     <td style="border:1px solid black;">attr_parameter_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The attribute parameter identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">10</td>
+ *     <td style="border:1px solid black;">attr_parameter_type_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The attribute parameter type identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">11</td>
+ *     <td style="border:1px solid black;">attr_duration_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The attribute duration identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">12</td>
+ *     <td style="border:1px solid black;">attr_units_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The attribute value unit</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">13</td>
+ *     <td style="border:1px solid black;">attr_value</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The attribute value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">14</td>
+ *     <td style="border:1px solid black;">minimum_duration</td>
+ *     <td style="border:1px solid black;">interval day(3) to second(0)</td>
+ *     <td style="border:1px solid black;">The minumum amount of time that a condition must evalutate to TRUE for the indicator value to be considered to be set</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">15</td>
+ *     <td style="border:1px solid black;">maximum_age</td>
+ *     <td style="border:1px solid black;">interval day(3) to second(0)</td>
+ *     <td style="border:1px solid black;">The amount of time beyond which data is not considered current enough to evaluate indicator conditions</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">16</td>
+ *     <td style="border:1px solid black;">ref_specified_level_id</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">The specified level identifier of the referenced location level</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">17</td>
+ *     <td style="border:1px solid black;">ref_attribute_value</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The attribute value of the referenced location level</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">18</td>
+ *     <td style="border:1px solid black;">conditions</td>
+ *     <td style="border:1px solid black;">sys_refcursor</td>
+ *     <td style="border:1px solid black;">
+ *       The location level indicator condtions
+ *       <p>
+ *       <table style="border-collapse:collapse; border:1px solid black;">
+ *         <tr>
+ *           <th style="border:1px solid black;">Column No.</th>
+ *           <th style="border:1px solid black;">Column Name</th>
+ *           <th style="border:1px solid black;">Data Type</th>
+ *           <th style="border:1px solid black;">Contents</th>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">1</td>
+ *           <td style="border:1px solid black;">indicator_value</td>
+ *           <td style="border:1px solid black;">integer</td>
+ *           <td style="border:1px solid black;">The indicator value</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">2</td>
+ *           <td style="border:1px solid black;">expression</td>
+ *           <td style="border:1px solid black;">varchar2(64)</td>
+ *           <td style="border:1px solid black;">The value expression</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">3</td>
+ *           <td style="border:1px solid black;">comparison_operator_1</td>
+ *           <td style="border:1px solid black;">varchar2(2)</td>
+ *           <td style="border:1px solid black;">The first value comparison operator</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">4</td>
+ *           <td style="border:1px solid black;">comparison_value_1</td>
+ *           <td style="border:1px solid black;">number</td>
+ *           <td style="border:1px solid black;">The first value comparison value</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">5</td>
+ *           <td style="border:1px solid black;">comparison_unit_id</td>
+ *           <td style="border:1px solid black;">varchar2(16)</td>
+ *           <td style="border:1px solid black;">The value comparison unit</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">6</td>
+ *           <td style="border:1px solid black;">connector</td>
+ *           <td style="border:1px solid black;">varchar2(3)</td>
+ *           <td style="border:1px solid black;">The logical operator connecting the first and second value comparisons</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">7</td>
+ *           <td style="border:1px solid black;">comparison_operator_2</td>
+ *           <td style="border:1px solid black;">varchar2(2)</td>
+ *           <td style="border:1px solid black;">The second value comparison operator</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">8</td>
+ *           <td style="border:1px solid black;">comparison_value_2</td>
+ *           <td style="border:1px solid black;">number</td>
+ *           <td style="border:1px solid black;">The second value comparison value</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">9</td>
+ *           <td style="border:1px solid black;">rate_expression</td>
+ *           <td style="border:1px solid black;">varchar2(64)</td>
+ *           <td style="border:1px solid black;">The rate-of-chane expression</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">10</td>
+ *           <td style="border:1px solid black;">rate_comparison_operator_1</td>
+ *           <td style="border:1px solid black;">varchar2(2)</td>
+ *           <td style="border:1px solid black;">The first rate-of-change comparison operator</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">11</td>
+ *           <td style="border:1px solid black;">rate_comparison_value_1</td>
+ *           <td style="border:1px solid black;">number</td>
+ *           <td style="border:1px solid black;">The first rate-of-change comparison value</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">12</td>
+ *           <td style="border:1px solid black;">rate_comparison_unit_id</td>
+ *           <td style="border:1px solid black;">varchar2(16)</td>
+ *           <td style="border:1px solid black;">The rate-of-change comparison unit</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">13</td>
+ *           <td style="border:1px solid black;">rate_connector</td>
+ *           <td style="border:1px solid black;">varchar2(3)</td>
+ *           <td style="border:1px solid black;">The logical operator connecting the first and second rate comparisons</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">14</td>
+ *           <td style="border:1px solid black;">rate_comparison_operator_2</td>
+ *           <td style="border:1px solid black;">varchar2(2)</td>
+ *           <td style="border:1px solid black;">The second rate-of-change comparison operator</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">15</td>
+ *           <td style="border:1px solid black;">rate_comparison_value_2</td>
+ *           <td style="border:1px solid black;">number</td>
+ *           <td style="border:1px solid black;">The second rate-of-change comparison value</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">16</td>
+ *           <td style="border:1px solid black;">rate_interval</td>
+ *           <td style="border:1px solid black;">interval day(3) to second(0)</td>
+ *           <td style="border:1px solid black;">The time used to compute rate-of-change from the difference in successive values</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">17</td>
+ *           <td style="border:1px solid black;">description</td>
+ *           <td style="border:1px solid black;">varchar2(256)</td>
+ *           <td style="border:1px solid black;">A description of the location level indicator condition</td>
+ *         </tr>
+ *       </table>
+ *     </td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_location_level_id_mask  The location level identifier pattern to match. If not specified or NULL, all location level identifiers will be matched
+ *
+ * @param p_attribute_id_mask  The attribute identifier pattern to match. If not specified or NULL, all attribute identifiers will be matched
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used
+ *
+ * @param p_unit_system The unit system ('EN' or 'SI') to retrive values in
+ */
 procedure cat_loc_lvl_indicator(
    p_cursor                 out sys_refcursor,
    p_location_level_id_mask in  varchar2,
    p_attribute_id_mask      in  varchar2 default null,
    p_office_id_mask         in  varchar2 default null,
    p_unit_system            in  varchar2 default 'SI');
-
---------------------------------------------------------------------------------
--- PROCEDURE cat_loc_lvl_indicator2
---
--- Retrieves a cursor of Location Level Indicators and associated Conditions
--- that match the input masks and contains only text and numeric fields
---
--- p_location_level_id_mask - Location Level Identifier that can contain SQL
--- wildcards (%, _) or filename wildcards (*, ?), cannot be NULL
---
--- p_attribute_id_mask - Attribute Identifier that can contain wildcards, cannot
--- be NULL
---
--- p_office_id_mask - Office Identifier that can contain wildcards, if NULL, the
--- user's office id is used
---
--- p_unit_system is 'EN' or 'SI'
---
--- p_cursor contains 18 fields:
---   1 : office_id              varchar2(16)
---   2 : location_id            varchar2(49)
---   3 : parameter_id           varchar2(49)
---   4 : parameter_type_id      varchar2(16)
---   5 : duration_id            varchar2(16)
---   6 : specified_level_id     varchar2(256)
---   7 : level_indicator_id     varchar2(32)
---   8 : level_units_id         varchar2(16)
---   9 : attr_parameter_id      varchar2(49)
---  10 : attr_parameter_type_id varchar2(16)
---  11 : attr_duration_id       varchar2(16)
---  12 : attr_units_id          varchar2(16)
---  13 : attr_value             number
---  14 : minimum_duration       varchar2(12)
---  15 : maximum_age            varchar2(12)
---  16 : ref_specified_level_id varchar2(256)
---  17 : ref_attribute_value    number
---  18 : conditions             varchar2(4096)
---
--- Fields 14 and 15 are in the format 'ddd hh:mm:ss'
---
--- The character string returned in field 18 contains text records separated
--- by the RS character (chr(30)), each record having 17 fields separated by
--- the GS character (chr(29)):
---   1 : indicator_value             integer  (1..5)
---   2 : expression                  varchar2(64)
---   3 : comparison_operator_1       varchar2(2) (LT,LE,EQ,NE,GE,GT)
---   4 : comparison_value_1          number
---   5 : comparison_unit_id          varchar2(16)
---   6 : connector                   varchar2(3) (AND,OR) 
---   7 : comparison_operator_2       varchar2(2) (LT,LE,EQ,NE,GE,GT)
---   8 : comparison_value_2          number  
---   9 : rate_expression             varchar2(64)
---  10 : rate_comparison_operator_1  varchar2(2) (LT,LE,EQ,NE,GE,GT)
---  11 : rate_comparison_value_1     number
---  12 : rate_comparison_unit_id     varchar2(16)
---  13 : rate_connector              varchar2(3) (AND,OR) 
---  14 : rate_comparison_operator_2  varchar2(2) (LT,LE,EQ,NE,GE,GT)
---  15 : rate_comparison_value_2     number  
---  16 : rate_interval               varchar2(12)
---  17 : description                 varchar2(256)  
---
--- Field 16 is in the format 'ddd hh:mm:ss'
---------------------------------------------------------------------------------
+/**
+ * Catalogs location level indicators in the database that match input parameters, returning data in simple types. Matching is
+ * accomplished with glob-style wildcards, as shown below. SQL-style wildcards may also be used.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_level_cursor A cursor containing all matching location level indicators.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">office_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The office that owns the location level indicator</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">location_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The location identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">parameter_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The parameter identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">parameter_type_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The parameter type identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">duration_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The duration identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">specified_level_id</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">The specified level identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">7</td>
+ *     <td style="border:1px solid black;">level_indicator_id</td>
+ *     <td style="border:1px solid black;">varchar2(32)</td>
+ *     <td style="border:1px solid black;">The indicator identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">8</td>
+ *     <td style="border:1px solid black;">level_units_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The level value unit</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">9</td>
+ *     <td style="border:1px solid black;">attr_parameter_id</td>
+ *     <td style="border:1px solid black;">varchar2(49)</td>
+ *     <td style="border:1px solid black;">The attribute parameter identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">10</td>
+ *     <td style="border:1px solid black;">attr_parameter_type_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The attribute parameter type identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">11</td>
+ *     <td style="border:1px solid black;">attr_duration_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The attribute duration identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">12</td>
+ *     <td style="border:1px solid black;">attr_units_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The attribute value unit</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">13</td>
+ *     <td style="border:1px solid black;">attr_value</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The attribute value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">14</td>
+ *     <td style="border:1px solid black;">minimum_duration</td>
+ *     <td style="border:1px solid black;">varchar2(12)</td>
+ *     <td style="border:1px solid black;">The minumum amount of time that a condition must evalutate to TRUE for the indicator value to be considered to be set. Format is 'ddd hh:mm:ss'</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">15</td>
+ *     <td style="border:1px solid black;">maximum_age</td>
+ *     <td style="border:1px solid black;">varchar2(12)</td>
+ *     <td style="border:1px solid black;">The amount of time beyond which data is not considered current enough to evaluate indicator conditions. Format is 'ddd hh:mm:ss'</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">16</td>
+ *     <td style="border:1px solid black;">ref_specified_level_id</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">The specified level identifier of the referenced location level</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">17</td>
+ *     <td style="border:1px solid black;">ref_attribute_value</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The attribute value of the referenced location level</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">18</td>
+ *     <td style="border:1px solid black;">conditions</td>
+ *     <td style="border:1px solid black;">sys_refcursor</td>
+ *     <td style="border:1px solid black;">
+ *       The location level indicator condtions
+ *       <p>
+ *       <table style="border-collapse:collapse; border:1px solid black;">
+ *         <tr>
+ *           <th style="border:1px solid black;">Column No.</th>
+ *           <th style="border:1px solid black;">Column Name</th>
+ *           <th style="border:1px solid black;">Data Type</th>
+ *           <th style="border:1px solid black;">Contents</th>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">1</td>
+ *           <td style="border:1px solid black;">indicator_value</td>
+ *           <td style="border:1px solid black;">integer</td>
+ *           <td style="border:1px solid black;">The indicator value</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">2</td>
+ *           <td style="border:1px solid black;">expression</td>
+ *           <td style="border:1px solid black;">varchar2(64)</td>
+ *           <td style="border:1px solid black;">The value expression</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">3</td>
+ *           <td style="border:1px solid black;">comparison_operator_1</td>
+ *           <td style="border:1px solid black;">varchar2(2)</td>
+ *           <td style="border:1px solid black;">The first value comparison operator</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">4</td>
+ *           <td style="border:1px solid black;">comparison_value_1</td>
+ *           <td style="border:1px solid black;">number</td>
+ *           <td style="border:1px solid black;">The first value comparison value</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">5</td>
+ *           <td style="border:1px solid black;">comparison_unit_id</td>
+ *           <td style="border:1px solid black;">varchar2(16)</td>
+ *           <td style="border:1px solid black;">The value comparison unit</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">6</td>
+ *           <td style="border:1px solid black;">connector</td>
+ *           <td style="border:1px solid black;">varchar2(3)</td>
+ *           <td style="border:1px solid black;">The logical operator connecting the first and second value comparisons</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">7</td>
+ *           <td style="border:1px solid black;">comparison_operator_2</td>
+ *           <td style="border:1px solid black;">varchar2(2)</td>
+ *           <td style="border:1px solid black;">The second value comparison operator</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">8</td>
+ *           <td style="border:1px solid black;">comparison_value_2</td>
+ *           <td style="border:1px solid black;">number</td>
+ *           <td style="border:1px solid black;">The second value comparison value</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">9</td>
+ *           <td style="border:1px solid black;">rate_expression</td>
+ *           <td style="border:1px solid black;">varchar2(64)</td>
+ *           <td style="border:1px solid black;">The rate-of-chane expression</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">10</td>
+ *           <td style="border:1px solid black;">rate_comparison_operator_1</td>
+ *           <td style="border:1px solid black;">varchar2(2)</td>
+ *           <td style="border:1px solid black;">The first rate-of-change comparison operator</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">11</td>
+ *           <td style="border:1px solid black;">rate_comparison_value_1</td>
+ *           <td style="border:1px solid black;">number</td>
+ *           <td style="border:1px solid black;">The first rate-of-change comparison value</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">12</td>
+ *           <td style="border:1px solid black;">rate_comparison_unit_id</td>
+ *           <td style="border:1px solid black;">varchar2(16)</td>
+ *           <td style="border:1px solid black;">The rate-of-change comparison unit</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">13</td>
+ *           <td style="border:1px solid black;">rate_connector</td>
+ *           <td style="border:1px solid black;">varchar2(3)</td>
+ *           <td style="border:1px solid black;">The logical operator connecting the first and second rate comparisons</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">14</td>
+ *           <td style="border:1px solid black;">rate_comparison_operator_2</td>
+ *           <td style="border:1px solid black;">varchar2(2)</td>
+ *           <td style="border:1px solid black;">The second rate-of-change comparison operator</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">15</td>
+ *           <td style="border:1px solid black;">rate_comparison_value_2</td>
+ *           <td style="border:1px solid black;">number</td>
+ *           <td style="border:1px solid black;">The second rate-of-change comparison value</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">16</td>
+ *           <td style="border:1px solid black;">rate_interval</td>
+ *           <td style="border:1px solid black;">varchar2(12)</td>
+ *           <td style="border:1px solid black;">The time used to compute rate-of-change from the difference in successive values. Format is 'ddd hh:mm:ss'</td>
+ *         </tr>
+ *         <tr>
+ *           <td style="border:1px solid black;">17</td>
+ *           <td style="border:1px solid black;">description</td>
+ *           <td style="border:1px solid black;">varchar2(256)</td>
+ *           <td style="border:1px solid black;">A description of the location level indicator condition</td>
+ *         </tr>
+ *       </table>
+ *     </td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_location_level_id_mask  The location level identifier pattern to match. If not specified or NULL, all location level identifiers will be matched
+ *
+ * @param p_attribute_id_mask  The attribute identifier pattern to match. If not specified or NULL, all attribute identifiers will be matched
+ *
+ * @param p_office_id_mask  The office pattern to match.  If the routine is called
+ * without this parameter, or if this parameter is set to NULL, the session user's
+ * default office will be used
+ *
+ * @param p_unit_system The unit system ('EN' or 'SI') to retrive values in
+ */
 procedure cat_loc_lvl_indicator2(
    p_cursor                 out sys_refcursor,
    p_location_level_id_mask in  varchar2,
    p_attribute_id_mask      in  varchar2 default null,
    p_office_id_mask         in  varchar2 default null,
    p_unit_system            in  varchar2 default 'SI');
-
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_loc_lvl_indicator
---
--- Retrieves a Location Level Indicator and its associated Conditions
---
--- The cursor returned in p_conditions contains 17 fields:
---   1 : indicator_value             integer  (1..5)
---   2 : expression                  varchar2(64)
---   3 : comparison_operator_1       varchar2(2) (LT,LE,EQ,NE,GE,GT)
---   4 : comparison_value_1          number
---   5 : comparison_unit_id          varchar2(16)
---   6 : connector                   varchar2(3) (AND,OR) 
---   7 : comparison_operator_2       varchar2(2) (LT,LE,EQ,NE,GE,GT)
---   8 : comparison_value_2          number  
---   9 : rate_expression             varchar2(64)
---  10 : rate_comparison_operator_1  varchar2(2) (LT,LE,EQ,NE,GE,GT)
---  11 : rate_comparison_value_1     number
---  12 : rate_comparison_unit_id     varchar2(16)
---  13 : rate_connector              varchar2(3) (AND,OR) 
---  14 : rate_comparison_operator_2  varchar2(2) (LT,LE,EQ,NE,GE,GT)
---  15 : rate_comparison_value_2     number  
---  16 : rate_interval               interval day(3) to second(0)
---  17 : description                 varchar2(256)  
---------------------------------------------------------------------------------
+/**
+ * Retrieves a location level indicator and its associated conditions
+ *
+ * @param p_minimum_duration       The minumum amount of time that a condition must evalutate to TRUE for the indicator value to be considered to be set
+ * @param p_maximum_age            The amount of time beyond which data is not considered current enough to evaluate indicator conditions
+ * @param p_conditions             The location level indicator condtions
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">indicator_value</td>
+ *     <td style="border:1px solid black;">integer</td>
+ *     <td style="border:1px solid black;">The indicator value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">expression</td>
+ *     <td style="border:1px solid black;">varchar2(64)</td>
+ *     <td style="border:1px solid black;">The value expression</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">comparison_operator_1</td>
+ *     <td style="border:1px solid black;">varchar2(2)</td>
+ *     <td style="border:1px solid black;">The first value comparison operator</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">comparison_value_1</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The first value comparison value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">comparison_unit_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The value comparison unit</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">connector</td>
+ *     <td style="border:1px solid black;">varchar2(3)</td>
+ *     <td style="border:1px solid black;">The logical operator connecting the first and second value comparisons</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">7</td>
+ *     <td style="border:1px solid black;">comparison_operator_2</td>
+ *     <td style="border:1px solid black;">varchar2(2)</td>
+ *     <td style="border:1px solid black;">The second value comparison operator</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">8</td>
+ *     <td style="border:1px solid black;">comparison_value_2</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The second value comparison value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">9</td>
+ *     <td style="border:1px solid black;">rate_expression</td>
+ *     <td style="border:1px solid black;">varchar2(64)</td>
+ *     <td style="border:1px solid black;">The rate-of-chane expression</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">10</td>
+ *     <td style="border:1px solid black;">rate_comparison_operator_1</td>
+ *     <td style="border:1px solid black;">varchar2(2)</td>
+ *     <td style="border:1px solid black;">The first rate-of-change comparison operator</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">11</td>
+ *     <td style="border:1px solid black;">rate_comparison_value_1</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The first rate-of-change comparison value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">12</td>
+ *     <td style="border:1px solid black;">rate_comparison_unit_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The rate-of-change comparison unit</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">13</td>
+ *     <td style="border:1px solid black;">rate_connector</td>
+ *     <td style="border:1px solid black;">varchar2(3)</td>
+ *     <td style="border:1px solid black;">The logical operator connecting the first and second rate comparisons</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">14</td>
+ *     <td style="border:1px solid black;">rate_comparison_operator_2</td>
+ *     <td style="border:1px solid black;">varchar2(2)</td>
+ *     <td style="border:1px solid black;">The second rate-of-change comparison operator</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">15</td>
+ *     <td style="border:1px solid black;">rate_comparison_value_2</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The second rate-of-change comparison value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">16</td>
+ *     <td style="border:1px solid black;">rate_interval</td>
+ *     <td style="border:1px solid black;">interval day(3) to second(0)</td>
+ *     <td style="border:1px solid black;">The time used to compute rate-of-change from the difference in successive values</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">17</td>
+ *     <td style="border:1px solid black;">description</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">A description of the location level indicator condition</td>
+ *   </tr>
+ * </table>
+ * @param p_loc_lvl_indicator_id   The location level indidicator identifier
+ * @param p_level_units_id         The unit to retrieve values in
+ * @param p_attr_value             The location level attribute value, if applicable
+ * @param p_attr_units_id          The location level attribute unit, if applicable
+ * @param p_attr_id                The location level attribute identifier, if applicable
+ * @param p_ref_specified_level_id The specified level identifier of the referenced (secondary) location level, if applicable
+ * @param p_ref_attr_value         The attribute value of the referenced (secondary) location level, if applicable
+ * @param p_office_id              The office that owns the location level indicator
+ */
 procedure retrieve_loc_lvl_indicator(
    p_minimum_duration       out interval day to second,
    p_maximum_age            out interval day to second,
@@ -1310,40 +2657,132 @@ procedure retrieve_loc_lvl_indicator(
    p_ref_specified_level_id in  varchar2 default null,
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- PROCEDURE retrieve_loc_lvl_indicator2
---
--- Retrieves a Location Level Indicator and its associated Conditions and uses
--- only text and numeric fields
---
--- p_minimum_duration is in the format 'ddd hh:mm:ss'
---
--- p_maximum_age is in the format 'ddd hh:mm:ss'
---
--- The character string returned in p_conditions contains text records separated
--- by the RS character (chr(30)), each record having 17 fields separated by
--- the GS character (chr(29)):
---   1 : indicator_value             integer  (1..5)
---   2 : expression                  varchar2(64)
---   3 : comparison_operator_1       varchar2(2) (LT,LE,EQ,NE,GE,GT)
---   4 : comparison_value_1          number
---   5 : comparison_unit_id          varchar2(16)
---   6 : connector                   varchar2(3) (AND,OR) 
---   7 : comparison_operator_2       varchar2(2) (LT,LE,EQ,NE,GE,GT)
---   8 : comparison_value_2          number  
---   9 : rate_expression             varchar2(64)
---  10 : rate_comparison_operator_1  varchar2(2) (LT,LE,EQ,NE,GE,GT)
---  11 : rate_comparison_value_1     number
---  12 : rate_comparison_unit_id     varchar2(16)
---  13 : rate_connector              varchar2(3) (AND,OR) 
---  14 : rate_comparison_operator_2  varchar2(2) (LT,LE,EQ,NE,GE,GT)
---  15 : rate_comparison_value_2     number  
---  16 : rate_interval               varchar2(12)
---  17 : description                 varchar2(256)  
---
--- Field 16 is in the format 'ddd hh:mm:ss'
---------------------------------------------------------------------------------
+/**
+ * Retrieves a location level indicator and its associated conditions, in simple data types
+ *
+ * @param p_minimum_duration       The minumum amount of time that a condition must evalutate to TRUE for the indicator value to be considered to be set
+ * @param p_maximum_age            The amount of time beyond which data is not considered current enough to evaluate indicator conditions
+ * @param p_conditions             The location level indicator condtions. If not specified or NULL, the session user's default office is used
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">indicator_value</td>
+ *     <td style="border:1px solid black;">integer</td>
+ *     <td style="border:1px solid black;">The indicator value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">expression</td>
+ *     <td style="border:1px solid black;">varchar2(64)</td>
+ *     <td style="border:1px solid black;">The value expression</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">comparison_operator_1</td>
+ *     <td style="border:1px solid black;">varchar2(2)</td>
+ *     <td style="border:1px solid black;">The first value comparison operator</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">comparison_value_1</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The first value comparison value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">comparison_unit_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The value comparison unit</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">6</td>
+ *     <td style="border:1px solid black;">connector</td>
+ *     <td style="border:1px solid black;">varchar2(3)</td>
+ *     <td style="border:1px solid black;">The logical operator connecting the first and second value comparisons</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">7</td>
+ *     <td style="border:1px solid black;">comparison_operator_2</td>
+ *     <td style="border:1px solid black;">varchar2(2)</td>
+ *     <td style="border:1px solid black;">The second value comparison operator</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">8</td>
+ *     <td style="border:1px solid black;">comparison_value_2</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The second value comparison value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">9</td>
+ *     <td style="border:1px solid black;">rate_expression</td>
+ *     <td style="border:1px solid black;">varchar2(64)</td>
+ *     <td style="border:1px solid black;">The rate-of-chane expression</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">10</td>
+ *     <td style="border:1px solid black;">rate_comparison_operator_1</td>
+ *     <td style="border:1px solid black;">varchar2(2)</td>
+ *     <td style="border:1px solid black;">The first rate-of-change comparison operator</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">11</td>
+ *     <td style="border:1px solid black;">rate_comparison_value_1</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The first rate-of-change comparison value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">12</td>
+ *     <td style="border:1px solid black;">rate_comparison_unit_id</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The rate-of-change comparison unit</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">13</td>
+ *     <td style="border:1px solid black;">rate_connector</td>
+ *     <td style="border:1px solid black;">varchar2(3)</td>
+ *     <td style="border:1px solid black;">The logical operator connecting the first and second rate comparisons</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">14</td>
+ *     <td style="border:1px solid black;">rate_comparison_operator_2</td>
+ *     <td style="border:1px solid black;">varchar2(2)</td>
+ *     <td style="border:1px solid black;">The second rate-of-change comparison operator</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">15</td>
+ *     <td style="border:1px solid black;">rate_comparison_value_2</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The second rate-of-change comparison value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">16</td>
+ *     <td style="border:1px solid black;">rate_interval</td>
+ *     <td style="border:1px solid black;">varchar2(12)</td>
+ *     <td style="border:1px solid black;">The time used to compute rate-of-change from the difference in successive values. Format is 'ddd hh:mm:ss'</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">17</td>
+ *     <td style="border:1px solid black;">description</td>
+ *     <td style="border:1px solid black;">varchar2(256)</td>
+ *     <td style="border:1px solid black;">A description of the location level indicator condition</td>
+ *   </tr>
+ * </table>
+ * @param p_loc_lvl_indicator_id   The location level indidicator identifier
+ * @param p_level_units_id         The unit to retrieve values in
+ * @param p_attr_value             The location level attribute value, if applicable
+ * @param p_attr_units_id          The location level attribute unit, if applicable
+ * @param p_attr_id                The location level attribute identifier, if applicable
+ * @param p_ref_specified_level_id The specified level identifier of the referenced (secondary) location level, if applicable
+ * @param p_ref_attr_value         The attribute value of the referenced (secondary) location level, if applicable
+ * @param p_office_id              The office that owns the location level indicator. If not specified or NULL, the session user's default office is used
+ */
 procedure retrieve_loc_lvl_indicator2(
    p_minimum_duration       out varchar2, -- 'ddd hh:mi:ss'
    p_maximum_age            out varchar2, -- 'ddd hh:mi:ss'
@@ -1356,13 +2795,20 @@ procedure retrieve_loc_lvl_indicator2(
    p_ref_specified_level_id in  varchar2 default null,
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- FUNCTION retrieve_loc_lvl_indicator 
---
--- Returns a Location Level Indicator and its associated Conditions in a
--- LOC_LVL_INDICATOR_T object
---------------------------------------------------------------------------------
+/**
+ * Retrieves a location level indicator and its associated conditions
+ *
+ * @param p_loc_lvl_indicator_id   The location level indidicator identifier
+ * @param p_level_units_id         The unit to retrieve values in
+ * @param p_attr_value             The location level attribute value, if applicable
+ * @param p_attr_units_id          The location level attribute unit, if applicable
+ * @param p_attr_id                The location level attribute identifier, if applicable
+ * @param p_ref_specified_level_id The specified level identifier of the referenced (secondary) location level, if applicable
+ * @param p_ref_attr_value         The attribute value of the referenced (secondary) location level, if applicable
+ * @param p_office_id              The office that owns the location level indicator
+ *
+ * @return The specified location level indicator and its associated conditions
+ */
 function retrieve_loc_lvl_indicator(
    p_loc_lvl_indicator_id   in  varchar2,
    p_level_units_id         in  varchar2 default null,
@@ -1373,12 +2819,18 @@ function retrieve_loc_lvl_indicator(
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null)
    return loc_lvl_indicator_t;
-
---------------------------------------------------------------------------------
--- PROCEDURE delete_loc_lvl_indicator
---
--- Deletes a Location Level Indicator and its associated Conditions
---------------------------------------------------------------------------------
+/**
+ * Deletes a location level indicator and its associated conditions from the database
+ *
+ * @param p_loc_lvl_indicator_id   The location level indidicator identifier
+ * @param p_level_units_id         The unit to retrieve values in
+ * @param p_attr_value             The location level attribute value, if applicable
+ * @param p_attr_units_id          The location level attribute unit, if applicable
+ * @param p_attr_id                The location level attribute identifier, if applicable
+ * @param p_ref_specified_level_id The specified level identifier of the referenced (secondary) location level, if applicable
+ * @param p_ref_attr_value         The attribute value of the referenced (secondary) location level, if applicable
+ * @param p_office_id              The office that owns the location level indicator. If not specified or NULL, the session user's default office is used
+ */
 procedure delete_loc_lvl_indicator(
    p_loc_lvl_indicator_id   in  varchar2,
    p_level_units_id         in  varchar2 default null,
@@ -1388,39 +2840,74 @@ procedure delete_loc_lvl_indicator(
    p_ref_specified_level_id in  varchar2 default null,
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null);
-
---------------------------------------------------------------------------------
--- PROCEDURE get_level_indicator_values
---
--- Retreieves the values for all Location Level Indicator Conditions that are
--- set at p_eval_time and that match the input parameters.  Each indicator may
--- have multiple condions set.
---
--- p_tsid - time series identifier, p_cursor will only include Conditions for 
--- Location Levels that have the same Location, Parameter, and Parameter Type
--- 
--- p_eval_time - evaluation time, current time if NULL
---
--- p_time_zone - time zone of p_eval_time, 'UTC' if NULL
---
--- p_specified_level_mask - Specified Level Indicator with optional SQL
--- wildcards (%, _) or filename wildcards (*, ?), '%' if NULL
---
--- p_indicator_id_mask - Location Level Identifier with optional wildcards, '%'
--- if NULL
---
--- p_unit_system - unit system for which to retrieve attribute values, 'EN' or 
--- 'SI', 'SI' if NULL
---
--- p_office_id - office identifier for p_tsid, user's office identifier if NULL
--- 
--- p_cursor contains the following fields:
--- 1 indicator_id     varchar2(423)
--- 2 attribute_id     varchar2(83)
--- 3 attribute_value  number           
--- 4 attribute_units  varchar2(16)
--- 5 indicator_values number_tab_t
---------------------------------------------------------------------------------
+/**
+ * Retreieves the values for all Location level indicator conditions that are set at
+ * p_eval_time and that match the input parameters.  Each indicator may have multiple condions set. Matching is
+ * accomplished with glob-style wildcards, as shown below. SQL-style wildcards may also be used.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cursor               The retrieved location level indicator values
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">indicator_id</td>
+ *     <td style="border:1px solid black;">varchar2(423)</td>
+ *     <td style="border:1px solid black;">The location level indicator identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">attribute_id</td>
+ *     <td style="border:1px solid black;">varchar2(83)</td>
+ *     <td style="border:1px solid black;">The location level attribute identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">attribute_value</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The location level attribute</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">attribute_units</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The unit of the location level attribute value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">indicator_values</td>
+ *     <td style="border:1px solid black;">number_tab_t</td>
+ *     <td style="border:1px solid black;">The location level indicator condition values that are set for the specified parameters</td>
+ *   </tr>
+ * </table>
+ * @param p_tsid                 A time series identifier. p_cursor will only include conditions for location levels that have the same location, parameter, and parameter type
+ * @param p_eval_time            The evaluation time.  If not specified or NULL, the current time is used
+ * @param p_time_zone            The time zone of p_eval_time. If not specified or NULL, UTC is used
+ * @param p_specified_level_mask The specified level identifier pattern to match. If not specified or NULL, all specified level identifiers are matched
+ * @param p_indicator_id_mask    The location level indicator identifier pattern to match. If not specified or NULL, all location level indicator identifiers are matched
+ * @param p_unit_system          The unit system ('EN' or 'SI') to retrieve values in. If not specified or NULL, SI is used
+ * @param p_office_id            The office that owns the time series and location level indicators. If not specified or NULL, the session user's default office is used
+ */
 procedure get_level_indicator_values(
    p_cursor               out sys_refcursor,
    p_tsid                 in  varchar2,
@@ -1430,44 +2917,77 @@ procedure get_level_indicator_values(
    p_indicator_id_mask    in  varchar2 default null,
    p_unit_system          in  varchar2 default null,
    p_office_id            in  varchar2 default null); 
-
---------------------------------------------------------------------------------
--- PROCEDURE get_level_indicator_max_values
---
--- Retrieves a time series of the maximum Condition value that is set for each 
--- Location Level Indicator that matches the input parameters.  Each time series 
--- has the same times as the time series defined by p_tsid, p_start_time and
--- p_end_time.  Each date_time in the time series is in the specified time
--- zone. The quality_code of each time series value is set to zero.
---
--- p_tsid - time series identifier, p_cursor will only include Conditions for 
--- Location Levels that have the same Location, Parameter, and Parameter Type
--- 
--- p_start_time - start of the time window for p_tsid, in p_time_zone
--- 
--- p_end_time - end of the time window for p_tsid, in p_time_zone
---
--- p_time_zone - time zone of p_start_time, p_end_time and the date_times of the
--- retrieved time series, 'UTC' if NULL
---
--- p_specified_level_mask - Specified Level Indicator with optional SQL
--- wildcards (%, _) or filename wildcards (*, ?), '%' if NULL
---
--- p_indicator_id_mask - Location Level Identifier with optional wildcards, '%'
--- if NULL
---
--- p_unit_system - unit system for which to retrieve attribute values, 'EN' or 
--- 'SI', 'SI' if NULL
---
--- p_office_id - office identifier for p_tsid, user's office identifier if NULL
--- 
--- p_cursor has the following fields:
--- 1 indicator_id     varchar2(423)
--- 2 attribute_id     varchar2(83)
--- 3 attribute_value  number
--- 4 attribute_units  varchar2(16)
--- 5 indicator_values ztsv_array  
---------------------------------------------------------------------------------
+/**
+ * Retrieves a time series of the maximum Condition value that is set for each location
+ * level indicator that matches the input parameters.  Each time series has the same
+ * times as the time series defined by p_tsid, p_start_time and p_end_time.  Each date_time
+ * in the time series is in the specified time zone. Matching is
+ * accomplished with glob-style wildcards, as shown below. SQL-style wildcards may also be used.
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Wildcard</th>
+ *     <th style="border:1px solid black;">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">*</td>
+ *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">?</td>
+ *     <td style="border:1px solid black;">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cursor               The retrieved location level indicator values
+ * <p>
+ * <table style="border-collapse:collapse; border:1px solid black;">
+ *   <tr>
+ *     <th style="border:1px solid black;">Column No.</th>
+ *     <th style="border:1px solid black;">Column Name</th>
+ *     <th style="border:1px solid black;">Data Type</th>
+ *     <th style="border:1px solid black;">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">1</td>
+ *     <td style="border:1px solid black;">indicator_id</td>
+ *     <td style="border:1px solid black;">varchar2(423)</td>
+ *     <td style="border:1px solid black;">The location level indicator identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">2</td>
+ *     <td style="border:1px solid black;">attribute_id</td>
+ *     <td style="border:1px solid black;">varchar2(83)</td>
+ *     <td style="border:1px solid black;">The location level attribute identifier</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">3</td>
+ *     <td style="border:1px solid black;">attribute_value</td>
+ *     <td style="border:1px solid black;">number</td>
+ *     <td style="border:1px solid black;">The location level attribute</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">4</td>
+ *     <td style="border:1px solid black;">attribute_units</td>
+ *     <td style="border:1px solid black;">varchar2(16)</td>
+ *     <td style="border:1px solid black;">The unit of the location level attribute value</td>
+ *   </tr>
+ *   <tr>
+ *     <td style="border:1px solid black;">5</td>
+ *     <td style="border:1px solid black;">indicator_values</td>
+ *     <td style="border:1px solid black;">number_tab_t</td>
+ *     <td style="border:1px solid black;">The maximum location level indicator condition values that are set for the specified parameters</td>
+ *   </tr>
+ * </table>
+ * @param p_tsid                 A time series identifier. p_cursor will only include conditions for location levels that have the same location, parameter, and parameter type
+ * @param p_start_time           The start of the time window
+ * @param p_end_time             The end of the time window
+ * @param p_time_zone            The time zone of p_eval_time. If not specified or NULL, UTC is used
+ * @param p_specified_level_mask The specified level identifier pattern to match. If not specified or NULL, all specified level identifiers are matched
+ * @param p_indicator_id_mask    The location level indicator identifier pattern to match. If not specified or NULL, all location level indicator identifiers are matched
+ * @param p_unit_system          The unit system ('EN' or 'SI') to retrieve values in. If not specified or NULL, SI is used
+ * @param p_office_id            The office that owns the time series and location level indicators. If not specified or NULL, the session user's default office is used
+ */
 procedure get_level_indicator_max_values(
    p_cursor               out sys_refcursor,
    p_tsid                 in  varchar2,
