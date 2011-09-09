@@ -90,22 +90,22 @@ procedure retrieve_stream(
  * @param p_stream_id      The stream location identifier
  * @param p_delete_action Specifies what to delete.  Actions are as follows:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">p_delete_action</th>
- *     <th style="border:1px solid black;">Action</th>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_key</td>
- *     <td style="border:1px solid black;">deletes only this stream, and then only if it has no referring data</td>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only this stream, and then only if it has no referring data</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_data</td>
- *     <td style="border:1px solid black;">deletes only data that refers to this stream, if any</td>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only data that refers to this stream, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_all</td>
- *     <td style="border:1px solid black;">deletes this stream and all data that refers to it</td>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes this stream and all data that refers to it</td>
  *   </tr>
  * </table>
  * @param p_office_id      The office that owns the stream location. If not specified or NULL, the session user's default office is used.
@@ -130,102 +130,102 @@ procedure rename_stream(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_stream_catalog A cursor containing all matching basins.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the stream location</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the stream location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">stream_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the stream</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">stationing_starts_ds</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">Specifies whether the zero station is at the downstream most end</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">stationing_starts_ds</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">Specifies whether the zero station is at the downstream most end</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">flows_into_stream</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the receiving stream</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">flows_into_stream</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the receiving stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">flows_into_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The station on the receiving stream of the confluence with this stream</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">flows_into_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station on the receiving stream of the confluence with this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">flows_into_bank</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">The bank on the receiving stream of the confluence with this stream</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">flows_into_bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank on the receiving stream of the confluence with this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">diverts_from_stream</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the diverting stream</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">diverts_from_stream</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the diverting stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">diverts_from_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The station on the diverting stream of the diversion into this stream</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">diverts_from_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station on the diverting stream of the diversion into this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">diverts_from_bank</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">The bank on the diverting stream of the diversion into this stream</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">diverts_from_bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank on the diverting stream of the diversion into this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">stream_length</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The length of this stream</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">stream_length</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The length of this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">average_slope</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The average slope of this stream</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">average_slope</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The average slope of this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">comments</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">Any comments for this stream</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">comments</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">Any comments for this stream</td>
  *   </tr>
  * </table>
  *
@@ -299,18 +299,18 @@ procedure cat_streams(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -363,84 +363,84 @@ procedure cat_streams(
  * @return A cursor containing all matching basins.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the stream location</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the stream location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">stream_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the stream</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">stationing_starts_ds</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">Specifies whether the zero station is at the downstream most end</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">stationing_starts_ds</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">Specifies whether the zero station is at the downstream most end</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">flows_into_stream</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the receiving stream</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">flows_into_stream</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the receiving stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">flows_into_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The station on the receiving stream of the confluence with this stream</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">flows_into_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station on the receiving stream of the confluence with this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">flows_into_bank</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">The bank on the receiving stream of the confluence with this stream</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">flows_into_bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank on the receiving stream of the confluence with this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">diverts_from_stream</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the diverting stream</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">diverts_from_stream</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the diverting stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">diverts_from_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The station on the diverting stream of the diversion into this stream</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">diverts_from_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The station on the diverting stream of the diversion into this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">diverts_from_bank</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">The bank on the diverting stream of the diversion into this stream</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">diverts_from_bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The bank on the diverting stream of the diversion into this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">stream_length</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The length of this stream</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">stream_length</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The length of this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">average_slope</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The average slope of this stream</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">average_slope</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The average slope of this stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">comments</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">Any comments for this stream</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">comments</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">Any comments for this stream</td>
  *   </tr>
  * </table>
  */
@@ -534,72 +534,72 @@ procedure rename_stream_reach(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_reach_catalog A cursor containing all matching basins.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the stream location</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the stream location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">stream_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the stream</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">stream_reach_id</td>
- *     <td style="border:1px solid black;">varchar2(64)</td>
- *     <td style="border:1px solid black;">The stream reach identifier</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">stream_reach_id</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The stream reach identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">upstream_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The upstream station of the reach</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">upstream_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The upstream station of the reach</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">downstream_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The downstream station of the reach</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">downstream_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The downstream station of the reach</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">stream_type_id</td>
- *     <td style="border:1px solid black;">varchar2(4)</td>
- *     <td style="border:1px solid black;">The <a href="http://www.epa.gov/owow/watershed/wacademy/acad2000/stream_class/index.htm">Rosgen Level II Stream Type</a> of the reach</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">stream_type_id</td>
+ *     <td class="descr">varchar2(4)</td>
+ *     <td class="descr">The <a href="http://www.epa.gov/owow/watershed/wacademy/acad2000/stream_class/index.htm">Rosgen Level II Stream Type</a> of the reach</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">comments</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">Any comments for this stream</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">comments</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">Any comments for this stream</td>
  *   </tr>
  * </table>
  *
@@ -637,18 +637,18 @@ procedure cat_stream_reaches(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -677,54 +677,54 @@ procedure cat_stream_reaches(
  * @param p_reach_catalog A cursor containing all matching basins.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the stream location</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the stream location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">stream_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the stream</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">stream_reach_id</td>
- *     <td style="border:1px solid black;">varchar2(64)</td>
- *     <td style="border:1px solid black;">The stream reach identifier</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">stream_reach_id</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The stream reach identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">upstream_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The upstream station of the reach</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">upstream_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The upstream station of the reach</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">downstream_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The downstream station of the reach</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">downstream_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The downstream station of the reach</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">stream_type_id</td>
- *     <td style="border:1px solid black;">varchar2(4)</td>
- *     <td style="border:1px solid black;">The <a href="http://www.epa.gov/owow/watershed/wacademy/acad2000/stream_class/index.htm">Rosgen Level II Stream Type</a> of the reach</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">stream_type_id</td>
+ *     <td class="descr">varchar2(4)</td>
+ *     <td class="descr">The <a href="http://www.epa.gov/owow/watershed/wacademy/acad2000/stream_class/index.htm">Rosgen Level II Stream Type</a> of the reach</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">comments</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">Any comments for this stream</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">comments</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">Any comments for this stream</td>
  *   </tr>
  * </table>
  */
@@ -817,108 +817,108 @@ procedure delete_stream_location(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_stream_location_catalog A cursor containing all matching basins.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the stream and location</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the stream and location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">stream_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the stream</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the location on the stream</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the location on the stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The actual stream station of the location>/td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The actual stream station of the location>/td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">published_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The published stream station of the location>/td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">published_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The published stream station of the location>/td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">navigation_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The navigation stream station of the location>/td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">navigation_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The navigation stream station of the location>/td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">bank</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">The stream bank of the location</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The stream bank of the location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">lowest_measurable_stage</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The lowest stream stage at this location that can be measured</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">lowest_measurable_stage</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The lowest stream stage at this location that can be measured</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">drainage_area</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The total drainage area above this location</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">drainage_area</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The total drainage area above this location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">ungaged_drainage_area</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The drainage area above this location that is ungaged</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">ungaged_drainage_area</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The drainage area above this location that is ungaged</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">station_unit</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The station unit</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">station_unit</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The station unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">stage_unit</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The stage unit</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">stage_unit</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The stage unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">area_unit</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The area unit</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">area_unit</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The area unit</td>
  *   </tr>
  * </table>
  *
@@ -955,18 +955,18 @@ procedure cat_stream_locations(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -993,90 +993,90 @@ procedure cat_stream_locations(
  * @return A cursor containing all matching basins.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the stream and location</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the stream and location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">stream_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the stream</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the location on the stream</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the location on the stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The actual stream station of the location>/td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The actual stream station of the location>/td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">published_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The published stream station of the location>/td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">published_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The published stream station of the location>/td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">navigation_station</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The navigation stream station of the location>/td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">navigation_station</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The navigation stream station of the location>/td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">bank</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">The stream bank of the location</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">bank</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The stream bank of the location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">lowest_measurable_stage</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The lowest stream stage at this location that can be measured</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">lowest_measurable_stage</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The lowest stream stage at this location that can be measured</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">drainage_area</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The total drainage area above this location</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">drainage_area</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The total drainage area above this location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">ungaged_drainage_area</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The drainage area above this location that is ungaged</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">ungaged_drainage_area</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The drainage area above this location that is ungaged</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">station_unit</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The station unit</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">station_unit</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The station unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">stage_unit</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The stage unit</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">stage_unit</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The stage unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">area_unit</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The area unit</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">area_unit</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The area unit</td>
  *   </tr>
  * </table>
  */

@@ -68,22 +68,22 @@ procedure retrieve_spec(
  * @param p_forecast_id    The forecast identifier
  * @param p_delete_action  Specifies what to delete. Actions are as follows:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">p_delete_action</th>
- *     <th style="border:1px solid black;">Action</th>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_key</td>
- *     <td style="border:1px solid black;">deletes only the forcast specification, and then only if it has no forecast time series or text</td>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only the forcast specification, and then only if it has no forecast time series or text</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_data</td>
- *     <td style="border:1px solid black;">deletes only the forecast time series and text under this forecast specification</td>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only the forecast time series and text under this forecast specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_all</td>
- *     <td style="border:1px solid black;">deletes the forecast specification and all forecast timeseries and text under it</td>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes the forecast specification and all forecast timeseries and text under it</td>
  *   </tr>
  * </table>
  * @param p_office_id      The office that owns the forecast specification.  If not specified or NULL, the session user's default office is used.
@@ -111,78 +111,78 @@ procedure rename_spec(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_spec_catalog A cursor containing all matching forecast specifications.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the forecast specification</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the forecast specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the forecast specification</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the forecast specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">forecast_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The forecast identifier of the forecast specification</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">forecast_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The forecast identifier of the forecast specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">source_agency</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The agency that supplies forecasts under this spcecification</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">source_agency</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The agency that supplies forecasts under this spcecification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">source_office</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office within the source agency that supplies forecasts under this spcecification</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">source_office</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office within the source agency that supplies forecasts under this spcecification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">valid_lifetime</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The number of hours that a forecast under this specification is considered current</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">valid_lifetime</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The number of hours that a forecast under this specification is considered current</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">forecast_type</td>
- *     <td style="border:1px solid black;">varchar2(5)</td>
- *     <td style="border:1px solid black;">The forecast type as determined by the source agency</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">forecast_type</td>
+ *     <td class="descr">varchar2(5)</td>
+ *     <td class="descr">The forecast type as determined by the source agency</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">source_loc_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location that is the source for forecasts under this specification</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">source_loc_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location that is the source for forecasts under this specification</td>
  *   </tr>
  * </table>
  *
@@ -230,18 +230,18 @@ procedure cat_specs(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -278,60 +278,60 @@ procedure cat_specs(
  * @return A cursor containing all matching forecast specifications.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the forecast specification</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the forecast specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the forecast specification</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the forecast specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">forecast_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The forecast identifier of the forecast specification</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">forecast_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The forecast identifier of the forecast specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">source_agency</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The agency that supplies forecasts under this spcecification</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">source_agency</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The agency that supplies forecasts under this spcecification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">source_office</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office within the source agency that supplies forecasts under this spcecification</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">source_office</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office within the source agency that supplies forecasts under this spcecification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">valid_lifetime</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The number of hours that a forecast under this specification is considered current</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">valid_lifetime</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The number of hours that a forecast under this specification is considered current</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">forecast_type</td>
- *     <td style="border:1px solid black;">varchar2(5)</td>
- *     <td style="border:1px solid black;">The forecast type as determined by the source agency</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">forecast_type</td>
+ *     <td class="descr">varchar2(5)</td>
+ *     <td class="descr">The forecast type as determined by the source agency</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">source_loc_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location that is the source for forecasts under this specification</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">source_loc_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location that is the source for forecasts under this specification</td>
  *   </tr>
  * </table>
  */
@@ -381,30 +381,30 @@ procedure store_ts(
  * @param p_ts_cursor       The cursor of time series data. The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">date_time</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The date/time of the value, in the specified time zone</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">date_time</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time of the value, in the specified time zone</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">value</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The time series value in the specified unit</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">value</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The time series value in the specified unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">quality_code</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The quality code of the time series value</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">quality_code</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The quality code of the time series value</td>
  *   </tr>
  * </table>
  * @param p_version_date    The version date for the time series
@@ -485,78 +485,78 @@ procedure delete_ts(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_ts_catalog A cursor containing all matching forecast specifications.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the forecast time series</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the forecast time series</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">forecast_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The forecast date of the forecast</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">forecast_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The forecast date of the forecast</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">issue_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The issue date of the forecast</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">issue_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The issue date of the forecast</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">cwms_ts_id</td>
- *     <td style="border:1px solid black;">varchar2(183)</td>
- *     <td style="border:1px solid black;">The time series identifier</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">cwms_ts_id</td>
+ *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">The time series identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">version_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The version date of the time series</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">version_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The version date of the time series</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">min_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The earliest date/time for the time series</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">min_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The earliest date/time for the time series</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">max_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The latest date/time for the time series</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">max_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The latest date/time for the time series</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">time_zone_name</td>
- *     <td style="border:1px solid black;">varchar2(28)</td>
- *     <td style="border:1px solid black;">The time zone for the date/time columns</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">time_zone_name</td>
+ *     <td class="descr">varchar2(28)</td>
+ *     <td class="descr">The time zone for the date/time columns</td>
  *   </tr>
  * </table>
  *
@@ -590,18 +590,18 @@ procedure cat_ts(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -626,60 +626,60 @@ procedure cat_ts(
  * @param p_ts_catalog A cursor containing all matching forecast specifications.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the forecast time series</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the forecast time series</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">forecast_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The forecast date of the forecast</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">forecast_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The forecast date of the forecast</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">issue_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The issue date of the forecast</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">issue_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The issue date of the forecast</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">cwms_ts_id</td>
- *     <td style="border:1px solid black;">varchar2(183)</td>
- *     <td style="border:1px solid black;">The time series identifier</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">cwms_ts_id</td>
+ *     <td class="descr">varchar2(183)</td>
+ *     <td class="descr">The time series identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">version_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The version date of the time series</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">version_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The version date of the time series</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">min_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The earliest date/time for the time series</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">min_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The earliest date/time for the time series</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">max_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The latest date/time for the time series</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">max_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The latest date/time for the time series</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">time_zone_name</td>
- *     <td style="border:1px solid black;">varchar2(28)</td>
- *     <td style="border:1px solid black;">The time zone for the date/time columns</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">time_zone_name</td>
+ *     <td class="descr">varchar2(28)</td>
+ *     <td class="descr">The time zone for the date/time columns</td>
  *   </tr>
  * </table>
  */
@@ -754,42 +754,42 @@ procedure delete_text(
  *
  * @param p_text_catalog A cursor containging the following columns, sorted by the first four:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the forecast text</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the forecast text</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">forecast_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The forecast date of the forecast</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">forecast_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The forecast date of the forecast</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">issue_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The issue date of the forecast</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">issue_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The issue date of the forecast</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">text_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The text identifier. Can be used with <a href="pkg_cwms_text.html#procedure retrieve_text(p_text out clob,p_id in varchar2,p_office_id in varchar2)">cwms_text.retieve_text</a> to retrieve the actual text</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">text_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The text identifier. Can be used with <a href="pkg_cwms_text.html#procedure retrieve_text(p_text out clob,p_id in varchar2,p_office_id in varchar2)">cwms_text.retieve_text</a> to retrieve the actual text</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">time_zone_name</td>
- *     <td style="border:1px solid black;">varchar2(28)</td>
- *     <td style="border:1px solid black;">The time zone for the forecast and issue dates</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">time_zone_name</td>
+ *     <td class="descr">varchar2(28)</td>
+ *     <td class="descr">The time zone for the forecast and issue dates</td>
  *   </tr>
  * </table>
  * @param p_location_id  The forecast location identifier
@@ -813,42 +813,42 @@ procedure cat_text(
  *
  * @return A cursor containging the following columns, sorted by the first four:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the forecast text</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the forecast text</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">forecast_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The forecast date of the forecast</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">forecast_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The forecast date of the forecast</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">issue_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The issue date of the forecast</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">issue_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The issue date of the forecast</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">text_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The text identifier. Can be used with <a href="pkg_cwms_text.html#procedure retrieve_text(p_text out clob,p_id in varchar2,p_office_id in varchar2)">cwms_text.retieve_text</a> to retrieve the actual text</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">text_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The text identifier. Can be used with <a href="pkg_cwms_text.html#procedure retrieve_text(p_text out clob,p_id in varchar2,p_office_id in varchar2)">cwms_text.retieve_text</a> to retrieve the actual text</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">time_zone_name</td>
- *     <td style="border:1px solid black;">varchar2(28)</td>
- *     <td style="border:1px solid black;">The time zone for the forecast and issue dates</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">time_zone_name</td>
+ *     <td class="descr">varchar2(28)</td>
+ *     <td class="descr">The time zone for the forecast and issue dates</td>
  *   </tr>
  * </table>
  */

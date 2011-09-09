@@ -16,42 +16,42 @@ AS
     * @param p_cwms_cat A cursor containing properties that match any element of p_property_info.
     * The cursor contains the following columns, sorted by the first three:
     * <p>
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">Column No.</th>
-    *     <th style="border:1px solid black;">Column Name</th>
-    *     <th style="border:1px solid black;">Data Type</th>
-    *     <th style="border:1px solid black;">Contents</th>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">1</td>
-    *     <td style="border:1px solid black;">office_id</td>
-    *     <td style="border:1px solid black;">varchar2(16)</td>
-    *     <td style="border:1px solid black;">The office that owns the property</td>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">office_id</td>
+    *     <td class="descr">varchar2(16)</td>
+    *     <td class="descr">The office that owns the property</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">2</td>
-    *     <td style="border:1px solid black;">prop_category</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property category</td>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">prop_category</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property category</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">3</td>
-    *     <td style="border:1px solid black;">prop_id</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property identifier</td>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">prop_id</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property identifier</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">4</td>
-    *     <td style="border:1px solid black;">prop_value</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property value</td>
+    *     <td class="descr-center">4</td>
+    *     <td class="descr">prop_value</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property value</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">5</td>
-    *     <td style="border:1px solid black;">prop_comment</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property comment</td>
+    *     <td class="descr-center">5</td>
+    *     <td class="descr">prop_comment</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property comment</td>
     *   </tr>
     *   <tr>
     * </table>
@@ -74,42 +74,42 @@ AS
     * @param p_cwms_cat A cursor containing properties that match any element of p_property_info.
     * The cursor contains the following columns, sorted by the first three:
     * <p>
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">Column No.</th>
-    *     <th style="border:1px solid black;">Column Name</th>
-    *     <th style="border:1px solid black;">Data Type</th>
-    *     <th style="border:1px solid black;">Contents</th>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">1</td>
-    *     <td style="border:1px solid black;">office_id</td>
-    *     <td style="border:1px solid black;">varchar2(16)</td>
-    *     <td style="border:1px solid black;">The office that owns the property</td>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">office_id</td>
+    *     <td class="descr">varchar2(16)</td>
+    *     <td class="descr">The office that owns the property</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">2</td>
-    *     <td style="border:1px solid black;">prop_category</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property category</td>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">prop_category</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property category</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">3</td>
-    *     <td style="border:1px solid black;">prop_id</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property identifier</td>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">prop_id</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property identifier</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">4</td>
-    *     <td style="border:1px solid black;">prop_value</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property value</td>
+    *     <td class="descr-center">4</td>
+    *     <td class="descr">prop_value</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property value</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">5</td>
-    *     <td style="border:1px solid black;">prop_comment</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property comment</td>
+    *     <td class="descr-center">5</td>
+    *     <td class="descr">prop_comment</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property comment</td>
     *   </tr>
     *   <tr>
     * </table>
@@ -130,42 +130,42 @@ AS
     * @param p_cwms_cat A cursor containing properties that match any element of p_property_info.
     * The cursor contains the following columns, sorted by the first three:
     * <p>
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">Column No.</th>
-    *     <th style="border:1px solid black;">Column Name</th>
-    *     <th style="border:1px solid black;">Data Type</th>
-    *     <th style="border:1px solid black;">Contents</th>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">1</td>
-    *     <td style="border:1px solid black;">office_id</td>
-    *     <td style="border:1px solid black;">varchar2(16)</td>
-    *     <td style="border:1px solid black;">The office that owns the property</td>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">office_id</td>
+    *     <td class="descr">varchar2(16)</td>
+    *     <td class="descr">The office that owns the property</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">2</td>
-    *     <td style="border:1px solid black;">prop_category</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property category</td>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">prop_category</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property category</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">3</td>
-    *     <td style="border:1px solid black;">prop_id</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property identifier</td>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">prop_id</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property identifier</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">4</td>
-    *     <td style="border:1px solid black;">prop_value</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property value</td>
+    *     <td class="descr-center">4</td>
+    *     <td class="descr">prop_value</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property value</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">5</td>
-    *     <td style="border:1px solid black;">prop_comment</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property comment</td>
+    *     <td class="descr-center">5</td>
+    *     <td class="descr">prop_comment</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property comment</td>
     *   </tr>
     *   <tr>
     * </table>
@@ -184,42 +184,42 @@ AS
     * @param p_cwms_cat A cursor containing the matching properties. The cursor contains
     * the following columns, sorted by the first three:
     * <p>
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">Column No.</th>
-    *     <th style="border:1px solid black;">Column Name</th>
-    *     <th style="border:1px solid black;">Data Type</th>
-    *     <th style="border:1px solid black;">Contents</th>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">1</td>
-    *     <td style="border:1px solid black;">office_id</td>
-    *     <td style="border:1px solid black;">varchar2(16)</td>
-    *     <td style="border:1px solid black;">The office that owns the property</td>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">office_id</td>
+    *     <td class="descr">varchar2(16)</td>
+    *     <td class="descr">The office that owns the property</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">2</td>
-    *     <td style="border:1px solid black;">prop_category</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property category</td>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">prop_category</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property category</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">3</td>
-    *     <td style="border:1px solid black;">prop_id</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property identifier</td>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">prop_id</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property identifier</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">4</td>
-    *     <td style="border:1px solid black;">prop_value</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property value</td>
+    *     <td class="descr-center">4</td>
+    *     <td class="descr">prop_value</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property value</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">5</td>
-    *     <td style="border:1px solid black;">prop_comment</td>
-    *     <td style="border:1px solid black;">varchar2(256)</td>
-    *     <td style="border:1px solid black;">The property comment</td>
+    *     <td class="descr-center">5</td>
+    *     <td class="descr">prop_comment</td>
+    *     <td class="descr">varchar2(256)</td>
+    *     <td class="descr">The property comment</td>
     *   </tr>
     *   <tr>
     * </table>

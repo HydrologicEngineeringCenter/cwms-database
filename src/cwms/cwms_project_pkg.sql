@@ -27,54 +27,54 @@ IS
 --    description              varchar2(512)  location description
 --    active_flag              varchar2(1)    'T' if active, else 'F'
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">db_office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the project</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">db_office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the project</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">base_location_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The base location identifier of the project</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">base_location_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The base location identifier of the project</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">sub_location_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The sub-location identifier of the project, if any</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">sub_location_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The sub-location identifier of the project, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">time_zone_name</td>
- *     <td style="border:1px solid black;">varchar2(28)</td>
- *     <td style="border:1px solid black;">The local time zone of the office</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">time_zone_name</td>
+ *     <td class="descr">varchar2(28)</td>
+ *     <td class="descr">The local time zone of the office</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">latitude</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The actual latitude of the project location</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">latitude</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The actual latitude of the project location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">longitude</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The actual longitude of the project location</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">longitude</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The actual longitude of the project location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">horizontal_datum</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The datum of the actual latitude and longitude</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">horizontal_datum</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The datum of the actual latitude and longitude</td>
  *   </tr>
 --   1 db_office_id             varchar2(16)   owning office of location
 --   2 base_location_id         varchar2(16)   base location id
@@ -91,46 +91,46 @@ IS
 --   3 description              varchar2(512)  location description
 --   4 active_flag              varchar2(1)    'T' if active, else 'F'
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">elevation</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The elevation of the project location</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">elevation</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The elevation of the project location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">elev_unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The unit of elevation</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">elev_unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The unit of elevation</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">vertical_datum</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The datum for the elevation</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">vertical_datum</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The datum for the elevation</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">public_name</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The public name of the project location</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">public_name</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The public name of the project location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">long_name</td>
- *     <td style="border:1px solid black;">varchar2(80)</td>
- *     <td style="border:1px solid black;">The long name of the project location</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">long_name</td>
+ *     <td class="descr">varchar2(80)</td>
+ *     <td class="descr">The long name of the project location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">description</td>
- *     <td style="border:1px solid black;">varchar2(512)</td>
- *     <td style="border:1px solid black;">A description of the project location</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">description</td>
+ *     <td class="descr">varchar2(512)</td>
+ *     <td class="descr">A description of the project location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">14</td>
- *     <td style="border:1px solid black;">active_flag</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">A flag ('T' or 'F') that specifies whether the project location is marked as active</td>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">active_flag</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">A flag ('T' or 'F') that specifies whether the project location is marked as active</td>
  *   </tr>
  * </table>
  *
@@ -207,22 +207,22 @@ procedure rename_project(
  * @param p_project_id The location identifier of the project to delete
  * @param p_delete_action Specifies what to delete.  Actions are as follows:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">p_delete_action</th>
- *     <th style="border:1px solid black;">Action</th>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_key</td>
- *     <td style="border:1px solid black;">deletes only the project location, and then only if it has no associated data</td>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only the project location, and then only if it has no associated data</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_data</td>
- *     <td style="border:1px solid black;">deletes only data associated with the project, if any</td>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only data associated with the project, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_all</td>
- *     <td style="border:1px solid black;">deletes the project and all associated data</td>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes the project and all associated data</td>
  *   </tr>
  * </table>
  * @param p_db_office_id The office that owns the project.  If not specified or NULL, the session user's default office will be used.

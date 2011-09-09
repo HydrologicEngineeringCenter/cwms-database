@@ -74,22 +74,22 @@ procedure retrieve_basin(
  *
  * @param p_delete_action Specifies what to delete.  Actions are as follows:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">p_delete_action</th>
- *     <th style="border:1px solid black;">Action</th>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_key</td>
- *     <td style="border:1px solid black;">deletes only this basin, and then only if it has no sub-basins</td>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only this basin, and then only if it has no sub-basins</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_data</td>
- *     <td style="border:1px solid black;">deletes only sub-basins of this basin, if any</td>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only sub-basins of this basin, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_all</td>
- *     <td style="border:1px solid black;">deletes this basin and its sub-basins, if any</td>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes this basin and its sub-basins, if any</td>
  *   </tr>
  * </table>
  * @param p_office_id The office that owns the basin location
@@ -118,78 +118,78 @@ procedure rename_basin(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_basins_catalog A cursor containing all matching basins.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the basin</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the basin</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">basin_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the basin</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">basin_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the basin</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">parent_basin_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the parent basin, if any</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">parent_basin_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the parent basin, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">sort_order</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The sort order of the basin within it parent basin</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">sort_order</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The sort order of the basin within it parent basin</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">primary_stream_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the primary stream</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">primary_stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the primary stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">total_drainage_area</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The total drainage area of the basin</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">total_drainage_area</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The total drainage area of the basin</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">contributing_drainage_area</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The contributing area of the basin</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">contributing_drainage_area</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The contributing area of the basin</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">area_unit</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The unit of the total and contributing drainage areas</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">area_unit</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The unit of the total and contributing drainage areas</td>
  *   </tr>
  * </table>
  *
@@ -225,18 +225,18 @@ procedure cat_basins(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -263,60 +263,60 @@ procedure cat_basins(
  * @return A cursor containing all matching basins.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the basin</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the basin</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">basin_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the basin</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">basin_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the basin</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">parent_basin_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the parent basin, if any</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">parent_basin_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the parent basin, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">sort_order</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The sort order of the basin within it parent basin</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">sort_order</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The sort order of the basin within it parent basin</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">primary_stream_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the primary stream</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">primary_stream_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the primary stream</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">total_drainage_area</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The total drainage area of the basin</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">total_drainage_area</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The total drainage area of the basin</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">contributing_drainage_area</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The contributing area of the basin</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">contributing_drainage_area</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The contributing area of the basin</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">area_unit</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The unit of the total and contributing drainage areas</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">area_unit</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The unit of the total and contributing drainage areas</td>
  *   </tr>
  * </table>
  */

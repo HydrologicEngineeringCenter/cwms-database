@@ -294,22 +294,22 @@ AS
     * @param p_cwms_ts_id     The identifier of the time series to delete
     * @param p_delete_action Specifies what to delete.  Actions are as follows:
     * <p>
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">p_delete_action</th>
-    *     <th style="border:1px solid black;">Action</th>
+    *     <th class="descr">p_delete_action</th>
+    *     <th class="descr">Action</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">cwms_util.delete_ts_id<br>cwms_util.delete_key</td>
-    *     <td style="border:1px solid black;">deletes only the time series identifier, and then only if it has no time series values</td>
+    *     <td class="descr">cwms_util.delete_ts_id<br>cwms_util.delete_key</td>
+    *     <td class="descr">deletes only the time series identifier, and then only if it has no time series values</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">cwms_util.delete_ts_data<br>cwms_util.delete_data</td>
-    *     <td style="border:1px solid black;">deletes only the time series values, if any</td>
+    *     <td class="descr">cwms_util.delete_ts_data<br>cwms_util.delete_data</td>
+    *     <td class="descr">deletes only the time series values, if any</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">delete_ts_cascade<br>cwms_util.delete_all</td>
-    *     <td style="border:1px solid black;">deletes the time series identifier and any time series values</td>
+    *     <td class="descr">delete_ts_cascade<br>cwms_util.delete_all</td>
+    *     <td class="descr">deletes the time series identifier and any time series values</td>
     *   </tr>
     * </table>
     * @param p_db_office_id   The office that owns the time series.  If not specified or NULL, the session user's default office will be used.
@@ -332,22 +332,22 @@ AS
     * @param p_cwms_ts_id     The identifier of the time series to delete
     * @param p_delete_action Specifies what to delete.  Actions are as follows:
     * <p>
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">p_delete_action</th>
-    *     <th style="border:1px solid black;">Action</th>
+    *     <th class="descr">p_delete_action</th>
+    *     <th class="descr">Action</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">cwms_util.delete_ts_id<br>cwms_util.delete_key</td>
-    *     <td style="border:1px solid black;">deletes only the time series identifier, and then only if it has no time series values</td>
+    *     <td class="descr">cwms_util.delete_ts_id<br>cwms_util.delete_key</td>
+    *     <td class="descr">deletes only the time series identifier, and then only if it has no time series values</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">cwms_util.delete_ts_data<br>cwms_util.delete_data</td>
-    *     <td style="border:1px solid black;">deletes only the time series values, if any</td>
+    *     <td class="descr">cwms_util.delete_ts_data<br>cwms_util.delete_data</td>
+    *     <td class="descr">deletes only the time series values, if any</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">delete_ts_cascade<br>cwms_util.delete_all</td>
-    *     <td style="border:1px solid black;">deletes the time series identifier and any time series values</td>
+    *     <td class="descr">delete_ts_cascade<br>cwms_util.delete_all</td>
+    *     <td class="descr">deletes the time series identifier and any time series values</td>
     *   </tr>
     * </table>
     * @param p_db_office_code The unique numeric code that identifies the office that owns the time series
@@ -575,30 +575,30 @@ AS
     * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
     * contains the following columns, sorted by date_time:
     * <p>
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">Column No.</th>
-    *     <th style="border:1px solid black;">Column Name</th>
-    *     <th style="border:1px solid black;">Data Type</th>
-    *     <th style="border:1px solid black;">Contents</th>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">1</td>
-    *     <td style="border:1px solid black;">date_time</td>
-    *     <td style="border:1px solid black;">date</td>
-    *     <td style="border:1px solid black;">The date/time of the value, in the specified time zone</td>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date/time of the value, in the specified time zone</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">2</td>
-    *     <td style="border:1px solid black;">value</td>
-    *     <td style="border:1px solid black;">binary_double</td>
-    *     <td style="border:1px solid black;">The data value</td>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">value</td>
+    *     <td class="descr">binary_double</td>
+    *     <td class="descr">The data value</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">3</td>
-    *     <td style="border:1px solid black;">quality_code</td>
-    *     <td style="border:1px solid black;">number</td>
-    *     <td style="border:1px solid black;">The quality code for the data value</td>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">quality_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The quality code for the data value</td>
     *   </tr>
     * </table>
     * @param p_cwms_ts_id_out  The case-corrected version of the time series identifier
@@ -655,30 +655,30 @@ AS
     * @return  A collection of records containing the time series data. The records contains
     * the following columns, sorted by date_time:
     * <p>
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">Column No.</th>
-    *     <th style="border:1px solid black;">Column Name</th>
-    *     <th style="border:1px solid black;">Data Type</th>
-    *     <th style="border:1px solid black;">Contents</th>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">1</td>
-    *     <td style="border:1px solid black;">date_time</td>
-    *     <td style="border:1px solid black;">date</td>
-    *     <td style="border:1px solid black;">The date/time of the value, in the specified time zone</td>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date/time of the value, in the specified time zone</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">2</td>
-    *     <td style="border:1px solid black;">value</td>
-    *     <td style="border:1px solid black;">binary_double</td>
-    *     <td style="border:1px solid black;">The data value</td>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">value</td>
+    *     <td class="descr">binary_double</td>
+    *     <td class="descr">The data value</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">3</td>
-    *     <td style="border:1px solid black;">quality_code</td>
-    *     <td style="border:1px solid black;">number</td>
-    *     <td style="border:1px solid black;">The quality code for the data value</td>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">quality_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The quality code for the data value</td>
     *   </tr>
     * </table><p>
     * The record collection is suitable for casting to a table with the table() function.
@@ -705,30 +705,30 @@ AS
     * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
     * contains the following columns, sorted by date_time:
     * <p>
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">Column No.</th>
-    *     <th style="border:1px solid black;">Column Name</th>
-    *     <th style="border:1px solid black;">Data Type</th>
-    *     <th style="border:1px solid black;">Contents</th>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">1</td>
-    *     <td style="border:1px solid black;">date_time</td>
-    *     <td style="border:1px solid black;">timestamp with time zone</td>
-    *     <td style="border:1px solid black;">The date/time of the value</td>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">timestamp with time zone</td>
+    *     <td class="descr">The date/time of the value</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">2</td>
-    *     <td style="border:1px solid black;">value</td>
-    *     <td style="border:1px solid black;">binary_double</td>
-    *     <td style="border:1px solid black;">The data value</td>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">value</td>
+    *     <td class="descr">binary_double</td>
+    *     <td class="descr">The data value</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">3</td>
-    *     <td style="border:1px solid black;">quality_code</td>
-    *     <td style="border:1px solid black;">number</td>
-    *     <td style="border:1px solid black;">The quality code for the data value</td>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">quality_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The quality code for the data value</td>
     *   </tr>
     * </table>
     * @param p_units           The unit to retrieve the data values in
@@ -775,30 +775,30 @@ AS
     * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
     * contains the following columns, sorted by date_time:
     * <p>
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">Column No.</th>
-    *     <th style="border:1px solid black;">Column Name</th>
-    *     <th style="border:1px solid black;">Data Type</th>
-    *     <th style="border:1px solid black;">Contents</th>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">1</td>
-    *     <td style="border:1px solid black;">date_time</td>
-    *     <td style="border:1px solid black;">date</td>
-    *     <td style="border:1px solid black;">The date/time of the value, in the specified time zone</td>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date/time of the value, in the specified time zone</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">2</td>
-    *     <td style="border:1px solid black;">value</td>
-    *     <td style="border:1px solid black;">binary_double</td>
-    *     <td style="border:1px solid black;">The data value</td>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">value</td>
+    *     <td class="descr">binary_double</td>
+    *     <td class="descr">The data value</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">3</td>
-    *     <td style="border:1px solid black;">quality_code</td>
-    *     <td style="border:1px solid black;">number</td>
-    *     <td style="border:1px solid black;">The quality code for the data value</td>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">quality_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The quality code for the data value</td>
     *   </tr>
     * </table>
     * @param p_cwms_ts_id      The time series identifier to retrieve data for
@@ -835,79 +835,79 @@ AS
     *
     * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
     * contains the following columns, sorted by date_time:
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">Column No.</th>
-    *     <th style="border:1px solid black;">Column Name</th>
-    *     <th style="border:1px solid black;">Data Type</th>
-    *     <th style="border:1px solid black;">Contents</th>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">1</td>
-    *     <td style="border:1px solid black;">sequence</td>
-    *     <td style="border:1px solid black;">integer</td>
-    *     <td style="border:1px solid black;">The position in p_timeseries_info that this record is associated with</td>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">sequence</td>
+    *     <td class="descr">integer</td>
+    *     <td class="descr">The position in p_timeseries_info that this record is associated with</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">2</td>
-    *     <td style="border:1px solid black;">tsid</td>
-    *     <td style="border:1px solid black;">varchar2(183)</td>
-    *     <td style="border:1px solid black;">The time series identifier for this record</td>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">tsid</td>
+    *     <td class="descr">varchar2(183)</td>
+    *     <td class="descr">The time series identifier for this record</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">3</td>
-    *     <td style="border:1px solid black;">units</td>
-    *     <td style="border:1px solid black;">varchar2(16)</td>
-    *     <td style="border:1px solid black;">The data unit for this record</td>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">units</td>
+    *     <td class="descr">varchar2(16)</td>
+    *     <td class="descr">The data unit for this record</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">4</td>
-    *     <td style="border:1px solid black;">start_time</td>
-    *     <td style="border:1px solid black;">date</td>
-    *     <td style="border:1px solid black;">The start time of the time window for this record</td>
+    *     <td class="descr-center">4</td>
+    *     <td class="descr">start_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The start time of the time window for this record</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">5</td>
-    *     <td style="border:1px solid black;">end_time</td>
-    *     <td style="border:1px solid black;">date</td>
-    *     <td style="border:1px solid black;">The end time of the time window for this record</td>
+    *     <td class="descr-center">5</td>
+    *     <td class="descr">end_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The end time of the time window for this record</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">6</td>
-    *     <td style="border:1px solid black;">time_zone</td>
-    *     <td style="border:1px solid black;">varchar2(28)</td>
-    *     <td style="border:1px solid black;">The time zone of the time window</td>
+    *     <td class="descr-center">6</td>
+    *     <td class="descr">time_zone</td>
+    *     <td class="descr">varchar2(28)</td>
+    *     <td class="descr">The time zone of the time window</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">3</td>
-    *     <td style="border:1px solid black;">data</td>
-    *     <td style="border:1px solid black;">cursor</td>
-    *     <td style="border:1px solid black;">The time series data for this record
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">data</td>
+    *     <td class="descr">cursor</td>
+    *     <td class="descr">The time series data for this record
     *    <p>
-    *    <table style="border-collapse:collapse; border:1px solid black;">
+    *    <table class="descr">
     *      <tr>
-    *        <th style="border:1px solid black;">Column No.</th>
-    *        <th style="border:1px solid black;">Column Name</th>
-    *        <th style="border:1px solid black;">Data Type</th>
-    *        <th style="border:1px solid black;">Contents</th>
+    *        <th class="descr">Column No.</th>
+    *        <th class="descr">Column Name</th>
+    *        <th class="descr">Data Type</th>
+    *        <th class="descr">Contents</th>
     *      </tr>
     *      <tr>
-    *        <td style="border:1px solid black;">1</td>
-    *        <td style="border:1px solid black;">date_time</td>
-    *        <td style="border:1px solid black;">timestamp with time zone</td>
-    *        <td style="border:1px solid black;">The date/time of the value, in the specified time zone</td>
+    *        <td class="descr-center">1</td>
+    *        <td class="descr">date_time</td>
+    *        <td class="descr">timestamp with time zone</td>
+    *        <td class="descr">The date/time of the value, in the specified time zone</td>
     *      </tr>
     *      <tr>
-    *        <td style="border:1px solid black;">2</td>
-    *        <td style="border:1px solid black;">value</td>
-    *        <td style="border:1px solid black;">binary_double</td>
-    *        <td style="border:1px solid black;">The data value</td>
+    *        <td class="descr-center">2</td>
+    *        <td class="descr">value</td>
+    *        <td class="descr">binary_double</td>
+    *        <td class="descr">The data value</td>
     *      </tr>
     *      <tr>
-    *        <td style="border:1px solid black;">3</td>
-    *        <td style="border:1px solid black;">quality_code</td>
-    *        <td style="border:1px solid black;">number</td>
-    *        <td style="border:1px solid black;">The quality code for the data value</td>
+    *        <td class="descr-center">3</td>
+    *        <td class="descr">quality_code</td>
+    *        <td class="descr">number</td>
+    *        <td class="descr">The quality code for the data value</td>
     *      </tr>
     *    </table>
     *     </td>
@@ -1256,30 +1256,30 @@ AS
     * @param p_at_tsv_rc       A cursor containing the time series data.  The cursor
     * contains the following columns, sorted by date_time:
     * <p>
-    * <table style="border-collapse:collapse; border:1px solid black;">
+    * <table class="descr">
     *   <tr>
-    *     <th style="border:1px solid black;">Column No.</th>
-    *     <th style="border:1px solid black;">Column Name</th>
-    *     <th style="border:1px solid black;">Data Type</th>
-    *     <th style="border:1px solid black;">Contents</th>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">1</td>
-    *     <td style="border:1px solid black;">date_time</td>
-    *     <td style="border:1px solid black;">date</td>
-    *     <td style="border:1px solid black;">The date/time of the value, in UTC</td>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date/time of the value, in UTC</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">2</td>
-    *     <td style="border:1px solid black;">value</td>
-    *     <td style="border:1px solid black;">binary_double</td>
-    *     <td style="border:1px solid black;">The data value</td>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">value</td>
+    *     <td class="descr">binary_double</td>
+    *     <td class="descr">The data value</td>
     *   </tr>
     *   <tr>
-    *     <td style="border:1px solid black;">3</td>
-    *     <td style="border:1px solid black;">quality_code</td>
-    *     <td style="border:1px solid black;">number</td>
-    *     <td style="border:1px solid black;">The quality code for the data value</td>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">quality_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">The quality code for the data value</td>
     *   </tr>
     * </table>
     * @param p_units_out       The unit of the retrieved data values

@@ -1,6 +1,7 @@
 create or replace package cwms_rating
 /**
- * Provides routines dealing with ratings.
+ * Provides routines dealing with ratings.<p>
+ * General information about CWMS ratings can be found <a href="CWMS RATINGS.pdf">here</a>.
  *
  * @since CWMS 2.1
  *
@@ -109,54 +110,54 @@ procedure store_templates(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_cat_cursor A cursor containing all matching rating templates.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the template</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">template_id</td>
- *     <td style="border:1px solid black;">varchar2(289)</td>
- *     <td style="border:1px solid black;">The rating template</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">template_id</td>
+ *     <td class="descr">varchar2(289)</td>
+ *     <td class="descr">The rating template</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">parameters_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The parameters used by the template</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">parameters_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The parameters used by the template</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">version</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The template version</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">version</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The template version</td>
  *   </tr>
  * </table>
  *
@@ -179,18 +180,18 @@ procedure cat_template_ids(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -207,36 +208,36 @@ procedure cat_template_ids(
  * @return A cursor containing all matching rating templates.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the template</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">template_id</td>
- *     <td style="border:1px solid black;">varchar2(289)</td>
- *     <td style="border:1px solid black;">The rating template</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">template_id</td>
+ *     <td class="descr">varchar2(289)</td>
+ *     <td class="descr">The rating template</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">parameters_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The parameters used by the template</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">parameters_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The parameters used by the template</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">version</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The template version</td></tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">version</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The template version</td></tr>
  * </table>
  */
 function cat_template_ids_f(
@@ -248,18 +249,18 @@ function cat_template_ids_f(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -286,18 +287,18 @@ procedure retrieve_templates_obj(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -324,18 +325,18 @@ function retrieve_templates_obj_f(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -361,18 +362,18 @@ procedure retrieve_templates_xml(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -398,18 +399,18 @@ function retrieve_templates_xml_f(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -423,22 +424,22 @@ function retrieve_templates_xml_f(
  *
  * @param p_delete_action Specifies what to delete.  Actions are as follows:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">p_delete_action</th>
- *     <th style="border:1px solid black;">Action</th>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_key</td>
- *     <td style="border:1px solid black;">deletes only the matching templates, and only then if they are not referenced by any rating specifications</td>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only the matching templates, and only then if they are not referenced by any rating specifications</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_data</td>
- *     <td style="border:1px solid black;">deletes only the rating specifications that reference the matching templates</td>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only the rating specifications that reference the matching templates</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_all</td>
- *     <td style="border:1px solid black;">deletes the matching templates, as well as any rating specifications that reference them</td>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes the matching templates, as well as any rating specifications that reference them</td>
  *   </tr>
  * </table>
  *
@@ -585,60 +586,60 @@ procedure store_specs(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_cat_cursor A cursor containing all matching rating templates.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the template</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">specification_id</td>
- *     <td style="border:1px solid black;">varchar2(372)</td>
- *     <td style="border:1px solid black;">The rating specification</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location portion of the rating specification</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location portion of the rating specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">template_id</td>
- *     <td style="border:1px solid black;">varchar2(289)</td>
- *     <td style="border:1px solid black;">The template portion of the rating specification</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">template_id</td>
+ *     <td class="descr">varchar2(289)</td>
+ *     <td class="descr">The template portion of the rating specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">version</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The version portion of the rating specification</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">version</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The version portion of the rating specification</td>
  *   </tr>
  * </table>
  *
@@ -661,18 +662,18 @@ procedure cat_spec_ids(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -689,42 +690,42 @@ procedure cat_spec_ids(
  * @return A cursor containing all matching rating templates.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the template</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">specification_id</td>
- *     <td style="border:1px solid black;">varchar2(372)</td>
- *     <td style="border:1px solid black;">The rating specification</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location portion of the rating specification</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location portion of the rating specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">template_id</td>
- *     <td style="border:1px solid black;">varchar2(289)</td>
- *     <td style="border:1px solid black;">The template portion of the rating specification</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">template_id</td>
+ *     <td class="descr">varchar2(289)</td>
+ *     <td class="descr">The template portion of the rating specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">version</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The version portion of the rating specification</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">version</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The version portion of the rating specification</td>
  *   </tr>
  * </table>
  */
@@ -737,18 +738,18 @@ function cat_spec_ids_f(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -773,18 +774,18 @@ procedure retrieve_specs_obj(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -809,18 +810,18 @@ function retrieve_specs_obj_f(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -845,18 +846,18 @@ procedure retrieve_specs_xml(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -904,18 +905,18 @@ function retrieve_specs_xml_f(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -929,22 +930,22 @@ function retrieve_specs_xml_f(
  *
  * @param p_delete_action Specifies what to delete.  Actions are as follows:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">p_delete_action</th>
- *     <th style="border:1px solid black;">Action</th>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_key</td>
- *     <td style="border:1px solid black;">deletes only the matching specifications, and only then if they are not referenced by any ratings</td>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only the matching specifications, and only then if they are not referenced by any ratings</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_data</td>
- *     <td style="border:1px solid black;">deletes only the ratings that reference the matching specifications</td>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only the ratings that reference the matching specifications</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_all</td>
- *     <td style="border:1px solid black;">deletes the matching specifications, as well as any ratings that reference them</td>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes the matching specifications, as well as any ratings that reference them</td>
  *   </tr>
  * </table>
  *
@@ -1052,54 +1053,54 @@ procedure store_ratings(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_cat_cursor A cursor containing all matching rating templates.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the template</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">specification_id</td>
- *     <td style="border:1px solid black;">varchar2(372)</td>
- *     <td style="border:1px solid black;">The rating specification</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">effective_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">create_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
  * </table>
  *
@@ -1138,18 +1139,18 @@ procedure cat_ratings(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -1179,36 +1180,36 @@ procedure cat_ratings(
  * @return A cursor containing all matching rating templates.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the template</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the template</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">specification_id</td>
- *     <td style="border:1px solid black;">varchar2(372)</td>
- *     <td style="border:1px solid black;">The rating specification</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specification_id</td>
+ *     <td class="descr">varchar2(372)</td>
+ *     <td class="descr">The rating specification</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">effective_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">effective_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating went into effect, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">create_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">create_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The date/time that the rating was loaded into the database, in the specified time zone or in the rating location's local time zone if no time zone is specified</td>
  *   </tr>
  * </table>
  */
@@ -1224,18 +1225,18 @@ function cat_ratings_f(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -1281,18 +1282,18 @@ procedure retrieve_ratings_obj(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -1338,18 +1339,18 @@ function retrieve_ratings_obj_f(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -1390,18 +1391,18 @@ procedure retrieve_ratings_xml(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -1442,18 +1443,18 @@ function retrieve_ratings_xml_f(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *

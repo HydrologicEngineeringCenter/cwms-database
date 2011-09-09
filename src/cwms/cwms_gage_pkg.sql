@@ -98,22 +98,22 @@ procedure retrieve_gage(
  * @param p_gage_id       The gage identifier (unique per location)
  * @param p_delete_action Specifies what to delete.  Actions are as follows:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">p_delete_action</th>
- *     <th style="border:1px solid black;">Action</th>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_key</td>
- *     <td style="border:1px solid black;">deletes only the gage, and then only if no other data refers to it</td>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only the gage, and then only if no other data refers to it</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_data</td>
- *     <td style="border:1px solid black;">deletes only data that refers to this gage</td>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only data that refers to this gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_all</td>
- *     <td style="border:1px solid black;">deletes the gage and all data that refers to it</td>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes the gage and all data that refers to it</td>
  *   </tr>
  * </table>
  * @param p_office_id     The office that owns the gage location. If not specified or NULL, the session user's default office is used
@@ -141,96 +141,96 @@ procedure rename_gage(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_gage_catalog A cursor containing the matching gage information. The cursor
  * contains the following columns, sorted by the first three:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the gage</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the gage</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">gage_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The gage identifier</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">gage_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The gage identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">gage_type</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The gage type</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">gage_type</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The gage type</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">discontinued</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">Discontinued flag</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">discontinued</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">Discontinued flag</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">out_of_service</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">Out of service flag</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">out_of_service</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">Out of service flag</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">phone_number</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The phone number of the gage</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">phone_number</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The phone number of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">internet_address</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The internet address of the gage</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">internet_address</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The internet address of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">other_access_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The other access identifier of the gage</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">other_access_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The other access identifier of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">associated_location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The associated location identifier of the gage</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">associated_location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The associated location identifier of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">comments</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">Any comment about the gage</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">comments</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">Any comment about the gage</td>
  *   </tr>
  * </table>
  *
@@ -296,18 +296,18 @@ procedure cat_gages(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -355,78 +355,78 @@ procedure cat_gages(
  * @return A cursor containing the matching gage information. The cursor
  * contains the following columns, sorted by the first three:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the gage</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the gage</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">gage_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The gage identifier</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">gage_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The gage identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">gage_type</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The gage type</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">gage_type</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The gage type</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">discontinued</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">Discontinued flag</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">discontinued</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">Discontinued flag</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">out_of_service</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">Out of service flag</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">out_of_service</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">Out of service flag</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">phone_number</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The phone number of the gage</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">phone_number</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The phone number of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">internet_address</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The internet address of the gage</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">internet_address</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The internet address of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">other_access_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The other access identifier of the gage</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">other_access_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The other access identifier of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">associated_location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The associated location identifier of the gage</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">associated_location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The associated location identifier of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">comments</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">Any comment about the gage</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">comments</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">Any comment about the gage</td>
  *   </tr>
  * </table>
  */
@@ -553,120 +553,120 @@ procedure rename_gage_sensor(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_sensor_catalog A cursor containing the matching sensor information. The cursor
  * contains the following columns, sorted by the first four:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the sensor gage location</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the sensor gage location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the gage</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">gage_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The gage identifier</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">gage_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The gage identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">sensor_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The sensor identifier</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">sensor_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The sensor identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">parameter_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The CWMS parameter associated with the sensor</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">parameter_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The CWMS parameter associated with the sensor</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">report_unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The CWMS unit the sensor reports data in</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">report_unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The CWMS unit the sensor reports data in</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">valid_range_min</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The bottom of the valid range for the sensor</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">valid_range_min</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The bottom of the valid range for the sensor</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">valid_range_max</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The top of the valid range for the sensor</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">valid_range_max</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The top of the valid range for the sensor</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">zero_reading_value</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The CWMS parameter value corresponding to a sensor reading of zero</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">zero_reading_value</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The CWMS parameter value corresponding to a sensor reading of zero</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">value_units</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The unit of the valid range and zero reading columns</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">value_units</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The unit of the valid range and zero reading columns</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">out_of_service</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">Out of service flag</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">out_of_service</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">Out of service flag</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">manufacturer</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The sensor manufacturer</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">manufacturer</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The sensor manufacturer</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">model_number</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The sensor model number</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">model_number</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The sensor model number</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">14</td>
- *     <td style="border:1px solid black;">serial_number</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The sensor serial number</td>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">serial_number</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The sensor serial number</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">15</td>
- *     <td style="border:1px solid black;">comments</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">Any comment about the sensor</td>
+ *     <td class="descr-center">15</td>
+ *     <td class="descr">comments</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">Any comment about the sensor</td>
  *   </tr>
  * </table>
  *
@@ -725,18 +725,18 @@ procedure cat_gage_sensors(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -779,102 +779,102 @@ procedure cat_gage_sensors(
  * @return A cursor containing the matching sensor information. The cursor
  * contains the following columns, sorted by the first four:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the sensor gage location</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the sensor gage location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the gage</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">gage_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The gage identifier</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">gage_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The gage identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">sensor_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The sensor identifier</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">sensor_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The sensor identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">parameter_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The CWMS parameter associated with the sensor</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">parameter_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The CWMS parameter associated with the sensor</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">report_unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The CWMS unit the sensor reports data in</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">report_unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The CWMS unit the sensor reports data in</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">valid_range_min</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The bottom of the valid range for the sensor</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">valid_range_min</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The bottom of the valid range for the sensor</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">valid_range_max</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The top of the valid range for the sensor</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">valid_range_max</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The top of the valid range for the sensor</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">zero_reading_value</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The CWMS parameter value corresponding to a sensor reading of zero</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">zero_reading_value</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The CWMS parameter value corresponding to a sensor reading of zero</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">value_units</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The unit of the valid range and zero reading columns</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">value_units</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The unit of the valid range and zero reading columns</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">out_of_service</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">Out of service flag</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">out_of_service</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">Out of service flag</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">manufacturer</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The sensor manufacturer</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">manufacturer</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The sensor manufacturer</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">model_number</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The sensor model number</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">model_number</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The sensor model number</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">14</td>
- *     <td style="border:1px solid black;">serial_number</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The sensor serial number</td>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">serial_number</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The sensor serial number</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">15</td>
- *     <td style="border:1px solid black;">comments</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">Any comment about the sensor</td>
+ *     <td class="descr-center">15</td>
+ *     <td class="descr">comments</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">Any comment about the sensor</td>
  *   </tr>
  * </table>
  */
@@ -991,114 +991,114 @@ procedure rename_goes(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_goes_catalog A cursor containing the matching GOES information. The cursor
  * contains the following columns, sorted by the first four:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the gage location</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the gage location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the gage</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">gage_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The gage identifier</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">gage_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The gage identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">goes_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The GOES platform identifier</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">goes_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The GOES platform identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">goes_satellite</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">The GOES satellite</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">goes_satellite</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The GOES satellite</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">selftimed_channel</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The timed transmission channel</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">selftimed_channel</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The timed transmission channel</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">selftimed_rate</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The timed transmission rate, in bits/s</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">selftimed_rate</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The timed transmission rate, in bits/s</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">selftimed_interval</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The timed transmission interval, in minutes</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">selftimed_interval</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The timed transmission interval, in minutes</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">selftimed_offset</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The transmission offset into the timed interval, in minutes</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">selftimed_offset</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The transmission offset into the timed interval, in minutes</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">selftimed_length</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The timed transmission window, in seconds</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">selftimed_length</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The timed transmission window, in seconds</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">random_channel</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The triggered transmission channel</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">random_channel</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The triggered transmission channel</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">random_rate</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The triggered transmission rate, in bits/s</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">random_rate</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The triggered transmission rate, in bits/s</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">random_interval</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The triggered transmission interval, in minutes</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">random_interval</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The triggered transmission interval, in minutes</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">14</td>
- *     <td style="border:1px solid black;">random_offset</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The transmission offset into the triggered interval, in minutes</td>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">random_offset</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The transmission offset into the triggered interval, in minutes</td>
  *   </tr>
  * </table>
  *
@@ -1141,18 +1141,18 @@ procedure cat_goes(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -1182,96 +1182,96 @@ procedure cat_goes(
  * @return A cursor containing the matching GOES information. The cursor
  * contains the following columns, sorted by the first four:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the gage location</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the gage location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the gage</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the gage</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">gage_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The gage identifier</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">gage_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The gage identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">goes_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The GOES platform identifier</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">goes_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The GOES platform identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">goes_satellite</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">The GOES satellite</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">goes_satellite</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">The GOES satellite</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">selftimed_channel</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The timed transmission channel</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">selftimed_channel</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The timed transmission channel</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">selftimed_rate</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The timed transmission rate, in bits/s</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">selftimed_rate</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The timed transmission rate, in bits/s</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">selftimed_interval</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The timed transmission interval, in minutes</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">selftimed_interval</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The timed transmission interval, in minutes</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">selftimed_offset</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The transmission offset into the timed interval, in minutes</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">selftimed_offset</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The transmission offset into the timed interval, in minutes</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">selftimed_length</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The timed transmission window, in seconds</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">selftimed_length</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The timed transmission window, in seconds</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">random_channel</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The triggered transmission channel</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">random_channel</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The triggered transmission channel</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">random_rate</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The triggered transmission rate, in bits/s</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">random_rate</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The triggered transmission rate, in bits/s</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">random_interval</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The triggered transmission interval, in minutes</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">random_interval</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The triggered transmission interval, in minutes</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">14</td>
- *     <td style="border:1px solid black;">random_offset</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The transmission offset into the triggered interval, in minutes</td>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">random_offset</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The transmission offset into the triggered interval, in minutes</td>
  *   </tr>
  * </table>
  */

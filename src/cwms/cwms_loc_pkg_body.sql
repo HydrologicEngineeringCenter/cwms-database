@@ -5705,9 +5705,9 @@ AS
 		l_office_id :=
 			NVL (UPPER (TRIM (p_office_id)), cwms_util.user_office_id);
 
-		---------------------------------------------------
-		-- first, check for duplicate aliases in a group --
-		---------------------------------------------------
+		-----------------------------------------------------------
+		-- first, check for multiple locations in the same group --
+		-----------------------------------------------------------
 		IF p_alias_id IS NOT NULL
 		THEN
 			BEGIN
@@ -5746,9 +5746,9 @@ AS
 			END IF;
 		END IF;
 
-		----------------------------------------
-		-- next, check for multiple locations --
-		----------------------------------------
+		-----------------------------------------------------------
+		-- next, check for multiple locations in multiple groups --
+		-----------------------------------------------------------
 		BEGIN
 			l_location_id :=
 				get_location_id_from_alias (p_alias_id, NULL, NULL, p_office_id);

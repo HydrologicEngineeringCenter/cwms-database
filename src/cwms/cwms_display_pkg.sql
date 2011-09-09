@@ -34,22 +34,22 @@ scale_extra_nice constant integer := 2;
  *
  * @param p_adjustment_level The adjustment level. Adjustment behaviors are
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">p_adjustment_level</th>
- *     <th style="border:1px solid black;">Action</th>
+ *     <th class="descr">p_adjustment_level</th>
+ *     <th class="descr">Action</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_display.scale_as_is</td>
- *     <td style="border:1px solid black;">no adjustment is made to the scale<p>(124.87 -&gt; 126.23) =&gt; (124.87 -&gt; 126.23)</td>
+ *     <td class="descr">cwms_display.scale_as_is</td>
+ *     <td class="descr">no adjustment is made to the scale<p>(124.87 -&gt; 126.23) =&gt; (124.87 -&gt; 126.23)</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_display.scale_nice</td>
- *     <td style="border:1px solid black;">scale is adjusted so that the range (max - min) follows the 1-2-5 increment rule and the minimum value is an even multiple of the <b>increment</b><p>(124.87 -&gt; 126.23) =&gt; (124.0 -&gt; 129.0)</td>
+ *     <td class="descr">cwms_display.scale_nice</td>
+ *     <td class="descr">scale is adjusted so that the range (max - min) follows the 1-2-5 increment rule and the minimum value is an even multiple of the <b>increment</b><p>(124.87 -&gt; 126.23) =&gt; (124.0 -&gt; 129.0)</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_display.scale_extra_nice</td>
- *     <td style="border:1px solid black;">scale is adjusted so that the range (max - min) follows the 1-2-5 increment rule and the minimum value is an even multiple of the <b>range</b><p>(124.87 -&gt; 126.23) =&gt; (120.0 -&gt; 130.0)</td>
+ *     <td class="descr">cwms_display.scale_extra_nice</td>
+ *     <td class="descr">scale is adjusted so that the range (max - min) follows the 1-2-5 increment rule and the minimum value is an even multiple of the <b>range</b><p>(124.87 -&gt; 126.23) =&gt; (120.0 -&gt; 130.0)</td>
  *   </tr>
  * </table>
  */
@@ -124,66 +124,66 @@ procedure delete_scale_limits(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_limits_catalog A cursor containing all matching scale limits.  The cursor contains
  * the following columns and is sorted by the first three:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the scale limits</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the scale limits</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier for the scale_limits</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier for the scale_limits</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">parameter_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The parameter identifier for the scale_limits</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">parameter_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The parameter identifier for the scale_limits</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The unit identifier for the scale_limits</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The unit identifier for the scale_limits</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">scale_min</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The minimum scale limit</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">scale_min</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The minimum scale limit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">scale_max</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The maximum scale limit</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">scale_max</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The maximum scale limit</td>
  *   </tr>
  * </table>
  *
@@ -216,18 +216,18 @@ procedure cat_scale_limits(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -252,48 +252,48 @@ procedure cat_scale_limits(
  * @return A cursor containing all matching scale limits.  The cursor contains
  * the following columns and is sorted by the first three:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the scale limits</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the scale limits</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier for the scale_limits</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier for the scale_limits</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">parameter_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The parameter identifier for the scale_limits</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">parameter_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The parameter identifier for the scale_limits</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The unit identifier for the scale_limits</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The unit identifier for the scale_limits</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">scale_min</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The minimum scale limit</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">scale_min</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The minimum scale limit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">scale_max</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The maximum scale limit</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">scale_max</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The maximum scale limit</td>
  *   </tr>
  * </table>
  */
@@ -351,54 +351,54 @@ procedure delete_unit(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_unit_catalog A cursor containing all matching preferred units.  The cursor contains
  * the following and is sorted by the first three:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the preferred unit</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the preferred unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">parameter_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The parameter identifier for the preferred unit</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">parameter_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The parameter identifier for the preferred unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">unit_system</td>
- *     <td style="border:1px solid black;">varchar2(2)</td>
- *     <td style="border:1px solid black;">The unit system for the preferred unit</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">unit_system</td>
+ *     <td class="descr">varchar2(2)</td>
+ *     <td class="descr">The unit system for the preferred unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The preferred unit identifier</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The preferred unit identifier</td>
  *   </tr>
  * </table>
  *
@@ -424,18 +424,18 @@ procedure cat_unit(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -454,36 +454,36 @@ procedure cat_unit(
  * @return A cursor containing all matching preferred units.  The cursor contains
  * the following and is sorted by the first three:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the preferred unit</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the preferred unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">parameter_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The parameter identifier for the preferred unit</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">parameter_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The parameter identifier for the preferred unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">unit_system</td>
- *     <td style="border:1px solid black;">varchar2(2)</td>
- *     <td style="border:1px solid black;">The unit system for the preferred unit</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">unit_system</td>
+ *     <td class="descr">varchar2(2)</td>
+ *     <td class="descr">The unit system for the preferred unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The preferred unit identifier</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The preferred unit identifier</td>
  *   </tr>
  * </table>
  */
@@ -514,36 +514,36 @@ function cat_unit_f(
  * to mapped are specified as ARG1 in the expression. Various methods of mapping the range of 1..5 onto the
  * range of 1..3 are shown below.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Expression (algebraic)</th>
- *     <th style="border:1px solid black;">Characteristic</th>
- *     <th style="border:1px solid black;">Mapping</th>
+ *     <th class="descr">Expression (algebraic)</th>
+ *     <th class="descr">Characteristic</th>
+ *     <th class="descr">Mapping</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'TRUNC((ARG1 + 2) / 2)'</td>
- *     <td style="border:1px solid black;">Skinny Bottom</td>
- *     <td style="border:1px solid black;">1,2,2,3,3</td>
+ *     <td class="descr">'TRUNC((ARG1 + 2) / 2)'</td>
+ *     <td class="descr">Skinny Bottom</td>
+ *     <td class="descr">1,2,2,3,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'TRUNC((ARG1 + 1) / 2)'</td>
- *     <td style="border:1px solid black;">Skinny Top</td>
- *     <td style="border:1px solid black;">1,1,2,2,3</td>
+ *     <td class="descr">'TRUNC((ARG1 + 1) / 2)'</td>
+ *     <td class="descr">Skinny Top</td>
+ *     <td class="descr">1,1,2,2,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'ROUND((ARG1 / 5) ^ 3 * 2 + 1)'</td>
- *     <td style="border:1px solid black;">Fat Bottom</td>
- *     <td style="border:1px solid black;">1,1,1,2,3</td>
+ *     <td class="descr">'ROUND((ARG1 / 5) ^ 3 * 2 + 1)'</td>
+ *     <td class="descr">Fat Bottom</td>
+ *     <td class="descr">1,1,1,2,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'TRUNC((ARG1 - 2) / 3 + 2)'</td>
- *     <td style="border:1px solid black;">Fat Middle</td>
- *     <td style="border:1px solid black;">1,2,2,2,3</td>
+ *     <td class="descr">'TRUNC((ARG1 - 2) / 3 + 2)'</td>
+ *     <td class="descr">Fat Middle</td>
+ *     <td class="descr">1,2,2,2,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'ROUND((ARG1 - 1) ^ .3 * 1.25 + 1)'</td>
- *     <td style="border:1px solid black;">Fat Top</td>
- *     <td style="border:1px solid black;">1,2,3,3,3</td>
+ *     <td class="descr">'ROUND((ARG1 - 1) ^ .3 * 1.25 + 1)'</td>
+ *     <td class="descr">Fat Top</td>
+ *     <td class="descr">1,2,3,3,3</td>
  *   </tr>
  * </table>
  *
@@ -583,36 +583,36 @@ procedure retrieve_status_indicators(
  * to mapped are specified as ARG1 in the expression. Various methods of mapping the range of 1..5 onto the
  * range of 1..3 are shown below.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Expression (algebraic)</th>
- *     <th style="border:1px solid black;">Characteristic</th>
- *     <th style="border:1px solid black;">Mapping</th>
+ *     <th class="descr">Expression (algebraic)</th>
+ *     <th class="descr">Characteristic</th>
+ *     <th class="descr">Mapping</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'TRUNC((ARG1 + 2) / 2)'</td>
- *     <td style="border:1px solid black;">Skinny Bottom</td>
- *     <td style="border:1px solid black;">1,2,2,3,3</td>
+ *     <td class="descr">'TRUNC((ARG1 + 2) / 2)'</td>
+ *     <td class="descr">Skinny Bottom</td>
+ *     <td class="descr">1,2,2,3,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'TRUNC((ARG1 + 1) / 2)'</td>
- *     <td style="border:1px solid black;">Skinny Top</td>
- *     <td style="border:1px solid black;">1,1,2,2,3</td>
+ *     <td class="descr">'TRUNC((ARG1 + 1) / 2)'</td>
+ *     <td class="descr">Skinny Top</td>
+ *     <td class="descr">1,1,2,2,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'ROUND((ARG1 / 5) ^ 3 * 2 + 1)'</td>
- *     <td style="border:1px solid black;">Fat Bottom</td>
- *     <td style="border:1px solid black;">1,1,1,2,3</td>
+ *     <td class="descr">'ROUND((ARG1 / 5) ^ 3 * 2 + 1)'</td>
+ *     <td class="descr">Fat Bottom</td>
+ *     <td class="descr">1,1,1,2,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'TRUNC((ARG1 - 2) / 3 + 2)'</td>
- *     <td style="border:1px solid black;">Fat Middle</td>
- *     <td style="border:1px solid black;">1,2,2,2,3</td>
+ *     <td class="descr">'TRUNC((ARG1 - 2) / 3 + 2)'</td>
+ *     <td class="descr">Fat Middle</td>
+ *     <td class="descr">1,2,2,2,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'ROUND((ARG1 - 1) ^ .3 * 1.25 + 1)'</td>
- *     <td style="border:1px solid black;">Fat Top</td>
- *     <td style="border:1px solid black;">1,2,3,3,3</td>
+ *     <td class="descr">'ROUND((ARG1 - 1) ^ .3 * 1.25 + 1)'</td>
+ *     <td class="descr">Fat Top</td>
+ *     <td class="descr">1,2,3,3,3</td>
  *   </tr>
  * </table>
  *
@@ -653,36 +653,36 @@ function retrieve_status_indicators_f(
  * to mapped are specified as ARG1 in the expression. Various methods of mapping the range of 1..5 onto the
  * range of 1..3 are shown below.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Expression (algebraic)</th>
- *     <th style="border:1px solid black;">Characteristic</th>
- *     <th style="border:1px solid black;">Mapping</th>
+ *     <th class="descr">Expression (algebraic)</th>
+ *     <th class="descr">Characteristic</th>
+ *     <th class="descr">Mapping</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'TRUNC((ARG1 + 2) / 2)'</td>
- *     <td style="border:1px solid black;">Skinny Bottom</td>
- *     <td style="border:1px solid black;">1,2,2,3,3</td>
+ *     <td class="descr">'TRUNC((ARG1 + 2) / 2)'</td>
+ *     <td class="descr">Skinny Bottom</td>
+ *     <td class="descr">1,2,2,3,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'TRUNC((ARG1 + 1) / 2)'</td>
- *     <td style="border:1px solid black;">Skinny Top</td>
- *     <td style="border:1px solid black;">1,1,2,2,3</td>
+ *     <td class="descr">'TRUNC((ARG1 + 1) / 2)'</td>
+ *     <td class="descr">Skinny Top</td>
+ *     <td class="descr">1,1,2,2,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'ROUND((ARG1 / 5) ^ 3 * 2 + 1)'</td>
- *     <td style="border:1px solid black;">Fat Bottom</td>
- *     <td style="border:1px solid black;">1,1,1,2,3</td>
+ *     <td class="descr">'ROUND((ARG1 / 5) ^ 3 * 2 + 1)'</td>
+ *     <td class="descr">Fat Bottom</td>
+ *     <td class="descr">1,1,1,2,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'TRUNC((ARG1 - 2) / 3 + 2)'</td>
- *     <td style="border:1px solid black;">Fat Middle</td>
- *     <td style="border:1px solid black;">1,2,2,2,3</td>
+ *     <td class="descr">'TRUNC((ARG1 - 2) / 3 + 2)'</td>
+ *     <td class="descr">Fat Middle</td>
+ *     <td class="descr">1,2,2,2,3</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'ROUND((ARG1 - 1) ^ .3 * 1.25 + 1)'</td>
- *     <td style="border:1px solid black;">Fat Top</td>
- *     <td style="border:1px solid black;">1,2,3,3,3</td>
+ *     <td class="descr">'ROUND((ARG1 - 1) ^ .3 * 1.25 + 1)'</td>
+ *     <td class="descr">Fat Top</td>
+ *     <td class="descr">1,2,3,3,3</td>
  *   </tr>
  * </table>
  *

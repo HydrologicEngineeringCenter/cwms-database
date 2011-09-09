@@ -232,48 +232,48 @@ procedure rename_specified_level(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_level_cursor A cursor containing all matching specified levels.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the specified level</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the specified level</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">specified_level_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The identifier of the specified level</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specified_level_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The identifier of the specified level</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">description</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">A description, if any, of the specified level</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">description</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">A description, if any, of the specified level</td>
  *   </tr>
  * </table>
  *
@@ -296,18 +296,18 @@ procedure cat_specified_levels(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
@@ -324,30 +324,30 @@ procedure cat_specified_levels(
  * @return A cursor containing all matching specified levels.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the specified level</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the specified level</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">specified_level_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The identifier of the specified level</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">specified_level_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The identifier of the specified level</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">description</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">A description, if any, of the specified level</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">description</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">A description, if any, of the specified level</td>
  *   </tr>
  * </table>
  */
@@ -515,21 +515,21 @@ procedure store_location_level3(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_match_date         A flag ('T' or 'F') that specifies whether p_date is interpreted as an effective date.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_match_date</th>
- *     <th style="border:1px solid black;">If p_date matches an effective date</th>
- *     <th style="border:1px solid black;">If p_date does not match an effective date</th>
+ *     <th class="descr">p_match_date</th>
+ *     <th class="descr">If p_date matches an effective date</th>
+ *     <th class="descr">If p_date does not match an effective date</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'T'</td>
- *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
- *     <td style="border:1px solid black;">Retrieves NULL</td>
+ *     <td class="descr-center">'T'</td>
+ *     <td class="descr">Retrieves the level with the matched effecitve date</td>
+ *     <td class="descr">Retrieves NULL</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'F'</td>
- *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
- *     <td style="border:1px solid black;">Retrieves the level with the latest effecitve date before p_date</td>
+ *     <td class="descr-center">'F'</td>
+ *     <td class="descr">Retrieves the level with the matched effecitve date</td>
+ *     <td class="descr">Retrieves the level with the latest effecitve date before p_date</td>
  *   </tr>
  * </table>
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
@@ -577,21 +577,21 @@ procedure retrieve_location_level(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_match_date         A flag ('T' or 'F') that specifies whether p_date is interpreted as an effective date.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_match_date</th>
- *     <th style="border:1px solid black;">If p_date matches an effective date</th>
- *     <th style="border:1px solid black;">If p_date does not match an effective date</th>
+ *     <th class="descr">p_match_date</th>
+ *     <th class="descr">If p_date matches an effective date</th>
+ *     <th class="descr">If p_date does not match an effective date</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'T'</td>
- *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
- *     <td style="border:1px solid black;">Retrieves NULL</td>
+ *     <td class="descr-center">'T'</td>
+ *     <td class="descr">Retrieves the level with the matched effecitve date</td>
+ *     <td class="descr">Retrieves NULL</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'F'</td>
- *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
- *     <td style="border:1px solid black;">Retrieves the level with the latest effecitve date before p_date</td>
+ *     <td class="descr-center">'F'</td>
+ *     <td class="descr">Retrieves the level with the matched effecitve date</td>
+ *     <td class="descr">Retrieves the level with the latest effecitve date before p_date</td>
  *   </tr>
  * </table>
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
@@ -635,21 +635,21 @@ procedure retrieve_location_level2(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_match_date         A flag ('T' or 'F') that specifies whether p_date is interpreted as an effective date.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_match_date</th>
- *     <th style="border:1px solid black;">If p_date matches an effective date</th>
- *     <th style="border:1px solid black;">If p_date does not match an effective date</th>
+ *     <th class="descr">p_match_date</th>
+ *     <th class="descr">If p_date matches an effective date</th>
+ *     <th class="descr">If p_date does not match an effective date</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'T'</td>
- *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
- *     <td style="border:1px solid black;">Retrieves NULL</td>
+ *     <td class="descr-center">'T'</td>
+ *     <td class="descr">Retrieves the level with the matched effecitve date</td>
+ *     <td class="descr">Retrieves NULL</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'F'</td>
- *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
- *     <td style="border:1px solid black;">Retrieves the level with the latest effecitve date before p_date</td>
+ *     <td class="descr-center">'F'</td>
+ *     <td class="descr">Retrieves the level with the matched effecitve date</td>
+ *     <td class="descr">Retrieves the level with the latest effecitve date before p_date</td>
  *   </tr>
  * </table>
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
@@ -685,21 +685,21 @@ procedure retrieve_location_level3(
  * @param p_attribute_units    The unit of the attribute, if applicable
  * @param p_match_date         A flag ('T' or 'F') that specifies whether p_date is interpreted as an effective date.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_match_date</th>
- *     <th style="border:1px solid black;">If p_date matches an effective date</th>
- *     <th style="border:1px solid black;">If p_date does not match an effective date</th>
+ *     <th class="descr">p_match_date</th>
+ *     <th class="descr">If p_date matches an effective date</th>
+ *     <th class="descr">If p_date does not match an effective date</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'T'</td>
- *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
- *     <td style="border:1px solid black;">Retrieves NULL</td>
+ *     <td class="descr-center">'T'</td>
+ *     <td class="descr">Retrieves the level with the matched effecitve date</td>
+ *     <td class="descr">Retrieves NULL</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">'F'</td>
- *     <td style="border:1px solid black;">Retrieves the level with the matched effecitve date</td>
- *     <td style="border:1px solid black;">Retrieves the level with the latest effecitve date before p_date</td>
+ *     <td class="descr-center">'F'</td>
+ *     <td class="descr">Retrieves the level with the matched effecitve date</td>
+ *     <td class="descr">Retrieves the level with the latest effecitve date before p_date</td>
  *   </tr>
  * </table>
  * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
@@ -1138,83 +1138,83 @@ function retrieve_location_level_attrs2(
  * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
  * Valid values are
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_in_range_behavior</th>
- *     <th style="border:1px solid black;">lookup behavior</th>
+ *     <th class="descr">p_in_range_behavior</th>
+ *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
- *     <td style="border:1px solid black;">Return null if between values</td>
+ *     <td class="descr">cwms_lookup.method_null</td>
+ *     <td class="descr">Return null if between values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
- *     <td style="border:1px solid black;">Raise an exception if between values</td>
+ *     <td class="descr">cwms_lookup.method_error</td>
+ *     <td class="descr">Raise an exception if between values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
- *     <td style="border:1px solid black;">Linear interpolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_linear</td>
+ *     <td class="descr">Linear interpolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
- *     <td style="border:1px solid black;">Logarithmic interpolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_logarithmic</td>
+ *     <td class="descr">Logarithmic interpolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
- *     <td style="border:1px solid black;">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">cwms_lookup.method_lin_log</td>
+ *     <td class="descr">Linear interpolation of attribute values, Logarithmic of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
- *     <td style="border:1px solid black;">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *     <td class="descr">cwms_lookup.method_log_lin</td>
+ *     <td class="descr">Logarithmic interpolation of attribute values, Linear of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lower</td>
- *     <td style="border:1px solid black;">Return the value that is lower in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_lower</td>
+ *     <td class="descr">Return the value that is lower in magnitude</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_higher</td>
- *     <td style="border:1px solid black;">Return the value that is higher in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_higher</td>
+ *     <td class="descr">Return the value that is higher in magnitude</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
- *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_closest</td>
+ *     <td class="descr">Return the value that is closest in magnitude</td>
  *   </tr>
  * </table>
  * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
  * Valid values are
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_out_range_behavior</th>
- *     <th style="border:1px solid black;">lookup behavior</th>
+ *     <th class="descr">p_out_range_behavior</th>
+ *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
- *     <td style="border:1px solid black;">Return null if outside range</td>
+ *     <td class="descr">cwms_lookup.method_null</td>
+ *     <td class="descr">Return null if outside range</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
- *     <td style="border:1px solid black;">Raise an exception outside range</td>
+ *     <td class="descr">cwms_lookup.method_error</td>
+ *     <td class="descr">Raise an exception outside range</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
- *     <td style="border:1px solid black;">Linear extrapolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_linear</td>
+ *     <td class="descr">Linear extrapolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
- *     <td style="border:1px solid black;">Logarithmic extrapolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_logarithmic</td>
+ *     <td class="descr">Logarithmic extrapolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
- *     <td style="border:1px solid black;">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">cwms_lookup.method_lin_log</td>
+ *     <td class="descr">Linear extrapoloation of attribute values, Logarithmic of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
- *     <td style="border:1px solid black;">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *     <td class="descr">cwms_lookup.method_log_lin</td>
+ *     <td class="descr">Logarithmic extrapoloation of attribute values, Linear of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
- *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_closest</td>
+ *     <td class="descr">Return the value that is closest in magnitude</td>
  *   </tr>
  * </table>
  * @param p_timezone_id        The time zone of p_date
@@ -1254,83 +1254,83 @@ procedure lookup_level_by_attribute(
  * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
  * Valid values are
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_in_range_behavior</th>
- *     <th style="border:1px solid black;">lookup behavior</th>
+ *     <th class="descr">p_in_range_behavior</th>
+ *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
- *     <td style="border:1px solid black;">Return null if between values</td>
+ *     <td class="descr">cwms_lookup.method_null</td>
+ *     <td class="descr">Return null if between values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
- *     <td style="border:1px solid black;">Raise an exception if between values</td>
+ *     <td class="descr">cwms_lookup.method_error</td>
+ *     <td class="descr">Raise an exception if between values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
- *     <td style="border:1px solid black;">Linear interpolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_linear</td>
+ *     <td class="descr">Linear interpolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
- *     <td style="border:1px solid black;">Logarithmic interpolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_logarithmic</td>
+ *     <td class="descr">Logarithmic interpolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
- *     <td style="border:1px solid black;">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">cwms_lookup.method_lin_log</td>
+ *     <td class="descr">Linear interpolation of attribute values, Logarithmic of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
- *     <td style="border:1px solid black;">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *     <td class="descr">cwms_lookup.method_log_lin</td>
+ *     <td class="descr">Logarithmic interpolation of attribute values, Linear of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lower</td>
- *     <td style="border:1px solid black;">Return the value that is lower in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_lower</td>
+ *     <td class="descr">Return the value that is lower in magnitude</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_higher</td>
- *     <td style="border:1px solid black;">Return the value that is higher in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_higher</td>
+ *     <td class="descr">Return the value that is higher in magnitude</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
- *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_closest</td>
+ *     <td class="descr">Return the value that is closest in magnitude</td>
  *   </tr>
  * </table>
  * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
  * Valid values are
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_out_range_behavior</th>
- *     <th style="border:1px solid black;">lookup behavior</th>
+ *     <th class="descr">p_out_range_behavior</th>
+ *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
- *     <td style="border:1px solid black;">Return null if outside range</td>
+ *     <td class="descr">cwms_lookup.method_null</td>
+ *     <td class="descr">Return null if outside range</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
- *     <td style="border:1px solid black;">Raise an exception outside range</td>
+ *     <td class="descr">cwms_lookup.method_error</td>
+ *     <td class="descr">Raise an exception outside range</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
- *     <td style="border:1px solid black;">Linear extrapolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_linear</td>
+ *     <td class="descr">Linear extrapolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
- *     <td style="border:1px solid black;">Logarithmic extrapolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_logarithmic</td>
+ *     <td class="descr">Logarithmic extrapolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
- *     <td style="border:1px solid black;">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">cwms_lookup.method_lin_log</td>
+ *     <td class="descr">Linear extrapoloation of attribute values, Logarithmic of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
- *     <td style="border:1px solid black;">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *     <td class="descr">cwms_lookup.method_log_lin</td>
+ *     <td class="descr">Logarithmic extrapoloation of attribute values, Linear of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
- *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_closest</td>
+ *     <td class="descr">Return the value that is closest in magnitude</td>
  *   </tr>
  * </table>
  * @param p_timezone_id        The time zone of p_date
@@ -1373,83 +1373,83 @@ function lookup_level_by_attribute(
  * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
  * Valid values are
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_in_range_behavior</th>
- *     <th style="border:1px solid black;">lookup behavior</th>
+ *     <th class="descr">p_in_range_behavior</th>
+ *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
- *     <td style="border:1px solid black;">Return null if between values</td>
+ *     <td class="descr">cwms_lookup.method_null</td>
+ *     <td class="descr">Return null if between values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
- *     <td style="border:1px solid black;">Raise an exception if between values</td>
+ *     <td class="descr">cwms_lookup.method_error</td>
+ *     <td class="descr">Raise an exception if between values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
- *     <td style="border:1px solid black;">Linear interpolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_linear</td>
+ *     <td class="descr">Linear interpolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
- *     <td style="border:1px solid black;">Logarithmic interpolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_logarithmic</td>
+ *     <td class="descr">Logarithmic interpolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
- *     <td style="border:1px solid black;">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">cwms_lookup.method_lin_log</td>
+ *     <td class="descr">Linear interpolation of attribute values, Logarithmic of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
- *     <td style="border:1px solid black;">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *     <td class="descr">cwms_lookup.method_log_lin</td>
+ *     <td class="descr">Logarithmic interpolation of attribute values, Linear of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lower</td>
- *     <td style="border:1px solid black;">Return the value that is lower in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_lower</td>
+ *     <td class="descr">Return the value that is lower in magnitude</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_higher</td>
- *     <td style="border:1px solid black;">Return the value that is higher in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_higher</td>
+ *     <td class="descr">Return the value that is higher in magnitude</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
- *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_closest</td>
+ *     <td class="descr">Return the value that is closest in magnitude</td>
  *   </tr>
  * </table>
  * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
  * Valid values are
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_out_range_behavior</th>
- *     <th style="border:1px solid black;">lookup behavior</th>
+ *     <th class="descr">p_out_range_behavior</th>
+ *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
- *     <td style="border:1px solid black;">Return null if outside range</td>
+ *     <td class="descr">cwms_lookup.method_null</td>
+ *     <td class="descr">Return null if outside range</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
- *     <td style="border:1px solid black;">Raise an exception outside range</td>
+ *     <td class="descr">cwms_lookup.method_error</td>
+ *     <td class="descr">Raise an exception outside range</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
- *     <td style="border:1px solid black;">Linear extrapolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_linear</td>
+ *     <td class="descr">Linear extrapolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
- *     <td style="border:1px solid black;">Logarithmic extrapolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_logarithmic</td>
+ *     <td class="descr">Logarithmic extrapolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
- *     <td style="border:1px solid black;">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">cwms_lookup.method_lin_log</td>
+ *     <td class="descr">Linear extrapoloation of attribute values, Logarithmic of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
- *     <td style="border:1px solid black;">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *     <td class="descr">cwms_lookup.method_log_lin</td>
+ *     <td class="descr">Logarithmic extrapoloation of attribute values, Linear of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
- *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_closest</td>
+ *     <td class="descr">Return the value that is closest in magnitude</td>
  *   </tr>
  * </table>
  * @param p_timezone_id        The time zone of p_date
@@ -1489,83 +1489,83 @@ procedure lookup_attribute_by_level(
  * @param p_in_range_behavior  Specifies the lookup behavior if the specified attribute is in the range of attributes for the specified level and date.
  * Valid values are
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_in_range_behavior</th>
- *     <th style="border:1px solid black;">lookup behavior</th>
+ *     <th class="descr">p_in_range_behavior</th>
+ *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
- *     <td style="border:1px solid black;">Return null if between values</td>
+ *     <td class="descr">cwms_lookup.method_null</td>
+ *     <td class="descr">Return null if between values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
- *     <td style="border:1px solid black;">Raise an exception if between values</td>
+ *     <td class="descr">cwms_lookup.method_error</td>
+ *     <td class="descr">Raise an exception if between values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
- *     <td style="border:1px solid black;">Linear interpolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_linear</td>
+ *     <td class="descr">Linear interpolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
- *     <td style="border:1px solid black;">Logarithmic interpolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_logarithmic</td>
+ *     <td class="descr">Logarithmic interpolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
- *     <td style="border:1px solid black;">Linear interpolation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">cwms_lookup.method_lin_log</td>
+ *     <td class="descr">Linear interpolation of attribute values, Logarithmic of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
- *     <td style="border:1px solid black;">Logarithmic interpolation of attribute values, Linear of level values</td>
+ *     <td class="descr">cwms_lookup.method_log_lin</td>
+ *     <td class="descr">Logarithmic interpolation of attribute values, Linear of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lower</td>
- *     <td style="border:1px solid black;">Return the value that is lower in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_lower</td>
+ *     <td class="descr">Return the value that is lower in magnitude</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_higher</td>
- *     <td style="border:1px solid black;">Return the value that is higher in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_higher</td>
+ *     <td class="descr">Return the value that is higher in magnitude</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
- *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_closest</td>
+ *     <td class="descr">Return the value that is closest in magnitude</td>
  *   </tr>
  * </table>
  * @param p_out_range_behavior Specifies the lookup behavior if the specified attribute is outside the range of attributes for the specified level and date.
  * Valid values are
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">p_out_range_behavior</th>
- *     <th style="border:1px solid black;">lookup behavior</th>
+ *     <th class="descr">p_out_range_behavior</th>
+ *     <th class="descr">lookup behavior</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_null</td>
- *     <td style="border:1px solid black;">Return null if outside range</td>
+ *     <td class="descr">cwms_lookup.method_null</td>
+ *     <td class="descr">Return null if outside range</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_error</td>
- *     <td style="border:1px solid black;">Raise an exception outside range</td>
+ *     <td class="descr">cwms_lookup.method_error</td>
+ *     <td class="descr">Raise an exception outside range</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_linear</td>
- *     <td style="border:1px solid black;">Linear extrapolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_linear</td>
+ *     <td class="descr">Linear extrapolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_logarithmic</td>
- *     <td style="border:1px solid black;">Logarithmic extrapolation of attribute and level values</td>
+ *     <td class="descr">cwms_lookup.method_logarithmic</td>
+ *     <td class="descr">Logarithmic extrapolation of attribute and level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_lin_log</td>
- *     <td style="border:1px solid black;">Linear extrapoloation of attribute values, Logarithmic of level values</td>
+ *     <td class="descr">cwms_lookup.method_lin_log</td>
+ *     <td class="descr">Linear extrapoloation of attribute values, Logarithmic of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_log_lin</td>
- *     <td style="border:1px solid black;">Logarithmic extrapoloation of attribute values, Linear of level values</td>
+ *     <td class="descr">cwms_lookup.method_log_lin</td>
+ *     <td class="descr">Logarithmic extrapoloation of attribute values, Linear of level values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_lookup.method_closest</td>
- *     <td style="border:1px solid black;">Return the value that is closest in magnitude</td>
+ *     <td class="descr">cwms_lookup.method_closest</td>
+ *     <td class="descr">Return the value that is closest in magnitude</td>
  *   </tr>
  * </table>
  * @param p_timezone_id        The time zone of p_date
@@ -1695,66 +1695,66 @@ procedure delete_location_level_ex(
  * Catalogs location levels in the database that match input parameters. Matching is
  * accomplished with glob-style wildcards, as shown below, SQL-style wildcards can also be used.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_cursor A cursor containing all matching basins.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the location levels</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the location levels</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_level_id</td>
- *     <td style="border:1px solid black;">varchar2(390)</td>
- *     <td style="border:1px solid black;">The location level identifier</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_level_id</td>
+ *     <td class="descr">varchar2(390)</td>
+ *     <td class="descr">The location level identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">attribute_id</td>
- *     <td style="border:1px solid black;">varchar2(83)</td>
- *     <td style="border:1px solid black;">The attribute identifier, if any</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">attribute_id</td>
+ *     <td class="descr">varchar2(83)</td>
+ *     <td class="descr">The attribute identifier, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">attribute_value</td>
- *     <td style="border:1px solid black;">binary_double</td>
- *     <td style="border:1px solid black;">The attribue value, if any</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">attribute_value</td>
+ *     <td class="descr">binary_double</td>
+ *     <td class="descr">The attribue value, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">attribute_unit</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The unit of the attribute, if any</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">attribute_unit</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The unit of the attribute, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">location_level_date</td>
- *     <td style="border:1px solid black;">date</td>
- *     <td style="border:1px solid black;">The effective date of the location level</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">location_level_date</td>
+ *     <td class="descr">date</td>
+ *     <td class="descr">The effective date of the location level</td>
  *   </tr>
  * </table>
  *
@@ -1818,22 +1818,22 @@ procedure store_loc_lvl_indicator_cond(
  * @param p_level_indicator_value       The value (1..5) of the indicator condition
  * @param p_expression                  The arithmetic expression for value comparisons. This can be an algebraic or RPN expression with the following variables
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Variable</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Variable</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">V</td>
- *     <td style="border:1px solid black;">The value (specified explicitly or in a time series) to use in the comparison</td>
+ *     <td class="descr-center">V</td>
+ *     <td class="descr">The value (specified explicitly or in a time series) to use in the comparison</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">L or L1</td>
- *     <td style="border:1px solid black;">The location level value</td>
+ *     <td class="descr-center">L or L1</td>
+ *     <td class="descr">The location level value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">L2</td>
- *     <td style="border:1px solid black;">The location level value of the referenced (secondary) location level</td>
+ *     <td class="descr-center">L2</td>
+ *     <td class="descr">The location level value of the referenced (secondary) location level</td>
  *   </tr>
  * </table>
  * @param p_comparison_operator_1       The comparison operator ('LT', 'LE', 'EQ', 'NE', 'GE', 'GT') to use in comparing the result of the expression evalutaion with p_comparison_value_1
@@ -1844,14 +1844,14 @@ procedure store_loc_lvl_indicator_cond(
  * @param p_comparison_value_2          The second value to compare against the result of the expression evaluation via p_comparison_operator_2, if two value comparisons are used
  * @param p_rate_expression             The arithmetic expression for rate-of-change comparisons, if rate-of-change comparisons are used. This can be an algebraic or RPN expression with the following variables
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Variable</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Variable</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">R</td>
- *     <td style="border:1px solid black;">The rate-of-change value to use in the comparison. Computed by the difference of two time series values divided by the interval</td>
+ *     <td class="descr-center">R</td>
+ *     <td class="descr">The rate-of-change value to use in the comparison. Computed by the difference of two time series values divided by the interval</td>
  *   </tr>
  * </table>
  * @param p_rate_comparison_operator_1  The comparison operator ('LT', 'LE', 'EQ', 'NE', 'GE', 'GT') to use in comparing the result of the expression evalutaion with p_rate_comparison_value_1, if rate comparisons are used
@@ -1987,248 +1987,248 @@ function cat_loc_lvl_indicator_codes(
  * Catalogs location level indicators in the database that match input parameters. Matching is
  * accomplished with glob-style wildcards, as shown below. SQL-style wildcards may also be used.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_level_cursor A cursor containing all matching location level indicators.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the location level indicator</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the location level indicator</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">parameter_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The parameter identifier</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">parameter_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The parameter identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">parameter_type_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The parameter type identifier</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">parameter_type_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The parameter type identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">duration_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The duration identifier</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">duration_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The duration identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">specified_level_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The specified level identifier</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">specified_level_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The specified level identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">level_indicator_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The indicator identifier</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">level_indicator_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The indicator identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">level_units_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The level value unit</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">level_units_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The level value unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">attr_parameter_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The attribute parameter identifier</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">attr_parameter_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The attribute parameter identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">attr_parameter_type_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The attribute parameter type identifier</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">attr_parameter_type_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The attribute parameter type identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">attr_duration_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The attribute duration identifier</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">attr_duration_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The attribute duration identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">attr_units_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The attribute value unit</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">attr_units_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The attribute value unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">attr_value</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The attribute value</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">attr_value</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The attribute value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">14</td>
- *     <td style="border:1px solid black;">minimum_duration</td>
- *     <td style="border:1px solid black;">interval day(3) to second(0)</td>
- *     <td style="border:1px solid black;">The minumum amount of time that a condition must evalutate to TRUE for the indicator value to be considered to be set</td>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">minimum_duration</td>
+ *     <td class="descr">interval day(3) to second(0)</td>
+ *     <td class="descr">The minumum amount of time that a condition must evalutate to TRUE for the indicator value to be considered to be set</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">15</td>
- *     <td style="border:1px solid black;">maximum_age</td>
- *     <td style="border:1px solid black;">interval day(3) to second(0)</td>
- *     <td style="border:1px solid black;">The amount of time beyond which data is not considered current enough to evaluate indicator conditions</td>
+ *     <td class="descr-center">15</td>
+ *     <td class="descr">maximum_age</td>
+ *     <td class="descr">interval day(3) to second(0)</td>
+ *     <td class="descr">The amount of time beyond which data is not considered current enough to evaluate indicator conditions</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">16</td>
- *     <td style="border:1px solid black;">ref_specified_level_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The specified level identifier of the referenced location level</td>
+ *     <td class="descr-center">16</td>
+ *     <td class="descr">ref_specified_level_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The specified level identifier of the referenced location level</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">17</td>
- *     <td style="border:1px solid black;">ref_attribute_value</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The attribute value of the referenced location level</td>
+ *     <td class="descr-center">17</td>
+ *     <td class="descr">ref_attribute_value</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The attribute value of the referenced location level</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">18</td>
- *     <td style="border:1px solid black;">conditions</td>
- *     <td style="border:1px solid black;">sys_refcursor</td>
- *     <td style="border:1px solid black;">
+ *     <td class="descr-center">18</td>
+ *     <td class="descr">conditions</td>
+ *     <td class="descr">sys_refcursor</td>
+ *     <td class="descr">
  *       The location level indicator condtions
  *       <p>
- *       <table style="border-collapse:collapse; border:1px solid black;">
+ *       <table class="descr"">
  *         <tr>
- *           <th style="border:1px solid black;">Column No.</th>
- *           <th style="border:1px solid black;">Column Name</th>
- *           <th style="border:1px solid black;">Data Type</th>
- *           <th style="border:1px solid black;">Contents</th>
+ *           <th class="descr">Column No.</th>
+ *           <th class="descr">Column Name</th>
+ *           <th class="descr">Data Type</th>
+ *           <th class="descr">Contents</th>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">1</td>
- *           <td style="border:1px solid black;">indicator_value</td>
- *           <td style="border:1px solid black;">integer</td>
- *           <td style="border:1px solid black;">The indicator value</td>
+ *           <td class="descr-center">1</td>
+ *           <td class="descr">indicator_value</td>
+ *           <td class="descr">integer</td>
+ *           <td class="descr">The indicator value</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">2</td>
- *           <td style="border:1px solid black;">expression</td>
- *           <td style="border:1px solid black;">varchar2(64)</td>
- *           <td style="border:1px solid black;">The value expression</td>
+ *           <td class="descr-center">2</td>
+ *           <td class="descr">expression</td>
+ *           <td class="descr">varchar2(64)</td>
+ *           <td class="descr">The value expression</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">3</td>
- *           <td style="border:1px solid black;">comparison_operator_1</td>
- *           <td style="border:1px solid black;">varchar2(2)</td>
- *           <td style="border:1px solid black;">The first value comparison operator</td>
+ *           <td class="descr-center">3</td>
+ *           <td class="descr">comparison_operator_1</td>
+ *           <td class="descr">varchar2(2)</td>
+ *           <td class="descr">The first value comparison operator</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">4</td>
- *           <td style="border:1px solid black;">comparison_value_1</td>
- *           <td style="border:1px solid black;">number</td>
- *           <td style="border:1px solid black;">The first value comparison value</td>
+ *           <td class="descr-center">4</td>
+ *           <td class="descr">comparison_value_1</td>
+ *           <td class="descr">number</td>
+ *           <td class="descr">The first value comparison value</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">5</td>
- *           <td style="border:1px solid black;">comparison_unit_id</td>
- *           <td style="border:1px solid black;">varchar2(16)</td>
- *           <td style="border:1px solid black;">The value comparison unit</td>
+ *           <td class="descr-center">5</td>
+ *           <td class="descr">comparison_unit_id</td>
+ *           <td class="descr">varchar2(16)</td>
+ *           <td class="descr">The value comparison unit</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">6</td>
- *           <td style="border:1px solid black;">connector</td>
- *           <td style="border:1px solid black;">varchar2(3)</td>
- *           <td style="border:1px solid black;">The logical operator connecting the first and second value comparisons</td>
+ *           <td class="descr-center">6</td>
+ *           <td class="descr">connector</td>
+ *           <td class="descr">varchar2(3)</td>
+ *           <td class="descr">The logical operator connecting the first and second value comparisons</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">7</td>
- *           <td style="border:1px solid black;">comparison_operator_2</td>
- *           <td style="border:1px solid black;">varchar2(2)</td>
- *           <td style="border:1px solid black;">The second value comparison operator</td>
+ *           <td class="descr-center">7</td>
+ *           <td class="descr">comparison_operator_2</td>
+ *           <td class="descr">varchar2(2)</td>
+ *           <td class="descr">The second value comparison operator</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">8</td>
- *           <td style="border:1px solid black;">comparison_value_2</td>
- *           <td style="border:1px solid black;">number</td>
- *           <td style="border:1px solid black;">The second value comparison value</td>
+ *           <td class="descr-center">8</td>
+ *           <td class="descr">comparison_value_2</td>
+ *           <td class="descr">number</td>
+ *           <td class="descr">The second value comparison value</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">9</td>
- *           <td style="border:1px solid black;">rate_expression</td>
- *           <td style="border:1px solid black;">varchar2(64)</td>
- *           <td style="border:1px solid black;">The rate-of-chane expression</td>
+ *           <td class="descr-center">9</td>
+ *           <td class="descr">rate_expression</td>
+ *           <td class="descr">varchar2(64)</td>
+ *           <td class="descr">The rate-of-chane expression</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">10</td>
- *           <td style="border:1px solid black;">rate_comparison_operator_1</td>
- *           <td style="border:1px solid black;">varchar2(2)</td>
- *           <td style="border:1px solid black;">The first rate-of-change comparison operator</td>
+ *           <td class="descr-center">10</td>
+ *           <td class="descr">rate_comparison_operator_1</td>
+ *           <td class="descr">varchar2(2)</td>
+ *           <td class="descr">The first rate-of-change comparison operator</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">11</td>
- *           <td style="border:1px solid black;">rate_comparison_value_1</td>
- *           <td style="border:1px solid black;">number</td>
- *           <td style="border:1px solid black;">The first rate-of-change comparison value</td>
+ *           <td class="descr-center">11</td>
+ *           <td class="descr">rate_comparison_value_1</td>
+ *           <td class="descr">number</td>
+ *           <td class="descr">The first rate-of-change comparison value</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">12</td>
- *           <td style="border:1px solid black;">rate_comparison_unit_id</td>
- *           <td style="border:1px solid black;">varchar2(16)</td>
- *           <td style="border:1px solid black;">The rate-of-change comparison unit</td>
+ *           <td class="descr-center">12</td>
+ *           <td class="descr">rate_comparison_unit_id</td>
+ *           <td class="descr">varchar2(16)</td>
+ *           <td class="descr">The rate-of-change comparison unit</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">13</td>
- *           <td style="border:1px solid black;">rate_connector</td>
- *           <td style="border:1px solid black;">varchar2(3)</td>
- *           <td style="border:1px solid black;">The logical operator connecting the first and second rate comparisons</td>
+ *           <td class="descr-center">13</td>
+ *           <td class="descr">rate_connector</td>
+ *           <td class="descr">varchar2(3)</td>
+ *           <td class="descr">The logical operator connecting the first and second rate comparisons</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">14</td>
- *           <td style="border:1px solid black;">rate_comparison_operator_2</td>
- *           <td style="border:1px solid black;">varchar2(2)</td>
- *           <td style="border:1px solid black;">The second rate-of-change comparison operator</td>
+ *           <td class="descr-center">14</td>
+ *           <td class="descr">rate_comparison_operator_2</td>
+ *           <td class="descr">varchar2(2)</td>
+ *           <td class="descr">The second rate-of-change comparison operator</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">15</td>
- *           <td style="border:1px solid black;">rate_comparison_value_2</td>
- *           <td style="border:1px solid black;">number</td>
- *           <td style="border:1px solid black;">The second rate-of-change comparison value</td>
+ *           <td class="descr-center">15</td>
+ *           <td class="descr">rate_comparison_value_2</td>
+ *           <td class="descr">number</td>
+ *           <td class="descr">The second rate-of-change comparison value</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">16</td>
- *           <td style="border:1px solid black;">rate_interval</td>
- *           <td style="border:1px solid black;">interval day(3) to second(0)</td>
- *           <td style="border:1px solid black;">The time used to compute rate-of-change from the difference in successive values</td>
+ *           <td class="descr-center">16</td>
+ *           <td class="descr">rate_interval</td>
+ *           <td class="descr">interval day(3) to second(0)</td>
+ *           <td class="descr">The time used to compute rate-of-change from the difference in successive values</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">17</td>
- *           <td style="border:1px solid black;">description</td>
- *           <td style="border:1px solid black;">varchar2(256)</td>
- *           <td style="border:1px solid black;">A description of the location level indicator condition</td>
+ *           <td class="descr-center">17</td>
+ *           <td class="descr">description</td>
+ *           <td class="descr">varchar2(256)</td>
+ *           <td class="descr">A description of the location level indicator condition</td>
  *         </tr>
  *       </table>
  *     </td>
@@ -2255,248 +2255,248 @@ procedure cat_loc_lvl_indicator(
  * Catalogs location level indicators in the database that match input parameters, returning data in simple types. Matching is
  * accomplished with glob-style wildcards, as shown below. SQL-style wildcards may also be used.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_level_cursor A cursor containing all matching location level indicators.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the location level indicator</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the location level indicator</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">location_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">location_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">parameter_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The parameter identifier</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">parameter_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The parameter identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">parameter_type_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The parameter type identifier</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">parameter_type_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The parameter type identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">duration_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The duration identifier</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">duration_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The duration identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">specified_level_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The specified level identifier</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">specified_level_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The specified level identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">level_indicator_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The indicator identifier</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">level_indicator_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The indicator identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">level_units_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The level value unit</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">level_units_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The level value unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">attr_parameter_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The attribute parameter identifier</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">attr_parameter_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The attribute parameter identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">attr_parameter_type_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The attribute parameter type identifier</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">attr_parameter_type_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The attribute parameter type identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">attr_duration_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The attribute duration identifier</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">attr_duration_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The attribute duration identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">attr_units_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The attribute value unit</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">attr_units_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The attribute value unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">attr_value</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The attribute value</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">attr_value</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The attribute value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">14</td>
- *     <td style="border:1px solid black;">minimum_duration</td>
- *     <td style="border:1px solid black;">varchar2(12)</td>
- *     <td style="border:1px solid black;">The minumum amount of time that a condition must evalutate to TRUE for the indicator value to be considered to be set. Format is 'ddd hh:mm:ss'</td>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">minimum_duration</td>
+ *     <td class="descr">varchar2(12)</td>
+ *     <td class="descr">The minumum amount of time that a condition must evalutate to TRUE for the indicator value to be considered to be set. Format is 'ddd hh:mm:ss'</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">15</td>
- *     <td style="border:1px solid black;">maximum_age</td>
- *     <td style="border:1px solid black;">varchar2(12)</td>
- *     <td style="border:1px solid black;">The amount of time beyond which data is not considered current enough to evaluate indicator conditions. Format is 'ddd hh:mm:ss'</td>
+ *     <td class="descr-center">15</td>
+ *     <td class="descr">maximum_age</td>
+ *     <td class="descr">varchar2(12)</td>
+ *     <td class="descr">The amount of time beyond which data is not considered current enough to evaluate indicator conditions. Format is 'ddd hh:mm:ss'</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">16</td>
- *     <td style="border:1px solid black;">ref_specified_level_id</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">The specified level identifier of the referenced location level</td>
+ *     <td class="descr-center">16</td>
+ *     <td class="descr">ref_specified_level_id</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">The specified level identifier of the referenced location level</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">17</td>
- *     <td style="border:1px solid black;">ref_attribute_value</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The attribute value of the referenced location level</td>
+ *     <td class="descr-center">17</td>
+ *     <td class="descr">ref_attribute_value</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The attribute value of the referenced location level</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">18</td>
- *     <td style="border:1px solid black;">conditions</td>
- *     <td style="border:1px solid black;">sys_refcursor</td>
- *     <td style="border:1px solid black;">
+ *     <td class="descr-center">18</td>
+ *     <td class="descr">conditions</td>
+ *     <td class="descr">sys_refcursor</td>
+ *     <td class="descr">
  *       The location level indicator condtions
  *       <p>
- *       <table style="border-collapse:collapse; border:1px solid black;">
+ *       <table class="descr"">
  *         <tr>
- *           <th style="border:1px solid black;">Column No.</th>
- *           <th style="border:1px solid black;">Column Name</th>
- *           <th style="border:1px solid black;">Data Type</th>
- *           <th style="border:1px solid black;">Contents</th>
+ *           <th class="descr">Column No.</th>
+ *           <th class="descr">Column Name</th>
+ *           <th class="descr">Data Type</th>
+ *           <th class="descr">Contents</th>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">1</td>
- *           <td style="border:1px solid black;">indicator_value</td>
- *           <td style="border:1px solid black;">integer</td>
- *           <td style="border:1px solid black;">The indicator value</td>
+ *           <td class="descr-center">1</td>
+ *           <td class="descr">indicator_value</td>
+ *           <td class="descr">integer</td>
+ *           <td class="descr">The indicator value</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">2</td>
- *           <td style="border:1px solid black;">expression</td>
- *           <td style="border:1px solid black;">varchar2(64)</td>
- *           <td style="border:1px solid black;">The value expression</td>
+ *           <td class="descr-center">2</td>
+ *           <td class="descr">expression</td>
+ *           <td class="descr">varchar2(64)</td>
+ *           <td class="descr">The value expression</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">3</td>
- *           <td style="border:1px solid black;">comparison_operator_1</td>
- *           <td style="border:1px solid black;">varchar2(2)</td>
- *           <td style="border:1px solid black;">The first value comparison operator</td>
+ *           <td class="descr-center">3</td>
+ *           <td class="descr">comparison_operator_1</td>
+ *           <td class="descr">varchar2(2)</td>
+ *           <td class="descr">The first value comparison operator</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">4</td>
- *           <td style="border:1px solid black;">comparison_value_1</td>
- *           <td style="border:1px solid black;">number</td>
- *           <td style="border:1px solid black;">The first value comparison value</td>
+ *           <td class="descr-center">4</td>
+ *           <td class="descr">comparison_value_1</td>
+ *           <td class="descr">number</td>
+ *           <td class="descr">The first value comparison value</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">5</td>
- *           <td style="border:1px solid black;">comparison_unit_id</td>
- *           <td style="border:1px solid black;">varchar2(16)</td>
- *           <td style="border:1px solid black;">The value comparison unit</td>
+ *           <td class="descr-center">5</td>
+ *           <td class="descr">comparison_unit_id</td>
+ *           <td class="descr">varchar2(16)</td>
+ *           <td class="descr">The value comparison unit</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">6</td>
- *           <td style="border:1px solid black;">connector</td>
- *           <td style="border:1px solid black;">varchar2(3)</td>
- *           <td style="border:1px solid black;">The logical operator connecting the first and second value comparisons</td>
+ *           <td class="descr-center">6</td>
+ *           <td class="descr">connector</td>
+ *           <td class="descr">varchar2(3)</td>
+ *           <td class="descr">The logical operator connecting the first and second value comparisons</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">7</td>
- *           <td style="border:1px solid black;">comparison_operator_2</td>
- *           <td style="border:1px solid black;">varchar2(2)</td>
- *           <td style="border:1px solid black;">The second value comparison operator</td>
+ *           <td class="descr-center">7</td>
+ *           <td class="descr">comparison_operator_2</td>
+ *           <td class="descr">varchar2(2)</td>
+ *           <td class="descr">The second value comparison operator</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">8</td>
- *           <td style="border:1px solid black;">comparison_value_2</td>
- *           <td style="border:1px solid black;">number</td>
- *           <td style="border:1px solid black;">The second value comparison value</td>
+ *           <td class="descr-center">8</td>
+ *           <td class="descr">comparison_value_2</td>
+ *           <td class="descr">number</td>
+ *           <td class="descr">The second value comparison value</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">9</td>
- *           <td style="border:1px solid black;">rate_expression</td>
- *           <td style="border:1px solid black;">varchar2(64)</td>
- *           <td style="border:1px solid black;">The rate-of-chane expression</td>
+ *           <td class="descr-center">9</td>
+ *           <td class="descr">rate_expression</td>
+ *           <td class="descr">varchar2(64)</td>
+ *           <td class="descr">The rate-of-chane expression</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">10</td>
- *           <td style="border:1px solid black;">rate_comparison_operator_1</td>
- *           <td style="border:1px solid black;">varchar2(2)</td>
- *           <td style="border:1px solid black;">The first rate-of-change comparison operator</td>
+ *           <td class="descr-center">10</td>
+ *           <td class="descr">rate_comparison_operator_1</td>
+ *           <td class="descr">varchar2(2)</td>
+ *           <td class="descr">The first rate-of-change comparison operator</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">11</td>
- *           <td style="border:1px solid black;">rate_comparison_value_1</td>
- *           <td style="border:1px solid black;">number</td>
- *           <td style="border:1px solid black;">The first rate-of-change comparison value</td>
+ *           <td class="descr-center">11</td>
+ *           <td class="descr">rate_comparison_value_1</td>
+ *           <td class="descr">number</td>
+ *           <td class="descr">The first rate-of-change comparison value</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">12</td>
- *           <td style="border:1px solid black;">rate_comparison_unit_id</td>
- *           <td style="border:1px solid black;">varchar2(16)</td>
- *           <td style="border:1px solid black;">The rate-of-change comparison unit</td>
+ *           <td class="descr-center">12</td>
+ *           <td class="descr">rate_comparison_unit_id</td>
+ *           <td class="descr">varchar2(16)</td>
+ *           <td class="descr">The rate-of-change comparison unit</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">13</td>
- *           <td style="border:1px solid black;">rate_connector</td>
- *           <td style="border:1px solid black;">varchar2(3)</td>
- *           <td style="border:1px solid black;">The logical operator connecting the first and second rate comparisons</td>
+ *           <td class="descr-center">13</td>
+ *           <td class="descr">rate_connector</td>
+ *           <td class="descr">varchar2(3)</td>
+ *           <td class="descr">The logical operator connecting the first and second rate comparisons</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">14</td>
- *           <td style="border:1px solid black;">rate_comparison_operator_2</td>
- *           <td style="border:1px solid black;">varchar2(2)</td>
- *           <td style="border:1px solid black;">The second rate-of-change comparison operator</td>
+ *           <td class="descr-center">14</td>
+ *           <td class="descr">rate_comparison_operator_2</td>
+ *           <td class="descr">varchar2(2)</td>
+ *           <td class="descr">The second rate-of-change comparison operator</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">15</td>
- *           <td style="border:1px solid black;">rate_comparison_value_2</td>
- *           <td style="border:1px solid black;">number</td>
- *           <td style="border:1px solid black;">The second rate-of-change comparison value</td>
+ *           <td class="descr-center">15</td>
+ *           <td class="descr">rate_comparison_value_2</td>
+ *           <td class="descr">number</td>
+ *           <td class="descr">The second rate-of-change comparison value</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">16</td>
- *           <td style="border:1px solid black;">rate_interval</td>
- *           <td style="border:1px solid black;">varchar2(12)</td>
- *           <td style="border:1px solid black;">The time used to compute rate-of-change from the difference in successive values. Format is 'ddd hh:mm:ss'</td>
+ *           <td class="descr-center">16</td>
+ *           <td class="descr">rate_interval</td>
+ *           <td class="descr">varchar2(12)</td>
+ *           <td class="descr">The time used to compute rate-of-change from the difference in successive values. Format is 'ddd hh:mm:ss'</td>
  *         </tr>
  *         <tr>
- *           <td style="border:1px solid black;">17</td>
- *           <td style="border:1px solid black;">description</td>
- *           <td style="border:1px solid black;">varchar2(256)</td>
- *           <td style="border:1px solid black;">A description of the location level indicator condition</td>
+ *           <td class="descr-center">17</td>
+ *           <td class="descr">description</td>
+ *           <td class="descr">varchar2(256)</td>
+ *           <td class="descr">A description of the location level indicator condition</td>
  *         </tr>
  *       </table>
  *     </td>
@@ -2526,114 +2526,114 @@ procedure cat_loc_lvl_indicator2(
  * @param p_maximum_age            The amount of time beyond which data is not considered current enough to evaluate indicator conditions
  * @param p_conditions             The location level indicator condtions
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">indicator_value</td>
- *     <td style="border:1px solid black;">integer</td>
- *     <td style="border:1px solid black;">The indicator value</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">indicator_value</td>
+ *     <td class="descr">integer</td>
+ *     <td class="descr">The indicator value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">expression</td>
- *     <td style="border:1px solid black;">varchar2(64)</td>
- *     <td style="border:1px solid black;">The value expression</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">expression</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The value expression</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">comparison_operator_1</td>
- *     <td style="border:1px solid black;">varchar2(2)</td>
- *     <td style="border:1px solid black;">The first value comparison operator</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">comparison_operator_1</td>
+ *     <td class="descr">varchar2(2)</td>
+ *     <td class="descr">The first value comparison operator</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">comparison_value_1</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The first value comparison value</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">comparison_value_1</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The first value comparison value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">comparison_unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The value comparison unit</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">comparison_unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The value comparison unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">connector</td>
- *     <td style="border:1px solid black;">varchar2(3)</td>
- *     <td style="border:1px solid black;">The logical operator connecting the first and second value comparisons</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">connector</td>
+ *     <td class="descr">varchar2(3)</td>
+ *     <td class="descr">The logical operator connecting the first and second value comparisons</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">comparison_operator_2</td>
- *     <td style="border:1px solid black;">varchar2(2)</td>
- *     <td style="border:1px solid black;">The second value comparison operator</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">comparison_operator_2</td>
+ *     <td class="descr">varchar2(2)</td>
+ *     <td class="descr">The second value comparison operator</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">comparison_value_2</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The second value comparison value</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">comparison_value_2</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The second value comparison value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">rate_expression</td>
- *     <td style="border:1px solid black;">varchar2(64)</td>
- *     <td style="border:1px solid black;">The rate-of-chane expression</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">rate_expression</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The rate-of-chane expression</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">rate_comparison_operator_1</td>
- *     <td style="border:1px solid black;">varchar2(2)</td>
- *     <td style="border:1px solid black;">The first rate-of-change comparison operator</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">rate_comparison_operator_1</td>
+ *     <td class="descr">varchar2(2)</td>
+ *     <td class="descr">The first rate-of-change comparison operator</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">rate_comparison_value_1</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The first rate-of-change comparison value</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">rate_comparison_value_1</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The first rate-of-change comparison value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">rate_comparison_unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The rate-of-change comparison unit</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">rate_comparison_unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The rate-of-change comparison unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">rate_connector</td>
- *     <td style="border:1px solid black;">varchar2(3)</td>
- *     <td style="border:1px solid black;">The logical operator connecting the first and second rate comparisons</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">rate_connector</td>
+ *     <td class="descr">varchar2(3)</td>
+ *     <td class="descr">The logical operator connecting the first and second rate comparisons</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">14</td>
- *     <td style="border:1px solid black;">rate_comparison_operator_2</td>
- *     <td style="border:1px solid black;">varchar2(2)</td>
- *     <td style="border:1px solid black;">The second rate-of-change comparison operator</td>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">rate_comparison_operator_2</td>
+ *     <td class="descr">varchar2(2)</td>
+ *     <td class="descr">The second rate-of-change comparison operator</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">15</td>
- *     <td style="border:1px solid black;">rate_comparison_value_2</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The second rate-of-change comparison value</td>
+ *     <td class="descr-center">15</td>
+ *     <td class="descr">rate_comparison_value_2</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The second rate-of-change comparison value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">16</td>
- *     <td style="border:1px solid black;">rate_interval</td>
- *     <td style="border:1px solid black;">interval day(3) to second(0)</td>
- *     <td style="border:1px solid black;">The time used to compute rate-of-change from the difference in successive values</td>
+ *     <td class="descr-center">16</td>
+ *     <td class="descr">rate_interval</td>
+ *     <td class="descr">interval day(3) to second(0)</td>
+ *     <td class="descr">The time used to compute rate-of-change from the difference in successive values</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">17</td>
- *     <td style="border:1px solid black;">description</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">A description of the location level indicator condition</td>
+ *     <td class="descr-center">17</td>
+ *     <td class="descr">description</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">A description of the location level indicator condition</td>
  *   </tr>
  * </table>
  * @param p_loc_lvl_indicator_id   The location level indidicator identifier
@@ -2664,114 +2664,114 @@ procedure retrieve_loc_lvl_indicator(
  * @param p_maximum_age            The amount of time beyond which data is not considered current enough to evaluate indicator conditions
  * @param p_conditions             The location level indicator condtions. If not specified or NULL, the session user's default office is used
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">indicator_value</td>
- *     <td style="border:1px solid black;">integer</td>
- *     <td style="border:1px solid black;">The indicator value</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">indicator_value</td>
+ *     <td class="descr">integer</td>
+ *     <td class="descr">The indicator value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">expression</td>
- *     <td style="border:1px solid black;">varchar2(64)</td>
- *     <td style="border:1px solid black;">The value expression</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">expression</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The value expression</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">comparison_operator_1</td>
- *     <td style="border:1px solid black;">varchar2(2)</td>
- *     <td style="border:1px solid black;">The first value comparison operator</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">comparison_operator_1</td>
+ *     <td class="descr">varchar2(2)</td>
+ *     <td class="descr">The first value comparison operator</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">comparison_value_1</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The first value comparison value</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">comparison_value_1</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The first value comparison value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">comparison_unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The value comparison unit</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">comparison_unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The value comparison unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">connector</td>
- *     <td style="border:1px solid black;">varchar2(3)</td>
- *     <td style="border:1px solid black;">The logical operator connecting the first and second value comparisons</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">connector</td>
+ *     <td class="descr">varchar2(3)</td>
+ *     <td class="descr">The logical operator connecting the first and second value comparisons</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">comparison_operator_2</td>
- *     <td style="border:1px solid black;">varchar2(2)</td>
- *     <td style="border:1px solid black;">The second value comparison operator</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">comparison_operator_2</td>
+ *     <td class="descr">varchar2(2)</td>
+ *     <td class="descr">The second value comparison operator</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">comparison_value_2</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The second value comparison value</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">comparison_value_2</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The second value comparison value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">rate_expression</td>
- *     <td style="border:1px solid black;">varchar2(64)</td>
- *     <td style="border:1px solid black;">The rate-of-chane expression</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">rate_expression</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The rate-of-chane expression</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">rate_comparison_operator_1</td>
- *     <td style="border:1px solid black;">varchar2(2)</td>
- *     <td style="border:1px solid black;">The first rate-of-change comparison operator</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">rate_comparison_operator_1</td>
+ *     <td class="descr">varchar2(2)</td>
+ *     <td class="descr">The first rate-of-change comparison operator</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">rate_comparison_value_1</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The first rate-of-change comparison value</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">rate_comparison_value_1</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The first rate-of-change comparison value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">rate_comparison_unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The rate-of-change comparison unit</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">rate_comparison_unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The rate-of-change comparison unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">rate_connector</td>
- *     <td style="border:1px solid black;">varchar2(3)</td>
- *     <td style="border:1px solid black;">The logical operator connecting the first and second rate comparisons</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">rate_connector</td>
+ *     <td class="descr">varchar2(3)</td>
+ *     <td class="descr">The logical operator connecting the first and second rate comparisons</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">14</td>
- *     <td style="border:1px solid black;">rate_comparison_operator_2</td>
- *     <td style="border:1px solid black;">varchar2(2)</td>
- *     <td style="border:1px solid black;">The second rate-of-change comparison operator</td>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">rate_comparison_operator_2</td>
+ *     <td class="descr">varchar2(2)</td>
+ *     <td class="descr">The second rate-of-change comparison operator</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">15</td>
- *     <td style="border:1px solid black;">rate_comparison_value_2</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The second rate-of-change comparison value</td>
+ *     <td class="descr-center">15</td>
+ *     <td class="descr">rate_comparison_value_2</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The second rate-of-change comparison value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">16</td>
- *     <td style="border:1px solid black;">rate_interval</td>
- *     <td style="border:1px solid black;">varchar2(12)</td>
- *     <td style="border:1px solid black;">The time used to compute rate-of-change from the difference in successive values. Format is 'ddd hh:mm:ss'</td>
+ *     <td class="descr-center">16</td>
+ *     <td class="descr">rate_interval</td>
+ *     <td class="descr">varchar2(12)</td>
+ *     <td class="descr">The time used to compute rate-of-change from the difference in successive values. Format is 'ddd hh:mm:ss'</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">17</td>
- *     <td style="border:1px solid black;">description</td>
- *     <td style="border:1px solid black;">varchar2(256)</td>
- *     <td style="border:1px solid black;">A description of the location level indicator condition</td>
+ *     <td class="descr-center">17</td>
+ *     <td class="descr">description</td>
+ *     <td class="descr">varchar2(256)</td>
+ *     <td class="descr">A description of the location level indicator condition</td>
  *   </tr>
  * </table>
  * @param p_loc_lvl_indicator_id   The location level indidicator identifier
@@ -2845,59 +2845,59 @@ procedure delete_loc_lvl_indicator(
  * p_eval_time and that match the input parameters.  Each indicator may have multiple condions set. Matching is
  * accomplished with glob-style wildcards, as shown below. SQL-style wildcards may also be used.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_cursor               The retrieved location level indicator values
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">indicator_id</td>
- *     <td style="border:1px solid black;">varchar2(423)</td>
- *     <td style="border:1px solid black;">The location level indicator identifier</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">indicator_id</td>
+ *     <td class="descr">varchar2(423)</td>
+ *     <td class="descr">The location level indicator identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">attribute_id</td>
- *     <td style="border:1px solid black;">varchar2(83)</td>
- *     <td style="border:1px solid black;">The location level attribute identifier</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">attribute_id</td>
+ *     <td class="descr">varchar2(83)</td>
+ *     <td class="descr">The location level attribute identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">attribute_value</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The location level attribute</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">attribute_value</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The location level attribute</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">attribute_units</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The unit of the location level attribute value</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">attribute_units</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The unit of the location level attribute value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">indicator_values</td>
- *     <td style="border:1px solid black;">number_tab_t</td>
- *     <td style="border:1px solid black;">The location level indicator condition values that are set for the specified parameters</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">indicator_values</td>
+ *     <td class="descr">number_tab_t</td>
+ *     <td class="descr">The location level indicator condition values that are set for the specified parameters</td>
  *   </tr>
  * </table>
  * @param p_tsid                 A time series identifier. p_cursor will only include conditions for location levels that have the same location, parameter, and parameter type
@@ -2924,59 +2924,59 @@ procedure get_level_indicator_values(
  * in the time series is in the specified time zone. Matching is
  * accomplished with glob-style wildcards, as shown below. SQL-style wildcards may also be used.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_cursor               The retrieved location level indicator values
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr"">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">indicator_id</td>
- *     <td style="border:1px solid black;">varchar2(423)</td>
- *     <td style="border:1px solid black;">The location level indicator identifier</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">indicator_id</td>
+ *     <td class="descr">varchar2(423)</td>
+ *     <td class="descr">The location level indicator identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">attribute_id</td>
- *     <td style="border:1px solid black;">varchar2(83)</td>
- *     <td style="border:1px solid black;">The location level attribute identifier</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">attribute_id</td>
+ *     <td class="descr">varchar2(83)</td>
+ *     <td class="descr">The location level attribute identifier</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">attribute_value</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The location level attribute</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">attribute_value</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The location level attribute</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">attribute_units</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The unit of the location level attribute value</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">attribute_units</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The unit of the location level attribute value</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">indicator_values</td>
- *     <td style="border:1px solid black;">number_tab_t</td>
- *     <td style="border:1px solid black;">The maximum location level indicator condition values that are set for the specified parameters</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">indicator_values</td>
+ *     <td class="descr">number_tab_t</td>
+ *     <td class="descr">The maximum location level indicator condition values that are set for the specified parameters</td>
  *   </tr>
  * </table>
  * @param p_tsid                 A time series identifier. p_cursor will only include conditions for location levels that have the same location, parameter, and parameter type

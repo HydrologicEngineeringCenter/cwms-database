@@ -12,108 +12,108 @@ AS
  *
  * @param p_lock_cat A cursor containing all the locks for the specified project
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">project_office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the project location</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">project_office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the project location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">project_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of project</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">project_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of project</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">db_office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the lock location</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">db_office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the lock location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">base_location_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The base location identifier of the lock</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">base_location_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The base location identifier of the lock</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">sub_location_id</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The sub-location identifier, if any, of the lock</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">sub_location_id</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The sub-location identifier, if any, of the lock</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">time_zone_name</td>
- *     <td style="border:1px solid black;">varchar2(28)</td>
- *     <td style="border:1px solid black;">The local time zone for the lock location</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">time_zone_name</td>
+ *     <td class="descr">varchar2(28)</td>
+ *     <td class="descr">The local time zone for the lock location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">7</td>
- *     <td style="border:1px solid black;">latitude</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The actual latitude of the lock location</td>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">latitude</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The actual latitude of the lock location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">8</td>
- *     <td style="border:1px solid black;">longitude</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The actual longitude of the lock location</td>
+ *     <td class="descr-center">8</td>
+ *     <td class="descr">longitude</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The actual longitude of the lock location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">9</td>
- *     <td style="border:1px solid black;">horizontal_datum</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The datum of the latitude and longitude</td>
+ *     <td class="descr-center">9</td>
+ *     <td class="descr">horizontal_datum</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The datum of the latitude and longitude</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">10</td>
- *     <td style="border:1px solid black;">elevation</td>
- *     <td style="border:1px solid black;">number</td>
- *     <td style="border:1px solid black;">The elevation of the lock location</td>
+ *     <td class="descr-center">10</td>
+ *     <td class="descr">elevation</td>
+ *     <td class="descr">number</td>
+ *     <td class="descr">The elevation of the lock location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">11</td>
- *     <td style="border:1px solid black;">elev_unit_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The elvation unit</td>
+ *     <td class="descr-center">11</td>
+ *     <td class="descr">elev_unit_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The elvation unit</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">12</td>
- *     <td style="border:1px solid black;">vertical_datum</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The datum of the elevation</td>
+ *     <td class="descr-center">12</td>
+ *     <td class="descr">vertical_datum</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The datum of the elevation</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">13</td>
- *     <td style="border:1px solid black;">public_name</td>
- *     <td style="border:1px solid black;">varchar2(32)</td>
- *     <td style="border:1px solid black;">The public name of the lock location</td>
+ *     <td class="descr-center">13</td>
+ *     <td class="descr">public_name</td>
+ *     <td class="descr">varchar2(32)</td>
+ *     <td class="descr">The public name of the lock location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">14</td>
- *     <td style="border:1px solid black;">long_name</td>
- *     <td style="border:1px solid black;">varchar2(80)</td>
- *     <td style="border:1px solid black;">The long name of the lock location</td>
+ *     <td class="descr-center">14</td>
+ *     <td class="descr">long_name</td>
+ *     <td class="descr">varchar2(80)</td>
+ *     <td class="descr">The long name of the lock location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">15</td>
- *     <td style="border:1px solid black;">description</td>
- *     <td style="border:1px solid black;">varchar2(512)</td>
- *     <td style="border:1px solid black;">A description of the lock location</td>
+ *     <td class="descr-center">15</td>
+ *     <td class="descr">description</td>
+ *     <td class="descr">varchar2(512)</td>
+ *     <td class="descr">A description of the lock location</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">16</td>
- *     <td style="border:1px solid black;">active_flag</td>
- *     <td style="border:1px solid black;">varchar2(1)</td>
- *     <td style="border:1px solid black;">Specifies whether the lock location is active</td>
+ *     <td class="descr-center">16</td>
+ *     <td class="descr">active_flag</td>
+ *     <td class="descr">varchar2(1)</td>
+ *     <td class="descr">Specifies whether the lock location is active</td>
  *   </tr>
  * </table>
  *
@@ -168,22 +168,22 @@ procedure rename_lock(
  * @param p_lock_id_ The location identifier of the lock to delete
  * @param p_delete_action  Specifies what to delete. Actions are as follows:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">p_delete_action</th>
- *     <th style="border:1px solid black;">Action</th>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_key</td>
- *     <td style="border:1px solid black;">deletes only the lock location, and then only if it has no data referencing it</td>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only the lock location, and then only if it has no data referencing it</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_data</td>
- *     <td style="border:1px solid black;">deletes data that references this lock location, if any</td>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes data that references this lock location, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_all</td>
- *     <td style="border:1px solid black;">deletes this lock location and all data referencing it</td>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes this lock location and all data referencing it</td>
  *   </tr>
  * </table>
  * @param p_db_office_id   The office that owns the lock.  If not specified or NULL, the session user's default office will be used.

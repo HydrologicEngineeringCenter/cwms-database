@@ -354,27 +354,27 @@ function parse_log_msg_prop_tab (
  * Trims messages from the message log tables. This procedure uses the following
  * database property entries:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Owning Office</th>
- *     <th style="border:1px solid black;">Property Category Identifier</th>
- *     <th style="border:1px solid black;">Property Identifier</th>
- *     <th style="border:1px solid black;">Meaning</th>
- *     <th style="border:1px solid black;">Default Value if Property Not Set</th>
+ *     <th class="descr">Owning Office</th>
+ *     <th class="descr">Property Category Identifier</th>
+ *     <th class="descr">Property Identifier</th>
+ *     <th class="descr">Meaning</th>
+ *     <th class="descr">Default Value if Property Not Set</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">CWMS</td>
- *     <td style="border:1px solid black;">CWMSDB</td>
- *     <td style="border:1px solid black;">logging.entry.max_age</td>
- *     <td style="border:1px solid black;">Max entry age in days to keep when trimming log</td>
- *     <td style="border:1px solid black;">120</td>
+ *     <td class="descr">CWMS</td>
+ *     <td class="descr">CWMSDB</td>
+ *     <td class="descr">logging.entry.max_age</td>
+ *     <td class="descr">Max entry age in days to keep when trimming log</td>
+ *     <td class="descr-center">120</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">CWMS</td>
- *     <td style="border:1px solid black;">CWMSDB</td>
- *     <td style="border:1px solid black;">logging.entry.max_entries</td>
- *     <td style="border:1px solid black;">Max number of log message to keep when trimming log</td>
- *     <td style="border:1px solid black;">100000</td>
+ *     <td class="descr">CWMS</td>
+ *     <td class="descr">CWMSDB</td>
+ *     <td class="descr">logging.entry.max_entries</td>
+ *     <td class="descr">Max number of log message to keep when trimming log</td>
+ *     <td class="descr-center">100000</td>
  *   </tr>
  * </table>
  *
@@ -386,20 +386,20 @@ procedure trim_log;
  * existing job is stopped and restarted. This procedure uses the following
  * database property entry:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Owning Office</th>
- *     <th style="border:1px solid black;">Property Category Identifier</th>
- *     <th style="border:1px solid black;">Property Identifier</th>
- *     <th style="border:1px solid black;">Meaning</th>
- *     <th style="border:1px solid black;">Default Value if Property Not Set</th>
+ *     <th class="descr">Owning Office</th>
+ *     <th class="descr">Property Category Identifier</th>
+ *     <th class="descr">Property Identifier</th>
+ *     <th class="descr">Meaning</th>
+ *     <th class="descr">Default Value if Property Not Set</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">CWMS</td>
- *     <td style="border:1px solid black;">CWMSDB</td>
- *     <td style="border:1px solid black;">logging.auto_trim.interval</td>
- *     <td style="border:1px solid black;">Interval in minutes for job trim_log to execute.</td>
- *     <td style="border:1px solid black;">120</td>
+ *     <td class="descr">CWMS</td>
+ *     <td class="descr">CWMSDB</td>
+ *     <td class="descr">logging.auto_trim.interval</td>
+ *     <td class="descr">Interval in minutes for job trim_log to execute.</td>
+ *     <td class="descr-center">120</td>
  *   </tr>
  * </table>
  *
@@ -417,20 +417,20 @@ procedure purge_queues;
  * existing job is stopped and restarted. This procedure uses the following
  * database property entry:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Owning Office</th>
- *     <th style="border:1px solid black;">Property Category Identifier</th>
- *     <th style="border:1px solid black;">Property Identifier</th>
- *     <th style="border:1px solid black;">Meaning</th>
- *     <th style="border:1px solid black;">Default Value if Property Not Set</th>
+ *     <th class="descr">Owning Office</th>
+ *     <th class="descr">Property Category Identifier</th>
+ *     <th class="descr">Property Identifier</th>
+ *     <th class="descr">Meaning</th>
+ *     <th class="descr">Default Value if Property Not Set</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">CWMS</td>
- *     <td style="border:1px solid black;">CWMSDB</td>
- *     <td style="border:1px solid black;">queues.all.purge_interval</td>
- *     <td style="border:1px solid black;">Interval in minutes for purge_queues to execute.</td>
- *     <td style="border:1px solid black;">5</td>
+ *     <td class="descr">CWMS</td>
+ *     <td class="descr">CWMSDB</td>
+ *     <td class="descr">queues.all.purge_interval</td>
+ *     <td class="descr">Interval in minutes for purge_queues to execute.</td>
+ *     <td class="descr-center">5</td>
  *   </tr>
  * </table>
  *

@@ -12,54 +12,54 @@ IS
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_cursor  A cursor containing all matching water users.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">project_office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the project</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">project_office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the project</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">project_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the project</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">project_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the project</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">entity_name</td>
- *     <td style="border:1px solid black;">varchar2(64)</td>
- *     <td style="border:1px solid black;">The water user</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">entity_name</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The water user</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">water_right</td>
- *     <td style="border:1px solid black;">varchar2(255)</td>
- *     <td style="border:1px solid black;">The water right for the water user</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">water_right</td>
+ *     <td class="descr">varchar2(255)</td>
+ *     <td class="descr">The water right for the water user</td>
  *   </tr>
  * </table>
  *
@@ -87,66 +87,66 @@ PROCEDURE cat_water_user(
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Wildcard</th>
- *     <th style="border:1px solid black;">Meaning</th>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">*</td>
- *     <td style="border:1px solid black;">Match zero or more characters</td>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">?</td>
- *     <td style="border:1px solid black;">Match a single character</td>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
  *   </tr>
  * </table>
  *
  * @param p_cursor  A cursor containing all matching water user contracts.  The cursor contains
  * the following columns:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">Column No.</th>
- *     <th style="border:1px solid black;">Column Name</th>
- *     <th style="border:1px solid black;">Data Type</th>
- *     <th style="border:1px solid black;">Contents</th>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">1</td>
- *     <td style="border:1px solid black;">project_office_id</td>
- *     <td style="border:1px solid black;">varchar2(16)</td>
- *     <td style="border:1px solid black;">The office that owns the project</td>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">project_office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the project</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">2</td>
- *     <td style="border:1px solid black;">project_id</td>
- *     <td style="border:1px solid black;">varchar2(49)</td>
- *     <td style="border:1px solid black;">The location identifier of the project</td>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">project_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the project</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">3</td>
- *     <td style="border:1px solid black;">entity_name</td>
- *     <td style="border:1px solid black;">varchar2(64)</td>
- *     <td style="border:1px solid black;">The water user</td>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">entity_name</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The water user</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">4</td>
- *     <td style="border:1px solid black;">contract name</td>
- *     <td style="border:1px solid black;">varchar2(255)</td>
- *     <td style="border:1px solid black;">The water right for the water user</td>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">contract name</td>
+ *     <td class="descr">varchar2(255)</td>
+ *     <td class="descr">The water right for the water user</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">5</td>
- *     <td style="border:1px solid black;">contracted storage</td>
- *     <td style="border:1px solid black;">binary double</td>
- *     <td style="border:1px solid black;">The amount of storage under contract</td>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">contracted storage</td>
+ *     <td class="descr">binary double</td>
+ *     <td class="descr">The amount of storage under contract</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">6</td>
- *     <td style="border:1px solid black;">contract type</td>
- *     <td style="border:1px solid black;">varchar2(25)</td>
- *     <td style="border:1px solid black;">The water supply contract type</td>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">contract type</td>
+ *     <td class="descr">varchar2(25)</td>
+ *     <td class="descr">The water supply contract type</td>
  *   </tr>
  * </table>
  *
@@ -224,22 +224,22 @@ PROCEDURE store_water_users(
  * @param p_entity_name          The water user to delete
  * @param p_delete_action        Specifies what to delete.  Actions are as follows:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">p_delete_action</th>
- *     <th style="border:1px solid black;">Action</th>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_key</td>
- *     <td style="border:1px solid black;">deletes only the water user, and then only if it has no other data refers to it</td>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only the water user, and then only if it has no other data refers to it</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_data</td>
- *     <td style="border:1px solid black;">deletes only data that refers to the water user, if any</td>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only data that refers to the water user, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_all</td>
- *     <td style="border:1px solid black;">deletes the water user and all data that refers to it, if any</td>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes the water user and all data that refers to it, if any</td>
  *   </tr>
  * </table>
  */
@@ -304,22 +304,22 @@ PROCEDURE store_contracts(
  *
  * @param p_delete_action        Specifies what to delete.  Actions are as follows:
  * <p>
- * <table style="border-collapse:collapse; border:1px solid black;">
+ * <table class="descr">
  *   <tr>
- *     <th style="border:1px solid black;">p_delete_action</th>
- *     <th style="border:1px solid black;">Action</th>
+ *     <th class="descr">p_delete_action</th>
+ *     <th class="descr">Action</th>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_key</td>
- *     <td style="border:1px solid black;">deletes only the water user, and then only if it has no other data refers to it</td>
+ *     <td class="descr">cwms_util.delete_key</td>
+ *     <td class="descr">deletes only the water user, and then only if it has no other data refers to it</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_data</td>
- *     <td style="border:1px solid black;">deletes only data that refers to the water user, if any</td>
+ *     <td class="descr">cwms_util.delete_data</td>
+ *     <td class="descr">deletes only data that refers to the water user, if any</td>
  *   </tr>
  *   <tr>
- *     <td style="border:1px solid black;">cwms_util.delete_all</td>
- *     <td style="border:1px solid black;">deletes the water user and all data that refers to it, if any</td>
+ *     <td class="descr">cwms_util.delete_all</td>
+ *     <td class="descr">deletes the water user and all data that refers to it, if any</td>
  *   </tr>
  * </table>
  */
