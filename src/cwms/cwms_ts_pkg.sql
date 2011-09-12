@@ -1348,12 +1348,14 @@ AS
     * @see cwms_msg.register_msg_callback
     *
     * @param p_procedure_name   The name of the procedure to register.  This can be a free standing or package procedure and must have exactly the following signature:<p>
-    * <code><big>&nbsp;&nbsp;procedure&nbsp;procedure_name&nbsp;(<br>
-    * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;context&nbsp;&nbsp;in&nbsp;raw,<br>
-    * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;reginfo&nbsp;&nbsp;in&nbsp;sys.aq$_reg_info,<br>
-    * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;descr&nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;sys.aq$_descriptor,<br>
-    * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;payload&nbsp;&nbsp;in&nbsp;raw,<br>
-    * &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;payloadl&nbsp;in&nbsp;number);</big></code><br>
+    * <big><pre>
+    * procedure procedure_name (
+    *      context  in raw,
+    *      reginfo  in sys.aq$_reg_info,
+    *      descr    in sys.aq$_descriptor,
+    *      payload  in raw,
+    *      payloadl in number);
+    * </pre></big>
     * @param p_subscriber_name  The subscriber name, unique per queue. If not specified or NULL, a unique subscriber name will be generated.
     * @param p_queue_name       The queue name to subscibe to. If not specified or NULL, the TS_DATA_STORED queue for the session user's default office is used
     *
