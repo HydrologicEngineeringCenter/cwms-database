@@ -1236,7 +1236,7 @@ def build_main_page() :
       HtmlElem('a', attrs=[('href', '#Display Units and Scales')], content='Display Units and Scales'),
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', '#Miscellaneous and Support')], content='Miscellaneous and Support'),
-      HtmlElem('p'),
+      HtmlElem('p '),
       HtmlElem('hr'),
       dlist])
    page = HtmlElem('html', content=[head, body])
