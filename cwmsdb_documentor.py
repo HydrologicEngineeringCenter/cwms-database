@@ -6,6 +6,7 @@ views in CWMS schema (currently named CWMS_20).
 
 VERSIONS:
    1.0   12Sep2011   MDP   Original version
+   1.1   15Sep2011   MDP   Improved initial page in main frame
 
 JAVADOCS:
    Standard javadoc syntax applies as shown below, but the list of tags is a
@@ -382,74 +383,13 @@ css = '''
      white-space:nowrap;
    }
 '''
-
-mainpage = '''
-<html>
-   <head><title>CWMS Database API Documentation</title></head>
-   <body class="top-level">
-      <h2>CWMS Database API Documentation</h2><p>
-      <dl>
-         <td><h3>Locations and Time Series</h3></dt>
-         <dd><a href="pkg_cwms_loc.html">Cwms_Loc</a> Package</dd>
-         <dd><a href="pkg_cwms_ts.html">Cwms_Ts</a> Package</dd>
-      </dl>
-      <dl>
-         <td><h3>Basins and Streams</h3></dt>
-         <dd><a href="pkg_cwms_basin.html">Cwms_Basin</a> Package</dd>
-         <dd><a href="pkg_cwms_stream.html">Cwms_Stream</a> Package</dd>
-      </dl>
-      <dl>
-         <td><h3>Projects, Structures, and Project Usage</h3></dt>
-         <dd><a href="pkg_cwms_project.html">Cwms_Project</a> Package</dd>
-         <dd><a href="pkg_cwms_embank.html">Cwms_Embank</a> Package</dd>
-         <dd><a href="pkg_cwms_outlet.html">Cwms_Outlet</a> Package</dd>
-         <dd><a href="pkg_cwms_turbine.html">Cwms_Turbine</a> Package</dd>
-         <dd><a href="pkg_cwms_lock.html">Cwms_Lock</a> Package</dd>
-         <dd><a href="pkg_cwms_water_supply.html">Cwms_Water_Supply</a> Package</dd>
-      </dl>
-      <dl>
-
-         <td><h3>Levels, Rule Curves, and Ratings</h3></dt>
-         <dd><a href="pkg_cwms_level.html">Cwms_Level</a> Package</dd>
-         <dd><a href="pkg_cwms_rating.html">Cwms_Rating</a> Package</dd>
-      </dl>
-      <dl>
-         <td><h3>Forecasts and Model Runs</h3></dt>
-         <dd><a href="pkg_cwms_forecast.html">Cwms_Forecast</a> Package</dd>
-      </dl>
-      <dl>
-         <td><h3>Gages, Sensors, GOES, SHEF, Decoding, and Screening</h3></dt>
-         <dd><a href="pkg_cwms_gage.html">Cwms_Gage</a> Package</dd>
-         <dd><a href="pkg_cwms_shef.html">Cwms_Shef</a> Package</dd>
-         <dd><a href="pkg_cwms_vt.html">Cwms_Vt</a> Package</dd>
-      </dl>
-      <dl>
-         <td><h3>Oracle/HEC-DSS Data Exchange</h3></dt>
-         <dd><a href="pkg_cwms_xchg.html">Cwms_Xchg</a> Package</dd>
-      </dl>
-      <dl>
-         <td><h3>Display Units and Scales</h3></dt>
-         <dd><a href="pkg_cwms_display.html">Cwms_Display</a> Package</dd>
-      </dl>
-      <dl>
-         <td><h3>Miscellaneous and Support</h3></dt>
-         <dd><a href="pkg_cwms_cat.html">Cwms_Cat</a> Package</dd>
-         <dd><a href="pkg_cwms_lookup.html">Cwms_Lookup</a> Package</dd>
-         <dd><a href="pkg_cwms_msg.html">Cwms_Msg</a> Package</dd>
-         <dd><a href="pkg_cwms_properties.html">Cwms_Properties</a> Package</dd>
-         <dd><a href="pkg_cwms_rounding.html">Cwms_Rounding</a> Package</dd>
-         <dd><a href="pkg_cwms_text.html">Cwms_Text</a> Package</dd>
-         <dd><a href="pkg_cwms_util.html">Cwms_Util</a> Package</dd>
-      </dl>
-   </body>
-</html>
-'''
 compiled_regexs = {}
 synonyms = {}
 css_filename = 'pljdoc.css'
 package_links = {}
 type_links = {}
 view_links = {}
+brief_descriptions = {}
 external_files = [
    'cwms location levels.pdf',
    'cwms ratings.pdf',
@@ -631,7 +571,7 @@ def replace_synonyms(text) :
    Replaces any raw type and view names with their formatted, aliased equivalents
    '''
    for type_name in fmt_type_names.keys() :
-      matcher = get_pattern(r'(\W)%s(\W)' % type_name, 'i').matcher(text)
+      matcher = get_pattern(r'(\W|^)%s(\W|$)' % type_name, 'i').matcher(text)
       if matcher.find() : text = matcher.replaceAll('$1%s$2' % fmt_type_names[type_name])
    for view_name, is_materialized in fmt_view_names.keys() :
       matcher = get_pattern(r'(\W)%s(\W)' % view_name, 'i').matcher(text)
@@ -1171,6 +1111,137 @@ class HtmlElem :
          buffer.close()
          return text
 
+def build_main_page() :
+   '''
+   Builds the HTML for the main documentation page.
+   '''
+   def build_item_list(item_type, items) :
+      '''
+      Builds elements lists
+      '''
+      content = []
+      for i in range(len(items)) :
+         try    : formatted = format(items[i])
+         except : formatted = items[i]
+         if item_type == 'package' :
+            title = 'Package '
+            links = package_links
+         elif item_type == 'view' :
+            title = 'View '
+            links = view_links
+         else :
+            raise ValueError('Item type must be "package" or "view"')
+         try :
+            dt = HtmlElem('dt', content = [
+               HtmlElem('', content=title),
+               HtmlElem('a', attrs=[('href', links[formatted])], content=formatted)])
+         except KeyError :
+            dt = HtmlElem('dt', content='%s%s' % (title, formatted))
+         dl = HtmlElem('dl', content=[dt])
+         try    :
+            dl.add_content([HtmlElem('dd', content=brief_descriptions[items[i].upper()])])
+         except :
+            pass
+         content.append(dl)
+      return content
+
+   def build_item_lists(packages, views) :
+      '''
+      Builds packages and element lists
+      '''
+      content = []
+      packages_content = build_item_list('package', packages)
+      views_content = build_item_list('view', views)
+      if packages_content : content.extend(packages_content)
+      if views_content : content.extend(views_content)
+      return content
+
+   head = HtmlElem('head', content=[HtmlElem('title', content='CWMS Database API Documentation')])
+   dlist = HtmlElem('dl', content=[
+      HtmlElem('a', attrs=[('name', 'Locations and Time Series')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Locations and Time Series')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_loc', 'cwms_ts'],
+         views    = ['av_loc', 'av_loc_alias', 'av_loc_cat_grp', 'av_loc_grp_assgn', 'av_tsv',
+                     'av_tsv_dqu', 'av_ts_alias', 'av_ts_cat_grp', 'av_ts_grp_assgn', 'av_ts_association']))])
+   dlist.add_content([
+      HtmlElem('a', attrs=[('name', 'Basins and Streams')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Basins and Streams')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_basin', 'cwms_stream'],
+         views    = ['av_stream_types']))])
+   dlist.add_content([
+      HtmlElem('a', attrs=[('name', 'Projects, Structures, and Project Usage')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Projects, Structures, and Project Usage')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_project', 'cwms_embank', 'cwms_outlet', 'cwms_turbine', 'cwms_lock', 'cwms_water_supply'],
+         views    = ['av_gate_change', 'av_gate_setting', 'av_outlet', 'av_project', 'av_turbine', 'av_turbine_change', 'av_turbine_setting']))])
+   dlist.add_content([
+      HtmlElem('a', attrs=[('name', 'Levels, Rule Curves, and Ratings')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Levels, Rule Curves, and Ratings')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_level', 'cwms_rating'],
+         views    = ['av_loc_lvl_cur_max_ind', 'av_loc_lvl_indicator', 'av_loc_lvl_indicator_2', 'av_loc_lvl_ts_map', 'av_location_level',
+                     'av_rating', 'av_rating_local', 'av_rating_spec','av_rating_template', 'av_rating_values', 'av_rating_values_native']))])
+   dlist.add_content([
+      HtmlElem('a', attrs=[('name', 'Forecasts and Model Runs')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Forecasts and Model Runs')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_forecast'],
+         views    = []))])
+   dlist.add_content([
+      HtmlElem('a', attrs=[('name', 'Gages, Sensors, GOES, SHEF, Decoding, and Screening')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Gages, Sensors, GOES, SHEF, Decoding, and Screening')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_gage', 'cwms_shef', 'cwms_vt'],
+         views    = ['av_active_flag', 'av_data_streams', 'av_data_streams_current', 'av_screened_ts_ids', 'av_screening_assignments',
+                     'av_screening_criteria', 'av_screening_dur_mag', 'av_screening_id', 'av_shef_decode_spec', 'av_shef_pe_codes']))])
+   dlist.add_content([
+      HtmlElem('a', attrs=[('name', 'Oracle/HEC-DSS Data Exchange')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Oracle/HEC-DSS Data Exchange')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_xchg'],
+         views    = ['av_dataexchange_job']))])
+   dlist.add_content([
+      HtmlElem('a', attrs=[('name', 'Display Units and Scales')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Display Units and Scales')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_display'],
+         views    = ['av_display_units']))])
+   dlist.add_content([
+      HtmlElem('a', attrs=[('name', 'Miscellaneous and Support')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Miscellaneous and Support')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_cat', 'cwms_lookup', 'cwms_msg', 'cwms_properties', 'cwms_rounding', 'cwms_text', 'cwms_util'],
+         views    = ['av_data_q_changed', 'av_data_q_protection', 'av_data_q_range', 'av_data_q_repl_cause', 'av_data_q_repl_method',
+                     'av_data_q_screened', 'av_data_q_test_failed', 'av_data_q_validity', 'av_data_quality', 'av_log_message',
+                     'mv_time_zone', 'av_parameter', 'av_state', 'av_storage_unit', 'av_unit']))])
+   body = HtmlElem('body', content=[
+      HtmlElem('h2', attrs=[('style', 'text-align:center;')], content='CWMS Database API Documentation'),
+      HtmlElem('h3', content='API Categories'),
+      HtmlElem('a', attrs=[('href', '#Locations and Time Series')], content='Locations and Time Series'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', '#Basins and Streams')], content='Basins and Streams'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', '#Projects, Structures, and Project Usage')], content='Projects, Structures, and Project Usage'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', '#Levels, Rule Curves, and Ratings')], content='Levels, Rule Curves, and Ratings'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', '#Forecasts and Model Runs')], content='Forecasts and Model Runs'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', '#Gages, Sensors, GOES, SHEF, Decoding, and Screening')], content='Gages, Sensors, GOES, SHEF, Decoding, and Screening'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', '#Oracle/HEC-DSS Data Exchange')], content='Oracle/HEC-DSS Data Exchange'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', '#Display Units and Scales')], content='Display Units and Scales'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', '#Miscellaneous and Support')], content='Miscellaneous and Support'),
+      HtmlElem('p'),
+      HtmlElem('hr'),
+      dlist])
+   page = HtmlElem('html', content=[head, body])
+   return page.get_content()
+
 #--------------------------#
 # process the command line #
 #--------------------------#
@@ -1331,10 +1402,12 @@ try :
          output2('not documented.')
          continue
       jdoc_text   = pkg_matcher.group(6)
+      jdoc        = JDoc(jdoc_text)
       pkg_text    = text.replace(jdoc_text, '').strip()
       top_div     = HtmlElem('div')
       summary_div = HtmlElem('div')
       details_div = HtmlElem('div')
+      brief_descriptions[package_name] = brief(jdoc.description())
       page = HtmlElem(
          'html', [
             HtmlElem(
@@ -1349,7 +1422,7 @@ try :
                   summary_div,
                   HtmlElem('p'),
                   details_div])])
-      top_div.add_summary(JDoc(jdoc_text))
+      top_div.add_summary(jdoc)
       tokenized, replacements = tokenize(pkg_text)
       #-----------------------#
       # collect package types #
@@ -2047,6 +2120,7 @@ try :
          output2('not documented.')
          continue
       jdoc = JDoc(jdoc_text)
+      brief_descriptions[view_name] = brief(jdoc.description())
       #-----------------------------------------#
       # get the column info from the datatabase #
       #-----------------------------------------#
@@ -2192,12 +2266,15 @@ try :
    htmlfile.write(page.get_content())
    htmlfile.close()
    #
-   # frameset
+   # main page
    #
    htmlfilename = os.path.join(output_dir, 'main.html')
    htmlfile = open(htmlfilename, 'w')
-   htmlfile.write(mainpage)
+   htmlfile.write(build_main_page())
    htmlfile.close()
+   #
+   # frameset
+   #
    page = HtmlElem('hmtl', [
       HtmlElem('head', content=[HtmlElem('title', content='CWMS Database API')]),
       HtmlElem('frameset', attrs=[('cols','20%,80%')], content=[
