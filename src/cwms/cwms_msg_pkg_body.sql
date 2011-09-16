@@ -1072,6 +1072,69 @@ end start_trim_log_job;
 --------------------------------------------------------------------------------
 -- procedure purge_queues
 --
+procedure create_queues(
+   p_office_id in varchar2)
+is
+   l_office_id   varchar2(16);
+   l_queue_names str_tab_t := str_tab_t('STATUS', 'REALTIME_OPS', 'TS_STORED');
+   l_queue_name  varchar2(30);
+   l_table_name  varchar2(30);
+begin
+   -----------------------------------------
+   -- make sure we have a valid office id --
+   -----------------------------------------
+   cwms_util.check_input(p_office_id);
+   select office_id
+     into l_office_id 
+     from cwms_office
+    where office_id = upper(p_office_id);
+   ----------------------------------------    
+   -- eliminate and re-create the queues --
+   ----------------------------------------    
+   for i in 1..l_queue_names.count loop
+      l_queue_name := l_office_id || '_' || l_queue_names(i);
+      l_table_name := l_queue_name || '_TABLE'; 
+         begin
+            sys.dbms_aqadm.stop_queue(queue_name => l_queue_name);
+            dbms_output.put_line('Stopped queue '||l_queue_name);
+         exception
+            when others then dbms_output.put_line('Could not stop queue '||l_queue_name);   
+         end;
+         begin
+            sys.dbms_aqadm.drop_queue(queue_name => l_queue_name);
+            dbms_output.put_line('Dropped queue '||l_queue_name);
+         exception
+            when others then dbms_output.put_line('Could not drop queue '||l_queue_name);   
+         end;
+         begin
+            sys.dbms_aqadm.drop_queue_table(queue_table => l_table_name);
+            dbms_output.put_line('Dropped queue table '||l_table_name);
+         exception
+            when others then dbms_output.put_line('Could not drop queue table '||l_table_name);   
+         end;
+         begin
+            sys.dbms_aqadm.create_queue_table(
+               queue_table        => l_table_name, 
+               queue_payload_type => 'SYS.AQ$_JMS_MAP_MESSAGE',
+               multiple_consumers => true);
+            dbms_output.put_line('Created queue table '||l_table_name);
+         end;
+         sys.dbms_aqadm.create_queue(
+            queue_name     => l_queue_name,
+            queue_table    => l_table_name,
+            queue_type     => sys.dbms_aqadm.normal_queue,
+            max_retries    => 5,
+            retry_delay    => 0,
+            retention_time => 0);
+         dbms_output.put_line('Created queue '||l_queue_name);
+         sys.dbms_aqadm.start_queue(
+            queue_name => l_queue_name,
+            enqueue    => true, 
+            dequeue    => true);
+         dbms_output.put_line('Started queue '||l_queue_name);
+   end loop;
+end;   
+
 procedure purge_queues
 is
    l_subscriber_name varchar2(31);
