@@ -790,6 +790,12 @@ begin
       'remote_query.set_office',
       cwms_msg.msg_level_normal,
       l_dst_office_id
+      || ': Creating local queues');
+   cwms_msg.create_queues(l_dst_office_id);      
+   cwms_msg.log_db_message(
+      'remote_query.set_office',
+      cwms_msg.msg_level_normal,
+      l_dst_office_id
       || ': Retrieving remote timeseires ids');
    populate_tsids(p_office_id);
    cwms_msg.log_db_message(
