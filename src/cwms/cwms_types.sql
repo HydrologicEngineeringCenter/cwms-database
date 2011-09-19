@@ -434,6 +434,12 @@ create type screen_dur_mag_type
 /**
  * [description needed]
  *
+ * @member duration_id  [description needed]
+ * @member reject_lo    [description needed]
+ * @member reject_hi    [description needed]
+ * @member question_lo  [description needed]
+ * @member question_hi  [description needed]
+ *
  * @see type screen_dur_mag_array
  */
 AS OBJECT (
@@ -444,13 +450,11 @@ AS OBJECT (
    question_hi   NUMBER
 );
 /
-
-
 create type screen_dur_mag_array
 /**
  * [description needed]
  *
- * @see type screen_crit_type
+ * @see type screen_dur_mag_type
  */
 IS TABLE OF screen_dur_mag_type;
 /

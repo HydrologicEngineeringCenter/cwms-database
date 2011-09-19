@@ -13,8 +13,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/ZV_CURRENT_CRIT_FIL
  *
  * @since CWMS 2.1
  *
- * @see view mv_data_quality
- *
  * @field crit_file_code          [description needed]
  * @field data_stream_code        [description needed]
  * @field crit_file_creation_date [description needed]

@@ -480,6 +480,8 @@ AS
    /**
     * [description needed]
     *
+    * @param p_db_office_id [description needed]
+    *
     * @return [description needed]
     */
 	FUNCTION cat_shef_pe_codes_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
@@ -487,6 +489,10 @@ AS
 		PIPELINED;
    /**
     * [description needed]
+    *
+    * @param p_data_stream_id   [description needed]
+    * @param p_utc_version_date [description needed]
+    * @param p_db_office_id     [description needed]
     *
     * @return [description needed]
     */

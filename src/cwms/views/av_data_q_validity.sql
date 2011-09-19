@@ -5,7 +5,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_Q_VALIDITY'
  *
  * @since CWMS 2.1
  *
- * @see view mv_data_quality
+ * @see view av_data_quality
  *
  * @field validity_id  Specifies a valid value for the validity_id component
  * @field description  Describes the specified value

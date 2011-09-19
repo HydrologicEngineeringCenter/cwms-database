@@ -5,14 +5,14 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_QUALITY', n
  *
  * @since CWMS 2.1
  *
- * @see view mv_data_q_screened
- * @see view mv_data_q_validity
- * @see view mv_data_q_range
- * @see view mv_data_q_changed
- * @see view mv_data_q_repl_cause
- * @see view mv_data_q_repl_method
- * @see view mv_data_q_test_failed
- * @see view mv_data_q_protection
+ * @see view av_data_q_screened
+ * @see view av_data_q_validity
+ * @see view av_data_q_range
+ * @see view av_data_q_changed
+ * @see view av_data_q_repl_cause
+ * @see view av_data_q_repl_method
+ * @see view av_data_q_test_failed
+ * @see view av_data_q_protection
  *
  * @field quality_code   The numeric data quality code
  * @field screened_id    Specifies whether the value has been screened
