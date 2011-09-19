@@ -1612,7 +1612,7 @@ END cat_ts_id;
                    case
                      when shared_ts_ref_code is null then null
                      else cwms_ts.get_ts_id(shared_ts_ref_code)
-                   end as ref_ts_id,
+                   end as shared_ref_ts_id,
                    ts_attribute
               from ( select o1.office_id as cat_db_office_id,
                             c.ts_category_id,
@@ -2433,7 +2433,7 @@ END cat_ts_id;
       l_location_kind_id_mask := cwms_util.normalize_wildcards(
          upper(nvl(p_location_kind_id_mask, '*')), true);
       l_office_id_mask        := cwms_util.normalize_wildcards(
-         upper(nvl(p_office_id_mask, '*')), true);
+         upper(nvl(p_office_id_mask, cwms_util.user_office_id)), true);
       open p_cwms_cat for 
          select o.office_id,
                 k.location_kind_id,
@@ -3710,24 +3710,22 @@ END cat_ts_id;
       l_prop_id         VARCHAR2 (256);
    BEGIN
       l_office_id := NVL (p_office_id, cwms_util.user_office_id);
-      l_prop_category :=
-         UPPER(REPLACE (REPLACE (NVL (p_prop_category, '%'), '*', '%'),
-                        '?',
-                        '_'
-                       ));
-      l_prop_id :=
-         UPPER (REPLACE (REPLACE (NVL (p_prop_id, '%'), '*', '%'), '?', '_'));
+      l_prop_category := upper(cwms_util.normalize_wildcards(nvl(p_prop_category, '*'), true));
+      l_prop_id       := upper(cwms_util.normalize_wildcards(nvl(p_prop_id, '*'), true));
 
-      OPEN p_cwms_cat FOR
-           SELECT   o.office_id, p.prop_category, p.prop_id
-             FROM   at_properties p, cwms_office o
-            WHERE       o.office_id = l_office_id
-                    AND p.office_code = o.office_code
-                    AND UPPER (p.prop_category) LIKE l_prop_category ESCAPE '\'
-                    AND UPPER (p.prop_id) LIKE l_prop_id ESCAPE '\'
-         ORDER BY   o.office_id,
-                    UPPER (p.prop_category),
-                    UPPER (p.prop_id) ASC;
+      open p_cwms_cat for
+           select o.office_id, 
+                  p.prop_category, 
+                  p.prop_id
+             from at_properties p, 
+                  cwms_office o
+            where o.office_id = l_office_id
+              and p.office_code = o.office_code
+              and upper (p.prop_category) like l_prop_category escape '\'
+              and upper (p.prop_id) like l_prop_id escape '\'
+         order by o.office_id,
+                  upper (p.prop_category),
+                  upper (p.prop_id) asc;
    END cat_property;
 
    PROCEDURE cat_loc_group (p_cwms_cat          OUT sys_refcursor,
