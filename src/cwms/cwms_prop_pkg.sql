@@ -1,7 +1,22 @@
 /* Formatted on 4/6/2009 12:40:25 PM (QP5 v5.115.810.9015) */
 CREATE OR REPLACE PACKAGE cwms_properties
 /**
- * Facilities for working with CWMS properties
+ * Facilities for working with CWMS properties.
+ * <p>
+    * <dl>CWMS database properties are modeled after property files widely used in
+    * UNIX and Java environments. Each property has the following:
+    * <dd><dl>
+    *   <dt>office_id</dt>
+    *   <dd>The office owning the property. This is <em>somewhat</em> analogous to the host on which a property file resides</dd>
+    *   <dt>prop_category</dt>
+    *   <dd>The property category. This is analogous to a property file name</dd>
+    *   <dt>prop_id</dt>
+    *   <dd>The property identifier. This is analogous to the left of equals sign in a property file</dd>
+    *   <dt>prop_value</dt>
+    *   <dd>The property value. This is analogous to the right side of the equals sign in a properties file</dd>
+    *   <dt>prop_comment</dt>
+    *   <dd>A comment about the property. This is <em>somewhat</em> analogous to a comment line above the property in a property file</dd>
+    * </dl></dd></dl>
  *
  * @since CWMS 2.0
  *
