@@ -7,6 +7,7 @@ views in CWMS schema (currently named CWMS_20).
 VERSIONS:
    1.0   12Sep2011   MDP   Original version
    1.1   15Sep2011   MDP   Improved initial page in main frame
+   1.2   19Sep2011   MDP   Added links to categories on initial page
 
 JAVADOCS:
    Standard javadoc syntax applies as shown below, but the list of tags is a
@@ -1157,67 +1158,7 @@ def build_main_page() :
       return content
 
    head = HtmlElem('head', content=[HtmlElem('title', content='CWMS Database API Documentation')])
-   dlist = HtmlElem('dl', content=[
-      HtmlElem('a', attrs=[('name', 'Locations and Time Series')]),
-      HtmlElem('dt', content=[HtmlElem('h3', content='Locations and Time Series')]),
-      HtmlElem('dd', content=build_item_lists(
-         packages = ['cwms_loc', 'cwms_ts'],
-         views    = ['av_loc', 'av_loc_alias', 'av_loc_cat_grp', 'av_loc_grp_assgn', 'av_tsv',
-                     'av_tsv_dqu', 'av_ts_alias', 'av_ts_cat_grp', 'av_ts_grp_assgn', 'av_ts_association']))])
-   dlist.add_content([
-      HtmlElem('a', attrs=[('name', 'Basins and Streams')]),
-      HtmlElem('dt', content=[HtmlElem('h3', content='Basins and Streams')]),
-      HtmlElem('dd', content=build_item_lists(
-         packages = ['cwms_basin', 'cwms_stream'],
-         views    = ['av_stream_types']))])
-   dlist.add_content([
-      HtmlElem('a', attrs=[('name', 'Projects, Structures, and Project Usage')]),
-      HtmlElem('dt', content=[HtmlElem('h3', content='Projects, Structures, and Project Usage')]),
-      HtmlElem('dd', content=build_item_lists(
-         packages = ['cwms_project', 'cwms_embank', 'cwms_outlet', 'cwms_turbine', 'cwms_lock', 'cwms_water_supply'],
-         views    = ['av_gate_change', 'av_gate_setting', 'av_outlet', 'av_project', 'av_turbine', 'av_turbine_change', 'av_turbine_setting']))])
-   dlist.add_content([
-      HtmlElem('a', attrs=[('name', 'Levels, Rule Curves, and Ratings')]),
-      HtmlElem('dt', content=[HtmlElem('h3', content='Levels, Rule Curves, and Ratings')]),
-      HtmlElem('dd', content=build_item_lists(
-         packages = ['cwms_level', 'cwms_rating'],
-         views    = ['av_loc_lvl_cur_max_ind', 'av_loc_lvl_indicator', 'av_loc_lvl_indicator_2', 'av_loc_lvl_ts_map', 'av_location_level',
-                     'av_rating', 'av_rating_local', 'av_rating_spec','av_rating_template', 'av_rating_values', 'av_rating_values_native']))])
-   dlist.add_content([
-      HtmlElem('a', attrs=[('name', 'Forecasts and Model Runs')]),
-      HtmlElem('dt', content=[HtmlElem('h3', content='Forecasts and Model Runs')]),
-      HtmlElem('dd', content=build_item_lists(
-         packages = ['cwms_forecast'],
-         views    = []))])
-   dlist.add_content([
-      HtmlElem('a', attrs=[('name', 'Gages, Sensors, GOES, SHEF, Decoding, and Screening')]),
-      HtmlElem('dt', content=[HtmlElem('h3', content='Gages, Sensors, GOES, SHEF, Decoding, and Screening')]),
-      HtmlElem('dd', content=build_item_lists(
-         packages = ['cwms_gage', 'cwms_shef', 'cwms_vt'],
-         views    = ['av_active_flag', 'av_data_streams', 'av_data_streams_current', 'av_screened_ts_ids', 'av_screening_assignments',
-                     'av_screening_criteria', 'av_screening_dur_mag', 'av_screening_id', 'av_shef_decode_spec', 'av_shef_pe_codes']))])
-   dlist.add_content([
-      HtmlElem('a', attrs=[('name', 'Oracle/HEC-DSS Data Exchange')]),
-      HtmlElem('dt', content=[HtmlElem('h3', content='Oracle/HEC-DSS Data Exchange')]),
-      HtmlElem('dd', content=build_item_lists(
-         packages = ['cwms_xchg'],
-         views    = ['av_dataexchange_job']))])
-   dlist.add_content([
-      HtmlElem('a', attrs=[('name', 'Display Units and Scales')]),
-      HtmlElem('dt', content=[HtmlElem('h3', content='Display Units and Scales')]),
-      HtmlElem('dd', content=build_item_lists(
-         packages = ['cwms_display'],
-         views    = ['av_display_units']))])
-   dlist.add_content([
-      HtmlElem('a', attrs=[('name', 'Miscellaneous and Support')]),
-      HtmlElem('dt', content=[HtmlElem('h3', content='Miscellaneous and Support')]),
-      HtmlElem('dd', content=build_item_lists(
-         packages = ['cwms_cat', 'cwms_lookup', 'cwms_msg', 'cwms_properties', 'cwms_rounding', 'cwms_text', 'cwms_util'],
-         views    = ['av_data_q_changed', 'av_data_q_protection', 'av_data_q_range', 'av_data_q_repl_cause', 'av_data_q_repl_method',
-                     'av_data_q_screened', 'av_data_q_test_failed', 'av_data_q_validity', 'av_data_quality', 'av_log_message',
-                     'mv_time_zone', 'av_parameter', 'av_state', 'av_storage_unit', 'av_unit']))])
-   body = HtmlElem('body', content=[
-      HtmlElem('h2', attrs=[('style', 'text-align:center;')], content='CWMS Database API Documentation'),
+   category_list = [
       HtmlElem('h3', content='API Categories'),
       HtmlElem('a', attrs=[('href', '#Locations and Time Series')], content='Locations and Time Series'),
       HtmlElem('br'),
@@ -1235,10 +1176,80 @@ def build_main_page() :
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', '#Display Units and Scales')], content='Display Units and Scales'),
       HtmlElem('br'),
-      HtmlElem('a', attrs=[('href', '#Miscellaneous and Support')], content='Miscellaneous and Support'),
-      HtmlElem('p '),
-      HtmlElem('hr'),
-      dlist])
+      HtmlElem('a', attrs=[('href', '#Miscellaneous and Support')], content='Miscellaneous and Support')]
+   example_list = [
+      HtmlElem('h3', content='API Usage Examples'),
+      HtmlElem('', content= 'Examples of accessing the CWMS database and using the API from various programming languages are available on the '),
+      HtmlElem('a', attrs=[('href', 'https://cwms.usace.army.mil/dokuwiki/')], content='CWMS Wiki'),
+      HtmlElem('', content=' at '),
+      HtmlElem('a', attrs=[('href', 'https://cwms.usace.army.mil/dokuwiki/doku.php?id=database_api:sample_programs')], content='this location'),
+      HtmlElem('', content='.'),
+   ]
+   items_list = HtmlElem('dl', content=[
+      HtmlElem('a', attrs=[('name', 'Locations and Time Series')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Locations and Time Series')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_loc', 'cwms_ts'],
+         views    = ['av_loc', 'av_loc_alias', 'av_loc_cat_grp', 'av_loc_grp_assgn', 'av_tsv',
+                     'av_tsv_dqu', 'av_ts_alias', 'av_ts_cat_grp', 'av_ts_grp_assgn', 'av_ts_association']))])
+   items_list.add_content([
+      HtmlElem('a', attrs=[('name', 'Basins and Streams')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Basins and Streams')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_basin', 'cwms_stream'],
+         views    = ['av_stream_types']))])
+   items_list.add_content([
+      HtmlElem('a', attrs=[('name', 'Projects, Structures, and Project Usage')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Projects, Structures, and Project Usage')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_project', 'cwms_embank', 'cwms_outlet', 'cwms_turbine', 'cwms_lock', 'cwms_water_supply'],
+         views    = ['av_gate_change', 'av_gate_setting', 'av_outlet', 'av_project', 'av_turbine', 'av_turbine_change', 'av_turbine_setting']))])
+   items_list.add_content([
+      HtmlElem('a', attrs=[('name', 'Levels, Rule Curves, and Ratings')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Levels, Rule Curves, and Ratings')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_level', 'cwms_rating'],
+         views    = ['av_loc_lvl_cur_max_ind', 'av_loc_lvl_indicator', 'av_loc_lvl_indicator_2', 'av_loc_lvl_ts_map', 'av_location_level',
+                     'av_rating', 'av_rating_local', 'av_rating_spec','av_rating_template', 'av_rating_values', 'av_rating_values_native']))])
+   items_list.add_content([
+      HtmlElem('a', attrs=[('name', 'Forecasts and Model Runs')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Forecasts and Model Runs')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_forecast'],
+         views    = []))])
+   items_list.add_content([
+      HtmlElem('a', attrs=[('name', 'Gages, Sensors, GOES, SHEF, Decoding, and Screening')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Gages, Sensors, GOES, SHEF, Decoding, and Screening')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_gage', 'cwms_shef', 'cwms_vt'],
+         views    = ['av_active_flag', 'av_data_streams', 'av_data_streams_current', 'av_screened_ts_ids', 'av_screening_assignments',
+                     'av_screening_criteria', 'av_screening_dur_mag', 'av_screening_id', 'av_shef_decode_spec', 'av_shef_pe_codes']))])
+   items_list.add_content([
+      HtmlElem('a', attrs=[('name', 'Oracle/HEC-DSS Data Exchange')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Oracle/HEC-DSS Data Exchange')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_xchg'],
+         views    = ['av_dataexchange_job']))])
+   items_list.add_content([
+      HtmlElem('a', attrs=[('name', 'Display Units and Scales')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Display Units and Scales')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_display'],
+         views    = ['av_display_units']))])
+   items_list.add_content([
+      HtmlElem('a', attrs=[('name', 'Miscellaneous and Support')]),
+      HtmlElem('dt', content=[HtmlElem('h3', content='Miscellaneous and Support')]),
+      HtmlElem('dd', content=build_item_lists(
+         packages = ['cwms_cat', 'cwms_lookup', 'cwms_msg', 'cwms_properties', 'cwms_rounding', 'cwms_text', 'cwms_util'],
+         views    = ['av_data_q_changed', 'av_data_q_protection', 'av_data_q_range', 'av_data_q_repl_cause', 'av_data_q_repl_method',
+                     'av_data_q_screened', 'av_data_q_test_failed', 'av_data_q_validity', 'av_data_quality', 'av_log_message',
+                     'mv_time_zone', 'av_parameter', 'av_state', 'av_storage_unit', 'av_unit']))])
+   body = HtmlElem('body', content= \
+      [HtmlElem('h2', attrs=[('style', 'text-align:center;')], content='CWMS Database API Documentation')] +\
+      category_list + \
+      [HtmlElem('p'), HtmlElem('hr')] + \
+      example_list + \
+      [HtmlElem('p'), HtmlElem('hr'), items_list])
    page = HtmlElem('html', content=[head, body])
    return page.get_content()
 
@@ -1759,8 +1770,9 @@ try :
       #---------------------------#
       # output the html to a file #
       #---------------------------#
-      htmlfilename = os.path.join(output_dir, 'pkg_%s.html' % package_name.lower())
+      htmlfilename = 'pkg_%s.html' % package_name.lower()
       package_links[format(package_name)] = htmlfilename
+      htmlfilename = os.path.join(output_dir, htmlfilename)
       output2('writing %s' % os.path.abspath(htmlfilename))
       htmlfile = open(htmlfilename, 'w')
       htmlfile.write(page.get_content())
@@ -2052,8 +2064,9 @@ try :
       #---------------------------#
       # output the html to a file #
       #---------------------------#
-      htmlfilename = os.path.join(output_dir, 'type_%s.html' % alias(type_name).lower())
+      htmlfilename = 'type_%s.html' % alias(type_name).lower()
       type_links[format(type_name)] = htmlfilename
+      htmlfilename = os.path.join(output_dir, htmlfilename)
       output2('writing %s' % os.path.abspath(htmlfilename))
       htmlfile = open(htmlfilename, 'w')
       htmlfile.write(page.get_content())
@@ -2175,8 +2188,9 @@ try :
       #---------------------------#
       # output the html to a file #
       #---------------------------#
-      htmlfilename = os.path.join(output_dir, 'view_%s.html' % alias(view_name).lower())
+      htmlfilename = 'view_%s.html' % alias(view_name).lower()
       view_links[format(view_name)] = htmlfilename
+      htmlfilename = os.path.join(output_dir, htmlfilename)
       output2('writing %s' % os.path.abspath(htmlfilename))
       htmlfile = open(htmlfilename, 'w')
       htmlfile.write(page.get_content())
