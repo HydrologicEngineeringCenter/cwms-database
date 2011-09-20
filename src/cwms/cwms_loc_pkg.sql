@@ -1390,6 +1390,48 @@ AS
 								p_office_id_mask		IN VARCHAR2 DEFAULT NULL
 							  )
 		RETURN SYS_REFCURSOR;
+   /**
+    * Retrieves the type of the location
+    *
+    * @param p_location_code The unique numeric code that identifies the location
+    *
+    * @return A string identifying the type of the location. Will be one of:
+    * <ul>
+    *   <li>BASIN</li>
+    *   <li>STREAM</li>
+    *   <li>OUTLET</li>
+    *   <li>TURBINE</li>
+    *   <li>PROJECT</li>
+    *   <li>EMBANKMENT</li>
+    *   <li>LOCK</li>
+    *   <li>NONE</li>
+    * </ul>
+    */
+   function get_location_type(
+      p_location_code in number)
+      return varchar2;
+   /**
+    * Retrieves the type of the location
+    *
+    * @param p_location_id The location identifier
+    * @param p_office_id   The office that owns the location. If not specified or NULL, the session user's default office will be used
+    *
+    * @return A string identifying the type of the location. Will be one of:
+    * <ul>
+    *   <li>BASIN</li>
+    *   <li>STREAM</li>
+    *   <li>OUTLET</li>
+    *   <li>TURBINE</li>
+    *   <li>PROJECT</li>
+    *   <li>EMBANKMENT</li>
+    *   <li>LOCK</li>
+    *   <li>NONE</li>
+    * </ul>
+    */
+   function get_location_type(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2;
 END cwms_loc;
 /
 

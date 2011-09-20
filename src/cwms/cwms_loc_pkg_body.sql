@@ -6164,5 +6164,48 @@ AS
 
 		RETURN l_cursor;
 	END cat_urls_f;
+
+   function get_location_type(
+      p_location_code in number)
+      return varchar2
+   is
+      l_table_types str_tab_tab_t := str_tab_tab_t(
+         str_tab_t('AT_BASIN',      'BASIN_LOCATION_CODE',      'BASIN'),
+         str_tab_t('AT_STREAM',     'STREAM_LOCATION_CODE',     'STREAM'),
+         str_tab_t('AT_OUTLET',     'OUTLET_LOCATION_CODE',     'OUTLET'),
+         str_tab_t('AT_TURBINE',    'TURBINE_LOCATION_CODE',    'TURBINE'),
+         str_tab_t('AT_EMBANKMENT', 'EMBANKMENT_LOCATION_CODE', 'EMBANKMENT'),
+         str_tab_t('AT_LOCK',       'LOCK_LOCATION_CODE',       'LOCK'),
+         str_tab_t('AT_PROJECT',    'PROJECT_LOCATION_CODE',    'PROJECT'));
+      l_type_names  str_tab_t := str_tab_t();
+      l_count       pls_integer;
+   begin
+      for i in 1..l_table_types.count loop
+         execute immediate 'select count(*) from '||l_table_types(i)(1)||' where '||l_table_types(i)(2)||' = :1'
+            into l_count
+           using p_location_code;
+         if l_count = 1 then
+            l_type_names.extend;
+            l_type_names(l_type_names.count) := l_table_types(i)(3);
+         end if;                                
+      end loop;
+      case l_type_names.count
+         when 0 then return 'NONE';
+         when 1 then return l_type_names(1);
+         else cwms_err.raise('ERROR', 'Location has multiple types: '||cwms_util.join_text(l_type_names, ', '));
+      end case;
+   end get_location_type;
+
+   function get_location_type(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2
+   is
+   begin
+      cwms_util.check_inputs(str_tab_t(p_location_id, p_office_id));
+      return get_location_type(cwms_loc.get_location_code(p_office_id, p_location_id));
+   end get_location_type;
+
 END cwms_loc;
 /
+show errors;

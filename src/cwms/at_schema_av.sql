@@ -76,6 +76,7 @@ END;
 @@cwms/views/av_storage_unit.sql
 @@cwms/views/av_dataexchange_job.sql
 @@cwms/views/av_location_level.sql
+@@cwms/views/av_location_type.sql
 @@cwms/views/av_loc_lvl_indicator.sql
 @@cwms/views/av_loc_lvl_indicator_2.sql
 @@cwms/views/av_display_units.sql
