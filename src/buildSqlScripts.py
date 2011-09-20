@@ -4917,14 +4917,9 @@ sys.stderr.write("Processing location categories \n")
 locationKinds = [
 #   CODE  ID        DESCRIPTION
 #   ----  --------  -----------------------------------------------------------------------------
-    [1,   'POINT',        'A generic location that can be represented by a single lat/lon.'      ],
-    [2,   'STREAM',       'A stream, the lat/lon represent the downstream-most point.'           ],
-    [3,   'BASIN',        'A basin, the lat/lon represent the geospatial centroid.'              ],
-    [4,   'GATE-LOWFLOW', 'A gated low-flow reservoir outlet'                                    ],
-    [5,   'GATE-SLUICE',  'A reservoir sluice gate'                                              ],
-    [6,   'GATE-TAINTER', 'A reservoir tainter gate'                                             ],
-    [7,   'POWERHOUSE',   'A reservoir power generation plant'                                   ],
-    [8,   'TURBINE',      'A turbine in a powerhouse'                                            ],
+    [1,   'POINT',        'A generic location that can be represented by a single lat/lon.'               ],
+    [2,   'STREAM',       'A stream, the lat/lon represent the downstream-most point.'                    ],
+    [3,   'BASIN',        'A basin, the lat/lon represent the point on the major stream draing the basin.'],
 ]
 
 #--------------#

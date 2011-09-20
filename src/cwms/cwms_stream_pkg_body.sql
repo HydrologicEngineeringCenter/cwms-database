@@ -78,17 +78,7 @@ begin
    if l_location_code is null then
       l_exists := false;
    else
-      begin
-         select lk.location_kind_id
-           into l_location_kind_id
-           from at_physical_location pl,
-                at_location_kind lk
-          where pl.location_code = l_location_code
-            and lk.location_kind_code = pl.location_kind;             
-      exception
-         when no_data_found then null; 
-      end;
-      if l_location_kind_id != 'STREAM' then
+      if cwms_loc.get_location_type(l_location_code) not in ('STREAM', 'NONE') then
          cwms_err.raise(
             'ERROR',
             'The location '
