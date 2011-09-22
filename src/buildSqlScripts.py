@@ -133,6 +133,7 @@ tableInfo = [
     {"ID" : "nation",             "TABLE" : "CWMS_NATION",                "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "streamType",         "TABLE" : "CWMS_STREAM_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "msgId",              "TABLE" : "CWMS_MSG_ID",                "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "schemaObjVersion",   "TABLE" : "CWMS_SCHEMA_OBJECT_VERSION", "SCHEMA" : "CWMS", "USERACCESS" : True},
 ]
 
 tables = []
@@ -8836,6 +8837,25 @@ msgIdLoadTemplate = '''
    COMMIT;
 '''
 
+sys.stderr.write("Building schemaObjVersionCreationTemplate\n")
+schemaObjVersionCreationTemplate = \
+'''
+CREATE TABLE @TABLE (
+   HASH_CODE      VARCHAR2(40) NOT NULL,
+   OBJECT_TYPE    VARCHAR2(30) NOT NULL,
+   OBJECT_NAME    VARCHAR2(30) NOT NULL,
+   SCHEMA_VERSION VARCHAR2(32) NOT NULL,
+   COMMENTS       VARCHAR2(256),
+   CONSTRAINT CWMS_SCHEMA_VERSION_PK PRIMARY KEY (HASH_CODE, OBJECT_TYPE, OBJECT_NAME, SCHEMA_VERSION)
+)
+TABLESPACE CWMS_20DATA
+/
+CREATE INDEX @TABLE_IDX ON @TABLE (SCHEMA_VERSION)
+TABLESPACE CWMS_20DATA
+/
+
+COMMIT;
+'''
 
 #==
 #====

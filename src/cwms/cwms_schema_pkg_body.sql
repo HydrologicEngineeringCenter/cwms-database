@@ -1,0 +1,206 @@
+create or replace package body cwms_schema
+as
+
+function get_hash_code(
+   p_ddl in clob)
+   return varchar2
+is
+begin
+   return rawtohex(dbms_crypto.hash(replace(p_ddl, '"&cwms_schema"', '"<cwms_schema>"'), dbms_crypto.hash_sh1));
+end get_hash_code;
+
+procedure set_schema_version(
+   p_cwms_version  in varchar2,
+   p_comments      in varchar2 default null)
+is
+   l_date_str     varchar2(19) := to_char(cast(systimestamp at time zone 'UTC' as date), 'yyyy/mm/dd hh:mm:ss');
+   l_object_names object_tab_t;
+
+   procedure store_info(
+      p_object_type in varchar2,
+      p_object_name in varchar2)
+   is
+      l_hash_code    varchar2(40);
+   begin
+      l_hash_code := get_hash_code(dbms_metadata.get_ddl(p_object_type, p_object_name));
+      insert
+        into cwms_schema_object_version
+      values ( l_hash_code,
+               p_object_type,
+               p_object_name,
+               l_date_str||' '||p_cwms_version,
+               p_comments);
+   end;
+begin
+   -----------------------------------
+   -- check the list of table names --
+   -----------------------------------
+   select object_name bulk collect
+     into l_object_names
+     from user_objects
+    where object_type = 'TABLE'
+      and regexp_like(object_name, '(CWMS|AT)_.+')
+ order by object_name;
+   if l_object_names != table_names then
+      cwms_err.raise('ERROR', 'Variable table_names is out of date');
+   end if;
+   ----------------------------------
+   -- check the list of view names --
+   ----------------------------------
+   l_object_names.delete;
+   select object_name bulk collect
+     into l_object_names
+     from user_objects
+    where object_type = 'VIEW'
+      and regexp_like(object_name, '(AV|ZAV|ZV)_.+')
+ order by object_name;
+   if l_object_names != view_names then
+      cwms_err.raise('ERROR', 'Variable view_names is out of date');
+   end if;
+   -------------------------------------
+   -- check the list of package names --
+   -------------------------------------
+   l_object_names.delete;
+   select object_name bulk collect
+     into l_object_names
+     from user_objects
+    where object_type = 'PACKAGE'
+ order by object_name;
+   if l_object_names != package_names then
+      cwms_err.raise('ERROR', 'Variable package_names is out of date');
+   end if;
+   ----------------------------------
+   -- check the list of type names --
+   ----------------------------------
+   l_object_names.delete;
+   select object_name bulk collect
+     into l_object_names
+     from user_objects
+    where object_type = 'TYPE'
+      and object_name not like 'SYS\_%' escape '\'
+ order by object_name;
+   if l_object_names != type_names then
+      cwms_err.raise('ERROR', 'Variable type_names is out of date');
+   end if;
+   ---------------------------------------
+   -- check the list of type body names --
+   ---------------------------------------
+   l_object_names.delete;
+   select object_name bulk collect
+     into l_object_names
+     from user_objects
+    where object_type = 'TYPE BODY'
+      and object_name not like 'SYS\_%' escape '\'
+ order by object_name;
+   if l_object_names != type_body_names then
+      cwms_err.raise('ERROR', 'Variable type_body_names is out of date');
+   end if;
+   ---------------------------------------------------------------------------
+   -- store the current hash code and the specified version for each object --
+   ---------------------------------------------------------------------------
+   for i in 1..table_names.count loop
+      store_info('TABLE', table_names(i));
+   end loop;
+   for i in 1..view_names.count loop
+      store_info('VIEW', view_names(i));
+   end loop;
+   for i in 1..package_names.count loop
+      store_info('PACKAGE', package_names(i));
+      store_info('PACKAGE_BODY', package_names(i));
+   end loop;
+   for i in 1..type_names.count loop
+      store_info('TYPE', type_names(i));
+   end loop;
+   for i in 1..type_body_names.count loop
+      store_info('TYPE_BODY', type_body_names(i));
+   end loop;
+end set_schema_version;
+
+procedure check_schema_version
+is
+   l_max_version varchar2(32);
+   l_version     varchar2(32);
+   l_hash_code   varchar2(40);
+   l_ddl         clob;
+
+   function check_items(
+      p_item_type in varchar2,
+      p_items     in object_tab_t)
+      return pls_integer
+   is
+      l_item_type varchar2(30) := upper(p_item_type);
+      l_count     pls_integer  := 0;
+   begin
+      for i in 1..p_items.count loop
+         begin
+            l_ddl := dbms_metadata.get_ddl(l_item_type, p_items(i));
+            l_hash_code := get_hash_code(l_ddl);
+            begin
+               select max(schema_version)
+                 into l_version
+                 from cwms_schema_object_version
+                where hash_code = l_hash_code
+                  and object_type = l_item_type
+                  and object_name = p_items(i);
+               if l_version  != l_max_version then
+                  l_count := l_count + 1;
+                  dbms_output.put_line(l_item_type||' '||p_items(i)||' = version "'||l_version||'"');
+               end if;
+            exception
+               when no_data_found then
+                  l_count := l_count + 1;
+                  dbms_output.put_line(l_item_type||' '||p_items(i)||' = unknown version.');
+            end;
+         exception
+            when no_such_object then
+               l_count := l_count + 1;
+               dbms_output.put_line(l_item_type||' '||p_items(i)||' does not exist.');
+         end;
+      end loop;
+      return l_count;
+   end;
+
+begin
+   dbms_output.enable(2000000);
+   select max(schema_version)
+     into l_max_version
+     from cwms_schema_object_version;
+   dbms_output.put_line('Checking database objects against current version: '||l_max_version);
+   if check_items('table', table_names) = 0 then
+      dbms_output.put_line('All tables are of the current version.');
+   end if;
+   if check_items('view', view_names) = 0 then
+      dbms_output.put_line('All views are of the current version.');
+   end if;
+   if check_items('package', package_names) = 0 then
+      dbms_output.put_line('All packages are of the current version.');
+   end if;
+   if check_items('package_body', package_names) = 0 then
+      dbms_output.put_line('All package bodies are of the current version.');
+   end if;
+   if check_items('type', type_names) = 0 then
+      dbms_output.put_line('All types are of the current version.');
+   end if;
+   if check_items('type_body', type_body_names) = 0 then
+      dbms_output.put_line('All type bodies are of the current version.');
+   end if;
+end check_schema_version;
+
+procedure output_schema_versions
+is
+begin
+   dbms_output.enable(2000000);
+   for rec in (select * from cwms_schema_object_version) loop
+      dbms_output.put_line(
+         'insert into cwms_schema_object_version values ('''
+         ||rec.hash_code
+         ||''', '''||rec.object_type
+         ||''', '''||rec.object_name
+         ||''', '''||rec.schema_version
+         ||''', '''||rec.comments||''');');
+   end loop;
+end output_schema_versions;
+
+end cwms_schema;
+/
+show errors

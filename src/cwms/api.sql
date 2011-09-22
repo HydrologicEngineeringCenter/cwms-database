@@ -95,3 +95,5 @@
 @@cwms_turbine_pkg
 @@cwms_turbine_pkg_body
 
+@@cwms_schema_pkg
+@@cwms_schema_pkg_body
