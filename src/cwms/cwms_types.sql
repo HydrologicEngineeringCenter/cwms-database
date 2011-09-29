@@ -3733,7 +3733,10 @@ as
       interval_months  := cwms_util.yminterval_to_months(p_obj.calendar_interval);
       interval_minutes := cwms_util.dsinterval_to_minutes(p_obj.time_interval);
       interpolate      := p_obj.interpolate;
-      tsid             := cwms_ts.get_ts_id(p_obj.ts_code);
+      tsid             := case p_obj.ts_code is null
+                             when true  then null
+                             when false then cwms_ts.get_ts_id(p_obj.ts_code)
+                          end;
       if p_obj.seasonal_level_values is not null then
          seasonal_values := new seasonal_value_tab_t();
          for i in 1..p_obj.seasonal_level_values.count loop
