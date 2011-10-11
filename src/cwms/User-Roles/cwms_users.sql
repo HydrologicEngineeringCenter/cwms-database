@@ -120,17 +120,14 @@ begin
       privilege    => 'manage_any',
       grantee      => '&cwms_schema',
       admin_option => false);
-   
-   $if dbms_db_version.version > 10 $then
-      --
-      -- compile only on Oracle 11 or above
-      --
-      dbms_network_acl_admin.add_privilege(
-         acl         => 'resolve.xml',
-         principal   => upper('&cwms_schema'), 
-         is_grant    => true, 
-         privilege   => 'resolve');
-   $end
+   --
+   -- grant network address lookup privilege
+   --
+   dbms_network_acl_admin.add_privilege(
+      acl         => 'resolve.xml',
+      principal   => upper('&cwms_schema'),
+      is_grant    => true,
+      privilege   => 'resolve');
 end;
 /
 

@@ -23,27 +23,20 @@ begin
    --
    -- grant network address resolve privileges (new in Oracle 11)
    --
-   $if dbms_db_version.version > 10 $then
-      --
-      -- compile only on Oracle 11 or above
-      --
-      begin
-         dbms_network_acl_admin.drop_acl('resolve.xml');
-      exception
-         when others then null;
-      end;
-      dbms_network_acl_admin.create_acl(
-         acl         => 'resolve.xml',
-         description => 'resolve acl', 
-         principal   => 'CWMS_USER', 
-         is_grant    => true, 
-         privilege   => 'resolve');
-      dbms_network_acl_admin.assign_acl(
-         acl         => 'resolve.xml', 
-         host        => '*');
-   $else
-      dbms_output.put_line('Skipping network acl setup on pre-11 database.');
-   $end
+   begin
+      dbms_network_acl_admin.drop_acl('resolve.xml');
+   exception
+      when others then null;
+   end;
+   dbms_network_acl_admin.create_acl(
+      acl         => 'resolve.xml',
+      description => 'resolve acl', 
+      principal   => 'CWMS_USER', 
+      is_grant    => true, 
+      privilege   => 'resolve');
+   dbms_network_acl_admin.assign_acl(
+      acl         => 'resolve.xml', 
+      host        => '*');
 end;
 /
 
