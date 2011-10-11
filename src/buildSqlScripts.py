@@ -4581,7 +4581,7 @@ parameters = [
 #                                                                                 store      ------Display Units-----
 #    CODE   ABSTRACT PARAMETER                  ID          NAME                  UNIT ID      SI       Non-SI         DESCRIPTION
 #    ------ ----------------------------------- ----------- --------------------- ---------- ---------- -------------- -----------------------------------------------------------------------------
-    [ 1,    "None",                             "%",        "Precent",            "%",       "%",       "%",           "Ratio expressed as hundredths"                                               ],
+    [ 1,    "None",                             "%",        "Percent",            "%",       "%",       "%",           "Ratio expressed as hundredths"                                               ],
     [ 2,    "Area",                             "Area",     "Surface Area",       "m2",      "m2",      "ft2",         "Area of a surface"                                                           ],
     [ 7,    "Count",                            "Count",    "Count",              "unit",    "unit",    "unit",        "Progressive sum of items enumerated one by one or group by group."           ],
     [ 8,    "Currency",                         "Currency", "Currency",           "$",       "$",       "$",           "Economic value expressed as currency/money"                                  ],
