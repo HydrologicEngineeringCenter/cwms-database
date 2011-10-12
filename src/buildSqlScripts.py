@@ -3673,6 +3673,7 @@ durations = [
     [45,    '6HoursBOP',    360,    'Measurement applies over 6 hours, time stamped at period beginning'],
     [46,    '8HoursBOP',    480,    'Measurement applies over 8 hours, time stamped at period beginning'],
     [47,    '12HoursBOP',   720,    'Measurement applies over 12 hours, time stamped at period beginning'],
+    [48,    '1DayBOP',      1440,   'Measurement applies over 1 day, time stamped at period beginning'],
     [49,    '2DaysBOP',     2880,   'Measurement applies over 2 days, time stamped at period beginning'],
     [50,    '3DaysBOP',     4320,   'Measurement applies over 3 days, time stamped at period beginning'],
     [51,    '4DaysBOP',     5760,   'Measurement applies over 4 days, time stamped at period beginning'],
