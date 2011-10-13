@@ -2010,8 +2010,11 @@ begin
    --
    -- set the out parameters
    --
-   p_cwms_ts_id_out := l_cwms_ts_id;
-   p_units_out := l_units;
+   p_cwms_ts_id_out := cwms_ts.get_ts_id(l_cwms_ts_id, p_office_id);
+   p_units_out := case l_units is null
+                     when true  then cwms_util.get_unit_id2(cwms_util.get_db_unit_code(cwms_util.split_text(p_cwms_ts_id_out, 2, '.')))
+                     when false then cwms_util.get_unit_id(l_units, p_office_id)
+                  end;
    --
    -- get ts code
    --
@@ -2022,7 +2025,7 @@ begin
           INTO   l_ts_code, l_interval, l_offset
           FROM   mv_cwms_ts_id
          WHERE   UPPER(db_office_id) = UPPER (l_office_id)
-                    AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
+                    AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id_out);
     EXCEPTION
         WHEN NO_DATA_FOUND
         THEN
@@ -2030,7 +2033,7 @@ begin
               INTO   l_ts_code, l_interval, l_offset
               FROM   zav_cwms_ts_id
              WHERE   UPPER(db_office_id) = UPPER (l_office_id)
-                        AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
+                        AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id_out);
                         
     END;
 
@@ -2113,7 +2116,7 @@ begin
                       on v.date_time = t.date_time
                       order by t.date_time asc';
                   replace_strings;
-                  open l_cursor for l_query_str using l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,l_units,l_end_str,l_date_format,l_start_str,l_date_format,
+                  open l_cursor for l_query_str using l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format,
                     l_reg_start_str,l_date_format,l_interval,l_time_zone,l_reg_start_str,l_date_format,l_reg_end_str,l_date_format,l_reg_start_str,l_date_format,l_interval;
                  
          else
@@ -2151,7 +2154,7 @@ begin
                       on v.date_time = t.date_time
                       order by t.date_time asc';
                 replace_strings;
-                open l_cursor for l_query_str using l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,l_units,l_end_str,l_date_format,l_start_str,l_date_format,
+                open l_cursor for l_query_str using l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format,
                     l_reg_start_str,l_date_format,l_interval,l_time_zone,l_reg_start_str,l_date_format,l_reg_end_str,l_date_format,l_reg_start_str,l_date_format,l_interval;
          end if;
       else
@@ -2175,7 +2178,7 @@ begin
            group by date_time
            order by date_time asc';
             replace_strings;
-            open l_cursor for l_query_str using l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,l_units,l_end_str,l_date_format,l_start_str,l_date_format;
+            open l_cursor for l_query_str using l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format;
                   
       end if;
                          
@@ -2230,7 +2233,7 @@ begin
                       on v.date_time = t.date_time
                       order by t.date_time asc';
                  replace_strings;
-                  open l_cursor for l_query_str using l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,l_units,l_end_str,l_date_format,l_start_str,l_date_format,to_char(l_version_date, l_date_format),
+                  open l_cursor for l_query_str using l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format,to_char(l_version_date, l_date_format),
                     l_reg_start_str,l_date_format,l_interval,l_time_zone,l_reg_start_str,l_date_format,l_reg_start_str,l_date_format,l_reg_end_str,l_date_format,l_interval;
          else
             --
@@ -2267,7 +2270,7 @@ begin
                       on v.date_time = t.date_time
                       order by t.date_time asc';
                        replace_strings;
-                open l_cursor for l_query_str using l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,l_units,l_end_str,l_date_format,l_start_str,l_date_format,to_char(l_version_date, l_date_format),
+                open l_cursor for l_query_str using l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format,to_char(l_version_date, l_date_format),
                     l_reg_start_str,l_date_format,l_interval,l_time_zone,l_reg_start_str,l_date_format,l_reg_end_str,l_date_format,l_reg_start_str,l_date_format,l_interval;
          end if;
       else
@@ -2291,7 +2294,7 @@ begin
                 and version_date =  to_date(:version, :l_date_fmt)
            order by date_time asc';
              replace_strings;
-            open l_cursor for l_query_str using l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,l_units,l_end_str,l_date_format,l_start_str,l_date_format,to_char(l_version_date, l_date_format);
+            open l_cursor for l_query_str using l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format,to_char(l_version_date, l_date_format);
       end if;                   
            
       --l_query_str := replace(l_query_str, ':version', to_char(l_version_date, l_date_format));
@@ -2306,7 +2309,7 @@ begin
    --l_query_str := replace(l_query_str, ':ts_code', l_ts_code);
    --l_query_str := replace(l_query_str, ':start',   l_start_str);
    --l_query_str := replace(l_query_str, ':end',     l_end_str);
-   --l_query_str := replace(l_query_str, ':units',   l_units);
+   --l_query_str := replace(l_query_str, ':units',   p_units_out);
    --l_query_str := replace(l_query_str, ':datefmt', l_date_format);
    
   -- if l_interval > 0 then
@@ -2324,9 +2327,9 @@ begin
    --set_action('Return query string');
    --dbms_application_info.set_module(null,null);
   -- if l_version_date is null then
-       --open l_cursor for l_query_str using l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,l_units,l_end_str,l_date_format,l_start_str,l_date_format;
+       --open l_cursor for l_query_str using l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format;
    --else
-   --    open l_cursor for l_query_str using l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,l_units,l_end_str,l_date_format,l_start_str,l_date_format,
+   --    open l_cursor for l_query_str using l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format,
        --    to_char(l_version_date, l_date_format);
    --end if;
    return l_cursor;
@@ -2688,7 +2691,7 @@ begin
          p_timeseries_info(i).start_time,
          p_timeseries_info(i).end_time,
          tsv_array());
-      begin         
+      begin      
          retrieve_ts_out(
             rec,
             t(i).tsid,
