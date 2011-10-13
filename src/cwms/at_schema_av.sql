@@ -11,7 +11,8 @@ DECLARE
 	TYPE id_array_t IS TABLE OF VARCHAR2 (32);
 
 	view_names	 id_array_t
-		:= id_array_t ('av_active_flag',
+		:= id_array_t ('av_current_map_data',
+                            'av_active_flag',
 							'av_loc',          -- av_loc is created in at_schema_2...
 							'av_cwms_ts_id',
 							'av_loc_alias',
@@ -97,6 +98,7 @@ END;
 @@cwms/views/av_data_q_test_failed.sql
 @@cwms/views/av_data_q_validity.sql
 @@cwms/views/av_data_quality.sql
+@@cwms/views/av_current_map_data.sql
 
 @@cwms/views/av_data_streams.sql
 @@cwms/views/av_data_streams_current.sql
