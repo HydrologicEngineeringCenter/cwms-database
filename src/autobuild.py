@@ -93,20 +93,3 @@ for loaderFilename in [fn for fn in os.listdir(".") if fnmatch.fnmatch(fn, "*Loa
 		print "SQL*Loader exited with code", ec 
 		print
 		sys.exit(ec)
-
-#--------------------------------------------------------------------------------#
-# execute script to refresh the MV_DATA_QUALITY view after the quality is loaded #
-#--------------------------------------------------------------------------------#
-scriptFilename = 'refresh_mv_data_quality.sql'
-f = open(scriptFilename, 'w')
-f.write("connect %s/%s@%s\nexec dbms_snapshot.refresh('mv_data_quality', 'C');\ndisconnect\n" % (cwms_schema, cwms_passwd, inst))
-f.close()
-cmd = "sqlplus /nolog @%s" % scriptFilename
-print cmd
-ec = os.system(cmd)
-if ec :
-	print
-	print "SQL*Plus exited with code", ec
-	print
-	sys.exit(ec)
-
