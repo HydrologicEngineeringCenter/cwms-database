@@ -4849,9 +4849,7 @@ AS
 					p_location_id,
 					p_loc_attribute,
 					p_loc_alias_id,
-					get_location_code (cwms_util.get_office_code (p_db_office_id),
-											 p_ref_loc_id
-											)
+               p_ref_loc_id
 				)
 			);
 		assign_loc_groups3 (p_loc_category_id	 => p_loc_category_id,
