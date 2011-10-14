@@ -149,7 +149,8 @@ IS
       loc_alias_id        VARCHAR2 (128),
 		loc_ref_id          VARCHAR2 (49),
       shared_loc_alias_id VARCHAR2 (128),
-      shared_loc_ref_id   VARCHAR2 (49)
+      shared_loc_ref_id   VARCHAR2 (49),
+      attribute           NUMBER
    );
    -- not documented
    TYPE cat_loc_alias_tab_t IS TABLE OF cat_loc_alias_rec_t;
@@ -1934,6 +1935,12 @@ IS
     *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">A referenced location identifier shared by all members of the group</td>
     *   </tr>
+    *   <tr>
+    *     <td class="descr-center">12</td>
+    *     <td class="descr">loc_attribute</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">A numeric attribute for the location with respect to the group. Can be used for sorting, etc...</td>
+    *   </tr>
     * </table>
     * @param p_location_id     The location identifier pattern to match. Use glob-style wildcards as shown above instead of SQL-style wildcards. If not specified or NULL, all location identifiers will be matched.
     * @param p_loc_category_id The location category identifier pattern to match. Use glob-style wildcards as shown above instead of SQL-style wildcards. If not specified or NULL, all location category identifiers will be matched.
@@ -2051,6 +2058,12 @@ IS
     *     <td class="descr">shared_loc_ref_id</td>
     *     <td class="descr">varchar2(49)</td>
     *     <td class="descr">A referenced location identifier shared by all members of the group</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">12</td>
+    *     <td class="descr">loc_attribute</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">A numeric attribute for the location with respect to the group. Can be used for sorting, etc...</td>
     *   </tr>
     * </table>
     */
