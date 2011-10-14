@@ -45,7 +45,7 @@ AS
 	FUNCTION get_location_id (p_location_code IN NUMBER)
 		RETURN VARCHAR2;
    /**
-    * Retrieves a location's unique numeric code
+    * Retrieves a location's unique numeric code. Retrieves the location code if p_location_id is a location identifier or location alias.
     *
     * @param p_db_office_id The office that owns the location. If not specified or NULL the session user's default office is used
     * @param p_location_id  The location identifier
@@ -58,7 +58,7 @@ AS
 		RETURN NUMBER
 		RESULT_CACHE;
    /**
-    * Retrieves a location's unique numeric code
+    * Retrieves a location's unique numeric code. Retrieves the location code if p_location_id is a location identifier or location alias.
     *
     * @param p_office_code The unique numeric code that identifies the office that owns the location
     * @param p_location_id The location identifier
@@ -70,6 +70,36 @@ AS
 										)
 		RETURN NUMBER
 		RESULT_CACHE;
+   /**
+    * Retrieves a location's unique numeric code
+    *
+    * @param p_office_code The unique numeric code that identifies the office that owns the location
+    * @param p_location_id The location identifier
+    * @param p_check_aliases A flag ('T' or 'F') that specifies whether to check aliases if p_location_id is not found as a location identifier
+    *
+    * @return The unique numeric code that identifies the location
+    */
+   FUNCTION get_location_code (p_db_office_code   IN NUMBER,
+                               p_location_id      IN VARCHAR2,
+                               p_check_aliases    IN VARCHAR2
+                              )
+      RETURN NUMBER
+      RESULT_CACHE;
+   /**
+    * Retrieves a location's unique numeric code
+    *
+    * @param p_db_office_id The office that owns the location. If not specified or NULL the session user's default office is used
+    * @param p_location_id  The location identifier
+    * @param p_check_aliases A flag ('T' or 'F') that specifies whether to check aliases if p_location_id is not found as a location identifier
+    *
+    * @return The unique numeric code that identifies the location
+    */
+   FUNCTION get_location_code (p_db_office_id   IN VARCHAR2,
+                               p_location_id    IN VARCHAR2,
+                               p_check_aliases  IN VARCHAR2
+                              )
+      RETURN NUMBER
+      RESULT_CACHE;
    /**
     * Retrieves a state's unique numeric code given its two letter state abbreviation
     *

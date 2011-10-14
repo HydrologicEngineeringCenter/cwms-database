@@ -156,7 +156,8 @@ AS
 	--
 	------------------------------------------------------------------------------*/
 	FUNCTION get_location_code (p_db_office_id	IN VARCHAR2,
-										 p_location_id 	IN VARCHAR2
+										 p_location_id 	IN VARCHAR2,
+                               p_check_aliases  IN VARCHAR2
 										)
 		RETURN NUMBER
 		RESULT_CACHE
@@ -164,13 +165,15 @@ AS
 		l_db_office_code	 NUMBER := cwms_util.get_office_code (p_db_office_id);
 	BEGIN
 		RETURN get_location_code (p_db_office_code	=> l_db_office_code,
-										  p_location_id		=> p_location_id
+										  p_location_id		=> p_location_id,
+                                p_check_aliases    => p_check_aliases
 										 );
 	END;
 
 	--
 	FUNCTION get_location_code (p_db_office_code   IN NUMBER,
-										 p_location_id 	  IN VARCHAR2
+										 p_location_id 	  IN VARCHAR2,
+                               p_check_aliases    IN VARCHAR2
 										)
 		RETURN NUMBER
 		RESULT_CACHE
@@ -201,30 +204,54 @@ AS
 	EXCEPTION
 		WHEN NO_DATA_FOUND
 		THEN
-			DECLARE
-				l_office_id   VARCHAR2 (16);
-			BEGIN
-				SELECT	office_id
-				  INTO	l_office_id
-				  FROM	cwms_office
-				 WHERE	office_code = p_db_office_code;
+         IF cwms_util.is_true(p_check_aliases) THEN
+            DECLARE
+               l_office_id   VARCHAR2 (16);
+            BEGIN
+               SELECT   office_id
+                 INTO   l_office_id
+                 FROM   cwms_office
+                WHERE   office_code = p_db_office_code;
 
-				l_location_code :=
-					get_location_code_from_alias (p_alias_id	  => p_location_id,
-															p_office_id   => l_office_id
-														  );
+               l_location_code :=
+                  get_location_code_from_alias (p_alias_id     => p_location_id,
+                                                p_office_id   => l_office_id
+                                               );
 
-				IF l_location_code IS NULL
-				THEN
-					cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id);
-				END IF;
+               IF l_location_code IS NULL
+               THEN
+                  cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id);
+               END IF;
 
-				RETURN l_location_code;
-			END;
+               RETURN l_location_code;
+            END;
+         ELSE
+            RAISE;
+         END IF;
 		WHEN OTHERS
 		THEN
 			RAISE;
 	END get_location_code;
+   
+   FUNCTION get_location_code (p_db_office_code   IN NUMBER,
+                               p_location_id      IN VARCHAR2
+                              )
+      RETURN NUMBER
+      RESULT_CACHE
+   IS
+   BEGIN
+      return get_location_code(p_db_office_code, p_location_id, 'T');
+   END get_location_code;
+      
+   FUNCTION get_location_code (p_db_office_id   IN VARCHAR2,
+                               p_location_id    IN VARCHAR2
+                              )
+      RETURN NUMBER
+      RESULT_CACHE
+   IS
+   BEGIN
+      return get_location_code(p_db_office_id, p_location_id, 'T');
+   END get_location_code;
 
 	--********************************************************************** -
 	--********************************************************************** -
@@ -4719,7 +4746,7 @@ AS
 		END LOOP;
 
 		MERGE INTO	 at_loc_group_assignment a
-			  USING	 (SELECT   get_location_code (p_db_office_id => l_db_office_id, p_location_id => plaa.location_id) location_code,
+			  USING	 (SELECT   get_location_code (p_db_office_id => l_db_office_id, p_location_id => plaa.location_id, p_check_aliases => 'F') location_code,
 									  plaa.loc_attribute, plaa.loc_alias_id,
 									  plaa.loc_ref_id
 							 FROM   TABLE (p_loc_alias_array) plaa) b
@@ -4735,7 +4762,8 @@ AS
 						b.loc_ref_id,
 						NULL, NULL,
 						get_location_code (p_db_office_code   => l_db_office_code,
-												 p_location_id 	  => b.loc_ref_id
+												 p_location_id 	  => b.loc_ref_id,
+                                     p_check_aliases    => 'F'
 												)
 					)
 		WHEN NOT MATCHED
@@ -4756,7 +4784,8 @@ AS
 									 NULL, NULL,
 									 get_location_code (
 										 p_db_office_code   => l_db_office_code,
-										 p_location_id 	  => b.loc_ref_id
+										 p_location_id 	  => b.loc_ref_id,
+                               p_check_aliases    => 'F'
 									 )
 								 )
 							 );
