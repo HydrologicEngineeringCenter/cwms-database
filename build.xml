@@ -257,6 +257,91 @@
 	
     <target name="all" depends="all-schema" description="does a clean build">
     </target>
+    <target name="export" description="Executes python script to export CWMS schema">
+
+                <echo message="Exporting CWMS tables ..."/>
+
+                <property name="autoexport-arg-line" value="/c python autoexport.py echo=${autoexport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir} ${autoexport.force}"/>
+                <echo message="${autoexport-arg-line}"/>
+
+                <exec dir="${src}" executable="cmd" output="auto-export-output.txt" error="auto-export-error.txt" resultproperty="auto-export-result" failonerror="true">
+                        <arg line="${autoexport-arg-line}"/>
+                </exec>
+
+                <if>
+                        <equals arg1="${auto-export-result}" arg2="0" />
+                        <then>
+                                <echo message="Finished exporting CWMS tables"/>
+                        </then>
+                        <else>
+                                <concat>
+                                        <filelist dir="${root}" files="auto-export-output.txt,auto-export-error.txt"/>
+                                </concat>
+                                <echo message="${auto-export-result}"/>
+                                <fail/>
+                        </else>
+                </if>
+
+    </target>
+    <!-- Executes python script to import CWMS tables -->
+        <target name="import" description="Executes python script to import CWMS schema">
+
+                <echo message="Importing  CWMS tables ..."/>
+
+                <property name="autoimport-arg-line" value="/c python autoimport.py echo=${autoimport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} cwms_dir=${oracle.cwms.dir} ${autoimport.force}"/>
+                <echo message="${autoimport-arg-line}"/>
+
+                <exec dir="${src}" executable="cmd" output="auto-import-output.txt" error="auto-import-error.txt" resultproperty="auto-import-result">
+                        <arg line="${autoimport-arg-line}"/>
+                </exec>
+
+                <if>
+                        <equals arg1="${auto-import-result}" arg2="0" />
+                        <then>
+                                <echo message="Finished Importting CWMS tables"/>
+                        </then>
+                        <else>
+                                <concat>
+                                        <filelist dir="${root}" files="auto-import-output.txt,auto-import-error.txt"/>
+                                </concat>
+                                <echo message="${auto-import-result}"/>
+                                <fail/>
+                        </else>
+                </if>
+
+    </target>
+    <!-- Executes python script to import users -->
+        <target name="createUsers" description="Executes python script to recreate CWMS users">
+
+                <echo message="Recreate  CWMS users ..."/>
+
+                <property name="autocreateusers-arg-line" value="/c python autoCreateCWMSUsers.py echo=${autocreateusers.echo} inst=${oracle.cwms.instance} dbi_passwd=${oracle.dbi.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} ${autocreateusers.force}"/>
+                <echo message="${autocreateusers-arg-line}"/>
+
+                <exec dir="${src}" executable="cmd" output="auto-createusers-output.txt" error="auto-createusers-error.txt" resultproperty="auto-createusers-result" failonerror="true">
+                        <arg line="${autocreateusers-arg-line}"/>
+                </exec>
+
+                <if>
+                        <equals arg1="${auto-createusers-result}" arg2="0" />
+                        <then>
+                                <echo message="Finished Creating CWMS users"/>
+                        </then>
+                        <else>
+                                <concat>
+                                        <filelist dir="${root}" files="auto-createusers-output.txt,auto-createusers-error.txt"/>
+                                </concat>
+                                <echo message="${auto-createusers-result}"/>
+                                <fail/>
+                        </else>
+                </if>
+
+    </target>
+    <target name="rebuild-schema" depends="export,clean,build,import,createUsers" description="export AT tables,drop existing CWMS schema then build a new CWMS schema, import AT data, recreate user accounts">
+    </target>
+
+
+
 	
 </project>
 
