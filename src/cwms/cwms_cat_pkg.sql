@@ -1937,7 +1937,7 @@ IS
     *   </tr>
     *   <tr>
     *     <td class="descr-center">12</td>
-    *     <td class="descr">loc_attribute</td>
+    *     <td class="descr">attribute</td>
     *     <td class="descr">number</td>
     *     <td class="descr">A numeric attribute for the location with respect to the group. Can be used for sorting, etc...</td>
     *   </tr>
@@ -2061,7 +2061,7 @@ IS
     *   </tr>
     *   <tr>
     *     <td class="descr-center">12</td>
-    *     <td class="descr">loc_attribute</td>
+    *     <td class="descr">attribute</td>
     *     <td class="descr">number</td>
     *     <td class="descr">A numeric attribute for the location with respect to the group. Can be used for sorting, etc...</td>
     *   </tr>
