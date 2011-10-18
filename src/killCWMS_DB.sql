@@ -34,6 +34,22 @@ whenever sqlerror exit sql.sqlcode
 set echo off
 set serveroutput on
 set echo off
+--  Kill current CWMS sessions
+declare
+    cursor c is select sid,serial# from v$session where username = '&cwms_schema';
+    kill_command varchar2(128);
+begin
+
+    dbms_output.put_line('Kill current schema sessions');
+    for rec in c
+    loop
+        kill_command := 'alter system kill session '''||rec.sid||','||rec.serial#||'''';
+        dbms_output.put_line(kill_command);
+        execute immediate kill_command;
+    end loop;
+end;
+/
+
 begin
    for rec in (
       select synonym_name
@@ -56,11 +72,11 @@ end;
 -- kill the cwms users and the roles
 --
 begin
-   dbms_output.put_line('drop role cwms_dev');
-   execute immediate 'drop role cwms_dev';
+   dbms_output.put_line('drop role &CWMS_SCHEMA');
+   execute immediate 'drop role &CWMS_SCHEMA';
 exception
    when others then 
-      dbms_output.put_line('==> Cannot drop role cwms_dev : ' || sqlerrm);
+      dbms_output.put_line('==> Cannot drop role &CWMS_SCHEMA : ' || sqlerrm);
       raise;  
 end;
 /
