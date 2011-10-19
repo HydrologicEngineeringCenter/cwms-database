@@ -4474,7 +4474,7 @@ Bit Mappings :
          3                   2                   1                     
      2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 
 
-     P - - - - - T T - T - T T T T T T M M M M C C C D R R V V V V S 
+     P - - - - - T T T T T T T T T T T M M M M C C C D R R V V V V S
      |           <---------+---------> <--+--> <-+-> | <+> <--+--> |
      |                     |              |      |   |  |     |    +------Screened T/F
      |                     |              |      |   |  |     +-----------Validity Flags
