@@ -8,7 +8,8 @@ CREATE USER CWMS_DBA
   -- 1 Role for CWMS_DBA 
   GRANT CONNECT TO CWMS_DBA
 /
-GRANT "MGMT_USER" TO "CWMS_DBA"
+-- This role seems to be unnecessary and is causing problem on M3000 installations
+-- GRANT "MGMT_USER" TO "CWMS_DBA"
 /
   ALTER USER CWMS_DBA DEFAULT ROLE ALL
 /
