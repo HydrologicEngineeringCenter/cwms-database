@@ -268,7 +268,7 @@ function get_text_code(
 --    p_delete_action in varchar2 default cwms_util.delete_key,
 --    p_office_id     in varchar2 default null);
 -- /**
---  * Catalogs standard text that matches specified parameters. Matching is
+--  * Catalogs standard text that matches specified criteria. Matching is
 --  * accomplished with glob-style wildcards, as shown below, instead of sql-style
 --  * wildcards.
 --  * <p>
@@ -332,7 +332,7 @@ function get_text_code(
 --    p_std_text_id_mask in  varchar2 default '*',
 --    p_office_id_mask   in  varchar2 default null);
 -- /**
---  * Catalogs standard text that matches specified parameters. Matching is
+--  * Catalogs standard text that matches specified criteria. Matching is
 --  * accomplished with glob-style wildcards, as shown below, instead of sql-style
 --  * wildcards.
 --  * <p>
@@ -409,10 +409,12 @@ function get_text_code(
 --  * @param p_tsid         The time series identifier
 --  * @param p_std_text_id  The identifier of the standard text to store.
 --  * @param p_start_time   The first (or only) time for the text
---  * @param p_end_time     The last time for the text. Not valid for irregular time series. If specified the text is associated with all times from p_start_time to p_end_time (inclusive).
+--  * @param p_end_time     The last time for the text. If specified the text is associated with all times from p_start_time to p_end_time (inclusive). Times must already exist for irregular time series.
 --  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing standard text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
 --  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  */
 -- procedure store_ts_std_text(
@@ -423,9 +425,42 @@ function get_text_code(
 --    p_version_date in date     default cwms_util.non_versioned,
 --    p_time_zone    in varchar2 default null,
 --    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
 --    p_office_id    in varchar2 default null);
 -- /**
---  * Retrieves standard text that match a specified identifier pattern from a time series.
+--  * Store standard text to a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_std_text_id  The identifier of the standard text to store.
+--  * @param p_times        The times for the text
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing standard text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_std_text(
+--    p_tsid         in varchar2,
+--    p_std_text_id  in varchar2,
+--    p_times        in date_table_type,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Retrieves standard text that matches specified criteria from a time series.
 --  * The text can be:
 --  * <ul>
 --  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
@@ -483,6 +518,12 @@ function get_text_code(
 --  *   </tr>
 --  *   <tr>
 --  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the standard text identifier</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
 --  *     <td class="descr">std_text</td>
 --  *     <td class="descr">clob</td>
 --  *     <td class="descr">The descriptive text, if any, for the standard text identifier</td>
@@ -496,6 +537,8 @@ function get_text_code(
 --  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
 --  * @param p_retrieve_text    A flag ('T' or 'F') specifying whether to retrieve descriptive text.
+--  * @param p_min_attribute    The minimum attribute value to retrieve text for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to retrieve text for. If not specified or NULL, no maximum value is used.
 --  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  */
 -- procedure retrieve_ts_std_text(
@@ -508,6 +551,8 @@ function get_text_code(
 --    p_time_zone        in  varchar2 default null,
 --    p_max_version      in  varchar2 default 'T',
 --    p_retrieve_text    in  varchar2 default 'T',
+--    p_min_attribute    in  number   default null,
+--    p_max_attribute    in  number   default null,
 --    p_office_id        in  varchar2 default null);
 -- /**
 --  * Retrieves standard text that match a specified identifier pattern from a time series.
@@ -546,6 +591,8 @@ function get_text_code(
 --  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
 --  * @param p_retrieve_text    A flag ('T' or 'F') specifying whether to retrieve descriptive text.
+--  * @param p_min_attribute    The minimum attribute value to retrieve text for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to retrieve text for. If not specified or NULL, no maximum value is used.
 --  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  *
 --  * @return A cursor containing the standard text. The cursor contains the following columns
@@ -578,6 +625,12 @@ function get_text_code(
 --  *   </tr>
 --  *   <tr>
 --  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the standard text identifier</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
 --  *     <td class="descr">std_text</td>
 --  *     <td class="descr">clob</td>
 --  *     <td class="descr">The descriptive text, if any, for the standard text identifier</td>
@@ -593,9 +646,11 @@ function get_text_code(
 --    p_time_zone        in varchar2 default null,
 --    p_max_version      in varchar2 default 'T',
 --    p_retrieve_text    in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
 --    p_office_id        in varchar2 default null);
 -- /**
---  * Retrieves the number of times a time series has standard text that matches a specified identifier pattern
+--  * Retrieves the number of times a time series has standard text that matches specified criteria
 --  * The text can be:
 --  * <ul>
 --  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
@@ -630,9 +685,11 @@ function get_text_code(
 --  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to include in the count. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to include in the count. If not specified or NULL, no maximum value is used.
 --  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  *
---  * @return The number of times in the time window that have standard text that matches p_std_text_id_mask
+--  * @return The number of times in the time window that have standard text that matches the specified criteria
 --  */
 -- function get_ts_std_text_count(
 --    p_tsid             in varchar2,
@@ -642,10 +699,12 @@ function get_text_code(
 --    p_version_date     in date     default cwms_util.non_versioned,
 --    p_time_zone        in varchar2 default null,
 --    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
 --    p_office_id        in varchar2 default null)
 --    return pls_integer;
 -- /**
---  * Deletes standard text that match a specified identifier pattern from a time series.
+--  * Deletes standard text that match a specified parameters from a time series.
 --  * The text can be:
 --  * <ul>
 --  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
@@ -680,6 +739,8 @@ function get_text_code(
 --  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to delete. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to delete. If not specified or NULL, no maximum value is used.
 --  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  */
 -- procedure delete_ts_std_text(
@@ -690,6 +751,8 @@ function get_text_code(
 --    p_version_date     in date     default cwms_util.non_versioned,
 --    p_time_zone        in varchar2 default null,
 --    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
 --    p_office_id        in varchar2 default null);
 -- /**
 --  * Store nonstandard text to a time series. The text can be:
@@ -705,10 +768,12 @@ function get_text_code(
 --  * @param p_tsid         The time series identifier
 --  * @param p_text         The text to store.
 --  * @param p_start_time   The first (or only) time for the text
---  * @param p_end_time     The last time for the text. Not valid for irregular time series. If specified the text is associated with all times from p_start_time to p_end_time (inclusive).
+--  * @param p_end_time     The last time for the text. If specified the text is associated with all times from p_start_time to p_end_time (inclusive). Times must already exist for irregular time series.
 --  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
 --  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  */
 -- procedure store_ts_text(
@@ -719,6 +784,39 @@ function get_text_code(
 --    p_version_date in date     default cwms_util.non_versioned,
 --    p_time_zone    in varchar2 default null,
 --    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Store nonstandard text to a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_text         The text to store.
+--  * @param p_times        The times for the text
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_text(
+--    p_tsid         in varchar2,
+--    p_text         in clob,
+--    p_times        in date_table_type,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
 --    p_office_id    in varchar2 default null);
 -- /**
 --  * Stores existing time series nonstandard text to a time series. The text can be:
@@ -734,10 +832,12 @@ function get_text_code(
 --  * @param p_tsid         The time series identifier
 --  * @param p_text_id      The identifier of the existing time series nonstandard text to associate with the time series, as retrieved from retrieve_ts_text.
 --  * @param p_start_time   The first (or only) time for the text
---  * @param p_end_time     The last time for the text. Not valid for irregular time series. If specified the text is associated with all times from p_start_time to p_end_time (inclusive).
+--  * @param p_end_time     The last time for the text. If specified the text is associated with all times from p_start_time to p_end_time (inclusive). Times must already exist for irregular time series.
 --  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
 --  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  */
 -- procedure store_ts_text_id(
@@ -748,9 +848,42 @@ function get_text_code(
 --    p_version_date in date     default cwms_util.non_versioned,
 --    p_time_zone    in varchar2 default null,
 --    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
 --    p_office_id    in varchar2 default null);
 -- /**
---  * Retrieve nonstandard text from a time series. The text can be:
+--  * Stores existing time series nonstandard text to a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_text_id      The identifier of the existing time series nonstandard text to associate with the time series, as retrieved from retrieve_ts_text.
+--  * @param p_times        The times for the text
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_text_id(
+--    p_tsid         in varchar2,
+--    p_text_id      in varchar2,
+--    p_times        in date_table_type,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Retrieve nonstandard text that matches specified criteria from a time series. The text can be:
 --  * <ul>
 --  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
 --  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
@@ -806,6 +939,12 @@ function get_text_code(
 --  *   </tr>
 --  *   <tr>
 --  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the text</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
 --  *     <td class="descr">text</td>
 --  *     <td class="descr">clob</td>
 --  *     <td class="descr">The nonstandard text</td>
@@ -818,20 +957,24 @@ function get_text_code(
 --  * @param p_version_date   The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone      The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version    A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute  The minimum attribute value to retrieve text for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute  The maximum attribute value to retrieve text for. If not specified or NULL, no maximum value is used.
 --  * @param p_office_id      The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  */
 -- procedure retrieve_ts_text(
---    p_cursor       out sys_refcursor,
---    p_tsid         in  varchar2,
---    p_text_mask    in  varchar2,
---    p_start_time   in  date,
---    p_end_time     in  date     default null,
---    p_version_date in  date     default cwms_util.non_versioned,
---    p_time_zone    in  varchar2 default null,
---    p_max_version  in  varchar2 default 'T',
---    p_office_id    in  varchar2 default null);
+--    p_cursor        out sys_refcursor,
+--    p_tsid          in  varchar2,
+--    p_text_mask     in  varchar2,
+--    p_start_time    in  date,
+--    p_end_time      in  date     default null,
+--    p_version_date  in  date     default cwms_util.non_versioned,
+--    p_time_zone     in  varchar2 default null,
+--    p_max_version   in  varchar2 default 'T',
+--    p_min_attribute in  number   default null,
+--    p_max_attribute in  number   default null,
+--    p_office_id     in  varchar2 default null);
 -- /**
---  * Retrieve nonstandard text from a time series. The text can be:
+--  * Retrieve nonstandard text that matches specified criteria from a time series. The text can be:
 --  * <ul>
 --  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
 --  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
@@ -865,6 +1008,8 @@ function get_text_code(
 --  * @param p_version_date   The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone      The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version    A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute  The minimum attribute value to retrieve text for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute  The maximum attribute value to retrieve text for. If not specified or NULL, no maximum value is used.
 --  * @param p_office_id      The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  *
 --  * @return A cursor containing the text. The cursor contains the following columns:
@@ -896,6 +1041,12 @@ function get_text_code(
 --  *   </tr>
 --  *   <tr>
 --  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the text</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
 --  *     <td class="descr">text</td>
 --  *     <td class="descr">clob</td>
 --  *     <td class="descr">The nonstandard text</td>
@@ -903,17 +1054,73 @@ function get_text_code(
 --  * </table>
 --  */
 -- function retrieve_ts_text_f(
---    p_tsid         in varchar2,
---    p_text_mask    in varchar2,
---    p_start_time   in date,
---    p_end_time     in date     default null,
---    p_version_date in date     default cwms_util.non_versioned,
---    p_time_zone    in varchar2 default null,
---    p_max_version  in varchar2 default 'T',
---    p_office_id    in varchar2 default null)
+--    p_tsid          in varchar2,
+--    p_text_mask     in varchar2,
+--    p_start_time    in date,
+--    p_end_time      in date     default null,
+--    p_version_date  in date     default cwms_util.non_versioned,
+--    p_time_zone     in varchar2 default null,
+--    p_max_version   in varchar2 default 'T',
+--    p_min_attribute in number   default null,
+--    p_max_attribute in number   default null,
+--    p_office_id     in varchar2 default null)
 --    return sys_refcursor;
 -- /**
---  * Delete nonstandard text from a time series. The text can be:
+--  * Retrieves the number of times a time series has nonstandard text that matches specified criteria
+--  * The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored for each time.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_tsid             The time series identifier
+--  * @param p_text_mask        The text pattern to match. Use glob-style  wildcard characters as shown above instead of sql-style wildcard characters for pattern  matching.
+--  * @param p_start_time       The start of the time window
+--  * @param p_end_time         The end of the time window. If not specified or NULL the time window contains only p_start_time.
+--  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to include in the count. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to include in the count. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  *
+--  * @return The number of times in the time window that have nonstandard text that matches the specified criteria
+--  */
+-- function get_ts_text_count(
+--    p_tsid             in varchar2,
+--    p_text_mask        in varchar2,
+--    p_start_time       in date,
+--    p_end_time         in date     default null,
+--    p_version_date     in date     default cwms_util.non_versioned,
+--    p_time_zone        in varchar2 default null,
+--    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
+--    p_office_id        in varchar2 default null)
+--    return pls_integer;
+-- /**
+--  * Delete nonstandard text that matches specified criteria from a time series. The text can be:
 --  * <ul>
 --  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
 --  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
@@ -947,19 +1154,23 @@ function get_text_code(
 --  * @param p_version_date   The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone      The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version    A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute  The minimum attribute value to delete. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute  The maximum attribute value to delete. If not specified or NULL, no maximum value is used.
 --  * @param p_office_id      The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --   */
 -- procedure delete_ts_text(
---    p_tsid         in varchar2,
---    p_text_mask    in varchar2,
---    p_start_time   in date,
---    p_end_time     in date     default null,
---    p_version_date in date     default cwms_util.non_versioned,
---    p_time_zone    in varchar2 default null,
---    p_max_version  in varchar2 default 'T',
---    p_office_id    in varchar2 default null);
+--    p_tsid          in varchar2,
+--    p_text_mask     in varchar2,
+--    p_start_time    in date,
+--    p_end_time      in date     default null,
+--    p_version_date  in date     default cwms_util.non_versioned,
+--    p_time_zone     in varchar2 default null,
+--    p_max_version   in varchar2 default 'T',
+--    p_min_attribute in number   default null,
+--    p_max_attribute in number   default null,
+--    p_office_id     in varchar2 default null);
 -- /**
---  * Delete nonstandard text from a time series. The text can be:
+--  * Delete nonstandard text that matches specified criteria from a time series. The text can be:
 --  * <ul>
 --  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
 --  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
@@ -969,10 +1180,35 @@ function get_text_code(
 --  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
 --  * in the order they are stored.
 --  *
+--  * @see constant cwms_util.delete_key
+--  * @see constant cwms_util.delete_data
+--  * @see constant cwms_util.delete_all
+--  *
 --  * @param p_text_id The unique identifier for the nonstandard text as retrieved in retrieve_ts_text.
+--  * @param p_delete_action Specifies what to delete.  Actions are as follows:
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">p_delete_action</th>
+--  *     <th class="descr">Action</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_key</td>
+--  *     <td class="descr">deletes only the text, and then only if it is not used in any time series</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_data</td>
+--  *     <td class="descr">deletes only the time series references to the text</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_all</td>
+--  *     <td class="descr">deletes the text and all time series references to it</td>
+--  *   </tr>
+--  * </table>
 --  */
 -- procedure delete_ts_text(
---    p_text_id in varchar2);
+--    p_text_id       in varchar2,
+--    p_delete_action in varchar2 default cwms_util.delete_key);
 -- /**
 --  * Store binary data to a time series. The binary data can be:
 --  * <ul>
@@ -988,10 +1224,12 @@ function get_text_code(
 --  * @param p_binary       The binary data to store.
 --  * @param p_binary_type  The data type expressed as either an internet media type (e.g. 'application/pdf') or a file extension (e.g. '.pdf')
 --  * @param p_start_time   The first (or only) time for the for the binary data
---  * @param p_end_time     The last time for the binary data. Not valid for irregular time series. If specified the binary data is associated with all times from p_start_time to p_end_time (inclusive).
+--  * @param p_end_time     The last time for the binary data. If specified the binary data is associated with all times from p_start_time to p_end_time (inclusive). Times must already exist for irregular time series.
 --  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing binary data with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
 --  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  */
 -- procedure store_ts_binary(
@@ -1003,6 +1241,41 @@ function get_text_code(
 --    p_version_date in date     default cwms_util.non_versioned,
 --    p_time_zone    in varchar2 default null,
 --    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Store binary data to a time series. The binary data can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a text time series (base parameter = "Text")</li>
+--  *   <li>the contents of a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_binary       The binary data to store.
+--  * @param p_binary_type  The data type expressed as either an internet media type (e.g. 'application/pdf') or a file extension (e.g. '.pdf')
+--  * @param p_times        The times for the for the binary data
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing binary data with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_binary(
+--    p_tsid         in varchar2,
+--    p_binary       in blob,
+--    p_binary_type  in varchar2,
+--    p_times        in date_table_type,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
 --    p_office_id    in varchar2 default null);
 -- /**
 --  * Stores existing time series binary data to a time series. The binary data can be:
@@ -1019,10 +1292,12 @@ function get_text_code(
 --  * @param p_binary_id    The unique identifier for the existing time series binary data as retrieved in retrieve_ts_binary.
 --  * @param p_binary_type  The data type expressed as either an internet media type (e.g. 'application/pdf') or a file extension (e.g. '.pdf')
 --  * @param p_start_time   The first (or only) time for the for the binary data
---  * @param p_end_time     The last time for the binary data. Not valid for irregular time series. If specified the binary data is associated with all times from p_start_time to p_end_time (inclusive).
+--  * @param p_end_time     The last time for the binary data. If specified the binary data is associated with all times from p_start_time to p_end_time (inclusive). Times must already exist for irregular time series.
 --  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing binary data with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
 --  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  */
 -- procedure store_ts_binary_id(
@@ -1034,9 +1309,44 @@ function get_text_code(
 --    p_version_date in date     default cwms_util.non_versioned,
 --    p_time_zone    in varchar2 default null,
 --    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
 --    p_office_id    in varchar2 default null);
 -- /**
---  * Retrieve binary data that matches a specified type pattern from a time series. The binary data can be:
+--  * Stores existing time series binary data to a time series. The binary data can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a text time series (base parameter = "Text")</li>
+--  *   <li>the contents of a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_binary_id    The unique identifier for the existing time series binary data as retrieved in retrieve_ts_binary.
+--  * @param p_binary_type  The data type expressed as either an internet media type (e.g. 'application/pdf') or a file extension (e.g. '.pdf')
+--  * @param p_times        The times for the for the binary data
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing binary data with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_binary_id(
+--    p_tsid         in varchar2,
+--    p_binary_id    in varchar2,
+--    p_binary_type  in varchar2,
+--    p_times        in date_table_type,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Retrieve binary data that matches a specified criteria from a time series. The binary data can be:
 --  * <ul>
 --  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
 --  *   <li>associated with a text time series (base parameter = "Text")</li>
@@ -1092,18 +1402,24 @@ function get_text_code(
 --  *   </tr>
 --  *   <tr>
 --  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
 --  *     <td class="descr">media_type</td>
 --  *     <td class="descr">varchar2(84)</td>
 --  *     <td class="descr">The internet media type of the binary data</td>
 --  *   </tr>
 --  *   <tr>
---  *     <td class="descr-center">5</td>
+--  *     <td class="descr-center">6</td>
 --  *     <td class="descr">file_extension</td>
 --  *     <td class="descr">varchar2(16)</td>
 --  *     <td class="descr">The file extension of the binary data</td>
 --  *   </tr>
 --  *   <tr>
---  *     <td class="descr-center">6</td>
+--  *     <td class="descr-center">7</td>
 --  *     <td class="descr">binary_data</td>
 --  *     <td class="descr">blob</td>
 --  *     <td class="descr">The binary data</td>
@@ -1116,6 +1432,8 @@ function get_text_code(
 --  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to retrieve binary data for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to retrieve binary data for. If not specified or NULL, no maximum value is used.
 --  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  */
 -- procedure retrieve_ts_binary(
@@ -1127,6 +1445,8 @@ function get_text_code(
 --    p_version_date     in  date     default cwms_util.non_versioned,
 --    p_time_zone        in  varchar2 default null,
 --    p_max_version      in  varchar2 default 'T',
+--    p_min_attribute    in  number   default null,
+--    p_max_attribute    in  number   default null,
 --    p_office_id        in  varchar2 default null);
 -- /**
 --  * Retrieve binary data that matches a specified type pattern from a time series. The binary data can be:
@@ -1163,6 +1483,8 @@ function get_text_code(
 --  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to retrieve binary data for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to retrieve binary data for. If not specified or NULL, no maximum value is used.
 --  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  *
 --  * @return A cursor containing the binary data. The cursor contains the following columns:
@@ -1194,18 +1516,24 @@ function get_text_code(
 --  *   </tr>
 --  *   <tr>
 --  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
 --  *     <td class="descr">media_type</td>
 --  *     <td class="descr">varchar2(84)</td>
 --  *     <td class="descr">The internet media type of the binary data</td>
 --  *   </tr>
 --  *   <tr>
---  *     <td class="descr-center">5</td>
+--  *     <td class="descr-center">6</td>
 --  *     <td class="descr">file_extension</td>
 --  *     <td class="descr">varchar2(16)</td>
 --  *     <td class="descr">The file extension of the binary data</td>
 --  *   </tr>
 --  *   <tr>
---  *     <td class="descr-center">6</td>
+--  *     <td class="descr-center">7</td>
 --  *     <td class="descr">binary_data</td>
 --  *     <td class="descr">blob</td>
 --  *     <td class="descr">The binary data</td>
@@ -1220,10 +1548,66 @@ function get_text_code(
 --    p_version_date     in date     default cwms_util.non_versioned,
 --    p_time_zone        in varchar2 default null,
 --    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
 --    p_office_id        in varchar2 default null)
 --    return sys_refcursor;
 -- /**
---  * Deletes binary data that matches a specified type pattern from a time series. The binary data can be:
+--  * Retrieves the number of times a time series has binary data that matches specified criteria
+--  * The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored for each time.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_tsid             The time series identifier
+--  * @param p_binary_type_mask The data type pattern expressed as either an internet media type (e.g. 'image/*') or a file extension (e.g. '.*'). Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
+--  * @param p_start_time       The start of the time window
+--  * @param p_end_time         The end of the time window. If not specified or NULL the time window contains only p_start_time.
+--  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to include in the count. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to include in the count. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  *
+--  * @return The number of times in the time window that have binary data that matches the specified criteria
+--  */
+-- function get_ts_binary_count(
+--    p_tsid             in varchar2,
+--    p_binary_type_mask in varchar2,
+--    p_start_time       in date,
+--    p_end_time         in date     default null,
+--    p_version_date     in date     default cwms_util.non_versioned,
+--    p_time_zone        in varchar2 default null,
+--    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
+--    p_office_id        in varchar2 default null)
+--    return pls_integer;
+-- /**
+--  * Deletes binary data that matches a specified criteria from a time series. The binary data can be:
 --  * <ul>
 --  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
 --  *   <li>associated with a text time series (base parameter = "Text")</li>
@@ -1257,6 +1641,8 @@ function get_text_code(
 --  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
 --  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
 --  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to delete. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to delete. If not specified or NULL, no maximum value is used.
 --  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
 --  */
 -- procedure delete_ts_binary(
@@ -1267,6 +1653,8 @@ function get_text_code(
 --    p_version_date     in date     default cwms_util.non_versioned,
 --    p_time_zone        in varchar2 default null,
 --    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
 --    p_office_id        in varchar2 default null);
 -- /**
 --  * Delete binary data from a time series. The binary data can be:
@@ -1279,10 +1667,35 @@ function get_text_code(
 --  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
 --  * in the order they are stored.
 --  *
+--  * @see constant cwms_util.delete_key
+--  * @see constant cwms_util.delete_data
+--  * @see constant cwms_util.delete_all
+--  *
 --  * @param p_binary_id The unique identifier for the binary data as retrieved in retrieve_ts_binary.
+--  * @param p_delete_action Specifies what to delete.  Actions are as follows:
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">p_delete_action</th>
+--  *     <th class="descr">Action</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_key</td>
+--  *     <td class="descr">deletes only the binary data, and then only if it is not used in any time series</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_data</td>
+--  *     <td class="descr">deletes only the time series references to the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_all</td>
+--  *     <td class="descr">deletes the binary data and all time series references to it</td>
+--  *   </tr>
+--  * </table>
 --  */
 -- procedure delete_ts_binary(
---    p_binary_id in varchar2);
+--    p_binary_id     in varchar2,
+--    p_delete_action in varchar2 default cwms_util.delete_key);
 end;
 /
 
