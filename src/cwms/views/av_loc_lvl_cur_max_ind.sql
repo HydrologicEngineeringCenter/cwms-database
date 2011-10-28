@@ -24,7 +24,8 @@ create or replace force view av_loc_lvl_cur_max_ind (
    indicator_name
 )
 as
-select q1.office_id,
+select distinct
+       q1.office_id,
        q1.cwms_ts_id,
        q1.level_indicator_id,
        q1.attribute_id,
