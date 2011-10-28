@@ -3457,27 +3457,27 @@ as
       ---------------------------
       -- set the member fields --
       ---------------------------
-      location_level_code           := p_location_level_code;
-      location_code                 := p_location_code;
-      specified_level_code          := p_specified_level_code;
-      parameter_code                := p_parameter_code;
-      parameter_type_code           := p_parameter_type_code;
-      duration_code                 := p_duration_code;
-      location_level_date           := p_location_level_date;
-      location_level_value          := p_location_level_value;
-      location_level_comment        := p_location_level_comment;
-      attribute_value               := p_attribute_value;
-      attribute_parameter_code      := p_attribute_parameter_code;
-      attribute_param_type_code     := p_attribute_param_type_code;
-      attribute_duration_code       := p_attribute_duration_code;
-      attribute_comment             := p_attribute_comment;
-      interval_origin               := p_interval_origin;
-      calendar_interval             := p_calendar_interval;
-      time_interval                 := p_time_interval;
-      interpolate                   := p_interpolate;
-      ts_code                       :=  p_ts_code;
-      seasonal_level_values         := p_seasonal_values;
-      indicators                    := p_indicators;
+      self.location_level_code           := p_location_level_code;
+      self.location_code                 := p_location_code;
+      self.specified_level_code          := p_specified_level_code;
+      self.parameter_code                := p_parameter_code;
+      self.parameter_type_code           := p_parameter_type_code;
+      self.duration_code                 := p_duration_code;
+      self.location_level_date           := p_location_level_date;
+      self.location_level_value          := p_location_level_value;
+      self.location_level_comment        := p_location_level_comment;
+      self.attribute_value               := p_attribute_value;
+      self.attribute_parameter_code      := p_attribute_parameter_code;
+      self.attribute_param_type_code     := p_attribute_param_type_code;
+      self.attribute_duration_code       := p_attribute_duration_code;
+      self.attribute_comment             := p_attribute_comment;
+      self.interval_origin               := p_interval_origin;
+      self.calendar_interval             := p_calendar_interval;
+      self.time_interval                 := p_time_interval;
+      self.interpolate                   := p_interpolate;
+      self.ts_code                       :=  p_ts_code;
+      self.seasonal_level_values         := p_seasonal_values;
+      self.indicators                    := p_indicators;
    end init;
 
    member procedure store
@@ -3501,25 +3501,25 @@ as
       ---------------------------
       -- set the record fields --
       ---------------------------
-      l_rec.location_level_code           := location_level_code;
-      l_rec.location_code                 := location_code;
-      l_rec.specified_level_code          := specified_level_code;
-      l_rec.parameter_code                := parameter_code;
-      l_rec.parameter_type_code           := parameter_type_code;
-      l_rec.duration_code                 := duration_code;
-      l_rec.location_level_date           := location_level_date;
-      l_rec.location_level_value          := location_level_value;
-      l_rec.location_level_comment        := location_level_comment;
-      l_rec.attribute_value               := attribute_value;
-      l_rec.attribute_parameter_code      := attribute_parameter_code;
-      l_rec.attribute_parameter_type_code := attribute_param_type_code;
-      l_rec.attribute_duration_code       := attribute_duration_code;
-      l_rec.attribute_comment             := attribute_comment;
-      l_rec.interval_origin               := interval_origin;
-      l_rec.calendar_interval             := calendar_interval;
-      l_rec.time_interval                 := time_interval;
-      l_rec.interpolate                   := interpolate;
-      l_rec.ts_code                       := ts_code;
+      l_rec.location_level_code           := self.location_level_code;
+      l_rec.location_code                 := self.location_code;
+      l_rec.specified_level_code          := self.specified_level_code;
+      l_rec.parameter_code                := self.parameter_code;
+      l_rec.parameter_type_code           := self.parameter_type_code;
+      l_rec.duration_code                 := self.duration_code;
+      l_rec.location_level_date           := self.location_level_date;
+      l_rec.location_level_value          := self.location_level_value;
+      l_rec.location_level_comment        := self.location_level_comment;
+      l_rec.attribute_value               := self.attribute_value;
+      l_rec.attribute_parameter_code      := self.attribute_parameter_code;
+      l_rec.attribute_parameter_type_code := self.attribute_param_type_code;
+      l_rec.attribute_duration_code       := self.attribute_duration_code;
+      l_rec.attribute_comment             := self.attribute_comment;
+      l_rec.interval_origin               := self.interval_origin;
+      l_rec.calendar_interval             := self.calendar_interval;
+      l_rec.time_interval                 := self.time_interval;
+      l_rec.interpolate                   := self.interpolate;
+      l_rec.ts_code                       := self.ts_code;
       --------------------------------------
       -- insert or update the main record --
       --------------------------------------
@@ -3541,14 +3541,14 @@ as
            from at_seasonal_location_level
           where location_level_code = l_rec.location_level_code;
        end if;
-       if seasonal_level_values is not null then
-          for i in 1..seasonal_level_values.count loop
+       if self.seasonal_level_values is not null then
+          for i in 1..self.seasonal_level_values.count loop
             insert
               into at_seasonal_location_level
             values (l_rec.location_level_code,
-                    seasonal_level_values(i).calendar_offset,
-                    seasonal_level_values(i).time_offset,
-                    seasonal_level_values(i).level_value);
+                    self.seasonal_level_values(i).calendar_offset,
+                    self.seasonal_level_values(i).time_offset,
+                    self.seasonal_level_values(i).level_value);
           end loop;
        end if;
       --------------------------
@@ -3567,9 +3567,9 @@ as
             and nvl(attr_parameter_type_code, -1) = nvl(l_rec.attribute_parameter_type_code, -1)
             and nvl(attr_duration_code, -1)       = nvl(l_rec.attribute_duration_code, -1);
        end if;
-       if indicators is not null then
+       if self.indicators is not null then
          for i in 1..indicators.count loop
-            indicators(i).store;
+            self.indicators(i).store;
          end loop;
        end if;
    end store;
@@ -3667,8 +3667,8 @@ as
              bl.base_location_id
              || substr('-', 1, length(pl.sub_location_id))
              || pl.sub_location_id
-        into office_id,
-             location_id
+        into self.office_id,
+             self.location_id
         from at_physical_location pl,
              at_base_location bl,
              cwms_office o
@@ -3679,48 +3679,48 @@ as
       select bp.base_parameter_id
              || substr('-', 1, length(p.sub_parameter_id))
              || p.sub_parameter_id
-        into parameter_id
+        into self.parameter_id
         from at_parameter p,
              cwms_base_parameter bp
        where p.parameter_code = p_obj.parameter_code
          and bp.base_parameter_code = p.base_parameter_code;
 
       select parameter_type_id
-        into parameter_type_id
+        into self.parameter_type_id
         from cwms_parameter_type
        where parameter_type_code = p_obj.parameter_type_code;
 
       select duration_id
-        into duration_id
+        into self.duration_id
         from cwms_duration
        where duration_code = p_obj.duration_code;
 
       select specified_level_id
-        into specified_level_id
+        into self.specified_level_id
         from at_specified_level
        where specified_level_code = p_obj.specified_level_code;
 
-      level_date := p_obj.location_level_date;
-      level_value := p_obj.location_level_value;
-      level_units_id := cwms_util.get_default_units(parameter_id);
+      self.level_date := p_obj.location_level_date;
+      self.level_value := p_obj.location_level_value;
+      self.level_units_id := cwms_util.get_default_units(parameter_id);
 
       if p_obj.attribute_parameter_code is not null then
          select bp.base_parameter_id
                 || substr('-', 1, length(p.sub_parameter_id))
                 || p.sub_parameter_id
-           into attribute_parameter_id
+           into self.attribute_parameter_id
            from at_parameter p,
                 cwms_base_parameter bp
           where p.parameter_code = p_obj.attribute_parameter_code
             and bp.base_parameter_code = p.base_parameter_code;
 
          select parameter_type_id
-           into attribute_parameter_type_id
+           into self.attribute_parameter_type_id
            from cwms_parameter_type
           where parameter_type_code = p_obj.attribute_param_type_code;
 
          select duration_id
-           into attribute_duration_id
+           into self.attribute_duration_id
            from cwms_duration
           where duration_code = p_obj.attribute_duration_code;
          attribute_value := p_obj.attribute_value;
@@ -3729,25 +3729,25 @@ as
          attribute_comment := p_obj.attribute_comment;
       end if;
 
-      interval_origin  := p_obj.interval_origin;
-      interval_months  := cwms_util.yminterval_to_months(p_obj.calendar_interval);
-      interval_minutes := cwms_util.dsinterval_to_minutes(p_obj.time_interval);
-      interpolate      := p_obj.interpolate;
-      tsid             := case p_obj.ts_code is null
-                             when true  then null
-                             when false then cwms_ts.get_ts_id(p_obj.ts_code)
-                          end;
+      self.interval_origin  := p_obj.interval_origin;
+      self.interval_months  := cwms_util.yminterval_to_months(p_obj.calendar_interval);
+      self.interval_minutes := cwms_util.dsinterval_to_minutes(p_obj.time_interval);
+      self.interpolate      := p_obj.interpolate;
+      self.tsid             := case p_obj.ts_code is null
+                                  when true  then null
+                                  when false then cwms_ts.get_ts_id(p_obj.ts_code)
+                               end;
       if p_obj.seasonal_level_values is not null then
-         seasonal_values := new seasonal_value_tab_t();
+         self.seasonal_values := new seasonal_value_tab_t();
          for i in 1..p_obj.seasonal_level_values.count loop
-            seasonal_values.extend;
-            seasonal_values(i) := seasonal_value_t(
+            self.seasonal_values.extend;
+            self.seasonal_values(i) := seasonal_value_t(
                p_obj.seasonal_level_values(i).calendar_offset,
                p_obj.seasonal_level_values(i).time_offset,
                p_obj.seasonal_level_values(i).level_value);
          end loop;
       end if;
-      indicators := p_obj.indicators;
+      self.indicators := p_obj.indicators;
       return;
    end location_level_t;
 
@@ -3793,19 +3793,19 @@ as
         from at_physical_location pl,
              at_base_location bl,
              cwms_office o
-       where upper(o.office_id) = upper(office_id)
+       where upper(o.office_id) = upper(self.office_id)
          and bl.db_office_code = o.office_code
          and bl.base_location_code = pl.base_location_code
-         and upper(bl.base_location_id) = upper(cwms_util.get_base_id(location_id))
-         and upper(nvl(pl.sub_location_id, '.')) = upper(nvl(cwms_util.get_sub_id(location_id), '.'));
+         and upper(bl.base_location_id) = upper(cwms_util.get_base_id(self.location_id))
+         and upper(nvl(pl.sub_location_id, '.')) = upper(nvl(cwms_util.get_sub_id(self.location_id), '.'));
 
       select p.parameter_code
         into l_parameter_code
         from at_parameter p,
              cwms_base_parameter bp
-       where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(parameter_id))
+       where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(self.parameter_id))
          and p.base_parameter_code = bp.base_parameter_code
-         and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(parameter_id), '.'))
+         and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(self.parameter_id), '.'))
          and p.db_office_code in (l_office_code, l_cwms_office_code);
 
       select pt.parameter_type_code
@@ -3826,46 +3826,46 @@ as
       select level_value * factor + offset
         into l_location_level_value
         from cwms_unit_conversion cuc
-       where from_unit_id = level_units_id
-         and to_unit_id = cwms_util.get_default_units(parameter_id);
+       where from_unit_id = self.level_units_id
+         and to_unit_id = cwms_util.get_default_units(self.parameter_id);
 
-      if attribute_parameter_id is not null then
+      if self.attribute_parameter_id is not null then
          select p.parameter_code
            into l_attribute_parameter_code
            from at_parameter p,
                 cwms_base_parameter bp
-          where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(attribute_parameter_id))
+          where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(self.attribute_parameter_id))
             and p.base_parameter_code = bp.base_parameter_code
-            and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(attribute_parameter_id), '.'))
+            and upper(nvl(p.sub_parameter_id, '.')) = upper(nvl(cwms_util.get_sub_id(self.attribute_parameter_id), '.'))
             and p.db_office_code in (l_office_code, l_cwms_office_code);
 
          select pt.parameter_type_code
            into l_attribute_param_type_code
            from cwms_parameter_type pt
-          where upper(pt.parameter_type_id) = upper(attribute_parameter_type_id);
+          where upper(pt.parameter_type_id) = upper(self.attribute_parameter_type_id);
 
          select d.duration_code
            into l_attribute_duration_code
            from cwms_duration d
-          where upper(d.duration_id) = upper(attribute_duration_id);
+          where upper(d.duration_id) = upper(self.attribute_duration_id);
 
-         select attribute_value * factor + offset
+         select self.attribute_value * factor + offset
            into l_attribute_value
            from cwms_unit_conversion cuc
           where from_unit_id = attribute_units_id
-            and to_unit_id = cwms_util.get_default_units(attribute_parameter_id);
+            and to_unit_id = cwms_util.get_default_units(self.attribute_parameter_id);
       end if;
 
-      l_calendar_interval := cwms_util.months_to_yminterval(interval_months);
-      l_time_interval     := cwms_util.minutes_to_dsinterval(interval_minutes);
+      l_calendar_interval := cwms_util.months_to_yminterval(self.interval_months);
+      l_time_interval     := cwms_util.minutes_to_dsinterval(self.interval_minutes);
 
-      if seasonal_values is not null then
+      if self.seasonal_values is not null then
          l_seasonal_level_values := new seasonal_loc_lvl_tab_t();
-         for i in 1..seasonal_values.count loop
+         for i in 1..self.seasonal_values.count loop
             l_seasonal_level_values.extend;
             l_seasonal_level_values(i) := seasonal_location_level_t(
-               cwms_util.months_to_yminterval(seasonal_values(i).offset_months),
-               cwms_util.minutes_to_dsinterval(seasonal_values(i).offset_minutes),
+               cwms_util.months_to_yminterval(self.seasonal_values(i).offset_months),
+               cwms_util.minutes_to_dsinterval(self.seasonal_values(i).offset_minutes),
                seasonal_values(i).value);
          end loop;
       end if;
@@ -3879,7 +3879,7 @@ as
             and parameter_type_code = l_parameter_type_code
             and duration_code = l_duration_code
             and specified_level_code = l_specified_level_code
-            and location_level_date = location_level_date
+            and location_level_date = self.level_date
             and location_level_value = l_location_level_value
             and nvl(to_char(attribute_value), '@') = nvl(to_char(l_attribute_value), '@')
             and nvl(attribute_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
@@ -3897,24 +3897,24 @@ as
             l_parameter_code,
             l_parameter_type_code,
             l_duration_code,
-            level_date,
+            self.level_date,
             l_location_level_value,
-            level_comment,
+            self.level_comment,
             l_attribute_value,
             l_attribute_parameter_code,
             l_attribute_param_type_code,
             l_attribute_duration_code,
-            attribute_comment,
-            interval_origin,
+            self.attribute_comment,
+            self.interval_origin,
             l_calendar_interval,
             l_time_interval,
-            interpolate,
-            case tsid is null
+            self.interpolate,
+            case self.tsid is null
                when true  then null
-               when false then cwms_ts.get_ts_code(tsid, l_office_code)
+               when false then cwms_ts.get_ts_code(self.tsid, l_office_code)
             end,
             l_seasonal_level_values,
-            indicators);
+            self.indicators);
       else
          l_obj := zlocation_level_t(l_location_level_code);
       end if;
