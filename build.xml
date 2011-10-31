@@ -70,11 +70,11 @@
 		<if>
 			<equals arg1="${office.secondary.id}" arg2="" />
 			<then>
-				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${office.primary.id} ${test.account.create}"/>
+				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${existing.cwms.instances} ${office.primary.id} ${test.account.create}"/>
 				<echo message="${buildSqlScript-arg-line}"/>
 			</then>
 			<else>
-				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${office.primary.id} ${office.secondary.id} ${test.account.create}"/>
+				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${existing.cwms.instances} ${office.primary.id} ${office.secondary.id} ${test.account.create}"/>
 				<echo message="${buildSqlScript-arg-line}"/>
 			</else>
 		</if>

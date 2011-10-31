@@ -84,6 +84,7 @@ if ec :
 # use SQL*Loader to load any control files generated #
 # by buildSqlScripts.py                              #
 #----------------------------------------------------#
+print "Loading control files"
 loaderCmdTemplate = "sqlldr %s/%s@%s control=%s"
 for loaderFilename in [fn for fn in os.listdir(".") if fnmatch.fnmatch(fn, "*Loader.ctl")] :
 	loaderCmd = loaderCmdTemplate % (cwms_schema, cwms_passwd, inst, loaderFilename)

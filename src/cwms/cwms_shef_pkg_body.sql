@@ -3953,11 +3953,12 @@ AS
         p_db_office_id      IN      VARCHAR2 DEFAULT NULL
     )
     IS
-        l_data_stream_code    NUMBER
+	l_data_stream_code    NUMBER;
+    BEGIN
+        l_data_stream_code    
             := get_data_stream_code (p_data_stream_id   => p_data_stream_id,
                                              p_db_office_id      => p_db_office_id
                                             );
-    BEGIN
         p_crit_file := NULL;
         p_otf_file := NULL;
         p_use_db_crit := 'F';
@@ -3983,8 +3984,11 @@ AS
             --cwms_err.RAISE ('NO_CRIT_FILE_FOUND', p_data_stream_id);
             END;
         END IF;
-    --
-    END;
+	EXCEPTION
+	    WHEN OTHERS
+	    THEN
+		p_use_db_crit := 'F';
+	END;
 
     PROCEDURE set_ds_update_idle_period (p_idle_period       IN NUMBER DEFAULT 0,
                                                      p_db_office_code   IN NUMBER

@@ -26,6 +26,7 @@ def uniqueCombinations(items):
                 
 testAccount  = None
 db_office_id = None
+db_cwms_count = -1 
 office_ids   = []
 tempFilename = os.tmpnam()
 
@@ -35,13 +36,14 @@ tempFilename = os.tmpnam()
 #-------------------------#
 try :
     user = sys.argv[1].upper()
+    db_cwms_count = int(sys.argv[2])
 except :
-    sys.stderr.write("Usage: python buildSqlScripts.py <schema name>\n")
-    sys.stderr.write("Ex:    python buildSqlScripts.py cwms\n")
+    sys.stderr.write("Usage: python buildSqlScripts.py <schema name> <existing_cwms_instances>\n")
+    sys.stderr.write("Ex:    python buildSqlScripts.py cwms 0\n")
     sys.exit(-1)
 
 
-args = sys.argv[2:]
+args = sys.argv[3:]
 for arg in args :
     arg = arg.upper()
     if arg in ('/TESTACCOUNT', '-TESTACCOUNT') :
@@ -5374,6 +5376,9 @@ if not db_office_id:
             line = raw_input("Is this correct? (y/n) [n] > ")
             if not line or line[0].upper() != 'Y' :
                 ok = False
+	    while db_cwms_count < 0 or db_cwms_count > 9 :
+		db_cwms_count = int(raw_input('Enter CWMS Database Instances already installed at this office(0-9): '))
+		print db_cwms_count
         else :
             print
             print "ERROR! Office %s does not host a database. Contact HEC if this" % db_office_id
@@ -5452,6 +5457,9 @@ if testAccount :
     print "-- and read privileges on all -RAW ts ids for the %s " % db_office_id
     print "-- database."
     print
+else:
+    db_office_eroc = ''
+    test_user_id = ''
     
 #------------------------------------------------------------------------------
 # Consolidate db_office_id and shared office_ids
@@ -8947,12 +8955,13 @@ for table in tables_rev :
 #==============================================================================
 # Create CWMS_SEQ for the specified db_office_id's offset...
 #==============================================================================
+dbStartIndex =  db_office_code[db_office_id] + (100*db_cwms_count)
 dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
 print dropPrefix + "DROP SEQUENCE CWMS_SEQ;"
 print prefix[CWMS] + "CREATE SEQUENCE CWMS_SEQ"
-print prefix[CWMS] + "\tSTART WITH %s" % db_office_code[db_office_id]
+print prefix[CWMS] + "\tSTART WITH %s" % dbStartIndex 
 print prefix[CWMS] + "\tINCREMENT BY 1000"
-print prefix[CWMS] + "\tMINVALUE %s" % db_office_code[db_office_id]
+print prefix[CWMS] + "\tMINVALUE %s" % dbStartIndex 
 print prefix[CWMS] + "\tMAXVALUE 1.0e38"
 print prefix[CWMS] + "\tNOCYCLE"
 print prefix[CWMS] + "\tCACHE 20"
