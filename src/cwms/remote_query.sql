@@ -7,7 +7,7 @@ define retrieve_job_interval = '60'                      -- job interval in minu
 define office_id             = 'SWT'                     -- office_id for database link name
 define cwms_pass             = '********'                -- cwms password for database link (v1.5 or v2 remote)
 define remote_db_url         = '155.88.11.61:1521/WM5B'  -- host:port/SID for remote database (v1.5 or v2 remote)
-
+/*
 whenever sqlerror continue
 
 drop table remote_offices;
@@ -46,7 +46,7 @@ create table remote_tsids
    ts_id               varchar2(193) not null
 );
 alter table remote_tsids add constraint remote_tsids_pk primary key (dblink, ts_code) using index;
-
+*/
 --##############################################################################
 -- PACKAGE SPECIFICATION
 --##############################################################################
@@ -1202,6 +1202,7 @@ begin
                      'F',
                      cwms_util.non_versioned,
                      ofc_rec.dst_office_id);
+                  commit;
                exception
                   when others then
                      cwms_msg.log_db_message(
@@ -1302,7 +1303,7 @@ end;
 /
 show errors
 commit;
-
+/*
 whenever sqlerror continue
 
 drop database link &office_id._cwms_remote;
@@ -1310,7 +1311,7 @@ drop database link &office_id._cwms_remote;
 whenever sqlerror exit sql.sqlcode
 
 create database link &office_id._cwms_remote connect to cwms identified by &cwms_pass using '&remote_db_url';
-
+*/
 declare
    l_job_name varchar2(30) := 'get_remote_cwms_data'; 
 begin
