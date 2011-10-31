@@ -31,6 +31,10 @@
 	<!-- flag to create the test account -->
 	<property name="test.account.create" value="-testaccount"/>
 
+        <!-- Existing CWMS instances at current office (used to determine CWMS_SEQ offset) -->
+        <property name="cwms.existing.instances" value="0"/>
+
+
 	<!-- flags to control output of auto kill and auto build -->
 	<property name="autobuild.echo" value="OFF"/>
 	<property name="autokill.echo" value="OFF"/>
@@ -70,11 +74,11 @@
 		<if>
 			<equals arg1="${office.secondary.id}" arg2="" />
 			<then>
-				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${existing.cwms.instances} ${office.primary.id} ${test.account.create}"/>
+				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${cwms.existing.instances} ${office.primary.id} ${test.account.create}"/>
 				<echo message="${buildSqlScript-arg-line}"/>
 			</then>
 			<else>
-				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${existing.cwms.instances} ${office.primary.id} ${office.secondary.id} ${test.account.create}"/>
+				<property name="buildSqlScript-arg-line" value="/c python buildSqlScripts.py ${oracle.cwms.user} ${cwms.existing.instances} ${office.primary.id} ${office.secondary.id} ${test.account.create}"/>
 				<echo message="${buildSqlScript-arg-line}"/>
 			</else>
 		</if>
