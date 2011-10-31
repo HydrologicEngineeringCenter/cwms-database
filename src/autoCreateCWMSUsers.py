@@ -1,7 +1,7 @@
 #!/bin/env python
 import os, sys
 
-manual_sqlfilename = "CreateCWMSUsers.sql"
+manual_sqlfilename = "createCWMSUsers.sql"
 auto_sqlfilename   = "autoCreateCWMSUsers.sql"
 
 prompt_block = \

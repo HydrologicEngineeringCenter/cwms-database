@@ -74,8 +74,7 @@ begin
    
      
    DBMS_DATAPUMP.METADATA_FILTER (h1,'INCLUDE_PATH_EXPR','IN (''SEQUENCE'',''TABLE'')' );
-   DBMS_DATAPUMP.METADATA_FILTER (h1,'NAME_EXPR', 'IN (SELECT  table_name from dba_tables where owner = ''&cwms_schema'' and table_name like ''AT_%'' OR table_name = ''CWMS_DATA_QUALITY'')','TABLE'  );
-   --DBMS_DATAPUMP.METADATA_FILTER (h1,'NAME_EXPR', 'IN (SELECT  table_name from dba_tables where owner = ''&cwms_schema'' and table_name like ''EXPORT_%'')','TABLE'  );
+   DBMS_DATAPUMP.METADATA_FILTER (h1,'NAME_EXPR', 'IN (SELECT  table_name from dba_tables where owner = ''&cwms_schema'' and table_name like ''AT_%'' )','TABLE'  );
    
 
    DBMS_DATAPUMP.START_JOB (h1);
