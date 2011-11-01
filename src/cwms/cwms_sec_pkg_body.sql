@@ -2260,7 +2260,7 @@ END;
     IS
         l_db_office_code     NUMBER;
     BEGIN
-        SELECT    min_value
+        SELECT    mod(min_value,100)
           INTO    l_db_office_code
           FROM    user_sequences
          WHERE    sequence_name = 'CWMS_SEQ';
