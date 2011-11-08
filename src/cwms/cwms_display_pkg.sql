@@ -304,7 +304,7 @@ function cat_scale_limits_f(
    p_office_id_mask    in  varchar2 default null)
    return sys_refcursor;
 /**
- * Stores a preferred parameter unit to the database
+ * Stores an office's preferred parameter unit to the database
  *
  * @param p_parameter_id   The parameter to store the preferred unit for
  * @param p_unit_system    The unit system ('EN' or 'SI') for which the preferred unit applies
@@ -318,12 +318,31 @@ function cat_scale_limits_f(
 procedure store_unit(
    p_parameter_id   in varchar2,
    p_unit_system    in varchar2,
-   p_fail_if_exists in varchar2,
-   p_ignore_nulls   in varchar2,
    p_unit_id        in varchar2,
+   p_fail_if_exists in varchar2,
    p_office_id      in varchar2 default null);
 /**
- * Retrieves a preferred parameter unit from the database
+ * Stores a user's preferred parameter unit to the database
+ *
+ * @param p_parameter_id   The parameter to store the preferred unit for
+ * @param p_unit_system    The unit system ('EN' or 'SI') for which the preferred unit applies
+ * @param p_fail_if_exists A flag ('T' or 'F') specifying whether the routine should fail if the specified preferred already exists.  If 'F', the existing preferred unit are updated with the specified parameters.
+ * @param p_ignore_nulls   A flag ('T' or 'F') specifying whether to ignore NULL parameters when updating existing preferred unit. If 'T', no existing data will be overwritten by NULL
+ * @param p_unit_id        The preferred unit for the specified parameter and unit system
+ * @param p_user_id        The user for which the preferred unit applies. If not specified or NULL, the session user is used.
+ * @param p_office_id      The office for which the preferred unit applies.  If not specified or NULL, the session user's default office is used.
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the preferred unit is already exists in the database
+ */
+procedure store_user_unit(
+   p_parameter_id   in varchar2,
+   p_unit_system    in varchar2,
+   p_unit_id        in varchar2,
+   p_fail_if_exists in varchar2,
+   p_user_id        in varchar2 default null,
+   p_office_id      in varchar2 default null);
+/**
+ * Retrieves an office's preferred parameter unit from the database
  *
  * @param p_unit_id        The preferred unit for the specified parameter and unit system
  * @param p_parameter_id   The parameter to retrieve the preferred unit for
@@ -336,7 +355,52 @@ procedure retrieve_unit(
    p_unit_system    in  varchar2,
    p_office_id      in  varchar2 default null);
 /**
- * Retrieves a preferred parameter unit from the database
+ * Retrieves an office's preferred parameter unit from the database
+ *
+ * @param p_parameter_id   The parameter to retrieve the preferred unit for
+ * @param p_unit_system    The unit system ('EN' or 'SI') for which the preferred unit applies
+ * @param p_office_id      The office for which the preferred unit applies.  If not specified or NULL, the session user's default office is used.
+ *
+ * @return The preferred unit for the specified parameter and unit system
+ */
+function retrieve_unit_f(
+   p_parameter_id   in varchar2,
+   p_unit_system    in varchar2,
+   p_office_id      in varchar2 default null)
+   return varchar2;
+/**
+ * Retrieves an office's preferred parameter unit from the database
+ *
+ * @param p_unit_id        The preferred unit for the specified parameter and unit system
+ * @param p_parameter_id   The parameter to retrieve the preferred unit for
+ * @param p_unit_system    The unit system ('EN' or 'SI') for which the preferred unit applies
+ * @param p_user_id        The user for which the preferred unit applies. If not specified or NULL, the session user is used.
+ * @param p_office_id      The office for which the preferred unit applies.  If not specified or NULL, the session user's default office is used.
+ */
+procedure retrieve_user_unit(
+   p_unit_id        out varchar2,
+   p_parameter_id   in  varchar2,
+   p_unit_system    in  varchar2 default null,
+   p_user_id        in  varchar2 default null,
+   p_office_id      in  varchar2 default null);
+/**
+ * Retrieves an office's preferred parameter unit from the database
+ *
+ * @param p_parameter_id   The parameter to retrieve the preferred unit for
+ * @param p_unit_system    The unit system ('EN' or 'SI') for which the preferred unit applies
+ * @param p_user_id        The user for which the preferred unit applies. If not specified or NULL, the session user is used.
+ * @param p_office_id      The office for which the preferred unit applies.  If not specified or NULL, the session user's default office is used.
+ *
+ * @return The preferred unit for the specified parameter and unit system
+ */
+function retrieve_user_unit_f(
+   p_parameter_id   in varchar2,
+   p_unit_system    in varchar2 default null,
+   p_user_id        in varchar2 default null,
+   p_office_id      in varchar2 default null)
+   return varchar2;
+/**
+ * Deletes an office's preferred parameter unit from the database
  *
  * @param p_parameter_id   The parameter to delete the preferred unit for
  * @param p_unit_system    The unit system ('EN' or 'SI') for which the preferred unit applies
@@ -345,6 +409,19 @@ procedure retrieve_unit(
 procedure delete_unit(
    p_parameter_id   in varchar2,
    p_unit_system    in varchar2,
+   p_office_id      in varchar2 default null);
+/**
+ * Deletes a user's preferred parameter unit from the database
+ *
+ * @param p_parameter_id   The parameter to delete the preferred unit for
+ * @param p_unit_system    The unit system ('EN' or 'SI') for which the preferred unit applies
+ * @param p_user_id        The user for which the preferred unit applies. If not specified or NULL, the session user is used.
+ * @param p_office_id      The office for which the preferred unit applies.  If not specified or NULL, the session user's default office is used.
+ */
+procedure delete_user_unit(
+   p_parameter_id   in varchar2,
+   p_unit_system    in varchar2,
+   p_user_id        in varchar2 default null,
    p_office_id      in varchar2 default null);
 /**
  * Catalogs preferred units in the database that match input parameters. Matching is

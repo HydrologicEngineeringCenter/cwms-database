@@ -505,9 +505,8 @@ end cat_scale_limits_f;
 procedure store_unit(
    p_parameter_id   in varchar2,
    p_unit_system    in varchar2,
-   p_fail_if_exists in varchar2,
-   p_ignore_nulls   in varchar2,
    p_unit_id        in varchar2,
+   p_fail_if_exists in varchar2,
    p_office_id      in varchar2 default null)
 is
    l_fail_if_exists boolean;
@@ -521,9 +520,8 @@ begin
    cwms_util.check_inputs(str_tab_t(
       p_parameter_id,
       p_unit_system,
-      p_fail_if_exists,
-      p_ignore_nulls,
       p_unit_id,
+      p_fail_if_exists,
       p_office_id));
    if p_parameter_id is null then
       cwms_err.raise(
@@ -606,6 +604,109 @@ begin
 end store_unit;      
 
 --------------------------------------------------------------------------------
+-- function make_user_unit_property
+--------------------------------------------------------------------------------
+function make_user_unit_property_id(
+   p_user_id      in varchar2,
+   p_parameter_id in varchar2,
+   p_unit_system  in varchar2)
+   return varchar2
+is
+begin
+   return cwms_util.join_text(str_tab_t(
+      'display_unit',
+      upper(p_user_id),
+      upper(p_unit_system),
+      p_parameter_id),
+      '.');
+end make_user_unit_property_id;
+
+--------------------------------------------------------------------------------
+-- procedure store_user_unit
+--------------------------------------------------------------------------------
+procedure store_user_unit(
+   p_parameter_id   in varchar2,
+   p_unit_system    in varchar2,
+   p_unit_id        in varchar2,
+   p_fail_if_exists in varchar2,
+   p_user_id        in varchar2 default null,
+   p_office_id      in varchar2 default null)
+is
+   l_user_id     varchar2(30);
+   l_office_id   varchar2(16);
+   l_base_param  number(10);
+   l_property_id varchar2(256);
+   l_unit_id     varchar2(256);
+   l_comment     varchar2(256);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_parameter_id,
+      p_unit_system,
+      p_unit_id,
+      p_fail_if_exists,
+      p_user_id,
+      p_office_id));
+   if upper(p_unit_system) not in ('EN', 'SI') then
+      cwms_err.raise('INVALID_ITEM', p_unit_system, 'CWMS unit system');
+   end if;
+   begin
+      select base_parameter_code
+        into l_base_param
+        from cwms_base_parameter
+       where base_parameter_id = cwms_util.get_base_id(p_parameter_id);
+   exception
+      when no_data_found then
+         cwms_err.raise('INVALID_PARAM_ID', p_parameter_id);
+   end;
+   declare
+      l_converted binary_double;
+   begin
+      l_converted := cwms_util.convert_units(
+         1.0,
+         cwms_util.get_default_units(p_parameter_id),
+         p_unit_id);
+   exception
+      when others then
+         cwms_err.raise('ERROR', p_unit_id||' is not a valid unit for '||p_parameter_id);
+   end;
+   l_user_id   := upper(nvl(p_user_id, cwms_util.get_user_id));
+   l_office_id := nvl(p_office_id, cwms_util.user_office_id);
+   ----------------------------------------------
+   -- determine if the property already exists --
+   ----------------------------------------------
+   l_property_id := make_user_unit_property_id(
+      l_user_id,
+      p_parameter_id,
+      p_unit_system);
+   if cwms_util.is_true(p_fail_if_exists) then
+      cwms_properties.get_property(
+         l_unit_id,
+         l_comment,
+         'CWMSDB',
+         l_property_id,
+         null,
+         l_office_id);
+      if l_unit_id is not null then
+         cwms_err.raise(
+            'ITEM_ALREADY_EXISTS',
+            'Property '||l_office_id||'/CWMSDB/'||l_property_id);
+      end if;
+   end if;
+   ----------------------
+   -- set the property --
+   ----------------------
+   cwms_properties.set_property(
+      'CWMSDB',
+      l_property_id,
+      p_unit_id,
+      null,
+      l_office_id);
+end;
+
+--------------------------------------------------------------------------------
 -- procedure retrieve_unit
 --------------------------------------------------------------------------------
 procedure retrieve_unit(
@@ -663,6 +764,118 @@ exception
          ||'/'
          ||p_unit_system);
 end retrieve_unit;
+--------------------------------------------------------------------------------
+-- function retrieve_unit_f
+--------------------------------------------------------------------------------
+function retrieve_unit_f(
+   p_parameter_id   in  varchar2,
+   p_unit_system    in  varchar2,
+   p_office_id      in  varchar2 default null)
+   return varchar2
+is
+   l_unit varchar2(16);
+begin
+   retrieve_unit(l_unit, p_parameter_id, p_unit_system, p_office_id);
+   return l_unit;
+end retrieve_unit_f;
+
+--------------------------------------------------------------------------------
+-- procedure retrieve_user_unit
+--------------------------------------------------------------------------------
+procedure retrieve_user_unit(
+   p_unit_id        out varchar2,
+   p_parameter_id   in  varchar2,
+   p_unit_system    in  varchar2 default null,
+   p_user_id        in  varchar2 default null,
+   p_office_id      in  varchar2 default null)
+is
+   l_user_id     varchar2(30);
+   l_office_id   varchar2(16);
+   l_unit_system varchar2(2);
+   l_property_id varchar2(256);
+   l_comment     varchar2(256);
+   l_unit_id     varchar2(16);
+   l_base_param  number(10);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_parameter_id,
+      p_unit_system,
+      p_user_id,
+      p_office_id));
+   if p_unit_system is not null and upper(p_unit_system) not in ('EN', 'SI') then
+      cwms_err.raise('INVALID_ITEM', p_unit_system, 'CWMS unit system');
+   end if;
+   begin
+      select base_parameter_code
+        into l_base_param
+        from cwms_base_parameter
+       where base_parameter_id = cwms_util.get_base_id(p_parameter_id);
+   exception
+      when no_data_found then
+         cwms_err.raise('INVALID_PARAM_ID', p_parameter_id);
+   end;
+   l_user_id   := upper(nvl(p_user_id, cwms_util.get_user_id));
+   l_office_id := nvl(p_office_id, cwms_util.user_office_id);
+   if p_unit_system is null then
+      begin
+         select display_unit_system
+           into l_unit_system
+           from at_user_preferences
+          where db_office_code = cwms_util.get_db_office_code(l_office_id)
+            and username = l_user_id;
+      exception
+         when no_data_found then l_unit_system := 'SI';
+      end;
+   else
+      l_unit_system := p_unit_system;      
+   end if;
+   --------------------------------
+   -- see if the property exists --
+   --------------------------------
+   l_property_id := make_user_unit_property_id(
+      l_user_id,
+      p_parameter_id,
+      l_unit_system);
+
+   cwms_properties.get_property(
+      l_unit_id,
+      l_comment,
+      'CWMSDB',
+      l_property_id,
+      null,
+      l_office_id);
+   ---------------------------------------
+   -- use default unit as a last resort --
+   ---------------------------------------
+   if l_unit_id is null then
+      l_unit_id := cwms_util.get_default_units(p_parameter_id, l_unit_system);
+   end if;
+   p_unit_id := l_unit_id;
+end retrieve_user_unit;
+
+--------------------------------------------------------------------------------
+-- function retrieve_user_unit_f
+--------------------------------------------------------------------------------
+function retrieve_user_unit_f(
+   p_parameter_id   in varchar2,
+   p_unit_system    in varchar2 default null,
+   p_user_id        in varchar2 default null,
+   p_office_id      in varchar2 default null)
+   return varchar2
+is
+   l_unit_id varchar2(16);
+begin
+   retrieve_user_unit(
+      l_unit_id,
+      p_parameter_id,
+      p_unit_system,
+      p_user_id,
+      p_office_id);
+   return l_unit_id;
+end retrieve_user_unit_f;
 
 --------------------------------------------------------------------------------
 -- procedure delete_unit
@@ -711,6 +924,42 @@ exception
          ||'/'
          ||nvl(p_unit_system, '<any>'));
 end delete_unit;
+
+--------------------------------------------------------------------------------
+-- procedure delete_user_unit
+--------------------------------------------------------------------------------
+procedure delete_user_unit(
+   p_parameter_id   in varchar2,
+   p_unit_system    in varchar2,
+   p_user_id        in varchar2 default null,
+   p_office_id      in varchar2 default null)
+is
+   l_user_id     varchar2(30);
+   l_office_id   varchar2(16);
+   l_property_id varchar2(256);
+begin
+   -------------------
+   -- sanity checks --
+   -------------------
+   cwms_util.check_inputs(str_tab_t(
+      p_parameter_id,
+      p_unit_system,
+      p_user_id,
+      p_office_id));
+   l_user_id   := upper(nvl(p_user_id, cwms_util.get_user_id));
+   l_office_id := nvl(p_office_id, cwms_util.user_office_id);
+   -------------------------
+   -- delete the property --
+   -------------------------
+   l_property_id := make_user_unit_property_id(
+      l_user_id,
+      p_parameter_id,
+      p_unit_system);
+   cwms_properties.delete_property(
+      'CWMSDB',
+      l_property_id,
+      l_office_id);
+end delete_user_unit;
 
 --------------------------------------------------------------------------------
 -- procedure cat_unit
