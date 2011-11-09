@@ -1,0 +1,12 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."RATING_IND_PARAM_TAB_T" 
+/**
+ * Holds a collection of rating_ind_parameter_t objects
+ *
+ * @see type rating_ind_parameter_t
+ */
+as table of rating_ind_parameter_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."RATING_IND_PARAM_TAB_T" TO "CWMS_USER"
+ 
