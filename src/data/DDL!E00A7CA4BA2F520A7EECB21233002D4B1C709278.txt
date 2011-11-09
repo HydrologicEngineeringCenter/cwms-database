@@ -1,0 +1,11 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."CAT_LOC_ALIAS_OBJ_T" AS OBJECT (
+   office_id   VARCHAR2 (16),
+   cwms_id     VARCHAR2 (16),
+   source_id   VARCHAR2 (16),
+   gage_id     VARCHAR2 (32)
+);
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."CAT_LOC_ALIAS_OBJ_T" TO "CWMS_USER"
+ 
