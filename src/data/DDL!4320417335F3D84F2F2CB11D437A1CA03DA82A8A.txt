@@ -1,0 +1,56 @@
+
+  CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_TURBINE_CHANGE" ("TURBINE_CHANGE_CODE", "OFFICE_ID", "PROJECT_ID", "TURBINE_CHANGE_DATE", "TIME_ZONE", "ELEV_POOL_EN", "ELEV_TAILWATER_EN", "ELEV_UNIT_EN", "ELEV_POOL_SI", "ELEV_TAILWATER_SI", "ELEV_UNIT_SI", "OLD_DISCHARGE_OVERRIDE_EN", "NEW_DISCHARGE_OVERRIDE_EN", "DISCHARGE_UNIT_EN", "OLD_DISCHARGE_OVERRIDE_SI", "NEW_DISCHARGE_OVERRIDE_SI", "DISCHARGE_UNIT_SI", "DISCHARGE_COMP", "DISCHARGE_COMP_DESCR", "SETTING_REASON", "SETTING_REASON_DESCR", "TURBINE_CHANGE_NOTES", "PROTECTED") AS 
+  select tc.turbine_change_code,
+       o.office_id as office_id,
+       bl.base_location_id
+       ||substr('-', 1, length(pl.sub_location_id))
+       ||pl.sub_location_id as project_id,
+       cwms_util.change_timezone(
+          tc.turbine_change_datetime,
+          'UTC',
+          cwms_loc.get_local_timezone(tc.project_location_code)) as turbine_change_date,
+       cwms_loc.get_local_timezone(tc.project_location_code) as time_zone,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(tc.elev_pool, 'm', 'ft'),
+          '9999999999') as elev_pool_en,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(tc.elev_tailwater, 'm', 'ft'),
+          '9999999999') as elev_tailwater_en,
+       'ft' as elev_unit_en,
+       cwms_rounding.round_dd_f(tc.elev_pool, '9999999999') as elev_pool_si,
+       cwms_rounding.round_dd_f(tc.elev_tailwater, '9999999999') as elev_tailwater_si,
+       'm' as elev_unit_si,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(tc.old_total_discharge_override, 'cms', 'cfs'),
+          '9999999999') as old_discharge_override_en,
+       cwms_rounding.round_dd_f(
+          cwms_util.convert_units(tc.new_total_discharge_override, 'cms', 'cfs'),
+          '9999999999') as new_discharge_override_en,
+       'cfs' as discharge_unit_en,
+       cwms_rounding.round_dd_f(
+          tc.old_total_discharge_override,
+          '9999999999') as old_discharge_override_si,
+       cwms_rounding.round_dd_f(
+          tc.new_total_discharge_override,
+          '9999999999') as new_discharge_override_si,
+       'cms' as discharge_unit_si,
+       tcc.turbine_comp_display_value as discharge_comp,
+       tcc.turbine_comp_tooltip as discharge_comp_descr,
+       tsr.turb_set_reason_display_value as setting_reason,
+       tsr.turb_set_reason_tooltip as setting_reason_descr,
+       tc.turbine_change_notes,
+       tc.protected
+  from cwms_office o,
+       at_base_location bl,
+       at_physical_location pl,
+       at_turbine_change tc,
+       at_turbine_computation_code tcc,
+       at_turbine_setting_reason tsr
+ where bl.db_office_code = o.office_code
+   and pl.base_location_code = bl.base_location_code
+   and tc.project_location_code = pl.location_code
+   and tcc.turbine_comp_code = tc.turbine_discharge_comp_code
+   and tsr.turb_set_reason_code = tc.turbine_setting_reason_code
+ 
+  GRANT SELECT ON "CWMS_20"."AV_TURBINE_CHANGE" TO "CWMS_USER"
+ 
