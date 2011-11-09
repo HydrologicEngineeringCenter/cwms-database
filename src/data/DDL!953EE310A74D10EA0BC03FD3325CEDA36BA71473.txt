@@ -1,0 +1,13 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."PROJECT_STRUCTURE_TAB_T" 
+/**
+ * Holds a collection of project_structure_obj_t objects
+ *
+ * @see type project_structure_obj_t
+ */
+IS
+  TABLE OF project_structure_obj_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."PROJECT_STRUCTURE_TAB_T" TO "CWMS_USER"
+ 
