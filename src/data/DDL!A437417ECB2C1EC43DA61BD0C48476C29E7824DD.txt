@@ -1,0 +1,9 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."CAT_STATE_OBJ_T" AS OBJECT (
+   state_initial   VARCHAR2 (2),
+   state_name      VARCHAR2 (40)
+);
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."CAT_STATE_OBJ_T" TO "CWMS_USER"
+ 
