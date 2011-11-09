@@ -1,0 +1,11 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."WAT_USR_CONTRACT_ACCT_TAB_T" 
+/**
+ * Holds a collection of water user accounting records
+ */
+IS
+  TABLE OF wat_usr_contract_acct_obj_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."WAT_USR_CONTRACT_ACCT_TAB_T" TO "CWMS_USER"
+ 
