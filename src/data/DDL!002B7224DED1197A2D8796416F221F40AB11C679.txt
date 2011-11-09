@@ -1,0 +1,9 @@
+
+  CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_STORAGE_UNIT" ("BASE_PARAMETER_ID", "SUB_PARAMETER_ID", "UNIT_ID") AS 
+  SELECT    base_parameter_id, sub_parameter_id, unit_id
+      FROM    at_parameter ap, cwms_base_parameter bp, cwms_unit u
+     WHERE    ap.base_parameter_code = bp.base_parameter_code
+                AND bp.unit_code = u.unit_code
+ 
+  GRANT SELECT ON "CWMS_20"."AV_STORAGE_UNIT" TO "CWMS_USER"
+ 
