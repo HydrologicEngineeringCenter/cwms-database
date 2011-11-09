@@ -1,0 +1,16 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."CWMS_TS_ID_T" 
+/**
+ * Type for holding a CWMS time series identifier
+ *
+ * @see cwms_ts_id_array
+ *
+ * @member cwms_ts_id the time series identifier
+ */
+AS OBJECT (
+   cwms_ts_id   VARCHAR2 (183)
+);
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."CWMS_TS_ID_T" TO "CWMS_USER"
+ 
