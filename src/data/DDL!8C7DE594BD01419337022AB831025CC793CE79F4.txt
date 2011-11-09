@@ -1,0 +1,13 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."LOOKUP_TYPE_TAB_T" 
+/**
+ * Holds a collection of lookup_type_obj_t objects
+ *
+ * @see type lookup_type_obj_t
+ */
+IS
+  TABLE OF lookup_type_obj_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."LOOKUP_TYPE_TAB_T" TO "CWMS_USER"
+ 
