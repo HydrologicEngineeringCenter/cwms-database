@@ -1,0 +1,12 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."SPECIFIED_LEVEL_TAB_T" 
+/**
+ * Holds a collection of specified levels
+ *
+ * @see type specified_level_t
+ */
+is table of specified_level_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."SPECIFIED_LEVEL_TAB_T" TO "CWMS_USER"
+ 
