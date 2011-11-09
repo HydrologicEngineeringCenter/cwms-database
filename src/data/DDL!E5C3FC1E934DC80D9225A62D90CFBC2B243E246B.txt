@@ -1,0 +1,11 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."CHAR_16_ARRAY_TYPE" 
+/**
+ * Type suitable for holding multiple base locations, base parameters, or other text
+ * not longer than 16 bytes.
+ */
+IS TABLE OF VARCHAR2 (16);
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."CHAR_16_ARRAY_TYPE" TO "CWMS_USER"
+ 
