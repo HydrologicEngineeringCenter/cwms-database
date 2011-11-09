@@ -1,0 +1,12 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."NUMBER_TAB_T" 
+/**
+ * Holds a collection of integer or floating point numeric values
+ *
+ * @see type double_tab_t
+ */
+is table of number;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."NUMBER_TAB_T" TO "CWMS_USER"
+ 
