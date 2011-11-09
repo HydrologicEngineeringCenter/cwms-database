@@ -1,0 +1,250 @@
+
+  CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_LOC_LVL_INDICATOR_2" ("OFFICE_ID", "LEVEL_INDICATOR_ID", "REFERENCE_LEVEL_ID", "ATTRIBUTE_ID", "UNIT_SYSTEM", "ATTRIBUTE_VALUE", "REFERENCE_ATTRIBUTE_VALUE", "ATTRIBUTE_UNITS", "MINIMUM_DURATION", "MAXIMUM_AGE", "UNIT_ID", "RATE_UNIT_ID", "COND_1_NAME", "COND_1_EXPR", "COND_1_OP_1", "COND_1_VAL_1", "COND_1_CONNECTOR", "COND_1_OP_2", "COND_1_VAL_2", "COND_1_RATE_EXPR", "COND_1_RATE_OP_1", "COND_1_RATE_VAL_1", "COND_1_RATE_CONNECTOR", "COND_1_RATE_OP_2", "COND_1_RATE_VAL_2", "COND_1_RATE_INTERVAL", "COND_2_NAME", "COND_2_EXPR", "COND_2_OP_1", "COND_2_VAL_1", "COND_2_CONNECTOR", "COND_2_OP_2", "COND_2_VAL_2", "COND_2_RATE_EXPR", "COND_2_RATE_OP_1", "COND_2_RATE_VAL_1", "COND_2_RATE_CONNECTOR", "COND_2_RATE_OP_2", "COND_2_RATE_VAL_2", "COND_2_RATE_INTERVAL", "COND_3_NAME", "COND_3_EXPR", "COND_3_OP_1", "COND_3_VAL_1", "COND_3_CONNECTOR", "COND_3_OP_2", "COND_3_VAL_2", "COND_3_RATE_EXPR", "COND_3_RATE_OP_1", "COND_3_RATE_VAL_1", "COND_3_RATE_CONNECTOR", "COND_3_RATE_OP_2", "COND_3_RATE_VAL_2", "COND_3_RATE_INTERVAL", "COND_4_NAME", "COND_4_EXPR", "COND_4_OP_1", "COND_4_VAL_1", "COND_4_CONNECTOR", "COND_4_OP_2", "COND_4_VAL_2", "COND_4_RATE_EXPR", "COND_4_RATE_OP_1", "COND_4_RATE_VAL_1", "COND_4_RATE_CONNECTOR", "COND_4_RATE_OP_2", "COND_4_RATE_VAL_2", "COND_4_RATE_INTERVAL", "COND_5_NAME", "COND_5_EXPR", "COND_5_OP_1", "COND_5_VAL_1", "COND_5_CONNECTOR", "COND_5_OP_2", "COND_5_VAL_2", "COND_5_RATE_EXPR", "COND_5_RATE_OP_1", "COND_5_RATE_VAL_1", "COND_5_RATE_CONNECTOR", "COND_5_RATE_OP_2", "COND_5_RATE_VAL_2", "COND_5_RATE_INTERVAL") AS 
+  WITH llic1
+          AS (SELECT    level_indicator_code, description AS name, expression,
+                            comparison_operator_1 AS op_1,
+                            ROUND (CAST (comparison_value_1 AS NUMBER), 10) AS val_1,
+                            connector, comparison_operator_2 AS op_2,
+                            ROUND (CAST (comparison_value_2 AS NUMBER), 10) AS val_2,
+                            comparison_unit, rate_expression,
+                            rate_comparison_operator_1 AS rate_op_1,
+                            ROUND (CAST (rate_comparison_value_1 AS NUMBER), 10) AS rate_val_1,
+                            rate_connector, rate_comparison_operator_2 AS rate_op_2,
+                            ROUND (CAST (rate_comparison_value_2 AS NUMBER), 10) AS rate_val_2,
+                            rate_comparison_unit, rate_interval
+                  FROM    at_loc_lvl_indicator_cond
+                 WHERE    level_indicator_value = 1),
+          llic2
+          AS (SELECT    level_indicator_code, description AS name, expression,
+                            comparison_operator_1 AS op_1,
+                            ROUND (CAST (comparison_value_1 AS NUMBER), 10) AS val_1,
+                            connector, comparison_operator_2 AS op_2,
+                            ROUND (CAST (comparison_value_2 AS NUMBER), 10) AS val_2,
+                            comparison_unit, rate_expression,
+                            rate_comparison_operator_1 AS rate_op_1,
+                            ROUND (CAST (rate_comparison_value_1 AS NUMBER), 10) AS rate_val_1,
+                            rate_connector, rate_comparison_operator_2 AS rate_op_2,
+                            ROUND (CAST (rate_comparison_value_2 AS NUMBER), 10) AS rate_val_2,
+                            rate_comparison_unit, rate_interval
+                  FROM    at_loc_lvl_indicator_cond
+                 WHERE    level_indicator_value = 2),
+          llic3
+          AS (SELECT    level_indicator_code, description AS name, expression,
+                            comparison_operator_1 AS op_1,
+                            ROUND (CAST (comparison_value_1 AS NUMBER), 10) AS val_1,
+                            connector, comparison_operator_2 AS op_2,
+                            ROUND (CAST (comparison_value_2 AS NUMBER), 10) AS val_2,
+                            comparison_unit, rate_expression,
+                            rate_comparison_operator_1 AS rate_op_1,
+                            ROUND (CAST (rate_comparison_value_1 AS NUMBER), 10) AS rate_val_1,
+                            rate_connector, rate_comparison_operator_2 AS rate_op_2,
+                            ROUND (CAST (rate_comparison_value_2 AS NUMBER), 10) AS rate_val_2,
+                            rate_comparison_unit, rate_interval
+                  FROM    at_loc_lvl_indicator_cond
+                 WHERE    level_indicator_value = 3),
+          llic4
+          AS (SELECT    level_indicator_code, description AS name, expression,
+                            comparison_operator_1 AS op_1,
+                            ROUND (CAST (comparison_value_1 AS NUMBER), 10) AS val_1,
+                            connector, comparison_operator_2 AS op_2,
+                            ROUND (CAST (comparison_value_2 AS NUMBER), 10) AS val_2,
+                            comparison_unit, rate_expression,
+                            rate_comparison_operator_1 AS rate_op_1,
+                            ROUND (CAST (rate_comparison_value_1 AS NUMBER), 10) AS rate_val_1,
+                            rate_connector, rate_comparison_operator_2 AS rate_op_2,
+                            ROUND (CAST (rate_comparison_value_2 AS NUMBER), 10) AS rate_val_2,
+                            rate_comparison_unit, rate_interval
+                  FROM    at_loc_lvl_indicator_cond
+                 WHERE    level_indicator_value = 4),
+          llic5
+          AS (SELECT    level_indicator_code, description AS name, expression,
+                            comparison_operator_1 AS op_1,
+                            ROUND (CAST (comparison_value_1 AS NUMBER), 10) AS val_1,
+                            connector, comparison_operator_2 AS op_2,
+                            ROUND (CAST (comparison_value_2 AS NUMBER), 10) AS val_2,
+                            comparison_unit, rate_expression,
+                            rate_comparison_operator_1 AS rate_op_1,
+                            ROUND (CAST (rate_comparison_value_1 AS NUMBER), 10) AS rate_val_1,
+                            rate_connector, rate_comparison_operator_2 AS rate_op_2,
+                            ROUND (CAST (rate_comparison_value_2 AS NUMBER), 10) AS rate_val_2,
+                            rate_comparison_unit, rate_interval
+                  FROM    at_loc_lvl_indicator_cond
+                 WHERE    level_indicator_value = 5),
+          unit
+          AS (SELECT    unit_code, unit_id
+                  FROM    cwms_unit),
+          rate_unit
+          AS (SELECT    unit_code AS rate_unit_code, unit_id AS rate_unit_id
+                  FROM    cwms_unit),
+          lli
+          AS (SELECT    *
+                  FROM    at_loc_lvl_indicator),
+          loc
+          AS (SELECT    location_code, base_location_code, sub_location_id
+                  FROM    at_physical_location),
+          base_loc
+          AS (SELECT    base_location_code, base_location_id, db_office_code
+                  FROM    at_base_location),
+          ofc
+          AS (SELECT    office_code, office_id
+                  FROM    cwms_office),
+          param
+          AS (SELECT    parameter_code, base_parameter_code, sub_parameter_id
+                  FROM    at_parameter),
+          base_param
+          AS (SELECT    base_parameter_code, base_parameter_id
+                  FROM    cwms_base_parameter),
+          param_type
+          AS (SELECT    parameter_type_code, parameter_type_id
+                  FROM    cwms_parameter_type),
+          dur
+          AS (SELECT    duration_code, duration_id
+                  FROM    cwms_duration),
+          spec_level
+          AS (SELECT    *
+                  FROM    at_specified_level),
+          attr_param
+          AS (SELECT    parameter_code, base_parameter_code, sub_parameter_id
+                  FROM    at_parameter),
+          attr_base_param
+          AS (SELECT    base_parameter_code, base_parameter_id, unit_code
+                  FROM    cwms_base_parameter),
+          attr_param_type
+          AS (SELECT    parameter_type_code, parameter_type_id
+                  FROM    cwms_parameter_type),
+          attr_dur
+          AS (SELECT    duration_code, duration_id
+                  FROM    cwms_duration),
+          disp
+          AS (SELECT    *
+                  FROM    at_display_units),
+          conv
+          AS (SELECT    *
+                  FROM    cwms_unit_conversion),
+          ref_spec_level
+          AS (SELECT    *
+                  FROM    at_specified_level)
+    SELECT      office_id,
+                  base_location_id || SUBSTR ('-', 1, LENGTH (sub_location_id)) || sub_location_id || '.' || base_param.base_parameter_id || SUBSTR ('-', 1, LENGTH (param.sub_parameter_id)) || param.sub_parameter_id || '.' || param_type.parameter_type_id || '.' || dur.duration_id || '.' || spec_level.specified_level_id || '.' || level_indicator_id AS level_indicator_id,
+                  ref_spec_level.specified_level_id AS reference_level_id,
+                  attr_base_param.base_parameter_id || SUBSTR ('-', 1, LENGTH (attr_param.sub_parameter_id)) || attr_param.sub_parameter_id || SUBSTR ('.', 1, LENGTH (attr_param_type.parameter_type_id)) || attr_param_type.parameter_type_id || SUBSTR ('.', 1, LENGTH (attr_dur.duration_id)) || attr_dur.duration_id AS attribute_id,
+                  unit_system,
+                  ROUND (attr_value * factor + offset, 10 - LOG (10, attr_value * factor + offset)) AS attribute_value,
+                  ROUND (ref_attr_value * factor + offset, 10 - LOG (10, ref_attr_value * factor + offset)) AS reference_attribute_value,
+                  to_unit_id AS attribute_units,
+                  SUBSTR (minimum_duration, 2) AS minimum_duration,
+                  SUBSTR (maximum_age, 2) AS maximum_age, unit_id, rate_unit_id,
+                  llic1.name AS cond_1_name, llic1.expression AS cond_1_expr,
+                  llic1.op_1 AS cond_1_op_1, llic1.val_1 AS cond_1_val_1,
+                  llic1.connector AS cond_1_connector, llic1.op_2 AS cond_1_op_2,
+                  llic1.val_2 AS cond_1_val_2,
+                  llic1.rate_expression AS cond_1_rate_expr,
+                  llic1.rate_op_1 AS cond_1_rate_op_1,
+                  llic1.rate_val_1 AS cond_1_rate_val_1,
+                  llic1.rate_connector AS cond_1_rate_connector,
+                  llic1.rate_op_2 AS cond_1_rate_op_2,
+                  llic1.rate_val_2 AS cond_1_rate_val_2,
+                  llic1.rate_interval AS cond_1_rate_interval,
+                  llic2.name AS cond_2_name, llic2.expression AS cond_2_expr,
+                  llic2.op_1 AS cond_2_op_1, llic2.val_1 AS cond_2_val_1,
+                  llic2.connector AS cond_2_connector, llic2.op_2 AS cond_2_op_2,
+                  llic2.val_2 AS cond_2_val_2,
+                  llic2.rate_expression AS cond_2_rate_expr,
+                  llic2.rate_op_1 AS cond_2_rate_op_1,
+                  llic2.rate_val_1 AS cond_2_rate_val_1,
+                  llic2.rate_connector AS cond_2_rate_connector,
+                  llic2.rate_op_2 AS cond_2_rate_op_2,
+                  llic2.rate_val_2 AS cond_2_rate_val_2,
+                  llic2.rate_interval AS cond_2_rate_interval,
+                  llic3.name AS cond_3_name, llic3.expression AS cond_3_expr,
+                  llic3.op_1 AS cond_3_op_1, llic3.val_1 AS cond_3_val_1,
+                  llic3.connector AS cond_3_connector, llic3.op_2 AS cond_3_op_2,
+                  llic3.val_2 AS cond_3_val_2,
+                  llic3.rate_expression AS cond_3_rate_expr,
+                  llic3.rate_op_1 AS cond_3_rate_op_1,
+                  llic3.rate_val_1 AS cond_3_rate_val_1,
+                  llic3.rate_connector AS cond_3_rate_connector,
+                  llic3.rate_op_2 AS cond_3_rate_op_2,
+                  llic3.rate_val_2 AS cond_3_rate_val_2,
+                  llic3.rate_interval AS cond_3_rate_interval,
+                  llic4.name AS cond_4_name, llic4.expression AS cond_4_expr,
+                  llic4.op_1 AS cond_4_op_1, llic4.val_1 AS cond_4_val_1,
+                  llic4.connector AS cond_4_connector, llic4.op_2 AS cond_4_op_2,
+                  llic4.val_2 AS cond_4_val_2,
+                  llic4.rate_expression AS cond_4_rate_expr,
+                  llic4.rate_op_1 AS cond_4_rate_op_1,
+                  llic4.rate_val_1 AS cond_4_rate_val_1,
+                  llic4.rate_connector AS cond_4_rate_connector,
+                  llic4.rate_op_2 AS cond_4_rate_op_2,
+                  llic4.rate_val_2 AS cond_4_rate_val_2,
+                  llic4.rate_interval AS cond_4_rate_interval,
+                  llic5.name AS cond_5_name, llic5.expression AS cond_5_expr,
+                  llic5.op_1 AS cond_5_op_1, llic5.val_1 AS cond_5_val_1,
+                  llic5.connector AS cond_5_connector, llic5.op_2 AS cond_5_op_2,
+                  llic5.val_2 AS cond_5_val_2,
+                  llic5.rate_expression AS cond_5_rate_expr,
+                  llic5.rate_op_1 AS cond_5_rate_op_1,
+                  llic5.rate_val_1 AS cond_5_rate_val_1,
+                  llic5.rate_connector AS cond_5_rate_connector,
+                  llic5.rate_op_2 AS cond_5_rate_op_2,
+                  llic5.rate_val_2 AS cond_5_rate_val_2,
+                  llic5.rate_interval AS cond_5_rate_interval
+         FROM   llic1
+                  JOIN llic2
+                      ON llic2.level_indicator_code = llic1.level_indicator_code
+                  JOIN llic3
+                      ON llic3.level_indicator_code = llic1.level_indicator_code
+                  JOIN llic4
+                      ON llic4.level_indicator_code = llic1.level_indicator_code
+                  JOIN llic5
+                      ON llic5.level_indicator_code = llic1.level_indicator_code
+                  JOIN lli
+                      ON lli.level_indicator_code = llic1.level_indicator_code
+                  JOIN loc
+                      ON loc.location_code = lli.location_code
+                  JOIN base_loc
+                      ON base_loc.base_location_code = loc.base_location_code
+                  JOIN ofc
+                      ON ofc.office_code = base_loc.db_office_code
+                  JOIN param
+                      ON param.parameter_code = lli.parameter_code
+                  JOIN base_param
+                      ON base_param.base_parameter_code = param.base_parameter_code
+                  JOIN param_type
+                      ON param_type.parameter_type_code = lli.parameter_type_code
+                  JOIN dur
+                      ON dur.duration_code = lli.duration_code
+                  JOIN spec_level
+                      ON spec_level.specified_level_code = lli.specified_level_code
+                  LEFT OUTER JOIN attr_param
+                      ON attr_param.parameter_code = lli.attr_parameter_code
+                  LEFT OUTER JOIN attr_base_param
+                      ON attr_base_param.base_parameter_code =
+                              attr_param.base_parameter_code
+                  LEFT OUTER JOIN attr_param_type
+                      ON attr_param_type.parameter_type_code =
+                              lli.attr_parameter_type_code
+                  LEFT OUTER JOIN attr_dur
+                      ON attr_dur.duration_code = lli.attr_duration_code
+                  LEFT OUTER JOIN disp
+                      ON disp.parameter_code = attr_base_param.base_parameter_code
+                          AND disp.db_office_code = ofc.office_code
+                  LEFT OUTER JOIN conv
+                      ON conv.from_unit_code = attr_base_param.unit_code
+                          AND conv.to_unit_code = disp.display_unit_code
+                  LEFT OUTER JOIN ref_spec_level
+                      ON ref_spec_level.specified_level_code =
+                              lli.ref_specified_level_code
+                  LEFT OUTER JOIN unit
+                      ON unit.unit_code = llic1.comparison_unit
+                  LEFT OUTER JOIN rate_unit
+                      ON rate_unit.rate_unit_code = llic1.rate_comparison_unit
+    ORDER BY   office_id,
+                  level_indicator_id,
+                  reference_level_id,
+                  attribute_id,
+                  unit_system,
+                  attribute_value
+ 
+  GRANT SELECT ON "CWMS_20"."AV_LOC_LVL_INDICATOR_2" TO "CWMS_USER"
+ 
