@@ -1,0 +1,1581 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."RATING_T" 
+/**
+ * Holds a rating
+ *
+ * @see type rating_ind_parameter_t
+ * @see type rating_spec_t
+ * @see type stream_rating_t
+ * @see type rating_tab_t
+ *
+ * @member office_id      The office that owns the rating
+ * @member rating_spec_id The rating specification identifier
+ * @member effective_date The earliest date/time that the rating is to be in effect
+ * @member create_date    The date/time that the rating was loaded into the datbase
+ * @member active_flag    A flag ('T' or 'F') specifying whether the rating is active
+ * @member formula        The formula (algebraic or RPN) for the rating if the rating is formula-based
+ * @member native_units   The native units for the rating
+ * @member description    The description of the rating
+ * @member rating_info    The rating lookup values if the rating is lookup-based
+ * @member current_units  A flag ('D' or 'N') specfying whether the lookup values are currently in database storage ('D') or native ('N') units
+ * @member current_time   A flag ('D' or 'L') specifying whether the times are currently in database ('D') (=UTC) or rating location local ('L') time zone
+ * @member formula_tokens A collection of formula tokens if the rating is formula-based
+ */
+as object(
+   office_id      varchar2(16),
+   rating_spec_id varchar2(372),
+   effective_date date,
+   create_date    date,
+   active_flag    varchar2(1),
+   formula        varchar2(1000),
+   native_units   varchar2(256),
+   description    varchar2(256),
+   rating_info    rating_ind_parameter_t,
+   current_units  varchar2(1), -- 'D' = database, 'N' = native, other = don't know
+   current_time   varchar2(2), -- 'D' = database, 'L' = native, other = don't know
+   formula_tokens str_tab_t,
+   /**
+    * Construct a rating_t object from data in the database.
+    *
+    * @param p_rating_code The primary key of the AT_RATING table
+    */
+   constructor function rating_t(
+      p_rating_code in number)
+   return self as result,
+   /**
+    * Construct a rating_t object from data in the database.
+    *
+    * @param p_rating_spec_id The rating specification of the rating to construct
+    * @param p_effective_date The effective date
+    * @param p_match_date     A flag ('T' or 'F') specifying whether the p_effective_date parameter is to be matched exactly.  If 'F', the latest effective date on or before p_effective_date will be used.
+    * @param p_time_zone      The time zone for p_effective_date.  If NULL, the local time zone of the rating's location will be used.
+    * @param p_office_id      The office owning the rating.  If NULL, the session user's default office will be used
+    */
+   constructor function rating_t(
+      p_rating_spec_id in varchar2,
+      p_effective_date in date     default null,
+      p_match_date     in varchar2 default 'F',
+      p_time_zone      in varchar2 default null,
+      p_office_id      in varchar2 default null)
+   return self as result,
+   /**
+    * Constructs a rating_t object from an XML instance.  The XML
+    * instance must conform to the <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.xsd">CWMS Ratings XML Schema</a>.
+    * The instance structure is <a href="http://www.hec.usace.army.mil/xmlSchema/CWMS/Ratings.htm#element_rating">documented here</a>.
+    *
+    * @param p_xml The XML instance
+    */
+   constructor function rating_t(
+      p_xml in xmltype)
+   return self as result,
+   -- not documented
+   member procedure init(
+      p_rating_code in number),
+   -- not documented
+   member procedure init(
+      p_rating_spec_id in varchar2,
+      p_effective_date in date     default null,
+      p_match_date     in varchar2 default 'F',
+      p_time_zone      in varchar2 default null,
+      p_office_id      in varchar2 default null),
+   -- not documented
+   member procedure validate_obj,
+   /**
+    * Sets all rating values of this rating to database storage units, converting if necessary
+    */
+   member procedure convert_to_database_units,
+   /**
+    * Sets all rating values of this rating to native units, converting if necessary
+    */
+   member procedure convert_to_native_units,
+   /**
+    * Sets the times of this rating to UTC, converting if necessary
+    */
+   member procedure convert_to_database_time,
+   /**
+    * Sets the times of this rating to the local time of the rating's location, converting if necessary
+    */
+   member procedure convert_to_local_time,
+   -- not documented
+   member procedure store(
+      p_rating_code    out number,
+      p_fail_if_exists in  varchar2),
+   /**
+    * Stores the rating to the database
+    *
+    * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the function
+    *        should fail if the rating already exists in the database
+    *
+    * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is set to 'T' and the
+    *            rating already exists
+    */
+   member procedure store(
+      p_fail_if_exists in varchar2),
+   /**
+    * Retrieves the rating as an XML instance in an CLOB object
+    *
+    * @return the rating as an XML instance in an CLOB object
+    */
+   member function to_clob
+   return clob,
+   /**
+    * Retrieves the rating as an XML instance in an XMLTYPE object
+    *
+    * @return the rating as an XML instance in an XMLTYPE object
+    */
+   member function to_xml
+   return xmltype,
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function rate(
+      p_ind_values in double_tab_tab_t)
+   return double_tab_t,
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function rate(
+      p_ind_values in double_tab_t)
+   return double_tab_t,
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function rate_one(
+      p_ind_values in double_tab_t)
+   return binary_double,
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function rate(
+      p_ind_value in binary_double)
+   return binary_double,
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function rate(
+      p_ind_values in tsv_array)
+   return tsv_array,
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function rate(
+      p_ind_values in ztsv_array)
+   return ztsv_array,
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function rate(
+      p_ind_value in tsv_type)
+   return tsv_type,
+   /**
+    * Rate the specified independent values
+    *
+    * @param p_ind_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function rate(
+      p_ind_value in ztsv_type)
+   return ztsv_type,
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function reverse_rate(
+      p_dep_values in double_tab_t)
+   return double_tab_t,
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function reverse_rate(
+      p_dep_value in binary_double)
+   return binary_double,
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function reverse_rate(
+      p_dep_values in tsv_array)
+   return tsv_array,
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function reverse_rate(
+      p_dep_values in ztsv_array)
+   return ztsv_array,
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function reverse_rate(
+      p_dep_value in tsv_type)
+   return tsv_type,
+   /**
+    * Reverse rate the specified dependent values. This method id valid only if
+    * the rating contains a signle independent value.
+    *
+    * @param p_dep_values the values to rate
+    *
+    * @return the rated values
+    */
+   member function reverse_rate(
+      p_dep_value in ztsv_type)
+   return ztsv_type,
+   -- not documented
+   member function get_date(
+      p_timestr in varchar2)
+   return date,
+   /**
+    * Returns the number of independent paramters for this rating
+    *
+    * @return the number of independent paramters for this rating
+    */
+   member function get_ind_parameter_count
+   return pls_integer,
+   -- not documented
+   static function get_rating_code(
+      p_rating_spec_id in varchar2,
+      p_effective_date in date     default null,
+      p_match_date     in varchar2 default 'F',
+      p_time_zone      in varchar2 default null,
+      p_office_id      in varchar2 default null)
+   return number
+
+) not final;
+CREATE OR REPLACE TYPE BODY "CWMS_20"."RATING_T" 
+as
+   constructor function rating_t(
+      p_rating_code in number)
+   return self as result
+   is
+   begin
+      init(p_rating_code);
+      return;
+   end;
+
+   constructor function rating_t(
+      p_rating_spec_id in varchar2,
+      p_effective_date in date     default null,
+      p_match_date     in varchar2 default 'F',
+      p_time_zone      in varchar2 default null,
+      p_office_id      in varchar2 default null)
+   return self as result
+   is
+   begin
+      init(
+         p_rating_spec_id,
+         p_effective_date,
+         p_match_date,
+         p_time_zone,
+         p_office_id);
+
+      return;
+   end;
+
+   constructor function rating_t(
+      p_xml in xmltype)
+   return self as result
+   is
+      l_xml     xmltype;
+      l_node    xmltype;
+      l_text    varchar2(64);
+      ------------------------------
+      -- local function shortcuts --
+      ------------------------------
+      function get_node(p_xml in xmltype, p_path in varchar2) return xmltype is
+      begin
+         return cwms_util.get_xml_node(p_xml, p_path);
+      end;
+      function get_text(p_xml in xmltype, p_path in varchar2) return varchar2 is
+      begin
+         return cwms_util.get_xml_text(p_xml, p_path);
+      end;
+      function get_number(p_xml in xmltype, p_path in varchar2) return number is
+      begin
+         return cwms_util.get_xml_number(p_xml, p_path);
+      end;
+   begin
+      l_xml := get_node(p_xml, '//rating[1]');
+      if l_xml is null then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot locate <rating> element');
+      end if;
+      self.office_id := get_text(l_xml, '/rating/@office-id');
+      if self.office_id is null then
+         cwms_err.raise('ERROR', 'Required office-id attribute not found');
+      end if;
+      self.rating_spec_id := get_text(l_xml, '/rating/rating-spec-id');
+      if self.rating_spec_id is null then
+         cwms_err.raise('ERROR', 'Required <rating-spec-id> element not found');
+      end if;
+      l_text := get_text(l_xml, '/rating/effective-date');
+      if l_text is null then
+         cwms_err.raise('ERROR', 'Required <effective-date> element not found');
+      end if;
+      self.effective_date := get_date(l_text);
+      l_text := get_text(l_xml, '/rating/create-date');
+      if l_text is not null then
+         self.create_date := get_date(l_text);
+      end if;
+      l_text := get_text(l_xml, '/rating/active');
+      if l_text is null then
+         cwms_err.raise(
+            'ERROR',
+            'Missing <active> element under <rating> element');
+      else
+         case l_text
+            when 'true'  then self.active_flag := 'T';
+            when '1'     then self.active_flag := 'T';
+            when 'false' then self.active_flag := 'F';
+            when '0'     then self.active_flag := 'F';
+            else
+               cwms_err.raise(
+                  'ERROR',
+                  'Invalid value for <active> element under <rating-spec> element: '
+                  ||l_text
+                  ||', should be 1, 0, true or false');
+         end case;
+      end if;
+      self.formula := get_text(l_xml, '/rating/formula');
+      self.native_units := get_text(l_xml, '/rating/units-id');
+      if self.native_units is null then
+         cwms_err.raise('ERROR', 'Required <units-id> element not found');
+      end if;
+      self.description   := get_text(l_xml, '/rating/description');
+      self.rating_info   := rating_ind_parameter_t(l_xml);
+      self.current_units := 'N';
+      self.current_time  := 'L';
+      self.validate_obj;
+      return;
+   end;
+
+   member procedure init(
+      p_rating_code in number)
+   is
+      l_ind_param_count      number(1);
+      l_ind_param_spec_codes number_tab_t := number_tab_t();
+   begin
+      ----------------------------------------------------------
+      -- use loop for convenience - only 1 at most will match --
+      ----------------------------------------------------------
+      for rec in
+         (  select *
+              from at_rating
+             where rating_code = p_rating_code
+         )
+      loop
+         for rec2 in
+            (
+               select template_code,
+                      location_code,
+                      version
+                 from at_rating_spec
+                where rating_spec_code = rec.rating_spec_code
+            )
+         loop
+            for rec3 in
+               (  select template_code,
+                         office_code,
+                         parameters_id,
+                         version
+                    from at_rating_template
+                   where template_code = rec2.template_code
+               )
+            loop
+               select office_id
+                 into self.office_id
+                 from cwms_office
+                where office_code = rec3.office_code;
+
+               self.rating_spec_id :=
+                  cwms_util.get_location_id(rec2.location_code, 'F')
+                  ||cwms_rating.separator1
+                  ||rec3.parameters_id
+                  ||cwms_rating.separator1
+                  ||rec3.version
+                  ||cwms_rating.separator1
+                  ||rec2.version;
+
+               l_ind_param_count := cwms_util.split_text(rec3.parameters_id, cwms_rating.separator3).count;
+
+               select ind_param_spec_code bulk collect
+                 into l_ind_param_spec_codes
+                 from at_rating_ind_param_spec
+                where template_code = rec3.template_code
+             order by parameter_position;
+
+               if l_ind_param_spec_codes.count != l_ind_param_count then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Rating template has '
+                     ||l_ind_param_spec_codes.count
+                     ||' independent parameter(s), but rating has '
+                     ||l_ind_param_count);
+               end if;
+            end loop;
+         end loop;
+         self.effective_date := rec.effective_date;
+         self.create_date    := rec.create_date;
+         self.active_flag    := rec.active_flag;
+         self.formula        := rec.formula;
+         self.native_units   := rec.native_units;
+         self.description    := rec.description;
+         self.rating_info    := rating_ind_parameter_t(p_rating_code);
+         self.current_units  := 'D';
+         self.current_time   := 'D';
+      end loop;
+      validate_obj;
+   end;
+
+   member procedure init(
+      p_rating_spec_id in varchar2,
+      p_effective_date in date     default null,
+      p_match_date     in varchar2 default 'F',
+      p_time_zone      in varchar2 default null,
+      p_office_id      in varchar2 default null)
+   is
+      l_rating_code number(10);
+   begin
+      l_rating_code := rating_t.get_rating_code(
+         p_rating_spec_id,
+         p_effective_date,
+         p_match_date,
+         p_time_zone,
+         p_office_id);
+
+      init(l_rating_code);
+   end;
+
+   member procedure validate_obj
+   is
+      l_code   number(10);
+      l_parts  str_tab_t;
+      l_params str_tab_t;
+      l_units  str_tab_t;
+      l_factor binary_double;
+      l_offset binary_double;
+   begin
+      ---------------
+      -- office_id --
+      ---------------
+      begin
+         select office_code
+           into l_code
+           from cwms_office
+          where office_id = upper(self.office_id);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'INVALID_OFFICE_ID',
+               self.office_id);
+      end;
+      --------------------
+      -- rating spec... --
+      --------------------
+      if self.rating_spec_id is null then
+         cwms_err.raise(
+            'ERROR',
+            'Rating specification identifier not found');
+      end if;
+      l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+      if l_parts.count != 4 then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            self.rating_spec_id,
+            'Rating specification identifier');
+      end if;
+      -----------------
+      -- ...location --
+      -----------------
+      l_code := cwms_loc.get_location_code(self.office_id, l_parts(1));
+      -------------------------
+      -- ...template version --
+      -------------------------
+      if l_parts(3) is null then
+         cwms_err.raise(
+            'ERROR',
+            'Rating specification identifier contains NULL template version');
+      end if;
+      ----------------
+      -- ...version --
+      ----------------
+      if l_parts(4) is null then
+         cwms_err.raise(
+            'ERROR',
+            'Rating specification identifier contains NULL version');
+      end if;
+      -------------------
+      -- ...parameters --
+      -------------------
+      l_parts := cwms_util.split_text(l_parts(2), cwms_rating.separator2);
+      if l_parts.count != 2 then
+         cwms_err.raise(
+            'ERROR',
+            'Rating specification identifier contains invalid template parameters identifier');
+      end if;
+      l_params := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
+      for i in 1..l_params.count loop
+         begin
+            l_code := cwms_util.get_base_param_code(l_params(i), 'T');
+         exception
+            when no_data_found then
+               cwms_err.raise(
+                  'ERROR',
+                  'Rating specification identifier contains invalid base parameter: '||l_params(i));
+         end;
+      end loop;
+      begin
+         l_code := cwms_util.get_base_param_code(l_parts(2), 'T');
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ERROR',
+               'Rating specification identifier contains invalid base parameter: '||l_parts(2));
+      end;
+      l_params.extend;
+      l_params(l_params.count) := l_parts(2);
+      ------------------
+      -- native units --
+      ------------------
+      if self.native_units is not null then
+         l_parts := cwms_util.split_text(self.native_units, cwms_rating.separator2);
+         if l_parts.count != 2 then
+            cwms_err.raise(
+               'INVALID_ITEM',
+               self.rating_spec_id,
+               'Rating native units identifier');
+         end if;
+         l_units := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
+         if l_units.count != l_params.count - 1 then
+            cwms_err.raise(
+               'ERROR',
+               'Native units specification indicates '
+               ||l_units.count
+               ||' independent parameters, rating specification contains '
+               ||l_params.count - 1
+               ||' independent parameters');
+         end if;
+         l_units.extend;
+         l_units(l_units.count) := l_parts(2);
+         for i in 1..l_units.count loop
+            begin
+               select unit_code
+                 into l_code
+                 from cwms_unit
+                where unit_id = l_units(i);
+            exception
+               when no_data_found then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Native units specification contains invalid unit: '||l_units(i));
+            end;
+            begin
+               select factor,
+                      offset
+                 into l_factor,
+                      l_offset
+                 from cwms_unit_conversion
+                where to_unit_id = cwms_util.get_default_units(l_params(i), 'SI')
+                  and from_unit_id = l_units(i);
+            exception
+               when no_data_found then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Native unit "'||l_units(i)||'" is invalid for parameter "'||l_params(i)||'"');
+            end;
+         end loop;
+      end if;
+      ----------------------
+      -- formula / points --
+      ----------------------
+      if self.formula is null then
+         if self.rating_info is null then
+            cwms_err.raise(
+               'ERROR',
+               'Either formula or rating points must be specified');
+         else
+            ------------------------------------------
+            -- ind_params validated on construction --
+            ------------------------------------------
+            null;
+         end if;
+      else
+         if self.rating_info is null then
+            -------------
+            -- formula --
+            -------------
+            declare
+               l_tokens   str_tab_t;
+               l_count    number_tab_t;
+               l_position integer;
+            begin
+               if instr(self.formula, '(') > 0 then
+                  l_tokens := cwms_util.tokenize_algebraic(self.formula);
+               else
+                  l_tokens := cwms_util.tokenize_rpn(self.formula);
+                  if l_tokens.count > 1 and
+                     l_tokens(l_tokens.count) not in
+                     ('+cwms_rating.separator3-cwms_rating.separator3*cwms_rating.separator3/cwms_rating.separator3//cwms_rating.separator3%cwms_rating.separator3^cwms_rating.separator3ABScwms_rating.separator3ACOScwms_rating.separator3ASINcwms_rating.separator3ATANcwms_rating.separator3CEILcwms_rating.separator3COS',
+                     'EXPcwms_rating.separator3FLOORcwms_rating.separator3INVcwms_rating.separator3LNcwms_rating.separator3LOGcwms_rating.separator3NEG', 'SIGNcwms_rating.separator3SINcwms_rating.separator3SQRTcwms_rating.separator3TANcwms_rating.separator3TRUNC')
+                  then
+                     l_tokens := cwms_util.tokenize_algebraic(self.formula);
+                  end if;
+               end if;
+               l_count := number_tab_t();
+               l_count.extend(l_params.count - 1);
+               for i in 1..l_count.count loop
+                  l_count(i) := 0;
+               end loop;
+               for i in 1..l_tokens.count loop
+                  if upper(l_tokens(i)) = 'ARG' then
+                     begin
+                        l_position := to_number(substr(l_tokens(i), 4));
+                        l_count(l_position) := l_count(l_position) + 1;
+                     exception
+                        when others then
+                           if sqlcode = -6502 then
+                              cwms_err.raise(
+                                 'ERROR',
+                                 'Formula contains invalid token: '||l_tokens(i));
+                           else
+                              raise;
+                           end if;
+                     end;
+                  end if;
+               end loop;
+               for i in 1..l_count.count loop
+                  if l_count(i) = 0 then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Formula does not contain token ARG'||i);
+                  end if;
+               end loop;
+               self.formula_tokens := l_tokens;
+            end;
+         else
+            cwms_err.raise(
+               'ERROR',
+               'Formula and rating points cannot both be specified');
+         end if;
+      end if;
+   end;
+
+   member procedure convert_to_database_units
+   is
+      l_parts str_tab_t;
+   begin
+      case self.current_units
+         when 'D' then
+            null;
+         when 'N' then
+            l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+            self.rating_info.convert_to_database_units(l_parts(2), self.native_units);
+            self.current_units := 'D';
+         else
+            cwms_err.raise('ERROR', 'Don''t know the current units of the rating object');
+      end case;
+   end;
+
+   member procedure convert_to_native_units
+   is
+      l_parts str_tab_t;
+   begin
+      case self.current_units
+         when 'D' then
+            l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+            self.rating_info.convert_to_native_units(l_parts(2), self.native_units);
+            self.current_units := 'N';
+         when 'N' then
+            null;
+         else
+            cwms_err.raise('ERROR', 'Don''t know the current units of the rating object');
+      end case;
+   end;
+
+   member procedure convert_to_database_time
+   is
+      l_local_timezone varchar2(28);
+      l_parts          str_tab_t;
+   begin
+      case self.current_time
+         when 'D' then
+            null;
+         when 'L' then
+            l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+            select tz.time_zone_name
+              into l_local_timezone
+              from at_physical_location pl,
+                   cwms_time_zone tz
+             where pl.location_code = cwms_loc.get_location_code(self.office_id, l_parts(1))
+               and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+            self.effective_date := cwms_util.change_timezone(self.effective_date, l_local_timezone, 'UTC');
+            if self.create_date is not null then
+               self.create_date := cwms_util.change_timezone(self.create_date, l_local_timezone, 'UTC');
+            end if;
+            self.current_time := 'D';
+         else
+            cwms_err.raise('ERROR', 'Don''t know the current time setting of the rating object');
+      end case;
+   end;
+
+   member procedure convert_to_local_time
+   is
+      l_local_timezone varchar2(28);
+      l_parts          str_tab_t;
+   begin
+      case self.current_time
+         when 'D' then
+            l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+            select tz.time_zone_name
+              into l_local_timezone
+              from at_physical_location pl,
+                   cwms_time_zone tz
+             where pl.location_code = cwms_loc.get_location_code(self.office_id, l_parts(1))
+               and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+            self.effective_date := cwms_util.change_timezone(self.effective_date, 'UTC', l_local_timezone);
+            if self.create_date is not null then
+               self.create_date := cwms_util.change_timezone(self.create_date, 'UTC', l_local_timezone);
+            end if;
+            self.current_time := 'L';
+         when 'L' then
+            null;
+         else
+            cwms_err.raise('ERROR', 'Don''t know the current time setting of the rating object');
+      end case;
+   end;
+
+   member procedure store(
+      p_rating_code    out number,
+      p_fail_if_exists in  varchar2)
+   is
+      l_rec       at_rating%rowtype;
+      l_time_zone varchar2(28);
+      l_exists    boolean := true;
+      l_clone     rating_t;
+      l_msg       sys.aq$_jms_map_message;
+      l_msgid     pls_integer;
+      i           integer;
+   begin
+      if self.current_units = 'N' or self.current_time = 'L' then
+         l_clone := self;
+         l_clone.convert_to_database_units;
+         l_clone.convert_to_database_time;
+         l_clone.store(p_rating_code, p_fail_if_exists);
+         return;
+      end if;
+      l_rec.rating_spec_code := rating_spec_t.get_rating_spec_code(
+         self.rating_spec_id,
+         self.office_id);
+
+      select tz.time_zone_name
+        into l_time_zone
+        from at_rating_spec rs,
+             at_physical_location pl,
+             cwms_time_zone tz
+       where rs.rating_spec_code = l_rec.rating_spec_code
+         and pl.location_code = rs.location_code
+         and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+
+      if l_time_zone = 'Unknown or Not Applicable' then
+         l_time_zone := 'UTC';
+      end if;
+
+      l_rec.effective_date := cwms_util.change_timezone(self.effective_date, l_time_zone, 'UTC');
+
+      begin
+         select *
+           into l_rec
+           from at_rating
+          where rating_spec_code = l_rec.rating_spec_code
+            and effective_date = l_rec.effective_date;
+
+         if cwms_util.is_true(p_fail_if_exists) then
+            cwms_err.raise(
+               'ITEM_ALREADY_EXISTS',
+               'Rating',
+               self.office_id
+               ||'/'
+               ||self.rating_spec_id
+               ||' - '
+               ||to_char(self.effective_date, 'yyyy/mm/dd hh24mi')
+               ||' ('
+               ||l_time_zone
+               ||')');
+         end if;
+      exception
+         when no_data_found then
+            l_exists := false;
+            l_rec.rating_code := cwms_seq.nextval;
+      end;
+
+      l_rec.ref_rating_code := null;
+      l_rec.create_date     := nvl(cwms_util.change_timezone(self.create_date, l_time_zone, 'UTC'), cast(systimestamp at time zone 'UTC' as date));
+      l_rec.active_flag     := self.active_flag;
+      l_rec.formula         := self.formula;
+      l_rec.native_units    := self.native_units;
+      l_rec.description     := self.description;
+
+      if l_exists then
+         update at_rating
+            set row = l_rec
+          where rating_code = l_rec.rating_code;
+      else
+         insert
+           into at_rating
+         values l_rec;
+      end if;
+
+      if self.rating_info is not null then
+         self.rating_info.store(l_rec.rating_code, null, 'F');
+      end if;
+
+      p_rating_code := l_rec.rating_code;
+
+      cwms_msg.new_message(l_msg, l_msgid, 'RatingStored');
+      l_msg.set_string(l_msgid, 'office_id', self.office_id);
+      l_msg.set_string(l_msgid, 'rating_id', self.rating_spec_id);
+      l_msg.set_string(l_msgid, 'active',    self.active_flag);
+      l_msg.set_long(l_msgid, 'create_date',    cwms_util.to_millis(l_rec.create_date));
+      l_msg.set_long(l_msgid, 'effective_date', cwms_util.to_millis(l_rec.effective_date));
+      i := cwms_msg.publish_message(l_msg, l_msgid, self.office_id||'_ts_stored');
+      i := cwms_msg.publish_message(l_msg, l_msgid, self.office_id||'_realtime_ops');
+   end;
+
+   member procedure store(
+      p_fail_if_exists in varchar2)
+   is
+      l_rating_code number(10);
+   begin
+      self.store(l_rating_code, p_fail_if_exists);
+   end;
+
+   member function to_clob
+   return clob
+   is
+      l_text           clob;
+      l_parts          str_tab_t;
+      l_time_zone      varchar2(28);
+      l_clone          rating_t;
+      function bool_text(
+         p_state in boolean)
+      return varchar2
+      is
+      begin
+         return case p_state
+                   when true  then 'true'
+                   when false then 'false'
+                end;
+      end;
+   begin
+      if self.current_units = 'D' or self.current_time = 'D' then
+         l_clone := self;
+         l_clone.convert_to_native_units;
+         l_clone.convert_to_local_time;
+         return l_clone.to_clob;
+      end if;
+      l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+      select tz.time_zone_name
+        into l_time_zone
+        from at_physical_location pl,
+             cwms_time_zone tz
+       where pl.location_code = cwms_loc.get_location_code(self.office_id, l_parts(1))
+         and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+      if l_time_zone = 'Unknown or Not Applicable' then
+         l_time_zone := 'UTC';
+      end if;
+      dbms_lob.createtemporary(l_text, true);
+      dbms_lob.open(l_text, dbms_lob.lob_readwrite);
+      cwms_util.append(l_text, '<rating office-id="'||self.office_id||'">'
+         ||'<rating-spec-id>'||self.rating_spec_id||'</rating-spec-id>'
+         ||'<units-id>'||self.native_units||'</units-id>'
+         ||'<effective-date>'||to_char(self.effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
+      if self.create_date is not null then
+         cwms_util.append(l_text, '<create-date>'||to_char(self.create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>');
+      end if;
+      cwms_util.append(l_text,'<active>'||bool_text(cwms_util.is_true(self.active_flag))||'</active>'
+         ||case self.description is null
+              when true  then '<description/>'
+              when false then '<description>'||self.description||'</description>'
+           end);
+      if self.formula is null then
+         cwms_util.append(l_text, self.rating_info.to_clob);
+      else
+         cwms_util.append(l_text, '<formula>'||self.formula||'</formula>');
+      end if;
+      cwms_util.append(l_text, '</rating>');
+      dbms_lob.close(l_text);
+      return l_text;
+   end;
+
+   member function to_xml
+   return xmltype
+   is
+   begin
+      return xmltype(self.to_clob);
+   end;
+
+   member function rate(
+      p_ind_values in double_tab_tab_t)
+   return double_tab_t
+   is
+      l_results     double_tab_t;
+      l_inp_length  pls_integer;
+      l_ind_set     double_tab_t;
+      l_rating_spec rating_spec_t;
+      l_template    rating_template_t;
+   begin
+      if p_ind_values is not null then
+         if p_ind_values.count != get_ind_parameter_count then
+            -------------------
+            -- sanity checks --
+            -------------------
+            cwms_err.raise(
+               'ERROR',
+               'Rating '
+               ||rating_spec_id
+               ||' requires '
+               ||get_ind_parameter_count
+               ||' independent parameters, '
+               ||p_ind_values.count
+               ||' specified');
+         end if;
+         for i in 1..p_ind_values.count loop
+            if i = 1 then
+               l_inp_length := p_ind_values(i).count;
+            else
+               if p_ind_values(i).count != l_inp_length then
+                  cwms_err.raise(
+                     'ERROR', 'Input parameter sequences have inconsistent sizes');
+               end if;
+            end if;
+         end loop;
+         ------------------------
+         -- perform the rating --
+         ------------------------
+         l_ind_set := double_tab_t();
+         l_results := double_tab_t();
+         l_results.extend(l_inp_length);
+         for j in 1..l_inp_length loop
+            if l_ind_set.count > 0 then
+               l_ind_set.trim(l_ind_set.count);
+            end if;
+            l_ind_set.extend(p_ind_values.count);
+            for i in 1..p_ind_values.count loop
+               l_ind_set(i) := p_ind_values(i)(j);
+            end loop;
+            if formula is not null then
+               --------------------
+               -- formula rating --
+               --------------------
+               l_results(j) := cwms_util.eval_tokenized_expression(formula_tokens, l_ind_set);
+            else
+               ------------------
+               -- table rating --
+               ------------------
+               if l_template is null then
+                  l_rating_spec := rating_spec_t(rating_spec_id, office_id);
+                  l_template := rating_template_t(office_id, l_rating_spec.template_id);
+               end if;
+               l_results(j) := rating_info.rate(l_ind_set, 1, l_template.ind_parameters);
+            end if;
+         end loop;
+      end if;
+      return l_results;
+   end;
+
+   member function rate(
+      p_ind_values in double_tab_t)
+   return double_tab_t
+   is
+      l_ind_values double_tab_tab_t;
+   begin
+      if p_ind_values is not null then
+         l_ind_values := double_tab_tab_t();
+         l_ind_values.extend(p_ind_values.count);
+         for i in 1..p_ind_values.count loop
+            l_ind_values(i) := double_tab_t(p_ind_values(i));
+         end loop;
+      end if;
+      return rate(l_ind_values);
+   end;
+
+   member function rate_one(
+      p_ind_values in double_tab_t)
+   return binary_double
+   is
+      l_results    double_tab_t;
+      l_ind_values double_tab_tab_t := double_tab_tab_t();
+   begin
+      l_ind_values.extend(p_ind_values.count);
+      for i in 1..p_ind_values.count loop
+         l_ind_values(i) := double_tab_t(p_ind_values(i));
+      end loop;
+      l_results := rate(l_ind_values);
+      return l_results(1);
+   end;
+
+   member function rate(
+      p_ind_value in binary_double)
+   return binary_double
+   is
+      l_results double_tab_t;
+   begin
+      l_results := rate(double_tab_tab_t(double_tab_t(p_ind_value)));
+      return l_results(1);
+   end;
+
+   member function rate(
+      p_ind_values in tsv_array)
+   return tsv_array
+   is
+      l_results tsv_array;
+      l_values  double_tab_t;
+   begin
+      if p_ind_values is not null then
+         l_values := double_tab_t();
+         l_values.extend(p_ind_values.count);
+         l_results := tsv_array();
+         l_results.extend(p_ind_values.count);
+         for i in 1..p_ind_values.count loop
+            l_values(i) := case cwms_ts.quality_is_missing(p_ind_values(i)) or
+                                cwms_ts.quality_is_rejected(p_ind_values(i))
+                              when true  then null
+                              when false then p_ind_values(i).value
+                           end;
+         end loop;
+         l_values := rate(l_values);
+         for i in 1..p_ind_values.count loop
+            l_results(i).date_time    := p_ind_values(i).date_time;
+            l_results(i).value        := l_values(i);
+            l_results(i).quality_code := case l_values(i) is null
+                                            when true  then 5
+                                            when false then 0
+                                         end;
+         end loop;
+      end if;
+      return l_results;
+   end;
+
+   member function rate(
+      p_ind_values in ztsv_array)
+   return ztsv_array
+   is
+      l_results ztsv_array;
+      l_values  double_tab_t;
+   begin
+      if p_ind_values is not null then
+         l_values := double_tab_t();
+         l_values.extend(p_ind_values.count);
+         l_results := ztsv_array();
+         l_results.extend(p_ind_values.count);
+         for i in 1..p_ind_values.count loop
+            l_values(i) := case cwms_ts.quality_is_missing(p_ind_values(i)) or
+                                cwms_ts.quality_is_rejected(p_ind_values(i))
+                              when true  then null
+                              when false then p_ind_values(i).value
+                           end;
+         end loop;
+         l_values := rate(l_values);
+         for i in 1..p_ind_values.count loop
+            l_results(i).date_time    := p_ind_values(i).date_time;
+            l_results(i).value        := l_values(i);
+            l_results(i).quality_code := case l_values(i) is null
+                                            when true  then 5
+                                            when false then 0
+                                         end;
+         end loop;
+      end if;
+      return l_results;
+   end;
+
+   member function rate(
+      p_ind_value in tsv_type)
+   return tsv_type
+   is
+      l_values tsv_array;
+   begin
+      l_values := rate(tsv_array(p_ind_value));
+      return l_values(1);
+   end;
+
+   member function rate(
+      p_ind_value in ztsv_type)
+   return ztsv_type
+   is
+      l_values ztsv_array;
+   begin
+      l_values := rate(ztsv_array(p_ind_value));
+      return l_values(1);
+   end;
+
+   member function reverse_rate(
+      p_dep_values in double_tab_t)
+   return double_tab_t
+   is
+      l_clone rating_t;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if get_ind_parameter_count != 1 then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a rating with '
+            ||get_ind_parameter_count
+            ||' independent parameters ('
+            ||rating_spec_id
+            ||')');
+      elsif formula is not null then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a formula-based rating ('
+            ||rating_spec_id
+            ||')');
+      end if;
+      ------------------------------------------------------------------
+      -- clone the rating, reversing independent and dependent values --
+      ------------------------------------------------------------------
+      l_clone := self;
+      for i in 1..rating_info.rating_values.count loop
+         l_clone.rating_info.rating_values(i).ind_value := rating_info.rating_values(i).dep_value;
+         l_clone.rating_info.rating_values(i).dep_value := rating_info.rating_values(i).ind_value;
+      end loop;
+      if rating_info.extension_values is not null then
+         for i in 1..rating_info.extension_values.count loop
+            l_clone.rating_info.extension_values(i).ind_value := rating_info.extension_values(i).dep_value;
+            l_clone.rating_info.extension_values(i).dep_value := rating_info.extension_values(i).ind_value;
+         end loop;
+      end if;
+      ----------------------------------------------
+      -- perform the rating on the reversed clone --
+      ----------------------------------------------
+      return l_clone.rate(p_dep_values);
+   end;
+
+   member function reverse_rate(
+      p_dep_value in binary_double)
+   return binary_double
+   is
+      l_clone rating_t;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if get_ind_parameter_count != 1 then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a rating with '
+            ||get_ind_parameter_count
+            ||' independent parameters ('
+            ||rating_spec_id
+            ||')');
+      elsif formula is not null then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a formula-based rating ('
+            ||rating_spec_id
+            ||')');
+      end if;
+      ------------------------------------------------------------------
+      -- clone the rating, reversing independent and dependent values --
+      ------------------------------------------------------------------
+      l_clone := self;
+      for i in 1..rating_info.rating_values.count loop
+         l_clone.rating_info.rating_values(i).ind_value := rating_info.rating_values(i).dep_value;
+         l_clone.rating_info.rating_values(i).dep_value := rating_info.rating_values(i).ind_value;
+      end loop;
+      if rating_info.extension_values is not null then
+         for i in 1..rating_info.extension_values.count loop
+            l_clone.rating_info.extension_values(i).ind_value := rating_info.extension_values(i).dep_value;
+            l_clone.rating_info.extension_values(i).dep_value := rating_info.extension_values(i).ind_value;
+         end loop;
+      end if;
+      ----------------------------------------------
+      -- perform the rating on the reversed clone --
+      ----------------------------------------------
+      return l_clone.rate(p_dep_value);
+   end;
+
+   member function reverse_rate(
+      p_dep_values in tsv_array)
+   return tsv_array
+   is
+      l_clone rating_t;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if get_ind_parameter_count != 1 then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a rating with '
+            ||get_ind_parameter_count
+            ||' independent parameters ('
+            ||rating_spec_id
+            ||')');
+      elsif formula is not null then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a formula-based rating ('
+            ||rating_spec_id
+            ||')');
+      end if;
+      ------------------------------------------------------------------
+      -- clone the rating, reversing independent and dependent values --
+      ------------------------------------------------------------------
+      l_clone := self;
+      for i in 1..rating_info.rating_values.count loop
+         l_clone.rating_info.rating_values(i).ind_value := rating_info.rating_values(i).dep_value;
+         l_clone.rating_info.rating_values(i).dep_value := rating_info.rating_values(i).ind_value;
+      end loop;
+      if rating_info.extension_values is not null then
+         for i in 1..rating_info.extension_values.count loop
+            l_clone.rating_info.extension_values(i).ind_value := rating_info.extension_values(i).dep_value;
+            l_clone.rating_info.extension_values(i).dep_value := rating_info.extension_values(i).ind_value;
+         end loop;
+      end if;
+      ----------------------------------------------
+      -- perform the rating on the reversed clone --
+      ----------------------------------------------
+      return l_clone.rate(p_dep_values);
+   end;
+
+   member function reverse_rate(
+      p_dep_values in ztsv_array)
+   return ztsv_array
+   is
+      l_clone rating_t;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if get_ind_parameter_count != 1 then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a rating with '
+            ||get_ind_parameter_count
+            ||' independent parameters ('
+            ||rating_spec_id
+            ||')');
+      elsif formula is not null then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a formula-based rating ('
+            ||rating_spec_id
+            ||')');
+      end if;
+      ------------------------------------------------------------------
+      -- clone the rating, reversing independent and dependent values --
+      ------------------------------------------------------------------
+      l_clone := self;
+      for i in 1..rating_info.rating_values.count loop
+         l_clone.rating_info.rating_values(i).ind_value := rating_info.rating_values(i).dep_value;
+         l_clone.rating_info.rating_values(i).dep_value := rating_info.rating_values(i).ind_value;
+      end loop;
+      if rating_info.extension_values is not null then
+         for i in 1..rating_info.extension_values.count loop
+            l_clone.rating_info.extension_values(i).ind_value := rating_info.extension_values(i).dep_value;
+            l_clone.rating_info.extension_values(i).dep_value := rating_info.extension_values(i).ind_value;
+         end loop;
+      end if;
+      ----------------------------------------------
+      -- perform the rating on the reversed clone --
+      ----------------------------------------------
+      return l_clone.rate(p_dep_values);
+   end;
+
+   member function reverse_rate(
+      p_dep_value in tsv_type)
+   return tsv_type
+   is
+      l_clone rating_t;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if get_ind_parameter_count != 1 then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a rating with '
+            ||get_ind_parameter_count
+            ||' independent parameters ('
+            ||rating_spec_id
+            ||')');
+      elsif formula is not null then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a formula-based rating ('
+            ||rating_spec_id
+            ||')');
+      end if;
+      ------------------------------------------------------------------
+      -- clone the rating, reversing independent and dependent values --
+      ------------------------------------------------------------------
+      l_clone := self;
+      for i in 1..rating_info.rating_values.count loop
+         l_clone.rating_info.rating_values(i).ind_value := rating_info.rating_values(i).dep_value;
+         l_clone.rating_info.rating_values(i).dep_value := rating_info.rating_values(i).ind_value;
+      end loop;
+      if rating_info.extension_values is not null then
+         for i in 1..rating_info.extension_values.count loop
+            l_clone.rating_info.extension_values(i).ind_value := rating_info.extension_values(i).dep_value;
+            l_clone.rating_info.extension_values(i).dep_value := rating_info.extension_values(i).ind_value;
+         end loop;
+      end if;
+      ----------------------------------------------
+      -- perform the rating on the reversed clone --
+      ----------------------------------------------
+      return l_clone.rate(p_dep_value);
+   end;
+
+   member function reverse_rate(
+      p_dep_value in ztsv_type)
+   return ztsv_type
+   is
+      l_clone rating_t;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if get_ind_parameter_count != 1 then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a rating with '
+            ||get_ind_parameter_count
+            ||' independent parameters ('
+            ||rating_spec_id
+            ||')');
+      elsif formula is not null then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot reverse rate through a formula-based rating ('
+            ||rating_spec_id
+            ||')');
+      end if;
+      ------------------------------------------------------------------
+      -- clone the rating, reversing independent and dependent values --
+      ------------------------------------------------------------------
+      l_clone := self;
+      for i in 1..rating_info.rating_values.count loop
+         l_clone.rating_info.rating_values(i).ind_value := rating_info.rating_values(i).dep_value;
+         l_clone.rating_info.rating_values(i).dep_value := rating_info.rating_values(i).ind_value;
+      end loop;
+      if rating_info.extension_values is not null then
+         for i in 1..rating_info.extension_values.count loop
+            l_clone.rating_info.extension_values(i).ind_value := rating_info.extension_values(i).dep_value;
+            l_clone.rating_info.extension_values(i).dep_value := rating_info.extension_values(i).ind_value;
+         end loop;
+      end if;
+      ----------------------------------------------
+      -- perform the rating on the reversed clone --
+      ----------------------------------------------
+      return l_clone.rate(p_dep_value);
+   end;
+
+   member function get_date(p_timestr in varchar2) return date
+   is
+      l_date     date;
+      l_timezone varchar2(28);
+      l_parts    str_tab_t;
+      l_timestr  varchar2(32); -- hides outer declaration
+   begin
+      l_date := cwms_util.to_timestamp(substr(p_timestr, 1, 19));
+      l_timestr := substr(p_timestr, 20);
+      if l_timestr is null then
+         ----------------------------
+         -- assume local time zone --
+         ----------------------------
+         null;
+      else
+         ------------------------------
+         -- shift to local time zone --
+         ------------------------------
+         l_timestr := 'Etc/GMT'
+         ||case substr(l_timestr, 1, 1)
+              when '+' then '-' || to_number(l_timestr, 2, 2)
+              when '-' then '+' || to_number(l_timestr, 2, 2)
+           end;
+         l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+         select tz.time_zone_name
+           into l_timezone
+           from at_base_location bl,
+                at_physical_location pl,
+                cwms_office o,
+                cwms_time_zone tz
+          where o.office_id = upper(self.office_id)
+                and bl.db_office_code = o.office_code
+                and bl.base_location_id = cwms_util.get_base_id(l_parts(1))
+                and nvl(pl.sub_location_id, cwms_rating.separator1) = nvl(cwms_util.get_sub_id(l_parts(1)), cwms_rating.separator1)
+                and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+         if l_timezone = 'Unknown or Not Applicable' then
+            l_timezone := 'UTC';
+         end if;
+         l_date := cwms_util.change_timezone(l_date, l_timestr, l_timezone);
+      end if;
+      return l_date;
+   end;
+
+   member function get_ind_parameter_count
+   return pls_integer
+   is
+      l_parts str_tab_t;
+   begin
+      l_parts := cwms_util.split_text(rating_spec_id, cwms_rating.separator1);
+      l_parts := cwms_util.split_text(l_parts(2), cwms_rating.separator3);
+      return l_parts.count;
+   end;
+
+   static function get_rating_code(
+      p_rating_spec_id in varchar2,
+      p_effective_date in date     default null,
+      p_match_date     in varchar2 default 'F',
+      p_time_zone      in varchar2 default null,
+      p_office_id      in varchar2 default null)
+   return number
+   is
+      l_parts                   str_tab_t;
+      l_location_id             varchar2(49);
+      l_template_parameters_id  varchar2(256);
+      l_template_version        varchar2(32);
+      l_version                 varchar2(32);
+      l_office_id               varchar2(16);
+      l_office_code             number;
+      l_rating_spec_code        number;
+      l_effective_date          date;
+      l_time_zone               varchar2(28);
+      l_rating_code             number;
+   begin
+      l_office_id := nvl(p_office_id, cwms_util.user_office_id);
+      l_office_code := cwms_util.get_office_code(l_office_id);
+      l_parts := cwms_util.split_text(p_rating_spec_id, cwms_rating.separator1);
+      if l_parts.count != 4 then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            p_rating_spec_id,
+            'Rating identifier');
+      end if;
+      l_location_id            := l_parts(1);
+      l_template_parameters_id := l_parts(2);
+      l_template_version       := l_parts(3);
+      l_version                := l_parts(4);
+
+      begin
+         select ls.rating_spec_code
+           into l_rating_spec_code
+           from at_rating_spec ls,
+                at_rating_template lt
+          where lt.office_code = l_office_code
+            and upper(lt.parameters_id) = upper(l_template_parameters_id)
+            and upper(lt.version) = upper(l_template_version)
+            and ls.template_code = lt.template_code
+            and ls.location_code = cwms_loc.get_location_code(l_office_code, l_location_id)
+            and upper(ls.version) = upper(l_version);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Rating specification',
+               l_office_id||'/'||p_rating_spec_id);
+      end;
+
+      if p_effective_date is null then
+         if cwms_util.is_true(p_match_date) then
+            cwms_err.raise(
+               'ERROR',
+               'Cannot specify p_match_date => ''T'' with p_effecive_date => null');
+         end if;
+         l_effective_date := sysdate + 1;
+      else
+         l_effective_date := p_effective_date;
+         if p_time_zone is null then
+            select tz.time_zone_name
+              into l_time_zone
+              from at_physical_location pl,
+                   cwms_time_zone tz
+             where pl.location_code = cwms_loc.get_location_code(l_office_code, l_location_id)
+               and tz.time_zone_code = nvl(pl.time_zone_code, 0);
+            if l_time_zone = 'Unknown or Not Applicable' then
+               l_time_zone := 'UTC';
+            end if;
+         else
+            l_time_zone := p_time_zone;
+         end if;
+         l_effective_date := cwms_util.change_timezone(l_effective_date, l_time_zone, 'UTC');
+      end if;
+
+      if cwms_util.is_true(p_match_date) then
+         select rating_code
+           into l_rating_code
+           from at_rating
+          where rating_spec_code = l_rating_spec_code
+            and effective_date = l_effective_date;
+      else
+         select rating_code
+           into l_rating_code
+           from at_rating
+          where rating_spec_code = l_rating_spec_code
+            and effective_date =
+                ( select max(effective_date)
+                    from at_rating
+                   where rating_spec_code = l_rating_spec_code
+                     and effective_date <= l_effective_date
+                );
+      end if;
+
+      return l_rating_code;
+   end;
+end;
+ 
+  GRANT EXECUTE ON "CWMS_20"."RATING_T" TO "CWMS_USER"
+ 
