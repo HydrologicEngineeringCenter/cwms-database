@@ -1,0 +1,11 @@
+
+  CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_PARAMETER" ("DB_OFFICE_ID", "DB_OFFICE_CODE", "PARAMETER_CODE", "BASE_PARAMETER_CODE", "BASE_PARAMETER_ID", "SUB_PARAMETER_ID", "PARAMETER_ID") AS 
+  SELECT    a.office_id db_office_id, b.db_office_code, b.parameter_code,
+                c.base_parameter_code, c.base_parameter_id, b.sub_parameter_id,
+                c.base_parameter_id || SUBSTR ('-', 1, LENGTH (b.sub_parameter_id)) || b.sub_parameter_id parameter_id
+      FROM    cwms_office a, at_parameter b, cwms_base_parameter c
+     WHERE    b.db_office_code = a.db_host_office_code
+                AND b.base_parameter_code = c.base_parameter_code
+ 
+  GRANT SELECT ON "CWMS_20"."AV_PARAMETER" TO "CWMS_USER"
+ 
