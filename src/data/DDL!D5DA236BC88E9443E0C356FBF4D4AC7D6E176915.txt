@@ -1,0 +1,32 @@
+
+  CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_DATA_STREAMS_CURRENT" ("DB_OFFICE_ID", "DATA_STREAM_ID", "DATA_STREAM_DESC", "DS_ACTIVE_FLAG", "USE_DB_SHEF_SPEC_MAPPING", "NUM_CRIT_FILES", "CRIT_FILE_EXISTS", "CRIT_FILE_CREATION_DATE", "CRIT_FILE_STATE", "NUM_DECODE_PROCESS_RECS", "NUM_DECODE_IGNORE_RECS", "NUM_SPEC_ONLY_IGNORE_RECS", "TOTAL_IGNORE_RECS", "TOTAL_CRIT_FILE_RECS", "CRIT_FILE_CODE", "DATA_STREAM_CODE", "DB_OFFICE_CODE", "CRIT_FILE_HASH", "NEW_CRIT_FILE_HASH") AS 
+  SELECT      office_id db_office_id, data_stream_id, data_stream_desc,
+                  active_flag ds_active_flag, use_db_shef_spec_mapping,
+                  NVL (num_crit_files, 0) num_crit_files,
+                  CASE WHEN crit_file_creation_date IS NULL THEN 'F' ELSE 'T' END crit_file_exists,
+                  crit_file_creation_date,
+                  CASE WHEN NVL (num_crit_files, 0) = 0 THEN 'STALE' ELSE CASE WHEN NVL (crit_file_hash, 0) = NVL (new_crit_file_hash, 0) THEN 'CURRENT' ELSE 'STALE' END END crit_file_state,
+                  NVL (num_decode_process_recs, 0) num_decode_process_recs,
+                  NVL (num_decode_ignore_recs, 0) num_decode_ignore_recs,
+                  NVL (num_ignore_recs, 0) num_spec_only_ignore_recs,
+                  NVL (num_decode_ignore_recs, 0) + NVL (num_ignore_recs, 0) total_ignore_recs,
+                  NVL (num_decode_process_recs, 0) + NVL (num_decode_ignore_recs, 0) + NVL (num_ignore_recs, 0) total_crit_file_recs,
+                  crit_file_code, data_stream_code, db_office_code,
+                  NVL (crit_file_hash, 0) crit_file_hash,
+                  NVL (new_crit_file_hash, 0) new_crit_file_hash
+         FROM   at_data_stream_id a
+                  LEFT JOIN zv_current_crit_file_code
+                      USING (data_stream_code)
+                  LEFT JOIN (SELECT        data_stream_code,
+                                                SUM (ORA_HASH (a.shef_crit_line)) new_crit_file_hash
+                                      FROM    av_shef_decode_spec a
+                                     WHERE    a.data_stream_code IS NOT NULL
+                                 GROUP BY    data_stream_code) c
+                      USING (data_stream_code)
+                  JOIN cwms_office
+                      ON office_code = db_office_code
+        WHERE   delete_date IS NULL
+    ORDER BY   db_office_id, UPPER (data_stream_id)
+ 
+  GRANT SELECT ON "CWMS_20"."AV_DATA_STREAMS_CURRENT" TO "CWMS_USER"
+ 
