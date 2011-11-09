@@ -1,0 +1,19 @@
+
+  CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_LOCATION_TYPE" ("LOCATION_CODE", "OFFICE_ID", "BASE_LOCATION_ID", "SUB_LOCATION_ID", "LOCATION_ID", "LOCATION_TYPE") AS 
+  select pl.location_code,
+       o.office_id,
+       bl.base_location_id,
+       pl.sub_location_id,
+       bl.base_location_id
+       ||substr('-', 1, length(pl.sub_location_id))
+       ||pl.sub_location_id as location_id,
+       cwms_loc.get_location_type(pl.location_code) as location_type
+  from at_physical_location pl,
+       at_base_location bl,
+       cwms_office o
+ where pl.location_code > 0
+   and bl.base_location_code = pl.base_location_code
+   and o.office_code = bl.db_office_code
+ 
+  GRANT SELECT ON "CWMS_20"."AV_LOCATION_TYPE" TO "CWMS_USER"
+ 
