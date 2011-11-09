@@ -1,0 +1,13 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."GATE_CHANGE_TAB_T" 
+/**
+ * Holds information on a collection of gate changes
+ *
+ * @see type gate_change_obj_t
+ */
+is
+  TABLE OF gate_change_obj_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."GATE_CHANGE_TAB_T" TO "CWMS_USER"
+ 
