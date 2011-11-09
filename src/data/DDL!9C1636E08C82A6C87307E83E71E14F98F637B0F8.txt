@@ -1,0 +1,12 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."RATING_TAB_T" 
+/**
+ * Holds a collection of ratings
+ *
+ * @see type rating_t
+ */
+as table of rating_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."RATING_TAB_T" TO "CWMS_USER"
+ 
