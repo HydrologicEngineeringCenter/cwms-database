@@ -1,0 +1,64 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."SEASONAL_VALUE_T" 
+/**
+ * Holds a single value at a specified time offset into a recurring interval. The offset
+ * into the interval is specified as a combination of months and minutes
+ *
+ * @see type seasonal_value_tab_t
+ *
+ * @member offset_months  The integer number of months offset into the interval (combined with offset minutes)
+ * @member offset_minutes The integer number of minutes offset into the interval (combined with offset months)
+ * @member value          The value at the specified offset into the interval
+ */
+is object (
+   offset_months  number(2),
+   offset_minutes number(5),
+   value          number,
+   /**
+    * Constructs a seasonal_value_t object from Oracle interval types instead of integer types
+    *
+    * @param p_calendar_offset The calendar offset (years and months) into the interval (combined with time offset)
+    * @param p_time_offset     The time offset (days, hours and minutes) into the interval (combined with calendar offset)
+    * @param p_value           The value at the specified offset into the interval
+    */
+   constructor function seasonal_value_t(
+      p_calendar_offset in interval year to month,
+      p_time_offset     in interval day to second,
+      p_value           in number)
+      return self as result,
+
+   member procedure init(
+      p_offset_months  in integer,
+      p_offset_minutes in integer,
+      p_value          in number)
+);
+CREATE OR REPLACE TYPE BODY "CWMS_20"."SEASONAL_VALUE_T" 
+as
+   constructor function seasonal_value_t(
+      p_calendar_offset in interval year to month,
+      p_time_offset     in interval day to second,
+      p_value           in number)
+      return self as result
+   is
+   begin
+      init(cwms_util.yminterval_to_months(p_calendar_offset),
+           cwms_util.dsinterval_to_minutes(p_time_offset),
+           p_value);
+      return;
+   end seasonal_value_t;
+
+   member procedure init(
+      p_offset_months  in integer,
+      p_offset_minutes in integer,
+      p_value          in number)
+   is
+   begin
+      offset_months  := p_offset_months;
+      offset_minutes := p_offset_minutes;
+      value          := p_value;
+   end init;
+
+end;
+ 
+  GRANT EXECUTE ON "CWMS_20"."SEASONAL_VALUE_T" TO "CWMS_USER"
+ 
