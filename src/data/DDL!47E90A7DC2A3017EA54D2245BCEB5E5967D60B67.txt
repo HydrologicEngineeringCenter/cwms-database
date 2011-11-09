@@ -1,0 +1,13 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."SCREEN_ASSIGN_ARRAY" 
+/**
+ * [description needed]
+ *
+ * @see type screen_assign_t
+ * @see cwms_vt.assign_screening_id
+ */
+IS TABLE OF screen_assign_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."SCREEN_ASSIGN_ARRAY" TO "CWMS_USER"
+ 
