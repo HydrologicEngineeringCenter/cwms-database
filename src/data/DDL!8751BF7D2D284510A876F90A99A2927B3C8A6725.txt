@@ -1,0 +1,18 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."GROUP_CAT_T" 
+/**
+ * Holds the name of a location group within a specific location category
+ *
+ * @see group_cat_tab_t
+ *
+ * @member loc_category_id the location category identifier (parent of location group)
+ * @member loc_group_id    the location group identifier (child of location category)
+ */
+AS OBJECT (
+   loc_category_id   VARCHAR2 (32),
+   loc_group_id      VARCHAR2 (32)
+);
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."GROUP_CAT_T" TO "CWMS_USER"
+ 
