@@ -1,0 +1,9 @@
+
+  CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_SEC_TS_PRIVILEGES_MV" ("DB_OFFICE_CODE", "USERNAME", "TS_CODE", "NET_PRIVILEGE_BIT") AS 
+  SELECT    db_office_code, username, ts_code, net_privilege_bit
+      FROM        av_sec_ts_privileges
+                JOIN
+                    at_sec_locked_users
+                USING (db_office_code, username)
+     WHERE    is_locked != 'T'
+ 
