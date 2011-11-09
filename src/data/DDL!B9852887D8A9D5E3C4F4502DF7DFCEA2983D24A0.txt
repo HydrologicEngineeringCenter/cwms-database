@@ -1,0 +1,13 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."PROPERTY_INFO_TAB_T" 
+/**
+ * Holds a collection of property keys
+ *
+ * @see type property_info_t
+ * @see type property_info2_tab_t
+ */
+as table of property_info_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."PROPERTY_INFO_TAB_T" TO "CWMS_USER"
+ 
