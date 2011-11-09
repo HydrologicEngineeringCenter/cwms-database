@@ -1,0 +1,13 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."WATER_USER_TAB_T" 
+/**
+ * Hold a collection of water_user_obj_t objects
+ *
+ * @see type water_uer_obj_t
+ */
+IS
+  TABLE OF water_user_obj_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."WATER_USER_TAB_T" TO "CWMS_USER"
+ 
