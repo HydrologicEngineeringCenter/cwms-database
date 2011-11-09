@@ -1,0 +1,14 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."TS_ALIAS_TAB_T" 
+/**
+ * Holds information about a collection of time series aliases.  This information
+ * doesn't contain any context for the aliases.
+ *
+ * @see ts_alias_t
+ * @see cwms_ts.assign_ts_groups
+ */
+IS TABLE OF ts_alias_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."TS_ALIAS_TAB_T" TO "CWMS_USER"
+ 
