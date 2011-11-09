@@ -1,0 +1,2263 @@
+
+  CREATE OR REPLACE PACKAGE "CWMS_20"."CWMS_TEXT" 
+/**
+ * Facilities for working with text in the database
+ */
+as
+/**
+ * Store (insert or update) text to the database
+ *
+ * @param p_text_code      A unique numeric value that identifies the text
+ * @param p_text           The text to store
+ * @param p_id             A text identifier for the text to store
+ * @param p_description    A description of the text
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if the text identifier already exists in the database
+ * @param p_office_id      The office that owns the text. If not specified or NULL, the session user's default office is used
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the text identifier already exists in the database
+ */
+procedure store_text(
+   p_text_code      out number,                 -- the code for use in foreign keys
+   p_text           in  clob,                   -- the text, unlimited length
+   p_id             in  varchar2,               -- identifier with which to retrieve text (256 chars max)
+   p_description    in  varchar2 default null,  -- description, defaults to null
+   p_fail_if_exists in  varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+   p_office_id      in  varchar2 default null); -- office id, defaults current user's office
+/**
+ * Store (insert or update) text to the database
+ *
+ * @param p_text           The text to store
+ * @param p_id             A text identifier for the text to store
+ * @param p_description    A description of the text
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if the text identifier already exists in the database
+ * @param p_office_id      The office that owns the text. If not specified or NULL, the session user's default office is used
+ *
+ * @return A unique numeric value that identifies the text
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the text identifier already exists in the database
+ */
+function store_text(
+   p_text           in clob,                   -- the text, unlimited length
+   p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
+   p_description    in varchar2 default null,  -- description, defaults to null
+   p_fail_if_exists in varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+   p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+   return number;                              -- the code for use in foreign keys
+/**
+ * Store (insert or update) text to the database
+ *
+ * @param p_text_code      A unique numeric value that identifies the text
+ * @param p_text           The text to store
+ * @param p_id             A text identifier for the text to store
+ * @param p_description    A description of the text
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if the text identifier already exists in the database
+ * @param p_office_id      The office that owns the text. If not specified or NULL, the session user's default office is used
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the text identifier already exists in the database
+ */
+procedure store_text(
+   p_text_code      out number,                 -- the code for use in foreign keys
+   p_text           in  varchar2,               -- the text, limited to varchar2 max size
+   p_id             in  varchar2,               -- identifier with which to retrieve text (256 chars max)
+   p_description    in  varchar2 default null,  -- description, defaults to null
+   p_fail_if_exists in  varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+   p_office_id      in  varchar2 default null); -- office id, defaults current user's office
+/**
+ * Store (insert or update) text to the database
+ *
+ * @param p_text           The text to store
+ * @param p_id             A text identifier for the text to store
+ * @param p_description    A description of the text
+ * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if the text identifier already exists in the database
+ * @param p_office_id      The office that owns the text. If not specified or NULL, the session user's default office is used
+ *
+ * @return A unique numeric value that identifies the text
+ *
+ * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the text identifier already exists in the database
+ */
+function store_text(
+   p_text           in varchar2,               -- the text, limited to varchar2 max size
+   p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
+   p_description    in varchar2 default null,  -- description, defaults to null
+   p_fail_if_exists in varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+   p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+   return number;                              -- the code for use in foreign keys
+/**
+ * Retrieve text from the database
+ *
+ * @param p_text      The retrieved text
+ * @param p_id        A text identifier of the text to retrieve
+ * @param p_office_id The office that owns the text. If not specified or NULL, the session user's default office is used
+ */
+procedure retrieve_text(
+   p_text      out clob,                   -- the text, unlimited length
+   p_id        in  varchar2,               -- identifier used to store text (256 chars max)
+   p_office_id in  varchar2 default null); -- office id, defaults current user's office
+/**
+ * Retrieve text from the database
+ *
+ * @param p_id        A text identifier of the text to retrieve
+ * @param p_office_id The office that owns the text. If not specified or NULL, the session user's default office is used
+ *
+ * @return The retrieved text
+ */
+function retrieve_text(
+   p_id        in  varchar2,              -- identifier used to store text (256 chars max)
+   p_office_id in  varchar2 default null) -- office id, defaults current user's office
+   return clob;                           -- the text, unlimited length
+/**
+ * Retrieve text and description from the database
+ *
+ * @param p_text        The retrieved text
+ * @param p_description The retrieved description
+ * @param p_id          A text identifier of the text to retrieve
+ * @param p_office_id   The office that owns the text. If not specified or NULL, the session user's default office is used
+ */
+procedure retrieve_text2(
+   p_text        out clob,                   -- the text, unlimited length
+   p_description out varchar2,               -- the description
+   p_id          in  varchar2,               -- identifier used to store text (256 chars max)
+   p_office_id   in  varchar2 default null); -- office id, defaults current user's office
+/**
+ * Update text in the database
+ *
+ * @param p_text         The text to store
+ * @param p_id           A text identifier for the text to store
+ * @param p_description  A description of the text
+ * @param p_ignore_nulls A flag ('T' or 'F') that specifies whether to ignore NULL values on input ('T') or to update the database with NULL values ('F')
+ * @param p_office_id    The office that owns the text. If not specified or NULL, the session user's default office is used
+ */
+procedure update_text(
+   p_text           in clob,                   -- the text, unlimited length
+   p_id             in varchar2,               -- identifier of text to update (256 chars max)
+   p_description    in varchar2 default null,  -- description, defaults to null
+   p_ignore_nulls   in varchar2 default 'T',   -- flag specifying null inputs leave current values unchanged
+   p_office_id      in varchar2 default null); -- office id, defaults current user's office
+/**
+ * Append to text in the database
+ *
+ * @param p_new_text  The text to append
+ * @param p_id        The text identifier for the existing text to append to
+ * @param p_office_id The office that owns the text. If not specified or NULL, the session user's default office is used
+ */
+procedure append_text(
+   p_new_text       in out nocopy clob,        -- the text to append, unlimited length
+   p_id             in varchar2,               -- identifier of text to append to (256 chars max)
+   p_office_id      in varchar2 default null); -- office id, defaults current user's office
+/**
+ * Append to text in the database
+ *
+ * @param p_new_text  The text to append
+ * @param p_id        The text identifier for the existing text to append to
+ * @param p_office_id The office that owns the text. If not specified or NULL, the session user's default office is used
+ */
+procedure append_text(
+   p_new_text       in varchar2,               -- the text to append, limited to varchar2 max size
+   p_id             in varchar2,               -- identifier of text to append to (256 chars max)
+   p_office_id      in varchar2 default null); -- office id, defaults current user's office
+/**
+ * Delete text from the database
+ *
+ * @param p_id        The text identifier for the existing text to delete
+ * @param p_office_id The office that owns the text. If not specified or NULL, the session user's default office is used
+ */
+procedure delete_text(
+   p_id        in  varchar2,               -- identifier used to store text (256 chars max)
+   p_office_id in  varchar2 default null); -- office id, defaults current user's office
+--
+-- get matching ids in a cursor
+--
+procedure get_matching_ids(
+   p_ids                  in out sys_refcursor,       -- cursor of the matching office ids, text ids, and optionally descriptions
+   p_id_masks             in  varchar2 default '%',   -- delimited list of id masks, defaults to all ids
+   p_include_descriptions in  varchar2 default 'F',   -- flag specifying whether to retrieve descriptions also
+   p_office_id_masks      in  varchar2 default null,  -- delimited list of office id masks, defaults to user's office
+   p_delimiter            in  varchar2 default ',');  -- delimiter for masks, defaults to comma
+--
+-- get matching ids in a delimited clob
+--
+procedure get_matching_ids(
+   p_ids                  out clob,                   -- delimited clob of the matching office ids, text ids, and optionally descriptions
+   p_id_masks             in  varchar2 default '%',   -- delimited list of id masks, defaults to all ids
+   p_include_descriptions in  varchar2 default 'F',   -- flag specifying whether to retrieve descriptions also
+   p_office_id_masks      in  varchar2 default null,  -- delimited list of office id masks, defaults to user's office
+   p_delimiter            in  varchar2 default ',');  -- delimiter for masks, defaults to comma
+--
+-- get code for id
+--
+procedure get_text_code(
+   p_text_code      out number,                 -- the code for use in foreign keys
+   p_id             in  varchar2,               -- identifier with which to retrieve text (256 chars max)
+   p_office_id      in  varchar2 default null); -- office id, defaults current user's office
+--
+-- get code for id
+--
+function get_text_code(
+   p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
+   p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+   return number;                              -- the code for use in foreign keys
+-- /**
+--  * Stores (inserts or updates) standard text.  Standard text is text that is expected to be used many times
+--  * and is identified by a short text identifier.  If the identifier is self-describing, it may exist without
+--  * descriptive text; otherwise it is used a handle for a longer description.
+--  *
+--  * @param p_std_text_id    The standard text identifier. Maximum length is 16 bytes. Case is preserved, but case insensitive uniqueness is required.
+--  * @param p_std_text       The descriptive text. May be NULL if p_std_text_id is self-descriptive
+--  * @param p_fail_if_exists A flag ('T' or 'F') specifying whether to fail if p_std_text_id already exists
+--  * @param p_office_id      The office owning the standard text. If not specified or NULL the session user's default office is used.
+--  */
+-- procedure store_std_text(
+--    p_std_text_id    in varchar2,
+--    p_std_text       in clob     default null,
+--    p_fail_if_exists in varchar2 default 'T',
+--    p_office_id      in varchar2 default null);
+-- /**
+--  * Retrieves the descriptive text for a standard text identifier
+--  *
+--  * @param p_std_text    The descriptive text
+--  * @param p_std_text_id The standard text identifier to retrieve the description for. This may be owned by p_office_id or the CWMS "office".
+--  * @param p_office_id   The office owning the standard text. If not specified or NULL the session user's default office is used.
+--  */
+-- procedure retrieve_std_text(
+--    p_std_text    out clob,
+--    p_std_text_id in  varchar2,
+--    p_office_id   in  varchar2 default null);
+-- /**
+--  * Retrieves the descriptive text for a standard text identifier
+--  *
+--  * @param p_std_text_id The standard text identifier to retrieve the description for. This may be owned by p_office_id or the CWMS "office".
+--  * @param p_office_id   The office owning the standard text. If not specified or NULL the session user's default office is used.
+--  *
+--  * @return The descriptive text
+--  */
+-- function retrieve_std_text_f(
+--    p_std_text_id in varchar2,
+--    p_office_id   in varchar2 default null)
+--    return clob;
+-- /**
+--  * Deletes standard text
+--  *
+--  * @see constant cwms_util.delete_key
+--  * @see constant cwms_util.delete_data
+--  * @see constant cwms_util.delete_all
+--  *
+--  * @param p_std_text_id The standard text identifier to delete
+--  * @param p_delete_action Specifies what to delete.  Actions are as follows:
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">p_delete_action</th>
+--  *     <th class="descr">Action</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_key</td>
+--  *     <td class="descr">deletes only the standard text, and then only if it is not used in any time series</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_data</td>
+--  *     <td class="descr">deletes only the time series references to the standard text</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_all</td>
+--  *     <td class="descr">deletes the standard text and all time series references to it</td>
+--  *   </tr>
+--  * </table>
+--  * @param p_office_id   The office owning the standard text. If not specified or NULL the session user's default office is used.
+--  */
+-- procedure delete_std_text(
+--    p_std_text_id   in varchar2,
+--    p_delete_action in varchar2 default cwms_util.delete_key,
+--    p_office_id     in varchar2 default null);
+-- /**
+--  * Catalogs standard text that matches specified criteria. Matching is
+--  * accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_cusror A cursor containing all matching standard text.  The cursor contains
+--  * the following columns:
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Column No.</th>
+--  *     <th class="descr">Column Name</th>
+--  *     <th class="descr">Data Type</th>
+--  *     <th class="descr">Contents</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">1</td>
+--  *     <td class="descr">office_id</td>
+--  *     <td class="descr">varchar2(16)</td>
+--  *     <td class="descr">The office that owns the standard text</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">2</td>
+--  *     <td class="descr">std_text_id</td>
+--  *     <td class="descr">varchar2(16)</td>
+--  *     <td class="descr">The standard text identifier</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">3</td>
+--  *     <td class="descr">std_text</td>
+--  *     <td class="descr">clob</td>
+--  *     <td class="descr">The descriptive text, if any, for the standard text identifier</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_std_text_id_mask The standard text identifier pattern to match. Use glob-style
+--  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+--  * matching.
+--
+--  * @param p_office_id_mask The office pattern to match.  If the routine is called
+--  * without this parameter, or if this parameter is set to NULL, the session user's
+--  * default office will be used. For matching multiple office, use glob-style
+--  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+--  * matching.
+--  */
+-- procedure cat_std_text(
+--    p_cursor           out sys_refcursor,
+--    p_std_text_id_mask in  varchar2 default '*',
+--    p_office_id_mask   in  varchar2 default null);
+-- /**
+--  * Catalogs standard text that matches specified criteria. Matching is
+--  * accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_std_text_id_mask The standard text identifier pattern to match. Use glob-style
+--  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+--  * matching.
+--
+--  * @param p_office_id_mask The office pattern to match.  If the routine is called
+--  * without this parameter, or if this parameter is set to NULL, the session user's
+--  * default office will be used. For matching multiple office, use glob-style
+--  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
+--  * matching.
+--  *
+--  * @return A cursor containing all matching standard text. The cursor contains
+--  * the following columns:
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Column No.</th>
+--  *     <th class="descr">Column Name</th>
+--  *     <th class="descr">Data Type</th>
+--  *     <th class="descr">Contents</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">1</td>
+--  *     <td class="descr">office_id</td>
+--  *     <td class="descr">varchar2(16)</td>
+--  *     <td class="descr">The office that owns the standard text</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">2</td>
+--  *     <td class="descr">std_text_id</td>
+--  *     <td class="descr">varchar2(16)</td>
+--  *     <td class="descr">The standard text identifier</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">3</td>
+--  *     <td class="descr">std_text</td>
+--  *     <td class="descr">clob</td>
+--  *     <td class="descr">The descriptive text, if any, for the standard text identifier</td>
+--  *   </tr>
+--  * </table>
+--  */
+-- function cat_std_text_f(
+--    p_std_text_id_mask in varchar2 default '*',
+--    p_office_id_mask   in varchar2 default null)
+--    return sys_refcursor;
+-- /**
+--  * Store standard text to a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_std_text_id  The identifier of the standard text to store.
+--  * @param p_start_time   The first (or only) time for the text
+--  * @param p_end_time     The last time for the text. If specified the text is associated with all times from p_start_time to p_end_time (inclusive). Times must already exist for irregular time series.
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing standard text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_std_text(
+--    p_tsid         in varchar2,
+--    p_std_text_id  in varchar2,
+--    p_start_time   in date,
+--    p_end_time     in date     default null,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Store standard text to a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_std_text_id  The identifier of the standard text to store.
+--  * @param p_times        The times for the text
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing standard text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_std_text(
+--    p_tsid         in varchar2,
+--    p_std_text_id  in varchar2,
+--    p_times        in date_table_type,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Retrieves standard text that matches specified criteria from a time series.
+--  * The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_cursor A cursor containing the standard text. The cursor contains the following columns
+--  * (column 4 is included only if p_retrieve_text is 'T'):
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Column No.</th>
+--  *     <th class="descr">Column Name</th>
+--  *     <th class="descr">Data Type</th>
+--  *     <th class="descr">Contents</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">1</td>
+--  *     <td class="descr">date_time</td>
+--  *     <td class="descr">date</td>
+--  *     <td class="descr">The date/time for which the standard text applies. No date/times without standard text are included, even for regular time series.</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">2</td>
+--  *     <td class="descr">data_entry_date</td>
+--  *     <td class="descr">timestamp(6)</td>
+--  *     <td class="descr">The time the standard text was stored</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">3</td>
+--  *     <td class="descr">std_text_id</td>
+--  *     <td class="descr">varchar2(16)</td>
+--  *     <td class="descr">The standard text identifier</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the standard text identifier</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
+--  *     <td class="descr">std_text</td>
+--  *     <td class="descr">clob</td>
+--  *     <td class="descr">The descriptive text, if any, for the standard text identifier</td>
+--  *   </tr>
+--  * </table>
+--  * @param p_tsid             The time series identifier
+--  * @param p_std_text_id_mask The standard text identifier pattern to match. Use glob-style  wildcard characters as shown above instead of sql-style wildcard characters for pattern  matching.
+--  * @param p_start_time       The start of the time window
+--  * @param p_end_time         The end of the time window. If not specified or NULL the time window contains only p_start_time.
+--  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_retrieve_text    A flag ('T' or 'F') specifying whether to retrieve descriptive text.
+--  * @param p_min_attribute    The minimum attribute value to retrieve text for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to retrieve text for. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure retrieve_ts_std_text(
+--    p_cursor           out sys_refcursor,
+--    p_tsid             in  varchar2,
+--    p_std_text_id_mask in  varchar2,
+--    p_start_time       in  date,
+--    p_end_time         in  date     default null,
+--    p_version_date     in  date     default cwms_util.non_versioned,
+--    p_time_zone        in  varchar2 default null,
+--    p_max_version      in  varchar2 default 'T',
+--    p_retrieve_text    in  varchar2 default 'T',
+--    p_min_attribute    in  number   default null,
+--    p_max_attribute    in  number   default null,
+--    p_office_id        in  varchar2 default null);
+-- /**
+--  * Retrieves standard text that match a specified identifier pattern from a time series.
+--  * The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored for each time.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_tsid             The time series identifier
+--  * @param p_std_text_id_mask The standard text identifier pattern to match. Use glob-style  wildcard characters as shown above instead of sql-style wildcard characters for pattern  matching.
+--  * @param p_start_time       The start of the time window
+--  * @param p_end_time         The end of the time window. If not specified or NULL the time window contains only p_start_time.
+--  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_retrieve_text    A flag ('T' or 'F') specifying whether to retrieve descriptive text.
+--  * @param p_min_attribute    The minimum attribute value to retrieve text for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to retrieve text for. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  *
+--  * @return A cursor containing the standard text. The cursor contains the following columns
+--  * (column 4 is included only if p_retrieve_text is 'T'):
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Column No.</th>
+--  *     <th class="descr">Column Name</th>
+--  *     <th class="descr">Data Type</th>
+--  *     <th class="descr">Contents</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">1</td>
+--  *     <td class="descr">date_time</td>
+--  *     <td class="descr">date</td>
+--  *     <td class="descr">The date/time for which the standard text applies. No date/times without standard text are included, even for regular time series.</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">2</td>
+--  *     <td class="descr">data_entry_date</td>
+--  *     <td class="descr">timestamp(6)</td>
+--  *     <td class="descr">The time the standard text was stored</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">3</td>
+--  *     <td class="descr">std_text_id</td>
+--  *     <td class="descr">varchar2(16)</td>
+--  *     <td class="descr">The standard text identifier</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the standard text identifier</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
+--  *     <td class="descr">std_text</td>
+--  *     <td class="descr">clob</td>
+--  *     <td class="descr">The descriptive text, if any, for the standard text identifier</td>
+--  *   </tr>
+--  * </table>
+--  */
+-- procedure retrieve_ts_std_text_f(
+--    p_tsid             in varchar2,
+--    p_std_text_id_mask in varchar2,
+--    p_start_time       in date,
+--    p_end_time         in date     default null,
+--    p_version_date     in date     default cwms_util.non_versioned,
+--    p_time_zone        in varchar2 default null,
+--    p_max_version      in varchar2 default 'T',
+--    p_retrieve_text    in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
+--    p_office_id        in varchar2 default null);
+-- /**
+--  * Retrieves the number of times a time series has standard text that matches specified criteria
+--  * The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored for each time.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_tsid             The time series identifier
+--  * @param p_std_text_id_mask The standard text identifier pattern to match. Use glob-style  wildcard characters as shown above instead of sql-style wildcard characters for pattern  matching.
+--  * @param p_start_time       The start of the time window
+--  * @param p_end_time         The end of the time window. If not specified or NULL the time window contains only p_start_time.
+--  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to include in the count. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to include in the count. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  *
+--  * @return The number of times in the time window that have standard text that matches the specified criteria
+--  */
+-- function get_ts_std_text_count(
+--    p_tsid             in varchar2,
+--    p_std_text_id_mask in varchar2,
+--    p_start_time       in date,
+--    p_end_time         in date     default null,
+--    p_version_date     in date     default cwms_util.non_versioned,
+--    p_time_zone        in varchar2 default null,
+--    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
+--    p_office_id        in varchar2 default null)
+--    return pls_integer;
+-- /**
+--  * Deletes standard text that match a specified parameters from a time series.
+--  * The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored for each time.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_tsid             The time series identifier
+--  * @param p_std_text_id_mask The standard text identifier pattern to match. Use glob-style  wildcard characters as shown above instead of sql-style wildcard characters for pattern  matching.
+--  * @param p_start_time       The first (or only) time for the text
+--  * @param p_end_time         The last time for the text. If specified the text associated with all times from p_start_time to p_end_time (inclusive) is deleted.
+--  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to delete. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to delete. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure delete_ts_std_text(
+--    p_tsid             in varchar2,
+--    p_std_text_id_mask in varchar2,
+--    p_start_time       in date,
+--    p_end_time         in date     default null,
+--    p_version_date     in date     default cwms_util.non_versioned,
+--    p_time_zone        in varchar2 default null,
+--    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
+--    p_office_id        in varchar2 default null);
+-- /**
+--  * Store nonstandard text to a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_text         The text to store.
+--  * @param p_start_time   The first (or only) time for the text
+--  * @param p_end_time     The last time for the text. If specified the text is associated with all times from p_start_time to p_end_time (inclusive). Times must already exist for irregular time series.
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_text(
+--    p_tsid         in varchar2,
+--    p_text         in clob,
+--    p_start_time   in date,
+--    p_end_time     in date     default null,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Store nonstandard text to a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_text         The text to store.
+--  * @param p_times        The times for the text
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_text(
+--    p_tsid         in varchar2,
+--    p_text         in clob,
+--    p_times        in date_table_type,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Stores existing time series nonstandard text to a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_text_id      The identifier of the existing time series nonstandard text to associate with the time series, as retrieved from retrieve_ts_text.
+--  * @param p_start_time   The first (or only) time for the text
+--  * @param p_end_time     The last time for the text. If specified the text is associated with all times from p_start_time to p_end_time (inclusive). Times must already exist for irregular time series.
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_text_id(
+--    p_tsid         in varchar2,
+--    p_text_id      in varchar2,
+--    p_start_time   in date,
+--    p_end_time     in date     default null,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Stores existing time series nonstandard text to a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_text_id      The identifier of the existing time series nonstandard text to associate with the time series, as retrieved from retrieve_ts_text.
+--  * @param p_times        The times for the text
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing text with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_text_id(
+--    p_tsid         in varchar2,
+--    p_text_id      in varchar2,
+--    p_times        in date_table_type,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Retrieve nonstandard text that matches specified criteria from a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_cursor A cursor containing the text. The cursor contains the following columns:
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Column No.</th>
+--  *     <th class="descr">Column Name</th>
+--  *     <th class="descr">Data Type</th>
+--  *     <th class="descr">Contents</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">1</td>
+--  *     <td class="descr">date_time</td>
+--  *     <td class="descr">date</td>
+--  *     <td class="descr">The date/time for which the text applies. No date/times without text are included, even for regular time series.</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">2</td>
+--  *     <td class="descr">data_entry_date</td>
+--  *     <td class="descr">timestamp(6)</td>
+--  *     <td class="descr">The time the nonstandard text was stored</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">3</td>
+--  *     <td class="descr">text_id</td>
+--  *     <td class="descr">varchar2(32)</td>
+--  *     <td class="descr">A unique identifier for the nonstandard text</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the text</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
+--  *     <td class="descr">text</td>
+--  *     <td class="descr">clob</td>
+--  *     <td class="descr">The nonstandard text</td>
+--  *   </tr>
+--  * </table>
+--  * @param p_tsid           The time series identifier
+--  * @param p_text_mask      The text pattern to match. Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
+--  * @param p_start_time     The start of the time window.
+--  * @param p_end_time       The end of the time window. If specified the text associated with all times from p_start_time to p_end_time (inclusive) is retrieved.
+--  * @param p_version_date   The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone      The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version    A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute  The minimum attribute value to retrieve text for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute  The maximum attribute value to retrieve text for. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id      The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure retrieve_ts_text(
+--    p_cursor        out sys_refcursor,
+--    p_tsid          in  varchar2,
+--    p_text_mask     in  varchar2,
+--    p_start_time    in  date,
+--    p_end_time      in  date     default null,
+--    p_version_date  in  date     default cwms_util.non_versioned,
+--    p_time_zone     in  varchar2 default null,
+--    p_max_version   in  varchar2 default 'T',
+--    p_min_attribute in  number   default null,
+--    p_max_attribute in  number   default null,
+--    p_office_id     in  varchar2 default null);
+-- /**
+--  * Retrieve nonstandard text that matches specified criteria from a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_tsid           The time series identifier
+--  * @param p_text_mask      The text pattern to match. Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
+--  * @param p_start_time     The start of the time window.
+--  * @param p_end_time       The end of the time window. If specified the text associated with all times from p_start_time to p_end_time (inclusive) is retrieved.
+--  * @param p_version_date   The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone      The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version    A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute  The minimum attribute value to retrieve text for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute  The maximum attribute value to retrieve text for. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id      The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  *
+--  * @return A cursor containing the text. The cursor contains the following columns:
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Column No.</th>
+--  *     <th class="descr">Column Name</th>
+--  *     <th class="descr">Data Type</th>
+--  *     <th class="descr">Contents</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">1</td>
+--  *     <td class="descr">date_time</td>
+--  *     <td class="descr">date</td>
+--  *     <td class="descr">The date/time for which the text applies. No date/times without text are included, even for regular time series.</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">2</td>
+--  *     <td class="descr">data_entry_date</td>
+--  *     <td class="descr">timestamp(6)</td>
+--  *     <td class="descr">The time the nonstandard text was stored</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">3</td>
+--  *     <td class="descr">text_id</td>
+--  *     <td class="descr">varchar2(32)</td>
+--  *     <td class="descr">A unique identifier for the nonstandard text</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the text</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
+--  *     <td class="descr">text</td>
+--  *     <td class="descr">clob</td>
+--  *     <td class="descr">The nonstandard text</td>
+--  *   </tr>
+--  * </table>
+--  */
+-- function retrieve_ts_text_f(
+--    p_tsid          in varchar2,
+--    p_text_mask     in varchar2,
+--    p_start_time    in date,
+--    p_end_time      in date     default null,
+--    p_version_date  in date     default cwms_util.non_versioned,
+--    p_time_zone     in varchar2 default null,
+--    p_max_version   in varchar2 default 'T',
+--    p_min_attribute in number   default null,
+--    p_max_attribute in number   default null,
+--    p_office_id     in varchar2 default null)
+--    return sys_refcursor;
+-- /**
+--  * Retrieves the number of times a time series has nonstandard text that matches specified criteria
+--  * The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored for each time.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_tsid             The time series identifier
+--  * @param p_text_mask        The text pattern to match. Use glob-style  wildcard characters as shown above instead of sql-style wildcard characters for pattern  matching.
+--  * @param p_start_time       The start of the time window
+--  * @param p_end_time         The end of the time window. If not specified or NULL the time window contains only p_start_time.
+--  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to include in the count. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to include in the count. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  *
+--  * @return The number of times in the time window that have nonstandard text that matches the specified criteria
+--  */
+-- function get_ts_text_count(
+--    p_tsid             in varchar2,
+--    p_text_mask        in varchar2,
+--    p_start_time       in date,
+--    p_end_time         in date     default null,
+--    p_version_date     in date     default cwms_util.non_versioned,
+--    p_time_zone        in varchar2 default null,
+--    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
+--    p_office_id        in varchar2 default null)
+--    return pls_integer;
+-- /**
+--  * Delete nonstandard text that matches specified criteria from a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_tsid           The time series identifier
+--  * @param p_text_mask      The text pattern to match. Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
+--  * @param p_start_time     The start of the time window.
+--  * @param p_end_time       The end of the time window. If specified the text associated with all times from p_start_time to p_end_time (inclusive) is retrieved.
+--  * @param p_version_date   The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone      The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version    A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute  The minimum attribute value to delete. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute  The maximum attribute value to delete. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id      The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--   */
+-- procedure delete_ts_text(
+--    p_tsid          in varchar2,
+--    p_text_mask     in varchar2,
+--    p_start_time    in date,
+--    p_end_time      in date     default null,
+--    p_version_date  in date     default cwms_util.non_versioned,
+--    p_time_zone     in varchar2 default null,
+--    p_max_version   in varchar2 default 'T',
+--    p_min_attribute in number   default null,
+--    p_max_attribute in number   default null,
+--    p_office_id     in varchar2 default null);
+-- /**
+--  * Delete nonstandard text that matches specified criteria from a time series. The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @see constant cwms_util.delete_key
+--  * @see constant cwms_util.delete_data
+--  * @see constant cwms_util.delete_all
+--  *
+--  * @param p_text_id The unique identifier for the nonstandard text as retrieved in retrieve_ts_text.
+--  * @param p_delete_action Specifies what to delete.  Actions are as follows:
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">p_delete_action</th>
+--  *     <th class="descr">Action</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_key</td>
+--  *     <td class="descr">deletes only the text, and then only if it is not used in any time series</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_data</td>
+--  *     <td class="descr">deletes only the time series references to the text</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_all</td>
+--  *     <td class="descr">deletes the text and all time series references to it</td>
+--  *   </tr>
+--  * </table>
+--  */
+-- procedure delete_ts_text(
+--    p_text_id       in varchar2,
+--    p_delete_action in varchar2 default cwms_util.delete_key);
+-- /**
+--  * Store binary data to a time series. The binary data can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a text time series (base parameter = "Text")</li>
+--  *   <li>the contents of a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_binary       The binary data to store.
+--  * @param p_binary_type  The data type expressed as either an internet media type (e.g. 'application/pdf') or a file extension (e.g. '.pdf')
+--  * @param p_start_time   The first (or only) time for the for the binary data
+--  * @param p_end_time     The last time for the binary data. If specified the binary data is associated with all times from p_start_time to p_end_time (inclusive). Times must already exist for irregular time series.
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing binary data with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_binary(
+--    p_tsid         in varchar2,
+--    p_binary       in blob,
+--    p_binary_type  in varchar2,
+--    p_start_time   in date,
+--    p_end_time     in date     default null,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Store binary data to a time series. The binary data can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a text time series (base parameter = "Text")</li>
+--  *   <li>the contents of a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_binary       The binary data to store.
+--  * @param p_binary_type  The data type expressed as either an internet media type (e.g. 'application/pdf') or a file extension (e.g. '.pdf')
+--  * @param p_times        The times for the for the binary data
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing binary data with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_binary(
+--    p_tsid         in varchar2,
+--    p_binary       in blob,
+--    p_binary_type  in varchar2,
+--    p_times        in date_table_type,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Stores existing time series binary data to a time series. The binary data can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a text time series (base parameter = "Text")</li>
+--  *   <li>the contents of a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_binary_id    The unique identifier for the existing time series binary data as retrieved in retrieve_ts_binary.
+--  * @param p_binary_type  The data type expressed as either an internet media type (e.g. 'application/pdf') or a file extension (e.g. '.pdf')
+--  * @param p_start_time   The first (or only) time for the for the binary data
+--  * @param p_end_time     The last time for the binary data. If specified the binary data is associated with all times from p_start_time to p_end_time (inclusive). Times must already exist for irregular time series.
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing binary data with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_binary_id(
+--    p_tsid         in varchar2,
+--    p_binary_id    in varchar2,
+--    p_binary_type  in varchar2,
+--    p_start_time   in date,
+--    p_end_time     in date     default null,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Stores existing time series binary data to a time series. The binary data can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a text time series (base parameter = "Text")</li>
+--  *   <li>the contents of a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @param p_tsid         The time series identifier
+--  * @param p_binary_id    The unique identifier for the existing time series binary data as retrieved in retrieve_ts_binary.
+--  * @param p_binary_type  The data type expressed as either an internet media type (e.g. 'application/pdf') or a file extension (e.g. '.pdf')
+--  * @param p_times        The times for the for the binary data
+--  * @param p_version_date The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone    The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version  A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_replace_all  A flag ('T' or 'F') specifying whether to replace any and all existing binary data with the specified text
+--  * @param p_attribute    A numeric attribute that can be used for sorting or other purposes
+--  * @param p_office_id    The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure store_ts_binary_id(
+--    p_tsid         in varchar2,
+--    p_binary_id    in varchar2,
+--    p_binary_type  in varchar2,
+--    p_times        in date_table_type,
+--    p_version_date in date     default cwms_util.non_versioned,
+--    p_time_zone    in varchar2 default null,
+--    p_max_version  in varchar2 default 'T',
+--    p_replace_all  in varchar2 default 'F',
+--    p_attribute    in number   default null,
+--    p_office_id    in varchar2 default null);
+-- /**
+--  * Retrieve binary data that matches a specified criteria from a time series. The binary data can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a text time series (base parameter = "Text")</li>
+--  *   <li>the contents of a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_cursor A cursor containing the binary data. The cursor contains the following columns:
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Column No.</th>
+--  *     <th class="descr">Column Name</th>
+--  *     <th class="descr">Data Type</th>
+--  *     <th class="descr">Contents</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">1</td>
+--  *     <td class="descr">date_time</td>
+--  *     <td class="descr">date</td>
+--  *     <td class="descr">The date/time for which the text applies. No date/times without text are included, even for regular time series.</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">2</td>
+--  *     <td class="descr">data_entry_date</td>
+--  *     <td class="descr">timestamp(6)</td>
+--  *     <td class="descr">The time the nonstandard text was stored</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">3</td>
+--  *     <td class="descr">binary_id</td>
+--  *     <td class="descr">varchar2(32)</td>
+--  *     <td class="descr">A unique identifier for the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
+--  *     <td class="descr">media_type</td>
+--  *     <td class="descr">varchar2(84)</td>
+--  *     <td class="descr">The internet media type of the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">6</td>
+--  *     <td class="descr">file_extension</td>
+--  *     <td class="descr">varchar2(16)</td>
+--  *     <td class="descr">The file extension of the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">7</td>
+--  *     <td class="descr">binary_data</td>
+--  *     <td class="descr">blob</td>
+--  *     <td class="descr">The binary data</td>
+--  *   </tr>
+--  * </table>
+--  * @param p_tsid             The time series identifier
+--  * @param p_binary_type_mask The data type pattern expressed as either an internet media type (e.g. 'image/*') or a file extension (e.g. '.*'). Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
+--  * @param p_start_time       The start of the time window
+--  * @param p_end_time         The end of the time window. If specified the binary data associated with all times from p_start_time to p_end_time (inclusive) is retrieved.
+--  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to retrieve binary data for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to retrieve binary data for. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure retrieve_ts_binary(
+--    p_cursor           out sys_refcursor,
+--    p_tsid             in  varchar2,
+--    p_binary_type_mask in  varchar2,
+--    p_start_time       in  date,
+--    p_end_time         in  date     default null,
+--    p_version_date     in  date     default cwms_util.non_versioned,
+--    p_time_zone        in  varchar2 default null,
+--    p_max_version      in  varchar2 default 'T',
+--    p_min_attribute    in  number   default null,
+--    p_max_attribute    in  number   default null,
+--    p_office_id        in  varchar2 default null);
+-- /**
+--  * Retrieve binary data that matches a specified type pattern from a time series. The binary data can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a text time series (base parameter = "Text")</li>
+--  *   <li>the contents of a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_tsid             The time series identifier
+--  * @param p_binary_type_mask The data type pattern expressed as either an internet media type (e.g. 'image/*') or a file extension (e.g. '.*'). Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
+--  * @param p_start_time       The start of the time window
+--  * @param p_end_time         The end of the time window. If specified the binary data associated with all times from p_start_time to p_end_time (inclusive) is retrieved.
+--  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to retrieve binary data for. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to retrieve binary data for. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  *
+--  * @return A cursor containing the binary data. The cursor contains the following columns:
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Column No.</th>
+--  *     <th class="descr">Column Name</th>
+--  *     <th class="descr">Data Type</th>
+--  *     <th class="descr">Contents</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">1</td>
+--  *     <td class="descr">date_time</td>
+--  *     <td class="descr">date</td>
+--  *     <td class="descr">The date/time for which the text applies. No date/times without text are included, even for regular time series.</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">2</td>
+--  *     <td class="descr">data_entry_date</td>
+--  *     <td class="descr">timestamp(6)</td>
+--  *     <td class="descr">The time the nonstandard text was stored</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">3</td>
+--  *     <td class="descr">binary_id</td>
+--  *     <td class="descr">varchar2(32)</td>
+--  *     <td class="descr">A unique identifier for the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">4</td>
+--  *     <td class="descr">attribute</td>
+--  *     <td class="descr">number</td>
+--  *     <td class="descr">The numeric attribute, if any, for the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">5</td>
+--  *     <td class="descr">media_type</td>
+--  *     <td class="descr">varchar2(84)</td>
+--  *     <td class="descr">The internet media type of the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">6</td>
+--  *     <td class="descr">file_extension</td>
+--  *     <td class="descr">varchar2(16)</td>
+--  *     <td class="descr">The file extension of the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">7</td>
+--  *     <td class="descr">binary_data</td>
+--  *     <td class="descr">blob</td>
+--  *     <td class="descr">The binary data</td>
+--  *   </tr>
+--  * </table>
+--  */
+-- function retrieve_ts_binary_f(
+--    p_tsid             in varchar2,
+--    p_binary_type_mask in varchar2,
+--    p_start_time       in date,
+--    p_end_time         in date     default null,
+--    p_version_date     in date     default cwms_util.non_versioned,
+--    p_time_zone        in varchar2 default null,
+--    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
+--    p_office_id        in varchar2 default null)
+--    return sys_refcursor;
+-- /**
+--  * Retrieves the number of times a time series has binary data that matches specified criteria
+--  * The text can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored for each time.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_tsid             The time series identifier
+--  * @param p_binary_type_mask The data type pattern expressed as either an internet media type (e.g. 'image/*') or a file extension (e.g. '.*'). Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
+--  * @param p_start_time       The start of the time window
+--  * @param p_end_time         The end of the time window. If not specified or NULL the time window contains only p_start_time.
+--  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to include in the count. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to include in the count. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  *
+--  * @return The number of times in the time window that have binary data that matches the specified criteria
+--  */
+-- function get_ts_binary_count(
+--    p_tsid             in varchar2,
+--    p_binary_type_mask in varchar2,
+--    p_start_time       in date,
+--    p_end_time         in date     default null,
+--    p_version_date     in date     default cwms_util.non_versioned,
+--    p_time_zone        in varchar2 default null,
+--    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
+--    p_office_id        in varchar2 default null)
+--    return pls_integer;
+-- /**
+--  * Deletes binary data that matches a specified criteria from a time series. The binary data can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a text time series (base parameter = "Text")</li>
+--  *   <li>the contents of a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  * Matching is accomplished with glob-style wildcards, as shown below, instead of sql-style
+--  * wildcards.
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">Wildcard</th>
+--  *     <th class="descr">Meaning</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">*</td>
+--  *     <td class="descr">Match zero or more characters</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr-center">?</td>
+--  *     <td class="descr">Match a single character</td>
+--  *   </tr>
+--  * </table>
+--  *
+--  * @param p_tsid             The time series identifier
+--  * @param p_binary_type_mask The data type pattern expressed as either an internet media type (e.g. 'image/*') or a file extension (e.g. '.*'). Use glob-style wildcard characters as shown above instead of sql-style wildcard characters for pattern matching.
+--  * @param p_start_time       The start of the time window
+--  * @param p_end_time         The end of the time window. If specified the binary data associated with all times from p_start_time to p_end_time (inclusive) is deleted.
+--  * @param p_version_date     The version date for the time series.  If not specified or NULL, the minimum or maximum version date (depending on p_max_version) is used.
+--  * @param p_time_zone        The time zone for p_start_time, p_end_time, and p_version_date. If not specified or NULL, the local time zone of the time series' location is used.
+--  * @param p_max_version      A flag ('T' or 'F') specifying whether to use the maximum version date if p_version_date is not specifed or NULL.
+--  * @param p_min_attribute    The minimum attribute value to delete. If not specified or NULL, no minimum value is used.
+--  * @param p_max_attribute    The maximum attribute value to delete. If not specified or NULL, no maximum value is used.
+--  * @param p_office_id        The office that owns the time series. If not specified or NULL, the session user's default office is used.
+--  */
+-- procedure delete_ts_binary(
+--    p_tsid             in varchar2,
+--    p_binary_type_mask in varchar2,
+--    p_start_time       in date,
+--    p_end_time         in date     default null,
+--    p_version_date     in date     default cwms_util.non_versioned,
+--    p_time_zone        in varchar2 default null,
+--    p_max_version      in varchar2 default 'T',
+--    p_min_attribute    in number   default null,
+--    p_max_attribute    in number   default null,
+--    p_office_id        in varchar2 default null);
+-- /**
+--  * Delete binary data from a time series. The binary data can be:
+--  * <ul>
+--  *   <li>associated with a "normal" time series with numeric values and quality codes</li>
+--  *   <li>associated with a binary time series (base parameter = "Binary") that contains images, documents, etc...</li>
+--  *   <li>the contents of a text time series (base parameter = "Text")</li>
+--  * </ul>
+--  * Unlike a "normal" time series, which can have only one value/quality pair at any time/version date combination,
+--  * binary and text time series can have multiple entries at each time/version date combination.  Entries are retrieved
+--  * in the order they are stored.
+--  *
+--  * @see constant cwms_util.delete_key
+--  * @see constant cwms_util.delete_data
+--  * @see constant cwms_util.delete_all
+--  *
+--  * @param p_binary_id The unique identifier for the binary data as retrieved in retrieve_ts_binary.
+--  * @param p_delete_action Specifies what to delete.  Actions are as follows:
+--  * <p>
+--  * <table class="descr">
+--  *   <tr>
+--  *     <th class="descr">p_delete_action</th>
+--  *     <th class="descr">Action</th>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_key</td>
+--  *     <td class="descr">deletes only the binary data, and then only if it is not used in any time series</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_data</td>
+--  *     <td class="descr">deletes only the time series references to the binary data</td>
+--  *   </tr>
+--  *   <tr>
+--  *     <td class="descr">cwms_util.delete_all</td>
+--  *     <td class="descr">deletes the binary data and all time series references to it</td>
+--  *   </tr>
+--  * </table>
+--  */
+-- procedure delete_ts_binary(
+--    p_binary_id     in varchar2,
+--    p_delete_action in varchar2 default cwms_util.delete_key);
+end;
+CREATE OR REPLACE PACKAGE BODY "CWMS_20"."CWMS_TEXT" 
+as
+--
+-- store text with optional description
+--
+procedure store_text(
+   p_text_code      out number,                 -- the code for use in foreign keys
+	p_text           in  clob,                   -- the text, unlimited length
+	p_id             in  varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_description    in  varchar2 default null,  -- description, defaults to null
+	p_fail_if_exists in  varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+	p_office_id      in  varchar2 default null) -- office id, defaults current user's office
+is
+   l_id               varchar2(256) := upper(p_id);
+   l_fail_if_exists   boolean := cwms_util.return_true_or_false(p_fail_if_exists);
+   l_count            binary_integer;
+   l_office_code      number := cwms_util.get_office_code(p_office_id);
+   l_cwms_office_code number := cwms_util.get_office_code('CWMS');
+   l_rowid            urowid;
+begin
+   select count(*)
+     into l_count
+     from at_clob
+    where office_code in (l_office_code, l_cwms_office_code)
+      and id = l_id;
+
+   if l_count = 0 then
+      insert
+        into at_clob
+      values (cwms_seq.nextval, l_office_code, l_id, p_description, p_text)
+   returning clob_code into p_text_code;
+   else
+      if l_fail_if_exists then
+         cwms_err.raise('ITEM_ALREADY_EXISTS', 'Text ID', p_id);
+      end if;
+      update at_clob
+         set description = p_description,
+             value = p_text
+      where office_code = l_office_code
+         and id = l_id
+      returning rowid, clob_code into l_rowid, p_text_code;
+      if l_rowid is null then
+         cwms_err.raise(
+            'ERROR',
+            'Cannot update text owned by the CWMS Office ID.');
+      end if;
+   end if;
+
+end store_text;
+
+--
+-- store text with optional description
+--
+function store_text(
+	p_text           in clob,                   -- the text, unlimited length
+	p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_description    in varchar2 default null,  -- description, defaults to null
+	p_fail_if_exists in varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+	p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+   return number                               -- the code for use in foreign keys
+is
+   l_text_code number;
+begin
+   store_text(
+      p_text_code      => l_text_code,
+      p_text           => p_text,
+      p_id             => p_id,
+      p_description    => p_description,
+      p_fail_if_exists => p_fail_if_exists,
+      p_office_id      => p_office_id);
+
+   return l_text_code;
+end store_text;
+
+--
+-- store text with optional description
+--
+procedure store_text(
+   p_text_code      out number,                 -- the code for use in foreign keys
+	p_text           in  varchar2,               -- the text, limited to varchar2 max size
+	p_id             in  varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_description    in  varchar2 default null,  -- description, defaults to null
+	p_fail_if_exists in  varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+	p_office_id      in  varchar2 default null)  -- office id, defaults current user's office
+is
+   l_text clob;
+begin
+   dbms_lob.createtemporary(l_text, true);
+   dbms_lob.open(l_text, dbms_lob.lob_readwrite);
+   dbms_lob.writeappend(l_text, length(p_text), p_text);
+   dbms_lob.close(l_text);
+   store_text(
+      p_text_code      => p_text_code,
+      p_text           => l_text,
+      p_id             => p_id,
+      p_description    => p_description,
+      p_fail_if_exists => p_fail_if_exists,
+      p_office_id      => p_office_id);
+end store_text;
+
+--
+-- store text with optional description
+--
+function store_text(
+	p_text           in varchar2,               -- the text, limited to varchar2 max size
+	p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_description    in varchar2 default null,  -- description, defaults to null
+	p_fail_if_exists in varchar2 default 'T',   -- flag specifying whether to fail if p_id already exists
+	p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+   return number                               -- the code for use in foreign keys
+is
+   l_text_code number;
+begin
+   store_text(
+      p_text_code      => l_text_code,
+      p_text           => p_text,
+      p_id             => p_id,
+      p_description    => p_description,
+      p_fail_if_exists => p_fail_if_exists,
+      p_office_id      => p_office_id);
+
+   return l_text_code;
+end store_text;
+
+--
+-- retrieve text only
+--
+procedure retrieve_text(
+   p_text      out clob,                   -- the text, unlimited length
+   p_id        in  varchar2,               -- identifier used to store text (256 chars max)
+   p_office_id in  varchar2 default null)  -- office id, defaults current user's office
+is
+   l_id               varchar2(256) := upper(p_id);
+   l_office_code      number := cwms_util.get_office_code(p_office_id);
+   l_cwms_office_code number := cwms_util.get_office_code('CWMS');
+begin
+   select value
+     into p_text
+     from at_clob
+    where office_code in (l_office_code, l_cwms_office_code)
+      and id = l_id;
+
+end retrieve_text;
+
+--
+-- retrieve text only
+--
+function retrieve_text(
+   p_id        in  varchar2,              -- identifier used to store text (256 chars max)
+   p_office_id in  varchar2 default null) -- office id, defaults current user's office
+   return clob                            -- the text, unlimited length
+is
+   l_text clob;
+begin
+   retrieve_text(
+      p_text      => l_text,
+      p_id        => p_id,
+      p_office_id => p_office_id);
+   return l_text;
+end retrieve_text;
+
+--
+-- retrieve text and description
+--
+procedure retrieve_text2(
+   p_text        out clob,                   -- the text, unlimited length
+   p_description out varchar2,               -- the description
+   p_id          in  varchar2,               -- identifier used to store text (256 chars max)
+   p_office_id   in  varchar2 default null)  -- office id, defaults current user's office
+is
+   l_id               varchar2(256) := upper(p_id);
+   l_office_code      number := cwms_util.get_office_code(p_office_id);
+   l_cwms_office_code number := cwms_util.get_office_code('CWMS');
+begin
+   select value,
+          description
+     into p_text,
+          p_description
+     from at_clob
+    where office_code in (l_office_code, l_cwms_office_code)
+      and id = l_id;
+
+end retrieve_text2;
+
+--
+-- update text and/or description
+--
+procedure update_text(
+   p_text           in clob,                   -- the text, unlimited length
+   p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
+   p_description    in varchar2 default null,  -- description, defaults to null
+   p_ignore_nulls   in varchar2 default 'T',   -- flag specifying null inputs leave current values unchanged
+   p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+is
+   l_id               varchar2(256) := upper(p_id);
+   l_office_code      number := cwms_util.get_office_code(p_office_id);
+   l_cwms_office_code number := cwms_util.get_office_code('CWMS');
+   l_ignore_nulls     boolean := cwms_util.return_true_or_false(p_ignore_nulls);
+begin
+   if l_ignore_nulls then
+      if p_text is null then
+         if p_description is not null then
+            update at_clob
+               set description = p_description
+             where office_code in (l_office_code, l_cwms_office_code)
+               and id = l_id;
+         end if;
+      elsif p_description is null then
+         update at_clob
+            set value = p_text
+          where office_code in (l_office_code, l_cwms_office_code)
+            and id = l_id;
+      else
+         update at_clob
+            set value = p_text,
+                description = p_description
+          where office_code in (l_office_code, l_cwms_office_code)
+            and id = l_id;
+      end if;
+   else
+      update at_clob
+         set value = p_text,
+             description = p_description
+       where office_code in (l_office_code, l_cwms_office_code)
+         and id = l_id;
+   end if;
+end update_text;
+
+--
+-- append to text
+--
+procedure append_text(
+   p_new_text       in out nocopy clob,       -- the text to append, unlimited length
+   p_id             in varchar2,              -- identifier of text to append to (256 chars max)
+   p_office_id      in varchar2 default null) -- office id, defaults current user's office
+is
+   l_existing_text clob;
+   l_code          number(10);
+   l_office_code   number(10);
+begin
+   begin
+      l_code := cwms_text.get_text_code(p_id, p_office_id);
+      select office_code,
+             value
+        into l_office_code,
+             l_existing_text
+        from at_clob
+       where clob_code = l_code;
+
+      if l_office_code = cwms_util.db_office_code_all then
+            cwms_err.raise(
+               'ERROR',
+               'Cannot update text owned by the CWMS Office ID.');
+      end if;
+      cwms_util.append(l_existing_text, p_new_text);
+      update at_clob
+         set value = l_existing_text
+       where clob_code = l_code;
+   exception
+      when no_data_found then
+         store_text(
+            p_text_code      => l_code,
+            p_text           => p_new_text,
+            p_id             => p_id,
+            p_description    => null,
+            p_fail_if_exists => 'T',
+            p_office_id      => p_office_id);
+   end;
+end append_text;
+
+--
+-- append to text
+--
+procedure append_text(
+   p_new_text       in varchar2,              -- the text to append, limited to varchar2 max size
+   p_id             in varchar2,              -- identifier of text to append to (256 chars max)
+   p_office_id      in varchar2 default null) -- office id, defaults current user's office
+is
+   l_existing_text clob;
+   l_code          number(10);
+   l_office_code   number(10);
+begin
+   begin
+      l_code := cwms_text.get_text_code(p_id, p_office_id);
+      select office_code,
+             value
+        into l_office_code,
+             l_existing_text
+        from at_clob
+       where clob_code = l_code;
+
+      if l_office_code = cwms_util.db_office_code_all then
+            cwms_err.raise(
+               'ERROR',
+               'Cannot update text owned by the CWMS Office ID.');
+      end if;
+      cwms_util.append(l_existing_text, p_new_text);
+      update at_clob
+         set value = l_existing_text
+       where clob_code = l_code;
+   exception
+      when no_data_found then
+         dbms_lob.createtemporary(l_existing_text, true);
+         dbms_lob.open(l_existing_text, dbms_lob.lob_readwrite);
+         dbms_lob.writeappend(l_existing_text, length(p_new_text), p_new_text);
+         dbms_lob.close(l_existing_text);
+         store_text(
+            p_text_code      => l_code,
+            p_text           => l_existing_text,
+            p_id             => p_id,
+            p_description    => null,
+            p_fail_if_exists => 'T',
+            p_office_id      => p_office_id);
+   end;
+end append_text;
+
+--
+-- delete text
+--
+procedure delete_text(
+   p_id        in  varchar2,               -- identifier used to store text (256 chars max)
+   p_office_id in  varchar2 default null)  -- office id, defaults current user's office
+is
+   l_id          varchar2(256) := upper(p_id);
+   l_office_code number := cwms_util.get_office_code(p_office_id);
+begin
+   delete
+     from at_clob
+    where office_code = l_office_code
+      and id = l_id;
+end delete_text;
+
+--
+-- get matching ids in a cursor
+--
+procedure get_matching_ids(
+   p_ids                  in out sys_refcursor,       -- cursor of the matching office ids, text ids, and optionally descriptions
+   p_id_masks             in  varchar2 default '%',   -- delimited list of id masks, defaults to all ids
+   p_include_descriptions in  varchar2 default 'F',   -- flag specifying whether to retrieve descriptions also
+   p_office_id_masks      in  varchar2 default null,  -- delimited list of office id masks, defaults to user's office
+   p_delimiter            in  varchar2 default ',')   -- delimiter for masks, defaults to comma
+is
+   type id_collection is  table of boolean index by varchar2(256);
+   l_include_descriptions boolean := cwms_util.return_true_or_false(p_include_descriptions);
+   l_office_id_masks      varchar2(256) := nvl(p_office_id_masks, cwms_util.user_office_id);
+   l_office_id_mask_tab   str_tab_t;
+   l_id_mask_tab          str_tab_t;
+   l_ids                  id_collection;
+   l_office_id_bind_str   varchar2(32767);
+   l_id_bind_str          varchar2(32767);
+   l_query_str            varchar2(32767);
+   l_office_id            varchar2(16);
+   l_id                   varchar2(256);
+   l_cwms_matched         boolean := false;
+   l_id_mask              varchar2(256);
+begin
+   ------------------------------------
+   -- build office ids bind variable --
+   ------------------------------------
+   l_office_id_mask_tab := cwms_util.split_text(l_office_id_masks, p_delimiter);
+   for i in 1..l_office_id_mask_tab.count loop
+       l_id_mask := cwms_util.normalize_wildcards(upper(l_office_id_mask_tab(i)), true);
+       for rec in
+           (select office_id
+              from cwms_office
+              where office_id like l_id_mask)
+       loop
+          if not l_ids.exists(rec.office_id) then
+              l_ids(rec.office_id) := true;
+          end if;
+       end loop;
+   end loop;
+   l_office_id := l_ids.first;
+   loop
+      if l_office_id = 'CWMS' then
+         l_cwms_matched := true;
+      end if;
+      l_office_id_bind_str := l_office_id_bind_str || '''' || l_office_id || '''';
+      l_office_id := l_ids.next(l_office_id);
+      exit when l_office_id is null;
+      l_office_id_bind_str := l_office_id_bind_str || ',';
+   end loop;
+   l_ids.delete;
+   if not l_cwms_matched then
+     l_office_id_bind_str := l_office_id_bind_str || ',' || '''CWMS''';
+ end if;
+   -----------------------------
+   -- build ids bind variable --
+   -----------------------------
+   l_id_mask_tab := cwms_util.split_text(p_id_masks, p_delimiter);
+   for i in 1..l_id_mask_tab.count loop
+       l_id_mask := cwms_util.normalize_wildcards(upper(l_id_mask_tab(i)), true);
+       for rec in
+          (select id
+             from at_clob
+             where id like l_id_mask)
+       loop
+          if not l_ids.exists(rec.id) then
+             l_ids(rec.id) := true;
+          end if;
+       end loop;
+   end loop;
+   l_id := l_ids.first;
+   loop
+      l_id_bind_str := l_id_bind_str || '''' || l_id || '''';
+      l_id := l_ids.next(l_id);
+      exit when l_id is null;
+      l_id_bind_str := l_id_bind_str || ',';
+   end loop;
+   l_ids.delete;
+   ----------------------------
+   -- build the query string --
+   ----------------------------
+   if l_include_descriptions then
+      l_query_str :=
+         'select o.office_id,
+                 c.id,
+                 c.description
+            from cwms_office o,
+                 at_clob c
+           where o.office_id in (:office_ids)
+             and c.office_code = o.office_code
+             and c.id in (:ids)';
+   else
+      l_query_str :=
+         'select o.office_id,
+                 c.id
+            from cwms_office o,
+                 at_clob c
+           where o.office_id in (:office_ids)
+             and c.office_code = o.office_code
+             and c.id in (:ids)';
+   end if;
+   l_query_str := replace(l_query_str, ':office_ids', l_office_id_bind_str);
+   l_query_str := replace(l_query_str, ':ids',        l_id_bind_str);
+   -----------------------
+   -- perform the query --
+   -----------------------
+   open p_ids for l_query_str;
+end get_matching_ids;
+
+--
+-- get matching ids in a delimited clob
+--
+procedure get_matching_ids(
+   p_ids                  out clob,                   -- delimited clob of the matching office ids, text ids, and optionally descriptions
+   p_id_masks             in  varchar2 default '%',   -- comma-separated list of id masks, defaults to all ids
+   p_include_descriptions in  varchar2 default 'F',   -- flag specifying whether to retrieve descriptions also
+   p_office_id_masks      in  varchar2 default null,  -- delimited list of office id masks, defaults to user's office
+	p_delimiter            in  varchar2 default ',')  -- delimiter for masks, defaults to comma
+is
+   type rec1_t is record(office_id varchar2(16), id varchar2(256));
+   type rec2_t is record(office_id varchar2(16), id varchar2(256), description varchar2(256));
+   l_include_descriptions boolean := cwms_util.return_true_or_false(p_include_descriptions);
+   l_rec1                 rec1_t;
+   l_rec2                 rec2_t;
+   l_cursor               sys_refcursor;
+   l_ids                  clob;
+   l_first                boolean := true;
+
+   procedure write_clob(p1 varchar2, p2 varchar2)
+   is
+      l_data varchar2(32767);
+   begin
+      if l_first then
+         l_data := p1
+            || cwms_util.field_separator
+            || p2;
+         l_first := false;
+      else
+         l_data := cwms_util.record_separator
+            || p1
+            || cwms_util.field_separator
+            || p2;
+      end if;
+      dbms_lob.writeappend(l_ids, length(l_data), l_data);
+   end;
+
+   procedure write_clob(p1 varchar2, p2 varchar2, p3 varchar2)
+   is
+      l_data varchar2(32767);
+   begin
+      if l_first then
+         l_data := p1
+            || cwms_util.field_separator
+            || p2
+            || cwms_util.field_separator
+            || p3;
+         l_first := false;
+      else
+         l_data := cwms_util.record_separator
+            || p1
+            || cwms_util.field_separator
+            || p2
+            || cwms_util.field_separator
+            || p3;
+      end if;
+      dbms_lob.writeappend(l_ids, length(l_data), l_data);
+   end;
+
+begin
+   get_matching_ids(
+      l_cursor,
+      p_id_masks,
+      p_include_descriptions,
+      p_office_id_masks,
+      p_delimiter);
+
+   dbms_lob.createtemporary(l_ids, true);
+   dbms_lob.open(l_ids, dbms_lob.lob_readwrite);
+
+   loop
+      if l_include_descriptions then
+         fetch l_cursor into l_rec2;
+         exit when l_cursor%notfound;
+         write_clob(l_rec2.office_id, l_rec2.id, l_rec2.description);
+      else
+         fetch l_cursor into l_rec1;
+         exit when l_cursor%notfound;
+         write_clob(l_rec1.office_id, l_rec1.id);
+      end if;
+   end loop;
+
+   dbms_lob.close(l_ids);
+   p_ids := l_ids;
+end get_matching_ids;
+
+--
+-- get code for id
+--
+procedure get_text_code(
+   p_text_code      out number,                 -- the code for use in foreign keys
+	p_id             in  varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_office_id      in  varchar2 default null)  -- office id, defaults current user's office
+is
+   l_office_code      number := cwms_util.get_office_code(p_office_id);
+   l_cwms_office_code number := cwms_util.get_office_code('CWMS');
+begin
+   select clob_code
+     into p_text_code
+     from at_clob
+    where office_code in (l_office_code, l_cwms_office_code)
+      and id = upper(p_id);
+end get_text_code;
+
+--
+-- get code for id
+--
+function get_text_code(
+	p_id             in varchar2,               -- identifier with which to retrieve text (256 chars max)
+	p_office_id      in varchar2 default null)  -- office id, defaults current user's office
+   return number                               -- the code for use in foreign keys
+is
+   l_text_code number;
+begin
+   get_text_code(l_text_code, p_id, p_office_id);
+   return l_text_code;
+end get_text_code;
+
+end;
+ 
+  GRANT EXECUTE ON "CWMS_20"."CWMS_TEXT" TO "CWMS_USER"
+ 
