@@ -1,0 +1,20 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."DOCUMENT_OBJ_T" 
+/**
+ * Holds a document identifier
+ *
+ * @see type document_tab_t
+ *
+ * @member office_id   The office that owns the document
+ * @member document_id The document identifier
+ */
+AS
+  OBJECT
+  (
+    office_id   VARCHAR2 (16),    -- the office id for this lookup type
+    document_id VARCHAR2(64 BYTE) -- The unique identifier for the individual document, user provided
+  );
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."DOCUMENT_OBJ_T" TO "CWMS_USER"
+ 
