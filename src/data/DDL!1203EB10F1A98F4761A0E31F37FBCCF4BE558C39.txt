@@ -1,0 +1,13 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."DOCUMENT_TAB_T" 
+/**
+ * Holds a collection of document identifiers
+ *
+ * @see type document_obj_t
+ */
+IS
+  TABLE OF document_obj_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."DOCUMENT_TAB_T" TO "CWMS_USER"
+ 
