@@ -1,0 +1,10 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."CAT_LOCATION_KIND_OBJ_T" AS OBJECT (
+   office_id        VARCHAR2(16),
+   location_kind_id VARCHAR2(32),
+   description      VARCHAR2(256)
+);
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."CAT_LOCATION_KIND_OBJ_T" TO "CWMS_USER"
+ 
