@@ -1,0 +1,14 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."CAT_DSS_XCHG_SET_OBJ_T" AS OBJECT (
+   office_id                  VARCHAR2 (16),
+   dss_xchg_set_id            VARCHAR (32),
+   dss_xchg_set_description   VARCHAR (80),
+   dss_filemgr_url            VARCHAR2 (32),
+   dss_file_name              VARCHAR2 (255),
+   dss_xchg_direction_id      VARCHAR2 (16),
+   dss_xchg_last_update       TIMESTAMP ( 6 )
+);
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."CAT_DSS_XCHG_SET_OBJ_T" TO "CWMS_USER"
+ 
