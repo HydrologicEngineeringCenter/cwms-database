@@ -1,9 +1,0 @@
-
-  CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_STREAM_TYPES" ("STREAM_TYPE_ID", "NUMBER_OF_CHANNELS", "ENTRENCHMENT_RATIO", "WIDTH_TO_DEPTH_RATIO", "SUNUOSITY", "SLOPE", "CHANNEL_MATERIAL") AS 
-  SELECT      stream_type_id, number_of_channels, entrenchment_ratio,
-                  width_to_depth_ratio, sinuosity, slope, channel_material
-         FROM   cwms_stream_type
-    ORDER BY   stream_type_id
- 
-  GRANT SELECT ON "CWMS_20"."AV_STREAM_TYPES" TO "CWMS_USER"
- 

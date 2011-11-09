@@ -1,6 +1,0 @@
-
-  CREATE OR REPLACE TYPE "CWMS_20"."JMS_MAP_MSG_TAB_T" as table of sys.aq$_jms_map_message;
-
- 
-  GRANT EXECUTE ON "CWMS_20"."JMS_MAP_MSG_TAB_T" TO "CWMS_USER"
- 
