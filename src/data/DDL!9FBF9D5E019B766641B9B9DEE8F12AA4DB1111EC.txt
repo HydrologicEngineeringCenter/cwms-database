@@ -1,0 +1,12 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."LOCATION_LEVEL_TAB_T" 
+/**
+ * Holds a collection of location levels
+ *
+ * @see type location_level_t
+ */
+is table of location_level_t;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."LOCATION_LEVEL_TAB_T" TO "CWMS_USER"
+ 
