@@ -1,0 +1,22 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."PROJECT_STRUCTURE_OBJ_T" 
+/**
+ * Holds information about a structure at a CWMS project
+ *
+ * @see type project_structure_tab_t
+ *
+ * @member project_location_ref Identifies the project
+ * @member structure_location   The location information about structure
+ * @member characteristic_ref   Identifies the characteristic
+ */
+AS
+  OBJECT
+  (
+    project_location_ref location_ref_t,           --The project this structure is a child of
+    structure_location location_obj_t,                  --The location for this structure
+    characteristic_ref characteristic_ref_t   -- the characteristic for this structure.
+  );
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."PROJECT_STRUCTURE_OBJ_T" TO "CWMS_USER"
+ 
