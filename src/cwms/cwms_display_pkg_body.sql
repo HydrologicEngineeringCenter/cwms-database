@@ -789,6 +789,7 @@ procedure retrieve_user_unit(
    p_user_id        in  varchar2 default null,
    p_office_id      in  varchar2 default null)
 is
+   item_does_not_exist exception; pragma exception_init(item_does_not_exist, -20034);
    l_user_id     varchar2(30);
    l_office_id   varchar2(16);
    l_unit_system varchar2(2);
@@ -847,6 +848,14 @@ begin
       l_property_id,
       null,
       l_office_id);
+   -------------------------------------
+   -- use office unit if no user unit --
+   -------------------------------------
+   begin
+      retrieve_unit(l_unit_id, p_parameter_id, l_unit_system, l_office_id);
+   exception
+      when item_does_not_exist then null;
+   end;
    ---------------------------------------
    -- use default unit as a last resort --
    ---------------------------------------

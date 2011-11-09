@@ -369,7 +369,9 @@ function retrieve_unit_f(
    p_office_id      in varchar2 default null)
    return varchar2;
 /**
- * Retrieves an office's preferred parameter unit from the database
+ * Retrieves a user's preferred parameter unit from the database. If the user does not have a
+ * preferred unit for the specified parameter, the office's preferred unit is retreieved. If the
+ * office does not have a preferred unit, the default unit is retreieved.
  *
  * @param p_unit_id        The preferred unit for the specified parameter and unit system
  * @param p_parameter_id   The parameter to retrieve the preferred unit for
@@ -384,7 +386,9 @@ procedure retrieve_user_unit(
    p_user_id        in  varchar2 default null,
    p_office_id      in  varchar2 default null);
 /**
- * Retrieves an office's preferred parameter unit from the database
+ * Retrieves a user's preferred parameter unit from the database. If the user does not have a
+ * preferred unit for the specified parameter, the office's preferred unit is retreieved. If the
+ * office does not have a preferred unit, the default unit is retreieved.
  *
  * @param p_parameter_id   The parameter to retrieve the preferred unit for
  * @param p_unit_system    The unit system ('EN' or 'SI') for which the preferred unit applies
