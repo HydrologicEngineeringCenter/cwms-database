@@ -1,0 +1,9 @@
+
+  CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_SEC_USER_GROUPS" ("DB_OFFICE_ID", "USER_GROUP_TYPE", "USER_GROUP_OWNER", "USER_GROUP_ID", "USER_GROUP_DESC", "DB_OFFICE_CODE", "USER_GROUP_CODE") AS 
+  SELECT	b.office_id db_office_id,
+				CASE WHEN a.user_group_code < 10 THEN 'Privilege User Group' ELSE 'TS Collection User Group' END user_group_type,
+				CASE WHEN a.user_group_code < 20 THEN 'CWMS' ELSE b.office_id END user_group_owner, a.user_group_id, a.user_group_desc,
+				a.db_office_code, a.user_group_code
+	  FROM	at_sec_user_groups a, cwms_office b
+	 WHERE	b.office_code = a.db_office_code AND a.db_office_code != 0
+ 
