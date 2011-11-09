@@ -1,0 +1,36 @@
+
+  CREATE OR REPLACE FORCE VIEW "CWMS_20"."AV_OUTLET" ("OFFICE_ID", "PROJECT_ID", "OUTLET_ID", "RATING_GROUP_ID", "RATING_SPEC", "OPENING_UNIT_EN", "OPENING_UNIT_SI") AS 
+  select o.office_id as office_id,
+       bl1.base_location_id
+       ||substr('-', 1, length(pl1.sub_location_id))
+       ||pl1.sub_location_id as project_id,
+       bl2.base_location_id
+       ||substr('-', 1, length(pl2.sub_location_id))
+       ||pl2.sub_location_id as outlet_id,
+       lg.loc_group_id as rating_group_id,
+       lg.shared_loc_alias_id as rating_spec,
+       cwms_rating.get_opening_unit(cwms_rating.get_template(lg.shared_loc_alias_id), 'EN') as opening_unit_en,
+       cwms_rating.get_opening_unit(cwms_rating.get_template(lg.shared_loc_alias_id), 'SI') as opening_unit_si
+  from cwms_office o,
+       at_base_location bl1,
+       at_physical_location pl1,
+       at_base_location bl2,
+       at_physical_location pl2,
+       at_project p,
+       at_outlet ou,
+       at_loc_category lc,
+       at_loc_group lg,
+       at_loc_group_assignment lga
+ where bl1.db_office_code = o.office_code
+   and pl1.base_location_code = bl1.base_location_code
+   and p.project_location_code = pl1.location_code
+   and pl2.base_location_code = bl2.base_location_code
+   and ou.outlet_location_code = pl2.location_code
+   and ou.project_location_code = p.project_location_code
+   and lga.location_code = ou.outlet_location_code
+   and lg.loc_group_code = lga.loc_group_code
+   and lc.loc_category_code = lg.loc_category_code
+   and lc.loc_category_id = 'RATING'
+ 
+  GRANT SELECT ON "CWMS_20"."AV_OUTLET" TO "CWMS_USER"
+ 
