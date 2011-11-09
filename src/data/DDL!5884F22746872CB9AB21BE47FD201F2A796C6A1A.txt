@@ -1,0 +1,13 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."TR_TEMPLATE_SET_ARRAY" 
+/**
+ * [description needed]
+ *
+ * @see type tr_template_set_type
+ * @see cwms_vt.store_tr_template
+ */
+IS TABLE OF tr_template_set_type;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."TR_TEMPLATE_SET_ARRAY" TO "CWMS_USER"
+ 
