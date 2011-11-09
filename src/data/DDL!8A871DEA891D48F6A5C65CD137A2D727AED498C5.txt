@@ -1,0 +1,18 @@
+
+  CREATE OR REPLACE TYPE "CWMS_20"."ZTSV_ARRAY_TAB" 
+/**
+ * Table of <code><big>ztsv_array</big></code> records. This collection specifies
+ * multiple time series.  There is no implicit constraint that all of the time series
+ * are for the same location or time range, although any routine that uses this type
+ * may impose these constraints.  This type does not carrytime zone information, so
+ * any usage of it should explicitly declare the time zone. External specification of
+ * time series attributes is also required for proper usage.
+ *
+ * @see type ztsv_type
+ * @see type ztsv_array
+ */
+as table of ztsv_array;
+
+ 
+  GRANT EXECUTE ON "CWMS_20"."ZTSV_ARRAY_TAB" TO "CWMS_USER"
+ 
