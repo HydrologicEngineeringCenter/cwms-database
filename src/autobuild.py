@@ -1,5 +1,5 @@
 #!/bin/env python
-import fnmatch, os, sys
+import glob, os, sys
 
 #-----------------------------------------------------#
 # create an automatic version of the buildCWMS_DB.sql #
@@ -86,7 +86,7 @@ if ec :
 #----------------------------------------------------#
 print "Loading control files"
 loaderCmdTemplate = "sqlldr %s/%s@%s control=%s"
-for loaderFilename in [fn for fn in os.listdir(".") if fnmatch.fnmatch(fn, "*Loader.ctl")] :
+for loaderFilename in glob.glob('*.ctl') + glob.glob('data/*.ctl') :
 	loaderCmd = loaderCmdTemplate % (cwms_schema, cwms_passwd, inst, loaderFilename)
 	ec = os.system(loaderCmd)
 	if ec :
