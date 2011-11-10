@@ -351,6 +351,7 @@ begin
       -----------------------
       -- create the record --
       -----------------------
+      cwms_loc.store_location(p_turbines(i).structure_location, 'F');
       if not l_exists then
          l_rec.turbine_location_code := p_turbines(i).structure_location.location_ref.get_location_code('T');
          l_rec.project_location_code := l_project.project_location.location_ref.get_location_code('F');
