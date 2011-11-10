@@ -959,6 +959,9 @@ returning count(*)
     where msg_id < greatest(l_msg_id_count, l_msg_id_date)
 returning count(*)
      into l_count;
+     
+   commit;
+        
    log_db_message('TRIM_LOG', msg_level_detailed, 'Deleted '||l_count||' records from AT_LOG_MESSAGE');
 
    log_db_message('TRIM_LOG', msg_level_basic, 'Done trimming log entries');
@@ -1255,6 +1258,7 @@ begin
          cwms_msg.msg_level_normal,
          'Done purging expired messages from queues');
    end if;
+   commit;
 end purge_queues;
 
 --------------------------------------------------------------------------------
