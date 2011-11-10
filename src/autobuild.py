@@ -1,5 +1,5 @@
 #!/bin/env python
-import glob, os, sys
+import glob, gzip, os, sys, tarfile
 
 #-----------------------------------------------------#
 # create an automatic version of the buildCWMS_DB.sql #
@@ -7,6 +7,8 @@ import glob, os, sys
 #-----------------------------------------------------#
 manual_sqlfilename = "buildCWMS_DB.sql"
 auto_sqlfilename   = "autobuild.sql"
+schema_tarfilename = 'cwms_schema.tar'
+schema_zipfilename = schema_tarfilename + '.gz'
 
 defines_sqlfilename = "cwms/defines.sql"
 
@@ -44,9 +46,7 @@ for arg in sys.argv[1:] :
 		exec arg
 		
 if not (echo and inst and sys_passwd and cwms_schema and cwms_passwd and dbi_passwd and test_passwd) :
-	print
-	print "Usage %s echo=(on|off) inst=<SID> sys_passwd=<pw> cwms_schema=<schema> cwms_passwd=<pw> dbi_passwd=<pw> test_passwd=<pw>" % sys.argv[0]
-	print
+	print("\nUsage %s echo=(on|off) inst=<SID> sys_passwd=<pw> cwms_schema=<schema> cwms_passwd=<pw> dbi_passwd=<pw> test_passwd=<pw>\n" % sys.argv[0])
 	sys.exit(-1)
 
 cwms_schema = cwms_schema.upper()
@@ -67,30 +67,52 @@ f = open(defines_sqlfilename, "w")
 f.write(defines_block)
 f.close()
 
+#--------------------------------------------------#
+# extract the current cwms_schema info for loading #
+#--------------------------------------------------#
+extfilenames = []
+if os.path.exists(schema_zipfilename) :
+	print("Uncompressing %s..." % schema_zipfilename)
+	z = gzip.open(schema_zipfilename, 'rb')
+	t = open(schema_tarfilename, 'wb')
+	t.write(z.read())
+	t.close()
+	z.close()
+	print("Extracting %s..." % schema_tarfilename)
+	t = tarfile.TarFile(schema_tarfilename, 'r')
+	extfilenames = t.getnames()
+	t.extractall()
+	t.close()
+
 #---------------------------------------------#
 # execute the automatic version of the script #
 #---------------------------------------------#
 cmd = "sqlplus /nolog @%s" % auto_sqlfilename
-print cmd
+print(cmd)
 ec = os.system(cmd)
 #os.remove(auto_sqlfilename)
 if ec :
-	print
-	print "SQL*Plus exited with code", ec 
-	print
+	print("\nSQL*Plus exited with code %s\n" % ec)
 	sys.exit(ec)
-	
+
 #----------------------------------------------------#
 # use SQL*Loader to load any control files generated #
 # by buildSqlScripts.py                              #
 #----------------------------------------------------#
-print "Loading control files"
+print("Loading control files")
 loaderCmdTemplate = "sqlldr %s/%s@%s control=%s"
 for loaderFilename in glob.glob('*.ctl') + glob.glob('data/*.ctl') :
 	loaderCmd = loaderCmdTemplate % (cwms_schema, cwms_passwd, inst, loaderFilename)
+	print("...%s" % loaderFilename)
 	ec = os.system(loaderCmd)
 	if ec :
-		print
-		print "SQL*Loader exited with code", ec 
-		print
+		print("\nSQL*Loader exited with code %s\n" % ec)
 		sys.exit(ec)
+
+#---------#
+# cleanup #
+#---------#
+for filename in extfilenames + [schema_tarfilename] :
+	if os.path.exists(filename) :
+	   try    : os.remove(filename)
+	   except : pass
