@@ -1,3 +1,5 @@
+SET define on
+@@defines.sql
 create or replace package body cwms_schema
 as
 
@@ -20,9 +22,24 @@ is
       p_object_type in varchar2,
       p_object_name in varchar2)
    is
-      l_hash_code    varchar2(40);
+      l_hash_code varchar2(40);
+      l_ddl       clob;
+      l_sub_ddl   clob;
+      l_code      number;
    begin
-      l_hash_code := get_hash_code(dbms_metadata.get_ddl(p_object_type, p_object_name));
+      l_ddl := dbms_metadata.get_ddl(p_object_type, p_object_name);
+      for i in 1..dependent_type_names.count loop
+         begin
+            l_sub_ddl := dbms_metadata.get_dependent_ddl(dependent_type_names(i), p_object_name);
+            dbms_lob.append(l_ddl, l_sub_ddl);
+         exception
+            when others then 
+            if l_sub_ddl is not null then
+               dbms_lob.trim(l_sub_ddl, 0);
+            end if;
+         end;
+      end loop;
+      l_hash_code := get_hash_code(l_ddl);
       insert
         into cwms_schema_object_version
       values ( l_hash_code,
@@ -30,6 +47,7 @@ is
                p_object_name,
                l_date_str||' '||p_cwms_version,
                p_comments);
+      cwms_text.store_text(l_code, l_ddl, '/DDL/'||l_hash_code, null, 'F', 'CWMS');
    end;
 begin
    -----------------------------------
@@ -48,7 +66,7 @@ begin
    -- check the list of view names --
    ----------------------------------
    l_object_names.delete;
-   select object_name bulk collect
+   select object_name bulk collect 
      into l_object_names
      from user_objects
     where object_type = 'VIEW'
@@ -101,19 +119,23 @@ begin
    for i in 1..table_names.count loop
       store_info('TABLE', table_names(i));
    end loop;
+   commit;
    for i in 1..view_names.count loop
       store_info('VIEW', view_names(i));
    end loop;
+   commit;
    for i in 1..package_names.count loop
       store_info('PACKAGE', package_names(i));
       store_info('PACKAGE_BODY', package_names(i));
    end loop;
+   commit;
    for i in 1..type_names.count loop
       store_info('TYPE', type_names(i));
    end loop;
    for i in 1..type_body_names.count loop
       store_info('TYPE_BODY', type_body_names(i));
    end loop;
+   commit;
 end set_schema_version;
 
 procedure check_schema_version
@@ -121,6 +143,7 @@ is
    l_max_version varchar2(32);
    l_version     varchar2(32);
    l_hash_code   varchar2(40);
+   l_message     varchar2(256);
    l_ddl         clob;
 
    function check_items(
@@ -130,10 +153,22 @@ is
    is
       l_item_type varchar2(30) := upper(p_item_type);
       l_count     pls_integer  := 0;
+      l_sub_ddl   clob;
    begin
       for i in 1..p_items.count loop
          begin
             l_ddl := dbms_metadata.get_ddl(l_item_type, p_items(i));
+            for j in 1..dependent_type_names.count loop
+               begin
+                  l_sub_ddl := dbms_metadata.get_dependent_ddl(dependent_type_names(j), p_items(i));
+                  dbms_lob.append(l_ddl, l_sub_ddl);
+               exception
+                  when others then 
+                  if l_sub_ddl is not null then
+                     dbms_lob.trim(l_sub_ddl, 0);
+                  end if;
+               end;
+            end loop;
             l_hash_code := get_hash_code(l_ddl);
             begin
                select max(schema_version)
@@ -144,17 +179,23 @@ is
                   and object_name = p_items(i);
                if l_version  != l_max_version then
                   l_count := l_count + 1;
-                  dbms_output.put_line(l_item_type||' '||p_items(i)||' = version "'||l_version||'"');
+                  l_message := 'CHECK_SCHEMA_VERSION : '||l_item_type||' '||p_items(i)||' = version "'||l_version||'"';
+                  cwms_msg.log_db_message('CWMS_SCHEMA.CHECK_SCHEMA_VERSION', cwms_msg.msg_level_normal , l_message);
+                  dbms_output.put_line(l_message);
                end if;
             exception
                when no_data_found then
                   l_count := l_count + 1;
-                  dbms_output.put_line(l_item_type||' '||p_items(i)||' = unknown version.');
+                  l_message := 'CHECK_SCHEMA_VERSION : '||l_item_type||' '||p_items(i)||' = unknown version.';
+                  cwms_msg.log_db_message('CWMS_SCHEMA.CHECK_SCHEMA_VERSION', cwms_msg.msg_level_normal , l_message);
+                  dbms_output.put_line(l_message);
             end;
          exception
             when no_such_object then
                l_count := l_count + 1;
-               dbms_output.put_line(l_item_type||' '||p_items(i)||' does not exist.');
+               l_message := 'CHECK_SCHEMA_VERSION : '||l_item_type||' '||p_items(i)||' does not exist.';
+               cwms_msg.log_db_message('CWMS_SCHEMA.CHECK_SCHEMA_VERSION', cwms_msg.msg_level_normal , l_message);
+               dbms_output.put_line(l_message);
          end;
       end loop;
       return l_count;
@@ -165,25 +206,30 @@ begin
    select max(schema_version)
      into l_max_version
      from cwms_schema_object_version;
-   dbms_output.put_line('Checking database objects against current version: '||l_max_version);
+   l_message := 'CHECK_SCHEMA_VERSION : Checking database objects against current version: '||l_max_version;
+   cwms_msg.log_db_message('CWMS_SCHEMA.CHECK_SCHEMA_VERSION', cwms_msg.msg_level_detailed , l_message);
+   dbms_output.put_line(l_message);
    if check_items('table', table_names) = 0 then
-      dbms_output.put_line('All tables are of the current version.');
+      dbms_output.put_line('CHECK_SCHEMA_VERSION : All tables are of the current version.');
    end if;
    if check_items('view', view_names) = 0 then
-      dbms_output.put_line('All views are of the current version.');
+      dbms_output.put_line('CHECK_SCHEMA_VERSION : All views are of the current version.');
    end if;
    if check_items('package', package_names) = 0 then
-      dbms_output.put_line('All packages are of the current version.');
+      dbms_output.put_line('CHECK_SCHEMA_VERSION : All package specifications are of the current version.');
    end if;
    if check_items('package_body', package_names) = 0 then
-      dbms_output.put_line('All package bodies are of the current version.');
+      dbms_output.put_line('CHECK_SCHEMA_VERSION : All package bodies are of the current version.');
    end if;
    if check_items('type', type_names) = 0 then
-      dbms_output.put_line('All types are of the current version.');
+      dbms_output.put_line('CHECK_SCHEMA_VERSION : All type specifications are of the current version.');
    end if;
    if check_items('type_body', type_body_names) = 0 then
-      dbms_output.put_line('All type bodies are of the current version.');
+      dbms_output.put_line('CHECK_SCHEMA_VERSION : All type bodies are of the current version.');
    end if;
+   l_message := 'CHECK_SCHEMA_VERSION : Done';
+   cwms_msg.log_db_message('CWMS_SCHEMA.CHECK_SCHEMA_VERSION', cwms_msg.msg_level_detailed , l_message);
+   dbms_output.put_line(l_message);
 end check_schema_version;
 
 procedure output_schema_versions
@@ -200,6 +246,189 @@ begin
          ||''', '''||rec.comments||''');');
    end loop;
 end output_schema_versions;
+
+--------------------------------------------------------------------------------
+-- procedure start_check_schema_job
+--
+procedure start_check_schema_job
+is
+   l_count        binary_integer;
+   l_user_id      varchar2(30);
+   l_job_id       varchar2(30)  := 'CHECK_SCHEMA_JOB';
+   l_run_interval varchar2(8);
+   l_comment      varchar2(256);
+
+   function job_count
+      return binary_integer
+   is
+   begin
+      select count (*)
+        into l_count
+        from sys.dba_scheduler_jobs
+       where job_name = l_job_id and owner = l_user_id;
+
+      return l_count;
+   end;
+begin
+   --------------------------------------
+   -- make sure we're the correct user --
+   --------------------------------------
+   l_user_id := cwms_util.get_user_id;
+
+   if l_user_id != '&cwms_schema'
+   then
+      raise_application_error (-20999,
+                                  'Must be &cwms_schema user to start job '
+                               || l_job_id,
+                               true
+                              );
+   end if;
+
+   -------------------------------------------
+   -- drop the job if it is already running --
+   -------------------------------------------
+   if job_count > 0
+   then
+      dbms_output.put ('Dropping existing job ' || l_job_id || '...');
+      dbms_scheduler.drop_job (l_job_id);
+
+      --------------------------------
+      -- verify that it was dropped --
+      --------------------------------
+      if job_count = 0
+      then
+         dbms_output.put_line ('done.');
+      else
+         dbms_output.put_line ('failed.');
+      end if;
+   end if;
+
+   if job_count = 0
+   then
+      begin
+         ---------------------
+         -- restart the job --
+         ---------------------
+         cwms_properties.get_property(
+            l_run_interval,
+            l_comment,
+            'CWMSDB',
+            'check_schema.interval',
+            '1440',
+            'CWMS');
+         dbms_scheduler.create_job
+            (job_name             => l_job_id,
+             job_type             => 'stored_procedure',
+             job_action           => 'cwms_schema.check_schema_version',
+             start_date           => null,
+             repeat_interval      => 'freq=minutely; interval=' || l_run_interval,
+             end_date             => null,
+             job_class            => 'default_job_class',
+             enabled              => true,
+             auto_drop            => false,
+             comments             => 'Checks CWMS schema against deployed version and logs differences'
+            );
+
+         if job_count = 1
+         then
+            dbms_output.put_line
+                           (   'Job '
+                            || l_job_id
+                            || ' successfully scheduled to execute every '
+                            || l_run_interval
+                            || ' minutes.'
+                           );
+         else
+            cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
+         end if;
+      exception
+         when others
+         then
+            cwms_err.raise ('ITEM_NOT_CREATED',
+                            'job',
+                            l_job_id || ':' || sqlerrm
+                           );
+      end;
+   end if;
+   
+end start_check_schema_job;
+
+function get_latest_hash(
+   p_object_type in varchar2,
+   p_object_name in varchar2)
+   return varchar2
+is
+   l_hash varchar2(64);
+begin
+   select hash_code
+     into l_hash
+     from cwms_schema_object_version
+    where object_type = upper(p_object_type)
+      and object_name = upper(p_object_name)
+      and schema_version = (select max(schema_version)
+                              from cwms_schema_object_version
+                             where object_type = upper(p_object_type)
+                               and object_name = upper(p_object_name)
+                           );
+   return l_hash;                           
+end get_latest_hash;   
+
+function get_latest_ddl(
+   p_object_type in varchar2,
+   p_object_name in varchar2)
+   return clob
+is
+   l_ddl clob;
+begin
+   select value
+     into l_ddl
+     from at_clob
+    where id = '/DDL/'||get_latest_hash(p_object_type, p_object_name);
+    
+   return l_ddl;    
+end get_latest_ddl;
+
+
+function get_latest_static_data
+   return clob
+is
+   l_max_schema_version varchar2(64);
+   l_static_data        clob;
+begin
+   select max(schema_version)
+     into l_max_schema_version 
+     from cwms_schema_object_version;
+
+   select value
+     into l_static_data 
+     from at_clob 
+    where id = '/DDL/STATIC_DATA/'||substr(l_max_schema_version, 21);
+
+   return l_static_data;    
+end get_latest_static_data;   
+
+function get_current_ddl(
+   p_object_type in varchar2,
+   p_object_name in varchar2)
+   return clob
+is
+   l_ddl     clob;
+   l_sub_ddl clob;
+begin
+   l_ddl := dbms_metadata.get_ddl(upper(p_object_type), upper(p_object_name));
+   for i in 1..dependent_type_names.count loop
+      begin
+         l_sub_ddl := dbms_metadata.get_dependent_ddl(dependent_type_names(i), upper(p_object_name));
+         dbms_lob.append(l_ddl, l_sub_ddl);
+      exception
+         when others then 
+         if l_sub_ddl is not null then
+            dbms_lob.trim(l_sub_ddl, 0);
+         end if;
+      end;
+   end loop;
+   return l_ddl;
+end get_current_ddl;
 
 end cwms_schema;
 /
