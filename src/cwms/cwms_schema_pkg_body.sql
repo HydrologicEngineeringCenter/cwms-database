@@ -321,7 +321,7 @@ begin
              job_type             => 'stored_procedure',
              job_action           => 'cwms_schema.check_schema_version',
              start_date           => null,
-             repeat_interval      => 'freq=minutely; interval=' || l_run_interval,
+             repeat_interval      => 'freq=hourly; interval=' || trunc(l_run_interval / 60),
              end_date             => null,
              job_class            => 'default_job_class',
              enabled              => true,
