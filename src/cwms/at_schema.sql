@@ -2894,31 +2894,13 @@ COMMENT ON COLUMN at_clob.VALUE       IS 'The CLOB data';
 -----------------------------
 -- AT_CLOB indices
 --
-ALTER TABLE at_clob ADD
-(
-  PRIMARY KEY (CLOB_CODE)
-  USING INDEX
-  TABLESPACE CWMS_20AT_DATA
-  PCTFREE    10
-  INITRANS   2
-  MAXTRANS   255
-  STORAGE
-  (
-    INITIAL          64 k
-    MINEXTENTS       1
-    MAXEXTENTS       2147483645
-    PCTINCREASE      0
-  )
-)
-/
+create unique index at_clob_idx1 on at_clob (office_code, upper(id));
 
 -----------------------------
 -- AT_CLOB constraints
 --
-ALTER TABLE AT_CLOB ADD CONSTRAINT AT_CLOB_U1  UNIQUE (OFFICE_CODE, ID) USING INDEX;
+ALTER TABLE AT_CLOB ADD CONSTRAINT AT_CLOB_PK  PRIMARY KEY (clob_code) USING INDEX;
 ALTER TABLE AT_CLOB ADD CONSTRAINT AT_CLOB_FK1 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
-ALTER TABLE AT_CLOB ADD CONSTRAINT AT_CLOB_CK1 CHECK (SUBSTR(ID, 1, 1) = '/');
-ALTER TABLE AT_CLOB ADD CONSTRAINT AT_CLOB_CK2 CHECK (UPPER(ID) = ID);
 
 SET define off
 -----------------------------
@@ -3087,6 +3069,17 @@ CREATE TABLE AT_FORECAST_TEXT
    CLOB_CODE          NUMBER(10) NOT NULL
 )
 TABLESPACE CWMS_20AT_DATA
+/
+
+create global temporary table at_schema_object_diff
+(
+   object_type      varchar2(30),
+   object_name      varchar2(30),
+   deployed_version varchar2(64),
+   deployed_ddl     clob,
+   current_ddl      clob
+)
+on commit delete rows
 /
 
 COMMENT ON TABLE  AT_FORECAST_TEXT                    IS 'Contains cross references between forecasts and time sereies';
