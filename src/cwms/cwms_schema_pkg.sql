@@ -555,6 +555,23 @@ procedure check_schema_version;
 procedure output_schema_versions;
 
 /**
+ * Outputs (via dbms_output) the results of the latest completed execution of
+ * check_schema_vesion.
+ */
+procedure output_latest_results;
+
+/**
+ * Loads the deployed and current ddl for a specified schema object into the
+ * AT_SCHEMA_OBJECT_DIFF table for comparison
+ *
+ * @param p_object_type The type of the schema object (table, package, etc...)
+ * @param p_object_name The name of the schema object
+ */
+procedure compare_ddl(
+   p_object_type in varchar2,
+   p_object_name in varchar2);
+   
+/**
  * Schedules background execution of check_schema_version. The default schedule is
  * to run once a day, starting when this procedure is executed. The property
  * CWMSDB/check_schema.interval can be set to the number of minutes between runs
