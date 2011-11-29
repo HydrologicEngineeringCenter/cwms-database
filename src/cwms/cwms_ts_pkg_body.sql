@@ -1949,7 +1949,7 @@ function build_retrieve_ts_query (
    p_units           in  varchar2,
    p_start_time      in  date,
    p_end_time        in  date,
-   p_date_time_type   in varchar2,
+   p_date_time_type  in varchar2,
    p_time_zone       in  varchar2 default 'UTC',
    p_trim            in  varchar2 default 'F',
    p_start_inclusive in  varchar2 default 'T',
@@ -1964,6 +1964,7 @@ function build_retrieve_ts_query (
 is
    l_ts_code          number;
    l_interval         number;
+   l_interval2        number          := 60 / 1440;
    l_offset           number;
    l_office_id        varchar2(16)    := nvl(p_office_id, cwms_util.user_office_id);
    l_cwms_ts_id       varchar2(183)   := get_cwms_ts_id(p_cwms_ts_id, l_office_id);
@@ -1980,7 +1981,7 @@ is
    l_reg_start_time   date;
    l_reg_end_time     date;
    l_max_version      boolean         := cwms_util.return_true_or_false(nvl(p_max_version, 'F'));
-   l_query_str        varchar2(4000);
+   l_query_str        varchar2(32767);
    l_start_str        varchar2(32);
    l_end_str          varchar2(32);
    l_reg_start_str    varchar2(32);
@@ -2130,47 +2131,72 @@ begin
             -- can use date arithmetic
             --
             l_query_str := 
-               'select cast(cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) as :date_time_type) as date_time, 
-                       value, 
+               'select date_time,
+                       value,
                        quality_code
-                  from (select t.date_time as date_time,
-                               case
-                                  when value is nan then null
-                                  else value
-                               end as value,
-                               cwms_util.sign_extend(nvl(quality_code, :missing)) as quality_code
-                          from (
-                               select date_time,
-                                      max(value) keep(dense_rank :first_or_last order by version_date) as value,
-                                      max(quality_code) keep(dense_rank :first_or_last order by version_date) as quality_code
-                                 from av_tsv_dqu
-                                where ts_code    =  :ts_code 
-                                  and date_time  >= to_date(:l_start, :l_date_fmt)  
-                                  and date_time  <= to_date(:l_end,   :l_date_fmt) 
-                                  and unit_id    =  :units
-                                  and start_date <= to_date(:l_end,   :l_date_fmt) 
-                                  and end_date   >  to_date(:l_start, :l_date_fmt)
-                             group by date_time
-                               ) v
-                               right outer join
-                               (
-                               select max(date_time) date_time
-                                 from (select date_time,
-                                              cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) local_time
-                                         from (select to_date(:reg_start, :l_date_fmt) + (level-1) * :interval date_time
-                                                 from dual
-                                           connect by level <= round((to_date(:reg_end,   :l_date_fmt)
-                                                                    - to_date(:reg_start, :l_date_fmt)) / :interval + 1)
+                  from ((select cast(cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) as :date_time_type) as date_time,
+                               value,
+                               quality_code
+                          from (select t.date_time as date_time,
+                                       case
+                                          when value is nan then null
+                                          else value
+                                       end as value,
+                                       cwms_util.sign_extend(nvl(quality_code, :missing)) as quality_code
+                                  from (
+                                       select date_time,
+                                              max(value) keep(dense_rank :first_or_last order by version_date) as value,
+                                              max(quality_code) keep(dense_rank :first_or_last order by version_date) as quality_code
+                                         from av_tsv_dqu
+                                        where ts_code    =  :ts_code
+                                          and date_time  >= to_date(:l_start, :l_date_fmt)
+                                          and date_time  <= to_date(:l_end,   :l_date_fmt)
+                                          and unit_id    =  :units
+                                          and start_date <= to_date(:l_end,   :l_date_fmt)
+                                          and end_date   >  to_date(:l_start, :l_date_fmt)
+                                     group by date_time
+                                       ) v
+                                       right outer join
+                                       (
+                                       select max(date_time) date_time
+                                         from (select date_time,
+                                                      cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) local_time
+                                                 from (select to_date(:reg_start, :l_date_fmt) + (level-1) * :interval date_time
+                                                         from dual
+                                                   connect by level <= round((to_date(:reg_end,   :l_date_fmt)
+                                                                            - to_date(:reg_start, :l_date_fmt)) / :interval + 1)
+                                                      )
                                               )
-                                      )
-                              group by local_time
-                               ) t
-                               on v.date_time = t.date_time
-                       )
+                                      group by local_time
+                                       ) t
+                                       on v.date_time = t.date_time
+                               )
+                        )
+                        union all
+                        (select prev_time + level * :interval as date_time,
+                                null as value,
+                                :missing as quality_code
+                           from (select date_time,
+                                        prev_time
+                                   from (select date_time,
+                                                lag(date_time, 1, null) over (order by date_time) as prev_time,
+                                                date_time - lag(date_time, 1, null) over (order by date_time) as time_diff
+                                           from (select cwms_util.change_timezone(to_date(:reg_start, :l_date_fmt) + (level-1) * :interval2, ''UTC'', :l_timezone) as date_time
+                                                   from dual
+                                             connect by level <= round((to_date(:reg_end,   :l_date_fmt)
+                                                                      - to_date(:reg_start, :l_date_fmt)) / :interval2 + 1)
+                                                )
+                                        )
+                                  where time_diff > :interval2
+                               order by date_time
+                               )
+                     connect by level < (date_time - prev_time) / :interval
+                       ))
               order by date_time';
                 replace_strings;
                 open l_cursor for l_query_str using l_time_zone, l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format,
-                                                    l_time_zone, l_reg_start_str, l_date_format, l_interval, l_reg_end_str, l_date_format, l_reg_start_str, l_date_format, l_interval;
+                                                    l_time_zone,l_reg_start_str,l_date_format,l_interval,l_reg_end_str,l_date_format,l_reg_start_str,l_date_format,l_interval,
+                                                    l_interval,l_missing,l_reg_start_str,l_date_format,l_interval2,l_time_zone,l_reg_end_str,l_date_format,l_reg_start_str,l_date_format,l_interval2,l_interval2,l_interval;
          end if;
       else
         --
@@ -2261,43 +2287,72 @@ begin
             -- can use date arithmetic
             --
             l_query_str := 
-               'select cast(cwms_util.change_timezone(t.date_time, ''UTC'', :l_time_zone) as :date_time_type) "DATE_TIME",
-                      case
-                         when value is nan then null
-                         else value
-                      end "VALUE",
-                      cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
-                 from (
-                      select date_time,
-                             value,
-                             quality_code
-                        from av_tsv_dqu
-                       where ts_code      =  :ts_code 
-                         and date_time    >= to_date(:l_start,   :l_date_fmt)  
-                         and date_time    <= to_date(:l_end,     :l_date_fmt) 
-                         and unit_id      =  :units
-                         and start_date   <= to_date(:l_end,     :l_date_fmt) 
-                         and end_date     >  to_date(:l_start,   :l_date_fmt)
-                         and version_date =  to_date(:version,   :l_date_fmt)
-                      ) v
-                      right outer join
-                      (
-                      select max(date_time) date_time
-                        from (select date_time,
-                                     cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) local_time
-                                from (select to_date(:reg_start, :l_date_fmt) + (level-1) * :interval date_time
-                                        from dual
-                                  connect by level <= round((to_date(:reg_end,   :l_date_fmt)
-                                                           - to_date(:reg_start, :l_date_fmt)) / :interval + 1)
-                                     )
-                             )
-                     group by local_time
-                      ) t
-                      on v.date_time = t.date_time
-                      order by t.date_time asc';
-                       replace_strings;
-                open l_cursor for l_query_str using l_time_zone,l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format,l_version_date,l_date_format,
-                                                    l_time_zone, l_reg_start_str, l_date_format, l_interval, l_reg_end_str, l_date_format, l_reg_start_str, l_date_format, l_interval;
+               'select date_time,
+                       value,
+                       quality_code
+                  from ((select cast(cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) as :date_time_type) as date_time,
+                               value,
+                               quality_code
+                          from (select t.date_time as date_time,
+                                       case
+                                          when value is nan then null
+                                          else value
+                                       end as value,
+                                       cwms_util.sign_extend(nvl(quality_code, :missing)) as quality_code
+                                  from (
+                                       select date_time,
+                                              value,
+                                              quality_code
+                                         from av_tsv_dqu
+                                        where ts_code     =  :ts_code
+                                          and date_time   >= to_date(:l_start, :l_date_fmt)
+                                          and date_time   <= to_date(:l_end,   :l_date_fmt)
+                                          and unit_id     =  :units
+                                          and start_date  <= to_date(:l_end,   :l_date_fmt)
+                                          and end_date    >  to_date(:l_start, :l_date_fmt)
+                                          and version_date = to_date(:version, :l_date_fmt)
+                                       ) v
+                                       right outer join
+                                       (
+                                       select max(date_time) date_time
+                                         from (select date_time,
+                                                      cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) local_time
+                                                 from (select to_date(:reg_start, :l_date_fmt) + (level-1) * :interval date_time
+                                                         from dual
+                                                   connect by level <= round((to_date(:reg_end,   :l_date_fmt)
+                                                                            - to_date(:reg_start, :l_date_fmt)) / :interval + 1)
+                                                      )
+                                              )
+                                      group by local_time
+                                       ) t
+                                       on v.date_time = t.date_time
+                               )
+                        )
+                        union all
+                        (select prev_time + level * :interval as date_time,
+                                null as value,
+                                :missing as quality_code
+                           from (select date_time,
+                                        prev_time
+                                   from (select date_time,
+                                                lag(date_time, 1, null) over (order by date_time) as prev_time,
+                                                date_time - lag(date_time, 1, null) over (order by date_time) as time_diff
+                                           from (select cwms_util.change_timezone(to_date(:reg_start, :l_date_fmt) + (level-1) * :interval2, ''UTC'', :l_timezone) as date_time
+                                                   from dual
+                                             connect by level <= round((to_date(:reg_end,   :l_date_fmt)
+                                                                      - to_date(:reg_start, :l_date_fmt)) / :interval2 + 1)
+                                                )
+                                        )
+                                  where time_diff > :interval2
+                               order by date_time
+                               )
+                     connect by level < (date_time - prev_time) / :interval
+                       ))
+              order by date_time';
+                replace_strings;
+                open l_cursor for l_query_str using l_time_zone, l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format,l_version_date,l_date_format,
+                                                    l_time_zone,l_reg_start_str,l_date_format,l_interval,l_reg_end_str,l_date_format,l_reg_start_str,l_date_format,l_interval,
+                                                    l_interval,l_missing,l_reg_start_str,l_date_format,l_interval2,l_time_zone,l_reg_end_str,l_date_format,l_reg_start_str,l_date_format,l_interval2,l_interval2,l_interval;
          end if;
       else
         --
