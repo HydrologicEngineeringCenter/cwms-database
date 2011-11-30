@@ -26,9 +26,9 @@ usage_blurb = \
    All parameters are required except that the object name is not required if
    the object type is DATA, in which case the static data are compared.
 
-   If the comment is not specified, no comment will be use.
-   If the working directory is not specified, the current directory will be used.
-   ''' % program_name
+   Valid object types are "%s".
+
+''' % (program_name, '", "'.join(obj_types))
 
 database = None
 username = None
@@ -38,6 +38,7 @@ obj_name = None
 
 def usage(message = None) :
    if message : sys.stderr.write('\n%s\n' % message)
+   sys.stderr.write(usage_blurb)
    sys.exit(-1)
 
 def run_cmd(cmd) :
@@ -54,7 +55,7 @@ opts, args = getopt.getopt(
    ['database=', 'username=', 'password=', 'type=', 'name='])
 
 if args :
-   usage('Unexpected parameter(s) :', ', '.join(['%s' % arg for arg in args]))
+   usage('Unexpected parameter(s) : %s' % ', '.join(['%s' % arg for arg in args]))
 
 for key, value in opts :
    if key in ('-d', '--database') :

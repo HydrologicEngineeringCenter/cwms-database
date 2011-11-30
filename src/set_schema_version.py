@@ -34,7 +34,8 @@ usage_blurb = \
    If the working directory is not specified, the current directory will be used.
 
    The working directory must map to //wcdba/dev/oracle/dev/src in Perforce.
-   ''' % program_name
+
+''' % program_name
 
 inp_header = \
 '''
@@ -63,6 +64,7 @@ workdir  = None
 
 def usage(message = None) :
    if message : sys.stderr.write('\n%s\n' % message)
+   sys.stderr.write(usage_blurb)
    sys.exit(-1)
 
 def run_cmd(cmd) :
@@ -79,7 +81,7 @@ opts, args = getopt.getopt(
    ['database=', 'username=', 'password=', 'version=', 'comment=', 'workdir='])
 
 if args :
-   usage('Unexpected parameter(s) :', ', '.join(['%s' % arg for arg in args]))
+   usage('Unexpected parameter(s) : %s' % ', '.join(['%s' % arg for arg in args]))
 
 for key, value in opts :
    if key in ('-d', '--database') :
