@@ -1,4 +1,3 @@
-from __future__      import with_statement
 import os, string, StringIO
 
 at_tables = {
@@ -55,20 +54,30 @@ cwms_tables = [
    'cwms_unit_conversion'
 ]
 
-def get_static_data(filename) :
+table_columns = {}
+
+def get_table_columns(schemaname, conn) :
+   stmt = conn.prepareStatement("select column_name from all_tab_columns where owner = '%s' and table_name = :1 order by column_id" % schemaname)
+   for table_name in at_tables.keys() + cwms_tables :
+      table_columns[table_name] = []
+      stmt.setString(1, table_name.upper())
+      rs = stmt.executeQuery()
+      while rs.next() : table_columns[table_name].append(rs.getString(1))
+      rs.close()
+   stmt.close()
+
+def get_static_data(filename, schemaname, conn) :
+   get_table_columns(schemaname, conn)
    f = StringIO.StringIO()
-   f.write('set linesize 2000\nset pagesize 1000\nspool %s\n' % filename)
+   f.write('set linesize 2000\nset pagesize 1000\nset trimspool on\nspool %s\n' % filename)
    for table_name in at_tables.keys() :
       f.write('prompt .\nprompt table %s\n' % table_name)
-      f.write('select * from %s where %s = 53;\n' % (table_name, at_tables[table_name]))
+      f.write('select * from %s where %s = 53 order by %s;\n' % (table_name, at_tables[table_name], ', '.join(table_columns[table_name])))
    for table_name in cwms_tables :
       f.write('prompt .\nprompt table %s\n' % table_name)
-      f.write('select * from %s;\n' % table_name)
+      f.write('select * from %s order by %s;\n' % (table_name, ', '.join(table_columns[table_name])))
    f.write('spool off\n')
    buf = f.getvalue()
    f.close()
    return buf
 
-def trim_data_file(filename) :
-   with open(filename, 'r') as f : lines = f.read().split('\n')
-   with open(filename, 'w') as f : f.write('\n'.join(map(string.rstrip, lines)))
