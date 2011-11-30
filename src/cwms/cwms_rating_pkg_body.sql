@@ -1537,7 +1537,7 @@ begin
    -- get the rating time --
    -------------------------
    if p_rating_time is null then
-      l_rating_time := sysdate;
+      l_rating_time := cast(systimestamp at time zone 'UTC' as date);
    else
       if l_time_zone = 'UTC' then
          l_rating_time := p_rating_time;
