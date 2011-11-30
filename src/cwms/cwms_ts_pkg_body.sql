@@ -2187,7 +2187,7 @@ begin
                                                                       - to_date(:reg_start, :l_date_fmt)) / :interval2 + 1)
                                                 )
                                         )
-                                  where time_diff > :interval2
+                                  where time_diff > greatest(:interval, :interval2)
                                order by date_time
                                )
                      connect by level < (date_time - prev_time) / :interval
@@ -2343,7 +2343,7 @@ begin
                                                                       - to_date(:reg_start, :l_date_fmt)) / :interval2 + 1)
                                                 )
                                         )
-                                  where time_diff > :interval2
+                                  where time_diff > greatest(:interval, :interval2)
                                order by date_time
                                )
                      connect by level < (date_time - prev_time) / :interval
