@@ -880,7 +880,7 @@ procedure cat_ratings(
    p_office_id_mask       in  varchar2 default null)
 is
    c_default_start_date constant date := date '1700-01-01';
-   c_default_end_date   constant date := sysdate;
+   c_default_end_date   constant date := cast(systimestamp at time zone 'UTC' as date);
    
    l_parts str_tab_t;
    l_location_id_mask      varchar2(49);
@@ -1016,7 +1016,7 @@ procedure retrieve_ratings_obj(
    p_office_id_mask       in  varchar2 default null)
 is
    c_default_start_date constant date := date '1700-01-01';
-   c_default_end_date   constant date := sysdate;
+   c_default_end_date   constant date := cast(systimestamp at time zone 'UTC' as date);
    
    l_parts str_tab_t;
    l_location_id_mask      varchar2(49);
@@ -1669,7 +1669,7 @@ begin
          l_ind_set(i) := p_values(i)(j);
       end loop;
       l_date_offset := case l_value_times is null
-                          when true  then sysdate - c_base_date
+                          when true  then cast(systimestamp at time zone 'UTC' as date) - c_base_date
                           when false then l_value_times(j) - c_base_date 
                        end;
       ---------------------------------------------------------
@@ -2497,7 +2497,7 @@ begin
    -- get the rating time --
    -------------------------
    if p_rating_time is null then
-      l_rating_time := sysdate;
+      l_rating_time := cast(systimestamp at time zone 'UTC' as date);
    else
       if l_time_zone = 'UTC' then
          l_rating_time := p_rating_time;
@@ -2621,7 +2621,7 @@ begin
    p_results.extend(l_values_count);
    for i in 1..l_values_count loop
       l_date_offset := case l_value_times is null
-                          when true  then sysdate - c_base_date
+                          when true  then cast(systimestamp at time zone 'UTC' as date) - c_base_date
                           when false then l_value_times(i) - c_base_date 
                        end;
       ---------------------------------------------------------
