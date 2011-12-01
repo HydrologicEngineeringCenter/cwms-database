@@ -1215,14 +1215,14 @@ begin
          end if;
       end loop;
       close l_cursor;
-      ----------------------------------------------------------------
-      -- next purge queues of any expired or undeliverable messages --
-      ----------------------------------------------------------------
+      -------------------------------------------------------------------------------------
+      -- next purge queues of any messages that are expired, undeliverable, or processed --
+      -------------------------------------------------------------------------------------
       l_sql := 'select count(*)
                   from AQ$'
                      || rec.object_name
                      || '_TABLE
-                 where msg_state in (''UNDELIVERABLE'',''EXPIRED'')';
+                 where msg_state in (''UNDELIVERABLE'',''EXPIRED'', ''PROCESSED'')';
       execute immediate l_sql into l_expired_count;
       if l_expired_count > l_max_purge_count then
          cwms_msg.log_db_message(
@@ -1247,7 +1247,7 @@ begin
          l_purged := true;
          dbms_aqadm.purge_queue_table(
             rec.object_name||'_TABLE',
-            'MSG_STATE IN (''UNDELIVERABLE'',''EXPIRED'') AND ROWNUM <= '
+            'MSG_STATE IN (''UNDELIVERABLE'',''EXPIRED'', ''PROCESSED'') AND ROWNUM <= '
                || l_max_purge_count,
             l_purge_options);
       end if;
