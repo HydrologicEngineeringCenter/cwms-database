@@ -155,6 +155,8 @@ exec cwms_msg.start_trim_log_job;
 /
 exec cwms_msg.start_purge_queues_job;
 /
+exec cwms_schema.cleanup_schema_version_table;
+/
 exec cwms_schema.start_check_schema_job;
 /
 exec cwms_ts.start_trim_ts_deleted_job;
