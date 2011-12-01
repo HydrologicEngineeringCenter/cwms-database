@@ -28,7 +28,7 @@ procedure set_schema_version(
    p_cwms_version  in varchar2,
    p_comments      in varchar2 default null)
 is
-   l_date_str     varchar2(19) := to_char(cast(systimestamp at time zone 'UTC' as date), 'yyyy/mm/dd hh:mm:ss');
+   l_date_str     varchar2(19) := to_char(cast(systimestamp at time zone 'UTC' as date), 'yyyy/mm/dd hh24:mi:ss');
    l_object_names object_tab_t;
 
    procedure store_info(
@@ -129,19 +129,17 @@ begin
    ---------------------------------------------------------------------------
    -- store the current hash code and the specified version for each object --
    ---------------------------------------------------------------------------
+   dbms_output.put_line('Setting schema version to '||l_date_str||' '||p_cwms_version);
    for i in 1..table_names.count loop
       store_info('TABLE', table_names(i));
    end loop;
-   commit;
    for i in 1..view_names.count loop
       store_info('VIEW', view_names(i));
    end loop;
-   commit;
    for i in 1..package_names.count loop
       store_info('PACKAGE', package_names(i));
       store_info('PACKAGE_BODY', package_names(i));
    end loop;
-   commit;
    for i in 1..type_names.count loop
       store_info('TYPE', type_names(i));
    end loop;
@@ -149,7 +147,45 @@ begin
       store_info('TYPE_BODY', type_body_names(i));
    end loop;
    commit;
+   --------------------------------------------------------------
+   -- remove previous entries for objects that haven't changed --
+   --------------------------------------------------------------
+   cleanup_schema_version_table;
 end set_schema_version;
+
+procedure cleanup_schema_version_table
+is
+   l_old_ver sys_refcursor;
+begin
+   --------------------------------------------------------------
+   -- remove previous entries for objects that haven't changed --
+   --------------------------------------------------------------
+      for l_old_ver in 
+      (with all_ as (select hash_code, 
+                             schema_version 
+                        from cwms_schema_object_version
+                     ),
+            cur_ as (select hash_code, 
+                             max(schema_version) as schema_version 
+                        from cwms_schema_object_version 
+                       group 
+                          by hash_code
+                     )  
+       select all_.hash_code, 
+              all_.schema_version
+         from all_, 
+              cur_
+        where all_.hash_code       = cur_.hash_code
+          and all_.schema_version != cur_.schema_version
+      )
+   loop
+      delete
+        from cwms_schema_object_version
+       where hash_code = l_old_ver.hash_code
+         and schema_version = l_old_ver.schema_version;
+   end loop;
+   commit;
+end cleanup_schema_version_table;
 
 procedure check_schema_version
 is
@@ -362,6 +398,18 @@ begin
    end if;
    
 end start_check_schema_job;
+
+function get_schema_version
+   return varchar2
+is
+   l_schema_version varchar2(64);
+begin
+   select max(schema_version)
+     into l_schema_version
+     from cwms_schema_object_version;
+     
+   return l_schema_version;     
+end get_schema_version;
 
 procedure output_latest_results
 is
