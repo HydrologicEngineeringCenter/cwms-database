@@ -3077,7 +3077,8 @@ create global temporary table at_schema_object_diff
    object_name      varchar2(30),
    deployed_version varchar2(64),
    deployed_ddl     clob,
-   current_ddl      clob
+   current_ddl      clob,
+   constraint at_schema_object_diff_pk primary key (object_type, object_name)
 )
 on commit delete rows
 /
