@@ -2196,7 +2196,7 @@ begin
                 replace_strings;
                 open l_cursor for l_query_str using l_time_zone, l_missing,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format,
                                                     l_time_zone,l_reg_start_str,l_date_format,l_interval,l_reg_end_str,l_date_format,l_reg_start_str,l_date_format,l_interval,
-                                                    l_interval,l_missing,l_reg_start_str,l_date_format,l_interval2,l_time_zone,l_reg_end_str,l_date_format,l_reg_start_str,l_date_format,l_interval2,l_interval2,l_interval;
+                                                    l_interval,l_missing,l_reg_start_str,l_date_format,l_interval2,l_time_zone,l_reg_end_str,l_date_format,l_reg_start_str,l_date_format,l_interval2,l_interval,l_interval2,l_interval;
          end if;
       else
         --
