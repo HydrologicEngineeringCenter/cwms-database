@@ -509,6 +509,7 @@ is
    l_project        project_obj_t;
    l_rec            at_outlet%rowtype;
    l_rating_group   varchar2(65);
+   l_location_type  varchar2(32);
 begin
    -------------------
    -- sanity checks --
@@ -539,30 +540,25 @@ begin
       -----------------------------------------------
       begin          
          l_rec.outlet_location_code := p_outlets(i).structure_location.location_ref.get_location_code('F');
-         begin
-            select *
-              into l_rec
-              from at_outlet
-             where outlet_location_code = l_rec.outlet_location_code;
-            l_exists := true;             
-         exception
-            when no_data_found then
-               cwms_err.raise(
-                  'ERROR',
-                  'CWMS location '             
-                  ||p_outlets(i).structure_location.location_ref.get_office_id
-                  ||'/'
-                  ||p_outlets(i).structure_location.location_ref.get_location_id
-                  ||' exists but is not identified as an outlet.');
-         end;
-            if l_fail_if_exists then
-               cwms_err.raise(
-                  'ITEM_ALREADY_EXISTS',
-                  'CWMS outlet',
-                  p_outlets(i).structure_location.location_ref.get_office_id
-                  ||'/'
-                  ||p_outlets(i).structure_location.location_ref.get_location_id);
-            end if;
+         l_exists := true;
+         l_location_type := cwms_loc.get_location_type(l_rec.outlet_location_code);
+         if l_location_type not in ('NONE', 'OUTLET') then
+            cwms_err.raise(
+               'ERROR',
+               'CWMS location '             
+               ||p_outlets(i).structure_location.location_ref.get_office_id
+               ||'/'
+               ||p_outlets(i).structure_location.location_ref.get_location_id
+               ||' exists but is identified as type '||l_location_type);
+         end if;
+         if l_fail_if_exists then
+            cwms_err.raise(
+               'ITEM_ALREADY_EXISTS',
+               'CWMS outlet',
+               p_outlets(i).structure_location.location_ref.get_office_id
+               ||'/'
+               ||p_outlets(i).structure_location.location_ref.get_location_id);
+         end if;
       exception
          when no_data_found then
             l_exists := false;
