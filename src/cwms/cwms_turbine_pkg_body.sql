@@ -296,6 +296,7 @@ is
    l_exists         boolean;
    l_project        project_obj_t;
    l_rec            at_turbine%rowtype;
+   l_location_type  varchar2(32);
 begin
    -------------------
    -- sanity checks --
@@ -319,34 +320,31 @@ begin
       -- see if the turbine location already exists --
       ------------------------------------------------
       begin          
+      begin          
          l_rec.turbine_location_code := p_turbines(i).structure_location.location_ref.get_location_code('F');
-         begin
-            select *
-              into l_rec
-              from at_turbine
-             where turbine_location_code = l_rec.turbine_location_code;
-            l_exists := true;             
-         exception
-            when no_data_found then
-               cwms_err.raise(
-                  'ERROR',
-                  'CWMS location '             
-                  ||p_turbines(i).structure_location.location_ref.get_office_id
-                  ||'/'
-                  ||p_turbines(i).structure_location.location_ref.get_location_id
-                  ||' exists but is not identified as an turbine.');
-         end;
-            if l_fail_if_exists then
-               cwms_err.raise(
-                  'ITEM_ALREADY_EXISTS',
-                  'CWMS turbine',
-                  p_turbines(i).structure_location.location_ref.get_office_id
-                  ||'/'
-                  ||p_turbines(i).structure_location.location_ref.get_location_id);
-            end if;
+         l_exists := true;
+         l_location_type := cwms_loc.get_location_type(l_rec.turbine_location_code);
+         if l_location_type not in ('NONE', 'TURBINE') then
+            cwms_err.raise(
+               'ERROR',
+               'CWMS location '             
+               ||p_turbines(i).structure_location.location_ref.get_office_id
+               ||'/'
+               ||p_turbines(i).structure_location.location_ref.get_location_id
+               ||' exists but is identified as type '||l_location_type);
+         end if;
+         if l_fail_if_exists then
+            cwms_err.raise(
+               'ITEM_ALREADY_EXISTS',
+               'CWMS turnbine',
+               p_turbines(i).structure_location.location_ref.get_office_id
+               ||'/'
+               ||p_turbines(i).structure_location.location_ref.get_location_id);
+         end if;
       exception
          when no_data_found then
             l_exists := false;
+      end;
       end;
       -----------------------
       -- create the record --
