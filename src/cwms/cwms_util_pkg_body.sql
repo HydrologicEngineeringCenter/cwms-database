@@ -98,6 +98,27 @@ AS
 			RAISE;
 	END min_dm;
 
+   --
+   -- Filter out PST and CST
+   FUNCTION get_timezone (p_timezone IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+      l_timezone varchar2(28);
+   BEGIN
+      check_input(p_timezone);
+      IF p_timezone IS NOT NULL THEN
+         l_timezone := UPPER(p_timezone);
+         IF    l_timezone = 'PST' THEN l_timezone := 'Etc/GMT+8';
+         ELSIF l_timezone = 'CST' THEN l_timezone := 'Etc/GMT+6';
+         ELSE
+            SELECT time_zone_name
+              INTO l_timezone
+              FROM mv_time_zone
+             WHERE UPPER(time_zone_name) = l_timezone;
+         END IF;
+      END IF;
+      RETURN l_timezone;
+   END get_timezone;
 	--
 	-- return the p_in_date which is in p_in_tz as a date in UTC
 	FUNCTION date_from_tz_to_utc (p_in_date IN DATE, p_in_tz IN VARCHAR2)
@@ -123,8 +144,8 @@ AS
 						 p_in_date
 					 ELSE
 						 CAST (
-							 FROM_TZ (CAST (p_in_date AS TIMESTAMP), p_from_tz)
-								 AT TIME ZONE p_to_tz AS DATE
+							 FROM_TZ (CAST (p_in_date AS TIMESTAMP), get_timezone(p_from_tz))
+								 AT TIME ZONE get_timezone(p_to_tz) AS DATE
 						 )
 				 END;
 	END;
@@ -1273,7 +1294,7 @@ AS
 		SELECT	time_zone_code
 		  INTO	l_time_zone_code
 		  FROM	mv_time_zone
-		 WHERE	UPPER (time_zone_name) = UPPER (NVL (p_time_zone_name, 'UTC'));
+		 WHERE	time_zone_name = get_timezone(nvl(p_time_zone_name, 'UTC'));
 
 		RETURN l_time_zone_code;
 	EXCEPTION
@@ -1294,7 +1315,7 @@ AS
         into l_time_zone_name
         from mv_time_zone v,
              cwms_time_zone z
-       where upper(v.time_zone_name) = upper(p_time_zone_name)
+       where v.time_zone_name = get_timezone(p_time_zone_name)
          and z.time_zone_code = v.time_zone_code;
       return l_time_zone_name;
    END get_time_zone_name;

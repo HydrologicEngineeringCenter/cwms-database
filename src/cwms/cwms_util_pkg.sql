@@ -361,6 +361,36 @@ AS
    FUNCTION min_dm (p_decimal_degrees IN NUMBER)
       RETURN NUMBER;
    /**
+    * Retrieves a time zone equivalent to the specified time zone.  This is used
+    * specifically to filter out PST and CST time zones, which are defined DST,
+    * which is unexpected for these zones.
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">p_timezone</th>
+    *     <th class="descr">return value</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'PST'</td>
+    *     <td class="descr">'Etc/GMT+8'</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">'CST'</td>
+    *     <td class="descr">'Etc/GMT+6'</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">other</td>
+    *     <td class="descr">p_timezone, corrected for case</td>
+    *   </tr>
+    * </table>
+    * @param p_timezone the specified time zone
+    *
+    * @return An equivalent time zone. Except for PST and CST this is just a
+    *         case-corrected version of p_timezone.
+    */
+   FUNCTION get_timezone (p_timezone IN VARCHAR2)
+      RETURN VARCHAR2;
+   /**
     * Converts a specified<code><big>DATE</big></code> from a specified time zone
     * to UTC
     * 
