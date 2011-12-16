@@ -39,7 +39,8 @@ DECLARE
 							'av_rating_values',
 							'av_rating_values_native',
 							'av_ts_association',
-							'av_stream_types'
+							'av_stream_types',
+                            'av_loc_ts_id_count'
 						  );
 BEGIN
 	FOR i IN view_names.FIRST .. view_names.LAST
@@ -66,6 +67,7 @@ END;
 @@cwms/views/av_loc_alias.sql
 @@cwms/views/av_loc_grp_assgn.sql
 @@cwms/views/av_loc_cat_grp.sql
+@@cwms/views/av_loc_ts_id_count.sql
 @@cwms/views/av_parameter.sql
 @@cwms/views/av_screened_ts_ids.sql
 @@cwms/views/av_screening_assignments.sql
