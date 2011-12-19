@@ -1222,7 +1222,7 @@ begin
                   from AQ$'
                      || rec.object_name
                      || '_TABLE
-                 where msg_state in (''UNDELIVERABLE'',''EXPIRED'', ''PROCESSED'')';
+                 where msg_state in (''UNDELIVERABLE'',''EXPIRED'')';
       execute immediate l_sql into l_expired_count;
       if l_expired_count > l_max_purge_count then
          cwms_msg.log_db_message(
