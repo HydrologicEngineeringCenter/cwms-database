@@ -1150,7 +1150,7 @@ is
    l_sql             varchar2(256);
    l_purged          boolean := false;
 begin
-   l_purge_options.block := true;
+   l_purge_options.block := false; -- don't block enqueues or dequeues when trying to purge
    for rec in (
       select object_name
         from dba_objects
@@ -1198,6 +1198,7 @@ begin
                dbms_aqadm.remove_subscriber(
                   rec.object_name,
                   l_subscriber);
+               commit;
             exception
                when others then
                   cwms_msg.log_db_message(
@@ -1244,12 +1245,26 @@ begin
                || rec.object_name);
       end if;
       if l_expired_count > 0 then
-         l_purged := true;
-         dbms_aqadm.purge_queue_table(
-            rec.object_name||'_TABLE',
-            'MSG_STATE IN (''UNDELIVERABLE'',''EXPIRED'', ''PROCESSED'') AND ROWNUM <= '
-               || l_max_purge_count,
-            l_purge_options);
+         for i in 1..100 loop
+            begin
+               dbms_aqadm.purge_queue_table(
+                  rec.object_name||'_TABLE',
+                  'MSG_STATE IN (''UNDELIVERABLE'',''EXPIRED'') AND ROWNUM <= '
+                     || l_max_purge_count,
+                  l_purge_options);
+               commit;
+               l_purged := true;
+               exit;
+            exception
+               when others then null; -- failed because something else was enqueing or dequeuing
+            end;
+            if not l_purged then
+               cwms_msg.log_db_message(
+                  'purge_queues',
+                  cwms_msg.msg_level_normal,
+                  'Failed purging expired messages from queues');
+            end if;
+         end loop;
       end if;
    end loop;
    if l_purged then
@@ -1258,7 +1273,6 @@ begin
          cwms_msg.msg_level_normal,
          'Done purging expired messages from queues');
    end if;
-   commit;
 end purge_queues;
 
 --------------------------------------------------------------------------------
