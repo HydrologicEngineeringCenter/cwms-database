@@ -2307,7 +2307,7 @@ begin
                open l_cursor for l_query_str using l_time_zone,l_time_zone,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format;
          else
             l_query_str :=
-               'select local_time,
+               'select local_time as date_time,
                        value,
                        quality_code
                   from (select date_time,
@@ -2528,7 +2528,7 @@ begin
                open l_cursor for l_query_str using l_time_zone,l_time_zone,l_ts_code,l_start_str,l_date_format,l_end_str,l_date_format,p_units_out,l_end_str,l_date_format,l_start_str,l_date_format,l_version_date,l_date_format;
          else
             l_query_str :=
-               'select local_time,
+               'select local_time as date_time,
                        value,
                        quality_code
                   from (select date_time,
