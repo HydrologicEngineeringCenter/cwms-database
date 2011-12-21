@@ -1165,7 +1165,7 @@ begin
          'select consumer_name as subscriber,
                  max(deq_timestamp) as last_dequeue_time
             from AQ$'||rec.object_name||'_TABLE
-           where msg_state != ''READY''
+           where msg_state not in (''READY'', ''PROCESSED'')
         group by consumer_name';
       loop
          fetch l_cursor into l_subscriber_name, l_last_dequeue;
