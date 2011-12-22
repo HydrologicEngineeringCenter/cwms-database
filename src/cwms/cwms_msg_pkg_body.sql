@@ -1140,47 +1140,78 @@ end;
 
 procedure purge_queues
 is
-   l_subscriber_name varchar2(31);
-   l_last_dequeue    timestamp;
+   type zombie_t is table of boolean index by varchar2(31);
+   l_subscriber_name varchar2(30);
    l_subscriber      sys.aq$_agent := sys.aq$_agent(null, null, null);
+   l_msg_state       varchar2(30);
+   l_queue_name      varchar2(30);
+   l_table_name      varchar2(30);
+   l_count           pls_integer;
+   l_last_dequeue    timestamp;
+   l_zombies         zombie_t;
    l_cursor          sys_refcursor;
    l_purge_options   dbms_aqadm.aq$_purge_options_t;
-   l_expired_count   integer;
-   l_max_purge_count integer := 50000;
-   l_sql             varchar2(256);
+   l_purge_count     pls_integer;
+   l_max_purge_count pls_integer := 50000;
    l_purged          boolean := false;
 begin
    l_purge_options.block := false; -- don't block enqueues or dequeues when trying to purge
    for rec in (
-      select object_name
-        from dba_objects
-       where object_type = 'QUEUE'
-         and owner = '&cwms_schema'
-         and object_name not like 'AQ$%')
+      select name
+        from user_queues
+       where name not like 'AQ$%')
    loop
-      ---------------------------------------
-      -- first kill any zombie subscribers --
-      ---------------------------------------
+      l_queue_name := rec.name;
+      l_table_name := l_queue_name || '_TABLE';
+      --------------------------------------------------------------
+      -- determine if there are any zombies and messages to purge --
+      --------------------------------------------------------------
+      l_zombies.delete;
+      l_purge_count := 0;
       open l_cursor for
-         'select consumer_name as subscriber,
-                 max(deq_timestamp) as last_dequeue_time
-            from AQ$'||rec.object_name||'_TABLE
-           where msg_state not in (''READY'', ''PROCESSED'')
-        group by consumer_name';
+         'select consumer_name,
+                 msg_state,
+                 count(*),
+                 max(deq_timestamp)
+            from AQ$'||l_table_name||'
+        group by consumer_name,
+                 msg_state';
       loop
-         fetch l_cursor into l_subscriber_name, l_last_dequeue;
+         fetch l_cursor into l_subscriber_name, l_msg_state, l_count, l_last_dequeue;
          exit when l_cursor%notfound;
-         if l_last_dequeue is null then
-            ------------
-            -- zombie --
-            ------------
+            if l_msg_state = 'UNDELIVERABLE' then
+               l_purge_count := l_purge_count + l_count;
+            elsif l_msg_state = 'EXPIRED' then
+               cwms_msg.log_db_message(
+                  'purge_queues',
+                  cwms_msg.msg_level_normal,
+                  'Subsciber '
+                     || l_subscriber_name
+                     || ' for queue '
+                     || l_queue_name
+                     || ' has failed to dequeue '
+                     || l_count
+                     || ' messages');
+               if l_count > 1000 then
+                  l_zombies(l_subscriber_name) := true;
+               end if;
+            end if;
+       end loop;
+      close l_cursor;
+      ---------------------------------
+      -- kill any zombie subscribers --
+      ---------------------------------
+      l_subscriber_name := l_zombies.first;
+      loop
+         exit when l_subscriber_name is null;
+         if l_zombies(l_subscriber_name) then
             cwms_msg.log_db_message(
                'purge_queues',
                cwms_msg.msg_level_normal,
-               'Killing zombie subsciber '
+               'Removing zombie subsciber '
                   || l_subscriber_name
                   || ' for queue '
-                  || rec.object_name);
+                  || l_queue_name);
             l_subscriber.name := l_subscriber_name;
             begin
                execute immediate
@@ -1188,91 +1219,66 @@ begin
                           protocol
                      into :address,
                           :protocol
-                     from AQ$'||rec.object_name||'_TABLE_S
+                     from AQ$'||l_queue_name||'_TABLE_S
                     where queue = :queue
                       and name = :name'
                      into l_subscriber.address,
                           l_subscriber.protocol
-                    using rec.object_name,
+                    using l_queue_name,
                           l_subscriber.name;
-               dbms_aqadm.remove_subscriber(
-                  rec.object_name,
-                  l_subscriber);
+               dbms_aqadm.remove_subscriber(l_queue_name, l_subscriber);
                commit;
             exception
                when others then
                   cwms_msg.log_db_message(
                      'purge_queues',
                      cwms_msg.msg_level_normal,
-                     'Error killing zombie subsciber '
+                     'Error removing zombie subsciber '
                         || l_subscriber_name
                         || ' for queue '
-                        || rec.object_name
+                        || l_queue_name
                         || ': '
                         || sqlcode
                         || ' - '
                         || sqlerrm);
             end;
          end if;
+         l_subscriber_name := l_zombies.next(l_subscriber_name);
       end loop;
-      close l_cursor;
-      -------------------------------------------------------------------------------------
-      -- next purge queues of any messages that are expired, undeliverable, or processed --
-      -------------------------------------------------------------------------------------
-      l_sql := 'select count(*)
-                  from AQ$'
-                     || rec.object_name
-                     || '_TABLE
-                 where msg_state in (''UNDELIVERABLE'',''EXPIRED'')';
-      execute immediate l_sql into l_expired_count;
-      if l_expired_count > l_max_purge_count then
-         cwms_msg.log_db_message(
-            'purge_queues',
-            cwms_msg.msg_level_normal,
-            'Purging '
-               || l_max_purge_count
-               || ' of '
-               || l_expired_count
-               || ' expired messages from queue: '
-               || rec.object_name);
-      elsif l_expired_count > 0 then
-         cwms_msg.log_db_message(
-            'purge_queues',
-            cwms_msg.msg_level_normal,
-            'Purging '
-               || l_expired_count
-               || ' expired messages from queue: '
-               || rec.object_name);
-      end if;
-      if l_expired_count > 0 then
-         for i in 1..100 loop
-            begin
-               dbms_aqadm.purge_queue_table(
-                  rec.object_name||'_TABLE',
-                  'MSG_STATE IN (''UNDELIVERABLE'',''EXPIRED'') AND ROWNUM <= '
-                     || l_max_purge_count,
-                  l_purge_options);
-               commit;
-               l_purged := true;
-               exit;
-            exception
-               when others then null; -- failed because something else was enqueing or dequeuing
-            end;
-            if not l_purged then
-               cwms_msg.log_db_message(
-                  'purge_queues',
-                  cwms_msg.msg_level_normal,
-                  'Failed purging expired messages from queues');
-            end if;
+      -------------------------------------------------
+      -- purge any expired or undeliverable messages --
+      -------------------------------------------------
+      if l_purge_count > 0 then
+         l_purged := false;
+         for i in 1..trunc((l_purge_count - 1)/l_max_purge_count) + 1 loop
+            for j in 1..100 loop
+               begin
+                  dbms_aqadm.purge_queue_table(
+                     l_table_name,
+                     'MSG_STATE = ''UNDELIVERABLE'' AND ROWNUM <= '
+                        || l_max_purge_count,
+                     l_purge_options);
+                  commit;
+                  l_purged := true;
+                  exit;
+               exception
+                  when others then null;  -- failed because something else was enqueing or dequeuing
+               end;
+            end loop;
          end loop;
+         if l_purged then
+            cwms_msg.log_db_message(
+               'purge_queues',
+               cwms_msg.msg_level_normal,
+               'Done purging messages from queues '||l_queue_name);
+         else
+            cwms_msg.log_db_message(
+               'purge_queues',
+               cwms_msg.msg_level_normal,
+               'Failed purging messages from queue '||l_queue_name);
+         end if;
       end if;
    end loop;
-   if l_purged then
-      cwms_msg.log_db_message(
-         'purge_queues',
-         cwms_msg.msg_level_normal,
-         'Done purging expired messages from queues');
-   end if;
 end purge_queues;
 
 --------------------------------------------------------------------------------
