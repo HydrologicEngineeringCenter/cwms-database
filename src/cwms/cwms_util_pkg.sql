@@ -1108,7 +1108,15 @@ AS
       p_value_in     in  number   default null,
       p_user_id      in  varchar2 default null,
       p_office_id    in  varchar2 default null);
-      
+   /**
+    * Converts a number of minutes into a string representation showing the
+    * the number of years, months, days, hours, and minutes. 
+    * 
+    * @param p_interval is the number of minutes to convert into a string
+    *        representation.
+    *        
+    * @return the string representation as nnyrnnmonndynnhrnnmi                        
+    */                  
    FUNCTION get_interval_string (p_interval IN NUMBER)
       RETURN VARCHAR2;
    /**
