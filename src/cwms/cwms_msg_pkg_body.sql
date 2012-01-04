@@ -118,6 +118,7 @@ is
    l_queuename          varchar2(32);
    l_now                integer := cwms_util.current_millis;
    l_expiration_time    constant binary_integer := 300; -- 5 minutes
+   l_java_action        varchar2(4000);
 begin
    l_queuename := get_queue_name(p_msg_queue);
    if l_queuename is null then
@@ -135,6 +136,7 @@ begin
    p_message.set_long(p_messageid, 'millis', l_now);
    p_message.flush(p_messageid);
    p_message.clean(p_messageid);
+   l_java_action := dbms_java.endsession_and_related_state;
 
    dbms_aq.enqueue(
       l_queuename,
