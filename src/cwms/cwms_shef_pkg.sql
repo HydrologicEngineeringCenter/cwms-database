@@ -1,6 +1,7 @@
-/* Formatted on 9/9/2011 11:05:35 AM (QP5 v5.163.1008.3004) */
+/* Formatted on 1/4/2012 11:20:47 AM (QP5 v5.185.11230.41888) */
 CREATE OR REPLACE PACKAGE cwms_shef
 AS
+   default_update_idle_period   CONSTANT NUMBER := 60;           -- 60 minutes
 	data_stream_state_startup	  CONSTANT VARCHAR2 (7) := 'Startup';
 	data_stream_state_shutdown   CONSTANT VARCHAR2 (8) := 'Shutdown';
 	data_stream_state_active	  CONSTANT VARCHAR2 (6) := 'Active';
@@ -9,8 +10,7 @@ AS
 		:= str_tab_t (data_stream_state_startup,
 						  data_stream_state_shutdown,
 						  data_stream_state_active,
-						  data_stream_state_inactive
-						 ) ;
+                    data_stream_state_inactive) ;
 
 	data_stream_mgt_style		  CONSTANT VARCHAR2 (16) := 'DATA STREAMS';
 	data_feed_mgt_style			  CONSTANT VARCHAR2 (16) := 'DATA FEEDS';
@@ -97,6 +97,49 @@ AS
 
 	TYPE cat_shef_extremum_tab_t IS TABLE OF cat_shef_extremum_rec_t;
 
+
+
+   TYPE cat_shef_decode_spec_rec_t IS RECORD
+   (
+      ts_code                 NUMBER,
+      cwms_ts_id              VARCHAR2 (183 BYTE),
+      db_office_id            VARCHAR2 (16 BYTE),
+      data_stream_id          VARCHAR2 (16 BYTE),
+      stream_db_office_id     VARCHAR2 (16 BYTE),
+      data_feed_id            VARCHAR2 (32 BYTE),
+      feed_db_office_id       VARCHAR2 (16 BYTE),
+      data_feed_prefix        VARCHAR2 (3 BYTE),
+      loc_group_id            VARCHAR2 (65 BYTE),
+      loc_category_id         VARCHAR2 (32 BYTE),
+      loc_alias_id            VARCHAR2 (256 BYTE),
+      shef_loc_id             VARCHAR2 (128 BYTE),
+      shef_pe_code            VARCHAR2 (2 BYTE),
+      shef_tse_code           VARCHAR2 (3 BYTE),
+      shef_duration_code      VARCHAR2 (1 BYTE),
+      shef_duration_numeric   VARCHAR2 (4 BYTE),
+      shef_time_zone_id       VARCHAR2 (16 BYTE),
+      dl_time                 VARCHAR2 (1 BYTE),
+      unit_id                 VARCHAR2 (16 BYTE),
+      unit_system             VARCHAR2 (2 BYTE),
+      interval_utc_offset     NUMBER,
+      interval_forward        NUMBER,
+      interval_backward       NUMBER,
+      ts_active_flag          VARCHAR2 (1 BYTE),
+      net_ts_active_flag      CHAR (1 BYTE),
+      ignore_shef_spec        VARCHAR2 (1 BYTE),
+      shef_spec               VARCHAR2 (271 BYTE),
+      location_id             VARCHAR2 (49 BYTE),
+      parameter_id            VARCHAR2 (49 BYTE),
+      parameter_type_id       VARCHAR2 (16 BYTE),
+      interval_id             VARCHAR2 (16 BYTE),
+      duration_id             VARCHAR2 (16 BYTE),
+      version_id              VARCHAR2 (32 BYTE),
+      data_stream_code        NUMBER,
+      shef_crit_line          VARCHAR2 (4000 BYTE)
+   );
+
+   TYPE cat_shef_decode_spec_tab_t IS TABLE OF cat_shef_decode_spec_rec_t;
+
 	-- FUNCTION get_update_crit_file_flag (p_data_stream_id	IN VARCHAR2,
 	-- 				p_db_office_id   IN VARCHAR2
 	-- 				 )
@@ -109,21 +152,19 @@ AS
 	-- );
 
 
-	PROCEDURE cat_shef_extremum_codes (p_shef_extremum_codes OUT SYS_REFCURSOR
-												 );
+   PROCEDURE cat_shef_extremum_codes (
+      p_shef_extremum_codes OUT SYS_REFCURSOR);
 
 	PROCEDURE cat_shef_pe_codes (
 		p_shef_pe_codes		OUT SYS_REFCURSOR,
-		p_db_office_id 	IN 	 VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id    IN     VARCHAR2 DEFAULT NULL);
 
 	TYPE cat_shef_crit_lines_rec_t IS RECORD (shef_crit_line VARCHAR2 (400));
 
 	TYPE cat_shef_crit_lines_tab_t IS TABLE OF cat_shef_crit_lines_rec_t;
 
 	PROCEDURE delete_local_pe_code (p_id_code 		 IN NUMBER,
-											  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
-											 );
+                                   p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE create_local_pe_code (
 		p_shef_pe_code 			  IN VARCHAR2,
@@ -136,8 +177,7 @@ AS
 		p_unit_id_si				  IN VARCHAR2,
 		p_description				  IN VARCHAR2 DEFAULT NULL,
 		p_notes						  IN VARCHAR2 DEFAULT NULL,
-		p_db_office_id 			  IN VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id            IN VARCHAR2 DEFAULT NULL);
 
 
 
@@ -161,13 +201,11 @@ AS
 		p_ts_active_flag			  IN VARCHAR2 DEFAULT 'T',
 		p_ignore_shef_spec		  IN VARCHAR2 DEFAULT 'F',
 		p_update_allowed			  IN VARCHAR2 DEFAULT 'T',
-		p_db_office_id 			  IN VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id            IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE delete_shef_spec (p_cwms_ts_id		  IN VARCHAR2,
 										 p_data_stream_id   IN VARCHAR2,
-										 p_db_office_id	  IN VARCHAR2 DEFAULT NULL
-										);
+                               p_db_office_id     IN VARCHAR2 DEFAULT NULL);
 
 	-- left kernal must be unique.
     PROCEDURE store_data_stream (
@@ -176,38 +214,31 @@ AS
         p_active_flag                      IN VARCHAR2 DEFAULT 'T',
         p_use_db_shef_spec_mapping   IN VARCHAR2 DEFAULT 'T',
         p_ignore_nulls                   IN VARCHAR2 DEFAULT 'T',
-        p_db_office_id                   IN VARCHAR2 DEFAULT NULL
-    );
+      p_db_office_id               IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE rename_data_stream (
 		p_data_stream_id_old   IN VARCHAR2,
 		p_data_stream_id_new   IN VARCHAR2,
-		p_db_office_id 		  IN VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id         IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE delete_data_feed_shef_specs (
 		p_data_feed_id   IN VARCHAR2,
-		p_db_office_id   IN VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE delete_data_stream_shef_specs (
 		p_data_stream_id	 IN VARCHAR2,
-		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id     IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE delete_data_stream (p_data_stream_id	 IN VARCHAR2,
 											p_cascade_all		 IN VARCHAR2 DEFAULT 'F',
-											p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
-										  );
+                                 p_db_office_id     IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE cat_shef_data_streams (
 		p_shef_data_streams		 OUT SYS_REFCURSOR,
-		p_db_office_id 		 IN	  VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id        IN     VARCHAR2 DEFAULT NULL);
 
 	FUNCTION cat_shef_data_streams_tab (
-		p_db_office_id IN VARCHAR2 DEFAULT NULL
-	)
+      p_db_office_id IN VARCHAR2 DEFAULT NULL)
 		RETURN cat_data_stream_tab_t
 		PIPELINED;
 
@@ -228,6 +259,7 @@ AS
 	FUNCTION cat_shef_extremum_tab
 		RETURN cat_shef_extremum_tab_t
 		PIPELINED;
+
    /**
     * [description needed]
     *
@@ -238,6 +270,7 @@ AS
 	FUNCTION cat_shef_pe_codes_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
 		RETURN cat_shef_pe_codes_tab_t
 		PIPELINED;
+
    /**
     * [description needed]
     *
@@ -247,10 +280,10 @@ AS
     *
     * @return [description needed]
     */
-	FUNCTION get_shef_crit_file (p_data_stream_id	  IN VARCHAR2,
+   FUNCTION get_shef_crit_file (
+      p_data_stream_id     IN VARCHAR2,
 										  p_utc_version_date   IN DATE DEFAULT NULL,
-										  p_db_office_id		  IN VARCHAR2 DEFAULT NULL
-										 )
+      p_db_office_id       IN VARCHAR2 DEFAULT NULL)
 		RETURN CLOB;
 
 	FUNCTION get_shef_duration_numeric (p_shef_duration_code IN VARCHAR2)
@@ -269,71 +302,73 @@ AS
 												p_int_forward				  OUT VARCHAR2,
 												p_cwms_ts_id				  OUT VARCHAR2,
 												p_comment					  OUT VARCHAR2,
-												p_criteria_record 	  IN		VARCHAR2
-											  );
+                                    p_criteria_record      IN     VARCHAR2);
 
 	PROCEDURE cat_shef_crit_lines (
 		p_shef_crit_lines 	  OUT SYS_REFCURSOR,
 		p_data_stream_id	  IN		VARCHAR2,
-		p_db_office_id 	  IN		VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id      IN     VARCHAR2 DEFAULT NULL);
 
 	FUNCTION cat_shef_crit_lines_tab (
 		p_data_stream_id	 IN VARCHAR2,
-		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
-	)
+      p_db_office_id     IN VARCHAR2 DEFAULT NULL)
 		RETURN cat_shef_crit_lines_tab_t
 		PIPELINED;
 
+   FUNCTION cat_shef_crit_lines_tab (p_data_stream_code IN NUMBER)
+      RETURN cat_shef_crit_lines_tab_t
+      PIPELINED;
+
+   FUNCTION cat_shef_decode_spec_tab (
+      p_data_stream_id     IN VARCHAR2,
+      p_utc_version_date   IN DATE DEFAULT NULL,
+      p_date_rank         IN NUMBER DEFAULT NULL,
+      p_db_office_id       IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_shef_decode_spec_tab_t
+      PIPELINED;
+
 	PROCEDURE store_shef_crit_file (
 		p_data_stream_id	 IN VARCHAR2,
-		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id     IN VARCHAR2 DEFAULT NULL);
 
-	FUNCTION get_data_stream_code (p_data_stream_id   IN VARCHAR2,
-											 p_db_office_id	  IN VARCHAR2 DEFAULT NULL
-											)
+   FUNCTION get_data_stream_code (
+      p_data_stream_id   IN VARCHAR2,
+      p_db_office_id     IN VARCHAR2 DEFAULT NULL)
 		RETURN NUMBER;
 
-	FUNCTION is_crit_file_current (p_data_stream_id   IN VARCHAR2,
-											 p_db_office_id	  IN VARCHAR2 DEFAULT NULL
-											)
+   FUNCTION is_crit_file_current (
+      p_data_stream_id   IN VARCHAR2,
+      p_db_office_id     IN VARCHAR2 DEFAULT NULL)
 		RETURN BOOLEAN;
 
 	FUNCTION is_data_stream_active (
 		p_data_stream_id	 IN VARCHAR2,
-		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
-	)
+      p_db_office_id     IN VARCHAR2 DEFAULT NULL)
 		RETURN BOOLEAN;
 
 	FUNCTION create_data_feed (p_data_feed_id 		IN VARCHAR2,
 										p_data_feed_prefix	IN VARCHAR2,
 										p_data_feed_desc		IN VARCHAR2,
-										p_db_office_id 		IN VARCHAR2 DEFAULT NULL
-									  )
+                              p_db_office_id       IN VARCHAR2 DEFAULT NULL)
 		RETURN NUMBER;
 
 	PROCEDURE assign_data_feed (
 		p_data_stream_id			IN VARCHAR2,
 		p_data_feed_id 			IN VARCHAR2,
 		p_stream_db_office_id	IN VARCHAR2 DEFAULT NULL,
-		p_feed_db_office_id		IN VARCHAR2 DEFAULT NULL
-   );
+      p_feed_db_office_id     IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE unassign_data_feed (
 		p_data_feed_id 		 IN VARCHAR2,
-		p_feed_db_office_id	 IN VARCHAR2 DEFAULT NULL
-	);
+      p_feed_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE delete_data_feed (p_data_feed_id	IN VARCHAR2,
 										 p_cascade_all 	IN VARCHAR2 DEFAULT 'F',
-										 p_db_office_id	IN VARCHAR2 DEFAULT NULL
-										);
+                               p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE cat_shef_data_feeds (
 		p_shef_data_feeds 	  OUT SYS_REFCURSOR,
-		p_db_office_id 	  IN		VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id      IN     VARCHAR2 DEFAULT NULL);
 
 	FUNCTION cat_shef_data_feeds_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
 		RETURN cat_data_feed_tab_t
@@ -342,26 +377,22 @@ AS
 	PROCEDURE set_data_feed_prefix (
 		p_data_feed_id 		IN VARCHAR2,
 		p_data_feed_prefix	IN VARCHAR2,
-		p_db_office_id 		IN VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id       IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE set_data_feed_desc (p_data_feed_id 	 IN VARCHAR2,
 											p_data_feed_desc	 IN VARCHAR2,
-											p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
-										  );
+                                 p_db_office_id     IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE rename_data_feed (p_data_feed_id_old	 IN VARCHAR2,
 										 p_data_feed_id_new	 IN VARCHAR2,
-										 p_db_office_id		 IN VARCHAR2 DEFAULT NULL
-										);
+                               p_db_office_id       IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE convert_data_stream_to_feed (
 		p_data_stream_id		IN VARCHAR2,
 		p_data_feed_id 		IN VARCHAR2 DEFAULT NULL,
 		p_data_feed_prefix	IN VARCHAR2 DEFAULT NULL,
 		p_data_feed_desc		IN VARCHAR2 DEFAULT NULL,
-		p_db_office_id 		IN VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id       IN VARCHAR2 DEFAULT NULL);
 
 	-- DATA STREAMS
 	-- DATA FEEDS
@@ -369,20 +400,17 @@ AS
 	--  data stream.
 
 	FUNCTION get_data_stream_mgt_style (
-		p_db_office_id IN VARCHAR2 DEFAULT NULL
-	)
+      p_db_office_id IN VARCHAR2 DEFAULT NULL)
 		RETURN VARCHAR2;
 
 	FUNCTION get_data_stream_state (
 		p_data_stream_id	 IN VARCHAR2,
-		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
-	)
+      p_db_office_id     IN VARCHAR2 DEFAULT NULL)
 		RETURN VARCHAR2;
 
 	PROCEDURE set_data_stream_mgt_style (
 		p_data_stream_mgt_style   IN VARCHAR2,
-		p_db_office_id 			  IN VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id            IN VARCHAR2 DEFAULT NULL);
 
 	-----------------------------------------------------------------------------
 	-- Messaging Routines
@@ -391,8 +419,7 @@ AS
 		p_data_stream_id	 IN VARCHAR2,
 		p_new_state 		 IN VARCHAR2,
 		p_old_state 		 IN VARCHAR2 DEFAULT NULL,
-		p_office_id 		 IN VARCHAR2 DEFAULT NULL
-	);
+      p_office_id        IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE confirm_data_stream_state (
 		p_component 		 IN VARCHAR2,
@@ -402,13 +429,11 @@ AS
 		p_data_stream_id	 IN VARCHAR2,
 		p_new_state 		 IN VARCHAR2,
 		p_old_state 		 IN VARCHAR2 DEFAULT NULL,
-		p_office_id 		 IN VARCHAR2 DEFAULT NULL
-	);
+      p_office_id        IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE notify_criteria_modified (
 		p_data_stream_id	 IN VARCHAR2,
-		p_office_id 		 IN VARCHAR2 DEFAULT NULL
-	);
+      p_office_id        IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE confirm_criteria_reloaded (
 		p_component 		 IN VARCHAR2,
@@ -416,20 +441,17 @@ AS
 		p_host				 IN VARCHAR2,
 		p_port				 IN INTEGER,
 		p_data_stream_id	 IN VARCHAR2,
-		p_office_id 		 IN VARCHAR2 DEFAULT NULL
-	);
+      p_office_id        IN VARCHAR2 DEFAULT NULL);
 
 	FUNCTION get_use_db_shef_spec_mapping (
 		p_data_stream_id	 IN VARCHAR2,
-		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
-	)
+      p_db_office_id     IN VARCHAR2 DEFAULT NULL)
 		RETURN BOOLEAN;
 
 	PROCEDURE set_use_db_shef_spec_mapping (
 		p_boolean			 IN BOOLEAN,
 		p_data_stream_id	 IN VARCHAR2,
-		p_db_office_id 	 IN VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id     IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE get_process_shefit_files (
 		p_use_db_crit			 OUT VARCHAR2,
@@ -437,40 +459,29 @@ AS
 		p_use_db_otf			 OUT VARCHAR2,
 		p_otf_file				 OUT CLOB,
 		p_data_stream_id	 IN	  VARCHAR2,
-		p_db_office_id 	 IN	  VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id     IN     VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE set_ds_update_idle_period (
-		p_idle_period	  IN NUMBER DEFAULT 0,				 -- idle time in minutes
-		p_db_office_id   IN VARCHAR2 DEFAULT NULL
-	);
 
-	PROCEDURE get_ds_update_idle_period (
-		p_idle_period		  OUT NUMBER,						 -- idle time in minutes
-		p_db_office_id   IN		VARCHAR2 DEFAULT NULL
-	);
 
 	PROCEDURE set_ds_state (p_data_stream_id		 IN VARCHAR2,
 									p_data_stream_state	 IN VARCHAR2,
-									p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
-								  );
+                           p_db_office_id        IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE set_ds_update_time (p_update_time	  IN VARCHAR2 DEFAULT NULL, -- time string e.g 21:15
+   PROCEDURE set_ds_update_time (p_update_idle_period    IN NUMBER,
+                                 p_update_time    IN VARCHAR2 DEFAULT NULL, -- time string e.g 21:15
 											p_time_zone 	  IN VARCHAR2 DEFAULT 'UTC', -- time zone of p_update_time
-											p_db_office_id   IN VARCHAR2 DEFAULT NULL
-										  );
+                                 p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
 	PROCEDURE get_ds_update_time (
+      p_update_idle_period       OUT NUMBER,                  -- idle time in minutes
 		p_update_time		  OUT VARCHAR2,					-- time string e.g 21:15
 		p_time_zone 		  OUT VARCHAR2,			 -- time zone of p_update_time
-		p_db_office_id   IN		VARCHAR2 DEFAULT NULL
-	);
+      p_db_office_id   IN     VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE set_ds_shef_spec_auto_update (
-		p_idle_period	  IN NUMBER DEFAULT 0,				 -- idle time in minutes
-		p_update_time	  IN VARCHAR2 DEFAULT NULL,		-- time string e.g 21:15
-		p_time_zone 	  IN VARCHAR2 DEFAULT 'UTC', -- time zone of p_update_time
-		p_db_office_id   IN VARCHAR2 DEFAULT NULL
-	);
+
+   PROCEDURE update_shef_spec_mapping;
+   
+   PROCEDURE start_update_shef_spec_map_job;
+   
 END cwms_shef;
 /

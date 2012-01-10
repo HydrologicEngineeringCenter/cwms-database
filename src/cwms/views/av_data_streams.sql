@@ -19,6 +19,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_STREAMS', n
  * @field data_stream_desc          [description needed]
  * @field ds_active_flag            [description needed]
  * @field crit_file_creation_date   [description needed]
+ * @field date_rank                 [description needed]
  * @field num_decode_process_recs   [description needed]
  * @field num_decode_ignore_recs    [description needed]
  * @field num_spec_only_ignore_recs [description needed]
@@ -30,40 +31,55 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_DATA_STREAMS', n
  * @field  */
 ');
 
-CREATE OR REPLACE FORCE VIEW av_data_streams
+CREATE OR REPLACE FORCE VIEW AV_DATA_STREAMS
 (
-	db_office_id,
-	data_stream_id,
-	data_stream_desc,
-	ds_active_flag,
-	crit_file_creation_date,
-	num_decode_process_recs,
-	num_decode_ignore_recs,
-	num_spec_only_ignore_recs,
-	total_ignore_recs,
-	total_crit_file_recs,
-	crit_file_code,
-	data_stream_code,
-	db_office_code
+   DB_OFFICE_ID,
+   DATA_STREAM_ID,
+   DATA_STREAM_DESC,
+   DS_ACTIVE_FLAG,
+   CRIT_FILE_CREATION_DATE,
+   DATE_RANK,
+   NUM_DECODE_PROCESS_RECS,
+   NUM_DECODE_IGNORE_RECS,
+   NUM_SPEC_ONLY_IGNORE_RECS,
+   TOTAL_IGNORE_RECS,
+   TOTAL_CRIT_FILE_RECS,
+   CRIT_FILE_CODE,
+   DATA_STREAM_CODE,
+   DB_OFFICE_CODE
 )
 AS
-	SELECT	  office_id db_office_id, data_stream_id, data_stream_desc,
-				  active_flag ds_active_flag, crit_file_creation_date,
-				  NVL (num_decode_process_recs, 0) num_decode_process_recs,
-				  NVL (num_decode_ignore_recs, 0) num_decode_ignore_recs,
-				  NVL (num_ignore_recs, 0) num_spec_only_ignore_recs,
-				  NVL (num_decode_ignore_recs, 0) + NVL (num_ignore_recs, 0) total_ignore_recs,
-				  NVL (num_decode_process_recs, 0) + NVL (num_decode_ignore_recs, 0) + NVL (num_ignore_recs, 0) total_crit_file_recs,
-				  crit_file_code, data_stream_code, db_office_code
-		 FROM   at_data_stream_id a
-				  LEFT JOIN at_shef_crit_file_rec b
-					  USING (data_stream_code)
-				  JOIN cwms_office c
-					  ON (a.db_office_code = c.office_code)
-		WHERE   delete_date IS NULL
-	ORDER BY   db_office_id,
-				  UPPER (data_stream_id),
-				  crit_file_creation_date DESC
+     SELECT office_id db_office_id,
+            data_stream_id,
+            data_stream_desc,
+            active_flag ds_active_flag,
+            crit_file_creation_date,
+            (  RANK ()
+               OVER (PARTITION BY data_Stream_code
+                     ORDER BY crit_file_creation_date DESC)
+             - 1)
+               date_rank,
+            NVL (num_decode_process_recs, 0) num_decode_process_recs,
+            NVL (num_decode_ignore_recs, 0) num_decode_ignore_recs,
+            NVL (num_ignore_recs, 0) num_spec_only_ignore_recs,
+            NVL (num_decode_ignore_recs, 0) + NVL (num_ignore_recs, 0)
+               total_ignore_recs,
+              NVL (num_decode_process_recs, 0)
+            + NVL (num_decode_ignore_recs, 0)
+            + NVL (num_ignore_recs, 0)
+               total_crit_file_recs,
+            crit_file_code,
+            data_stream_code,
+            db_office_code
+       FROM at_data_stream_id a
+            LEFT JOIN at_shef_crit_file_rec b
+               USING (data_stream_code)
+            JOIN cwms_office c
+               ON (a.db_office_code = c.office_code)
+      WHERE delete_date IS NULL
+   ORDER BY db_office_id,
+            UPPER (data_stream_id),
+            crit_file_creation_date DESC
 /
 
 

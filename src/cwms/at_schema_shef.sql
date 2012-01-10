@@ -13,13 +13,13 @@ DECLARE
 							'cwms_shef_pe_codes',
 							'cwms_shef_extremum_codes',
 							'at_shef_crit_file_rec',
-							'at_shef_crit_file',
                             'at_shef_spec_mapping_update',
                             'at_data_stream_properties',
                             'at_data_stream_id',
                             'at_data_feed_id',
 							'at_shef_ignore',
-							'at_shef_decode',
+                            'at_shef_decode_spec',
+                            'at_shef_decode',
 							'at_shef_pe_codes'
 						  );
 BEGIN
@@ -51,4 +51,5 @@ END;
 @@cwms/tables/at_shef_crit_file.sql
 @@cwms/tables/at_shef_ignore.sql
 @@cwms/tables/at_shef_decode.sql
+@@cwms/tables/at_shef_decode_spec.sql
 @@cwms/tables/at_shef_pe_codes.sql

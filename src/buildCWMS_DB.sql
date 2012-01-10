@@ -163,6 +163,8 @@ exec cwms_ts.start_trim_ts_deleted_job;
 /
 exec cwms_sec.start_refresh_mv_sec_privs_job;
 /
+exec cwms_shef.start_update_shef_spec_map_job;
+/
 --
 -- all done
 --
