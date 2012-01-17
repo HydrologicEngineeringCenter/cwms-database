@@ -2093,6 +2093,28 @@ AS
 
    -- not documented
    PROCEDURE start_trim_ts_deleted_job;
+
+   /**
+    * Retrieve the time series associated with the specified parameters.
+    *
+    * @param p_location_id       The location for the association
+    * @param p_association_type  The association type for the assocation
+    * @param p_usage_category_id The usage category for the association
+    * @param p_usage_id          The usage identifier for the association
+    * @param p_office_id         The office owning the association. If NULL or not specified, the office identifier of the session user is used.
+    *
+    * @return The time series identifier matching the association parameters
+    *
+    * @since CWMS 2.1
+    */
+   function get_associated_timeseries(
+      p_location_id       in varchar2,
+      p_association_type  in varchar2,
+      p_usage_category_id in varchar2,
+      p_usage_id          in varchar2,
+      p_office_id         in varchar2 default null)
+      return varchar2;
+
 END;
 /
 

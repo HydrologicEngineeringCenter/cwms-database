@@ -8795,6 +8795,60 @@ AS
          END;
       END IF;
    END start_trim_ts_deleted_job;
+
+   function get_associated_timeseries(
+      p_location_id       in varchar2,
+      p_association_type  in varchar2,
+      p_usage_category_id in varchar2,
+      p_usage_id          in varchar2,
+      p_office_id         in varchar2 default null)
+      return varchar2
+   as
+      l_office_id varchar2(16);
+      l_tsid varchar2(183);
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      cwms_util.check_inputs(str_tab_t(
+         p_location_id,
+         p_association_type,
+         p_usage_category_id,
+         p_usage_id,
+         p_office_id));
+      l_office_id := cwms_util.get_db_office_id(p_office_id);
+      ----------------------------------------------------------------------------
+      -- retrieve the associated time series with specified or default location --
+      ----------------------------------------------------------------------------
+      begin
+         select timeseries_id
+           into l_tsid
+           from (select timeseries_id
+                   from cwms_v_ts_association
+                  where upper(association_id) in ('?GLOBAL?', upper(p_location_id))
+                    and association_type = upper(p_association_type)
+                    and upper(usage_category_id) = upper(p_usage_category_id)
+                    and upper(usage_id) = upper(p_usage_id)
+                    and office_id = l_office_id
+               order by association_id desc -- '?GLOBAL?' sorts after actual location
+                )
+          where rownum < 2;
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ERROR',
+               'No such time series association: '''
+               ||l_office_id||'/'
+               ||'?GLOBAL?/'
+               ||p_association_type||'/'
+               ||p_usage_category_id||'/'
+               ||p_usage_id||'''');
+      end get_associated_timeseries;
+      ---------------------------------------
+      -- return the associated time series --
+      ---------------------------------------
+      return replace(l_tsid, '?GLOBAL?', p_location_id);
+   end;
 END cwms_ts;                                                --end package body
 /
 
