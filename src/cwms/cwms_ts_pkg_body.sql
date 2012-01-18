@@ -1,4 +1,4 @@
-/* Formatted on 12/28/2011 11:41:08 AM (QP5 v5.185.11230.41888) */
+/* Formatted on 1/18/2012 2:59:32 PM (QP5 v5.185.11230.41888) */
 SET DEFINE ON
 
 CREATE OR REPLACE PACKAGE BODY cwms_ts
@@ -217,7 +217,8 @@ AS
       END IF;
 
       --
-      l_normalized_datetime := TRUNC (p_datetime, 'MI') - (p_ts_offset / min_in_dy);
+      l_normalized_datetime :=
+         TRUNC (p_datetime, 'MI') - (p_ts_offset / min_in_dy);
 
       IF p_ts_interval = 1
       THEN
@@ -229,7 +230,8 @@ AS
 
          IF l_mod <= 0
          THEN
-            l_normalized_datetime := l_normalized_datetime - (l_mod / min_in_dy);
+            l_normalized_datetime :=
+               l_normalized_datetime - (l_mod / min_in_dy);
          ELSE
             l_normalized_datetime :=
                l_normalized_datetime + (l_ts_interval - l_mod) / min_in_dy;
@@ -242,7 +244,8 @@ AS
 
          IF l_mod <= 0
          THEN
-            l_normalized_datetime := l_normalized_datetime - (l_mod / min_in_dy);
+            l_normalized_datetime :=
+               l_normalized_datetime - (l_mod / min_in_dy);
          ELSE
             l_normalized_datetime :=
                l_normalized_datetime + (l_ts_interval - l_mod) / min_in_dy;
@@ -319,7 +322,8 @@ AS
       END IF;
 
       --
-      l_normalized_datetime := TRUNC (p_datetime, 'MI') - (p_ts_offset / min_in_dy);
+      l_normalized_datetime :=
+         TRUNC (p_datetime, 'MI') - (p_ts_offset / min_in_dy);
 
       IF p_ts_interval = 1
       THEN
@@ -334,7 +338,8 @@ AS
             l_normalized_datetime :=
                l_normalized_datetime - (l_ts_interval + l_mod) / min_in_dy;
          ELSE
-            l_normalized_datetime := l_normalized_datetime - (l_mod / min_in_dy);
+            l_normalized_datetime :=
+               l_normalized_datetime - (l_mod / min_in_dy);
          END IF;
       ELSIF l_ts_interval = min_in_wk                        -- weekly interval...
       THEN
@@ -347,7 +352,8 @@ AS
             l_normalized_datetime :=
                l_normalized_datetime - (l_ts_interval + l_mod) / min_in_dy;
          ELSE
-            l_normalized_datetime := l_normalized_datetime - (l_mod / min_in_dy);
+            l_normalized_datetime :=
+               l_normalized_datetime - (l_mod / min_in_dy);
          END IF;
       ELSIF l_ts_interval = min_in_mo                       -- monthly interval...
       THEN
@@ -3680,6 +3686,9 @@ AS
       l_msgid               PLS_INTEGER;
       i                     INTEGER;
       l_millis              NUMBER (14) := cwms_util.to_millis (l_store_date);
+      idx                   NUMBER := 0;
+      i_max_itterations     NUMBER := 100;
+   --
    BEGIN
       DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.store_ts',
                                         'get tscode from ts_id');
@@ -3971,6 +3980,20 @@ AS
          || CHR (10)
          || '*****************************');
 
+      /*
+     A WHILE LOOP was added to catch primary key violations when multiple
+     threads are simultaneously processing data for the same ts code and
+     the data blocks have overlapping time windows. The loop allows    
+     repeated attempts to store the data block, with the hope that the
+     initial data block that successfully stored data for the overlapping
+     date/times has finally completed and COMMITed the inserts. If after
+     i_max_itterations, the dup_value_on_index exception is still being
+     thrown, then the loop ends and the dup_value_on_index exception is
+     raised one last time.
+     */
+      WHILE idx < i_max_itterations
+      LOOP
+         BEGIN
       CASE
          WHEN     l_override_prot
               AND UPPER (p_store_rule) = cwms_util.replace_all
@@ -3984,7 +4007,8 @@ AS
             DBMS_APPLICATION_INFO.set_action (
                'merge into table, override, replace_all ');
 
-            FOR x IN (SELECT start_date, end_date, table_name
+                  FOR x
+                     IN (SELECT start_date, end_date, table_name
                         FROM at_ts_table_properties
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
@@ -4045,7 +4069,8 @@ AS
             DBMS_APPLICATION_INFO.set_action (
                'CASE 2: merge into  table, no override, replace_all ');
 
-            FOR x IN (SELECT start_date, end_date, table_name
+                  FOR x
+                     IN (SELECT start_date, end_date, table_name
                         FROM at_ts_table_properties
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
@@ -4115,7 +4140,8 @@ AS
             DBMS_APPLICATION_INFO.set_action (
                'merge into table, do_not_replace ');
 
-            FOR x IN (SELECT start_date, end_date, table_name
+                  FOR x
+                     IN (SELECT start_date, end_date, table_name
                         FROM at_ts_table_properties
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
@@ -4161,7 +4187,8 @@ AS
                         l_store_date,
                         l_version_date;
             END LOOP;
-         WHEN UPPER (p_store_rule) = cwms_util.replace_missing_values_only
+               WHEN UPPER (p_store_rule) =
+                       cwms_util.replace_missing_values_only
          THEN
             --
             --***************************************************
@@ -4171,7 +4198,8 @@ AS
             DBMS_APPLICATION_INFO.set_action (
                'merge into table, replace_missing_values_only');
 
-            FOR x IN (SELECT start_date, end_date, table_name
+                  FOR x
+                     IN (SELECT start_date, end_date, table_name
                         FROM at_ts_table_properties
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
@@ -4224,7 +4252,8 @@ AS
                         l_version_date;
             END LOOP;
          WHEN     l_override_prot
-              AND UPPER (p_store_rule) = cwms_util.replace_with_non_missing
+                    AND UPPER (p_store_rule) =
+                           cwms_util.replace_with_non_missing
          THEN
             --
             --*******************************************
@@ -4235,7 +4264,8 @@ AS
             DBMS_APPLICATION_INFO.set_action (
                'merge into table, override, replace_with_non_missing ');
 
-            FOR x IN (SELECT start_date, end_date, table_name
+                  FOR x
+                     IN (SELECT start_date, end_date, table_name
                         FROM at_ts_table_properties
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
@@ -4290,7 +4320,8 @@ AS
                         l_version_date;
             END LOOP;
          WHEN     NOT l_override_prot
-              AND UPPER (p_store_rule) = cwms_util.replace_with_non_missing
+                    AND UPPER (p_store_rule) =
+                           cwms_util.replace_with_non_missing
          THEN
             --
             --*******************************************
@@ -4301,7 +4332,8 @@ AS
             DBMS_APPLICATION_INFO.set_action (
                'merge into table, no override, replace_with_non_missing ');
 
-            FOR x IN (SELECT start_date, end_date, table_name
+                  FOR x
+                     IN (SELECT start_date, end_date, table_name
                         FROM at_ts_table_properties
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
@@ -4378,7 +4410,8 @@ AS
             DBMS_APPLICATION_INFO.set_action (
                'delete/merge from table, no override, delete_insert ');
 
-            FOR x IN (SELECT start_date, end_date, table_name
+                  FOR x
+                     IN (SELECT start_date, end_date, table_name
                         FROM at_ts_table_properties
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
@@ -4531,7 +4564,8 @@ AS
             DBMS_APPLICATION_INFO.set_action (
                'delete/merge from  table, override, delete_insert ');
 
-            FOR x IN (SELECT start_date, end_date, table_name
+                  FOR x
+                     IN (SELECT start_date, end_date, table_name
                         FROM at_ts_table_properties
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
@@ -4657,11 +4691,27 @@ AS
                                          l_msgid,
                                          l_office_id || '_ts_stored');
 
-            DBMS_OUTPUT.put_line ('CASE 7: delete-insert FALSE Completed.');
+                  DBMS_OUTPUT.put_line (
+                     'CASE 7: delete-insert FALSE Completed.');
          ELSE
             cwms_err.raise ('INVALID_STORE_RULE',
                             NVL (p_store_rule, '<NULL>'));
       END CASE;
+
+            idx := i_max_itterations;
+         EXCEPTION
+            WHEN DUP_VAL_ON_INDEX
+            THEN
+               idx := idx + 1;
+
+               IF idx >= i_max_itterations
+               THEN
+                  RAISE DUP_VAL_ON_INDEX;
+               ELSE
+                  DBMS_LOCK.sleep (0.02);
+               END IF;
+         END;
+      END LOOP;
 
       COMMIT;
       ---------------------------------
@@ -8796,59 +8846,67 @@ AS
       END IF;
    END start_trim_ts_deleted_job;
 
-   function get_associated_timeseries(
-      p_location_id       in varchar2,
-      p_association_type  in varchar2,
-      p_usage_category_id in varchar2,
-      p_usage_id          in varchar2,
-      p_office_id         in varchar2 default null)
-      return varchar2
-   as
-      l_office_id varchar2(16);
-      l_tsid varchar2(183);
-   begin
+   FUNCTION get_associated_timeseries (
+      p_location_id         IN VARCHAR2,
+      p_association_type    IN VARCHAR2,
+      p_usage_category_id   IN VARCHAR2,
+      p_usage_id            IN VARCHAR2,
+      p_office_id           IN VARCHAR2 DEFAULT NULL)
+      RETURN VARCHAR2
+   AS
+      l_office_id   VARCHAR2 (16);
+      l_tsid        VARCHAR2 (183);
+   BEGIN
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-         p_location_id,
+      cwms_util.check_inputs (str_tab_t (p_location_id,
          p_association_type,
          p_usage_category_id,
          p_usage_id,
          p_office_id));
-      l_office_id := cwms_util.get_db_office_id(p_office_id);
+      l_office_id := cwms_util.get_db_office_id (p_office_id);
+
       ----------------------------------------------------------------------------
       -- retrieve the associated time series with specified or default location --
       ----------------------------------------------------------------------------
-      begin
-         select timeseries_id
-           into l_tsid
-           from (select timeseries_id
-                   from cwms_v_ts_association
-                  where upper(association_id) in ('?GLOBAL?', upper(p_location_id))
-                    and association_type = upper(p_association_type)
-                    and upper(usage_category_id) = upper(p_usage_category_id)
-                    and upper(usage_id) = upper(p_usage_id)
-                    and office_id = l_office_id
-               order by association_id desc -- '?GLOBAL?' sorts after actual location
+      BEGIN
+         SELECT timeseries_id
+           INTO l_tsid
+           FROM (  SELECT timeseries_id
+                     FROM cwms_v_ts_association
+                    WHERE     UPPER (association_id) IN
+                                 ('?GLOBAL?', UPPER (p_location_id))
+                          AND association_type = UPPER (p_association_type)
+                          AND UPPER (usage_category_id) =
+                                 UPPER (p_usage_category_id)
+                          AND UPPER (usage_id) = UPPER (p_usage_id)
+                          AND office_id = l_office_id
+                 ORDER BY association_id DESC -- '?GLOBAL?' sorts after actual location
                 )
-          where rownum < 2;
-      exception
-         when no_data_found then
-            cwms_err.raise(
+          WHERE ROWNUM < 2;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise (
                'ERROR',
                'No such time series association: '''
-               ||l_office_id||'/'
-               ||'?GLOBAL?/'
-               ||p_association_type||'/'
-               ||p_usage_category_id||'/'
-               ||p_usage_id||'''');
-      end get_associated_timeseries;
+               || l_office_id
+               || '/'
+               || '?GLOBAL?/'
+               || p_association_type
+               || '/'
+               || p_usage_category_id
+               || '/'
+               || p_usage_id
+               || '''');
+      END get_associated_timeseries;
+
       ---------------------------------------
       -- return the associated time series --
       ---------------------------------------
-      return replace(l_tsid, '?GLOBAL?', p_location_id);
-   end;
+      RETURN REPLACE (l_tsid, '?GLOBAL?', p_location_id);
+   END;
 END cwms_ts;                                                --end package body
 /
 
