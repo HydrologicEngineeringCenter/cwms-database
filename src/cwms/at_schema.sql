@@ -3071,18 +3071,6 @@ CREATE TABLE AT_FORECAST_TEXT
 TABLESPACE CWMS_20AT_DATA
 /
 
-create global temporary table at_schema_object_diff
-(
-   object_type      varchar2(30),
-   object_name      varchar2(30),
-   deployed_version varchar2(64),
-   deployed_ddl     clob,
-   current_ddl      clob,
-   constraint at_schema_object_diff_pk primary key (object_type, object_name)
-)
-on commit delete rows
-/
-
 COMMENT ON TABLE  AT_FORECAST_TEXT                    IS 'Contains cross references between forecasts and time sereies';
 COMMENT ON COLUMN AT_FORECAST_TEXT.FORECAST_SPEC_CODE IS 'References forecst specification';
 COMMENT ON COLUMN AT_FORECAST_TEXT.FORECAST_DATE      IS 'Target date/time of the forecast';
@@ -3109,6 +3097,33 @@ COMMENT ON COLUMN AT_TS_DELETED_TIMES.DELETED_TIME IS 'Time at which the data we
 COMMENT ON COLUMN AT_TS_DELETED_TIMES.TS_CODE      IS 'TS_CODE of the deleted data';
 COMMENT ON COLUMN AT_TS_DELETED_TIMES.VERSION_DATE IS 'VERSION_DATE of the deleted data';
 COMMENT ON COLUMN AT_TS_DELETED_TIMES.DATE_TIME    IS 'DATE_TIME of the deleted data';
+
+create table at_boolean_state(
+   name  varchar2(64) primary key,
+   state char(1),
+   constraint at_boolean_state_ck1 check (nvl(state, 'T') in ('T','F'))
+)
+tablespace cwms_20at_data
+/
+
+comment on table  at_boolean_state       is 'Holds named boolean states';
+comment on column at_boolean_state.name  is 'Name of boolean state';
+comment on column at_boolean_state.state is 'Value (T/F) of boolean state';
+
+create unique index at_boolean_state_u1 on at_boolean_state(upper(name));
+
+
+create global temporary table at_schema_object_diff
+(
+   object_type      varchar2(30),
+   object_name      varchar2(30),
+   deployed_version varchar2(64),
+   deployed_ddl     clob,
+   current_ddl      clob,
+   constraint at_schema_object_diff_pk primary key (object_type, object_name)
+)
+on commit delete rows
+/
 
 --                 
 -- CWMS_APEX_ROLES  (Table) 

@@ -3738,6 +3738,73 @@ AS
       RETURN cwms_util.join_text (p_text_tab    => l_list_3,
                                   p_separator   => p_separator);
    END;
+
+
+   procedure set_boolean_state(
+      p_name  in varchar2,
+      p_state in boolean)
+   is
+   begin
+      set_boolean_state(
+         p_name,
+         case p_state
+           when true  then 'T'
+           when false then 'F'
+         end);
+   end set_boolean_state;
+
+   procedure set_boolean_state(
+      p_name  in varchar2,
+      p_state in char)
+   is
+      l_name varchar2(64);
+   begin
+      check_input(p_name);
+      select name
+        into l_name
+        from at_boolean_state
+       where upper(name) = upper(p_name);
+      update at_boolean_state
+         set state = p_state
+       where name = l_name;
+   exception
+     when no_data_found then
+       insert
+         into at_boolean_state
+       values (p_name, p_state);
+   end set_boolean_state;
+
+   function get_boolean_state_char(
+      p_name in varchar2)
+      return char
+   is
+      l_state char(1);
+   begin
+      check_input(p_name);
+      begin
+         select state
+           into l_state
+           from at_boolean_state
+          where upper(name) = upper(p_name);
+      exception
+         when others then null;
+      end;
+      return l_state; 
+   end get_boolean_state_char;
+
+   function get_boolean_state(
+      p_name in varchar2)
+      return boolean
+   is
+      l_state char(1);
+   begin
+      l_state := get_boolean_state_char(p_name);
+      return case l_state is null
+                when true then null
+                else l_state = 'T'
+             end;
+   end get_boolean_state;
+
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call

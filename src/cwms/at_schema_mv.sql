@@ -5,16 +5,7 @@ DECLARE
 	TYPE id_array_t IS TABLE OF VARCHAR2 (32);
 
 	table_names   id_array_t := id_array_t ('at_cwms_ts_id');
-   view_names    id_array_t := id_array_t('mv_data_quality',
-                                       	'mv_data_q_changed',
-                                       	'mv_data_q_protection',
-                                       	'mv_data_q_range',
-                                       	'mv_data_q_repl_cause',
-                                       	'mv_data_q_repl_method',
-                                       	'mv_data_q_screened',
-                                       	'mv_data_q_test_failed',
-                                       	'mv_data_q_validity',
-                                          'mv_time_zone');
+   view_names    id_array_t := id_array_t('mv_time_zone');
 
 BEGIN
 	FOR i IN table_names.FIRST .. table_names.LAST

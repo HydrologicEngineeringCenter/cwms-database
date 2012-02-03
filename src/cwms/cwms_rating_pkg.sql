@@ -2604,6 +2604,10 @@ function get_min_opening2(
    p_time_zone   in  varchar2 default 'UTC',
    p_office_id   in  varchar2 default null)
    return double_tab_t;   
+
+procedure update_materialized_views;
+
+procedure start_update_mviews_job;
       
 end;
    

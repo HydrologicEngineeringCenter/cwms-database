@@ -83,6 +83,7 @@ alter session set current_schema = &cwms_schema;
 -- 
 @@cwms/at_schema_2
 @@cwms/at_schema_tsv_dqu
+@@cwms/at_schema_mv2
 --@@cwms/cwms_types_rating
 --
 -- Create dbi and pd user accounts...
@@ -151,19 +152,16 @@ set serveroutput on
 prompt Creating and starting queues...
 @py_Queues
 prompt Starting jobs...
-exec cwms_msg.start_trim_log_job;
-/
-exec cwms_msg.start_purge_queues_job;
-/
-exec cwms_schema.cleanup_schema_version_table;
-/
-exec cwms_schema.start_check_schema_job;
-/
-exec cwms_ts.start_trim_ts_deleted_job;
-/
-exec cwms_sec.start_refresh_mv_sec_privs_job;
-/
-exec cwms_shef.start_update_shef_spec_map_job;
+begin
+   cwms_msg.start_trim_log_job;
+   cwms_msg.start_purge_queues_job;
+   cwms_schema.cleanup_schema_version_table;
+   cwms_schema.start_check_schema_job;
+   cwms_ts.start_trim_ts_deleted_job;
+   cwms_sec.start_refresh_mv_sec_privs_job;
+   cwms_shef.start_update_shef_spec_map_job;
+   cwms_rating.start_update_mviews_job;
+end;
 /
 --
 -- all done

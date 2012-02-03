@@ -1619,6 +1619,23 @@ AS
                        p_separator   IN VARCHAR2 DEFAULT NULL
                       )
       RETURN VARCHAR2;
+
+   procedure set_boolean_state(
+      p_name  in varchar2,
+      p_state in boolean);
+
+   procedure set_boolean_state(
+      p_name  in varchar2,
+      p_state in char);
+
+   function get_boolean_state(
+      p_name in varchar2)
+      return boolean;
+
+   function get_boolean_state_char(
+      p_name in varchar2)
+      return char;
+
 END cwms_util;
 /
 
