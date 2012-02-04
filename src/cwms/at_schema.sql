@@ -1241,7 +1241,7 @@ CREATE TABLE at_cwms_ts_spec
   delete_date          TIMESTAMP(9),
   data_source          VARCHAR2(16 BYTE)
 )
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE CWMS_20_TSV
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -1276,7 +1276,7 @@ CREATE UNIQUE INDEX at_cwms_ts_spec_ui ON at_cwms_ts_spec
 (location_code, parameter_type_code, parameter_code, interval_code,
 duration_code, UPPER("VERSION"), delete_date)
 LOGGING
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE CWMS_20_TSV
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1294,7 +1294,7 @@ NOPARALLEL
 CREATE UNIQUE INDEX at_cwms_ts_spec_pk ON at_cwms_ts_spec
 (ts_code)
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20_TSV
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1325,7 +1325,7 @@ ALTER TABLE at_cwms_ts_spec ADD (
  PRIMARY KEY
  (ts_code)
     USING INDEX
-    tablespace CWMS_20DATA
+    tablespace CWMS_20_TSV
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255

@@ -78,6 +78,7 @@ logFileName["DROPCWMS"]  = "dropCwms.lst"
 cwmsTableSpaceName = "CWMS_20DATA"
 #userTableSpaceName = "%sCWMSDATA" % user
 #tsTableSpaceName = "%sCWMSTS" % user
+tsTableSpaceName = "CWMS_20_TSV"
 #userSchema = "%sCWMSPD" % user
 
 cwmsSequences = [
@@ -8928,6 +8929,9 @@ for table in tables_rev :
             tableSpaceName = tsTableSpaceName
         else :
             tableSpaceName = userTableSpaceName
+    if tableName == "CWMS_DATA_QUALITY" :
+            tableSpaceName = tsTableSpaceName
+
     dropPrefix = thisPrefix.replace("BUILD", "DROP")
     lines = eval("%sCreationTemplate.split('\\n')" % table)
     for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
