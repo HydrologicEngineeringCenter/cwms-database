@@ -2560,7 +2560,7 @@ END cat_ts_id;
            from cwms_office o,
                 at_location_kind k
           where k.location_kind_id like l_location_kind_id_mask escape '\'
-            and o.office_id like l_office_id_mask escape '\'
+            and (o.office_id like l_office_id_mask escape '\' or o.office_id = 'CWMS')
             and o.office_code = k.office_code
        order by o.office_id,
                 k.location_kind_id;
