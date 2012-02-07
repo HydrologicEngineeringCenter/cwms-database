@@ -12,8 +12,11 @@ create table at_rating_template
    constraint at_rating_template_pk  primary key (template_code),
    constraint at_rating_template_fk1 foreign key (office_code) references cwms_office(office_code),
    constraint at_rating_template_fk2 foreign key (dep_parameter_code) references at_parameter(parameter_code)
-) organization index;
-create unique index at_rating_template_u1 on at_rating_template(office_code, upper(parameters_id), upper(version));
+)
+organization index
+tablespace CWMS_20AT_DATA;
+
+create unique index at_rating_template_u1 on at_rating_template(office_code, upper(parameters_id), upper(version)) tablespace cwms_20at_data;
 
 comment on table  at_rating_template                      is 'Templates for rating tables';
 comment on column at_rating_template.template_code        is 'Synthetic key';
@@ -42,7 +45,9 @@ create table at_rating_ind_param_spec
    constraint at_rating_ind_param_spec_fk3 foreign key (in_range_rating_method) references cwms_rating_method(rating_method_code),
    constraint at_rating_ind_param_spec_fk4 foreign key (out_range_low_rating_method) references cwms_rating_method(rating_method_code),
    constraint at_rating_ind_param_spec_fk5 foreign key (out_range_high_rating_method) references cwms_rating_method(rating_method_code)
-) organization index;
+)
+organization index
+tablespace CWMS_20AT_DATA;
 
 comment on table  at_rating_ind_param_spec                              is 'Independent parameters for rating templates';
 comment on column at_rating_ind_param_spec.template_code                is 'Reference to rating template';
@@ -82,8 +87,11 @@ create table at_rating_spec
    constraint at_rating_spec_ck2 check (auto_update_flag in ('T', 'F')),
    constraint at_rating_spec_ck3 check (auto_activate_flag in ('T', 'F')),
    constraint at_rating_spec_ck4 check (auto_migrate_ext_flag in ('T', 'F'))
-) organization index;
-create unique index at_rating_spec_u1 on at_rating_spec (template_code, location_code, upper(version));
+)
+organization index
+tablespace CWMS_20AT_DATA;
+
+create unique index at_rating_spec_u1 on at_rating_spec (template_code, location_code, upper(version)) tablespace cwms_20at_data;
 
 comment on table  at_rating_spec                              is 'Specifies a time series of ratings by location, parameters, and version';
 comment on column at_rating_spec.rating_spec_code             is 'Synthetic key';
@@ -111,7 +119,9 @@ create table at_rating_ind_rounding
    rounding_spec      varchar2(10),
    constraint at_rating_ind_rounding_pk  primary key (rating_spec_code, parameter_position),
    constraint at_rating_ind_rounding_fk1 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code)
-) organization index;
+)
+organization index
+tablespace CWMS_20AT_DATA;
 
 comment on table  at_rating_ind_rounding                    is 'Rounding specifications for rating input parameters';
 comment on column at_rating_ind_rounding.rating_spec_code   is 'References rating specification';
@@ -137,7 +147,9 @@ create table at_rating
    constraint at_rating_fk1 foreign key (rating_spec_code) references at_rating_spec (rating_spec_code),
    constraint at_rating_fk2 foreign key (ref_rating_code) references at_rating (rating_code),
    constraint at_rating_ck1 check (active_flag in ('T', 'F'))
-) organization index;
+)
+organization index
+tablespace CWMS_20AT_DATA;
 
 comment on table  at_rating                  is 'A dated rating in a rating time series';
 comment on column at_rating.rating_code      is 'Synthetic key';
@@ -161,7 +173,8 @@ create table at_rating_ind_parameter
    constraint at_rating_ind_parameter_pk  primary key (rating_ind_param_code),
    constraint at_rating_ind_parameter_fk1 foreign key (rating_code) references at_rating (rating_code),
    constraint at_rating_ind_parameter_fk2 foreign key (ind_param_spec_code) references at_rating_ind_param_spec (ind_param_spec_code) 
-);
+)
+tablespace CWMS_20AT_DATA;
 
 comment on table  at_rating_ind_parameter                       is 'Associates a formula or rating values with a rating parameter';
 comment on column at_rating_ind_parameter.rating_ind_param_code is 'Synthetic key';
@@ -181,7 +194,9 @@ create table at_rating_value_note
    constraint at_rating_value_note_u1  unique (office_code, note_id) using index,
    constraint at_rating_value_note_ck1 check (note_id = upper(note_id)),
    constraint at_rating_value_note_fk1 foreign key (office_code) references cwms_office(office_code)
-) organization index;
+)
+organization index
+tablespace CWMS_20AT_DATA;
 
 comment on table  at_rating_value_note             is 'Provides notation for specific rating values';
 comment on column at_rating_value_note.note_code   is 'Synthetic key';
@@ -210,7 +225,9 @@ create table at_rating_value
     constraint at_rating_value_fk1 foreign key (rating_ind_param_code) references at_rating_ind_parameter (rating_ind_param_code),
     constraint at_rating_value_fk2 foreign key (dep_rating_ind_param_code) references at_rating_ind_parameter (rating_ind_param_code),
     constraint at_rating_value_fk3 foreign key (note_code) references at_rating_value_note (note_code)
-) organization index;
+)
+organization index
+tablespace CWMS_20AT_DATA;
 
 comment on table  at_rating_value                           is 'Specifies rating values';
 comment on column at_rating_value.rating_ind_param_code     is 'References rating parameter';
@@ -246,7 +263,9 @@ create table at_rating_extension_value
     constraint at_rating_extension_value_fk1 foreign key (rating_ind_param_code) references at_rating_ind_parameter (rating_ind_param_code),
     constraint at_rating_extension_value_fk2 foreign key (dep_rating_ind_param_code) references at_rating_ind_parameter (rating_ind_param_code),
     constraint at_rating_extension_value_fk3 foreign key (note_code) references at_rating_value_note (note_code)
-) organization index;
+)
+organization index
+tablespace CWMS_20AT_DATA;
 
 comment on table  at_rating_extension_value                           is 'Specifies rating extension values';
 comment on column at_rating_extension_value.rating_ind_param_code     is 'References rating parameter';

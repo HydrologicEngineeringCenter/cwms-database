@@ -65,7 +65,6 @@ table_names constant object_tab_t := object_tab_t(
    'AT_LOC_LVL_INDICATOR_TAB',
    'AT_LOG_MESSAGE',
    'AT_LOG_MESSAGE_PROPERTIES',
-   'AT_MVIEW_REFRESH_PAUSED',
    'AT_OFFICE_SETTINGS',
    'AT_OPERATIONAL_STATUS_CODE',
    'AT_OUTLET',

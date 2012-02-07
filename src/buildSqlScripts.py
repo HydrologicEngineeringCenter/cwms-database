@@ -76,6 +76,7 @@ logFileName["DROPCWMS"]  = "dropCwms.lst"
 #logFileName["DROPUSER"]  = "dropCwmsPd.lst"
 
 cwmsTableSpaceName = "CWMS_20DATA"
+atTableSpaceName = "CWMS_20AT_DATA"
 #userTableSpaceName = "%sCWMSDATA" % user
 #tsTableSpaceName = "%sCWMSTS" % user
 tsTableSpaceName = "CWMS_20_TSV"
@@ -7247,7 +7248,7 @@ ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK4 FOREIGN KEY (TO_UNIT_ID, ABSTRACT_P
 CREATE UNIQUE INDEX CWMS_UNIT_CONVERSION_U01 ON CWMS_UNIT_CONVERSION
 (FROM_UNIT_CODE, TO_UNIT_CODE)
 LOGGING
-tablespace CWMS_20DATA
+tablespace @DATASPACE
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -7733,7 +7734,8 @@ qScreenedCreationTemplate = \
 CREATE TABLE @TABLE 
    (
        SCREENED_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION   VARCHAR2(80)
+       DESCRIPTION   VARCHAR2(80),
+       CONSTRAINT @TABLE_PK PRIMARY KEY (SCREENED_ID)
    )
        PCTFREE 10
        PCTUSED 40
@@ -7752,10 +7754,6 @@ CREATE TABLE @TABLE
           BUFFER_POOL DEFAULT
    );
    
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (SCREENED_ID);
 
 ---------------------------
 -- @TABLE comments --
@@ -7781,7 +7779,8 @@ qValidityCreationTemplate = \
 CREATE TABLE @TABLE 
    (
        VALIDITY_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION   VARCHAR2(80)
+       DESCRIPTION   VARCHAR2(80),
+       CONSTRAINT @TABLE_PK PRIMARY KEY (VALIDITY_ID)
    )
        PCTFREE 10
        PCTUSED 40
@@ -7800,10 +7799,6 @@ CREATE TABLE @TABLE
           BUFFER_POOL DEFAULT
    );
    
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (VALIDITY_ID);
 
 ---------------------------
 -- @TABLE comments --
@@ -7829,7 +7824,8 @@ qRangeCreationTemplate = \
 CREATE TABLE @TABLE 
    (
        RANGE_ID    VARCHAR2(16)  NOT NULL,
-       DESCRIPTION VARCHAR2(80)
+       DESCRIPTION VARCHAR2(80),
+       CONSTRAINT @TABLE_PK PRIMARY KEY (RANGE_ID)
    )
        PCTFREE 10
        PCTUSED 40
@@ -7848,10 +7844,6 @@ CREATE TABLE @TABLE
           BUFFER_POOL DEFAULT
    );
    
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (RANGE_ID);
 
 ---------------------------
 -- @TABLE comments --
@@ -7877,7 +7869,8 @@ qChangedCreationTemplate = \
 CREATE TABLE @TABLE 
    (
        CHANGED_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION  VARCHAR2(80)
+       DESCRIPTION  VARCHAR2(80),
+       CONSTRAINT @TABLE_PK PRIMARY KEY (CHANGED_ID)
    )
        PCTFREE 10
        PCTUSED 40
@@ -7896,10 +7889,6 @@ CREATE TABLE @TABLE
           BUFFER_POOL DEFAULT
    );
    
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (CHANGED_ID);
 
 ---------------------------
 -- @TABLE comments --
@@ -7925,7 +7914,8 @@ qReplCauseCreationTemplate = \
 CREATE TABLE @TABLE 
    (
        REPL_CAUSE_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION     VARCHAR2(80)
+       DESCRIPTION     VARCHAR2(80),
+       CONSTRAINT @TABLE_PK PRIMARY KEY (REPL_CAUSE_ID)
    )
        PCTFREE 10
        PCTUSED 40
@@ -7944,10 +7934,6 @@ CREATE TABLE @TABLE
           BUFFER_POOL DEFAULT
    );
    
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (REPL_CAUSE_ID);
 
 ---------------------------
 -- @TABLE comments --
@@ -7973,7 +7959,8 @@ qReplMethodCreationTemplate = \
 CREATE TABLE @TABLE 
    (
        REPL_METHOD_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION      VARCHAR2(80)
+       DESCRIPTION      VARCHAR2(80),
+       CONSTRAINT @TABLE_PK PRIMARY KEY (REPL_METHOD_ID)
    )
        PCTFREE 10
        PCTUSED 40
@@ -7992,11 +7979,6 @@ CREATE TABLE @TABLE
           BUFFER_POOL DEFAULT
    );
    
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (REPL_METHOD_ID);
-
 ---------------------------
 -- @TABLE comments --
 --
@@ -8021,7 +8003,8 @@ qTestFailedCreationTemplate = \
 CREATE TABLE @TABLE 
    (
        TEST_FAILED_ID   VARCHAR2(125)  NOT NULL,
-       DESCRIPTION      VARCHAR2(80)
+       DESCRIPTION      VARCHAR2(80),
+       CONSTRAINT @TABLE_PK PRIMARY KEY (TEST_FAILED_ID)
    )
        PCTFREE 10
        PCTUSED 40
@@ -8040,10 +8023,6 @@ CREATE TABLE @TABLE
           BUFFER_POOL DEFAULT
    );
    
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (TEST_FAILED_ID);
 
 ---------------------------
 -- @TABLE comments --
@@ -8070,7 +8049,8 @@ qProtectionCreationTemplate = \
 CREATE TABLE @TABLE 
    (
        PROTECTION_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION     VARCHAR2(80)
+       DESCRIPTION     VARCHAR2(80),
+       CONSTRAINT @TABLE_PK PRIMARY KEY (PROTECTION_ID)
    )
        PCTFREE 10
        PCTUSED 40
@@ -8089,10 +8069,6 @@ CREATE TABLE @TABLE
           BUFFER_POOL DEFAULT
    );
    
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (PROTECTION_ID);
 
 ---------------------------
 -- @TABLE comments --
@@ -8125,7 +8101,8 @@ CREATE TABLE @TABLE
        REPL_CAUSE_ID  VARCHAR2(16)  NOT NULL,
        REPL_METHOD_ID VARCHAR2(16)  NOT NULL,
        TEST_FAILED_ID VARCHAR2(125) NOT NULL,
-       PROTECTION_ID  VARCHAR2(16)  NOT NULL
+       PROTECTION_ID  VARCHAR2(16)  NOT NULL,
+       CONSTRAINT @TABLE_PK   PRIMARY KEY (QUALITY_CODE)
    )
        PCTFREE 10
        PCTUSED 40
@@ -8147,7 +8124,6 @@ CREATE TABLE @TABLE
 -------------------------------
 -- @TABLE constraints  --
 --
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK   PRIMARY KEY (QUALITY_CODE    );
 ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (SCREENED_ID   ) REFERENCES @qScreenedTableName   (SCREENED_ID   );
 ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (PROTECTION_ID ) REFERENCES @qProtectionTableName (PROTECTION_ID );
 ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK3 FOREIGN KEY (VALIDITY_ID   ) REFERENCES @qValidityTableName   (VALIDITY_ID   );
@@ -8423,7 +8399,7 @@ ALTER TABLE AT_DISPLAY_UNITS ADD (
  PRIMARY KEY
  (DB_OFFICE_CODE, PARAMETER_CODE, UNIT_SYSTEM)
     USING INDEX 
-    tablespace CWMS_20DATA
+    tablespace @DATASPACE
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -8500,9 +8476,11 @@ CREATE TABLE @TABLE
    LOCATION_KIND_CODE NUMBER(10)     NOT NULL,
    OFFICE_CODE        NUMBER(10)     NOT NULL,
    LOCATION_KIND_ID   VARCHAR2(32)   NOT NULL,
-   DESCRIPTION        VARCHAR2(256)
+   DESCRIPTION        VARCHAR2(256),
+   CONSTRAINT @TABLE_PK  PRIMARY KEY (LOCATION_KIND_CODE) USING INDEX,
+   CONSTRAINT @TABLE_U1  UNIQUE (OFFICE_CODE, LOCATION_KIND_ID)
 )
-tablespace CWMS_20DATA
+tablespace @DATASPACE
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -8524,8 +8502,6 @@ MONITORING;
 -------------------------------
 -- @TABLE constraints  --
 --
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (LOCATION_KIND_CODE) USING INDEX;
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_U1  UNIQUE (OFFICE_CODE, LOCATION_KIND_ID);
 ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK(TRIM(UPPER(LOCATION_KIND_ID)) = LOCATION_KIND_ID);
 ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
 
@@ -8558,7 +8534,7 @@ CREATE TABLE @TABLE
    METHOD_ID   VARCHAR2(32)  NOT NULL,
    DESCRIPTION VARCHAR2(256)
 )
-tablespace CWMS_20DATA
+tablespace @DATASPACE
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -8616,7 +8592,7 @@ CREATE TABLE @TABLE
    TRANSMIT_METHOD     NUMBER(10), 
    DESCRIPTION         VARCHAR2(256)
 )
-tablespace CWMS_20DATA
+tablespace @DATASPACE
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -8649,7 +8625,7 @@ ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (TRANSMIT_METHOD) REFER
 --
 CREATE UNIQUE INDEX @TABLE_U1 ON @TABLE (UPPER(GAGE_TYPE_ID))
 LOGGING
-tablespace CWMS_20DATA
+tablespace @DATASPACE
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -8699,7 +8675,7 @@ CREATE TABLE @TABLE
    NATION_CODE VARCHAR2(2)  NOT NULL,
    NATION_ID   VARCHAR2(48) NOT NULL
 )
-tablespace CWMS_20DATA
+tablespace @DATASPACE
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -8729,7 +8705,7 @@ ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(NATION_ID) = NATION_ID)
 --
 CREATE UNIQUE INDEX @TABLE_U1 ON @TABLE (UPPER(NATION_ID))
 LOGGING
-TABLESPACE CWMS_20AT_DATA
+TABLESPACE @DATASPACE
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -8774,7 +8750,7 @@ CREATE TABLE @TABLE
   SLOPE                VARCHAR2(32) NOT NULL,
   CHANNEL_MATERIAL     VARCHAR2(32) NOT NULL
 )
-tablespace CWMS_20DATA
+tablespace @DATASPACE
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -8829,7 +8805,7 @@ CREATE TABLE @TABLE
    LAST_MILLIS INTEGER,
    LAST_SEQ    INTEGER
 )
-tablespace CWMS_20DATA
+tablespace @DATASPACE
 /
 
 ---------------------------
@@ -8858,10 +8834,10 @@ CREATE TABLE @TABLE (
    COMMENTS       VARCHAR2(256),
    CONSTRAINT CWMS_SCHEMA_VERSION_PK PRIMARY KEY (HASH_CODE, OBJECT_TYPE, OBJECT_NAME, SCHEMA_VERSION)
 )
-TABLESPACE CWMS_20DATA
+TABLESPACE @DATASPACE
 /
 CREATE INDEX @TABLE_IDX ON @TABLE (SCHEMA_VERSION)
-TABLESPACE CWMS_20DATA
+TABLESPACE @DATASPACE
 /
 
 COMMIT;
@@ -8920,18 +8896,14 @@ print prefix[ALL] + "SET SERVEROUTPUT ON"
 
 for table in tables_rev :
     tableName = eval("%sTableName" % table)
-    if schema[table] == "CWMS"  :
-        tableSpaceName = cwmsTableSpaceName
-        thisPrefix = prefix[CWMS]
-    else :
-        thisPrefix = prefix[USER]
-        if tableName.find("TSV") != -1 :
-            tableSpaceName = tsTableSpaceName
-        else :
-            tableSpaceName = userTableSpaceName
-    if tableName == "CWMS_DATA_QUALITY" :
-            tableSpaceName = tsTableSpaceName
 
+    if   tableName.startswith("CWMS") : tableSpaceName = cwmsTableSpaceName
+    elif tableName.startswith("AT")   : tableSpaceName = atTableSpaceName
+    else : raise Exception("Don't know what tablespace to use for %s" % tableName)
+    if "TSV" in tableName or tableName.startswith("CWMS_DATA_Q") : tableSpaceName = tsTableSpaceName
+
+    if schema[table] == "CWMS"  : thisPrefix = prefix[CWMS]
+    else                        : thisPrefix = prefix[USER]
     dropPrefix = thisPrefix.replace("BUILD", "DROP")
     lines = eval("%sCreationTemplate.split('\\n')" % table)
     for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]

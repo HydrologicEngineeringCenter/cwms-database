@@ -11,7 +11,7 @@ CREATE TABLE "&cwms_schema"."CWMS_TR_TRANSFORMATIONS"
   transform_id  VARCHAR2(32 BYTE)               NOT NULL,
   description   VARCHAR2(256 BYTE)              NOT NULL
 )
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -32,7 +32,7 @@ MONITORING
 CREATE UNIQUE INDEX "&cwms_schema"."CWMS_TR_TRANSFORMATIONS_PK" ON "&cwms_schema"."CWMS_TR_TRANSFORMATIONS"
 (transform_id)
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -48,7 +48,7 @@ NOPARALLEL
 CREATE UNIQUE INDEX "&cwms_schema"."CWMS_TR_TRANSFORMATIONS_UI01" ON "&cwms_schema"."CWMS_TR_TRANSFORMATIONS"
 (UPPER("TRANSFORM_ID"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -66,7 +66,7 @@ ALTER TABLE "&cwms_schema"."CWMS_TR_TRANSFORMATIONS" ADD (
  PRIMARY KEY
  (transform_id)
     USING INDEX
-    tablespace CWMS_20DATA
+    tablespace CWMS_20AT_DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -116,7 +116,7 @@ CREATE TABLE "&cwms_schema"."AT_TR_TEMPLATE_ID"
   description               VARCHAR2(132 BYTE),
   seed_version_suffix       VARCHAR2(32 BYTE)
 )
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -137,7 +137,7 @@ MONITORING
 CREATE UNIQUE INDEX "&cwms_schema"."AT_TR_TEMPLATE_ID_PK" ON "&cwms_schema"."AT_TR_TEMPLATE_ID"
 (template_code)
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -153,7 +153,7 @@ NOPARALLEL
 CREATE UNIQUE INDEX "&cwms_schema"."AT_TR_TEMPLATE_ID_UQ01" ON "&cwms_schema"."AT_TR_TEMPLATE_ID"
 (UPPER("TEMPLATE_ID"), db_office_code)
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -171,7 +171,7 @@ ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE_ID" ADD (
  PRIMARY KEY
  (template_code)
     USING INDEX
-    tablespace CWMS_20DATA
+    tablespace CWMS_20AT_DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -213,7 +213,7 @@ CREATE TABLE "&cwms_schema"."AT_TR_TEMPLATE_SET"
   scaling_arg_b          NUMBER,
   scaling_arg_c          NUMBER
 )
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -240,7 +240,7 @@ COMMENT ON COLUMN "&cwms_schema"."AT_TR_TEMPLATE_SET"."UNIT_SYSTEM" IS 'Either S
 CREATE UNIQUE INDEX "&cwms_schema"."AT_TR_TEMPLATE_SET_PK" ON "&cwms_schema"."AT_TR_TEMPLATE_SET"
 (template_code, sequence_no)
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -258,7 +258,7 @@ ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE_SET" ADD (
  PRIMARY KEY
  (template_code, sequence_no)
     USING INDEX
-    tablespace CWMS_20DATA
+    tablespace CWMS_20AT_DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -296,7 +296,7 @@ CREATE TABLE "&cwms_schema"."AT_TR_TS_MASK"
   duration_code        NUMBER,
   version_mask         VARCHAR2(42 BYTE)
 )
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -317,7 +317,7 @@ MONITORING
 CREATE UNIQUE INDEX "&cwms_schema"."AT_TR_TS_MASK_PK" ON "&cwms_schema"."AT_TR_TS_MASK"
 (template_code, sequence_no, variable_no)
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -335,7 +335,7 @@ ALTER TABLE "&cwms_schema"."AT_TR_TS_MASK" ADD (
  PRIMARY KEY
  (template_code, sequence_no, variable_no)
     USING INDEX
-    tablespace CWMS_20DATA
+    tablespace CWMS_20AT_DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255
@@ -378,7 +378,7 @@ CREATE TABLE "&cwms_schema"."AT_TR_TEMPLATE"
   active_flag      VARCHAR2(1 BYTE)             NOT NULL,
   event_trigger    VARCHAR2(32 BYTE)            NOT NULL
 )
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTUSED    0
 PCTFREE    10
 INITRANS   1
@@ -399,7 +399,7 @@ MONITORING
 CREATE UNIQUE INDEX "&cwms_schema"."AT_TR_TEMPLATE_PK" ON "&cwms_schema"."AT_TR_TEMPLATE"
 (ts_code_indep_1, template_code)
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -417,7 +417,7 @@ ALTER TABLE "&cwms_schema"."AT_TR_TEMPLATE" ADD (
  PRIMARY KEY
  (ts_code_indep_1, template_code)
     USING INDEX
-    tablespace CWMS_20DATA
+    tablespace CWMS_20AT_DATA
     PCTFREE    10
     INITRANS   2
     MAXTRANS   255

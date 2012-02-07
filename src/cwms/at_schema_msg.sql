@@ -270,7 +270,8 @@ storage    (
             buffer_pool      default
            )
 logging 
-nocompress 
+TABLESPACE CWMS_20AT_DATA
+nocompress
 nocache
 noparallel
 monitoring;
@@ -302,34 +303,6 @@ alter table at_log_message_properties add constraint at_log_message_properties_p
                 maxextents       2147483645
                 pctincrease      0
                );
-
------------------------------
--- AT_MVIEW_REFRESH_PAUSED table
---
-CREATE TABLE AT_MVIEW_REFRESH_PAUSED
-(
-  PAUSED_AT   TIMESTAMP(6)                      NOT NULL,
-  MVIEW_NAME  VARCHAR2(30 CHAR)                 NOT NULL,
-  USER_NAME   VARCHAR2(30 CHAR)                 NOT NULL,
-  REMARKS     VARCHAR2(80 CHAR)
-)
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-NOMONITORING;
------------------------------
--- AT_MVIEW_REFRESH_PAUSED comments
---
-COMMENT ON TABLE AT_MVIEW_REFRESH_PAUSED IS 'M-views temporarily switched from on commit refresh to on demand';
-COMMENT ON COLUMN AT_MVIEW_REFRESH_PAUSED.PAUSED_AT IS 'Timestamp of pause action';
-COMMENT ON COLUMN AT_MVIEW_REFRESH_PAUSED.MVIEW_NAME IS 'Name of paused m-view';
-COMMENT ON COLUMN AT_MVIEW_REFRESH_PAUSED.USER_NAME IS 'Name of user causing action';
-COMMENT ON COLUMN AT_MVIEW_REFRESH_PAUSED.REMARKS IS 'Comment on action';
------------------------------
--- AT_MVIEW_REFRESH_PAUSED constraints
---
-ALTER TABLE AT_MVIEW_REFRESH_PAUSED ADD CONSTRAINT AT_MVIEW_REFRESH_PAUSED_PK PRIMARY KEY(PAUSED_AT, MVIEW_NAME);
 
 show errors;
 commit;

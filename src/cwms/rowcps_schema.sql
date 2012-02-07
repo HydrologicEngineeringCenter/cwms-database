@@ -124,7 +124,7 @@ COMMENT ON COLUMN at_gate_ch_computation_code.discharge_comp_active IS 'Whether 
 CREATE UNIQUE INDEX gate_ch_computation_code_idx1 ON at_gate_ch_computation_code
 (db_office_code, UPPER(DISCHARGE_COMP_DISPLAY_VALUE))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -208,7 +208,7 @@ COMMENT ON COLUMN at_gate_release_reason_code.release_reason_active IS 'Whether 
 CREATE UNIQUE INDEX gate_release_reason_code_idx1 ON at_gate_release_reason_code
 (db_office_code, UPPER("RELEASE_REASON_DISPLAY_VALUE"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -293,7 +293,7 @@ COMMENT ON COLUMN at_project_purposes.purpose_active IS 'Whether the project_pur
 CREATE UNIQUE INDEX project_purpose_idx1 ON at_project_purposes
 (db_office_code, UPPER("PURPOSE_DISPLAY_VALUE"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -377,7 +377,7 @@ COMMENT ON COLUMN at_document_type.document_type_active IS 'Whether this documen
 CREATE UNIQUE INDEX document_type_idx1 ON at_document_type
 (db_office_code, UPPER("DOCUMENT_TYPE_DISPLAY_VALUE"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -461,7 +461,7 @@ COMMENT ON COLUMN at_embank_structure_type.structure_type_active IS 'Whether thi
 CREATE UNIQUE INDEX embank_structure_type_idx1 ON at_embank_structure_type
 (db_office_code, UPPER("STRUCTURE_TYPE_DISPLAY_VALUE"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -544,7 +544,7 @@ COMMENT ON COLUMN at_embank_protection_type.protection_type_active IS 'Whether t
 CREATE UNIQUE INDEX embank_protection_type_idx1 ON at_embank_protection_type
 (db_office_code, UPPER("PROTECTION_TYPE_DISPLAY_VALUE"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -628,7 +628,7 @@ COMMENT ON COLUMN at_turbine_setting_reason.turb_set_reason_active IS 'Whether t
 CREATE UNIQUE INDEX turbine_setting_reason_idx1 ON at_turbine_setting_reason
 (db_office_code, UPPER(TURB_SET_REASON_DISPLAY_VALUE))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -714,7 +714,7 @@ COMMENT ON COLUMN at_turbine_computation_code.turbine_comp_active IS 'Whether th
 CREATE UNIQUE INDEX turbine_computation_code_idx1 ON at_turbine_computation_code
 (db_office_code, UPPER(TURBINE_COMP_DISPLAY_VALUE))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -798,7 +798,7 @@ COMMENT ON COLUMN at_physical_transfer_type.phys_trans_type_active IS 'Whether t
 CREATE UNIQUE INDEX physical_transfer_type_idx1 ON at_physical_transfer_type
 (db_office_code, UPPER("PHYS_TRANS_TYPE_DISPLAY_VALUE"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -882,7 +882,7 @@ COMMENT ON COLUMN at_operational_status_code.operational_status_active IS 'Wheth
 CREATE UNIQUE INDEX operational_status_code_idx1 ON at_operational_status_code
 (db_office_code, UPPER("OPER_STATUS_DISPLAY_VALUE"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -968,7 +968,7 @@ COMMENT ON COLUMN at_ws_contract_type.ws_contract_type_active IS 'Whether this w
 CREATE UNIQUE INDEX ws_contract_type_code_idx1 ON at_ws_contract_type
 (db_office_code, UPPER("WS_CONTRACT_TYPE_DISPLAY_VALUE"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1431,7 +1431,7 @@ ALTER TABLE at_turbine_characteristic ADD (
 CREATE UNIQUE INDEX at_turbine_characteristic_idx1 ON at_turbine_characteristic
 (db_office_code, UPPER("TURBINE_CHARACTERISTIC_ID"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -1497,6 +1497,7 @@ ALTER TABLE at_turbine ADD (
 /
 CREATE UNIQUE INDEX at_turbine_idx_1 ON at_turbine
 (turbine_location_code,project_location_code)--,turbine_characteristic_code)
+tablespace cwms_20at_data
 /
 ALTER TABLE at_turbine ADD (
   CONSTRAINT at_turbine_fk1
@@ -1942,7 +1943,7 @@ ALTER TABLE at_outlet_characteristic ADD (
 CREATE UNIQUE INDEX at_outlet_characteristic_idx1 ON at_outlet_characteristic
 (db_office_code, UPPER("OUTLET_CHARACTERISTIC_ID"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
@@ -2006,6 +2007,7 @@ ALTER TABLE at_outlet ADD (
 /
 CREATE UNIQUE INDEX at_outlet_idx_1 ON at_outlet
 (outlet_location_code,project_location_code)--,outlet_characteristic_code)
+TABLESPACE CWMS_20AT_DATA
 /
 
 ALTER TABLE at_outlet ADD (
@@ -2157,7 +2159,7 @@ COMMENT ON COLUMN at_document.stored_document IS 'The actual storage of the docu
 CREATE UNIQUE INDEX at_document_idx1 ON at_document
 (db_office_code, UPPER("DOCUMENT_ID"))
 LOGGING
-tablespace CWMS_20DATA
+tablespace CWMS_20AT_DATA
 PCTFREE    10
 INITRANS   2
 MAXTRANS   255
