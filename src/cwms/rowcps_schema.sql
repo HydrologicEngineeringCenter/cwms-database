@@ -2111,17 +2111,17 @@ ALTER TABLE at_gate_setting ADD (
 
 CREATE TABLE at_document
 (
-  document_code         NUMBER(10)      NOT NULL,
-  db_office_code      NUMBER                    NOT NULL,
-  document_id         VARCHAR2(64 BYTE) NOT NULL,
-  document_type_code      NUMBER(10)      NOT NULL,
-  document_location_code    NUMBER(10),
-  document_url          VARCHAR2(100 BYTE),
-  document_date         DATE        NOT NULL,
-  document_mod_date       DATE,
-  document_obsolete_date    DATE,
-  document_preview_code     NUMBER(10),
-  stored_document       BLOB
+  document_code          NUMBER(10)        NOT NULL,
+  db_office_code         NUMBER            NOT NULL,
+  document_id            VARCHAR2(64 BYTE) NOT NULL,
+  document_type_code     NUMBER(10)        NOT NULL,
+  document_location_code NUMBER(10),
+  document_url           VARCHAR2(100 BYTE),
+  document_date          DATE              NOT NULL,
+  document_mod_date      DATE,
+  document_obsolete_date DATE,
+  document_preview_code  NUMBER(10),
+  stored_document        NUMBER(10)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -2211,6 +2211,9 @@ ALTER TABLE at_document ADD (
   CONSTRAINT at_document_fk4
  FOREIGN KEY (db_office_code)
  REFERENCES cwms_office (office_code))
+/
+
+alter table at_document add constraint at_document_fk5 foreign key(stored_document) references at_blob(blob_code)
 /
 
 --------

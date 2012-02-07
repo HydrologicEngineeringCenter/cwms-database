@@ -561,6 +561,439 @@ begin
    return l_text_code;
 end get_text_code;
 
+procedure store_std_text(
+   p_std_text_id    in varchar2,
+   p_std_text       in clob     default null,
+   p_fail_if_exists in varchar2 default 'T',
+   p_office_id      in varchar2 default null)
+is
+begin
+ null;
+end store_std_text;
+   
+procedure retrieve_std_text(
+   p_std_text    out clob,
+   p_std_text_id in  varchar2,
+   p_office_id   in  varchar2 default null)
+is
+begin
+   null;
+end retrieve_std_text;
+      
+function retrieve_std_text_f(
+   p_std_text_id in varchar2,
+   p_office_id   in varchar2 default null)
+   return clob
+is
+begin
+   return null;
+end retrieve_std_text_f;
+      
+procedure delete_std_text(
+   p_std_text_id   in varchar2,
+   p_delete_action in varchar2 default cwms_util.delete_key,
+   p_office_id     in varchar2 default null)
+is
+begin
+   null;
+end delete_std_text;
+      
+procedure cat_std_text(
+   p_cursor           out sys_refcursor,
+   p_std_text_id_mask in  varchar2 default '*',
+   p_office_id_mask   in  varchar2 default null)
+is
+begin
+   null;
+end cat_std_text;
+      
+function cat_std_text_f(
+   p_std_text_id_mask in varchar2 default '*',
+   p_office_id_mask   in varchar2 default null)
+   return sys_refcursor
+is
+begin
+   return null;
+end cat_std_text_f;
+      
+procedure store_ts_std_text(
+   p_tsid         in varchar2,
+   p_std_text_id  in varchar2,
+   p_start_time   in date,
+   p_end_time     in date     default null,
+   p_version_date in date     default cwms_util.non_versioned,
+   p_time_zone    in varchar2 default null,
+   p_max_version  in varchar2 default 'T',
+   p_replace_all  in varchar2 default 'F',
+   p_attribute    in number   default null,
+   p_office_id    in varchar2 default null)
+is
+begin
+   null;
+end store_ts_std_text;
+      
+procedure store_ts_std_text(
+   p_tsid         in varchar2,
+   p_std_text_id  in varchar2,
+   p_times        in date_table_type,
+   p_version_date in date     default cwms_util.non_versioned,
+   p_time_zone    in varchar2 default null,
+   p_max_version  in varchar2 default 'T',
+   p_replace_all  in varchar2 default 'F',
+   p_attribute    in number   default null,
+   p_office_id    in varchar2 default null)
+is
+begin
+   null;
+end store_ts_std_text;
+      
+procedure retrieve_ts_std_text(
+   p_cursor           out sys_refcursor,
+   p_tsid             in  varchar2,
+   p_std_text_id_mask in  varchar2,
+   p_start_time       in  date,
+   p_end_time         in  date     default null,
+   p_version_date     in  date     default cwms_util.non_versioned,
+   p_time_zone        in  varchar2 default null,
+   p_max_version      in  varchar2 default 'T',
+   p_retrieve_text    in  varchar2 default 'T',
+   p_min_attribute    in  number   default null,
+   p_max_attribute    in  number   default null,
+   p_office_id        in  varchar2 default null)
+is
+begin
+   null;
+end retrieve_ts_std_text;
+      
+function retrieve_ts_std_text_f(
+   p_tsid             in varchar2,
+   p_std_text_id_mask in varchar2,
+   p_start_time       in date,
+   p_end_time         in date     default null,
+   p_version_date     in date     default cwms_util.non_versioned,
+   p_time_zone        in varchar2 default null,
+   p_max_version      in varchar2 default 'T',
+   p_retrieve_text    in varchar2 default 'T',
+   p_min_attribute    in number   default null,
+   p_max_attribute    in number   default null,
+   p_office_id        in varchar2 default null)
+   return sys_refcursor
+is
+begin
+   return null;
+end retrieve_ts_std_text_f;
+         
+function get_ts_std_text_count(
+   p_tsid             in varchar2,
+   p_std_text_id_mask in varchar2,
+   p_start_time       in date,
+   p_end_time         in date     default null,
+   p_version_date     in date     default cwms_util.non_versioned,
+   p_time_zone        in varchar2 default null,
+   p_max_version      in varchar2 default 'T',
+   p_min_attribute    in number   default null,
+   p_max_attribute    in number   default null,
+   p_office_id        in varchar2 default null)
+   return pls_integer
+is
+begin
+   return  null;
+end get_ts_std_text_count;
+      
+procedure delete_ts_std_text(
+   p_tsid             in varchar2,
+   p_std_text_id_mask in varchar2,
+   p_start_time       in date,
+   p_end_time         in date     default null,
+   p_version_date     in date     default cwms_util.non_versioned,
+   p_time_zone        in varchar2 default null,
+   p_max_version      in varchar2 default 'T',
+   p_min_attribute    in number   default null,
+   p_max_attribute    in number   default null,
+   p_office_id        in varchar2 default null)
+is
+begin
+   null;
+end delete_ts_std_text;
+      
+procedure store_ts_text(
+   p_tsid         in varchar2,
+   p_text         in clob,
+   p_start_time   in date,
+   p_end_time     in date     default null,
+   p_version_date in date     default cwms_util.non_versioned,
+   p_time_zone    in varchar2 default null,
+   p_max_version  in varchar2 default 'T',
+   p_replace_all  in varchar2 default 'F',
+   p_attribute    in number   default null,
+   p_office_id    in varchar2 default null)
+is
+begin
+   null;
+end store_ts_text;
+      
+procedure store_ts_text(
+   p_tsid         in varchar2,
+   p_text         in clob,
+   p_times        in date_table_type,
+   p_version_date in date     default cwms_util.non_versioned,
+   p_time_zone    in varchar2 default null,
+   p_max_version  in varchar2 default 'T',
+   p_replace_all  in varchar2 default 'F',
+   p_attribute    in number   default null,
+   p_office_id    in varchar2 default null)
+is
+begin
+   null;
+end store_ts_text;
+      
+procedure store_ts_text_id(
+   p_tsid         in varchar2,
+   p_text_id      in varchar2,
+   p_start_time   in date,
+   p_end_time     in date     default null,
+   p_version_date in date     default cwms_util.non_versioned,
+   p_time_zone    in varchar2 default null,
+   p_max_version  in varchar2 default 'T',
+   p_replace_all  in varchar2 default 'F',
+   p_attribute    in number   default null,
+   p_office_id    in varchar2 default null)
+is
+begin
+   null;
+end store_ts_text_id;
+      
+procedure store_ts_text_id(
+   p_tsid         in varchar2,
+   p_text_id      in varchar2,
+   p_times        in date_table_type,
+   p_version_date in date     default cwms_util.non_versioned,
+   p_time_zone    in varchar2 default null,
+   p_max_version  in varchar2 default 'T',
+   p_replace_all  in varchar2 default 'F',
+   p_attribute    in number   default null,
+   p_office_id    in varchar2 default null)
+is
+begin
+   null;
+end store_ts_text_id;
+      
+procedure retrieve_ts_text(
+   p_cursor        out sys_refcursor,
+   p_tsid          in  varchar2,
+   p_text_mask     in  varchar2,
+   p_start_time    in  date,
+   p_end_time      in  date     default null,
+   p_version_date  in  date     default cwms_util.non_versioned,
+   p_time_zone     in  varchar2 default null,
+   p_max_version   in  varchar2 default 'T',
+   p_min_attribute in  number   default null,
+   p_max_attribute in  number   default null,
+   p_office_id     in  varchar2 default null)
+is
+begin
+   null;
+end retrieve_ts_text;
+      
+function retrieve_ts_text_f(
+   p_tsid          in varchar2,
+   p_text_mask     in varchar2,
+   p_start_time    in date,
+   p_end_time      in date     default null,
+   p_version_date  in date     default cwms_util.non_versioned,
+   p_time_zone     in varchar2 default null,
+   p_max_version   in varchar2 default 'T',
+   p_min_attribute in number   default null,
+   p_max_attribute in number   default null,
+   p_office_id     in varchar2 default null)
+   return sys_refcursor
+is
+begin
+   return null;
+end retrieve_ts_text_f;
+      
+function get_ts_text_count(
+   p_tsid             in varchar2,
+   p_text_mask        in varchar2,
+   p_start_time       in date,
+   p_end_time         in date     default null,
+   p_version_date     in date     default cwms_util.non_versioned,
+   p_time_zone        in varchar2 default null,
+   p_max_version      in varchar2 default 'T',
+   p_min_attribute    in number   default null,
+   p_max_attribute    in number   default null,
+   p_office_id        in varchar2 default null)
+   return pls_integer
+is
+begin
+   return null;
+end get_ts_text_count;
+      
+procedure delete_ts_text(
+   p_tsid          in varchar2,
+   p_text_mask     in varchar2,
+   p_start_time    in date,
+   p_end_time      in date     default null,
+   p_version_date  in date     default cwms_util.non_versioned,
+   p_time_zone     in varchar2 default null,
+   p_max_version   in varchar2 default 'T',
+   p_min_attribute in number   default null,
+   p_max_attribute in number   default null,
+   p_office_id     in varchar2 default null)
+is
+begin
+   null;
+end delete_ts_text;
+      
+procedure delete_ts_text(
+   p_text_id       in varchar2,
+   p_delete_action in varchar2 default cwms_util.delete_key)
+is
+begin
+   null;
+end delete_ts_text;
+      
+procedure store_ts_binary(
+   p_tsid         in varchar2,
+   p_binary       in blob,
+   p_binary_type  in varchar2,
+   p_start_time   in date,
+   p_end_time     in date     default null,
+   p_version_date in date     default cwms_util.non_versioned,
+   p_time_zone    in varchar2 default null,
+   p_max_version  in varchar2 default 'T',
+   p_replace_all  in varchar2 default 'F',
+   p_attribute    in number   default null,
+   p_office_id    in varchar2 default null)
+is
+begin
+   null;
+end store_ts_binary;
+      
+procedure store_ts_binary(
+   p_tsid         in varchar2,
+   p_binary       in blob,
+   p_binary_type  in varchar2,
+   p_times        in date_table_type,
+   p_version_date in date     default cwms_util.non_versioned,
+   p_time_zone    in varchar2 default null,
+   p_max_version  in varchar2 default 'T',
+   p_replace_all  in varchar2 default 'F',
+   p_attribute    in number   default null,
+   p_office_id    in varchar2 default null)
+is
+begin
+   null;
+end store_ts_binary;
+
+procedure store_ts_binary_id(
+   p_tsid         in varchar2,
+   p_binary_id    in varchar2,
+   p_binary_type  in varchar2,
+   p_start_time   in date,
+   p_end_time     in date     default null,
+   p_version_date in date     default cwms_util.non_versioned,
+   p_time_zone    in varchar2 default null,
+   p_max_version  in varchar2 default 'T',
+   p_replace_all  in varchar2 default 'F',
+   p_attribute    in number   default null,
+   p_office_id    in varchar2 default null)
+is
+begin
+   null;
+end store_ts_binary_id;
+
+procedure store_ts_binary_id(
+   p_tsid         in varchar2,
+   p_binary_id    in varchar2,
+   p_binary_type  in varchar2,
+   p_times        in date_table_type,
+   p_version_date in date     default cwms_util.non_versioned,
+   p_time_zone    in varchar2 default null,
+   p_max_version  in varchar2 default 'T',
+   p_replace_all  in varchar2 default 'F',
+   p_attribute    in number   default null,
+   p_office_id    in varchar2 default null)
+is
+begin
+   null;
+end store_ts_binary_id;
+
+procedure retrieve_ts_binary(
+   p_cursor           out sys_refcursor,
+   p_tsid             in  varchar2,
+   p_binary_type_mask in  varchar2,
+   p_start_time       in  date,
+   p_end_time         in  date     default null,
+   p_version_date     in  date     default cwms_util.non_versioned,
+   p_time_zone        in  varchar2 default null,
+   p_max_version      in  varchar2 default 'T',
+   p_min_attribute    in  number   default null,
+   p_max_attribute    in  number   default null,
+   p_office_id        in  varchar2 default null)
+is
+begin
+   null;
+end retrieve_ts_binary;
+      
+function retrieve_ts_binary_f(
+   p_tsid             in varchar2,
+   p_binary_type_mask in varchar2,
+   p_start_time       in date,
+   p_end_time         in date     default null,
+   p_version_date     in date     default cwms_util.non_versioned,
+   p_time_zone        in varchar2 default null,
+   p_max_version      in varchar2 default 'T',
+   p_min_attribute    in number   default null,
+   p_max_attribute    in number   default null,
+   p_office_id        in varchar2 default null)
+   return sys_refcursor
+is
+begin
+   return null;
+end retrieve_ts_binary_f;
+      
+function get_ts_binary_count(
+   p_tsid             in varchar2,
+   p_binary_type_mask in varchar2,
+   p_start_time       in date,
+   p_end_time         in date     default null,
+   p_version_date     in date     default cwms_util.non_versioned,
+   p_time_zone        in varchar2 default null,
+   p_max_version      in varchar2 default 'T',
+   p_min_attribute    in number   default null,
+   p_max_attribute    in number   default null,
+   p_office_id        in varchar2 default null)
+   return pls_integer
+is
+begin
+   return null;
+end get_ts_binary_count;
+      
+procedure delete_ts_binary(
+   p_tsid             in varchar2,
+   p_binary_type_mask in varchar2,
+   p_start_time       in date,
+   p_end_time         in date     default null,
+   p_version_date     in date     default cwms_util.non_versioned,
+   p_time_zone        in varchar2 default null,
+   p_max_version      in varchar2 default 'T',
+   p_min_attribute    in number   default null,
+   p_max_attribute    in number   default null,
+   p_office_id        in varchar2 default null)
+is
+begin
+   null;
+end delete_ts_binary;
+      
+procedure delete_ts_binary(
+   p_binary_id     in varchar2,
+   p_delete_action in varchar2 default cwms_util.delete_key)
+is
+begin
+   null;
+end delete_ts_binary;      
+
 end;
 /
 
