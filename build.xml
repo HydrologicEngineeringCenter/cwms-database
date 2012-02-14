@@ -1,4 +1,4 @@
-<project name="wcdba-oracle" default="all">
+<project name="wcdba-oracle-dev" default="all">
 	<description>
 		"Build file for the oracle side of the WCDBA project."
 	</description>
@@ -21,6 +21,8 @@
 
 	<import optional="true" file="${root}/${env.USERNAME}.xml"/>
 	<import optional="true" file="${builduser.overrides}"/>
+	
+	<property name="output.lines" value="1000"/>
 	
 	<!-- whether or not this build is a debug build -->
 	<property name="debug"  value="true"/>
@@ -118,8 +120,18 @@
 				<echo message="Finished creating new CWMS Schema"/>
 			</then>
 			<else>
+				<!-- concat last 1000 lines of std output -->
 				<concat>
-					<filelist dir="${root}" files="auto-build-output.txt,auto-build-error.txt"/>
+					<filelist dir="${root}" files="auto-build-output.txt"/>
+					<filterchain>
+						<filterreader classname="org.apache.tools.ant.filters.TailFilter">
+							<param name="lines" value="${output.lines}"/>
+						</filterreader>
+					</filterchain>			
+				</concat>
+				<!-- concat all of std error -->
+				<concat>
+					<filelist dir="${root}" files="auto-build-error.txt"/>
 				</concat>
 				<echo message="${auto-build-result}"/>
 				<fail/>
@@ -127,6 +139,17 @@
 		</if>
 
     </target>
+	
+	<target name="tail-test">
+		<concat>
+			<filelist dir="${root}" files="auto-build-output.txt"/>
+			<filterchain>
+				<filterreader classname="org.apache.tools.ant.filters.TailFilter">
+					<param name="lines" value="${output.lines}"/>
+				</filterreader>
+			</filterchain>			
+		</concat>
+	</target>
 	
 	<!-- Executes python script to drop the CWMS schema. -->
 	<target name="clean" description="Executes python script to drop the CWMS schema">
