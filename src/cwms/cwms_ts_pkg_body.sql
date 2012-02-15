@@ -3522,7 +3522,7 @@ AS
    BEGIN
       RETURN use_first_table (cwms_util.TO_TIMESTAMP (p_timestamp));
    END use_first_table;
-
+   
    -------------------------------------------------------------------------------
    -- PROCEDURE TIME_SERIES_UPDATED(...)
    --
@@ -3533,7 +3533,9 @@ AS
                                   p_last_time    IN TIMESTAMP WITH TIME ZONE)
    IS
       l_msg          SYS.aq$_jms_map_message;
+      l_dx_msg       SYS.aq$_jms_map_message;
       l_msgid        PLS_INTEGER;
+      l_dx_msgid     PLS_INTEGER;
       l_first_time   TIMESTAMP;
       l_last_time    TIMESTAMP;
       i              INTEGER;
@@ -3588,12 +3590,21 @@ AS
          -----------------------------------------------
          -- notify the real-time Oracle->DSS exchange --
          -----------------------------------------------
+         cwms_msg.new_message (l_dx_msg, l_dx_msgid, 'TSDataStored');
+         l_dx_msg.set_string (l_dx_msgid, 'ts_id', p_ts_id);
+         l_dx_msg.set_string (l_dx_msgid, 'office_id', p_office_id);
+         l_dx_msg.set_long (l_dx_msgid, 'ts_code', p_ts_code);
+         l_dx_msg.set_long (l_dx_msgid,
+                        'start_time',
+                        cwms_util.to_millis (l_first_time));
+         l_dx_msg.set_long (l_dx_msgid, 'end_time', cwms_util.to_millis (l_last_time));
          i :=
             cwms_msg.publish_message (l_msg,
                                       l_msgid,
                                       p_office_id || '_realtime_ops');
       END IF;
    END time_series_updated;
+
 
    --*******************************************************************   --
    --*******************************************************************   --
