@@ -2078,6 +2078,7 @@ AS
          ELSE
             l_query_str := REPLACE (l_query_str, ':first_or_last', 'first');
          END IF;
+         dbms_output.put_line(l_query_str);
       END;
    BEGIN
       -------------------
@@ -2289,7 +2290,7 @@ AS
                      'select date_time,
                           value,
                           quality_code
-                     from ((select cast(cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) as :date_time_type) as date_time,
+                     from ((select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'') as :date_time_type) as date_time,
                                   value,
                                   quality_code
                              from (select t.date_time as date_time,
@@ -2355,8 +2356,7 @@ AS
                   replace_strings;
 
                   OPEN l_cursor FOR l_query_str
-                     USING l_time_zone,
-                           l_missing,
+                     USING l_missing,
                            l_ts_code,
                            l_start_str,
                            l_date_format,
@@ -2458,7 +2458,7 @@ AS
             IF l_strict_times
             THEN
                l_query_str :=
-                  'select cwms_util.change_timezone(max(date_time), ''UTC'', :l_time_zone) as date_time,
+                  'select cast(from_tz(cast(max(date_time) as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as date_time,
                        max(value) keep(dense_rank last order by date_time) as value,
                        max(quality_code) keep(dense_rank last order by date_time) as quality_code
                   from (select date_time,
@@ -2483,7 +2483,6 @@ AS
 
                OPEN l_cursor FOR l_query_str
                   USING l_time_zone,
-                        l_time_zone,
                         l_ts_code,
                         l_start_str,
                         l_date_format,
@@ -2500,7 +2499,7 @@ AS
                        value,
                        quality_code
                   from (select date_time,
-                               cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) as local_time,
+                               cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as local_time,
                                case
                                   when max(value) keep(dense_rank :first_or_last order by version_date) is nan then null
                                   else max(value) keep(dense_rank :first_or_last order by version_date)
@@ -2519,8 +2518,7 @@ AS
                replace_strings;
 
                OPEN l_cursor FOR l_query_str
-                  USING l_time_zone,
-                        l_ts_code,
+                  USING l_ts_code,
                         l_start_str,
                         l_date_format,
                         l_end_str,
@@ -2622,7 +2620,7 @@ AS
                      'select date_time,
                           value,
                           quality_code
-                     from ((select cast(cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) as :date_time_type) as date_time,
+                     from ((select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as date_time,
                                   value,
                                   quality_code
                              from (select t.date_time as date_time,
@@ -2688,8 +2686,7 @@ AS
                   replace_strings;
 
                   OPEN l_cursor FOR l_query_str
-                     USING l_time_zone,
-                           l_missing,
+                     USING l_missing,
                            l_ts_code,
                            l_start_str,
                            l_date_format,
@@ -2796,7 +2793,7 @@ AS
             IF l_strict_times
             THEN
                l_query_str :=
-                  'select cwms_util.change_timezone(max(date_time), ''UTC'', :l_time_zone) as date_time,
+                  'select cast(from_tz(cast(max(date_time) as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as date_time,
                        max(value) keep(dense_rank last order by date_time) as value,
                        max(quality_code) keep(dense_rank last order by date_time) as quality_code
                   from (select date_time,
@@ -2821,7 +2818,6 @@ AS
 
                OPEN l_cursor FOR l_query_str
                   USING l_time_zone,
-                        l_time_zone,
                         l_ts_code,
                         l_start_str,
                         l_date_format,
@@ -2840,7 +2836,7 @@ AS
                        value,
                        quality_code
                   from (select date_time,
-                               cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) as local_time,
+                               cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as local_time,
                                case
                                   when max(value) keep(dense_rank :first_or_last order by version_date) is nan then null
                                   else max(value) keep(dense_rank :first_or_last order by version_date)
@@ -2860,8 +2856,7 @@ AS
                replace_strings;
 
                OPEN l_cursor FOR l_query_str
-                  USING l_time_zone,
-                        l_ts_code,
+                  USING l_ts_code,
                         l_start_str,
                         l_date_format,
                         l_end_str,
