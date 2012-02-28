@@ -14,10 +14,12 @@ DECLARE
 		:= id_array_t ('av_current_map_data',
                             'av_active_flag',
 							'av_loc',          -- av_loc is created in at_schema_2...
+							'av_county',
 							'av_cwms_ts_id',
 							'av_loc_alias',
 							'av_loc_cat_grp',
 							'av_loc_level',
+							'av_nation',
 							'av_parameter',
 							'av_screened_ts_ids',
 							'av_screening_assignments',
@@ -105,6 +107,8 @@ END;
 @@cwms/views/av_data_streams.sql
 @@cwms/views/av_data_streams_current.sql
 @@cwms/views/av_state.sql
+@@cwms/views/av_county.sql
+@@cwms/views/av_nation.sql
 
 --------------------------------------------------------------------------------
 SHOW ERRORS;
