@@ -2078,7 +2078,6 @@ AS
          ELSE
             l_query_str := REPLACE (l_query_str, ':first_or_last', 'first');
          END IF;
-         dbms_output.put_line(l_query_str);
       END;
    BEGIN
       -------------------
