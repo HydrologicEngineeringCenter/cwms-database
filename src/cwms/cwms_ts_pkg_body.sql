@@ -5218,18 +5218,39 @@ AS
          CONTINUE WHEN rec.start_date > l_end_time;
          CONTINUE WHEN rec.end_date < l_start_time;
 
-         IF p_version_date_utc IS NULL
-         THEN
-            EXECUTE IMMEDIATE
-               'delete from ' || rec.table_name || ' where ts_code = :1'
-               USING p_ts_code;
-         ELSE
-            EXECUTE IMMEDIATE
-                  'delete from '
-               || rec.table_name
-               || ' where ts_code = :1 and version_date = :2'
-               USING p_ts_code, p_version_date_utc;
-         END IF;
+         if p_start_time_utc is null and p_end_time_utc is null then
+            ------------------------------
+            -- no time window specified --
+            ------------------------------
+            IF p_version_date_utc IS NULL
+            THEN
+               EXECUTE IMMEDIATE
+                  'delete from ' || rec.table_name || ' where ts_code = :1'
+                  USING p_ts_code;
+            ELSE
+               EXECUTE IMMEDIATE
+                     'delete from '
+                  || rec.table_name
+                  || ' where ts_code = :1 and version_date = :2'
+                  USING p_ts_code, p_version_date_utc;
+            END IF;
+         else
+            ---------------------------
+            -- time window specified --
+            ---------------------------
+            IF p_version_date_utc IS NULL
+            THEN
+               EXECUTE IMMEDIATE
+                  'delete from ' || rec.table_name || ' where ts_code = :1 and date_time between :2 and :3'
+                  USING p_ts_code, l_start_time, l_end_time;
+            ELSE
+               EXECUTE IMMEDIATE
+                     'delete from '
+                  || rec.table_name
+                  || ' where ts_code = :1 and date_time between :2 and :3 and version_date = :4'
+                  USING p_ts_code, l_start_time, l_end_time, p_version_date_utc;
+            END IF;
+         end if;
       END LOOP;
    END purge_ts_data;
 
