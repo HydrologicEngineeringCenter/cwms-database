@@ -1161,7 +1161,7 @@ AS
         FROM at_cwms_ts_spec
        WHERE ts_code = p_cwms_ts_code;
 
-      l_is_versioned := l_version_flag IS NOT NULL;
+      l_is_versioned := nvl(l_version_flag, 'F') = 'T';
 
       IF p_versioned IN ('T', 't') AND NOT l_is_versioned
       THEN
@@ -1169,7 +1169,7 @@ AS
          -- turn on versioning --
          ------------------------
          UPDATE at_cwms_ts_spec
-            SET version_flag = 'Y'
+            SET version_flag = 'T'
           WHERE ts_code = p_cwms_ts_code;
       ELSIF p_versioned IN ('F', 'f') AND l_is_versioned
       THEN
@@ -1185,7 +1185,7 @@ AS
          IF l_version_date_count = 0
          THEN
             UPDATE at_cwms_ts_spec
-               SET version_flag = NULL
+               SET version_flag = 'F'
              WHERE ts_code = p_cwms_ts_code;
          ELSE
             cwms_err.raise (
@@ -1215,10 +1215,10 @@ AS
        WHERE ts_code = p_cwms_ts_code;
 
       p_is_versioned :=
-         CASE l_version_flag IS NULL
-            WHEN FALSE THEN 'F'
-            WHEN TRUE THEN 'T'
-         END;
+         case nvl(l_version_flag , 'F')
+            when 'T' then 'T'
+            else 'F'
+         end;
    END is_ts_versioned;
 
    PROCEDURE is_tsid_versioned (
@@ -1243,28 +1243,24 @@ AS
    END is_tsid_versioned_f;
 
    PROCEDURE get_ts_version_dates (
-      p_date_cat          OUT SYS_REFCURSOR,
-      p_cwms_ts_code   IN     NUMBER,
-      p_start_time     IN     DATE,
-      p_end_time       IN     DATE,
-      p_time_zone      IN     VARCHAR2 DEFAULT 'UTC')
+      p_date_cat       OUT SYS_REFCURSOR,
+      p_cwms_ts_code   IN  NUMBER,
+      p_start_time     IN  DATE,
+      p_end_time       IN  DATE,
+      p_time_zone      IN  VARCHAR2 DEFAULT 'UTC')
    IS
-      l_start_time   DATE
-         := CAST (
-               FROM_TZ (CAST (p_start_time AS TIMESTAMP), p_time_zone)
-                  AT TIME ZONE 'UTC' AS DATE);
-      l_end_time     DATE
-         := CAST (
-               FROM_TZ (CAST (p_end_time AS TIMESTAMP), p_time_zone)
-                  AT TIME ZONE 'UTC' AS DATE);
+      l_start_time DATE;
+      l_end_time   DATE;
    BEGIN
+      cwms_util.check_input(p_time_zone);
+      l_start_time := cwms_util.change_timezone(p_start_time, p_time_zone, 'UTC');
+      l_end_time   := cwms_util.change_timezone(p_end_time,   p_time_zone, 'UTC');
       OPEN p_date_cat FOR
            SELECT DISTINCT
-                  CAST (
-                     CAST (version_date AS TIMESTAMP) AT TIME ZONE p_time_zone AS DATE)
+                  cwms_util.change_timezone(version_date, 'UTC', p_time_zone) as version_date
              FROM at_tsv
-            WHERE     ts_code = p_cwms_ts_code
-                  AND date_time BETWEEN l_start_time AND l_end_time
+            WHERE ts_code = p_cwms_ts_code
+              AND date_time BETWEEN l_start_time AND l_end_time
          ORDER BY version_date;
    END get_ts_version_dates;
 
@@ -1277,6 +1273,7 @@ AS
       p_db_office_id   IN     VARCHAR2 DEFAULT NULL)
    IS
    BEGIN
+      cwms_util.check_inputs(str_tab_t(p_cwms_ts_id, p_db_office_id));
       get_ts_version_dates (p_date_cat,
                             get_ts_code (p_cwms_ts_id, p_db_office_id),
                             p_start_time,

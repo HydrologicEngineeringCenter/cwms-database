@@ -1318,7 +1318,7 @@ ALTER TABLE at_cwms_ts_spec ADD (
 /
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_ck_4
- CHECK (NVL(version_flag,'T')='T'))
+ CHECK (nvl(version_flag, 'F') in ('T', 'F')))
 /
 ALTER TABLE at_cwms_ts_spec ADD (
   CONSTRAINT at_cwms_ts_spec_ck_5
