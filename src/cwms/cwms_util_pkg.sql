@@ -20,7 +20,7 @@ AS
          := TO_DATE ('04Jan1970 00:00', 'ddmonyyyy hh24:mi') ;
    /**
     * Store rule to replace any/all existing values, but do not insert values that 
-    * don't already exits.
+    * don't already exist.
     */
    replace_all CONSTANT                      VARCHAR2 (16) := 'REPLACE ALL';
    /**

@@ -2227,7 +2227,7 @@ AS
                          when value is nan then null
                          else value
                       end "VALUE",
-                      cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
+                      nvl(quality_code, :missing) "QUALITY_CODE"
                  from (
                       select date_time,
                              max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
@@ -2294,7 +2294,7 @@ AS
                                              when value is nan then null
                                              else value
                                           end as value,
-                                          cwms_util.sign_extend(nvl(quality_code, :missing)) as quality_code
+                                          nvl(quality_code, :missing) as quality_code
                                      from (
                                           select date_time,
                                                  max(value) keep(dense_rank :first_or_last order by version_date) as value,
@@ -2397,7 +2397,7 @@ AS
                                              when value is nan then null
                                              else value
                          end "VALUE",
-                         cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
+                         nvl(quality_code, :missing) "QUALITY_CODE"
                                      from (
                                           select date_time,
                                                  max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
@@ -2463,7 +2463,7 @@ AS
                                   when max(value) keep(dense_rank :first_or_last order by version_date) is nan then null
                                   else max(value) keep(dense_rank :first_or_last order by version_date)
                                end as value,
-                               cwms_util.sign_extend(max(quality_code) keep(dense_rank :first_or_last order by version_date)) as quality_code
+                               max(quality_code) keep(dense_rank :first_or_last order by version_date) as quality_code
                           from av_tsv_dqu
                          where ts_code    =  :ts_code
                            and date_time  >= to_date(:l_start, :l_date_fmt)
@@ -2500,7 +2500,7 @@ AS
                                   when max(value) keep(dense_rank :first_or_last order by version_date) is nan then null
                                   else max(value) keep(dense_rank :first_or_last order by version_date)
                                end as value,
-                               cwms_util.sign_extend(max(quality_code) keep(dense_rank :first_or_last order by version_date)) as quality_code
+                               max(quality_code) keep(dense_rank :first_or_last order by version_date) as quality_code
                           from av_tsv_dqu
                          where ts_code    =  :ts_code
                            and date_time  >= to_date(:l_start, :l_date_fmt)
@@ -2555,7 +2555,7 @@ AS
                          when value is nan then null
                          else value
                       end "VALUE",
-                      cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
+                      nvl(quality_code, :missing) "QUALITY_CODE"
                  from (
                       select date_time,
                              value,
@@ -2624,7 +2624,7 @@ AS
                                              when value is nan then null
                                              else value
                                           end as value,
-                                          cwms_util.sign_extend(nvl(quality_code, :missing)) as quality_code
+                                          nvl(quality_code, :missing) as quality_code
                                      from (
                                           select date_time,
                                                  value,
@@ -2729,7 +2729,7 @@ AS
                                              when value is nan then null
                                              else value
                          end "VALUE",
-                         cwms_util.sign_extend(nvl(quality_code, :missing)) "QUALITY_CODE"
+                         nvl(quality_code, :missing) "QUALITY_CODE"
                                      from (
                                           select date_time,
                                                  max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
@@ -2798,7 +2798,7 @@ AS
                                   when value is nan then null
                                   else value
                                end as value,
-                               cwms_util.sign_extend(quality_code) as quality_code
+                               quality_code
                           from av_tsv_dqu
                          where ts_code     =  :ts_code
                            and date_time   >= to_date(:l_start, :l_date_fmt)
@@ -2837,7 +2837,7 @@ AS
                                   when max(value) keep(dense_rank :first_or_last order by version_date) is nan then null
                                   else max(value) keep(dense_rank :first_or_last order by version_date)
                                end as value,
-                               cwms_util.sign_extend(max(quality_code) keep(dense_rank :first_or_last order by version_date)) as quality_code
+                               max(quality_code) keep(dense_rank :first_or_last order by version_date) as quality_code
                           from av_tsv_dqu
                          where ts_code     =  :ts_code
                            and date_time   >= to_date(:l_start, :l_date_fmt)

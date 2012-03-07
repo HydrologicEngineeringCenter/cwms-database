@@ -2712,27 +2712,9 @@ AS
    FUNCTION sign_extend (p_int IN INTEGER)
       RETURN INTEGER
    IS
-      i                  INTEGER;
-      bi                 BINARY_INTEGER;
-      numeric_overflow   EXCEPTION;
-      PRAGMA EXCEPTION_INIT (numeric_overflow, -1426);
    BEGIN
-      BEGIN
-         bi := p_int;
-      EXCEPTION
-         WHEN numeric_overflow
-         THEN
-            BEGIN
-               bi := p_int - 4294967296;
-            EXCEPTION
-               WHEN OTHERS
-               THEN
-                  cwms_err.raise ('INVALID_ITEM', p_int, '32-bit integer');
-            END;
-      END;
-
-      i := bi;
-      RETURN i;
+      dbms_output.put_line('Warning: Use of CWMS_UTIL.SIGN_EXTEND is deprecated');
+      return p_int;
    END;
 
    -----------------------------------
