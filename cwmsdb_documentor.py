@@ -8,6 +8,7 @@ VERSIONS:
    1.0   12Sep2011   MDP   Original version
    1.1   15Sep2011   MDP   Improved initial page in main frame
    1.2   19Sep2011   MDP   Added links to categories on initial page
+   1.3   07Mar2012   MDP   Fixed tokenize(), added documents to initial page
 
 JAVADOCS:
    Standard javadoc syntax applies as shown below, but the list of tags is a
@@ -394,6 +395,7 @@ brief_descriptions = {}
 external_files = [
    'cwms location levels.pdf',
    'cwms ratings.pdf',
+   'cwms properties dictionary.pdf'
 ]
 
 format_type = 'initcap' # must be 'upper', 'lower' or 'initcap'
@@ -478,17 +480,32 @@ format_funcs = {
 
 def tokenize(text) :
    '''
-   Removes quoted text for safe formatting
+   prepares text for safe formatting
    '''
-   pattern = get_pattern("'[^']*?'", 'imd')
-   replacements = []
+   patterns = [
+      get_pattern(re_multi_comment, 'imd'),
+      get_pattern(re_line_comment, 'im'),
+      get_pattern("'[^']*?'", 'imd')]
+   pattern_count = len(patterns)
+   replacements = [[] for i in range(pattern_count)]
    tokenized = text
-   while True :
-      matcher = pattern.matcher(tokenized)
-      if not matcher.find() : break
-      token = '!~%d~!' % len(replacements)
-      replacements.append(matcher.group())
-      tokenized = matcher.replaceFirst(token)
+   #------------------------------------------#
+   # replace comments and strings with tokens #
+   #------------------------------------------#
+   for i in range(pattern_count) :
+      squiggle = (i + 1) * '~'
+      template = '!%s%%d%s!' % (squiggle, squiggle)
+      while True :
+         matcher = patterns[i].matcher(tokenized)
+         if not matcher.find() : break
+         replacement = template % len(replacements[i])
+         replacements[i].append(matcher.group())
+         tokenized = matcher.replaceFirst(replacement)
+   #---------------------------------------------#
+   # restore comments, leaving strings tokenized #
+   #---------------------------------------------#
+   tokenized = untokenize(tokenized, replacements[:-1])
+   for i in range(pattern_count - 1) : replacements[i] = []
    return tokenized, replacements
 
 def untokenize(text, replacements) :
@@ -497,7 +514,10 @@ def untokenize(text, replacements) :
    '''
    if text :
       for i in range(len(replacements)) :
-         text = text.replace('!~%d~!' % i, replacements[i])
+         squiggle = (i + 1) * '~'
+         template = '!%s%%d%s!' % (squiggle, squiggle)
+         for j in range(len(replacements[i])) :
+            text = text.replace(template % j, replacements[i][j])
    return text
 
 def format(item, useSynonym=None) :
@@ -1176,7 +1196,16 @@ def build_main_page() :
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', '#Display Units and Scales')], content='Display Units and Scales'),
       HtmlElem('br'),
-      HtmlElem('a', attrs=[('href', '#Miscellaneous and Support')], content='Miscellaneous and Support')]
+      HtmlElem('a', attrs=[('href', '#Miscellaneous and Support')], content='Miscellaneous and Support')
+   ]
+   documents_list = [
+      HtmlElem('h3', content='General Documents'),
+      HtmlElem('a', attrs=[('href', 'cwms ratings.pdf')], content='CWMS Ratings'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', 'cwms location levels.pdf')], content='CWMS Location Levels'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', 'cwms properties dictionary.pdf')], content='CWMS User Properties')
+   ]
    example_list = [
       HtmlElem('h3', content='API Usage Examples'),
       HtmlElem('', content= 'Examples of accessing the CWMS database and using the API from various programming languages are available on the '),
@@ -1249,6 +1278,8 @@ def build_main_page() :
       category_list + \
       [HtmlElem('p'), HtmlElem('hr')] + \
       example_list + \
+      [HtmlElem('p'), HtmlElem('hr')] + \
+      documents_list + \
       [HtmlElem('p'), HtmlElem('hr'), items_list])
    page = HtmlElem('html', content=[head, body])
    return page.get_content()
