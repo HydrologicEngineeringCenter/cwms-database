@@ -56,7 +56,7 @@ AS
             EXCEPTION
                WHEN NO_DATA_FOUND
                THEN
-                  cwms_err.raise ('TS_ID_NOT_FOUND', TRIM (p_cwms_ts_id));
+                  cwms_err.raise ('TS_ID_NOT_FOUND', TRIM (p_cwms_ts_id)); 
             END;
       END;
 
@@ -119,8 +119,13 @@ AS
                       AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
             EXCEPTION
                WHEN NO_DATA_FOUND
-               THEN
-                  CWMS_ERR.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
+               THEN    
+                  l_cwms_ts_id := cwms_ts.get_ts_id_from_alias(
+                     p_alias_id  => p_cwms_ts_id, 
+                     p_office_id => p_office_id);
+                  if l_cwms_ts_id is null then
+                     CWMS_ERR.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
+                  end if;
             END;
       END;
 
@@ -3658,6 +3663,7 @@ AS
    IS
       TS_ID_NOT_FOUND       EXCEPTION;
       PRAGMA EXCEPTION_INIT (ts_id_not_found, -20001);
+      l_cwms_ts_id          VARCHAR2(183);
       l_office_id           VARCHAR2 (16);
       l_office_code         NUMBER;
       t1count               NUMBER;
@@ -3701,6 +3707,7 @@ AS
 
       -- set default values, don't be fooled by NULL as an actual argument
 
+
       IF p_office_id IS NULL
       THEN
          l_office_id := cwms_util.user_office_id;
@@ -3714,8 +3721,9 @@ AS
       ELSE
          l_office_id := p_office_id;
       END IF;
-
       l_office_code := CWMS_UTIL.GET_OFFICE_CODE (l_office_id);
+      
+      l_cwms_ts_id := nvl(cwms_ts.get_ts_id(p_cwms_ts_id, l_office_id), p_cwms_ts_id);                                        
 
       l_version_date := NVL (p_version_date, cwms_util.non_versioned);
 
@@ -3729,7 +3737,7 @@ AS
       DBMS_APPLICATION_INFO.set_action (
          'Determine utc_offset of incoming data set');
 
-      SELECT REGEXP_SUBSTR (p_cwms_ts_id,
+      SELECT REGEXP_SUBSTR (l_cwms_ts_id,
                             '[^.]+',
                             1,
                             4)
@@ -3758,7 +3766,7 @@ AS
 
       BEGIN                                        -- BEGIN - Find the TS_CODE
          l_ts_code :=
-            get_ts_code (p_cwms_ts_id       => p_cwms_ts_id,
+            get_ts_code (p_cwms_ts_id       => l_cwms_ts_id,
                          p_db_office_code   => l_office_code);
 
          SELECT interval_utc_offset
@@ -3776,7 +3784,7 @@ AS
             */
             create_ts_code (p_ts_code      => l_ts_code,
                             p_office_id    => l_office_id,
-                            p_cwms_ts_id   => p_cwms_ts_id,
+                            p_cwms_ts_id   => l_cwms_ts_id,
                             p_utc_offset   => cwms_util.UTC_OFFSET_UNDEFINED);
 
             existing_utc_offset := cwms_util.UTC_OFFSET_UNDEFINED;
@@ -3786,7 +3794,7 @@ AS
       THEN
          raise_application_error (
             -20105,
-            'Unable to create or locate ts_code for ' || p_cwms_ts_id,
+            'Unable to create or locate ts_code for ' || l_cwms_ts_id,
             TRUE);
       END IF;
 
@@ -3836,7 +3844,7 @@ AS
                raise_application_error (
                   -20110,
                      'ERROR: Incoming data set appears to contain irregular data. Unable to store data for '
-                  || p_cwms_ts_id,
+                  || l_cwms_ts_id,
                   TRUE);
          END;
 
@@ -3969,7 +3977,7 @@ AS
          || 'IN STORE_TS'
          || CHR (10)
          || 'TS Description: '
-         || p_cwms_ts_id
+         || l_cwms_ts_id
          || CHR (10)
          || '       TS CODE: '
          || l_ts_code
@@ -4531,7 +4539,7 @@ AS
             -- Publish a TSDataDeleted message --
             -------------------------------------
             cwms_msg.new_message (l_msg, l_msgid, 'TSDataDeleted');
-            l_msg.set_string (l_msgid, 'ts_id', p_cwms_ts_id);
+            l_msg.set_string (l_msgid, 'ts_id', l_cwms_ts_id);
             l_msg.set_string (l_msgid, 'office_id', l_office_id);
             l_msg.set_long (l_msgid, 'ts_code', l_ts_code);
             l_msg.set_long (
@@ -4669,7 +4677,7 @@ AS
             -- Publish a TSDataDeleted message --
             -------------------------------------
             cwms_msg.new_message (l_msg, l_msgid, 'TSDataDeleted');
-            l_msg.set_string (l_msgid, 'ts_id', p_cwms_ts_id);
+            l_msg.set_string (l_msgid, 'ts_id', l_cwms_ts_id);
             l_msg.set_string (l_msgid, 'office_id', l_office_id);
             l_msg.set_long (l_msgid, 'ts_code', l_ts_code);
             l_msg.set_long (
@@ -4721,7 +4729,7 @@ AS
       ---------------------------------
       time_series_updated (
          l_ts_code,
-         p_cwms_ts_id,
+         l_cwms_ts_id,
          l_office_id,
          p_timeseries_data (p_timeseries_data.FIRST).date_time,
          p_timeseries_data (p_timeseries_data.LAST).date_time);
@@ -4734,7 +4742,7 @@ AS
             'store_ts',
             1,
                'STORE_TS ERROR ***'
-            || p_cwms_ts_id
+            || l_cwms_ts_id
             || '*** '
             || SQLCODE
             || ': '
@@ -7714,7 +7722,7 @@ AS
                l_ts_code :=
                   get_ts_code_from_alias (p_ts_id_or_alias, p_office_id);
             EXCEPTION
-               WHEN NO_DATA_FOUND
+               WHEN ts_id_not_found
                THEN
                   NULL;
             END;

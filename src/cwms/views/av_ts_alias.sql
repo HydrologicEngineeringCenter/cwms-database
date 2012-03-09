@@ -25,7 +25,7 @@ CREATE OR REPLACE VIEW av_ts_alias
 AS
 	SELECT	atc.ts_category_id, atg.ts_group_id, atga.ts_code,
 				co.office_id AS db_office_id,
-				cwms_ts.get_cwms_ts_id (acts.ts_code, co.office_id) AS ts_id,
+				cwms_ts.get_ts_id (acts.ts_code) AS ts_id,
 				atga.ts_alias_id
 	  FROM	at_cwms_ts_spec acts,
 				at_ts_group_assignment atga,
