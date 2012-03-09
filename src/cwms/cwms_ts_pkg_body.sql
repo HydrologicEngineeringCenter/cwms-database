@@ -3722,8 +3722,13 @@ AS
          l_office_id := p_office_id;
       END IF;
       l_office_code := CWMS_UTIL.GET_OFFICE_CODE (l_office_id);
-      
-      l_cwms_ts_id := nvl(cwms_ts.get_ts_id(p_cwms_ts_id, l_office_id), p_cwms_ts_id);                                        
+                                                                
+      begin
+         l_cwms_ts_id := get_cwms_ts_id(p_cwms_ts_id, l_office_id);
+      exception
+         when ts_id_not_found then
+            l_cwms_ts_id := p_cwms_ts_id;
+      end;                                        
 
       l_version_date := NVL (p_version_date, cwms_util.non_versioned);
 
@@ -4983,6 +4988,7 @@ AS
    IS
       l_db_office_code   NUMBER := p_db_office_code;
       l_db_office_id     VARCHAR2 (16);
+      l_cwms_ts_id       varchar2(183);
       l_ts_code          NUMBER;
       l_count            NUMBER;
       l_ts_code_new      NUMBER := NULL;
@@ -5006,12 +5012,18 @@ AS
       END IF;
 
       --
-
+      SELECT office_id
+        INTO l_db_office_id
+        FROM cwms_office
+       WHERE office_code = l_db_office_code;
+       
+      l_cwms_ts_id := get_cwms_ts_id(p_cwms_ts_id, l_db_office_id);
+      
       BEGIN
          SELECT ts_code
            INTO l_ts_code
            FROM mv_cwms_ts_id mcts
-          WHERE     UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
+          WHERE     UPPER (mcts.cwms_ts_id) = UPPER (l_cwms_ts_id)
                 AND mcts.db_office_code = l_db_office_code;
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -5020,12 +5032,12 @@ AS
                SELECT ts_code
                  INTO l_ts_code
                  FROM zav_cwms_ts_id mcts
-                WHERE     UPPER (mcts.cwms_ts_id) = UPPER (p_cwms_ts_id)
+                WHERE     UPPER (mcts.cwms_ts_id) = UPPER (l_cwms_ts_id)
                       AND mcts.db_office_code = l_db_office_code;
             EXCEPTION
                WHEN NO_DATA_FOUND
                THEN
-                  cwms_err.raise ('TS_ID_NOT_FOUND', p_cwms_ts_id);
+                  cwms_err.raise ('TS_ID_NOT_FOUND', l_cwms_ts_id);
             END;
       END;
 
@@ -5041,10 +5053,6 @@ AS
       --         cwms_err.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
       --   END;
 
-      SELECT office_id
-        INTO l_db_office_id
-        FROM cwms_office
-       WHERE office_code = l_db_office_code;
 
       --
       -- Process Depricated delete_actions -
@@ -5096,7 +5104,7 @@ AS
 
                   -- Publish TSDeleted message --
                   cwms_msg.new_message (l_msg, l_msgid, 'TSDeleted');
-                  l_msg.set_string (l_msgid, 'ts_id', p_cwms_ts_id);
+                  l_msg.set_string (l_msgid, 'ts_id', l_cwms_ts_id);
                   l_msg.set_string (l_msgid, 'office_id', l_db_office_id);
                   l_msg.set_long (l_msgid, 'ts_code', l_ts_code);
                   i :=
