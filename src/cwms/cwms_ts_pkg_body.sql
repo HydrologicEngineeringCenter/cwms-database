@@ -3526,7 +3526,8 @@ AS
                                   p_ts_id        IN VARCHAR2,
                                   p_office_id    IN VARCHAR2,
                                   p_first_time   IN TIMESTAMP WITH TIME ZONE,
-                                  p_last_time    IN TIMESTAMP WITH TIME ZONE)
+                                  p_last_time    IN TIMESTAMP WITH TIME ZONE,
+                                  p_store_rule   IN VARCHAR2)
    IS
       l_msg          SYS.aq$_jms_map_message;
       l_dx_msg       SYS.aq$_jms_map_message;
@@ -3576,6 +3577,7 @@ AS
                       'start_time',
                       cwms_util.to_millis (l_first_time));
       l_msg.set_long (l_msgid, 'end_time', cwms_util.to_millis (l_last_time));
+      l_msg.set_string (l_msgid, 'store_rule', p_store_rule);
       i :=
          cwms_msg.publish_message (l_msg,
                                    l_msgid,
@@ -4539,7 +4541,7 @@ AS
                         l_store_date,
                         l_store_date;
             END LOOP;
-
+            /*
             -------------------------------------
             -- Publish a TSDataDeleted message --
             -------------------------------------
@@ -4567,6 +4569,7 @@ AS
                cwms_msg.publish_message (l_msg,
                                          l_msgid,
                                          l_office_id || '_ts_stored');
+            */                                         
          WHEN     l_override_prot
               AND UPPER (p_store_rule) = cwms_util.delete_insert
          THEN
@@ -4677,7 +4680,7 @@ AS
                         l_store_date,
                         l_store_date;
             END LOOP;
-
+            /*
             -------------------------------------
             -- Publish a TSDataDeleted message --
             -------------------------------------
@@ -4705,7 +4708,7 @@ AS
                cwms_msg.publish_message (l_msg,
                                          l_msgid,
                                          l_office_id || '_ts_stored');
-
+            */
                   DBMS_OUTPUT.put_line (
                      'CASE 7: delete-insert FALSE Completed.');
          ELSE
@@ -4737,7 +4740,8 @@ AS
          l_cwms_ts_id,
          l_office_id,
          p_timeseries_data (p_timeseries_data.FIRST).date_time,
-         p_timeseries_data (p_timeseries_data.LAST).date_time);
+         p_timeseries_data (p_timeseries_data.LAST).date_time,
+         p_store_rule);
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    EXCEPTION
