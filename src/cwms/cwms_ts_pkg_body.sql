@@ -3527,6 +3527,8 @@ AS
                                   p_office_id    IN VARCHAR2,
                                   p_first_time   IN TIMESTAMP WITH TIME ZONE,
                                   p_last_time    IN TIMESTAMP WITH TIME ZONE,
+                                  p_version_date IN TIMESTAMP WITH TIME ZONE,
+                                  p_store_time   IN TIMESTAMP WITH TIME ZONE,
                                   p_store_rule   IN VARCHAR2)
    IS
       l_msg          SYS.aq$_jms_map_message;
@@ -3535,6 +3537,8 @@ AS
       l_dx_msgid     PLS_INTEGER;
       l_first_time   TIMESTAMP;
       l_last_time    TIMESTAMP;
+      l_version_date TIMESTAMP;
+      l_store_time   TIMESTAMP;
       i              INTEGER;
    BEGIN
       -------------------------------------------------------
@@ -3542,6 +3546,8 @@ AS
       -------------------------------------------------------
       l_first_time := SYS_EXTRACT_UTC (p_first_time);
       l_last_time := SYS_EXTRACT_UTC (p_last_time);
+      l_version_date := SYS_EXTRACT_UTC (p_version_date);
+      l_store_time := SYS_EXTRACT_UTC (p_store_time);
 
       IF use_first_table
       THEN
@@ -3577,6 +3583,8 @@ AS
                       'start_time',
                       cwms_util.to_millis (l_first_time));
       l_msg.set_long (l_msgid, 'end_time', cwms_util.to_millis (l_last_time));
+      l_msg.set_long (l_msgid, 'version_date', cwms_util.to_millis (l_version_date));
+      l_msg.set_long (l_msgid, 'store_time', cwms_util.to_millis (l_store_time));
       l_msg.set_string (l_msgid, 'store_rule', p_store_rule);
       i :=
          cwms_msg.publish_message (l_msg,
@@ -4741,7 +4749,9 @@ AS
          l_office_id,
          p_timeseries_data (p_timeseries_data.FIRST).date_time,
          p_timeseries_data (p_timeseries_data.LAST).date_time,
-         p_store_rule);
+         FROM_TZ (CAST (l_version_date AS TIMESTAMP), 'UTC'),
+         l_store_date,
+         upper(p_store_rule));
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
    EXCEPTION
