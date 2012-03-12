@@ -117,7 +117,7 @@ is
    l_msgid              raw(16);
    l_queuename          varchar2(32);
    l_now                integer := cwms_util.current_millis;
-   l_expiration_time    constant binary_integer := 300; -- 5 minutes
+   l_expiration_time    constant binary_integer := 900; -- 5 minutes
    l_java_action        varchar2(4000);
 begin
    l_queuename := get_queue_name(p_msg_queue);
@@ -1143,19 +1143,22 @@ end;
 procedure purge_queues
 is
    type zombie_t is table of boolean index by varchar2(31);
-   l_subscriber_name varchar2(30);
-   l_subscriber      sys.aq$_agent := sys.aq$_agent(null, null, null);
-   l_msg_state       varchar2(30);
-   l_queue_name      varchar2(30);
-   l_table_name      varchar2(30);
-   l_count           pls_integer;
-   l_last_dequeue    timestamp;
-   l_zombies         zombie_t;
-   l_cursor          sys_refcursor;
-   l_purge_options   dbms_aqadm.aq$_purge_options_t;
-   l_purge_count     pls_integer;
-   l_max_purge_count pls_integer := 50000;
-   l_purged          boolean := false;
+   l_subscriber_name      varchar2(30);
+   l_subscriber           sys.aq$_agent := sys.aq$_agent(null, null, null);
+   l_msg_state            varchar2(30);
+   l_queue_name           varchar2(30);
+   l_table_name           varchar2(30);
+   l_count                pls_integer;
+   l_last_dequeue         timestamp;
+   l_zombies              zombie_t;
+   l_cursor               sys_refcursor;
+   l_purge_options        dbms_aqadm.aq$_purge_options_t;
+   l_undeliverable_count  pls_integer;
+   l_expired_count        pls_integer;
+   l_purge_count          pls_integer;
+   l_max_purge_count      pls_integer := 50000;
+   l_max_expired_count    constant pls_integer := 10;
+   l_purged               boolean := false;
 begin
    l_purge_options.block := false; -- don't block enqueues or dequeues when trying to purge
    for rec in (
@@ -1169,7 +1172,8 @@ begin
       -- determine if there are any zombies and messages to purge --
       --------------------------------------------------------------
       l_zombies.delete;
-      l_purge_count := 0;
+      l_undeliverable_count := 0;
+      l_expired_count := 0;
       open l_cursor for
          'select consumer_name,
                  msg_state,
@@ -1181,23 +1185,26 @@ begin
       loop
          fetch l_cursor into l_subscriber_name, l_msg_state, l_count, l_last_dequeue;
          exit when l_cursor%notfound;
-            if l_msg_state = 'UNDELIVERABLE' then
-               l_purge_count := l_purge_count + l_count;
-            elsif l_msg_state = 'EXPIRED' then
-               cwms_msg.log_db_message(
-                  'purge_queues',
-                  cwms_msg.msg_level_normal,
-                  'Subsciber '
-                     || l_subscriber_name
-                     || ' for queue '
-                     || l_queue_name
-                     || ' has failed to dequeue '
-                     || l_count
-                     || ' messages');
-               if l_count > 1000 then
-                  l_zombies(l_subscriber_name) := true;
-               end if;
-            end if;
+            case l_msg_state
+               when 'UNDELIVERABLE' then
+                  l_undeliverable_count := l_undeliverable_count + l_count;
+               when 'EXPIRED' then
+                  l_expired_count := l_expired_count + l_count;
+                  cwms_msg.log_db_message(
+                     'purge_queues',
+                     cwms_msg.msg_level_normal,
+                     'Subsciber '
+                        || l_subscriber_name
+                        || ' for queue '
+                        || l_queue_name
+                        || ' has failed to dequeue '
+                        || l_count
+                        || ' messages');
+                  if l_count > l_max_expired_count then
+                     l_zombies(l_subscriber_name) := true;
+                  end if;
+               else null;
+            end case;
        end loop;
       close l_cursor;
       ---------------------------------
@@ -1249,16 +1256,16 @@ begin
       end loop;
       -------------------------------------------------
       -- purge any expired or undeliverable messages --
-      -------------------------------------------------
-      if l_purge_count > 0 then
+      ------------------------------------------------- 
+      l_purge_count := l_expired_count + l_undeliverable_count;
+      if l_undeliverable_count > 0 then
          l_purged := false;
          for i in 1..trunc((l_purge_count - 1)/l_max_purge_count) + 1 loop
             for j in 1..100 loop
                begin
                   dbms_aqadm.purge_queue_table(
                      l_table_name,
-                     'MSG_STATE = ''UNDELIVERABLE'' AND ROWNUM <= '
-                        || l_max_purge_count,
+                     'MSG_STATE = IN(''UNDELIVERABLE'', ''EXPIRED'') AND ROWNUM <= '|| l_max_purge_count,
                      l_purge_options);
                   commit;
                   l_purged := true;
