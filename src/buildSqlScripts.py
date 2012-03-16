@@ -3733,7 +3733,6 @@ unitDefs = [
 #    ABSTRACT PARAMETER                  UNIT ID        SYSTEM  NAME                             DESCRIPTION
 #    ----------------------------------- -------------- ------- -------------------------------- --------------------------------------------------------------------
     ["Angle",                            "deg",         "NULL", "Degrees",                       "Angle of 1 degree"                                                 ],
-    ["Angle",                            "rev",         "NULL", "Revolution",                    "Angle of 360 degrees"                                              ],
     ["Angular Speed",                    "rpm",         "NULL", "Revolutions per minute",        "Angular speed of 1 revolution per minute"                          ],
     ["Area",                             "1000 m2",     "SI",   "Thousands of square meters",    "Area of 1E+03 square meters"                                       ],
     ["Area",                             "acre",        "EN",   "Acre",                          "Area of 1 acre"                                                    ],
@@ -3820,6 +3819,7 @@ unitDefs = [
     ["Volume",                           "m3",          "SI",   "Cubic meters",                  "Volume of 1 cubic meter"                                           ],
     ["Volume",                           "mgal",        "EN",   "Millions of gallons",           "Volume of 1E+06 gallons"                                           ],
     ["Volume",                           "mile3",       "EN",   "Cubic miles",                   "Volume of 1 cubic mile"                                            ],
+    ["Angle",                            "rev",         "NULL", "Revolution",                    "Angle of 360 degrees"                                              ],
 ]
 
 unitDefsById = {}
