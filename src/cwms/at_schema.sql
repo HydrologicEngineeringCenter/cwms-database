@@ -3260,8 +3260,9 @@ comment on column at_tsv_binary.data_entry_date is 'The date/time the references
 comment on column at_tsv_binary.attribute       is 'Attribute that can be used for sorting or other puropses';
 --
 begin
-   insert into cwms_base_parameter values(-2, 'Binary', 19, 55, 55, 55, 'Binary Data', 'Binary data such as images, documents, etc...');
-   insert into cwms_base_parameter values(-1, 'Text',   19, 55, 55, 55, 'Text Data',   'Text data only, no numeric values');
+   insert into cwms_base_parameter select -2, 'Binary', a.abstract_param_code, unit_code, unit_code, unit_code, 'Binary Data', 'Binary data such as images, documents, etc...' from cwms_abstract_parameter a, cwms_unit u where u.unit_id='n/a' and a.abstract_param_id = 'None' ;
+   insert into cwms_base_parameter select -1, 'Text',    a.abstract_param_code, unit_code, unit_code, unit_code, 'Text Data',   'Text data only, no numeric values'  from cwms_abstract_parameter a, cwms_unit u where
+ u.unit_id='n/a' and a.abstract_param_id = 'None' ;
 exception
    when others then
       if sqlcode = -1 then
