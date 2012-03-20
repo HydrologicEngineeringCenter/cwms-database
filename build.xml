@@ -1,4 +1,4 @@
-<project name="wcdba-oracle-dev" default="all">
+<project name="wcdba-oracle-v2.1" default="all">
 	<description>
 		"Build file for the oracle side of the WCDBA project."
 	</description>
@@ -288,7 +288,7 @@
 
                 <echo message="Exporting CWMS tables ..."/>
 
-                <property name="autoexport-arg-line" value="/c python autoexport.py echo=${autoexport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir} ${autoexport.force}"/>
+                <property name="autoexport-arg-line" value="/c python autoexport.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  oracle_parallel=${oracle.parallel} ${autoexport.force}"/>
                 <echo message="${autoexport-arg-line}"/>
 
                 <exec dir="${src}" executable="cmd" output="auto-export-output.txt" error="auto-export-error.txt" resultproperty="auto-export-result" failonerror="true">
@@ -315,10 +315,10 @@
 
                 <echo message="Importing  CWMS tables ..."/>
 
-                <property name="autoimport-arg-line" value="/c python autoimport.py echo=${autoimport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} cwms_dir=${oracle.cwms.dir} ${autoimport.force}"/>
+                <property name="autoimport-arg-line" value="/c python autoimport.py echo=${autoimport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} cwms_dir=${oracle.cwms.dir} oracle_parallel=${oracle.parallel} ${autoimport.force}"/>
                 <echo message="${autoimport-arg-line}"/>
 
-                <exec dir="${src}" executable="cmd" output="auto-import-output.txt" error="auto-import-error.txt" resultproperty="auto-import-result">
+                <exec dir="${src}" executable="cmd" output="auto-import-output.txt" error="auto-import-error.txt" resultproperty="auto-import-result" failonerror="true">
                         <arg line="${autoimport-arg-line}"/>
                 </exec>
 

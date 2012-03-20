@@ -13,6 +13,7 @@ accept cwms_schema  char prompt 'Enter cwms schema name    : '
 accept cwms_passwd  char prompt 'Enter the password for cwms  schema   : '
 accept sys_passwd  char prompt 'Enter the password for SYS     : '
 accept cwms_dir  char prompt 'Enter the directory containing exported file     : '
+accept oracle_parallel  char prompt 'Enter number of oracle export jobs (1-9)   : '
 set echo &echo_state
 '''
 
@@ -24,10 +25,11 @@ define cwms_schema = %s
 define cwms_passwd = %s
 define sys_passwd = %s
 define cwms_dir = %s
+define oracle_parallel = %s
 '''
 
 force = False
-echo, inst, cwms_passwd, cwms_schema,sys_passwd,cwms_dir = None, None, None, None, None, None
+echo, inst, cwms_passwd, cwms_schema,sys_passwd,cwms_dir,oracle_parallel = None, None, None, None, None, None, None
 for arg in sys.argv[1:] : 
 	if arg.find("=") != -1 : 
 		name, value = arg.split("=", 1)
@@ -36,9 +38,9 @@ for arg in sys.argv[1:] :
 	elif arg.lower() in ("-force", "/force") :
 		force = True
 		
-if not (echo and inst and cwms_passwd and cwms_schema and sys_passwd and cwms_dir) :
+if not (echo and inst and cwms_passwd and cwms_schema and sys_passwd and cwms_dir and oracle_parallel) :
 	print
-	print "Usage %s echo=(on|off) inst=<SID> cwms_passwd=<password> cwms_schema=<schema> sys_passwd=<system password> cwms_dir=<oracle dir> [-force]" % sys.argv[0]
+	print "Usage %s echo=(on|off) inst=<SID> cwms_passwd=<password> cwms_schema=<schema> sys_passwd=<system password> cwms_dir=<oracle dir>  oracle_parallel=<number of export jobs> [-force]" % sys.argv[0]
 	print
 	print "The -force option keeps the script from exiting on errors."
 	print
@@ -48,7 +50,7 @@ cwms_schema = cwms_schema.upper()
 inst = inst.upper()
 
 
-auto_block = auto_block_template % (echo, inst, cwms_schema, cwms_passwd, sys_passwd,cwms_dir)
+auto_block = auto_block_template % (echo, inst, cwms_schema, cwms_passwd, sys_passwd,cwms_dir,oracle_parallel)
 
 f = open(manual_sqlfilename, "r")
 sql_script = f.read()
@@ -71,6 +73,7 @@ ec = os.system(cmd)
 if ec :
 	print
 	print "SQL*Plus exited with code", ec 
+	ec = 1
 	print
 	
 sys.exit(ec)
