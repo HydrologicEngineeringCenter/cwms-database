@@ -146,6 +146,30 @@ set echo off
 set define on
 connect &cwms_schema/&cwms_passwd@&inst
 set serveroutput on
+--------------------------------
+-- populate base data via API --
+--------------------------------
+begin
+   cwms_text.store_std_text('A', 'NO RECORD');
+   cwms_text.store_std_text('B', 'CHANNEL DRY');
+   cwms_text.store_std_text('C', 'POOL STAGE');
+   cwms_text.store_std_text('D', 'AFFECTED BY WIND');
+   cwms_text.store_std_text('E', 'ESTIMATED');
+   cwms_text.store_std_text('F', 'NOT AT STATED TIME');
+   cwms_text.store_std_text('G', 'GATES CLOSED');
+   cwms_text.store_std_text('H', 'PEAK STAGE');
+   cwms_text.store_std_text('I', 'ICE/SHORE ICE');
+   cwms_text.store_std_text('J', 'INTAKES OUT OF WATER');
+   cwms_text.store_std_text('K', 'FLOAT FROZEN/FLOATING ICE');
+   cwms_text.store_std_text('L', 'GAGE FROZEN');
+   cwms_text.store_std_text('M', 'MALFUNCTION');
+   cwms_text.store_std_text('N', 'MEAN STAGE FOR THE DAY');
+   cwms_text.store_std_text('O', 'OBSERVERS READING');
+   cwms_text.store_std_text('P', 'INTERPOLATED');
+   cwms_text.store_std_text('Q', 'DISCHARGE MISSING');
+   cwms_text.store_std_text('R', 'HIGH WATER, NO ACCESS');
+end;
+/
 --------------------------------------
 -- create and start queues and jobs --
 --------------------------------------
