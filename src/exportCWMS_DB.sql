@@ -19,8 +19,8 @@ spool exportCWMS_DB.log
 --
 -- log on as sysdba
 --
-connect sys/&sys_passwd@&inst as sysdba
 whenever sqlerror exit sql.sqlcode;
+connect sys/&sys_passwd@&inst as sysdba
 set serveroutput on
 select sysdate from dual;
 begin execute immediate 'ALTER SYSTEM ENABLE RESTRICTED SESSION'; end;
@@ -41,7 +41,7 @@ DECLARE
 
    data_export_state   VARCHAR2 (30);                 -- Status of export jobs
    data_filename       VARCHAR2 (1024);
-   invalid_parameter   EXCEPTION;
+   export_exception   EXCEPTION;
 
 
    PROCEDURE WRITE_DATAFILE
@@ -78,7 +78,6 @@ DECLARE
                       AND c.status = 'ENABLED'
                       AND c.owner = '&cwms_schema'
                       AND c.constraint_type = 'R'
-		      AND c.table_name not like 'AT_TSV%'
              ORDER BY c.constraint_type DESC)
       LOOP
          DBMS_UTILITY.exec_ddl_statement (
@@ -103,7 +102,6 @@ DECLARE
                       AND c.status = 'DISABLED'
                       AND c.owner = '&cwms_schema'
                       AND c.constraint_type = 'R'
-                      AND c.table_name not like 'AT_TSV%'
              ORDER BY c.constraint_type DESC)
       LOOP
          DBMS_UTILITY.exec_ddl_statement (
@@ -208,11 +206,11 @@ DECLARE
 BEGIN
    EXECUTE IMMEDIATE 'create or replace directory expdp_dir as ''&cwms_dir''';
    DISABLE_FK_CONSTRAINTS;
-   EXECUTE IMMEDIATE 'ALTER TABLE ' || '&CWMS_SCHEMA' || '.CWMS_DATA_QUALITY MOVE TABLESPACE CWMS_20_TSV';
-   EXECUTE IMMEDIATE 'ALTER TABLE ' || '&CWMS_SCHEMA' || '.AT_CWMS_TS_SPEC MOVE TABLESPACE CWMS_20_TSV';
-   EXECUTE IMMEDIATE 'ALTER INDEX ' || '&CWMS_SCHEMA' || '.AT_CWMS_TS_SPEC_PK REBUILD TABLESPACE CWMS_20_TSV';
-   EXECUTE IMMEDIATE 'ALTER INDEX ' || '&CWMS_SCHEMA' || '.AT_CWMS_TS_SPEC_UI REBUILD TABLESPACE CWMS_20_TSV';
-   EXECUTE IMMEDIATE 'ALTER INDEX ' || '&CWMS_SCHEMA' || '.CWMS_DATA_QUALITY_PK REBUILD TABLESPACE CWMS_20_TSV';
+   --EXECUTE IMMEDIATE 'ALTER TABLE ' || '&CWMS_SCHEMA' || '.CWMS_DATA_QUALITY MOVE TABLESPACE CWMS_20_TSV';
+   --EXECUTE IMMEDIATE 'ALTER TABLE ' || '&CWMS_SCHEMA' || '.AT_CWMS_TS_SPEC MOVE TABLESPACE CWMS_20_TSV';
+   --EXECUTE IMMEDIATE 'ALTER INDEX ' || '&CWMS_SCHEMA' || '.AT_CWMS_TS_SPEC_PK REBUILD TABLESPACE CWMS_20_TSV';
+   --EXECUTE IMMEDIATE 'ALTER INDEX ' || '&CWMS_SCHEMA' || '.AT_CWMS_TS_SPEC_UI REBUILD TABLESPACE CWMS_20_TSV';
+   --EXECUTE IMMEDIATE 'ALTER INDEX ' || '&CWMS_SCHEMA' || '.CWMS_DATA_QUALITY_PK REBUILD TABLESPACE CWMS_20_TSV';
    WRITE_DATAFILE;
 
    h1 :=
@@ -249,6 +247,10 @@ BEGIN
    DBMS_OUTPUT.put_line ('AT Export Job has completed');
    DBMS_OUTPUT.put_line ('Final job state(AT export) = ' || data_export_state);
    DBMS_DATAPUMP.detach (h1);
+   IF data_export_state != 'COMPLETED'
+   THEN
+	RAISE export_exception;
+   END IF;
 
    h1 :=
       DBMS_DATAPUMP.OPEN ('EXPORT',
@@ -280,6 +282,10 @@ BEGIN
    DBMS_OUTPUT.put_line ('Sequence export Job has completed');
    DBMS_OUTPUT.put_line ('Final job state(sequence export) = ' || data_export_state);
    DBMS_DATAPUMP.detach (h1);
+   IF data_export_state != 'COMPLETED'
+   THEN
+	RAISE export_exception;
+   END IF;
    RENAME_BACKUP_FILE ('cwms_at_tsv');
    EXECUTE IMMEDIATE 'ALTER TABLESPACE CWMS_20_TSV read only';
 
@@ -298,6 +304,10 @@ BEGIN
    DBMS_OUTPUT.put_line ('Tablespace export Job has completed');
    DBMS_OUTPUT.put_line ('Final job state(Tablespace) = ' || data_export_state);
    DBMS_DATAPUMP.detach (h1);
+   IF data_export_state != 'COMPLETED'
+   THEN
+	RAISE export_exception;
+   END IF;
    --ENABLE_FK_CONSTRAINTS;
 
 

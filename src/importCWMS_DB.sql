@@ -140,7 +140,6 @@ DECLARE
    		AND c.status = 'DISABLED'
    		AND c.owner = '&cwms_schema'
    		AND c.constraint_type = 'R'
-                AND c.table_name not like 'AT_TSV%'
    		ORDER BY c.constraint_type DESC)
   	LOOP
     		dbms_utility.exec_ddl_statement('alter table ' || c.owner || '.' || c.table_name || ' enable constraint ' || c.constraint_name);
@@ -175,7 +174,6 @@ DECLARE
    AND c.status = 'ENABLED'
    AND c.owner = '&cwms_schema'
    AND c.constraint_type = 'R'
-   AND c.table_name not like 'AT_TSV%'
    ORDER BY c.constraint_type DESC)
   LOOP
     dbms_utility.exec_ddl_statement('alter table ' || c.owner || '.' || c.table_name || ' disable constraint ' || c.constraint_name);
