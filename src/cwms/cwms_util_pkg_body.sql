@@ -3787,6 +3787,159 @@ AS
              end;
    end get_boolean_state;
 
+   procedure set_session_info(
+      p_item_name in varchar2,
+      p_txt_value in varchar2,
+      p_num_value in number)
+   is
+      l_item_name varchar2(64);
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      check_inputs(str_tab_t(p_item_name, p_txt_value));
+      if p_item_name is null then cwms_err.raise('NULL_ARGUMENT', 'P_ITEM_NAME'); end if;
+      -----------------------------
+      -- insert/update the table --
+      -----------------------------
+      l_item_name := upper(trim(p_item_name));
+      merge into at_session_info t
+      using (select l_item_name as item_name from dual) d
+         on (t.item_name = d.item_name)
+      when matched then
+         update set str_value = p_txt_value, num_value = p_num_value
+      when not matched then
+         insert values (l_item_name, p_txt_value, p_num_value);
+   end set_session_info;
+
+   procedure set_session_info(
+      p_item_name in varchar2,
+      p_txt_value in varchar2)
+   is
+      l_item_name varchar2(64);
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      check_inputs(str_tab_t(p_item_name, p_txt_value));
+      if p_item_name is null then cwms_err.raise('NULL_ARGUMENT', 'P_ITEM_NAME'); end if;
+      -----------------------------
+      -- insert/update the table --
+      -----------------------------
+      l_item_name := upper(trim(p_item_name));
+      merge into at_session_info t
+      using (select l_item_name as item_name from dual) d
+         on (t.item_name = d.item_name)
+      when matched then
+         update set str_value = p_txt_value
+      when not matched then
+         insert values (l_item_name, p_txt_value, null);
+   end set_session_info;
+
+   procedure set_session_info(
+      p_item_name in varchar2,
+      p_num_value in number)
+   is
+      l_item_name varchar2(64);
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      check_input(p_item_name);
+      if p_item_name is null then cwms_err.raise('NULL_ARGUMENT', 'P_ITEM_NAME'); end if;
+      -----------------------------
+      -- insert/update the table --
+      -----------------------------
+      l_item_name := upper(trim(p_item_name));
+      merge into at_session_info t
+      using (select l_item_name as item_name from dual) d
+         on (t.item_name = d.item_name)
+      when matched then
+         update set num_value = p_num_value
+      when not matched then
+         insert values (l_item_name, null, p_num_value);
+   end set_session_info;
+
+   procedure get_session_info(
+      p_txt_value out varchar2,
+      p_num_value out number,
+      p_item_name in  varchar2)
+   is
+      l_item_name varchar2(64);
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      check_input(p_item_name);
+      if p_item_name is null then cwms_err.raise('NULL_ARGUMENT', 'P_ITEM_NAME'); end if;
+      -------------------------
+      -- retrieve the values --
+      -------------------------
+      l_item_name := upper(trim(p_item_name));
+      begin
+         select str_value,
+                num_value
+           into p_txt_value,
+                p_num_value
+           from at_session_info
+          where item_name = l_item_name;
+      exception
+         when no_data_found then null;
+      end;
+   end get_session_info;
+
+   function get_session_info_txt(
+      p_item_name in varchar2)
+      return varchar2
+   is
+      l_txt_value varchar2(256);
+      l_num_value number;
+   begin
+      get_session_info(
+         l_txt_value,
+         l_num_value,
+         p_item_name);
+
+      return l_txt_value;
+   end get_session_info_txt;
+
+   function get_session_info_num(
+      p_item_name in varchar2)
+      return number
+   is
+      l_txt_value varchar2(256);
+      l_num_value number;
+   begin
+      get_session_info(
+         l_txt_value,
+         l_num_value,
+         p_item_name);
+
+      return l_num_value;
+   end get_session_info_num;
+
+   procedure reset_session_info(
+      p_item_name in varchar2)
+   is
+      l_item_name varchar2(64);
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      check_input(p_item_name);
+      if p_item_name is null then cwms_err.raise('NULL_ARGUMENT', 'P_ITEM_NAME'); end if;
+      -----------------------
+      -- delete the record --
+      -----------------------
+      l_item_name := upper(trim(p_item_name));
+      begin
+         delete from at_session_info
+          where item_name = l_item_name;
+      exception
+         when no_data_found then null;
+      end;
+   end reset_session_info;
+
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call

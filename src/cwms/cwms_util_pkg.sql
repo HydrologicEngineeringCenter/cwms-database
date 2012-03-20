@@ -1620,6 +1620,9 @@ AS
                       )
       RETURN VARCHAR2;
 
+   --
+   -- Routines for dealing with AT_BOOLEAN_STATE table
+   --
    procedure set_boolean_state(
       p_name  in varchar2,
       p_state in boolean);
@@ -1635,6 +1638,79 @@ AS
    function get_boolean_state_char(
       p_name in varchar2)
       return char;
+   --
+   -- Routines for dealing with AT_SESSION_INFO table
+   --
+   /**
+    * Sets session-specific information
+    *
+    * @param p_item_name the name of the session info to set
+    * @param p_txt_value the text value of the session info
+    * @param p_num_value the numeric value of the session info
+    */
+   procedure set_session_info(
+      p_item_name in varchar2,
+      p_txt_value in varchar2,
+      p_num_value in number);
+   /**
+    * Sets session-specific information
+    *
+    * @param p_item_name the name of the session info to set
+    * @param p_txt_value the text value of the session info
+    */
+   procedure set_session_info(
+      p_item_name in varchar2,
+      p_txt_value in varchar2);
+   /**
+    * Sets session-specific information
+    *
+    * @param p_item_name the name of the session info to set
+    * @param p_num_value the numeric value of the session info
+    */
+   procedure set_session_info(
+      p_item_name in varchar2,
+      p_num_value in number);
+   /**
+    * Retrieves session-specific information
+    *
+    * @param p_txt_value the text value of the session info
+    * @param p_num_value the numeric value of the session info
+    * @param p_item_name the name of the session info to retrieve
+    */
+   procedure get_session_info(
+      p_txt_value out varchar2,
+      p_num_value out number,
+      p_item_name in  varchar2);
+   /**
+    * Retrieves session-specific text information
+    *
+    * @param p_item_name the name of the session info to retrieve
+    *
+    * @return the text value of the session info
+    */
+   function get_session_info_txt(
+      p_item_name in varchar2)
+      return varchar2;
+   /**
+    * Retrieves session-specific numeric information
+    *
+    * @param p_item_name the name of the session info to retrieve
+    *
+    * @return the numeric value of the session info
+    */
+   function get_session_info_num(
+      p_item_name in varchar2)
+      return number;
+   /**
+    * Resets (unsets, deletes) session-specific information
+    *
+    * @param p_item_name the name of the session info to reset
+    */
+   procedure reset_session_info(
+      p_item_name in varchar2);
+
+
+
 
 END cwms_util;
 /

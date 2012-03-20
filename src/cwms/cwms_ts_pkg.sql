@@ -951,7 +951,7 @@ AS
     *     <td class="descr">The time zone of the time window</td>
     *   </tr>
     *   <tr>
-    *     <td class="descr-center">3</td>
+    *     <td class="descr-center">7</td>
     *     <td class="descr">data</td>
     *     <td class="descr">cursor</td>
     *     <td class="descr">The time series data for this record
@@ -1886,6 +1886,110 @@ AS
       RESULT_CACHE;
 
    /**
+    * Retrieves the interval minutes of a time series
+    *
+    * @param p_ts_code the unique numeric value identifying the time series
+    *
+    * @return the interval minutes of the time series identifier
+    */
+   FUNCTION get_ts_interval (p_ts_code IN NUMBER)
+      RETURN NUMBER result_cache;
+
+   /**
+    * Retrieves the interval minutes of a time series identifier
+    *
+    * @param p_cwms_ts_id the time series identifier
+    *
+    * @return the interval minutes of the time series identifier
+    */
+   FUNCTION get_ts_interval (p_cwms_ts_id IN VARCHAR2)
+      RETURN NUMBER result_cache;
+
+   /**
+    * Retrieves the interval portion string of a time series identifier
+    *
+    * @param p_cwms_ts_id the time series identifier
+    *
+    * @return the interval portion string of the time series identifier
+    */
+   FUNCTION get_ts_interval_string (p_cwms_ts_id IN VARCHAR2)
+      RETURN VARCHAR2 result_cache;
+
+   /**
+    * Retrieves the interval minutes of a specified interval string
+    *
+    * @param p_interval_id the time series identifier
+    *
+    * @return the interval minutes of the specified interval string
+    */
+   FUNCTION get_interval (p_interval_id IN VARCHAR2)
+      RETURN NUMBER result_cache;
+
+   /**
+    * Returns the UTC interval offset for a specified time and interval
+    *
+    * @param p_date_time_utc    the date/time
+    * @param p_interval_minutes the interval in minutes
+    *
+    * @return the UTC interval offset in minuts
+    */
+   FUNCTION get_utc_interval_offset (
+      p_date_time_utc    IN DATE,
+      p_interval_minutes IN NUMBER)
+      RETURN NUMBER result_cache;
+   /**
+    * Returns a table of valid date/times in a specified time window for a regular time series
+    *
+    * @param p_start_time the start time of the time window
+    * @param p_end_time   the end time of the time window
+    * @param p_interval_minutes the interval for the time series, specified in minutes
+    * @param p_utc_interval_offset_minutes The valid offset in minutes into the UTC interval for the time series
+    * @param p_time_zone the time zone of the input and output values. If null or not specified, the time zone 'UTC' is used.
+    *
+    * @return the table of valid date/times for the specified parameters
+    */
+   FUNCTION get_times_for_time_window (
+      p_start_time                  IN DATE,
+      p_end_time                    IN DATE,
+      p_interval_minutes            IN INTEGER,
+      p_utc_interval_offset_minutes IN INTEGER,
+      p_time_zone                   IN VARCHAR2 DEFAULT 'UTC')
+      RETURN date_table_type;
+   /**
+    * Returns a table of valid date/times in a specified time window for a regular time series
+    *
+    * @param p_start_time the start time of the time window
+    * @param p_end_time   the end time of the time window
+    * @param p_ts_code    the unique numeric code identifying the time series
+    * @param p_time_zone the time zone of the input and output values. If null or not specified, the time zone 'UTC' is used.
+    *
+    * @return the table of valid date/times for the time series
+    */
+   FUNCTION get_times_for_time_window (
+      p_start_time IN DATE,
+      p_end_time   IN DATE,
+      p_ts_code    IN INTEGER,
+      p_time_zone  IN VARCHAR2 DEFAULT 'UTC')
+      RETURN date_table_type;
+   /**
+    * Returns a table of valid date/times in a specified time window for a regular time series
+    *
+    * @param p_start_time the start time of the time window
+    * @param p_end_time   the end time of the time window
+    * @param p_ts_id      the time series identifier
+    * @param p_time_zone  the time zone of the input and output values. If null or not specified, the time zone 'UTC' is used.
+    * @param p_office_id  the identifier of the office that owns the time series. If not specified or NULL, the session user's default office is used.
+    *
+    * @return the table of valid date/times for the time series
+    */
+   FUNCTION get_times_for_time_window (
+      p_start_time IN DATE,
+      p_end_time   IN DATE,
+      p_ts_id      IN VARCHAR2,
+      p_time_zone  IN VARCHAR2 DEFAULT 'UTC',
+      p_office_id  IN VARCHAR2 DEFAULT NULL)
+      RETURN date_table_type;
+   /**
     * Retrieves the earliest time series data date in the database for a time series
     *
     * @see constant cwms_util.non_versioned
@@ -2115,6 +2219,44 @@ AS
       p_office_id         in varchar2 default null)
       return varchar2;
 
+   /**
+    * Sets the current session to retrieve quality codes as unsigned quantities. Quality codes
+    * are 32-bit masks, with specific bits representing specific portions of the overall quality.
+    * As such, they are neither inherently signed nor unsigned.  They are represented in the
+    * database as unsigned values. Since Java has no unsigned 32-bit data type the default
+    * representation of quality codes as returned by RETRIEVE_TS is signed.
+    */
+   procedure set_retrieve_unsigned_quality;
+
+   /**
+    * Sets the current session to retrieve quality codes as signed quantities. Quality codes
+    * are 32-bit masks, with specific bits representing specific portions of the overall quality.
+    * As such, they are neither inherently signed nor unsigned.  They are represented in the
+    * database as unsigned values. Since Java has no unsigned 32-bit data type the default
+    * representation of quality codes as returned by RETRIEVE_TS is signed.
+    */
+   procedure set_retrieve_signed_quality;
+
+   /**
+    * Normalizes the specified quality code to as igned or unsigned quantity depending on
+    * current session settings. Quality codes are 32-bit masks, with specific bits representing
+    * specific portions of the overall quality.  As such, they are neither inherently signed nor
+    * unsigned.  They are represented in the database as unsigned values. Since Java has no
+    * unsigned 32-bit data type the default representation of quality codes as returned by RETRIEVE_TS
+    * is signed.
+    *
+    * @param p_quality the quality code to normalize
+    *
+    * @return the normalized quality code
+    *
+    * @since CWMS2.1
+    * @see set_retrieve_unsigned_quality
+    * @see set_retrieve_signed_quality
+    */
+   function normalize_quality(
+      p_quality in number)
+      return number
+      result_cache;
 END;
 /
 
