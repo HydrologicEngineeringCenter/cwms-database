@@ -1,4 +1,4 @@
-o/* Formatted on 2007/11/14 12:53 (Formatter Plus v4.8.8) */
+/* Formatted on 2007/11/14 12:53 (Formatter Plus v4.8.8) */
 /* CWMS Version 2.0 --
 This script should be run by the cwms schema owner.
 */
@@ -3129,6 +3129,15 @@ create global temporary table at_schema_object_diff
 on commit delete rows
 /
 
+create global temporary table at_session_info
+(
+   item_name varchar2(64) primary key,
+   str_value varchar2(256),
+   num_value number
+)
+on commit preserve rows
+/
+
 create table cwms_media_type (
    media_type_code number(4)    not null,
    media_type_id   varchar2(84) not null,
@@ -3182,7 +3191,6 @@ create table at_std_text(
    std_text_id   varchar2(16) not null,
    clob_code     number(10),
    constraint at_std_text_pk  primary key(std_text_code),
-   constraint at_std_text_u1  unique(office_code, std_text_id),
    constraint at_std_text_ck1 check(std_text_id = upper(std_text_id)),
    constraint at_std_text_fk1 foreign key(clob_code) references at_clob(clob_code)
 ) tablespace cwms_20at_data
@@ -3192,6 +3200,8 @@ comment on column at_std_text.std_text_code is 'Synthetic key';
 comment on column at_std_text.office_code   is 'Office that owns the standard text';
 comment on column at_std_text.std_text_id   is 'The short identifier';
 comment on column at_std_text.clob_code     is 'Reference to the descriptive text - may be null if short identifier is self-descriptive';
+
+create unique index at_std_text_u1 on at_std_text(office_code, upper(std_text_id)) tablespace cwms_20at_data;
 --
 create table at_tsv_std_text(
    ts_code         number(10)   not null,
@@ -3272,47 +3282,6 @@ exception
       end if;
 end;
 /
-begin
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/A', '''A'' code from DATAMAN', 'NO RECORD');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/B', '''B'' code from DATAMAN', 'CHANNEL DRY');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/C', '''C'' code from DATAMAN', 'POOL STAGE');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/D', '''D'' code from DATAMAN', 'AFFECTED BY WIND');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/E', '''E'' code from DATAMAN', 'ESTIMATED');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/F', '''F'' code from DATAMAN', 'NOT AT STATED TIME');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/G', '''G'' code from DATAMAN', 'GATES CLOSED');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/H', '''H'' code from DATAMAN', 'PEAK STAGE');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/I', '''I'' code from DATAMAN', 'ICE/SHORE ICE');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/J', '''J'' code from DATAMAN', 'INTAKES OUT OF WATER');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/K', '''K'' code from DATAMAN', 'FLOAT FROZEN/FLOATING ICE');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/L', '''L'' code from DATAMAN', 'GAGE FROZEN');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/M', '''M'' code from DATAMAN', 'MALFUNCTION');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/N', '''N'' code from DATAMAN', 'MEAN STAGE FOR THE DAY');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/O', '''O'' code from DATAMAN', 'OBSERVERS READING');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/P', '''P'' code from DATAMAN', 'INTERPOLATED');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/Q', '''Q'' code from DATAMAN', 'DISCHARGE MISSING');
-   insert into at_clob values(cwms_seq.nextval, 53, '/DATMAN/R', '''R'' code from DATAMAN', 'HIGH WATER, NO ACCESS');
---
-   insert into at_std_text values(cwms_seq.nextval, 53, 'A', (select clob_code from at_clob where id = '/DATMAN/A'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'B', (select clob_code from at_clob where id = '/DATMAN/B'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'C', (select clob_code from at_clob where id = '/DATMAN/C'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'D', (select clob_code from at_clob where id = '/DATMAN/D'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'E', (select clob_code from at_clob where id = '/DATMAN/E'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'F', (select clob_code from at_clob where id = '/DATMAN/F'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'G', (select clob_code from at_clob where id = '/DATMAN/G'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'H', (select clob_code from at_clob where id = '/DATMAN/H'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'I', (select clob_code from at_clob where id = '/DATMAN/I'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'J', (select clob_code from at_clob where id = '/DATMAN/J'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'K', (select clob_code from at_clob where id = '/DATMAN/K'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'L', (select clob_code from at_clob where id = '/DATMAN/L'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'M', (select clob_code from at_clob where id = '/DATMAN/M'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'N', (select clob_code from at_clob where id = '/DATMAN/N'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'O', (select clob_code from at_clob where id = '/DATMAN/O'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'P', (select clob_code from at_clob where id = '/DATMAN/P'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'Q', (select clob_code from at_clob where id = '/DATMAN/Q'));
-   insert into at_std_text values(cwms_seq.nextval, 53, 'R', (select clob_code from at_clob where id = '/DATMAN/R'));
-end;
-/
-commit;
 declare
    i number(4) := 0;
 begin
