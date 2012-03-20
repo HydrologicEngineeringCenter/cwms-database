@@ -93,7 +93,7 @@ ec = os.system(cmd)
 #os.remove(auto_sqlfilename)
 if ec :
 	print("\nSQL*Plus exited with code %s\n" % ec)
-	sys.exit(ec)
+	sys.exit(-1)
 
 #----------------------------------------------------#
 # use SQL*Loader to load any control files generated #
@@ -107,7 +107,7 @@ for loaderFilename in glob.glob('*.ctl') + glob.glob('data/*.ctl') :
 	ec = os.system(loaderCmd)
 	if ec :
 		print("\nSQL*Loader exited with code %s\n" % ec)
-		sys.exit(ec)
+		sys.exit(-1)
 
 #---------#
 # cleanup #
