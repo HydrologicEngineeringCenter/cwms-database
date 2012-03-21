@@ -3882,7 +3882,14 @@ AS
                   || l_cwms_ts_id,
                   TRUE);
          end;
-         if existing_utc_offset != cwms_util.utc_offset_undefined then
+         if existing_utc_offset = cwms_util.utc_offset_undefined then
+            --------------------
+            -- set the offset --
+            --------------------
+            update at_cwms_ts_spec
+               set interval_utc_offset = l_utc_offset
+             where ts_code = l_ts_code; 
+         else
             -----------------------------
             -- test for invalid offset --
             -----------------------------
