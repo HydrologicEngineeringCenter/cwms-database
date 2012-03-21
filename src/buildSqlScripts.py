@@ -79,7 +79,7 @@ cwmsTableSpaceName = "CWMS_20DATA"
 atTableSpaceName = "CWMS_20AT_DATA"
 #userTableSpaceName = "%sCWMSDATA" % user
 #tsTableSpaceName = "%sCWMSTS" % user
-tsTableSpaceName = "CWMS_20_TSV"
+#tsTableSpaceName = "CWMS_20_TSV"
 #userSchema = "%sCWMSPD" % user
 
 cwmsSequences = [
@@ -9223,7 +9223,7 @@ for table in tables_rev :
     if   tableName.startswith("CWMS") : tableSpaceName = cwmsTableSpaceName
     elif tableName.startswith("AT")   : tableSpaceName = atTableSpaceName
     else : raise Exception("Don't know what tablespace to use for %s" % tableName)
-    if "TSV" in tableName or tableName.startswith("CWMS_DATA_Q") : tableSpaceName = tsTableSpaceName
+    #if "TSV" in tableName or tableName.startswith("CWMS_DATA_Q") : tableSpaceName = tsTableSpaceName
 
     if schema[table] == "CWMS"  : thisPrefix = prefix[CWMS]
     else                        : thisPrefix = prefix[USER]
