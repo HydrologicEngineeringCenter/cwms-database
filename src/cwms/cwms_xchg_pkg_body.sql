@@ -1780,21 +1780,43 @@ begin
    -------------------------------------
    -- loop over the archived messages --
    -------------------------------------
-   for rec in (select msg.ts_code,
-                   msg.message_time,
-                   msg.first_data_time,
-                   msg.last_data_time,
-                   tsid.cwms_ts_id
-              from ((select * from at_ts_msg_archive_1) union (select * from at_ts_msg_archive_2)) msg,
-                   mv_cwms_ts_id tsid
-             where message_time between l_start_time and l_end_time
-               and msg.ts_code in (select cwms_ts_code
-                                     from at_xchg_dss_ts_mappings
-                                    where xchg_set_code = l_xchg_code
-                                  )
-               and tsid.ts_code = msg.ts_code                            
-          order by msg.message_time asc
-           )
+   -- for rec in (select msg.ts_code,
+   --                 msg.message_time,
+   --                 msg.first_data_time,
+   --                 msg.last_data_time,
+   --                 tsid.cwms_ts_id
+   --            from ((select * from at_ts_msg_archive_1) union (select * from at_ts_msg_archive_2)) msg,
+   --                 mv_cwms_ts_id tsid
+   --           where message_time between l_start_time and l_end_time
+   --             and msg.ts_code in (select cwms_ts_code
+   --                                   from at_xchg_dss_ts_mappings
+   --                                  where xchg_set_code = l_xchg_code
+   --                                )
+   --             and tsid.ts_code = msg.ts_code
+   --        order by msg.message_time asc
+   --         )
+   for rec in
+      (
+         select msg.ts_code,
+                msg.message_time,
+                msg.first_data_time,
+                msg.last_data_time,
+                tsid.cwms_ts_id
+           from ((select *
+                   from at_ts_msg_archive_1
+                  where message_time between l_start_time and l_end_time
+                    and ts_code in (select cwms_ts_code from at_xchg_dss_ts_mappings where xchg_set_code = l_xchg_code)
+                 )
+                 union all
+                 (select *
+                   from at_ts_msg_archive_2
+                  where message_time between l_start_time and l_end_time
+                    and ts_code in (select cwms_ts_code from at_xchg_dss_ts_mappings where xchg_set_code = l_xchg_code)
+                 )) msg,
+                 mv_cwms_ts_id tsid
+           where tsid.ts_code = msg.ts_code
+           order by msg.message_time asc
+      )
    loop
       ------------------------------
       -- keep track of statistics --
