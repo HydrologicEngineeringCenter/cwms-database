@@ -3705,7 +3705,14 @@ AS
       i                     INTEGER;
       l_millis              NUMBER (14) := cwms_util.to_millis (l_store_date);
       idx                   NUMBER := 0;
-      i_max_itterations     NUMBER := 100;
+      i_max_iterations      NUMBER := 100;
+      --
+      l_date_times          date_table_type;
+      l_valid_times         date_table_type;
+      l_intervals           number_tab_t;
+      l_min_interval        number;
+      l_count               number;
+
    --
    BEGIN
       DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.store_ts',
@@ -3813,6 +3820,33 @@ AS
             TRUE);
       END IF;
 
+      if p_timeseries_data.count = 0 then
+         dbms_application_info.set_action ('Returning due to no data provided');
+         return;      -- have already created ts_code if it didn't exist
+      end if;
+
+      DBMS_APPLICATION_INFO.set_action (
+         'Truncate incoming times to minute and verify validity');
+      ---------------------------------------------------------
+      -- get the times as date types truncated to the minute --
+      ---------------------------------------------------------
+      select trunc(cast(date_time at time zone 'UTC' as date), 'mi')
+        bulk collect into l_date_times
+        from table(p_timeseries_data)
+       order by date_time;
+
+      select 1440 * (column_value - lag(column_value, 1, null) over (order by column_value))
+        bulk collect into l_intervals
+        from table(l_date_times);
+
+      select min(column_value)
+        into l_min_interval
+        from table(l_intervals);
+
+      if l_min_interval = 0 then
+         cwms_err.raise('ERROR', 'Incoming data has multiple values for same minute.');
+      end if;
+
       IF l_interval_value > 0
       THEN
          DBMS_APPLICATION_INFO.set_action (
@@ -3831,93 +3865,40 @@ AS
              WHERE time_zone_code = l_local_tz_code;
          END IF;
 
-         BEGIN
-            EXECUTE IMMEDIATE REPLACE (
-                                '
-         SELECT DISTINCT MOD ( ROUND (
-                                     ( CAST ((date_time at time zone ''$TZ'') AS DATE)
-                                       - TRUNC (CAST ((date_time at time zone ''$TZ'') AS DATE))
-                                     ) * 1440,
-                                     0
-                                   ),
-                               :l_interval_value
-                             )
-               INTO :l_tz_name
-               FROM TABLE (:p_timeseries_data)',
-                                '$TZ',
-                                l_tz_name)
-               INTO l_utc_offset
-               USING l_interval_value, p_timeseries_data;
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               DBMS_APPLICATION_INFO.set_action (
-                  'Returning due to no data provided');
-               RETURN;      -- Have already created TS_CODE if it didn't exist
-            WHEN TOO_MANY_ROWS
-            THEN
-               raise_application_error (
-                  -20110,
-                     'ERROR: Incoming data set appears to contain irregular data. Unable to store data for '
-                  || l_cwms_ts_id,
-                  TRUE);
-         END;
-
-         IF l_local_tz_code IS NOT NULL
-         THEN
-            DECLARE
-               l_offset_str   VARCHAR2 (8);
-               l_parts        str_tab_t;
-               l_hours        INTEGER;
-               l_minutes      INTEGER;
-            BEGIN
-               DBMS_APPLICATION_INFO.set_action (
-                  'Modify utc offset for LRTS.');
-               l_offset_str := RTRIM (TZ_OFFSET (l_tz_name), CHR (0));
-               l_parts := cwms_util.split_text (l_offset_str, ':');
-               l_hours := TO_NUMBER (l_parts (1));
-               l_minutes := TO_NUMBER (l_parts (2));
-
-               IF l_hours < 0
-               THEN
-                  l_minutes := 60 * l_hours - l_minutes;
-               ELSE
-                  l_minutes := 60 * l_hours + l_minutes;
-               END IF;
-
-               l_utc_offset := l_utc_offset - l_minutes;
-
-               IF l_utc_offset < 0
-               THEN
-                  l_utc_offset := l_utc_offset + l_interval_value;
-               END IF;
-            END;
-         END IF;
-
-
          DBMS_APPLICATION_INFO.set_action (
             'Check utc_offset against the dataset''s and/or set an undefined utc_offset');
-
-         IF existing_utc_offset = cwms_util.UTC_OFFSET_UNDEFINED
-         THEN
-            -- Existing TS_Code did not have a defined UTC_OFFSET, so set it equal to the offset of this data set.
-
-            UPDATE at_cwms_ts_spec acts
-               SET acts.INTERVAL_UTC_OFFSET = l_utc_offset
-             WHERE acts.TS_CODE = l_ts_code;
-         ELSIF existing_utc_offset != l_utc_offset
-         THEN
-            -- Existing TS_Code's UTC_OFFSET does not match the offset of the data set - so storage of data set fails.
-
-            raise_application_error (
-               -20101,
+         -----------------------------
+         -- test for irregular data --
+         -----------------------------
+         begin
+            select distinct get_utc_interval_offset(column_value, l_interval_value)
+              into l_utc_offset
+              from table(l_date_times);
+         exception
+            when too_many_rows then
+               raise_application_error (
+                  -20110,
+                  'ERROR: Incoming data set appears to contain irregular data. Unable to store data for '
+                  || l_cwms_ts_id,
+                  TRUE);
+         end;
+         if existing_utc_offset != cwms_util.utc_offset_undefined then
+            -----------------------------
+            -- test for invalid offset --
+            -----------------------------
+            if get_utc_interval_offset(l_date_times(1), l_interval_value) != existing_utc_offset then
+               raise_application_error (
+                  -20101,
                   'Incoming Data Set''s UTC_OFFSET: '
-               || l_utc_offset
-               || ' does not match its previously stored UTC_OFFSET of: '
-               || existing_utc_offset
-               || ' - data set was NOT stored',
-               TRUE);
-         END IF;
+                  || l_utc_offset
+                  || ' does not match its previously stored UTC_OFFSET of: '
+                  || existing_utc_offset
+                  || ' - data set was NOT stored',
+                  TRUE);
+            end if;
+         end if;
+
+
       ELSE
          DBMS_APPLICATION_INFO.set_action ('Incoming data set is irregular');
 
@@ -3981,8 +3962,8 @@ AS
       -- at_tsv tables need to be accessed during the store.
       --
 
-      SELECT MIN (CAST ( (t.date_time AT TIME ZONE 'UTC') AS DATE)),
-             MAX (CAST ( (t.date_time AT TIME ZONE 'UTC') AS DATE))
+      SELECT MIN (trunc(CAST ( (t.date_time AT TIME ZONE 'UTC') AS DATE), 'mi')),
+             MAX (trunc(CAST ( (t.date_time AT TIME ZONE 'UTC') AS DATE), 'mi'))
         INTO mindate, maxdate
         FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t;
 
@@ -4012,11 +3993,11 @@ AS
      repeated attempts to store the data block, with the hope that the
      initial data block that successfully stored data for the overlapping
      date/times has finally completed and COMMITed the inserts. If after
-     i_max_itterations, the dup_value_on_index exception is still being
+     i_max_iterations, the dup_value_on_index exception is still being
      thrown, then the loop ends and the dup_value_on_index exception is
      raised one last time.
      */
-      WHILE idx < i_max_itterations
+      WHILE idx < i_max_iterations
       LOOP
          BEGIN
       CASE
@@ -4041,7 +4022,7 @@ AS
                      ' merge into '
                   || x.table_name
                   || ' t1
-               using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time,
+               using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
                            (t.value * c.factor + c.offset) value,
                         cwms_ts.clean_quality_code(t.quality_code) quality_code
                          from TABLE(cast(:p_timeseries_data as tsv_array)) t,
@@ -4103,7 +4084,7 @@ AS
                      ' merge into '
                   || x.table_name
                   || ' t1
-                  using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time,
+                  using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
                            (t.value * c.factor + c.offset) value,
                         cwms_ts.clean_quality_code(t.quality_code) quality_code
                          from TABLE(cast(:p_timeseries_data as tsv_array)) t,
@@ -4174,7 +4155,7 @@ AS
                      'merge into '
                   || x.table_name
                   || ' t1
-                   using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time,
+                   using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
                             (t.value * c.factor + c.offset) value,
                         cwms_ts.clean_quality_code(t.quality_code) quality_code
                           from TABLE(cast(:p_timeseries_data as tsv_array)) t,
@@ -4232,7 +4213,7 @@ AS
                      'merge into '
                   || x.table_name
                   || ' t1
-                   using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time,
+                   using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
                             (t.value * c.factor + c.offset) value,
                         cwms_ts.clean_quality_code(t.quality_code) quality_code
                           from TABLE(cast(:p_timeseries_data as tsv_array)) t,
@@ -4298,7 +4279,7 @@ AS
                      'merge into '
                   || x.table_name
                   || ' t1
-                   using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time,
+                   using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
                             (t.value * c.factor + c.offset) value,
                         cwms_ts.clean_quality_code(t.quality_code) quality_code
                        from TABLE(cast(:p_timeseries_data as tsv_array)) t,
@@ -4366,7 +4347,7 @@ AS
                      'merge into '
                   || x.table_name
                   || ' t1
-              using (select CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE) date_time,
+              using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
                        (t.value * c.factor + c.offset) value,
                     cwms_ts.clean_quality_code(t.quality_code) quality_code
                   from TABLE(cast(:p_timeseries_data as tsv_array)) t,
@@ -4451,10 +4432,10 @@ AS
                     where t1.ts_code = :ts_code
                       and t1.version_date = :version_date
                       and t1.date_time between
-                          (SELECT MIN (CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE))
+                          (SELECT MIN (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                           and
-                          (SELECT MAX (CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE))
+                          (SELECT MAX (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                       and t1.quality_code NOT IN (SELECT quality_code
                                                    FROM cwms_data_quality q
@@ -4475,10 +4456,10 @@ AS
                     where t1.ts_code = :ts_code
                       and t1.version_date = :version_date
                       and t1.date_time between
-                          (SELECT MIN (CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE))
+                          (SELECT MIN (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                           and
-                          (SELECT MAX (CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE))
+                          (SELECT MAX (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                       and t1.quality_code NOT IN (SELECT quality_code
                                                    FROM cwms_data_quality q
@@ -4492,7 +4473,7 @@ AS
 
                EXECUTE IMMEDIATE REPLACE (
                                    'MERGE INTO table_name t1
-                     USING (SELECT CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE) as date_time,
+                     USING (SELECT trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') as date_time,
                                    (t.value * c.factor + c.offset) as value,
                                    cwms_ts.clean_quality_code(t.quality_code) as quality_code
                               FROM TABLE (CAST (:timeseries_data AS tsv_array)) t,
@@ -4606,10 +4587,10 @@ AS
                     where t1.ts_code = :ts_code
                       and t1.version_date = :version_date
                       and t1.date_time between
-                          (SELECT MIN (CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE))
+                          (SELECT MIN (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                           and
-                          (SELECT MAX (CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE))
+                          (SELECT MAX (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)',
                                    'table_name',
                                    x.table_name)
@@ -4627,10 +4608,10 @@ AS
                     where t1.ts_code = :ts_code
                       and t1.version_date = :version_date
                       and t1.date_time between
-                          (SELECT MIN (CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE))
+                          (SELECT MIN (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                           and
-                          (SELECT MAX (CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE))
+                          (SELECT MAX (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)',
                                    'table_name',
                                    x.table_name)
@@ -4641,7 +4622,7 @@ AS
 
                EXECUTE IMMEDIATE REPLACE (
                                    'MERGE INTO table_name t1
-                     USING (SELECT CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE) as date_time,
+                     USING (SELECT trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') as date_time,
                                    (t.value * c.factor + c.offset) as value,
                                    cwms_ts.clean_quality_code(t.quality_code) as quality_code
                               FROM TABLE (CAST (:timeseries_data AS tsv_array)) t,
@@ -4724,13 +4705,13 @@ AS
                             NVL (p_store_rule, '<NULL>'));
       END CASE;
 
-            idx := i_max_itterations;
+            idx := i_max_iterations;
          EXCEPTION
             WHEN DUP_VAL_ON_INDEX
             THEN
                idx := idx + 1;
 
-               IF idx >= i_max_itterations
+               IF idx >= i_max_iterations
                THEN
                   RAISE DUP_VAL_ON_INDEX;
                ELSE
