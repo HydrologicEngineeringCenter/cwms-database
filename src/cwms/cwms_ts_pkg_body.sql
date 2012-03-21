@@ -3683,8 +3683,6 @@ AS
       l_ts_code             NUMBER;
       l_interval_id         cwms_interval.interval_id%TYPE;
       l_interval_value      NUMBER;
-      l_local_tz_code       NUMBER;
-      l_tz_name             VARCHAR2 (28) := 'UTC';
       l_utc_offset          NUMBER;
       existing_utc_offset   NUMBER;
       table_cnt             NUMBER;
@@ -3709,7 +3707,6 @@ AS
       --
       l_date_times          date_table_type;
       l_valid_times         date_table_type;
-      l_intervals           number_tab_t;
       l_min_interval        number;
       l_count               number;
 
@@ -3835,13 +3832,10 @@ AS
         from table(p_timeseries_data)
        order by date_time;
 
-      select 1440 * (column_value - lag(column_value, 1, null) over (order by column_value))
-        bulk collect into l_intervals
-        from table(l_date_times);
-
-      select min(column_value)
+      select min(interval)
         into l_min_interval
-        from table(l_intervals);
+        from (select column_value - lag(column_value, 1, null) over (order by column_value) as interval
+                from table(l_date_times));
 
       if l_min_interval = 0 then
          cwms_err.raise('ERROR', 'Incoming data has multiple values for same minute.');
@@ -3852,21 +3846,6 @@ AS
          DBMS_APPLICATION_INFO.set_action (
             'Incoming data set has a regular interval, confirm data set matches interval_id');
 
-         SELECT time_zone_code
-           INTO l_local_tz_code
-           FROM at_cwms_ts_spec
-          WHERE ts_code = l_ts_code;
-
-         IF l_local_tz_code IS NOT NULL AND l_local_tz_code != 0
-         THEN
-            SELECT time_zone_name
-              INTO l_tz_name
-              FROM cwms_time_zone
-             WHERE time_zone_code = l_local_tz_code;
-         END IF;
-
-         DBMS_APPLICATION_INFO.set_action (
-            'Check utc_offset against the dataset''s and/or set an undefined utc_offset');
          -----------------------------
          -- test for irregular data --
          -----------------------------
