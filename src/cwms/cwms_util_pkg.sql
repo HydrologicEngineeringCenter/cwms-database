@@ -80,7 +80,39 @@ AS
     * Cookie for specifying version date of non-versioned time series
     */       
    non_versioned CONSTANT                    DATE := DATE '1111-11-11';
-   /** 
+   /**
+    * Cookie for specifying all versions of a time series
+    */
+   all_version_dates CONSTANT                DATE := DATE '1010-10-10';
+   /**
+    * Cookie for specifying time series values
+    */
+   ts_values CONSTANT                        BINARY_INTEGER :=  1;
+   /**
+    * Cookie for specifying time series standard text
+    */
+   ts_std_text CONSTANT                      BINARY_INTEGER :=  2;
+   /**
+    * Cookie for specifying time series non-standard text
+    */
+   ts_text CONSTANT                          BINARY_INTEGER :=  4;
+   /**
+    * Cookie for specifying time series standard and non-standard text
+    */
+   ts_all_text CONSTANT                      BINARY_INTEGER :=  6;
+   /**
+    * Cookie for specifying time series binary objects
+    */
+   ts_binary CONSTANT                        BINARY_INTEGER :=  8;
+   /**
+    * Cookie for specifying all time series items except values
+    */
+   ts_all_non_values CONSTANT                BINARY_INTEGER := -2;
+   /**
+    * Cookie for specifying all time series items
+    */
+   ts_all CONSTANT                           BINARY_INTEGER := -1;
+   /**
     * Cookie for specifying UTC Interval Offset for irregular time series
     */       
    utc_offset_irregular CONSTANT             NUMBER := -2147483648;
@@ -415,6 +447,20 @@ AS
       p_from_tz IN VARCHAR2, 
       p_to_tz   IN VARCHAR2 default 'UTC')
       RETURN DATE result_cache;
+   /**
+    * Converts a specified<code><big>TIMESTAMP</big></code> from one time zone to another
+    *
+    * @param p_in_date the date to convert to UTC
+    * @param p_from_tz the original time zone
+    * @param p_to_tz the desired time zone
+    *
+    * @return an equivalent <code><big>DATE</big></code> in the desired time zone
+    */
+   FUNCTION change_timezone (
+      p_in_date IN TIMESTAMP,
+      p_from_tz IN VARCHAR2,
+      p_to_tz   IN VARCHAR2 default 'UTC')
+      RETURN TIMESTAMP result_cache;
    /**
     * Returns whether the upper case of the input is <code><big>'T'</big></code>
     * or <code><big>'TRUE'</big></code>

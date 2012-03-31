@@ -2128,7 +2128,7 @@ AS
       --
       -- set the out parameters
       --
-      p_cwms_ts_id_out := cwms_ts.get_ts_id (l_cwms_ts_id, p_office_id);
+      p_cwms_ts_id_out := cwms_ts.get_ts_id (l_cwms_ts_id, l_office_id);
       p_units_out :=
          CASE l_units IS NULL
             WHEN TRUE
@@ -3302,7 +3302,7 @@ AS
    --
    FUNCTION clean_quality_code (p_quality_code IN NUMBER)
       RETURN NUMBER
-      RESULT_CACHE
+      result_cache
    IS
       /*
       Data Quality Rules :
@@ -3694,6 +3694,7 @@ AS
       --
       l_units               VARCHAR2 (16);
       l_base_parameter_id   VARCHAR2 (16);
+      l_base_parameter_code NUMBER(10);
       l_base_unit_id        VARCHAR2 (16);
       --
       l_first_time          DATE;
@@ -3753,32 +3754,29 @@ AS
          l_override_prot := TRUE;
       END IF;
 
-      DBMS_APPLICATION_INFO.set_action (
-         'Determine utc_offset of incoming data set');
-
-      SELECT REGEXP_SUBSTR (l_cwms_ts_id,
-                            '[^.]+',
-                            1,
-                            4)
-                interval_id
-        INTO l_interval_id
-        FROM DUAL;
-
       BEGIN
          SELECT i.interval
            INTO l_interval_value
            FROM cwms_interval i
-          WHERE UPPER (i.interval_id) = UPPER (l_interval_id);
+          WHERE UPPER (i.interval_id) = UPPER (regexp_substr (l_cwms_ts_id, '[^.]+', 1, 4));
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            raise_application_error (
-               -20110,
-                  'ERROR: '
-               || l_interval_id
-               || ' is not a valid time series interval',
-               TRUE);
+            cwms_err.raise('INVALID_INTERVAL_ID', regexp_substr (l_cwms_ts_id, '[^.]+', 1, 4));
       END;
+
+      begin
+         select base_parameter_code
+           into l_base_parameter_code
+           from cwms_base_parameter
+          where upper(base_parameter_id) = upper(cwms_util.get_base_id(regexp_substr (l_cwms_ts_id, '[^.]+', 1, 2)));
+      exception
+         when no_data_found then
+            cwms_err.raise('INVALID_PARAM_ID', regexp_substr (l_cwms_ts_id, '[^.]+', 1, 2));
+      end;
+      if l_base_parameter_code < 0 then
+         cwms_err.raise('ERROR', 'Cannot store values to time series with parameter "'||regexp_substr (l_cwms_ts_id, '[^.]+', 1, 2)||'"');
+      end if;
 
       DBMS_APPLICATION_INFO.set_action (
          'Find or create a TS_CODE for your TS Desc');
@@ -4963,328 +4961,540 @@ AS
                  p_db_office_code   => l_db_office_code);
    END;
 
-   PROCEDURE delete_ts (p_cwms_ts_id       IN VARCHAR2,
-                        p_delete_action    IN VARCHAR2,
-                        p_db_office_code   IN NUMBER)
-   IS
-      l_db_office_code   NUMBER := p_db_office_code;
-      l_db_office_id     VARCHAR2 (16);
+   procedure delete_ts(
+      p_cwms_ts_id     in varchar2,
+      p_delete_action  in varchar2,
+      p_db_office_code in number)
+   is
+      l_db_office_code   number := p_db_office_code;
+      l_db_office_id     varchar2(16);
       l_cwms_ts_id       varchar2(183);
-      l_ts_code          NUMBER;
-      l_count            NUMBER;
-      l_ts_code_new      NUMBER := NULL;
-      l_delete_action    VARCHAR2 (22)
-         := UPPER (NVL (p_delete_action, cwms_util.delete_ts_id));
-      l_delete_date      TIMESTAMP (9) := SYSTIMESTAMP;
-      l_tmp_del_date     TIMESTAMP (9) := l_delete_date + 1;
+      l_ts_code          number;
+      l_count            number;
+      l_value_count      number;
+      l_std_text_count   number;
+      l_text_count       number;
+      l_binary_count     number;
+      l_delete_action    varchar2(22) := upper(nvl(p_delete_action, cwms_util.delete_ts_id));
+      l_delete_date      timestamp(9) := systimestamp;
+      l_msg              sys.aq$_jms_map_message;
+      l_msgid            pls_integer;
+      i                  integer;
+   begin
+      if p_db_office_code is null then
+         l_db_office_code := cwms_util.get_office_code(null);
+      end if;
 
-      l_msg              SYS.aq$_jms_map_message;
-      l_msgid            PLS_INTEGER;
-      i                  INTEGER;
-      l_first_time       DATE;
-      l_last_time        DATE;
-      l_deleted_time     TIMESTAMP;
-   --
-   BEGIN
-      --
-      IF p_db_office_code IS NULL
-      THEN
-         l_db_office_code := cwms_util.GET_OFFICE_CODE (NULL);
-      END IF;
+      select office_id
+        into l_db_office_id
+        from cwms_office
+       where office_code = l_db_office_code;
 
-      --
-      SELECT office_id
-        INTO l_db_office_id
-        FROM cwms_office
-       WHERE office_code = l_db_office_code;
-       
       l_cwms_ts_id := get_cwms_ts_id(p_cwms_ts_id, l_db_office_id);
-      
-      BEGIN
-         SELECT ts_code
-           INTO l_ts_code
-           FROM mv_cwms_ts_id mcts
-          WHERE     UPPER (mcts.cwms_ts_id) = UPPER (l_cwms_ts_id)
-                AND mcts.db_office_code = l_db_office_code;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            BEGIN
-               SELECT ts_code
-                 INTO l_ts_code
-                 FROM zav_cwms_ts_id mcts
-                WHERE     UPPER (mcts.cwms_ts_id) = UPPER (l_cwms_ts_id)
-                      AND mcts.db_office_code = l_db_office_code;
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN
-                  cwms_err.raise ('TS_ID_NOT_FOUND', l_cwms_ts_id);
-            END;
-      END;
 
-      --   BEGIN
-      --      SELECT ts_code
-      --        INTO l_ts_code
-      --        FROM at_cwms_ts_spec a
-      --       WHERE a.TS_CODE = l_ts_code
-      --         AND a.DELETE_DATE is null;
-      --   EXCEPTION
-      --      WHEN NO_DATA_FOUND
-      --      THEN
-      --         cwms_err.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
-      --   END;
+      begin
+         select ts_code
+           into l_ts_code
+           from mv_cwms_ts_id mcts
+          where upper(mcts.cwms_ts_id) = upper(l_cwms_ts_id) and mcts.db_office_code = l_db_office_code;
+      exception
+         when no_data_found then
+            begin
+               select ts_code
+                 into l_ts_code
+                 from zav_cwms_ts_id mcts
+                where upper(mcts.cwms_ts_id) = upper(l_cwms_ts_id) and mcts.db_office_code = l_db_office_code;
+            exception
+               when no_data_found then
+                  cwms_err.raise('TS_ID_NOT_FOUND', l_cwms_ts_id);
+            end;
+      end;
 
-
-      --
-      -- Process Depricated delete_actions -
-      IF l_delete_action = cwms_util.delete_key
-      THEN
+      ----------------------------------------------
+      -- translate non-ts-specific delete_actions --
+      ----------------------------------------------
+      if l_delete_action = cwms_util.delete_key then
          l_delete_action := cwms_util.delete_ts_id;
-      END IF;
+      end if;
 
-      IF l_delete_action = cwms_util.delete_all
-      THEN
+      if l_delete_action = cwms_util.delete_all then
          l_delete_action := cwms_util.delete_ts_cascade;
-      END IF;
+      end if;
 
-      --
-      IF l_delete_action = cwms_util.delete_data
-      THEN
+      if l_delete_action = cwms_util.delete_data then
          l_delete_action := cwms_util.delete_ts_data;
-      END IF;
+      end if;
 
-      --
-      CASE
-         WHEN l_delete_action = cwms_util.delete_ts_id
-         THEN
-            SELECT COUNT (*)
-              INTO l_count
-              FROM av_tsv
-             WHERE ts_code = l_ts_code;
+      case
+         when l_delete_action = cwms_util.delete_ts_id then
+            select count(*)
+              into l_value_count
+              from av_tsv
+             where ts_code = l_ts_code;
 
-            --
-            CASE
-               WHEN l_count = 0
-               THEN
-                  LOOP
-                     BEGIN
-                        UPDATE at_cwms_ts_spec
-                           SET location_code = 0, delete_date = l_delete_date
-                         WHERE ts_code = l_ts_code;
+            select count(*)
+              into l_std_text_count
+              from at_tsv_std_text
+             where ts_code = l_ts_code;
 
-                        EXIT;
-                     EXCEPTION
-                        WHEN OTHERS
-                        THEN
-                           IF SQLCODE = -1
-                           THEN
-                              l_delete_date := SYSTIMESTAMP;
-                           END IF;
-                     END;
-                  END LOOP;
+            select count(*)
+              into l_text_count
+              from at_tsv_text
+             where ts_code = l_ts_code;
 
-                  -- Publish TSDeleted message --
-                  cwms_msg.new_message (l_msg, l_msgid, 'TSDeleted');
-                  l_msg.set_string (l_msgid, 'ts_id', l_cwms_ts_id);
-                  l_msg.set_string (l_msgid, 'office_id', l_db_office_id);
-                  l_msg.set_long (l_msgid, 'ts_code', l_ts_code);
-                  i :=
-                     cwms_msg.publish_message (
-                        l_msg,
-                        l_msgid,
-                        l_db_office_id || '_ts_stored');
-               ELSE
-                  cwms_err.RAISE (
-                     'GENERIC_ERROR',
-                        'cwms_ts_id: '
-                     || p_cwms_ts_id
-                     || ' contains data. Cannot use the DELETE TS ID action');
-            END CASE;
-         --
-         --
-         WHEN    l_delete_action = cwms_util.delete_ts_cascade
-              OR l_delete_action = cwms_util.delete_ts_data
-         THEN
-            ---------------------------------------
-            -- Physically delete data from database --
-            ---------------------------------------
-            FOR rec1 IN (SELECT DISTINCT version_date
-                           FROM cwms_v_tsv
-                          WHERE ts_code = l_ts_code)
-            LOOP
-               FOR rec2
-                  IN (SELECT MIN (date_time) AS start_time,
-                             MAX (date_time) AS end_time
-                        FROM av_tsv
-                       WHERE     ts_code = l_ts_code
-                             AND version_date = rec1.version_date)
-               LOOP
-                  purge_ts_data (p_ts_code            => l_ts_code, --IN NUMBER
-                                 p_version_date_utc   => rec1.version_date, --IN DATE
-                                 p_start_time_utc     => rec2.start_time, --IN DATE
-                                 p_end_time_utc       => rec2.end_time --IN DATE
-                                                                      );
-               END LOOP;
-            END LOOP;
+            select count(*)
+              into l_binary_count
+              from at_tsv_binary
+             where ts_code = l_ts_code;
 
+            l_count := l_value_count + l_std_text_count + l_text_count + l_binary_count;
 
-            IF l_delete_action = cwms_util.delete_ts_cascade
-            THEN
-               -- Delete the timeseries id --
-               UPDATE at_cwms_ts_spec
-                  SET location_code = 0, delete_date = l_delete_date
-                WHERE ts_code = l_ts_code;
+            if l_count = 0 then
+               loop
+                  begin
+                     update at_cwms_ts_spec
+                        set location_code = 0, delete_date = l_delete_date
+                      where ts_code = l_ts_code;
 
-               delete_ts_cleanup (l_ts_code);
-            END IF;
+                     exit;
+                  exception
+                     when others then
+                        if sqlcode = -1 then
+                           l_delete_date := systimestamp;
+                        end if;
+                  end;
+               end loop;
+            else
+               cwms_err.raise('ERROR', 'cwms_ts_id: ' || p_cwms_ts_id || ' contains data. Cannot use the DELETE TS ID action');
+            end if;
+         when l_delete_action in (cwms_util.delete_ts_cascade, cwms_util.delete_ts_data) then
+            -------------------------------
+            -- delete data from database --
+            -------------------------------
+            for rec in (select table_name
+                          from at_ts_table_properties
+                         where start_date in (select distinct start_date
+                                                from av_tsv
+                                               where ts_code = l_ts_code)) loop
+               execute immediate replace('delete from $t where ts_code = :1', '$t', rec.table_name) using l_ts_code;
+            end loop;
 
-            --
-            COMMIT;
-         --
-         ELSE
-            cwms_err.RAISE ('INVALID_DELETE_ACTION', p_delete_action);
-      END CASE;
-   --
-   END delete_ts;
+            delete from at_tsv_std_text
+                  where ts_code = l_ts_code;
 
+            delete from at_tsv_text
+                  where ts_code = l_ts_code;
 
-   PROCEDURE purge_ts_data (p_ts_code            IN NUMBER,
-                            p_version_date_utc   IN DATE,
-                            p_start_time_utc     IN DATE,
-                            p_end_time_utc       IN DATE)
-   IS
-      l_start_time     DATE := NVL (p_start_time_utc, DATE '0001-01-01');
-      l_end_time       DATE := NVL (p_end_time_utc, DATE '9999-12-31');
-      l_tsid           VARCHAR2 (183);
-      l_office_id      VARCHAR2 (16);
-      l_deleted_time   TIMESTAMP;
-      l_msg            SYS.aq$_jms_map_message;
-      l_msgid          PLS_INTEGER;
-      i                INTEGER;
-   BEGIN
-      ---------------------------------------
-      -- collect the times of deleted data --
-      ---------------------------------------
-      l_deleted_time := SYSTIMESTAMP AT TIME ZONE 'UTC';
-      collect_deleted_times (l_deleted_time,
-                             p_ts_code,
-                             p_version_date_utc,
-                             p_start_time_utc,
-                             p_end_time_utc);
+            delete from at_tsv_binary
+                  where ts_code = l_ts_code;
 
-      -----------------------------------
-      -- Publish TSDataDeleted message --
-      -----------------------------------
-      SELECT cwms_ts_id, db_office_id
-        INTO l_tsid, l_office_id
-        FROM cwms_v_ts_id
-       WHERE ts_code = p_ts_code;
+            if l_delete_action = cwms_util.delete_ts_cascade then
+               ------------------------------
+               -- delete the timeseries id --
+               ------------------------------
+               update at_cwms_ts_spec
+                  set location_code = 0, delete_date = l_delete_date
+                where ts_code = l_ts_code;
 
-      cwms_msg.new_message (l_msg, l_msgid, 'TSDataDeleted');
-      l_msg.set_string (l_msgid, 'ts_id', l_tsid);
-      l_msg.set_string (l_msgid, 'office_id', l_office_id);
-      l_msg.set_long (l_msgid, 'ts_code', p_ts_code);
-      l_msg.set_long (
-         l_msgid,
-         'start_time',
-         cwms_util.to_millis (CAST (p_start_time_utc AS TIMESTAMP)));
-      l_msg.set_long (
-         l_msgid,
-         'end_time',
-         cwms_util.to_millis (CAST (p_end_time_utc AS TIMESTAMP)));
-      l_msg.set_long (
-         l_msgid,
-         'version_date',
-         cwms_util.to_millis (CAST (p_version_date_utc AS TIMESTAMP)));
-      l_msg.set_long (l_msgid,
-                      'deleted_time',
-                      cwms_util.to_millis (l_deleted_time));
-      i :=
-         cwms_msg.publish_message (l_msg,
-                                   l_msgid,
-                                   l_office_id || '_ts_stored');
+               delete_ts_cleanup(l_ts_code);
+            end if;
+
+            commit;
+         else
+            cwms_err.raise('INVALID_DELETE_ACTION', p_delete_action);
+      end case;
+
+      if l_delete_action in (cwms_util.delete_ts_id, cwms_util.delete_ts_cascade) then
+         -------------------------------
+         -- publish TSDeleted message --
+         -------------------------------
+         cwms_msg.new_message(l_msg, l_msgid, 'TSDeleted');
+         l_msg.set_string(l_msgid, 'ts_id', l_cwms_ts_id);
+         l_msg.set_string(l_msgid, 'office_id', l_db_office_id);
+         l_msg.set_long(l_msgid, 'ts_code', l_ts_code);
+         i := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id || '_ts_stored');
+      end if;
+   end delete_ts;
+
+   procedure purge_ts_data(
+      p_ts_code          in number,
+      p_version_date_utc in date,
+      p_start_time_utc   in date,
+      p_end_time_utc     in date,
+      p_date_times_utc   in date_table_type default null,
+      p_max_version      in varchar2 default 'T',
+      p_ts_item_mask     in integer default cwms_util.ts_all)
+   is
+      l_tsid                     varchar2(183);
+      l_office_id                varchar2(16);
+      l_deleted_time             timestamp := systimestamp at time zone 'UTC';
+      l_msg                      sys.aq$_jms_map_message;
+      l_msgid                    pls_integer;
+      i                          integer;
+      l_max_version              boolean;
+      l_date_times_values        date_table_type := date_table_type();
+      l_version_dates_values     date_table_type := date_table_type();
+      l_date_times_std_text      date_table_type := date_table_type();
+      l_version_dates_std_text   date_table_type := date_table_type();
+      l_date_times_text          date_table_type := date_table_type();
+      l_version_dates_text       date_table_type := date_table_type();
+      l_date_times_binary        date_table_type := date_table_type();
+      l_version_dates_binary     date_table_type := date_table_type();
+      l_times_values             date2_tab_t := date2_tab_t();
+      l_times_std_text           date2_tab_t := date2_tab_t();
+      l_times_text               date2_tab_t := date2_tab_t();
+      l_times_binary             date2_tab_t := date2_tab_t();
+      l_cursor                   sys_refcursor;
+   begin
+      cwms_util.check_input(p_max_version);
+      l_max_version := cwms_util.return_true_or_false(p_max_version);
+
+      --------------------------------------------------------------------
+      -- get the date_times and version_dates of all the items to purge --
+      --------------------------------------------------------------------
+      if bitand(p_ts_item_mask, cwms_util.ts_values) > 0 then
+         l_cursor      :=
+            retrieve_existing_times_f(
+               p_ts_code,
+               p_start_time_utc,
+               p_end_time_utc,
+               p_date_times_utc,
+               p_version_date_utc,
+               l_max_version,
+               cwms_util.ts_values);
+
+         fetch l_cursor
+         bulk collect into l_date_times_values, l_version_dates_values;
+         close l_cursor;
+      end if;
+
+      if bitand(p_ts_item_mask, cwms_util.ts_std_text) > 0 then
+         l_cursor      :=
+            retrieve_existing_times_f(
+               p_ts_code,
+               p_start_time_utc,
+               p_end_time_utc,
+               p_date_times_utc,
+               p_version_date_utc,
+               l_max_version,
+               cwms_util.ts_std_text);
+
+         fetch l_cursor
+         bulk collect into l_date_times_std_text, l_version_dates_std_text;
+         close l_cursor;
+      end if;
+
+      if bitand(p_ts_item_mask, cwms_util.ts_text) > 0 then
+         l_cursor      :=
+            retrieve_existing_times_f(
+               p_ts_code,
+               p_start_time_utc,
+               p_end_time_utc,
+               p_date_times_utc,
+               p_version_date_utc,
+               l_max_version,
+               cwms_util.ts_text);
+
+         fetch l_cursor
+         bulk collect into l_date_times_text, l_version_dates_text;
+         close l_cursor;
+      end if;
+
+      if bitand(p_ts_item_mask, cwms_util.ts_binary) > 0 then
+         l_cursor      :=
+            retrieve_existing_times_f(
+               p_ts_code,
+               p_start_time_utc,
+               p_end_time_utc,
+               p_date_times_utc,
+               p_version_date_utc,
+               l_max_version,
+               cwms_util.ts_binary);
+
+         fetch l_cursor
+         bulk collect into l_date_times_binary, l_version_dates_binary;
+         close l_cursor;
+      end if;
+
+      -------------------------------------------------
+      -- collect the times into queryable structures --
+      -------------------------------------------------
+      l_times_values.extend(l_date_times_values.count);
+
+      for i in 1 .. l_date_times_values.count loop
+         l_times_values(i) := date2_t(l_date_times_values(i), l_version_dates_values(i));
+      end loop;
+
+      l_times_std_text.extend(l_date_times_std_text.count);
+
+      for i in 1 .. l_date_times_std_text.count loop
+         l_times_std_text(i) := date2_t(l_date_times_std_text(i), l_version_dates_std_text(i));
+      end loop;
+
+      l_times_text.extend(l_date_times_text.count);
+
+      for i in 1 .. l_date_times_text.count loop
+         l_times_text(i) := date2_t(l_date_times_text(i), l_version_dates_text(i));
+      end loop;
+
+      l_times_binary.extend(l_date_times_binary.count);
+
+      for i in 1 .. l_date_times_binary.count loop
+         l_times_binary(i) := date2_t(l_date_times_binary(i), l_version_dates_binary(i));
+      end loop;
+
+      ----------------------------------------
+      -- perform actions specific to values --
+      ----------------------------------------
+      if l_times_values.count > 0 then
+         ------------------------------------------
+         -- insert records into at_deleted_times --
+         ------------------------------------------
+         insert into at_ts_deleted_times
+            select cwms_util.to_millis(l_deleted_time),
+                   p_ts_code,
+                   d.version_date,
+                   d.date_time
+              from (select date_1 as date_time, date_2 as version_date from table(l_times_values)) d;
+
+         ------------------------------------
+         -- Publish TSDataDeleted messages --
+         ------------------------------------
+         select cwms_ts_id, db_office_id
+           into l_tsid, l_office_id
+           from cwms_v_ts_id
+          where ts_code = p_ts_code;
+
+         for rec1 in (select distinct date_2 as version_date from table(l_times_values)) loop
+            for rec2 in (select min(date_1) as start_time, max(date_1) as end_time
+                           from table(l_times_values)
+                          where date_2 = rec1.version_date) loop
+               cwms_msg.new_message(l_msg, l_msgid, 'TSDataDeleted');
+               l_msg.set_string(l_msgid, 'ts_id', l_tsid);
+               l_msg.set_string(l_msgid, 'office_id', l_office_id);
+               l_msg.set_long(l_msgid, 'ts_code', p_ts_code);
+               l_msg.set_long(l_msgid, 'start_time', cwms_util.to_millis(cast(rec2.start_time as timestamp)));
+               l_msg.set_long(l_msgid, 'end_time', cwms_util.to_millis(cast(rec2.end_time as timestamp)));
+               l_msg.set_long(l_msgid, 'version_date', cwms_util.to_millis(cast(rec1.version_date as timestamp)));
+               l_msg.set_long(l_msgid, 'deleted_time', cwms_util.to_millis(l_deleted_time));
+               i := cwms_msg.publish_message(l_msg, l_msgid, l_office_id || '_ts_stored');
+            end loop;
+         end loop;
+      end if;
 
       ------------------------------
       -- actually delete the data --
       ------------------------------
-      FOR rec IN (SELECT * FROM at_ts_table_properties)
-      LOOP
-         CONTINUE WHEN rec.start_date > l_end_time;
-         CONTINUE WHEN rec.end_date < l_start_time;
+      for rec
+         in (select table_name
+               from at_ts_table_properties
+              where start_date in (select distinct v.start_date
+                                     from cwms_v_tsv v, table(l_times_values) d
+                                    where v.ts_code = p_ts_code and v.date_time = d.date_1 and v.version_date = d.date_2)) loop
+         execute immediate replace('delete from $t
+                 where rowid in (select t.rowid
+                                   from $t t,
+                                        table(:1) d
+                                  where t.ts_code = :2
+                                    and t.date_time = d.date_1
+                                    and t.version_date = d.date_2)', '$t', rec.table_name)
+            using l_times_values, p_ts_code;
+      end loop;
 
-         if p_start_time_utc is null and p_end_time_utc is null then
-            ------------------------------
-            -- no time window specified --
-            ------------------------------
-            IF p_version_date_utc IS NULL
-            THEN
-               EXECUTE IMMEDIATE
-                  'delete from ' || rec.table_name || ' where ts_code = :1'
-                  USING p_ts_code;
-            ELSE
-               EXECUTE IMMEDIATE
-                     'delete from '
-                  || rec.table_name
-                  || ' where ts_code = :1 and version_date = :2'
-                  USING p_ts_code, p_version_date_utc;
-            END IF;
-         else
-            ---------------------------
-            -- time window specified --
-            ---------------------------
-            IF p_version_date_utc IS NULL
-            THEN
-               EXECUTE IMMEDIATE
-                  'delete from ' || rec.table_name || ' where ts_code = :1 and date_time between :2 and :3'
-                  USING p_ts_code, l_start_time, l_end_time;
-            ELSE
-               EXECUTE IMMEDIATE
-                     'delete from '
-                  || rec.table_name
-                  || ' where ts_code = :1 and date_time between :2 and :3 and version_date = :4'
-                  USING p_ts_code, l_start_time, l_end_time, p_version_date_utc;
-            END IF;
-         end if;
-      END LOOP;
-   END purge_ts_data;
+      delete from at_tsv_std_text
+            where rowid in (select t.rowid
+                              from at_tsv_std_text t, table(l_times_std_text) d
+                             where ts_code = p_ts_code and t.date_time = d.date_1 and t.version_date = d.date_2);
 
-   PROCEDURE change_version_date (p_ts_code                IN NUMBER,
-                                  p_old_version_date_utc   IN DATE,
-                                  p_new_version_date_utc   IN DATE,
-                                  p_start_time_utc         IN DATE,
-                                  p_end_time_utc           IN DATE)
-   IS
-      l_is_versioned   VARCHAR2 (1);
-      l_start_time     DATE := NVL (p_start_time_utc, DATE '0001-01-01');
-      l_end_time       DATE := NVL (p_end_time_utc, DATE '9999-12-31');
-   BEGIN
-      ------------------
-      -- sanity check --
-      ------------------
-      is_ts_versioned (l_is_versioned, p_ts_code);
+      delete from at_tsv_text
+            where rowid in (select t.rowid
+                              from at_tsv_text t, table(l_times_text) d
+                             where ts_code = p_ts_code and t.date_time = d.date_1 and t.version_date = d.date_2);
 
-      IF cwms_util.is_false (l_is_versioned)
-      THEN
-         cwms_err.raise ('ERROR',
-                         'Cannot change version date on non-versioned data.');
-      END IF;
+      delete from at_tsv_binary
+            where rowid in (select t.rowid
+                              from at_tsv_binary t, table(l_times_binary) d
+                             where ts_code = p_ts_code and t.date_time = d.date_1 and t.version_date = d.date_2);
+   end purge_ts_data;
 
-      FOR rec IN (SELECT * FROM at_ts_table_properties)
-      LOOP
-         CONTINUE WHEN rec.start_date > l_end_time;
-         CONTINUE WHEN rec.end_date < l_start_time;
+   procedure change_version_date(
+      p_ts_code              in number,
+      p_old_version_date_utc in date,
+      p_new_version_date_utc in date,
+      p_start_time_utc       in date,
+      p_end_time_utc         in date,
+      p_date_times_utc       in date_table_type default null,
+      p_ts_item_mask         in integer default cwms_util.ts_all)
+   is
+      l_is_versioned             varchar2(1);
+      l_date_times_values        date_table_type := date_table_type();
+      l_version_dates_values     date_table_type := date_table_type();
+      l_date_times_std_text      date_table_type := date_table_type();
+      l_version_dates_std_text   date_table_type := date_table_type();
+      l_date_times_text          date_table_type := date_table_type();
+      l_version_dates_text       date_table_type := date_table_type();
+      l_date_times_binary        date_table_type := date_table_type();
+      l_version_dates_binary     date_table_type := date_table_type();
+      l_times_values             date2_tab_t := date2_tab_t();
+      l_times_std_text           date2_tab_t := date2_tab_t();
+      l_times_text               date2_tab_t := date2_tab_t();
+      l_times_binary             date2_tab_t := date2_tab_t();
+      l_cursor                   sys_refcursor;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      is_ts_versioned(l_is_versioned, p_ts_code);
 
-         EXECUTE IMMEDIATE
-               'update '
-            || rec.table_name
-            || '
-             set version_date = :1
-           where ts_code = :2
-             and version_date = :3'
-            USING p_new_version_date_utc, p_ts_code, p_old_version_date_utc;
-      END LOOP;
-   END change_version_date;
+      if cwms_util.is_false(l_is_versioned) then
+         cwms_err.raise('ERROR', 'Cannot change version date on non-versioned data.');
+      end if;
 
+      if cwms_util.all_version_dates in (p_old_version_date_utc, p_new_version_date_utc) then
+         cwms_err.raise('ERROR', 'CWMS_UTIL.ALL_VERSION_DATES cannot be used for actual version date');
+      end if;
+
+      -------------------------------------------------------------------------------
+      -- NOTE: The version dates in all the following collections will be the same --
+      -- as the p_old_version_date_utc parameter                                   --
+      -------------------------------------------------------------------------------
+
+      ---------------------------------------------------------------------
+      -- get the date_times and version_dates of all the items to update --
+      ---------------------------------------------------------------------
+      if bitand(p_ts_item_mask, cwms_util.ts_values) > 0 then
+         l_cursor      :=
+            retrieve_existing_times_f(
+               p_ts_code,
+               p_start_time_utc,
+               p_end_time_utc,
+               p_date_times_utc,
+               p_old_version_date_utc,
+               true,
+               cwms_util.ts_values);
+
+         fetch l_cursor
+         bulk collect into l_date_times_values, l_version_dates_values;
+
+         close l_cursor;
+      end if;
+
+      if bitand(p_ts_item_mask, cwms_util.ts_std_text) > 0 then
+         l_cursor      :=
+            retrieve_existing_times_f(
+               p_ts_code,
+               p_start_time_utc,
+               p_end_time_utc,
+               p_date_times_utc,
+               p_old_version_date_utc,
+               true,
+               cwms_util.ts_std_text);
+
+         fetch l_cursor
+         bulk collect into l_date_times_std_text, l_version_dates_std_text;
+
+         close l_cursor;
+      end if;
+
+      if bitand(p_ts_item_mask, cwms_util.ts_text) > 0 then
+         l_cursor      :=
+            retrieve_existing_times_f(
+               p_ts_code,
+               p_start_time_utc,
+               p_end_time_utc,
+               p_date_times_utc,
+               p_old_version_date_utc,
+               true,
+               cwms_util.ts_text);
+
+         fetch l_cursor
+         bulk collect into l_date_times_text, l_version_dates_text;
+
+         close l_cursor;
+      end if;
+
+      if bitand(p_ts_item_mask, cwms_util.ts_binary) > 0 then
+         l_cursor      :=
+            retrieve_existing_times_f(
+               p_ts_code,
+               p_start_time_utc,
+               p_end_time_utc,
+               p_date_times_utc,
+               p_old_version_date_utc,
+               true,
+               cwms_util.ts_binary);
+
+         fetch l_cursor
+         bulk collect into l_date_times_binary, l_version_dates_binary;
+
+         close l_cursor;
+      end if;
+
+      -------------------------------------------------
+      -- collect the times into queryable structures --
+      -------------------------------------------------
+      l_times_values.extend(l_date_times_values.count);
+
+      for i in 1 .. l_date_times_values.count loop
+         l_times_values(i) := date2_t(l_date_times_values(i), l_version_dates_values(i));
+      end loop;
+
+      l_times_std_text.extend(l_date_times_std_text.count);
+
+      for i in 1 .. l_date_times_std_text.count loop
+         l_times_std_text(i) := date2_t(l_date_times_std_text(i), l_version_dates_std_text(i));
+      end loop;
+
+      l_times_text.extend(l_date_times_text.count);
+
+      for i in 1 .. l_date_times_text.count loop
+         l_times_text(i) := date2_t(l_date_times_text(i), l_version_dates_text(i));
+      end loop;
+
+      l_times_binary.extend(l_date_times_binary.count);
+
+      for i in 1 .. l_date_times_binary.count loop
+         l_times_binary(i) := date2_t(l_date_times_binary(i), l_version_dates_binary(i));
+      end loop;
+
+      ---------------------
+      -- update the data --
+      ---------------------
+      for rec
+         in (select table_name
+               from at_ts_table_properties
+              where start_date in (select distinct v.start_date
+                                     from cwms_v_tsv v, table(l_times_values) d
+                                    where v.ts_code = p_ts_code and v.date_time = d.date_1 and v.version_date = d.date_2)) loop
+         execute immediate replace('update $t
+                                    set version_date = :1
+                    where rowid in (select t.rowid
+                                      from $t t,
+                                           table(:2) d
+                                     where t.ts_code = :3
+                                       and t.date_time = d.date_1
+                                       and t.version_date = d.date_2)', '$t', rec.table_name)
+            using p_new_version_date_utc, l_times_values, p_ts_code;
+      end loop;
+
+      update at_tsv_std_text
+         set version_date = p_new_version_date_utc
+       where rowid in (select t.rowid
+                         from at_tsv_std_text t, table(l_times_std_text) d
+                        where ts_code = p_ts_code and t.date_time = d.date_1 and t.version_date = d.date_2);
+
+      update at_tsv_text
+         set version_date = p_new_version_date_utc
+       where rowid in (select t.rowid
+                         from at_tsv_text t, table(l_times_text) d
+                        where ts_code = p_ts_code and t.date_time = d.date_1 and t.version_date = d.date_2);
+
+      update at_tsv_binary
+         set version_date = p_new_version_date_utc
+       where rowid in (select t.rowid
+                         from at_tsv_binary t, table(l_times_binary) d
+                        where ts_code = p_ts_code and t.date_time = d.date_1 and t.version_date = d.date_2);
+   end change_version_date;
 
    --
    --*******************************************************************   --
@@ -6365,6 +6575,458 @@ AS
                        p_max_version,
                        p_db_office_id);
    END zretrieve_ts_java;
+
+   PROCEDURE retrieve_existing_times(
+      p_cursor           OUT sys_refcursor,
+      p_ts_code          IN  NUMBER,
+      p_start_time_utc   IN  DATE            DEFAULT NULL,
+      p_end_time_utc     IN  DATE            DEFAULT NULL,
+      p_date_times_utc   in  date_table_type DEFAULT NULL,
+      p_version_date_utc IN  DATE            DEFAULT NULL,
+      p_max_version      IN  BOOLEAN         DEFAULT TRUE,
+      p_item_mask        IN  BINARY_INTEGER  DEFAULT cwms_util.ts_all)
+   IS
+   BEGIN
+      p_cursor := retrieve_existing_times_f(
+         p_ts_code,
+         p_start_time_utc,
+         p_end_time_utc,
+         p_date_times_utc,
+         p_version_date_utc,
+         p_max_version);
+
+   END retrieve_existing_times;
+
+   FUNCTION retrieve_existing_times_f(
+      p_ts_code          IN  NUMBER,
+      p_start_time_utc   IN  DATE            DEFAULT NULL,
+      p_end_time_utc     IN  DATE            DEFAULT NULL,
+      p_date_times_utc   in  date_table_type DEFAULT NULL,
+      p_version_date_utc IN  DATE            DEFAULT NULL,
+      p_max_version      IN  BOOLEAN         DEFAULT TRUE,
+      p_item_mask        IN  BINARY_INTEGER  DEFAULT cwms_util.ts_all)
+      RETURN sys_refcursor
+   IS
+      l_is_versioned           varchar2(1);
+      l_version_date_utc       date;
+      l_date_times_values      date_table_type := date_table_type();
+      l_version_dates_values   date_table_type := date_table_type();
+      l_date_times_std_text    date_table_type := date_table_type();
+      l_version_dates_std_text date_table_type := date_table_type();
+      l_date_times_text        date_table_type := date_table_type();
+      l_version_dates_text     date_table_type := date_table_type();
+      l_date_times_binary      date_table_type := date_table_type();
+      l_version_dates_binary   date_table_type := date_table_type();
+      l_value_times            date2_tab_t := date2_tab_t();
+      l_std_text_times         date2_tab_t := date2_tab_t();
+      l_text_times             date2_tab_t := date2_tab_t();
+      l_binary_times           date2_tab_t := date2_tab_t();
+      l_cursor                 sys_refcursor;
+   BEGIN
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_ts_code is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_TS_CODE');
+      end if;
+      if p_date_times_utc is not null and (p_start_time_utc is not null or p_end_time_utc is not null) then
+         cwms_err.raise('ERROR', 'Start and/or end times cannot be specified with specific times.');
+      end if;
+
+      -----------------------------------------------
+      -- collect the times for the specified items --
+      -----------------------------------------------
+      cwms_ts.is_ts_versioned(l_is_versioned, p_ts_code);
+      if p_version_date_utc is null then
+         -------------------------------
+         -- no version_date specified --
+         -------------------------------
+         if cwms_util.return_true_or_false(l_is_versioned) then
+            ---------------------------
+            -- versioned time series --
+            ---------------------------
+            if p_max_version then
+               ---------------------------
+               -- max_version specified --
+               ---------------------------
+               if bitand(p_item_mask, cwms_util.ts_values) > 0 then
+                  if p_date_times_utc is null then
+                       select date_time, max(version_date)
+                         bulk collect into l_date_times_values, l_version_dates_values
+                         from av_tsv
+                        where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                     group by ts_code, date_time;
+                  else
+                       select date_time, max(version_date)
+                         bulk collect into l_date_times_values, l_version_dates_values
+                         from av_tsv
+                        where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc))
+                     group by ts_code, date_time;
+                  end if;
+               end if;
+               if bitand(p_item_mask, cwms_util.ts_std_text) > 0 then
+                  if p_date_times_utc is null then
+                       select date_time, max(version_date)
+                         bulk collect into l_date_times_std_text, l_version_dates_std_text
+                         from at_tsv_std_text
+                        where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                     group by ts_code, date_time;
+                  else
+                       select date_time, max(version_date)
+                         bulk collect into l_date_times_std_text, l_version_dates_std_text
+                         from at_tsv_std_text
+                        where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc))
+                     group by ts_code, date_time;
+                  end if;
+               end if;
+               if bitand(p_item_mask, cwms_util.ts_text) > 0 then
+                  if p_date_times_utc is null then
+                       select date_time, max(version_date)
+                         bulk collect into l_date_times_text, l_version_dates_text
+                         from at_tsv_text
+                        where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                     group by ts_code, date_time;
+                  else
+                       select date_time, max(version_date)
+                         bulk collect into l_date_times_text, l_version_dates_text
+                         from at_tsv_text
+                        where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc))
+                     group by ts_code, date_time;
+                  end if;
+               end if;
+               if bitand(p_item_mask, cwms_util.ts_binary) > 0 then
+                  if p_date_times_utc is null then
+                       select date_time, max(version_date)
+                         bulk collect into l_date_times_binary, l_version_dates_binary
+                         from at_tsv_binary
+                        where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                     group by ts_code, date_time;
+                  else
+                       select date_time, max(version_date)
+                         bulk collect into l_date_times_binary, l_version_dates_binary
+                         from at_tsv_binary
+                        where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc))
+                     group by ts_code, date_time;
+                  end if;
+               end if;
+            else
+               ---------------------------
+               -- min_version specified --
+               ---------------------------
+               if bitand(p_item_mask, cwms_util.ts_values) > 0 then
+                  if p_date_times_utc is null then
+                       select date_time, min(version_date)
+                         bulk collect into l_date_times_values, l_version_dates_values
+                         from av_tsv
+                        where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                     group by ts_code, date_time;
+                  else
+                       select date_time, min(version_date)
+                         bulk collect into l_date_times_values, l_version_dates_values
+                         from av_tsv
+                        where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc))
+                     group by ts_code, date_time;
+                  end if;
+               end if;
+               if bitand(p_item_mask, cwms_util.ts_std_text) > 0 then
+                  if p_date_times_utc is null then
+                       select date_time, min(version_date)
+                         bulk collect into l_date_times_std_text, l_version_dates_std_text
+                         from at_tsv_std_text
+                        where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                     group by ts_code, date_time;
+                  else
+                       select date_time, min(version_date)
+                         bulk collect into l_date_times_std_text, l_version_dates_std_text
+                         from at_tsv_std_text
+                        where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc))
+                     group by ts_code, date_time;
+                  end if;
+               end if;
+               if bitand(p_item_mask, cwms_util.ts_text) > 0 then
+                  if p_date_times_utc is null then
+                       select date_time, min(version_date)
+                         bulk collect into l_date_times_text, l_version_dates_text
+                         from at_tsv_text
+                        where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                     group by ts_code, date_time;
+                  else
+                       select date_time, min(version_date)
+                         bulk collect into l_date_times_text, l_version_dates_text
+                         from at_tsv_text
+                        where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc))
+                     group by ts_code, date_time;
+                  end if;
+               end if;
+               if bitand(p_item_mask, cwms_util.ts_binary) > 0 then
+                  if p_date_times_utc is null then
+                       select date_time, min(version_date)
+                         bulk collect into l_date_times_binary, l_version_dates_binary
+                         from at_tsv_binary
+                        where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                     group by ts_code, date_time;
+                  else
+                       select date_time, min(version_date)
+                         bulk collect into l_date_times_binary, l_version_dates_binary
+                         from at_tsv_binary
+                        where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc))
+                     group by ts_code, date_time;
+                  end if;
+               end if;
+            end if;
+         else
+            -------------------------------
+            -- non-versioned time series --
+            -------------------------------
+            if bitand(p_item_mask, cwms_util.ts_values) > 0 then
+               if p_date_times_utc is null then
+                  select date_time, version_date
+                    bulk collect into l_date_times_values, l_version_dates_values
+                    from av_tsv
+                   where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time);
+               else
+                  select date_time, version_date
+                    bulk collect into l_date_times_values, l_version_dates_values
+                    from av_tsv
+                   where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc));
+               end if;
+            end if;
+            if bitand(p_item_mask, cwms_util.ts_std_text) > 0 then
+               if p_date_times_utc is null then
+                  select date_time, version_date
+                    bulk collect into l_date_times_std_text, l_version_dates_std_text
+                    from at_tsv_std_text
+                   where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time);
+               else
+                  select date_time, version_date
+                    bulk collect into l_date_times_std_text, l_version_dates_std_text
+                    from at_tsv_std_text
+                   where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc));
+               end if;
+            end if;
+            if bitand(p_item_mask, cwms_util.ts_text) > 0 then
+               if p_date_times_utc is null then
+                  select date_time, version_date
+                    bulk collect into l_date_times_text, l_version_dates_text
+                    from at_tsv_text
+                   where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time);
+               else
+                  select date_time, version_date
+                    bulk collect into l_date_times_text, l_version_dates_text
+                    from at_tsv_text
+                   where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc));
+               end if;
+            end if;
+            if bitand(p_item_mask, cwms_util.ts_binary) > 0 then
+               if p_date_times_utc is null then
+                  select date_time, version_date
+                    bulk collect into l_date_times_binary, l_version_dates_binary
+                    from at_tsv_binary
+                   where ts_code = p_ts_code and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time);
+               else
+                  select date_time, version_date
+                    bulk collect into l_date_times_binary, l_version_dates_binary
+                    from at_tsv_binary
+                   where ts_code = p_ts_code and date_time in (select column_value from table(p_date_times_utc));
+               end if;
+            end if;
+         end if;
+      else
+         -------------------------------
+         -- version_date is specified --
+         -------------------------------
+         if p_version_date_utc != cwms_util.all_version_dates then
+            l_version_date_utc := p_version_date_utc;
+         end if;
+         if bitand(p_item_mask, cwms_util.ts_values) > 0 then
+            if p_date_times_utc is null then
+               select date_time, version_date
+                 bulk collect into l_date_times_values, l_version_dates_values
+                 from av_tsv
+                where ts_code = p_ts_code
+                  and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                  and version_date = nvl(l_version_date_utc, version_date);
+            else
+               select date_time, version_date
+                 bulk collect into l_date_times_values, l_version_dates_values
+                 from av_tsv
+                where ts_code = p_ts_code
+                  and date_time in (select column_value from table(p_date_times_utc))
+                  and version_date = nvl(l_version_date_utc, version_date);
+            end if;
+         end if;
+         if bitand(p_item_mask, cwms_util.ts_std_text) > 0 then
+            if p_date_times_utc is null then
+               select date_time, version_date
+                 bulk collect into l_date_times_std_text, l_version_dates_std_text
+                 from at_tsv_std_text
+                where ts_code = p_ts_code
+                  and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                  and version_date = nvl(l_version_date_utc, version_date);
+            else
+               select date_time, version_date
+                 bulk collect into l_date_times_std_text, l_version_dates_std_text
+                 from at_tsv_std_text
+                where ts_code = p_ts_code
+                  and date_time in (select column_value from table(p_date_times_utc))
+                  and version_date = nvl(l_version_date_utc, version_date);
+            end if;
+         end if;
+         if bitand(p_item_mask, cwms_util.ts_text) > 0 then
+            if p_date_times_utc is null then
+               select date_time, version_date
+                 bulk collect into l_date_times_text, l_version_dates_text
+                 from at_tsv_text
+                where ts_code = p_ts_code
+                  and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                  and version_date = nvl(l_version_date_utc, version_date);
+            else
+               select date_time, version_date
+                 bulk collect into l_date_times_text, l_version_dates_text
+                 from at_tsv_text
+                where ts_code = p_ts_code
+                  and date_time in (select column_value from table(p_date_times_utc))
+                  and version_date = nvl(l_version_date_utc, version_date);
+            end if;
+         end if;
+         if bitand(p_item_mask, cwms_util.ts_binary) > 0 then
+            if p_date_times_utc is null then
+               select date_time, version_date
+                 bulk collect into l_date_times_binary, l_version_dates_binary
+                 from at_tsv_binary
+                where ts_code = p_ts_code
+                  and date_time between nvl(p_start_time_utc, date_time) and nvl(p_end_time_utc, date_time)
+                  and version_date = nvl(l_version_date_utc, version_date);
+            else
+               select date_time, version_date
+                 bulk collect into l_date_times_binary, l_version_dates_binary
+                 from at_tsv_binary
+                where ts_code = p_ts_code
+                  and date_time in (select column_value from table(p_date_times_utc))
+                  and version_date = nvl(l_version_date_utc, version_date);
+            end if;
+         end if;
+      end if;
+      ----------------------------------------------------
+      -- collect the results into queryable collections --
+      ----------------------------------------------------
+      l_value_times.extend(l_date_times_values.count);
+      for i in 1..l_date_times_values.count loop
+         l_value_times(i) := date2_t(l_date_times_values(i), l_version_dates_values(i));
+      end loop;
+      l_std_text_times.extend(l_date_times_std_text.count);
+      for i in 1..l_date_times_std_text.count loop
+         l_std_text_times(i) := date2_t(l_date_times_std_text(i), l_version_dates_std_text(i));
+      end loop;
+      l_text_times.extend(l_date_times_text.count);
+      for i in 1..l_date_times_text.count loop
+         l_text_times(i) := date2_t(l_date_times_text(i), l_version_dates_text(i));
+      end loop;
+      l_binary_times.extend(l_date_times_binary.count);
+      for i in 1..l_date_times_binary.count loop
+         l_binary_times(i) := date2_t(l_date_times_binary(i), l_version_dates_binary(i));
+      end loop;
+      --------------------------------------
+      -- return a cursor into the results --
+      --------------------------------------
+      open l_cursor for
+         select date_1 as date_time,
+                date_2 as version_date
+           from (select * from table(l_value_times)
+                 union
+                 select * from table(l_std_text_times)
+                 union
+                 select * from table(l_text_times)
+                 union
+                 select * from table(l_binary_times)
+                )
+          order by date_1, date_2;
+      return l_cursor;
+   END retrieve_existing_times_f;
+
+   PROCEDURE retrieve_existing_item_counts(
+      p_cursor           OUT sys_refcursor,
+      p_ts_code          IN  NUMBER,
+      p_start_time_utc   IN  DATE            DEFAULT NULL,
+      p_end_time_utc     IN  DATE            DEFAULT NULL,
+      p_date_times_utc   in  date_table_type DEFAULT NULL,
+      p_version_date_utc IN  DATE            DEFAULT NULL,
+      p_max_version      IN  BOOLEAN         DEFAULT TRUE)
+   IS
+   BEGIN
+      p_cursor := retrieve_existing_item_counts(
+         p_ts_code,
+         p_start_time_utc,
+         p_end_time_utc,
+         p_date_times_utc,
+         p_version_date_utc,
+         p_max_version);
+   END retrieve_existing_item_counts;
+
+function retrieve_existing_item_counts(
+   p_ts_code          in number,
+   p_start_time_utc   in date default null,
+   p_end_time_utc     in date default null,
+   p_date_times_utc   in date_table_type default null,
+   p_version_date_utc in date default null,
+   p_max_version      in boolean default true)
+   return sys_refcursor
+is
+   l_cursor          sys_refcursor;
+   l_date_times      date_table_type;
+   l_version_dates   date_table_type;
+   l_times           date2_tab_t := date2_tab_t();
+begin
+   l_cursor      :=
+      retrieve_existing_times_f(
+         p_ts_code,
+         p_start_time_utc,
+         p_end_time_utc,
+         p_date_times_utc,
+         p_version_date_utc,
+         p_max_version,
+         cwms_util.ts_all);
+
+   fetch l_cursor
+   bulk collect into l_date_times, l_version_dates;
+
+   close l_cursor;
+
+   l_times.extend(l_date_times.count);
+
+   for i in 1 .. l_date_times.count loop
+      l_times(i) := date2_t(l_date_times(i), l_version_dates(i));
+   end loop;
+
+   open l_cursor for
+        select d.date_time,
+               d.version_date,
+               count(v.date_time) as value_count,
+               count(s.date_time) as std_text_count,
+               count(t.date_time) as text_count,
+               count(b.date_time) as binary_count
+          from (select date_1 as date_time, date_2 as version_date from table(l_times)) d
+               left outer join (select date_time, version_date
+                                  from av_tsv
+                                 where ts_code = p_ts_code) v
+                  on v.date_time = d.date_time and v.version_date = d.version_date
+               left outer join (select date_time, version_date
+                                  from at_tsv_std_text
+                                 where ts_code = p_ts_code) s
+                  on s.date_time = d.date_time and s.version_date = d.version_date
+               left outer join (select date_time, version_date
+                                  from at_tsv_text
+                                 where ts_code = p_ts_code) t
+                  on t.date_time = d.date_time and t.version_date = d.version_date
+               left outer join (select date_time, version_date
+                                  from at_tsv_binary
+                                 where ts_code = p_ts_code) b
+                  on b.date_time = d.date_time and b.version_date = d.version_date
+      group by d.date_time, d.version_date
+      order by d.date_time, d.version_date;
+
+   return l_cursor;
+end retrieve_existing_item_counts;
 
    PROCEDURE collect_deleted_times (p_deleted_time   IN TIMESTAMP,
                                     p_ts_code        IN NUMBER,
@@ -7743,7 +8405,7 @@ AS
    ---------------------------
    FUNCTION get_quality_validity (p_quality_code IN NUMBER)
       RETURN VARCHAR2
-      RESULT_CACHE
+      result_cache
    IS
       l_validity   VARCHAR2 (16);
    BEGIN
@@ -7773,7 +8435,7 @@ AS
 
    FUNCTION quality_is_okay (p_quality_code IN NUMBER)
       RETURN BOOLEAN
-      RESULT_CACHE
+      result_cache
    IS
    BEGIN
       RETURN get_quality_validity (p_quality_code) = 'OKAY';
@@ -7795,7 +8457,7 @@ AS
 
    FUNCTION quality_is_missing (p_quality_code IN NUMBER)
       RETURN BOOLEAN
-      RESULT_CACHE
+      result_cache
    IS
    BEGIN
       RETURN get_quality_validity (p_quality_code) = 'MISSING';
@@ -7817,7 +8479,7 @@ AS
 
    FUNCTION quality_is_questionable (p_quality_code IN NUMBER)
       RETURN BOOLEAN
-      RESULT_CACHE
+      result_cache
    IS
    BEGIN
       RETURN get_quality_validity (p_quality_code) = 'QUESTIONABLE';
@@ -7839,7 +8501,7 @@ AS
 
    FUNCTION quality_is_rejected (p_quality_code IN NUMBER)
       RETURN BOOLEAN
-      RESULT_CACHE
+      result_cache
    IS
    BEGIN
       RETURN get_quality_validity (p_quality_code) = 'REJECTED';
@@ -7861,7 +8523,7 @@ AS
 
    FUNCTION get_quality_description (p_quality_code IN NUMBER)
       RETURN VARCHAR2
-      RESULT_CACHE
+      result_cache
    IS
       l_description   VARCHAR2 (4000);
       l_rec           cwms_data_quality%ROWTYPE;
@@ -7935,12 +8597,8 @@ AS
    FUNCTION get_ts_interval_string (p_cwms_ts_id IN VARCHAR2)
       RETURN VARCHAR2 result_cache
    IS
-      l_interval_id VARCHAR2(16);
    BEGIN
-      SELECT REGEXP_SUBSTR (p_cwms_ts_id, '[^.]+', 1, 4)
-        INTO l_interval_id
-        FROM DUAL;
-      return l_interval_id;
+      return regexp_substr (p_cwms_ts_id, '[^.]+', 1, 4);
    END get_ts_interval_string;
 
    FUNCTION get_interval (p_interval_id IN VARCHAR2)

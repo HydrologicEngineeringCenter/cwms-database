@@ -123,6 +123,23 @@ AS
 
    --
    -- return the input date in a different time zone
+   FUNCTION change_timezone (p_in_date   IN TIMESTAMP,
+                             p_from_tz   IN VARCHAR2,
+                             p_to_tz     IN VARCHAR2 DEFAULT 'UTC')
+      RETURN TIMESTAMP
+      RESULT_CACHE
+   IS
+   BEGIN
+      RETURN CASE p_to_tz = p_from_tz
+                WHEN TRUE THEN
+                   p_in_date
+                ELSE
+                   FROM_TZ (p_in_date, get_timezone (p_from_tz))  AT TIME ZONE get_timezone (p_to_tz)
+             END;
+   END;
+
+   --
+   -- return the input date in a different time zone
    FUNCTION change_timezone (p_in_date   IN DATE,
                              p_from_tz   IN VARCHAR2,
                              p_to_tz     IN VARCHAR2 DEFAULT 'UTC')

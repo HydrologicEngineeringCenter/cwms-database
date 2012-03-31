@@ -3269,19 +3269,6 @@ comment on column at_tsv_binary.blob_code       is 'Reference to the binary data
 comment on column at_tsv_binary.data_entry_date is 'The date/time the references was stored';
 comment on column at_tsv_binary.attribute       is 'Attribute that can be used for sorting or other puropses';
 --
-begin
-   insert into cwms_base_parameter select -2, 'Binary', a.abstract_param_code, unit_code, unit_code, unit_code, 'Binary Data', 'Binary data such as images, documents, etc...' from cwms_abstract_parameter a, cwms_unit u where u.unit_id='n/a' and a.abstract_param_id = 'None' ;
-   insert into cwms_base_parameter select -1, 'Text',    a.abstract_param_code, unit_code, unit_code, unit_code, 'Text Data',   'Text data only, no numeric values'  from cwms_abstract_parameter a, cwms_unit u where
- u.unit_id='n/a' and a.abstract_param_id = 'None' ;
-exception
-   when others then
-      if sqlcode = -1 then
-         null;
-      else
-         raise;
-      end if;
-end;
-/
 declare
    i number(4) := 0;
 begin

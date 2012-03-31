@@ -4037,6 +4037,29 @@ create type time_series_range_tab_t
 as table of time_series_range_t;
 /
 
+create type date2_t
+/**
+ * Holds a pair of dates
+ *
+ * @see type date2_tab_t
+ *
+ * @member date_1 The first date
+ * @member date_2 The second date
+ */
+as object(
+   date_1 date,
+   date_2 date);
+/
+
+create type date2_tab_t
+/**
+ * Holds a collection of date pairs
+ *
+ * @see type date2_t
+ */
+as table of date2_t;
+/
+
 -- HOST pwd
 @@rowcps_types
 @@cwms_types_rating

@@ -5030,6 +5030,9 @@ parameters = [
     [29,    "Electromotive Potential",          "Volt",     "Voltage",            "volt",    "volt",    "volt",        "Electric Potential"                                                          ],
     [39,    "Volume",                           "Volume",   "Volume",             "m3",      "m3",      "ft3",         "Volume of anything other than impounded water"                               ],
     [43,    "Length",                           "Width",    "Width",              "m",       "m",       "ft",          "Linear displacement associated with the smaller horizontal planar measurment"],
+#   Negative base parameter codes for non-value parmameters (i.e., no entries in AT_TSV... tables)
+    [-1,    "None",                             "Text",     "Text Data",          "n/a",     "n/a",     "n/a",         "Text data only, no numeric values"                                           ],
+    [-2,    "None",                             "Binary",   "Binary Data",        "n/a",     "n/a",     "n/a",         "Binary data such as images, documents, etc..."                               ],
 ]
 
 cwmsUnitParamDefsById = {}

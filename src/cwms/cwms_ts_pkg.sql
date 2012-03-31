@@ -392,16 +392,30 @@ AS
     * Deletes time series values for a specified time series, version date, and time window
     *
     * @see constant cwms_util.non_versioned
+    * @see constant cwms_util.all_version_dates
+    * @see constant cwms_util.ts_values
+    * @see constant cwms_util.ts_std_text
+    * @see constant cwms_util.ts_text
+    * @see constant cwms_util.ts_all_text
+    * @see constant cwms_util.ts_binary
+    * @see constant cwms_util.ts_all_non_values
+    * @see constant cwms_util.ts_all
     *
     * @param p_ts_code          The unique numeric code identifying the time series
-    * @param p_version_date_utc The UTC version date/time of the time series
+    * @param p_version_date_utc The UTC version date/time of the time series. If NULL, the earliest or latest version date will be used depending on p_max_version.
     * @param p_start_time_utc   The UTC start of the time window
     * @param p_end_time_utc     The UTC end of the time window
+    * @param p_date_times_utc   A table of specific times to use instead of a time window.
+    * @param p_max_version      A flag ('T'/'F') specifying whether to use the earliest ('F') or latest ('T') version date for each time if p_version_date_utc is NULL.
+    * @param p_ts_item_mask     A cookie specifying what time series items to purge.
     */
    PROCEDURE purge_ts_data (p_ts_code            IN NUMBER,
                             p_version_date_utc   IN DATE,
                             p_start_time_utc     IN DATE,
-                            p_end_time_utc       IN DATE);
+                            p_end_time_utc       IN DATE,
+                            p_date_times_utc     IN date_table_type DEFAULT NULL,
+                            p_max_version        IN VARCHAR2 DEFAULT 'T',
+                            p_ts_item_mask       IN INTEGER DEFAULT cwms_util.ts_all);
 
    /**
     * Changes the version date for a time series, version date, and time window
@@ -413,12 +427,16 @@ AS
     * @param p_new_version_date_utc The new UTC version date/time of the time series
     * @param p_start_time_utc       The UTC start of the time window
     * @param p_end_time_utc         The UTC end of the time window
+    * @param p_date_times_utc       A table of specific times to use instead of a time window.
+    * @param p_ts_item_mask         A cookie specifying what time series items to purge.
     */
    PROCEDURE change_version_date (p_ts_code                IN NUMBER,
                                   p_old_version_date_utc   IN DATE,
                                   p_new_version_date_utc   IN DATE,
                                   p_start_time_utc         IN DATE,
-                                  p_end_time_utc           IN DATE);
+                                  p_end_time_utc           IN DATE,
+                                  p_date_times_utc         IN date_table_type DEFAULT NULL,
+                                  p_ts_item_mask           IN INTEGER DEFAULT cwms_util.ts_all);
 
    -- not documented, for LRTS
    PROCEDURE set_ts_time_zone (p_ts_code          IN NUMBER,
@@ -1392,6 +1410,262 @@ AS
       p_max_version        IN     VARCHAR2 DEFAULT 'T',
       p_db_office_id       IN     VARCHAR2 DEFAULT NULL);
 
+   /**
+    * Retrieves existing date_times and version_dates for a time series for specified time series and item types.
+    *
+    * @param p_cursor  A cursor containing the date_times and version_dates that match the input parameters.
+    * The cursor contains the following columns and will be sorted ascending by date_time and then by version_date:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date_time of an existing value (in UTC)</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">version_date</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The version date (in UTC) associated with the date_time</td>
+    *   </tr>
+    * </table>
+    * @param p_ts_code          the unique numeric code identifying the time series
+    * @param p_start_time_utc   the earliest date_time to retrieve. If not specified or null no earliest bound will be applied.
+    * @param p_end_time_utc     the latest date_time to retrieve.  If not specified or null no latest bound will be applied.
+    * @param p_date_times_utc   a table of date_times to use instead of p_start_time_utc and p_end_time_utc. If not specified or null, p_start_time_utc and p_end_time_utc will be used.
+    * @param p_version_date_utc the version_date to retrieve times for. If not specified, or null, p_max_vesion will determine whether the earliest or latest version date is retrieved.
+    * @param p_max_version      flag specifying whether to retrieve the latest (true) or earliest (false) version_date if p_version_date_utc is not specified or null.
+    * @param p_item_mask        value specifying which time series items to retrieve times for (values, standard/non-standard text, binary)
+    *
+    * @since CWMS 2.1
+    *
+    * @see constant cwms_util.non_versioned
+    * @see constant cwms_util.all_version_dates
+    * @see constant cwms_util.ts_values
+    * @see constant cwms_util.ts_std_text
+    * @see constant cwms_util.ts_text
+    * @see constant cwms_util.ts_all_text
+    * @see constant cwms_util.ts_binary
+    * @see constant cwms_util.ts_all_non_values
+    * @see constant cwms_util.ts_all
+    */
+   PROCEDURE retrieve_existing_times(
+      p_cursor           OUT sys_refcursor,
+      p_ts_code          IN  NUMBER,
+      p_start_time_utc   IN  DATE            DEFAULT NULL,
+      p_end_time_utc     IN  DATE            DEFAULT NULL,
+      p_date_times_utc   in  date_table_type DEFAULT NULL,
+      p_version_date_utc IN  DATE            DEFAULT NULL,
+      p_max_version      IN  BOOLEAN         DEFAULT TRUE,
+      p_item_mask        IN  BINARY_INTEGER  DEFAULT cwms_util.ts_all);
+
+   /**
+    * Retrieves existing date_times and version_dates for a time series for specified time series and item types.
+    *
+    * @param p_ts_code          the unique numeric code identifying the time series
+    * @param p_start_time_utc   the earliest date_time to retrieve. If not specified or null no earliest bound will be applied.
+    * @param p_end_time_utc     the latest date_time to retrieve.  If not specified or null no latest bound will be applied.
+    * @param p_date_times_utc   a table of date_times to use instead of p_start_time_utc and p_end_time_utc. If not specified or null, p_start_time_utc and p_end_time_utc will be used.
+    * @param p_version_date_utc the version_date to retrieve times for. If not specified, or null, p_max_vesion will determine whether the earliest or latest version date is retrieved.
+    * @param p_max_version      flag specifying whether to retrieve the latest (true) or earliest (false) version_date if p_version_date_utc is not specified or null.
+    * @param p_item_mask        value specifying which time series items to retrieve times for (values, standard/non-standard text, binary)
+    *
+    * @return  A cursor containing the date_times and version_dates that match the input parameters.
+    * The cursor contains the following columns and will be sorted ascending by date_time and then by version_date:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date_time of an existing value (in UTC)</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">version_date</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The version date (in UTC) associated with the date_time</td>
+    *   </tr>
+    * </table>
+    *
+    * @since CWMS 2.1
+    *
+    * @see constant cwms_util.non_versioned
+    * @see constant cwms_util.all_version_dates
+    * @see constant cwms_util.ts_values
+    * @see constant cwms_util.ts_std_text
+    * @see constant cwms_util.ts_text
+    * @see constant cwms_util.ts_all_text
+    * @see constant cwms_util.ts_binary
+    * @see constant cwms_util.ts_all_non_values
+    * @see constant cwms_util.ts_all
+    */
+   FUNCTION retrieve_existing_times_f(
+      p_ts_code          IN  NUMBER,
+      p_start_time_utc   IN  DATE            DEFAULT NULL,
+      p_end_time_utc     IN  DATE            DEFAULT NULL,
+      p_date_times_utc   in  date_table_type DEFAULT NULL,
+      p_version_date_utc IN  DATE            DEFAULT NULL,
+      p_max_version      IN  BOOLEAN         DEFAULT TRUE,
+      p_item_mask        IN  BINARY_INTEGER  DEFAULT cwms_util.ts_all)
+      RETURN sys_refcursor;
+
+   /**
+    * Retrieves existing date_times, version_dates, and counts of time series item types for a specified time series.
+    *
+    * @param p_cursor  A cursor containing the date_times, version_datesm and item counts that match the input parameters.
+    * The cursor contains the following columns and will be sorted ascending by date_time and then by version_date:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date_time of an existing value (in UTC)</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">version_date</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The version date (in UTC) associated with the date_time</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">value_count</td>
+    *     <td class="descr">integer</td>
+    *     <td class="descr">The number of values (0/1) for the date_time and vesion_date</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">4</td>
+    *     <td class="descr">std_text_count</td>
+    *     <td class="descr">integer</td>
+    *     <td class="descr">The number of standard text items (>=0) for the date_time and vesion_date</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">5</td>
+    *     <td class="descr">text_count</td>
+    *     <td class="descr">integer</td>
+    *     <td class="descr">The number of non-standard text items (>=0) for the date_time and vesion_date</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">6</td>
+    *     <td class="descr">binary_count</td>
+    *     <td class="descr">integer</td>
+    *     <td class="descr">The number of binary items (>=0) for the date_time and vesion_date</td>
+    *   </tr>
+    * </table>
+   * @param p_ts_code          the unique numeric code identifying the time series
+    * @param p_start_time_utc   the earliest date_time to retrieve. If not specified or null no earliest bound will be applied.
+    * @param p_end_time_utc     the latest date_time to retrieve.  If not specified or null no latest bound will be applied.
+    * @param p_date_times_utc   a table of date_times to use instead of p_start_time_utc and p_end_time_utc. If not specified or null, p_start_time_utc and p_end_time_utc will be used.
+    * @param p_version_date_utc the version_date to retrieve times for. If not specified, or null, p_max_vesion will determine whether the earliest or latest version date is retrieved.
+    * @param p_max_version      flag specifying whether to retrieve the latest (true) or earliest (false) version_date if p_version_date_utc is not specified or null.
+    *
+    * @since CWMS 2.1
+    *
+    * @see constant cwms_util.non_versioned
+    * @see constant cwms_util.all_version_dates
+    */
+   PROCEDURE retrieve_existing_item_counts(
+      p_cursor           OUT sys_refcursor,
+      p_ts_code          IN  NUMBER,
+      p_start_time_utc   IN  DATE            DEFAULT NULL,
+      p_end_time_utc     IN  DATE            DEFAULT NULL,
+      p_date_times_utc   in  date_table_type DEFAULT NULL,
+      p_version_date_utc IN  DATE            DEFAULT NULL,
+      p_max_version      IN  BOOLEAN         DEFAULT TRUE);
+
+   /**
+    * Retrieves existing date_times, version_dates, and counts of time series item types for a specified time series.
+    *
+    * @param p_ts_code          the unique numeric code identifying the time series
+    * @param p_start_time_utc   the earliest date_time to retrieve. If not specified or null no earliest bound will be applied.
+    * @param p_end_time_utc     the latest date_time to retrieve.  If not specified or null no latest bound will be applied.
+    * @param p_date_times_utc   a table of date_times to use instead of p_start_time_utc and p_end_time_utc. If not specified or null, p_start_time_utc and p_end_time_utc will be used.
+    * @param p_version_date_utc the version_date to retrieve times for. If not specified, or null, p_max_vesion will determine whether the earliest or latest version date is retrieved.
+    * @param p_max_version      flag specifying whether to retrieve the latest (true) or earliest (false) version_date if p_version_date_utc is not specified or null.
+    *
+    * @return  A cursor containing the date_times, version_datesm and item counts that match the input parameters.
+    * The cursor contains the following columns and will be sorted ascending by date_time and then by version_date:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr">date_time</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The date_time of an existing value (in UTC)</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">version_date</td>
+    *     <td class="descr">date</td>
+    *     <td class="descr">The version date (in UTC) associated with the date_time</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr">value_count</td>
+    *     <td class="descr">integer</td>
+    *     <td class="descr">The number of values (0/1) for the date_time and vesion_date</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">4</td>
+    *     <td class="descr">std_text_count</td>
+    *     <td class="descr">integer</td>
+    *     <td class="descr">The number of standard text items (>=0) for the date_time and vesion_date</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">5</td>
+    *     <td class="descr">text_count</td>
+    *     <td class="descr">integer</td>
+    *     <td class="descr">The number of non-standard text items (>=0) for the date_time and vesion_date</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">6</td>
+    *     <td class="descr">binary_count</td>
+    *     <td class="descr">integer</td>
+    *     <td class="descr">The number of binary items (>=0) for the date_time and vesion_date</td>
+    *   </tr>
+    * </table>
+    *
+    * @since CWMS 2.1
+    *
+    * @see constant cwms_util.non_versioned
+    * @see constant cwms_util.all_version_dates
+    */
+   FUNCTION retrieve_existing_item_counts(
+      p_ts_code          IN  NUMBER,
+      p_start_time_utc   IN  DATE            DEFAULT NULL,
+      p_end_time_utc     IN  DATE            DEFAULT NULL,
+      p_date_times_utc   in  date_table_type DEFAULT NULL,
+      p_version_date_utc IN  DATE            DEFAULT NULL,
+      p_max_version      IN  BOOLEAN         DEFAULT TRUE)
+      RETURN sys_refcursor;
+
    -- not documented
    PROCEDURE collect_deleted_times (p_deleted_time   IN TIMESTAMP,
                                     p_ts_code        IN NUMBER,
@@ -1893,7 +2167,7 @@ AS
     * @return the interval minutes of the time series identifier
     */
    FUNCTION get_ts_interval (p_ts_code IN NUMBER)
-      RETURN NUMBER result_cache;
+      RETURN NUMBER RESULT_CACHE;
 
    /**
     * Retrieves the interval minutes of a time series identifier
@@ -1903,7 +2177,7 @@ AS
     * @return the interval minutes of the time series identifier
     */
    FUNCTION get_ts_interval (p_cwms_ts_id IN VARCHAR2)
-      RETURN NUMBER result_cache;
+      RETURN NUMBER RESULT_CACHE;
 
    /**
     * Retrieves the interval portion string of a time series identifier
@@ -1913,7 +2187,7 @@ AS
     * @return the interval portion string of the time series identifier
     */
    FUNCTION get_ts_interval_string (p_cwms_ts_id IN VARCHAR2)
-      RETURN VARCHAR2 result_cache;
+      RETURN VARCHAR2 RESULT_CACHE;
 
    /**
     * Retrieves the interval minutes of a specified interval string
@@ -1923,7 +2197,7 @@ AS
     * @return the interval minutes of the specified interval string
     */
    FUNCTION get_interval (p_interval_id IN VARCHAR2)
-      RETURN NUMBER result_cache;
+      RETURN NUMBER RESULT_CACHE;
 
    /**
     * Returns the UTC interval offset for a specified time and interval
@@ -1936,7 +2210,7 @@ AS
    FUNCTION get_utc_interval_offset (
       p_date_time_utc    IN DATE,
       p_interval_minutes IN NUMBER)
-      RETURN NUMBER result_cache;
+      RETURN NUMBER RESULT_CACHE;
    /**
     * Returns a table of valid date/times in a specified time window for a regular time series
     *
