@@ -2572,7 +2572,7 @@ AS
                          and unit_id      =  :units
                          and start_date   <= to_date(:l_end,     :l_date_fmt)
                          and end_date     >  to_date(:l_start,   :l_date_fmt)
-                         and version_date =  to_date(:version,   :l_date_fmt)
+                         and version_date =  :version
                       ) v
                       right outer join
                       (
@@ -2599,7 +2599,6 @@ AS
                         l_start_str,
                         l_date_format,
                         l_version_date,
-                        l_date_format,
                         l_reg_start_str,
                         l_date_format,
                         l_interval,
@@ -2641,7 +2640,7 @@ AS
                                              and unit_id     =  :units
                                              and start_date  <= to_date(:l_end,   :l_date_fmt)
                                              and end_date    >  to_date(:l_start, :l_date_fmt)
-                                             and version_date = to_date(:version, :l_date_fmt)
+                                             and version_date = :version
                                           ) v
                                           right outer join
                                           (
@@ -2699,7 +2698,6 @@ AS
                            l_start_str,
                            l_date_format,
                            l_version_date,
-                           l_date_format,
                            l_time_zone,
                            l_reg_start_str,
                            l_date_format,
@@ -2746,7 +2744,7 @@ AS
                                              and unit_id     =  :units
                                              and start_date  <= to_date(:l_end,   :l_date_fmt)
                                              and end_date    >  to_date(:l_start, :l_date_fmt)
-                                             and version_date = to_date(:version, :l_date_fmt)
+                                             and version_date = :version
                                         group by date_time
                                           ) v
                                           right outer join
@@ -2761,7 +2759,6 @@ AS
                                           on v.date_time = t.date_time
                          order by t.date_time asc';
                   replace_strings;
-
                   OPEN l_cursor FOR l_query_str
                      USING l_missing,
                            l_ts_code,
@@ -2775,7 +2772,6 @@ AS
                            l_start_str,
                            l_date_format,
                            l_version_date,
-                           l_date_format,
                            l_time_zone,
                            l_reg_start_str,
                            l_date_format,
@@ -2811,7 +2807,7 @@ AS
                            and unit_id     =  :units
                            and start_date  <= to_date(:l_end,   :l_date_fmt)
                            and end_date    >  to_date(:l_start, :l_date_fmt)
-                           and version_date = to_date(:version, :l_date_fmt)
+                           and version_date = :version
                       )
              group by local_time
              order by local_time';
@@ -2829,8 +2825,7 @@ AS
                         l_date_format,
                         l_start_str,
                         l_date_format,
-                        l_version_date,
-                        l_date_format;
+                        l_version_date;
             ELSE
                l_query_str :=
                   'select local_time as date_time,
@@ -2850,7 +2845,7 @@ AS
                            and unit_id     =  :units
                            and start_date  <= to_date(:l_end,   :l_date_fmt)
                            and end_date    >  to_date(:l_start, :l_date_fmt)
-                           and version_date = to_date(:version, :l_date_fmt)
+                           and version_date = :version
                       group by date_time
                        )
               order by date_time';
@@ -2867,8 +2862,7 @@ AS
                         l_date_format,
                         l_start_str,
                         l_date_format,
-                        l_version_date,
-                        l_date_format;
+                        l_version_date;
             END IF;
          END IF;
       END IF;
@@ -4343,7 +4337,7 @@ AS
                     cwms_data_quality q
                       where t.value is not nan
                         and s.ts_code        =  :l_ts_code
-                        and s.parameter_code =  p.parameter_code
+                        and s.parameter_code =  ap.parameter_code
                  and ap.base_parameter_code = p.base_parameter_code
                         and q.quality_code   =  t.quality_code
                         and p.unit_code      =  c.to_unit_code
@@ -4374,7 +4368,6 @@ AS
                when not matched then
             insert (ts_code, date_time, data_entry_date, value, quality_code,version_date )
             values (:l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
-
                EXECUTE IMMEDIATE l_sql_txt
                   USING p_timeseries_data,
                         l_ts_code,
