@@ -3997,36 +3997,41 @@ AS
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
                l_sql_txt :=
-                     ' merge into '
-                  || x.table_name
-                  || ' t1
-               using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
-                           (t.value * c.factor + c.offset) value,
-                        cwms_ts.clean_quality_code(t.quality_code) quality_code
-                         from TABLE(cast(:p_timeseries_data as tsv_array)) t,
-                         at_cwms_ts_spec s,
-                         at_parameter ap,
-                         cwms_unit_conversion c,
-                         cwms_base_parameter p,
-                         cwms_unit u
-                          where t.value is not nan
-                            and s.ts_code        =  :l_ts_code
-                            and s.parameter_code =  ap.parameter_code
-                     and ap.base_parameter_code = p.base_parameter_code
-                            and p.unit_code      =  c.to_unit_code
-                            and c.from_unit_code   =  u.unit_code
-                            and u.UNIT_ID        =  :l_units
-                            and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                            and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')
-                     ) t2
-                     on (    t1.ts_code      = :l_ts_code
-                   and t1.date_time    = t2.date_time
-                  and t1.version_date = :l_version_date )
-                   when matched then
-                   update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
-                   when not matched then
-                   insert (ts_code, date_time, data_entry_date, value, quality_code,version_date )
-               values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
+                     'merge into ' || x.table_name || ' t1
+                           using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                                         (t.value * c.factor + c.offset) value,
+                                         cwms_ts.clean_quality_code(t.quality_code) quality_code
+                                    from table(cast(:p_timeseries_data as tsv_array)) t,
+                                         at_cwms_ts_spec s,
+                                         at_parameter ap,
+                                         cwms_unit_conversion c,
+                                         cwms_base_parameter p,
+                                         cwms_unit u
+                                   where cwms_util.is_nan(t.value) = ''F''
+                                     and s.ts_code = :l_ts_code
+                                     and s.parameter_code = ap.parameter_code
+                                     and ap.base_parameter_code = p.base_parameter_code
+                                     and p.unit_code = c.to_unit_code
+                                     and c.from_unit_code = u.unit_code
+                                     and u.unit_id = :l_units
+                                     and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
+                                     and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                              on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
+                      when matched then
+                         update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
+                      when not matched then
+                         insert     (  ts_code,
+                                       date_time,
+                                       data_entry_date,
+                                       value,
+                                       quality_code,
+                                       version_date)
+                             values (  :l_ts_code,
+                                       t2.date_time,
+                                       :l_store_date,
+                                       t2.value,
+                                       t2.quality_code,
+                                       :l_version_date)';
 
                EXECUTE IMMEDIATE l_sql_txt
                   USING p_timeseries_data,
@@ -4059,47 +4064,47 @@ AS
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
                l_sql_txt :=
-                     ' merge into '
-                  || x.table_name
-                  || ' t1
-                  using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
-                           (t.value * c.factor + c.offset) value,
-                        cwms_ts.clean_quality_code(t.quality_code) quality_code
-                         from TABLE(cast(:p_timeseries_data as tsv_array)) t,
-                         at_cwms_ts_spec s,
-                         at_parameter ap,
-                         cwms_unit_conversion c,
-                         cwms_base_parameter p,
-                         cwms_unit u
-                          where t.value is not nan
-                            and s.ts_code        =  :l_ts_code
-                            and s.parameter_code =  ap.parameter_code
-                            AND ap.base_parameter_code = p.base_parameter_code
-                             and p.unit_code      =  c.to_unit_code
-                             and c.from_unit_code   =  u.unit_code
-                             and u.UNIT_ID        =  :l_units
-                             and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                             and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')
-                     ) t2
-                     on (    t1.ts_code      = :l_ts_code
-                   and t1.date_time    = t2.date_time
-                  and t1.version_date = :l_version_date )
-                   when matched then
-                   update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
-                      where (t1.quality_code in (select quality_code
-                                                  from cwms_data_quality q
-                                                where q.PROTECTION_ID=''UNPROTECTED''
-                                             )
-                      )
-                   or (t2.quality_code in (select quality_code
-                                                   from cwms_data_quality q
-                                                 where q.PROTECTION_ID=''PROTECTED''
-                                    )
-                     )
-                   when not matched then
-                   insert (ts_code, date_time, data_entry_date, value, quality_code,version_date )
-                  values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code,:l_version_date )
-                 ';
+                     'merge into ' || x.table_name || ' t1
+                           using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                                         (t.value * c.factor + c.offset) value,
+                                         cwms_ts.clean_quality_code(t.quality_code) quality_code
+                                    from table(cast(:p_timeseries_data as tsv_array)) t,
+                                         at_cwms_ts_spec s,
+                                         at_parameter ap,
+                                         cwms_unit_conversion c,
+                                         cwms_base_parameter p,
+                                         cwms_unit u
+                                   where cwms_util.is_nan(t.value) = ''F''
+                                     and s.ts_code = :l_ts_code
+                                     and s.parameter_code = ap.parameter_code
+                                     and ap.base_parameter_code = p.base_parameter_code
+                                     and p.unit_code = c.to_unit_code
+                                     and c.from_unit_code = u.unit_code
+                                     and u.unit_id = :l_units
+                                     and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
+                                     and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                              on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
+                      when matched then
+                         update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
+                                 where (t1.quality_code in (select quality_code
+                                                              from cwms_data_quality q
+                                                             where q.protection_id = ''UNPROTECTED''))
+                                    or (t2.quality_code in (select quality_code
+                                                              from cwms_data_quality q
+                                                             where q.protection_id = ''PROTECTED''))
+                      when not matched then
+                         insert     (  ts_code,
+                                       date_time,
+                                       data_entry_date,
+                                       value,
+                                       quality_code,
+                                       version_date)
+                             values (  :l_ts_code,
+                                       t2.date_time,
+                                       :l_store_date,
+                                       t2.value,
+                                       t2.quality_code,
+                                       :l_version_date)';
 
                EXECUTE IMMEDIATE l_sql_txt
                   USING p_timeseries_data,
@@ -4130,34 +4135,39 @@ AS
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
                l_sql_txt :=
-                     'merge into '
-                  || x.table_name
-                  || ' t1
-                   using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
-                            (t.value * c.factor + c.offset) value,
-                        cwms_ts.clean_quality_code(t.quality_code) quality_code
-                          from TABLE(cast(:p_timeseries_data as tsv_array)) t,
-                         at_cwms_ts_spec s,
-                         at_parameter ap,
-                         cwms_unit_conversion c,
-                         cwms_base_parameter p,
-                         cwms_unit u
-                          where t.value is not nan
-                            and s.ts_code        =  :l_ts_code
-                            and s.parameter_code =  ap.parameter_code
-                     and ap.base_parameter_code = p.base_parameter_code
-                             and p.unit_code      =  c.to_unit_code
-                             and c.from_unit_code   =  u.unit_code
-                             and u.UNIT_ID        =  :l_units
-                             and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                             and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')
-                      ) t2
-                      on (    t1.ts_code      = :l_ts_code
-                    and t1.date_time    = t2.date_time
-                   and t1.version_date = :l_version_date)
-                    when not matched then
-                    insert (ts_code, date_time, data_entry_date, value, quality_code,version_date )
-                    values ( :l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
+                     'merge into ' || x.table_name || ' t1
+                           using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                                         (t.value * c.factor + c.offset) value,
+                                         cwms_ts.clean_quality_code(t.quality_code) quality_code
+                                    from table(cast(:p_timeseries_data as tsv_array)) t,
+                                         at_cwms_ts_spec s,
+                                         at_parameter ap,
+                                         cwms_unit_conversion c,
+                                         cwms_base_parameter p,
+                                         cwms_unit u
+                                   where cwms_util.is_nan(t.value) = ''F''
+                                     and s.ts_code = :l_ts_code
+                                     and s.parameter_code = ap.parameter_code
+                                     and ap.base_parameter_code = p.base_parameter_code
+                                     and p.unit_code = c.to_unit_code
+                                     and c.from_unit_code = u.unit_code
+                                     and u.unit_id = :l_units
+                                     and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
+                                     and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                              on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
+                      when not matched then
+                         insert     (  ts_code,
+                                       date_time,
+                                       data_entry_date,
+                                       value,
+                                       quality_code,
+                                       version_date)
+                             values (  :l_ts_code,
+                                       t2.date_time,
+                                       :l_store_date,
+                                       t2.value,
+                                       t2.quality_code,
+                                       :l_version_date)';
 
                EXECUTE IMMEDIATE l_sql_txt
                   USING p_timeseries_data,
@@ -4177,7 +4187,7 @@ AS
             --
             --***************************************************
             -- CASE 4 - Store Rule: REPLACE MISSING VALUES ONLY -
-            --*************************************************
+            --***************************************************
             --
             DBMS_APPLICATION_INFO.set_action (
                'merge into table, replace_missing_values_only');
@@ -4187,40 +4197,105 @@ AS
                         FROM at_ts_table_properties
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
-               l_sql_txt :=
-                     'merge into '
-                  || x.table_name
-                  || ' t1
-                   using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
-                            (t.value * c.factor + c.offset) value,
-                        cwms_ts.clean_quality_code(t.quality_code) quality_code
-                          from TABLE(cast(:p_timeseries_data as tsv_array)) t,
-                         at_cwms_ts_spec s,
-                         at_parameter ap,
-                         cwms_unit_conversion c,
-                         cwms_base_parameter p,
-                         cwms_unit u
-                          where t.value is not nan
-                            and s.ts_code        =  :l_ts_code
-                            and s.parameter_code =  ap.parameter_code
-                     and ap.base_parameter_code = p.base_parameter_code
-                             and p.unit_code      =  c.to_unit_code
-                             and c.from_unit_code   =  u.unit_code
-                             and u.UNIT_ID        =  :l_units
-                             and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                             and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')
-                      ) t2
-                      on (    t1.ts_code      = :l_ts_code
-                    and t1.date_time    = t2.date_time
-                   and t1.version_date = :l_version_date)
-                    when matched then
-                    update set t1.value = t2.value, t1.quality_code = t2.quality_code, t1.data_entry_date = :l_store_date
-                       where t1.quality_code in (select quality_code
-                                             from cwms_data_quality q
-                                     where q.VALIDITY_ID=''MISSING'')
-                    when not matched then
-                    insert (ts_code,  date_time,    data_entry_date, value,    quality_code,    version_date )
-                     values (:l_ts_code, t2.date_time, :l_store_date,      t2.value, t2.quality_code, :l_version_date )';
+               if not l_override_prot then
+                  --
+                  --***************************************************
+                  -- CASE 4a - Store Rule: REPLACE MISSING VALUES ONLY -
+                  --           Override:   FALSE
+                  --***************************************************
+                  --
+                  l_sql_txt :=
+                        'merge into ' || x.table_name || ' t1
+                              using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                                            (t.value * c.factor + c.offset) value,
+                                            cwms_ts.clean_quality_code(t.quality_code) quality_code
+                                       from table(cast(:p_timeseries_data as tsv_array)) t,
+                                            at_cwms_ts_spec s,
+                                            at_parameter ap,
+                                            cwms_unit_conversion c,
+                                            cwms_base_parameter p,
+                                            cwms_unit u
+                                      where cwms_util.is_nan(t.value) = ''F''
+                                        and s.ts_code = :l_ts_code
+                                        and s.parameter_code = ap.parameter_code
+                                        and ap.base_parameter_code = p.base_parameter_code
+                                        and p.unit_code = c.to_unit_code
+                                        and c.from_unit_code = u.unit_code
+                                        and u.unit_id = :l_units
+                                        and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
+                                        and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                                 on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
+                         when matched then
+                            update set t1.value = t2.value, t1.quality_code = t2.quality_code, t1.data_entry_date = :l_store_date
+                                    where t1.quality_code in (select quality_code
+                                                                from cwms_data_quality q
+                                                               where q.validity_id = ''MISSING'')
+                                      and ((t1.quality_code in (select quality_code
+                                                                  from cwms_data_quality q
+                                                                 where q.protection_id = ''UNPROTECTED''))
+                                        or (t2.quality_code in (select quality_code
+                                                                  from cwms_data_quality q
+                                                                 where q.protection_id = ''PROTECTED'')))
+                         when not matched then
+                            insert     (  ts_code,
+                                          date_time,
+                                          data_entry_date,
+                                          value,
+                                          quality_code,
+                                          version_date)
+                                values (  :l_ts_code,
+                                          t2.date_time,
+                                          :l_store_date,
+                                          t2.value,
+                                          t2.quality_code,
+                                          :l_version_date)';
+               else
+                  --
+                  --***************************************************
+                  -- CASE 4b - Store Rule: REPLACE MISSING VALUES ONLY -
+                  --           Override:   TRUE
+                  --***************************************************
+                  --
+                  l_sql_txt :=
+                        'merge into ' || x.table_name || ' t1
+                              using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                                            (t.value * c.factor + c.offset) value,
+                                            cwms_ts.clean_quality_code(t.quality_code) quality_code
+                                       from table(cast(:p_timeseries_data as tsv_array)) t,
+                                            at_cwms_ts_spec s,
+                                            at_parameter ap,
+                                            cwms_unit_conversion c,
+                                            cwms_base_parameter p,
+                                            cwms_unit u
+                                      where cwms_util.is_nan(t.value) = ''F''
+                                        and s.ts_code = :l_ts_code
+                                        and s.parameter_code = ap.parameter_code
+                                        and ap.base_parameter_code = p.base_parameter_code
+                                        and p.unit_code = c.to_unit_code
+                                        and c.from_unit_code = u.unit_code
+                                        and u.unit_id = :l_units
+                                        and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
+                                        and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                                 on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
+                         when matched then
+                            update set t1.value = t2.value, t1.quality_code = t2.quality_code, t1.data_entry_date = :l_store_date
+                                    where t1.quality_code in (select quality_code
+                                                                from cwms_data_quality q
+                                                               where q.validity_id = ''MISSING'')
+                         when not matched then
+                            insert     (  ts_code,
+                                          date_time,
+                                          data_entry_date,
+                                          value,
+                                          quality_code,
+                                          version_date)
+                                values (  :l_ts_code,
+                                          t2.date_time,
+                                          :l_store_date,
+                                          t2.value,
+                                          t2.quality_code,
+                                          :l_version_date)';
+               end if;
 
                EXECUTE IMMEDIATE l_sql_txt
                   USING p_timeseries_data,
@@ -4254,41 +4329,46 @@ AS
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
                l_sql_txt :=
-                     'merge into '
-                  || x.table_name
-                  || ' t1
-                   using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
-                            (t.value * c.factor + c.offset) value,
-                        cwms_ts.clean_quality_code(t.quality_code) quality_code
-                       from TABLE(cast(:p_timeseries_data as tsv_array)) t,
-                          at_cwms_ts_spec s,
-                          at_parameter ap,
-                        cwms_unit_conversion c,
-                        cwms_base_parameter p,
-                        cwms_unit u,
-                        cwms_data_quality q
-                           where t.value is not nan
-                             and s.ts_code        =  :l_ts_code
-                             and s.parameter_code =  ap.parameter_code
-                     and ap.base_parameter_code = p.base_parameter_code
-                             and q.quality_code   =  t.quality_code
-                             and p.unit_code      =  c.to_unit_code
-                             and c.from_unit_code   =  u.unit_code
-                             and u.UNIT_ID        =  :l_units
-                             and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                             and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')
-                   ) t2
-                      on (    t1.ts_code      = :l_ts_code
-                    and t1.date_time    = t2.date_time
-                   and t1.version_date = :l_version_date)
-                    when matched then
-                 update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
-                 where t2.quality_code not in (select quality_code
-                                                 from cwms_data_quality
-                                        where validity_id = ''MISSING'')
-                    when not matched then
-                 insert (ts_code,  date_time,    data_entry_date, value,    quality_code,    version_date )
-                values (:l_ts_code, t2.date_time, :l_store_date,      t2.value, t2.quality_code, :l_version_date )';
+                     'merge into ' || x.table_name || ' t1
+                           using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                                         (t.value * c.factor + c.offset) value,
+                                         cwms_ts.clean_quality_code(t.quality_code) quality_code
+                                    from table(cast(:p_timeseries_data as tsv_array)) t,
+                                         at_cwms_ts_spec s,
+                                         at_parameter ap,
+                                         cwms_unit_conversion c,
+                                         cwms_base_parameter p,
+                                         cwms_unit u,
+                                         cwms_data_quality q
+                                   where cwms_util.is_nan(t.value) = ''F''
+                                     and s.ts_code = :l_ts_code
+                                     and s.parameter_code = ap.parameter_code
+                                     and ap.base_parameter_code = p.base_parameter_code
+                                     and q.quality_code = t.quality_code
+                                     and p.unit_code = c.to_unit_code
+                                     and c.from_unit_code = u.unit_code
+                                     and u.unit_id = :l_units
+                                     and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
+                                     and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                              on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
+                      when matched then
+                         update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
+                                 where t2.quality_code not in (select quality_code
+                                                                 from cwms_data_quality
+                                                                where validity_id = ''MISSING'')
+                      when not matched then
+                         insert     (  ts_code,
+                                       date_time,
+                                       data_entry_date,
+                                       value,
+                                       quality_code,
+                                       version_date)
+                             values (  :l_ts_code,
+                                       t2.date_time,
+                                       :l_store_date,
+                                       t2.value,
+                                       t2.quality_code,
+                                       :l_version_date)';
 
                EXECUTE IMMEDIATE l_sql_txt
                   USING p_timeseries_data,
@@ -4322,52 +4402,52 @@ AS
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
                l_sql_txt :=
-                     'merge into '
-                  || x.table_name
-                  || ' t1
-              using (select trunc(CAST((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') date_time,
-                       (t.value * c.factor + c.offset) value,
-                    cwms_ts.clean_quality_code(t.quality_code) quality_code
-                  from TABLE(cast(:p_timeseries_data as tsv_array)) t,
-                     at_cwms_ts_spec s,
-                     at_parameter ap,
-                    cwms_unit_conversion c,
-                    cwms_base_parameter p,
-                    cwms_unit u,
-                    cwms_data_quality q
-                      where t.value is not nan
-                        and s.ts_code        =  :l_ts_code
-                        and s.parameter_code =  ap.parameter_code
-                 and ap.base_parameter_code = p.base_parameter_code
-                        and q.quality_code   =  t.quality_code
-                        and p.unit_code      =  c.to_unit_code
-                        and c.from_unit_code   =  u.unit_code
-                        and u.UNIT_ID        =  :l_units
-                        and date_time        >= from_tz(cast(:start_date as timestamp), ''UTC'')
-                        and date_time        <  from_tz(cast(:end_date as timestamp), ''UTC'')
-              ) t2
-                 on ( t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
-               when matched then
-            update set t1.value = t2.value,  t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
-                  where (  (t1.quality_code in (select quality_code
-                                        from cwms_data_quality q
-                                 where q.PROTECTION_ID=''UNPROTECTED''
-                                )
-                    )
-                     or (t2.quality_code in (select quality_code
-                                              from cwms_data_quality q
-                                            where q.PROTECTION_ID=''PROTECTED''
-                                   )
-                       )
-                 )
-              and (t2.quality_code not in (select quality_code
-                                                  from cwms_data_quality q
-                                                where q.VALIDITY_ID=''MISSING''
-                                       )
-                    )
-               when not matched then
-            insert (ts_code, date_time, data_entry_date, value, quality_code,version_date )
-            values (:l_ts_code, t2.date_time, :l_store_date, t2.value, t2.quality_code, :l_version_date )';
+                     'merge into ' || x.table_name || ' t1
+                           using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                                         (t.value * c.factor + c.offset) value,
+                                         cwms_ts.clean_quality_code(t.quality_code) quality_code
+                                    from table(cast(:p_timeseries_data as tsv_array)) t,
+                                         at_cwms_ts_spec s,
+                                         at_parameter ap,
+                                         cwms_unit_conversion c,
+                                         cwms_base_parameter p,
+                                         cwms_unit u,
+                                         cwms_data_quality q
+                                   where cwms_util.is_nan(t.value) = ''F''
+                                     and s.ts_code = :l_ts_code
+                                     and s.parameter_code = ap.parameter_code
+                                     and ap.base_parameter_code = p.base_parameter_code
+                                     and q.quality_code = t.quality_code
+                                     and p.unit_code = c.to_unit_code
+                                     and c.from_unit_code = u.unit_code
+                                     and u.unit_id = :l_units
+                                     and date_time >= from_tz(cast(:start_date as timestamp), ''UTC'')
+                                     and date_time < from_tz(cast(:end_date as timestamp), ''UTC'')) t2
+                              on (t1.ts_code = :l_ts_code and t1.date_time = t2.date_time and t1.version_date = :l_version_date)
+                      when matched then
+                         update set t1.value = t2.value, t1.data_entry_date = :l_store_date, t1.quality_code = t2.quality_code
+                                 where ((t1.quality_code in (select quality_code
+                                                               from cwms_data_quality q
+                                                              where q.protection_id = ''UNPROTECTED''))
+                                     or (t2.quality_code in (select quality_code
+                                                               from cwms_data_quality q
+                                                              where q.protection_id = ''PROTECTED'')))
+                                   and (t2.quality_code not in (select quality_code
+                                                                  from cwms_data_quality q
+                                                                 where q.validity_id = ''MISSING''))
+                      when not matched then
+                         insert     (  ts_code,
+                                       date_time,
+                                       data_entry_date,
+                                       value,
+                                       quality_code,
+                                       version_date)
+                             values (  :l_ts_code,
+                                       t2.date_time,
+                                       :l_store_date,
+                                       t2.value,
+                                       t2.quality_code,
+                                       :l_version_date)';
                EXECUTE IMMEDIATE l_sql_txt
                   USING p_timeseries_data,
                         l_ts_code,
@@ -4459,7 +4539,7 @@ AS
                                    cwms_unit_conversion c,
                                    cwms_base_parameter p,
                                    cwms_unit u
-                             WHERE t.value IS NOT NAN
+                             WHERE cwms_util.is_nan(t.value) = ''F''
                                AND s.ts_code = :ts_code
                                AND s.parameter_code = ap.parameter_code
                                AND ap.base_parameter_code = p.base_parameter_code
@@ -4507,35 +4587,6 @@ AS
                         l_store_date,
                         l_store_date;
             END LOOP;
-            /*
-            -------------------------------------
-            -- Publish a TSDataDeleted message --
-            -------------------------------------
-            cwms_msg.new_message (l_msg, l_msgid, 'TSDataDeleted');
-            l_msg.set_string (l_msgid, 'ts_id', l_cwms_ts_id);
-            l_msg.set_string (l_msgid, 'office_id', l_office_id);
-            l_msg.set_long (l_msgid, 'ts_code', l_ts_code);
-            l_msg.set_long (
-               l_msgid,
-               'start_time',
-               cwms_util.to_millis (
-                  FROM_TZ (CAST (mindate AS TIMESTAMP), 'UTC')));
-            l_msg.set_long (
-               l_msgid,
-               'end_time',
-               cwms_util.to_millis (
-                  FROM_TZ (CAST (maxdate AS TIMESTAMP), 'UTC')));
-            l_msg.set_long (
-               l_msgid,
-               'version_date',
-               cwms_util.to_millis (
-                  FROM_TZ (CAST (l_version_date AS TIMESTAMP), 'UTC')));
-            l_msg.set_long (l_msgid, 'deleted_time', l_millis);
-            i :=
-               cwms_msg.publish_message (l_msg,
-                                         l_msgid,
-                                         l_office_id || '_ts_stored');
-            */                                         
          WHEN     l_override_prot
               AND UPPER (p_store_rule) = cwms_util.delete_insert
          THEN
@@ -4608,7 +4659,7 @@ AS
                                    cwms_unit_conversion c,
                                    cwms_base_parameter p,
                                    cwms_unit u
-                             WHERE t.value IS NOT NAN
+                             WHERE cwms_util.is_nan(t.value) = ''F''
                                AND s.ts_code = :ts_code
                                AND s.parameter_code = ap.parameter_code
                                AND ap.base_parameter_code = p.base_parameter_code
@@ -4646,35 +4697,6 @@ AS
                         l_store_date,
                         l_store_date;
             END LOOP;
-            /*
-            -------------------------------------
-            -- Publish a TSDataDeleted message --
-            -------------------------------------
-            cwms_msg.new_message (l_msg, l_msgid, 'TSDataDeleted');
-            l_msg.set_string (l_msgid, 'ts_id', l_cwms_ts_id);
-            l_msg.set_string (l_msgid, 'office_id', l_office_id);
-            l_msg.set_long (l_msgid, 'ts_code', l_ts_code);
-            l_msg.set_long (
-               l_msgid,
-               'start_time',
-               cwms_util.to_millis (
-                  FROM_TZ (CAST (mindate AS TIMESTAMP), 'UTC')));
-            l_msg.set_long (
-               l_msgid,
-               'end_time',
-               cwms_util.to_millis (
-                  FROM_TZ (CAST (maxdate AS TIMESTAMP), 'UTC')));
-            l_msg.set_long (
-               l_msgid,
-               'version_date',
-               cwms_util.to_millis (
-                  FROM_TZ (CAST (l_version_date AS TIMESTAMP), 'UTC')));
-            l_msg.set_long (l_msgid, 'deleted_time', l_millis);
-            i :=
-               cwms_msg.publish_message (l_msg,
-                                         l_msgid,
-                                         l_office_id || '_ts_stored');
-            */
                   DBMS_OUTPUT.put_line (
                      'CASE 7: delete-insert FALSE Completed.');
          ELSE

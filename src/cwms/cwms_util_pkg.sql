@@ -19,26 +19,29 @@ AS
    l_epoch_wk_dy_1 CONSTANT DATE
          := TO_DATE ('04Jan1970 00:00', 'ddmonyyyy hh24:mi') ;
    /**
-    * Store rule to replace any/all existing values, but do not insert values that 
-    * don't already exist.
+    * Store rule: Insert values at new times and replace any values at existing times, even
+    * if incoming values are specified as missing
     */
    replace_all CONSTANT                      VARCHAR2 (16) := 'REPLACE ALL';
    /**
-    * Store rule to only insert values that don't already exist.
+    * Store rule: Insert values at new times but do not replace any values at existing times
     */
    do_not_replace CONSTANT                   VARCHAR2 (16) := 'DO NOT REPLACE';
    /**
-    * Store rule to only replace missing values
+    * Store rule: Insert values at new times but do not replace any values at existing times
+    * unless the existing values are specified as missing
     */
    replace_missing_values_only CONSTANT VARCHAR2 (32)
          := 'REPLACE MISSING VALUES ONLY' ;
    /**
-    * Store rule to any values with non-missing values.
+    * Store rule: Insert values at new times and replace any values at existing times, unless
+    * the incoming values are specified as missing
     */
    replace_with_non_missing CONSTANT VARCHAR2 (32)
          := 'REPLACE WITH NON MISSING' ;
    /**
-    * Store rule to remove all values in time window before storing new values.
+    * Store rule: Delete all existing values in time window of incoming data and then
+    * insert incoming data
     */
    delete_insert CONSTANT                    VARCHAR2 (16) := 'DELETE INSERT';
    /**
@@ -1754,7 +1757,18 @@ AS
     */
    procedure reset_session_info(
       p_item_name in varchar2);
-
+   /**
+    * Returns 'T' if a number is a NaN, otherwise 'F'. The clause "Is_Nan(<val>) = 'F'"
+    * can be used in place of "<val> Is Not Nan" to correctly identify NULL values as 
+    * not NaN values..
+    *
+    * @param p_value The value to check for not-NaN status.
+    *
+    * @return 'T' if p_value is a NaN, 'F' otherwise.
+    */
+   function is_nan(
+      p_value in binary_double)
+      return varchar2;
 
 
 

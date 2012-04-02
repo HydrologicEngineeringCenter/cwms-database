@@ -3957,6 +3957,15 @@ AS
       end;
    end reset_session_info;
 
+   function is_nan(
+      p_value in binary_double)
+      return varchar2
+   is
+      l_is_nan boolean := p_value is nan;
+   begin
+      return case l_is_nan when true then 'T' else 'F' end;
+   end is_nan;
+
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call
