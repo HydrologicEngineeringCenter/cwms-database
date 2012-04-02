@@ -74,6 +74,6 @@ if ec :
 	print
 	print "SQL*Plus exited with code", ec 
 	print
-	sys.exit(1)	
+	sys.exit(-1)	
 
 sys.exit(0)

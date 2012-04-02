@@ -73,7 +73,6 @@ ec = os.system(cmd)
 if ec :
 	print
 	print "SQL*Plus exited with code", ec 
-	ec = 1
-	print
+	sys.exit(-1)
 	
 sys.exit(ec)

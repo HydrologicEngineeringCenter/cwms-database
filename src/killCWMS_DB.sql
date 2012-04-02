@@ -24,9 +24,14 @@ spool killCWMS_DB.log
 --
 -- log on as sysdba
 --
-connect sys/&sys_passwd@&inst as sysdba
-select sysdate from dual;
 whenever sqlerror exit sql.sqlcode
+connect sys/&sys_passwd@&inst as sysdba
+begin dbms_output.enable; end;
+/
+
+select sysdate from dual;
+begin execute immediate 'ALTER SYSTEM ENABLE RESTRICTED SESSION'; end;
+/
 
 --
 -- kill the cwms public synonyms
@@ -36,7 +41,8 @@ set serveroutput on
 set echo off
 --  Kill current CWMS sessions
 declare
-    cursor c is select sid,serial# from v$session where username = '&cwms_schema';
+    cursor c is select sid,serial# from v$session where username = '&cwms_schema' or
+	username like '__CWMSDBI' or username like '__CWMSPD' or username like '__HECTEST' ;
     kill_command varchar2(128);
 begin
 
@@ -72,20 +78,15 @@ end;
 -- kill the cwms users and the roles
 --
 begin
-   dbms_output.put_line('drop role &CWMS_SCHEMA');
-   execute immediate 'drop role &CWMS_SCHEMA';
+   for rec in (select role from dba_roles
+	where role = 'CWMS_USER' or role = 'CWMS_DBX_ROLE')
+   loop
+   	dbms_output.put_line('drop role ' || rec.role);
+   	execute immediate 'drop role ' || rec.role;
+   end loop;
 exception
    when others then 
-      dbms_output.put_line('==> Cannot drop role &CWMS_SCHEMA : ' || sqlerrm);
-      raise;  
-end;
-/
-begin
-   dbms_output.put_line('drop role cwms_user');
-   execute immediate 'drop role cwms_user';
-exception
-   when others then 
-      dbms_output.put_line('==> Cannot drop role cwms_user : ' || sqlerrm);
+      dbms_output.put_line('==> Cannot drop role  : ' || sqlerrm);
       raise;  
 end;
 /
@@ -110,23 +111,20 @@ begin
 end;
 /
 begin
-   dbms_output.put_line('drop user &cwms_schema cascade');
-   execute immediate 'drop user &cwms_schema cascade';
+   for rec in (select username from dba_users
+	where username = '&CWMS_SCHEMA' or username = 'CWMS_DBA')
+   loop
+   	dbms_output.put_line('drop user ' || rec.username || ' cascade');
+   	execute immediate 'drop user  ' || rec.username || '  cascade';
+   end loop;
 exception
    when others then 
-      dbms_output.put_line('==> Cannot drop role &cwms_schema : ' || sqlerrm);
+      dbms_output.put_line('==> Cannot drop role  : ' || sqlerrm);
       raise;  
 end;
 /
-begin
-   dbms_output.put_line('drop user cwms_dba cascade');
-   execute immediate 'drop user cwms_dba cascade';
-exception
-   when others then 
-      dbms_output.put_line('==> Cannot drop role cwms_dba : ' || sqlerrm);
-      raise;  
-end;
+
+begin execute immediate 'ALTER SYSTEM DISABLE RESTRICTED SESSION'; end;
 /
-set echo &echo_state
 exit 0
 
