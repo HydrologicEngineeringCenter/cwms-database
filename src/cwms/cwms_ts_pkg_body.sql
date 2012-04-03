@@ -3998,7 +3998,7 @@ AS
             LOOP
                l_sql_txt :=
                      'merge into ' || x.table_name || ' t1
-                           using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:p_timeseries_data as tsv_array)) t,
@@ -4065,7 +4065,7 @@ AS
             LOOP
                l_sql_txt :=
                      'merge into ' || x.table_name || ' t1
-                           using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:p_timeseries_data as tsv_array)) t,
@@ -4136,7 +4136,7 @@ AS
             LOOP
                l_sql_txt :=
                      'merge into ' || x.table_name || ' t1
-                           using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:p_timeseries_data as tsv_array)) t,
@@ -4206,7 +4206,7 @@ AS
                   --
                   l_sql_txt :=
                         'merge into ' || x.table_name || ' t1
-                              using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                              using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                             (t.value * c.factor + c.offset) value,
                                             cwms_ts.clean_quality_code(t.quality_code) quality_code
                                        from table(cast(:p_timeseries_data as tsv_array)) t,
@@ -4258,7 +4258,7 @@ AS
                   --
                   l_sql_txt :=
                         'merge into ' || x.table_name || ' t1
-                              using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                              using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                             (t.value * c.factor + c.offset) value,
                                             cwms_ts.clean_quality_code(t.quality_code) quality_code
                                        from table(cast(:p_timeseries_data as tsv_array)) t,
@@ -4330,7 +4330,7 @@ AS
             LOOP
                l_sql_txt :=
                      'merge into ' || x.table_name || ' t1
-                           using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:p_timeseries_data as tsv_array)) t,
@@ -4403,7 +4403,7 @@ AS
             LOOP
                l_sql_txt :=
                      'merge into ' || x.table_name || ' t1
-                           using (select trunc(cast((t.date_time at time zone ''GMT'') as date), ''mi'') date_time,
+                           using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
                                     from table(cast(:p_timeseries_data as tsv_array)) t,
@@ -4489,10 +4489,10 @@ AS
                     where t1.ts_code = :ts_code
                       and t1.version_date = :version_date
                       and t1.date_time between
-                          (SELECT MIN (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
+                          (SELECT MIN (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                           and
-                          (SELECT MAX (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
+                          (SELECT MAX (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                       and t1.quality_code NOT IN (SELECT quality_code
                                                    FROM cwms_data_quality q
@@ -4513,10 +4513,10 @@ AS
                     where t1.ts_code = :ts_code
                       and t1.version_date = :version_date
                       and t1.date_time between
-                          (SELECT MIN (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
+                          (SELECT MIN (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                           and
-                          (SELECT MAX (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
+                          (SELECT MAX (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                       and t1.quality_code NOT IN (SELECT quality_code
                                                    FROM cwms_data_quality q
@@ -4530,7 +4530,7 @@ AS
 
                EXECUTE IMMEDIATE REPLACE (
                                    'MERGE INTO table_name t1
-                     USING (SELECT trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') as date_time,
+                     USING (SELECT trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi'') as date_time,
                                    (t.value * c.factor + c.offset) as value,
                                    cwms_ts.clean_quality_code(t.quality_code) as quality_code
                               FROM TABLE (CAST (:timeseries_data AS tsv_array)) t,
@@ -4615,10 +4615,10 @@ AS
                     where t1.ts_code = :ts_code
                       and t1.version_date = :version_date
                       and t1.date_time between
-                          (SELECT MIN (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
+                          (SELECT MIN (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                           and
-                          (SELECT MAX (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
+                          (SELECT MAX (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)',
                                    'table_name',
                                    x.table_name)
@@ -4636,10 +4636,10 @@ AS
                     where t1.ts_code = :ts_code
                       and t1.version_date = :version_date
                       and t1.date_time between
-                          (SELECT MIN (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
+                          (SELECT MIN (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)
                           and
-                          (SELECT MAX (trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi''))
+                          (SELECT MAX (trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi''))
                              FROM TABLE (CAST (:timeseries_data AS tsv_array)) t)',
                                    'table_name',
                                    x.table_name)
@@ -4650,7 +4650,7 @@ AS
 
                EXECUTE IMMEDIATE REPLACE (
                                    'MERGE INTO table_name t1
-                     USING (SELECT trunc(CAST ((t.date_time AT TIME ZONE ''GMT'') AS DATE), ''mi'') as date_time,
+                     USING (SELECT trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi'') as date_time,
                                    (t.value * c.factor + c.offset) as value,
                                    cwms_ts.clean_quality_code(t.quality_code) as quality_code
                               FROM TABLE (CAST (:timeseries_data AS tsv_array)) t,

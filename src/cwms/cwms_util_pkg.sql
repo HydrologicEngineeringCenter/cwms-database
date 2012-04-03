@@ -397,7 +397,7 @@ AS
       RETURN NUMBER;
    /**
     * Retrieves a time zone equivalent to the specified time zone.  This is used
-    * specifically to filter out PST and CST time zones, which are defined DST,
+    * specifically to filter out PST and CST time zones, which define DST,
     * which is unexpected for these zones.
     * <p>
     * <table class="descr">
@@ -425,6 +425,18 @@ AS
     */
    FUNCTION get_timezone (p_timezone IN VARCHAR2)
       RETURN VARCHAR2;
+
+   /**
+    * Corrects times withing daylight savings time in time zones PST and CST.  These
+    * time zones are not expected to observer DST, but erroneously do.  This function
+    * corrects the affected times.
+    *
+    * @param p_time The input time that may need correction
+    *
+    * @return The time which has been corrected if necessary
+    */
+   FUNCTION fixup_timezone (p_time IN TIMESTAMP WITH TIME ZONE)
+      RETURN TIMESTAMP WITH TIME ZONE;
    /**
     * Converts a specified<code><big>DATE</big></code> from a specified time zone
     * to UTC

@@ -112,6 +112,29 @@ AS
       RETURN l_timezone;
    END get_timezone;
 
+   FUNCTION FIXUP_TIMEZONE (p_time IN TIMESTAMP WITH TIME ZONE)
+      RETURN TIMESTAMP WITH TIME ZONE
+   IS
+      l_time TIMESTAMP WITH TIME ZONE;
+   BEGIN
+      CASE EXTRACT(TIMEZONE_REGION FROM p_time)
+         WHEN 'PST' THEN
+            CASE EXTRACT(TIMEZONE_ABBR FROM p_time)
+               WHEN 'PDT' THEN
+                  l_time := (p_time + TO_DSINTERVAL('0 01:00:00')) AT TIME ZONE 'ETC/GMT+8';
+               ELSE l_time := p_time;
+            END CASE;
+         WHEN 'CST' THEN
+            CASE EXTRACT(TIMEZONE_ABBR FROM p_time)
+               WHEN 'CDT' THEN
+                  l_time := (p_time + TO_DSINTERVAL('0 01:00:00')) AT TIME ZONE 'ETC/GMT+6';
+               ELSE l_time := p_time;
+            END CASE;
+         ELSE l_time := p_time;
+      END CASE;
+      RETURN l_time;
+   END FIXUP_TIMEZONE;
+
    --
    -- return the p_in_date which is in p_in_tz as a date in UTC
    FUNCTION date_from_tz_to_utc (p_in_date IN DATE, p_in_tz IN VARCHAR2)
