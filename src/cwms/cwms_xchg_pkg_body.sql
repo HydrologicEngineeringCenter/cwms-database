@@ -434,6 +434,7 @@ CREATE OR REPLACE package body cwms_xchg as
       ----------------------------------------------
       -- retrieve all the matching xchg set codes --
       ----------------------------------------------
+      del_unused_dss_xchg_info;
       for rec in (
          select xchg_set_code
            from at_xchg_set
@@ -1523,6 +1524,12 @@ CREATE OR REPLACE package body cwms_xchg as
       p_office_id in varchar2 default null)
    is
    begin
+      delete
+        from at_xchg_dss_ts_mappings
+       where cwms_ts_code in (
+                select ts_code
+                  from at_cwms_ts_spec
+                 where delete_date is not null);
       delete
         from at_xchg_set
        where xchg_set_code not in (
