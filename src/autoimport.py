@@ -1,7 +1,7 @@
 #!/bin/env python
 import os, sys
 
-manual_sqlfilename = "importCWMS_DB.sql"
+manual_sqlfilename = "exportImportCWMS_DB.sql"
 auto_sqlfilename   = "autoImport.sql"
 
 prompt_block = \
@@ -12,7 +12,7 @@ accept inst        char prompt 'Enter the database instance    : '
 accept cwms_schema  char prompt 'Enter cwms schema name    : '
 accept cwms_passwd  char prompt 'Enter the password for cwms  schema   : '
 accept sys_passwd  char prompt 'Enter the password for SYS     : '
-accept cwms_dir  char prompt 'Enter the directory containing exported file     : '
+accept cwms_dir  char prompt 'Enter directory for storing export file   : '
 accept oracle_parallel  char prompt 'Enter number of oracle export jobs (1-9)   : '
 set echo &echo_state
 '''
@@ -27,6 +27,7 @@ define sys_passwd = %s
 define cwms_dir = %s
 define oracle_parallel = %s
 '''
+
 
 force = False
 echo, inst, cwms_passwd, cwms_schema,sys_passwd,cwms_dir,oracle_parallel = None, None, None, None, None, None, None
@@ -54,6 +55,20 @@ auto_block = auto_block_template % (echo, inst, cwms_schema, cwms_passwd, sys_pa
 
 f = open(manual_sqlfilename, "r")
 sql_script = f.read()
+sql_script = sql_script.replace(
+                "--IMPORT_CWMS;",
+                "IMPORT_CWMS;")
+sql_script = sql_script.replace(
+                "exportImportCWMS_DB",
+                "importCWMS_DB")
+sql_script = sql_script.replace(
+                "/* UNCOMMENT FOR IMPORT",
+                "-- UNCOMMENT FOR IMPORT")
+sql_script = sql_script.replace(
+                "UNCOMMENT FOR IMPORT */",
+                "--UNCOMMENT FOR IMPORT")
+
+
 f.close()
 
 if force : 

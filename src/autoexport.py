@@ -1,7 +1,7 @@
 #!/bin/env python
 import os, sys
 
-manual_sqlfilename = "exportCWMS_DB.sql"
+manual_sqlfilename = "exportImportCWMS_DB.sql"
 auto_sqlfilename   = "autoexport.sql"
 
 prompt_block = \
@@ -54,6 +54,19 @@ auto_block = auto_block_template % (echo, inst, cwms_schema, cwms_passwd, sys_pa
 
 f = open(manual_sqlfilename, "r")
 sql_script = f.read()
+sql_script = sql_script.replace(
+                "--EXPORT_CWMS;",
+                "EXPORT_CWMS;")
+sql_script = sql_script.replace(
+                "exportImportCWMS_DB",
+                "exportCWMS_DB")
+sql_script = sql_script.replace(
+                "-- spool cwms_seq.log replace",
+                "spool cwms_seq.log replace")
+sql_script = sql_script.replace(
+                "-- select last_number from dba_sequences WHERE sequence_owner = '&cwms_schema' AND sequence_name = 'CWMS_SEQ';",
+                "select last_number from dba_sequences WHERE sequence_owner = '&cwms_schema' AND sequence_name = 'CWMS_SEQ';")
+
 f.close()
 
 if force : 

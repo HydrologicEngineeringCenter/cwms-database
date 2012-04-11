@@ -15,6 +15,7 @@ spool buildCWMS_DB.log
 -- log on as sysdba
 --
 connect sys/&sys_passwd@&inst as sysdba
+--ALTER SYSTEM ENABLE RESTRICTED SESSION;
 --
 --
 select sysdate from dual;
@@ -22,7 +23,6 @@ set serveroutput on
 begin dbms_output.enable; end;
 /
 set echo &echo_state
-whenever sqlerror exit sql.sqlcode
 --
 -- create user roles and users
 --
@@ -143,9 +143,14 @@ set echo off
 --
 -- log on as the CWMS schema user and start queues and jobs
 --
+--ALTER SYSTEM DISABLE RESTRICTED SESSION;
+--DBMS_LOCK.SLEEP(1);
+
 set define on
+prompt Connecting as &cwms_schema
 connect &cwms_schema/&cwms_passwd@&inst
 set serveroutput on
+prompt Connected as &cwms_schema
 --------------------------------
 -- populate base data via API --
 --------------------------------
