@@ -29,9 +29,7 @@ connect sys/&sys_passwd@&inst as sysdba
 begin dbms_output.enable; end;
 /
 
-select sysdate from dual;
-begin execute immediate 'ALTER SYSTEM ENABLE RESTRICTED SESSION'; end;
-/
+--ALTER SYSTEM ENABLE RESTRICTED SESSION;
 
 --
 -- kill the cwms public synonyms
@@ -124,7 +122,7 @@ exception
 end;
 /
 
-begin execute immediate 'ALTER SYSTEM DISABLE RESTRICTED SESSION'; end;
-/
+--ALTER SYSTEM DISABLE RESTRICTED SESSION;
+--DBMS_LOCK.SLEEP(1);
 exit 0
 

@@ -12,7 +12,7 @@ accept cwms_schema  char prompt 'Enter cwms schema name    : '
 accept cwms_passwd  char prompt 'Enter the password for cwms  schema   : '
 accept sys_passwd  char prompt 'Enter the password for SYS     : '
 accept cwms_dir  char prompt 'Enter directory for storing export file   : '
-accept oracle_parallel  char prompt 'Enter number of oracle export jobs (1-9)   : '
+accept ccp_passwd  char prompt 'Enter the password for CCP   : '
 set echo &echo_state
 
 spool exportImportCWMS_DB.log
@@ -31,6 +31,35 @@ spool exportImportCWMS_DB.log
 
 /* Formatted on 4/5/2012 1:21:16 PM (QP5 v5.163.1008.3004) */
 DECLARE
+   PROCEDURE REMOVE_CWMS_Q_SUBSCRIBERS
+   IS
+      l_queue_name   VARCHAR2 (32);
+   BEGIN
+      FOR rec1
+         IN (SELECT name
+               FROM dba_queues
+              WHERE     owner = UPPER ('&CWMS_SCHEMA')
+                    AND queue_type IN ('NORMAL_QUEUE')
+                    AND name LIKE '%_TS_STORED')
+      LOOP
+         FOR rec2
+            IN (SELECT consumer_name
+                  FROM dba_queue_subscribers
+                 WHERE owner = UPPER ('&CWMS_SCHEMA')
+                       AND queue_name LIKE '%_TS_STORED')
+         LOOP
+            l_queue_name := '&CWMS_SCHEMA..' || rec1.name;
+            DBMS_OUTPUT.put_line (
+                  'Removing subscriber '
+               || rec2.consumer_name
+               || 'For Q '
+               || l_queue_name);
+            DBMS_AQADM.remove_subscriber (
+               l_queue_name,
+               sys.AQ$_AGENT (rec2.consumer_name, l_queue_name, 0));
+         END LOOP;
+      END LOOP;
+   END;
    PROCEDURE ADD_DATAFILE_NAMES (p_h IN NUMBER)
    IS
       l_ft              UTL_FILE.file_type;
@@ -307,7 +336,7 @@ DECLARE
       l_insert_col   VARCHAR2 (2048);
       l_select_col   VARCHAR2 (2048);
       l_query        VARCHAR2 (256);
-      l_copycmd      VARCHAR2 (2048);
+      l_copycmd      VARCHAR2 (4096);
       l_cur          SYS_REFCURSOR;
       l_tablename    VARCHAR (64);
    BEGIN
@@ -440,6 +469,7 @@ DECLARE
       l_export_exception    EXCEPTION;
    BEGIN
       TOGGLE_FK_CONSTRAINTS ('ENABLED', 'DISABLE');
+      REMOVE_CWMS_Q_SUBSCRIBERS;
       --EXECUTE IMMEDIATE 'ALTER TABLE ' || '&CWMS_SCHEMA' || '.CWMS_DATA_QUALITY MOVE TABLESPACE CWMS_20_TSV';
       --EXECUTE IMMEDIATE 'ALTER TABLE ' || '&CWMS_SCHEMA' || '.AT_CWMS_TS_SPEC MOVE TABLESPACE CWMS_20_TSV';
       --EXECUTE IMMEDIATE 'ALTER INDEX ' || '&CWMS_SCHEMA' || '.AT_CWMS_TS_SPEC_PK REBUILD TABLESPACE CWMS_20_TSV';
@@ -668,6 +698,7 @@ BEGIN
    --IMPORT_CWMS;
 
    EXECUTE IMMEDIATE 'ALTER SYSTEM DISABLE RESTRICTED SESSION';
+   DBMS_LOCK.SLEEP(1);
 END;
 /
 
@@ -681,4 +712,7 @@ exec cwms_ts.start_trim_ts_deleted_job;
 exec cwms_sec.start_refresh_mv_sec_privs_job;
 exec cwms_shef.start_update_shef_spec_map_job;
 exec cwms_rating.start_update_mviews_job;
+whenever sqlerror continue
+connect ccp/&ccp_passwd@&inst
+exec CWMS_CCP.START_CHECK_CALLBACK_PROC_JOB;
    UNCOMMENT FOR IMPORT */ 

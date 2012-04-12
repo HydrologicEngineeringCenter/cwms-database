@@ -36,6 +36,7 @@ define cwms_schema = %s
 '''
 
 force = False
+restricted = False
 echo, inst, sys_passwd, cwms_schema = None, None, None, None
 for arg in sys.argv[1:] : 
 	if arg.find("=") != -1 : 
@@ -44,6 +45,8 @@ for arg in sys.argv[1:] :
 		exec arg
 	elif arg.lower() in ("-force", "/force") :
 		force = True
+	elif arg.lower() in ("-restricted", "/restricted") :
+                restricted = True
 		
 if not (echo and inst and sys_passwd and cwms_schema) :
 	print
