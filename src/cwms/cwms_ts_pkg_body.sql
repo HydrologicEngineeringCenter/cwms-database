@@ -3499,8 +3499,28 @@ AS
    FUNCTION use_first_table (p_timestamp IN TIMESTAMP DEFAULT NULL)
       RETURN BOOLEAN
    IS
+      pragma autonomous_transaction;
+      l_ts_month    integer;
+      l_table_month integer;
+      l_first_table boolean;
+      l_table_ts    timestamp;
    BEGIN
-      RETURN MOD (TO_CHAR (NVL (p_timestamp, SYSTIMESTAMP), 'MM'), 2) = 1;
+      l_ts_month := to_number(to_char(nvl(p_timestamp, systimestamp), 'MM'));
+      l_first_table := mod(l_ts_month, 2) = 1;
+      if l_first_table then
+         select min(message_time) into l_table_ts from at_ts_msg_archive_1;
+      else
+         select min(message_time) into l_table_ts from at_ts_msg_archive_2;
+      end if;
+      l_table_month := to_number(to_char(l_table_ts, 'MM'));
+      if l_table_month != l_ts_month then
+         execute immediate case l_first_table
+                              when true  then 'truncate table at_ts_msg_archive_1'
+                              when false then 'truncate table at_ts_msg_archive_2'
+                           end;
+         commit;
+      end if;
+      return l_first_table;
    END use_first_table;
 
    -------------------------------------------------------------------------------

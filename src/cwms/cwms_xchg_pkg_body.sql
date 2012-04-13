@@ -1569,51 +1569,6 @@ begin
    return l_count = 1;
 
 end is_realtime_export;
--------------------------------------------------------------------------------
--- BOOLEAN FUNCTION USE_FIRST_TABLE(TIMESTAMP)
---
-function use_first_table(
-   p_timestamp in timestamp default null)
-   return boolean
-is
-begin
-   return mod(to_char(nvl(p_timestamp, systimestamp), 'MM'), 2) = 1;
-end use_first_table;
-
--------------------------------------------------------------------------------
--- BOOLEAN FUNCTION USE_FIRST_TABLE(VARCHAR2)
---
-function use_first_table(
-   p_timestamp in integer)
-   return boolean
-
-is
-begin
-   return use_first_table(cwms_util.to_timestamp(p_timestamp));
-end use_first_table;
-
--------------------------------------------------------------------------------
--- VARCHAR2 FUNCTION GET_TABLE_NAME(TIMESTAMP)
---
-function get_table_name(
-   p_timestamp in timestamp default null)
-   return varchar2
-is
-begin
-   if use_first_table(p_timestamp) then return 'AT_TS_MSG_ARCHIVE_1'; end if;
-   return 'AT_TS_MSG_ARCHIVE_2';
-end get_table_name;
-
--------------------------------------------------------------------------------
--- VARCHAR2 FUNCTION GET_TABLE_NAME(TIMESTAMP)
---
-function get_table_name(
-   p_timestamp in integer default null)
-   return varchar2
-is
-begin
-   return get_table_name(cwms_util.to_timestamp(p_timestamp));
-end get_table_name;
 
 -------------------------------------------------------------------------------
 -- PROCEDURE XCHG_CONFIG_UPDATED(...)
@@ -1787,21 +1742,6 @@ begin
    -------------------------------------
    -- loop over the archived messages --
    -------------------------------------
-   -- for rec in (select msg.ts_code,
-   --                 msg.message_time,
-   --                 msg.first_data_time,
-   --                 msg.last_data_time,
-   --                 tsid.cwms_ts_id
-   --            from ((select * from at_ts_msg_archive_1) union (select * from at_ts_msg_archive_2)) msg,
-   --                 mv_cwms_ts_id tsid
-   --           where message_time between l_start_time and l_end_time
-   --             and msg.ts_code in (select cwms_ts_code
-   --                                   from at_xchg_dss_ts_mappings
-   --                                  where xchg_set_code = l_xchg_code
-   --                                )
-   --             and tsid.ts_code = msg.ts_code
-   --        order by msg.message_time asc
-   --         )
    for rec in
       (
          select msg.ts_code,

@@ -1045,6 +1045,9 @@ AS
       RETURN NUMBER
       RESULT_CACHE;
 
+   FUNCTION use_first_table (p_timestamp IN TIMESTAMP DEFAULT NULL)
+      RETURN BOOLEAN;
+
    /**
     * Stores time series data to the database
     *
