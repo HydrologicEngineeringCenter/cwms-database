@@ -3558,10 +3558,10 @@ AS
       -------------------------------------------------------
       -- insert the time series update info into the table --
       -------------------------------------------------------
-      l_first_time := SYS_EXTRACT_UTC (p_first_time);
-      l_last_time := SYS_EXTRACT_UTC (p_last_time);
-      l_version_date := SYS_EXTRACT_UTC (p_version_date);
-      l_store_time := SYS_EXTRACT_UTC (p_store_time);
+      l_first_time   := SYS_EXTRACT_UTC (trunc(p_first_time,   'mi'));
+      l_last_time    := SYS_EXTRACT_UTC (trunc(p_last_time,    'mi'));
+      l_version_date := SYS_EXTRACT_UTC (trunc(p_version_date, 'mi'));
+      l_store_time   := SYS_EXTRACT_UTC (p_store_time);
 
       IF use_first_table
       THEN
@@ -3759,7 +3759,10 @@ AS
             l_cwms_ts_id := p_cwms_ts_id;
       end;                                        
 
-      l_version_date := NVL (p_version_date, cwms_util.non_versioned);
+      l_version_date := trunc(NVL(p_version_date, cwms_util.non_versioned), 'mi');
+      if l_version_date = cwms_util.all_version_dates then
+         cwms_err.raise('ERROR', 'Cannot use CWMS_UTIL.ALL_VERSION_DATES for storing data.');
+      end if;
 
       IF NVL (p_override_prot, 'F') = 'F'
       THEN
@@ -4739,7 +4742,6 @@ AS
          END;
       END LOOP;
 
-      COMMIT;
       ---------------------------------
       -- archive and publish message --
       ---------------------------------
