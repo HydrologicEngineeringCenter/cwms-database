@@ -27,7 +27,6 @@ def uniqueCombinations(items):
 testAccount  = None
 db_office_id = None
 db_cwms_count = -1 
-db_seq_start = None
 office_ids   = []
 tempFilename = os.tmpnam()
 
@@ -51,8 +50,6 @@ for arg in args :
         testAccount = True
     elif arg in ('/NOTESTACCOUNT', '-NOTESTACCOUNT') :
         testAccount = False
-    elif arg in ('/SEQ_START', '-SEQ_START') :
-        db_seq_start = db_seq_start=int(os.popen('cat cwms_seq.log | grep \'[0-9]\\{4\\}\'').read()) 
     elif db_office_id == None :
         db_office_id = arg
     else :
@@ -9261,10 +9258,7 @@ for table in tables_rev :
 # Create CWMS_SEQ for the specified db_office_id's offset...
 #==============================================================================
 dbMinValue =  db_office_code[db_office_id] + (100*db_cwms_count)
-if db_seq_start is not None:
-	dbStartIndex = db_seq_start
-else:
-	dbStartIndex = dbMinValue
+dbStartIndex = dbMinValue
 dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
 print dropPrefix + "DROP SEQUENCE CWMS_SEQ;"
 print prefix[CWMS] + "CREATE SEQUENCE CWMS_SEQ"

@@ -60,12 +60,6 @@ sql_script = sql_script.replace(
 sql_script = sql_script.replace(
                 "exportImportCWMS_DB",
                 "exportCWMS_DB")
-sql_script = sql_script.replace(
-                "-- spool cwms_seq.log replace",
-                "spool cwms_seq.log replace")
-sql_script = sql_script.replace(
-                "-- select last_number from dba_sequences WHERE sequence_owner = '&cwms_schema' AND sequence_name = 'CWMS_SEQ';",
-                "select last_number from dba_sequences WHERE sequence_owner = '&cwms_schema' AND sequence_name = 'CWMS_SEQ';")
 
 f.close()
 

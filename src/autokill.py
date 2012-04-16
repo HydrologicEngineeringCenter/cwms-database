@@ -70,6 +70,17 @@ if force :
 	sql_script = sql_script.replace(
 		"whenever sqlerror exit sql.sqlcode", 
 		"whenever sqlerror continue")
+if restricted :
+        sql_script = sql_script.replace(
+                "--ALTER SYSTEM ENABLE RESTRICTED SESSION;",
+                "ALTER SYSTEM ENABLE RESTRICTED SESSION;")
+        sql_script = sql_script.replace(
+                "--ALTER SYSTEM DISABLE RESTRICTED SESSION;",
+                "ALTER SYSTEM DISABLE RESTRICTED SESSION;")
+        sql_script = sql_script.replace(
+                "--EXEC DBMS_LOCK.SLEEP(1)",
+                "EXEC DBMS_LOCK.SLEEP(1)")
+
 		
 f = open(auto_sqlfilename, "w")
 f.write(sql_script.replace(prompt_block, auto_block))

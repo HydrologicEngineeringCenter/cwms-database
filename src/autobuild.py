@@ -70,8 +70,8 @@ if restricted :
                 "--ALTER SYSTEM DISABLE RESTRICTED SESSION;",
                 "ALTER SYSTEM DISABLE RESTRICTED SESSION;")
 	sql_script = sql_script.replace(
-                "--DBMS_LOCK.SLEEP(1)",
-                "DBMS_LOCK.SLEEP(1)")
+                "--EXEC DBMS_LOCK.SLEEP(1)",
+                "EXEC DBMS_LOCK.SLEEP(1)")
 
 
 

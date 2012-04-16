@@ -144,7 +144,7 @@ set echo off
 -- log on as the CWMS schema user and start queues and jobs
 --
 --ALTER SYSTEM DISABLE RESTRICTED SESSION;
---DBMS_LOCK.SLEEP(1);
+--EXEC DBMS_LOCK.SLEEP(1);
 
 set define on
 prompt Connecting as &cwms_schema

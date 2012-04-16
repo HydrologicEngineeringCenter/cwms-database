@@ -24,9 +24,6 @@ connect sys/&sys_passwd@&inst as sysdba
 set serveroutput on
 select sysdate from dual;
 
--- spool cwms_seq.log replace
--- select last_number from dba_sequences WHERE sequence_owner = '&cwms_schema' AND sequence_name = 'CWMS_SEQ';
-
 spool exportImportCWMS_DB.log
 
 /* Formatted on 4/5/2012 1:21:16 PM (QP5 v5.163.1008.3004) */
@@ -253,6 +250,74 @@ DECLARE
 
       RETURN l_job_state;
    END CHECK_STATUS;
+   PROCEDURE IMPORT_SEQUENCE
+   IS
+      l_handle            NUMBER;
+      data_export_state   VARCHAR2 (64);
+   BEGIN
+      FOR rec IN (SELECT sequence_name
+                    FROM all_sequences
+                   WHERE sequence_name LIKE 'CWMS_SEQ%')
+      LOOP
+         EXECUTE IMMEDIATE
+            'drop sequence &cwms_schema' || '.' || rec.sequence_name;
+      END LOOP;
+
+      l_handle :=
+         DBMS_DATAPUMP.OPEN ('IMPORT',
+                             'SCHEMA',
+                             NULL,
+                             NULL);
+      DBMS_DATAPUMP.ADD_FILE (l_handle, 'cwms_seq_data.dmp', 'EXPDP_DIR');
+      DBMS_DATAPUMP.START_JOB (l_handle);
+
+      data_export_state := CHECK_STATUS (l_handle);
+      -- Indicate that the job finished and detach from it.
+
+      DBMS_OUTPUT.put_line ('Sequence import job has completed');
+      DBMS_OUTPUT.put_line (
+         'Final job state (Sequence import) = ' || data_export_state);
+      DBMS_DATAPUMP.detach (l_handle);
+   END;
+
+   PROCEDURE EXPORT_SEQUENCE
+   IS
+      l_handle            NUMBER;
+      data_export_state   VARCHAR2 (64);
+   BEGIN
+      RENAME_BACKUP_FILE ('cwms_seq_data');
+      l_handle :=
+         DBMS_DATAPUMP.OPEN ('EXPORT',
+                             'SCHEMA',
+                             NULL,
+                             NULL,
+                             'LATEST');
+
+
+      DBMS_DATAPUMP.ADD_FILE (l_handle, 'cwms_seq_data.dmp', 'EXPDP_DIR');
+
+      DBMS_DATAPUMP.METADATA_FILTER (l_handle,
+                                     'SCHEMA_EXPR',
+                                     'IN (''&cwms_schema'')');
+
+      DBMS_DATAPUMP.METADATA_FILTER (l_handle,
+                                     'INCLUDE_PATH_EXPR',
+                                     'IN (''SEQUENCE'')');
+
+      DBMS_DATAPUMP.METADATA_FILTER (
+         l_handle,
+         'NAME_EXPR',
+         'IN (SELECT  sequence_name from dba_sequences where sequence_owner = ''&cwms_schema'' and sequence_name like ''CWMS_SEQ%'' )',
+         'SEQUENCE');
+
+
+      DBMS_DATAPUMP.START_JOB (l_handle);
+      data_export_state := CHECK_STATUS (l_handle);
+      DBMS_OUTPUT.put_line ('Sequence export Job has completed');
+      DBMS_OUTPUT.put_line (
+         'Final job state(sequence export) = ' || data_export_state);
+      DBMS_DATAPUMP.detach (l_handle);
+   END;
 
    PROCEDURE CREATE_USER (p_username          IN VARCHAR2,
                           p_tablespace_name   IN VARCHAR2)
@@ -373,10 +438,14 @@ DECLARE
             || '.'
             || l_tablename
             || ')';
-         DBMS_OUTPUT.PUT_LINE (l_copycmd);
+         --DBMS_OUTPUT.PUT_LINE (l_copycmd);
 
          BEGIN
             EXECUTE IMMEDIATE l_copycmd;
+	    IF SQL%ROWCOUNT > 0
+            THEN
+              DBMS_OUTPUT.PUT_LINE ('Inserted ' || SQL%ROWCOUNT || ' Rows in ' || l_tablename);
+            END IF;
          EXCEPTION
             WHEN OTHERS
             THEN
@@ -425,7 +494,7 @@ DECLARE
             || p_fromUser
             || '.'
             || l_tablename;
-         DBMS_OUTPUT.PUT_LINE (l_createcmd);
+         --DBMS_OUTPUT.PUT_LINE (l_createcmd);
 
          EXECUTE IMMEDIATE l_createcmd;
       END LOOP;
@@ -460,6 +529,29 @@ DECLARE
       COMMIT;
    END BACKUP_CWMS_SEQ;
 
+   PROCEDURE BACKUP_TSB_ENTRIES
+   IS
+   BEGIN
+      EXECUTE IMMEDIATE
+         'CREATE TABLE CWMS_20_BAK.CWMS_TSV_BAK (TABLE_NAME VARCHAR2(64)) TABLESPACE CWMS_20_AT_DATA_BAK';
+
+      FOR c
+         IN (SELECT table_name object_name, owner
+               FROM dba_tables
+              WHERE tablespace_name = 'CWMS_20_TSV'
+             UNION
+             SELECT table_name object_name, owner
+               FROM dba_indexes
+              WHERE tablespace_name = 'CWMS_20_TSV'
+                    AND index_type LIKE 'IOT%')
+      LOOP
+         EXECUTE IMMEDIATE
+               'INSERT INTO CWMS_20_BAK.CWMS_TSV_BAK (TABLE_NAME) VALUES ('''
+            || c.object_name
+            || ''')';
+      END LOOP;
+   END;
+
    PROCEDURE EXPORT_CWMS_AT_DATA
    IS
       l_h1                  NUMBER;                    -- Data Pump job handle
@@ -483,6 +575,8 @@ DECLARE
          'TABLE_NAME LIKE ''AT_%'' AND TABLE_NAME NOT LIKE ''AT_TSV%'' AND TABLE_NAME NOT LIKE ''AT_LOG_MESSAGE%''');
 
       BACKUP_CWMS_SEQ;
+      EXPORT_SEQUENCE;
+      BACKUP_TSB_ENTRIES;
 
       RENAME_BACKUP_FILE ('cwms_at_tsv');
 
@@ -553,40 +647,71 @@ DECLARE
       EXECUTE IMMEDIATE 'drop  tablespace CWMS_20_TSV_BAK including contents';
    END;
 
-   PROCEDURE MOVE_TSV_OBJECTS (p_fromTb VARCHAR2, p_toTb VARCHAR2)
+
+   PROCEDURE MOVE_TSV_OBJECTS (p_fromTb        VARCHAR2,
+                               p_toTb          VARCHAR2,
+                               where_clause    VARCHAR2)
    IS
+      l_query        VARCHAR2 (1024);
+      l_cur          SYS_REFCURSOR;
+      l_table_name   VARCHAR2 (64);
+      l_owner        VARCHAR2 (64);
    BEGIN
-      FOR c
-         IN (SELECT table_name object_name, owner
+      l_query :=
+            'SELECT table_name object_name, owner
                FROM dba_tables
-              WHERE tablespace_name = p_fromTb
-             UNION
+              WHERE tablespace_name = '''
+         || p_fromTb
+         || ''''
+         || where_clause
+         || ' UNION
              SELECT table_name object_name, owner
                FROM dba_indexes
-              WHERE tablespace_name = p_fromTb AND index_type LIKE 'IOT%'
-                    AND table_name NOT IN
-                           (SELECT table_name
-                              FROM &cwms_schema..AT_TS_TABLE_PROPERTIES))
+              WHERE tablespace_name = '''
+         || p_fromTb
+         || ''' AND index_type LIKE ''IOT%'''
+         || where_clause;
+      DBMS_OUTPUT.PUT_LINE (l_query);
+
+      OPEN l_cur FOR l_query;
+
       LOOP
+         FETCH l_cur
+         INTO l_table_name, l_owner;
+
+         EXIT WHEN l_cur%NOTFOUND;
+
          EXECUTE IMMEDIATE
                'Alter Table '
-            || c.owner
+            || l_owner
             || '.'
-            || c.object_name
+            || l_table_name
             || ' move tablespace '
             || p_toTb;
       END LOOP;
 
-      FOR c
-         IN (SELECT index_name object_name, owner
+      l_query :=
+            'SELECT index_name object_name, owner
                FROM dba_indexes
-              WHERE tablespace_name = p_fromTb AND index_type NOT LIKE 'IOT%')
+              WHERE tablespace_name = '''
+         || p_fromTb
+         || '''AND index_type NOT LIKE ''IOT%'''
+         || where_clause;
+      DBMS_OUTPUT.PUT_LINE (l_query);
+
+      OPEN l_cur FOR l_query;
+
       LOOP
+         FETCH l_cur
+         INTO l_table_name, l_owner;
+
+         EXIT WHEN l_cur%NOTFOUND;
+
          EXECUTE IMMEDIATE
                'Alter Index '
-            || c.owner
+            || l_owner
             || '.'
-            || c.object_name
+            || l_table_name
             || '  rebuild tablespace '
             || p_toTb;
       END LOOP;
@@ -597,14 +722,13 @@ DECLARE
          DBMS_OUTPUT.put_line (DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
    END;
 
-
    PROCEDURE IMPORT_TSV
    IS
       l_handle              NUMBER;
       l_data_import_state   VARCHAR2 (30);
    BEGIN
       CREATE_BAK_TB;
-      MOVE_TSV_OBJECTS ('CWMS_20_TSV', 'CWMS_20_TSV_BAK');
+      MOVE_TSV_OBJECTS ('CWMS_20_TSV', 'CWMS_20_TSV_BAK',' AND  TABLE_NAME NOT IN (SELECT TABLE_NAME FROM CWMS_20_BAK.CWMS_TSV_BAK)');
 
       EXECUTE IMMEDIATE
          'drop tablespace cwms_20_tsv including contents cascade constraints';
@@ -623,7 +747,7 @@ DECLARE
          'Import state(Tablespace import):' || l_data_import_state);
       DBMS_DATAPUMP.detach (l_handle);
       EXECUTE IMMEDIATE 'ALTER TABLESPACE CWMS_20_TSV read write';
-      MOVE_TSV_OBJECTS ('CWMS_20_TSV_BAK', 'CWMS_20_TSV');
+      MOVE_TSV_OBJECTS ('CWMS_20_TSV_BAK', 'CWMS_20_TSV','');
       DROP_BAK_TB;
    EXCEPTION
       WHEN OTHERS
@@ -669,6 +793,7 @@ DECLARE
       EXECUTE IMMEDIATE 'GRANT EXECUTE ON &CWMS_SCHEMA..JMS_MAP_MSG_TAB_T TO CCP';
 
       EXECUTE IMMEDIATE 'GRANT CCP_USERS TO CWMS_USER';
+      UTL_RECOMP.RECOMP_SERIAL('CCP');
    END;
 
    PROCEDURE IMPORT_CWMS
@@ -679,14 +804,15 @@ DECLARE
       TOGGLE_TRIGGERS ('ENABLED', 'DISABLE');
       COPY_BACK_TABLES ('CWMS_20_BAK', 'CWMS_20');
 
+      IMPORT_SEQUENCE;
       IMPORT_TSV;
 
 
-      RESTORE_CCP_PERMISSIONS;
       EXECUTE IMMEDIATE 'BEGIN &CWMS_SCHEMA..CWMS_TS_ID.refresh_at_cwms_ts_id; END;';
       TOGGLE_FK_CONSTRAINTS ('DISABLED', 'ENABLE');
       TOGGLE_TRIGGERS ('DISABLED', 'ENABLE');
       UTL_RECOMP.RECOMP_SERIAL('&CWMS_SCHEMA');
+      RESTORE_CCP_PERMISSIONS;
    END;
 BEGIN
    EXECUTE IMMEDIATE 'ALTER SYSTEM ENABLE RESTRICTED SESSION';
