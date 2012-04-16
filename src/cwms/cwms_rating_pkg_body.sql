@@ -1189,6 +1189,73 @@ begin
 end retrieve_ratings_xml;   
    
 --------------------------------------------------------------------------------
+-- RETRIEVE_RATINGS_XML
+--
+procedure retrieve_ratings_xml2(
+   p_ratings              out clob,
+   p_spec_id_mask         in  varchar2 default '*',
+   p_effective_date_start in  date     default null,
+   p_effective_date_end   in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+is
+   type id_tab_t is table of boolean index by varchar2(390); 
+   l_id        varchar2(390);
+   l_ids       id_tab_t;
+   l_specs     rating_spec_tab_t := rating_spec_tab_t();
+   l_templates rating_template_tab_t := rating_template_tab_t();
+   l_ratings   rating_tab_t;
+   l_text      clob;
+begin
+   retrieve_ratings_obj(
+      l_ratings,
+      p_spec_id_mask,
+      p_effective_date_start,
+      p_effective_date_end,
+      p_time_zone,
+      p_office_id_mask);
+   for i in 1..l_ratings.count loop
+      l_id := l_ratings(i).office_id||'/'||l_ratings(i).rating_spec_id;
+      if not l_ids.exists(l_id) then
+         l_specs.extend;
+         l_specs(l_specs.count) := retrieve_specs_obj_f(l_ratings(i).rating_spec_id, l_ratings(i).office_id)(1);
+         l_ids(l_id) := true;
+      end if;
+   end loop;
+   l_ids.delete;
+   for i in 1..l_specs.count loop
+      l_id := l_specs(i).office_id||'/'||l_specs(i).template_id;
+      if not l_ids.exists(l_id) then
+         l_templates.extend;
+         l_templates(l_templates.count) := retrieve_templates_obj_f(l_specs(i).template_id, l_specs(i).office_id)(1);
+         l_ids(l_id) := true;
+      end if;
+   end loop;      
+   dbms_lob.createtemporary(l_text, true);
+   dbms_lob.open(l_text, dbms_lob.lob_readwrite);
+   cwms_util.append(
+      l_text, 
+      '<ratings xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" '
+      ||'xsi:noNamespaceSchemaLocation="http://www.hec.usace.army.mil/xmlSchema/cwms/Ratings.xsd">');
+   for i in 1..l_templates.count loop
+      cwms_util.append(l_text, l_templates(i).to_clob);
+   end loop;
+   for i in 1..l_specs.count loop
+      cwms_util.append(l_text, l_specs(i).to_clob);
+   end loop;
+   for i in 1..l_ratings.count loop
+      cwms_util.append(l_text, l_ratings(i).to_clob);
+   end loop; 
+   cwms_util.append(l_text, '</ratings>');     
+   dbms_lob.close(l_text);      
+   dbms_lob.createtemporary(p_ratings, true);
+   dbms_lob.open(p_ratings, dbms_lob.lob_readwrite);
+   cwms_util.append(p_ratings, '<?xml version="1.0" encoding="utf-8"?>'||chr(10));
+   cwms_util.append(p_ratings, xmltype(l_text).extract('/node()').getclobval);
+   dbms_lob.close(p_ratings);
+end retrieve_ratings_xml2;   
+   
+--------------------------------------------------------------------------------
 -- RETRIEVE_RATINGS_XML_F
 --
 function retrieve_ratings_xml_f(
@@ -1211,6 +1278,30 @@ begin
       
    return l_ratings;      
 end retrieve_ratings_xml_f;   
+   
+--------------------------------------------------------------------------------
+-- RETRIEVE_RATINGS_XML2_F
+--
+function retrieve_ratings_xml2_f(
+   p_spec_id_mask         in  varchar2 default '*',
+   p_effective_date_start in  date     default null,
+   p_effective_date_end   in  date     default null,
+   p_time_zone            in  varchar2 default null,
+   p_office_id_mask       in  varchar2 default null)
+   return clob
+is
+   l_ratings clob;
+begin
+   retrieve_ratings_xml2(
+      l_ratings,
+      p_spec_id_mask,
+      p_effective_date_start,
+      p_effective_date_end,
+      p_time_zone,
+      p_office_id_mask);
+      
+   return l_ratings;      
+end retrieve_ratings_xml2_f;   
    
 --------------------------------------------------------------------------------
 -- DELETE_RATINGS
