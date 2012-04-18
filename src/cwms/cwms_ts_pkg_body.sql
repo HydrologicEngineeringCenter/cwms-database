@@ -3558,10 +3558,10 @@ AS
       -------------------------------------------------------
       -- insert the time series update info into the table --
       -------------------------------------------------------
-      l_first_time   := SYS_EXTRACT_UTC (trunc(cwms_util.fixup_timezone(p_first_time),   'mi'));
-      l_last_time    := SYS_EXTRACT_UTC (trunc(cwms_util.fixup_timezone(p_last_time),    'mi'));
-      l_version_date := SYS_EXTRACT_UTC (trunc(cwms_util.fixup_timezone(p_version_date), 'mi'));
-      l_store_time   := SYS_EXTRACT_UTC (cwms_util.fixup_timezone(p_store_time));
+      l_first_time   := trunc(sys_extract_utc(cwms_util.fixup_timezone(p_first_time)),   'mi');
+      l_last_time    := trunc(sys_extract_utc(cwms_util.fixup_timezone(p_last_time)),    'mi');
+      l_version_date := trunc(sys_extract_utc(cwms_util.fixup_timezone(p_version_date)), 'mi');
+      l_store_time   := sys_extract_utc(cwms_util.fixup_timezone(p_store_time));
 
       IF use_first_table
       THEN
