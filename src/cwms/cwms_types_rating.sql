@@ -4701,6 +4701,12 @@ as
       l_msg.set_long(l_msgid, 'create_date',    cwms_util.to_millis(l_rec.create_date));
       l_msg.set_long(l_msgid, 'effective_date', cwms_util.to_millis(l_rec.effective_date));
       i := cwms_msg.publish_message(l_msg, l_msgid, self.office_id||'_ts_stored');
+      cwms_msg.new_message(l_msg, l_msgid, 'RatingStored');
+      l_msg.set_string(l_msgid, 'office_id', self.office_id);
+      l_msg.set_string(l_msgid, 'rating_id', self.rating_spec_id);
+      l_msg.set_string(l_msgid, 'active',    self.active_flag);
+      l_msg.set_long(l_msgid, 'create_date',    cwms_util.to_millis(l_rec.create_date));
+      l_msg.set_long(l_msgid, 'effective_date', cwms_util.to_millis(l_rec.effective_date));
       i := cwms_msg.publish_message(l_msg, l_msgid, self.office_id||'_realtime_ops');
    end;
    
