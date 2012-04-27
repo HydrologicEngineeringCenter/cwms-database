@@ -3840,6 +3840,113 @@ IS
       p_lookup_type_tab IN lookup_type_tab_t,
       p_lookup_category IN VARCHAR2,
       p_lookup_prefix   IN VARCHAR2);
+   
+   /**
+    * Deletes a set of lookup values that conform to a common structure but different names. 
+    * The identifying parts within the arg lookup table type are used to determine which row
+    * values to delete from the look up table.
+    * <p>
+    * All tables accessed by this procedure have the same structure:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">Column No.</th>
+    *     <th class="descr">Column Name</th>
+    *     <th class="descr">Data Type</th>
+    *     <th class="descr">Contents</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">1</td>
+    *     <td class="descr"><em>prefix</em>_code</td>
+    *     <td class="descr">number(10)</td>
+    *     <td class="descr">The primary key of the tabe.</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">2</td>
+    *     <td class="descr">db_office_code</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">A foreign key into the CWMS_OFFICE table. Idenifies the owning office</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">3</td>
+    *     <td class="descr"><em>prefix</em>_display_value</td>
+    *     <td class="descr">varchar2(25)</td>
+    *     <td class="descr">A text identifier for the value</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">4</td>
+    *     <td class="descr"><em>prefix</em>_tooltip</td>
+    *     <td class="descr">varchar2(255)</td>
+    *     <td class="descr">A description of the value</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr-center">5</td>
+    *     <td class="descr"><em>prefix</em>_active</td>
+    *     <td class="descr">varchar2(1)</td>
+    *     <td class="descr">A flag ('T' or 'F') specifying whether the value is marked as active</td>
+    *   </tr>
+    * </table>
+    * <p>
+    * The following combinations of p_lookup_category and p_lookup_prefix parameters are currently valid:
+    * <p>
+    * <table class="descr">
+    *   <tr>
+    *     <th class="descr">p_lookup_category (table name)</th>
+    *     <th class="descr">p_lookup_prefix (column name prefix)</th>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">AT_DOCUMENT_TYPE</td>
+    *     <td class="descr">DOCUMENT_TYPE</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">AT_EMBANK_PROTECTION_TYPE</td>
+    *     <td class="descr">PROTECTION_TYPE</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">AT_EMBANK_STRUCTURE_TYPE</td>
+    *     <td class="descr">STRUCTURE_TYPE</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">AT_GATE_CH_COMPUTATION_CODE</td>
+    *     <td class="descr">DISCHARGE_COMP</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">AT_GATE_RELEASE_REASON_CODE</td>
+    *     <td class="descr">RELEASE_REASON</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">AT_PHYSICAL_TRANSFER_TYPE</td>
+    *     <td class="descr">PHYS_TRANS_TYPE</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">AT_PROJECT_PURPOSES</td>
+    *     <td class="descr">PURPOSE</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">AT_TURBINE_COMPUTATION_CODE</td>
+    *     <td class="descr">TURBINE_COMP</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">AT_TURBINE_SETTING_REASON</td>
+    *     <td class="descr">TURB_SET_REASON</td>
+    *   </tr>
+    *   <tr>
+    *     <td class="descr">AT_WS_CONTRACT_TYPE</td>
+    *     <td class="descr">WS_CONTRACT_TYPE</td>
+    *   </tr>
+    * </table>
+    *
+    * @param p_lookup_type_tab The values to delete, only identifying parts are required.
+    * @param p_lookup_category The name of the table to store values to
+    * @param p_lookup_prefix   The column name prefix in the table
+    *
+    * @see get_lookup_table
+    */   
+   procedure delete_lookups(
+      p_lookup_type_tab IN lookup_type_tab_t,
+      p_lookup_category IN VARCHAR2,
+      p_lookup_prefix   IN VARCHAR2);
+  
    /**
     * Catalogs streams in the database that match input parameters. Matching is
     * accomplished with glob-style wildcards, as shown below, instead of sql-style

@@ -3989,19 +3989,22 @@ END cat_ts_id;
       cwms_err.raise(
             'NULL_ARGUMENT',
             'Lookup Prefix');
-    end if;
-    begin
-      --clear out existing. this should probably be a loop to handle lus that are fked.
-      EXECUTE IMMEDIATE 'delete 
-          from '||p_lookup_category||' 
-          where db_office_code in (
-            select cwms_util.get_office_code(cwms_util.check_input_f(ltab.office_id)) 
-            from table (cast (:bv1 as lookup_type_tab_t)) ltab )'
-        using p_lookup_type_tab;
-        EXCEPTION
-            WHEN child_rec_exception THEN
-              null;
-    end;
+    END IF;
+
+-- removed use the delete_lookups() procedure instead.
+--    begin
+--      --clear out existing. this should probably be a loop to handle lus that are fked.
+--      EXECUTE IMMEDIATE 'delete 
+--          from '||p_lookup_category||' 
+--          where db_office_code in (
+--            select cwms_util.get_office_code(cwms_util.check_input_f(ltab.office_id)) 
+--            from table (cast (:bv1 as lookup_type_tab_t)) ltab )'
+--        using p_lookup_type_tab;
+--        EXCEPTION
+--            WHEN child_rec_exception THEN
+--              null;
+--    end;
+
     --this should be a merge.
     --incoming object array sanitized when being used.
     EXECUTE IMMEDIATE 'MERGE INTO '||p_lookup_category||' lutab
@@ -4036,6 +4039,63 @@ END cat_ts_id;
       USING p_lookup_type_tab;
 
   end set_lookup_table;
+
+--Deletes a set of lookup values that conform to a common structure but different names. 
+--The identifying parts within the arg lookup table type are used to determine which row
+--values to delete from the look up table.d.
+  procedure delete_lookups(
+    -- the lookups to delete. only the identifying parts need be defined.
+    p_lookup_type_tab IN lookup_type_tab_t,
+    -- the category of the incoming lookups, should be the table name.
+    p_lookup_category IN VARCHAR2,
+    -- the lookups have a prefix on the column name.
+    p_lookup_prefix IN VARCHAR2
+    )
+  is
+
+    child_rec_exception EXCEPTION; 
+    PRAGMA exception_init (child_rec_exception, -2292);   
+
+  begin
+    dbms_application_info.set_module ('cwms_cat.delete_lookups','deleting lookups');  
+   
+    --sanitize vars
+    dbms_application_info.set_action('sanitizing vars');
+    cwms_util.check_inputs(str_tab_t(
+      p_lookup_category,
+      p_lookup_prefix));
+    
+    -- check args for errors
+    dbms_application_info.set_action('checking args');
+    if p_lookup_category is null then
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Lookup Category');
+    end if;
+    
+    if p_lookup_prefix is null then
+      cwms_err.raise(
+            'NULL_ARGUMENT',
+            'Lookup Prefix');
+    end if;
+
+    BEGIN
+      --delete the passed in lookups. this will fail if lookups are fked.
+      EXECUTE IMMEDIATE 
+      'DELETE FROM '||p_lookup_category||'   
+      WHERE '||p_lookup_prefix||'_code IN (    
+        SELECT lu.'||p_lookup_prefix||'_code     
+        FROM '||p_lookup_category||' lu    
+        INNER JOIN TABLE (CAST (:bv1 AS lookup_type_tab_t)) ltab     
+          ON lu.db_office_code = cwms_util.get_office_code(ltab.office_id)    
+          AND UPPER(lu.'||p_lookup_prefix||'_display_value) = UPPER(ltab.display_value))' 
+      USING p_lookup_type_tab;
+      EXCEPTION
+          WHEN CHILD_REC_EXCEPTION THEN
+            NULL;
+    END;    
+ 
+  END delete_lookups;
 
    --------------------------------------------------------------------------------
    -- procedure cat_streams
