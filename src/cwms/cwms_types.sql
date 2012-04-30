@@ -3492,7 +3492,7 @@ as
          select *
            into l_rec
            from at_location_level
-          where location_level_code = location_level_code;
+          where location_level_code = self.location_level_code;
          l_exists := true;
       exception
          when no_data_found then
@@ -3529,6 +3529,7 @@ as
           where location_level_code = l_rec.location_level_code;
       else
          l_rec.location_level_code := cwms_seq.nextval;
+         l_rec.location_level_date := nvl(l_rec.location_level_date, date '1900-01-01');
          insert
            into at_location_level
          values l_rec;
