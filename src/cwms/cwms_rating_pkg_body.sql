@@ -3677,7 +3677,7 @@ begin
          p_cwms_ts_id      => p_dependent_id,
          p_units           => l_dep_unit,
          p_timeseries_data => l_dep_ts,
-         p_store_rule      => null,
+         p_store_rule      => cwms_util.replace_all,
          p_override_prot   => 'F',
          p_version_date    => p_version_date,
          p_office_id       => p_ts_office_id);
@@ -3995,7 +3995,7 @@ begin
          p_cwms_ts_id      => p_output_id,
          p_units            => l_dep_unit,
          p_timeseries_data => l_dep_ts,
-         p_store_rule      => null,
+         p_store_rule      => cwms_util.replace_all,
          p_override_prot   => 'F',
          p_version_date    => p_version_date,
          p_office_id       => p_ts_office_id);
