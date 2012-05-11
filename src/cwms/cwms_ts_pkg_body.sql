@@ -4364,6 +4364,8 @@ AS
                                          cwms_unit u,
                                          cwms_data_quality q
                                    where cwms_util.is_nan(t.value) = ''F''
+                                     and t.value is not null
+                                     and not quality_is_missing(t.quality_code)
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
                                      and ap.base_parameter_code = p.base_parameter_code
@@ -4437,6 +4439,8 @@ AS
                                          cwms_unit u,
                                          cwms_data_quality q
                                    where cwms_util.is_nan(t.value) = ''F''
+                                     and t.value is not null
+                                     and not quality_is_missing(t.quality_code)
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
                                      and ap.base_parameter_code = p.base_parameter_code
