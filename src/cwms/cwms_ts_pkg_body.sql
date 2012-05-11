@@ -4365,7 +4365,7 @@ AS
                                          cwms_data_quality q
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and t.value is not null
-                                     and quality_is_missing_text(t.quality_code) = ''F''
+                                     and cwms_ts.quality_is_missing_text(t.quality_code) = ''F''
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
                                      and ap.base_parameter_code = p.base_parameter_code
@@ -4440,7 +4440,7 @@ AS
                                          cwms_data_quality q
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and t.value is not null
-                                     and quality_is_missing_text(t.quality_code) = ''F''
+                                     and cwms_ts.quality_is_missing_text(t.quality_code) = ''F''
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
                                      and ap.base_parameter_code = p.base_parameter_code
@@ -8454,6 +8454,7 @@ end retrieve_existing_item_counts;
         INTO l_validity
         FROM cwms_data_quality
        WHERE quality_code = p_quality_code;
+      RETURN l_validity;
    EXCEPTION
       WHEN NO_DATA_FOUND
       THEN
