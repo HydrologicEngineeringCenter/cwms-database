@@ -4365,7 +4365,7 @@ AS
                                          cwms_data_quality q
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and t.value is not null
-                                     and not quality_is_missing(t.quality_code)
+                                     and quality_is_missing_text(t.quality_code) = ''F''
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
                                      and ap.base_parameter_code = p.base_parameter_code
@@ -4440,7 +4440,7 @@ AS
                                          cwms_data_quality q
                                    where cwms_util.is_nan(t.value) = ''F''
                                      and t.value is not null
-                                     and not quality_is_missing(t.quality_code)
+                                     and quality_is_missing_text(t.quality_code) = ''F''
                                      and s.ts_code = :l_ts_code
                                      and s.parameter_code = ap.parameter_code
                                      and ap.base_parameter_code = p.base_parameter_code
@@ -8496,6 +8496,31 @@ end retrieve_existing_item_counts;
       RETURN quality_is_okay (p_value.quality_code);
    END quality_is_okay;
 
+   FUNCTION quality_is_okay_text (p_quality_code IN NUMBER)
+      RETURN VARCHAR2
+      result_cache
+   IS
+   BEGIN
+      RETURN CASE get_quality_validity (p_quality_code) = 'OKAY'
+                WHEN TRUE  THEN 'T'
+                WHEN FALSE THEN 'F'
+             END;
+   END quality_is_okay_text;
+
+   FUNCTION quality_is_okay_text (p_value IN tsv_type)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      RETURN quality_is_okay_text (p_value.quality_code);
+   END quality_is_okay_text;
+
+   FUNCTION quality_is_okay_text (p_value IN ztsv_type)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      RETURN quality_is_okay_text (p_value.quality_code);
+   END quality_is_okay_text;
+
    FUNCTION quality_is_missing (p_quality_code IN NUMBER)
       RETURN BOOLEAN
       result_cache
@@ -8517,6 +8542,32 @@ end retrieve_existing_item_counts;
    BEGIN
       RETURN quality_is_missing (p_value.quality_code);
    END quality_is_missing;
+
+   FUNCTION quality_is_missing_text (p_quality_code IN NUMBER)
+      RETURN VARCHAR2
+      result_cache
+   IS
+   BEGIN
+      RETURN CASE get_quality_validity (p_quality_code) = 'MISSING'
+                WHEN TRUE  THEN 'T'
+                WHEN FALSE THEN 'F'
+             END;
+
+   END quality_is_missing_text;
+
+   FUNCTION quality_is_missing_text (p_value IN tsv_type)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      RETURN quality_is_missing_text (p_value.quality_code);
+   END quality_is_missing_text;
+
+   FUNCTION quality_is_missing_text (p_value IN ztsv_type)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      RETURN quality_is_missing_text (p_value.quality_code);
+   END quality_is_missing_text;
 
    FUNCTION quality_is_questionable (p_quality_code IN NUMBER)
       RETURN BOOLEAN
@@ -8540,6 +8591,31 @@ end retrieve_existing_item_counts;
       RETURN quality_is_okay (p_value.quality_code);
    END quality_is_questionable;
 
+   FUNCTION quality_is_questionable_text (p_quality_code IN NUMBER)
+      RETURN VARCHAR2
+      result_cache
+   IS
+   BEGIN
+      RETURN CASE get_quality_validity (p_quality_code) = 'QUESTIONABLE'
+                WHEN TRUE  THEN 'T'
+                WHEN FALSE THEN 'F'
+             END;
+   END quality_is_questionable_text;
+
+   FUNCTION quality_is_questionable_text (p_value IN tsv_type)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      RETURN quality_is_questionable_text (p_value.quality_code);
+   END quality_is_questionable_text;
+
+   FUNCTION quality_is_questionable_text (p_value IN ztsv_type)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      RETURN quality_is_questionable_text (p_value.quality_code);
+   END quality_is_questionable_text;
+
    FUNCTION quality_is_rejected (p_quality_code IN NUMBER)
       RETURN BOOLEAN
       result_cache
@@ -8561,6 +8637,31 @@ end retrieve_existing_item_counts;
    BEGIN
       RETURN quality_is_rejected (p_value.quality_code);
    END quality_is_rejected;
+
+   FUNCTION quality_is_rejected_text (p_quality_code IN NUMBER)
+      RETURN VARCHAR2
+      result_cache
+   IS
+   BEGIN
+      RETURN CASE get_quality_validity (p_quality_code) = 'REJECTED'
+                WHEN TRUE  THEN 'T'
+                WHEN FALSE THEN 'F'
+             END;
+   END quality_is_rejected_text;
+
+   FUNCTION quality_is_rejected_text (p_value IN tsv_type)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      RETURN quality_is_rejected_text (p_value.quality_code);
+   END quality_is_rejected_text;
+
+   FUNCTION quality_is_rejected_text (p_value IN ztsv_type)
+      RETURN VARCHAR2
+   IS
+   BEGIN
+      RETURN quality_is_rejected_text (p_value.quality_code);
+   END quality_is_rejected_text;
 
    FUNCTION get_quality_description (p_quality_code IN NUMBER)
       RETURN VARCHAR2

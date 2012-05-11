@@ -2059,6 +2059,37 @@ AS
       RETURN BOOLEAN;
 
    /**
+    * Retrieves whether a quality code is marked as okay
+    *
+    * @param p_quality_code The quality code
+    *
+    * @return Whether the quality code is marked as okay as text ('T'/'F')
+    */
+   FUNCTION quality_is_okay_text (p_quality_code IN NUMBER)
+      RETURN VARCHAR2
+      RESULT_CACHE;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as okay
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as okay as text ('T'/'F')
+    */
+   FUNCTION quality_is_okay_text (p_value IN tsv_type)
+      RETURN VARCHAR2;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as okay
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as okay as text ('T'/'F')
+    */
+   FUNCTION quality_is_okay_text (p_value IN ztsv_type)
+      RETURN VARCHAR2;
+
+   /**
     * Retrieves whether a quality code is marked as missing
     *
     * @param p_quality_code The quality code
@@ -2088,6 +2119,37 @@ AS
     */
    FUNCTION quality_is_missing (p_value IN ztsv_type)
       RETURN BOOLEAN;
+
+   /**
+    * Retrieves whether a quality code is marked as missing
+    *
+    * @param p_quality_code The quality code
+    *
+    * @return Whether the quality code is marked as missing as text ('T'/'F')
+    */
+   FUNCTION quality_is_missing_text (p_quality_code IN NUMBER)
+      RETURN VARCHAR2
+      RESULT_CACHE;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as missing
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as missing as text ('T'/'F')
+    */
+   FUNCTION quality_is_missing_text (p_value IN tsv_type)
+      RETURN VARCHAR2;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as missing
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as missing as text ('T'/'F')
+    */
+   FUNCTION quality_is_missing_text (p_value IN ztsv_type)
+      RETURN VARCHAR2;
 
    /**
     * Retrieves whether a quality code is marked as questionable
@@ -2121,6 +2183,37 @@ AS
       RETURN BOOLEAN;
 
    /**
+    * Retrieves whether a quality code is marked as questionable
+    *
+    * @param p_quality_code The quality code
+    *
+    * @return Whether the quality code is marked as questionable as text ('T'/'F')
+    */
+   FUNCTION quality_is_questionable_text (p_quality_code IN NUMBER)
+      RETURN VARCHAR2
+      RESULT_CACHE;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as questionable
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as questionable as text ('T'/'F')
+    */
+   FUNCTION quality_is_questionable_text (p_value IN tsv_type)
+      RETURN VARCHAR2;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as questionable
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as questionable as text ('T'/'F')
+    */
+   FUNCTION quality_is_questionable_text (p_value IN ztsv_type)
+      RETURN VARCHAR2;
+
+   /**
     * Retrieves whether a quality code is marked as rejected
     *
     * @param p_quality_code The quality code
@@ -2150,6 +2243,37 @@ AS
     */
    FUNCTION quality_is_rejected (p_value IN ztsv_type)
       RETURN BOOLEAN;
+
+   /**
+    * Retrieves whether a quality code is marked as rejected
+    *
+    * @param p_quality_code The quality code
+    *
+    * @return Whether the quality code is marked as rejected  as text ('T'/'F')
+    */
+   FUNCTION quality_is_rejected_text (p_quality_code IN NUMBER)
+      RETURN VARCHAR2
+      RESULT_CACHE;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as rejected
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as rejected as text ('T'/'F')
+    */
+   FUNCTION quality_is_rejected_text (p_value IN tsv_type)
+      RETURN VARCHAR2;
+
+   /**
+    * Retrieves whether the quality code of a time series value is marked as rejected
+    *
+    * @param p_value The time series value
+    *
+    * @return Whether the quality code is marked as rejected  as text ('T'/'F')
+    */
+   FUNCTION quality_is_rejected_text (p_value IN ztsv_type)
+      RETURN VARCHAR2;
 
    /**
     * Retrieves a text description for a quality code
