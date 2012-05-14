@@ -140,6 +140,6 @@ AS
                         FROM     at_display_units adu, cwms_unit_conversion cuc
                       WHERE          adu.parameter_code = 10
                                  AND adu.display_unit_code = cuc.to_unit_code
-                                 AND cuc.from_unit_code = 39) bb
+                                 AND cuc.from_unit_code = 38) bb
 /
 SHOW ERRORS;
