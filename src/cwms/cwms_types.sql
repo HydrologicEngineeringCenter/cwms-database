@@ -3135,14 +3135,35 @@ as
       p_eval_time in date default null)
       return number
    is
-      l_indicator_values number_tab_t;
+      l_eval_time           date;
+      l_lookback_time       date;
+      l_indicator_values    number_tab_t;
+      l_max_indicator_value number;
+      l_eval_times          date_table_type;
    begin
-      l_indicator_values := get_indicator_values(p_ts, p_eval_time);
-      return case l_indicator_values.count > 0
-                when true then  l_indicator_values(l_indicator_values.count)
-                when false then 0
-             end;
-   end get_max_indicator_value;      
+      l_eval_time     := nvl(p_eval_time, sysdate);
+      l_lookback_time := cast(cast(l_eval_time as timestamp) - maximum_age as date);
+      ------------------------------------------------------------------------------------------
+      -- get a reversed-ordered collection of times in the data and also within lookback time --
+      ------------------------------------------------------------------------------------------
+      select t.date_time
+        bulk collect into l_eval_times
+        from table(p_ts) t
+       where t.date_time between l_lookback_time and l_eval_time
+       order by t.date_time desc;
+      ----------------------------------------------------------------
+      -- get the first (most recent) time that has a non-zero value --
+      ----------------------------------------------------------------
+      for i in 1..l_eval_times.count loop
+         l_indicator_values := get_indicator_values(p_ts, l_eval_times(i));
+         case l_indicator_values.count
+            when 0 then l_max_indicator_value :=  0;
+            else l_max_indicator_value := l_indicator_values(l_indicator_values.count);
+         end case;
+         exit when l_max_indicator_value != 0;
+      end loop;
+      return l_max_indicator_value;
+   end get_max_indicator_value;
 
    member function get_max_indicator_values(
       p_ts         in ztsv_array,

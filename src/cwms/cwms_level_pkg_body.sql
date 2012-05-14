@@ -6981,7 +6981,7 @@ begin
    else     
       l_end_time := from_tz(cast(p_end_time as timestamp), nvl(p_time_zone, 'UTC')) at time zone 'UTC';
    end if;  
-   select min(l_start_time-minimum_duration-maximum_age)
+   select min(l_start_time-minimum_duration-2*maximum_age)
      into l_lookback_time
      from table(l_loc_lvl_objs);
    ------------------------------               
