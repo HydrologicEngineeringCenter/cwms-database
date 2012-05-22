@@ -285,11 +285,39 @@
 	
     <target name="all" depends="all-schema" description="does a clean build">
     </target>
-    <target name="export" description="Executes python script to export CWMS schema">
+
+    <target name="exportSchema" description="Executes python script to export CWMS schema">
+
+                <echo message="Exporting CWMS schema ..."/>
+
+                <property name="autoexportschema-arg-line" value="/c python autoexportschema.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexportschema.force}"/>
+                <echo message="${autoexportschema-arg-line}"/>
+
+                <exec dir="${src}" executable="cmd" output="auto-export-schema-output.txt" error="auto-export-schema-error.txt" resultproperty="auto-export-schema-result" failonerror="true">
+                        <arg line="${autoexportschema-arg-line}"/>
+                </exec>
+
+                <if>
+                        <equals arg1="${auto-export-schema-result}" arg2="0" />
+                        <then>
+                                <echo message="Finished exporting CWMS schema"/>
+                        </then>
+                        <else>
+                                <concat>
+                                        <filelist dir="${root}" files="auto-export-schema-output.txt,auto-export-schema-error.txt"/>
+                                </concat>
+                                <echo message="${auto-export-schema-result}"/>
+                                <fail/>
+                        </else>
+                </if>
+
+    </target>
+
+    <target name="export" description="Executes python script to export CWMS tables">
 
                 <echo message="Exporting CWMS tables ..."/>
 
-                <property name="autoexport-arg-line" value="/c python autoexport.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexport.force}"/>
+                <property name="autoexport-arg-line" value="/c python autoexport.py echo=${autoexport.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} cwms_dir=${oracle.cwms.dir}  ccp_passwd=${oracle.ccp.password} ${autoexport.force} ${build.restricted}"/>
                 <echo message="${autoexport-arg-line}"/>
 
                 <exec dir="${src}" executable="cmd" output="auto-export-output.txt" error="auto-export-error.txt" resultproperty="auto-export-result" failonerror="true">
@@ -316,7 +344,7 @@
 
                 <echo message="Importing  CWMS tables ..."/>
 
-                <property name="autoimport-arg-line" value="/c python autoimport.py echo=${autoimport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} cwms_dir=${oracle.cwms.dir} ccp_passwd=${oracle.ccp.password} ${autoimport.force}"/>
+                <property name="autoimport-arg-line" value="/c python autoimport.py echo=${autoimport.echo} inst=${oracle.cwms.instance} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} cwms_dir=${oracle.cwms.dir} ccp_passwd=${oracle.ccp.password} ${autoimport.force} ${build.restricted}"/>
                 <echo message="${autoimport-arg-line}"/>
 
                 <exec dir="${src}" executable="cmd" output="auto-import-output.txt" error="auto-import-error.txt" resultproperty="auto-import-result" failonerror="true">
@@ -367,9 +395,8 @@
     </target>
     <target name="rebuild-schema" depends="export,clean,build,import,createUsers" description="export AT tables,drop existing CWMS schema then build a new CWMS schema, import AT data, recreate user accounts">
     </target>
+    <target name="rebuild-schema-with-export" depends="exportSchema,export,clean,build,import,createUsers" description="export AT tables,drop existing CWMS schema then build a new CWMS schema, import AT data, recreate user accounts">
+    </target>
 
-
-
-	
 </project>
 

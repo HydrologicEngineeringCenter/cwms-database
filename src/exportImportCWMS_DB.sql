@@ -26,7 +26,7 @@ select sysdate from dual;
 
 spool exportImportCWMS_DB.log
 
-/* Formatted on 4/5/2012 1:21:16 PM (QP5 v5.163.1008.3004) */
+/* Formatted on 5/18/2012 10:19:09 AM (QP5 v5.163.1008.3004) */
 DECLARE
    PROCEDURE REMOVE_CWMS_Q_SUBSCRIBERS
    IS
@@ -57,6 +57,7 @@ DECLARE
          END LOOP;
       END LOOP;
    END;
+
    PROCEDURE ADD_DATAFILE_NAMES (p_h IN NUMBER)
    IS
       l_ft              UTL_FILE.file_type;
@@ -142,28 +143,49 @@ DECLARE
       END;
    END RENAME_BACKUP_FILE;
 
-   PROCEDURE TOGGLE_FK_CONSTRAINTS (p_flag1 VARCHAR2, p_flag2 VARCHAR2)
+   PROCEDURE TOGGLE_FK_CONSTRAINTS (p_flag1         IN VARCHAR2,
+                                    p_flag2         IN VARCHAR2,
+                                    p_include_tsv   IN BOOLEAN DEFAULT FALSE)
    IS
+      l_query             VARCHAR2 (512);
+      l_owner             VARCHAR2 (32);
+      l_table_name        VARCHAR2 (64);
+      l_constraint_name   VARCHAR2 (64);
+      l_cursor            SYS_REFCURSOR;
    BEGIN
-      FOR c
-         IN (  SELECT c.owner, c.table_name, c.constraint_name
+      l_query :=
+            'SELECT c.owner, c.table_name, c.constraint_name
                  FROM dba_constraints c, dba_tables t
                 WHERE     c.table_name = t.table_name
-                      AND c.status = p_flag1
-                      AND c.owner = '&cwms_schema'
-                      AND c.constraint_type = 'R'
-             --AND c.table_name not in (select table_name from &cwms_schema..AT_TS_TABLE_PROPERTIES)
-             ORDER BY c.constraint_type DESC)
+                      AND c.status = '''
+         || p_flag1
+         || ''' AND c.owner = ''&cwms_schema''
+                      AND c.constraint_type = ''R''';
+
+      IF (p_include_tsv)
+      THEN
+         l_query :=
+            l_query
+            || ' AND c.table_name not in (select table_name from &cwms_schema..AT_TS_TABLE_PROPERTIES)';
+      END IF;
+
+      OPEN l_cursor FOR l_query;
+
+
       LOOP
+         FETCH l_cursor
+         INTO l_owner, l_table_name, l_constraint_name;
+
+         EXIT WHEN l_cursor%NOTFOUND;
          DBMS_UTILITY.exec_ddl_statement (
                'alter table '
-            || c.owner
+            || l_owner
             || '.'
-            || c.table_name
+            || l_table_name
             || ' '
             || p_flag2
             || ' constraint '
-            || c.constraint_name);
+            || l_constraint_name);
       END LOOP;
    END TOGGLE_FK_CONSTRAINTS;
 
@@ -250,10 +272,11 @@ DECLARE
 
       RETURN l_job_state;
    END CHECK_STATUS;
+
    PROCEDURE IMPORT_SEQUENCE
    IS
-      l_handle            NUMBER;
-      data_export_state   VARCHAR2 (64);
+      l_handle              NUMBER;
+      l_data_export_state   VARCHAR2 (64);
    BEGIN
       FOR rec IN (SELECT sequence_name
                     FROM all_sequences
@@ -271,19 +294,20 @@ DECLARE
       DBMS_DATAPUMP.ADD_FILE (l_handle, 'cwms_seq_data.dmp', 'EXPDP_DIR');
       DBMS_DATAPUMP.START_JOB (l_handle);
 
-      data_export_state := CHECK_STATUS (l_handle);
+      l_data_export_state := CHECK_STATUS (l_handle);
       -- Indicate that the job finished and detach from it.
 
       DBMS_OUTPUT.put_line ('Sequence import job has completed');
       DBMS_OUTPUT.put_line (
-         'Final job state (Sequence import) = ' || data_export_state);
+         'Final job state (Sequence import) = ' || l_data_export_state);
       DBMS_DATAPUMP.detach (l_handle);
    END;
 
    PROCEDURE EXPORT_SEQUENCE
    IS
-      l_handle            NUMBER;
-      data_export_state   VARCHAR2 (64);
+      l_handle              NUMBER;
+      l_data_export_state   VARCHAR2 (64);
+      l_export_exception    EXCEPTION;
    BEGIN
       RENAME_BACKUP_FILE ('cwms_seq_data');
       l_handle :=
@@ -312,11 +336,16 @@ DECLARE
 
 
       DBMS_DATAPUMP.START_JOB (l_handle);
-      data_export_state := CHECK_STATUS (l_handle);
+      l_data_export_state := CHECK_STATUS (l_handle);
       DBMS_OUTPUT.put_line ('Sequence export Job has completed');
       DBMS_OUTPUT.put_line (
-         'Final job state(sequence export) = ' || data_export_state);
+         'Final job state(sequence export) = ' || l_data_export_state);
       DBMS_DATAPUMP.detach (l_handle);
+
+      IF l_data_export_state != 'COMPLETED'
+      THEN
+         RAISE l_export_exception;
+      END IF;
    END;
 
    PROCEDURE CREATE_USER (p_username          IN VARCHAR2,
@@ -356,7 +385,7 @@ DECLARE
       RETURN VARCHAR2
    IS
       l_return        VARCHAR2 (2048);
-      l_query         VARCHAR2 (256);
+      l_query         VARCHAR2 (512);
       l_cur           SYS_REFCURSOR;
       l_column_name   VARCHAR2 (64);
    BEGIN
@@ -373,7 +402,7 @@ DECLARE
       THEN
          l_query :=
             l_query
-            || ' AND DATA_TYPE != ''CLOB'' AND DATA_TYPE != ''BLOB'' AND DATA_TYPE != ''BFILE'' AND DATA_TYPE != ''VARRAY''';
+            || ' AND DATA_TYPE != ''CLOB'' AND DATA_TYPE != ''SDO_GEOMETRY'' AND DATA_TYPE != ''BLOB'' AND DATA_TYPE != ''BFILE'' AND DATA_TYPE != ''VARRAY''';
       END IF;
 
       --DBMS_OUTPUT.PUT_LINE (l_query);
@@ -438,21 +467,26 @@ DECLARE
             || '.'
             || l_tablename
             || ')';
+
          --DBMS_OUTPUT.PUT_LINE (l_copycmd);
 
          BEGIN
             EXECUTE IMMEDIATE l_copycmd;
-	    IF SQL%ROWCOUNT > 0
+
+            IF SQL%ROWCOUNT > 0
             THEN
-              DBMS_OUTPUT.PUT_LINE ('Inserted ' || SQL%ROWCOUNT || ' Rows in ' || l_tablename);
+               DBMS_OUTPUT.PUT_LINE (
+                  'Inserted ' || SQL%ROWCOUNT || ' Rows in ' || l_tablename);
             END IF;
          EXCEPTION
             WHEN OTHERS
             THEN
+	       DBMS_OUTPUT.put_line ('Error inserting into ' || l_tablename || ' ' || l_copycmd);
                DBMS_OUTPUT.put_line (SQLERRM);
                DBMS_OUTPUT.put_line (DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
          END;
       END LOOP;
+
       COMMIT;
    END;
 
@@ -466,7 +500,6 @@ DECLARE
       l_tablename   VARCHAR2 (64);
       l_cur         SYS_REFCURSOR;
    BEGIN
-      CREATE_USER (p_toUser, 'CWMS_20_AT_DATA_BAK');
       l_query :=
             'select table_name from dba_tables where owner = '''
          || p_fromUser
@@ -494,16 +527,60 @@ DECLARE
             || p_fromUser
             || '.'
             || l_tablename;
+
          --DBMS_OUTPUT.PUT_LINE (l_createcmd);
 
          EXECUTE IMMEDIATE l_createcmd;
       END LOOP;
 
       CLOSE l_cur;
+
       COMMIT;
    END COPY_TABLES;
 
+   PROCEDURE BACKUP_CWMS_ROLES
+   IS
+      l_lastval   NUMBER;
+      l_cmd       VARCHAR2 (256);
+   BEGIN
+      EXECUTE IMMEDIATE
+         'CREATE TABLE CWMS_20_BAK.CWMS_ROLES_BAK (grantee varchar2(30), granted_role varchar2(30)) TABLESPACE CWMS_20_AT_DATA_BAK';
 
+      l_cmd :=
+         'Insert into CWMS_20_BAK.CWMS_ROLES_BAK(grantee,granted_role) select grantee,granted_role from DBA_ROLE_PRIVS where granted_role = ''CWMS_USER'' or granted_role = ''CWMS_DBX_ROLE''';
+      DBMS_OUTPUT.put_line (l_cmd);
+
+      EXECUTE IMMEDIATE l_cmd;
+
+      COMMIT;
+   END BACKUP_CWMS_ROLES;
+
+   PROCEDURE RECREATE_CWMS_ROLES
+   IS
+      l_cmd            VARCHAR2 (128);
+      l_select         VARCHAR2 (128);
+      l_cur            SYS_REFCURSOR;
+      l_grantee        VARCHAR (30);
+      l_granted_role   VARCHAR (30);
+   BEGIN
+      l_select :=
+         'SELECT grantee, granted_role FROM  CWMS_20_BAK.CWMS_ROLES_BAK';
+
+      OPEN l_cur FOR l_select;
+
+      LOOP
+         FETCH l_cur
+         INTO l_grantee, l_granted_role;
+
+         EXIT WHEN l_cur%NOTFOUND;
+         l_cmd := 'Grant ' || l_granted_role || ' to ' || l_grantee;
+         DBMS_OUTPUT.PUT_LINE (l_cmd);
+
+         EXECUTE IMMEDIATE l_cmd;
+      END LOOP;
+
+      COMMIT;
+   END RECREATE_CWMS_ROLES;
 
    PROCEDURE BACKUP_CWMS_SEQ
    IS
@@ -552,9 +629,99 @@ DECLARE
       END LOOP;
    END;
 
+   PROCEDURE EXPORT_TSV (p_dump_file   IN VARCHAR2,
+                         p_parallel    IN INTEGER DEFAULT 9)
+   IS
+      l_handle              NUMBER;
+      l_data_export_state   VARCHAR2 (64);
+      l_dump_file           VARCHAR2 (64);
+      l_parallel            INTEGER;
+      l_export_exception    EXCEPTION;
+   BEGIN
+      IF (p_parallel > 9)
+      THEN
+         l_parallel := 9;
+      ELSIF (p_parallel < 1)
+      THEN
+         l_parallel := 1;
+      ELSE
+         l_parallel := p_parallel;
+      END IF;
+
+      IF (l_parallel > 1)
+      THEN
+         FOR num IN 1 .. 9
+         LOOP
+            l_dump_file := p_dump_file || '0' || num;
+            DBMS_OUTPUT.PUT_LINE (l_dump_file);
+            RENAME_BACKUP_FILE (l_dump_file);
+         END LOOP;
+      ELSE
+         RENAME_BACKUP_FILE (p_dump_file);
+      END IF;
+
+
+      l_handle :=
+         DBMS_DATAPUMP.OPEN ('EXPORT',
+                             'TABLE',
+                             NULL,
+                             NULL,
+                             'LATEST');
+      DBMS_OUTPUT.PUT_LINE (l_parallel);
+
+      IF (l_parallel > 1)
+      THEN
+         DBMS_DATAPUMP.ADD_FILE (l_handle, p_dump_file || '%U', 'EXPDP_DIR');
+      ELSE
+         DBMS_DATAPUMP.ADD_FILE (l_handle, p_dump_file, 'EXPDP_DIR');
+      END IF;
+
+      DBMS_DATAPUMP.METADATA_FILTER (l_handle,
+                                     'SCHEMA_EXPR',
+                                     'IN (''&cwms_schema'')');
+
+
+
+      DBMS_DATAPUMP.METADATA_FILTER (
+         l_handle,
+         'NAME_EXPR',
+         'IN (SELECT  table_name from dba_tables where owner = ''&cwms_schema'' and table_name like ''AT_TSV%'' )',
+         'TABLE');
+      DBMS_DATAPUMP.SET_PARAMETER (l_handle, 'INCLUDE_METADATA', 0);
+      DBMS_DATAPUMP.SET_PARALLEL (l_handle, l_parallel);
+      DBMS_DATAPUMP.START_JOB (l_handle);
+      l_data_export_state := CHECK_STATUS (l_handle);
+      DBMS_OUTPUT.put_line ('Sequence export Job has completed');
+      DBMS_OUTPUT.put_line (
+         'Final job state(sequence export) = ' || l_data_export_state);
+
+      DBMS_DATAPUMP.detach (l_handle);
+
+      IF l_data_export_state != 'COMPLETED'
+      THEN
+         RAISE l_export_exception;
+      END IF;
+   END;
+
    PROCEDURE EXPORT_CWMS_AT_DATA
    IS
-      l_h1                  NUMBER;                    -- Data Pump job handle
+   BEGIN
+      REMOVE_CWMS_Q_SUBSCRIBERS;
+      DROP_USER ('CWMS_20_BAK', 'CWMS_20_AT_DATA_BAK');
+      CREATE_USER ('CWMS_20_BAK', 'CWMS_20_AT_DATA_BAK');
+      BACKUP_CWMS_ROLES;
+      BACKUP_CWMS_SEQ;
+      COPY_TABLES (
+         '&cwms_schema',
+         'CWMS_20_BAK',
+         'TABLE_NAME LIKE ''AT_%'' AND TABLE_NAME NOT LIKE ''AT_TSV%'' AND TABLE_NAME NOT LIKE ''AT_LOG_MESSAGE%''');
+      EXPORT_SEQUENCE;
+      EXPORT_TSV ('cwms_tsv_dump');
+   END;
+
+   PROCEDURE EXPORT_CWMS_AT_DATA_TB
+   IS
+      l_handle              NUMBER;                    -- Data Pump job handle
 
       l_data_export_state   VARCHAR2 (30);            -- Status of export jobs
       l_data_filename       VARCHAR2 (1024);
@@ -582,22 +749,28 @@ DECLARE
 
       EXECUTE IMMEDIATE 'ALTER TABLESPACE CWMS_20_TSV read only';
 
-      l_h1 :=
+      l_handle :=
          DBMS_DATAPUMP.OPEN ('EXPORT',
                              'TRANSPORTABLE',
                              NULL,
                              NULL);
 
-      DBMS_DATAPUMP.ADD_FILE (l_h1, 'cwms_at_tsv.dmp', 'EXPDP_DIR');
-      DBMS_DATAPUMP.METADATA_FILTER (l_h1,
+      DBMS_DATAPUMP.ADD_FILE (l_handle, 'cwms_at_tsv.dmp', 'EXPDP_DIR');
+      DBMS_DATAPUMP.METADATA_FILTER (l_handle,
                                      'TABLESPACE_EXPR',
                                      'IN (''CWMS_20_TSV'')');
-      DBMS_DATAPUMP.START_JOB (l_h1);
-      l_data_export_state := CHECK_STATUS (l_h1);
+      DBMS_DATAPUMP.START_JOB (l_handle);
+      l_data_export_state := CHECK_STATUS (l_handle);
       DBMS_OUTPUT.put_line ('Tablespace export Job has completed');
       DBMS_OUTPUT.put_line (
          'Final job state(Tablespace) = ' || l_data_export_state);
-      DBMS_DATAPUMP.detach (l_h1);
+      DBMS_DATAPUMP.detach (l_handle);
+
+      EXECUTE IMMEDIATE
+         'drop tablespace CWMS_20_TSV including contents keep datafiles cascade constraints';
+
+      EXECUTE IMMEDIATE
+         'create  tablespace CWMS_20_TSV datafile autoextend on';
 
       IF l_data_export_state != 'COMPLETED'
       THEN
@@ -608,10 +781,10 @@ DECLARE
       THEN
          DBMS_OUTPUT.put_line (SQLERRM);
          DBMS_OUTPUT.put_line (DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
-         DBMS_DATAPUMP.detach (l_h1);
+         DBMS_DATAPUMP.detach (l_handle);
          --ENABLE_FK_CONSTRAINTS;
          RAISE;
-   END EXPORT_CWMS_AT_DATA;
+   END EXPORT_CWMS_AT_DATA_TB;
 
    PROCEDURE EXPORT_CWMS
    IS
@@ -620,15 +793,10 @@ DECLARE
          'Update ' || '&CWMS_SCHEMA'
          || '.AT_PARAMETER Set SUB_PARAMETER_DESC = ''Percent'' WHERE PARAMETER_CODE = 1 AND DB_OFFICE_CODE = 53 AND BASE_PARAMETER_CODE = 1';
 
+      COMMIT;
       DROP_ALL_JOBS;
 
       EXPORT_CWMS_AT_DATA;
-
-      EXECUTE IMMEDIATE
-         'drop tablespace CWMS_20_TSV including contents keep datafiles cascade constraints';
-
-      EXECUTE IMMEDIATE
-         'create  tablespace CWMS_20_TSV datafile autoextend on';
    END;
 
    PROCEDURE CREATE_BAK_TB
@@ -722,13 +890,60 @@ DECLARE
          DBMS_OUTPUT.put_line (DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
    END;
 
-   PROCEDURE IMPORT_TSV
+   PROCEDURE IMPORT_TSV (p_dump_file VARCHAR2, p_parallel INTEGER DEFAULT 9)
    IS
       l_handle              NUMBER;
       l_data_import_state   VARCHAR2 (30);
+      l_parallel            INTEGER;
+      l_import_exception    EXCEPTION;
+   BEGIN
+      IF (p_parallel > 9)
+      THEN
+         l_parallel := 9;
+      ELSIF (p_parallel < 1)
+      THEN
+         l_parallel := 1;
+      ELSE
+         l_parallel := p_parallel;
+      END IF;
+
+      l_handle :=
+         DBMS_DATAPUMP.OPEN ('IMPORT',
+                             'TABLE',
+                             NULL,
+                             NULL);
+
+      IF (l_parallel > 1)
+      THEN
+         DBMS_DATAPUMP.ADD_FILE (l_handle, p_dump_file || '%U', 'EXPDP_DIR');
+      ELSE
+         DBMS_DATAPUMP.ADD_FILE (l_handle, p_dump_file, 'EXPDP_DIR');
+      END IF;
+
+      DBMS_DATAPUMP.START_JOB (l_handle);
+      l_data_import_state := CHECK_STATUS (l_handle);
+
+      DBMS_OUTPUT.PUT_LINE (
+         'Import state(Tablespace import):' || l_data_import_state);
+      DBMS_DATAPUMP.detach (l_handle);
+
+      IF l_data_import_state != 'COMPLETED'
+      THEN
+         RAISE l_import_exception;
+      END IF;
+   END;
+
+   PROCEDURE IMPORT_TSV_TB
+   IS
+      l_handle              NUMBER;
+      l_data_import_state   VARCHAR2 (30);
+      l_import_exception    EXCEPTION;
    BEGIN
       CREATE_BAK_TB;
-      MOVE_TSV_OBJECTS ('CWMS_20_TSV', 'CWMS_20_TSV_BAK',' AND  TABLE_NAME NOT IN (SELECT TABLE_NAME FROM CWMS_20_BAK.CWMS_TSV_BAK)');
+      MOVE_TSV_OBJECTS (
+         'CWMS_20_TSV',
+         'CWMS_20_TSV_BAK',
+         ' AND  TABLE_NAME NOT IN (SELECT TABLE_NAME FROM CWMS_20_BAK.CWMS_TSV_BAK)');
 
       EXECUTE IMMEDIATE
          'drop tablespace cwms_20_tsv including contents cascade constraints';
@@ -746,9 +961,16 @@ DECLARE
       DBMS_OUTPUT.PUT_LINE (
          'Import state(Tablespace import):' || l_data_import_state);
       DBMS_DATAPUMP.detach (l_handle);
+
       EXECUTE IMMEDIATE 'ALTER TABLESPACE CWMS_20_TSV read write';
-      MOVE_TSV_OBJECTS ('CWMS_20_TSV_BAK', 'CWMS_20_TSV','');
+
+      MOVE_TSV_OBJECTS ('CWMS_20_TSV_BAK', 'CWMS_20_TSV', '');
       DROP_BAK_TB;
+
+      IF l_data_import_state != 'COMPLETED'
+      THEN
+         RAISE l_import_exception;
+      END IF;
    EXCEPTION
       WHEN OTHERS
       THEN
@@ -788,12 +1010,15 @@ DECLARE
 
       EXECUTE IMMEDIATE 'GRANT EXECUTE ON &CWMS_SCHEMA..CWMS_UTIL TO CCP';
 
-      EXECUTE IMMEDIATE 'GRANT EXECUTE ON &CWMS_SCHEMA..DATE_TABLE_TYPE TO CCP';
+      EXECUTE IMMEDIATE
+         'GRANT EXECUTE ON &CWMS_SCHEMA..DATE_TABLE_TYPE TO CCP';
 
-      EXECUTE IMMEDIATE 'GRANT EXECUTE ON &CWMS_SCHEMA..JMS_MAP_MSG_TAB_T TO CCP';
+      EXECUTE IMMEDIATE
+         'GRANT EXECUTE ON &CWMS_SCHEMA..JMS_MAP_MSG_TAB_T TO CCP';
 
       EXECUTE IMMEDIATE 'GRANT CCP_USERS TO CWMS_USER';
-      UTL_RECOMP.RECOMP_SERIAL('CCP');
+
+      UTL_RECOMP.RECOMP_SERIAL ('CCP');
    END;
 
    PROCEDURE IMPORT_CWMS
@@ -805,17 +1030,80 @@ DECLARE
       COPY_BACK_TABLES ('CWMS_20_BAK', 'CWMS_20');
 
       IMPORT_SEQUENCE;
-      IMPORT_TSV;
+      IMPORT_TSV ('cwms_tsv_dump');
 
 
-      EXECUTE IMMEDIATE 'BEGIN &CWMS_SCHEMA..CWMS_TS_ID.refresh_at_cwms_ts_id; END;';
+      EXECUTE IMMEDIATE
+         'BEGIN &CWMS_SCHEMA..CWMS_TS_ID.refresh_at_cwms_ts_id; END;';
+
       TOGGLE_FK_CONSTRAINTS ('DISABLED', 'ENABLE');
       TOGGLE_TRIGGERS ('DISABLED', 'ENABLE');
-      UTL_RECOMP.RECOMP_SERIAL('&CWMS_SCHEMA');
+      UTL_RECOMP.RECOMP_SERIAL ('&CWMS_SCHEMA');
       RESTORE_CCP_PERMISSIONS;
+      RECREATE_CWMS_ROLES; 
+      COMMIT;
+   END;
+
+   PROCEDURE EXPORT_SCHEMA (p_schema_name   IN VARCHAR2,
+                            p_dump_file     IN VARCHAR2,
+                            p_parallel      IN INTEGER DEFAULT 9)
+   IS
+      l_handle              NUMBER;
+      l_data_export_state   VARCHAR2 (64);
+      l_dump_file           VARCHAR2 (64);
+      l_parallel            INTEGER;
+   BEGIN
+      IF (p_parallel > 9)
+      THEN
+         l_parallel := 9;
+      ELSIF (p_parallel < 1)
+      THEN
+         l_parallel := 1;
+      ELSE
+         l_parallel := p_parallel;
+      END IF;
+
+      IF (l_parallel > 1)
+      THEN
+         FOR num IN 1 .. 9
+         LOOP
+            l_dump_file := p_dump_file || '0' || num;
+            DBMS_OUTPUT.PUT_LINE (l_dump_file);
+            RENAME_BACKUP_FILE (l_dump_file);
+         END LOOP;
+      ELSE
+         RENAME_BACKUP_FILE (p_dump_file);
+      END IF;
+
+
+      l_handle :=
+         DBMS_DATAPUMP.OPEN ('EXPORT',
+                             'SCHEMA',
+                             NULL,
+                             NULL,
+                             'LATEST');
+
+      IF (l_parallel > 1)
+      THEN
+         DBMS_DATAPUMP.ADD_FILE (l_handle, p_dump_file || '%U', 'EXPDP_DIR');
+      ELSE
+         DBMS_DATAPUMP.ADD_FILE (l_handle, p_dump_file, 'EXPDP_DIR');
+      END IF;
+
+      DBMS_DATAPUMP.METADATA_FILTER (l_handle,
+                                     'SCHEMA_EXPR',
+                                     'IN (''' || p_schema_name || ''')');
+
+      DBMS_DATAPUMP.SET_PARALLEL (l_handle, l_parallel);
+      DBMS_DATAPUMP.START_JOB (l_handle);
+      l_data_export_state := CHECK_STATUS (l_handle);
+      DBMS_OUTPUT.put_line ('Sequence export Job has completed');
+      DBMS_OUTPUT.put_line (
+         'Final job state(sequence export) = ' || l_data_export_state);
+      DBMS_DATAPUMP.detach (l_handle);
    END;
 BEGIN
-   EXECUTE IMMEDIATE 'ALTER SYSTEM ENABLE RESTRICTED SESSION';
+   --EXECUTE IMMEDIATE 'ALTER SYSTEM ENABLE RESTRICTED SESSION';
 
    EXECUTE IMMEDIATE 'create or replace directory expdp_dir as ''&cwms_dir''';
 
@@ -823,8 +1111,10 @@ BEGIN
 
    --IMPORT_CWMS;
 
-   EXECUTE IMMEDIATE 'ALTER SYSTEM DISABLE RESTRICTED SESSION';
-   DBMS_LOCK.SLEEP(1);
+   --EXPORT_SCHEMA('&CWMS_SCHEMA','cwms_export_dump');
+
+   --EXECUTE IMMEDIATE 'ALTER SYSTEM DISABLE RESTRICTED SESSION';
+   DBMS_LOCK.SLEEP (1);
 END;
 /
 
@@ -841,4 +1131,4 @@ exec cwms_rating.start_update_mviews_job;
 whenever sqlerror continue
 connect ccp/&ccp_passwd@&inst
 exec CWMS_CCP.START_CHECK_CALLBACK_PROC_JOB;
-   UNCOMMENT FOR IMPORT */ 
+   UNCOMMENT FOR IMPORT */

@@ -2,7 +2,7 @@
 import os, sys
 
 manual_sqlfilename = "exportImportCWMS_DB.sql"
-auto_sqlfilename   = "autoImport.sql"
+auto_sqlfilename   = "autoexportschema.sql"
 
 prompt_block = \
 '''
@@ -28,10 +28,9 @@ define cwms_dir = %s
 define ccp_passwd = %s
 '''
 
-
 force = False
 restricted = False
-echo, inst, cwms_passwd, cwms_schema,sys_passwd,cwms_dir,ccp_passwd = None, None, None, None, None, None, None
+echo, inst, cwms_passwd, sys_passwd, cwms_schema, cwms_dir, ccp_passwd = None, None, None, None, None, None, None
 for arg in sys.argv[1:] : 
 	if arg.find("=") != -1 : 
 		name, value = arg.split("=", 1)
@@ -43,9 +42,9 @@ for arg in sys.argv[1:] :
                 restricted = True
 
 		
-if not (echo and inst and cwms_passwd and cwms_schema and sys_passwd and cwms_dir and ccp_passwd) :
+if not (echo and inst and sys_passwd and cwms_passwd and cwms_schema and cwms_dir and ccp_passwd) :
 	print
-	print "Usage %s echo=(on|off) inst=<SID> cwms_passwd=<password> cwms_schema=<schema> sys_passwd=<system password> cwms_dir=<oracle dir>  ccp_passwd=<ccp password> [-force]" % sys.argv[0]
+	print "Usage %s echo=(on|off) inst=<SID> cwms_passwd=<password> sys_passwd=<password> cwms_schema=<schema> cwms_dir=<dir name> ccp_passwd=<ccp password> [-force]" % sys.argv[0]
 	print
 	print "The -force option keeps the script from exiting on errors."
 	print
@@ -55,23 +54,16 @@ cwms_schema = cwms_schema.upper()
 inst = inst.upper()
 
 
-auto_block = auto_block_template % (echo, inst, cwms_schema, cwms_passwd, sys_passwd,cwms_dir,ccp_passwd)
+auto_block = auto_block_template % (echo, inst, cwms_schema, cwms_passwd, sys_passwd, cwms_dir,ccp_passwd)
 
 f = open(manual_sqlfilename, "r")
 sql_script = f.read()
 sql_script = sql_script.replace(
-                "--IMPORT_CWMS;",
-                "IMPORT_CWMS;")
+                "--EXPORT_SCHEMA('&CWMS_SCHEMA','cwms_export_dump');",
+                "EXPORT_SCHEMA('&CWMS_SCHEMA','cwms_export_dump');")
 sql_script = sql_script.replace(
                 "exportImportCWMS_DB",
-                "importCWMS_DB")
-sql_script = sql_script.replace(
-                "/* UNCOMMENT FOR IMPORT",
-                "-- UNCOMMENT FOR IMPORT")
-sql_script = sql_script.replace(
-                "UNCOMMENT FOR IMPORT */",
-                "--UNCOMMENT FOR IMPORT")
-
+                "exportCWMS_SCHEMA")
 
 f.close()
 
@@ -100,6 +92,7 @@ ec = os.system(cmd)
 if ec :
 	print
 	print "SQL*Plus exited with code", ec 
-	sys.exit(-1)
-	
-sys.exit(ec)
+	print
+	sys.exit(-1)	
+
+sys.exit(0)

@@ -138,6 +138,9 @@ begin
 end;
 /
 
+-- Create CWMS_DBXC_ROLE
+
+@@cwms/User-Roles/cwms_dbx_role_et_user
 
 set echo off
 --

@@ -29,6 +29,7 @@ define ccp_passwd = %s
 '''
 
 force = False
+restricted = False
 echo, inst, cwms_passwd, sys_passwd, cwms_schema, cwms_dir, ccp_passwd = None, None, None, None, None, None, None
 for arg in sys.argv[1:] : 
 	if arg.find("=") != -1 : 
@@ -37,6 +38,8 @@ for arg in sys.argv[1:] :
 		exec arg
 	elif arg.lower() in ("-force", "/force") :
 		force = True
+        elif arg.lower() in ("-restricted", "/restricted") :
+                restricted = True
 		
 if not (echo and inst and sys_passwd and cwms_passwd and cwms_schema and cwms_dir and ccp_passwd) :
 	print
@@ -67,6 +70,14 @@ if force :
 	sql_script = sql_script.replace(
 		"whenever sqlerror exit sql.sqlcode", 
 		"whenever sqlerror continue")
+if restricted :
+        sql_script = sql_script.replace(
+                "--EXECUTE IMMEDIATE 'ALTER SYSTEM ENABLE RESTRICTED SESSION';",
+                "EXECUTE IMMEDIATE 'ALTER SYSTEM ENABLE RESTRICTED SESSION';")
+        sql_script = sql_script.replace(
+                "--EXECUTE IMMEDIATE 'ALTER SYSTEM DISABLE RESTRICTED SESSION';",
+                "EXECUTE IMMEDIATE 'ALTER SYSTEM DISABLE RESTRICTED SESSION';")
+
 		
 f = open(auto_sqlfilename, "w")
 f.write(sql_script.replace(prompt_block, auto_block))
