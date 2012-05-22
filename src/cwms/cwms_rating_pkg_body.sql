@@ -1247,7 +1247,7 @@ begin
       cwms_util.append(l_text, l_ratings(i).to_clob);
    end loop; 
    cwms_util.append(l_text, '</ratings>');     
-   dbms_lob.close(l_text);      
+   dbms_lob.close(l_text); 
    dbms_lob.createtemporary(p_ratings, true);
    dbms_lob.open(p_ratings, dbms_lob.lob_readwrite);
    cwms_util.append(p_ratings, '<?xml version="1.0" encoding="utf-8"?>'||chr(10));
@@ -1786,7 +1786,7 @@ begin
          ------------------------------------------
          -- set log properties on dependent axis --
          ------------------------------------------
-         if l_ratio < 0. then
+         if l_ratio <= 0. then
             l_dependent_log := cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method)
                                in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
             if l_dependent_log then
@@ -2060,12 +2060,17 @@ procedure rate_one(
    p_time_zone   in  varchar2 default null,
    p_office_id   in  varchar2 default null)
 is
+   l_values  double_tab_tab_t := double_tab_tab_t();
    l_results double_tab_t;
 begin
+   l_values.extend(p_values.count);
+   for i in 1..p_values.count loop
+      l_values(i) := double_tab_t(p_values(i));
+   end loop;
    rate(
       l_results,
       p_rating_spec,
-      double_tab_tab_t(p_values),
+      l_values,
       p_units,
       p_round,
       date_table_type(p_value_time),
@@ -2738,7 +2743,7 @@ begin
          ------------------------------------------
          -- set log properties on dependent axis --
          ------------------------------------------
-         if l_ratio < 0. then
+         if l_ratio <= 0. then
             l_dependent_log := cwms_lookup.method_by_name(l_rating_spec.out_range_low_rating_method)
                                in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
             if l_dependent_log then
@@ -3244,7 +3249,7 @@ function reverse_rate_f(
 is
    l_results tsv_array;
 begin
-   rate(
+   reverse_rate(
       l_results,
       p_rating_spec,
       p_values,
@@ -3272,7 +3277,7 @@ function reverse_rate_f(
 is
    l_results ztsv_array;
 begin
-   rate(
+   reverse_rate(
       l_results,
       p_rating_spec,
       p_values,
