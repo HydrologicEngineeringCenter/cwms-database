@@ -56,7 +56,7 @@ as
 --------------------------------------------------------------------------------
 -- POPULATE_TSIDS
 --
--- Only call this if you have manually edited the REMOTE_OFFICES and/or 
+-- Only call this if you have manually edited the REMOTE_OFFICES and/or
 -- REMOTE_TSID_MASKS tables.  Call this before CREATE_LOCATIONS.
 --------------------------------------------------------------------------------
 procedure populate_tsids(
@@ -65,12 +65,12 @@ procedure populate_tsids(
 --------------------------------------------------------------------------------
 -- CREATE_LOCATIONS
 --
--- Only call this if you have manually edited the REMOTE_OFFICES and/or 
+-- Only call this if you have manually edited the REMOTE_OFFICES and/or
 -- REMOTE_TSID_MASKS tables.  Call this after POPULATE_TSIDS
 --------------------------------------------------------------------------------
 procedure create_locations(
    p_office_id in varchar2); -- 'LRH', 'SPK', etc...
-   
+
 --------------------------------------------------------------------------------
 -- SET_OFFICE
 --
@@ -98,7 +98,7 @@ procedure retrieve_timeseries(
    p_office_id_masks   in  varchar2,
    p_start_time_utc    in date,
    p_end_time_utc      in date default null); -- null = current time
-   
+
 --------------------------------------------------------------------------------
 -- RETRIEVE_AND_LOG
 --
@@ -108,7 +108,7 @@ procedure retrieve_and_log(
    p_office_id_masks   in varchar2,
    p_start_time_utc    in date,
    p_end_time_utc      in date default null); -- null = current time
-   
+
 --------------------------------------------------------------------------------
 -- RETRIEVE_AND_LOG
 --
@@ -116,10 +116,10 @@ procedure retrieve_and_log(
 --------------------------------------------------------------------------------
 procedure retrieve_and_log(
    p_office_id_masks  in varchar2,
-   p_days_to_retrieve in number);   
-   
-procedure retrieve_job;   
-   
+   p_days_to_retrieve in number);
+
+procedure retrieve_job;
+
 end;
 /
 show errors
@@ -127,7 +127,7 @@ show errors
 --##############################################################################
 -- PACKAGE BODY
 --##############################################################################
-CREATE OR REPLACE package body remote_query
+create or replace package body remote_query
 as
 
 --------------------------------------------------------------------------------
@@ -848,7 +848,7 @@ is
    l_cursor           sys_refcursor;
    l_interval_id      varchar2(16);
    l_interval         number;
-   l_offset           number          := p_offset / 60; -- convert to minutes
+   l_offset           number          := p_offset; -- specified in minutes
    l_trim             boolean         := false;
    l_start_inclusive  boolean         := true;
    l_end_inclusive    boolean         := true;
@@ -1023,7 +1023,14 @@ begin
                  p_start_time;
       end if;
    end if;
-
+   --dbms_output.put_line(l_query_str);
+   --dbms_output.put_line('ts_code        : '||p_ts_code);
+   --dbms_output.put_line('start_time     : '||p_start_time);
+   --dbms_output.put_line('end_time       : '||p_end_time);
+   --dbms_output.put_line('offset         : '||p_offset);
+   --dbms_output.put_line('reg_start_time : '||l_reg_start_time);
+   --dbms_output.put_line('reg_end_time   : '||l_reg_end_time);
+   --dbms_output.put_line('interval       : '||l_interval);
    p_cursor := l_cursor;
 
 end build_retrieve_ts_query;
@@ -1313,13 +1320,13 @@ commit;
 whenever sqlerror continue
 
 drop database link &office_id._cwms_remote;
- 
+
 whenever sqlerror exit sql.sqlcode
 
 create database link &office_id._cwms_remote connect to cwms identified by &cwms_pass using '&remote_db_url';
 */
 declare
-   l_job_name varchar2(30) := 'get_remote_cwms_data'; 
+   l_job_name varchar2(30) := 'get_remote_cwms_data';
 begin
    begin
       dbms_scheduler.stop_job(l_job_name, true);
@@ -1343,8 +1350,8 @@ begin
        auto_drop            => false,
        comments             => 'Pulls specified time series data from remote CWMS system'
       );
-end;   
+end;
 
-commit;   
+commit;
    
 
