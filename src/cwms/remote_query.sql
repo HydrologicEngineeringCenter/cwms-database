@@ -757,9 +757,9 @@ begin
    --------------------------
    -- now insert or update --
    --------------------------
-   select count(*) 
-     into l_count 
-     from remote_offices 
+   select count(*)
+     into l_count
+     from remote_offices
     where src_office_id = l_src_office_id
       and dst_office_id = l_dst_office_id;
    if l_count = 0 then
@@ -791,7 +791,7 @@ begin
       cwms_msg.msg_level_normal,
       l_dst_office_id
       || ': Creating local queues');
-   cwms_msg.create_queues(l_dst_office_id);      
+   cwms_msg.create_queues(l_dst_office_id);
    cwms_msg.log_db_message(
       'remote_query.set_office',
       cwms_msg.msg_level_normal,
@@ -928,7 +928,7 @@ begin
                l_interval := l_interval / 365 * 12;
             end if;
             l_query_str :=
-               'select v.date_time,
+               'select t.date_time,
                        value,
                        nvl(quality_code, :missing) "QUALITY_CODE"
                  from (
@@ -957,7 +957,7 @@ begin
             -- can use date arithmetic
             --
             l_query_str :=
-               'select  v.date_time,
+               'select  t.date_time,
                         value,
                         nvl(quality_code, :missing) "QUALITY_CODE"
                    from (
@@ -1071,14 +1071,20 @@ is
 begin
    --
    -- If the following line is omitted, Oracle often pukes with an internal error
-   -- when executing the queries across the dblinks.  I don't know if using this 
+   -- when executing the queries across the dblinks.  I don't know if using this
    -- setting is the culprit, but the cursors have NULL times for missing data in
    -- regular time series.  The values should be NULL, but not the times.  I added
    -- 'continue when date_time is null' in the loops below to deal with it.  Other-
    -- wise the store_ts() procedure pukes.
    --
    -- MDP 07-JUL-2009
-   -- 
+   --
+
+   --
+   -- Found the cause of the NULL times - it was a bust in the ts_query
+   --
+   -- MDP 23-MAY-2012
+   --
    execute immediate 'alter session set "_optimizer_connect_by_cost_based"=false';
    -------------------------------------------
    -- loop through office masks and offices --
@@ -1173,7 +1179,7 @@ begin
                loop
                   fetch l_ts_cur into l_ts_rec20;
                   exit when l_ts_cur%notfound;
-                  continue when l_ts_rec20.date_time is null;
+                  continue when l_ts_rec20.date_time is null; -- shouldn't be needed now, modified ts_query
                   l_tsv_array.extend;
                   l_tsv_array(l_tsv_array.count) := new tsv_type(
                      from_tz(cast(l_ts_rec20.date_time as timestamp), 'UTC'),
@@ -1202,7 +1208,7 @@ begin
                      'F',
                      cwms_util.non_versioned,
                      ofc_rec.dst_office_id);
-                  commit;
+                  -- commit;
                exception
                   when others then
                      cwms_msg.log_db_message(
@@ -1236,23 +1242,23 @@ procedure retrieve_and_log(
    p_office_id_masks   in varchar2,
    p_start_time_utc    in date,
    p_end_time_utc      in date default null) -- null = current time
-is   
+is
    l_offices_processed  integer;
    l_tsids_processed    integer;
    l_values_retrieved   integer;
-   l_end_time_utc       date := nvl(p_end_time_utc, cast(systimestamp at time zone 'UTC' as date)); 
+   l_end_time_utc       date := nvl(p_end_time_utc, cast(systimestamp at time zone 'UTC' as date));
 begin
    cwms_msg.log_db_message(
-      'retrieve timeseries', 
+      'retrieve timeseries',
       cwms_msg.msg_level_normal,
-      to_char(systimestamp) 
+      to_char(systimestamp)
       || ' Starting retrieval for offices ('
       || p_office_id_masks
       || ') and time window '
       || to_char(p_start_time_utc, 'dd-Mon-yyyy hh24mi')
       || ' to '
       || to_char(l_end_time_utc, 'dd-Mon-yyyy hh24mi'));
-      
+
    retrieve_timeseries(
       l_offices_processed,
       l_tsids_processed,
@@ -1260,11 +1266,11 @@ begin
       p_office_id_masks,
       p_start_time_utc,
       p_end_time_utc);
-      
+
    cwms_msg.log_db_message(
-      'retrieve timeseries', 
+      'retrieve timeseries',
       cwms_msg.msg_level_normal,
-      to_char(systimestamp) 
+      to_char(systimestamp)
       || ' Retrieved '
       || l_values_retrieved
       || ' values from '
@@ -1272,10 +1278,10 @@ begin
       || ' tsids in '
       || l_offices_processed
       || ' offices');
-      
+
 end retrieve_and_log;
 
-   
+
 --------------------------------------------------------------------------------
 -- RETRIEVE_AND_LOG
 --
@@ -1289,14 +1295,14 @@ is
    l_start_time date := l_end_time - p_days_to_retrieve;
 begin
    retrieve_and_log(p_office_id_masks, l_start_time, l_end_time);
-end retrieve_and_log;   
-   
+end retrieve_and_log;
+
 procedure retrieve_job
 is
    l_now date := cast(systimestamp at time zone 'UTC' as date);
 begin
    retrieve_and_log('%', l_now - &retrieve_ts_minutes / 1440, l_now);
-end retrieve_job;   
+end retrieve_job;
 
 
 end;
