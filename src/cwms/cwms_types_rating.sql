@@ -4092,6 +4092,9 @@ as object(
    member function get_ind_parameter_count
    return pls_integer,
    -- not documented
+    member function reverse
+    return rating_t,
+   -- not documented
    static function get_rating_code(
       p_rating_spec_id in varchar2,
       p_effective_date in date     default null,
@@ -4101,7 +4104,6 @@ as object(
    return number
 
 ) not final
- alter type rating_t add member function reverse return rating_t cascade
 /
 show errors;
 
