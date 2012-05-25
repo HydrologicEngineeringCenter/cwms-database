@@ -16,6 +16,150 @@ begin
    return l_code;
 end;
 
+procedure delete_rating_ind_parameter(
+   p_rating_ind_param_code in number)
+is
+begin
+   -----------------------------
+   -- first the rating values --
+   -----------------------------
+   for rec in
+      (  select dep_rating_ind_param_code,
+                note_code
+           from at_rating_value
+          where rating_ind_param_code = p_rating_ind_param_code
+            and (note_code is not null or dep_rating_ind_param_code is not null)
+      )
+   loop
+      if rec.note_code is not null then
+         delete
+           from at_rating_value_note 
+          where note_code = rec.note_code;
+      end if;
+      if rec.dep_rating_ind_param_code is not null then
+         delete_rating_ind_parameter(rec.dep_rating_ind_param_code);
+      end if;
+   end loop;
+   delete
+     from at_rating_value 
+    where rating_ind_param_code = p_rating_ind_param_code;
+   --------------------------------------
+   -- then the rating extension values --
+   --------------------------------------
+   for rec in
+      (  select dep_rating_ind_param_code,
+                note_code
+           from at_rating_extension_value
+          where rating_ind_param_code = p_rating_ind_param_code
+            and (note_code is not null or dep_rating_ind_param_code is not null)
+      )
+   loop
+      if rec.note_code is not null then
+         delete 
+           from at_rating_value_note 
+          where note_code = rec.note_code;
+      end if;
+      if rec.dep_rating_ind_param_code is not null then
+         delete_rating_ind_parameter(rec.dep_rating_ind_param_code);
+      end if;
+      delete_rating_ind_parameter(rec.dep_rating_ind_param_code);
+   end loop;
+   delete 
+     from at_rating_extension_value 
+    where rating_ind_param_code = p_rating_ind_param_code;
+   -------------------------------     
+   -- finally the record itself --
+   -------------------------------  
+   delete
+     from at_rating_ind_parameter
+    where rating_ind_param_code = p_rating_ind_param_code;     
+end delete_rating_ind_parameter;
+
+procedure delete_rating(
+   p_rating_code in number)
+is
+begin
+   ----------------------------
+   -- first the rating table --
+   ----------------------------
+   for rec in 
+      (  select rating_ind_param_code
+           from at_rating_ind_parameter
+          where rating_code = p_rating_code
+      )
+   loop                                     
+      delete_rating_ind_parameter(rec.rating_ind_param_code);
+   end loop;
+   ----------------------------------------------
+   -- then any child ratings (shifts, offsets) --
+   ----------------------------------------------
+   for rec in
+      (  select rating_code
+           from at_rating
+          where ref_rating_code = p_rating_code
+      )
+   loop
+      delete_rating(rec.rating_code);
+   end loop;
+   -------------------------------
+   -- finally the record itself --
+   -------------------------------
+   delete
+     from at_rating
+    where rating_code = p_rating_code;
+end delete_rating;
+
+procedure delete_rating_spec(
+   p_rating_spec_code in number,
+   p_delete_action    in varchar2 default cwms_util.delete_key)
+is
+begin
+   if p_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
+      for rec in 
+         (  select rating_code 
+             from at_rating 
+            where rating_spec_code = p_rating_spec_code
+         )
+      loop  
+         delete_rating(rec.rating_code);
+      end loop;
+   end if;
+   if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
+      delete
+        from at_rating_ind_rounding 
+       where rating_spec_code = p_rating_spec_code;
+      delete
+        from at_rating_spec 
+       where rating_spec_code = p_rating_spec_code;
+   end if;
+end delete_rating_spec;         
+
+procedure delete_rating_template(
+   p_rating_template_code in number,
+   p_delete_action    in varchar2 default cwms_util.delete_key)
+is
+begin
+   if p_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
+      for rec in 
+         (  select rating_spec_code 
+             from at_rating_spec 
+            where template_code = p_rating_template_code
+         )
+      loop  
+         delete_rating_spec(rec.rating_spec_code);
+      end loop;
+   end if;
+   if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
+      delete
+        from at_rating_ind_param_spec 
+       where template_code = p_rating_template_code;
+      delete
+        from at_rating_template 
+       where template_code = p_rating_template_code;
+   end if;
+    
+end delete_rating_template;         
+
 --------------------------------------------------------------------------------
 -- STORE TEMPLATES
 --
@@ -281,32 +425,7 @@ begin
          l_templates(i).parameters_id,
          l_templates(i).version,
          l_templates(i).office_id);
-      if p_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
-         -----------------------
-         -- delete child data --
-         -----------------------
-         delete
-           from at_rating_ind_rounding
-          where rating_spec_code in
-                ( select rating_spec_code
-                    from at_rating_spec
-                   where template_code = l_template_code
-                );
-         delete
-           from at_rating_spec
-          where template_code = l_template_code;
-      end if;
-      if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
-         ---------------------
-         -- delete template --
-         ---------------------
-         delete
-           from at_rating_ind_param_spec
-          where template_code = l_template_code;
-         delete
-           from at_rating_template
-          where template_code = l_template_code;
-      end if;
+      delete_rating_template(l_template_code, p_delete_action);         
    end loop;
 end delete_templates;
 
@@ -723,49 +842,8 @@ begin
          l_specs(i).location_id,
          l_specs(i).template_id,
          l_specs(i).version,
-         l_specs(i).office_id);
-      if p_delete_action in (cwms_util.delete_data, cwms_util.delete_all) then
-         -----------------------
-         -- delete child data --
-         -----------------------
-         for rec in
-            (  select rating_code
-                 from at_rating
-                where rating_spec_code = l_spec_code
-            )
-         loop
-            for rec2 in
-               (  select rating_ind_param_code
-                    from at_rating_ind_parameter
-                   where rating_code = rec.rating_code
-               )
-            loop
-               delete
-                 from at_rating_value
-                where rating_ind_param_code = rec2.rating_ind_param_code;
-               delete
-                 from at_rating_extension_value
-                where rating_ind_param_code = rec2.rating_ind_param_code;
-            end loop;
-            delete
-              from at_rating_ind_parameter
-             where rating_code = rec.rating_code;
-         end loop;
-         delete
-           from at_rating
-          where rating_spec_code = l_spec_code;
-      end if;
-      if p_delete_action in (cwms_util.delete_key, cwms_util.delete_all) then
-         ---------------------
-         -- delete the spec --
-         ---------------------
-         delete
-           from at_rating_ind_rounding
-          where rating_spec_code = l_spec_code;
-         delete
-           from at_rating_spec
-          where rating_spec_code = l_spec_code;
-      end if;
+         l_specs(i).office_id); 
+      delete_rating_spec(l_spec_code, p_delete_action);         
    end loop;
 end delete_specs;
 
@@ -1313,69 +1391,28 @@ procedure delete_ratings(
    p_time_zone            in varchar2 default null,
    p_office_id_mask       in varchar2 default null)
 is
-   l_ratings     rating_tab_t;
-   l_rating_code number(10);
+   l_spec_id_mask    varchar2(512);
+   l_time_zone       varchar2(28);
+   l_office_id_mask  varchar2(16);
+   l_effective_start date;
+   l_effective_end   date;
 begin
-   l_ratings := retrieve_ratings_obj_f(
-      p_spec_id_mask,
-      p_effective_date_start,
-      p_effective_date_end,
-      p_time_zone,
-      p_office_id_mask);
-   for i in 1..l_ratings.count loop
-      l_ratings(i).convert_to_database_time;
-      dbms_output.put_line('deleting '||l_ratings(i).rating_spec_id||' ('||to_char(l_ratings(i).effective_date, 'yyyy/mm/dd hh24mi')||')');
-      l_rating_code := rating_t.get_rating_code(
-         l_ratings(i).rating_spec_id,
-         l_ratings(i).effective_date,
-         'T',
-         'UTC',
-         l_ratings(i).office_id);
-      for rec in
-         (  select rating_code
-              from at_rating
-             where ref_rating_code = l_rating_code
-         )
-      loop
-         for rec2 in
-            (  select rating_ind_param_code
-                 from at_rating_ind_parameter
-                where rating_code = rec.rating_code
-            )
-         loop
-            delete
-              from at_rating_value
-             where rating_ind_param_code = rec2.rating_ind_param_code;
-            delete
-              from at_rating_extension_value
-             where rating_ind_param_code = rec2.rating_ind_param_code;
-         end loop;
-         delete
-           from at_rating_ind_parameter
-          where rating_code = rec.rating_code;
-         delete
-           from at_rating
-          where rating_code = rec.rating_code;
-      end loop;
-      for rec in
-         (  select rating_ind_param_code
-              from at_rating_ind_parameter
-             where rating_code = l_rating_code
-         )
-      loop
-         delete
-           from at_rating_value
-          where rating_ind_param_code = rec.rating_ind_param_code;
-         delete
-           from at_rating_extension_value
-          where rating_ind_param_code = rec.rating_ind_param_code;
-      end loop;
-      delete
-        from at_rating_ind_parameter
-       where rating_code = l_rating_code;
-      delete
-        from at_rating
-       where rating_code = l_rating_code;
+   cwms_util.check_inputs(str_tab_t(p_spec_id_mask, p_time_zone, p_office_id_mask));
+   l_spec_id_mask    := cwms_util.normalize_wildcards(p_spec_id_mask);
+   l_office_id_mask  := cwms_util.normalize_wildcards(nvl(p_office_id_mask, cwms_util.user_office_id));
+   l_time_zone       := nvl(p_time_zone, 'UTC');
+   l_effective_start := cwms_util.change_timezone(p_effective_date_start, l_time_zone, 'UTC');
+   l_effective_end   := cwms_util.change_timezone(p_effective_date_end, l_time_zone, 'UTC');
+   for rec in
+      (  select rating_code
+           from cwms_v_rating
+          where upper(rating_id) like upper(l_spec_id_mask) escape '\'
+            and office_id like upper(l_office_id_mask) escape '\'
+            and effective_date >= nvl(l_effective_start, effective_date)
+            and effective_date <= nvl(l_effective_end, effective_date) 
+      )
+   loop
+      delete_rating(rec.rating_code);
    end loop;
 end delete_ratings;
 
