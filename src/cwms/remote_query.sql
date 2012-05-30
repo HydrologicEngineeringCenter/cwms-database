@@ -1,12 +1,9 @@
 --##############################################################################
 -- VARIABLE DEFINITIONS
 --##############################################################################
-define cwms_schema           = 'cwms_20'                 -- remote schema name (cwms v2 remote only)
-define retrieve_ts_minutes   = '70'                      -- number of minutes of data to retrieve in job
-define retrieve_job_interval = '60'                      -- job interval in minutes
-define office_id             = 'SWT'                     -- office_id for database link name
-define cwms_pass             = '********'                -- cwms password for database link (v1.5 or v2 remote)
-define remote_db_url         = '155.88.11.61:1521/WM5B'  -- host:port/SID for remote database (v1.5 or v2 remote)
+define cwms_schema           = 'cwms_20' -- remote schema name (cwms v2 remote only)
+define retrieve_ts_minutes   = '70'      -- number of minutes of data to retrieve in job
+define retrieve_job_interval = '60'      -- job interval in minutes
 /*
 whenever sqlerror continue
 
@@ -1316,15 +1313,7 @@ end;
 /
 show errors
 commit;
-/*
-whenever sqlerror continue
 
-drop database link &office_id._cwms_remote;
-
-whenever sqlerror exit sql.sqlcode
-
-create database link &office_id._cwms_remote connect to cwms identified by &cwms_pass using '&remote_db_url';
-*/
 declare
    l_job_name varchar2(30) := 'get_remote_cwms_data';
 begin
