@@ -4760,6 +4760,7 @@ AS
          upper(p_store_rule));
 
       DBMS_APPLICATION_INFO.set_module (NULL, NULL);
+      COMMIT;
    EXCEPTION
       WHEN OTHERS
       THEN
