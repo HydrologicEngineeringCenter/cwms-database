@@ -43,7 +43,7 @@ DECLARE
             IN (SELECT consumer_name
                   FROM dba_queue_subscribers
                  WHERE owner = UPPER ('&CWMS_SCHEMA')
-                       AND queue_name LIKE '%_TS_STORED')
+                       AND queue_name = rec1.name)
          LOOP
             l_queue_name := '&CWMS_SCHEMA..' || rec1.name;
             DBMS_OUTPUT.put_line (
@@ -547,7 +547,7 @@ DECLARE
          'CREATE TABLE CWMS_20_BAK.CWMS_ROLES_BAK (grantee varchar2(30), granted_role varchar2(30)) TABLESPACE CWMS_20_AT_DATA_BAK';
 
       l_cmd :=
-         'Insert into CWMS_20_BAK.CWMS_ROLES_BAK(grantee,granted_role) select grantee,granted_role from DBA_ROLE_PRIVS where granted_role = ''CWMS_USER'' or granted_role = ''CWMS_DBX_ROLE''';
+         'Insert into CWMS_20_BAK.CWMS_ROLES_BAK(grantee,granted_role) select grantee,granted_role from DBA_ROLE_PRIVS where grantee not like ''%HECTEST%'' and grantee not like ''%CWMSPD%%'' and (granted_role = ''CWMS_USER'' or granted_role = ''CWMS_DBX_ROLE'')';
       DBMS_OUTPUT.put_line (l_cmd);
 
       EXECUTE IMMEDIATE l_cmd;
@@ -774,7 +774,7 @@ DECLARE
       COPY_TABLES (
          '&cwms_schema',
          'CWMS_20_BAK',
-         'TABLE_NAME LIKE ''AT_%'' AND TABLE_NAME NOT LIKE ''AT_TSV%'' AND TABLE_NAME NOT LIKE ''AT_LOG_MESSAGE%''');
+         'TABLE_NAME LIKE ''AT_%'' AND TABLE_NAME NOT LIKE ''AT_TSV%'' AND TABLE_NAME NOT LIKE ''AT_TS_MSG_ARCHIVE_%'' AND TABLE_NAME NOT LIKE ''AT_LOG_MESSAGE%''');
       EXPORT_SEQUENCE;
       --EXPORT_TSV ('cwms_tsv_dump');
       EXPORT_CWMS_TSV_TB;

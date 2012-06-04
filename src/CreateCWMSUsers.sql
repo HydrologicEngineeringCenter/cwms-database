@@ -35,7 +35,7 @@ begin
 			 dbms_output.put_line( DBMS_UTILITY.FORMAT_ERROR_BACKTRACE);
         end;
     end loop;
-    for rec in (select username,user_db_office_code from "&cwms_schema".at_sec_user_office order by username )
+    for rec in (select at.username,user_db_office_code from "&cwms_schema".at_sec_user_office at, all_users au where at.username=au.username order by username )
     loop
         group_id_list := "&cwms_schema".char_32_array_type();
         select office_id into office_id from "&cwms_schema".cwms_office where office_code = rec.user_db_office_code;
