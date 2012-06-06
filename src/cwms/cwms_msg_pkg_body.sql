@@ -1265,7 +1265,7 @@ begin
                begin
                   dbms_aqadm.purge_queue_table(
                      l_table_name,
-                     'MSG_STATE = IN(''UNDELIVERABLE'', ''EXPIRED'') AND ROWNUM <= '|| l_max_purge_count,
+                     'MSG_STATE IN(''UNDELIVERABLE'', ''EXPIRED'') AND ROWNUM <= '|| l_max_purge_count,
                      l_purge_options);
                   commit;
                   l_purged := true;
