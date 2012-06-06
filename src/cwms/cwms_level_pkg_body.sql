@@ -4476,8 +4476,6 @@ procedure cat_location_levels(
 is          
    l_parts                    str_tab_t;
    l_count                    binary_integer;
-   l_location_level_id_mask   varchar2(390);
-   l_attribute_id_mask        varchar2(83);
    l_office_id_mask           varchar2(16);
    l_location_mask            varchar2(49);
    l_parameter_mask           varchar2(49);
@@ -4499,8 +4497,7 @@ begin
    ---------------------------------------------------------------
    -- process the location level id mask into constituent parts --
    ---------------------------------------------------------------
-   l_location_level_id_mask := cwms_util.normalize_wildcards(p_location_level_id_mask);
-   l_parts := cwms_util.split_text(l_location_level_id_mask, '.');
+   l_parts := cwms_util.split_text(p_location_level_id_mask, '.');
    l_count := l_parts.count;
    if l_count < 5 then
       l_parts.extend(5 - l_count);
@@ -4522,8 +4519,7 @@ begin
    -- process the attribute id mask into constituent parts --
    ----------------------------------------------------------
    if p_attribute_id_mask is not null then
-      l_attribute_id_mask := cwms_util.normalize_wildcards(p_attribute_id_mask);
-      l_parts := cwms_util.split_text(l_attribute_id_mask, '.');
+      l_parts := cwms_util.split_text(p_attribute_id_mask, '.');
       l_count := l_parts.count;
       if l_count < 3 then
          l_parts.extend(3 - l_count);
@@ -4670,8 +4666,8 @@ begin
         l_attr_parameter_type_mask,
         l_attr_duration_mask,
         p_unit_system;
-        
-end cat_location_levels;   
+
+end cat_location_levels;
             
 --------------------------------------------------------------------------------
 -- FUNCTION get_loc_lvl_indicator_code
