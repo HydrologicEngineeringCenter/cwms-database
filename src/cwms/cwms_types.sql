@@ -3902,7 +3902,6 @@ as
             and duration_code = l_duration_code
             and specified_level_code = l_specified_level_code
             and location_level_date = self.level_date
-            and location_level_value = l_location_level_value
             and nvl(to_char(attribute_value), '@') = nvl(to_char(l_attribute_value), '@')
             and nvl(attribute_parameter_code, -1) = nvl(l_attribute_parameter_code, -1)
             and nvl(attribute_parameter_type_code, -1) = nvl(l_attribute_param_type_code, -1)
@@ -3910,36 +3909,32 @@ as
       exception
          when no_data_found then null;
       end;
-      if l_location_level_code is null then
-         l_obj := zlocation_level_t();
-         l_obj.init(
-            cwms_seq.nextval,
-            l_location_code,
-            l_specified_level_code,
-            l_parameter_code,
-            l_parameter_type_code,
-            l_duration_code,
-            self.level_date,
-            l_location_level_value,
-            self.level_comment,
-            l_attribute_value,
-            l_attribute_parameter_code,
-            l_attribute_param_type_code,
-            l_attribute_duration_code,
-            self.attribute_comment,
-            self.interval_origin,
-            l_calendar_interval,
-            l_time_interval,
-            self.interpolate,
-            case self.tsid is null
-               when true  then null
-               when false then cwms_ts.get_ts_code(self.tsid, l_office_code)
-            end,
-            l_seasonal_level_values,
-            self.indicators);
-      else
-         l_obj := zlocation_level_t(l_location_level_code);
-      end if;
+      l_obj := zlocation_level_t();
+      l_obj.init(
+         nvl(l_location_level_code, cwms_seq.nextval),
+         l_location_code,
+         l_specified_level_code,
+         l_parameter_code,
+         l_parameter_type_code,
+         l_duration_code,
+         self.level_date,
+         l_location_level_value,
+         self.level_comment,
+         l_attribute_value,
+         l_attribute_parameter_code,
+         l_attribute_param_type_code,
+         l_attribute_duration_code,
+         self.attribute_comment,
+         self.interval_origin,
+         l_calendar_interval,
+         l_time_interval,
+         self.interpolate,
+         case self.tsid is null
+            when true  then null
+            when false then cwms_ts.get_ts_code(self.tsid, l_office_code)
+         end,
+         l_seasonal_level_values,
+         self.indicators);
       return l_obj;
    end zlocation_level;
 
