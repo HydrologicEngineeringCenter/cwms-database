@@ -5234,27 +5234,18 @@ as
          ------------------------------
          -- shift to local time zone --
          ------------------------------
-         l_timestr := 'Etc/GMT'
-         ||case substr(l_timestr, 1, 1)
-              when '+' then '-' || to_number(l_timestr, 2, 2)
-              when '-' then '+' || to_number(l_timestr, 2, 2)
-           end;
-         l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
-         select tz.time_zone_name
-           into l_timezone
-           from at_base_location bl,
-                at_physical_location pl,
-                cwms_office o,
-                cwms_time_zone tz
-          where o.office_id = upper(self.office_id)
-                and bl.db_office_code = o.office_code
-                and bl.base_location_id = cwms_util.get_base_id(l_parts(1))
-                and nvl(pl.sub_location_id, cwms_rating.separator1) = nvl(cwms_util.get_sub_id(l_parts(1)), cwms_rating.separator1)
-                and tz.time_zone_code = nvl(pl.time_zone_code, 0);
-         if l_timezone = 'Unknown or Not Applicable' then
-            l_timezone := 'UTC';
+         if l_timestr = 'Z' then
+            l_timestr := 'UTC';
+         else
+            l_timestr := 'Etc/GMT'
+            ||case substr(l_timestr, 1, 1)
+                 when '+' then '-' || to_number(l_timestr, 2, 2)
+                 when '-' then '+' || to_number(l_timestr, 2, 2)
+              end;
          end if;
-         l_date := cwms_util.change_timezone(l_date, l_timestr, l_timezone);
+         l_parts    := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+         l_timezone := cwms_loc.get_local_timezone(l_parts(1), self.office_id);
+         l_date     := cwms_util.change_timezone(l_date, l_timestr, l_timezone);
       end if;
       return l_date;
    end;
