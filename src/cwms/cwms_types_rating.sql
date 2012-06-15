@@ -6406,9 +6406,9 @@ as
          for i in 1..self.shifts.count loop
             cwms_util.append(l_text,
                '<height-shifts><effective-date>'
-               ||to_char(self.shifts(i).effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
+               ||cwms_util.get_xml_time(self.shifts(i).effective_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</effective-date>');
             if self.shifts(i).create_date is not null then
-               cwms_util.append(l_text, '<create-date>'||to_char(self.shifts(i).create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>');
+               cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(self.shifts(i).create_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</create-date>');
             end if;
             cwms_util.append(l_text,
                '<active>'
