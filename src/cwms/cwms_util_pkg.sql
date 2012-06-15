@@ -424,7 +424,21 @@ AS
     *         case-corrected version of p_timezone.
     */
    FUNCTION get_timezone (p_timezone IN VARCHAR2)
-      RETURN VARCHAR2;
+      RETURN VARCHAR2;  
+                      
+   /**
+     * Formats a date/time for use in XML
+     *
+     * @param p_local_time
+     * @param p_local_tz
+     *
+     * @return the XML-formatted date/time 
+     *
+     */      
+   FUNCTION get_xml_time(
+      p_local_time in date,
+      p_local_tz   in varchar2)
+      RETURN VARCHAR2;      
 
    /**
     * Corrects times withing daylight savings time in time zones PST and CST.  These

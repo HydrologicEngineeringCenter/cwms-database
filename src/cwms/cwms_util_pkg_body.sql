@@ -112,6 +112,24 @@ AS
       RETURN l_timezone;
    END get_timezone;
 
+   FUNCTION get_xml_time(
+      p_local_time in date,
+      p_local_tz   in varchar2)
+      RETURN VARCHAR2
+   IS                         
+      l_interval      interval day to second;
+      l_tz_designator varchar2(6);
+      l_xml_time      varchar2(32);
+   BEGIN                                
+      l_xml_time := to_char(p_local_time, 'yyyy-mm-dd"T"hh24:mi:ss');
+      l_interval := cast(p_local_time as timestamp) - cast(cwms_util.change_timezone(p_local_time, p_local_tz, 'UTC') as timestamp); 
+      l_tz_designator := case l_interval = to_dsinterval('00 00:00:00')
+                            when true then 'Z'
+                            else to_char(extract(hour from l_interval), 'S09')||':'||trim(to_char(extract(minute from l_interval), '09'))
+                         end;
+      return l_xml_time||l_tz_designator;
+   END get_xml_time;      
+
    FUNCTION FIXUP_TIMEZONE (p_time IN TIMESTAMP WITH TIME ZONE)
       RETURN TIMESTAMP WITH TIME ZONE
    IS
