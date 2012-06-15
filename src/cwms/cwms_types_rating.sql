@@ -4756,9 +4756,9 @@ as
       cwms_util.append(l_text, '<rating office-id="'||self.office_id||'">'
          ||'<rating-spec-id>'||self.rating_spec_id||'</rating-spec-id>'
          ||'<units-id>'||self.native_units||'</units-id>'
-         ||'<effective-date>'||to_char(self.effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
+         ||'<effective-date>'||cwms_util.get_xml_time(self.effective_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</effective-date>');
       if self.create_date is not null then
-         cwms_util.append(l_text, '<create-date>'||to_char(self.create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>');
+         cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(self.create_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</create-date>');
       end if;
       cwms_util.append(l_text,'<active>'||bool_text(cwms_util.is_true(self.active_flag))||'</active>'
          ||case self.description is null
@@ -6388,9 +6388,9 @@ as
          '<usgs-stream-rating office-id="'||self.office_id||'">'
          ||'<rating-spec-id>'||self.rating_spec_id||'</rating-spec-id>'
          ||'<units-id>'||self.native_units||'</units-id>'
-         ||'<effective-date>'||to_char(self.effective_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</effective-date>');
+         ||'<effective-date>'||cwms_util.get_xml_time(self.effective_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</effective-date>');
       if self.create_date is not null then
-         cwms_util.append(l_text, '<create-date>'||to_char(self.create_date, 'yyyy-mm-dd"T"hh24:mi:ss')||'</create-date>');
+         cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(self.create_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</create-date>');
       end if;
       cwms_util.append(l_text,
          '<active>'
