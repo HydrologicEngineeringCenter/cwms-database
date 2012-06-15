@@ -1397,7 +1397,7 @@ is
    l_effective_start date;
    l_effective_end   date;
 begin
-   cwms_util.check_inputs(str_tab_t(p_spec_id_mask, p_time_zone, p_office_id_mask));
+   cwms_util.check_inputs(str_tab_t(p_time_zone, p_office_id_mask));
    l_spec_id_mask    := cwms_util.normalize_wildcards(p_spec_id_mask);
    l_office_id_mask  := cwms_util.normalize_wildcards(nvl(p_office_id_mask, cwms_util.user_office_id));
    l_time_zone       := nvl(p_time_zone, 'UTC');
@@ -1583,7 +1583,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(cwms_util.split_text(p_rating_spec, separator2));
    cwms_util.check_input(p_time_zone);
    cwms_util.check_input(p_office_id);
    cwms_util.check_inputs(p_units);
@@ -2565,7 +2564,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(cwms_util.split_text(p_rating_spec, separator2));
    cwms_util.check_input(p_time_zone);
    cwms_util.check_input(p_office_id);
    cwms_util.check_inputs(p_units);
@@ -4294,7 +4292,6 @@ begin
    -- sanity checks --
    -------------------
    cwms_util.check_inputs(str_tab_t(
-      replace(p_rating_id, ';', '~'),
       p_native_units,
       p_time_zone,
       p_office_id));
