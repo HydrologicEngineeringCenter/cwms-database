@@ -4611,7 +4611,6 @@ as
       p_fail_if_exists in  varchar2)
    is
       l_rec       at_rating%rowtype;
-      l_time_zone varchar2(28);
       l_exists    boolean := true;
       l_clone     rating_t;
       l_msg       sys.aq$_jms_map_message;
@@ -4628,21 +4627,7 @@ as
       l_rec.rating_spec_code := rating_spec_t.get_rating_spec_code(
          self.rating_spec_id,
          self.office_id);
-
-      select tz.time_zone_name
-        into l_time_zone
-        from at_rating_spec rs,
-             at_physical_location pl,
-             cwms_time_zone tz
-       where rs.rating_spec_code = l_rec.rating_spec_code
-         and pl.location_code = rs.location_code
-         and tz.time_zone_code = nvl(pl.time_zone_code, 0);
-
-      if l_time_zone = 'Unknown or Not Applicable' then
-         l_time_zone := 'UTC';
-      end if;
-
-      l_rec.effective_date := cwms_util.change_timezone(self.effective_date, l_time_zone, 'UTC');
+      l_rec.effective_date := self.effective_date;
 
       begin
          select *
@@ -4660,9 +4645,7 @@ as
                ||self.rating_spec_id
                ||' - '
                ||to_char(self.effective_date, 'yyyy/mm/dd hh24mi')
-               ||' ('
-               ||l_time_zone
-               ||')');
+               ||' (UTC)');
          end if;
       exception
          when no_data_found then
@@ -4671,7 +4654,7 @@ as
       end;
 
       l_rec.ref_rating_code := null;
-      l_rec.create_date     := nvl(cwms_util.change_timezone(self.create_date, l_time_zone, 'UTC'), cast(systimestamp at time zone 'UTC' as date));
+      l_rec.create_date     := nvl(self.create_date, cast(systimestamp at time zone 'UTC' as date));
       l_rec.active_flag     := self.active_flag;
       l_rec.formula         := self.formula;
       l_rec.native_units    := self.native_units;
@@ -5797,7 +5780,7 @@ as
             null,                        -- description
             null,                        -- rating_info
             'N',                         -- current_units
-            'D',                         -- current_time
+            'L',                         -- current_time
             null);                       -- formula_tokens
          ----------------------------------
          -- get the shift effective date --
@@ -5895,7 +5878,7 @@ as
             'Logarithmic interpolation offsets', -- description
             null,                                -- rating_info
             'N',                                 -- current_units
-            'D',                                 -- current_time
+            'L',                                 -- current_time
             null);                               -- formula_tokens
          ----------------------------
          -- get the offset units id --
@@ -5966,7 +5949,7 @@ as
          end if;
       end if;
       self.current_units := 'N';
-      self.current_time := 'D';
+      self.current_time := 'L';
       self.validate_obj;
       return;
    end;
