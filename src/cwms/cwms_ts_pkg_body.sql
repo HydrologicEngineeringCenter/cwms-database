@@ -50,7 +50,7 @@ AS
             BEGIN
                SELECT a.ts_code
                  INTO l_cwms_ts_code
-                 FROM zav_cwms_ts_id a
+                 FROM at_cwms_ts_id a
                 WHERE     UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
                       AND a.db_office_code = p_db_office_code;
             EXCEPTION
@@ -80,7 +80,7 @@ AS
          THEN
             SELECT cwms_ts_id
               INTO l_cwms_ts_id
-              FROM zav_cwms_ts_id
+              FROM at_cwms_ts_id
              WHERE ts_code = p_ts_code;
       END;
 
@@ -114,7 +114,7 @@ AS
             BEGIN
                SELECT cwms_ts_id
                  INTO l_cwms_ts_id
-                 FROM zav_cwms_ts_id mcti
+                 FROM at_cwms_ts_id mcti
                 WHERE     UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
                       AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
             EXCEPTION
@@ -414,7 +414,7 @@ AS
          THEN
             SELECT location_id
               INTO l_location_id
-              FROM zav_cwms_ts_id
+              FROM at_cwms_ts_id
              WHERE ts_code = p_cwms_ts_code;
       END;
    END;
@@ -1133,7 +1133,7 @@ AS
             BEGIN
                SELECT ts_code
                  INTO l_ts_code
-                 FROM zav_cwms_ts_id
+                 FROM at_cwms_ts_id
                 WHERE     UPPER (cwms_ts_id) = UPPER (p_ts_id)
                       AND UPPER (db_office_id) = UPPER (l_office_id);
             EXCEPTION
@@ -2166,7 +2166,7 @@ AS
          THEN
             SELECT ts_code, interval, interval_utc_offset
               INTO l_ts_code, l_interval, l_offset
-              FROM zav_cwms_ts_id
+              FROM at_cwms_ts_id
              WHERE     UPPER (db_office_id) = UPPER (l_office_id)
                    AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id_out);
       END;
@@ -5044,7 +5044,7 @@ AS
             begin
                select ts_code
                  into l_ts_code
-                 from zav_cwms_ts_id mcts
+                 from at_cwms_ts_id mcts
                 where upper(mcts.cwms_ts_id) = upper(l_cwms_ts_id) and mcts.db_office_code = l_db_office_code;
             exception
                when no_data_found then
@@ -6050,7 +6050,7 @@ AS
                    l_ts_offset,
                    l_versioned,
                    l_ts_code
-              FROM zav_cwms_ts_id
+              FROM at_cwms_ts_id
              WHERE     db_office_id = UPPER (l_db_office_id)
                    AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
       END;

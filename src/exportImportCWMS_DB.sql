@@ -742,16 +742,17 @@ DECLARE
          'Final job state(Tablespace) = ' || l_data_export_state);
       DBMS_DATAPUMP.detach (l_handle);
 
-      EXECUTE IMMEDIATE
-         'drop tablespace CWMS_20_TSV including contents keep datafiles cascade constraints';
-
-      EXECUTE IMMEDIATE
-         'create  tablespace CWMS_20_TSV datafile autoextend on';
 
       IF l_data_export_state != 'COMPLETED'
       THEN
          RAISE l_export_exception;
       END IF;
+
+      EXECUTE IMMEDIATE
+         'drop tablespace CWMS_20_TSV including contents keep datafiles cascade constraints';
+
+      EXECUTE IMMEDIATE
+         'create  tablespace CWMS_20_TSV datafile autoextend on';
    EXCEPTION
       WHEN OTHERS
       THEN

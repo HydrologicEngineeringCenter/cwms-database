@@ -1,6 +1,6 @@
 SET define on
 create user &cwms_schema
-  identified by &cwms_passwd
+  identified by "&cwms_passwd"
   default tablespace CWMS_20DATA
   temporary tablespace temp
   profile cwms_prof

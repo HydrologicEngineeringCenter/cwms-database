@@ -939,7 +939,7 @@ AS
                --======
                SELECT location_id
                  INTO l_location_id
-                 FROM zav_cwms_ts_id
+                 FROM at_cwms_ts_id
                 WHERE ts_code = l_ts_code;
 
 
