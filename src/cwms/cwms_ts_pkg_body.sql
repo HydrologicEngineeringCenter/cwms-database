@@ -3619,8 +3619,8 @@ AS
                         cwms_util.to_millis (l_first_time));
          l_dx_msg.set_long (l_dx_msgid, 'end_time', cwms_util.to_millis (l_last_time));
          i :=
-            cwms_msg.publish_message (l_msg,
-                                      l_msgid,
+            cwms_msg.publish_message (l_dx_msg,
+                                      l_dx_msgid,
                                       p_office_id || '_realtime_ops');
       END IF;
    END time_series_updated;
