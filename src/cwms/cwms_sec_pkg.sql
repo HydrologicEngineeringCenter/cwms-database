@@ -1,241 +1,218 @@
-SET define on
-/* Formatted on 7/19/2009 4:12:02 PM (QP5 v5.115.810.9015) */
+/* Formatted on 6/25/2012 2:43:48 PM (QP5 v5.185.11230.41888) */
+SET DEFINE ON
+
 CREATE OR REPLACE PACKAGE cwms_sec
 AS
-	max_cwms_priv_ugroup_code		CONSTANT NUMBER := 9;
-	max_cwms_ts_ugroup_code 		CONSTANT NUMBER := 19;
-	max_cwms_ts_group_code			CONSTANT NUMBER := 9;
-	--
-	user_group_code_all_users		CONSTANT NUMBER := 10;
-	user_group_code_dba_users		CONSTANT NUMBER := 0;
-	user_group_code_user_admins	CONSTANT NUMBER := 7;
-	--
-	acc_state_locked					CONSTANT VARCHAR2 (16) := 'LOCKED';
-	acc_state_unlocked				CONSTANT VARCHAR2 (16) := 'UNLOCKED';
-	acc_state_no_account 			CONSTANT VARCHAR2 (16) := 'NO ACCOUNT';
+   max_cwms_priv_ugroup_code     CONSTANT NUMBER := 9;
+   max_cwms_ts_ugroup_code       CONSTANT NUMBER := 19;
+   max_cwms_ts_group_code        CONSTANT NUMBER := 9;
+   --
+   user_group_code_all_users     CONSTANT NUMBER := 10;
+   user_group_code_dba_users     CONSTANT NUMBER := 0;
+   user_group_code_user_admins   CONSTANT NUMBER := 7;
+   --
+   acc_state_locked              CONSTANT VARCHAR2 (16) := 'LOCKED';
+   acc_state_unlocked            CONSTANT VARCHAR2 (16) := 'UNLOCKED';
+   acc_state_no_account          CONSTANT VARCHAR2 (16) := 'NO ACCOUNT';
 
-	TYPE cat_at_sec_allow_rec_t IS RECORD (
-		db_office_code 	NUMBER,
-		user_group_code	NUMBER,
-		ts_group_code		NUMBER,
-		db_office_id		VARCHAR2 (16),
-		user_group_id		VARCHAR2 (32),
-		ts_group_id 		VARCHAR2 (32),
-		priv_sum 			NUMBER,
-		priv					VARCHAR2 (15)
-	);
+   TYPE cat_at_sec_allow_rec_t IS RECORD
+   (
+      db_office_code    NUMBER,
+      user_group_code   NUMBER,
+      ts_group_code     NUMBER,
+      db_office_id      VARCHAR2 (16),
+      user_group_id     VARCHAR2 (32),
+      ts_group_id       VARCHAR2 (32),
+      priv_sum          NUMBER,
+      priv              VARCHAR2 (15)
+   );
 
-	TYPE cat_at_sec_allow_tab_t IS TABLE OF cat_at_sec_allow_rec_t;
+   TYPE cat_at_sec_allow_tab_t IS TABLE OF cat_at_sec_allow_rec_t;
 
-	TYPE cat_priv_groups_rec_t IS RECORD (
-		username 			  VARCHAR2 (31),
-		user_db_office_id   VARCHAR2 (16),
-		db_office_id		  VARCHAR2 (16),
-		user_group_type	  VARCHAR2 (24),
-		user_group_owner	  VARCHAR2 (16),
-		user_group_id		  VARCHAR2 (32),
-		is_member			  VARCHAR2 (1),
-		user_group_desc	  VARCHAR2 (256)
-	);
+   TYPE cat_priv_groups_rec_t IS RECORD
+   (
+      username            VARCHAR2 (31),
+      user_db_office_id   VARCHAR2 (16),
+      db_office_id        VARCHAR2 (16),
+      user_group_type     VARCHAR2 (24),
+      user_group_owner    VARCHAR2 (16),
+      user_group_id       VARCHAR2 (32),
+      is_member           VARCHAR2 (1),
+      user_group_desc     VARCHAR2 (256)
+   );
 
-	TYPE cat_priv_groups_tab_t IS TABLE OF cat_priv_groups_rec_t;
+   TYPE cat_priv_groups_tab_t IS TABLE OF cat_priv_groups_rec_t;
 
-	FUNCTION get_this_db_office_code
-		RETURN NUMBER;
+   FUNCTION get_this_db_office_code
+      RETURN NUMBER;
 
-	FUNCTION get_this_db_office_id
-		RETURN VARCHAR2;
+   FUNCTION get_this_db_office_id
+      RETURN VARCHAR2;
 
-	FUNCTION get_this_db_office_name
-		RETURN VARCHAR2;
+   FUNCTION get_this_db_office_name
+      RETURN VARCHAR2;
 
 
-	FUNCTION get_max_cwms_ts_group_code
-		RETURN NUMBER;
+   FUNCTION get_max_cwms_ts_group_code
+      RETURN NUMBER;
 
-	FUNCTION is_user_admin (p_db_office_id IN VARCHAR2 DEFAULT NULL)
-		RETURN BOOLEAN;
+   FUNCTION is_user_admin (p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN BOOLEAN;
 
-	FUNCTION is_member_user_group (p_user_group_code	IN NUMBER,
-											 p_username 			IN VARCHAR2,
-											 p_db_office_code 	IN NUMBER
-											)
-		RETURN BOOLEAN;
+   FUNCTION is_member_user_group (p_user_group_code   IN NUMBER,
+                                  p_username          IN VARCHAR2,
+                                  p_db_office_code    IN NUMBER)
+      RETURN BOOLEAN;
 
-	PROCEDURE set_user_office_id (p_username		  IN VARCHAR2,
-											p_db_office_id   IN VARCHAR2
-										  );
+   PROCEDURE get_cwms_permissions (p_cwms_permissions      OUT VARCHAR2,
+                                   p_db_office_id       IN     VARCHAR2);
 
-	PROCEDURE assign_ts_group_user_group (
-		p_ts_group_id		IN VARCHAR2,
-		p_user_group_id	IN VARCHAR2,
-		p_privilege 		IN VARCHAR2,						  -- none, read or write
-		p_db_office_id 	IN VARCHAR2 DEFAULT NULL
-	);
+   PROCEDURE set_user_office_id (p_username       IN VARCHAR2,
+                                 p_db_office_id   IN VARCHAR2);
 
-	PROCEDURE lock_db_account (p_username IN VARCHAR2);
+   PROCEDURE assign_ts_group_user_group (
+      p_ts_group_id     IN VARCHAR2,
+      p_user_group_id   IN VARCHAR2,
+      p_privilege       IN VARCHAR2,                    -- none, read or write
+      p_db_office_id    IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE unlock_db_account (p_username IN VARCHAR2);
+   PROCEDURE lock_db_account (p_username IN VARCHAR2);
 
-	PROCEDURE create_cwms_db_account (
-		p_username		  IN VARCHAR2,
-		p_password		  IN VARCHAR2,
-		p_db_office_id   IN VARCHAR2 DEFAULT NULL
-	);
+   PROCEDURE unlock_db_account (p_username IN VARCHAR2);
 
-	PROCEDURE create_cwmsdbi_db_user (
-		p_dbi_username   IN VARCHAR2,
-		p_dbi_password   IN VARCHAR2 DEFAULT NULL,
-		p_db_office_id   IN VARCHAR2 DEFAULT NULL
-	);
+   PROCEDURE create_cwms_db_account (
+      p_username       IN VARCHAR2,
+      p_password       IN VARCHAR2,
+      p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE set_dbi_user_passwd (p_dbi_password	IN VARCHAR2,
-											 p_dbi_username	IN VARCHAR2 DEFAULT NULL,
-											 p_db_office_id	IN VARCHAR2 DEFAULT NULL
-											);
+   PROCEDURE create_cwmsdbi_db_user (
+      p_dbi_username   IN VARCHAR2,
+      p_dbi_password   IN VARCHAR2 DEFAULT NULL,
+      p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE delete_cwms_db_account (p_username IN VARCHAR2);
+   PROCEDURE set_dbi_user_passwd (p_dbi_password   IN VARCHAR2,
+                                  p_dbi_username   IN VARCHAR2 DEFAULT NULL,
+                                  p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE get_assigned_priv_groups (
-		p_priv_groups		  OUT SYS_REFCURSOR,
-		p_db_office_id   IN		VARCHAR2 DEFAULT NULL
-	);
+   PROCEDURE delete_cwms_db_account (p_username IN VARCHAR2);
 
-	FUNCTION get_assigned_priv_groups_tab (
-		p_db_office_id IN VARCHAR2 DEFAULT NULL
-	)
-		RETURN cat_priv_groups_tab_t
-		PIPELINED;
+   PROCEDURE get_assigned_priv_groups (
+      p_priv_groups       OUT SYS_REFCURSOR,
+      p_db_office_id   IN     VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE get_user_priv_groups (
-		p_priv_groups		  OUT SYS_REFCURSOR,
-		p_username		  IN		VARCHAR2 DEFAULT NULL,
-		p_db_office_id   IN		VARCHAR2 DEFAULT NULL
-	);
+   FUNCTION get_assigned_priv_groups_tab (
+      p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_priv_groups_tab_t
+      PIPELINED;
 
-	FUNCTION get_user_priv_groups_tab (
-		p_username		  IN VARCHAR2 DEFAULT NULL,
-		p_db_office_id   IN VARCHAR2 DEFAULT NULL
-	)
-		RETURN cat_priv_groups_tab_t
-		PIPELINED;
+   PROCEDURE get_user_priv_groups (
+      p_priv_groups       OUT SYS_REFCURSOR,
+      p_username       IN     VARCHAR2 DEFAULT NULL,
+      p_db_office_id   IN     VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE get_user_office_data (p_office_id			  OUT VARCHAR2,
-											  p_office_long_name   OUT VARCHAR2
-											 );
+   FUNCTION get_user_priv_groups_tab (
+      p_username       IN VARCHAR2 DEFAULT NULL,
+      p_db_office_id   IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_priv_groups_tab_t
+      PIPELINED;
 
-	FUNCTION get_user_office_id
-		RETURN VARCHAR2;
+   PROCEDURE get_user_office_data (p_office_id          OUT VARCHAR2,
+                                   p_office_long_name   OUT VARCHAR2);
 
-	PROCEDURE unlock_user (p_username		 IN VARCHAR2,
-								  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
-								 );
+   FUNCTION get_user_office_id
+      RETURN VARCHAR2;
 
-	FUNCTION get_user_group_code (p_user_group_id	 IN VARCHAR2,
-											p_db_office_code	 IN NUMBER
-										  )
-		RETURN NUMBER;
+   PROCEDURE unlock_user (p_username       IN VARCHAR2,
+                          p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE add_user_to_group (p_username			IN VARCHAR2,
-										  p_user_group_id 	IN VARCHAR2,
-										  p_db_office_code	IN NUMBER
-										 );
+   FUNCTION get_user_group_code (p_user_group_id    IN VARCHAR2,
+                                 p_db_office_code   IN NUMBER)
+      RETURN NUMBER;
 
-	PROCEDURE add_user_to_group (p_username		  IN VARCHAR2,
-										  p_user_group_id   IN VARCHAR2,
-										  p_db_office_id	  IN VARCHAR2 DEFAULT NULL
-										 );
+   PROCEDURE add_user_to_group (p_username         IN VARCHAR2,
+                                p_user_group_id    IN VARCHAR2,
+                                p_db_office_code   IN NUMBER);
 
-	PROCEDURE create_user (p_username				 IN VARCHAR2,
-								  p_password				 IN VARCHAR2,
-								  p_user_group_id_list	 IN char_32_array_type,
-								  p_db_office_id			 IN VARCHAR2 DEFAULT NULL
-								 );
+   PROCEDURE add_user_to_group (p_username        IN VARCHAR2,
+                                p_user_group_id   IN VARCHAR2,
+                                p_db_office_id    IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE delete_user (p_username IN VARCHAR2);
+   PROCEDURE create_user (p_username             IN VARCHAR2,
+                          p_password             IN VARCHAR2,
+                          p_user_group_id_list   IN char_32_array_type,
+                          p_db_office_id         IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE lock_user (p_username		  IN VARCHAR2,
-								p_db_office_id   IN VARCHAR2 DEFAULT NULL
-							  );
+   PROCEDURE delete_user (p_username IN VARCHAR2);
 
-	PROCEDURE remove_user_from_group (
-		p_username			IN VARCHAR2,
-		p_user_group_id	IN VARCHAR2,
-		p_db_office_id 	IN VARCHAR2 DEFAULT NULL
-	);
+   PROCEDURE lock_user (p_username       IN VARCHAR2,
+                        p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
-	FUNCTION get_user_state (p_username 		IN VARCHAR2,
-									 p_db_office_id	IN VARCHAR2 DEFAULT NULL
-									)
-		RETURN VARCHAR2;
+   PROCEDURE remove_user_from_group (
+      p_username        IN VARCHAR2,
+      p_user_group_id   IN VARCHAR2,
+      p_db_office_id    IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE cat_at_sec_allow (p_at_sec_allow		OUT SYS_REFCURSOR,
-										 p_db_office_id	IN 	 VARCHAR2 DEFAULT NULL
-										);
+   FUNCTION get_user_state (p_username       IN VARCHAR2,
+                            p_db_office_id   IN VARCHAR2 DEFAULT NULL)
+      RETURN VARCHAR2;
 
-	FUNCTION cat_at_sec_allow_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
-		RETURN cat_at_sec_allow_tab_t
-		PIPELINED;
+   PROCEDURE cat_at_sec_allow (p_at_sec_allow      OUT SYS_REFCURSOR,
+                               p_db_office_id   IN     VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE refresh_mv_sec_ts_privileges;
+   FUNCTION cat_at_sec_allow_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
+      RETURN cat_at_sec_allow_tab_t
+      PIPELINED;
 
-	PROCEDURE start_refresh_mv_sec_privs_job;
+   PROCEDURE refresh_mv_sec_ts_privileges;
 
-	PROCEDURE store_priv_groups (p_username				 IN VARCHAR2,
-										  p_user_group_id_list	 IN char_32_array_type,
-										  p_db_office_id_list	 IN char_16_array_type,
-										  p_is_member_list		 IN char_16_array_type
-										 );
+   PROCEDURE start_refresh_mv_sec_privs_job;
 
-	PROCEDURE change_user_group_id (
-		p_user_group_id_old	 IN VARCHAR2,
-		p_user_group_id_new	 IN VARCHAR2,
-		p_db_office_id 		 IN VARCHAR2 DEFAULT NULL
-	);
+   PROCEDURE store_priv_groups (p_username             IN VARCHAR2,
+                                p_user_group_id_list   IN char_32_array_type,
+                                p_db_office_id_list    IN char_16_array_type,
+                                p_is_member_list       IN char_16_array_type);
 
-	PROCEDURE change_user_group_desc (
-		p_user_group_id	  IN VARCHAR2,
-		p_user_group_desc   IN VARCHAR2,
-		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-	);
+   PROCEDURE change_user_group_id (
+      p_user_group_id_old   IN VARCHAR2,
+      p_user_group_id_new   IN VARCHAR2,
+      p_db_office_id        IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE delete_user_group (p_user_group_id   IN VARCHAR2,
-										  p_db_office_id	  IN VARCHAR2 DEFAULT NULL
-										 );
+   PROCEDURE change_user_group_desc (
+      p_user_group_id     IN VARCHAR2,
+      p_user_group_desc   IN VARCHAR2,
+      p_db_office_id      IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE create_user_group (p_user_group_id 	 IN VARCHAR2,
-										  p_user_group_desc	 IN VARCHAR2,
-										  p_db_office_id		 IN VARCHAR2 DEFAULT NULL
-										 );
+   PROCEDURE delete_user_group (p_user_group_id   IN VARCHAR2,
+                                p_db_office_id    IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE delete_ts_group (p_ts_group_id	  IN VARCHAR2,
-										p_db_office_id   IN VARCHAR2 DEFAULT NULL
-									  );
+   PROCEDURE create_user_group (p_user_group_id     IN VARCHAR2,
+                                p_user_group_desc   IN VARCHAR2,
+                                p_db_office_id      IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE change_ts_group_id (p_ts_group_id_old   IN VARCHAR2,
-											p_ts_group_id_new   IN VARCHAR2,
-											p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-										  );
+   PROCEDURE delete_ts_group (p_ts_group_id    IN VARCHAR2,
+                              p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE change_ts_group_desc (p_ts_group_id	  IN VARCHAR2,
-											  p_ts_group_desc   IN VARCHAR2,
-											  p_db_office_id	  IN VARCHAR2 DEFAULT NULL
-											 );
+   PROCEDURE change_ts_group_id (
+      p_ts_group_id_old   IN VARCHAR2,
+      p_ts_group_id_new   IN VARCHAR2,
+      p_db_office_id      IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE clear_ts_masks (p_ts_group_id	 IN VARCHAR2,
-									  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
-									 );
+   PROCEDURE change_ts_group_desc (
+      p_ts_group_id     IN VARCHAR2,
+      p_ts_group_desc   IN VARCHAR2,
+      p_db_office_id    IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE assign_ts_masks_to_ts_group (
-		p_ts_group_id		  IN VARCHAR2,
-		p_ts_mask_list 	  IN char_183_array_type,
-		p_add_remove_list   IN char_16_array_type,
-		p_db_office_id 	  IN VARCHAR2 DEFAULT NULL
-	);
+   PROCEDURE clear_ts_masks (p_ts_group_id    IN VARCHAR2,
+                             p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
-	PROCEDURE create_ts_group (p_ts_group_id		IN VARCHAR2,
-										p_ts_group_desc	IN VARCHAR2,
-										p_db_office_id 	IN VARCHAR2 DEFAULT NULL
-									  );
+   PROCEDURE assign_ts_masks_to_ts_group (
+      p_ts_group_id       IN VARCHAR2,
+      p_ts_mask_list      IN char_183_array_type,
+      p_add_remove_list   IN char_16_array_type,
+      p_db_office_id      IN VARCHAR2 DEFAULT NULL);
+
+   PROCEDURE create_ts_group (p_ts_group_id     IN VARCHAR2,
+                              p_ts_group_desc   IN VARCHAR2,
+                              p_db_office_id    IN VARCHAR2 DEFAULT NULL);
 END cwms_sec;
 /
