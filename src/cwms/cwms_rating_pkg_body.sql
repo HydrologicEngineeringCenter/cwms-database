@@ -42,7 +42,8 @@ begin
    end loop;
    delete
      from at_rating_value 
-    where rating_ind_param_code = p_rating_ind_param_code;
+    where rating_ind_param_code = p_rating_ind_param_code
+       or dep_rating_ind_param_code = p_rating_ind_param_code;
    --------------------------------------
    -- then the rating extension values --
    --------------------------------------
@@ -66,7 +67,8 @@ begin
    end loop;
    delete 
      from at_rating_extension_value 
-    where rating_ind_param_code = p_rating_ind_param_code;
+    where rating_ind_param_code = p_rating_ind_param_code
+       or dep_rating_ind_param_code = p_rating_ind_param_code;
    -------------------------------     
    -- finally the record itself --
    -------------------------------  
@@ -128,6 +130,14 @@ begin
       delete
         from at_rating_ind_rounding 
        where rating_spec_code = p_rating_spec_code;
+      for rec in 
+         (  select rating_code
+              from at_rating
+             where rating_spec_code = p_rating_spec_code
+         )
+      loop
+         delete_Rating(rec.rating_code);
+      end loop; 
       delete
         from at_rating_spec 
        where rating_spec_code = p_rating_spec_code;
