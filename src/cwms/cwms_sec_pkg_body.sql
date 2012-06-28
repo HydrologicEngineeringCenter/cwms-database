@@ -127,7 +127,7 @@ AS
             || '. Please see your CWMS Application Administrator.');
       END IF;
 
-      IF NOT is_user_cwms_locked (p_db_office_code => l_db_office_code)
+      IF is_user_cwms_locked (p_db_office_code => l_db_office_code)
       THEN
          cwms_err.raise (
             'ERROR',
