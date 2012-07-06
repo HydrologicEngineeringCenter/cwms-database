@@ -4,6 +4,30 @@ create or replace package cwms_text
  */
 as
    /**
+    * Store (insert or update) binary to the database
+    *
+    * @param p_binary_code       A unique numeric value that identifies the binary
+    * @param p_binary            The binary to store
+    * @param p_id                A binary identifier for the binary to store    
+    * @param p_media_type_or_ext The MIME media type or file extension for the binary
+    * @param p_description       A description of the binary
+    * @param p_fail_if_exists    A flag ('T' or 'F') that specifies whether the routine should fail if the binary identifier already exists in the database
+    * @param p_ignore_nulls      A flag ('T' or 'F') that specifies whether the routine should ignore null parameters when updating existing an binary
+    * @param p_office_id         The office that owns the binary. If not specified or NULL, the session user's default office is used
+    *
+    * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the binary identifier already exists in the database
+    */
+   procedure store_binary(
+      p_binary_code          out number, -- the code for use in foreign keys
+      p_binary            in     blob, -- the binary, unlimited length
+      p_id                in     varchar2, -- identifier with which to retrieve binary (256 chars max)
+      p_media_type_or_ext in     varchar2, -- the MIME media type or file extension 
+      p_description       in     varchar2 default null, -- description, defaults to null
+      p_fail_if_exists    in     varchar2 default 'T', -- flag specifying whether to fail if p_id already exists
+      p_ignore_nulls      in     varchar2 default 'T', -- flag specifying whether to ignore null parameters on update
+      p_office_id         in     varchar2 default null); -- office id, defaults current user's office
+      
+   /**
     * Store (insert or update) text to the database
     *
     * @param p_text_code      A unique numeric value that identifies the text
@@ -86,15 +110,59 @@ as
       return number; -- the code for use in foreign keys
 
    /**
+    * Retrieve binary from the database
+    *
+    * @param p_binary      The retrieved binary
+    * @param p_id          A binary identifier of the binary to retrieve
+    * @param p_office_id   The office that owns the binary. If not specified or NULL, the session user's default office is used
+    */
+   procedure retrieve_binary(
+      p_binary       out blob, -- the binary, unlimited length
+      p_id        in     varchar2, -- identifier used to store binary (256 chars max)
+      p_office_id in     varchar2 default null); -- office id, defaults current user's office
+
+   /**
+    * Retrieve binary from the database
+    *
+    * @param p_id          A binary identifier of the binary to retrieve
+    * @param p_office_id   The office that owns the binary. If not specified or NULL, the session user's default office is used
+    *
+    * @return      The retrieved binary
+    */
+   function retrieve_binary(
+      p_id        in     varchar2, -- identifier used to store binary (256 chars max)
+      p_office_id in     varchar2 default null) -- office id, defaults current user's office
+      return blob;
+
+   /**
+    * Retrieve binary and associated information from the database
+    *
+    * @param p_binary      The retrieved binary
+    * @param p_description The retrieved description
+    * @param p_media_type  The MIME media type of the binary
+    * @param p_file_extensions  A comma-separated list of file extensions, if any
+    * @param p_id          A binary identifier of the binary to retrieve
+    * @param p_office_id   The office that owns the binary. If not specified or NULL, the session user's default office is used
+    */
+   procedure retrieve_binary2(
+      p_binary             out blob, -- the binary, unlimited length
+      p_description        out varchar2, -- the description
+      p_media_type         out varchar2, -- the MIME media type
+      p_file_extensions    out varchar2, -- comma-separated list of file extensions, if any
+      p_id              in     varchar2, -- identifier used to store binary (256 chars max)
+      p_office_id       in     varchar2 default null); -- office id, defaults current user's office
+
+   /**
     * Retrieve text from the database
     *
     * @param p_text      The retrieved text
     * @param p_id        A text identifier of the text to retrieve
     * @param p_office_id The office that owns the text. If not specified or NULL, the session user's default office is used
     */
-   procedure retrieve_text(p_text out clob, -- the text, unlimited length
-                                           p_id in varchar2, -- identifier used to store text (256 chars max)
-                                                            p_office_id in varchar2 default null); -- office id, defaults current user's office
+   procedure retrieve_text(
+      p_text      out clob, -- the text, unlimited length
+      p_id        in  varchar2, -- identifier used to store text (256 chars max)
+      p_office_id in  varchar2 default null); -- office id, defaults current user's office
 
    /**
     * Retrieve text from the database
@@ -104,8 +172,9 @@ as
     *
     * @return The retrieved text
     */
-   function retrieve_text(p_id in varchar2, -- identifier used to store text (256 chars max)
-                                           p_office_id in varchar2 default null) -- office id, defaults current user's office
+   function retrieve_text(
+      p_id        in varchar2, -- identifier used to store text (256 chars max)
+      p_office_id in varchar2 default null) -- office id, defaults current user's office
       return clob; -- the text, unlimited length
 
    /**
@@ -145,9 +214,9 @@ as
     * @param p_id        The text identifier for the existing text to append to
     * @param p_office_id The office that owns the text. If not specified or NULL, the session user's default office is used
     */
-   procedure append_text(p_new_text in out nocopy clob, -- the text to append, unlimited length
-                                                       p_id in varchar2, -- identifier of text to append to (256 chars max)
-                                                                        p_office_id in varchar2 default null); -- office id, defaults current user's office
+   procedure append_text(p_new_text  in out nocopy clob, -- the text to append, unlimited length
+                         p_id        in varchar2, -- identifier of text to append to (256 chars max)
+                         p_office_id in varchar2 default null); -- office id, defaults current user's office
 
    /**
     * Append to text in the database
@@ -156,9 +225,18 @@ as
     * @param p_id        The text identifier for the existing text to append to
     * @param p_office_id The office that owns the text. If not specified or NULL, the session user's default office is used
     */
-   procedure append_text(p_new_text in varchar2, -- the text to append, limited to varchar2 max size
-                                                p_id in varchar2, -- identifier of text to append to (256 chars max)
-                                                                 p_office_id in varchar2 default null); -- office id, defaults current user's office
+   procedure append_text(p_new_text  in varchar2, -- the text to append, limited to varchar2 max size
+                         p_id        in varchar2, -- identifier of text to append to (256 chars max)
+                         p_office_id in varchar2 default null); -- office id, defaults current user's office
+
+   /**
+    * Delete a binary from the database
+    *
+    * @param p_id        The binary identifier for the existing binary to delete
+    * @param p_office_id The office that owns the binary. If not specified or NULL, the session user's default office is used
+    */
+   procedure delete_binary(p_id        in varchar2, -- identifier used to store binary (256 chars max)
+                           p_office_id in varchar2 default null); -- office id, defaults current user's office
 
    /**
     * Delete text from the database
@@ -166,8 +244,8 @@ as
     * @param p_id        The text identifier for the existing text to delete
     * @param p_office_id The office that owns the text. If not specified or NULL, the session user's default office is used
     */
-   procedure delete_text(p_id in varchar2, -- identifier used to store text (256 chars max)
-                                          p_office_id in varchar2 default null); -- office id, defaults current user's office
+   procedure delete_text(p_id        in varchar2, -- identifier used to store text (256 chars max)
+                         p_office_id in varchar2 default null); -- office id, defaults current user's office
 
    --
    -- get matching ids in a cursor

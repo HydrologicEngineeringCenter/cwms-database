@@ -22,7 +22,6 @@ as
    is
       l_times_1   date_table_type;
       l_times_2   date_table_type;
-      l_results   date2_tab_t;
    begin
       fetch p_cursor
       bulk collect into l_times_1, l_times_2;
@@ -30,7 +29,155 @@ as
       close p_cursor;
 
       return group_times(l_times_1, l_times_2);
-   end group_times;
+   end group_times; 
+
+   function get_media_type_code(p_type_or_ext in varchar2, p_office_code in number)
+      return number
+   is
+      l_media_type_code   number(10);
+   begin
+      cwms_util.check_input(p_type_or_ext);
+
+      if p_type_or_ext is null then
+         cwms_err.raise('NULL_ARGUMENT', 'P_TYPE_OR_EXT');
+      end if;
+
+      if instr(p_type_or_ext, '/') > 0 then
+         -----------------------
+         -- check media types --
+         -----------------------
+         begin
+            select media_type_code
+              into l_media_type_code
+              from cwms_media_type
+             where media_type_id = p_type_or_ext;
+         exception
+            when no_data_found then
+               begin
+                  select media_type_code
+                    into l_media_type_code
+                    from cwms_media_type
+                   where upper(media_type_id) = upper(p_type_or_ext);
+               exception
+                  when no_data_found then
+                     null;
+               end;
+         end;
+      else
+         ---------------------------
+         -- check file extensions --
+         ---------------------------
+         begin
+            select media_type_code
+              into l_media_type_code
+              from at_file_extension
+             where office_code in (p_office_code, cwms_util.db_office_code_all)
+               and file_ext = substr(
+                                 p_type_or_ext,
+                                 instr(
+                                    p_type_or_ext,
+                                    '.',
+                                    -1,
+                                    1)
+                                 + 1);
+         exception
+            when no_data_found then
+               begin
+                  select media_type_code
+                    into l_media_type_code
+                    from at_file_extension
+                   where office_code in (p_office_code, cwms_util.db_office_code_all)
+                     and upper(file_ext) = upper(substr(
+                                                    p_type_or_ext,
+                                                    instr(
+                                                       p_type_or_ext,
+                                                       '.',
+                                                       -1,
+                                                       1)
+                                                    + 1));
+               exception
+                  when no_data_found then
+                     null;
+               end;
+         end;
+      end if;
+
+      if l_media_type_code is null then
+         cwms_err.raise('ERROR', 'No media type associated with "' || p_type_or_ext || '"');
+      end if;
+
+      return l_media_type_code;
+   end get_media_type_code;
+   
+   --
+   -- store binary with optional description
+   -- 
+   procedure store_binary(
+      p_binary_code       out number, -- the code for use in foreign keys
+      p_binary            in     blob, -- the binary, unlimited length
+      p_id                in     varchar2, -- identifier with which to retrieve binary (256 chars max)
+      p_media_type_or_ext in     varchar2, -- the MIME media type or file extension 
+      p_description       in     varchar2 default null, -- description, defaults to null
+      p_fail_if_exists    in     varchar2 default 'T', -- flag specifying whether to fail if p_id already exists
+      p_ignore_nulls      in     varchar2 default 'T', -- flag specifying whether to ignore null parameters on update
+      p_office_id         in     varchar2 default null) -- office id, defaults current user's office
+   is
+      l_rec            at_blob%rowtype;
+      l_id             varchar2(256) := upper(p_id);
+      l_office_code    number := cwms_util.get_office_code(p_office_id);
+      l_fail_if_exists boolean := cwms_util.return_true_or_false(p_fail_if_exists);
+      l_ignore_nulls   boolean := cwms_util.return_true_or_false(p_ignore_nulls);
+      l_exists         boolean;
+   begin
+      begin
+         select *
+           into l_rec
+           from at_blob
+          where office_code in (l_office_code, cwms_util.db_office_code_all)
+            and id = l_id;
+         l_exists := true;            
+      exception           
+         when no_data_found then
+            l_exists := false;
+      end;
+      if l_exists then
+         if l_fail_if_exists then
+            cwms_err.raise('ITEM_ALREADY_EXISTS', 'Binary ID', p_id);
+         else
+            --
+            -- update the record
+            --
+            if l_ignore_nulls then
+               l_rec.value := case p_binary is null 
+                                 when true then l_rec.value 
+                                 else p_binary 
+                              end;
+               l_rec.description := nvl(p_description, l_rec.description);
+               l_rec.media_type_code := case p_media_type_or_ext is null                               
+                                           when true then l_rec.media_type_code
+                                           else get_media_type_code(p_media_type_or_ext, l_office_code)
+                                        end;
+            else               
+               l_rec.value := p_binary;
+               l_rec.description := p_description;
+               l_rec.media_type_code := get_media_type_code(p_media_type_or_ext, l_office_code);
+            end if;
+            update at_blob
+               set row = l_rec;
+         end if;
+      else
+         -- 
+         -- insert the record
+         --
+         l_rec.blob_code := cwms_seq.nextval;
+         l_rec.office_code := l_office_code;
+         l_rec.value := p_binary;
+         l_rec.description := p_description;
+         l_rec.media_type_code := get_media_type_code(p_media_type_or_ext, l_office_code);
+         insert into at_blob values l_rec;
+      end if;
+      p_binary_code := l_rec.blob_code;                          
+   end store_binary;      
 
    --
    -- store text with optional description
@@ -155,6 +302,92 @@ as
 
       return l_text_code;
    end store_text;
+   
+   --
+   -- retrieve binary only
+   --
+   procedure retrieve_binary(
+      p_binary       out blob, -- the binary, unlimited length
+      p_id        in     varchar2, -- identifier used to store binary (256 chars max)
+      p_office_id in     varchar2 default null) -- office id, defaults current user's office
+   is
+      l_description     at_blob.description%type;
+      l_media_type      cwms_media_type.media_type_id%type;
+      l_file_extensions varchar2(256);
+   begin                              
+      retrieve_binary2(
+         p_binary,
+         l_description,
+         l_media_type,
+         l_file_extensions,
+         p_id,
+         p_office_id);
+   end retrieve_binary;
+
+   --
+   -- retrieve binary only
+   --
+   function retrieve_binary(
+      p_id        in varchar2, -- identifier used to store binary (256 chars max)
+      p_office_id in varchar2 default null) -- office id, defaults current user's office
+      return blob
+   is
+      l_binary blob;
+   begin            
+      retrieve_binary(l_binary, p_id, p_office_id);
+      return l_binary;
+   end retrieve_binary;
+
+   --
+   -- Retrieve binary and associated information
+   --
+   procedure retrieve_binary2(
+      p_binary             out blob, -- the binary, unlimited length
+      p_description        out varchar2, -- the description
+      p_media_type         out varchar2, -- the MIME media type
+      p_file_extensions    out varchar2, -- comma-separated list of file extensions, if any
+      p_id              in     varchar2, -- identifier used to store binary (256 chars max)
+      p_office_id       in     varchar2 default null) -- office id, defaults current user's office
+   is
+      l_rec             at_blob%rowtype;
+      l_description     at_blob.description%type;
+      l_media_type      cwms_media_type.media_type_id%type;
+      l_office_code     number(10) := cwms_util.get_office_code(p_office_id); 
+      l_file_extensions str_tab_t := str_tab_t();
+   begin
+      begin
+         select *
+           into l_rec
+           from at_blob
+          where office_code in (l_office_code, cwms_util.db_office_code_all)
+            and id = upper(p_id);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               case p_office_id is null
+                  when true then p_id
+                  else p_office_id||'/'||p_id
+               end);
+      end;
+      select media_type_id
+        into p_media_type
+        from cwms_media_type
+       where media_type_code = l_rec.media_type_code;
+       
+      for rec in 
+         (  select file_ext
+              from at_file_extension
+             where office_code in (l_office_code, cwms_util.db_office_code_all)
+               and media_type_code = l_rec.media_type_code
+             order by file_ext
+         )
+      loop
+         l_file_extensions.extend;
+         l_file_extensions(l_file_extensions.count) := rec.file_ext;
+      end loop;
+      p_file_extensions := cwms_util.join_text(l_file_extensions, ',');       
+   end retrieve_binary2;
 
    --
    -- retrieve text only
@@ -328,16 +561,33 @@ as
    end append_text;
 
    --
-   -- delete text
+   -- delete binary
    --
-   procedure delete_text(p_id in varchar2, -- identifier used to store text (256 chars max)
-                                          p_office_id in varchar2 default null) -- office id, defaults current user's office
+   procedure delete_binary(
+      p_id        in varchar2, -- identifier used to store binary (256 chars max)
+      p_office_id in varchar2 default null) -- office id, defaults current user's office
    is
       l_id            varchar2(256) := upper(p_id);
       l_office_code   number := cwms_util.get_office_code(p_office_id);
    begin
-      delete from at_clob
-            where office_code = l_office_code and id = l_id;
+      delete 
+        from at_blob
+       where office_code = l_office_code and id = l_id;
+   end delete_binary;
+
+   --
+   -- delete text
+   --
+   procedure delete_text(
+      p_id        in varchar2, -- identifier used to store text (256 chars max)
+      p_office_id in varchar2 default null) -- office id, defaults current user's office
+   is
+      l_id            varchar2(256) := upper(p_id);
+      l_office_code   number := cwms_util.get_office_code(p_office_id);
+   begin
+      delete 
+        from at_clob
+       where office_code = l_office_code and id = l_id;
    end delete_text;
 
    --
@@ -3087,84 +3337,6 @@ as
                where clob_code = l_clob_code;
       end if;
    end delete_ts_text;
-
-   function get_media_type_code(p_type_or_ext in varchar2, p_office_code in number)
-      return number
-   is
-      l_media_type_code   number(10);
-   begin
-      cwms_util.check_input(p_type_or_ext);
-
-      if p_type_or_ext is null then
-         cwms_err.raise('NULL_ARGUMENT', 'P_TYPE_OR_EXT');
-      end if;
-
-      if instr(p_type_or_ext, '/') > 0 then
-         -----------------------
-         -- check media types --
-         -----------------------
-         begin
-            select media_type_code
-              into l_media_type_code
-              from cwms_media_type
-             where media_type_id = p_type_or_ext;
-         exception
-            when no_data_found then
-               begin
-                  select media_type_code
-                    into l_media_type_code
-                    from cwms_media_type
-                   where upper(media_type_id) = upper(p_type_or_ext);
-               exception
-                  when no_data_found then
-                     null;
-               end;
-         end;
-      else
-         ---------------------------
-         -- check file extensions --
-         ---------------------------
-         begin
-            select media_type_code
-              into l_media_type_code
-              from at_file_extension
-             where office_code in (p_office_code, cwms_util.db_office_code_all)
-               and file_ext = substr(
-                                 p_type_or_ext,
-                                 instr(
-                                    p_type_or_ext,
-                                    '.',
-                                    -1,
-                                    1)
-                                 + 1);
-         exception
-            when no_data_found then
-               begin
-                  select media_type_code
-                    into l_media_type_code
-                    from at_file_extension
-                   where office_code in (p_office_code, cwms_util.db_office_code_all)
-                     and upper(file_ext) = upper(substr(
-                                                    p_type_or_ext,
-                                                    instr(
-                                                       p_type_or_ext,
-                                                       '.',
-                                                       -1,
-                                                       1)
-                                                    + 1));
-               exception
-                  when no_data_found then
-                     null;
-               end;
-         end;
-      end if;
-
-      if l_media_type_code is null then
-         cwms_err.raise('ERROR', 'No media type associated with "' || p_type_or_ext || '"');
-      end if;
-
-      return l_media_type_code;
-   end get_media_type_code;
 
    procedure store_ts_binary(
       p_ts_code             in number,
