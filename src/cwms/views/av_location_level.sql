@@ -5,25 +5,33 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOCATION_LEVEL',
  *
  * @since CWMS 2.1
  *
- * @field office_id         Office that owns the location level
- * @field location_level_id The location level identifier
- * @field attribute_id      The attribute identifier, if any, for the location level
- * @field level_date        The effective data for the location level
- * @field unit_system       The unit system (SI or EN) that units are displayed in
- * @field attribute_unit    The unit of the attribute, if any
- * @field level_unit        The unit of the level
- * @field attribute_value   The value of the attribute, if any
- * @field constant_level    The value of the location level, if it is a constant value
- * @field interval_origin   The beginning of one interval, if the location level is a recurring pattern
- * @field calendar_interval The length of the interval if expressed in months or years (cannot be used with time_interval)
- * @field time_interval     The length of the interval if expressed in days or less (cannot be used with calendar_interval)
- * @field interpolate       Flag <code><big>''T''</big></code> or <code><big>''F''</big></code> specifying whether to interpolate between pattern breakpoints
- * @field calendar_offset   Years and months into the interval for the seasonal level (combined with time_offset)
- * @field time_offset       Days, hours, and minutes into the interval for the seasonal level (combined with calendar_offset)
- * @field seasonal_level    The level value at the offset into the interval specified by calendar_offset and time_offset
- * @field tsid              The time series identifier for the level, if it is specified as a time series
- * @field level_comment     Comment about the location level
- * @field attribute_comment Comment about the attribute, if any
+ * @field office_id          Office that owns the location level
+ * @field location_level_id  The location level identifier
+ * @field attribute_id       The attribute identifier, if any, for the location level
+ * @field level_date         The effective data for the location level
+ * @field unit_system        The unit system (SI or EN) that units are displayed in
+ * @field attribute_unit     The unit of the attribute, if any
+ * @field level_unit         The unit of the level
+ * @field attribute_value    The value of the attribute, if any
+ * @field constant_level     The value of the location level, if it is a constant value
+ * @field interval_origin    The beginning of one interval, if the location level is a recurring pattern
+ * @field calendar_interval  The length of the interval if expressed in months or years (cannot be used with time_interval)
+ * @field time_interval      The length of the interval if expressed in days or less (cannot be used with calendar_interval)
+ * @field interpolate        Flag <code><big>''T''</big></code> or <code><big>''F''</big></code> specifying whether to interpolate between pattern breakpoints
+ * @field calendar_offset    Years and months into the interval for the seasonal level (combined with time_offset)
+ * @field time_offset        Days, hours, and minutes into the interval for the seasonal level (combined with calendar_offset)
+ * @field seasonal_level     The level value at the offset into the interval specified by calendar_offset and time_offset
+ * @field tsid               The time series identifier for the level, if it is specified as a time series
+ * @field level_comment      Comment about the location level
+ * @field attribute_comment  Comment about the attribute, if any
+ * @field base_location_id   The base location portion of the location level
+ * @field sub_location_id    The sub-location portion of the location level
+ * @field location_id        The full location portion of the location level
+ * @field base_parameter_id  The base parameter portion of the location level
+ * @field sub_parameter_id   The sub-parameter portion of the location level
+ * @field parameter_id       The full parameter portion of the location level
+ * @field duration_id        The duration portion of the location level
+ * @field specified_level_id The specified level portion of the location level
  */
 ');
 
@@ -41,7 +49,15 @@ AS
                   seasonal_level,
                   tsid,
                   level_comment,
-                  attribute_comment
+                  attribute_comment,
+                  cwms_util.get_base_id(location_id) as base_location_id,
+                  cwms_util.get_sub_id(location_id) as sub_location_id,
+                  location_id,
+                  cwms_util.get_base_id(parameter_id) as base_parameter_id,
+                  cwms_util.get_sub_id(parameter_id) as sub_parameter_id,
+                  parameter_id,
+                  duration_id,
+                  specified_level_id
          FROM   ( (SELECT   c_o.office_id AS office_id,
                             a_bl.base_location_id || SUBSTR ('-', 1, LENGTH (a_pl.sub_location_id)) || a_pl.sub_location_id AS location_id,
                             c_bp1.base_parameter_id || SUBSTR ('-', 1, LENGTH (a_p1.sub_parameter_id)) || a_p1.sub_parameter_id AS parameter_id,

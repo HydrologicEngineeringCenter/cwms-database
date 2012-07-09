@@ -1,9 +1,8 @@
-insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PARAMETER', null,
-'
+insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PARAMETER', null,'
 /**
  * Displays information on parameters
  *
- * @since CWMS 2.0
+ * @since CWMS 2.0, modified in CWMS 2.1
  *
  * @field db_office_id        Office that owns the parameter
  * @field db_office_code      Unique numeric code identifying the office that owns the parameter
@@ -12,23 +11,28 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PARAMETER', null
  * @field base_parameter_id   The base parameter
  * @field sub_parameter_id    The sub-parameter, if any
  * @field parameter_id        The full parameter
+ * @field description         The parameter description
  */
 ');
-CREATE OR REPLACE VIEW av_parameter
-(
-    db_office_id,
-    db_office_code,
-    parameter_code,
-    base_parameter_code,
-    base_parameter_id,
-    sub_parameter_id,
-    parameter_id
-)
-AS
-    SELECT    a.office_id db_office_id, b.db_office_code, b.parameter_code,
-                c.base_parameter_code, c.base_parameter_id, b.sub_parameter_id,
-                c.base_parameter_id || SUBSTR ('-', 1, LENGTH (b.sub_parameter_id)) || b.sub_parameter_id parameter_id
-      FROM    cwms_office a, at_parameter b, cwms_base_parameter c
-     WHERE    b.db_office_code = a.db_host_office_code
-                AND b.base_parameter_code = c.base_parameter_code
+
+create or replace view av_parameter(
+   db_office_id,
+   db_office_code,
+   parameter_code,
+   base_parameter_code,
+   base_parameter_id,
+   sub_parameter_id,
+   parameter_id,
+   description)
+as
+   select o.office_id db_office_id,
+          p.db_office_code,
+          p.parameter_code,
+          b.base_parameter_code,
+          b.base_parameter_id,
+          p.sub_parameter_id,
+          b.base_parameter_id || substr('-', 1, length(p.sub_parameter_id)) || p.sub_parameter_id parameter_id,
+          nvl(p.sub_parameter_desc, b.long_name) as description
+     from cwms_office o, at_parameter p, cwms_base_parameter b
+    where p.db_office_code = o.db_host_office_code and p.base_parameter_code = b.base_parameter_code
 /
