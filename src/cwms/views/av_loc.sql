@@ -17,7 +17,7 @@
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC', null,
 '
 /**
- * Displays CWMS Time Locations
+ * Displays CWMS Locations
  *
  * @since CWMS 2.0 (modified in CWMS 2.1)
  *
