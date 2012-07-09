@@ -29,27 +29,27 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC', null,
  * @field location_id          The full location
  * @field location_type        User-defined type for location
  * @field unit_system          Unit system for elevation
- * @field elevation            Elevation of location
+ * @field elevation            Elevation of location (may be inherited from base location)
  * @field unit_id              Unit of elevation
- * @field vertical_datum       Datum used for elevation
- * @field longitude            Actual longitude of location
- * @field latitude             Actual latitude of location
- * @field horizontal_datum     Datum used for actual latitude and longitude
- * @field time_zone_name       Location''s local time zone
- * @field county_name          County encompassing location
- * @field state_initial        State encompassing location
+ * @field vertical_datum       Datum used for elevation (may be inherited from base location)
+ * @field longitude            Actual longitude of location (may be inherited from base location)
+ * @field latitude             Actual latitude of location (may be inherited from base location)
+ * @field horizontal_datum     Datum used for actual latitude and longitude (may be inherited from base location)
+ * @field time_zone_name       Location''s local time zone (may be inherited from base location)
+ * @field county_name          County encompassing location (may be inherited from base location)
+ * @field state_initial        State encompassing location (may be inherited from base location)
  * @field public_name          Public name for location
  * @field long_name            Long name for location
  * @field description          Description of location
  * @field base_loc_active_flag Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code> specifying whether the base location is marked as active
  * @field loc_active_flag      Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code> specifying whether the location is marked as active
  * @field location_kind_id     The geographic type of the location
- * @field map_label            Label to be used on maps for location
- * @field published_latitude   Published latitude of location
- * @field published_longitude  Published longitude of location
- * @field bounding_office_id   Office whose boundary encompasses location
- * @field nation_id            Nation encompassing location
- * @field nearest_city         City nearest to location
+ * @field map_label            Label to be used on maps for location (may be inherited from base location)
+ * @field published_latitude   Published latitude of location (may be inherited from base location)
+ * @field published_longitude  Published longitude of location (may be inherited from base location)
+ * @field bounding_office_id   Office whose boundary encompasses location (may be inherited from base location)
+ * @field nation_id            Nation encompassing location (may be inherited from base location)
+ * @field nearest_city         City nearest to location (may be inherited from base location)
  */
 ');
 CREATE OR REPLACE FORCE VIEW av_loc
@@ -85,61 +85,102 @@ CREATE OR REPLACE FORCE VIEW av_loc
     nearest_city
 )
 AS
-    SELECT    location_code, base_location_code, db_office_id, base_location_id,
-                sub_location_id, location_id, location_type, unit_system,
-                (elevation * factor + offset) elevation, to_unit_id unit_id,
-                vertical_datum, longitude, latitude, horizontal_datum,
-                time_zone_name, county_name, state_initial, public_name,
-                long_name, description, base_loc_active_flag, loc_active_flag,
-                location_kind_id, map_label, published_latitude,
-                published_longitude, bounding_office_id, nation_id, nearest_city
-      FROM        (SELECT     c.office_code db_office_code, location_code,
-                                 base_location_code, c.office_id db_office_id,
-                                 base_location_id, sub_location_id,
-                                 base_location_id || SUBSTR ('-', 1, LENGTH (sub_location_id)) || sub_location_id location_id,
-                                 location_type, elevation, vertical_datum, longitude,
-                                 latitude, horizontal_datum, time_zone_name,
-                                 county_name, state_initial, a.public_name,
-                                 a.long_name, a.description,
-                                 b.active_flag base_loc_active_flag,
-                                 a.active_flag loc_active_flag, location_kind_id,
-                                 map_label, published_latitude, published_longitude,
-                                 d.office_id bounding_office_id, nation_id,
-                                 nearest_city
-                        FROM         (   (    (     (   (    (     (   at_physical_location a
-                                                                      LEFT OUTER JOIN
-                                                                          cwms_office d
-                                                                      USING (office_code))
-                                                                 JOIN
-                                                                     at_base_location b
-                                                                 USING (base_location_code))
-                                                            JOIN
-                                                                cwms_office c
-                                                            ON b.db_office_code =
-                                                                    c.office_code)
-                                                      LEFT OUTER JOIN
-                                                          at_location_kind
-                                                      ON location_kind =
-                                                              location_kind_code)
-                                                 LEFT OUTER JOIN
-                                                     cwms_time_zone
-                                                 USING (time_zone_code))
-                                            LEFT OUTER JOIN
-                                                cwms_county
-                                            USING (county_code))
-                                      LEFT OUTER JOIN
-                                          cwms_state
-                                      USING (state_code))
-                                 LEFT OUTER JOIN
-                                     cwms_nation
-                                 USING (nation_code)
-                      WHERE     location_code != 0) aa
-                NATURAL JOIN
-                    (SELECT     adu.db_office_code, adu.unit_system, cuc.to_unit_id,
-                                 factor, offset
-                        FROM     at_display_units adu, cwms_unit_conversion cuc
-                      WHERE          adu.parameter_code = 10
-                                 AND adu.display_unit_code = cuc.to_unit_code
-                                 AND cuc.from_unit_code = 38) bb
+   select location_code,
+          base_location_code,
+          db_office_id,
+          base_location_id,
+          sub_location_id,
+          location_id,
+          location_type,
+          unit_system,
+          (elevation * factor + offset) elevation,
+          to_unit_id unit_id,
+          vertical_datum,
+          longitude,
+          latitude,
+          horizontal_datum,
+          time_zone_name,
+          county_name,
+          state_initial,
+          public_name,
+          long_name,
+          description,
+          base_loc_active_flag,
+          loc_active_flag,
+          location_kind_id,
+          map_label,
+          published_latitude,
+          published_longitude,
+          bounding_office_id,
+          nation_id,
+          nearest_city
+     from    (select o.office_code db_office_code,
+                     p1.location_code,
+                     p1.base_location_code,
+                     o.office_id db_office_id,
+                     base_location_id,
+                     p1.sub_location_id,
+                     base_location_id || substr('-', 1, length(p1.sub_location_id)) || p1.sub_location_id as location_id,
+                     p1.location_type,
+                     nvl(p1.elevation, p2.elevation) as elevation,
+                     nvl(p1.vertical_datum, p2.vertical_datum) as vertical_datum,
+                     nvl(p1.longitude, p2.longitude) as longitude,
+                     nvl(p1.latitude, p2.latitude) as latitude,
+                     nvl(p1.horizontal_datum, p2.horizontal_datum) as horizontal_datum,
+                     time_zone_name,
+                     county_name,
+                     state_initial,
+                     p1.public_name,
+                     p1.long_name,
+                     p1.description,
+                     b.active_flag base_loc_active_flag,
+                     p1.active_flag loc_active_flag,
+                     location_kind_id,
+                     nvl(p1.map_label, p2.map_label) as map_label,
+                     nvl(p1.published_latitude, p2.published_latitude) as published_latitude,
+                     nvl(p1.published_longitude, p2.published_longitude) as published_longitude,
+                     nvl(o1.office_id, o2.office_id) as bounding_office_id,
+                     nation_id,
+                     nvl(p1.nearest_city, p2.nearest_city) as nearest_city
+                from    (   (   (   (   (   (      (   at_physical_location p1
+                                                    left outer join
+                                                       cwms_office o1
+                                                    using (office_code))
+                                                join
+                                                   (   at_physical_location p2
+                                                    left outer join
+                                                       cwms_office o2
+                                                    using (office_code))
+                                                on p2.location_code = p1.base_location_code
+                                             join
+                                                at_base_location b
+                                             on b.base_location_code = p1.base_location_code)
+                                         join
+                                            cwms_office o
+                                         on b.db_office_code = o.office_code)
+                                     left outer join
+                                        at_location_kind
+                                     on location_kind_code = p1.location_kind)
+                                 left outer join
+                                    cwms_time_zone t
+                                 on t.time_zone_code = coalesce(p1.time_zone_code, p2.time_zone_code))
+                             left outer join
+                                cwms_county c
+                             on c.county_code = coalesce(p1.county_code, p2.county_code))
+                         left outer join
+                            cwms_state
+                         using (state_code))
+                     left outer join
+                        cwms_nation n
+                     on n.nation_code = coalesce(p1.nation_code, p2.nation_code)
+               where p1.location_code != 0) aa
+          natural join
+             (select adu.db_office_code,
+                     adu.unit_system,
+                     cuc.to_unit_id,
+                     factor,
+                     offset
+                from at_display_units adu, cwms_unit_conversion cuc
+               where adu.parameter_code = 10 and adu.display_unit_code = cuc.to_unit_code and cuc.from_unit_code = 38) bb;
 /
 SHOW ERRORS;
