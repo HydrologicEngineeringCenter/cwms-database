@@ -395,7 +395,8 @@ brief_descriptions = {}
 external_files = [
    'cwms location levels.pdf',
    'cwms ratings.pdf',
-   'cwms properties dictionary.pdf'
+   'cwms properties dictionary.pdf',
+   'Text and Binary Data in the CWMS Database.pdf'
 ]
 
 format_type = 'initcap' # must be 'upper', 'lower' or 'initcap'
@@ -1204,7 +1205,9 @@ def build_main_page() :
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', 'cwms location levels.pdf')], content='CWMS Location Levels'),
       HtmlElem('br'),
-      HtmlElem('a', attrs=[('href', 'cwms properties dictionary.pdf')], content='CWMS User Properties')
+      HtmlElem('a', attrs=[('href', 'cwms properties dictionary.pdf')], content='CWMS User Properties'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', 'Text and Binary Data in the CWMS Database.pdf')], content='CWMS Text and Binary Data (Standalone and Time Series)')
    ]
    example_list = [
       HtmlElem('h3', content='API Usage Examples'),
