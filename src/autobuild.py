@@ -118,6 +118,16 @@ if ec :
 print("Loading control files")
 loaderCmdTemplate = "sqlldr %s/%s@%s control=%s"
 for loaderFilename in glob.glob('*.ctl') + glob.glob('data/*.ctl') :
+	#-------------------------------#
+	# fixup pathnames for clob data #
+	#-------------------------------#
+	if os.sep != '\\' and os.path.basename(loaderFilename).lower() == 'ddl_clobs.ctl' :
+		f = open(loaderFilename)
+		data = f.read().replace('\\', os.sep)
+		f.close()
+		f.open(loaderFilename, 'w')
+		f.write(data)
+		f.close()
 	loaderCmd = loaderCmdTemplate % (cwms_schema, cwms_passwd, inst, loaderFilename)
 	print("...%s" % loaderFilename)
 	ec = os.system(loaderCmd)
