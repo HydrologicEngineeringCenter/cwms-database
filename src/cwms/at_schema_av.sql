@@ -12,38 +12,39 @@ DECLARE
 
 	view_names	 id_array_t
 		:= id_array_t ('av_current_map_data',
-                            'av_active_flag',
-							'av_loc',          -- av_loc is created in at_schema_2...
-							'av_county',
-							'av_cwms_ts_id',
-							'av_loc_alias',
-							'av_loc_cat_grp',
-							'av_loc_level',
-							'av_nation',
-							'av_parameter',
-							'av_screened_ts_ids',
-							'av_screening_assignments',
-							'av_screening_criteria',
-							'av_screening_dur_mag',
-							'av_screening_id',
-							'av_shef_decode_spec',
-							'av_shef_pe_codes',
-							'av_state',
-							'av_unit',
-							'av_storage_unit',
-							'av_log_message',               -- located in at_schema_2
-							'av_dataexchange_job',
-							'av_display_units',
-							'av_rating_template',
-							'av_rating_spec',
-							'av_rating',
-							'av_rating_local',
-							'av_rating_values',
-							'av_rating_values_native',
-							'av_ts_association',
-							'av_stream_types',
-                            'av_loc_ts_id_count'
-						  );
+			       'av_active_flag',
+			       'av_loc',          -- av_loc is created in at_schema_2...
+			       'av_county',
+			       'av_cwms_ts_id',
+			       'av_loc_alias',
+			       'av_loc_cat_grp',
+			       'av_loc_level',
+			       'av_nation',
+			       'av_parameter',
+			       'av_screened_ts_ids',
+			       'av_screening_assignments',
+			       'av_screening_criteria',
+			       'av_screening_dur_mag',
+			       'av_screening_id',
+			       'av_shef_decode_spec',
+			       'av_shef_pe_codes',
+			       'av_state',
+			       'av_unit',
+			       'av_storage_unit',
+			       'av_log_message',               -- located in at_schema_2
+			       'av_dataexchange_job',
+			       'av_display_units',
+			       'av_rating_template',
+			       'av_rating_spec',
+			       'av_rating',
+			       'av_rating_local',
+			       'av_rating_values',
+			       'av_rating_values_native',
+			       'av_ts_association',
+			       'av_stream_types',
+			       'av_loc_ts_id_count',
+			       'av_property'
+			      );
 BEGIN
 	FOR i IN view_names.FIRST .. view_names.LAST
 	LOOP
@@ -109,6 +110,7 @@ END;
 @@cwms/views/av_state.sql
 @@cwms/views/av_county.sql
 @@cwms/views/av_nation.sql
+@@cwms/views/av_property.sql
 
 --------------------------------------------------------------------------------
 SHOW ERRORS;
