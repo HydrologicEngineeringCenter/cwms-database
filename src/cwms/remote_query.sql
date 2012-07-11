@@ -1106,7 +1106,7 @@ begin
                 dblink,
                 cwms_ver
            from remote_offices
-          where dst_office_id like l_office_id_masks(i))
+          where src_office_id like l_office_id_masks(i))
       loop
          l_offices_processed := l_offices_processed + 1;
          cwms_msg.log_db_message(
