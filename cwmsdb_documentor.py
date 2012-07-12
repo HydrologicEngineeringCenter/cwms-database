@@ -9,6 +9,7 @@ VERSIONS:
    1.1   15Sep2011   MDP   Improved initial page in main frame
    1.2   19Sep2011   MDP   Added links to categories on initial page
    1.3   07Mar2012   MDP   Fixed tokenize(), added documents to initial page
+   1.4   12Jul2012   MDP   Added API Usage Note to main page
 
 JAVADOCS:
    Standard javadoc syntax applies as shown below, but the list of tags is a
@@ -1199,6 +1200,20 @@ def build_main_page() :
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', '#Miscellaneous and Support')], content='Miscellaneous and Support')
    ]
+   api_usage_note = [
+      HtmlElem('h3', content='API Usage Note - Please Read!'),
+      HtmlElem('', 'Make sure to take the following steps when using the CWMS Database API to ensure your applications work correctly both now and after the database is modified:'),
+      HtmlElem('dl', content = [
+         HtmlElem('dt', content=[HtmlElem('strong', content="<em>Don't</em> Specify the Schema")]),
+         HtmlElem('dd', content="All packages, types, and views have public synonyms (e.g., 'CWMS_TS' for the 'CWMS_20.CWMS_TS' package). If you specify the schema your application <em>will break</em> when a different schema name is used in the future."),
+         HtmlElem('p'),
+         HtmlElem('dt', content=[HtmlElem('strong', content="<em>Do</em> Use Public Synonyms")]),
+         HtmlElem('dd', content="Always use the 'CWMS_V_...' view synonyms and the 'CWMS_T_...' type synonyms. These will not change in the futue even if the names of the underlying objects do."),
+         HtmlElem('p'),
+         HtmlElem('dt', content=[HtmlElem('strong', content="<em>Don't</em> Use the \"CWMS\" Schema Account")]),
+         HtmlElem('dd', content="The \"CWMS\" schema account (currently 'CWMS_20') is designed to be used for administration purposes <em>only</em>. Its password is <em>not</em> guaranteed to remain constant, nor is it assigned an office identifier.  Do <em>not</em> use this account for local applications.")
+      ])
+   ]
    documents_list = [
       HtmlElem('h3', content='General Documents'),
       HtmlElem('a', attrs=[('href', 'cwms ratings.pdf')], content='CWMS Ratings'),
@@ -1279,6 +1294,8 @@ def build_main_page() :
    body = HtmlElem('body', content= \
       [HtmlElem('h2', attrs=[('style', 'text-align:center;')], content='CWMS Database API Documentation')] +\
       category_list + \
+      [HtmlElem('p'), HtmlElem('hr')] + \
+      api_usage_note + \
       [HtmlElem('p'), HtmlElem('hr')] + \
       example_list + \
       [HtmlElem('p'), HtmlElem('hr')] + \
