@@ -337,7 +337,7 @@ CREATE TYPE source_array IS TABLE OF source_type;
 /
 
 create type tr_template_set_type
-/**
+/* (non-javadoc)
  * [description needed]
  *
  * @see type tr_template_set_array
@@ -369,7 +369,7 @@ AS OBJECT (
 /
 
 create type tr_template_set_array
-/**
+/* (non-javadoc)
  * [description needed]
  *
  * @see type tr_template_set_type
@@ -431,7 +431,7 @@ CREATE TYPE alias_array IS TABLE OF alias_type;
 */
 
 create type screen_dur_mag_type
-/**
+/* (non-javadoc)
  * [description needed]
  *
  * @member duration_id  [description needed]
@@ -451,7 +451,7 @@ AS OBJECT (
 );
 /
 create type screen_dur_mag_array
-/**
+/* (non-javadoc)
  * [description needed]
  *
  * @see type screen_dur_mag_type
@@ -460,7 +460,7 @@ IS TABLE OF screen_dur_mag_type;
 /
 
 create type screen_crit_type
-/**
+/* (non-javadoc)
  * [description needed]
  *
  * @member season_start_day         [description needed]
@@ -511,7 +511,7 @@ AS OBJECT (
 /
 
 CREATE TYPE screen_crit_array
-/**
+/* (non-javadoc)
  * [description needed]
  *
  * @see type screen_crit_type
@@ -521,7 +521,7 @@ IS TABLE OF screen_crit_type;
 /
 
 create type screening_control_t
-/**
+/* (non-javadoc)
  * [description needed]
  *
  * @see cwms_vt.store_screening_criteria
@@ -852,7 +852,7 @@ CREATE TYPE cat_dss_xchg_tsmap_otab_t AS TABLE OF cat_dss_xchg_ts_map_obj_t;
 /
 
 create type screen_assign_t
-/**
+/* (non-javadoc)
  * [description needed]
  *
  * @see type screen_assign_array
@@ -869,7 +869,7 @@ AS OBJECT (
 /
 
 create type screen_assign_array
-/**
+/* (non-javadoc)
  * [description needed]
  *
  * @see type screen_assign_t

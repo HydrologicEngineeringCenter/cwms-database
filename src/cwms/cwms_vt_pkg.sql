@@ -1,6 +1,6 @@
 SET define off
 CREATE OR REPLACE PACKAGE cwms_vt
-/**
+/* (non-javadoc)
  * [description needed]
  *
  * @author Gerhard Krueger
@@ -8,7 +8,7 @@ CREATE OR REPLACE PACKAGE cwms_vt
  * @since CWMS 2.1
  */
 AS
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @member trans_id    [description needed]
@@ -18,11 +18,11 @@ AS
       trans_id      VARCHAR2 (32),
       description   VARCHAR2 (256)
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     */
    TYPE cat_tr_transforms_t IS TABLE OF cat_tr_transforms_rec_t;
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @member template_id          [description needed]
@@ -36,11 +36,11 @@ AS
       primary_ind_param_id   VARCHAR2 (16),
       dep_param_id           VARCHAR2 (16)
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     */
   TYPE cat_tr_templates_t IS TABLE OF cat_tr_templates_rec_t;
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @member sequence_no           [description needed]
@@ -66,11 +66,11 @@ AS
       scaling_arg_b           NUMBER,
       scaling_arg_c           NUMBER
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     */
    TYPE tr_template_set_t IS TABLE OF tr_template_set_rec_t;
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @member sequence_no          [description needed]
@@ -94,11 +94,11 @@ AS
       duration_mask         VARCHAR2 (16),
       version_mask          VARCHAR2 (42)
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     */
    TYPE tr_template_set_masks_t IS TABLE OF tr_template_set_masks_rec_t;
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_code [description needed]
@@ -107,7 +107,7 @@ AS
     */
    FUNCTION get_screening_code_ts_id_count (p_screening_code IN NUMBER)
       RETURN NUMBER;
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_id   [description needed]
@@ -120,7 +120,7 @@ AS
       p_db_office_code   IN   NUMBER DEFAULT NULL
    )
       RETURN NUMBER;
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_id        [description needed]
@@ -141,7 +141,7 @@ AS
       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    )
       RETURN NUMBER;
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_id        [description needed]
@@ -159,7 +159,7 @@ AS
       p_duration_id         IN   VARCHAR2 DEFAULT NULL,
       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_id_old       [description needed]
@@ -181,7 +181,7 @@ AS
       p_param_check             IN   VARCHAR2 DEFAULT 'T',
       p_db_office_id            IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_id_old  [description needed]
@@ -193,7 +193,7 @@ AS
       p_screening_id_new   IN   VARCHAR2,
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_id      [description needed]
@@ -205,7 +205,7 @@ AS
       p_screening_id_desc   IN   VARCHAR2,
       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_id      [description needed]
@@ -223,7 +223,7 @@ AS
       p_cascade             IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_id                  [description needed]
@@ -245,7 +245,7 @@ AS
       p_ignore_nulls                   IN   VARCHAR2 DEFAULT 'T',
       p_db_office_id                   IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_id_old  [description needed]
@@ -259,7 +259,7 @@ AS
       p_param_check        IN   VARCHAR2 DEFAULT 'T',
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_use_db_crit      [description needed]
@@ -277,7 +277,7 @@ AS
       p_data_stream_id   IN       VARCHAR2,
       p_db_office_id     IN       VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_id       [description needed]
@@ -289,7 +289,7 @@ AS
       p_scr_assign_array   IN   screen_assign_array,
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_screening_id      [description needed]
@@ -303,7 +303,7 @@ AS
       p_unassign_all       IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id       IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_timeseries_data [description needed]
@@ -321,7 +321,7 @@ AS
    );
 
 -- transfromation tables...
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_db_office_id [description needed]
@@ -330,7 +330,7 @@ AS
     */
    FUNCTION cat_tr_templates_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_tr_templates_t PIPELINED;
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_template_id   [description needed]
@@ -343,7 +343,7 @@ AS
       p_db_office_id   IN   VARCHAR2 DEFAULT NULL
    )
       RETURN tr_template_set_masks_t PIPELINED;
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_template_id   [description needed]
@@ -356,14 +356,14 @@ AS
       p_db_office_id   IN   VARCHAR2 DEFAULT NULL
    )
       RETURN tr_template_set_t PIPELINED;
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @return [description needed]
     */
    FUNCTION cat_tr_transforms_tab
       RETURN cat_tr_transforms_t PIPELINED;
-   /**
+   /* (non-javadoc)
     * [description needed]
     * @param p_template_id        [description needed]
     * @param p_cwms_ts_id         [description needed]
@@ -380,7 +380,7 @@ AS
       p_reassign_existing   IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id        IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_template_id    [description needed]
@@ -392,7 +392,7 @@ AS
       p_cwms_ts_id     IN   VARCHAR2,
       p_db_office_id   IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_template_id             [description needed]
@@ -404,7 +404,7 @@ AS
       p_delete_template_cascade   IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id              IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_template_id      [description needed]
@@ -416,7 +416,7 @@ AS
       p_template_id_new   IN   VARCHAR2,
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_template_id    [description needed]
@@ -428,7 +428,7 @@ AS
       description_new   IN   VARCHAR2,
       p_db_office_id    IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_template_id        [description needed]
@@ -446,7 +446,7 @@ AS
       p_replace_existing     IN   VARCHAR2 DEFAULT 'F',
       p_db_office_id         IN   VARCHAR2 DEFAULT NULL
    );
-   /**
+   /* (non-javadoc)
     * [description needed]
     *
     * @param p_location_id       [description needed]
