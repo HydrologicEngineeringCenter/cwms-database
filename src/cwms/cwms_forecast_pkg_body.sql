@@ -537,7 +537,7 @@ procedure store_ts(
    p_time_zone       in varchar2,
    p_timeseries_data in ztsv_array,
    p_fail_if_exists  in varchar2,
-   p_store_rule      in varchar2 default null, -- null = DELETE INSERT
+   p_store_rule      in varchar2,
    p_office_id       in varchar2 default null) -- null = user's office id
 is
    ts_id_not_found       exception; pragma exception_init(ts_id_not_found, -20001);
@@ -720,6 +720,7 @@ begin
          p_cwms_ts_id      => p_cwms_ts_id,
          p_units           => p_units,
          p_timeseries_data => l_timeseries_data,
+         p_store_rule      => p_store_rule,
          p_version_date    => nvl(l_version_date, l_rec.version_date),
          p_office_id       => p_office_id);
    end if;

@@ -1071,7 +1071,7 @@ AS
       p_cwms_ts_id        IN VARCHAR2,
       p_units             IN VARCHAR2,
       p_timeseries_data   IN tsv_array,
-      p_store_rule        IN VARCHAR2 DEFAULT NULL,
+      p_store_rule        IN VARCHAR2,
       p_override_prot     IN NUMBER DEFAULT cwms_util.false_num,
       p_versiondate       IN DATE DEFAULT cwms_util.non_versioned);
 
@@ -1097,7 +1097,7 @@ AS
       p_cwms_ts_id        IN VARCHAR2,
       p_units             IN VARCHAR2,
       p_timeseries_data   IN tsv_array,
-      p_store_rule        IN VARCHAR2 DEFAULT NULL,
+      p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
       p_office_id         IN VARCHAR2 DEFAULT NULL);
@@ -1130,7 +1130,7 @@ AS
       p_times           IN number_array,
       p_values          IN double_array,
       p_qualities       IN number_array,
-      p_store_rule      IN VARCHAR2 DEFAULT NULL,
+      p_store_rule      IN VARCHAR2,
       p_override_prot   IN VARCHAR2 DEFAULT 'F',
       p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
       p_office_id       IN VARCHAR2 DEFAULT NULL);
@@ -1161,7 +1161,7 @@ AS
       p_times           IN number_tab_t,
       p_values          IN number_tab_t,
       p_qualities       IN number_tab_t,
-      p_store_rule      IN VARCHAR2 DEFAULT NULL,
+      p_store_rule      IN VARCHAR2,
       p_override_prot   IN VARCHAR2 DEFAULT 'F',
       p_version_date    IN DATE DEFAULT cwms_util.non_versioned,
       p_office_id       IN VARCHAR2 DEFAULT NULL);
@@ -1184,7 +1184,7 @@ AS
     */
    PROCEDURE store_ts_multi (
       p_timeseries_array   IN timeseries_array,
-      p_store_rule         IN VARCHAR2 DEFAULT NULL,
+      p_store_rule         IN VARCHAR2,
       p_override_prot      IN VARCHAR2 DEFAULT 'F',
       p_version_date       IN DATE DEFAULT cwms_util.non_versioned,
       p_office_id          IN VARCHAR2 DEFAULT NULL);
@@ -1325,7 +1325,7 @@ AS
       p_cwms_ts_id        IN VARCHAR2,
       p_units             IN VARCHAR2,
       p_timeseries_data   IN ztsv_array,
-      p_store_rule        IN VARCHAR2 DEFAULT NULL,
+      p_store_rule        IN VARCHAR2,
       p_override_prot     IN VARCHAR2 DEFAULT 'F',
       p_version_date      IN DATE DEFAULT cwms_util.non_versioned,
       p_office_id         IN VARCHAR2 DEFAULT NULL);
@@ -1348,7 +1348,7 @@ AS
     */
    PROCEDURE zstore_ts_multi (
       p_timeseries_array   IN ztimeseries_array,
-      p_store_rule         IN VARCHAR2 DEFAULT NULL,
+      p_store_rule         IN VARCHAR2,
       p_override_prot      IN VARCHAR2 DEFAULT 'F',
       p_version_date       IN DATE DEFAULT cwms_util.non_versioned,
       p_office_id          IN VARCHAR2 DEFAULT NULL);

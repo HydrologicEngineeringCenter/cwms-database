@@ -373,7 +373,7 @@ procedure store_ts(
    p_time_zone       in varchar2,
    p_timeseries_data in ztsv_array,
    p_fail_if_exists  in varchar2,
-   p_store_rule      in varchar2 default null,  -- null = DELETE INSERT
+   p_store_rule      in varchar2,
    p_office_id       in varchar2 default null); -- null = user's office id   
 /**
  * Retrieves a single time series for a forecast from the database
