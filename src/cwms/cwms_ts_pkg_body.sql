@@ -1263,7 +1263,7 @@ AS
       OPEN p_date_cat FOR
            SELECT DISTINCT
                   cwms_util.change_timezone(version_date, 'UTC', p_time_zone) as version_date
-             FROM at_tsv
+             FROM av_tsv
             WHERE ts_code = p_cwms_ts_code
               AND date_time BETWEEN l_start_time AND l_end_time
          ORDER BY version_date;
