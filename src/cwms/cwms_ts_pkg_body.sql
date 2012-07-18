@@ -5131,6 +5131,13 @@ AS
                   where ts_code = l_ts_code;
 
             if l_delete_action = cwms_util.delete_ts_cascade then
+               ---------------------------------------
+               -- delete location group assignments --
+               ---------------------------------------
+               delete
+                 from at_ts_group_assignment
+                where ts_code = l_ts_code
+                   or ts_ref_code = l_ts_code;
                ------------------------------
                -- delete the timeseries id --
                ------------------------------

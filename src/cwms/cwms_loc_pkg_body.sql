@@ -2594,7 +2594,15 @@ AS
 				  BULK	COLLECT INTO l_location_codes, l_location_ids
 				  FROM	at_physical_location
 				 WHERE	base_location_code = l_base_location_code;
-
+                
+            -----------------------
+            -- group assignments --
+            -----------------------
+            delete 
+              from at_loc_group_assignment 
+             where location_code in (select * from table(l_location_codes))
+                or loc_ref_code in (select * from table(l_location_codes));
+             
 				------------
 				-- basins --
 				------------
@@ -2787,7 +2795,15 @@ AS
 					END LOOP;
 				END LOOP;
 			ELSE -- Deleting a single Sub Location --------------------------------
-				------------
+            -----------------------
+            -- group assignments --
+            -----------------------
+            delete 
+              from at_loc_group_assignment 
+             where location_code = l_location_code
+                or loc_ref_code = l_location_code;
+            
+   			------------
 				-- basins --
 				------------
 				UPDATE	at_basin
