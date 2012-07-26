@@ -210,7 +210,7 @@ IS
       parameter_id         VARCHAR2 (49),
       base_parameter_id    VARCHAR2 (16),
       sub_parameter_id     VARCHAR2 (32),
-      sub_parameter_desc   VARCHAR2 (80),
+      sub_parameter_desc   VARCHAR2 (160),
       db_office_id         VARCHAR2 (16),
       db_unit_id           VARCHAR2 (16),
       unit_long_name       VARCHAR2 (80),
