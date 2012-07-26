@@ -50,6 +50,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_LOC', null,
  * @field bounding_office_id   Office whose boundary encompasses location (may be inherited from base location)
  * @field nation_id            Nation encompassing location (may be inherited from base location)
  * @field nearest_city         City nearest to location (may be inherited from base location)
+ * @field active_flag          Depricated - loc_active_flag replaces active_flag as of v2.1
  */
 ');
 CREATE OR REPLACE FORCE VIEW av_loc
@@ -82,7 +83,8 @@ CREATE OR REPLACE FORCE VIEW av_loc
     published_longitude,
     bounding_office_id,
     nation_id,
-    nearest_city
+    nearest_city,
+    active_flag
 )
 AS
    select location_code,
@@ -113,7 +115,8 @@ AS
           published_longitude,
           bounding_office_id,
           nation_id,
-          nearest_city
+          nearest_city,
+          loc_active_flag
      from    (select o.office_code db_office_code,
                      p1.location_code,
                      p1.base_location_code,
