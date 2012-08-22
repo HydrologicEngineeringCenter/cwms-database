@@ -886,11 +886,11 @@ AS
                                 )
       RETURN VARCHAR2;
    /**
-    * Strips all leading and trailing whitespace from a string.
+    * Strips all leading and trailing whitespace and non-printable chars from a string.
     * 
     * @param p_text the string to strip
     * 
-    * @return the input string with all leading and trailing whitespace removed                
+    * @return the input string with all leading and trailing whitespace non-printable chars removed                
     */          
    FUNCTION strip (p_text IN VARCHAR2)
       RETURN VARCHAR2;
@@ -901,7 +901,7 @@ AS
     *        also essentially the W3C dateTime format used in XML
     *        
     * @return the <code><big>TIMESTAMP</big></code> equivalent of the input string                     
-    */             
+    */    
    FUNCTION TO_TIMESTAMP (p_iso_str IN VARCHAR2)
       RETURN timestamp;
    /**

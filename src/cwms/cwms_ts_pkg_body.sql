@@ -87,14 +87,33 @@ AS
       RETURN l_cwms_ts_id;
    END;
 
+   function clean_ts_id(
+      p_ts_id in varchar2)
+      return varchar2
+   is
+      l_parts str_tab_t;
+      l_ts_id varchar2(183);
+   begin
+      l_parts := cwms_util.split_text(p_ts_id, '.');
+      for i in 1..l_parts.count loop
+         l_parts(i) := cwms_util.strip(l_parts(i));
+      end loop;                                    
+      l_ts_id := cwms_util.join_text(l_parts, '.');
+      if length(l_ts_id) != length(p_ts_id) then
+         cwms_msg.log_db_message(
+            'CWMS_TS.CLEAN_TS_ID', 
+            cwms_msg.msg_level_normal, 
+            'Cleaned invalid TSID: '||p_ts_id); 
+      end if;
+      return l_ts_id;
+   end clean_ts_id;
+   
    --******************************************************************************/
    --
    --*******************************************************************   --
    --*******************************************************************   --
    --
    -- GET_CWMS_TS_ID -
-   --
-   -- Simply returns the cwms_ts_id using the case stored in the database   --
    --
    FUNCTION get_cwms_ts_id (p_cwms_ts_id   IN VARCHAR2,
                             p_office_id    IN VARCHAR2)
@@ -3723,7 +3742,7 @@ AS
       l_date_times          date_table_type;
       l_valid_times         date_table_type;
       l_min_interval        number;
-      l_count               number;
+      l_count               number; 
 
    --
    BEGIN
@@ -3748,15 +3767,16 @@ AS
          END IF;
       --
       ELSE
-         l_office_id := p_office_id;
+         l_office_id := cwms_util.strip(p_office_id);
       END IF;
       l_office_code := CWMS_UTIL.GET_OFFICE_CODE (l_office_id);
                                                                 
       begin
-         l_cwms_ts_id := get_cwms_ts_id(p_cwms_ts_id, l_office_id);
+         l_cwms_ts_id := clean_ts_id(p_cwms_ts_id);
+         l_cwms_ts_id := get_cwms_ts_id(l_cwms_ts_id, l_office_id);
       exception
          when ts_id_not_found then
-            l_cwms_ts_id := p_cwms_ts_id;
+            null;
       end;                                        
 
       l_version_date := trunc(NVL(p_version_date, cwms_util.non_versioned), 'mi');
@@ -5634,7 +5654,7 @@ AS
       -- Confirm old cwms_ts_id exists...
       --------------------------------------------------------
       l_ts_code_old :=
-         get_ts_code (p_cwms_ts_id     => p_cwms_ts_id_old,
+         get_ts_code (p_cwms_ts_id     => clean_ts_id(p_cwms_ts_id_old),
                       p_db_office_id   => l_office_id);
 
       --
@@ -5655,7 +5675,7 @@ AS
       BEGIN
          --
          l_ts_code_new :=
-            get_ts_code (p_cwms_ts_id     => p_cwms_ts_id_new,
+            get_ts_code (p_cwms_ts_id     => clean_ts_id(p_cwms_ts_id_new),
                          p_db_office_id   => l_office_id);
       --
 
@@ -5677,7 +5697,7 @@ AS
       ------------------------------------------------------------------
       -- Parse cwms_id_new --
       ------------------------------------------------------------------
-      parse_ts (p_cwms_ts_id_new,
+      parse_ts (clean_ts_id(p_cwms_ts_id_new),
                 l_base_location_id_new,
                 l_sub_location_id_new,
                 l_base_parameter_id_new,
@@ -7353,9 +7373,9 @@ end retrieve_existing_item_counts;
          WHEN NO_DATA_FOUND
          THEN
             l_base_parameter_id_new :=
-               cwms_util.get_base_id (p_parameter_id_new);
+               cwms_util.get_base_id (cwms_util.strip(p_parameter_id_new));
             l_sub_parameter_id_new :=
-               cwms_util.get_sub_id (p_parameter_id_new);
+               cwms_util.get_sub_id (cwms_util.strip(p_parameter_id_new));
 
             SELECT base_parameter_code
               INTO l_base_parameter_code_old
@@ -7609,7 +7629,7 @@ end retrieve_existing_item_counts;
       ----------------------------------
       -- determine if category exists --
       ----------------------------------
-      l_rec.ts_category_id := UPPER (p_ts_category_id);
+      l_rec.ts_category_id := UPPER (cwms_util.strip(p_ts_category_id));
 
       BEGIN
          SELECT *
@@ -7635,7 +7655,7 @@ end retrieve_existing_item_counts;
          THEN
             cwms_err.raise ('ITEM_ALREADY_EXISTS',
                             'Time series category',
-                            p_ts_category_id);
+                            cwms_util.strip(p_ts_category_id));
          ELSE
             IF     l_rec.db_office_code = cwms_util.db_office_code_all
                AND l_office_code != cwms_util.db_office_code_all
@@ -7654,7 +7674,7 @@ end retrieve_existing_item_counts;
       -----------------------------------
       IF NOT l_exists OR p_ts_category_desc IS NOT NULL OR NOT l_ignore_null
       THEN
-         l_rec.ts_category_desc := p_ts_category_desc;
+         l_rec.ts_category_desc := cwms_util.strip(p_ts_category_desc);
       END IF;
 
       IF l_exists
@@ -7717,11 +7737,11 @@ end retrieve_existing_item_counts;
            FROM at_ts_category
           WHERE     db_office_code IN
                        (l_office_code, cwms_util.db_office_code_all)
-                AND UPPER (ts_category_id) = UPPER (p_ts_category_id_new);
+                AND UPPER (ts_category_id) = UPPER (cwms_util.strip(p_ts_category_id_new));
 
          cwms_err.raise ('ITEM_ALREADY_EXISTS',
                          'Time series location category',
-                         p_ts_category_id_new);
+                         cwms_util.strip(p_ts_category_id_new));
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
@@ -7745,7 +7765,7 @@ end retrieve_existing_item_counts;
       -- rename the category --
       -------------------------
       UPDATE at_ts_category
-         SET ts_category_id = p_ts_category_id_new
+         SET ts_category_id = cwms_util.strip(p_ts_category_id_new)
        WHERE ts_category_code = l_category_rec.ts_category_code;
    END rename_ts_category;
 
@@ -7915,7 +7935,7 @@ end retrieve_existing_item_counts;
       -----------------------------------
       -- determine if the group exists --
       -----------------------------------
-      l_rec.ts_group_id := p_ts_group_id;
+      l_rec.ts_group_id := cwms_util.strip(p_ts_group_id);
 
       BEGIN
          SELECT *
@@ -7942,7 +7962,7 @@ end retrieve_existing_item_counts;
          THEN
             cwms_err.raise ('ITEM_ALREADY_EXISTS',
                             'Time series group',
-                            p_ts_category_id || '/' || p_ts_group_id);
+                            cwms_util.strip(p_ts_category_id) || '/' || cwms_util.strip(p_ts_group_id));
          ELSE
             IF     l_rec.db_office_code = cwms_util.db_office_code_all
                AND l_office_code != cwms_util.db_office_code_all
@@ -7950,9 +7970,9 @@ end retrieve_existing_item_counts;
                cwms_err.raise (
                   'ERROR',
                      'CWMS time series group '
-                  || p_ts_category_id
+                  || cwms_util.strip(p_ts_category_id)
                   || '/'
-                  || p_ts_group_id
+                  || cwms_util.strip(p_ts_group_id)
                   || ' can only be updated by owner.');
             END IF;
          END IF;
@@ -7965,7 +7985,7 @@ end retrieve_existing_item_counts;
 
       IF NOT l_exists OR p_ts_group_desc IS NOT NULL OR NOT l_ignore_nulls
       THEN
-         l_rec.ts_group_desc := p_ts_group_desc;
+         l_rec.ts_group_desc := cwms_util.strip(p_ts_group_desc);
       END IF;
 
       IF NOT l_exists OR p_shared_alias_id IS NOT NULL OR NOT l_ignore_nulls
@@ -8062,7 +8082,7 @@ end retrieve_existing_item_counts;
       -- rename the group --
       ----------------------
       UPDATE at_ts_group
-         SET ts_group_id = p_ts_group_id_new
+         SET ts_group_id = cwms_util.strip(p_ts_group_id_new)
        WHERE ts_group_code = l_rec.ts_group_code;
    END rename_ts_group;
 

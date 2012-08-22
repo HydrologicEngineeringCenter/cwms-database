@@ -1236,13 +1236,18 @@ AS
    FUNCTION strip (p_text IN VARCHAR2)
       RETURN VARCHAR2
    IS
+      l_first pls_integer := 1;
+      l_last  pls_integer := length(p_text);
    BEGIN
-      RETURN REGEXP_SUBSTR (p_text,
-                            '^\s*(.*?)\s*$',
-                            1,
-                            1,
-                            'n',
-                            1);
+      for i in l_first..l_last loop            
+         l_first := i;
+         exit when ascii(substr(p_text, i, 1)) between 33 and 126;  
+      end loop;
+      for i in reverse l_first..l_last loop
+         l_last := i;
+         exit when ascii(substr(p_text, i, 1)) between 33 and 126;  
+      end loop;
+      return substr(p_text, l_first, l_last-l_first+1);
    END strip;
 
    --------------------------------------------------------------------------------
