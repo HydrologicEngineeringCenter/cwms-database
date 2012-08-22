@@ -1,10 +1,10 @@
 set escape `;
 CREATE OR REPLACE PACKAGE cwms_util
 /**
- Miscellaneous constants and procedures.
- 
- @author Various
- @since CWMS 2.0
+ * Miscellaneous constants and procedures.
+ *
+ * @author Various
+ * @since CWMS 2.0
  */
 AS
    /**
@@ -220,32 +220,32 @@ AS
     */             
    TYPE cat_unit_tab_t IS TABLE OF cat_unit_rec_t;
    /**
-      Retrieves the nth delimited string.
-      <br>
-      Sequential delimiters in the source string result in null fields in the table,
-      except that if no delimiter is supplied, sequential whitespace characters are
-      treated as a single delimiter.
-      <br>
-      If no string can be found to satisfy the input parameters, the function return
-      <code><big>NULL</big></code>. 
-      
-      @param p_text The text to be split.
-      
-      @param p_return_index Specifies 'n' (which delimited string to return).
-      
-      @param p_separator The separator string on which to split the text. If not
-        specified or specified as <code><big>NULL</big></code>, the input text will be split
-        on all whitespace occurrences.
-        
-      @param p_max_split Specifies the maximum number of splits to perform.  The 
-        maximum number of items returned will be one greater than this number. If
-        not specified or specified as <code><big>NULL</big></code>, no maximum will be imposed
-        and the input text will be split on every occurrence of the specified
-        separator.
-        
-      @return The nth delimited string in the input string or <code><big>NULL</big></code>
-        if no such string exists.        
-   */
+     * Retrieves the nth delimited string.
+     * <br>
+     * Sequential delimiters in the source string result in null fields in the table,
+     * except that if no delimiter is supplied, sequential whitespace characters are
+     * treated as a single delimiter.
+     * <br>
+     * If no string can be found to satisfy the input parameters, the function return
+     * <code><big>NULL</big></code>.
+     *
+     * @param p_text The text to be split.
+     *
+     * @param p_return_index Specifies 'n' (which delimited string to return).
+     *
+     * @param p_separator The separator string on which to split the text. If not
+     *   specified or specified as <code><big>NULL</big></code>, the input text will be split
+     *   on all whitespace occurrences.
+     *
+     * @param p_max_split Specifies the maximum number of splits to perform.  The
+     *   maximum number of items returned will be one greater than this number. If
+     *   not specified or specified as <code><big>NULL</big></code>, no maximum will be imposed
+     *   and the input text will be split on every occurrence of the specified
+     *   separator.
+     *
+     * @return The nth delimited string in the input string or <code><big>NULL</big></code>
+     *   if no such string exists.
+     */
    function split_text (p_text        in varchar2,
                 p_return_index in integer ,
                         p_separator   IN VARCHAR2 DEFAULT NULL ,
@@ -253,84 +253,84 @@ AS
                        )
       RETURN VARCHAR2;
    /**
-      Splits string into a table of strings using the specified delimiter.
-      If no delmiter is specified, the string is split around whitespace.
-      <br>
-      Sequential delimiters in the source string result in null fields in the table,
-      except that if no delimiter is supplied, sequential whitespace characters are
-      treated as a single delimiter.
-      
-      @param p_text The text to be split.
-      
-      @param p_separator The separator string on which to split the text. If not
-        specified or specified as <code><big>NULL</big></code>, the input text will be split
-        on all whitespace occurrences.
-        
-      @param p_max_split Specifies the maximum number of splits to perform.  The 
-        maximum number of items returned will be one greater than this number. If
-        not specified or specified as <code><big>NULL</big></code>, no maximum will be imposed
-        and the input text will be split on every occurrence of the specified
-        separator.
-        
-      @return A table of strings.        
-   */
+     * Splits string into a table of strings using the specified delimiter.
+     * If no delmiter is specified, the string is split around whitespace.
+     * <br>
+     * Sequential delimiters in the source string result in null fields in the table,
+     * except that if no delimiter is supplied, sequential whitespace characters are
+     * treated as a single delimiter.
+     *
+     * @param p_text The text to be split.
+     *
+     * @param p_separator The separator string on which to split the text. If not
+     *   specified or specified as <code><big>NULL</big></code>, the input text will be split
+     *   on all whitespace occurrences.
+     *
+     * @param p_max_split Specifies the maximum number of splits to perform.  The
+     *   maximum number of items returned will be one greater than this number. If
+     *   not specified or specified as <code><big>NULL</big></code>, no maximum will be imposed
+     *   and the input text will be split on every occurrence of the specified
+     *   separator.
+     *
+     * @return A table of strings.
+     */
    FUNCTION split_text (p_text        IN VARCHAR2,
                         p_separator   IN VARCHAR2 DEFAULT NULL ,
                         p_max_split   IN INTEGER DEFAULT NULL
                        )
       RETURN str_tab_t result_cache;
    /**
-      Splits string into a table of strings using the specified delimiter.
-      If no delmiter is specified, the string is split around whitespace.
-      <br>
-      Sequential delimiters in the source string result in null fields in the table,
-      except that if no delimiter is supplied, sequential whitespace characters are
-      treated as a single delimiter.
-      
-      @param p_text The text to be split.
-      
-      @param p_separator The separator string on which to split the text. If not
-        specified or specified as <code><big>NULL</big></code>, the input text will be split
-        on all whitespace occurrences.
-        
-      @param p_max_split Specifies the maximum number of splits to perform.  The 
-        maximum number of items returned will be one greater than this number. If
-        not specified or specified as <code><big>NULL</big></code>, no maximum will be imposed
-        and the input text will be split on every occurrence of the specified
-        separator.
-        
-      @return A table of strings.        
-   */
+     * Splits string into a table of strings using the specified delimiter.
+     * If no delmiter is specified, the string is split around whitespace.
+     * <br>
+     * Sequential delimiters in the source string result in null fields in the table,
+     * except that if no delimiter is supplied, sequential whitespace characters are
+     * treated as a single delimiter.
+     *
+     * @param p_text The text to be split.
+     *
+     * @param p_separator The separator string on which to split the text. If not
+     *   specified or specified as <code><big>NULL</big></code>, the input text will be split
+     *   on all whitespace occurrences.
+     *
+     * @param p_max_split Specifies the maximum number of splits to perform.  The
+     *   maximum number of items returned will be one greater than this number. If
+     *   not specified or specified as <code><big>NULL</big></code>, no maximum will be imposed
+     *   and the input text will be split on every occurrence of the specified
+     *   separator.
+     *
+     * @return A table of strings.
+     */
    FUNCTION split_text (p_text        IN CLOB,
                         p_separator   IN VARCHAR2 DEFAULT NULL ,
                         p_max_split   IN INTEGER DEFAULT NULL
                        )
       RETURN str_tab_t;
    /**
-      Joins a table of strings into a single string using the specified delimiter.
-      If no delimiter is supplied or is specified as <code><big>NULL</big></code>, the input 
-      strings are simply concatenated together.
-      <p>
-      Null strings in the table result in adjacent delimiters in the returned string.
-      
-      @param p_text_tab A table of strings to be joined
-      
-      @param p_separator The string to insert between the strings in <code><big>p_tab_text</big></code>
-      
-      @return The joined string
-    */
+     * Joins a table of strings into a single string using the specified delimiter.
+     * If no delimiter is supplied or is specified as <code><big>NULL</big></code>, the input
+     * strings are simply concatenated together.
+     * <p>
+     * Null strings in the table result in adjacent delimiters in the returned string.
+     *
+     * @param p_text_tab A table of strings to be joined
+     *
+     * @param p_separator The string to insert between the strings in <code><big>p_tab_text</big></code>
+     *
+     * @return The joined string
+     */
    FUNCTION join_text (p_text_tab    IN str_tab_t,
                        p_separator   IN VARCHAR2 DEFAULT NULL
                       )
       RETURN VARCHAR2;
    /**
-      Formats the XML in the CLOB to have one element tag per line, indented by
-      the specified string.  The input is overwritten with the output.
-      
-      @param p_xml_clob <code><big>input: </big></code> The XML instance to be formatted<br> 
-                        <code><big>output:</big></code> The formatted XML instance
-      @param p_indent The string to use for indentation                         
-    */
+     * Formats the XML in the CLOB to have one element tag per line, indented by
+     * the specified string.  The input is overwritten with the output.
+     *
+     * @param p_xml_clob <code><big>input: </big></code> The XML instance to be formatted<br>
+     *                   <code><big>output:</big></code> The formatted XML instance
+     * @param p_indent The string to use for indentation
+     */
    PROCEDURE format_xml (p_xml_clob   IN OUT NOCOPY CLOB,
                          p_indent     IN            VARCHAR2 DEFAULT CHR (9)
                         );
