@@ -855,6 +855,161 @@ function retrieve_loc_lvl_values2(
    return varchar2;
 /**
  * Retrieves a time series of location level values for a specified location level
+ * and specified times
+ *
+ * @param p_level_values       The location level values as a ztsv_array
+ * @param p_specified_times    The times to retrieve the location level values for (only date_time member is used from each element)
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
+procedure retrieve_loc_lvl_values3(
+   p_level_values            out ztsv_array,
+   p_specified_times         in  ztsv_array,
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_office_id               in  varchar2 default null);
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * and specified times
+ *
+ * @param p_specified_times    The times to retrieve the location level values for (only date_time member is used from each element)
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The location level values as a ztsv_array
+ */
+function retrieve_loc_lvl_values3(
+   p_specified_times         in  ztsv_array,
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_office_id               in  varchar2 default null)
+   return ztsv_array;
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * and specified times
+ *
+ * @param p_level_values       The location level values as a double_tab_t
+ * @param p_specified_times    The times to retrieve the location level values
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
+procedure retrieve_loc_lvl_values3(
+   p_level_values            out double_tab_t,
+   p_specified_times         in  date_table_type,
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_office_id               in  varchar2 default null);
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * and specified times
+ *
+ * @param p_specified_times    The times to retrieve the location level values
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @return The location level values as a double_tab_t
+ */
+function retrieve_loc_lvl_values3(
+   p_specified_times         in  date_table_type,
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_office_id               in  varchar2 default null)
+   return double_tab_t;
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * and times taken from a specified time series
+ *
+ * @param p_level_values       The location level values as a ztsv_array
+ * @param p_ts_id              A time series to take the times from (using the specified time window)
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_start_time         The start of the time window
+ * @param p_end_time           The end of the time window
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ */
+procedure retrieve_loc_lvl_values3(
+   p_level_values            out ztsv_array,
+   p_ts_id                   in  varchar2,
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_start_time              in  date,
+   p_end_time                in  date,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_office_id               in  varchar2 default null);
+/**
+ * Retrieves a time series of location level values for a specified location level
+ * and times taken from a specified time series
+ *
+ * @param p_ts_id              A time series to take the times from (using the specified time window)
+ * @param p_location_level_id  The location level identifier. Format is location.parameter.parameter_type.duration.specified_level
+ * @param p_level_units        The value unit to retrieve the level values in
+ * @param p_start_time         The start of the time window
+ * @param p_end_time           The end of the time window
+ * @param p_attribute_id       The attribute identifier, if applicable. Format is parameter.parameter_type.duration
+ * @param p_attribute_value    The value of the attribute, if applicable
+ * @param p_attribute_units    The unit of the attribute, if applicable
+ * @param p_timezone_id        The time zone of the time window. Retrieved dates are also in this time zone
+ * @param p_office_id          The office that owns the location level. If not specified or NULL, the session user's default office is used
+ *
+ * @param p_level_values       The location level values as a ztsv_array
+ */
+function retrieve_loc_lvl_values3(
+   p_ts_id                   in  varchar2,
+   p_location_level_id       in  varchar2,
+   p_level_units             in  varchar2,
+   p_start_time              in  date,
+   p_end_time                in  date,
+   p_attribute_id            in  varchar2 default null,
+   p_attribute_value         in  number   default null,
+   p_attribute_units         in  varchar2 default null,
+   p_timezone_id             in  varchar2 default 'UTC',
+   p_office_id               in  varchar2 default null)
+   return ztsv_array;
+/**
+ * Retrieves a time series of location level values for a specified location level
  * time series, specified level, and time window.  The location level identifier
  * is generated from p_ts_id and p_spec_level_id
  *
