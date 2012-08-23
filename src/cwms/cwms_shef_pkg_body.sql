@@ -1,4 +1,4 @@
-/* Formatted on 1/10/2012 11:32:46 AM (QP5 v5.185.11230.41888) */
+/* Formatted on 8/22/2012 2:41:50 PM (QP5 v5.215.12089.38647) */
 CREATE OR REPLACE PACKAGE BODY cwms_shef
 AS
    PROCEDURE cat_shef_crit_lines (p_shef_crit_lines       OUT SYS_REFCURSOR,
@@ -155,7 +155,7 @@ AS
 
    FUNCTION get_crit_file_code (p_data_stream_code   IN NUMBER,
                                 p_utc_version_date   IN DATE DEFAULT NULL,
-                                p_date_rank         IN NUMBER DEFAULT NULL)
+                                p_date_rank          IN NUMBER DEFAULT NULL)
       RETURN NUMBER
    IS
       l_crit_file_code   NUMBER;
@@ -558,6 +558,9 @@ AS
       l_data_feed_id2              at_data_feed_id.data_feed_id%TYPE;
       l_db_office_code2            NUMBER;
       l_db_office_id2              cwms_office.office_id%TYPE;
+      l_shef_spec_alias_entry      at_properties.prop_value%TYPE;
+      l_prop_comment               at_properties.prop_comment%TYPE;
+      l_build_shef_id_table        BOOLEAN;
 
       --
       --
@@ -694,10 +697,11 @@ AS
          l_max_len_shef_loc_id := 8;
       ELSE
          l_data_stream_mgt_param := 'p_data_feed_id';
-         l_max_len_shef_loc_id :=
-              8
-            - get_data_feed_prefix_length (
-                 p_data_feed_code => l_data_feed_code);
+         l_max_len_shef_loc_id := 8;
+      --         l_max_len_shef_loc_id :=
+      --              8
+      --            - get_data_feed_prefix_length (
+      --                 p_data_feed_code => l_data_feed_code);
       END IF;
 
 
@@ -838,10 +842,7 @@ AS
          --==
          --====
          --======
-         l_loc_group_code :=
-            get_loc_group_code ('Agency Aliases',
-                                l_loc_group_id,
-                                l_db_office_code);
+
 
          SELECT a.location_code
            INTO l_location_code
@@ -859,42 +860,69 @@ AS
          --==
          --====
          --======
-         BEGIN
-            SELECT a.loc_alias_id
-              INTO l_shef_id
-              FROM at_loc_group_assignment a
-             WHERE     a.loc_group_code = l_loc_group_code
-                   AND a.location_code = l_location_code;
-         EXCEPTION
-            WHEN NO_DATA_FOUND
-            THEN
-               --======
-               --====
-               --==
-               -- if a loc_group assignment for this location/group has not already-
-               -- been made, then try and make the assignment.
-               --==
-               --====
-               --======
-               l_shef_id := NULL;
 
-               --
-               IF l_shef_loc_id IS NOT NULL
+         cwms_properties.get_property (
+            p_value       => l_shef_spec_alias_entry,
+            p_comment     => l_prop_comment,
+            p_category    => 'Office_Pref.' || l_db_office_id,
+            p_id          => 'SHEF_Spec_Alias_Entry',
+            p_default     => 'T',
+            p_office_id   => l_db_office_id);
+
+         l_build_shef_id_table := CWMS_UTIL.IS_TRUE (l_shef_spec_alias_entry);
+
+         IF l_build_shef_id_table
+         THEN
+            l_loc_group_code :=
+               get_loc_group_code ('Agency Aliases',
+                                   l_loc_group_id,
+                                   l_db_office_code);
+
+
+
+            BEGIN
+               SELECT a.loc_alias_id
+                 INTO l_shef_id
+                 FROM at_loc_group_assignment a
+                WHERE     a.loc_group_code = l_loc_group_code
+                      AND a.location_code = l_location_code;
+            EXCEPTION
+               WHEN NO_DATA_FOUND
                THEN
-                  INSERT
-                    INTO at_loc_group_assignment (location_code,
-                                                  loc_group_code,
-                                                  loc_alias_id)
-                  VALUES (l_location_code, l_loc_group_code, l_shef_loc_id);
-               ELSE
-                  cwms_err.raise (
-                     'ERROR',
-                        'Unable to find a SHEF Location Id for this TS ID: '
-                     || p_cwms_ts_id
-                     || ' and this Location Group: '
-                     || l_loc_group_id);
-               END IF;
-         END;
+                  --======
+                  --====
+                  --==
+                  -- if a loc_group assignment for this location/group has not already-
+                  -- been made, then try and make the assignment.
+                  --==
+                  --====
+                  --======
+                  l_shef_id := NULL;
+
+                  --
+                  IF l_shef_loc_id IS NOT NULL
+                  THEN
+                     INSERT
+                       INTO at_loc_group_assignment (location_code,
+                                                     loc_group_code,
+                                                     loc_alias_id)
+                     VALUES (
+                               l_location_code,
+                               l_loc_group_code,
+                               l_shef_loc_id);
+                  ELSE
+                     cwms_err.raise (
+                        'ERROR',
+                           'Unable to find a SHEF Location Id for this TS ID: '
+                        || p_cwms_ts_id
+                        || ' and this Location Group: '
+                        || l_loc_group_id);
+                  END IF;
+            END;
+         ELSE
+            l_loc_group_code := 0;
+            l_shef_id := l_shef_loc_id;
+         END IF;
 
          IF l_shef_id IS NULL AND l_shef_loc_id IS NULL
          THEN
@@ -3143,7 +3171,7 @@ AS
       p_shef_decode_spec_rc      OUT SYS_REFCURSOR,
       p_data_stream_id        IN     VARCHAR2,
       p_utc_version_date      IN     DATE DEFAULT NULL,
-      p_date_rank            IN     NUMBER DEFAULT NULL,
+      p_date_rank             IN     NUMBER DEFAULT NULL,
       p_db_office_id          IN     VARCHAR2 DEFAULT NULL)
    IS
       l_db_office_code     NUMBER
@@ -3153,9 +3181,9 @@ AS
       l_crit_file_code     NUMBER
          := get_crit_file_code (p_data_stream_code   => l_data_stream_code,
                                 p_utc_version_date   => p_utc_version_date,
-                                p_date_rank         => p_date_rank);
+                                p_date_rank          => p_date_rank);
    BEGIN
-   --dbms_output.put_line('l_crit_file_code: ' || l_crit_file_code);
+      --dbms_output.put_line('l_crit_file_code: ' || l_crit_file_code);
       CASE
          WHEN l_crit_file_code IS NULL
          THEN
@@ -3208,7 +3236,7 @@ AS
    FUNCTION cat_shef_decode_spec_tab (
       p_data_stream_id     IN VARCHAR2,
       p_utc_version_date   IN DATE DEFAULT NULL,
-      p_date_rank         IN NUMBER DEFAULT NULL,
+      p_date_rank          IN NUMBER DEFAULT NULL,
       p_db_office_id       IN VARCHAR2 DEFAULT NULL)
       RETURN cat_shef_decode_spec_tab_t
       PIPELINED
@@ -3219,7 +3247,7 @@ AS
       cat_shef_decode_spec (p_shef_decode_spec_rc   => query_cursor,
                             p_data_stream_id        => p_data_stream_id,
                             p_utc_version_date      => p_utc_version_date,
-                            p_date_rank            => p_date_rank,
+                            p_date_rank             => p_date_rank,
                             p_db_office_id          => p_db_office_id);
 
       LOOP
@@ -4448,7 +4476,7 @@ AS
             || rec.data_stream_code);
 
          CASE
-            WHEN rec.idle_time IS NULL       -- Need to initialize time and hash
+            WHEN rec.idle_time IS NULL     -- Need to initialize time and hash
             THEN
                CASE
                   WHEN rec.update_time IS NOT NULL
@@ -4531,7 +4559,7 @@ AS
                            THEN
                               l_archive_shef_specs := TRUE;
                            END IF;
-                        ELSE                 -- Reset both idle time and hash...
+                        ELSE               -- Reset both idle time and hash...
                            reset_time_hash (
                               p_data_stream_code   => rec.data_stream_code,
                               p_time               => l_run_time,
