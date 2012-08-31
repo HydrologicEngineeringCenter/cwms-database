@@ -2217,7 +2217,7 @@ begin
       rate(
          l_results,
          p_rating_spec,
-         l_values,
+         double_tab_tab_t(l_values),
          p_units,
          p_round,
          l_value_times,
@@ -2225,13 +2225,15 @@ begin
          p_time_zone,
          p_office_id);
       p_results := ztsv_array();
+      p_results.extend(p_values.count);
       for i in 1..p_values.count loop
-         p_results(i).date_time := p_values(i).date_time;
-         p_results(i).value := l_results(i);
-         p_results(i).quality_code := case l_results(i) is null
-                                         when true  then 5
-                                         when false then 0
-                                      end;
+         p_results(i) := ztsv_type(
+            p_values(i).date_time,
+            l_results(i),
+            case l_results(i) is null
+               when true  then 5
+               when false then 0
+            end);
       end loop;
    end if;
 end rate;
@@ -3452,6 +3454,9 @@ begin
             ||p_independent_ids.count
             ||' specified');
       end if;
+      for i in 1..l_units.count-1 loop
+         l_units(i) := cwms_util.get_default_units(l_units(i));
+      end loop;
       l_units(l_units.count) := p_units;
       for i in 1..p_independent_ids.count loop
          l_parts := cwms_util.split_text(p_independent_ids(i), separator1);
