@@ -645,7 +645,6 @@ AS
    --
    FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN NUMBER
-      RESULT_CACHE
    IS
       l_office_code   NUMBER := NULL;
    BEGIN
@@ -1992,7 +1991,6 @@ AS
    FUNCTION get_unit_id (p_unit_or_alias   IN VARCHAR2,
                          p_office_id       IN VARCHAR2 DEFAULT NULL)
       RETURN VARCHAR2
-      RESULT_CACHE
    IS
       l_unit_id       VARCHAR2 (16);
       l_office_code   NUMBER (10) := get_db_office_code (p_office_id);

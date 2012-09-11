@@ -643,7 +643,7 @@ AS
     * @throws INVALID_OFFICE_ID if the specified office identifier is invalid                             
     */       
    FUNCTION get_office_code (p_office_id IN VARCHAR2 DEFAULT NULL )
-      RETURN NUMBER result_cache;
+      RETURN NUMBER;
    /**
     * Returns the specified or default office identifier
     * 
@@ -977,7 +977,7 @@ AS
    function get_unit_id(
       p_unit_or_alias in varchar2,
       p_office_id     in varchar2 default null)
-      return varchar2 result_cache;
+      return varchar2;
       
    /**
     * Retrieves the unit identifier for a specified unit code
