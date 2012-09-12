@@ -579,6 +579,7 @@ as
          end if;
       end loop;
       self.parameters_id := self.parameters_id || cwms_rating.separator2 || dep_parameter_id;
+      return;
    end;
    
    constructor function rating_template_t(
