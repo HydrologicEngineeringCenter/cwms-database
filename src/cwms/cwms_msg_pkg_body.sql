@@ -37,7 +37,6 @@ begin
    -- release the lock and return --
    ---------------------------------
    commit;
-   dbms_output.put_line(l_msg_id);
    return l_msg_id;
 end;
 
@@ -115,18 +114,17 @@ is
    l_message_properties dbms_aq.message_properties_t;
    l_enqueue_options    dbms_aq.enqueue_options_t;
    l_msgid              raw(16);
-   l_queuename          varchar2(32);
+   l_queuename          varchar2(64);
    l_now                integer := cwms_util.current_millis;
    l_expiration_time    constant binary_integer := 900; -- 5 minutes
    l_java_action        varchar2(4000);
+   l_queueing_paused    boolean;
+   l_parts              str_tab_t;
+   l_office_id          varchar2(16);
 begin
-   l_queuename := get_queue_name(p_msg_queue);
-   if l_queuename is null then
-      cwms_err.raise('INVALID_ITEM', p_msg_queue, 'message queue name');
-   end if;
-   -------------------------
-   -- enqueue the message --
-   -------------------------
+   ----------------------------------------------------------
+   -- finish setting up the message and clean up java side --
+   ----------------------------------------------------------
    if p_immediate then
       l_enqueue_options.visibility := dbms_aq.immediate;
    else
@@ -137,23 +135,37 @@ begin
    p_message.flush(p_messageid);
    p_message.clean(p_messageid);
    l_java_action := dbms_java.endsession_and_related_state;
-
-   dbms_aq.enqueue(
-      l_queuename,
-      l_enqueue_options,
-      l_message_properties,
-      p_message,
-      l_msgid);
-
+   -------------------------------
+   -- get the actual queue name --
+   -------------------------------
+   l_queuename := get_queue_name(p_msg_queue);
+   if l_queuename is null then
+      cwms_err.raise('INVALID_ITEM', p_msg_queue, 'message queue name');
+   end if;
+   --------------------------------------
+   -- determine if enqueuing is paused --
+   --------------------------------------
+   l_parts := cwms_util.split_text(l_queuename, '.');
+   l_office_id := upper(substr(l_parts(l_parts.count), 1, instr(l_parts(l_parts.count), '_')-1));
+   l_queueing_paused := is_message_queueing_paused(l_office_id);
+   if not l_queueing_paused then
+      -------------------------
+      -- enqueue the message --
+      -------------------------
+      dbms_aq.enqueue(
+         l_queuename,
+         l_enqueue_options,
+         l_message_properties,
+         p_message,
+         l_msgid);
+   end if;
    return l_now;
-
 exception
    ---------------------------------------
    -- ignore the case of no subscribers --
    ---------------------------------------
    when exc_no_subscribers then return l_now;
    when others then raise;
-
 end publish_message;
 
 -------------------------------------------------------------------------------
@@ -1520,6 +1532,211 @@ begin
       when not_a_subscriber then dbms_output.put_line(sqlerrm); -- harmless
    end;         
 end unregister_msg_callback;
+
+function get_queueing_pause_prop_key(
+   p_all_sessions in boolean,
+   p_get_mask     in boolean default false)
+   return varchar2
+is
+   l_prop_id at_properties.prop_id%type := 'queues.enqueueing.paused.until';
+begin
+   if p_all_sessions then
+      if p_get_mask then
+         l_prop_id := l_prop_id||'.session=%';
+      end if;
+   else
+      l_prop_id := l_prop_id||'.session='||sys_context('USERENV', 'SESSIONID');
+   end if; 
+   dbms_output.put_line(l_prop_id);
+   return l_prop_id;
+end get_queueing_pause_prop_key;   
+
+procedure set_pause_until(
+   p_until        date,
+   p_all_sessions boolean,
+   p_office_id    varchar2)
+is
+begin
+   cwms_properties.set_property(
+      'CWMSDB', 
+      get_queueing_pause_prop_key(p_all_sessions), 
+      to_char(p_until, 'yyyy/mm/dd hh24:mi'), 
+      'set at '||to_char(sysdate, 'yyyy/mm/dd hh24:mi'), 
+      p_office_id);
+end set_pause_until;
+
+function get_pause_until(   
+   p_all_sessions boolean,
+   p_office_id    varchar2)
+   return date
+is
+   l_until      date;
+   l_prop_value at_properties.prop_value%type;
+begin
+   l_prop_value := cwms_properties.get_property(
+      'CWMSDB', 
+      get_queueing_pause_prop_key(p_all_sessions), 
+      null, 
+      p_office_id);
+      l_until := case l_prop_value is null
+         when true  then date '1000-01-01' 
+         when false then to_date(l_prop_value, 'yyyy/mm/dd hh24:mi')
+      end;
+   return l_until;      
+end get_pause_until;      
+   
+procedure pause_message_queueing (
+   p_number       in integer  default 10,
+   p_unit         in varchar2 default 'MINUTES',
+   p_all_sessions in varchar2 default 'F',
+   p_office_id    in varchar2 default null)
+is
+   l_now          date := sysdate;
+   l_office_id    varchar2(16);
+   l_number       integer;
+   l_unit         varchar2(8);
+   l_all_sessions boolean;
+   l_until        date;
+begin
+   cwms_util.check_inputs(str_tab_t(p_unit, p_office_id, p_all_sessions));
+   l_office_id := cwms_util.get_db_office_id(p_office_id);
+   l_unit := upper(substr(p_unit, 1, 8));
+   if l_unit not in ('MINUTE', 'MINUTES', 'HOUR', 'HOURS', 'DAY', 'DAYS') then
+      cwms_err.raise('ERROR', 'P_unit must be ''MINUTE(S)'', ''HOUR(S)'', or ''DAY(S)''');
+   end if;
+   l_all_sessions := cwms_util.return_true_or_false(p_all_sessions);
+   l_number := p_number;
+   if substr(l_unit, 1, 4) = 'HOUR' then
+      l_number := l_number * 60;
+   elsif substr(l_unit, 1, 3) = 'DAY' then
+      l_number := l_number * 1440;
+   end if;
+   if not l_number between 1 and 10080 then
+      cwms_err.raise('ERROR', 'Pause time cannot be less than 1 minute or more than 1 week');
+   end if;
+   l_until := l_now + l_number / 1440;
+   
+   if get_pause_until(l_all_sessions, l_office_id) < l_until then
+   
+      set_pause_until(
+         l_until, 
+         l_all_sessions, 
+         l_office_id);
+                  
+      cwms_msg.log_db_message(
+         'PAUSE_MESSAGE_QUEUEING', 
+         cwms_msg.msg_level_normal, 
+         'Pausing message queueing until '
+         ||to_char(l_until, 'yyyy/mm/dd hh24:mi')
+         ||' ('
+         ||l_number
+         ||' minutes) for office '
+         ||l_office_id
+         ||case l_all_sessions
+              when true  then ' session '||sys_context('USERENV', 'SESSIONID')
+              when false then ' all sessions'
+           end);
+   else                  
+      cwms_msg.log_db_message(
+         'PAUSE_MESSAGE_QUEUEING', 
+         cwms_msg.msg_level_normal, 
+         'Message queueing already paused until '
+         ||to_char(get_pause_until(l_all_sessions, l_office_id), 'yyyy/mm/dd hh24:mi')
+         ||' for office '
+         ||l_office_id
+         ||case l_all_sessions
+              when true  then ' session '||sys_context('USERENV', 'SESSIONID')
+              when false then ' all sessions'
+           end
+         ||', request ignored.');
+   end if;
+end pause_message_queueing;   
+   
+procedure unpause_message_queueing(
+   p_all_sessions in varchar2 default 'F',
+   p_force        in varchar2 default 'F',
+   p_office_id    in varchar2 default null)
+is
+   l_all_sessions boolean;
+   l_force        boolean;
+   l_office_id    varchar2(16);
+   l_prop_id_mask at_properties.prop_id%type;
+begin
+   cwms_util.check_inputs(str_tab_t(p_all_sessions, p_force, p_office_id));
+   l_all_sessions := cwms_util.return_true_or_false(p_all_sessions);
+   l_force := cwms_util.return_true_or_false(p_force);
+   l_office_id := cwms_util.get_db_office_id(p_office_id);
+   cwms_msg.log_db_message(
+      'UNPAUSE_MESSAGE_QUEUEING', 
+      cwms_msg.msg_level_normal, 
+      'Unpausing queueing for office '
+      ||l_office_id
+      ||case l_all_sessions
+              when false then ' session '||sys_context('USERENV', 'SESSIONID')
+              when true  then ' all sessions (force='
+                              ||case l_force
+                                   when true  then 'T'
+                                   when false then 'F'
+                                end
+                              ||')'
+        end);
+   if l_all_sessions then
+      begin
+         cwms_properties.delete_property(
+            'CWMSDB', 
+            get_queueing_pause_prop_key(true), 
+            l_office_id);
+      exception
+         when no_data_found then null;
+      end;
+      if (l_force) then
+         l_prop_id_mask := get_queueing_pause_prop_key(true, true);
+         delete 
+           from at_properties
+          where office_code = cwms_util.get_db_office_code(l_office_id)
+            and prop_category = 'CWMSDB'
+            and prop_id like l_prop_id_mask;
+      end if;
+   else
+      begin
+         cwms_properties.delete_property(
+            'CWMSDB', 
+            get_queueing_pause_prop_key(false), 
+            l_office_id);
+      exception
+         when no_data_found then null;
+      end;
+   end if;        
+end unpause_message_queueing;   
+
+function get_message_queueing_pause_min(
+   p_office_id in varchar2 default null)
+   return integer
+is
+   l_office_id  varchar2(16);
+   l_until      date;
+   l_minutes    integer;
+begin
+   cwms_util.check_input(p_office_id);
+   l_office_id := cwms_util.get_db_office_id(p_office_id);
+   l_until := greatest(
+      get_pause_until(true,  l_office_id),
+      get_pause_until(false, l_office_id));
+   l_minutes := case l_until > sysdate
+                   when true  then ceil((l_until - sysdate) * 1440)
+                   when false then -1
+                end;      
+   return l_minutes;      
+end get_message_queueing_pause_min;   
+
+function is_message_queueing_paused(
+   p_office_id in varchar2 default null)
+   return boolean
+is
+begin
+   return get_message_queueing_pause_min(p_office_id) > 0;
+end is_message_queueing_paused;         
+
 
 end cwms_msg;
 /

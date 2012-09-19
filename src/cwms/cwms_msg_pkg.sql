@@ -479,7 +479,35 @@ function register_msg_callback (
 procedure unregister_msg_callback (
    p_procedure_name  in varchar2,
    p_queue_name      in varchar2,
-   p_subscriber_name in varchar2);
+   p_subscriber_name in varchar2); 
+
+/*
+ * Pauses the enqueueing of all messages for the specified office for a specified time period.  If this is called without
+ * any parameters, message enqueueing is paused for 10 minutes from the current time for the session user's default office.
+ *
+ * @param p_number
+ * @param p_unit
+ * @param p_office_id  The office to pause message enqueueing for.  If not specified or NULL, the session user's default office is used.
+ *
+ */   
+procedure pause_message_queueing (
+   p_number       in integer  default 10,
+   p_unit         in varchar2 default 'MINUTES',
+   p_all_sessions in varchar2 default 'F',
+   p_office_id    in varchar2 default null);
+   
+procedure unpause_message_queueing(
+   p_all_sessions in varchar2 default 'F',
+   p_force        in varchar2 default 'F',
+   p_office_id    in varchar2 default null);
+
+function get_message_queueing_pause_min(
+   p_office_id in varchar2 default null)
+   return integer;
+
+function is_message_queueing_paused(
+   p_office_id in varchar2 default null)
+   return boolean;      
 
 end cwms_msg;
 /
