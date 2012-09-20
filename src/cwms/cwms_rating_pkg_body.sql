@@ -947,10 +947,11 @@ procedure store_ratings(
    p_ratings        in rating_tab_t,
    p_fail_if_exists in varchar2)
 is
+   l_ratings rating_tab_t := p_ratings;
 begin
-   if p_ratings is not null then
-      for i in 1..p_ratings.count loop
-         p_ratings(i).store(p_fail_if_exists);
+   if l_ratings is not null then
+      for i in 1..l_ratings.count loop
+         l_ratings(i).store(p_fail_if_exists);
       end loop;
    end if;
 end store_ratings;
