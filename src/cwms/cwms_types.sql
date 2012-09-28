@@ -3418,7 +3418,7 @@ as
          l_indicators);
       return;
    end zlocation_level_t;
-      
+
    constructor function zlocation_level_t
       return self as result
    is
@@ -3427,7 +3427,7 @@ as
       -- all members are null --
       --------------------------
       return;
-   end;            
+   end;
 
    member procedure init(
       p_location_level_code           in number,
@@ -3503,8 +3503,9 @@ as
 
    member procedure store
    as
-      l_rec    at_location_level%rowtype;
-      l_exists boolean;
+      l_rec       at_location_level%rowtype;
+      l_exists    boolean;
+      l_ind_codes number_tab_t;
    begin
       ------------------------------
       -- find any existing record --
@@ -3577,7 +3578,9 @@ as
       -- store the indicators --
       --------------------------
        if l_exists then
-         delete
+         select level_indicator_code
+           bulk collect
+           into l_ind_codes
            from at_loc_lvl_indicator
           where location_code                     = l_rec.location_code
             and parameter_code                    = l_rec.parameter_code
@@ -3588,6 +3591,12 @@ as
             and nvl(attr_parameter_code, -1)      = nvl(l_rec.attribute_parameter_code, -1)
             and nvl(attr_parameter_type_code, -1) = nvl(l_rec.attribute_parameter_type_code, -1)
             and nvl(attr_duration_code, -1)       = nvl(l_rec.attribute_duration_code, -1);
+         delete
+           from at_loc_lvl_indicator_cond
+          where level_indicator_code in (select column_value from table(l_ind_codes));
+         delete
+           from at_loc_lvl_indicator
+          where level_indicator_code in (select column_value from table(l_ind_codes));
        end if;
        if self.indicators is not null then
          for i in 1..indicators.count loop
