@@ -3557,13 +3557,14 @@ AS
 		BEGIN
 			SELECT	apl.location_type,
 						convert_from_to (apl.elevation, 'm', p_elev_unit_id, 'Length') elev,
+						apl.vertical_datum,
 						apl.latitude, apl.longitude, apl.horizontal_datum,
 						apl.public_name, apl.long_name, apl.description,
 						ctz.time_zone_name, cc.county_name, cs.state_initial,
 						apl.active_flag, alk.location_kind_id, apl.map_label,
 						apl.published_latitude, apl.published_longitude,
 						apl.office_code, apl.nation_code, apl.nearest_city
-			  INTO	p_location_type, p_elevation, p_latitude, p_longitude,
+			  INTO	p_location_type, p_elevation, p_vertical_datum, p_latitude, p_longitude,
 						p_horizontal_datum, p_public_name, p_long_name,
 						p_description, p_time_zone_id, p_county_name,
 						p_state_initial, p_active, p_location_kind_id, p_map_label,
