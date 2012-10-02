@@ -1158,12 +1158,7 @@ IS
               SELECT   db_office_id, cwms_ts_id, interval_utc_offset
                 FROM   mv_cwms_ts_id
                WHERE   db_office_id = UPPER (l_office_id)
-                       AND UPPER (cwms_ts_id) LIKE
-                             UPPER(REPLACE (
-                                      REPLACE (p_ts_subselect_string, '*', '%'),
-                                      '?',
-                                      '_'
-                                   ))
+                       AND UPPER (cwms_ts_id) LIKE cwms_util.normalize_wildcards(upper(p_ts_subselect_string)) escape '\'
             ORDER BY   UPPER (cwms_ts_id) ASC;
       END IF;
    END cat_ts;
@@ -1256,12 +1251,7 @@ IS
                WHERE       s.ts_code = v.ts_code
                        AND z.time_zone_code = NVL (s.time_zone_code, 0)
                        AND v.db_office_id = UPPER (l_office_id)
-                       AND UPPER (v.cwms_ts_id) LIKE
-                             UPPER(REPLACE (
-                                      REPLACE (p_ts_subselect_string, '*', '%'),
-                                      '?',
-                                      '_'
-                                   ))
+                       AND UPPER (v.cwms_ts_id) LIKE cwms_util.normalize_wildcards(upper(p_ts_subselect_string)) escape '\'
             ORDER BY   UPPER (v.cwms_ts_id) ASC;
       END IF;
    END cat_ts_cwms_20;
@@ -1395,7 +1385,7 @@ IS
                                 WHERE ts_group_code=l_ts_group_code))
                      AND  (l_db_office_code IS NULL
                              OR v.db_office_code = l_db_office_code)
-                      AND UPPER (v.cwms_ts_id) LIKE UPPER (l_ts_subselect_string)
+                      AND UPPER (v.cwms_ts_id) LIKE UPPER (l_ts_subselect_string) escape '\'
         ORDER BY   UPPER (v.cwms_ts_id), UPPER (v.db_office_id) ASC;
 --
 ---- Original Released Select...
@@ -1570,8 +1560,8 @@ END cat_ts_id;
                             at_ts_group g,
                             cwms_office o1,
                             cwms_office o2
-                      where upper(c.ts_category_id) like cwms_util.normalize_wildcards(nvl(upper(p_ts_category_id), '*'))
-                        and upper(g.ts_group_id) like cwms_util.normalize_wildcards(nvl(upper(p_ts_group_id), '*'))
+                      where upper(c.ts_category_id) like cwms_util.normalize_wildcards(nvl(upper(p_ts_category_id), '*')) escape '\'
+                        and upper(g.ts_group_id) like cwms_util.normalize_wildcards(nvl(upper(p_ts_group_id), '*')) escape '\'
                         and g.db_office_code in (cwms_util.db_office_code_all, l_office_code)
                         and g.ts_category_code = c.ts_category_code
                         and o1.office_code = c.db_office_code
@@ -1587,7 +1577,7 @@ END cat_ts_id;
                        from at_ts_group_assignment a,
                             at_cwms_ts_id t,
                             cwms_office o
-                      where upper(cwms_ts.get_ts_id(a.ts_code)) like cwms_util.normalize_wildcards(nvl(upper(p_ts_id), '*'))
+                      where upper(cwms_ts.get_ts_id(a.ts_code)) like cwms_util.normalize_wildcards(nvl(upper(p_ts_id), '*')) escape '\'
                         and t.ts_code = a.ts_code
                         and o.office_code = t.db_office_code
                    ) assgn on assgn.ts_group_code = grp.ts_group_code;
@@ -1626,8 +1616,8 @@ END cat_ts_id;
                             at_ts_group g,
                             cwms_office o1,
                             cwms_office o2
-                      where upper(c.ts_category_id) like cwms_util.normalize_wildcards(nvl(upper(p_ts_category_id), '*'))
-                        and upper(g.ts_group_id) like cwms_util.normalize_wildcards(nvl(upper(p_ts_group_id), '*'))
+                      where upper(c.ts_category_id) like cwms_util.normalize_wildcards(nvl(upper(p_ts_category_id), '*')) escape '\'
+                        and upper(g.ts_group_id) like cwms_util.normalize_wildcards(nvl(upper(p_ts_group_id), '*')) escape '\'
                         and g.db_office_code in (cwms_util.db_office_code_all, l_office_code)
                         and g.ts_category_code = c.ts_category_code
                         and o1.office_code = c.db_office_code
@@ -1643,7 +1633,7 @@ END cat_ts_id;
                        from at_ts_group_assignment a,
                             at_cwms_ts_id t,
                             cwms_office o
-                      where upper(cwms_ts.get_ts_id(a.ts_code)) like cwms_util.normalize_wildcards(nvl(upper(p_ts_id), '*'))
+                      where upper(cwms_ts.get_ts_id(a.ts_code)) like cwms_util.normalize_wildcards(nvl(upper(p_ts_id), '*')) escape '\'
                         and t.ts_code = a.ts_code
                         and o.office_code = t.db_office_code
                    ) assgn on assgn.ts_group_code = grp.ts_group_code;
@@ -3676,9 +3666,9 @@ END cat_ts_id;
                           JOIN
                              at_loc_group_assignment b
                           USING (location_code, loc_group_code)
-                  WHERE       UPPER (a.location_id) LIKE l_loc_id
-                          AND UPPER (a.loc_category_id) LIKE l_loc_cat_id
-                          AND UPPER (a.loc_group_id) LIKE l_loc_grp_id
+                  WHERE       UPPER (a.location_id) LIKE l_loc_id escape '\'
+                          AND UPPER (a.loc_category_id) LIKE l_loc_cat_id escape '\'
+                          AND UPPER (a.loc_group_id) LIKE l_loc_grp_id escape '\'
                ORDER BY   UPPER (location_id),
                           UPPER (loc_category_id),
                           UPPER (loc_group_id);
@@ -3780,9 +3770,9 @@ END cat_ts_id;
                           FULL OUTER JOIN
                              at_loc_group_assignment b
                           USING (location_code, loc_group_code)
-                  WHERE       UPPER (a.location_id) LIKE l_loc_id
-                          AND UPPER (a.loc_category_id) LIKE l_loc_cat_id
-                          AND UPPER (a.loc_group_id) LIKE l_loc_grp_id
+                  WHERE       UPPER (a.location_id) LIKE l_loc_id escape '\'
+                          AND UPPER (a.loc_category_id) LIKE l_loc_cat_id escape '\'
+                          AND UPPER (a.loc_group_id) LIKE l_loc_grp_id escape '\'
                ORDER BY   UPPER (location_id),
                           UPPER (loc_category_id),
                           UPPER (loc_group_id);
