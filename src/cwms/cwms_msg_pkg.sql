@@ -480,31 +480,70 @@ procedure unregister_msg_callback (
    p_procedure_name  in varchar2,
    p_queue_name      in varchar2,
    p_subscriber_name in varchar2); 
-
-/*
+/**
  * Pauses the enqueueing of all messages for the specified office for a specified time period.  If this is called without
- * any parameters, message enqueueing is paused for 10 minutes from the current time for the session user's default office.
+ * any parameters, message enqueueing is paused for 10 minutes from the current time for the current sessions, for all queues associated with the session user's default office.
+ * The duration of the pause must be between one minute and one week.
  *
- * @param p_number
- * @param p_unit
- * @param p_office_id  The office to pause message enqueueing for.  If not specified or NULL, the session user's default office is used.
+ * @param p_number       The number of units to pause enqueueing for
+ * @param p_unit         The unit associated with p_number. Must be one of the following (ignoring case)
+ * <ul><li>MINUTE</li><li>MINUTES</li><li>HOUR</li><li>HOURS</li><li>DAY</li><li>DAYS</li></ul>
+ * @param p_all_sessions A flag ('T' or 'F') specifying whether to pause enqueueing for all database sessions for the specified office.  If not specified or 'F', only the current session is paused.
+ * @param p_office_id    The office whose queues to pause message enqueueing for.  If not specified or NULL, the session user's default office is used.
  *
+ * @see procedure unpause_message_queueing
+ * @see function get_message_queueing_pause_min
+ * @see function is_message_queueing_paused
  */   
 procedure pause_message_queueing (
    p_number       in integer  default 10,
    p_unit         in varchar2 default 'MINUTES',
    p_all_sessions in varchar2 default 'F',
    p_office_id    in varchar2 default null);
-   
+/**
+ * Un-pauses the enqueueing of all messages for the specified office for a specified time period.  If this is called without
+ * any parameters, message queueing is un-paused for the current session for all queues associated with the sessions users' default office. Note that
+ * message queueing for the current session will remain paused as long as there is a pause in effect for the current session or all sessions for the specified or default office.
+ *
+ * @param p_all_sessions A flag ('T' or 'F') specifying whether to un-pause enqueueing for all database sessions for the specified office.  If not specified or 'F', only the current session is un-paused.
+ *                       Note that message queueing for the current session will remain paused as long as there is a pause in effect for the current session or all sessions for the specified or default office.
+ * @param p_force        A flag ('T' or 'F') specifying whether to forceably un-pause each session whose enqueueing is currently paused on a session basis. This parameter is ignored unless p_all_sessions is 'T'.
+ * @param p_office_id    The office whose queues to un-pause message enqueueing for.  If not specified or NULL, the session user's default office is used.
+ *
+ * @see procedure pause_message_queueing
+ * @see function get_message_queueing_pause_min
+ * @see function is_message_queueing_paused
+  */
 procedure unpause_message_queueing(
    p_all_sessions in varchar2 default 'F',
    p_force        in varchar2 default 'F',
    p_office_id    in varchar2 default null);
-
+/**
+ * Retrieves the number of minutes remaining until all pauses preventing the current session from enqueueing messages to queues associated with the specified or default office expire.
+ * This number will be the greater of time remaining on any all-session pause and any session-specific pause.
+ *
+ * @param p_office_id The office whose queues to check for current enqueueing pauses.  If not specified or NULL, the session user's default office is used.
+ *
+ * @return The number of minutes remaining until all enqueueing pauses expire, or -1 if no pauses are currently in effect
+ *
+ * @see procedure pause_message_queueing
+ * @see procedure unpause_message_queueing
+ * @see function is_message_queueing_paused
+ */
 function get_message_queueing_pause_min(
    p_office_id in varchar2 default null)
    return integer;
-
+/**
+ * Retrieves whether any pauses are in effect affecting that prevent the current session from enqueueing messages to queues associated with the specified or default office.
+ *
+ * @param p_office_id The office whose queues to check for current enqueueing pauses.  If not specified or NULL, the session user's default office is used.
+ *
+ * @return True or false
+ *
+ * @see procedure pause_message_queueing
+ * @see procedure unpause_message_queueing
+ * @see function get_message_queueing_pause_min
+ */
 function is_message_queueing_paused(
    p_office_id in varchar2 default null)
    return boolean;      
