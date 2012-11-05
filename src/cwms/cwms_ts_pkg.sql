@@ -514,7 +514,8 @@ AS
    /**
     * Returns all version dates for a specified time series and time window
     *
-    * @param p_date_cat     A cursor containing the version dates. The cursor contains a single unnamed column of type DATE, sorted in ascending order
+    * @param p_date_cat     A cursor containing the version dates. The cursor contains a single unnamed column of type VERSION_DATE, sorted in ascending order.
+    *                       VERSION_DATE will be in the specified time zone, except that non-versioned date signature is preserved regardless of time zone.
     * @param p_cwms_ts_code The unique numeric code identifying the time series
     * @param p_start_time   The start of the time window
     * @param p_end_time     The end of the time window
@@ -530,7 +531,8 @@ AS
    /**
     * Returns all version dates for a specified time series and time window
     *
-    * @param p_date_cat     A cursor containing the version dates. The cursor contains a single unnamed column of type DATE, sorted in ascending order
+    * @param p_date_cat     A cursor containing the version dates. The cursor contains a single unnamed column of type VERSION_DATE, sorted in ascending order.
+    *                       VERSION_DATE will be in the specified time zone, except that non-versioned date signature is preserved regardless of time zone.
     * @param p_cwms_ts_id   The time series identifier
     * @param p_start_time   The start of the time window
     * @param p_end_time     The end of the time window
