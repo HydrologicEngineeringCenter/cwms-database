@@ -56,7 +56,7 @@ AS
             EXCEPTION
                WHEN NO_DATA_FOUND
                THEN
-                  cwms_err.raise ('TS_ID_NOT_FOUND', TRIM (p_cwms_ts_id)); 
+                  cwms_err.raise ('TS_ID_NOT_FOUND', TRIM (p_cwms_ts_id),cwms_util.get_db_office_id(p_db_office_code)); 
             END;
       END;
 
@@ -143,7 +143,7 @@ AS
                      p_alias_id  => p_cwms_ts_id, 
                      p_office_id => p_office_id);
                   if l_cwms_ts_id is null then
-                     CWMS_ERR.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id);
+                     CWMS_ERR.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id,p_office_id);
                   end if;
             END;
       END;
@@ -5115,7 +5115,7 @@ AS
                 where upper(mcts.cwms_ts_id) = upper(l_cwms_ts_id) and mcts.db_office_code = l_db_office_code;
             exception
                when no_data_found then
-                  cwms_err.raise('TS_ID_NOT_FOUND', l_cwms_ts_id);
+                  cwms_err.raise('TS_ID_NOT_FOUND', l_cwms_ts_id,cwms_util.get_db_office_id(p_db_office_code));
             end;
       end;
 
