@@ -5207,7 +5207,7 @@ sys.stderr.write("Processing cwms error codes \n")
 #     ERR_CODE  ERR_NAME                    ERR_MSG
 #     --------  --------------------------- -----------------------------------------------------------------
 errorCodes = [
-    ['-20001', 'TS_ID_NOT_FOUND',       'The timeseries identifier "%1" was not found'                ],
+    ['-20001', 'TS_ID_NOT_FOUND',       'The timeseries identifier "%1" was not found for office "%2"'],
     ['-20002', 'TS_IS_INVALID',         'The timeseries identifier "%1" is not valid %2'              ],
     ['-20003', 'TS_ALREADY_EXISTS',     'The timeseries identifier "%1" is already in use'            ],
     ['-20004', 'INVALID_INTERVAL_ID',   '"%1" is not a valid CWMS timeseries interval'                ],
