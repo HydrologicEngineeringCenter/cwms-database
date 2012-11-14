@@ -677,6 +677,24 @@ AS
       RETURN get_office_code (p_office_id);
    END get_db_office_code;
 
+   FUNCTION get_db_office_id_from_code (p_db_office_code IN NUMBER)
+      RETURN VARCHAR2
+   IS
+      l_db_office_id   VARCHAR2(64);
+   BEGIN
+      l_db_office_id := NULL;
+      SELECT office_id
+        INTO l_db_office_id
+        FROM cwms_office
+       WHERE office_code = p_db_office_code;
+
+
+      RETURN l_db_office_id;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         RETURN l_db_office_id;
+   END get_db_office_id_from_code;
    --------------------------------------------------------
    --------------------------------------------------------
    FUNCTION get_db_office_id (p_db_office_id IN VARCHAR2 DEFAULT NULL)

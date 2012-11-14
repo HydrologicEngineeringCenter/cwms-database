@@ -56,7 +56,7 @@ AS
             EXCEPTION
                WHEN NO_DATA_FOUND
                THEN
-                  cwms_err.raise ('TS_ID_NOT_FOUND', TRIM (p_cwms_ts_id),cwms_util.get_db_office_id(p_db_office_code)); 
+                  cwms_err.raise ('TS_ID_NOT_FOUND', TRIM (p_cwms_ts_id),cwms_util.get_db_office_id_from_code(p_db_office_code)); 
             END;
       END;
 
@@ -5115,7 +5115,7 @@ AS
                 where upper(mcts.cwms_ts_id) = upper(l_cwms_ts_id) and mcts.db_office_code = l_db_office_code;
             exception
                when no_data_found then
-                  cwms_err.raise('TS_ID_NOT_FOUND', l_cwms_ts_id,cwms_util.get_db_office_id(p_db_office_code));
+                  cwms_err.raise('TS_ID_NOT_FOUND', l_cwms_ts_id,cwms_util.get_db_office_id_from_code(p_db_office_code));
             end;
       end;
 

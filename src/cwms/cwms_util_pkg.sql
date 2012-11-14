@@ -729,6 +729,16 @@ AS
    FUNCTION get_db_office_code (p_office_id IN VARCHAR2 DEFAULT NULL )
       RETURN NUMBER;
    /**
+    * Returns the office id of specified office code
+    *
+    * @param p_db_office_code  the office code for which to find the id. 
+    *
+    * @return the office id of the specified code
+    *
+    */
+   FUNCTION get_db_office_id_from_code (p_db_office_code IN NUMBER)
+      RETURN VARCHAR2;
+   /**
     * Replace glob wildcard chars (?,*) with SQL ones (_,%), using '\\' as an
     * escape character.
     * 
