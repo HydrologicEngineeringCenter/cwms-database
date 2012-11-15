@@ -2346,11 +2346,11 @@ as
       l_arguments(2) :=  p_level   * factor + offset;
       l_arguments(3) :=  p_level_2 * factor + offset;
       l_arguments(4) := (p_rate    * rate_factor + rate_offset) * interval_factor;
-      l_result := cwms_util.eval_tokenized_expression(expression_tokens, l_arguments);
+      l_result := cwms_util.eval_tokenized_expression(expression_tokens, l_arguments); -- may return null
       -----------------------------------
       -- evaluate the first comparison --
       -----------------------------------
-      l_comparison_1 :=
+      l_comparison_1 := nvl(
          case comparison_operator_1
             when 'LT' then l_result  < comparison_value_1
             when 'LE' then l_result <= comparison_value_1
@@ -2358,14 +2358,14 @@ as
             when 'NE' then l_result != comparison_value_1
             when 'GE' then l_result >= comparison_value_1
             when 'GT' then l_result  > comparison_value_1
-         end;
+         end, false);
       -------------------------------------------------
       -- evaluate the second comparison if specified --
       -------------------------------------------------
       if connector is null then
          l_is_set := l_comparison_1;
       else
-         l_comparison_2 :=
+         l_comparison_2 := nvl(
             case comparison_operator_2
                when 'LT' then l_result  < comparison_value_2
                when 'LE' then l_result <= comparison_value_2
@@ -2373,7 +2373,7 @@ as
                when 'NE' then l_result != comparison_value_2
                when 'GE' then l_result >= comparison_value_2
                when 'GT' then l_result  > comparison_value_2
-            end;
+            end, false);
          l_is_set :=
             case connector
                when 'AND' then l_comparison_1 and l_comparison_2
@@ -2384,11 +2384,11 @@ as
       -- evaluate the rate if a rate expression exists --
       ---------------------------------------------------
       if l_is_set and rate_expression_tokens is not null then
-         l_result := cwms_util.eval_tokenized_expression(rate_expression_tokens, l_arguments);
+         l_result := cwms_util.eval_tokenized_expression(rate_expression_tokens, l_arguments); -- may return null
          ----------------------------------------
          -- evaluate the first rate comparison --
          ----------------------------------------
-         l_comparison_1 :=
+         l_comparison_1 := nvl(
             case rate_comparison_operator_1
                when 'LT' then l_result  < rate_comparison_value_1
                when 'LE' then l_result <= rate_comparison_value_1
@@ -2396,14 +2396,14 @@ as
                when 'NE' then l_result != rate_comparison_value_1
                when 'GE' then l_result >= rate_comparison_value_1
                when 'GT' then l_result  > rate_comparison_value_1
-            end;
+            end, false);
          ------------------------------------------------------
          -- evaluate the second rate comparison if specified --
          ------------------------------------------------------
          if rate_connector is null then
             l_is_set := l_comparison_1;
          else
-            l_comparison_2 :=
+            l_comparison_2 := nvl(
                case rate_comparison_operator_2
                   when 'LT' then l_result  < rate_comparison_value_2
                   when 'LE' then l_result <= rate_comparison_value_2
@@ -2411,7 +2411,7 @@ as
                   when 'NE' then l_result != rate_comparison_value_2
                   when 'GE' then l_result >= rate_comparison_value_2
                   when 'GT' then l_result  > rate_comparison_value_2
-               end;
+               end, false);
             l_is_set :=
                case rate_connector
                   when 'AND' then l_comparison_1 and l_comparison_2

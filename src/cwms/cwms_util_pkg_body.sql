@@ -3338,24 +3338,24 @@ AS
                push (pop * pop);
             WHEN p_rpn_tokens (i) = '/'
             THEN
-               l_val2 := pop;
+               l_val2 := nullif(pop, 0);
                l_val1 := pop;
                push (l_val1 / l_val2);
             WHEN p_rpn_tokens (i) = '//'
             THEN                                             -- same as Python
-               l_val2 := pop;
+               l_val2 := nullif(pop, 0);
                l_val1 := pop;
                push (FLOOR (l_val1 / l_val2));
             WHEN p_rpn_tokens (i) = '%'
             THEN                            -- same as Python math.fmod, not %
-               l_val2 := pop;
+               l_val2 := nullif(pop, 0);
                l_val1 := pop;
                push (MOD (l_val1, l_val2));
             WHEN p_rpn_tokens (i) = '^'
             THEN
                l_val2 := pop;
                l_val1 := pop;
-               push (l_val1 ** l_val2);
+               push (POWER(l_val1, l_val2));
             ---------------
             -- constants --
             ---------------
