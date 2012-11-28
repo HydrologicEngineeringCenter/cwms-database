@@ -6123,9 +6123,9 @@ as
                      cwms_err.raise(
                         'ERROR',
                         'Shift '||i||' create date ('
-                        ||self.shifts(i).create_date
+                        ||to_char(self.shifts(i).create_date, 'yyyy/mm/dd hh24:mi:ss')
                         ||') is earlier than rating create date ('
-                        ||self.create_date
+                        ||to_char(self.create_date, 'yyyy/mm/dd hh24:mi:ss')
                         ||')');
                   end if;
                end if;
@@ -6171,7 +6171,8 @@ as
                      'stream_rating_t.validate_obj',
                      cwms_msg.msg_level_normal,
                      'Rating shift '||i||' skipped due to '||sqlerrm);
-                  for j in i+1..self.shifts.count loop
+                  for j in i+1..self.shifts.count loop -- static limits 
+                     exit when j > self.shifts.count;  -- dynamically evaluated
                      self.shifts(j-1) := self.shifts(j);
                      self.shifts.trim(1);
                   end loop;
