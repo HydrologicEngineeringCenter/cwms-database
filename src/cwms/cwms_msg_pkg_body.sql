@@ -1270,7 +1270,7 @@ begin
       -- purge any expired or undeliverable messages --
       ------------------------------------------------- 
       l_purge_count := l_expired_count + l_undeliverable_count;
-      if l_undeliverable_count > 0 then
+      if l_purge_count > 0 then
          l_purged := false;
          for i in 1..trunc((l_purge_count - 1)/l_max_purge_count) + 1 loop
             for j in 1..100 loop
