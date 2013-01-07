@@ -1,6 +1,6 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
-import sys, os
+import os, random, sys
 
 def uniqueCombinationsGenerator(items, n):
     '''
@@ -23,37 +23,25 @@ def uniqueCombinations(items):
         for comb in uniqueCombinationsGenerator(items, i+1) :
             results.append(comb)
     return results
+    
+def getRandomFilename() :
+	for var in ("tmp", "temp") :
+		tmpdir = os.getenv(var)
+		if tmpdir : break
+	else :
+		tmpdir = "."
+	chars = "_0123456789abcdefhijklmnopqrstuvwxyz"
+	while True :
+		filename = ""
+		for i in range(10) : filename += random.choice(chars)
+		pathname = os.path.join(tmpdir, filename)
+		if not os.path.exists(pathname) : return pathname
                 
 testAccount  = None
 db_office_id = None
 db_cwms_count = -1 
 office_ids   = []
-tempFilename = os.tmpnam()
-
-
-#-------------------------#
-# Handle the command line #
-#-------------------------#
-try :
-    user = sys.argv[1].upper()
-    db_cwms_count = int(sys.argv[2])
-except :
-    sys.stderr.write("Usage: python buildSqlScripts.py <schema name> <existing_cwms_instances> \n")
-    sys.stderr.write("Ex:    python buildSqlScripts.py cwms 0\n")
-    sys.exit(-1)
-
-
-args = sys.argv[3:]
-for arg in args :
-    arg = arg.upper()
-    if arg in ('/TESTACCOUNT', '-TESTACCOUNT') :
-        testAccount = True
-    elif arg in ('/NOTESTACCOUNT', '-NOTESTACCOUNT') :
-        testAccount = False
-    elif db_office_id == None :
-        db_office_id = arg
-    else :
-        office_ids.append(arg)
+tempFilename = getRandomFilename()
 
 #-----------------------------------------------------------------------------#
 # Prefixes are pre-pended to every line of the first-round output to identify #
@@ -156,7 +144,7 @@ for item in tableInfo :
 #---------------#
 # SHEF_Duration #
 #---------------#
-sys.stderr.write("Processing shef_durations.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing shef_durations.\n")
 shef_duration = [
 #    SHEF                                                                                                                      SHEF    CWMS 
 #    CODE  Description                                                                                                         Numeric CODE
@@ -189,7 +177,7 @@ shef_duration = [
 #--------#
 # States #
 #--------#
-sys.stderr.write("Processing states.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing states.\n")
 states = [
 #    ID    Initial  Name
 #    ----  -------  ----------------------------
@@ -265,7 +253,7 @@ for id, initial, name in states : stateNamesById[id] = name;
 #----------#
 # Counties #
 #----------#
-sys.stderr.write("Processing counties.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing counties.\n")
 counties = [
     [    0, 'Unknown County or County N/A'],
     [ 1000, 'Unknown County or County N/A'],
@@ -3462,7 +3450,7 @@ counties = [
 #---------------#
 # Sub-locations #
 #---------------#
-sys.stderr.write("Processing sub-locations.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing sub-locations.\n")
 subLocations = [
     'Left-Fish Ladder',
     'Right-Fish Ladder',
@@ -3481,7 +3469,7 @@ subLocations = [
 #---------#
 # Offices #
 #---------#
-sys.stderr.write("Processing offices.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing offices.\n")
 offices = [
 # **WARNING!! DO NOT CHANGE The "ofc code" number!! You can add a new office to the
 #                     bottom of the list, but it must have a new unique number.
@@ -3562,7 +3550,7 @@ offices = [
 #-----------#
 # Timezones #
 #-----------#
-sys.stderr.write("Processing Timezones.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing Timezones.\n")
 timezones = [
 #	TIME_ZONE_NAME                	UTC_OFFSET             		DST_OFFSET
 #	--------------			----------			----------
@@ -3962,7 +3950,7 @@ timezones = [
 #-----------#
 # Intervals #
 #-----------#
-sys.stderr.write("Processing intervals.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing intervals.\n")
 intervals = [
     [29,    '0',             0,'Irregular recurrence interval'            ],
     [31,     '~1Minute',       0,'Local time irregular: expected recurrence interval of 1 minute'  ],
@@ -4028,7 +4016,7 @@ intervals = [
 #-----------#
 # Durations #
 #-----------#
-sys.stderr.write("Processing durations.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing durations.\n")
 durations = [
     [1,     '1Minute',      1,  'Measurement applies over 1 minute, time stamped at period end'],
     [2,     '2Minutes',     2,  'Measurement applies over 2 minutes, time stamped at period end'],
@@ -4094,7 +4082,7 @@ durations = [
 #---------------------#
 # Abstract Parameters #
 #---------------------#
-sys.stderr.write("Processing abstract parameters.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing abstract parameters.\n")
 abstractParams = [
     "Angle",
     "Angular Speed",
@@ -4127,7 +4115,7 @@ abstractParams = [
 #-------#
 # Units #
 #-------#
-sys.stderr.write("Processing static unit definitions.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing static unit definitions.\n")
 unitDefs = [
 #                                                       UNIT
 #    ABSTRACT PARAMETER                  UNIT ID        SYSTEM  NAME                             DESCRIPTION
@@ -4236,7 +4224,7 @@ unitDefIds.sort()
 #---------#
 # Aliases #
 #---------#
-sys.stderr.write("Processing units unitAliases.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing units unitAliases.\n")
 unitAliases = [
 #    ABSTRACT PARAMETER         UNIT ID    ALIAS ID
 #    -------------------------- ---------- ------------------------
@@ -4379,7 +4367,7 @@ for abstract_param, unit_id, unitAlias_id in unitAliases :
 #------------------#
 # Unit conversions #
 #------------------#
-sys.stderr.write("Processing unit conversion definitions.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing unit conversion definitions.\n")
 unitConversions = [
 #    ABSTRACT PARAMETER                  FROM UNIT ID   TO UNIT ID    OFFSET                FACTOR
 #    ----------------------------------- -------------- ------------- --------------------- -----------------------
@@ -4979,7 +4967,7 @@ q_protection = {
 #------------#
 # Parameters #
 #------------#
-sys.stderr.write("Processing parameter definitions.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing parameter definitions.\n")
 parameters = [
 #    ------ ----------------------------------- ----------- --------------------- ---------- ---------- -------------- -----------------------------------------------------------------------------
 #                                                                                  db        -----    Default  ------
@@ -5044,7 +5032,7 @@ cwmsUnitParamIds = cwmsUnitParamDefsById.keys()
 #------------------------#
 # Default Sub-Parameters #
 #------------------------#
-sys.stderr.write("Processing default sub_parameter definitions.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing default sub_parameter definitions.\n")
 subParameters = [
 #           --  DEFAULT Sub_Parameters -------------------------------    -- Display Units --  
 #           Base        Sub                                       
@@ -5072,7 +5060,7 @@ subParameters = [
 #-----------------#
 # Parameter Types #
 #-----------------#
-sys.stderr.write("Processing parameter types.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing parameter types.\n")
 parameterTypes = [
     {"ID" : "Total", "DESCRIPTION" : "TOTAL"        },
     {"ID" : "Max",   "DESCRIPTION" : "MAXIMUM"      },
@@ -5085,7 +5073,7 @@ parameterTypes = [
 #---------------------#
 # DSS Parameter Types #
 #---------------------#
-sys.stderr.write("Processing HEC-DSS parameter types.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing HEC-DSS parameter types.\n")
 dssParameterTypes = [
     {"ID" : "PER-AVER", "DB_TYPE" : "Ave",   "DESCRIPTION" : "Average over a period"              },
     {"ID" : "PER-CUM",  "DB_TYPE" : "Total", "DESCRIPTION" : "Accumulation over a period"         },
@@ -5098,7 +5086,7 @@ dssParameterTypes = [
 #-------------------------#
 # DSS Exchange Directions #
 #-------------------------#
-sys.stderr.write("Processing HEC-DSS exchange directions.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing HEC-DSS exchange directions.\n")
 dssXchgDirections = [
     {"DSS_XCHG_DIRECTION_ID" : "DssToOracle", "DESCRIPTION" : "Direction is incoming to database (post)"},
     {"DSS_XCHG_DIRECTION_ID" : "OracleToDss", "DESCRIPTION" : "Direction is outgoing from database (extract)"},
@@ -5107,7 +5095,7 @@ dssXchgDirections = [
 #-----------------#
 # Time Zone Usage #
 #-----------------#
-sys.stderr.write("Processing time zone usage types.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing time zone usage types.\n")
 tzUsages = [
     {"ID" : "Standard",   "DESCRIPTION" : "Use constant offset for zone standard time"},
     {"ID" : "Daylight",   "DESCRIPTION" : "Use constant offset for zone daylight savings time"},
@@ -5117,7 +5105,7 @@ tzUsages = [
 #----------------#
 # Rating Methods #
 #----------------#
-sys.stderr.write("Processing rating methods.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing rating methods.\n")
 ratingMethods = [
     ['NULL'        , 'Return null if between values or outside range'                                            ],
     ['ERROR'       , 'Raise an exception if between values or outside range'                                     ],
@@ -5136,7 +5124,7 @@ ratingMethods = [
 #---------------#
 # Catalog items #
 #---------------#
-sys.stderr.write("Processing catalog items.\n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing catalog items.\n")
 catalogItems = [
     ['CAT_COUNTY',       'COUNTY_ID',                   'CAT_COUNTY',       'COUNTY_ID'                  ],
     ['CAT_COUNTY',       'COUNTY_NAME',                 'CAT_COUNTY',       'COUNTY_NAME'                ],
@@ -5202,7 +5190,7 @@ catalogItems = [
 #------------------#
 # CWMS ERROR CODES #
 #------------------#
-sys.stderr.write("Processing cwms error codes \n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing cwms error codes \n")
 
 #     ERR_CODE  ERR_NAME                    ERR_MSG
 #     --------  --------------------------- -----------------------------------------------------------------
@@ -5265,7 +5253,7 @@ errorCodes = [
 #-------------------#
 # LOG MESSAGE TYPES #
 #-------------------#
-sys.stderr.write("Processing log message types \n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing log message types \n")
 logMessageTypes = [
 #      CODE  ID
 #      ----  -----------------------
@@ -5294,7 +5282,7 @@ logMessageTypes = [
 #----------------------------#
 # LOG MESSAGE PROPERTY TYPES #
 #----------------------------#
-sys.stderr.write("Processing log message property types \n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing log message property types \n")
 logMessagePropTypes = [
 #      CODE  ID
 #      ----  --------
@@ -5311,7 +5299,7 @@ logMessagePropTypes = [
 #-------------------#
 # INTERPOLATE UNITS #
 #-------------------#
-sys.stderr.write("Processing interpolate units \n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing interpolate units \n")
 interpolateUnits = [
 #      CODE  ID
 #      ----  --------
@@ -5322,7 +5310,7 @@ interpolateUnits = [
 #---------------------#
 # LOCATION CATEGORIES #
 #---------------------#
-sys.stderr.write("Processing location categories \n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing location categories \n")
 locationKinds = [
 #   CODE  ID        DESCRIPTION
 #   ----  --------  -----------------------------------------------------------------------------
@@ -5334,7 +5322,7 @@ locationKinds = [
 #--------------#
 # GAGE METHODS #
 #--------------#
-sys.stderr.write("Processing gage methods \n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing gage methods \n")
 gageMethods = [
 #   CODE  ID             DESCRIPTION
 #   ----  -----------    ---------------------------------------
@@ -5349,7 +5337,7 @@ gageMethods = [
 #------------#
 # GAGE TYPES #
 #------------#
-sys.stderr.write("Processing gage types \n")
+if __name__ in ("__main__", "main") : sys.stderr.write("Processing gage types \n")
 gageTypes = [
 #   CODE  ID         MANNUALLY_READ   INQUIRY_METHOD TX_METHOD    DESCRIPTION
 #   ----  ---------- ---------------  -------------- ------------ ------------------------
@@ -5717,529 +5705,537 @@ streamTypes = [
     ['DA6',  'MULTIPLE', None,        'HIGHLY VARIABLE', 'HIGHLY VARIABLE', '< 0.005',      'SILT/CLAY'],   
 ]
 
-#--------------------------------------------------#
-# parse the offices into dbhost_offices dictionary #
-#--------------------------------------------------#
-office_names = {}
-dbhost_offices = {}
-office_erocs = {}
-db_office_code = {}
-for ofcCode, office_id, office_name, report_to, dbhost, eroc in offices :
-    if dbhost == '' : continue
-    office_erocs[office_id] = eroc
-    db_office_code[office_id] = ofcCode
-    if not dbhost : dbhost = office_id
-    office_names[office_id] = office_name
-    if not dbhost_offices.has_key(dbhost) : dbhost_offices[dbhost] = []
-    dbhost_offices[dbhost].append(office_id);
-
-dbhosts = dbhost_offices.keys()
-dbhosts.sort()
-
-#-------------------------------------------------------------------------------#
-# make sure the user entered a schema before the office ids on the command line #
-#-------------------------------------------------------------------------------#
-if user in dbhosts :
-    sys.stderr.write("No schema name was entered before the office id(s)\n\n")
-    sys.stderr.write("Usage: python buildSqlScripts.py <schema name> [<host officeid> [<other officeid(s)>]] [/[no]testaccount]\n")
-    sys.stderr.write("Ex:    python buildSqlScripts.py cwms SWF SWG /testaccount\n")
-    sys.exit(-1)
-
-#----------------------------------------------------------------------------------------#  
-# prompt the user for the primary and sharing offices if not entered on the command line #
-#----------------------------------------------------------------------------------------#  
-if not db_office_id:
-    print
-    for dbhost in dbhosts :
-        line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
-        for i in range(1, len(dbhost_offices[dbhost])) : 
-            line += ", %s" % office_names[dbhost_offices[dbhost][i]]
-        print line
-
-    #------------------------------------------------------------------------------
-    # Ask for the db_office_id for this database, i.e., the primary office id
-    # for this database.
-    #------------------------------------------------------------------------------
-    print
-    print 'Enter the office id for this database. If your office is not listed'
-    print 'or if your building a secondary COOP database for your office, then'
-    print 'please contact HEC for a revised install script.'
-    ok = False
-    while not ok :
+def main() :
+    global db_office_id
+    global office_ids
+    global prefix
+    #-------------------------#
+    # Handle the command line #
+    #-------------------------#
+    try :
+        user = sys.argv[1].upper()
+        db_cwms_count = int(sys.argv[2])
+    except :
+        sys.stderr.write("Usage: python buildSqlScripts.py <schema name> <existing_cwms_instances> \n")
+        sys.stderr.write("Ex:    python buildSqlScripts.py cwms 0\n")
+        sys.exit(-1)
+    
+    
+    args = sys.argv[3:]
+    for arg in args :
+        arg = arg.upper()
+        if arg in ('/TESTACCOUNT', '-TESTACCOUNT') :
+            testAccount = True
+        elif arg in ('/NOTESTACCOUNT', '-NOTESTACCOUNT') :
+            testAccount = False
+        elif db_office_id == None :
+            db_office_id = arg
+        else :
+            office_ids.append(arg)
+    
+    #--------------------------------------------------#
+    # parse the offices into dbhost_offices dictionary #
+    #--------------------------------------------------#
+    office_names = {}
+    dbhost_offices = {}
+    office_erocs = {}
+    db_office_code = {}
+    for ofcCode, office_id, office_name, report_to, dbhost, eroc in offices :
+        if dbhost == '' : continue
+        office_erocs[office_id] = eroc
+        db_office_code[office_id] = ofcCode
+        if not dbhost : dbhost = office_id
+        office_names[office_id] = office_name
+        if not dbhost_offices.has_key(dbhost) : dbhost_offices[dbhost] = []
+        dbhost_offices[dbhost].append(office_id);
+    
+    dbhosts = dbhost_offices.keys()
+    dbhosts.sort()
+    
+    #-------------------------------------------------------------------------------#
+    # make sure the user entered a schema before the office ids on the command line #
+    #-------------------------------------------------------------------------------#
+    if user in dbhosts :
+        sys.stderr.write("No schema name was entered before the office id(s)\n\n")
+        sys.stderr.write("Usage: python buildSqlScripts.py <schema name> [<host officeid> [<other officeid(s)>]] [/[no]testaccount]\n")
+        sys.stderr.write("Ex:    python buildSqlScripts.py cwms SWF SWG /testaccount\n")
+        sys.exit(-1)
+    
+    #----------------------------------------------------------------------------------------#  
+    # prompt the user for the primary and sharing offices if not entered on the command line #
+    #----------------------------------------------------------------------------------------#  
+    if not db_office_id:
         print
-        db_office_id = raw_input('Enter the primary office id for this database: ')
-        if not db_office_id :
-            print
-            print "ERROR! You must enter your office id."
-            continue
-        else :
-            ok = db_office_id in dbhosts
-
-        if ok :
-            print 'You have chosen the following office as the primary office for this'
-            print "database: %s" % db_office_id
-            line = raw_input("Is this correct? (y/n) [n] > ")
-            if not line or line[0].upper() != 'Y' :
-                ok = False
-	    while db_cwms_count < 0 or db_cwms_count > 9 :
-		db_cwms_count = int(raw_input('Enter CWMS Database Instances already installed at this office(0-9): '))
-		print db_cwms_count
-        else :
-            print
-            print "ERROR! Office %s does not host a database. Contact HEC if this" % db_office_id
-            print "is no longer the case."
-        
-    #------------------------------------------------------------------------------
-    # Ask if any other offices will be sharing this database - need to know so that
-    # queues can be set-up for them.
-    #------------------------------------------------------------------------------
-    print
-    for dbhost in dbhosts :
-        if dbhost != db_office_id :
+        for dbhost in dbhosts :
             line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
             for i in range(1, len(dbhost_offices[dbhost])) : 
                 line += ", %s" % office_names[dbhost_offices[dbhost][i]]
             print line
-    print
-    print 'Will other offices share this database as either their primary database'
-    print 'or as a backup database? If so, enter the office id(s) from the above'
-    print 'list. If this datbase will only be used by your office, then simply'
-    print 'press Enter.'
-    print 
-    ok = False
-    while not ok :
+    
+        #------------------------------------------------------------------------------
+        # Ask for the db_office_id for this database, i.e., the primary office id
+        # for this database.
+        #------------------------------------------------------------------------------
         print
-        line  = raw_input('Enter office id(s) of offices sharing this database: ')
-        print
-        office_ids = line.upper().replace(',', ' ').replace(';', ' ').split()
-        if not office_ids :
-            ok = True
-        else :
-            for office_id in office_ids :
-                if office_id == db_office_id :
-                    office_ids.remove(office_id)
-                if office_id == 'CWMS' : 
-                    office_ids = dbhosts[:]
-                    office_ids.remove('LCRA')
-                    ok = True
-                    break
-                if office_id not in dbhosts :
-                    print "Office %s does not host a database." % office_id
-                    break
+        print 'Enter the office id for this database. If your office is not listed'
+        print 'or if your building a secondary COOP database for your office, then'
+        print 'please contact HEC for a revised install script.'
+        ok = False
+        while not ok :
+            print
+            db_office_id = raw_input('Enter the primary office id for this database: ')
+            if not db_office_id :
+                print
+                print "ERROR! You must enter your office id."
+                continue
             else :
-                ok = True
-                
-        if ok :
-            print 'You have made the follwing choices:'
-            print "Primary office for this database: %s" % db_office_id
+                ok = db_office_id in dbhosts
+    
+            if ok :
+                print 'You have chosen the following office as the primary office for this'
+                print "database: %s" % db_office_id
+                line = raw_input("Is this correct? (y/n) [n] > ")
+                if not line or line[0].upper() != 'Y' :
+                    ok = False
+    	    while db_cwms_count < 0 or db_cwms_count > 9 :
+    		db_cwms_count = int(raw_input('Enter CWMS Database Instances already installed at this office(0-9): '))
+    		print db_cwms_count
+            else :
+                print
+                print "ERROR! Office %s does not host a database. Contact HEC if this" % db_office_id
+                print "is no longer the case."
+            
+        #------------------------------------------------------------------------------
+        # Ask if any other offices will be sharing this database - need to know so that
+        # queues can be set-up for them.
+        #------------------------------------------------------------------------------
+        print
+        for dbhost in dbhosts :
+            if dbhost != db_office_id :
+                line = "%-5s : %s" % (dbhost, office_names[dbhost_offices[dbhost][0]])
+                for i in range(1, len(dbhost_offices[dbhost])) : 
+                    line += ", %s" % office_names[dbhost_offices[dbhost][i]]
+                print line
+        print
+        print 'Will other offices share this database as either their primary database'
+        print 'or as a backup database? If so, enter the office id(s) from the above'
+        print 'list. If this datbase will only be used by your office, then simply'
+        print 'press Enter.'
+        print 
+        ok = False
+        while not ok :
+            print
+            line  = raw_input('Enter office id(s) of offices sharing this database: ')
+            print
+            office_ids = line.upper().replace(',', ' ').replace(';', ' ').split()
             if not office_ids :
-                print "No other offices will share this database."
-            else:
-                print "Office(s) sharing this database: %s" % ','.join(office_ids)
-            line = raw_input("Is this correct? (y/n) [n] > ")
-            if not line or line[0].upper() != 'Y' :
-                ok = False
-
-#----------------------------------------------------------------------------------#        
-# prompt the user about creating a test account if not entered on the command line #
-#----------------------------------------------------------------------------------#        
-if testAccount == None:
-    print
-    print '-----------TEST ACCOUNT-----------'
-    print
-    line = raw_input('--Do you want to create test accounts? [n]: ')
-    testAccount = line.strip().upper().startswith('Y')
-    print
-
-if testAccount :
-    db_office_eroc = office_erocs[db_office_id].lower()
-    test_user_id = db_office_eroc +"hectest"
-    print
-    print "                                               ---------"
-    print "-- The following test account will be created: %s" % test_user_id
-    print "                                               ---------"
-    print "-- This account will have write privileges on all -REV ts ids"
-    print "-- and read privileges on all -RAW ts ids for the %s " % db_office_id
-    print "-- database."
-    print
-else:
-    db_office_eroc = ''
-    test_user_id = ''
+                ok = True
+            else :
+                for office_id in office_ids :
+                    if office_id == db_office_id :
+                        office_ids.remove(office_id)
+                    if office_id == 'CWMS' : 
+                        office_ids = dbhosts[:]
+                        office_ids.remove('LCRA')
+                        ok = True
+                        break
+                    if office_id not in dbhosts :
+                        print "Office %s does not host a database." % office_id
+                        break
+                else :
+                    ok = True
+                    
+            if ok :
+                print 'You have made the follwing choices:'
+                print "Primary office for this database: %s" % db_office_id
+                if not office_ids :
+                    print "No other offices will share this database."
+                else:
+                    print "Office(s) sharing this database: %s" % ','.join(office_ids)
+                line = raw_input("Is this correct? (y/n) [n] > ")
+                if not line or line[0].upper() != 'Y' :
+                    ok = False
     
-#------------------------------------------------------------------------------
-# Consolidate db_office_id and shared office_ids
-#------------------------------------------------------------------------------
-office_ids.insert(0, db_office_id)
-
-test_user_template = '''
---
--- ignore errors
---
-whenever sqlerror continue
-
-drop user &eroc.hectest;
-drop user &eroc.hectest_ro;
-drop user &eroc.hectest_db;
-drop user &eroc.hectest_ua;
-drop user &eroc.hectest_dx;
-drop user &eroc.hectest_da;
-drop user &eroc.hectest_vt;
-drop user &eroc.hectest_dv;
-
---
--- notice errors
---
-whenever sqlerror exit sql.sqlcode
-
-variable test_passwd varchar2(50)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
-exec :test_passwd := '&test_passwd';
-
-clear
-
-DECLARE
-    test_passwd  VARCHAR2 (50) := :test_passwd;
-    group_list   "&cwms_schema"."CHAR_32_ARRAY_TYPE";
-BEGIN
-    -- hectest
-    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('TS ID Creator', 'CWMS Users');
-    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest', test_passwd, group_list, '&office_id');
-    --
-    -- hectest_ro
-    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('TS ID Creator', 'CWMS Users', 'Viewer Users');
-    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ro', test_passwd, group_list, '&office_id');
-    --
-    -- hectest_dba
-    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS DBA Users');
-    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_db', test_passwd, group_list, '&office_id');
-    --
-    -- hectest_ua
-    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'TS ID Creator', 'Viewer Users');
-    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ua', test_passwd, group_list, '&office_id');
-    --
-    -- hectest_dx
-    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Exchange Mgr', 'TS ID Creator', 'CWMS Users');
-    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_dx', test_passwd, group_list, '&office_id');
-    --
-    -- hectest_da
-    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Acquisition Mgr', 'TS ID Creator', 'CWMS Users');
-    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_da', test_passwd, group_list, '&office_id');
-    --
-    -- hectest_vt
-    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('VT Mgr', 'TS ID Creator', 'CWMS Users');
-    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_vt', test_passwd, group_list, '&office_id');
-    --
-    -- hectest_dv
-    group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Acquisition Mgr', 'VT Mgr', 'TS ID Creator', 'CWMS Users');
-    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_dv', test_passwd, group_list, '&office_id');
-
-END;
-/
-'''
-
-user_template = '''
---
--- ignore errors
---
-whenever sqlerror continue
-
-drop user &eroc.cwmspd;
-drop user &eroc.cwmsdbi;
-
---
--- notice errors
---
-whenever sqlerror exit sql.sqlcode
-
-variable dbi_passwd varchar2(50)
-exec :dbi_passwd := '&dbi_passwd';
-
-clear
-
-DECLARE
-    dbi_passwd      VARCHAR2 (50) := :dbi_passwd;
-    group_list      "&cwms_schema"."CHAR_32_ARRAY_TYPE" := "&cwms_schema"."CHAR_32_ARRAY_TYPE"('CWMS PD Users');
-BEGIN
-    "&cwms_schema"."CWMS_SEC"."CREATE_CWMSDBI_DB_USER"('&eroc.cwmsdbi', dbi_passwd, '&office_id');
-
-    "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.cwmspd', NULL, group_list, '&office_id');
+    #----------------------------------------------------------------------------------#        
+    # prompt the user about creating a test account if not entered on the command line #
+    #----------------------------------------------------------------------------------#        
+    if testAccount == None:
+        print
+        print '-----------TEST ACCOUNT-----------'
+        print
+        line = raw_input('--Do you want to create test accounts? [n]: ')
+        testAccount = line.strip().upper().startswith('Y')
+        print
     
-    "&cwms_schema"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All Rev TS IDs', 'Viewer Users', 'Read', '&office_id');
+    if testAccount :
+        db_office_eroc = office_erocs[db_office_id].lower()
+        test_user_id = db_office_eroc +"hectest"
+        print
+        print "                                               ---------"
+        print "-- The following test account will be created: %s" % test_user_id
+        print "                                               ---------"
+        print "-- This account will have write privileges on all -REV ts ids"
+        print "-- and read privileges on all -RAW ts ids for the %s " % db_office_id
+        print "-- database."
+        print
+    else:
+        db_office_eroc = ''
+        test_user_id = ''
+        
+    #------------------------------------------------------------------------------
+    # Consolidate db_office_id and shared office_ids
+    #------------------------------------------------------------------------------
+    office_ids.insert(0, db_office_id)
     
-    "&cwms_schema"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All TS IDs', 'CWMS Users', 'Read-Write', '&office_id');
-
-END;
-/
-'''
-
-queue_template = '''
-   dbms_aqadm.create_queue_table(
-      queue_table        => '%s_%s_table', 
-      queue_payload_type => 'sys.aq$_jms_map_message',
-      multiple_consumers => true);
-      
-   dbms_aqadm.create_queue(
-      queue_name  => '%s_%s',
-      queue_table => '%s_%s_table');
-      
-   dbms_aqadm.start_queue(queue_name => '%s_%s');
-'''
-
-#==============================================================================
-
-sys.stderr.write("Creating py_ErocUsers.sql\n");
-f  = open("py_ErocUsers.sql", "w")
-users_created = []
-for dbhost_id in office_ids :
-    for office_id in dbhost_offices[dbhost_id] :
-        eroc = office_erocs[office_id].lower()
-        if eroc not in users_created :
-            f.write(user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
-            user_id = eroc+"cwmspd"
-            users_created.append(eroc)
-if test_user_id : 
-    db_ofc_code = db_office_code[db_office_id]
-    db_ofc_eroc = office_erocs[db_office_id]
-    f.write(test_user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
-f.close()
-
-#==============================================================================
-#==
-#====
-#====== createQueues
-#--------------------------------------------------------------------#
-# generate a script to create and start queues for specified offices #
-#--------------------------------------------------------------------#
-
-sys.stderr.write("Creating py_Queues.sql\n")
-f = open("py_Queues.sql", "w")
-f.write("set define off\nbegin")
-for office_id in office_ids :
-    id = office_id.lower()
-    for q in ("realtime_ops", "status", "ts_stored") : 
-        f.write(queue_template % (id,q,id,q,id,q,id,q))
-f.write("end;\n/\ncommit;\n")
-f.close()
-
-#==============================================================================
-
-prompt_template = '''
-prompt
-accept echo_state  char prompt 'Enter ON or OFF for echo         : '
-accept inst        char prompt 'Enter the database SID           : '
-accept sys_passwd  char prompt 'Enter the password for SYS       : '
-accept cwms_passwd char prompt 'Enter the password for &cwms_schema   : '
-accept dbi_passwd  char prompt 'Enter the password for %scwmsdbi : '
-'''
-
-prompt_test_line_template = '''
-accept test_passwd  char prompt 'Enter the password for %s : '
-'''
-
-sys.stderr.write("Creating py_prompt.sql\n")
-f = open("py_prompt.sql","w")
-f.write(prompt_template % (db_office_eroc))
-if test_user_id : f.write(prompt_test_line_template % (test_user_id))
-f.close()
-#==============================================================================
-#====== createQueues
-#====
-#==
-
-#==
-#====
-#======
-#---------------------------------------------------#
-# Table construction templates and loading commands #
-#---------------------------------------------------#
-
-sys.stderr.write("Building cwmsOfficeCreationTemplate\n")
-cwmsOfficeCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       OFFICE_CODE           NUMBER(10)   NOT NULL,
-       OFFICE_ID             VARCHAR2(16) NOT NULL,
-       PUBLIC_NAME           VARCHAR2(32) NULL,
-       LONG_NAME             VARCHAR2(80) NULL,
-       REPORT_TO_OFFICE_CODE NUMBER(10)   NOT NULL,
-       DB_HOST_OFFICE_CODE   NUMBER(10)   NOT NULL,
-       EROC                  VARCHAR2(2)  NOT NULL
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200K
-          NEXT 200K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
-
------------------------------
--- @TABLE constraints --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (OFFICE_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_UK UNIQUE      (OFFICE_ID);
-
-
------------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE @TABLE IS 'Corps of Engineer''s district and division offices.';
-COMMENT ON COLUMN @TABLE."OFFICE_CODE" IS 'Unique office identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
-COMMENT ON COLUMN @TABLE.OFFICE_ID IS 'USACE code or symbol for a district or division office.  Record identifier that is meaningful to the user, e.g. NWS, MVS.  This is user defined.  If not defined during data entry, it defaults to OFFICE_CODE.';
-COMMENT ON COLUMN @TABLE.LONG_NAME IS 'Long name used to refer to an office.';
-COMMENT ON COLUMN @TABLE.REPORT_TO_OFFICE_CODE IS 'Organizationally, the office to report to.';
-COMMENT ON COLUMN @TABLE.DB_HOST_OFFICE_CODE IS 'The office hosting the database for this office.';
-COMMENT ON COLUMN @TABLE.EROC IS 'Corps of Engineers Reporting Organization Codes as per ER-37-1-27.';
-COMMIT;
-'''
-
-sys.stderr.write("Building cwmsOfficeLoadTemplate\n")
-cwmsOfficeLoadTemplate = ''
-code = 0
-for ofcCode, ofc, longName, reportTo, dbHost, eroc in offices :
-    if reportTo :
-        cwmsOfficeLoadTemplate +="INSERT INTO @TABLE (OFFICE_CODE, OFFICE_ID, LONG_NAME, REPORT_TO_OFFICE_CODE, DB_HOST_OFFICE_CODE, EROC)\n"
-        cwmsOfficeLoadTemplate +="\tSELECT %d, '%s', '%s', OFFICE_CODE, %d, '%s' FROM @TABLE WHERE OFFICE_ID='%s';\n" % (ofcCode, ofc, longName, ofcCode, eroc, reportTo)
-    else :
-        cwmsOfficeLoadTemplate +="INSERT INTO @TABLE (OFFICE_CODE, OFFICE_ID, LONG_NAME, REPORT_TO_OFFICE_CODE, DB_HOST_OFFICE_CODE, EROC)\n"
-        cwmsOfficeLoadTemplate +="\tVALUES (%d, '%s', '%s', %d, %d, '%s');\n" % (ofcCode, ofc, longName, ofcCode, ofcCode, eroc)
-    code += 1
+    test_user_template = '''
+    --
+    -- ignore errors
+    --
+    whenever sqlerror continue
     
-cwmsOfficeLoadTemplate +="UPDATE @TABLE SET DB_HOST_OFFICE_CODE=\n"
-cwmsOfficeLoadTemplate +="\t(SELECT OFFICE_CODE FROM @TABLE WHERE OFFICE_ID='NWDP')\n"
-cwmsOfficeLoadTemplate +="\tWHERE OFFICE_ID IN ('NWD', 'NWD', 'NWP', 'NWS', 'NWW');\n"
-
-cwmsOfficeLoadTemplate +="COMMIT;"
-
-sys.stderr.write("Building subLocationCreationTemplate\n")
-subLocationCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       SUBCWMS_CODE    NUMBER(10)   NOT NULL,
-       SUBCWMS_ID      VARCHAR2(32) NOT NULL,
-       DESCRIPTION     VARCHAR2(80)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
+    drop user &eroc.hectest;
+    drop user &eroc.hectest_ro;
+    drop user &eroc.hectest_db;
+    drop user &eroc.hectest_ua;
+    drop user &eroc.hectest_dx;
+    drop user &eroc.hectest_da;
+    drop user &eroc.hectest_vt;
+    drop user &eroc.hectest_dv;
+    
+    --
+    -- notice errors
+    --
+    whenever sqlerror exit sql.sqlcode
+    
+    variable test_passwd varchar2(50)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+    exec :test_passwd := '&test_passwd';
+    
+    clear
+    
+    DECLARE
+        test_passwd  VARCHAR2 (50) := :test_passwd;
+        group_list   "&cwms_schema"."CHAR_32_ARRAY_TYPE";
+    BEGIN
+        -- hectest
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('TS ID Creator', 'CWMS Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest', test_passwd, group_list, '&office_id');
+        --
+        -- hectest_ro
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('TS ID Creator', 'CWMS Users', 'Viewer Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ro', test_passwd, group_list, '&office_id');
+        --
+        -- hectest_dba
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS DBA Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_db', test_passwd, group_list, '&office_id');
+        --
+        -- hectest_ua
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS User Admins', 'TS ID Creator', 'Viewer Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ua', test_passwd, group_list, '&office_id');
+        --
+        -- hectest_dx
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Exchange Mgr', 'TS ID Creator', 'CWMS Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_dx', test_passwd, group_list, '&office_id');
+        --
+        -- hectest_da
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Acquisition Mgr', 'TS ID Creator', 'CWMS Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_da', test_passwd, group_list, '&office_id');
+        --
+        -- hectest_vt
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('VT Mgr', 'TS ID Creator', 'CWMS Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_vt', test_passwd, group_list, '&office_id');
+        --
+        -- hectest_dv
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Acquisition Mgr', 'VT Mgr', 'TS ID Creator', 'CWMS Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_dv', test_passwd, group_list, '&office_id');
+    
+    END;
+    /
+    '''
+    
+    user_template = '''
+    --
+    -- ignore errors
+    --
+    whenever sqlerror continue
+    
+    drop user &eroc.cwmspd;
+    drop user &eroc.cwmsdbi;
+    
+    --
+    -- notice errors
+    --
+    whenever sqlerror exit sql.sqlcode
+    
+    variable dbi_passwd varchar2(50)
+    exec :dbi_passwd := '&dbi_passwd';
+    
+    clear
+    
+    DECLARE
+        dbi_passwd      VARCHAR2 (50) := :dbi_passwd;
+        group_list      "&cwms_schema"."CHAR_32_ARRAY_TYPE" := "&cwms_schema"."CHAR_32_ARRAY_TYPE"('CWMS PD Users');
+    BEGIN
+        "&cwms_schema"."CWMS_SEC"."CREATE_CWMSDBI_DB_USER"('&eroc.cwmsdbi', dbi_passwd, '&office_id');
+    
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.cwmspd', NULL, group_list, '&office_id');
+        
+        "&cwms_schema"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All Rev TS IDs', 'Viewer Users', 'Read', '&office_id');
+        
+        "&cwms_schema"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All TS IDs', 'CWMS Users', 'Read-Write', '&office_id');
+    
+    END;
+    /
+    '''
+    
+    queue_template = '''
+       dbms_aqadm.create_queue_table(
+          queue_table        => '%s_%s_table', 
+          queue_payload_type => 'sys.aq$_jms_map_message',
+          multiple_consumers => true);
+          
+       dbms_aqadm.create_queue(
+          queue_name  => '%s_%s',
+          queue_table => '%s_%s_table');
+          
+       dbms_aqadm.start_queue(queue_name => '%s_%s');
+    '''
+    
+    #==============================================================================
+    
+    sys.stderr.write("Creating py_ErocUsers.sql\n");
+    f  = open("py_ErocUsers.sql", "w")
+    users_created = []
+    for dbhost_id in office_ids :
+        for office_id in dbhost_offices[dbhost_id] :
+            eroc = office_erocs[office_id].lower()
+            if eroc not in users_created :
+                f.write(user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
+                user_id = eroc+"cwmspd"
+                users_created.append(eroc)
+    if test_user_id : 
+        db_ofc_code = db_office_code[db_office_id]
+        db_ofc_eroc = office_erocs[db_office_id]
+        f.write(test_user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
+    f.close()
+    
+    #==============================================================================
+    #==
+    #====
+    #====== createQueues
+    #--------------------------------------------------------------------#
+    # generate a script to create and start queues for specified offices #
+    #--------------------------------------------------------------------#
+    
+    sys.stderr.write("Creating py_Queues.sql\n")
+    f = open("py_Queues.sql", "w")
+    f.write("set define off\nbegin")
+    for office_id in office_ids :
+        id = office_id.lower()
+        for q in ("realtime_ops", "status", "ts_stored") : 
+            f.write(queue_template % (id,q,id,q,id,q,id,q))
+    f.write("end;\n/\ncommit;\n")
+    f.close()
+    
+    #==============================================================================
+    
+    prompt_template = '''
+    prompt
+    accept echo_state  char prompt 'Enter ON or OFF for echo         : '
+    accept inst        char prompt 'Enter the database SID           : '
+    accept sys_passwd  char prompt 'Enter the password for SYS       : '
+    accept cwms_passwd char prompt 'Enter the password for &cwms_schema   : '
+    accept dbi_passwd  char prompt 'Enter the password for %scwmsdbi : '
+    '''
+    
+    prompt_test_line_template = '''
+    accept test_passwd  char prompt 'Enter the password for %s : '
+    '''
+    
+    sys.stderr.write("Creating py_prompt.sql\n")
+    f = open("py_prompt.sql","w")
+    f.write(prompt_template % (db_office_eroc))
+    if test_user_id : f.write(prompt_test_line_template % (test_user_id))
+    f.close()
+    #==============================================================================
+    #====== createQueues
+    #====
+    #==
+    
+    #==
+    #====
+    #======
+    #---------------------------------------------------#
+    # Table construction templates and loading commands #
+    #---------------------------------------------------#
+    
+    sys.stderr.write("Building cwmsOfficeCreationTemplate\n")
+    cwmsOfficeCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
        (
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
-   (
-       UPPER(SUBCWMS_ID)
-   )
-       PCTFREE 10
-       INITRANS 2
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 20k
-          NEXT 20k
-          MINEXTENTS 1
-          MAXEXTENTS 20
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
-COMMIT;
-'''
-
-sys.stderr.write("Building subLocationLoadTemplate\n")
-subLocationLoadTemplate = ''
-for i in range(len(subLocations)) :
-    subLocationLoadTemplate +="INSERT INTO @TABLE (SUBCWMS_CODE, SUBCWMS_ID) VALUES (%d, '%s');\n" % (i+1, subLocations[i])
-subLocationLoadTemplate +="COMMIT;"
-
-sys.stderr.write("Building shefDurationCreationTemplate\n")
-shefDurationCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE(
-  SHEF_DURATION_CODE     VARCHAR2(1 BYTE),
-  SHEF_DURATION_DESC     VARCHAR2(128 BYTE),
-  SHEF_DURATION_NUMERIC  VARCHAR2(4 BYTE),
-  CWMS_DURATION_CODE     NUMBER
-)
-TABLESPACE @DATASPACE
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-
-
-CREATE UNIQUE INDEX @TABLE_PK ON @TABLE
-(SHEF_DURATION_CODE)
-LOGGING
-TABLESPACE @DATASPACE
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
-
-ALTER TABLE @TABLE ADD (
-  CONSTRAINT @TABLE_PK
- PRIMARY KEY
- (SHEF_DURATION_CODE)
-    USING INDEX 
+           OFFICE_CODE           NUMBER(10)   NOT NULL,
+           OFFICE_ID             VARCHAR2(16) NOT NULL,
+           PUBLIC_NAME           VARCHAR2(32) NULL,
+           LONG_NAME             VARCHAR2(80) NULL,
+           REPORT_TO_OFFICE_CODE NUMBER(10)   NOT NULL,
+           DB_HOST_OFFICE_CODE   NUMBER(10)   NOT NULL,
+           EROC                  VARCHAR2(2)  NOT NULL
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200K
+              NEXT 200K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    
+    -----------------------------
+    -- @TABLE constraints --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (OFFICE_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_UK UNIQUE      (OFFICE_ID);
+    
+    
+    -----------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE @TABLE IS 'Corps of Engineer''s district and division offices.';
+    COMMENT ON COLUMN @TABLE."OFFICE_CODE" IS 'Unique office identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
+    COMMENT ON COLUMN @TABLE.OFFICE_ID IS 'USACE code or symbol for a district or division office.  Record identifier that is meaningful to the user, e.g. NWS, MVS.  This is user defined.  If not defined during data entry, it defaults to OFFICE_CODE.';
+    COMMENT ON COLUMN @TABLE.LONG_NAME IS 'Long name used to refer to an office.';
+    COMMENT ON COLUMN @TABLE.REPORT_TO_OFFICE_CODE IS 'Organizationally, the office to report to.';
+    COMMENT ON COLUMN @TABLE.DB_HOST_OFFICE_CODE IS 'The office hosting the database for this office.';
+    COMMENT ON COLUMN @TABLE.EROC IS 'Corps of Engineers Reporting Organization Codes as per ER-37-1-27.';
+    COMMIT;
+    '''
+    
+    sys.stderr.write("Building cwmsOfficeLoadTemplate\n")
+    cwmsOfficeLoadTemplate = ''
+    code = 0
+    for ofcCode, ofc, longName, reportTo, dbHost, eroc in offices :
+        if reportTo :
+            cwmsOfficeLoadTemplate +="INSERT INTO @TABLE (OFFICE_CODE, OFFICE_ID, LONG_NAME, REPORT_TO_OFFICE_CODE, DB_HOST_OFFICE_CODE, EROC)\n"
+            cwmsOfficeLoadTemplate +="\tSELECT %d, '%s', '%s', OFFICE_CODE, %d, '%s' FROM @TABLE WHERE OFFICE_ID='%s';\n" % (ofcCode, ofc, longName, ofcCode, eroc, reportTo)
+        else :
+            cwmsOfficeLoadTemplate +="INSERT INTO @TABLE (OFFICE_CODE, OFFICE_ID, LONG_NAME, REPORT_TO_OFFICE_CODE, DB_HOST_OFFICE_CODE, EROC)\n"
+            cwmsOfficeLoadTemplate +="\tVALUES (%d, '%s', '%s', %d, %d, '%s');\n" % (ofcCode, ofc, longName, ofcCode, ofcCode, eroc)
+        code += 1
+        
+    cwmsOfficeLoadTemplate +="UPDATE @TABLE SET DB_HOST_OFFICE_CODE=\n"
+    cwmsOfficeLoadTemplate +="\t(SELECT OFFICE_CODE FROM @TABLE WHERE OFFICE_ID='NWDP')\n"
+    cwmsOfficeLoadTemplate +="\tWHERE OFFICE_ID IN ('NWD', 'NWD', 'NWP', 'NWS', 'NWW');\n"
+    
+    cwmsOfficeLoadTemplate +="COMMIT;"
+    
+    sys.stderr.write("Building subLocationCreationTemplate\n")
+    subLocationCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           SUBCWMS_CODE    NUMBER(10)   NOT NULL,
+           SUBCWMS_ID      VARCHAR2(32) NOT NULL,
+           DESCRIPTION     VARCHAR2(80)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           (
+              INITIAL 20K
+              NEXT 20K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE indicies
+    --
+    CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
+       (
+           UPPER(SUBCWMS_ID)
+       )
+           PCTFREE 10
+           INITRANS 2
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 20k
+              NEXT 20k
+              MINEXTENTS 1
+              MAXEXTENTS 20
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    COMMIT;
+    '''
+    
+    sys.stderr.write("Building subLocationLoadTemplate\n")
+    subLocationLoadTemplate = ''
+    for i in range(len(subLocations)) :
+        subLocationLoadTemplate +="INSERT INTO @TABLE (SUBCWMS_CODE, SUBCWMS_ID) VALUES (%d, '%s');\n" % (i+1, subLocations[i])
+    subLocationLoadTemplate +="COMMIT;"
+    
+    sys.stderr.write("Building shefDurationCreationTemplate\n")
+    shefDurationCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE(
+      SHEF_DURATION_CODE     VARCHAR2(1 BYTE),
+      SHEF_DURATION_DESC     VARCHAR2(128 BYTE),
+      SHEF_DURATION_NUMERIC  VARCHAR2(4 BYTE),
+      CWMS_DURATION_CODE     NUMBER
+    )
+    TABLESPACE @DATASPACE
+    PCTUSED    0
+    PCTFREE    10
+    INITRANS   1
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    LOGGING 
+    NOCOMPRESS 
+    NOCACHE
+    NOPARALLEL
+    MONITORING
+    /
+    
+    
+    CREATE UNIQUE INDEX @TABLE_PK ON @TABLE
+    (SHEF_DURATION_CODE)
+    LOGGING
     TABLESPACE @DATASPACE
     PCTFREE    10
     INITRANS   2
@@ -6249,2482 +6245,1428 @@ ALTER TABLE @TABLE ADD (
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
-               ))
-/
-
-
-ALTER TABLE @TABLE ADD (
-  CONSTRAINT @TABLE_R01 
- FOREIGN KEY (CWMS_DURATION_CODE) 
- REFERENCES CWMS_DURATION (DURATION_CODE))
-/
-'''
-sys.stderr.write("Building shefDurationLoadTemplate\n")
-shefDurationLoadTemplate = ''
-for durCode, desc, durNum, cwmsDurCode in shef_duration :
-    if durNum == 'NULL' :
-        shefDurationLoadTemplate +="INSERT INTO @TABLE VALUES ('%s', '%s', %s, %s);\n" % (durCode, desc, durNum, cwmsDurCode)
-    else :
-        shefDurationLoadTemplate +="INSERT INTO @TABLE VALUES ('%s', '%s', '%s', %s);\n" % (durCode, desc, durNum, cwmsDurCode)
-shefDurationLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building statesCreationTemplate\n")
-statesCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       STATE_CODE    NUMBER(10)  NOT NULL,
-       STATE_INITIAL VARCHAR2(2) NOT NULL,
-       NAME          VARCHAR2(40)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
-----------------------------
--- @TABLE constraints --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (STATE_CODE);
-
--------------------------
--- CWMS STATE comments --
---
-COMMENT ON TABLE @TABLE IS 'STATE_CODE uses FIPS state number.';
-
-COMMIT;
-'''
-
-sys.stderr.write("Building statesLoadTemplate\n")
-statesLoadTemplate = ''
-for id, initial, name in states :
-    statesLoadTemplate +="INSERT INTO @TABLE VALUES (%s, '%s', '%s');\n" % (id, initial, name)
-statesLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building countiesCreationTemplate\n")
-countiesCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       COUNTY_CODE NUMBER(10)   NOT NULL,
-       COUNTY_ID   VARCHAR2(3)  NOT NULL,
-       STATE_CODE  NUMBER(10)   NOT NULL,
-       COUNTY_NAME VARCHAR2(40)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 100K
-          NEXT 50K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE constraints --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY(COUNTY_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY(STATE_CODE) REFERENCES @statesTableName (STATE_CODE);
---------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE @TABLE IS 'County code uses state and county FIPS number   01 - State FIPS number   053 - FIPS number thus, county code is 01053.';
-
-COMMIT;
-'''
-
-sys.stderr.write("Building countiesLoadTemplate\n")
-countiesLoadTemplate = ''
-for county_code, countyName in counties :
-    stateId = "%2.2d" % (county_code / 1000)
-    stateName = stateNamesById[stateId]
-    county_id = "%3.3d" % (county_code % 1000)
-    countiesLoadTemplate +="INSERT INTO @TABLE VALUES (\n"
-    countiesLoadTemplate +="\t%d,\n" % county_code
-    countiesLoadTemplate +="\t'%s',\n" % county_id
-    countiesLoadTemplate +="\t(SELECT STATE_CODE FROM @statesTableName WHERE NAME='%s'),\n" % stateName
-    countiesLoadTemplate +="\t'%s'\n" % countyName
-    countiesLoadTemplate +=");\n"
-countiesLoadTemplate +="COMMIT;\n"
-
-
-sys.stderr.write("Building intervalOffsetCreationTemplate\n")
-intervalOffsetCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       INTERVAL_OFFSET_CODE    NUMBER(10)   NOT NULL,
-       INTERVAL_OFFSET_ID      VARCHAR2(16) NOT NULL,
-       INTERVAL_OFFSET_VALUE   NUMBER(10)   NOT NULL,
-       DESCRIPTION             VARCHAR2(80) 
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       (
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       ); 
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
-   (
-       UPPER(INTERVAL_OFFSET_ID)
-   )
-       PCTFREE 10
-       INITRANS 2
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 20k
-          NEXT 20k
-          MINEXTENTS 1
-          MAXEXTENTS 20
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-     
-COMMIT;
-'''
-
-sys.stderr.write("Building validValuesCreationTemplate\n")
-validValuesCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-        COL_CODE             VARCHAR2(15) NOT NULL,
-        VALUE_CODE           VARCHAR2(16) NOT NULL,
-        VALUE_CODE_DESC      VARCHAR2(70) NULL
-   )
-        PCTFREE 10
-        PCTUSED 40
-        MAXTRANS 255
+                BUFFER_POOL      DEFAULT
+               )
+    NOPARALLEL
+    /
+    
+    
+    ALTER TABLE @TABLE ADD (
+      CONSTRAINT @TABLE_PK
+     PRIMARY KEY
+     (SHEF_DURATION_CODE)
+        USING INDEX 
         TABLESPACE @DATASPACE
-        STORAGE 
-        (
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-        );
-
-COMMIT;
-'''
-
-sys.stderr.write("Building errorMessageCreationTemplate\n")
-errorMessageCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       ERROR_CODE VARCHAR2(15) NOT NULL,
-       ERROR_DESC VARCHAR2(70)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       (
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
-COMMIT;
-'''
-
-sys.stderr.write("Building errorMessageNewCreationTemplate\n")
-errorMessageNewCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-(
-  ERR_CODE  NUMBER(6)                           NOT NULL,
-  ERR_NAME  VARCHAR2(32 BYTE)                   NOT NULL,
-  ERR_MSG   VARCHAR2(240 BYTE)
-)
-TABLESPACE @DATASPACE
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING;
-
-
-CREATE UNIQUE INDEX @TABLE_PK ON @TABLE
-(ERR_CODE)
-LOGGING
-TABLESPACE @DATASPACE
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL;
-
-
-CREATE UNIQUE INDEX @TABLE_AK1 ON @TABLE
-(ERR_NAME)
-LOGGING
-TABLESPACE @DATASPACE
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL;
-
-
-CREATE OR REPLACE TRIGGER @TABLE_BIUR
-before insert or update
-on @TABLE
-for each row
-begin
-   :new.err_name := upper(:new.err_name);
-end;
-/
-SHOW ERRORS;
-
-
-
-ALTER TABLE @TABLE ADD (
-  CONSTRAINT ERR_CODE_VAL_CHECK
- CHECK (err_code <-20000 and err_code>=-20999));
-
-ALTER TABLE @TABLE ADD (
-  CONSTRAINT @TABLE_PK
- PRIMARY KEY
- (ERR_CODE)
-    USING INDEX 
-    TABLESPACE @DATASPACE
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ));
-
-'''
-
-sys.stderr.write("Building errorMessageNewLoadTemplate\n")
-errorMessageNewLoadTemplate = ''
-for err_code, err_name, err_msg in errorCodes :
-    errorMessageNewLoadTemplate +="INSERT INTO @TABLE (ERR_CODE, ERR_NAME, ERR_MSG) VALUES (%s, '%s', '%s');\n" % (err_code, err_name, err_msg)
-errorMessageNewLoadTemplate +="COMMIT;\n"
-
-
-sys.stderr.write("Building intervalCreationTemplate\n")
-intervalCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       INTERVAL_CODE  NUMBER(10)   NOT NULL,
-       INTERVAL_ID    VARCHAR2(16) NOT NULL,
-       INTERVAL       NUMBER(10)   NOT NULL,
-       DESCRIPTION    VARCHAR2(80)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
--------------------------------
--- @TABLE constraints --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY(INTERVAL_CODE);
-
-COMMIT;
-'''
-
-
-sys.stderr.write("Building intervalLoadTemplate\n")
-intervalLoadTemplate = ''
-for code, id, minutesSignature, description in intervals :
-    intervalLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', %d, '%s');\n" % (code, id, minutesSignature, description)
-intervalLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building durationCreationTemplate\n")
-durationCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       DURATION_CODE NUMBER(10)   NOT NULL,
-       DURATION_ID   VARCHAR2(16) NOT NULL,
-       DURATION      NUMBER(10)   NOT NULL,
-       DESCRIPTION   VARCHAR2(80)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 100
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
---------------------------------
--- @TABLE constratints --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY(DURATION_CODE);
-
-COMMIT;
-'''
-
-
-sys.stderr.write("Building durationLoadTemplate\n")
-durationLoadTemplate = ''
-for code, id, minutesSignature, description in durations :
-    durationLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', %d, '%s');\n" % (code, id, minutesSignature, description)
-durationLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building catalogCreationTemplate\n")
-catalogCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       OBJECT_NAME  VARCHAR2(50) NOT NULL,
-       COLUMN_NAME VARCHAR2(50)  NOT NULL,
-       OBJECT_DESC VARCHAR2(100),
-       COLUMN_DESC VARCHAR2(100)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 100
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
-COMMIT;   
-'''
-
-sys.stderr.write("Building catalogLoadTemplate\n")
-catalogLoadTemplate = ''
-for objName, colName, objDesc, colDesc in catalogItems :
-    catalogLoadTemplate +="INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s');\n" % (objName, colName, objDesc, colDesc)
-catalogLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building abstractParamCreationTemplate\n")
-abstractParamCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       ABSTRACT_PARAM_CODE NUMBER(10)         NOT NULL,
-       ABSTRACT_PARAM_ID   VARCHAR2(32 BYTE)  NOT NULL
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200K
-          NEXT 200K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
-   (
-       UPPER(ABSTRACT_PARAM_ID)
-   )
-       PCTFREE 10
-       INITRANS 2
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200k
-          NEXT 200k
-          MINEXTENTS 1
-          MAXEXTENTS 20
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE constraints
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (ABSTRACT_PARAM_CODE);
-
------------------------------
--- @TABLE comments
---
-COMMENT ON TABLE @TABLE IS 'Contains abstract parameters used with CWMS';
-COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_CODE IS 'Primary key used for relating abstract parameters to other entities';
-COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_ID IS 'Text identifier of abstract parameter';
-COMMIT;
-'''
-
-sys.stderr.write("Building abstractParamLoadTemplate\n")
-abstractParamLoadTemplate = ""
-for i in range(len(abstractParams)) :
-    code = i+1
-    id = abstractParams[i]
-    abstractParamLoadTemplate +="INSERT INTO @abstractParamTableName (ABSTRACT_PARAM_CODE, ABSTRACT_PARAM_ID) VALUES(%d, '%s');\n" % (code, id)
-abstractParamLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building unitCreationTemplate\n")
-unitCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       UNIT_CODE           NUMBER(10)         NOT NULL,
-       UNIT_ID             VARCHAR2(16 BYTE)  NOT NULL,
-       ABSTRACT_PARAM_CODE NUMBER(10)         NOT NULL,
-       UNIT_SYSTEM         VARCHAR2(2 BYTE),
-       LONG_NAME           VARCHAR2(80 BYTE),
-       DESCRIPTION         VARCHAR2(80 BYTE)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200K
-          NEXT 200K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE constraints
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (UNIT_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_UK UNIQUE      (UNIT_ID, ABSTRACT_PARAM_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY (ABSTRACT_PARAM_CODE) REFERENCES @abstractParamTableName (ABSTRACT_PARAM_CODE);
-
------------------------------
--- @TABLE comments
---
-COMMENT ON TABLE @TABLE IS 'Contains all internal and external units used with CWMS';
-COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'Primary key used for relating units to other entities';
-COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_CODE IS 'Foreign key referencing @abstractParamTableName table';
-COMMENT ON COLUMN @TABLE.UNIT_ID IS 'Short text identifier of unit';
-COMMENT ON COLUMN @TABLE.UNIT_SYSTEM IS 'SI deonotes SI, EN denotes English, Null denotes both SI and EN';
-COMMENT ON COLUMN @TABLE.LONG_NAME IS 'Complete name of unit';
-COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description of unit';
-COMMIT;
-
-'''
-
-sys.stderr.write("Building unitLoadTemplate\n")
-unitLoadTemplate = ''
-unitDefIds = unitDefsById.keys()
-unitDefIds.sort()
-for i in range(len(unitDefIds)) :
-    id = unitDefIds[i]
-    unitDef = unitDefsById[id]
-    name = unitDef["NAME"]
-    description = unitDef["DESCRIPTION"]
-    code = unitDef["CODE"]
-    id = unitDef["ID"]
-    system = unitDef["SYSTEM"]
-    abstractParam = unitDef["ABSTRACT"]
-    unitLoadTemplate +="INSERT INTO @unitTableName (UNIT_CODE, UNIT_ID, ABSTRACT_PARAM_CODE, UNIT_SYSTEM, LONG_NAME, DESCRIPTION) VALUES (\n" 
-    unitLoadTemplate +="\t%d,\n" % code 
-    unitLoadTemplate +="\t'%s',\n" % id
-    unitLoadTemplate +="\t(\tSELECT ABSTRACT_PARAM_CODE\n"
-    unitLoadTemplate +="\t\tFROM   @abstractParamTableName \n"
-    unitLoadTemplate +="\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
-    unitLoadTemplate +="\t),\n"
-    if system == "NULL" :
-      unitLoadTemplate +="\tNULL,\n"
-    else :
-      unitLoadTemplate +="\t'%s',\n" % system  
-    unitLoadTemplate +="\t'%s',\n" % name
-    unitLoadTemplate +="\t'%s'\n" % description
-    unitLoadTemplate +=");\n"
-unitLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building cwmsUnitCreationTemplate\n")
-cwmsUnitCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       UNIT_CODE      NUMBER(10) NOT NULL
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200K
-          NEXT 200K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE constraints
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (UNIT_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY (UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
-
------------------------------
--- @TABLE comments
---
-COMMENT ON TABLE @TABLE IS 'Contains references to all units allowed in CWMS database';
-COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'Primary key used for relating cwms units to other entities';
-COMMIT;
-
-'''
-
-sys.stderr.write("Building cwmsUnitLoadTemplate\n")
-cwmsUnitLoadTemplate = ''
-for i in range(len(cwmsUnitParamDefsById)) :
-    cwmsUnitCode = cwmsUnitParamDefsById[cwmsUnitParamIds[i]]
-    cwmsUnitLoadTemplate +="INSERT INTO @cwmsUnitTableName (UNIT_CODE) VALUES (\n"
-    cwmsUnitLoadTemplate +="\t%d);\n" % cwmsUnitCode
-cwmsUnitLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building parameterTypeCreationTemplate\n")
-parameterTypeCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-  (
-       PARAMETER_TYPE_CODE  NUMBER(10)   NOT NULL,
-       PARAMETER_TYPE_ID    VARCHAR2(16) NOT NULL,
-       DESCRIPTION          VARCHAR2(80) NULL
-  )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 20k
-          NEXT 20k
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
-   (
-       UPPER(PARAMETER_TYPE_ID)
-   )
-       PCTFREE 10
-       INITRANS 2
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 20k
-          NEXT 20k
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
--------------------------------------
--- @TABLE constraints --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (PARAMETER_TYPE_CODE);
-
-----------------------------------
--- @TABLE comments --
---    
-COMMENT ON TABLE  @TABLE IS 'Associated with a parameter to define the relationship of the data value to its duration.  The valid values include average, total, maximum, minimum, and constant.';
-COMMENT ON COLUMN @TABLE.PARAMETER_TYPE_CODE IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
-COMMENT ON COLUMN @TABLE.PARAMETER_TYPE_ID IS 'Record identifier that is meaningful to the user.  This is user defined.  If not defined during data entry, it defaults to PARAMETER_TYPE_CODE.';
-COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Additional information.';
-COMMIT;
-
-'''
-
-sys.stderr.write("Building parameterTypeLoadTemplate\n")
-parameterTypeLoadTemplate = ''
-for i in range(len(parameterTypes)) :
-    code = i+1
-    parameterTypeLoadTemplate +="INSERT INTO @parameterTypeTableName (PARAMETER_TYPE_CODE, PARAMETER_TYPE_ID, DESCRIPTION) VALUES (\n"
-    parameterTypeLoadTemplate +="\t%d,\n"   % code
-    parameterTypeLoadTemplate +="\t'%s',\n" % parameterTypes[i]["ID"]
-    parameterTypeLoadTemplate +="\t'%s'\n"  % parameterTypes[i]["DESCRIPTION"]
-    parameterTypeLoadTemplate +=");\n"
-parameterTypeLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building parameterCreationTemplate\n")
-parameterCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       BASE_PARAMETER_CODE      NUMBER(10)         NOT NULL, 
-       BASE_PARAMETER_ID        VARCHAR2(16 BYTE)  NOT NULL,
-       ABSTRACT_PARAM_CODE      NUMBER(10)         NOT NULL,
-       UNIT_CODE                NUMBER(10)         NOT NULL,
-       DISPLAY_UNIT_CODE_SI     NUMBER(10)         NOT NULL,
-       DISPLAY_UNIT_CODE_EN     NUMBER(10)         NOT NULL,
-       LONG_NAME                VARCHAR2(80 BYTE),
-       DESCRIPTION              VARCHAR2(160 BYTE)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200K
-          NEXT 200K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
-   (
-       UPPER(BASE_PARAMETER_ID)
-   )
-       PCTFREE 10
-       INITRANS 2
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200k
-          NEXT 200k
-          MINEXTENTS 1
-          MAXEXTENTS 20
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE constraints
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK   PRIMARY KEY (BASE_PARAMETER_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (ABSTRACT_PARAM_CODE) REFERENCES @abstractParamTableName (ABSTRACT_PARAM_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK3 FOREIGN KEY (DISPLAY_UNIT_CODE_SI) REFERENCES @unitTableName (UNIT_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK4 FOREIGN KEY (DISPLAY_UNIT_CODE_EN) REFERENCES @unitTableName (UNIT_CODE);
-
------------------------------
--- @TABLE comments
---
-COMMENT ON TABLE @TABLE IS 'List of parameters allowed in the CWMS database';
-COMMENT ON COLUMN @TABLE.BASE_PARAMETER_CODE IS 'Primary key used to relate parameters other entities';
-COMMENT ON COLUMN @TABLE.BASE_PARAMETER_ID IS 'Short identifier of parameter';
-COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_CODE IS 'Foreign key referencing @abstractParamTableName table';
-COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'This is the db storage unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
-COMMENT ON COLUMN @TABLE.DISPLAY_UNIT_CODE_SI IS 'This is the default SI display unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
-COMMENT ON COLUMN @TABLE.DISPLAY_UNIT_CODE_EN IS 'This is the default Non-SI display unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
-COMMENT ON COLUMN @TABLE.LONG_NAME IS 'Full name of parameter';
-COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description of parameter';
-
------------------------------
--- @TABLE_UNIT trigger
---
-CREATE OR REPLACE TRIGGER cwms_base_parameter_unit
-   BEFORE INSERT OR UPDATE OF abstract_param_code, unit_code
-   ON cwms_base_parameter
-   REFERENCING NEW AS NEW OLD AS OLD
-   FOR EACH ROW
-DECLARE
-   --
-   -- This trigger ensures that the abstract parameter associated with the specified
-   -- unit is the same as the abstract parameter associated with this parameter.
-   --
-   unit_abstract_code            cwms_abstract_parameter.abstract_param_code%TYPE;
-   unit_abstract_id              cwms_abstract_parameter.abstract_param_id%TYPE;
-   unit_id                       cwms_unit.unit_id%TYPE;
-   unit_type                     VARCHAR (20);
-   parameter_abstract_id         cwms_abstract_parameter.abstract_param_id%TYPE;
-   inconsistent_abstract_codes   EXCEPTION;
-   PRAGMA EXCEPTION_INIT (inconsistent_abstract_codes, -20000);
-BEGIN
-   SELECT u.abstract_param_code
-     INTO unit_abstract_code
-     FROM cwms_unit u
-    WHERE u.unit_code = :NEW.unit_code;
-
-   IF :NEW.abstract_param_code != unit_abstract_code
-   THEN
-      SELECT u.unit_id
-        INTO unit_id
-        FROM cwms_unit u
-       WHERE u.unit_code = :NEW.unit_code;
-
-      unit_type := 'DB Storage Unit';
-      RAISE inconsistent_abstract_codes;
-   END IF;
-
-   --
-   SELECT u.abstract_param_code
-     INTO unit_abstract_code
-     FROM cwms_unit u
-    WHERE u.unit_code = :NEW.display_unit_code_si;
-
-   IF :NEW.abstract_param_code != unit_abstract_code
-   THEN
-      SELECT u.unit_id
-        INTO unit_id
-        FROM cwms_unit u
-       WHERE u.unit_code = :NEW.display_unit_code_si;
-
-      unit_type := 'SI Display Unit';
-      RAISE inconsistent_abstract_codes;
-   END IF;
-
-   --
-   SELECT u.abstract_param_code
-     INTO unit_abstract_code
-     FROM cwms_unit u
-    WHERE u.unit_code = :NEW.display_unit_code_en;
-
-   IF :NEW.abstract_param_code != unit_abstract_code
-   THEN
-      SELECT u.unit_id
-        INTO unit_id
-        FROM cwms_unit u
-       WHERE u.unit_code = :NEW.display_unit_code_en;
-
-      unit_type := 'Non-SI Display Unit';
-      RAISE inconsistent_abstract_codes;
-   END IF;
-EXCEPTION
-   WHEN inconsistent_abstract_codes
-   THEN
-      SELECT abstract_param_id
-        INTO unit_abstract_id
-        FROM cwms_abstract_parameter
-       WHERE abstract_param_code = unit_abstract_code;
-
-      SELECT abstract_param_id
-        INTO parameter_abstract_id
-        FROM cwms_abstract_parameter
-       WHERE abstract_param_code = :NEW.abstract_param_code;
-
-      DBMS_OUTPUT.put_line (   'ERROR: Parameter "'
-                            || :NEW.base_parameter_id
-                            || '" has abstract parameter "'
-                            || parameter_abstract_id
-                            || '" but '
-                            || unit_type
-                            ||  ' "'
-                            || unit_id
-                            || '" has abstract parameter "'
-                            || unit_abstract_id
-                            || '".'
-                           );
-      RAISE;
-   WHEN OTHERS
-   THEN
-      DBMS_OUTPUT.put_line (SQLERRM);
-      RAISE;
-END r_parameter_unit;
-/
-SHOW ERRORS
-COMMIT;
-
-'''
-
-sys.stderr.write("Building parameterLoadTemplate\n")
-parameterLoadTemplate = ''
-for i in range(len(parameters)) :
-    code, abstractParam, id, name, unitId, siUnitId, enUnitId, description = parameters[i]
-    parameterLoadTemplate +="INSERT INTO @parameterTableName (BASE_PARAMETER_CODE, BASE_PARAMETER_ID, ABSTRACT_PARAM_CODE, UNIT_CODE, DISPLAY_UNIT_CODE_SI, DISPLAY_UNIT_CODE_EN, LONG_NAME, DESCRIPTION) VALUES (\n"
-    parameterLoadTemplate +="\t%d,\n" % code
-    parameterLoadTemplate +="\t'%s',\n" % id
-    parameterLoadTemplate +="\t(\tSELECT ABSTRACT_PARAM_CODE\n"
-    parameterLoadTemplate +="\t\tFROM   @abstractParamTableName \n"
-    parameterLoadTemplate +="\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
-    parameterLoadTemplate +="\t),\n"
-    parameterLoadTemplate +="\t(\tSELECT U.UNIT_CODE\n"
-    parameterLoadTemplate +="\t\tFROM @unitTableName U \n"
-    parameterLoadTemplate +="\t\tWHERE U.UNIT_ID='%s'\n" % unitId
-    parameterLoadTemplate +="\t),\n"
-    parameterLoadTemplate +="\t(\tSELECT U.UNIT_CODE\n"
-    parameterLoadTemplate +="\t\tFROM @unitTableName U \n"
-    parameterLoadTemplate +="\t\tWHERE U.UNIT_ID='%s'\n" % siUnitId
-    parameterLoadTemplate +="\t),\n"
-    parameterLoadTemplate +="\t(\tSELECT U.UNIT_CODE\n"
-    parameterLoadTemplate +="\t\tFROM @unitTableName U \n"
-    parameterLoadTemplate +="\t\tWHERE U.UNIT_ID='%s'\n" % enUnitId
-    parameterLoadTemplate +="\t),\n"
-    parameterLoadTemplate +="\t'%s',\n" % name
-    parameterLoadTemplate +="\t'%s'\n" % description
-    parameterLoadTemplate +=");\n"
-parameterLoadTemplate +="COMMIT;\n"
-
-#-------------------------------------------------------
-#-------------------------------------------------------
-sys.stderr.write("Building subParameterCreationTemplate\n")
-subParameterCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-
-CREATE TABLE @TABLE
-(
-  PARAMETER_CODE       NUMBER,
-  DB_OFFICE_CODE       NUMBER                     NOT NULL,
-  BASE_PARAMETER_CODE  NUMBER                     NOT NULL,
-  SUB_PARAMETER_ID     VARCHAR2(32 BYTE),
-  SUB_PARAMETER_DESC   VARCHAR2(80 BYTE)
-)
-TABLESPACE @DATASPACE
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING
-/
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_PK ON @TABLE
-(PARAMETER_CODE)
-LOGGING
-TABLESPACE @DATASPACE
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
-
-CREATE UNIQUE INDEX @TABLE_UK1 ON @TABLE
-(BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE)
-LOGGING
-TABLESPACE @DATASPACE
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
------------------------------
--- @TABLE constraints
---
-ALTER TABLE @TABLE ADD (
-  CONSTRAINT @TABLE_PK
- PRIMARY KEY
- (PARAMETER_CODE)
-    USING INDEX 
-    TABLESPACE @DATASPACE
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-
-ALTER TABLE @TABLE ADD (
-  CONSTRAINT @TABLE_UK1
- UNIQUE (BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE)
-    USING INDEX 
-    TABLESPACE @DATASPACE
-    PCTFREE    10
-    INITRANS   2
-    MAXTRANS   255
-    STORAGE    (
-                INITIAL          64K
-                MINEXTENTS       1
-                MAXEXTENTS       2147483645
-                PCTINCREASE      0
-               ))
-/
-
-ALTER TABLE @TABLE ADD (
-  CONSTRAINT @TABLE_FK1 
- FOREIGN KEY (DB_OFFICE_CODE) 
- REFERENCES CWMS_OFFICE (OFFICE_CODE))
-/
-
-ALTER TABLE @TABLE ADD (
-  CONSTRAINT @TABLE_FK2 
- FOREIGN KEY (BASE_PARAMETER_CODE) 
- REFERENCES CWMS_BASE_PARAMETER (BASE_PARAMETER_CODE))
-/
-
-ALTER TABLE @TABLE ADD (
-  CONSTRAINT @TABLE_CK_1 
-       CHECK (TRIM(SUB_PARAMETER_ID)=SUB_PARAMETER_ID))
-/
-SHOW ERRORS
-
-'''
-
-
-sys.stderr.write("Building subParameterLoadTemplate\n")
-subParameterLoadTemplate = \
-'''
-INSERT INTO at_parameter
-   SELECT base_parameter_code, (SELECT office_code
-                                  FROM cwms_office
-                                 WHERE office_id = 'CWMS'),
-          base_parameter_code, NULL, cbp.long_name
-     FROM cwms_base_parameter cbp
-/
-
-'''
-for i in range(len(subParameters)) :
-    baseCode, baseParamId, subParamId, longName, siUnitId, enUnitId = subParameters[i]
-    subParameterLoadTemplate +="INSERT INTO @subParameterTableName (PARAMETER_CODE, BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE, SUB_PARAMETER_DESC) VALUES (\n"
-    subParameterLoadTemplate +="\t%d,\n" % baseCode
-    subParameterLoadTemplate +="\t(\tSELECT BASE_PARAMETER_CODE\n"
-    subParameterLoadTemplate +="\t\tFROM   @parameterTableName \n"
-    subParameterLoadTemplate +="\t\tWHERE  BASE_PARAMETER_ID='%s'\n" % baseParamId
-    subParameterLoadTemplate +="\t),\n"
-    subParameterLoadTemplate +="\t'%s',\n" % subParamId
-    subParameterLoadTemplate +="\t(\tSELECT OFFICE_CODE\n"
-    subParameterLoadTemplate +="\t\tFROM @cwmsOfficeTableName U \n"
-    subParameterLoadTemplate +="\t\tWHERE OFFICE_ID='CWMS'\n"
-    subParameterLoadTemplate +="\t),\n"
-    subParameterLoadTemplate +="\t'%s'\n" % longName
-    subParameterLoadTemplate +=");\n"
-subParameterLoadTemplate +="COMMIT;\n"
-
-
-#-------------------------------------------------------
-#-------------------------------------------------------
-
-sys.stderr.write("Building ratingMethodCreationTemplate\n")
-ratingMethodCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       RATING_METHOD_CODE NUMBER(10),
-       RATING_METHOD_ID   VARCHAR2(32),
-       DESCRIPTION        VARCHAR2(256),
-       CONSTRAINT @TABLE_PK PRIMARY KEY(RATING_METHOD_CODE)
-   ) 
-       ORGANIZATION INDEX
-       TABLESPACE @DATASPACE;
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
-   (
-       UPPER(RATING_METHOD_ID)
-   )
-       PCTFREE 10
-       INITRANS 2
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 20k
-          NEXT 20k
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
+        PCTFREE    10
+        INITRANS   2
+        MAXTRANS   255
+        STORAGE    (
+                    INITIAL          64K
+                    MINEXTENTS       1
+                    MAXEXTENTS       2147483645
+                    PCTINCREASE      0
+                   ))
+    /
     
-COMMIT;   
-'''
-
-sys.stderr.write("Building ratingMethodLoadTemplate\n")
-ratingMethodLoadTemplate = ''
-code = 1
-for id, description in ratingMethods :
-    ratingMethodLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
-    code += 1
-ratingMethodLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building dssParameterTypeCreationTemplate\n")
-dssParameterTypeCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-  (
-       DSS_PARAMETER_TYPE_CODE NUMBER(10)   NOT NULL,
-       DSS_PARAMETER_TYPE_ID   VARCHAR2(8)  NOT NULL,
-       PARAMETER_TYPE_CODE     NUMBER(10)   NOT NULL,
-       DESCRIPTION             VARCHAR2(40) NULL
-  )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200k
-          NEXT 200k
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
-   (
-       UPPER(DSS_PARAMETER_TYPE_ID)
-   )
-       PCTFREE 10
-       INITRANS 2
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200k
-          NEXT 200k
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
--------------------------------------
--- @TABLE constraints --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (DSS_PARAMETER_TYPE_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY (PARAMETER_TYPE_CODE) REFERENCES @parameterTypeTableName (PARAMETER_TYPE_CODE);
-
-----------------------------------
--- @TABLE comments --
---    
-COMMENT ON TABLE  @TABLE IS 'List of valid HEC-DSS time series data types';
-COMMENT ON COLUMN @TABLE.DSS_PARAMETER_TYPE_CODE IS 'Primary key for relating HEC-DSS parameter types to other entities';
-COMMENT ON COLUMN @TABLE.DSS_PARAMETER_TYPE_ID IS 'HEC-DSS time series parameter type';
-COMMENT ON COLUMN @TABLE.PARAMETER_TYPE_CODE IS 'CWMS parameter type associated with the HEC-DSS parameter type';
-COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description';
-COMMIT;
-
-'''
-
-sys.stderr.write("Building dssParameterTypeLoadTemplate\n")
-dssParameterTypeLoadTemplate = ''
-for i in range(len(dssParameterTypes)) :
-    code = i+1
-    dssParameterTypeLoadTemplate +="INSERT INTO @dssParameterTypeTableName (DSS_PARAMETER_TYPE_CODE, DSS_PARAMETER_TYPE_ID, PARAMETER_TYPE_CODE, DESCRIPTION) VALUES (\n"
-    dssParameterTypeLoadTemplate +="\t%d,\n"   % code
-    dssParameterTypeLoadTemplate +="\t'%s',\n" % dssParameterTypes[i]["ID"]
-    dssParameterTypeLoadTemplate +="\t(\tSELECT PARAMETER_TYPE_CODE\n"
-    dssParameterTypeLoadTemplate +="\t\tFROM   @parameterTypeTableName\n"
-    dssParameterTypeLoadTemplate +="\t\tWHERE  PARAMETER_TYPE_ID='%s'\n" % dssParameterTypes[i]["DB_TYPE"]
-    dssParameterTypeLoadTemplate +="\t),\n"
-    dssParameterTypeLoadTemplate +="\t'%s'\n"  % dssParameterTypes[i]["DESCRIPTION"]
-    dssParameterTypeLoadTemplate +=");\n"
-dssParameterTypeLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building dssXchgDirectionCreationTemplate\n")
-dssXchgDirectionCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-  (
-       DSS_XCHG_DIRECTION_CODE NUMBER       NOT NULL,
-       DSS_XCHG_DIRECTION_ID   VARCHAR2(16) NOT NULL,
-       DESCRIPTION             VARCHAR2(80) NULL
-  )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200k
-          NEXT 200k
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
-   (
-       UPPER(DSS_XCHG_DIRECTION_ID)
-   )
-       PCTFREE 10
-       INITRANS 2
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200k
-          NEXT 200k
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
--------------------------------------
--- @TABLE constraints --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (DSS_XCHG_DIRECTION_CODE);
-
-----------------------------------
--- @TABLE comments --
---    
-COMMENT ON TABLE  @TABLE IS 'List of valid Oracle/HEC-DSS exchange directions';
-COMMENT ON COLUMN @TABLE.DSS_XCHG_DIRECTION_CODE IS 'Primary key for relating exchange directions to other entities';
-COMMENT ON COLUMN @TABLE.DSS_XCHG_DIRECTION_ID IS 'Oracle/HEC-DSS exchange direction';
-COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description';
-COMMIT;
-
-'''
-
-sys.stderr.write("Building dssXchgDirectionLoadTemplate\n")
-dssXchgDirectionLoadTemplate = ''
-for i in range(len(dssXchgDirections)) :
-    code = i + 1
-    dssXchgDirectionLoadTemplate +="INSERT INTO @dssXchgDirectionTableName (DSS_XCHG_DIRECTION_CODE, DSS_XCHG_DIRECTION_ID, DESCRIPTION) VALUES (\n"
-    dssXchgDirectionLoadTemplate +="\t%d,\n"   % code
-    dssXchgDirectionLoadTemplate +="\t'%s',\n" % dssXchgDirections[i]["DSS_XCHG_DIRECTION_ID"]
-    dssXchgDirectionLoadTemplate +="\t'%s'\n"  % dssXchgDirections[i]["DESCRIPTION"]
-    dssXchgDirectionLoadTemplate +=");\n"
-dssParameterTypeLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building conversionCreationTemplate\n")
-conversionCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-(
-  FROM_UNIT_ID        VARCHAR2(16 BYTE)       NOT NULL,
-  TO_UNIT_ID          VARCHAR2(16 BYTE)       NOT NULL,
-  ABSTRACT_PARAM_CODE NUMBER(10)              NOT NULL,
-  FROM_UNIT_CODE      NUMBER(10)              NOT NULL,
-  TO_UNIT_CODE        NUMBER(10)              NOT NULL,
-  FACTOR              BINARY_DOUBLE           NOT NULL,
-  OFFSET              BINARY_DOUBLE           NOT NULL, 
-  CONSTRAINT CWMS_UNIT_CONVERSION_PK
- PRIMARY KEY
- (FROM_UNIT_ID, TO_UNIT_ID)
-)
-ORGANIZATION INDEX
-LOGGING
-TABLESPACE @DATASPACE
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-MONITORING
-/
-
------------------------------
--- @TABLE constraints
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (FROM_UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (TO_UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK3 FOREIGN KEY (FROM_UNIT_ID, ABSTRACT_PARAM_CODE) REFERENCES @unitTableName (UNIT_ID, ABSTRACT_PARAM_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK4 FOREIGN KEY (TO_UNIT_ID, ABSTRACT_PARAM_CODE) REFERENCES @unitTableName (UNIT_ID, ABSTRACT_PARAM_CODE);
-
-
-CREATE UNIQUE INDEX CWMS_UNIT_CONVERSION_U01 ON CWMS_UNIT_CONVERSION
-(FROM_UNIT_CODE, TO_UNIT_CODE)
-LOGGING
-tablespace @DATASPACE
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
-/
-
------------------------------
--- @TABLE comments
---
-COMMENT ON TABLE @TABLE IS 'Contains linear conversion factors for units';
-COMMENT ON COLUMN @TABLE.FROM_UNIT_ID IS   'Source units      (x in y=mx+b)';
-COMMENT ON COLUMN @TABLE.TO_UNIT_ID IS     'Destination units (y in y=mx+b)';
-COMMENT ON COLUMN @TABLE.FROM_UNIT_CODE IS 'Source units      (x in y=mx+b)';
-COMMENT ON COLUMN @TABLE.TO_UNIT_CODE IS   'Destination units (y in y=mx+b)';
-COMMENT ON COLUMN @TABLE.FACTOR IS         'Ratio of units    (m in y=mx+b)';
-COMMENT ON COLUMN @TABLE.OFFSET IS         'Offset of units   (b in y=mx+b)';
-
------------------------------
--- @TABLE_UNIT trigger
---
-CREATE OR REPLACE TRIGGER @TABLE_UNIT
-BEFORE INSERT OR UPDATE OF FROM_UNIT_CODE, TO_UNIT_CODE
-ON @TABLE 
-REFERENCING NEW AS NEW OLD AS OLD
-FOR EACH ROW
-DECLARE
-   --
-   -- This trigger ensures that the abstract parameter associated with the source unit
-   -- is the same as the abstract parameter associated with the destination unit.
-   --
-   FROM_ABSTRACT_CODE          @abstractParamTableName.ABSTRACT_PARAM_CODE%TYPE;
-   FROM_ABSTRACT_ID            @abstractParamTableName.ABSTRACT_PARAM_ID%TYPE;
-   FROM_ID                     @unitTableName.UNIT_ID%TYPE;
-   TO_ABSTRACT_CODE            @abstractParamTableName.ABSTRACT_PARAM_CODE%TYPE;
-   TO_ABSTRACT_ID              @abstractParamTableName.ABSTRACT_PARAM_ID%TYPE;
-   TO_ID                       @unitTableName.UNIT_ID%TYPE;
-   INCONSISTENT_ABSTRACT_CODES EXCEPTION;
-   PRAGMA EXCEPTION_INIT(INCONSISTENT_ABSTRACT_CODES, -20000);
-BEGIN
-   SELECT ABSTRACT_PARAM_CODE
-      INTO   FROM_ABSTRACT_CODE 
-      FROM   @unitTableName
-      WHERE  UNIT_CODE = :NEW.FROM_UNIT_CODE;
-   SELECT ABSTRACT_PARAM_CODE
-      INTO   TO_ABSTRACT_CODE 
-      FROM   @unitTableName
-      WHERE  UNIT_CODE = :NEW.TO_UNIT_CODE;
-   IF FROM_ABSTRACT_CODE != TO_ABSTRACT_CODE
-   THEN
-      RAISE INCONSISTENT_ABSTRACT_CODES;
-   END IF;
-EXCEPTION
-   WHEN INCONSISTENT_ABSTRACT_CODES THEN
-      SELECT UNIT_ID
-         INTO   FROM_ID
-         FROM   @unitTableName
-         WHERE  UNIT_CODE = :NEW.FROM_UNIT_CODE;
-      SELECT UNIT_ID
-         INTO   TO_ID
-         FROM   @unitTableName
-         WHERE  UNIT_CODE = :NEW.TO_UNIT_CODE;
-      SELECT ABSTRACT_PARAM_ID
-         INTO   FROM_ABSTRACT_ID 
-         FROM   @abstractParamTableName
-         WHERE  ABSTRACT_PARAM_CODE=FROM_ABSTRACT_CODE;
-      SELECT ABSTRACT_PARAM_ID
-         INTO   TO_ABSTRACT_ID 
-         FROM   @abstractParamTableName
-         WHERE  ABSTRACT_PARAM_CODE=TO_ABSTRACT_CODE;
-      DBMS_OUTPUT.PUT_LINE(
-         'ERROR: From-unit "' 
-         || FROM_ID
-         || '" has abstract parameter "' 
-         || FROM_ABSTRACT_ID
-         || '" but To-unit "'
-         || TO_ID
-         || '" has abstract parameter "'
-         || TO_ABSTRACT_ID
-         || '".');
-      RAISE;                                    
-   WHEN OTHERS THEN
-      DBMS_OUTPUT.PUT_LINE(SQLERRM);
-      RAISE;                                    
-END R_PARAMETER_UNIT;
-/
-SHOW ERRORS
-COMMIT;
-
-'''
-
-sys.stderr.write("Building conversionLoadTemplate\n")
-conversionLoadTemplate = ''
-conversionUnitIds = unitConversionsByUnitIds.keys()
-conversionUnitIds.sort()
-for abstractParam, fromUnit, toUnit in conversionUnitIds :
-    conversion = unitConversionsByUnitIds[abstractParam, fromUnit, toUnit]
-    conversionLoadTemplate +="INSERT INTO %s (FROM_UNIT_ID, TO_UNIT_ID, ABSTRACT_PARAM_CODE, FROM_UNIT_CODE, TO_UNIT_CODE, FACTOR, OFFSET) VALUES (\n" % conversionTableName
-    conversionLoadTemplate +="\t\t'%s',\n" % fromUnit
-    conversionLoadTemplate +="\t\t'%s',\n" % toUnit
-    conversionLoadTemplate +="\t\t(SELECT ABSTRACT_PARAM_CODE\n"
-    conversionLoadTemplate +="\t\tFROM   %s \n" % abstractParamTableName
-    conversionLoadTemplate +="\t\tWHERE  ABSTRACT_PARAM_ID='%s'),\n" % abstractParam
-    conversionLoadTemplate +="\t(\tSELECT UNIT_CODE\n"
-    conversionLoadTemplate +="\t\tFROM   %s\n" % unitTableName
-    conversionLoadTemplate +="\t\tWHERE  UNIT_ID='%s'\n" % fromUnit
-    conversionLoadTemplate +="\t\tAND    ABSTRACT_PARAM_CODE=\n"
-    conversionLoadTemplate +="\t\t(\tSELECT ABSTRACT_PARAM_CODE\n"
-    conversionLoadTemplate +="\t\t\tFROM   %s \n" % abstractParamTableName
-    conversionLoadTemplate +="\t\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
-    conversionLoadTemplate +="\t\t)\n"
-    conversionLoadTemplate +="\t),\n"
-    conversionLoadTemplate +="\t(\tSELECT UNIT_CODE\n"
-    conversionLoadTemplate +="\t\tFROM   %s\n" % unitTableName
-    conversionLoadTemplate +="\t\tWHERE  UNIT_ID='%s'\n" % toUnit
-    conversionLoadTemplate +="\t\tAND    ABSTRACT_PARAM_CODE=\n"
-    conversionLoadTemplate +="\t\t(\tSELECT ABSTRACT_PARAM_CODE\n"
-    conversionLoadTemplate +="\t\t\tFROM   %s \n" % abstractParamTableName
-    conversionLoadTemplate +="\t\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
-    conversionLoadTemplate +="\t\t)\n"
-    conversionLoadTemplate +="\t),\n"
-    conversionLoadTemplate +="\t%s,\n" % `conversion["FACTOR"]`
-    conversionLoadTemplate +="\t%s\n" % `conversion["OFFSET"]`
-    conversionLoadTemplate +=");\n"
-conversionLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building conversionTestTemplate\n")
-conversionTestTemplate = \
-'''
-CREATE OR REPLACE PROCEDURE @TABLE_TEST
-IS
-   L_PARAM @abstractParamTableName%ROWTYPE;
-   L_FROM  @unitTableName%ROWTYPE;
-   L_TO    @unitTableName%ROWTYPE;
-   L_CONV  @TABLE%ROWTYPE;
-   L_COUNT PLS_INTEGER := 0;
-   L_TOTAL PLS_INTEGER := 0;
-BEGIN
-   DBMS_OUTPUT.PUT_LINE('*** CHECKING UNIT CONVERSIONS ***');
-   FOR L_PARAM IN (SELECT * FROM @abstractParamTableName)
-   LOOP
-      L_COUNT := 0;
-      DBMS_OUTPUT.PUT_LINE('.');
-      DBMS_OUTPUT.PUT_LINE('.  Checking abstract parameter ' || L_PARAM.ABSTRACT_PARAM_ID);
-      FOR L_FROM IN (SELECT * FROM @unitTableName WHERE ABSTRACT_PARAM_CODE=L_PARAM.ABSTRACT_PARAM_CODE)
-      LOOP
-         FOR L_TO IN (SELECT * FROM @unitTableName WHERE ABSTRACT_PARAM_CODE=L_PARAM.ABSTRACT_PARAM_CODE)
-         LOOP
-            BEGIN
-               SELECT * 
-                  INTO  L_CONV
-                  FROM @conversionTableName
-                  WHERE FROM_UNIT_CODE = L_FROM.UNIT_CODE
-                  AND   TO_UNIT_CODE = L_TO.UNIT_CODE;
-               DBMS_OUTPUT.PUT_LINE(
-                   '.    "'
-                   || L_FROM.UNIT_ID
-                   || '","'
-                   || L_TO.UNIT_ID
-                   || '",'
-                   || L_CONV.OFFSET
-                   || ','
-                   || L_CONV.FACTOR);
-               L_COUNT := L_COUNT + 1;
-            EXCEPTION
-               WHEN NO_DATA_FOUND THEN
-                  DBMS_OUTPUT.PUT_LINE(
-                   '.    >>> No conversion from "'
-                   || L_FROM.UNIT_ID
-                   || '" to "'
-                   || L_TO.UNIT_ID
-                   || '".');
-               WHEN OTHERS THEN
-                  RAISE;
-            END;
-         END LOOP;
-      END LOOP;
-      DBMS_OUTPUT.PUT_LINE('.  ' || L_COUNT || ' unit conversion entries.');
-      L_TOTAL := L_TOTAL + L_COUNT;
-   END LOOP;
-   DBMS_OUTPUT.PUT_LINE('.');
-   DBMS_OUTPUT.PUT_LINE('' || L_TOTAL || ' unit conversion entries.');
-END @TABLE_TEST;
-/
-SHOW ERRORS
-COMMIT;
-
-BEGIN @TABLE_TEST; END;
-/
-
-DROP PROCEDURE @TABLE_TEST;
-COMMIT;
-
-'''
-
-sys.stderr.write("Building timezoneCreationTemplate\n")
-timezoneCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       TIME_ZONE_CODE NUMBER(10)             NOT NULL,
-       TIME_ZONE_NAME VARCHAR2(28)           NOT NULL,
-       UTC_OFFSET    INTERVAL DAY TO SECOND NOT NULL,
-       DST_OFFSET    INTERVAL DAY TO SECOND NOT NULL
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200K
-          NEXT 200K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE constraints
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY  (TIME_ZONE_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_UK  UNIQUE       (TIME_ZONE_NAME);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK       (UTC_OFFSET >= INTERVAL '-18:00' HOUR TO MINUTE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK2 CHECK       (UTC_OFFSET <= INTERVAL ' 18:00' HOUR TO MINUTE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK3 CHECK       (DST_OFFSET >= INTERVAL  ' 0:00' HOUR TO MINUTE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK4 CHECK       (DST_OFFSET <= INTERVAL   '1:00' HOUR TO MINUTE);
-
------------------------------
--- @TABLE comments
---
-COMMENT ON TABLE @TABLE IS 'Contains timezone information.';
-COMMENT ON COLUMN @TABLE.TIME_ZONE_CODE IS 'Primary key used to relate parameters other entities';
-COMMENT ON COLUMN @TABLE.TIME_ZONE_NAME IS 'Region name or abbreviation of timezone';
-COMMENT ON COLUMN @TABLE.UTC_OFFSET    IS 'Amount of time the timezone is ahead of UTC';
-COMMENT ON COLUMN @TABLE.DST_OFFSET    IS 'Amount of time the UTC_OFFSET increases during DST';
-COMMIT;
-
-'''
-
-sys.stderr.write("Building timezoneLoadTemplate\n")
-timezoneLoadTemplate = ''
-for time_zone_code,time_zone_name,utc_offset,dst_offset in timezones :
-	timezoneLoadTemplate +="INSERT INTO @TABLE (TIME_ZONE_CODE,TIME_ZONE_NAME,UTC_OFFSET,DST_OFFSET) VALUES (%d, '%s', '%s', '%s');\n" % (time_zone_code, time_zone_name, utc_offset, dst_offset) 
-timezoneLoadTemplate +="COMMIT;"
-
-sys.stderr.write("Building timezoneAliasCreationTemplate\n")
-timezoneAliasCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       TIME_ZONE_ALIAS VARCHAR2(9)  NOT NULL,
-       TIME_ZONE_NAME  VARCHAR2(28) NOT NULL
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE
-       (
-          INITIAL 20K
-          NEXT 20K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE constraints
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (TIME_ZONE_ALIAS);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (TIME_ZONE_NAME) REFERENCES @timezoneTableName (TIME_ZONE_NAME);
-
------------------------------
--- @TABLE comments
---
-COMMENT ON TABLE @TABLE IS 'Contains timezone aliases for Java custom time zones.';
-COMMENT ON COLUMN @TABLE.TIME_ZONE_ALIAS IS 'Time zone alias.';
-COMMENT ON COLUMN @TABLE.TIME_ZONE_NAME IS 'References propert time zone name.';
-COMMIT;
-
-'''
-sys.stderr.write("Building timezoneAliasLoadTemplate\n")
-timezoneAliasLoadTemplate = ''
-base_tzs = ['GMT', 'UTC']
-signs    = ['-', '+']
-seps     = [':', '']
-for base_tz in range(len(base_tzs)) :
-   for hour in range(13) :
-      for sign in range(len(signs)) :
-         oppositeSign = signs[(sign+1) % len(signs)]
-         tz = 'Etc/GMT%s%d' % (oppositeSign, hour)
-         for sep in range(len(seps)) :
-            alias = '%s%s%2.2d%s00' % (base_tzs[base_tz], signs[sign], hour, seps[sep])
-            timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('%s', '%s');\n" % (timezoneAliasTableName, alias, tz))
-            if hour < 10 :
-               alias = '%s%s%d%s00' % (base_tzs[base_tz], signs[sign], hour, seps[sep])
-               timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('%s', '%s');\n" % (timezoneAliasTableName, alias, tz))
-timezoneAliasLoadTemplate += 'COMMIT;\n'
-
-sys.stderr.write("Building tzUsageCreationTemplate\n")
-tzUsageCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-   (
-       TZ_USAGE_CODE NUMBER(10)   NOT NULL,
-       TZ_USAGE_ID   VARCHAR2(8)  NOT NULL,
-       DESCRIPTION   VARCHAR2(80)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200K
-          NEXT 200K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE indicies
---
-CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
-   (
-       UPPER(TZ_USAGE_ID)
-   )
-       PCTFREE 10
-       INITRANS 2
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-       ( 
-          INITIAL 200k
-          NEXT 200k
-          MINEXTENTS 1
-          MAXEXTENTS 20
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-       );
-
------------------------------
--- @TABLE constraints
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (TZ_USAGE_CODE);
-
------------------------------
--- @TABLE comments
---
-COMMENT ON TABLE @TABLE IS 'Contains timezone usage information.';
-COMMENT ON COLUMN @TABLE.TZ_USAGE_CODE IS 'Primary key used to relate parameters other entities';
-COMMENT ON COLUMN @TABLE.TZ_USAGE_ID   IS 'Timezone usage text identifier';
-COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Timezone usage text description';
-COMMIT;
-
-'''
-
-sys.stderr.write("Building tzUsageLoadTemplate\n")
-tzUsageLoadTemplate = ''
-for i in range(len(tzUsages)) :
-    code = i+1
-    tzUsageLoadTemplate +="INSERT INTO @tzUsageTableName (TZ_USAGE_CODE, TZ_USAGE_ID, DESCRIPTION) VALUES (\n"
-    tzUsageLoadTemplate +="\t%d,\n" % code
-    tzUsageLoadTemplate +="\t'%s',\n" % tzUsages[i]["ID"]
-    tzUsageLoadTemplate +="\t'%s'\n" % tzUsages[i]["DESCRIPTION"]
-    tzUsageLoadTemplate +=");\n"
-tzUsageLoadTemplate +="COMMIT;\n"
-
-sys.stderr.write("Building qScreenedCreationTemplate\n")
-qScreenedCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       SCREENED_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION   VARCHAR2(80),
-       CONSTRAINT @TABLE_PK PRIMARY KEY (SCREENED_ID)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 10K
-          NEXT 10K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE               IS 'Contains valid values for the screened component of CWMS data quality flags';
-COMMENT ON COLUMN @TABLE.SCREENED_ID   IS 'Text identifier of screened component and primary key';
-COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Text description of screened component';
-
-COMMIT;
-'''
-sys.stderr.write("Building qScreenedLoadTemplate\n")
-qScreenedLoadTemplate = ''
-for code, id, description in q_screened["values"] :
-    qScreenedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
-qScreenedLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building qValidityCreationTemplate\n")
-qValidityCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       VALIDITY_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION   VARCHAR2(80),
-       CONSTRAINT @TABLE_PK PRIMARY KEY (VALIDITY_ID)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 10K
-          NEXT 10K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE               IS 'Contains valid values for the validity component of CWMS data quality flags';
-COMMENT ON COLUMN @TABLE.VALIDITY_ID   IS 'Text identifier of validity component and primary key';
-COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Text description of validity component';
-
-COMMIT;
-'''
-sys.stderr.write("Building qValidityLoadTemplate\n")
-qValidityLoadTemplate = ''
-for code, id, description in q_validity["values"] :
-    qValidityLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
-qValidityLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building qRangeCreationTemplate\n")
-qRangeCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       RANGE_ID    VARCHAR2(16)  NOT NULL,
-       DESCRIPTION VARCHAR2(80),
-       CONSTRAINT @TABLE_PK PRIMARY KEY (RANGE_ID)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 10K
-          NEXT 10K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE             IS 'Contains valid values for the range component of CWMS data quality flags';
-COMMENT ON COLUMN @TABLE.RANGE_ID    IS 'Text identifier of range component and primary key';
-COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Text description of range component';
-
-COMMIT;
-'''
-sys.stderr.write("Building qRangeLoadTemplate\n")
-qRangeLoadTemplate = ''
-for code, id, description in q_value_range["values"] :
-    qRangeLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
-qRangeLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building qChangedCreationTemplate\n")
-qChangedCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       CHANGED_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION  VARCHAR2(80),
-       CONSTRAINT @TABLE_PK PRIMARY KEY (CHANGED_ID)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 10K
-          NEXT 10K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE              IS 'Contains valid values for the changed component of CWMS data quality flags';
-COMMENT ON COLUMN @TABLE.CHANGED_ID   IS 'Text identifier of changed component and primary key';
-COMMENT ON COLUMN @TABLE.DESCRIPTION  IS 'Text description of changed component';
-
-COMMIT;
-'''
-sys.stderr.write("Building qChangedLoadTemplate\n")
-qChangedLoadTemplate = ''
-for code, id, description in q_different["values"] :
-    qChangedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
-qChangedLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building qReplCauseCreationTemplate\n")
-qReplCauseCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       REPL_CAUSE_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION     VARCHAR2(80),
-       CONSTRAINT @TABLE_PK PRIMARY KEY (REPL_CAUSE_ID)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 10K
-          NEXT 10K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE                 IS 'Contains valid values for the replacement cause component of CWMS data quality flags';
-COMMENT ON COLUMN @TABLE.REPL_CAUSE_ID   IS 'Text identifier of replacement cause component and primary key';
-COMMENT ON COLUMN @TABLE.DESCRIPTION     IS 'Text description of replacement cause component';
-
-COMMIT;
-'''
-sys.stderr.write("Building qReplCauseLoadTemplate\n")
-qReplCauseLoadTemplate = ''
-for code, id, description in q_replacement_cause["values"] :
-    qReplCauseLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
-qReplCauseLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building qReplMethodCreationTemplate\n")
-qReplMethodCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       REPL_METHOD_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION      VARCHAR2(80),
-       CONSTRAINT @TABLE_PK PRIMARY KEY (REPL_METHOD_ID)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 10K
-          NEXT 10K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE                  IS 'Contains valid values for the replacement method component of CWMS data quality flags';
-COMMENT ON COLUMN @TABLE.REPL_METHOD_ID   IS 'Text identifier of replacement method component and primary key';
-COMMENT ON COLUMN @TABLE.DESCRIPTION      IS 'Text description of replacement method component';
-
-COMMIT;
-'''
-sys.stderr.write("Building qReplMethodLoadTemplate\n")
-qReplMethodLoadTemplate = ''
-for code, id, description in q_replacement_method["values"] :
-    qReplMethodLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
-qReplMethodLoadTemplate += "COMMIT;\n"
-        
-sys.stderr.write("Building qTestFailedCreationTemplate\n")
-qTestFailedCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       TEST_FAILED_ID   VARCHAR2(125)  NOT NULL,
-       DESCRIPTION      VARCHAR2(80),
-       CONSTRAINT @TABLE_PK PRIMARY KEY (TEST_FAILED_ID)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 10K
-          NEXT 10K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE                  IS 'Contains valid values for the test failed component of CWMS data quality flags';
-COMMENT ON COLUMN @TABLE.TEST_FAILED_ID   IS 'Text identifier of test failed component and primary key';
-COMMENT ON COLUMN @TABLE.DESCRIPTION      IS 'Text description of test failed component';
-
-COMMIT;
-'''
-
-sys.stderr.write("Building qTestFailedLoadTemplate\n")
-qTestFailedLoadTemplate = ''
-for code, id, description in q_test_failed["values"] :
-    qTestFailedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
-qTestFailedLoadTemplate += "COMMIT;\n"
-        
-sys.stderr.write("Building qProtectionCreationTemplate\n")
-qProtectionCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       PROTECTION_ID   VARCHAR2(16)  NOT NULL,
-       DESCRIPTION     VARCHAR2(80),
-       CONSTRAINT @TABLE_PK PRIMARY KEY (PROTECTION_ID)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 10K
-          NEXT 10K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE                 IS 'Contains valid values for the protection component of CWMS data quality flags';
-COMMENT ON COLUMN @TABLE.PROTECTION_ID   IS 'Text identifier of protection component and primary key';
-COMMENT ON COLUMN @TABLE.DESCRIPTION     IS 'Text description of protection component';
-
-COMMIT;
-'''
-sys.stderr.write("Building qProtectionLoadTemplate\n")
-qProtectionLoadTemplate = ''
-for code, id, description in q_protection["values"] :
-    qProtectionLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
-qProtectionLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building qualityCreationTemplate\n")
-qualityCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       QUALITY_CODE   NUMBER(10)    NOT NULL,
-       SCREENED_ID    VARCHAR2(16)  NOT NULL,
-       VALIDITY_ID    VARCHAR2(16)  NOT NULL,
-       RANGE_ID       VARCHAR2(16)  NOT NULL,
-       CHANGED_ID     VARCHAR2(16)  NOT NULL,
-       REPL_CAUSE_ID  VARCHAR2(16)  NOT NULL,
-       REPL_METHOD_ID VARCHAR2(16)  NOT NULL,
-       TEST_FAILED_ID VARCHAR2(125) NOT NULL,
-       PROTECTION_ID  VARCHAR2(16)  NOT NULL,
-       CONSTRAINT @TABLE_PK   PRIMARY KEY (QUALITY_CODE)
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 300K
-          NEXT 300K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (SCREENED_ID   ) REFERENCES @qScreenedTableName   (SCREENED_ID   );
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (PROTECTION_ID ) REFERENCES @qProtectionTableName (PROTECTION_ID );
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK3 FOREIGN KEY (VALIDITY_ID   ) REFERENCES @qValidityTableName   (VALIDITY_ID   );
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK4 FOREIGN KEY (RANGE_ID      ) REFERENCES @qRangeTableName      (RANGE_ID      );
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK5 FOREIGN KEY (CHANGED_ID    ) REFERENCES @qChangedTableName    (CHANGED_ID    );
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK6 FOREIGN KEY (REPL_CAUSE_ID ) REFERENCES @qReplCauseTableName  (REPL_CAUSE_ID );
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK7 FOREIGN KEY (REPL_METHOD_ID) REFERENCES @qReplMethodTableName (REPL_METHOD_ID);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK8 FOREIGN KEY (TEST_FAILED_ID) REFERENCES @qTestFailedTableName (TEST_FAILED_ID);
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE                IS 'Contains CWMS data quality flags';
-COMMENT ON COLUMN @TABLE.QUALITY_CODE   IS 'Quality value as an unsigned integer and primary key for relating quality to other entities';
-COMMENT ON COLUMN @TABLE.SCREENED_ID    IS 'Foreign key referencing @qScreenedTableName table by its primary key';
-COMMENT ON COLUMN @TABLE.VALIDITY_ID    IS 'Foreign key referencing @qValidityTableName table by its primary key';
-COMMENT ON COLUMN @TABLE.RANGE_ID       IS 'Foreign key referencing @qRangeTableName table by its primary key';
-COMMENT ON COLUMN @TABLE.CHANGED_ID     IS 'Foreign key referencing @qChangedTableName table by its primary key';
-COMMENT ON COLUMN @TABLE.REPL_CAUSE_ID  IS 'Foreign key referencing @qReplCauseTableName table by its primary key';
-COMMENT ON COLUMN @TABLE.REPL_METHOD_ID IS 'Foreign key referencing @qReplMethodTableName table by its primary key';
-COMMENT ON COLUMN @TABLE.TEST_FAILED_ID IS 'Foreign key referencing @qTestFailedTableName table by its primary key';
-COMMENT ON COLUMN @TABLE.PROTECTION_ID  IS 'Foreign key referencing @qProtectionTableName table by its primary key';
-COMMIT;
-'''
-sys.stderr.write("Building qualityLoadFile\n")
-qualityLoadFilename = "qualityLoader.ctl"
-qualityLoadFile = open(qualityLoadFilename, "w")
-qualityLoadFile.write('''load data
-  infile *
-  into table cwms_data_quality
-  fields terminated by ","
-  (QUALITY_CODE,SCREENED_ID,VALIDITY_ID,RANGE_ID,CHANGED_ID,REPL_CAUSE_ID,REPL_METHOD_ID,TEST_FAILED_ID,PROTECTION_ID)
-begindata
-''')
-
-qualityLoadFile.write("%lu,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
-    0,                                    # unsigned value
-    q_screened["values"][0][1],           # screened code
-    q_validity["values"][0][1],           # validity code
-    q_value_range["values"][0][1],        # range code
-    q_different["values"][0][1],          # changed code
-    q_replacement_cause["values"][0][1],  # replacement cause code
-    q_replacement_method["values"][0][1], # replacement method code
-    q_test_failed["values"][0][1],        # test failed code
-    q_protection["values"][0][1]))        # protection code
     
-for v in range(len(q_validity["values"])) :
-    for r in range(len(q_value_range["values"])) :
-        for d in range(len(q_different["values"])) :
-            for c in range(len(q_replacement_cause["values"])) :
-                if (d > 0) != (c > 0) : continue
-                for m in range(len(q_replacement_method["values"])) :
-                    if (d > 0) != (m > 0) : continue
-                    for t in range(len(q_test_failed["values"])) :
-                        for p in range(len(q_protection["values"])) :
-                            value = 0L \
-                                | (q_screened["values"][1][0] << q_screened["shift"]) \
-                                | (q_validity["values"][v][0] << q_validity["shift"]) \
-                                | (q_value_range["values"][r][0] << q_value_range["shift"]) \
-                                | (q_different["values"][d][0] << q_different["shift"]) \
-                                | (q_replacement_cause["values"][c][0] << q_replacement_cause["shift"]) \
-                                | (q_replacement_method["values"][m][0] << q_replacement_method["shift"]) \
-                                | (q_test_failed["values"][t][0] << q_test_failed["shift"]) \
-                                | (q_protection["values"][p][0] << q_protection["shift"])
-                            qualityLoadFile.write("%lu,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
-                                value,                                # unsigned value
-                                q_screened["values"][1][1],           # screened code
-                                q_validity["values"][v][1],           # validity code
-                                q_value_range["values"][r][1],        # range code
-                                q_different["values"][d][1],          # changed code
-                                q_replacement_cause["values"][c][1],  # replacement cause code
-                                q_replacement_method["values"][m][1], # replacement method code
-                                q_test_failed["values"][t][1],        # test failed code
-                                q_protection["values"][p][1]))        # protection code
+    ALTER TABLE @TABLE ADD (
+      CONSTRAINT @TABLE_R01 
+     FOREIGN KEY (CWMS_DURATION_CODE) 
+     REFERENCES CWMS_DURATION (DURATION_CODE))
+    /
+    '''
+    sys.stderr.write("Building shefDurationLoadTemplate\n")
+    shefDurationLoadTemplate = ''
+    for durCode, desc, durNum, cwmsDurCode in shef_duration :
+        if durNum == 'NULL' :
+            shefDurationLoadTemplate +="INSERT INTO @TABLE VALUES ('%s', '%s', %s, %s);\n" % (durCode, desc, durNum, cwmsDurCode)
+        else :
+            shefDurationLoadTemplate +="INSERT INTO @TABLE VALUES ('%s', '%s', '%s', %s);\n" % (durCode, desc, durNum, cwmsDurCode)
+    shefDurationLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building statesCreationTemplate\n")
+    statesCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           STATE_CODE    NUMBER(10)  NOT NULL,
+           STATE_INITIAL VARCHAR2(2) NOT NULL,
+           NAME          VARCHAR2(40)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 20K
+              NEXT 20K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    ----------------------------
+    -- @TABLE constraints --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (STATE_CODE);
+    
+    -------------------------
+    -- CWMS STATE comments --
+    --
+    COMMENT ON TABLE @TABLE IS 'STATE_CODE uses FIPS state number.';
+    
+    COMMIT;
+    '''
+    
+    sys.stderr.write("Building statesLoadTemplate\n")
+    statesLoadTemplate = ''
+    for id, initial, name in states :
+        statesLoadTemplate +="INSERT INTO @TABLE VALUES (%s, '%s', '%s');\n" % (id, initial, name)
+    statesLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building countiesCreationTemplate\n")
+    countiesCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           COUNTY_CODE NUMBER(10)   NOT NULL,
+           COUNTY_ID   VARCHAR2(3)  NOT NULL,
+           STATE_CODE  NUMBER(10)   NOT NULL,
+           COUNTY_NAME VARCHAR2(40)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 100K
+              NEXT 50K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE constraints --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY(COUNTY_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY(STATE_CODE) REFERENCES @statesTableName (STATE_CODE);
+    --------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE @TABLE IS 'County code uses state and county FIPS number   01 - State FIPS number   053 - FIPS number thus, county code is 01053.';
+    
+    COMMIT;
+    '''
+    
+    sys.stderr.write("Building countiesLoadTemplate\n")
+    countiesLoadTemplate = ''
+    for county_code, countyName in counties :
+        stateId = "%2.2d" % (county_code / 1000)
+        stateName = stateNamesById[stateId]
+        county_id = "%3.3d" % (county_code % 1000)
+        countiesLoadTemplate +="INSERT INTO @TABLE VALUES (\n"
+        countiesLoadTemplate +="\t%d,\n" % county_code
+        countiesLoadTemplate +="\t'%s',\n" % county_id
+        countiesLoadTemplate +="\t(SELECT STATE_CODE FROM @statesTableName WHERE NAME='%s'),\n" % stateName
+        countiesLoadTemplate +="\t'%s'\n" % countyName
+        countiesLoadTemplate +=");\n"
+    countiesLoadTemplate +="COMMIT;\n"
+    
+    
+    sys.stderr.write("Building intervalOffsetCreationTemplate\n")
+    intervalOffsetCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           INTERVAL_OFFSET_CODE    NUMBER(10)   NOT NULL,
+           INTERVAL_OFFSET_ID      VARCHAR2(16) NOT NULL,
+           INTERVAL_OFFSET_VALUE   NUMBER(10)   NOT NULL,
+           DESCRIPTION             VARCHAR2(80) 
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           (
+              INITIAL 20K
+              NEXT 20K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           ); 
+    
+    -----------------------------
+    -- @TABLE indicies
+    --
+    CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
+       (
+           UPPER(INTERVAL_OFFSET_ID)
+       )
+           PCTFREE 10
+           INITRANS 2
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 20k
+              NEXT 20k
+              MINEXTENTS 1
+              MAXEXTENTS 20
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+         
+    COMMIT;
+    '''
+    
+    sys.stderr.write("Building validValuesCreationTemplate\n")
+    validValuesCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+            COL_CODE             VARCHAR2(15) NOT NULL,
+            VALUE_CODE           VARCHAR2(16) NOT NULL,
+            VALUE_CODE_DESC      VARCHAR2(70) NULL
+       )
+            PCTFREE 10
+            PCTUSED 40
+            MAXTRANS 255
+            TABLESPACE @DATASPACE
+            STORAGE 
+            (
+              INITIAL 20K
+              NEXT 20K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+            );
+    
+    COMMIT;
+    '''
+    
+    sys.stderr.write("Building errorMessageCreationTemplate\n")
+    errorMessageCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           ERROR_CODE VARCHAR2(15) NOT NULL,
+           ERROR_DESC VARCHAR2(70)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           (
+              INITIAL 20K
+              NEXT 20K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    COMMIT;
+    '''
+    
+    sys.stderr.write("Building errorMessageNewCreationTemplate\n")
+    errorMessageNewCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+    (
+      ERR_CODE  NUMBER(6)                           NOT NULL,
+      ERR_NAME  VARCHAR2(32 BYTE)                   NOT NULL,
+      ERR_MSG   VARCHAR2(240 BYTE)
+    )
+    TABLESPACE @DATASPACE
+    PCTUSED    0
+    PCTFREE    10
+    INITRANS   1
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    LOGGING 
+    NOCOMPRESS 
+    NOCACHE
+    NOPARALLEL
+    MONITORING;
+    
+    
+    CREATE UNIQUE INDEX @TABLE_PK ON @TABLE
+    (ERR_CODE)
+    LOGGING
+    TABLESPACE @DATASPACE
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    NOPARALLEL;
+    
+    
+    CREATE UNIQUE INDEX @TABLE_AK1 ON @TABLE
+    (ERR_NAME)
+    LOGGING
+    TABLESPACE @DATASPACE
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    NOPARALLEL;
+    
+    
+    CREATE OR REPLACE TRIGGER @TABLE_BIUR
+    before insert or update
+    on @TABLE
+    for each row
+    begin
+       :new.err_name := upper(:new.err_name);
+    end;
+    /
+    SHOW ERRORS;
+    
+    
+    
+    ALTER TABLE @TABLE ADD (
+      CONSTRAINT ERR_CODE_VAL_CHECK
+     CHECK (err_code <-20000 and err_code>=-20999));
+    
+    ALTER TABLE @TABLE ADD (
+      CONSTRAINT @TABLE_PK
+     PRIMARY KEY
+     (ERR_CODE)
+        USING INDEX 
+        TABLESPACE @DATASPACE
+        PCTFREE    10
+        INITRANS   2
+        MAXTRANS   255
+        STORAGE    (
+                    INITIAL          64K
+                    MINEXTENTS       1
+                    MAXEXTENTS       2147483645
+                    PCTINCREASE      0
+                   ));
+    
+    '''
+    
+    sys.stderr.write("Building errorMessageNewLoadTemplate\n")
+    errorMessageNewLoadTemplate = ''
+    for err_code, err_name, err_msg in errorCodes :
+        errorMessageNewLoadTemplate +="INSERT INTO @TABLE (ERR_CODE, ERR_NAME, ERR_MSG) VALUES (%s, '%s', '%s');\n" % (err_code, err_name, err_msg)
+    errorMessageNewLoadTemplate +="COMMIT;\n"
+    
+    
+    sys.stderr.write("Building intervalCreationTemplate\n")
+    intervalCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           INTERVAL_CODE  NUMBER(10)   NOT NULL,
+           INTERVAL_ID    VARCHAR2(16) NOT NULL,
+           INTERVAL       NUMBER(10)   NOT NULL,
+           DESCRIPTION    VARCHAR2(80)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 20K
+              NEXT 20K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    -------------------------------
+    -- @TABLE constraints --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY(INTERVAL_CODE);
+    
+    COMMIT;
+    '''
+    
+    
+    sys.stderr.write("Building intervalLoadTemplate\n")
+    intervalLoadTemplate = ''
+    for code, id, minutesSignature, description in intervals :
+        intervalLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', %d, '%s');\n" % (code, id, minutesSignature, description)
+    intervalLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building durationCreationTemplate\n")
+    durationCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           DURATION_CODE NUMBER(10)   NOT NULL,
+           DURATION_ID   VARCHAR2(16) NOT NULL,
+           DURATION      NUMBER(10)   NOT NULL,
+           DESCRIPTION   VARCHAR2(80)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 20K
+              NEXT 20K
+              MINEXTENTS 1
+              MAXEXTENTS 100
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    --------------------------------
+    -- @TABLE constratints --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY(DURATION_CODE);
+    
+    COMMIT;
+    '''
+    
+    
+    sys.stderr.write("Building durationLoadTemplate\n")
+    durationLoadTemplate = ''
+    for code, id, minutesSignature, description in durations :
+        durationLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', %d, '%s');\n" % (code, id, minutesSignature, description)
+    durationLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building catalogCreationTemplate\n")
+    catalogCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           OBJECT_NAME  VARCHAR2(50) NOT NULL,
+           COLUMN_NAME VARCHAR2(50)  NOT NULL,
+           OBJECT_DESC VARCHAR2(100),
+           COLUMN_DESC VARCHAR2(100)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 20K
+              NEXT 20K
+              MINEXTENTS 1
+              MAXEXTENTS 100
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    COMMIT;   
+    '''
+    
+    sys.stderr.write("Building catalogLoadTemplate\n")
+    catalogLoadTemplate = ''
+    for objName, colName, objDesc, colDesc in catalogItems :
+        catalogLoadTemplate +="INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s');\n" % (objName, colName, objDesc, colDesc)
+    catalogLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building abstractParamCreationTemplate\n")
+    abstractParamCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           ABSTRACT_PARAM_CODE NUMBER(10)         NOT NULL,
+           ABSTRACT_PARAM_ID   VARCHAR2(32 BYTE)  NOT NULL
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200K
+              NEXT 200K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE indicies
+    --
+    CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
+       (
+           UPPER(ABSTRACT_PARAM_ID)
+       )
+           PCTFREE 10
+           INITRANS 2
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200k
+              NEXT 200k
+              MINEXTENTS 1
+              MAXEXTENTS 20
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE constraints
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (ABSTRACT_PARAM_CODE);
+    
+    -----------------------------
+    -- @TABLE comments
+    --
+    COMMENT ON TABLE @TABLE IS 'Contains abstract parameters used with CWMS';
+    COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_CODE IS 'Primary key used for relating abstract parameters to other entities';
+    COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_ID IS 'Text identifier of abstract parameter';
+    COMMIT;
+    '''
+    
+    sys.stderr.write("Building abstractParamLoadTemplate\n")
+    abstractParamLoadTemplate = ""
+    for i in range(len(abstractParams)) :
+        code = i+1
+        id = abstractParams[i]
+        abstractParamLoadTemplate +="INSERT INTO @abstractParamTableName (ABSTRACT_PARAM_CODE, ABSTRACT_PARAM_ID) VALUES(%d, '%s');\n" % (code, id)
+    abstractParamLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building unitCreationTemplate\n")
+    unitCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           UNIT_CODE           NUMBER(10)         NOT NULL,
+           UNIT_ID             VARCHAR2(16 BYTE)  NOT NULL,
+           ABSTRACT_PARAM_CODE NUMBER(10)         NOT NULL,
+           UNIT_SYSTEM         VARCHAR2(2 BYTE),
+           LONG_NAME           VARCHAR2(80 BYTE),
+           DESCRIPTION         VARCHAR2(80 BYTE)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200K
+              NEXT 200K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE constraints
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (UNIT_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_UK UNIQUE      (UNIT_ID, ABSTRACT_PARAM_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY (ABSTRACT_PARAM_CODE) REFERENCES @abstractParamTableName (ABSTRACT_PARAM_CODE);
+    
+    -----------------------------
+    -- @TABLE comments
+    --
+    COMMENT ON TABLE @TABLE IS 'Contains all internal and external units used with CWMS';
+    COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'Primary key used for relating units to other entities';
+    COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_CODE IS 'Foreign key referencing @abstractParamTableName table';
+    COMMENT ON COLUMN @TABLE.UNIT_ID IS 'Short text identifier of unit';
+    COMMENT ON COLUMN @TABLE.UNIT_SYSTEM IS 'SI deonotes SI, EN denotes English, Null denotes both SI and EN';
+    COMMENT ON COLUMN @TABLE.LONG_NAME IS 'Complete name of unit';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description of unit';
+    COMMIT;
+    
+    '''
+    
+    sys.stderr.write("Building unitLoadTemplate\n")
+    unitLoadTemplate = ''
+    unitDefIds = unitDefsById.keys()
+    unitDefIds.sort()
+    for i in range(len(unitDefIds)) :
+        id = unitDefIds[i]
+        unitDef = unitDefsById[id]
+        name = unitDef["NAME"]
+        description = unitDef["DESCRIPTION"]
+        code = unitDef["CODE"]
+        id = unitDef["ID"]
+        system = unitDef["SYSTEM"]
+        abstractParam = unitDef["ABSTRACT"]
+        unitLoadTemplate +="INSERT INTO @unitTableName (UNIT_CODE, UNIT_ID, ABSTRACT_PARAM_CODE, UNIT_SYSTEM, LONG_NAME, DESCRIPTION) VALUES (\n" 
+        unitLoadTemplate +="\t%d,\n" % code 
+        unitLoadTemplate +="\t'%s',\n" % id
+        unitLoadTemplate +="\t(\tSELECT ABSTRACT_PARAM_CODE\n"
+        unitLoadTemplate +="\t\tFROM   @abstractParamTableName \n"
+        unitLoadTemplate +="\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
+        unitLoadTemplate +="\t),\n"
+        if system == "NULL" :
+          unitLoadTemplate +="\tNULL,\n"
+        else :
+          unitLoadTemplate +="\t'%s',\n" % system  
+        unitLoadTemplate +="\t'%s',\n" % name
+        unitLoadTemplate +="\t'%s'\n" % description
+        unitLoadTemplate +=");\n"
+    unitLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building cwmsUnitCreationTemplate\n")
+    cwmsUnitCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           UNIT_CODE      NUMBER(10) NOT NULL
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200K
+              NEXT 200K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE constraints
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (UNIT_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY (UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
+    
+    -----------------------------
+    -- @TABLE comments
+    --
+    COMMENT ON TABLE @TABLE IS 'Contains references to all units allowed in CWMS database';
+    COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'Primary key used for relating cwms units to other entities';
+    COMMIT;
+    
+    '''
+    
+    sys.stderr.write("Building cwmsUnitLoadTemplate\n")
+    cwmsUnitLoadTemplate = ''
+    for i in range(len(cwmsUnitParamDefsById)) :
+        cwmsUnitCode = cwmsUnitParamDefsById[cwmsUnitParamIds[i]]
+        cwmsUnitLoadTemplate +="INSERT INTO @cwmsUnitTableName (UNIT_CODE) VALUES (\n"
+        cwmsUnitLoadTemplate +="\t%d);\n" % cwmsUnitCode
+    cwmsUnitLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building parameterTypeCreationTemplate\n")
+    parameterTypeCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+      (
+           PARAMETER_TYPE_CODE  NUMBER(10)   NOT NULL,
+           PARAMETER_TYPE_ID    VARCHAR2(16) NOT NULL,
+           DESCRIPTION          VARCHAR2(80) NULL
+      )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 20k
+              NEXT 20k
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE indicies
+    --
+    CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
+       (
+           UPPER(PARAMETER_TYPE_ID)
+       )
+           PCTFREE 10
+           INITRANS 2
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 20k
+              NEXT 20k
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -------------------------------------
+    -- @TABLE constraints --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (PARAMETER_TYPE_CODE);
+    
+    ----------------------------------
+    -- @TABLE comments --
+    --    
+    COMMENT ON TABLE  @TABLE IS 'Associated with a parameter to define the relationship of the data value to its duration.  The valid values include average, total, maximum, minimum, and constant.';
+    COMMENT ON COLUMN @TABLE.PARAMETER_TYPE_CODE IS 'Unique record identifier, primarily used for internal database processing. This code is automatically assigned by the system.';
+    COMMENT ON COLUMN @TABLE.PARAMETER_TYPE_ID IS 'Record identifier that is meaningful to the user.  This is user defined.  If not defined during data entry, it defaults to PARAMETER_TYPE_CODE.';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Additional information.';
+    COMMIT;
+    
+    '''
+    
+    sys.stderr.write("Building parameterTypeLoadTemplate\n")
+    parameterTypeLoadTemplate = ''
+    for i in range(len(parameterTypes)) :
+        code = i+1
+        parameterTypeLoadTemplate +="INSERT INTO @parameterTypeTableName (PARAMETER_TYPE_CODE, PARAMETER_TYPE_ID, DESCRIPTION) VALUES (\n"
+        parameterTypeLoadTemplate +="\t%d,\n"   % code
+        parameterTypeLoadTemplate +="\t'%s',\n" % parameterTypes[i]["ID"]
+        parameterTypeLoadTemplate +="\t'%s'\n"  % parameterTypes[i]["DESCRIPTION"]
+        parameterTypeLoadTemplate +=");\n"
+    parameterTypeLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building parameterCreationTemplate\n")
+    parameterCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           BASE_PARAMETER_CODE      NUMBER(10)         NOT NULL, 
+           BASE_PARAMETER_ID        VARCHAR2(16 BYTE)  NOT NULL,
+           ABSTRACT_PARAM_CODE      NUMBER(10)         NOT NULL,
+           UNIT_CODE                NUMBER(10)         NOT NULL,
+           DISPLAY_UNIT_CODE_SI     NUMBER(10)         NOT NULL,
+           DISPLAY_UNIT_CODE_EN     NUMBER(10)         NOT NULL,
+           LONG_NAME                VARCHAR2(80 BYTE),
+           DESCRIPTION              VARCHAR2(160 BYTE)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200K
+              NEXT 200K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE indicies
+    --
+    CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
+       (
+           UPPER(BASE_PARAMETER_ID)
+       )
+           PCTFREE 10
+           INITRANS 2
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200k
+              NEXT 200k
+              MINEXTENTS 1
+              MAXEXTENTS 20
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE constraints
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK   PRIMARY KEY (BASE_PARAMETER_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (ABSTRACT_PARAM_CODE) REFERENCES @abstractParamTableName (ABSTRACT_PARAM_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK3 FOREIGN KEY (DISPLAY_UNIT_CODE_SI) REFERENCES @unitTableName (UNIT_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK4 FOREIGN KEY (DISPLAY_UNIT_CODE_EN) REFERENCES @unitTableName (UNIT_CODE);
+    
+    -----------------------------
+    -- @TABLE comments
+    --
+    COMMENT ON TABLE @TABLE IS 'List of parameters allowed in the CWMS database';
+    COMMENT ON COLUMN @TABLE.BASE_PARAMETER_CODE IS 'Primary key used to relate parameters other entities';
+    COMMENT ON COLUMN @TABLE.BASE_PARAMETER_ID IS 'Short identifier of parameter';
+    COMMENT ON COLUMN @TABLE.ABSTRACT_PARAM_CODE IS 'Foreign key referencing @abstractParamTableName table';
+    COMMENT ON COLUMN @TABLE.UNIT_CODE IS 'This is the db storage unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
+    COMMENT ON COLUMN @TABLE.DISPLAY_UNIT_CODE_SI IS 'This is the default SI display unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
+    COMMENT ON COLUMN @TABLE.DISPLAY_UNIT_CODE_EN IS 'This is the default Non-SI display unit for this parameter. Foreign key referencing @cwmsUnitTableName table.';
+    COMMENT ON COLUMN @TABLE.LONG_NAME IS 'Full name of parameter';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description of parameter';
+    
+    -----------------------------
+    -- @TABLE_UNIT trigger
+    --
+    CREATE OR REPLACE TRIGGER cwms_base_parameter_unit
+       BEFORE INSERT OR UPDATE OF abstract_param_code, unit_code
+       ON cwms_base_parameter
+       REFERENCING NEW AS NEW OLD AS OLD
+       FOR EACH ROW
+    DECLARE
+       --
+       -- This trigger ensures that the abstract parameter associated with the specified
+       -- unit is the same as the abstract parameter associated with this parameter.
+       --
+       unit_abstract_code            cwms_abstract_parameter.abstract_param_code%TYPE;
+       unit_abstract_id              cwms_abstract_parameter.abstract_param_id%TYPE;
+       unit_id                       cwms_unit.unit_id%TYPE;
+       unit_type                     VARCHAR (20);
+       parameter_abstract_id         cwms_abstract_parameter.abstract_param_id%TYPE;
+       inconsistent_abstract_codes   EXCEPTION;
+       PRAGMA EXCEPTION_INIT (inconsistent_abstract_codes, -20000);
+    BEGIN
+       SELECT u.abstract_param_code
+         INTO unit_abstract_code
+         FROM cwms_unit u
+        WHERE u.unit_code = :NEW.unit_code;
+    
+       IF :NEW.abstract_param_code != unit_abstract_code
+       THEN
+          SELECT u.unit_id
+            INTO unit_id
+            FROM cwms_unit u
+           WHERE u.unit_code = :NEW.unit_code;
+    
+          unit_type := 'DB Storage Unit';
+          RAISE inconsistent_abstract_codes;
+       END IF;
+    
+       --
+       SELECT u.abstract_param_code
+         INTO unit_abstract_code
+         FROM cwms_unit u
+        WHERE u.unit_code = :NEW.display_unit_code_si;
+    
+       IF :NEW.abstract_param_code != unit_abstract_code
+       THEN
+          SELECT u.unit_id
+            INTO unit_id
+            FROM cwms_unit u
+           WHERE u.unit_code = :NEW.display_unit_code_si;
+    
+          unit_type := 'SI Display Unit';
+          RAISE inconsistent_abstract_codes;
+       END IF;
+    
+       --
+       SELECT u.abstract_param_code
+         INTO unit_abstract_code
+         FROM cwms_unit u
+        WHERE u.unit_code = :NEW.display_unit_code_en;
+    
+       IF :NEW.abstract_param_code != unit_abstract_code
+       THEN
+          SELECT u.unit_id
+            INTO unit_id
+            FROM cwms_unit u
+           WHERE u.unit_code = :NEW.display_unit_code_en;
+    
+          unit_type := 'Non-SI Display Unit';
+          RAISE inconsistent_abstract_codes;
+       END IF;
+    EXCEPTION
+       WHEN inconsistent_abstract_codes
+       THEN
+          SELECT abstract_param_id
+            INTO unit_abstract_id
+            FROM cwms_abstract_parameter
+           WHERE abstract_param_code = unit_abstract_code;
+    
+          SELECT abstract_param_id
+            INTO parameter_abstract_id
+            FROM cwms_abstract_parameter
+           WHERE abstract_param_code = :NEW.abstract_param_code;
+    
+          DBMS_OUTPUT.put_line (   'ERROR: Parameter "'
+                                || :NEW.base_parameter_id
+                                || '" has abstract parameter "'
+                                || parameter_abstract_id
+                                || '" but '
+                                || unit_type
+                                ||  ' "'
+                                || unit_id
+                                || '" has abstract parameter "'
+                                || unit_abstract_id
+                                || '".'
+                               );
+          RAISE;
+       WHEN OTHERS
+       THEN
+          DBMS_OUTPUT.put_line (SQLERRM);
+          RAISE;
+    END r_parameter_unit;
+    /
+    SHOW ERRORS
+    COMMIT;
+    
+    '''
+    
+    sys.stderr.write("Building parameterLoadTemplate\n")
+    parameterLoadTemplate = ''
+    for i in range(len(parameters)) :
+        code, abstractParam, id, name, unitId, siUnitId, enUnitId, description = parameters[i]
+        parameterLoadTemplate +="INSERT INTO @parameterTableName (BASE_PARAMETER_CODE, BASE_PARAMETER_ID, ABSTRACT_PARAM_CODE, UNIT_CODE, DISPLAY_UNIT_CODE_SI, DISPLAY_UNIT_CODE_EN, LONG_NAME, DESCRIPTION) VALUES (\n"
+        parameterLoadTemplate +="\t%d,\n" % code
+        parameterLoadTemplate +="\t'%s',\n" % id
+        parameterLoadTemplate +="\t(\tSELECT ABSTRACT_PARAM_CODE\n"
+        parameterLoadTemplate +="\t\tFROM   @abstractParamTableName \n"
+        parameterLoadTemplate +="\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
+        parameterLoadTemplate +="\t),\n"
+        parameterLoadTemplate +="\t(\tSELECT U.UNIT_CODE\n"
+        parameterLoadTemplate +="\t\tFROM @unitTableName U \n"
+        parameterLoadTemplate +="\t\tWHERE U.UNIT_ID='%s'\n" % unitId
+        parameterLoadTemplate +="\t),\n"
+        parameterLoadTemplate +="\t(\tSELECT U.UNIT_CODE\n"
+        parameterLoadTemplate +="\t\tFROM @unitTableName U \n"
+        parameterLoadTemplate +="\t\tWHERE U.UNIT_ID='%s'\n" % siUnitId
+        parameterLoadTemplate +="\t),\n"
+        parameterLoadTemplate +="\t(\tSELECT U.UNIT_CODE\n"
+        parameterLoadTemplate +="\t\tFROM @unitTableName U \n"
+        parameterLoadTemplate +="\t\tWHERE U.UNIT_ID='%s'\n" % enUnitId
+        parameterLoadTemplate +="\t),\n"
+        parameterLoadTemplate +="\t'%s',\n" % name
+        parameterLoadTemplate +="\t'%s'\n" % description
+        parameterLoadTemplate +=");\n"
+    parameterLoadTemplate +="COMMIT;\n"
+    
+    #-------------------------------------------------------
+    #-------------------------------------------------------
+    sys.stderr.write("Building subParameterCreationTemplate\n")
+    subParameterCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    
+    CREATE TABLE @TABLE
+    (
+      PARAMETER_CODE       NUMBER,
+      DB_OFFICE_CODE       NUMBER                     NOT NULL,
+      BASE_PARAMETER_CODE  NUMBER                     NOT NULL,
+      SUB_PARAMETER_ID     VARCHAR2(32 BYTE),
+      SUB_PARAMETER_DESC   VARCHAR2(80 BYTE)
+    )
+    TABLESPACE @DATASPACE
+    PCTUSED    0
+    PCTFREE    10
+    INITRANS   1
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    LOGGING 
+    NOCOMPRESS 
+    NOCACHE
+    NOPARALLEL
+    MONITORING
+    /
+    
+    -----------------------------
+    -- @TABLE indicies
+    --
+    CREATE UNIQUE INDEX @TABLE_PK ON @TABLE
+    (PARAMETER_CODE)
+    LOGGING
+    TABLESPACE @DATASPACE
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    NOPARALLEL
+    /
+    
+    
+    CREATE UNIQUE INDEX @TABLE_UK1 ON @TABLE
+    (BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE)
+    LOGGING
+    TABLESPACE @DATASPACE
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    NOPARALLEL
+    /
+    
+    -----------------------------
+    -- @TABLE constraints
+    --
+    ALTER TABLE @TABLE ADD (
+      CONSTRAINT @TABLE_PK
+     PRIMARY KEY
+     (PARAMETER_CODE)
+        USING INDEX 
+        TABLESPACE @DATASPACE
+        PCTFREE    10
+        INITRANS   2
+        MAXTRANS   255
+        STORAGE    (
+                    INITIAL          64K
+                    MINEXTENTS       1
+                    MAXEXTENTS       2147483645
+                    PCTINCREASE      0
+                   ))
+    /
+    
+    ALTER TABLE @TABLE ADD (
+      CONSTRAINT @TABLE_UK1
+     UNIQUE (BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE)
+        USING INDEX 
+        TABLESPACE @DATASPACE
+        PCTFREE    10
+        INITRANS   2
+        MAXTRANS   255
+        STORAGE    (
+                    INITIAL          64K
+                    MINEXTENTS       1
+                    MAXEXTENTS       2147483645
+                    PCTINCREASE      0
+                   ))
+    /
+    
+    ALTER TABLE @TABLE ADD (
+      CONSTRAINT @TABLE_FK1 
+     FOREIGN KEY (DB_OFFICE_CODE) 
+     REFERENCES CWMS_OFFICE (OFFICE_CODE))
+    /
+    
+    ALTER TABLE @TABLE ADD (
+      CONSTRAINT @TABLE_FK2 
+     FOREIGN KEY (BASE_PARAMETER_CODE) 
+     REFERENCES CWMS_BASE_PARAMETER (BASE_PARAMETER_CODE))
+    /
+    
+    ALTER TABLE @TABLE ADD (
+      CONSTRAINT @TABLE_CK_1 
+           CHECK (TRIM(SUB_PARAMETER_ID)=SUB_PARAMETER_ID))
+    /
+    SHOW ERRORS
+    
+    '''
+    
+    
+    sys.stderr.write("Building subParameterLoadTemplate\n")
+    subParameterLoadTemplate = \
+    '''
+    INSERT INTO at_parameter
+       SELECT base_parameter_code, (SELECT office_code
+                                      FROM cwms_office
+                                     WHERE office_id = 'CWMS'),
+              base_parameter_code, NULL, cbp.long_name
+         FROM cwms_base_parameter cbp
+    /
+    
+    '''
+    for i in range(len(subParameters)) :
+        baseCode, baseParamId, subParamId, longName, siUnitId, enUnitId = subParameters[i]
+        subParameterLoadTemplate +="INSERT INTO @subParameterTableName (PARAMETER_CODE, BASE_PARAMETER_CODE, SUB_PARAMETER_ID, DB_OFFICE_CODE, SUB_PARAMETER_DESC) VALUES (\n"
+        subParameterLoadTemplate +="\t%d,\n" % baseCode
+        subParameterLoadTemplate +="\t(\tSELECT BASE_PARAMETER_CODE\n"
+        subParameterLoadTemplate +="\t\tFROM   @parameterTableName \n"
+        subParameterLoadTemplate +="\t\tWHERE  BASE_PARAMETER_ID='%s'\n" % baseParamId
+        subParameterLoadTemplate +="\t),\n"
+        subParameterLoadTemplate +="\t'%s',\n" % subParamId
+        subParameterLoadTemplate +="\t(\tSELECT OFFICE_CODE\n"
+        subParameterLoadTemplate +="\t\tFROM @cwmsOfficeTableName U \n"
+        subParameterLoadTemplate +="\t\tWHERE OFFICE_ID='CWMS'\n"
+        subParameterLoadTemplate +="\t),\n"
+        subParameterLoadTemplate +="\t'%s'\n" % longName
+        subParameterLoadTemplate +=");\n"
+    subParameterLoadTemplate +="COMMIT;\n"
+    
+    
+    #-------------------------------------------------------
+    #-------------------------------------------------------
+    
+    sys.stderr.write("Building ratingMethodCreationTemplate\n")
+    ratingMethodCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           RATING_METHOD_CODE NUMBER(10),
+           RATING_METHOD_ID   VARCHAR2(32),
+           DESCRIPTION        VARCHAR2(256),
+           CONSTRAINT @TABLE_PK PRIMARY KEY(RATING_METHOD_CODE)
+       ) 
+           ORGANIZATION INDEX
+           TABLESPACE @DATASPACE;
+    
+    -----------------------------
+    -- @TABLE indicies
+    --
+    CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
+       (
+           UPPER(RATING_METHOD_ID)
+       )
+           PCTFREE 10
+           INITRANS 2
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 20k
+              NEXT 20k
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
         
-qualityLoadFile.close()
-
-sys.stderr.write("Building logMessageTypesCreationTemplate\n")
-logMessageTypesCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       MESSAGE_TYPE_CODE NUMBER(2)    NOT NULL,
-       MESSAGE_TYPE_ID   VARCHAR2(32) NOT NULL
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 1K
-          NEXT 1K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (MESSAGE_TYPE_CODE);
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE                   IS 'Contains valid values for the MSG_TYPE field of logged status messages';
-COMMENT ON COLUMN @TABLE.MESSAGE_TYPE_CODE IS 'Numeric code corresponding to the message type name';
-COMMENT ON COLUMN @TABLE.MESSAGE_TYPE_ID   IS 'The message type name';
-
-COMMIT;
-'''
-sys.stderr.write("Building logMessageTypesLoadTemplate\n")
-logMessageTypesLoadTemplate = ''
-for code, id in logMessageTypes :
-    logMessageTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
-logMessageTypesLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building logMessagePropTypesCreationTemplate\n")
-logMessagePropTypesCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       PROP_TYPE_CODE NUMBER(1)   NOT NULL,
-       PROP_TYPE_ID   VARCHAR2(8) NOT NULL
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 1K
-          NEXT 1K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (PROP_TYPE_CODE);
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE                IS 'Contains valid values for the PROP_TYPE field of logged status message properties';
-COMMENT ON COLUMN @TABLE.PROP_TYPE_CODE IS 'Numeric code corresponding to the property type name';
-COMMENT ON COLUMN @TABLE.PROP_TYPE_ID   IS 'The property type name';
-
-COMMIT;
-'''
-sys.stderr.write("Building logMessagePropTypesLoadTemplate\n")
-logMessagePropTypesLoadTemplate = ''
-for code, id in logMessagePropTypes :
-    logMessagePropTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
-logMessagePropTypesLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building intpolateUnitsCreationTemplate\n")
-interpolateUnitsCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE 
-   (
-       INTERPOLATE_UNITS_CODE NUMBER(1)   NOT NULL,
-       INTERPOLATE_UNITS_ID   VARCHAR2(16) NOT NULL
-   )
-       PCTFREE 10
-       PCTUSED 40
-       INITRANS 1
-       MAXTRANS 255
-       TABLESPACE @DATASPACE
-       STORAGE 
-   ( 
-          INITIAL 1K
-          NEXT 1K
-          MINEXTENTS 1
-          MAXEXTENTS 200
-          PCTINCREASE 25
-          FREELISTS 1
-          FREELIST GROUPS 1
-          BUFFER_POOL DEFAULT
-   );
-   
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (INTERPOLATE_UNITS_CODE);
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE                       IS 'Contains valid values for time series interpolation units';
-COMMENT ON COLUMN @TABLE.INTERPOLATE_UNITS_CODE IS 'Numeric code corresponding to the interpolation units';
-COMMENT ON COLUMN @TABLE.INTERPOLATE_UNITS_ID   IS 'The interpolation units';
-
-COMMIT;
-'''
-sys.stderr.write("Building interpolateUnitsLoadTemplate\n")
-interpolateUnitsLoadTemplate = ''
-for code, id in interpolateUnits :
-    interpolateUnitsLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
-interpolateUnitsLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building displayUnitsCreationTemplate\n")
-displayUnitsCreationTemplate = \
-'''
----------------------------------
--- AT_DISPLAY_UNITS table
--- 
-CREATE TABLE AT_DISPLAY_UNITS
-(
-  DB_OFFICE_CODE     NUMBER                     NOT NULL,
-  PARAMETER_CODE     NUMBER                     NOT NULL,
-  UNIT_SYSTEM        VARCHAR2(2 BYTE)           NOT NULL,
-  DISPLAY_UNIT_CODE  NUMBER                     NOT NULL
-)
-TABLESPACE @DATASPACE
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING;
-
-
-CREATE UNIQUE INDEX AT_DISPLAY_UNITS_PK1 ON AT_DISPLAY_UNITS
-(DB_OFFICE_CODE, PARAMETER_CODE, UNIT_SYSTEM)
-LOGGING
-TABLESPACE @DATASPACE
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64K
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL;
-
-
-ALTER TABLE AT_DISPLAY_UNITS ADD (
-  CONSTRAINT AT_DISPLAY_UNITS_PK1
- PRIMARY KEY
- (DB_OFFICE_CODE, PARAMETER_CODE, UNIT_SYSTEM)
-    USING INDEX 
+    COMMIT;   
+    '''
+    
+    sys.stderr.write("Building ratingMethodLoadTemplate\n")
+    ratingMethodLoadTemplate = ''
+    code = 1
+    for id, description in ratingMethods :
+        ratingMethodLoadTemplate +="INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
+        code += 1
+    ratingMethodLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building dssParameterTypeCreationTemplate\n")
+    dssParameterTypeCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+      (
+           DSS_PARAMETER_TYPE_CODE NUMBER(10)   NOT NULL,
+           DSS_PARAMETER_TYPE_ID   VARCHAR2(8)  NOT NULL,
+           PARAMETER_TYPE_CODE     NUMBER(10)   NOT NULL,
+           DESCRIPTION             VARCHAR2(40) NULL
+      )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200k
+              NEXT 200k
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE indicies
+    --
+    CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
+       (
+           UPPER(DSS_PARAMETER_TYPE_ID)
+       )
+           PCTFREE 10
+           INITRANS 2
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200k
+              NEXT 200k
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -------------------------------------
+    -- @TABLE constraints --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (DSS_PARAMETER_TYPE_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK FOREIGN KEY (PARAMETER_TYPE_CODE) REFERENCES @parameterTypeTableName (PARAMETER_TYPE_CODE);
+    
+    ----------------------------------
+    -- @TABLE comments --
+    --    
+    COMMENT ON TABLE  @TABLE IS 'List of valid HEC-DSS time series data types';
+    COMMENT ON COLUMN @TABLE.DSS_PARAMETER_TYPE_CODE IS 'Primary key for relating HEC-DSS parameter types to other entities';
+    COMMENT ON COLUMN @TABLE.DSS_PARAMETER_TYPE_ID IS 'HEC-DSS time series parameter type';
+    COMMENT ON COLUMN @TABLE.PARAMETER_TYPE_CODE IS 'CWMS parameter type associated with the HEC-DSS parameter type';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description';
+    COMMIT;
+    
+    '''
+    
+    sys.stderr.write("Building dssParameterTypeLoadTemplate\n")
+    dssParameterTypeLoadTemplate = ''
+    for i in range(len(dssParameterTypes)) :
+        code = i+1
+        dssParameterTypeLoadTemplate +="INSERT INTO @dssParameterTypeTableName (DSS_PARAMETER_TYPE_CODE, DSS_PARAMETER_TYPE_ID, PARAMETER_TYPE_CODE, DESCRIPTION) VALUES (\n"
+        dssParameterTypeLoadTemplate +="\t%d,\n"   % code
+        dssParameterTypeLoadTemplate +="\t'%s',\n" % dssParameterTypes[i]["ID"]
+        dssParameterTypeLoadTemplate +="\t(\tSELECT PARAMETER_TYPE_CODE\n"
+        dssParameterTypeLoadTemplate +="\t\tFROM   @parameterTypeTableName\n"
+        dssParameterTypeLoadTemplate +="\t\tWHERE  PARAMETER_TYPE_ID='%s'\n" % dssParameterTypes[i]["DB_TYPE"]
+        dssParameterTypeLoadTemplate +="\t),\n"
+        dssParameterTypeLoadTemplate +="\t'%s'\n"  % dssParameterTypes[i]["DESCRIPTION"]
+        dssParameterTypeLoadTemplate +=");\n"
+    dssParameterTypeLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building dssXchgDirectionCreationTemplate\n")
+    dssXchgDirectionCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+      (
+           DSS_XCHG_DIRECTION_CODE NUMBER       NOT NULL,
+           DSS_XCHG_DIRECTION_ID   VARCHAR2(16) NOT NULL,
+           DESCRIPTION             VARCHAR2(80) NULL
+      )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200k
+              NEXT 200k
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE indicies
+    --
+    CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
+       (
+           UPPER(DSS_XCHG_DIRECTION_ID)
+       )
+           PCTFREE 10
+           INITRANS 2
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200k
+              NEXT 200k
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -------------------------------------
+    -- @TABLE constraints --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (DSS_XCHG_DIRECTION_CODE);
+    
+    ----------------------------------
+    -- @TABLE comments --
+    --    
+    COMMENT ON TABLE  @TABLE IS 'List of valid Oracle/HEC-DSS exchange directions';
+    COMMENT ON COLUMN @TABLE.DSS_XCHG_DIRECTION_CODE IS 'Primary key for relating exchange directions to other entities';
+    COMMENT ON COLUMN @TABLE.DSS_XCHG_DIRECTION_ID IS 'Oracle/HEC-DSS exchange direction';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Description';
+    COMMIT;
+    
+    '''
+    
+    sys.stderr.write("Building dssXchgDirectionLoadTemplate\n")
+    dssXchgDirectionLoadTemplate = ''
+    for i in range(len(dssXchgDirections)) :
+        code = i + 1
+        dssXchgDirectionLoadTemplate +="INSERT INTO @dssXchgDirectionTableName (DSS_XCHG_DIRECTION_CODE, DSS_XCHG_DIRECTION_ID, DESCRIPTION) VALUES (\n"
+        dssXchgDirectionLoadTemplate +="\t%d,\n"   % code
+        dssXchgDirectionLoadTemplate +="\t'%s',\n" % dssXchgDirections[i]["DSS_XCHG_DIRECTION_ID"]
+        dssXchgDirectionLoadTemplate +="\t'%s'\n"  % dssXchgDirections[i]["DESCRIPTION"]
+        dssXchgDirectionLoadTemplate +=");\n"
+    dssParameterTypeLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building conversionCreationTemplate\n")
+    conversionCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+    (
+      FROM_UNIT_ID        VARCHAR2(16 BYTE)       NOT NULL,
+      TO_UNIT_ID          VARCHAR2(16 BYTE)       NOT NULL,
+      ABSTRACT_PARAM_CODE NUMBER(10)              NOT NULL,
+      FROM_UNIT_CODE      NUMBER(10)              NOT NULL,
+      TO_UNIT_CODE        NUMBER(10)              NOT NULL,
+      FACTOR              BINARY_DOUBLE           NOT NULL,
+      OFFSET              BINARY_DOUBLE           NOT NULL, 
+      CONSTRAINT CWMS_UNIT_CONVERSION_PK
+     PRIMARY KEY
+     (FROM_UNIT_ID, TO_UNIT_ID)
+    )
+    ORGANIZATION INDEX
+    LOGGING
+    TABLESPACE @DATASPACE
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    NOPARALLEL
+    MONITORING
+    /
+    
+    -----------------------------
+    -- @TABLE constraints
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (FROM_UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (TO_UNIT_CODE) REFERENCES @unitTableName (UNIT_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK3 FOREIGN KEY (FROM_UNIT_ID, ABSTRACT_PARAM_CODE) REFERENCES @unitTableName (UNIT_ID, ABSTRACT_PARAM_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK4 FOREIGN KEY (TO_UNIT_ID, ABSTRACT_PARAM_CODE) REFERENCES @unitTableName (UNIT_ID, ABSTRACT_PARAM_CODE);
+    
+    
+    CREATE UNIQUE INDEX CWMS_UNIT_CONVERSION_U01 ON CWMS_UNIT_CONVERSION
+    (FROM_UNIT_CODE, TO_UNIT_CODE)
+    LOGGING
     tablespace @DATASPACE
     PCTFREE    10
     INITRANS   2
@@ -8734,613 +7676,1688 @@ ALTER TABLE AT_DISPLAY_UNITS ADD (
                 MINEXTENTS       1
                 MAXEXTENTS       2147483645
                 PCTINCREASE      0
-               ));
-
-
-ALTER TABLE AT_DISPLAY_UNITS ADD (
-  CONSTRAINT AT_DISPLAY_UNITS_FK02 
- FOREIGN KEY (DISPLAY_UNIT_CODE) 
- REFERENCES CWMS_UNIT (UNIT_CODE));
-
-ALTER TABLE AT_DISPLAY_UNITS ADD (
-  CONSTRAINT AT_DISPLAY_UNITS_FK01 
- FOREIGN KEY (PARAMETER_CODE) 
- REFERENCES AT_PARAMETER (PARAMETER_CODE));
-'''
-
-sys.stderr.write("Building displayUnitsLoadTemplate\n")
-displayUnitsLoadTemplate = ''
-
-for k in range(len(office_ids)) :
-    dbOfcCode = db_office_code[office_ids[k]]
-    displayUnitsLoadTemplate +="DECLARE\n"
-    displayUnitsLoadTemplate +="BEGIN\n"
-    displayUnitsLoadTemplate +="   INSERT INTO at_display_units\n"
-    displayUnitsLoadTemplate +="      SELECT %s, a.parameter_code, 'EN', b.display_unit_code_en\n" % (dbOfcCode)
-    displayUnitsLoadTemplate +="        FROM at_parameter a, cwms_base_parameter b\n"
-    displayUnitsLoadTemplate +="       WHERE a.base_parameter_code = b.base_parameter_code\n"
-    displayUnitsLoadTemplate +="         AND a.sub_parameter_id IS NULL;\n"
-    displayUnitsLoadTemplate +="\n"
-    displayUnitsLoadTemplate +="   INSERT INTO at_display_units\n"
-    displayUnitsLoadTemplate +="      SELECT %s, a.parameter_code, 'SI', b.display_unit_code_si\n" % (dbOfcCode)
-    displayUnitsLoadTemplate +="        FROM at_parameter a, cwms_base_parameter b\n"
-    displayUnitsLoadTemplate +="       WHERE a.base_parameter_code = b.base_parameter_code\n"
-    displayUnitsLoadTemplate +="         AND a.sub_parameter_id IS NULL;\n"
-    displayUnitsLoadTemplate +="END;\n"
-    displayUnitsLoadTemplate +="/\n"
-    #
-    unitSys = ['SI', 'EN']
-    for i in range(len(subParameters)) :
-        baseCode, baseParamId, subParamId, longName, siUnitId, enUnitId = subParameters[i]
-        dispUnitId =[siUnitId, enUnitId]
-        for j in range(len(unitSys)) :
-            displayUnitsLoadTemplate +="INSERT INTO at_display_units\n"
-            displayUnitsLoadTemplate +="            (db_office_code, parameter_code, unit_system,\n"
-            displayUnitsLoadTemplate +="             display_unit_code\n"
-            displayUnitsLoadTemplate +="            )\n"
-            displayUnitsLoadTemplate +="     VALUES (%s, %s, '%s',\n" % (dbOfcCode, baseCode, unitSys[j])
-            displayUnitsLoadTemplate +="             (SELECT a.unit_code\n"
-            displayUnitsLoadTemplate +="                FROM cwms_unit a, at_parameter b, cwms_base_parameter c\n"
-            displayUnitsLoadTemplate +="               WHERE unit_id = '%s'\n" % dispUnitId[j]
-            displayUnitsLoadTemplate +="                 AND b.base_parameter_code = c.base_parameter_code\n"
-            displayUnitsLoadTemplate +="                 AND a.abstract_param_code = c.abstract_param_code\n"
-            displayUnitsLoadTemplate +="                 AND b.parameter_code = %s)\n" % (baseCode)
-            displayUnitsLoadTemplate +="            )\n"
-            displayUnitsLoadTemplate +="/\n"
-displayUnitsLoadTemplate +="COMMIT;\n"
-
-
-
-sys.stderr.write("Building locationKindCreationTemplate\n")
-locationKindCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-(
-   LOCATION_KIND_CODE NUMBER(10)     NOT NULL,
-   OFFICE_CODE        NUMBER(10)     NOT NULL,
-   LOCATION_KIND_ID   VARCHAR2(32)   NOT NULL,
-   DESCRIPTION        VARCHAR2(256),
-   CONSTRAINT @TABLE_PK  PRIMARY KEY (LOCATION_KIND_CODE) USING INDEX,
-   CONSTRAINT @TABLE_U1  UNIQUE (OFFICE_CODE, LOCATION_KIND_ID)
-)
-tablespace @DATASPACE
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-        INITIAL          10K
-        NEXT             10K
-        MINEXTENTS       1
-        MAXEXTENTS       UNLIMITED
-        PCTINCREASE      0
-        BUFFER_POOL      DEFAULT
+                BUFFER_POOL      DEFAULT
+               )
+    NOPARALLEL
+    /
+    
+    -----------------------------
+    -- @TABLE comments
+    --
+    COMMENT ON TABLE @TABLE IS 'Contains linear conversion factors for units';
+    COMMENT ON COLUMN @TABLE.FROM_UNIT_ID IS   'Source units      (x in y=mx+b)';
+    COMMENT ON COLUMN @TABLE.TO_UNIT_ID IS     'Destination units (y in y=mx+b)';
+    COMMENT ON COLUMN @TABLE.FROM_UNIT_CODE IS 'Source units      (x in y=mx+b)';
+    COMMENT ON COLUMN @TABLE.TO_UNIT_CODE IS   'Destination units (y in y=mx+b)';
+    COMMENT ON COLUMN @TABLE.FACTOR IS         'Ratio of units    (m in y=mx+b)';
+    COMMENT ON COLUMN @TABLE.OFFSET IS         'Offset of units   (b in y=mx+b)';
+    
+    -----------------------------
+    -- @TABLE_UNIT trigger
+    --
+    CREATE OR REPLACE TRIGGER @TABLE_UNIT
+    BEFORE INSERT OR UPDATE OF FROM_UNIT_CODE, TO_UNIT_CODE
+    ON @TABLE 
+    REFERENCING NEW AS NEW OLD AS OLD
+    FOR EACH ROW
+    DECLARE
+       --
+       -- This trigger ensures that the abstract parameter associated with the source unit
+       -- is the same as the abstract parameter associated with the destination unit.
+       --
+       FROM_ABSTRACT_CODE          @abstractParamTableName.ABSTRACT_PARAM_CODE%TYPE;
+       FROM_ABSTRACT_ID            @abstractParamTableName.ABSTRACT_PARAM_ID%TYPE;
+       FROM_ID                     @unitTableName.UNIT_ID%TYPE;
+       TO_ABSTRACT_CODE            @abstractParamTableName.ABSTRACT_PARAM_CODE%TYPE;
+       TO_ABSTRACT_ID              @abstractParamTableName.ABSTRACT_PARAM_ID%TYPE;
+       TO_ID                       @unitTableName.UNIT_ID%TYPE;
+       INCONSISTENT_ABSTRACT_CODES EXCEPTION;
+       PRAGMA EXCEPTION_INIT(INCONSISTENT_ABSTRACT_CODES, -20000);
+    BEGIN
+       SELECT ABSTRACT_PARAM_CODE
+          INTO   FROM_ABSTRACT_CODE 
+          FROM   @unitTableName
+          WHERE  UNIT_CODE = :NEW.FROM_UNIT_CODE;
+       SELECT ABSTRACT_PARAM_CODE
+          INTO   TO_ABSTRACT_CODE 
+          FROM   @unitTableName
+          WHERE  UNIT_CODE = :NEW.TO_UNIT_CODE;
+       IF FROM_ABSTRACT_CODE != TO_ABSTRACT_CODE
+       THEN
+          RAISE INCONSISTENT_ABSTRACT_CODES;
+       END IF;
+    EXCEPTION
+       WHEN INCONSISTENT_ABSTRACT_CODES THEN
+          SELECT UNIT_ID
+             INTO   FROM_ID
+             FROM   @unitTableName
+             WHERE  UNIT_CODE = :NEW.FROM_UNIT_CODE;
+          SELECT UNIT_ID
+             INTO   TO_ID
+             FROM   @unitTableName
+             WHERE  UNIT_CODE = :NEW.TO_UNIT_CODE;
+          SELECT ABSTRACT_PARAM_ID
+             INTO   FROM_ABSTRACT_ID 
+             FROM   @abstractParamTableName
+             WHERE  ABSTRACT_PARAM_CODE=FROM_ABSTRACT_CODE;
+          SELECT ABSTRACT_PARAM_ID
+             INTO   TO_ABSTRACT_ID 
+             FROM   @abstractParamTableName
+             WHERE  ABSTRACT_PARAM_CODE=TO_ABSTRACT_CODE;
+          DBMS_OUTPUT.PUT_LINE(
+             'ERROR: From-unit "' 
+             || FROM_ID
+             || '" has abstract parameter "' 
+             || FROM_ABSTRACT_ID
+             || '" but To-unit "'
+             || TO_ID
+             || '" has abstract parameter "'
+             || TO_ABSTRACT_ID
+             || '".');
+          RAISE;                                    
+       WHEN OTHERS THEN
+          DBMS_OUTPUT.PUT_LINE(SQLERRM);
+          RAISE;                                    
+    END R_PARAMETER_UNIT;
+    /
+    SHOW ERRORS
+    COMMIT;
+    
+    '''
+    
+    sys.stderr.write("Building conversionLoadTemplate\n")
+    conversionLoadTemplate = ''
+    conversionUnitIds = unitConversionsByUnitIds.keys()
+    conversionUnitIds.sort()
+    for abstractParam, fromUnit, toUnit in conversionUnitIds :
+        conversion = unitConversionsByUnitIds[abstractParam, fromUnit, toUnit]
+        conversionLoadTemplate +="INSERT INTO %s (FROM_UNIT_ID, TO_UNIT_ID, ABSTRACT_PARAM_CODE, FROM_UNIT_CODE, TO_UNIT_CODE, FACTOR, OFFSET) VALUES (\n" % conversionTableName
+        conversionLoadTemplate +="\t\t'%s',\n" % fromUnit
+        conversionLoadTemplate +="\t\t'%s',\n" % toUnit
+        conversionLoadTemplate +="\t\t(SELECT ABSTRACT_PARAM_CODE\n"
+        conversionLoadTemplate +="\t\tFROM   %s \n" % abstractParamTableName
+        conversionLoadTemplate +="\t\tWHERE  ABSTRACT_PARAM_ID='%s'),\n" % abstractParam
+        conversionLoadTemplate +="\t(\tSELECT UNIT_CODE\n"
+        conversionLoadTemplate +="\t\tFROM   %s\n" % unitTableName
+        conversionLoadTemplate +="\t\tWHERE  UNIT_ID='%s'\n" % fromUnit
+        conversionLoadTemplate +="\t\tAND    ABSTRACT_PARAM_CODE=\n"
+        conversionLoadTemplate +="\t\t(\tSELECT ABSTRACT_PARAM_CODE\n"
+        conversionLoadTemplate +="\t\t\tFROM   %s \n" % abstractParamTableName
+        conversionLoadTemplate +="\t\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
+        conversionLoadTemplate +="\t\t)\n"
+        conversionLoadTemplate +="\t),\n"
+        conversionLoadTemplate +="\t(\tSELECT UNIT_CODE\n"
+        conversionLoadTemplate +="\t\tFROM   %s\n" % unitTableName
+        conversionLoadTemplate +="\t\tWHERE  UNIT_ID='%s'\n" % toUnit
+        conversionLoadTemplate +="\t\tAND    ABSTRACT_PARAM_CODE=\n"
+        conversionLoadTemplate +="\t\t(\tSELECT ABSTRACT_PARAM_CODE\n"
+        conversionLoadTemplate +="\t\t\tFROM   %s \n" % abstractParamTableName
+        conversionLoadTemplate +="\t\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
+        conversionLoadTemplate +="\t\t)\n"
+        conversionLoadTemplate +="\t),\n"
+        conversionLoadTemplate +="\t%s,\n" % `conversion["FACTOR"]`
+        conversionLoadTemplate +="\t%s\n" % `conversion["OFFSET"]`
+        conversionLoadTemplate +=");\n"
+    conversionLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building conversionTestTemplate\n")
+    conversionTestTemplate = \
+    '''
+    CREATE OR REPLACE PROCEDURE @TABLE_TEST
+    IS
+       L_PARAM @abstractParamTableName%ROWTYPE;
+       L_FROM  @unitTableName%ROWTYPE;
+       L_TO    @unitTableName%ROWTYPE;
+       L_CONV  @TABLE%ROWTYPE;
+       L_COUNT PLS_INTEGER := 0;
+       L_TOTAL PLS_INTEGER := 0;
+    BEGIN
+       DBMS_OUTPUT.PUT_LINE('*** CHECKING UNIT CONVERSIONS ***');
+       FOR L_PARAM IN (SELECT * FROM @abstractParamTableName)
+       LOOP
+          L_COUNT := 0;
+          DBMS_OUTPUT.PUT_LINE('.');
+          DBMS_OUTPUT.PUT_LINE('.  Checking abstract parameter ' || L_PARAM.ABSTRACT_PARAM_ID);
+          FOR L_FROM IN (SELECT * FROM @unitTableName WHERE ABSTRACT_PARAM_CODE=L_PARAM.ABSTRACT_PARAM_CODE)
+          LOOP
+             FOR L_TO IN (SELECT * FROM @unitTableName WHERE ABSTRACT_PARAM_CODE=L_PARAM.ABSTRACT_PARAM_CODE)
+             LOOP
+                BEGIN
+                   SELECT * 
+                      INTO  L_CONV
+                      FROM @conversionTableName
+                      WHERE FROM_UNIT_CODE = L_FROM.UNIT_CODE
+                      AND   TO_UNIT_CODE = L_TO.UNIT_CODE;
+                   DBMS_OUTPUT.PUT_LINE(
+                       '.    "'
+                       || L_FROM.UNIT_ID
+                       || '","'
+                       || L_TO.UNIT_ID
+                       || '",'
+                       || L_CONV.OFFSET
+                       || ','
+                       || L_CONV.FACTOR);
+                   L_COUNT := L_COUNT + 1;
+                EXCEPTION
+                   WHEN NO_DATA_FOUND THEN
+                      DBMS_OUTPUT.PUT_LINE(
+                       '.    >>> No conversion from "'
+                       || L_FROM.UNIT_ID
+                       || '" to "'
+                       || L_TO.UNIT_ID
+                       || '".');
+                   WHEN OTHERS THEN
+                      RAISE;
+                END;
+             END LOOP;
+          END LOOP;
+          DBMS_OUTPUT.PUT_LINE('.  ' || L_COUNT || ' unit conversion entries.');
+          L_TOTAL := L_TOTAL + L_COUNT;
+       END LOOP;
+       DBMS_OUTPUT.PUT_LINE('.');
+       DBMS_OUTPUT.PUT_LINE('' || L_TOTAL || ' unit conversion entries.');
+    END @TABLE_TEST;
+    /
+    SHOW ERRORS
+    COMMIT;
+    
+    BEGIN @TABLE_TEST; END;
+    /
+    
+    DROP PROCEDURE @TABLE_TEST;
+    COMMIT;
+    
+    '''
+    
+    sys.stderr.write("Building timezoneCreationTemplate\n")
+    timezoneCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           TIME_ZONE_CODE NUMBER(10)             NOT NULL,
+           TIME_ZONE_NAME VARCHAR2(28)           NOT NULL,
+           UTC_OFFSET    INTERVAL DAY TO SECOND NOT NULL,
+           DST_OFFSET    INTERVAL DAY TO SECOND NOT NULL
        )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING;
-
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK(TRIM(UPPER(LOCATION_KIND_ID)) = LOCATION_KIND_ID);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE                    IS 'Contains location kinds.';
-COMMENT ON COLUMN @TABLE.LOCATION_KIND_CODE IS 'Primary key relating location kinds to other entities.';
-COMMENT ON COLUMN @TABLE.OFFICE_CODE        IS 'Office that generated/owns this kind code';
-COMMENT ON COLUMN @TABLE.LOCATION_KIND_ID   IS 'Text name used as an input to the lookup.';
-COMMENT ON COLUMN @TABLE.DESCRIPTION        IS 'Optional description or comments.';
-
-COMMIT;
-'''
-sys.stderr.write("Building locationKindLoadTemplate\n")
-locationKindLoadTemplate = ''
-for code, id, description in locationKinds :
-    locationKindLoadTemplate += "INSERT INTO @TABLE VALUES (%d, 53, '%s', '%s');\n" % (code, id, description)
-locationKindLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building gageMethodCreationTemplate\n")
-gageMethodCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-(
-   METHOD_CODE NUMBER(10)    NOT NULL,
-   METHOD_ID   VARCHAR2(32)  NOT NULL,
-   DESCRIPTION VARCHAR2(256)
-)
-tablespace @DATASPACE
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          10K
-            NEXT             10K
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING;
-
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY(METHOD_CODE) USING INDEX;
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_U1  UNIQUE (METHOD_ID) USING INDEX;
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(METHOD_ID) = METHOD_ID);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK2 CHECK (UPPER(METHOD_ID) = METHOD_ID);
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE             IS 'Contains inquiry and transmission methods gages.';
-COMMENT ON COLUMN @TABLE.METHOD_CODE IS 'Primary key relating methods to other entities.'; 
-COMMENT ON COLUMN @TABLE.METHOD_ID   IS 'Name of method (''MANUAL'', ''PHONE'', ''INTERNET'', ''GOES'', etc...).'; 
-COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Optional description.';
-
-COMMIT;
-'''
-sys.stderr.write("Building gageMethodLoadTemplate\n")
-gageMethodLoadTemplate = ''
-for code, id, description in gageMethods :
-    gageMethodLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
-gageMethodLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building gageTypeCreationTemplate\n")
-gageTypeCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-(
-   GAGE_TYPE_CODE      NUMBER(10)    NOT NULL,
-   GAGE_TYPE_ID        VARCHAR2(32)  NOT NULL,
-   MANUALLY_READ       VARCHAR2(1)   NOT NULL,
-   INQUIRY_METHOD      NUMBER(10),
-   TRANSMIT_METHOD     NUMBER(10), 
-   DESCRIPTION         VARCHAR2(256)
-)
-tablespace @DATASPACE
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          10K
-            NEXT             10K
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING;
-
-
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (GAGE_TYPE_CODE) USING INDEX;
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(GAGE_TYPE_ID) = GAGE_TYPE_ID);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (INQUIRY_METHOD) REFERENCES CWMS_GAGE_METHOD (METHOD_CODE);
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (TRANSMIT_METHOD) REFERENCES CWMS_GAGE_METHOD (METHOD_CODE);
-
--------------------------------
--- @TABLE indicies  --
---
-CREATE UNIQUE INDEX @TABLE_U1 ON @TABLE (UPPER(GAGE_TYPE_ID))
-LOGGING
-tablespace @DATASPACE
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          10K
-            NEXT             1M
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL;
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE                 IS 'Contains pre-defined gage types.';
-COMMENT ON COLUMN @TABLE.GAGE_TYPE_CODE  IS 'Primary key used to relate gage types to other entities.';
-COMMENT ON COLUMN @TABLE.GAGE_TYPE_ID    IS 'Name of gage type.';
-COMMENT ON COLUMN @TABLE.MANUALLY_READ   IS 'Indicator of whether gage is manually read.';
-COMMENT ON COLUMN @TABLE.INQUIRY_METHOD  IS 'Reference to method of inquiry.';
-COMMENT ON COLUMN @TABLE.TRANSMIT_METHOD IS 'Reference to method of data transmission.';
-COMMENT ON COLUMN @TABLE.DESCRIPTION     IS 'Optional description.';
-
-COMMIT;
-'''
-sys.stderr.write("Building gageTypeLoadTemplate\n")
-gageTypeLoadTemplate = ''
-for code, id, manually_read, inquiry_method, tx_method, description in gageTypes :
-    if inquiry_method != 'NULL' :
-        inquiry_method = "(SELECT METHOD_CODE FROM CWMS_GAGE_METHOD WHERE METHOD_ID='%s')" % inquiry_method
-    if tx_method != 'NULL' :
-        tx_method = "(SELECT METHOD_CODE FROM CWMS_GAGE_METHOD WHERE METHOD_ID='%s')" % tx_method
-    gageTypeLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s', %s, %s, '%s');\n" % \
-        (code, id, manually_read, inquiry_method, tx_method, description)
-gageTypeLoadTemplate += "COMMIT;\n"
-gageTypeLoadTemplate = gageTypeLoadTemplate.replace("'NULL'", "NULL")
-
-sys.stderr.write("Building nationCreationTemplate\n")
-nationCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-(
-   NATION_CODE VARCHAR2(2)  NOT NULL,
-   NATION_ID   VARCHAR2(48) NOT NULL
-)
-tablespace @DATASPACE
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          10K
-            NEXT             10K
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING;
-
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (NATION_CODE) USING INDEX;
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(NATION_ID) = NATION_ID);
-
--------------------------------
--- @TABLE indicies  --
---
-CREATE UNIQUE INDEX @TABLE_U1 ON @TABLE (UPPER(NATION_ID))
-LOGGING
-TABLESPACE @DATASPACE
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          10K
-            NEXT             1M
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL;
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE             IS 'Contains names of nations';
-COMMENT ON COLUMN @TABLE.NATION_CODE IS 'Primary key used to relate nation to other entities';
-COMMENT ON COLUMN @TABLE.NATION_ID   IS 'Name of nation';
-
-COMMIT;
-'''
-sys.stderr.write("Building nationLoadTemplate\n")
-nationLoadTemplate = ''
-for code, id,  in nations :
-    nationLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s');\n" % (code, id.replace("'", "''"))
-nationLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building streamTypeCreationTemplate\n")
-streamTypeCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-(
-  STREAM_TYPE_ID       VARCHAR2(4)  NOT NULL,
-  NUMBER_OF_CHANNELS   VARCHAR2(8)  NOT NULL,
-  ENTRENCHMENT_RATIO   VARCHAR2(32) NOT NULL,
-  WIDTH_TO_DEPTH_RATIO VARCHAR2(32) NOT NULL,
-  SINUOSITY            VARCHAR2(32) NOT NULL,
-  SLOPE                VARCHAR2(32) NOT NULL,
-  CHANNEL_MATERIAL     VARCHAR2(32) NOT NULL
-)
-tablespace @DATASPACE
-PCTUSED    0
-PCTFREE    10
-INITRANS   1
-MAXTRANS   255
-STORAGE    (
-            INITIAL          10K
-            NEXT             10K
-            MINEXTENTS       1
-            MAXEXTENTS       UNLIMITED
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-LOGGING 
-NOCOMPRESS 
-NOCACHE
-NOPARALLEL
-MONITORING;
-
--------------------------------
--- @TABLE constraints  --
---
-ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (STREAM_TYPE_ID) USING INDEX;
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE                      IS 'Contains pre-defined stream types based on Rosgen Classification (see http://www.wildlandhydrology.com/assets/ARM_5-3.pdf)';
-COMMENT ON COLUMN @TABLE.STREAM_TYPE_ID       IS 'Rosgen Classification identifier';
-COMMENT ON COLUMN @TABLE.NUMBER_OF_CHANNELS   IS 'Single or multiple channels';
-COMMENT ON COLUMN @TABLE.ENTRENCHMENT_RATIO   IS 'Channel entrenchment ratio range';
-COMMENT ON COLUMN @TABLE.WIDTH_TO_DEPTH_RATIO IS 'Channel width/Depth ratio range';
-COMMENT ON COLUMN @TABLE.SINUOSITY            IS 'Channel sinuosity range';
-COMMENT ON COLUMN @TABLE.SLOPE                IS 'Channel slope';
-COMMENT ON COLUMN @TABLE.CHANNEL_MATERIAL     IS 'Channel material';
-
-COMMIT;
-'''
-sys.stderr.write("Building streamTypeLoadTemplate\n")
-streamTypeLoadTemplate = ''
-for v1, v2, v3, v4, v5, v6, v7 in streamTypes :
-    streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s');\n" % (v1, v2, v3, v4, v5, v6, v7)
-streamTypeLoadTemplate += "COMMIT;\n"
-
-sys.stderr.write("Building msgIdCreationTemplate\n")
-msgIdCreationTemplate = \
-'''
--- ## TABLE ###############################################
--- ## @TABLE
--- ##
-CREATE TABLE @TABLE
-(
-   LAST_MILLIS INTEGER,
-   LAST_SEQ    INTEGER
-)
-tablespace @DATASPACE
-/
-
----------------------------
--- @TABLE comments --
---
-COMMENT ON TABLE  @TABLE             IS 'Contains data to generate message ids based on millisecond and sequence within millisecond';
-COMMENT ON COLUMN @TABLE.LAST_MILLIS IS 'Millisecond of last message id generated';
-COMMENT ON COLUMN @TABLE.LAST_SEQ    IS 'Sequence number within millisecond for last message id generated';
-
-COMMIT;
-'''
-sys.stderr.write("Building msgIdLoadTemplate\n")
-msgIdLoadTemplate = '''
-   INSERT INTO @TABLE VALUES (0, 0);
-   COMMIT;
-'''
-
-sys.stderr.write("Building schemaObjVersionCreationTemplate\n")
-schemaObjVersionCreationTemplate = \
-'''
-CREATE TABLE @TABLE (
-   HASH_CODE      VARCHAR2(40) NOT NULL,
-   OBJECT_TYPE    VARCHAR2(30) NOT NULL,
-   OBJECT_NAME    VARCHAR2(30) NOT NULL,
-   SCHEMA_VERSION VARCHAR2(64) NOT NULL,
-   COMMENTS       VARCHAR2(256),
-   CONSTRAINT CWMS_SCHEMA_VERSION_PK PRIMARY KEY (HASH_CODE, OBJECT_TYPE, OBJECT_NAME, SCHEMA_VERSION)
-)
-TABLESPACE @DATASPACE
-/
-CREATE INDEX @TABLE_IDX ON @TABLE (SCHEMA_VERSION)
-TABLESPACE @DATASPACE
-/
-
-COMMIT;
-'''
-
-#==
-#====
-#======
-#-----------------------------------------------------------------#
-# output commands to drop and re-create, populate and test tables #
-#-----------------------------------------------------------------#
-tables_rev = tables[:]
-tables_rev.reverse()
-
-sys.stderr.write("Outputting commands to drop and re-create tables.\n")
-for table1 in tables :
-    for table2 in tables :
-        tableName = eval("%sTableName" % table2)
-        try :
-            cmdStr = "%sCreationTemplate = %sCreationTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
-            #sys.stderr.write("%s\n" % cmdStr);
-            exec(cmdStr)
-        except : 
-            sys.stderr.write("\nERROR : Variable %sCreationTemplate does not exist, cannot continue.\n" % table1)
-            sys.exit(-1)
-        try : 
-            cmdStr = "%sLoadTemplate  = %sLoadTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
-            #sys.stderr.write("%s\n" % cmdStr);
-            exec(cmdStr)
-        except : 
-            pass
-        try : 
-            cmdStr = "%sTestTemplate  = %sTestTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
-            #sys.stderr.write("%s\n" % cmdStr);
-            exec(cmdStr)
-        except : 
-            pass
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200K
+              NEXT 200K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE constraints
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY  (TIME_ZONE_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_UK  UNIQUE       (TIME_ZONE_NAME);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK       (UTC_OFFSET >= INTERVAL '-18:00' HOUR TO MINUTE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK2 CHECK       (UTC_OFFSET <= INTERVAL ' 18:00' HOUR TO MINUTE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK3 CHECK       (DST_OFFSET >= INTERVAL  ' 0:00' HOUR TO MINUTE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK4 CHECK       (DST_OFFSET <= INTERVAL   '1:00' HOUR TO MINUTE);
+    
+    -----------------------------
+    -- @TABLE comments
+    --
+    COMMENT ON TABLE @TABLE IS 'Contains timezone information.';
+    COMMENT ON COLUMN @TABLE.TIME_ZONE_CODE IS 'Primary key used to relate parameters other entities';
+    COMMENT ON COLUMN @TABLE.TIME_ZONE_NAME IS 'Region name or abbreviation of timezone';
+    COMMENT ON COLUMN @TABLE.UTC_OFFSET    IS 'Amount of time the timezone is ahead of UTC';
+    COMMENT ON COLUMN @TABLE.DST_OFFSET    IS 'Amount of time the UTC_OFFSET increases during DST';
+    COMMIT;
+    
+    '''
+    
+    sys.stderr.write("Building timezoneLoadTemplate\n")
+    timezoneLoadTemplate = ''
+    for time_zone_code,time_zone_name,utc_offset,dst_offset in timezones :
+    	timezoneLoadTemplate +="INSERT INTO @TABLE (TIME_ZONE_CODE,TIME_ZONE_NAME,UTC_OFFSET,DST_OFFSET) VALUES (%d, '%s', '%s', '%s');\n" % (time_zone_code, time_zone_name, utc_offset, dst_offset) 
+    timezoneLoadTemplate +="COMMIT;"
+    
+    sys.stderr.write("Building timezoneAliasCreationTemplate\n")
+    timezoneAliasCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           TIME_ZONE_ALIAS VARCHAR2(9)  NOT NULL,
+           TIME_ZONE_NAME  VARCHAR2(28) NOT NULL
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE
+           (
+              INITIAL 20K
+              NEXT 20K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE constraints
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (TIME_ZONE_ALIAS);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (TIME_ZONE_NAME) REFERENCES @timezoneTableName (TIME_ZONE_NAME);
+    
+    -----------------------------
+    -- @TABLE comments
+    --
+    COMMENT ON TABLE @TABLE IS 'Contains timezone aliases for Java custom time zones.';
+    COMMENT ON COLUMN @TABLE.TIME_ZONE_ALIAS IS 'Time zone alias.';
+    COMMENT ON COLUMN @TABLE.TIME_ZONE_NAME IS 'References propert time zone name.';
+    COMMIT;
+    
+    '''
+    sys.stderr.write("Building timezoneAliasLoadTemplate\n")
+    timezoneAliasLoadTemplate = ''
+    base_tzs = ['GMT', 'UTC']
+    signs    = ['-', '+']
+    seps     = [':', '']
+    for base_tz in range(len(base_tzs)) :
+       for hour in range(13) :
+          for sign in range(len(signs)) :
+             oppositeSign = signs[(sign+1) % len(signs)]
+             tz = 'Etc/GMT%s%d' % (oppositeSign, hour)
+             for sep in range(len(seps)) :
+                alias = '%s%s%2.2d%s00' % (base_tzs[base_tz], signs[sign], hour, seps[sep])
+                timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('%s', '%s');\n" % (timezoneAliasTableName, alias, tz))
+                if hour < 10 :
+                   alias = '%s%s%d%s00' % (base_tzs[base_tz], signs[sign], hour, seps[sep])
+                   timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('%s', '%s');\n" % (timezoneAliasTableName, alias, tz))
+    timezoneAliasLoadTemplate += 'COMMIT;\n'
+    
+    sys.stderr.write("Building tzUsageCreationTemplate\n")
+    tzUsageCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+       (
+           TZ_USAGE_CODE NUMBER(10)   NOT NULL,
+           TZ_USAGE_ID   VARCHAR2(8)  NOT NULL,
+           DESCRIPTION   VARCHAR2(80)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200K
+              NEXT 200K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE indicies
+    --
+    CREATE UNIQUE INDEX @TABLE_UI ON @TABLE
+       (
+           UPPER(TZ_USAGE_ID)
+       )
+           PCTFREE 10
+           INITRANS 2
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+           ( 
+              INITIAL 200k
+              NEXT 200k
+              MINEXTENTS 1
+              MAXEXTENTS 20
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+           );
+    
+    -----------------------------
+    -- @TABLE constraints
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (TZ_USAGE_CODE);
+    
+    -----------------------------
+    -- @TABLE comments
+    --
+    COMMENT ON TABLE @TABLE IS 'Contains timezone usage information.';
+    COMMENT ON COLUMN @TABLE.TZ_USAGE_CODE IS 'Primary key used to relate parameters other entities';
+    COMMENT ON COLUMN @TABLE.TZ_USAGE_ID   IS 'Timezone usage text identifier';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Timezone usage text description';
+    COMMIT;
+    
+    '''
+    
+    sys.stderr.write("Building tzUsageLoadTemplate\n")
+    tzUsageLoadTemplate = ''
+    for i in range(len(tzUsages)) :
+        code = i+1
+        tzUsageLoadTemplate +="INSERT INTO @tzUsageTableName (TZ_USAGE_CODE, TZ_USAGE_ID, DESCRIPTION) VALUES (\n"
+        tzUsageLoadTemplate +="\t%d,\n" % code
+        tzUsageLoadTemplate +="\t'%s',\n" % tzUsages[i]["ID"]
+        tzUsageLoadTemplate +="\t'%s'\n" % tzUsages[i]["DESCRIPTION"]
+        tzUsageLoadTemplate +=");\n"
+    tzUsageLoadTemplate +="COMMIT;\n"
+    
+    sys.stderr.write("Building qScreenedCreationTemplate\n")
+    qScreenedCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           SCREENED_ID   VARCHAR2(16)  NOT NULL,
+           DESCRIPTION   VARCHAR2(80),
+           CONSTRAINT @TABLE_PK PRIMARY KEY (SCREENED_ID)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 10K
+              NEXT 10K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE               IS 'Contains valid values for the screened component of CWMS data quality flags';
+    COMMENT ON COLUMN @TABLE.SCREENED_ID   IS 'Text identifier of screened component and primary key';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Text description of screened component';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building qScreenedLoadTemplate\n")
+    qScreenedLoadTemplate = ''
+    for code, id, description in q_screened["values"] :
+        qScreenedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
+    qScreenedLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building qValidityCreationTemplate\n")
+    qValidityCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           VALIDITY_ID   VARCHAR2(16)  NOT NULL,
+           DESCRIPTION   VARCHAR2(80),
+           CONSTRAINT @TABLE_PK PRIMARY KEY (VALIDITY_ID)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 10K
+              NEXT 10K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE               IS 'Contains valid values for the validity component of CWMS data quality flags';
+    COMMENT ON COLUMN @TABLE.VALIDITY_ID   IS 'Text identifier of validity component and primary key';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION   IS 'Text description of validity component';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building qValidityLoadTemplate\n")
+    qValidityLoadTemplate = ''
+    for code, id, description in q_validity["values"] :
+        qValidityLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
+    qValidityLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building qRangeCreationTemplate\n")
+    qRangeCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           RANGE_ID    VARCHAR2(16)  NOT NULL,
+           DESCRIPTION VARCHAR2(80),
+           CONSTRAINT @TABLE_PK PRIMARY KEY (RANGE_ID)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 10K
+              NEXT 10K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE             IS 'Contains valid values for the range component of CWMS data quality flags';
+    COMMENT ON COLUMN @TABLE.RANGE_ID    IS 'Text identifier of range component and primary key';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Text description of range component';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building qRangeLoadTemplate\n")
+    qRangeLoadTemplate = ''
+    for code, id, description in q_value_range["values"] :
+        qRangeLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
+    qRangeLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building qChangedCreationTemplate\n")
+    qChangedCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           CHANGED_ID   VARCHAR2(16)  NOT NULL,
+           DESCRIPTION  VARCHAR2(80),
+           CONSTRAINT @TABLE_PK PRIMARY KEY (CHANGED_ID)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 10K
+              NEXT 10K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE              IS 'Contains valid values for the changed component of CWMS data quality flags';
+    COMMENT ON COLUMN @TABLE.CHANGED_ID   IS 'Text identifier of changed component and primary key';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION  IS 'Text description of changed component';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building qChangedLoadTemplate\n")
+    qChangedLoadTemplate = ''
+    for code, id, description in q_different["values"] :
+        qChangedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
+    qChangedLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building qReplCauseCreationTemplate\n")
+    qReplCauseCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           REPL_CAUSE_ID   VARCHAR2(16)  NOT NULL,
+           DESCRIPTION     VARCHAR2(80),
+           CONSTRAINT @TABLE_PK PRIMARY KEY (REPL_CAUSE_ID)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 10K
+              NEXT 10K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                 IS 'Contains valid values for the replacement cause component of CWMS data quality flags';
+    COMMENT ON COLUMN @TABLE.REPL_CAUSE_ID   IS 'Text identifier of replacement cause component and primary key';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION     IS 'Text description of replacement cause component';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building qReplCauseLoadTemplate\n")
+    qReplCauseLoadTemplate = ''
+    for code, id, description in q_replacement_cause["values"] :
+        qReplCauseLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
+    qReplCauseLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building qReplMethodCreationTemplate\n")
+    qReplMethodCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           REPL_METHOD_ID   VARCHAR2(16)  NOT NULL,
+           DESCRIPTION      VARCHAR2(80),
+           CONSTRAINT @TABLE_PK PRIMARY KEY (REPL_METHOD_ID)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 10K
+              NEXT 10K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                  IS 'Contains valid values for the replacement method component of CWMS data quality flags';
+    COMMENT ON COLUMN @TABLE.REPL_METHOD_ID   IS 'Text identifier of replacement method component and primary key';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION      IS 'Text description of replacement method component';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building qReplMethodLoadTemplate\n")
+    qReplMethodLoadTemplate = ''
+    for code, id, description in q_replacement_method["values"] :
+        qReplMethodLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
+    qReplMethodLoadTemplate += "COMMIT;\n"
             
-
-
-#------------------------------------------------------------------------------
-# Redirect stdout to the temp file
-#------------------------------------------------------------------------------
-sys.stdout = open(tempFilename, "w")
-
-#print prefix[ALL] + "SET TIME ON"
-#print "BUILDCWMS~SPOOL %s" % logFileName["BUILDCWMS"]
-#print "BUILDUSER~SPOOL %s" % logFileName["BUILDUSER"]
-#print "DROPCWMS~SPOOL %s"  % logFileName["DROPCWMS"]
-#print "DROPUSER~SPOOL %s"  % logFileName["DROPUSER"]
-#print prefix[ALL] + "SELECT SYSDATE FROM DUAL;"
-#print prefix[ALL] + "SET ECHO ON"
-print prefix[ALL] + "SET SERVEROUTPUT ON"
-#print prefix[ALL] + "BEGIN DBMS_OUTPUT.ENABLE(20000); END;"
-#print prefix[ALL] + "/"
-
-for table in tables_rev :
-    tableName = eval("%sTableName" % table)
-
-    if   tableName.startswith("CWMS") : tableSpaceName = cwmsTableSpaceName
-    elif tableName.startswith("AT")   : tableSpaceName = atTableSpaceName
-    else : raise Exception("Don't know what tablespace to use for %s" % tableName)
-    #if "TSV" in tableName or tableName.startswith("CWMS_DATA_Q") : tableSpaceName = tsTableSpaceName
-
-    if schema[table] == "CWMS"  : thisPrefix = prefix[CWMS]
-    else                        : thisPrefix = prefix[USER]
-    dropPrefix = thisPrefix.replace("BUILD", "DROP")
-    lines = eval("%sCreationTemplate.split('\\n')" % table)
-    for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
-    exec("%sCreationTemplate = '\\n'.join(lines)" % table)
-    exec("%sCreationStr = %sCreationTemplate.replace('@TABLE', '%s')" % (table, table, tableName))
-    exec("%sCreationStr = %sCreationStr.replace('@DATASPACE', '%s')" % (table, table, tableSpaceName))
-    try :
-        lines = eval("%sLoadTemplate.split('\\n')" % table)
+    sys.stderr.write("Building qTestFailedCreationTemplate\n")
+    qTestFailedCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           TEST_FAILED_ID   VARCHAR2(125)  NOT NULL,
+           DESCRIPTION      VARCHAR2(80),
+           CONSTRAINT @TABLE_PK PRIMARY KEY (TEST_FAILED_ID)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 10K
+              NEXT 10K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                  IS 'Contains valid values for the test failed component of CWMS data quality flags';
+    COMMENT ON COLUMN @TABLE.TEST_FAILED_ID   IS 'Text identifier of test failed component and primary key';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION      IS 'Text description of test failed component';
+    
+    COMMIT;
+    '''
+    
+    sys.stderr.write("Building qTestFailedLoadTemplate\n")
+    qTestFailedLoadTemplate = ''
+    for code, id, description in q_test_failed["values"] :
+        qTestFailedLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
+    qTestFailedLoadTemplate += "COMMIT;\n"
+            
+    sys.stderr.write("Building qProtectionCreationTemplate\n")
+    qProtectionCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           PROTECTION_ID   VARCHAR2(16)  NOT NULL,
+           DESCRIPTION     VARCHAR2(80),
+           CONSTRAINT @TABLE_PK PRIMARY KEY (PROTECTION_ID)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 10K
+              NEXT 10K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                 IS 'Contains valid values for the protection component of CWMS data quality flags';
+    COMMENT ON COLUMN @TABLE.PROTECTION_ID   IS 'Text identifier of protection component and primary key';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION     IS 'Text description of protection component';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building qProtectionLoadTemplate\n")
+    qProtectionLoadTemplate = ''
+    for code, id, description in q_protection["values"] :
+        qProtectionLoadTemplate += "INSERT INTO @TABLE VALUES('%s', '%s');\n" % (id, description)
+    qProtectionLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building qualityCreationTemplate\n")
+    qualityCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           QUALITY_CODE   NUMBER(10)    NOT NULL,
+           SCREENED_ID    VARCHAR2(16)  NOT NULL,
+           VALIDITY_ID    VARCHAR2(16)  NOT NULL,
+           RANGE_ID       VARCHAR2(16)  NOT NULL,
+           CHANGED_ID     VARCHAR2(16)  NOT NULL,
+           REPL_CAUSE_ID  VARCHAR2(16)  NOT NULL,
+           REPL_METHOD_ID VARCHAR2(16)  NOT NULL,
+           TEST_FAILED_ID VARCHAR2(125) NOT NULL,
+           PROTECTION_ID  VARCHAR2(16)  NOT NULL,
+           CONSTRAINT @TABLE_PK   PRIMARY KEY (QUALITY_CODE)
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 300K
+              NEXT 300K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    -------------------------------
+    -- @TABLE constraints  --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (SCREENED_ID   ) REFERENCES @qScreenedTableName   (SCREENED_ID   );
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (PROTECTION_ID ) REFERENCES @qProtectionTableName (PROTECTION_ID );
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK3 FOREIGN KEY (VALIDITY_ID   ) REFERENCES @qValidityTableName   (VALIDITY_ID   );
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK4 FOREIGN KEY (RANGE_ID      ) REFERENCES @qRangeTableName      (RANGE_ID      );
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK5 FOREIGN KEY (CHANGED_ID    ) REFERENCES @qChangedTableName    (CHANGED_ID    );
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK6 FOREIGN KEY (REPL_CAUSE_ID ) REFERENCES @qReplCauseTableName  (REPL_CAUSE_ID );
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK7 FOREIGN KEY (REPL_METHOD_ID) REFERENCES @qReplMethodTableName (REPL_METHOD_ID);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK8 FOREIGN KEY (TEST_FAILED_ID) REFERENCES @qTestFailedTableName (TEST_FAILED_ID);
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                IS 'Contains CWMS data quality flags';
+    COMMENT ON COLUMN @TABLE.QUALITY_CODE   IS 'Quality value as an unsigned integer and primary key for relating quality to other entities';
+    COMMENT ON COLUMN @TABLE.SCREENED_ID    IS 'Foreign key referencing @qScreenedTableName table by its primary key';
+    COMMENT ON COLUMN @TABLE.VALIDITY_ID    IS 'Foreign key referencing @qValidityTableName table by its primary key';
+    COMMENT ON COLUMN @TABLE.RANGE_ID       IS 'Foreign key referencing @qRangeTableName table by its primary key';
+    COMMENT ON COLUMN @TABLE.CHANGED_ID     IS 'Foreign key referencing @qChangedTableName table by its primary key';
+    COMMENT ON COLUMN @TABLE.REPL_CAUSE_ID  IS 'Foreign key referencing @qReplCauseTableName table by its primary key';
+    COMMENT ON COLUMN @TABLE.REPL_METHOD_ID IS 'Foreign key referencing @qReplMethodTableName table by its primary key';
+    COMMENT ON COLUMN @TABLE.TEST_FAILED_ID IS 'Foreign key referencing @qTestFailedTableName table by its primary key';
+    COMMENT ON COLUMN @TABLE.PROTECTION_ID  IS 'Foreign key referencing @qProtectionTableName table by its primary key';
+    COMMIT;
+    '''
+    sys.stderr.write("Building qualityLoadFile\n")
+    qualityLoadFilename = "qualityLoader.ctl"
+    qualityLoadFile = open(qualityLoadFilename, "w")
+    qualityLoadFile.write('''load data
+      infile *
+      into table cwms_data_quality
+      fields terminated by ","
+      (QUALITY_CODE,SCREENED_ID,VALIDITY_ID,RANGE_ID,CHANGED_ID,REPL_CAUSE_ID,REPL_METHOD_ID,TEST_FAILED_ID,PROTECTION_ID)
+    begindata
+    ''')
+    
+    qualityLoadFile.write("%lu,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
+        0,                                    # unsigned value
+        q_screened["values"][0][1],           # screened code
+        q_validity["values"][0][1],           # validity code
+        q_value_range["values"][0][1],        # range code
+        q_different["values"][0][1],          # changed code
+        q_replacement_cause["values"][0][1],  # replacement cause code
+        q_replacement_method["values"][0][1], # replacement method code
+        q_test_failed["values"][0][1],        # test failed code
+        q_protection["values"][0][1]))        # protection code
+        
+    for v in range(len(q_validity["values"])) :
+        for r in range(len(q_value_range["values"])) :
+            for d in range(len(q_different["values"])) :
+                for c in range(len(q_replacement_cause["values"])) :
+                    if (d > 0) != (c > 0) : continue
+                    for m in range(len(q_replacement_method["values"])) :
+                        if (d > 0) != (m > 0) : continue
+                        for t in range(len(q_test_failed["values"])) :
+                            for p in range(len(q_protection["values"])) :
+                                value = 0L \
+                                    | (q_screened["values"][1][0] << q_screened["shift"]) \
+                                    | (q_validity["values"][v][0] << q_validity["shift"]) \
+                                    | (q_value_range["values"][r][0] << q_value_range["shift"]) \
+                                    | (q_different["values"][d][0] << q_different["shift"]) \
+                                    | (q_replacement_cause["values"][c][0] << q_replacement_cause["shift"]) \
+                                    | (q_replacement_method["values"][m][0] << q_replacement_method["shift"]) \
+                                    | (q_test_failed["values"][t][0] << q_test_failed["shift"]) \
+                                    | (q_protection["values"][p][0] << q_protection["shift"])
+                                qualityLoadFile.write("%lu,%s,%s,%s,%s,%s,%s,%s,%s\n" % (
+                                    value,                                # unsigned value
+                                    q_screened["values"][1][1],           # screened code
+                                    q_validity["values"][v][1],           # validity code
+                                    q_value_range["values"][r][1],        # range code
+                                    q_different["values"][d][1],          # changed code
+                                    q_replacement_cause["values"][c][1],  # replacement cause code
+                                    q_replacement_method["values"][m][1], # replacement method code
+                                    q_test_failed["values"][t][1],        # test failed code
+                                    q_protection["values"][p][1]))        # protection code
+            
+    qualityLoadFile.close()
+    
+    sys.stderr.write("Building logMessageTypesCreationTemplate\n")
+    logMessageTypesCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           MESSAGE_TYPE_CODE NUMBER(2)    NOT NULL,
+           MESSAGE_TYPE_ID   VARCHAR2(32) NOT NULL
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 1K
+              NEXT 1K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    -------------------------------
+    -- @TABLE constraints  --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (MESSAGE_TYPE_CODE);
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                   IS 'Contains valid values for the MSG_TYPE field of logged status messages';
+    COMMENT ON COLUMN @TABLE.MESSAGE_TYPE_CODE IS 'Numeric code corresponding to the message type name';
+    COMMENT ON COLUMN @TABLE.MESSAGE_TYPE_ID   IS 'The message type name';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building logMessageTypesLoadTemplate\n")
+    logMessageTypesLoadTemplate = ''
+    for code, id in logMessageTypes :
+        logMessageTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
+    logMessageTypesLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building logMessagePropTypesCreationTemplate\n")
+    logMessagePropTypesCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           PROP_TYPE_CODE NUMBER(1)   NOT NULL,
+           PROP_TYPE_ID   VARCHAR2(8) NOT NULL
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 1K
+              NEXT 1K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    -------------------------------
+    -- @TABLE constraints  --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (PROP_TYPE_CODE);
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                IS 'Contains valid values for the PROP_TYPE field of logged status message properties';
+    COMMENT ON COLUMN @TABLE.PROP_TYPE_CODE IS 'Numeric code corresponding to the property type name';
+    COMMENT ON COLUMN @TABLE.PROP_TYPE_ID   IS 'The property type name';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building logMessagePropTypesLoadTemplate\n")
+    logMessagePropTypesLoadTemplate = ''
+    for code, id in logMessagePropTypes :
+        logMessagePropTypesLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
+    logMessagePropTypesLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building intpolateUnitsCreationTemplate\n")
+    interpolateUnitsCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE 
+       (
+           INTERPOLATE_UNITS_CODE NUMBER(1)   NOT NULL,
+           INTERPOLATE_UNITS_ID   VARCHAR2(16) NOT NULL
+       )
+           PCTFREE 10
+           PCTUSED 40
+           INITRANS 1
+           MAXTRANS 255
+           TABLESPACE @DATASPACE
+           STORAGE 
+       ( 
+              INITIAL 1K
+              NEXT 1K
+              MINEXTENTS 1
+              MAXEXTENTS 200
+              PCTINCREASE 25
+              FREELISTS 1
+              FREELIST GROUPS 1
+              BUFFER_POOL DEFAULT
+       );
+       
+    -------------------------------
+    -- @TABLE constraints  --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (INTERPOLATE_UNITS_CODE);
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                       IS 'Contains valid values for time series interpolation units';
+    COMMENT ON COLUMN @TABLE.INTERPOLATE_UNITS_CODE IS 'Numeric code corresponding to the interpolation units';
+    COMMENT ON COLUMN @TABLE.INTERPOLATE_UNITS_ID   IS 'The interpolation units';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building interpolateUnitsLoadTemplate\n")
+    interpolateUnitsLoadTemplate = ''
+    for code, id in interpolateUnits :
+        interpolateUnitsLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s');\n" % (code, id)
+    interpolateUnitsLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building displayUnitsCreationTemplate\n")
+    displayUnitsCreationTemplate = \
+    '''
+    ---------------------------------
+    -- AT_DISPLAY_UNITS table
+    -- 
+    CREATE TABLE AT_DISPLAY_UNITS
+    (
+      DB_OFFICE_CODE     NUMBER                     NOT NULL,
+      PARAMETER_CODE     NUMBER                     NOT NULL,
+      UNIT_SYSTEM        VARCHAR2(2 BYTE)           NOT NULL,
+      DISPLAY_UNIT_CODE  NUMBER                     NOT NULL
+    )
+    TABLESPACE @DATASPACE
+    PCTUSED    0
+    PCTFREE    10
+    INITRANS   1
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    LOGGING 
+    NOCOMPRESS 
+    NOCACHE
+    NOPARALLEL
+    MONITORING;
+    
+    
+    CREATE UNIQUE INDEX AT_DISPLAY_UNITS_PK1 ON AT_DISPLAY_UNITS
+    (DB_OFFICE_CODE, PARAMETER_CODE, UNIT_SYSTEM)
+    LOGGING
+    TABLESPACE @DATASPACE
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          64K
+                MINEXTENTS       1
+                MAXEXTENTS       2147483645
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    NOPARALLEL;
+    
+    
+    ALTER TABLE AT_DISPLAY_UNITS ADD (
+      CONSTRAINT AT_DISPLAY_UNITS_PK1
+     PRIMARY KEY
+     (DB_OFFICE_CODE, PARAMETER_CODE, UNIT_SYSTEM)
+        USING INDEX 
+        tablespace @DATASPACE
+        PCTFREE    10
+        INITRANS   2
+        MAXTRANS   255
+        STORAGE    (
+                    INITIAL          64K
+                    MINEXTENTS       1
+                    MAXEXTENTS       2147483645
+                    PCTINCREASE      0
+                   ));
+    
+    
+    ALTER TABLE AT_DISPLAY_UNITS ADD (
+      CONSTRAINT AT_DISPLAY_UNITS_FK02 
+     FOREIGN KEY (DISPLAY_UNIT_CODE) 
+     REFERENCES CWMS_UNIT (UNIT_CODE));
+    
+    ALTER TABLE AT_DISPLAY_UNITS ADD (
+      CONSTRAINT AT_DISPLAY_UNITS_FK01 
+     FOREIGN KEY (PARAMETER_CODE) 
+     REFERENCES AT_PARAMETER (PARAMETER_CODE));
+    '''
+    
+    sys.stderr.write("Building displayUnitsLoadTemplate\n")
+    displayUnitsLoadTemplate = ''
+    
+    for k in range(len(office_ids)) :
+        dbOfcCode = db_office_code[office_ids[k]]
+        displayUnitsLoadTemplate +="DECLARE\n"
+        displayUnitsLoadTemplate +="BEGIN\n"
+        displayUnitsLoadTemplate +="   INSERT INTO at_display_units\n"
+        displayUnitsLoadTemplate +="      SELECT %s, a.parameter_code, 'EN', b.display_unit_code_en\n" % (dbOfcCode)
+        displayUnitsLoadTemplate +="        FROM at_parameter a, cwms_base_parameter b\n"
+        displayUnitsLoadTemplate +="       WHERE a.base_parameter_code = b.base_parameter_code\n"
+        displayUnitsLoadTemplate +="         AND a.sub_parameter_id IS NULL;\n"
+        displayUnitsLoadTemplate +="\n"
+        displayUnitsLoadTemplate +="   INSERT INTO at_display_units\n"
+        displayUnitsLoadTemplate +="      SELECT %s, a.parameter_code, 'SI', b.display_unit_code_si\n" % (dbOfcCode)
+        displayUnitsLoadTemplate +="        FROM at_parameter a, cwms_base_parameter b\n"
+        displayUnitsLoadTemplate +="       WHERE a.base_parameter_code = b.base_parameter_code\n"
+        displayUnitsLoadTemplate +="         AND a.sub_parameter_id IS NULL;\n"
+        displayUnitsLoadTemplate +="END;\n"
+        displayUnitsLoadTemplate +="/\n"
+        #
+        unitSys = ['SI', 'EN']
+        for i in range(len(subParameters)) :
+            baseCode, baseParamId, subParamId, longName, siUnitId, enUnitId = subParameters[i]
+            dispUnitId =[siUnitId, enUnitId]
+            for j in range(len(unitSys)) :
+                displayUnitsLoadTemplate +="INSERT INTO at_display_units\n"
+                displayUnitsLoadTemplate +="            (db_office_code, parameter_code, unit_system,\n"
+                displayUnitsLoadTemplate +="             display_unit_code\n"
+                displayUnitsLoadTemplate +="            )\n"
+                displayUnitsLoadTemplate +="     VALUES (%s, %s, '%s',\n" % (dbOfcCode, baseCode, unitSys[j])
+                displayUnitsLoadTemplate +="             (SELECT a.unit_code\n"
+                displayUnitsLoadTemplate +="                FROM cwms_unit a, at_parameter b, cwms_base_parameter c\n"
+                displayUnitsLoadTemplate +="               WHERE unit_id = '%s'\n" % dispUnitId[j]
+                displayUnitsLoadTemplate +="                 AND b.base_parameter_code = c.base_parameter_code\n"
+                displayUnitsLoadTemplate +="                 AND a.abstract_param_code = c.abstract_param_code\n"
+                displayUnitsLoadTemplate +="                 AND b.parameter_code = %s)\n" % (baseCode)
+                displayUnitsLoadTemplate +="            )\n"
+                displayUnitsLoadTemplate +="/\n"
+    displayUnitsLoadTemplate +="COMMIT;\n"
+    
+    
+    
+    sys.stderr.write("Building locationKindCreationTemplate\n")
+    locationKindCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+    (
+       LOCATION_KIND_CODE NUMBER(10)     NOT NULL,
+       OFFICE_CODE        NUMBER(10)     NOT NULL,
+       LOCATION_KIND_ID   VARCHAR2(32)   NOT NULL,
+       DESCRIPTION        VARCHAR2(256),
+       CONSTRAINT @TABLE_PK  PRIMARY KEY (LOCATION_KIND_CODE) USING INDEX,
+       CONSTRAINT @TABLE_U1  UNIQUE (OFFICE_CODE, LOCATION_KIND_ID)
+    )
+    tablespace @DATASPACE
+    PCTUSED    0
+    PCTFREE    10
+    INITRANS   1
+    MAXTRANS   255
+    STORAGE    (
+            INITIAL          10K
+            NEXT             10K
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+    LOGGING 
+    NOCOMPRESS 
+    NOCACHE
+    NOPARALLEL
+    MONITORING;
+    
+    -------------------------------
+    -- @TABLE constraints  --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK(TRIM(UPPER(LOCATION_KIND_ID)) = LOCATION_KIND_ID);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (OFFICE_CODE) REFERENCES CWMS_OFFICE (OFFICE_CODE);
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                    IS 'Contains location kinds.';
+    COMMENT ON COLUMN @TABLE.LOCATION_KIND_CODE IS 'Primary key relating location kinds to other entities.';
+    COMMENT ON COLUMN @TABLE.OFFICE_CODE        IS 'Office that generated/owns this kind code';
+    COMMENT ON COLUMN @TABLE.LOCATION_KIND_ID   IS 'Text name used as an input to the lookup.';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION        IS 'Optional description or comments.';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building locationKindLoadTemplate\n")
+    locationKindLoadTemplate = ''
+    for code, id, description in locationKinds :
+        locationKindLoadTemplate += "INSERT INTO @TABLE VALUES (%d, 53, '%s', '%s');\n" % (code, id, description)
+    locationKindLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building gageMethodCreationTemplate\n")
+    gageMethodCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+    (
+       METHOD_CODE NUMBER(10)    NOT NULL,
+       METHOD_ID   VARCHAR2(32)  NOT NULL,
+       DESCRIPTION VARCHAR2(256)
+    )
+    tablespace @DATASPACE
+    PCTUSED    0
+    PCTFREE    10
+    INITRANS   1
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          10K
+                NEXT             10K
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    LOGGING 
+    NOCOMPRESS 
+    NOCACHE
+    NOPARALLEL
+    MONITORING;
+    
+    -------------------------------
+    -- @TABLE constraints  --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY(METHOD_CODE) USING INDEX;
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_U1  UNIQUE (METHOD_ID) USING INDEX;
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(METHOD_ID) = METHOD_ID);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK2 CHECK (UPPER(METHOD_ID) = METHOD_ID);
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE             IS 'Contains inquiry and transmission methods gages.';
+    COMMENT ON COLUMN @TABLE.METHOD_CODE IS 'Primary key relating methods to other entities.'; 
+    COMMENT ON COLUMN @TABLE.METHOD_ID   IS 'Name of method (''MANUAL'', ''PHONE'', ''INTERNET'', ''GOES'', etc...).'; 
+    COMMENT ON COLUMN @TABLE.DESCRIPTION IS 'Optional description.';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building gageMethodLoadTemplate\n")
+    gageMethodLoadTemplate = ''
+    for code, id, description in gageMethods :
+        gageMethodLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s');\n" % (code, id, description)
+    gageMethodLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building gageTypeCreationTemplate\n")
+    gageTypeCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+    (
+       GAGE_TYPE_CODE      NUMBER(10)    NOT NULL,
+       GAGE_TYPE_ID        VARCHAR2(32)  NOT NULL,
+       MANUALLY_READ       VARCHAR2(1)   NOT NULL,
+       INQUIRY_METHOD      NUMBER(10),
+       TRANSMIT_METHOD     NUMBER(10), 
+       DESCRIPTION         VARCHAR2(256)
+    )
+    tablespace @DATASPACE
+    PCTUSED    0
+    PCTFREE    10
+    INITRANS   1
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          10K
+                NEXT             10K
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    LOGGING 
+    NOCOMPRESS 
+    NOCACHE
+    NOPARALLEL
+    MONITORING;
+    
+    
+    -------------------------------
+    -- @TABLE constraints  --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (GAGE_TYPE_CODE) USING INDEX;
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(GAGE_TYPE_ID) = GAGE_TYPE_ID);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK1 FOREIGN KEY (INQUIRY_METHOD) REFERENCES CWMS_GAGE_METHOD (METHOD_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_FK2 FOREIGN KEY (TRANSMIT_METHOD) REFERENCES CWMS_GAGE_METHOD (METHOD_CODE);
+    
+    -------------------------------
+    -- @TABLE indicies  --
+    --
+    CREATE UNIQUE INDEX @TABLE_U1 ON @TABLE (UPPER(GAGE_TYPE_ID))
+    LOGGING
+    tablespace @DATASPACE
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          10K
+                NEXT             1M
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    NOPARALLEL;
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                 IS 'Contains pre-defined gage types.';
+    COMMENT ON COLUMN @TABLE.GAGE_TYPE_CODE  IS 'Primary key used to relate gage types to other entities.';
+    COMMENT ON COLUMN @TABLE.GAGE_TYPE_ID    IS 'Name of gage type.';
+    COMMENT ON COLUMN @TABLE.MANUALLY_READ   IS 'Indicator of whether gage is manually read.';
+    COMMENT ON COLUMN @TABLE.INQUIRY_METHOD  IS 'Reference to method of inquiry.';
+    COMMENT ON COLUMN @TABLE.TRANSMIT_METHOD IS 'Reference to method of data transmission.';
+    COMMENT ON COLUMN @TABLE.DESCRIPTION     IS 'Optional description.';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building gageTypeLoadTemplate\n")
+    gageTypeLoadTemplate = ''
+    for code, id, manually_read, inquiry_method, tx_method, description in gageTypes :
+        if inquiry_method != 'NULL' :
+            inquiry_method = "(SELECT METHOD_CODE FROM CWMS_GAGE_METHOD WHERE METHOD_ID='%s')" % inquiry_method
+        if tx_method != 'NULL' :
+            tx_method = "(SELECT METHOD_CODE FROM CWMS_GAGE_METHOD WHERE METHOD_ID='%s')" % tx_method
+        gageTypeLoadTemplate += "INSERT INTO @TABLE VALUES (%d, '%s', '%s', %s, %s, '%s');\n" % \
+            (code, id, manually_read, inquiry_method, tx_method, description)
+    gageTypeLoadTemplate += "COMMIT;\n"
+    gageTypeLoadTemplate = gageTypeLoadTemplate.replace("'NULL'", "NULL")
+    
+    sys.stderr.write("Building nationCreationTemplate\n")
+    nationCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+    (
+       NATION_CODE VARCHAR2(2)  NOT NULL,
+       NATION_ID   VARCHAR2(48) NOT NULL
+    )
+    tablespace @DATASPACE
+    PCTUSED    0
+    PCTFREE    10
+    INITRANS   1
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          10K
+                NEXT             10K
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    LOGGING 
+    NOCOMPRESS 
+    NOCACHE
+    NOPARALLEL
+    MONITORING;
+    
+    -------------------------------
+    -- @TABLE constraints  --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (NATION_CODE) USING INDEX;
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK (TRIM(NATION_ID) = NATION_ID);
+    
+    -------------------------------
+    -- @TABLE indicies  --
+    --
+    CREATE UNIQUE INDEX @TABLE_U1 ON @TABLE (UPPER(NATION_ID))
+    LOGGING
+    TABLESPACE @DATASPACE
+    PCTFREE    10
+    INITRANS   2
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          10K
+                NEXT             1M
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    NOPARALLEL;
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE             IS 'Contains names of nations';
+    COMMENT ON COLUMN @TABLE.NATION_CODE IS 'Primary key used to relate nation to other entities';
+    COMMENT ON COLUMN @TABLE.NATION_ID   IS 'Name of nation';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building nationLoadTemplate\n")
+    nationLoadTemplate = ''
+    for code, id,  in nations :
+        nationLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s');\n" % (code, id.replace("'", "''"))
+    nationLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building streamTypeCreationTemplate\n")
+    streamTypeCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+    (
+      STREAM_TYPE_ID       VARCHAR2(4)  NOT NULL,
+      NUMBER_OF_CHANNELS   VARCHAR2(8)  NOT NULL,
+      ENTRENCHMENT_RATIO   VARCHAR2(32) NOT NULL,
+      WIDTH_TO_DEPTH_RATIO VARCHAR2(32) NOT NULL,
+      SINUOSITY            VARCHAR2(32) NOT NULL,
+      SLOPE                VARCHAR2(32) NOT NULL,
+      CHANNEL_MATERIAL     VARCHAR2(32) NOT NULL
+    )
+    tablespace @DATASPACE
+    PCTUSED    0
+    PCTFREE    10
+    INITRANS   1
+    MAXTRANS   255
+    STORAGE    (
+                INITIAL          10K
+                NEXT             10K
+                MINEXTENTS       1
+                MAXEXTENTS       UNLIMITED
+                PCTINCREASE      0
+                BUFFER_POOL      DEFAULT
+               )
+    LOGGING 
+    NOCOMPRESS 
+    NOCACHE
+    NOPARALLEL
+    MONITORING;
+    
+    -------------------------------
+    -- @TABLE constraints  --
+    --
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (STREAM_TYPE_ID) USING INDEX;
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                      IS 'Contains pre-defined stream types based on Rosgen Classification (see http://www.wildlandhydrology.com/assets/ARM_5-3.pdf)';
+    COMMENT ON COLUMN @TABLE.STREAM_TYPE_ID       IS 'Rosgen Classification identifier';
+    COMMENT ON COLUMN @TABLE.NUMBER_OF_CHANNELS   IS 'Single or multiple channels';
+    COMMENT ON COLUMN @TABLE.ENTRENCHMENT_RATIO   IS 'Channel entrenchment ratio range';
+    COMMENT ON COLUMN @TABLE.WIDTH_TO_DEPTH_RATIO IS 'Channel width/Depth ratio range';
+    COMMENT ON COLUMN @TABLE.SINUOSITY            IS 'Channel sinuosity range';
+    COMMENT ON COLUMN @TABLE.SLOPE                IS 'Channel slope';
+    COMMENT ON COLUMN @TABLE.CHANNEL_MATERIAL     IS 'Channel material';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building streamTypeLoadTemplate\n")
+    streamTypeLoadTemplate = ''
+    for v1, v2, v3, v4, v5, v6, v7 in streamTypes :
+        streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s');\n" % (v1, v2, v3, v4, v5, v6, v7)
+    streamTypeLoadTemplate += "COMMIT;\n"
+    
+    sys.stderr.write("Building msgIdCreationTemplate\n")
+    msgIdCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE
+    (
+       LAST_MILLIS INTEGER,
+       LAST_SEQ    INTEGER
+    )
+    tablespace @DATASPACE
+    /
+    
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE             IS 'Contains data to generate message ids based on millisecond and sequence within millisecond';
+    COMMENT ON COLUMN @TABLE.LAST_MILLIS IS 'Millisecond of last message id generated';
+    COMMENT ON COLUMN @TABLE.LAST_SEQ    IS 'Sequence number within millisecond for last message id generated';
+    
+    COMMIT;
+    '''
+    sys.stderr.write("Building msgIdLoadTemplate\n")
+    msgIdLoadTemplate = '''
+       INSERT INTO @TABLE VALUES (0, 0);
+       COMMIT;
+    '''
+    
+    sys.stderr.write("Building schemaObjVersionCreationTemplate\n")
+    schemaObjVersionCreationTemplate = \
+    '''
+    CREATE TABLE @TABLE (
+       HASH_CODE      VARCHAR2(40) NOT NULL,
+       OBJECT_TYPE    VARCHAR2(30) NOT NULL,
+       OBJECT_NAME    VARCHAR2(30) NOT NULL,
+       SCHEMA_VERSION VARCHAR2(64) NOT NULL,
+       COMMENTS       VARCHAR2(256),
+       CONSTRAINT CWMS_SCHEMA_VERSION_PK PRIMARY KEY (HASH_CODE, OBJECT_TYPE, OBJECT_NAME, SCHEMA_VERSION)
+    )
+    TABLESPACE @DATASPACE
+    /
+    CREATE INDEX @TABLE_IDX ON @TABLE (SCHEMA_VERSION)
+    TABLESPACE @DATASPACE
+    /
+    
+    COMMIT;
+    '''
+    
+    #==
+    #====
+    #======
+    #-----------------------------------------------------------------#
+    # output commands to drop and re-create, populate and test tables #
+    #-----------------------------------------------------------------#
+    tables_rev = tables[:]
+    tables_rev.reverse()
+    
+    sys.stderr.write("Outputting commands to drop and re-create tables.\n")
+    for table1 in tables :
+        for table2 in tables :
+            tableName = eval("%sTableName" % table2)
+            try :
+                cmdStr = "%sCreationTemplate = %sCreationTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
+                #sys.stderr.write("%s\n" % cmdStr);
+                exec(cmdStr)
+            except : 
+                sys.stderr.write("\nERROR : Variable %sCreationTemplate does not exist, cannot continue.\n" % table1)
+                sys.exit(-1)
+            try : 
+                cmdStr = "%sLoadTemplate  = %sLoadTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
+                #sys.stderr.write("%s\n" % cmdStr);
+                exec(cmdStr)
+            except : 
+                pass
+            try : 
+                cmdStr = "%sTestTemplate  = %sTestTemplate.replace('@%sTableName', '%s')" % (table1, table1, table2, tableName)
+                #sys.stderr.write("%s\n" % cmdStr);
+                exec(cmdStr)
+            except : 
+                pass
+                
+    
+    
+    #------------------------------------------------------------------------------
+    # Redirect stdout to the temp file
+    #------------------------------------------------------------------------------
+    sys.stdout = open(tempFilename, "w")
+    
+    #print prefix[ALL] + "SET TIME ON"
+    #print "BUILDCWMS~SPOOL %s" % logFileName["BUILDCWMS"]
+    #print "BUILDUSER~SPOOL %s" % logFileName["BUILDUSER"]
+    #print "DROPCWMS~SPOOL %s"  % logFileName["DROPCWMS"]
+    #print "DROPUSER~SPOOL %s"  % logFileName["DROPUSER"]
+    #print prefix[ALL] + "SELECT SYSDATE FROM DUAL;"
+    #print prefix[ALL] + "SET ECHO ON"
+    print prefix[ALL] + "SET SERVEROUTPUT ON"
+    #print prefix[ALL] + "BEGIN DBMS_OUTPUT.ENABLE(20000); END;"
+    #print prefix[ALL] + "/"
+    
+    for table in tables_rev :
+        tableName = eval("%sTableName" % table)
+    
+        if   tableName.startswith("CWMS") : tableSpaceName = cwmsTableSpaceName
+        elif tableName.startswith("AT")   : tableSpaceName = atTableSpaceName
+        else : raise Exception("Don't know what tablespace to use for %s" % tableName)
+        #if "TSV" in tableName or tableName.startswith("CWMS_DATA_Q") : tableSpaceName = tsTableSpaceName
+    
+        if schema[table] == "CWMS"  : thisPrefix = prefix[CWMS]
+        else                        : thisPrefix = prefix[USER]
+        dropPrefix = thisPrefix.replace("BUILD", "DROP")
+        lines = eval("%sCreationTemplate.split('\\n')" % table)
         for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
-        exec("%sLoadTemplate = '\\n'.join(lines)" % table)
-        exec("%sLoadStr = %sLoadTemplate.replace('@TABLE', '%s')" % (table, table, tableName))
-    except Exception, e:
-        pass
-    try :
-        lines = eval("%sTestTemplate.split('\\n')" % table)
-        for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
-        exec("%sTestTemplate = '\\n'.join(lines)" % table)
-        exec("%sTestStr = %sTestTemplate.replace('@TABLE', '%s')" % (table, table, tableName))
-    except :
-        pass
-    print dropPrefix
-    print "%sDROP TABLE %s;" % (dropPrefix, tableName)
-    print "%sCOMMIT;" % dropPrefix
-
-#==============================================================================
-# Create CWMS_SEQ for the specified db_office_id's offset...
-#==============================================================================
-dbMinValue =  db_office_code[db_office_id] + (100*db_cwms_count)
-dbStartIndex = dbMinValue
-dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
-print dropPrefix + "DROP SEQUENCE CWMS_SEQ;"
-print prefix[CWMS] + "CREATE SEQUENCE CWMS_SEQ"
-print prefix[CWMS] + "\tSTART WITH %s" % dbStartIndex 
-print prefix[CWMS] + "\tINCREMENT BY 1000"
-print prefix[CWMS] + "\tMINVALUE %s" % dbMinValue 
-print prefix[CWMS] + "\tMAXVALUE 1.0e38"
-print prefix[CWMS] + "\tNOCYCLE"
-print prefix[CWMS] + "\tCACHE 20"
-print prefix[CWMS] + "\tORDER;"
-
-#==============================================================================
-# Create any other sequences...
-#==============================================================================
-cycleStr = ['NOCYCLE', 'CYCLE']
-if len(cwmsSequences) :
+        exec("%sCreationTemplate = '\\n'.join(lines)" % table)
+        exec("%sCreationStr = %sCreationTemplate.replace('@TABLE', '%s')" % (table, table, tableName))
+        exec("%sCreationStr = %sCreationStr.replace('@DATASPACE', '%s')" % (table, table, tableSpaceName))
+        try :
+            lines = eval("%sLoadTemplate.split('\\n')" % table)
+            for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
+            exec("%sLoadTemplate = '\\n'.join(lines)" % table)
+            exec("%sLoadStr = %sLoadTemplate.replace('@TABLE', '%s')" % (table, table, tableName))
+        except Exception, e:
+            pass
+        try :
+            lines = eval("%sTestTemplate.split('\\n')" % table)
+            for i in range(len(lines)) : lines[i] = thisPrefix + lines[i]
+            exec("%sTestTemplate = '\\n'.join(lines)" % table)
+            exec("%sTestStr = %sTestTemplate.replace('@TABLE', '%s')" % (table, table, tableName))
+        except :
+            pass
+        print dropPrefix
+        print "%sDROP TABLE %s;" % (dropPrefix, tableName)
+        print "%sCOMMIT;" % dropPrefix
+    
+    #==============================================================================
+    # Create CWMS_SEQ for the specified db_office_id's offset...
+    #==============================================================================
+    dbMinValue =  db_office_code[db_office_id] + (100*db_cwms_count)
+    dbStartIndex = dbMinValue
     dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
-    for name, start, increment, minimum, maximum, cycle, cache in cwmsSequences : 
-        print dropPrefix + "DROP SEQUENCE %s;" % name
-        print prefix[CWMS] + "CREATE SEQUENCE %s" % name
-        print prefix[CWMS] + "\tSTART WITH %s" % `start`
-        print prefix[CWMS] + "\tINCREMENT BY %s" % `increment`
-        print prefix[CWMS] + "\tMINVALUE %s" % `minimum`
-        print prefix[CWMS] + "\tMAXVALUE %s" % `maximum`
-        print prefix[CWMS] + "\t%s" % cycleStr[cycle]
-        print prefix[CWMS] + "\tCACHE %s" % `cache`
-        print prefix[CWMS] + "\tORDER;"
+    print dropPrefix + "DROP SEQUENCE CWMS_SEQ;"
+    print prefix[CWMS] + "CREATE SEQUENCE CWMS_SEQ"
+    print prefix[CWMS] + "\tSTART WITH %s" % dbStartIndex 
+    print prefix[CWMS] + "\tINCREMENT BY 1000"
+    print prefix[CWMS] + "\tMINVALUE %s" % dbMinValue 
+    print prefix[CWMS] + "\tMAXVALUE 1.0e38"
+    print prefix[CWMS] + "\tNOCYCLE"
+    print prefix[CWMS] + "\tCACHE 20"
+    print prefix[CWMS] + "\tORDER;"
+    
+    #==============================================================================
+    # Create any other sequences...
+    #==============================================================================
+    cycleStr = ['NOCYCLE', 'CYCLE']
+    if len(cwmsSequences) :
+        dropPrefix = prefix[CWMS].replace('BUILD', 'DROP')
+        for name, start, increment, minimum, maximum, cycle, cache in cwmsSequences : 
+            print dropPrefix + "DROP SEQUENCE %s;" % name
+            print prefix[CWMS] + "CREATE SEQUENCE %s" % name
+            print prefix[CWMS] + "\tSTART WITH %s" % `start`
+            print prefix[CWMS] + "\tINCREMENT BY %s" % `increment`
+            print prefix[CWMS] + "\tMINVALUE %s" % `minimum`
+            print prefix[CWMS] + "\tMAXVALUE %s" % `maximum`
+            print prefix[CWMS] + "\t%s" % cycleStr[cycle]
+            print prefix[CWMS] + "\tCACHE %s" % `cache`
+            print prefix[CWMS] + "\tORDER;"
+    
+    print dropPrefix + "COMMIT;"
+    print prefix[CWMS] + "COMMIT;"
+    
+    dropPrefix = prefix[USER].replace('BUILD', 'DROP')
+    for table in tables :
+        print eval("%sCreationStr" % table)
+    #    if schema[table] == "CWMS" and userAccess[table] :
+    #        tableName = eval("%sTableName" % table)
+    #        print prefix[CWMS] + "GRANT SELECT ON %s TO %s;" % (tableName, userSchema)
+    #        print prefix[CWMS] + "GRANT REFERENCES ON %s TO %s;" % (tableName, userSchema)
+            # generate private synonyms in the user schema
+    #        print prefix[USER] + "CREATE OR REPLACE SYNONYM %s FOR %s.%s;" % (tableName, schema[table], tableName)
+    #        print dropPrefix + "DROP SYNONYM %s;" % (tableName)
+    print dropPrefix + "COMMIT;"
+    
+    for table in tables :
+        try :
+            print eval("%sLoadStr" % table)
+        except :
+            pass
+    for table in tables :
+        try :
+            print eval("%sTestStr" % table)
+        except :
+            pass
+    
+    #print prefix[ALL] + "SPOOL OFF"
+    #print prefix[ALL] + "SET ECHO OFF"
+    #print prefix[ALL] + "SET TIME OFF"
+    
+    #--------------------------------------------------------------------#
+    # read in the output we just generated and parse to individual files #
+    #--------------------------------------------------------------------#
+    sys.stderr.write("Splitting output in to files.")
+    sys.stdout.close()
+    sys.stdout = sys.__stdout__
+    sys.stderr.write("Reading from file %s\n" % tempFilename)
+    tempFile = open(tempFilename, "r")
+    lines = tempFile.readlines()
+    tempFile.close()
+    sys.stderr.write("Writing to files %s\n" % sqlFileName.values())
+    buildCwms = open(sqlFileName["BUILDCWMS"], "w")
+    #buildUser = open(sqlFileName["BUILDUSER"], "w")
+    dropCwms  = open(sqlFileName["DROPCWMS"], "w")
+    #dropUser  = open(sqlFileName["DROPUSER"], "w")
+    for line in lines :
+        prefix, line = line.split("~", 1)
+        if prefix.find("BUILDCWMS") != -1 : buildCwms.write(line)
+        #if prefix.find("BUILDUSER") != -1 : buildUser.write(line)
+        if prefix.find("DROPCWMS")  != -1 : dropCwms.write(line)
+        #if prefix.find("DROPUSER")  != -1 : dropUser.write(line)
+    buildCwms.close()
+    #buildUser.close()
+    dropCwms.close()
+    #dropUser.close()
+    os.remove(tempFilename)
 
-print dropPrefix + "COMMIT;"
-print prefix[CWMS] + "COMMIT;"
-
-dropPrefix = prefix[USER].replace('BUILD', 'DROP')
-for table in tables :
-    print eval("%sCreationStr" % table)
-#    if schema[table] == "CWMS" and userAccess[table] :
-#        tableName = eval("%sTableName" % table)
-#        print prefix[CWMS] + "GRANT SELECT ON %s TO %s;" % (tableName, userSchema)
-#        print prefix[CWMS] + "GRANT REFERENCES ON %s TO %s;" % (tableName, userSchema)
-        # generate private synonyms in the user schema
-#        print prefix[USER] + "CREATE OR REPLACE SYNONYM %s FOR %s.%s;" % (tableName, schema[table], tableName)
-#        print dropPrefix + "DROP SYNONYM %s;" % (tableName)
-print dropPrefix + "COMMIT;"
-
-for table in tables :
-    try :
-        print eval("%sLoadStr" % table)
-    except :
-        pass
-for table in tables :
-    try :
-        print eval("%sTestStr" % table)
-    except :
-        pass
-
-#print prefix[ALL] + "SPOOL OFF"
-#print prefix[ALL] + "SET ECHO OFF"
-#print prefix[ALL] + "SET TIME OFF"
-
-#--------------------------------------------------------------------#
-# read in the output we just generated and parse to individual files #
-#--------------------------------------------------------------------#
-sys.stderr.write("Splitting output in to files.")
-sys.stdout.close()
-sys.stdout = sys.__stdout__
-sys.stderr.write("Reading from file %s\n" % tempFilename)
-tempFile = open(tempFilename, "r")
-lines = tempFile.readlines()
-tempFile.close()
-sys.stderr.write("Writing to files %s\n" % sqlFileName.values())
-buildCwms = open(sqlFileName["BUILDCWMS"], "w")
-#buildUser = open(sqlFileName["BUILDUSER"], "w")
-dropCwms  = open(sqlFileName["DROPCWMS"], "w")
-#dropUser  = open(sqlFileName["DROPUSER"], "w")
-for line in lines :
-    prefix, line = line.split("~", 1)
-    if prefix.find("BUILDCWMS") != -1 : buildCwms.write(line)
-    #if prefix.find("BUILDUSER") != -1 : buildUser.write(line)
-    if prefix.find("DROPCWMS")  != -1 : dropCwms.write(line)
-    #if prefix.find("DROPUSER")  != -1 : dropUser.write(line)
-buildCwms.close()
-#buildUser.close()
-dropCwms.close()
-#dropUser.close()
-os.remove(tempFilename)
-
+if __name__ in ("__main__", "main") : main()
