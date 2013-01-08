@@ -23,8 +23,12 @@ exec("import %s" % moduleName)
 #-----------------------------------------#
 # checkout the resource file if it exists #
 #-----------------------------------------#
+oldFileData = None
 exists = os.path.exists(outputFile)
 if exists :
+	f = open(outputFile, "r")
+	oldFileData = f.read()
+	f.close()
 	cmd = "p4 edit %s" % outputFile
 	print("%s : %s" % (progName, cmd))
 	subprocess.call(cmd)
@@ -41,6 +45,9 @@ f.write("\n=PARAMETER/UNIT\n\n")
 for param_id, si_unit, en_unit in params :
 	f.write(format % (param_id, si_unit, en_unit))
 f.close()
+f = open(outputFile, "r")
+newFileData = f.read()
+f.close()
 #------------------------------------------#
 # add the resource file if it didn't exist #
 #------------------------------------------#
@@ -48,10 +55,13 @@ if not exists :
 	cmd = "p4 add %s" % outputFile
 	print("%s : %s" % (progName, cmd))
 	subprocess.call(cmd)
-#--------------------------#
-# submit the resource file #
-#--------------------------#
-cmd = "p4 submit -d auto_update %s" % outputFile
+#------------------------------------#
+# submit or revert the resource file #
+#------------------------------------#
+if newFileData == oldFileData :
+	cmd = "p4 revert %s" % outputFile
+else :	
+	cmd = "p4 submit -d auto_update %s" % outputFile
 print("%s : %s" % (progName, cmd))
 subprocess.call(cmd)
 
