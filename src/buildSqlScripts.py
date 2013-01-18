@@ -5709,6 +5709,8 @@ def main() :
     global db_office_id
     global office_ids
     global prefix
+    global testAccount
+    global db_cwms_count 
     #-------------------------#
     # Handle the command line #
     #-------------------------#
