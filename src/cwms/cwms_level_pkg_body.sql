@@ -579,7 +579,7 @@ is
    l_value_after  number;
 begin
    l_date := cwms_util.change_timezone(p_date, 'UTC', p_tz);      
-   l_intvl := top_of_interval_on_or_before(p_rec, l_date, p_tz);
+   l_intvl := top_of_interval_on_or_before(p_rec, l_date, 'UTC');
    l_after :=
       case upper(p_direction)
          when 'BEFORE' then false
