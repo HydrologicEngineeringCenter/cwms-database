@@ -182,7 +182,14 @@ begin
    ---------------------------------
    l_message_id := cwms_msg.log_message(
       p_component => 'Location Level Indicator', 
-      p_instance  => l_loc_lvl_ind.level_indicator_id, 
+      p_instance  => cwms_util.join_text(cwms_t_str_tab(
+                     l_loc_lvl_ind.location_id,
+                     l_loc_lvl_ind.parameter_id,
+                     l_loc_lvl_ind.parameter_type_id,
+                     l_loc_lvl_ind.duration_id,
+                     l_loc_lvl_ind.specified_level_id,
+                     l_loc_lvl_ind.level_indicator_id),
+                     '.'), 
       p_host      => utl_inaddr.get_host_name,
       p_port      => null, 
       p_reported  => systimestamp, 
