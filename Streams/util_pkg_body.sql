@@ -560,7 +560,8 @@ AS
    BEGIN
       FOR idx IN 1 .. p_tables.COUNT
       LOOP
-         l_table_name := p_tables (idx);
+         l_table_name :=
+            SUBSTR (p_tables (idx), INSTR (p_tables (idx), '.') + 1);
 
          FOR C
             IN (SELECT c.owner, c.table_name, c.constraint_name
@@ -592,7 +593,8 @@ AS
    BEGIN
       FOR idx IN 1 .. p_tables.COUNT
       LOOP
-         l_table_name := p_tables (idx);
+         l_table_name :=
+            SUBSTR (p_tables (idx), INSTR (p_tables (idx), '.') + 1);
 
          FOR c
             IN (SELECT d.table_owner, d.table_name, d.trigger_name
