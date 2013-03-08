@@ -2098,7 +2098,15 @@ procedure store_loc_lvl_indicator(
    p_maximum_age            in  interval day to second default null,
    p_fail_if_exists         in  varchar2 default 'F',
    p_ignore_nulls_on_update in  varchar2 default 'T',
-   p_office_id              in  varchar2 default null);
+   p_office_id              in  varchar2 default null); 
+/**
+ * Stores (inserts or updates) a location level indicator to the database
+ *
+ * @param p_loc_lvl_indicator  The location level indicator object to store
+ */
+procedure store_loc_lvl_indicator(
+   p_loc_lvl_indicator in  loc_lvl_indicator_t); 
+   
 /**
  * Stores (inserts or updates) a location level indicator to the database using simple types
  *

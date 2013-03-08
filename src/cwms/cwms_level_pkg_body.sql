@@ -5853,6 +5853,20 @@ begin
 end store_loc_lvl_indicator;
             
 --------------------------------------------------------------------------------
+-- PROCEDURE store_loc_lvl_indicator
+--          
+-- Creates or updates a Location Level Indicator in the database
+--------------------------------------------------------------------------------
+procedure store_loc_lvl_indicator(
+   p_loc_lvl_indicator in  loc_lvl_indicator_t)
+is
+   l_loc_lvl_indicator loc_lvl_indicator_t;
+begin
+   l_loc_lvl_indicator := l_loc_lvl_indicator;
+   l_loc_lvl_indicator.store;
+end store_loc_lvl_indicator;    
+
+--------------------------------------------------------------------------------
 -- PROCEDURE store_loc_lvl_indicator2
 --          
 -- Creates or updates a Location Level Indicator in the database using only text
