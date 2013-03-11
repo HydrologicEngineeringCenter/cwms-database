@@ -1060,20 +1060,9 @@ NOPARALLEL
 /
 
 CREATE UNIQUE INDEX at_loc_groups_u1 ON at_loc_group
-(loc_category_code, UPPER("LOC_GROUP_ID"))
+(db_office_code, loc_category_code, UPPER("LOC_GROUP_ID"))
 LOGGING
 TABLESPACE CWMS_20AT_DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
 /
 
 ALTER TABLE at_loc_group ADD (
@@ -1937,20 +1926,9 @@ NOPARALLEL
 /
 
 CREATE UNIQUE INDEX at_ts_groups_u1 ON at_ts_group
-(ts_category_code, UPPER("TS_GROUP_ID"))
+(db_office_code, ts_category_code, UPPER("TS_GROUP_ID"))
 LOGGING
 TABLESPACE CWMS_20AT_DATA
-PCTFREE    10
-INITRANS   2
-MAXTRANS   255
-STORAGE    (
-            INITIAL          64 k
-            MINEXTENTS       1
-            MAXEXTENTS       2147483645
-            PCTINCREASE      0
-            BUFFER_POOL      DEFAULT
-           )
-NOPARALLEL
 /
 
 ALTER TABLE at_ts_group ADD (
