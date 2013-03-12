@@ -6990,7 +6990,6 @@ end retrieve_loc_lvl_indicator;
 --------------------------------------------------------------------------------
 procedure delete_loc_lvl_indicator(
    p_loc_lvl_indicator_id   in  varchar2,
-   p_level_units_id         in  varchar2 default null,
    p_attr_value             in  number   default null,
    p_attr_units_id          in  varchar2 default null,
    p_attr_id                in  varchar2 default null,

@@ -2986,7 +2986,6 @@ function retrieve_loc_lvl_indicator(
  * Deletes a location level indicator and its associated conditions from the database
  *
  * @param p_loc_lvl_indicator_id   The location level indidicator identifier
- * @param p_level_units_id         The unit to retrieve values in
  * @param p_attr_value             The location level attribute value, if applicable
  * @param p_attr_units_id          The location level attribute unit, if applicable
  * @param p_attr_id                The location level attribute identifier, if applicable
@@ -2996,7 +2995,6 @@ function retrieve_loc_lvl_indicator(
  */
 procedure delete_loc_lvl_indicator(
    p_loc_lvl_indicator_id   in  varchar2,
-   p_level_units_id         in  varchar2 default null,
    p_attr_value             in  number   default null,
    p_attr_units_id          in  varchar2 default null,
    p_attr_id                in  varchar2 default null,
