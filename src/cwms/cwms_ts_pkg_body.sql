@@ -8411,8 +8411,10 @@ end retrieve_existing_item_counts;
                                   p_office_id     IN VARCHAR2 DEFAULT NULL)
       RETURN VARCHAR2
    IS
-      l_ts_code   NUMBER (10);
-      l_ts_id     VARCHAR2 (183);
+      l_ts_code     NUMBER (10);
+      l_ts_id       VARCHAR2 (183); 
+      l_parts       str_tab_t;
+      l_location_id varchar2(49);
    BEGIN
       -------------------
       -- sanity checks --
@@ -8439,7 +8441,21 @@ end retrieve_existing_item_counts;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
-            NULL;
+            ------------------------------------
+            -- see if the location is aliased --
+            ------------------------------------
+            l_parts := cwms_util.split_text(p_alias_id, '.');
+            if l_parts.count = 6 then
+               l_location_id := cwms_loc.get_location_id(l_parts(1), p_office_id);
+               if l_location_id is not null and l_location_id != l_parts(1) then
+                  l_parts(1) := l_location_id;
+                  l_ts_id := cwms_util.join_text(l_parts, '.');
+                  l_ts_code := cwms_ts.get_ts_code(l_ts_id, p_office_id);
+                  if l_ts_code is not null then
+                     return l_ts_id;
+                  end if;
+               end if;
+            end if;
          WHEN TOO_MANY_ROWS
          THEN
             cwms_err.raise (
@@ -8487,7 +8503,7 @@ end retrieve_existing_item_counts;
          THEN
             BEGIN
                l_ts_code :=
-                  get_ts_code_from_alias (p_ts_id_or_alias, p_office_id);
+                  get_ts_code_from_alias (p_ts_id_or_alias, null, null, p_office_id);
             EXCEPTION
                WHEN ts_id_not_found
                THEN
