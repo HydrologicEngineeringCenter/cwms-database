@@ -2500,6 +2500,20 @@ is
       return l_origin + p_int / 1440;
    end;
 begin
+   -------------------------------------------------------
+   -- get_location_level_codes() will try to create the --
+   -- specified level if it doesn't exist, so test here --
+   -------------------------------------------------------
+   begin
+      select specified_level_code
+        into l_spec_level_code
+        from at_specified_level
+       where upper(specified_level_id) = upper(p_spec_level_id)
+         and office_code = l_office_code;
+   exception
+      when no_data_found then
+         cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Specified level', p_spec_level_id);
+   end;
    -----------------------------------------------------------
    -- get the codes and effective dates for the time window --
    -----------------------------------------------------------
