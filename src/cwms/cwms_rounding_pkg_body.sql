@@ -31,7 +31,7 @@ end validate_rounding_spec;
 function round_nn_f(
    p_value         in  number,
    p_rounding_spec in  varchar2)
-return number   
+return number deterministic   
 is
    l_value      number;
    l_magnitude  binary_integer; -- integer power of 10
@@ -64,7 +64,7 @@ end round_nn_f;
 function round_nd_f(
    p_value         in  number,
    p_rounding_spec in  varchar2)
-return binary_double   
+return binary_double deterministic   
 is
 begin
    return cast(round_nn_f(p_value, p_rounding_spec) as binary_double);
@@ -75,7 +75,7 @@ end round_nd_f;
 function round_nt_f(
    p_value         in  number,
    p_rounding_spec in  varchar2)
-return varchar2   
+return varchar2 deterministic   
 is
 begin
    return to_char(round_nn_f(p_value, p_rounding_spec));
@@ -86,7 +86,7 @@ end round_nt_f;
 function round_dd_f(
    p_value         in  binary_double,
    p_rounding_spec in  varchar2)
-return binary_double   
+return binary_double deterministic   
 is
    l_value      binary_double;
    l_magnitude  binary_integer; -- integer power of 10
@@ -119,7 +119,7 @@ end round_dd_f;
 function round_dn_f(
    p_value         in  binary_double,
    p_rounding_spec in  varchar2)
-return number   
+return number deterministic   
 is
 begin
    return cast(round_dd_f(p_value, p_rounding_spec) as number);
@@ -130,7 +130,7 @@ end round_dn_f;
 function round_dt_f(
    p_value         in  binary_double,
    p_rounding_spec in  varchar2)
-return varchar2   
+return varchar2 deterministic   
 is
 begin
    return round_nt_f(cast(p_value as number), p_rounding_spec);
@@ -141,7 +141,7 @@ end round_dt_f;
 function round_td_f(
    p_value         in  varchar2,
    p_rounding_spec in  varchar2)
-return binary_double
+return binary_double deterministic
 is
 begin
    return round_nd_f(to_number(p_value), p_rounding_spec);
@@ -152,7 +152,7 @@ end round_td_f;
 function round_tn_f(
    p_value         in  varchar2,
    p_rounding_spec in  varchar2)
-return number
+return number deterministic
 is
 begin
    return round_nn_f(to_number(p_value), p_rounding_spec);
@@ -163,7 +163,7 @@ end round_tn_f;
 function round_tt_f(
    p_value         in  varchar2,
    p_rounding_spec in  varchar2)
-return varchar2
+return varchar2 deterministic
 is
 begin
    return round_nt_f(to_number(p_value), p_rounding_spec);

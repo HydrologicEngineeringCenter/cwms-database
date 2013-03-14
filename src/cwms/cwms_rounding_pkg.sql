@@ -24,7 +24,7 @@ as
 function round_nn_f(
    p_value         in  number,
    p_rounding_spec in  varchar2)
-return number;   
+return number deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
  *
@@ -36,7 +36,7 @@ return number;
 function round_nd_f(
    p_value         in  number,
    p_rounding_spec in  varchar2)
-return binary_double;   
+return binary_double deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
  *
@@ -48,7 +48,7 @@ return binary_double;
 function round_nt_f(
    p_value         in  number,
    p_rounding_spec in  varchar2)
-return varchar2;   
+return varchar2 deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
  *
@@ -60,7 +60,7 @@ return varchar2;
 function round_dd_f(
    p_value         in  binary_double,
    p_rounding_spec in  varchar2)
-return binary_double;   
+return binary_double deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
  *
@@ -72,7 +72,7 @@ return binary_double;
 function round_dn_f(
    p_value         in  binary_double,
    p_rounding_spec in  varchar2)
-return number;   
+return number deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
  *
@@ -84,7 +84,7 @@ return number;
 function round_dt_f(
    p_value         in  binary_double,
    p_rounding_spec in  varchar2)
-return varchar2;   
+return varchar2 deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
  *
@@ -96,7 +96,7 @@ return varchar2;
 function round_td_f(
    p_value         in  varchar2,
    p_rounding_spec in  varchar2)
-return binary_double;   
+return binary_double deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
  *
@@ -108,7 +108,7 @@ return binary_double;
 function round_tn_f(
    p_value         in  varchar2,
    p_rounding_spec in  varchar2)
-return number;   
+return number deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
  *
@@ -120,7 +120,7 @@ return number;
 function round_tt_f(
    p_value         in  varchar2,
    p_rounding_spec in  varchar2)
-return varchar2;   
+return varchar2 deterministic;   
 /**
  * Rounds a collection of values according to a rounding specification
  *
