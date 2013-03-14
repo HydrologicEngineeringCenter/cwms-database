@@ -1149,7 +1149,7 @@ AS
     *
     * @param p_cwms_ts_id       The time series identifier
     * @param p_units            The unit of the data values
-    * @param p_times            The UTC times of the data values
+    * @param p_times            The UTC times of the data values in Java milliseconds
     * @param p_values           The data values
     * @param p_qualities        The data quality codes for the data values
     * @param p_store_rule       The store rule to use
