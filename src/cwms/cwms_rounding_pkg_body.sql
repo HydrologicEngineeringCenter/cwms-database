@@ -31,7 +31,7 @@ end validate_rounding_spec;
 function round_f(
    p_value      in number,
    p_sig_digits in integer)
-return number
+return number deterministic
 is
    l_value      number;
    l_magnitude  binary_integer; -- integer power of 10
@@ -58,7 +58,7 @@ end round_f;
 function round_f(
    p_value      in binary_double,
    p_sig_digits in integer)
-return binary_double
+return binary_double deterministic
 is
    l_value      binary_double;
    l_magnitude  binary_integer; -- integer power of 10

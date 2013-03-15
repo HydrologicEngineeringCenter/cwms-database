@@ -26,7 +26,7 @@ as
 function round_f(
    p_value      in number,
    p_sig_digits in integer)
-return number;   
+return number deterministic;   
 /**
  * Returns a number rounded to a specified number of significant digits.  This differs
  * from the SQL round function in that it specifies the number of significant digits
@@ -40,7 +40,7 @@ return number;
 function round_f(
    p_value      in binary_double,
    p_sig_digits in integer)
-return binary_double;   
+return binary_double deterministic;   
 /**
  * Returns a number rounded according to a rounding specification.
  *
