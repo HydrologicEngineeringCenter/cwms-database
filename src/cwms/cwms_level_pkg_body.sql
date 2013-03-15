@@ -286,7 +286,7 @@ begin
          'TO_CWMS',
          p_attribute_units,
          p_attribute_parameter_code);
-      l_attribute_value := cwms_rounding.round_nn_f(p_attribute_value * l_factor + l_offset, '9999999999');
+      l_attribute_value := cwms_rounding.round_f(p_attribute_value * l_factor + l_offset, 12);
    end if;  
    begin    
       if p_match_date then
@@ -1432,7 +1432,7 @@ begin
          'TO_CWMS',
          p_attribute_units,
          l_attribute_parameter_code);
-      l_attribute_value := cwms_rounding.round_nn_f(p_attribute_value * l_attr_factor + l_attr_offset, '9999999999');
+      l_attribute_value := cwms_rounding.round_f(p_attribute_value * l_attr_factor + l_attr_offset, 12);
    end if;  
    --------------------------------------
    -- determine whether already exists --
@@ -2692,7 +2692,7 @@ begin
             'TO_CWMS',
             p_attribute_units,
             l_attribute_parameter_code);
-         l_attribute_value := cwms_rounding.round_nn_f(p_attribute_value * l_attribute_factor + l_attribute_offset, '9999999999');
+         l_attribute_value := cwms_rounding.round_f(p_attribute_value * l_attribute_factor + l_attribute_offset, 12);
       end if;
       --------------------------------------
       -- get the at_location_level record --
@@ -3818,7 +3818,7 @@ begin
     order by a_ll.attribute_value * c_uc.factor + c_uc.offset)
    loop     
       l_attribute_values.extend;
-      l_attribute_values(l_attribute_values.count) := cwms_rounding.round_nn_f(rec.attribute_value, '9999999999');
+      l_attribute_values(l_attribute_values.count) := cwms_rounding.round_f(rec.attribute_value, 9);
    end loop;
    p_attribute_values := l_attribute_values;    
 end retrieve_location_level_attrs;
@@ -4898,7 +4898,7 @@ begin
              || attribute_parameter_type_id
              || substr(''.'', 1, length(attribute_duration_id))
              ||attribute_duration_id as attribute_parameter_type_id,
-             cwms_rounding.round_nn_f(attribute_value * factor + offset, ''9999999999'') as attribute_value,
+             cwms_rounding.round_f(attribute_value * factor + offset, 9) as attribute_value,
              attribute_unit_id,
              cwms_util.change_timezone(location_level_date, ''UTC'', :p_timezone_id)
         from (  (  select o.office_code as office_code1,
@@ -5229,10 +5229,10 @@ begin
    -- get the loc_lvl_indicator code --
    ------------------------------------
    if p_attr_value is not null then
-      l_attr_value := cwms_rounding.round_nn_f(p_attr_value * l_factor + l_offset, '9999999999');
+      l_attr_value := cwms_rounding.round_f(p_attr_value * l_factor + l_offset, 12);
    end if;  
    if p_ref_attr_value is not null then
-      l_ref_attr_value := cwms_rounding.round_nn_f(p_ref_attr_value * l_factor + l_offset, '9999999999');
+      l_ref_attr_value := cwms_rounding.round_f(p_ref_attr_value * l_factor + l_offset, 12);
    end if;  
    begin    
       select level_indicator_code
@@ -5682,12 +5682,12 @@ begin
          null);
    end if;  
    if l_exists and l_ignore_nulls_on_update then
-      l_rec.attr_value               := nvl(cwms_rounding.round_nn_f(p_attr_value, '9999999999'), l_rec.attr_value);
+      l_rec.attr_value               := nvl(cwms_rounding.round_f(p_attr_value, 12), l_rec.attr_value);
       l_rec.attr_parameter_code      := nvl(p_attr_parameter_code,      l_rec.attr_parameter_code);
       l_rec.attr_parameter_type_code := nvl(p_attr_parameter_type_code, l_rec.attr_parameter_type_code);
       l_rec.attr_duration_code       := nvl(p_attr_duration_code,       l_rec.attr_duration_code);
       l_rec.ref_specified_level_code := nvl(p_ref_specified_level_code, l_rec.ref_specified_level_code);
-      l_rec.ref_attr_value           := nvl(cwms_rounding.round_nn_f(p_ref_attr_value, '9999999999'), l_rec.ref_attr_value);
+      l_rec.ref_attr_value           := nvl(cwms_rounding.round_f(p_ref_attr_value, 12), l_rec.ref_attr_value);
       l_rec.minimum_duration         := nvl(p_minimum_duration,         l_rec.minimum_duration);
       l_rec.maximum_age              := nvl(p_maximum_age,              l_rec.maximum_age);
    else     
@@ -5697,12 +5697,12 @@ begin
       l_rec.duration_code            := p_duration_code;
       l_rec.specified_level_code     := p_specified_level_code;
       l_rec.level_indicator_id       := upper(p_level_indicator_id);
-      l_rec.attr_value               := cwms_rounding.round_nn_f(p_attr_value, '9999999999');
+      l_rec.attr_value               := cwms_rounding.round_f(p_attr_value, 12);
       l_rec.attr_parameter_code      := p_attr_parameter_code;
       l_rec.attr_parameter_type_code := p_attr_parameter_type_code;
       l_rec.attr_duration_code       := p_attr_duration_code;
       l_rec.ref_specified_level_code := p_ref_specified_level_code;
-      l_rec.ref_attr_value           := cwms_rounding.round_nn_f(p_ref_attr_value, '9999999999');
+      l_rec.ref_attr_value           := cwms_rounding.round_f(p_ref_attr_value, 12);
       l_rec.minimum_duration         := p_minimum_duration;
       l_rec.maximum_age              := p_maximum_age;
    end if;  
@@ -6356,11 +6356,11 @@ begin
              attr_parameter_type_id,
              attr_duration_id,
              cwms_util.get_default_units(attr_parameter_id, p_unit_system) as attr_units_id,
-             cwms_rounding.round_nn_f(attr_value * attr_param.factor + attr_param.offset, '9999999999') as attr_value,
+             cwms_rounding.round_f(attr_value * attr_param.factor + attr_param.offset, 9) as attr_value,
              minimum_duration,
              maximum_age,
              ref_specified_level_id,
-             cwms_rounding.round_nn_f(ref_attr_value * attr_param.factor + attr_param.offset, '9999999999') as ref_attr_value,
+             cwms_rounding.round_f(ref_attr_value * attr_param.factor + attr_param.offset, 9) as ref_attr_value,
                  cursor (
                     select level_indicator_value,
                            expression,
@@ -6647,12 +6647,12 @@ begin
               l_attr_parameter_type_id,
               l_attr_duration_id,
               l_attr_units_id,
-              cwms_rounding.round_nn_f(l_attr_value, '9999999999'),
+              cwms_rounding.round_f(l_attr_value, 9),
               to_char(l_minimum_duration),            
               to_char(l_maximum_age),
               l_rate_of_change,
               l_ref_specified_level_id,
-              cwms_rounding.round_nn_f(l_ref_attribute_value, '9999999999'),
+              cwms_rounding.round_f(l_ref_attribute_value, 9),
               l_conditions_txt);            
    end loop;
    close l_cursor;
@@ -7178,7 +7178,7 @@ begin
                 o.attr_parameter_id,
                 o.attr_parameter_type_id,
                 o.attr_duration_id) as attribute_id,
-             cwms_rounding.round_nn_f(o.attr_value * cuc.factor + cuc.offset, '9999999999') as attribute_value,
+             cwms_rounding.round_f(o.attr_value * cuc.factor + cuc.offset, 9) as attribute_value,
              cuc.to_unit_id as attribute_units,
              o.get_indicator_values(
                 l_ts,
@@ -7381,7 +7381,7 @@ begin
                 o.attr_parameter_id,
                 o.attr_parameter_type_id,
                 o.attr_duration_id) as attribute_id,
-             cwms_rounding.round_nn_f(o.attr_value * cuc.factor + cuc.offset, '9999999999') as attribute_value,
+             cwms_rounding.round_f(o.attr_value * cuc.factor + cuc.offset, 9) as attribute_value,
              cuc.to_unit_id as attribute_units,
              o.get_max_indicator_values(
                 l_ts,
