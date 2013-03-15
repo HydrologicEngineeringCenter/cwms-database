@@ -14,6 +14,34 @@ create or replace package cwms_rounding
  */
 as
 /**
+ * Returns a number rounded to a specified number of significant digits.  This differs
+ * from the SQL round function in that it specifies the number of significant digits
+ * instead of the number of decimal places.
+ *                                                                                   
+ * @param p_value      The number to round as an Oracle NUMBER type
+ * @param p_sig_digits The number of significant digits to keep in the rounded number
+ *
+ * @return The rounded number as an Oracle NUMBER type
+ */
+function round_f(
+   p_value      in number,
+   p_sig_digits in integer)
+return number;   
+/**
+ * Returns a number rounded to a specified number of significant digits.  This differs
+ * from the SQL round function in that it specifies the number of significant digits
+ * instead of the number of decimal places.
+ *                                                                                   
+ * @param p_value      The number to round as an Oracle BINARY_DOUBLE type
+ * @param p_sig_digits The number of significant digits to keep in the rounded number
+ *
+ * @return The rounded number as an Oracle BINARY_DOUBLE type
+ */
+function round_f(
+   p_value      in binary_double,
+   p_sig_digits in integer)
+return binary_double;   
+/**
  * Returns a number rounded according to a rounding specification.
  *
  * @param p_value         The value to be rounded

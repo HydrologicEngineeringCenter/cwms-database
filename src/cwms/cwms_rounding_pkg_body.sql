@@ -27,6 +27,60 @@ begin
 end validate_rounding_spec;
 
 --------------------------------------------------------------------------------
+-- round_f
+function round_f(
+   p_value      in number,
+   p_sig_digits in integer)
+return number
+is
+   l_value      number;
+   l_magnitude  binary_integer; -- integer power of 10
+   l_dec_places binary_integer; -- decimal places to round input number to
+begin
+   if p_value is null then
+      l_value := null;
+   elsif p_value = 0 then
+      l_value := 0;      
+   else                
+      l_value      := p_value;
+      l_magnitude  := trunc(log(10, abs(l_value)));
+      if p_sig_digits <= 0 then
+         l_value := 0;
+      end if;
+      l_dec_places := p_sig_digits - l_magnitude - 1;
+      l_value := round(l_value, l_dec_places);
+   end if;
+   return l_value;
+end round_f;   
+
+--------------------------------------------------------------------------------
+-- round_f
+function round_f(
+   p_value      in binary_double,
+   p_sig_digits in integer)
+return binary_double
+is
+   l_value      binary_double;
+   l_magnitude  binary_integer; -- integer power of 10
+   l_dec_places binary_integer; -- decimal places to round input number to
+begin
+   if p_value is null then
+      l_value := null;
+   elsif p_value = 0 then
+      l_value := 0;      
+   else                
+      l_value      := p_value;
+      l_magnitude  := trunc(log(10, abs(l_value)));
+      if p_sig_digits <= 0 then
+         l_value := 0;
+      end if;
+      l_dec_places := p_sig_digits - l_magnitude - 1;
+      l_value := round(l_value, l_dec_places);
+   end if;
+   return l_value;
+end round_f;   
+
+--------------------------------------------------------------------------------
 -- round_nn_f
 function round_nn_f(
    p_value         in  number,
