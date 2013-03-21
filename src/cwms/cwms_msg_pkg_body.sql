@@ -4,16 +4,15 @@ create or replace package body cwms_msg
 as
 
 -------------------------------------------------------------------------------
--- FUNCTION GET_MSG_ID(...)
+-- FUNCTION GET_MSG_ID(...)  Parameter p_millis is deprecated and not used
 --
 function get_msg_id (p_millis in integer default null) return varchar2
 is
    pragma autonomous_transaction;
-   l_millis      integer := p_millis;
+   l_millis      integer;
    l_seq         integer;
    l_last_millis integer;
    l_last_seq    integer;
-   l_msg_id      varchar2(17);
 begin
    --------------------------
    -- synchronize the code --
@@ -22,22 +21,18 @@ begin
    ------------------------
    -- perform the action --
    ------------------------
-   if l_millis is null then
-      l_millis := cwms_util.current_millis;
-   end if;
+   l_millis := cwms_util.current_millis;
    select last_millis, last_seq into l_last_millis, l_last_seq from cwms_msg_id;
-   if l_millis = l_last_millis then
-      l_seq := l_last_seq + 1;
-   else
-      l_seq := 0;
-   end if;
+   l_seq := case l_millis > l_last_millis
+               when true then 0
+               else l_last_seq + 1
+            end;
    update cwms_msg_id set last_millis = l_millis, last_seq = l_seq;
-   l_msg_id := replace(to_char(l_millis)||'_'||to_char(l_seq, '000'), ' ', '');
    ---------------------------------
    -- release the lock and return --
    ---------------------------------
    commit;
-   return l_msg_id;
+   return replace(to_char(l_millis)||'_'||to_char(l_seq, '000000'), ' ', '');
 end;
 
 -------------------------------------------------------------------------------

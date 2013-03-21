@@ -122,7 +122,7 @@ msg_level_detailed constant integer :=  5;
 msg_level_verbose  constant integer :=  7;
 -- not documented
 function get_msg_id (
-   p_millis in integer default null) 
+   p_millis in integer default null) -- deprecated, no longer used
    return varchar2;
 -- not documented
 function get_queue_name(
