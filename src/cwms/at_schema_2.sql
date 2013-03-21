@@ -14,6 +14,7 @@ create index at_loc_lvl_indicator_u1 on at_loc_lvl_indicator (
 @@cwms/views/av_ts_alias.sql
 @@cwms/views/av_ts_grp_assgn.sql
 @@cwms/views/av_ts_cat_grp.sql
+@@cwms/views/av_loc_lvl_attribute.sql
 @@cwms/views/av_loc_lvl_ts_map.sql
 @@cwms/views/av_loc_lvl_cur_max_ind.sql
 ---------------------------------------------------------
