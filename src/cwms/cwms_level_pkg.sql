@@ -2273,7 +2273,7 @@ function cat_loc_lvl_indicator_codes(
  *   </tr>
  *   <tr>
  *     <td class="descr-center">17</td>
- *     <td class="descr">ref_attribute_value</td>
+ *     <td class="descr">ref_attr_value</td>
  *     <td class="descr">number</td>
  *     <td class="descr">The attribute value of the referenced location level</td>
  *   </tr>
@@ -2293,7 +2293,7 @@ function cat_loc_lvl_indicator_codes(
  *         </tr>
  *         <tr>
  *           <td class="descr-center">1</td>
- *           <td class="descr">indicator_value</td>
+ *           <td class="descr">level_indicator_value</td>
  *           <td class="descr">integer</td>
  *           <td class="descr">The indicator value</td>
  *         </tr>

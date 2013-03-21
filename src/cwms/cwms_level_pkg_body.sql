@@ -6200,11 +6200,11 @@ end cat_loc_lvl_indicator_codes;
 --  14 : minimum_duration       interval day(3) to second(0)
 --  15 : maximum_age            interval day(3) to second(0)
 --  16 : ref_specified_level_id varchar2(256)
---  17 : ref_attribute_value    number
+--  17 : ref_attr_value         number
 --  18 : conditions             sys_refcursor
 --          
 -- The cursor returned in field 18 contains 17 fields:
---   1 : indicator_value             integer  (1..5)
+--   1 : level_indicator_value       integer  (1..5)
 --   2 : expression                  varchar2(64)
 --   3 : comparison_operator_1       varchar2(2) (LT,LE,EQ,NE,GE,GT)
 --   4 : comparison_value_1          number
