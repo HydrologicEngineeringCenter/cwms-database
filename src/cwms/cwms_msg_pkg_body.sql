@@ -1451,10 +1451,17 @@ begin
                    ||'_'||l_queue_name;
    l_reg_info.extend();
    l_reg_info(1) := sys.aq$_reg_info(
-      name      => upper(l_queue_name||':'||l_subscriber_name),
-      namespace => dbms_aq.namespace_aq,
-      callback  => 'plsql://'||upper(p_procedure_name),
-      context   => hextoraw('ff'));
+      name                       => upper(l_queue_name||':'||l_subscriber_name),
+      namespace                  => dbms_aq.namespace_aq,
+      callback                   => 'plsql://'||upper(p_procedure_name),
+      context                    => hextoraw('ff'),
+      qosflags                   => dbms_aq.ntfn_qos_reliable + dbms_aq.ntfn_qos_payload,
+      timeout                    => 0,
+      ntfn_grouping_class        => dbms_aq.ntfn_grouping_class_time,
+      ntfn_grouping_value        => 1,
+      ntfn_grouping_type         => dbms_aq.ntfn_grouping_type_summary,
+      ntfn_grouping_start_time   => systimestamp,
+      ntfn_grouping_repeat_count => dbms_aq.ntfn_grouping_forever);
    return l_reg_info;
 end get_registration_info;
 
