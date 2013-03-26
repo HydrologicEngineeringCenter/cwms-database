@@ -2936,8 +2936,8 @@ as
       end if;
 
       l_obj.level_indicator_id := level_indicator_id;
-      l_obj.attr_value         := attr_value * l_factor + l_offset;
-      l_obj.ref_attr_value     := ref_attr_value * l_factor + l_offset;
+      l_obj.attr_value         := cwms_rounding.round_f(attr_value * l_factor + l_offset, 12);
+      l_obj.ref_attr_value     := cwms_rounding.round_f(ref_attr_value * l_factor + l_offset, 12);
       l_obj.minimum_duration   := minimum_duration;
       l_obj.maximum_age        := maximum_age;
       l_obj.conditions         := conditions;
@@ -3880,7 +3880,7 @@ as
            from cwms_duration d
           where upper(d.duration_id) = upper(self.attribute_duration_id);
 
-         select self.attribute_value * factor + offset
+         select cwms_rounding.round_f(self.attribute_value * factor + offset, 12)
            into l_attribute_value
            from cwms_unit_conversion cuc
           where from_unit_id = attribute_units_id
