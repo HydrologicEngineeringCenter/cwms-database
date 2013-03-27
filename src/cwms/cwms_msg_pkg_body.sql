@@ -1415,7 +1415,10 @@ is
    l_subscriber_name varchar2(30) := nvl(p_subscriber_name, dbms_random.string('l', 16));
    l_schema_name     varchar2(30);
    l_office_id       varchar2(16);
-   l_parts           str_tab_t;
+   l_parts           str_tab_t;  
+   l_prop_id         varchar2(256);
+   l_prop_val        varchar2(256);
+   l_interval        number;
 begin
    -----------------------------------------------------------------------------
    -- get the schema and office id, either from the queue name or environment --
@@ -1443,25 +1446,54 @@ begin
             l_office_id := cwms_util.user_office_id;
       end;
    end if;
+   l_prop_id := 'queues.'||lower(l_queue_name)||'.callback.interval.min_seconds';
    ----------------------------------------------------------------------
    -- (re)construct the queue name, including the schema and office id --
    ----------------------------------------------------------------------
    l_queue_name := l_schema_name
                    ||'.'||l_office_id
                    ||'_'||l_queue_name;
+   ---------------------------------------------                   
+   -- get the queue callback minimum interval --
+   ---------------------------------------------
+   l_prop_val := cwms_properties.get_property(
+      p_category  => 'CWMSDB', 
+      p_id        => l_prop_id, 
+      p_default   => '1', 
+      p_office_id => l_office_id);
+   begin
+      l_interval := to_number(l_prop_val);
+      if l_interval is null or l_interval != trunc(l_interval) then
+         cwms_err.raise('ERROR', 'Queue callback interval must be specified in integer seconds.');
+      end if;
+   exception        
+      when others then
+         cwms_err.raise('ERROR', l_prop_val||' is not a valid queue callback interval');
+   end;
+   ----------------------------------                      
+   -- create the registration info --
+   ----------------------------------                      
    l_reg_info.extend();
-   l_reg_info(1) := sys.aq$_reg_info(
-      name                       => upper(l_queue_name||':'||l_subscriber_name),
-      namespace                  => dbms_aq.namespace_aq,
-      callback                   => 'plsql://'||upper(p_procedure_name),
-      context                    => hextoraw('ff'),
-      qosflags                   => dbms_aq.ntfn_qos_reliable + dbms_aq.ntfn_qos_payload,
-      timeout                    => 0,
-      ntfn_grouping_class        => dbms_aq.ntfn_grouping_class_time,
-      ntfn_grouping_value        => 1,
-      ntfn_grouping_type         => dbms_aq.ntfn_grouping_type_summary,
-      ntfn_grouping_start_time   => systimestamp,
-      ntfn_grouping_repeat_count => dbms_aq.ntfn_grouping_forever);
+   if l_interval > 0 then
+      l_reg_info(1) := sys.aq$_reg_info(
+         name                       => upper(l_queue_name||':'||l_subscriber_name),
+         namespace                  => dbms_aq.namespace_aq,
+         callback                   => 'plsql://'||upper(p_procedure_name),
+         context                    => hextoraw('ff'),
+         qosflags                   => dbms_aq.ntfn_qos_reliable + dbms_aq.ntfn_qos_payload,
+         timeout                    => 0,
+         ntfn_grouping_class        => dbms_aq.ntfn_grouping_class_time,
+         ntfn_grouping_value        => l_interval,
+         ntfn_grouping_type         => dbms_aq.ntfn_grouping_type_summary,
+         ntfn_grouping_start_time   => systimestamp,
+         ntfn_grouping_repeat_count => dbms_aq.ntfn_grouping_forever);
+   else 
+      l_reg_info(1) := sys.aq$_reg_info(
+         name      => upper(l_queue_name||':'||l_subscriber_name),
+         namespace => dbms_aq.namespace_aq,
+         callback  => 'plsql://'||upper(p_procedure_name),
+         context   => hextoraw('ff'));
+   end if;
    return l_reg_info;
 end get_registration_info;
 
@@ -1489,7 +1521,15 @@ begin
    dbms_aqadm.add_subscriber(
       queue_name => l_queue_name,
       subscriber => sys.aq$_agent(l_subscriber_name, null, null));
-   dbms_aq.register(l_reg_info, l_reg_info.count);
+   dbms_aq.register(l_reg_info, l_reg_info.count); 
+   cwms_msg.log_db_message(
+      'CWMS_MSG.REGISTER_MSG_CALLBACK',
+      cwms_msg.msg_level_normal,
+      'Callback registered:'
+      ||' Q='||l_queue_name
+      ||' P='||p_procedure_name
+      ||' S='||l_subscriber_name
+      ||' I='||l_reg_info(1).ntfn_grouping_value);
    return l_subscriber_name;
 end register_msg_callback;
 
