@@ -7015,6 +7015,37 @@ begin
      from at_loc_lvl_indicator
     where level_indicator_code = l_loc_lvl_indicator_code;      
 end delete_loc_lvl_indicator;   
+
+--------------------------------------------------------------------------------
+-- PROCEDURE rename_loc_lvl_indicator
+--          
+-- Renames a Location Level Indicator
+--------------------------------------------------------------------------------
+procedure rename_loc_lvl_indicator(
+   p_loc_lvl_indicator_id   in  varchar2,
+   p_new_indicator_id       in  varchar2,
+   p_attr_value             in  number   default null,
+   p_attr_units_id          in  varchar2 default null,
+   p_attr_id                in  varchar2 default null,
+   p_ref_specified_level_id in  varchar2 default null,
+   p_ref_attr_value         in  number   default null,
+   p_office_id              in  varchar2 default null)
+is
+   l_level_indicator_code number(10);   
+begin
+   l_level_indicator_code := cwms_level.get_loc_lvl_indicator_code(
+      p_loc_lvl_indicator_id, 
+      p_attr_value, 
+      p_attr_units_id, 
+      p_attr_id, 
+      p_ref_specified_level_id, 
+      p_ref_attr_value, 
+      p_office_id); 
+
+   update at_loc_lvl_indicator
+      set level_indicator_id = p_new_indicator_id
+    where level_indicator_code = l_level_indicator_code; 
+end rename_loc_lvl_indicator;
             
 --------------------------------------------------------------------------------
 -- PROCEDURE get_level_indicator_values

@@ -3002,6 +3002,27 @@ procedure delete_loc_lvl_indicator(
    p_ref_attr_value         in  number   default null,
    p_office_id              in  varchar2 default null);
 /**
+ * Renames a location level indicator in the database
+ *
+ * @param p_loc_lvl_indicator_id   The complete location level indidicator identifier
+ * @param p_new_indicator_id       The new level indicator identifier (last portion only, does not include location...specified level) 
+ * @param p_attr_value             The location level attribute value, if applicable
+ * @param p_attr_units_id          The location level attribute unit, if applicable
+ * @param p_attr_id                The location level attribute identifier, if applicable
+ * @param p_ref_specified_level_id The specified level identifier of the referenced (secondary) location level, if applicable
+ * @param p_ref_attr_value         The attribute value of the referenced (secondary) location level, if applicable
+ * @param p_office_id              The office that owns the location level indicator. If not specified or NULL, the session user's default office is used
+ */
+procedure rename_loc_lvl_indicator(
+   p_loc_lvl_indicator_id   in  varchar2,
+   p_new_indicator_id       in  varchar2,
+   p_attr_value             in  number   default null,
+   p_attr_units_id          in  varchar2 default null,
+   p_attr_id                in  varchar2 default null,
+   p_ref_specified_level_id in  varchar2 default null,
+   p_ref_attr_value         in  number   default null,
+   p_office_id              in  varchar2 default null);
+/**
  * Retreieves the values for all Location level indicator conditions that are set at
  * p_eval_time and that match the input parameters.  Each indicator may have multiple condions set. Matching is
  * accomplished with glob-style wildcards, as shown below. SQL-style wildcards may also be used.
