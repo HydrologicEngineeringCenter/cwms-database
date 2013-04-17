@@ -1799,6 +1799,7 @@ begin
    l_message.set_long(l_messageid, 'first_time', cwms_util.to_millis(to_timestamp(l_earliest)));
    l_message.set_long(l_messageid, 'last_time', cwms_util.to_millis(to_timestamp(l_latest)));
    l_ts := cwms_msg.publish_message(l_message, l_messageid, 'realtime_ops');
+   commit; -- force the messages to be enqueued
    return l_request_id;
 end replay_data_messages;
 
