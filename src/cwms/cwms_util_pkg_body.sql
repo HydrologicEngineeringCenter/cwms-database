@@ -3105,7 +3105,7 @@ AS
       l_infix_tokens :=
          cwms_util.split_text (
             TRIM (
-               REGEXP_REPLACE (UPPER (p_algebraic_expr), '([()])', ' \1 ')));
+               REGEXP_REPLACE (UPPER (REPLACE (p_algebraic_expr, chr(10), ' ')), '([()])', ' \1 ')));
 
       -------------------------------------
       -- process the tokens into postfix --
@@ -3209,7 +3209,7 @@ AS
       RESULT_CACHE
    IS
    BEGIN
-      RETURN split_text (TRIM (UPPER (p_rpn_expr)));
+      RETURN split_text (TRIM (UPPER (REPLACE (p_rpn_expr, chr(10), ' '))));
    END tokenize_rpn;
 
    -----------------------------------------------------------------------------
