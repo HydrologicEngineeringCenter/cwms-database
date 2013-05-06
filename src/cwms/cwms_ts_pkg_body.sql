@@ -3939,7 +3939,9 @@ AS
              AND B.PARAMETER_CODE = C.PARAMETER_CODE
              AND c.ts_code = l_ts_code;
 
-      l_units := CWMS_UTIL.GET_VALID_UNIT_ID (p_units, l_base_parameter_id);
+      l_units := cwms_util.get_unit_id(p_units, l_office_id);
+      if l_units is null then l_units := p_units; end if;
+      l_units := cwms_util.get_valid_unit_id (l_units, l_base_parameter_id);
 
       DBMS_APPLICATION_INFO.set_action ('check for unit conversion factors');
 
