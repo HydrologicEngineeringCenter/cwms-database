@@ -1522,25 +1522,54 @@ CREATE OR REPLACE package body cwms_xchg as
 --
    procedure del_unused_dss_xchg_info(
       p_office_id in varchar2 default null)
-   is
+   is                 
+      pragma autonomous_transaction;
+      l_codes       number_tab_t;
+      l_office_code number(10);
    begin
-      delete
-        from at_xchg_dss_ts_mappings
-       where cwms_ts_code in (
-                select ts_code
-                  from at_cwms_ts_spec
-                 where delete_date is not null);
-      delete
-        from at_xchg_set
-       where xchg_set_code not in (
-                select distinct xchg_set_code
-                  from at_xchg_dss_ts_mappings);
-
-      delete
-        from at_xchg_datastore_dss
-       where datastore_code not in (
-                select distinct datastore_code
-                  from at_xchg_set);
+      begin
+         l_office_code := cwms_util.get_office_code(p_office_id);
+         if l_office_code = cwms_util.db_office_code_all then
+            l_office_code := null;
+         end if;
+      exception
+         when others then null;
+      end;
+      
+      select ts.ts_code 
+        bulk collect 
+        into l_codes 
+        from at_cwms_ts_spec ts,
+             at_physical_location pl,
+             at_base_location bl 
+       where bl.db_office_code = nvl(l_office_code, bl.db_office_code)
+         and pl.base_location_code = bl.base_location_code
+         and ts.location_code = pl.location_code
+         and ts.delete_date is not null;      
+      
+      if l_codes is not null and l_codes.count > 0 then
+         delete from at_xchg_dss_ts_mappings where cwms_ts_code in (select * from table(l_codes));
+         commit; 
+      end if;
+      
+      select distinct xchg_set_code bulk collect into l_codes from at_xchg_dss_ts_mappings;
+      
+      if l_codes is not null and l_codes.count > 0 then
+         delete from at_xchg_set where xchg_set_code not in (select * from table(l_codes));
+      else
+         delete from at_xchg_set;
+      end if;   
+      commit;
+      
+      select distinct datastore_code bulk collect into l_codes from at_xchg_set;
+      
+      if l_codes is not null and l_codes.count > 0 then
+         delete from at_xchg_datastore_dss where datastore_code not in (select * from table(l_codes));
+      else
+         delete from at_xchg_datastore_dss;
+      end if;
+      commit;
+      
    end del_unused_dss_xchg_info;
 
 -------------------------------------------------------------------------------
