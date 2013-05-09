@@ -116,19 +116,19 @@ AS
       p_local_time in date,
       p_local_tz   in varchar2)
       RETURN VARCHAR2
-   IS                         
+   IS
       l_interval      interval day to second;
       l_tz_designator varchar2(6);
       l_xml_time      varchar2(32);
-   BEGIN                                
+   BEGIN
       l_xml_time := to_char(p_local_time, 'yyyy-mm-dd"T"hh24:mi:ss');
-      l_interval := cast(p_local_time as timestamp) - cast(cwms_util.change_timezone(p_local_time, p_local_tz, 'UTC') as timestamp); 
+      l_interval := cast(p_local_time as timestamp) - cast(cwms_util.change_timezone(p_local_time, p_local_tz, 'UTC') as timestamp);
       l_tz_designator := case l_interval = to_dsinterval('00 00:00:00')
                             when true then 'Z'
                             else to_char(extract(hour from l_interval), 'S09')||':'||trim(to_char(extract(minute from l_interval), '09'))
                          end;
       return l_xml_time||l_tz_designator;
-   END get_xml_time;      
+   END get_xml_time;
 
    FUNCTION FIXUP_TIMEZONE (p_time IN TIMESTAMP WITH TIME ZONE)
       RETURN TIMESTAMP WITH TIME ZONE
@@ -1256,13 +1256,13 @@ AS
       l_first pls_integer := 1;
       l_last  pls_integer := length(p_text);
    BEGIN
-      for i in l_first..l_last loop            
+      for i in l_first..l_last loop
          l_first := i;
-         exit when ascii(substr(p_text, i, 1)) between 33 and 126;  
+         exit when ascii(substr(p_text, i, 1)) between 33 and 126;
       end loop;
       for i in reverse l_first..l_last loop
          l_last := i;
-         exit when ascii(substr(p_text, i, 1)) between 33 and 126;  
+         exit when ascii(substr(p_text, i, 1)) between 33 and 126;
       end loop;
       return substr(p_text, l_first, l_last-l_first+1);
    END strip;
@@ -1617,39 +1617,41 @@ AS
       END IF;
 
       l_clob_len := DBMS_LOB.getlength (l_clob);
-      l_amount := chunk_size;
+      l_amount := least(chunk_size, l_clob_len);
       DBMS_LOB.open (l_clob, DBMS_LOB.lob_readonly);
 
-      LOOP
-         DBMS_LOB.read (l_clob,
-                        l_amount,
-                        l_clob_offset,
-                        l_chunk);
-         l_clob_offset := l_clob_offset + l_amount;
-         l_done_reading := l_clob_offset > l_clob_len;
-         l_buf := l_buf || l_chunk;
+      if l_amount > 0 then
+         loop    
+            dbms_lob.read (l_clob,
+                           l_amount,
+                           l_clob_offset,
+                           l_chunk);
+            l_clob_offset := l_clob_offset + l_amount;
+            l_done_reading := l_clob_offset > l_clob_len;
+            l_buf := l_buf || l_chunk;
 
-         IF INSTR (l_buf, p_separator) > 0 OR l_done_reading
-         THEN
-            l_new_rows := split_text (l_buf, p_separator);
+            if instr (l_buf, p_separator) > 0 or l_done_reading
+            then
+               l_new_rows := split_text (l_buf, p_separator);
 
-            FOR i IN 1 .. l_new_rows.COUNT - 1
-            LOOP
-               l_rows.EXTEND;
-               l_rows (l_rows.LAST) := l_new_rows (i);
-            END LOOP;
+               for i in 1 .. l_new_rows.count - 1
+               loop
+                  l_rows.extend;
+                  l_rows (l_rows.last) := l_new_rows (i);
+               end loop;
 
-            l_buf := l_new_rows (l_new_rows.COUNT);
+               l_buf := l_new_rows (l_new_rows.count);
 
-            IF l_done_reading
-            THEN
-               l_rows.EXTEND;
-               l_rows (l_rows.LAST) := l_buf;
-            END IF;
-         END IF;
+               if l_done_reading
+               then
+                  l_rows.extend;
+                  l_rows (l_rows.last) := l_buf;
+               end if;
+            end if;
 
-         EXIT WHEN l_done_reading;
-      END LOOP;
+            exit when l_done_reading;
+         end loop;
+      end if;
 
       DBMS_LOB.close (l_clob);
       RETURN l_rows;
@@ -1765,13 +1767,15 @@ AS
          RETURN NULL;
       END IF;
 
-      l_rows := split_text (p_clob, record_separator);
+      l_rows := split_text(p_clob, record_separator);
 
-      FOR i IN l_rows.FIRST .. l_rows.LAST
-      LOOP
-         l_tab.EXTEND;
-         l_tab (l_tab.LAST) := split_text (l_rows (i), field_separator);
-      END LOOP;
+      if l_rows.count > 0 then
+         for i in l_rows.first .. l_rows.last
+         loop
+            l_tab.extend;
+            l_tab(l_tab.last) := split_text(l_rows(i), field_separator);
+         end loop;
+      end if;
 
       RETURN l_tab;
    END parse_clob_recordset;
@@ -1791,13 +1795,15 @@ AS
          RETURN NULL;
       END IF;
 
-      l_rows := split_text (p_string, record_separator);
+      l_rows := split_text(p_string, record_separator);
 
-      FOR i IN l_rows.FIRST .. l_rows.LAST
-      LOOP
-         l_tab.EXTEND;
-         l_tab (i) := split_text (l_rows (i), field_separator);
-      END LOOP;
+      if l_rows.count > 0 then
+         for i in l_rows.first .. l_rows.last
+         loop
+            l_tab.extend;
+            l_tab(l_tab.last) := split_text(l_rows(i), field_separator);
+         end loop;
+      end if;
 
       RETURN l_tab;
    END parse_string_recordset;
@@ -3850,7 +3856,7 @@ AS
       exception
          when others then null;
       end;
-      return l_state; 
+      return l_state;
    end get_boolean_state_char;
 
    function get_boolean_state(
