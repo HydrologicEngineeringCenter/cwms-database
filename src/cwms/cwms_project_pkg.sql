@@ -199,11 +199,11 @@ procedure rename_project(
 );
 /**
  * Deletes a project location from the database
-  *
+ *
  * @see constant cwms_util.delete_key
  * @see constant cwms_util.delete_data
  * @see constant cwms_util.delete_all
-*
+ *
  * @param p_project_id The location identifier of the project to delete
  * @param p_delete_action Specifies what to delete.  Actions are as follows:
  * <p>
@@ -335,7 +335,274 @@ PROCEDURE rename_basin_group (
       -- defaults to the connected user's office if null
       p_db_office_id      IN   VARCHAR2 DEFAULT NULL
    );   
-   
+                                           
+                                        
+/**       
+ * Generates and publishes a message on the office's STATUS queue that a project has been updated for a specified application.
+ *
+ * @param p_project_id      The location identifier of the project that has been updated.
+ * @param p_application_id  A text string identifying the application for which the update applies.
+ * @param p_source_id       An application-defined string of the instance and/or component that generated the message. If NULL or not specified, the generated message will not include this item.
+ * @param p_time_series_id  A time series identifier of the time series associated with the update. If NULL or not specified, the generated message will not include this item.
+ * @param p_start_time      The UTC start time of the updates to the time series, in Java milliseconds. If NULL or not specified, the generated message will not include this item.
+ * @param p_end_time        The UTC end time of the updates to the time series, in Java milliseconds. If NULL or not specified, the generated message will not include this item.
+ * @param p_office_id       The text identifier of the office generating the message (and owning the project). If NULL or not specified, the session user's default office is used.
+ *
+ * @return The UTC timestamp of the generated message, in Java milliseconds.
+ */
+function publish_status_update(
+   p_project_id     in varchar2,
+   p_application_id in varchar2,
+   p_source_id      in varchar2 default null,
+   p_time_series_id in varchar2 default null,
+   p_start_time     in integer  default null,
+   p_end_time       in integer  default null,     
+   p_office_id      in varchar2 default null)
+   return integer;
+
+/**       
+ * Requests a lock for a specified project and application. Lock revocation can be denied by the owner of the current lock. Lock revocation can only be performed by authorized users.
+ *
+ * @param p_project_id      The location identifier of the project to be locked.
+ * @param p_application_id  A text string identifying the application for which the project is to be locked.
+ * @param p_revoke_existing A flag ('T'/'F') specifying whether to revoke any existing lock on the project/application combination.
+ * @param p_revoke_timeout  The number of seconds to wait for any revocation to be denied by the owner of the current lock on the project before revoking.
+ * @param p_office_id       The text identifier of the office requesting the lock (and owning the project). If NULL or not specified, the session user's default office is used.
+ *
+ * @return A text identifier of the lock placed on the project for the application, or NULL if the project could not be locked.
+ */
+function request_lock(
+   p_project_id      in varchar2,
+   p_application_id  in varchar2,
+   p_revoke_existing in varchar2 default 'F',
+   p_revoke_timeout  in integer  default 30,
+   p_office_id       in varchar2 default null)
+   return varchar2;
+
+/**       
+ * Releases a project lock.
+ *
+ * @param p_lock_id The text identifier of the lock returned by request_lock.
+ */
+procedure release_lock(
+   p_lock_id in varchar2);
+
+/**       
+ * Revokes a lock on a specified project and application. Lock revocation can be denied by the owner of the current lock. Lock revocation can only be performed by authorized users.
+ *
+ * @param p_project_id      The location identifier of the project to be have its lock revoked.
+ * @param p_application_id  A text string identifying the application for which the lock is to be revoked.
+ * @param p_revoke_timeout  The number of seconds to wait for any revocation to be denied by the owner of the current lock on the project before revoking.
+ * @param p_office_id       The text identifier of the office requesting the lock (and owning the project). If NULL or not specified, the session user's default office is used.
+ */
+procedure revoke_lock(
+   p_project_id      in varchar2,
+   p_application_id  in varchar2,
+   p_revoke_timeout  in integer  default 30,
+   p_office_id       in varchar2 default null);
+
+/**       
+ * Denies revocation of a project lock 
+ *
+ * @param p_lock_id The text identifier of the lock returned by request_lock
+ */
+procedure deny_lock_revocation(
+   p_lock_id in varchar2);
+         
+/**       
+ * Returns whether a project is currently locked for a specified application
+ *
+ * @param p_project_id      The location identifier of the project to be checked.
+ * @param p_application_id  A text string identifying the application to be checked.
+ * @param p_office_id       The text identifier of the office owning the project. If NULL or not specified, the session user's default office is used.
+ *
+ * @return A flag ('T'/'F') specifying whether the project is currently locked for the specified application
+ */
+function is_locked(
+   p_project_id      in varchar2,
+   p_application_id  in varchar2,
+   p_office_id       in varchar2 default null)
+   return varchar2; 
+      
+/**       
+ * Returns catalog of current locks. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ *
+ * @param p_project_id_mask      The location identifier mask for the project(s) to be cataloged. If not specified, locks for all projects will be cataloged.
+ * @param p_application_id_mask  A text string identifying the application(s) to be cataloged. If not specified, locks for all applications will be cataloged.     
+ * @param p_time_zone            The time zone in which to display the time the locks were acquired. If not specified, UTC will be used.
+ * @param p_office_id_mask       The text identifier mask of the office(s) to be cataloged.  If NULL or not specified, the session user's default office is used.
+ *
+ * @return A cursor containing all matching locks.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the project</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">project_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the locked projects</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">application_id</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The application for which the project is locked</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">acquire_time</td>
+ *     <td class="descr">varchar2(19)</td>
+ *     <td class="descr">The time in the specified time zone that the lock was acquired</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">session_user</td>
+ *     <td class="descr">varchar2(30)</td>
+ *     <td class="descr">The database user name of the user that acquired the lock</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">os_user</td>
+ *     <td class="descr">varchar2(30)</td>
+ *     <td class="descr">The operating system user name of the user that acquired the lock</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">session_program</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The name of the program that acquired the lock</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">session_machine</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The name of the computer that acquired the lock</td>
+ *   </tr>
+ * </table>
+ */
+function cat_locks(
+   p_project_id_mask     in varchar2 default '*',
+   p_application_id_mask in varchar2 default '*',
+   p_time_zone           in varchar2 default 'UTC',
+   p_office_id_mask      in varchar2 default null)
+   return sys_refcursor;
+
+/**
+ * Updates (creates, changes, or removes) lock revoker rights for a specified user and application. A user has revoker rights for a project if the project is matched in the user's ALLOWED project ids for
+ * the application (if any) and is not in the users DISALLOWED project ids for the application (if any). The DISALLOWED project ids is evaluated after (has a higher priority than) the ALLOWED project ids.
+ * Removing all of a user's lock revoker rights can be accomplished by specifying p_project_ids = '*' and specifying p_allow = 'F'.
+ *
+ * @param p_user_id        The user id to update the lock revoker rights for.
+ * @param p_project_ids    A comma-separated list of project identifiers. The identifiers can include wildcards; '*' specifies all projects.
+ * @param p_allow          A flag ('T'/'F') specifying whether the project ids are to be interpreted as the ALLOWED list ('T') or the DISALLOWED list ('F')
+ * @param p_application_id The application to update the user's lock revoker rights for.
+ * @param p_office_id       The text identifier of the office and owning the projects. If NULL or not specified, the session user's default office is used.
+ */      
+procedure update_lock_revoker_rights(
+   p_user_id        in varchar2,
+   p_project_ids    in varchar2,
+   p_allow          in varchar2,
+   p_application_id in varchar2,
+   p_office_id      in varchar2 default null);
+      
+/**       
+ * Returns catalog of current lock revoker rights. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_project_id_mask      The location identifier mask for the project(s) to be cataloged. If not specified, locks for all projects will be cataloged.
+ * @param p_application_id_mask  A text string identifying the application(s) to be cataloged. If not specified, locks for all applications will be cataloged.     
+ * @param p_time_zone            The time zone in which to display the time the locks were acquired. If not specified, UTC will be used.
+ * @param p_office_id_mask       The text identifier mask of the office(s) to be cataloged.  If NULL or not specified, the session user's default office is used.
+ *
+ * @return A cursor containing all matching locks.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the project</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">project_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the locked projects</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">application_id</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The application for which the project is locked</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">user_id</td>
+ *     <td class="descr">varchar2(30)</td>
+ *     <td class="descr">The user who owns the lock revoker rights for the project and application</td>
+ *   </tr>
+ * </table>
+ */
+function cat_lock_revoker_rights(      
+   p_project_id_mask     in varchar2 default '*',
+   p_application_id_mask in varchar2 default '*',
+   p_office_id_mask      in varchar2 default null)
+   return sys_refcursor;
+                  
+      
 END CWMS_PROJECT;
 
 /

@@ -25,7 +25,9 @@ DECLARE
            'AT_PROJECT',
            'AT_PROJECT_AGREEMENT',
            'AT_PROJECT_CONGRESS_DISTRICT',
+           'AT_PROJECT_LOCK',
            'AT_PROJECT_PURPOSES',
+           'AT_PRJ_LCK_REVOKER_RIGHTS',
            'AT_TURBINE',
            'AT_TURBINE_SETTING',
            'AT_WAT_USR_CONTRACT_ACCOUNTING',
@@ -2838,6 +2840,51 @@ ALTER TABLE at_construction_history ADD (
  FOREIGN KEY (operational_status_code)
  REFERENCES at_operational_status_code (operational_status_code))
 /
+
+create table at_project_lock (
+   lock_id         varchar2(40) primary key,
+   project_code    number(10),
+   application_id  varchar2(64),
+   acquire_time    timestamp,
+   session_user    varchar2(30),
+   os_user         varchar2(30),
+   session_program varchar2(64),
+   session_machine varchar2(64),
+   constraint at_project_lock_ck1 check (application_id = lower(application_id)),
+   constraint at_project_lock_u1  unique (project_code, application_id),
+   constraint at_project_lock_fk1 foreign key (project_code) references at_project (project_location_code)   
+)
+tablespace cwms_20at_data
+/
+
+comment on table at_project_lock is 'Contains information on projects locked for various applications';  
+comment on column at_project_lock.lock_id         is 'Unique lock identifier';
+comment on column at_project_lock.project_code    is 'References project that is locked for application';
+comment on column at_project_lock.application_id  is 'Specifies the application the project is locked for';
+comment on column at_project_lock.acquire_time    is 'The UTC time the project lock was acquired'; 
+comment on column at_project_lock.session_user    is 'The session user that acquired the lock';
+comment on column at_project_lock.os_user         is 'The session user''s operating system user name';
+comment on column at_project_lock.session_program is 'The program that acquired the lock';
+comment on column at_project_lock.session_machine is 'The computer that acquired the lock';
+
+create table at_prj_lck_revoker_rights (
+   user_id         varchar2(30),
+   application_id  varchar2(64),
+   allow_flag      varchar2(1),
+   project_list    varchar2(256),
+   constraint at_prj_lck_revoker_rights_pk  primary key (user_id, application_id, allow_flag),
+   constraint at_prj_lck_revoker_rights_ck1 check (user_id = lower(user_id)),
+   constraint at_prj_lck_revoker_rights_ck2 check (application_id = lower(application_id)),
+   constraint at_prj_lck_revoker_rights_ck3 check (allow_flag in ('T','F'))
+)
+tablespace cwms_20at_data
+/
+
+comment on table at_prj_lck_revoker_rights is 'Contains information about who can revoke project locks';
+comment on column at_prj_lck_revoker_rights.user_id        is 'The user whose rights are described';     
+comment on column at_prj_lck_revoker_rights.application_id is 'The application the user rights are described for';     
+comment on column at_prj_lck_revoker_rights.allow_flag     is 'Specifies whether this list is the ALLOW or DISALLOW list';  
+comment on column at_prj_lck_revoker_rights.project_list   is 'Comma-separated list of project identiers and/or project identifer masks';
 
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_PROJECT', null,
 '

@@ -632,6 +632,99 @@ BEGIN
   NULL;
 END unassign_basin_groups;
 
+function publish_status_update(
+   p_project_id     in varchar2,
+   p_application_id in varchar2,
+   p_source_id      in varchar2 default null,
+   p_time_series_id in varchar2 default null,
+   p_start_time     in integer  default null,
+   p_end_time       in integer  default null,     
+   p_office_id      in varchar2 default null)
+   return integer
+is
+begin
+   return null;
+end publish_status_update;         
+
+function request_lock(
+   p_project_id      in varchar2,
+   p_application_id  in varchar2,
+   p_revoke_existing in varchar2 default 'F',
+   p_revoke_timeout  in integer  default 30,
+   p_office_id       in varchar2 default null)
+   return varchar2
+is
+begin
+return null;
+end request_lock;
+
+procedure release_lock(
+   p_lock_id in varchar2)
+is
+begin
+null;
+end release_lock;
+
+procedure revoke_lock(
+   p_project_id      in varchar2,
+   p_application_id  in varchar2,
+   p_revoke_timeout  in integer  default 30,
+   p_office_id       in varchar2 default null)
+is
+begin
+null;
+end revoke_lock;
+
+procedure deny_lock_revocation(
+   p_lock_id in varchar2)
+is
+begin
+   null;
+end deny_lock_revocation;
+         
+function is_locked(
+   p_project_id      in varchar2,
+   p_application_id  in varchar2,
+   p_office_id       in varchar2 default null)
+   return varchar2
+is
+begin
+   return null;
+end is_locked; 
+      
+function cat_locks(
+   p_project_id_mask     in varchar2 default '*',
+   p_application_id_mask in varchar2 default '*',
+   p_time_zone           in varchar2 default 'UTC',
+   p_office_id_mask      in varchar2 default null)
+   return sys_refcursor
+is
+begin
+   return null;
+end cat_locks;
+
+procedure update_lock_revoker_rights(
+   p_user_id        in varchar2,
+   p_project_ids    in varchar2,
+   p_allow          in varchar2,
+   p_application_id in varchar2,
+   p_office_id      in varchar2 default null)
+is
+begin
+   null;
+end update_lock_revoker_rights;
+      
+function cat_lock_revoker_rights(      
+   p_project_id_mask     in varchar2 default '*',
+   p_application_id_mask in varchar2 default '*',
+   p_office_id_mask      in varchar2 default null)
+   return sys_refcursor
+is
+begin
+   return null;
+end cat_lock_revoker_rights;
+
+
 END CWMS_PROJECT;
  
 /
