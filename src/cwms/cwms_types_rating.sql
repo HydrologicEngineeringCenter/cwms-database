@@ -5223,8 +5223,8 @@ as
          else
             l_timestr := 'Etc/GMT'
             ||case substr(l_timestr, 1, 1)
-                 when '+' then '-' || to_number(l_timestr, 2, 2)
-                 when '-' then '+' || to_number(l_timestr, 2, 2)
+                 when '+' then '-' || to_number(substr(l_timestr, 2, 2))
+                 when '-' then '+' || to_number(substr(l_timestr, 2, 2))
               end;
          end if;
          l_parts    := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
