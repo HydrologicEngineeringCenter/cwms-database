@@ -164,41 +164,45 @@ AS
 
    --
    -- return the input date in a different time zone
-   FUNCTION change_timezone (p_in_date   IN TIMESTAMP,
-                             p_from_tz   IN VARCHAR2,
-                             p_to_tz     IN VARCHAR2 DEFAULT 'UTC')
-      RETURN TIMESTAMP
-      RESULT_CACHE
-   IS
-   BEGIN
-      RETURN CASE p_to_tz = p_from_tz
-                WHEN TRUE THEN
+   function change_timezone (
+      p_in_date   in timestamp,
+      p_from_tz   in varchar2,
+      p_to_tz     in varchar2 default 'UTC')
+      return timestamp
+      result_cache
+   is
+   begin
+      return case p_to_tz = p_from_tz
+                when true then
                    p_in_date
-                ELSE
-                   FROM_TZ (p_in_date, get_timezone (p_from_tz))  AT TIME ZONE get_timezone (p_to_tz)
-             END;
-   END;
+                else
+                   from_tz(p_in_date, 
+                           get_timezone(p_from_tz)
+                          ) at time zone get_timezone(p_to_tz)
+             end;
+   exception
+      when others then return null;
+   end change_timezone;
 
    --
    -- return the input date in a different time zone
-   FUNCTION change_timezone (p_in_date   IN DATE,
-                             p_from_tz   IN VARCHAR2,
-                             p_to_tz     IN VARCHAR2 DEFAULT 'UTC')
-      RETURN DATE
-      RESULT_CACHE
-   IS
-   BEGIN
-      RETURN CASE p_to_tz = p_from_tz
-                WHEN TRUE
-                THEN
+   function change_timezone(p_in_date in date, p_from_tz in varchar2, p_to_tz in varchar2 default 'UTC')
+      return date
+      result_cache
+   is
+   begin
+      return case p_to_tz = p_from_tz
+                when true then
                    p_in_date
-                ELSE
-                   CAST (
-                      FROM_TZ (CAST (p_in_date AS TIMESTAMP),
-                               get_timezone (p_from_tz))
-                         AT TIME ZONE get_timezone (p_to_tz) AS DATE)
-             END;
-   END;
+                else
+                   cast(from_tz(cast(p_in_date as timestamp), 
+                                get_timezone(p_from_tz)
+                               ) at time zone get_timezone(p_to_tz) as date)
+             end;
+   exception
+      when others then
+         return null;
+   end change_timezone;
 
    FUNCTION get_base_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2
