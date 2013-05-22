@@ -4408,6 +4408,66 @@ END cat_ts_id;
          p_area_unit,
          p_office_id_mask);
    end cat_basins_f;
+
+   function cat_loc_lvl_cur_max_ind
+      return loc_lvl_cur_max_ind_tab_t
+      pipelined
+   as   
+      l_cursor sys_refcursor;
+      l_indicator_id     varchar2(423);
+      l_attribute_id     varchar2(83);
+      l_attribute_value  number;           
+      l_attribute_units  varchar2(16);
+      l_indicator_values number_tab_t;
+      l_output_row       loc_lvl_cur_max_ind_t := loc_lvl_cur_max_ind_t(null, null, null, null, null, null, null);
+   begin
+      for rec in (select distinct * from av_loc_lvl_ts_map) loop
+         cwms_level.get_level_indicator_values(
+            p_cursor               => l_cursor, 
+            p_tsid                 => rec.cwms_ts_id, 
+            p_specified_level_mask => cwms_util.split_text(rec.location_level_id, 5, '.'), 
+            p_indicator_id_mask    => rec.level_indicator_id, 
+            p_office_id            => rec.office_id);
+         begin
+            fetch l_cursor 
+             into l_indicator_id,
+                  l_attribute_id,
+                  l_attribute_value,
+                  l_attribute_units,
+                  l_indicator_values;
+         exception
+            when others then null;
+                    
+         end;         
+         close l_cursor;        
+         
+         l_output_row.office_id          := rec.office_id;
+         l_output_row.cwms_ts_id         := rec.cwms_ts_id;
+         l_output_row.level_indicator_id := rec.location_level_id||'.'||rec.level_indicator_id;
+         l_output_row.attribute_id       := rec.attribute_id;
+         l_output_row.attribute_value    := rec.attribute_value;
+                         
+         if l_indicator_values.count = 0 then
+            l_output_row.max_indicator := 0;
+         else
+            l_output_row.max_indicator := l_indicator_values(l_indicator_values.count);
+         end if;
+           
+         if l_output_row.max_indicator = 0 then
+            l_output_row.indicator_name := 'None';
+         else
+            select name
+              into l_output_row.indicator_name
+              from av_loc_lvl_indicator lli
+             where lli.office_id = l_output_row.office_id
+               and lli.level_indicator_id = l_output_row.level_indicator_id
+               and nvl(lli.attribute_id, '.') = nvl(l_output_row.attribute_id, '.')
+               and nvl(lli.attribute_value, -1) = nvl(l_output_row.attribute_value, -1)
+               and lli.value = l_output_row.max_indicator; 
+         end if;
+         pipe row(l_output_row);
+      end loop;
+   end cat_loc_lvl_cur_max_ind;
     
 END cwms_cat;
 /

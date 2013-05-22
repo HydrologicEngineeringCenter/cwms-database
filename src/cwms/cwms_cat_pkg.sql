@@ -4982,6 +4982,13 @@ IS
       p_office_id_mask         in varchar2 default null)
       return sys_refcursor;
 
+   --
+   -- not documented - see AV_LOC_LVL_CUR_MAX_IND
+   --      
+   function cat_loc_lvl_cur_max_ind
+      return loc_lvl_cur_max_ind_tab_t
+      pipelined;
+
 END cwms_cat;
 /
 
