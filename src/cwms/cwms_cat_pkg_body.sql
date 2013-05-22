@@ -4447,7 +4447,7 @@ END cat_ts_id;
          l_output_row.attribute_id       := rec.attribute_id;
          l_output_row.attribute_value    := rec.attribute_value;
                          
-         if l_indicator_values.count = 0 then
+         if l_indicator_values is null or l_indicator_values.count = 0 then
             l_output_row.max_indicator := 0;
          else
             l_output_row.max_indicator := l_indicator_values(l_indicator_values.count);
