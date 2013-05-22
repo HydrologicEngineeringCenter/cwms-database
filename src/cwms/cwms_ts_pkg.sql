@@ -11,16 +11,43 @@ CREATE OR REPLACE PACKAGE cwms_ts
  */
 AS
    /**
-    * Number of minutes in an interval.
+    * Number of minutes in an hour.
     */
-   min_in_hr   CONSTANT NUMBER := 60;
-   min_in_dy   CONSTANT NUMBER := 1440;
-   min_in_wk   CONSTANT NUMBER := 10080;
-   min_in_mo   CONSTANT NUMBER := 43200;
-   min_in_yr   CONSTANT NUMBER := 525600;
-   min_in_dc   CONSTANT NUMBER := 5256000;
-
-
+   min_in_hr CONSTANT NUMBER := 60;
+   /**
+    * Number of minutes in a day.
+    */
+   min_in_dy CONSTANT NUMBER := 1440;
+   /**
+    * Number of minutes in a week.
+    */
+   min_in_wk CONSTANT NUMBER := 10080;
+   /**
+    * Number of minutes in a month (30 days).
+    */
+   min_in_mo CONSTANT NUMBER := 43200;
+   /**
+    * Number of minutes in a year (365 days).
+    */
+   min_in_yr CONSTANT NUMBER := 525600;
+   /**
+    * Number of minutes in a decade (10 365-day years).
+    */
+   min_in_dc CONSTANT NUMBER := 5256000;
+                                                  
+   /**
+    * Behavior for STORE_TS when storing data to remove nulls from the data that don't have quality code that indicates missing.
+    */
+   filter_out_null_values     constant number := 1; 
+   /**
+    * Behavior for STORE_TS when storing data to set all quality codes to missing for null values.
+    */
+   set_null_values_to_missing constant number := 2;
+   /**
+    * Behavior for STORE_TS when storing data to reject storing any data set that contains null values and non-missing quality.
+    */
+   reject_ts_with_null_values constant number := 3;                                      
+   
    /**
     * Type for holding a time series value.
     *
@@ -2684,7 +2711,90 @@ AS
    function normalize_quality(
       p_quality in number)
       return number
-      result_cache;
+      result_cache;  
+      
+   /**
+    * Sets the default storage policy for an office for time series data that contains null values with non-missing quality codes.
+    *
+    * @param p_storage_policy The storage policy. Must be NULL or one of filter_out_null_values, set_null_values_to_missing, or reject_ts_with_null_values. If NULL, any office storage policy is removed and the database default is in effect.
+    * @param p_office_id      The text identifier of the office to set the policy for.  If unspecified or NULL, the current session user's default office is used.
+    *
+    * @since CWMS 2.1
+    * @see constant filter_out_null_values
+    * @see constant set_null_values_to_missing
+    * @see constant reject_ts_with_null_values
+    */
+   procedure set_nulls_storage_policy_ofc(
+      p_storage_policy in integer,
+      p_office_id      in varchar2 default null);
+      
+   /**
+    * Sets the storage policy for specified time series for time series data that contains null values with non-missing quality codes.
+    *
+    * @param p_storage_policy The storage policy. Must be NULL or one of filter_out_null_values, set_null_values_to_missing, or reject_ts_with_null_values. If NULL, any time series policy is removed and the office default is in effect.
+    * @param p_ts_id          The time series identifier to set the policy for.
+    * @param p_office_id      The text identifier of the office that owns the time series.  If unspecified or NULL, the current session user's default office is used.
+    *
+    * @since CWMS 2.1
+    * @see constant filter_out_null_values
+    * @see constant set_null_values_to_missing
+    * @see constant reject_ts_with_null_values
+    */
+   procedure set_nulls_storage_policy_ts(
+      p_storage_policy in integer,
+      p_ts_id          in varchar2,
+      p_office_id      in varchar2 default null);
+      
+   /**
+    * Retrieves the default storage policy for an office for time series data that contains null values with non-missing quality codes.
+    *
+    * @param p_office_id  The text identifier of the office to retrieve the policy for.  If unspecified or NULL, the current session user's default office is used.
+    *
+    * @return The default storage policy for the specified office.  If NULL, the database default is in effect.
+    *
+    * @since CWMS 2.1
+    * @see constant filter_out_null_values
+    * @see constant set_null_values_to_missing
+    * @see constant reject_ts_with_null_values
+    */
+   function get_nulls_storage_policy_ofc(
+      p_office_id in varchar2 default null)
+      return integer;                  
+      
+   /**
+    * Retrieves the storage policy for specified time series for time series data that contains null values with non-missing quality codes.
+    *
+    * @param p_ts_id     The time series identifier to retrieve the policy for.
+    * @param p_office_id The text identifier of the office that owns the time series.  If unspecified or NULL, the current session user's default office is used.
+    *
+    * @return The default storage policy for the specified time series.  If NULL, the office default is in effect.
+    *
+    * @since CWMS 2.1
+    * @see constant filter_out_null_values
+    * @see constant set_null_values_to_missing
+    * @see constant reject_ts_with_null_values
+    */
+   function get_nulls_storage_policy_ts(
+      p_ts_id     in varchar2,
+      p_office_id in varchar2 default null)
+      return integer;
+      
+   /**
+    * Retrieves the effective storage policy for specified time series for time series data that contains null values with non-missing quality codes.
+    *
+    * @param p_ts_code The numeric code identifying the time series to retrieve the effective policy for.
+    *
+    * @return The effective storage policy for the specified time series.  If the time series has a policy, it is returned.  If not, the office default policy is returned. If that is not set, the database defatul is returned.
+    *
+    * @since CWMS 2.1
+    * @see constant filter_out_null_values
+    * @see constant set_null_values_to_missing
+    * @see constant reject_ts_with_null_values
+    */
+   function get_nulls_storage_policy(
+      p_ts_code in integer)
+      return integer;
+                           
 END;
 /
 

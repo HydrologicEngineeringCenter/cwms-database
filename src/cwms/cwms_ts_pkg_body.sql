@@ -3709,6 +3709,7 @@ AS
    IS
       TS_ID_NOT_FOUND       EXCEPTION;
       PRAGMA EXCEPTION_INIT (ts_id_not_found, -20001);
+      l_timeseries_data     tsv_array;
       l_cwms_ts_id          VARCHAR2(183);
       l_office_id           VARCHAR2 (16);
       l_office_code         NUMBER;
@@ -3746,8 +3747,13 @@ AS
       l_valid_times         date_table_type;
       l_min_interval        number;
       l_count               number; 
-
    --
+      function bitor (num1 in integer, num2 in integer)
+         return integer
+      is
+      begin
+         return num1 + num2 - bitand (num1, num2);
+      end;
    BEGIN
       DBMS_APPLICATION_INFO.set_module ('cwms_ts_store.store_ts',
                                         'get tscode from ts_id');
@@ -3860,6 +3866,34 @@ AS
          return;      -- have already created ts_code if it didn't exist
       end if;
 
+      DBMS_APPLICATION_INFO.set_action ('Check for nulls in incoming data');
+      
+      l_timeseries_data := tsv_array();
+      case get_nulls_storage_policy(l_ts_code)
+         when set_null_values_to_missing then
+            l_timeseries_data := p_timeseries_data;
+            for i in 1..l_timeseries_data.count loop
+               if l_timeseries_data(i).value is null then
+                  l_timeseries_data(i).quality_code := bitor(l_timeseries_data(i).quality_code, 5);
+               end if;
+            end loop;
+         when reject_ts_with_null_values then
+            for i in 1..p_timeseries_data.count loop
+               if p_timeseries_data(i).value is null and not cwms_ts.quality_is_missing(p_timeseries_data(i).quality_code) then
+                  cwms_err.raise('ERROR', 'Incoming data contains null values with non-missing quality.');
+               end if;
+            end loop; 
+            l_timeseries_data := p_timeseries_data;
+         else -- filter_out_null_values or unset
+            for i in 1..p_timeseries_data.count loop
+               if p_timeseries_data(i).value is not null or cwms_ts.quality_is_missing(p_timeseries_data(i).quality_code) then
+                  l_timeseries_data.extend;
+                  l_timeseries_data(l_timeseries_data.count) := p_timeseries_data(i);
+               end if;
+            end loop;
+      end case;
+      
+         
       DBMS_APPLICATION_INFO.set_action (
          'Truncate incoming times to minute and verify validity');
       ---------------------------------------------------------
@@ -3867,7 +3901,7 @@ AS
       ---------------------------------------------------------
       select trunc(cast(date_time at time zone 'UTC' as date), 'mi')
         bulk collect into l_date_times
-        from table(p_timeseries_data)
+        from table(l_timeseries_data)
        order by date_time;
 
       select min(interval)
@@ -3991,7 +4025,7 @@ AS
       SELECT MIN (trunc(CAST ( (t.date_time AT TIME ZONE 'UTC') AS DATE), 'mi')),
              MAX (trunc(CAST ( (t.date_time AT TIME ZONE 'UTC') AS DATE), 'mi'))
         INTO mindate, maxdate
-        FROM TABLE (CAST (p_timeseries_data AS tsv_array)) t;
+        FROM TABLE (CAST (l_timeseries_data AS tsv_array)) t;
 
       DBMS_OUTPUT.put_line (
             '*****************************'
@@ -4049,7 +4083,7 @@ AS
                            using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                    from table(cast(:p_timeseries_data as tsv_array)) t,
+                                    from table(cast(:l_timeseries_data as tsv_array)) t,
                                          at_cwms_ts_spec s,
                                          at_parameter ap,
                                          cwms_unit_conversion c,
@@ -4082,7 +4116,7 @@ AS
                                        :l_version_date)';
 
                EXECUTE IMMEDIATE l_sql_txt
-                  USING p_timeseries_data,
+                  USING l_timeseries_data,
                         l_ts_code,
                         l_units,
                         x.start_date,
@@ -4116,7 +4150,7 @@ AS
                            using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                    from table(cast(:p_timeseries_data as tsv_array)) t,
+                                    from table(cast(:l_timeseries_data as tsv_array)) t,
                                          at_cwms_ts_spec s,
                                          at_parameter ap,
                                          cwms_unit_conversion c,
@@ -4155,7 +4189,7 @@ AS
                                        :l_version_date)';
 
                EXECUTE IMMEDIATE l_sql_txt
-                  USING p_timeseries_data,
+                  USING l_timeseries_data,
                         l_ts_code,
                         l_units,
                         x.start_date,
@@ -4187,7 +4221,7 @@ AS
                            using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                    from table(cast(:p_timeseries_data as tsv_array)) t,
+                                    from table(cast(:l_timeseries_data as tsv_array)) t,
                                          at_cwms_ts_spec s,
                                          at_parameter ap,
                                          cwms_unit_conversion c,
@@ -4218,7 +4252,7 @@ AS
                                        :l_version_date)';
 
                EXECUTE IMMEDIATE l_sql_txt
-                  USING p_timeseries_data,
+                  USING l_timeseries_data,
                         l_ts_code,
                         l_units,
                         x.start_date,
@@ -4257,7 +4291,7 @@ AS
                               using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                             (t.value * c.factor + c.offset) value,
                                             cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                       from table(cast(:p_timeseries_data as tsv_array)) t,
+                                       from table(cast(:l_timeseries_data as tsv_array)) t,
                                             at_cwms_ts_spec s,
                                             at_parameter ap,
                                             cwms_unit_conversion c,
@@ -4309,7 +4343,7 @@ AS
                               using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                             (t.value * c.factor + c.offset) value,
                                             cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                       from table(cast(:p_timeseries_data as tsv_array)) t,
+                                       from table(cast(:l_timeseries_data as tsv_array)) t,
                                             at_cwms_ts_spec s,
                                             at_parameter ap,
                                             cwms_unit_conversion c,
@@ -4346,7 +4380,7 @@ AS
                end if;
 
                EXECUTE IMMEDIATE l_sql_txt
-                  USING p_timeseries_data,
+                  USING l_timeseries_data,
                         l_ts_code,
                         l_units,
                         x.start_date,
@@ -4381,7 +4415,7 @@ AS
                            using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                    from table(cast(:p_timeseries_data as tsv_array)) t,
+                                    from table(cast(:l_timeseries_data as tsv_array)) t,
                                          at_cwms_ts_spec s,
                                          at_parameter ap,
                                          cwms_unit_conversion c,
@@ -4421,7 +4455,7 @@ AS
                                        :l_version_date)';
 
                EXECUTE IMMEDIATE l_sql_txt
-                  USING p_timeseries_data,
+                  USING l_timeseries_data,
                         l_ts_code,
                         l_units,
                         x.start_date,
@@ -4456,7 +4490,7 @@ AS
                            using (select trunc(cast((cwms_util.fixup_timezone(t.date_time) at time zone ''GMT'') as date), ''mi'') date_time,
                                          (t.value * c.factor + c.offset) value,
                                          cwms_ts.clean_quality_code(t.quality_code) quality_code
-                                    from table(cast(:p_timeseries_data as tsv_array)) t,
+                                    from table(cast(:l_timeseries_data as tsv_array)) t,
                                          at_cwms_ts_spec s,
                                          at_parameter ap,
                                          cwms_unit_conversion c,
@@ -4501,7 +4535,7 @@ AS
                                        t2.quality_code,
                                        :l_version_date)';
                EXECUTE IMMEDIATE l_sql_txt
-                  USING p_timeseries_data,
+                  USING l_timeseries_data,
                         l_ts_code,
                         l_units,
                         x.start_date,
@@ -4556,8 +4590,8 @@ AS
                         l_version_date,
                         l_ts_code,
                         l_version_date,
-                        p_timeseries_data,
-                        p_timeseries_data;
+                        l_timeseries_data,
+                        l_timeseries_data;
 
                EXECUTE IMMEDIATE REPLACE (
                                    'delete
@@ -4577,8 +4611,8 @@ AS
                                    x.table_name)
                   USING l_ts_code,
                         l_version_date,
-                        p_timeseries_data,
-                        p_timeseries_data;
+                        l_timeseries_data,
+                        l_timeseries_data;
 
                EXECUTE IMMEDIATE REPLACE (
                                    'MERGE INTO table_name t1
@@ -4627,7 +4661,7 @@ AS
                                )',
                                    'table_name',
                                    x.table_name)
-                  USING p_timeseries_data,
+                  USING l_timeseries_data,
                         l_ts_code,
                         l_units,
                         x.start_date,
@@ -4679,8 +4713,8 @@ AS
                         l_version_date,
                         l_ts_code,
                         l_version_date,
-                        p_timeseries_data,
-                        p_timeseries_data;
+                        l_timeseries_data,
+                        l_timeseries_data;
 
                EXECUTE IMMEDIATE REPLACE (
                                    'delete
@@ -4697,8 +4731,8 @@ AS
                                    x.table_name)
                   USING l_ts_code,
                         l_version_date,
-                        p_timeseries_data,
-                        p_timeseries_data;
+                        l_timeseries_data,
+                        l_timeseries_data;
 
                EXECUTE IMMEDIATE REPLACE (
                                    'MERGE INTO table_name t1
@@ -4737,7 +4771,7 @@ AS
                                )',
                                    'table_name',
                                    x.table_name)
-                  USING p_timeseries_data,
+                  USING l_timeseries_data,
                         l_ts_code,
                         l_units,
                         x.start_date,
@@ -4778,8 +4812,8 @@ AS
          l_ts_code,
          l_cwms_ts_id,
          l_office_id,
-         p_timeseries_data (p_timeseries_data.FIRST).date_time,
-         p_timeseries_data (p_timeseries_data.LAST).date_time,
+         l_timeseries_data (l_timeseries_data.FIRST).date_time,
+         l_timeseries_data (l_timeseries_data.LAST).date_time,
          FROM_TZ (CAST (l_version_date AS TIMESTAMP), 'UTC'),
          l_store_date,
          upper(p_store_rule));
@@ -10045,6 +10079,172 @@ end retrieve_existing_item_counts;
       end case;
       return l_quality;
    end normalize_quality;
+
+   procedure set_nulls_storage_policy_ofc(
+      p_storage_policy in integer,
+      p_office_id      in varchar2 default null)
+   as
+   begin
+      ------------------
+      -- sanity check --
+      ------------------
+      if p_storage_policy is not null and
+         p_storage_policy not in (
+            filter_out_null_values, 
+            set_null_values_to_missing, 
+            reject_ts_with_null_values)
+      then
+         cwms_err.raise(
+            'ERROR',
+            'P_STORAGE_POLICY must be one of FILTER_OUT_NULL_VALUES, SET_NULL_VALUES_TO_MISSING, or REJECT_TS_WITH_NULL_VALUES'); 
+      end if;
+      cwms_msg.log_db_message(
+         'CWMS_TS.SET_NULLS_STORAGE_POLICY',
+         cwms_msg.msg_level_normal,
+         'Setting NULLs storage policy to '
+         || case p_storage_policy is null
+               when true then 'NULL'
+               else case p_storage_policy
+               	      when filter_out_null_values then 
+               	         'FILTER_OUT_NULL_VALUES'
+               	      when set_null_values_to_missing then
+               	      	 'SET_NULL_VALUES_TO_MISSING'
+               	      when reject_ts_with_null_values then
+               	      	 'REJECT_TS_WITH_NULL_VALUES'
+                    end
+            end
+         ||' for office '
+         ||cwms_util.get_db_office_id(p_office_id));
+      if p_storage_policy is null then
+         cwms_properties.delete_property(
+            p_category  => 'TIMESERIES', 
+            p_id        => 'storage.nulls.office.'||cwms_util.get_db_office_code(p_office_id), 
+            p_office_id => 'CWMS');
+      else
+         cwms_properties.set_property(
+            p_category  => 'TIMESERIES', 
+            p_id        => 'storage.nulls.office.'||cwms_util.get_db_office_code(p_office_id), 
+            p_value     => p_storage_policy, 
+            p_comment   => null, 
+            p_office_id => 'CWMS');
+      end if;   
+   end set_nulls_storage_policy_ofc;
+      
+   procedure set_nulls_storage_policy_ts(
+      p_storage_policy in integer,
+      p_ts_id          in varchar2,
+      p_office_id      in varchar2 default null)
+   as
+   begin
+      ------------------
+      -- sanity check --
+      ------------------
+      if p_storage_policy is not null and
+         p_storage_policy not in (
+            filter_out_null_values, 
+            set_null_values_to_missing, 
+            reject_ts_with_null_values)
+      then
+         cwms_err.raise(
+            'ERROR',
+            'P_STORAGE_POLICY must be one of FILTER_OUT_NULL_VALUES, SET_NULL_VALUES_TO_MISSING, or REJECT_TS_WITH_NULL_VALUES'); 
+      end if;
+      cwms_msg.log_db_message(
+         'CWMS_TS.SET_NULLS_STORAGE_POLICY',
+         cwms_msg.msg_level_normal,
+         'Setting NULLs storage policy to '
+         || case p_storage_policy is null
+               when true then 'NULL'
+               else case p_storage_policy
+               	      when filter_out_null_values then 
+               	         'FILTER_OUT_NULL_VALUES'
+               	      when set_null_values_to_missing then
+               	      	 'SET_NULL_VALUES_TO_MISSING'
+               	      when reject_ts_with_null_values then
+               	      	 'REJECT_TS_WITH_NULL_VALUES'
+                    end
+            end
+         ||' for time seires '
+         ||cwms_util.get_db_office_id(p_office_id)
+         ||'/'
+         ||p_ts_id
+         ||' ('
+         ||get_ts_code(p_ts_id, p_office_id)
+         ||')');
+      if p_storage_policy is null then
+         cwms_properties.delete_property(
+            p_category  => 'TIMESERIES', 
+            p_id        => 'storage.nulls.tscode.'||get_ts_code(p_ts_id, p_office_id), 
+            p_office_id => 'CWMS');
+      else
+         cwms_properties.set_property(
+            p_category  => 'TIMESERIES', 
+            p_id        => 'storage.nulls.tscode.'||get_ts_code(p_ts_id, p_office_id), 
+            p_value     => p_storage_policy, 
+            p_comment   => null, 
+            p_office_id => 'CWMS');
+
+      end if;   
+   end set_nulls_storage_policy_ts;
+      
+   function get_nulls_storage_policy_ofc(
+      p_office_id in varchar2 default null)
+      return integer
+   as
+   begin
+      return cwms_properties.get_property(
+         p_category  => 'TIMESERIES', 
+         p_id        => 'storage.nulls.office.'||cwms_util.get_db_office_code(p_office_id), 
+         p_default   => null, 
+         p_office_id => 'CWMS');
+   end get_nulls_storage_policy_ofc;                  
+      
+   function get_nulls_storage_policy_ts(
+      p_ts_id     in varchar2,
+      p_office_id in varchar2 default null)
+      return integer
+   as
+   begin
+      return cwms_properties.get_property(
+         p_category  => 'TIMESERIES', 
+         p_id        => 'storage.nulls.tscode.'||get_ts_code(p_ts_id, p_office_id), 
+         p_default   => null, 
+         p_office_id => 'CWMS');
+   end get_nulls_storage_policy_ts;
+      
+   function get_nulls_storage_policy(
+      p_ts_code in integer)
+      return integer
+   as
+      l_policy      integer; 
+      l_office_code integer;
+   begin
+      l_policy := cwms_properties.get_property(
+         p_category  => 'TIMESERIES', 
+         p_id        => 'storage.nulls.tscode.'||p_ts_code, 
+         p_default   => null, 
+         p_office_id => 'CWMS');
+      if l_policy is null then
+         select bl.db_office_code
+           into l_office_code 
+           from at_cwms_ts_spec ts,
+                at_physical_location pl,
+                at_base_location bl
+          where ts.ts_code = p_ts_code
+            and pl.location_code = ts.location_code
+            and bl.base_location_code = pl.base_location_code;
+         l_policy := cwms_properties.get_property(
+            p_category  => 'TIMESERIES', 
+            p_id        => 'storage.nulls.office.'||l_office_code, 
+            p_default   => null, 
+            p_office_id => 'CWMS');
+         if l_policy is null then
+            l_policy := filter_out_null_values;
+         end if;
+      end if;
+      return l_policy;
+   end get_nulls_storage_policy;
+
 
 END cwms_ts;                                                --end package body
 /
