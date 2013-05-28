@@ -4,6 +4,9 @@
 @@cwms_util_pkg
 @@cwms_util_pkg_body
 
+@@cwms_env_pkg
+@@cwms_env_pkg_body
+
 @@cwms/views/av_shef_decode_spec.sql
 
 @@cwms_prop_pkg

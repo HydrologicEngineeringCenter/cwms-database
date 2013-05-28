@@ -64,6 +64,7 @@ alter session set current_schema = &cwms_schema;
 @@cwms/at_schema_tsv
 @@cwms/at_schema_tr
 @@cwms/at_schema_sec
+@@cwms/at_schema_env
 @@cwms/at_schema_apex_debug
 
 --
