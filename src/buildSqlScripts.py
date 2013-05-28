@@ -5903,6 +5903,9 @@ def main() :
     drop user &eroc.hectest_da;
     drop user &eroc.hectest_vt;
     drop user &eroc.hectest_dv;
+    drop user &eroc.hectest_ccp_p;
+    drop user &eroc.hectest_ccp_m;
+    drop user &eroc.hectest_ccp_r;
     
     --
     -- notice errors
@@ -5949,6 +5952,18 @@ def main() :
         -- hectest_dv
         group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('Data Acquisition Mgr', 'VT Mgr', 'TS ID Creator', 'CWMS Users');
         "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_dv', test_passwd, group_list, '&office_id');
+        --
+        -- hectest_ccp_p
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'CCP Proc', 'TS ID Creator', 'CWMS Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ccp_p', test_passwd, group_list, '&office_id');
+        --
+        -- hectest_ccp_m
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'CCP Mgr', 'TS ID Creator', 'CWMS Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ccp_m', test_passwd, group_list, '&office_id');
+        --
+        -- hectest_ccp_r
+        group_list := "&cwms_schema"."CHAR_32_ARRAY_TYPE" ('CWMS PD Users', 'CCP Reviewer', 'TS ID Creator', 'CWMS Users');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.hectest_ccp_r', test_passwd, group_list, '&office_id');
     
     END;
     /
