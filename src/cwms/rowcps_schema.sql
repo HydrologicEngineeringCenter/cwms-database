@@ -2842,7 +2842,7 @@ ALTER TABLE at_construction_history ADD (
 /
 
 create table at_project_lock (
-   lock_id         varchar2(40) primary key,
+   lock_id         varchar2(64) primary key,
    project_code    number(10),
    application_id  varchar2(64),
    acquire_time    timestamp,
