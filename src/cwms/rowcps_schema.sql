@@ -2851,7 +2851,7 @@ create table at_project_lock (
    session_program varchar2(64),
    session_machine varchar2(64),
    constraint at_project_lock_ck1 check (application_id = lower(application_id)),
-   constraint at_project_lock_u1  unique (project_code, application_id),
+   constraint at_project_lock_u1  unique (project_code, application_id) using index,
    constraint at_project_lock_fk1 foreign key (project_code) references at_project (project_location_code)   
 )
 tablespace cwms_20at_data
