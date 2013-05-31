@@ -10,6 +10,7 @@ create index at_loc_lvl_indicator_u1 on at_loc_lvl_indicator (
    ref_attr_value);
 ---------------------------------------------------------
 @@cwms/views/av_loc.sql
+@@cwms/views/av_loc2.sql
 @@cwms/views/av_log_message.sql
 @@cwms/views/av_ts_alias.sql
 @@cwms/views/av_ts_grp_assgn.sql

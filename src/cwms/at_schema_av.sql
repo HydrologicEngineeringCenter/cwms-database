@@ -14,6 +14,7 @@ DECLARE
 		:= id_array_t ('av_current_map_data',
 			       'av_active_flag',
 			       'av_loc',          -- av_loc is created in at_schema_2...
+			       'av_loc2',         -- av_loc2 is created in at_schema_2...
 			       'av_county',
 			       'av_cwms_ts_id',
 			       'av_loc_alias',
