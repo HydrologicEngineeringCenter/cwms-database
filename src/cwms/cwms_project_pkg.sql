@@ -386,6 +386,17 @@ function request_lock(
  */
 procedure release_lock(
    p_lock_id in varchar2);
+   
+/*
+ * Not documented
+ */   
+function has_revoker_rights (
+   p_project_id     in varchar2,
+   p_application_id in varchar2,
+   p_user_id        in varchar2 default null,
+   p_office_id      in varchar2 default null,
+   p_office_code    in number   default null)
+   return varchar2;
 
 /**       
  * Revokes a lock on a specified project and application. Lock revocation can be denied by the owner of the current lock. Lock revocation can only be performed by authorized users.
