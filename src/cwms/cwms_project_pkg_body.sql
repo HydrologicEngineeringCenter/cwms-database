@@ -654,19 +654,23 @@ function request_lock(
    p_office_id       in varchar2 default null)
    return varchar2
 is
-   pragma       autonomous_transaction;
-   l_error      exception;
-   pragma       exception_init(l_error, -20998);
-   l_lock_id    varchar2(40);
-   l_do_lock    boolean := true;
-   l_username   varchar2(30);
-   l_osuser     varchar2(30);
-   l_program    varchar2(64);
-   l_machine    varchar2(64);
-   l_office_id  varchar2(16);
-   l_id         integer;
-   l_queue_name varchar2(61);
-   l_text_msg   varchar2(32767);
+   revocation_denied exception;
+   already_locked    exception;
+   pragma            exception_init(revocation_denied, -20998);  
+   pragma            exception_init(already_locked,    -00001);  
+   pragma            autonomous_transaction;
+   
+   l_lock_id         varchar2(40);
+   l_do_lock         boolean := true;
+   l_username        varchar2(30);
+   l_osuser          varchar2(30);
+   l_program         varchar2(64);
+   l_machine         varchar2(64);
+   l_office_id       varchar2(16);
+   l_already_locked  boolean := false;
+   l_id              integer;
+   l_queue_name      varchar2(61);
+   l_text_msg        varchar2(32767);
 begin
    -------------------
    -- sanity checks --
@@ -689,7 +693,7 @@ begin
                p_revoke_timeout,
                p_office_id);
          exception
-            when l_error then l_do_lock := false;
+            when revocation_denied then l_do_lock := false;
          end;
       else
          l_do_lock := false;
@@ -707,48 +711,61 @@ begin
              l_machine
         from v$session
        where audsid = userenv('sessionid');
-      
-      insert
-        into at_project_lock
-             ( lock_id,
-               project_code,
-               application_id,
-               acquire_time,
-               session_user,
-               os_user,
-               session_program,
-               session_machine
-             )
-      values ( l_lock_id,
-               cwms_loc.get_location_code(p_office_id, p_project_id),
-               lower(p_application_id),
-               systimestamp at time zone 'UTC',
-               l_username,
-               l_osuser,
-               l_program,
-               l_machine
-             );      
-      commit;   
-      ------------------------------
-      -- publish the state change --
-      ------------------------------   
-      l_office_id := cwms_util.get_db_office_id(p_office_id);
-      l_queue_name  := l_office_id||'_'||'STATUS';
-      l_text_msg := '
-         <cwms_message type="State">                                
-            <property name="new state"   type="String"> locked        </property>
-            <property name="old state"   type="String"> unlocked      </property>
-            <property name="action"      type="String"> lock acquired </property>
-            <property name="office"      type="String"> $office       </property>
-            <property name="project"     type="String"> $project      </property>
-            <property name="application" type="String"> $application  </property>
-            <property name="user"        type="String"> $user         </property>
-         </cwms_message>';
-      l_text_msg := replace(l_text_msg, '$office',      l_office_id);
-      l_text_msg := replace(l_text_msg, '$project',     p_project_id);
-      l_text_msg := replace(l_text_msg, '$application', lower(p_application_id));
-      l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);
-      l_id := cwms_msg.publish_message(l_text_msg, l_queue_name, true);
+        
+      begin
+         insert
+           into at_project_lock
+                ( lock_id,
+                  project_code,
+                  application_id,
+                  acquire_time,
+                  session_user,
+                  os_user,
+                  session_program,
+                  session_machine
+                )
+         values ( l_lock_id,
+                  cwms_loc.get_location_code(p_office_id, p_project_id),
+                  lower(p_application_id),
+                  systimestamp at time zone 'UTC',
+                  l_username,
+                  l_osuser,
+                  l_program,
+                  l_machine
+                );      
+      exception
+         when already_locked then
+            ---------------------------------------------- 
+            -- encountered a race condition and another --
+            -- lock attempt beat us to the punch        --
+            ---------------------------------------------- 
+            l_already_locked := true;
+      end;
+      if l_already_locked then
+         l_lock_id := null;
+      else
+         commit;   
+         ------------------------------
+         -- publish the state change --
+         ------------------------------   
+         l_office_id := cwms_util.get_db_office_id(p_office_id);
+         l_queue_name  := l_office_id||'_'||'STATUS';
+         l_text_msg := '
+            <cwms_message type="State">                                
+               <property name="new state"   type="String"> locked        </property>
+               <property name="old state"   type="String"> unlocked      </property>
+               <property name="action"      type="String"> lock acquired </property>
+               <property name="office"      type="String"> $office       </property>
+               <property name="project"     type="String"> $project      </property>
+               <property name="application" type="String"> $application  </property>
+               <property name="user"        type="String"> $user         </property>
+            </cwms_message>';
+         l_text_msg := replace(l_text_msg, '$office',      l_office_id);
+         l_text_msg := replace(l_text_msg, '$project',     p_project_id);
+         l_text_msg := replace(l_text_msg, '$application', lower(p_application_id));
+         l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);
+         l_id := cwms_msg.publish_message(l_text_msg, l_queue_name, true);
+      end if; 
    end if;
    return l_lock_id;
 end request_lock;
