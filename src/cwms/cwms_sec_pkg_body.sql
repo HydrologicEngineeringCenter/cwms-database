@@ -2,7 +2,7 @@
 SET DEFINE ON
 @@defines.sql
 
-CREATE OR REPLACE PACKAGE BODY &cwms_schema.cwms_sec
+CREATE OR REPLACE PACKAGE BODY cwms_sec
 AS
    FUNCTION is_user_cwms_locked (p_db_office_code IN NUMBER)
       RETURN BOOLEAN
