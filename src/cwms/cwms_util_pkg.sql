@@ -166,7 +166,6 @@ AS
     * Default escape character
     */       
    escape_char CONSTANT                      VARCHAR2 (1) := '\';
-   mv_cwms_ts_id_refresh_interval CONSTANT   NUMBER := 30;
    /**
     * ODBC-style timestamp format for PL/SQL 
     */       
@@ -1013,11 +1012,6 @@ AS
                               p_parameter_id   IN     VARCHAR2 DEFAULT NULL
                              );
 
-   PROCEDURE start_mv_cwms_ts_id_job;
-
-   PROCEDURE stop_mv_cwms_ts_id_job;
-
-   PROCEDURE refresh_mv_cwms_ts_id;
    /**
     * Retrieves a case-corrected unit identifier
     * 

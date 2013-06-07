@@ -1,9 +1,8 @@
-/* Formatted on 6/25/2012 3:33:50 PM (QP5 v5.185.11230.41888) */
+/* Formatted on 5/28/2013 4:17:36 PM (QP5 v5.163.1008.3004) */
 SET DEFINE ON
 @@defines.sql
---define cwms_schema=CWMS_20
 
-CREATE OR REPLACE PACKAGE BODY cwms_sec
+CREATE OR REPLACE PACKAGE BODY &cwms_schema.cwms_sec
 AS
    FUNCTION is_user_cwms_locked (p_db_office_code IN NUMBER)
       RETURN BOOLEAN
@@ -28,7 +27,7 @@ AS
          SELECT atslu.is_locked
            INTO l_is_locked
            FROM "AT_SEC_LOCKED_USERS" atslu
-          WHERE     atslu.db_office_code = p_db_office_code
+          WHERE atslu.db_office_code = p_db_office_code
                 AND atslu.username = UPPER (l_username);
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -76,7 +75,7 @@ AS
       SELECT COUNT (*)
         INTO l_count
         FROM "AT_SEC_USERS" atsu
-       WHERE     atsu.db_office_code = p_db_office_code
+       WHERE atsu.db_office_code = p_db_office_code
              AND atsu.user_group_code IN
                     (user_group_code_dba_users, user_group_code_user_admins)
              AND atsu.username = UPPER (l_username);
@@ -160,35 +159,6 @@ AS
       END IF;
    END;
 
-   PROCEDURE set_user_office_id (p_username       IN VARCHAR2,
-                                 p_db_office_id   IN VARCHAR2)
-   AS
-      l_db_office_code   NUMBER
-                            := cwms_util.get_db_office_code (p_db_office_id);
-      l_count            NUMBER;
-      l_username         VARCHAR2 (31);
-   BEGIN
-      confirm_user_admin_priv (l_db_office_code);
-
-      SELECT COUNT (*)
-        INTO l_count
-        FROM at_sec_user_office
-       WHERE username = UPPER (TRIM (p_username));
-
-      IF l_count > 0
-      THEN
-         UPDATE at_sec_user_office
-            SET user_db_office_code = l_db_office_code
-          WHERE username = UPPER (TRIM (p_username));
-      ELSE
-         cwms_err.raise (
-            'ERROR',
-               'User: '
-            || UPPER (TRIM (p_username))
-            || ' is not a valid CWMS account name.');
-      END IF;
-   END;
-
    FUNCTION get_max_cwms_ts_group_code
       RETURN NUMBER
    AS
@@ -236,7 +206,7 @@ AS
       SELECT MIN (l_code)
         INTO l_lowest_code
         FROM (SELECT COLUMN_VALUE l_code,
-                       LEAD (COLUMN_VALUE) OVER (ORDER BY COLUMN_VALUE)
+                     LEAD (COLUMN_VALUE) OVER (ORDER BY COLUMN_VALUE)
                      - COLUMN_VALUE
                         dif_value
                 FROM TABLE (l_codes_array))
@@ -465,7 +435,7 @@ AS
          SELECT COUNT (*)
            INTO l_count
            FROM at_sec_users
-          WHERE     username = cwms_util.get_user_id
+          WHERE username = cwms_util.get_user_id
                 AND user_group_code IN
                        (user_group_code_dba_users,
                         user_group_code_user_admins);
@@ -500,7 +470,7 @@ AS
              WHERE db_office_code IN
                       (SELECT UNIQUE db_office_code
                          FROM at_sec_users
-                        WHERE     username = cwms_util.get_user_id
+                        WHERE username = cwms_util.get_user_id
                               AND user_group_code IN
                                      (user_group_code_dba_users,
                                       user_group_code_user_admins));
@@ -529,7 +499,7 @@ AS
                    is_member,
                    user_group_desc
               FROM av_sec_users
-             WHERE     db_office_code = l_db_office_code
+             WHERE db_office_code = l_db_office_code
                    AND username = l_username;
       ELSE
          OPEN p_priv_groups FOR
@@ -542,17 +512,16 @@ AS
                    is_member,
                    user_group_desc
               FROM av_sec_users
-             WHERE     username = l_username
-                   AND user_group_code != 10
+             WHERE username = l_username AND user_group_code != 10
                    AND db_office_code IN
                           (SELECT db_office_code
                              FROM at_sec_locked_users
-                            WHERE     username = cwms_util.get_user_id
+                            WHERE username = cwms_util.get_user_id
                                   AND db_office_code IN
                                          (SELECT UNIQUE a.db_office_code
                                             FROM at_sec_users a --, at_sec_locked_users b
-                                           WHERE     a.username =
-                                                        cwms_util.get_user_id
+                                           WHERE a.username =
+                                                    cwms_util.get_user_id
                                                  AND a.user_group_code IN
                                                         (user_group_code_dba_users,
                                                          user_group_code_user_admins))
@@ -582,8 +551,7 @@ AS
       THEN
          cwms_err.raise (
             'ERROR',
-               'User Group: '
-            || p_user_group_id
+            'User Group: ' || p_user_group_id
             || ' is a primary privilege group, which cannot be paired with a TS Group.');
       ELSE
          RETURN l_user_group;
@@ -600,7 +568,7 @@ AS
          SELECT ts_group_code
            INTO l_ts_group_code
            FROM at_sec_ts_groups
-          WHERE     UPPER (ts_group_id) = UPPER (TRIM (p_ts_group_id))
+          WHERE UPPER (ts_group_id) = UPPER (TRIM (p_ts_group_id))
                 AND db_office_code = p_db_office_code;
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -691,7 +659,7 @@ AS
          THEN
             UPDATE at_sec_locked_users
                SET is_locked = 'F'
-             WHERE     db_office_code = l_db_office_code
+             WHERE db_office_code = l_db_office_code
                    AND username = l_username;
          END IF;
       EXCEPTION
@@ -824,7 +792,7 @@ AS
          SELECT user_group_code
            INTO l_user_group_code
            FROM at_sec_user_groups
-          WHERE     UPPER (user_group_id) = UPPER (p_user_group_id)
+          WHERE UPPER (user_group_id) = UPPER (p_user_group_id)
                 AND db_office_code = p_db_office_code;
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -923,41 +891,88 @@ AS
    PROCEDURE create_user (p_username             IN VARCHAR2,
                           p_password             IN VARCHAR2,
                           p_user_group_id_list   IN char_32_array_type,
-                          p_db_office_id         IN VARCHAR2 DEFAULT NULL)
+                          p_db_office_id         IN VARCHAR2 DEFAULT NULL,
+                          p_fullname             IN VARCHAR2 DEFAULT NULL,
+                          p_cwms_permissions     IN VARCHAR2 DEFAULT NULL)
    IS
-      l_db_office_id      VARCHAR2 (16)
-                             := cwms_util.get_db_office_id (p_db_office_id);
-      l_db_office_code    NUMBER
-                             := cwms_util.get_db_office_code (l_db_office_id);
-      l_dbi_username      VARCHAR2 (31);
-      l_username          VARCHAR2 (31) := UPPER (TRIM (p_username));
-      l_user_group_code   NUMBER;
-      l_count             NUMBER;
+      l_db_office_id       VARCHAR2 (16)
+                              := cwms_util.get_db_office_id (p_db_office_id);
+      l_db_office_code     NUMBER
+                              := cwms_util.get_db_office_code (l_db_office_id);
+      l_dbi_username       VARCHAR2 (31);
+      l_username           VARCHAR2 (31) := UPPER (TRIM (p_username));
+      l_user_group_code    NUMBER;
+      l_count              NUMBER;
+      l_cwms_permissions   VARCHAR2 (1024)
+         := 'Watershed Configuration-No Access,Data Acquisition-No Access,Data Visualization-No Access,Model Interface-No Access,Res-No Access,FloodOpt-No Access,GridUtil-No Access,FIA-No Access,FDA-No Access,Hfp-No Access,Scripting-No Access';
    BEGIN
       confirm_user_admin_priv (l_db_office_code);
 
-      IF p_user_group_id_list.COUNT > 0
+      IF (p_user_group_id_list IS NOT NULL)
       THEN
-         FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
-         LOOP
-            l_user_group_code :=
-               get_user_group_code (p_user_group_id_list (i),
-                                    l_db_office_code);
-         END LOOP;
+         IF p_user_group_id_list.COUNT > 0
+         THEN
+            FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
+            LOOP
+               l_user_group_code :=
+                  get_user_group_code (p_user_group_id_list (i),
+                                       l_db_office_code);
+            END LOOP;
+         END IF;
       END IF;
 
       create_cwms_db_account (l_username, p_password, l_db_office_id);
 
-      IF p_user_group_id_list.COUNT > 0
+      IF (p_user_group_id_list IS NOT NULL)
       THEN
-         FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
-         LOOP
-            add_user_to_group (l_username,
-                               p_user_group_id_list (i),
-                               l_db_office_code);
-         END LOOP;
+         IF p_user_group_id_list.COUNT > 0
+         THEN
+            FOR i IN p_user_group_id_list.FIRST .. p_user_group_id_list.LAST
+            LOOP
+               add_user_to_group (l_username,
+                                  p_user_group_id_list (i),
+                                  l_db_office_code);
+            END LOOP;
+         END IF;
       END IF;
-   END;
+
+      UPDATE AT_SEC_USER_OFFICE
+         SET FULLNAME = P_FULLNAME
+       WHERE USERNAME = p_username;
+
+      IF (p_cwms_permissions = NULL)
+      THEN
+         l_cwms_permissions := p_cwms_permissions;
+      END IF;
+
+      INSERT
+        INTO AT_SEC_CWMS_PERMISSIONS (USERNAME, PERMISSIONS, DB_OFFICE_CODE)
+      VALUES (UPPER (p_username), l_cwms_permissions, l_db_office_code);
+
+      COMMIT;
+   END CREATE_USER;
+
+   PROCEDURE update_user (p_username           IN VARCHAR2,
+                          p_fullname           IN VARCHAR2,
+                          p_cwms_permissions   IN VARCHAR2,
+                          p_db_office_id       IN VARCHAR2 DEFAULT NULL)
+   IS
+      l_db_office_id     VARCHAR2 (16)
+                            := cwms_util.get_db_office_id (p_db_office_id);
+      l_db_office_code   NUMBER
+                            := cwms_util.get_db_office_code (l_db_office_id);
+   BEGIN
+      UPDATE AT_SEC_USER_OFFICE
+         SET FULLNAME = p_fullname
+       WHERE username = p_username;
+
+      UPDATE AT_SEC_CWMS_PERMISSIONS
+         SET PERMISSIONS = p_cwms_permissions,
+             DB_OFFICE_CODE = l_db_office_code
+       WHERE username = p_username;
+
+      COMMIT;
+   END UPDATE_USER;
 
    ----------------------------------------------------------------------------
    -- delete_user
@@ -989,95 +1004,50 @@ AS
 
    PROCEDURE delete_user (p_username IN VARCHAR2)
    IS
-      l_username              VARCHAR2 (31);
-      l_count                 NUMBER := 0;
-      l_num_offices           NUMBER := 0;
-      l_num_unlocked          NUMBER := 0;
-      l_db_office_id          VARCHAR2 (16) := cwms_util.get_db_office_id (NULL);
-      l_db_office_code        NUMBER
-                                 := cwms_util.get_db_office_code (l_db_office_id);
-      l_user_db_office_code   NUMBER;
-      l_lock_oracle_account   BOOLEAN := FALSE;
-      l_drop_oracle_account   BOOLEAN := FALSE;
+      l_username   VARCHAR2 (31);
+      l_count      NUMBER := 0;
    BEGIN
       SELECT COUNT (UNIQUE db_office_code)
         INTO l_count
         FROM at_sec_users
-       WHERE     username = cwms_util.get_user_id
+       WHERE username = cwms_util.get_user_id
              AND user_group_code IN
                     (user_group_code_dba_users, user_group_code_user_admins);
+
+      DBMS_OUTPUT.PUT_LINE ('COunt ' || l_count);
 
       IF l_count > 0
       THEN
          l_username := UPPER (TRIM (p_username));
 
          DELETE FROM at_sec_users
-               WHERE     username = l_username
+               WHERE username = l_username
                      AND db_office_code IN
                             (SELECT UNIQUE db_office_code
                                FROM at_sec_users
-                              WHERE     username = cwms_util.get_user_id
+                              WHERE username = cwms_util.get_user_id
                                     AND user_group_code IN
                                            (user_group_code_dba_users,
                                             user_group_code_user_admins));
 
          DELETE FROM at_sec_locked_users
-               WHERE     username = l_username
+               WHERE username = l_username
                      AND db_office_code IN
                             (SELECT UNIQUE db_office_code
                                FROM at_sec_users
-                              WHERE     username = cwms_util.get_user_id
+                              WHERE username = cwms_util.get_user_id
                                     AND user_group_code IN
                                            (user_group_code_dba_users,
                                             user_group_code_user_admins));
 
+         DELETE FROM at_sec_cwms_permissions
+               WHERE username = l_username;
+
+         DELETE FROM at_sec_user_office
+               WHERE username = l_username;
+
+
          COMMIT;
-
-         --
-         SELECT COUNT (*)
-           INTO l_num_unlocked
-           FROM at_sec_locked_users
-          WHERE username = l_username AND is_locked = 'F';
-
-         IF l_num_unlocked > 0
-         THEN
-            /* p_username has active accounts to databases that this admin
-      user does not have admin privileges too.*/
-            l_lock_oracle_account := FALSE;
-            l_drop_oracle_account := FALSE;
-         END IF;
-
-
-         SELECT user_db_office_code
-           INTO l_user_db_office_code
-           FROM at_sec_user_office
-          WHERE username = l_username;
-      END IF;
-
-
-      SELECT COUNT (*)
-        INTO l_num_offices
-        FROM at_sec_locked_users
-       WHERE username = l_username;
-
-
-
-      IF l_count > 0
-      THEN
-         BEGIN
-            DELETE FROM at_sec_user_office
-                  WHERE username = l_username;
-         EXCEPTION
-            WHEN OTHERS
-            THEN
-               -- If this parent entry still has child entries in the above
-               -- tables, then leave an entry for this username
-               NULL;
-         END;
-      --
-
-
-
       END IF;
    END;
 
@@ -1241,7 +1211,7 @@ AS
             SELECT is_locked
               INTO l_is_locked
               FROM at_sec_locked_users
-             WHERE     username = l_username
+             WHERE username = l_username
                    AND db_office_code = l_db_office_code;
          EXCEPTION
             WHEN NO_DATA_FOUND
@@ -1304,14 +1274,14 @@ AS
             THEN
                cwms_err.raise (
                   'ERROR',
-                     'Sorry, unable to set the DBI User Password because the '
+                  'Sorry, unable to set the DBI User Password because the '
                   || l_db_office_id
                   || ' database does not have a DBI User set.');
             WHEN TOO_MANY_ROWS
             THEN
                cwms_err.raise (
                   'ERROR',
-                     'Sorry, unable to set the DBI User Password because there are more than one set DBI Users set for the '
+                  'Sorry, unable to set the DBI User Password because there are more than one set DBI Users set for the '
                   || l_db_office_id
                   || ' database. Please specify which DBI User''''s password you wish to reset.');
          END;
@@ -1320,7 +1290,7 @@ AS
             SELECT dbi_username
               INTO l_dbi_username
               FROM at_sec_dbi_user
-             WHERE     dbi_username = UPPER (p_dbi_username)
+             WHERE dbi_username = UPPER (p_dbi_username)
                    AND db_office_code = l_db_office_code;
          EXCEPTION
             WHEN NO_DATA_FOUND
@@ -1372,8 +1342,7 @@ AS
       ELSE
          cwms_err.raise (
             'ERROR',
-               'Unrecognized p_privilege: '
-            || p_privilege
+            'Unrecognized p_privilege: ' || p_privilege
             || ' "None", "Read" or "Read-Write" are the only valid privileges.');
       END IF;
 
@@ -1508,7 +1477,7 @@ AS
       SELECT status
         INTO l_status
         FROM dba_objects
-       WHERE     object_name = 'MV_SEC_TS_PRIVILEGES'
+       WHERE object_name = 'MV_SEC_TS_PRIVILEGES'
              AND object_type = 'MATERIALIZED VIEW';
 
 
@@ -1593,8 +1562,8 @@ AS
                job_type          => 'stored_procedure',
                job_action        => 'cwms_sec.refresh_mv_sec_ts_privileges',
                start_date        => NULL,
-               repeat_interval   =>    'freq=minutely; interval='
-                                    || l_run_interval,
+               repeat_interval   => 'freq=minutely; interval='
+                                   || l_run_interval,
                end_date          => NULL,
                job_class         => 'default_job_class',
                enabled           => TRUE,
@@ -1659,7 +1628,7 @@ AS
             l_is_member_list (i) :=
                cwms_util.return_t_or_f_flag (p_is_member_list (i));
 
-            IF     l_is_member_list (i) = 'F'
+            IF l_is_member_list (i) = 'F'
                AND l_user_group_code = user_group_code_all_users
             THEN
                cwms_err.raise (
@@ -1757,7 +1726,7 @@ AS
 
       UPDATE at_sec_user_groups
          SET user_group_id = TRIM (p_user_group_id_new)
-       WHERE     user_group_code = l_user_group_code
+       WHERE user_group_code = l_user_group_code
              AND db_office_code = l_db_office_code;
 
       COMMIT;
@@ -1800,7 +1769,7 @@ AS
 
       UPDATE at_sec_user_groups
          SET user_group_desc = TRIM (p_user_group_desc)
-       WHERE     user_group_code = l_user_group_code
+       WHERE user_group_code = l_user_group_code
              AND db_office_code = l_db_office_code;
 
       COMMIT;
@@ -1840,21 +1809,21 @@ AS
       -- delete all at_sec_allow pairings with this user_group...
       --
       DELETE FROM at_sec_allow
-            WHERE     user_group_code = l_user_group_code
+            WHERE user_group_code = l_user_group_code
                   AND db_office_code = l_db_office_code;
 
       --
       -- delete all at_sec_users entries with this user_code...
       --
       DELETE FROM at_sec_users
-            WHERE     user_group_code = l_user_group_code
+            WHERE user_group_code = l_user_group_code
                   AND db_office_code = l_db_office_code;
 
       --
       -- finally delete the user_group from at_sec_user_groups...
       --
       DELETE FROM at_sec_user_groups
-            WHERE     user_group_code = l_user_group_code
+            WHERE user_group_code = l_user_group_code
                   AND db_office_code = l_db_office_code;
 
       --
@@ -1912,7 +1881,7 @@ AS
       OPEN l_user_group_codes FOR
          SELECT user_group_code
            FROM at_sec_user_groups
-          WHERE     db_office_code = l_db_office_code
+          WHERE db_office_code = l_db_office_code
                 AND user_group_code > max_cwms_ts_ugroup_code;
 
       --
@@ -1964,21 +1933,21 @@ AS
       -- delete all at_sec_allow pairings with this user_group...
       --
       DELETE FROM at_sec_allow
-            WHERE     ts_group_code = l_ts_group_code
+            WHERE ts_group_code = l_ts_group_code
                   AND db_office_code = l_db_office_code;
 
       --
       -- delete all at_sec_users entries with this user_code...
       --
       DELETE FROM at_sec_ts_group_masks
-            WHERE     ts_group_code = l_ts_group_code
+            WHERE ts_group_code = l_ts_group_code
                   AND db_office_code = l_db_office_code;
 
       --
       -- finally delete the user_group from at_sec_user_groups...
       --
       DELETE FROM at_sec_ts_groups
-            WHERE     ts_group_code = l_ts_group_code
+            WHERE ts_group_code = l_ts_group_code
                   AND db_office_code = l_db_office_code;
 
       --
@@ -2048,7 +2017,7 @@ AS
 
       UPDATE at_sec_ts_groups
          SET ts_group_id = TRIM (p_ts_group_id_new)
-       WHERE     ts_group_code = l_ts_group_code
+       WHERE ts_group_code = l_ts_group_code
              AND db_office_code = l_db_office_code;
 
       COMMIT;
@@ -2091,7 +2060,7 @@ AS
 
       UPDATE at_sec_ts_groups
          SET ts_group_desc = TRIM (p_ts_group_desc)
-       WHERE     ts_group_code = l_ts_group_code
+       WHERE ts_group_code = l_ts_group_code
              AND db_office_code = l_db_office_code;
 
       COMMIT;
@@ -2135,7 +2104,7 @@ AS
       THEN
          cwms_err.raise (
             'ERROR',
-               'Unable to create new TS Collection. The TS Group '
+            'Unable to create new TS Collection. The TS Group '
             || l_ts_group_id
             || ' already exists. The existing Collection Group has a Description of: '
             || l_ts_group_desc);
@@ -2147,7 +2116,7 @@ AS
       OPEN l_ts_group_codes FOR
          SELECT ts_group_code
            FROM at_sec_ts_groups
-          WHERE     db_office_code = l_db_office_code
+          WHERE db_office_code = l_db_office_code
                 AND ts_group_code > max_cwms_ts_group_code;
 
       --
@@ -2204,7 +2173,7 @@ AS
       THEN
          cwms_err.raise (
             'ERROR',
-               'Unable to assign/reassign TS masks because the p_ts_mask_list and p_add_remove_lists are mismatched. The p_ts_mask_list has '
+            'Unable to assign/reassign TS masks because the p_ts_mask_list and p_add_remove_lists are mismatched. The p_ts_mask_list has '
             || p_ts_mask_list.COUNT
             || ' elements and the p_add_remove_list has '
             || p_add_remove_list.COUNT
@@ -2244,7 +2213,7 @@ AS
             END;
          ELSE
             DELETE FROM at_sec_ts_group_masks
-                  WHERE     db_office_code = l_db_office_code
+                  WHERE db_office_code = l_db_office_code
                         AND UPPER (ts_group_mask) = l_ts_mask;
          END IF;
 
@@ -2276,7 +2245,7 @@ AS
       END IF;
 
       DELETE FROM at_sec_ts_group_masks
-            WHERE     ts_group_code = l_ts_group_code
+            WHERE ts_group_code = l_ts_group_code
                   AND db_office_code = l_db_office_code;
 
       COMMIT;
@@ -2321,6 +2290,185 @@ AS
        WHERE office_code = l_db_office_code;
 
       RETURN l_db_office_name;
+   END;
+
+   FUNCTION is_user_admin (P_USERNAME VARCHAR2, P_DB_OFFICE_ID VARCHAR2)
+      RETURN BOOLEAN
+   IS
+      l_count   NUMBER;
+   BEGIN
+      SELECT COUNT (*)
+        INTO l_count
+        FROM "AT_SEC_USERS" atsu
+       WHERE atsu.db_office_code =
+                CWMS_UTIL.GET_DB_OFFICE_CODE (P_DB_OFFICE_ID)
+             AND atsu.user_group_code IN
+                    (user_group_code_dba_users, user_group_code_user_admins)
+             AND atsu.username = UPPER (p_username);
+
+      IF l_count > 0
+      THEN
+         RETURN TRUE;
+      ELSE
+         RETURN FALSE;
+      END IF;
+   END;
+
+   FUNCTION is_user_server_admin (P_USERNAME        VARCHAR2,
+                                  P_DB_OFFICE_ID    VARCHAR2)
+      RETURN BOOLEAN
+   IS
+      l_count   NUMBER;
+   BEGIN
+      SELECT COUNT (*)
+        INTO l_count
+        FROM "AT_SEC_USERS" atsu
+       WHERE atsu.db_office_code =
+                CWMS_UTIL.GET_DB_OFFICE_CODE (P_DB_OFFICE_ID)
+             AND atsu.user_group_code IN
+                    (user_group_code_dba_users, user_group_code_user_admins)
+             AND atsu.username = UPPER (p_username);
+
+      IF l_count > 0
+      THEN
+         RETURN TRUE;
+      ELSE
+         RETURN FALSE;
+      END IF;
+   END;
+
+   FUNCTION GET_ADMIN_PERMISSIONS (p_user_name      IN VARCHAR2,
+                                   p_db_office_id   IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+      l_permissions   VARCHAR2 (128);
+   BEGIN
+      IF (IS_USER_SERVER_ADMIN (p_user_name, p_db_office_id))
+      THEN
+         l_permissions := 'serverAdmin-configure';
+      ELSE
+         l_permissions := 'serverAdmin-No Access';
+      END IF;
+
+      IF (IS_USER_ADMIN (p_user_name, p_db_office_id))
+      THEN
+         l_permissions := l_permissions || ',serverAdminUsers-configure,';
+      ELSE
+         l_permissions := l_permissions || ',serverAdminUsers-No Access,';
+      END IF;
+
+      RETURN l_permissions;
+   END;
+
+   PROCEDURE get_cwms_permissions (
+      p_cwms_permissions      OUT SYS_REFCURSOR,
+      p_db_office_id       IN     VARCHAR2,
+      p_include_all        IN     BOOLEAN DEFAULT FALSE)
+   AS
+      l_db_office_id     VARCHAR2 (16)
+                            := cwms_util.get_db_office_id (p_db_office_id);
+      l_db_office_code   NUMBER
+                            := cwms_util.get_db_office_code (l_db_office_id);
+      l_username         VARCHAR2 (31) := CWMS_UTIL.GET_USER_ID;
+      l_is_locked        VARCHAR2 (1);
+      l_query            VARCHAR2 (1256);
+      l_count            NUMBER;
+      l_include_all      BOOLEAN := P_INCLUDE_ALL;
+   BEGIN
+      SELECT COUNT (*)
+        INTO l_count
+        FROM at_sec_user_office
+       WHERE username = l_username;
+
+      IF l_count = 0 OR l_db_office_id = 'UNK'
+      THEN
+         cwms_err.raise (
+            'ERROR',
+               'No CWMS Permissions Set. Account '
+            || l_username
+            || ' has no CWMS Permissions set for db_office_id: '
+            || l_db_office_id
+            || '. Please see your CWMS Application Administrator.');
+      END IF;
+
+      IF is_user_cwms_locked (p_db_office_code => l_db_office_code)
+      THEN
+         cwms_err.raise (
+            'ERROR',
+               'Account is Locked. Account '
+            || l_username
+            || ' is locked for db_office_id: '
+            || l_db_office_id
+            || '. Please see your CWMS Application Administrator.');
+      END IF;
+
+      IF P_INCLUDE_ALL AND NOT IS_USER_ADMIN
+      THEN
+         L_INCLUDE_ALL := FALSE;
+      END IF;
+
+      l_query :=
+         'SELECT    p.username
+             || ''|x|''
+             || CWMS_SEC.GET_ADMIN_PERMISSIONS (p.username,'''
+         || p_db_office_id
+         || ''')
+             || permissions
+             || ''|''
+             ||  case when fullname is null or length(fullname)=0 then '' '' else fullname end
+             || ''|''
+        FROM at_sec_cwms_permissions p, at_sec_user_office u  WHERE p.username=u.username';
+
+      IF NOT L_INCLUDE_ALL
+      THEN
+         l_query := l_query || ' AND p.username = ''' || l_username || '''';
+      END IF;
+
+      DBMS_OUTPUT.PUT_LINE (l_query);
+
+      OPEN p_cwms_permissions FOR l_query;
+   END;
+
+   PROCEDURE GET_DB_USERS (p_db_users OUT SYS_REFCURSOR)
+   IS
+   BEGIN
+      OPEN p_db_users FOR
+           SELECT username
+             FROM all_users
+            WHERE username NOT IN
+                     ('ANONYMOUS',
+                      'APPQOSSYS',
+                      '&cwms_schema',
+                      'CWMS_DBX',
+                      'CWMS_DBA',
+                      'CWMS_STR_ADM',
+                      'CTXSYS',
+                      'DBSNMP',
+                      'DIP',
+                      'EXFSYS',
+                      'FLOWS_FILES',
+                      'MDDATA',
+                      'MDSYS',
+                      'MGMT_VIEW',
+                      'ORACLE_OCM',
+                      'ORDDATA',
+                      'ORDSYS',
+                      'OUTLN',
+                      'ORDPLUGINS',
+                      'SI_INFORMTN_SCHEMA',
+                      'SPATIAL_CSW_ADMIN_USR',
+                      'SPATIAL_WFS_ADMIN_USR',
+                      'SYS',
+                      'SYSTEM',
+                      'SYSMAN',
+                      'UPASSADM',
+                      'WMSYS',
+                      'XDB',
+                      'XS$NULL')
+                  AND username NOT LIKE '%DBI'
+                  AND username NOT LIKE 'APEX_%'
+                  AND username NOT IN (SELECT username FROM AT_SEC_USER_OFFICE)
+         ORDER BY username;
    END;
 END cwms_sec;
 /

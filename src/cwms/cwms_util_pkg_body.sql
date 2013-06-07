@@ -13,9 +13,9 @@ AS
    BEGIN
       l_sec_dms :=
          ROUND (
-              (  (ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60.0)
-               - TRUNC (
-                    ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60))
+            ( (ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60.0)
+             - TRUNC (
+                  ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60))
             * 60.0,
             2);
       l_min_dms :=
@@ -45,8 +45,8 @@ AS
       l_sec_60    NUMBER;
    BEGIN
       l_sec_dms :=
-           (  (ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60.0)
-            - min_dms (p_decimal_degrees))
+         ( (ABS (p_decimal_degrees - TRUNC (p_decimal_degrees)) * 60.0)
+          - min_dms (p_decimal_degrees))
          * 60.0;
       l_sec_60 := ROUND (l_sec_dms, 2);
 
@@ -112,44 +112,63 @@ AS
       RETURN l_timezone;
    END get_timezone;
 
-   FUNCTION get_xml_time(
-      p_local_time in date,
-      p_local_tz   in varchar2)
+   FUNCTION get_xml_time (p_local_time IN DATE, p_local_tz IN VARCHAR2)
       RETURN VARCHAR2
    IS
-      l_interval      interval day to second;
-      l_tz_designator varchar2(6);
-      l_xml_time      varchar2(32);
+      l_interval        INTERVAL DAY TO SECOND;
+      l_tz_designator   VARCHAR2 (6);
+      l_xml_time        VARCHAR2 (32);
    BEGIN
-      l_xml_time := to_char(p_local_time, 'yyyy-mm-dd"T"hh24:mi:ss');
-      l_interval := cast(p_local_time as timestamp) - cast(cwms_util.change_timezone(p_local_time, p_local_tz, 'UTC') as timestamp);
-      l_tz_designator := case l_interval = to_dsinterval('00 00:00:00')
-                            when true then 'Z'
-                            else to_char(extract(hour from l_interval), 'S09')||':'||trim(to_char(extract(minute from l_interval), '09'))
-                         end;
-      return l_xml_time||l_tz_designator;
+      l_xml_time := TO_CHAR (p_local_time, 'yyyy-mm-dd"T"hh24:mi:ss');
+      l_interval :=
+         CAST (p_local_time AS TIMESTAMP)
+         - CAST (
+              cwms_util.change_timezone (p_local_time, p_local_tz, 'UTC') AS TIMESTAMP);
+      l_tz_designator :=
+         CASE l_interval = TO_DSINTERVAL ('00 00:00:00')
+            WHEN TRUE
+            THEN
+               'Z'
+            ELSE
+                  TO_CHAR (EXTRACT (HOUR FROM l_interval), 'S09')
+               || ':'
+               || TRIM (TO_CHAR (EXTRACT (MINUTE FROM l_interval), '09'))
+         END;
+      RETURN l_xml_time || l_tz_designator;
    END get_xml_time;
 
    FUNCTION FIXUP_TIMEZONE (p_time IN TIMESTAMP WITH TIME ZONE)
       RETURN TIMESTAMP WITH TIME ZONE
    IS
-      l_time TIMESTAMP WITH TIME ZONE;
+      l_time   TIMESTAMP WITH TIME ZONE;
    BEGIN
-      CASE EXTRACT(TIMEZONE_REGION FROM p_time)
-         WHEN 'PST' THEN
-            CASE EXTRACT(TIMEZONE_ABBR FROM p_time)
-               WHEN 'PDT' THEN
-                  l_time := (p_time + TO_DSINTERVAL('0 01:00:00')) AT TIME ZONE 'ETC/GMT+8';
-               ELSE l_time := p_time;
+      CASE EXTRACT (TIMEZONE_REGION FROM p_time)
+         WHEN 'PST'
+         THEN
+            CASE EXTRACT (TIMEZONE_ABBR FROM p_time)
+               WHEN 'PDT'
+               THEN
+                  l_time :=
+                     (p_time + TO_DSINTERVAL ('0 01:00:00'))
+                        AT TIME ZONE 'ETC/GMT+8';
+               ELSE
+                  l_time := p_time;
             END CASE;
-         WHEN 'CST' THEN
-            CASE EXTRACT(TIMEZONE_ABBR FROM p_time)
-               WHEN 'CDT' THEN
-                  l_time := (p_time + TO_DSINTERVAL('0 01:00:00')) AT TIME ZONE 'ETC/GMT+6';
-               ELSE l_time := p_time;
+         WHEN 'CST'
+         THEN
+            CASE EXTRACT (TIMEZONE_ABBR FROM p_time)
+               WHEN 'CDT'
+               THEN
+                  l_time :=
+                     (p_time + TO_DSINTERVAL ('0 01:00:00'))
+                        AT TIME ZONE 'ETC/GMT+6';
+               ELSE
+                  l_time := p_time;
             END CASE;
-         ELSE l_time := p_time;
+         ELSE
+            l_time := p_time;
       END CASE;
+
       RETURN l_time;
    END FIXUP_TIMEZONE;
 
@@ -164,45 +183,51 @@ AS
 
    --
    -- return the input date in a different time zone
-   function change_timezone (
-      p_in_date   in timestamp,
-      p_from_tz   in varchar2,
-      p_to_tz     in varchar2 default 'UTC')
-      return timestamp
-      result_cache
-   is
-   begin
-      return case p_to_tz = p_from_tz
-                when true then
+   FUNCTION change_timezone (p_in_date   IN TIMESTAMP,
+                             p_from_tz   IN VARCHAR2,
+                             p_to_tz     IN VARCHAR2 DEFAULT 'UTC')
+      RETURN TIMESTAMP
+      RESULT_CACHE
+   IS
+   BEGIN
+      RETURN CASE p_to_tz = p_from_tz
+                WHEN TRUE
+                THEN
                    p_in_date
-                else
-                   from_tz(p_in_date, 
-                           get_timezone(p_from_tz)
-                          ) at time zone get_timezone(p_to_tz)
-             end;
-   exception
-      when others then return null;
-   end change_timezone;
+                ELSE
+                   FROM_TZ (p_in_date, get_timezone (p_from_tz))
+                      AT TIME ZONE get_timezone (p_to_tz)
+             END;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         RETURN NULL;
+   END change_timezone;
 
    --
    -- return the input date in a different time zone
-   function change_timezone(p_in_date in date, p_from_tz in varchar2, p_to_tz in varchar2 default 'UTC')
-      return date
-      result_cache
-   is
-   begin
-      return case p_to_tz = p_from_tz
-                when true then
+   FUNCTION change_timezone (p_in_date   IN DATE,
+                             p_from_tz   IN VARCHAR2,
+                             p_to_tz     IN VARCHAR2 DEFAULT 'UTC')
+      RETURN DATE
+      RESULT_CACHE
+   IS
+   BEGIN
+      RETURN CASE p_to_tz = p_from_tz
+                WHEN TRUE
+                THEN
                    p_in_date
-                else
-                   cast(from_tz(cast(p_in_date as timestamp), 
-                                get_timezone(p_from_tz)
-                               ) at time zone get_timezone(p_to_tz) as date)
-             end;
-   exception
-      when others then
-         return null;
-   end change_timezone;
+                ELSE
+                   CAST (
+                      FROM_TZ (CAST (p_in_date AS TIMESTAMP),
+                               get_timezone (p_from_tz))
+                         AT TIME ZONE get_timezone (p_to_tz) AS DATE)
+             END;
+   EXCEPTION
+      WHEN OTHERS
+      THEN
+         RETURN NULL;
+   END change_timezone;
 
    FUNCTION get_base_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2
@@ -389,187 +414,31 @@ AS
       RETURN l_name;
    END get_real_name;
 
-   PROCEDURE start_mv_cwms_ts_id_job
-   IS
-      l_count     BINARY_INTEGER;
-      l_user_id   VARCHAR2 (30);
-      l_job_id    VARCHAR2 (30) := 'REFRESH_MV_CWMS_TS_ID_JOB';
-
-      FUNCTION job_count
-         RETURN BINARY_INTEGER
-      IS
-      BEGIN
-         SELECT COUNT (*)
-           INTO l_count
-           FROM sys.dba_scheduler_jobs
-          WHERE job_name = l_job_id AND owner = l_user_id;
-
-         RETURN l_count;
-      END;
-   BEGIN
-      --------------------------------------
-      -- make sure we're the correct user --
-      --------------------------------------
-      l_user_id := get_user_id;
-
-      IF l_user_id != '&cwms_schema'
-      THEN
-         raise_application_error (
-            -20999,
-            'Must be &cwms_schema user to start job ' || l_job_id,
-            TRUE);
-      END IF;
-
-      -------------------------------------------
-      -- drop the job if it is already running --
-      -------------------------------------------
-      IF job_count > 0
-      THEN
-         DBMS_OUTPUT.put ('Dropping existing job ' || l_job_id || '...');
-         DBMS_SCHEDULER.drop_job (l_job_id);
-
-         --------------------------------
-         -- verify that it was dropped --
-         --------------------------------
-         IF job_count = 0
-         THEN
-            DBMS_OUTPUT.put_line ('done.');
-         ELSE
-            DBMS_OUTPUT.put_line ('failed.');
-         END IF;
-      END IF;
-
-      IF job_count = 0
-      THEN
-         BEGIN
-            ---------------------
-            -- restart the job --
-            ---------------------
-            DBMS_SCHEDULER.create_job (
-               job_name          => l_job_id,
-               job_type          => 'stored_procedure',
-               job_action        => 'cwms_util.refresh_mv_cwms_ts_id',
-               start_date        => NULL,
-               repeat_interval   =>    'freq=secondly; interval='
-                                    || mv_cwms_ts_id_refresh_interval,
-               end_date          => NULL,
-               job_class         => 'default_job_class',
-               enabled           => TRUE,
-               auto_drop         => FALSE,
-               comments          => 'Refreshes the mv_cwms_ts_id materialized view.');
-
-            IF job_count = 1
-            THEN
-               DBMS_OUTPUT.put_line (
-                     'Job '
-                  || l_job_id
-                  || ' successfully scheduled to execute every '
-                  || mv_cwms_ts_id_refresh_interval
-                  || ' minutes.');
-            ELSE
-               cwms_err.raise ('ITEM_NOT_CREATED', 'job', l_job_id);
-            END IF;
-         EXCEPTION
-            WHEN OTHERS
-            THEN
-               cwms_err.raise ('ITEM_NOT_CREATED',
-                               'job',
-                               l_job_id || ':' || SQLERRM);
-         END;
-      END IF;
-   END start_mv_cwms_ts_id_job;
-
-   PROCEDURE stop_mv_cwms_ts_id_job
-   IS
-      l_count     BINARY_INTEGER;
-      l_user_id   VARCHAR2 (30);
-      l_job_id    VARCHAR2 (30) := 'REFRESH_MV_CWMS_TS_ID_JOB';
-
-      FUNCTION job_count
-         RETURN BINARY_INTEGER
-      IS
-      BEGIN
-         SELECT COUNT (*)
-           INTO l_count
-           FROM sys.dba_scheduler_jobs
-          WHERE job_name = l_job_id AND owner = l_user_id;
-
-         RETURN l_count;
-      END;
-   BEGIN
-      --------------------------------------
-      -- make sure we're the correct user --
-      --------------------------------------
-      l_user_id := get_user_id;
-
-      IF l_user_id != '&cwms_schema'
-      THEN
-         raise_application_error (
-            -20999,
-            'Must be &cwms_schema user to start job ' || l_job_id,
-            TRUE);
-      END IF;
-
-      -------------------------------------------
-      -- drop the job if it is already running --
-      -------------------------------------------
-      IF job_count > 0
-      THEN
-         DBMS_OUTPUT.put ('Dropping existing job ' || l_job_id || '...');
-         DBMS_SCHEDULER.drop_job (l_job_id);
-
-         --------------------------------
-         -- verify that it was dropped --
-         --------------------------------
-         IF job_count = 0
-         THEN
-            DBMS_OUTPUT.put_line ('done.');
-         ELSE
-            DBMS_OUTPUT.put_line ('failed.');
-         END IF;
-      END IF;
-   END stop_mv_cwms_ts_id_job;
-
-   PROCEDURE refresh_mv_cwms_ts_id
-   IS
-   BEGIN
-      NULL;
-   END refresh_mv_cwms_ts_id;
-
    --------------------------------------------------------
    -- Return the current session user's primary office id
    --
    FUNCTION user_office_id
       RETURN VARCHAR2
    IS
-      l_office_id   VARCHAR2 (16) := 'UNK';
+      l_office_id   VARCHAR2 (16);
       l_username    VARCHAR2 (32);
    BEGIN
       l_username := get_user_id;
 
-      BEGIN
-         SELECT a.office_id
-           INTO l_office_id
-           FROM cwms_office a, at_sec_user_office b
-          WHERE     b.username = l_username
-                AND a.office_code = b.user_db_office_code;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
+
+      SELECT SYS_CONTEXT ('CWMS_ENV', 'SESSION_OFFICE_ID')
+        INTO l_office_id
+        FROM DUAL;
+
+      IF l_office_id IS NULL
+      THEN
+         IF l_username = '&cwms_schema'
          THEN
-            BEGIN
-               SELECT office_id
-                 INTO l_office_id
-                 FROM cwms_office
-                WHERE eroc = UPPER (SUBSTR (l_username, 1, 2));
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN
-                  IF l_username = '&cwms_schema'
-                  THEN
-                     l_office_id := 'CWMS';
-                  END IF;
-            END;
-      END;
+            RETURN 'CWMS';
+         ELSE
+            cwms_err.raise ('SESSION_OFFICE_ID_NOT_SET');
+         END IF;
+      END IF;
 
       RETURN l_office_id;
    END user_office_id;
@@ -577,30 +446,12 @@ AS
    PROCEDURE get_user_office_data (p_office_id          OUT VARCHAR2,
                                    p_office_long_name   OUT VARCHAR2)
    IS
-      l_username   VARCHAR2 (32);
+      l_office_id   VARCHAR2 (16) := user_office_id;
    BEGIN
-      l_username := get_user_id;
-
-      BEGIN
-         SELECT a.office_id, a.long_name
-           INTO p_office_id, p_office_long_name
-           FROM cwms_office a, at_sec_user_office b
-          WHERE     b.username = l_username
-                AND a.office_code = b.user_db_office_code;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            BEGIN
-               SELECT a.office_id, a.long_name
-                 INTO p_office_id, p_office_long_name
-                 FROM cwms_office a
-                WHERE eroc = UPPER (SUBSTR (l_username, 1, 2));
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN
-                  NULL;
-            END;
-      END;
+      SELECT office_id, long_name
+        INTO p_office_id, p_office_long_name
+        FROM cwms_office
+       WHERE office_id = l_office_id;
    END;
 
    --------------------------------------------------------
@@ -610,35 +461,13 @@ AS
       RETURN NUMBER
    IS
       l_office_code   NUMBER (10) := 0;
-      l_username      VARCHAR2 (32);
+      l_office_id     VARCHAR2 (16) := user_office_id;
    BEGIN
-      l_username := get_user_id;
+      SELECT office_code
+        INTO l_office_code
+        FROM cwms_office
+       WHERE office_id = l_office_id;
 
-      BEGIN
-         SELECT user_db_office_code
-           INTO l_office_code
-           FROM at_sec_user_office
-          WHERE username = l_username;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            BEGIN
-               SELECT office_code
-                 INTO l_office_code
-                 FROM cwms_office
-                WHERE eroc = UPPER (SUBSTR (l_username, 1, 2));
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN
-                  IF l_username = '&cwms_schema'
-                  THEN
-                     SELECT office_code
-                       INTO l_office_code
-                       FROM cwms_office
-                      WHERE office_id = 'CWMS';
-                  END IF;
-            END;
-      END;
 
       RETURN l_office_code;
    END user_office_code;
@@ -684,9 +513,10 @@ AS
    FUNCTION get_db_office_id_from_code (p_db_office_code IN NUMBER)
       RETURN VARCHAR2
    IS
-      l_db_office_id   VARCHAR2(64);
+      l_db_office_id   VARCHAR2 (64);
    BEGIN
       l_db_office_id := NULL;
+
       SELECT office_id
         INTO l_db_office_id
         FROM cwms_office
@@ -699,6 +529,7 @@ AS
       THEN
          RETURN l_db_office_id;
    END get_db_office_id_from_code;
+
    --------------------------------------------------------
    --------------------------------------------------------
    FUNCTION get_db_office_id (p_db_office_id IN VARCHAR2 DEFAULT NULL)
@@ -765,7 +596,7 @@ AS
                 || atp.sub_parameter_id
            INTO l_parameter_id
            FROM at_parameter atp, cwms_base_parameter cbp
-          WHERE     atp.parameter_code = p_parameter_code
+          WHERE atp.parameter_code = p_parameter_code
                 AND atp.base_parameter_code = cbp.base_parameter_code;
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -1067,7 +898,7 @@ AS
                         l_skip := l_skip + 1;
 
                         --DBMS_OUTPUT.put_line (l_tmp_string);
-                        IF    j = l_string_length
+                        IF j = l_string_length
                            OR INSTR (NVL (SUBSTR (l_string, j + 1, 1), ' '),
                                      ' ') = 1
                         THEN
@@ -1111,7 +942,7 @@ AS
                            -- l_tmp_string := l_tmp_string || ')';
                            --l_skip := l_skip + 1;
                            --DBMS_OUTPUT.put_line (l_tmp_string);
-                           IF    j = l_string_length
+                           IF j = l_string_length
                               OR INSTR (
                                     NVL (SUBSTR (l_string, j + 1, 1), ' '),
                                     ' ') = 1
@@ -1257,18 +1088,22 @@ AS
    FUNCTION strip (p_text IN VARCHAR2)
       RETURN VARCHAR2
    IS
-      l_first pls_integer := 1;
-      l_last  pls_integer := length(p_text);
+      l_first   PLS_INTEGER := 1;
+      l_last    PLS_INTEGER := LENGTH (p_text);
    BEGIN
-      for i in l_first..l_last loop
+      FOR i IN l_first .. l_last
+      LOOP
          l_first := i;
-         exit when ascii(substr(p_text, i, 1)) between 33 and 126;
-      end loop;
-      for i in reverse l_first..l_last loop
+         EXIT WHEN ASCII (SUBSTR (p_text, i, 1)) BETWEEN 33 AND 126;
+      END LOOP;
+
+      FOR i IN REVERSE l_first .. l_last
+      LOOP
          l_last := i;
-         exit when ascii(substr(p_text, i, 1)) between 33 and 126;
-      end loop;
-      return substr(p_text, l_first, l_last-l_first+1);
+         EXIT WHEN ASCII (SUBSTR (p_text, i, 1)) BETWEEN 33 AND 126;
+      END LOOP;
+
+      RETURN SUBSTR (p_text, l_first, l_last - l_first + 1);
    END strip;
 
    --------------------------------------------------------------------------------
@@ -1396,7 +1231,7 @@ AS
       SELECT z.time_zone_name
         INTO l_time_zone_name
         FROM mv_time_zone v, cwms_time_zone z
-       WHERE     v.time_zone_name = get_timezone (p_time_zone_name)
+       WHERE v.time_zone_name = get_timezone (p_time_zone_name)
              AND z.time_zone_code = v.time_zone_code;
 
       RETURN l_time_zone_name;
@@ -1621,12 +1456,13 @@ AS
       END IF;
 
       l_clob_len := DBMS_LOB.getlength (l_clob);
-      l_amount := least(chunk_size, l_clob_len);
+      l_amount := LEAST (chunk_size, l_clob_len);
       DBMS_LOB.open (l_clob, DBMS_LOB.lob_readonly);
 
-      if l_amount > 0 then
-         loop    
-            dbms_lob.read (l_clob,
+      IF l_amount > 0
+      THEN
+         LOOP
+            DBMS_LOB.read (l_clob,
                            l_amount,
                            l_clob_offset,
                            l_chunk);
@@ -1634,28 +1470,28 @@ AS
             l_done_reading := l_clob_offset > l_clob_len;
             l_buf := l_buf || l_chunk;
 
-            if instr (l_buf, p_separator) > 0 or l_done_reading
-            then
+            IF INSTR (l_buf, p_separator) > 0 OR l_done_reading
+            THEN
                l_new_rows := split_text (l_buf, p_separator);
 
-               for i in 1 .. l_new_rows.count - 1
-               loop
-                  l_rows.extend;
-                  l_rows (l_rows.last) := l_new_rows (i);
-               end loop;
+               FOR i IN 1 .. l_new_rows.COUNT - 1
+               LOOP
+                  l_rows.EXTEND;
+                  l_rows (l_rows.LAST) := l_new_rows (i);
+               END LOOP;
 
-               l_buf := l_new_rows (l_new_rows.count);
+               l_buf := l_new_rows (l_new_rows.COUNT);
 
-               if l_done_reading
-               then
-                  l_rows.extend;
-                  l_rows (l_rows.last) := l_buf;
-               end if;
-            end if;
+               IF l_done_reading
+               THEN
+                  l_rows.EXTEND;
+                  l_rows (l_rows.LAST) := l_buf;
+               END IF;
+            END IF;
 
-            exit when l_done_reading;
-         end loop;
-      end if;
+            EXIT WHEN l_done_reading;
+         END LOOP;
+      END IF;
 
       DBMS_LOB.close (l_clob);
       RETURN l_rows;
@@ -1739,7 +1575,7 @@ AS
                   ELSE
                      write_line (l_lines (i));
 
-                     IF     INSTR (l_lines (i), '<xml?') != 1
+                     IF INSTR (l_lines (i), '<xml?') != 1
                         AND INSTR (l_lines (i), '/>', -1) !=
                                LENGTH (l_lines (i)) - 1
                      THEN
@@ -1771,15 +1607,16 @@ AS
          RETURN NULL;
       END IF;
 
-      l_rows := split_text(p_clob, record_separator);
+      l_rows := split_text (p_clob, record_separator);
 
-      if l_rows.count > 0 then
-         for i in l_rows.first .. l_rows.last
-         loop
-            l_tab.extend;
-            l_tab(l_tab.last) := split_text(l_rows(i), field_separator);
-         end loop;
-      end if;
+      IF l_rows.COUNT > 0
+      THEN
+         FOR i IN l_rows.FIRST .. l_rows.LAST
+         LOOP
+            l_tab.EXTEND;
+            l_tab (l_tab.LAST) := split_text (l_rows (i), field_separator);
+         END LOOP;
+      END IF;
 
       RETURN l_tab;
    END parse_clob_recordset;
@@ -1799,15 +1636,16 @@ AS
          RETURN NULL;
       END IF;
 
-      l_rows := split_text(p_string, record_separator);
+      l_rows := split_text (p_string, record_separator);
 
-      if l_rows.count > 0 then
-         for i in l_rows.first .. l_rows.last
-         loop
-            l_tab.extend;
-            l_tab(l_tab.last) := split_text(l_rows(i), field_separator);
-         end loop;
-      end if;
+      IF l_rows.COUNT > 0
+      THEN
+         FOR i IN l_rows.FIRST .. l_rows.LAST
+         LOOP
+            l_tab.EXTEND;
+            l_tab (l_tab.LAST) := split_text (l_rows (i), field_separator);
+         END LOOP;
+      END IF;
 
       RETURN l_tab;
    END parse_string_recordset;
@@ -1835,7 +1673,7 @@ AS
       l_pos                    BINARY_INTEGER;
       l_add_day                BOOLEAN := FALSE;
    BEGIN
-      IF    REGEXP_INSTR (l_str, l_iso_pattern) != 1
+      IF REGEXP_INSTR (l_str, l_iso_pattern) != 1
          OR REGEXP_INSTR (l_str,
                           l_iso_pattern,
                           1,
@@ -2040,7 +1878,7 @@ AS
             SELECT u.unit_id
               INTO l_unit_id
               FROM at_unit_alias ua, cwms_unit u
-             WHERE     ua.alias_id = p_unit_or_alias
+             WHERE ua.alias_id = p_unit_or_alias
                    AND ua.db_office_code IN
                           (db_office_code_all, l_office_code)
                    AND u.unit_code = ua.unit_code;
@@ -2071,7 +1909,7 @@ AS
             SELECT u.unit_id
               INTO l_unit_id
               FROM at_unit_alias ua, cwms_unit u
-             WHERE     UPPER (ua.alias_id) = UPPER (p_unit_or_alias)
+             WHERE UPPER (ua.alias_id) = UPPER (p_unit_or_alias)
                    AND ua.db_office_code IN
                           (db_office_code_all, l_office_code)
                    AND u.unit_code = ua.unit_code;
@@ -2217,7 +2055,7 @@ AS
             SELECT unit_code
               INTO l_unit_code
               FROM av_unit
-             WHERE     unit_id = TRIM (p_unit_id)
+             WHERE unit_id = TRIM (p_unit_id)
                    AND db_office_code IN (l_db_office_code, 53);
          EXCEPTION
             WHEN NO_DATA_FOUND
@@ -2238,7 +2076,7 @@ AS
             SELECT unit_code
               INTO l_unit_code
               FROM av_unit
-             WHERE     unit_id = TRIM (p_unit_id)
+             WHERE unit_id = TRIM (p_unit_id)
                    AND db_office_code IN (l_db_office_code, 53)
                    AND abstract_param_code =
                           (SELECT abstract_param_code
@@ -2276,7 +2114,7 @@ AS
             SELECT ts_group_code
               INTO l_ts_group_code
               FROM at_ts_group a, at_ts_category b
-             WHERE     a.ts_category_code = b.ts_category_code
+             WHERE a.ts_category_code = b.ts_category_code
                    AND UPPER (b.ts_category_id) =
                           UPPER (TRIM (p_ts_category_id))
                    AND b.db_office_code IN
@@ -2295,7 +2133,7 @@ AS
                   || TRIM (p_ts_group_id)
                   || ' category-group combination');
          END;
-      ELSIF    (p_ts_category_id IS NOT NULL AND p_ts_group_id IS NULL)
+      ELSIF (p_ts_category_id IS NOT NULL AND p_ts_group_id IS NULL)
             OR (p_ts_category_id IS NULL AND p_ts_group_id IS NOT NULL)
       THEN
          cwms_err.raise (
@@ -2325,7 +2163,7 @@ AS
             SELECT loc_group_code
               INTO l_loc_group_code
               FROM at_loc_group a, at_loc_category b
-             WHERE     a.loc_category_code = b.loc_category_code
+             WHERE a.loc_category_code = b.loc_category_code
                    AND UPPER (b.loc_category_id) =
                           UPPER (TRIM (p_loc_category_id))
                    AND b.db_office_code IN
@@ -2344,7 +2182,7 @@ AS
                   || TRIM (p_loc_group_id)
                   || ' category-group combination');
          END;
-      ELSIF    (p_loc_category_id IS NOT NULL AND p_loc_group_id IS NULL)
+      ELSIF (p_loc_category_id IS NOT NULL AND p_loc_group_id IS NULL)
             OR (p_loc_category_id IS NULL AND p_loc_group_id IS NOT NULL)
       THEN
          cwms_err.raise (
@@ -2503,20 +2341,20 @@ AS
       END CASE;
 
       --
---      l_num_wk := TRUNC ( (p_interval - l_min_rem) / CWMS_TS.MIN_IN_WK);
---      l_min_rem := l_min_rem + l_num_wk * CWMS_TS.MIN_IN_WK;
---
---      CASE
---         WHEN l_lvl IS NULL
---         THEN
---            IF l_num_wk > 0
---            THEN
---               l_return := l_num_wk || 'wk';
---               l_lvl := 'WK';
---            END IF;
---         ELSE
---            l_return := l_return || l_num_wk || 'wk';
---      END CASE;
+      --      l_num_wk := TRUNC ( (p_interval - l_min_rem) / CWMS_TS.MIN_IN_WK);
+      --      l_min_rem := l_min_rem + l_num_wk * CWMS_TS.MIN_IN_WK;
+      --
+      --      CASE
+      --         WHEN l_lvl IS NULL
+      --         THEN
+      --            IF l_num_wk > 0
+      --            THEN
+      --               l_return := l_num_wk || 'wk';
+      --               l_lvl := 'WK';
+      --            END IF;
+      --         ELSE
+      --            l_return := l_return || l_num_wk || 'wk';
+      --      END CASE;
 
       --
       l_num_dy := TRUNC ( (p_interval - l_min_rem) / CWMS_TS.MIN_IN_DY);
@@ -2599,14 +2437,14 @@ AS
          SELECT a.unit_id
            INTO l_default_units
            FROM cwms_unit a, cwms_base_parameter b
-          WHERE     a.unit_code = b.display_unit_code_si
+          WHERE a.unit_code = b.display_unit_code_si
                 AND b.base_parameter_code = l_base_param_code;
       ELSIF UPPER (p_unit_system) = 'EN'
       THEN
          SELECT a.unit_id
            INTO l_default_units
            FROM cwms_unit a, cwms_base_parameter b
-          WHERE     a.unit_code = b.display_unit_code_en
+          WHERE a.unit_code = b.display_unit_code_en
                 AND b.base_parameter_code = l_base_param_code;
       ELSE
          cwms_err.raise ('INVALID_ITEM',
@@ -2638,7 +2476,7 @@ AS
       SELECT bp.unit_code
         INTO l_unit_code
         FROM cwms_base_parameter bp, at_parameter p
-       WHERE     p.parameter_code = p_parameter_code
+       WHERE p.parameter_code = p_parameter_code
              AND bp.base_parameter_code = p.base_parameter_code;
 
       RETURN l_unit_code;
@@ -2684,7 +2522,7 @@ AS
       SELECT factor, offset
         INTO l_factor_and_offset (1), l_factor_and_offset (2)
         FROM cwms_unit_conversion
-       WHERE     from_unit_id = get_unit_id (p_from_unit_id)
+       WHERE from_unit_id = get_unit_id (p_from_unit_id)
              AND to_unit_id = get_unit_id (p_to_unit_id);
 
       RETURN l_factor_and_offset;
@@ -2724,7 +2562,7 @@ AS
       SELECT factor, offset
         INTO l_factor, l_offset
         FROM cwms_unit_conversion
-       WHERE     from_unit_code = p_from_unit_code
+       WHERE from_unit_code = p_from_unit_code
              AND to_unit_code = p_to_unit_code;
 
       RETURN p_value * l_factor + l_offset;
@@ -2751,7 +2589,7 @@ AS
       SELECT factor, offset
         INTO l_factor, l_offset
         FROM cwms_unit_conversion
-       WHERE     from_unit_code = p_from_unit_code
+       WHERE from_unit_code = p_from_unit_code
              AND to_unit_id = get_unit_id (p_to_unit_id);
 
       RETURN p_value * l_factor + l_offset;
@@ -2778,7 +2616,7 @@ AS
       SELECT factor, offset
         INTO l_factor, l_offset
         FROM cwms_unit_conversion
-       WHERE     from_unit_id = get_unit_id (p_from_unit_id)
+       WHERE from_unit_id = get_unit_id (p_from_unit_id)
              AND to_unit_code = p_to_unit_code;
 
       RETURN p_value * l_factor + l_offset;
@@ -2802,8 +2640,9 @@ AS
       RETURN INTEGER
    IS
    BEGIN
-      dbms_output.put_line('Warning: Use of CWMS_UTIL.SIGN_EXTEND is deprecated');
-      return p_int;
+      DBMS_OUTPUT.put_line (
+         'Warning: Use of CWMS_UTIL.SIGN_EXTEND is deprecated');
+      RETURN p_int;
    END;
 
    -----------------------------------
@@ -3115,7 +2954,10 @@ AS
       l_infix_tokens :=
          cwms_util.split_text (
             TRIM (
-               REGEXP_REPLACE (UPPER (REPLACE (p_algebraic_expr, chr(10), ' ')), '([()])', ' \1 ')));
+               REGEXP_REPLACE (
+                  UPPER (REPLACE (p_algebraic_expr, CHR (10), ' ')),
+                  '([()])',
+                  ' \1 ')));
 
       -------------------------------------
       -- process the tokens into postfix --
@@ -3128,7 +2970,7 @@ AS
             ---------------
             WHEN is_expression_operator (l_infix_tokens (i))
             THEN
-               IF     l_stack.COUNT > 0
+               IF l_stack.COUNT > 0
                   AND precedence (l_stack (l_stack.COUNT)) >=
                          precedence (l_infix_tokens (i))
                THEN
@@ -3165,7 +3007,7 @@ AS
                l_dummy := pop;
                l_func := pop_func;
 
-               IF     l_func_stack.COUNT > 0
+               IF l_func_stack.COUNT > 0
                   AND l_func_stack (l_func_stack.COUNT) IS NOT NULL
                THEN
                   l_func := pop_func;
@@ -3219,7 +3061,7 @@ AS
       RESULT_CACHE
    IS
    BEGIN
-      RETURN split_text (TRIM (UPPER (REPLACE (p_rpn_expr, chr(10), ' '))));
+      RETURN split_text (TRIM (UPPER (REPLACE (p_rpn_expr, CHR (10), ' '))));
    END tokenize_rpn;
 
    -----------------------------------------------------------------------------
@@ -3348,24 +3190,24 @@ AS
                push (pop * pop);
             WHEN p_rpn_tokens (i) = '/'
             THEN
-               l_val2 := nullif(pop, 0);
+               l_val2 := NULLIF (pop, 0);
                l_val1 := pop;
                push (l_val1 / l_val2);
             WHEN p_rpn_tokens (i) = '//'
             THEN                                             -- same as Python
-               l_val2 := nullif(pop, 0);
+               l_val2 := NULLIF (pop, 0);
                l_val1 := pop;
                push (FLOOR (l_val1 / l_val2));
             WHEN p_rpn_tokens (i) = '%'
             THEN                            -- same as Python math.fmod, not %
-               l_val2 := nullif(pop, 0);
+               l_val2 := NULLIF (pop, 0);
                l_val1 := pop;
                push (MOD (l_val1, l_val2));
             WHEN p_rpn_tokens (i) = '^'
             THEN
                l_val2 := pop;
                l_val1 := pop;
-               push (POWER(l_val1, l_val2));
+               push (POWER (l_val1, l_val2));
             ---------------
             -- constants --
             ---------------
@@ -3811,233 +3653,250 @@ AS
    END;
 
 
-   procedure set_boolean_state(
-      p_name  in varchar2,
-      p_state in boolean)
-   is
-   begin
-      set_boolean_state(
+   PROCEDURE set_boolean_state (p_name IN VARCHAR2, p_state IN BOOLEAN)
+   IS
+   BEGIN
+      set_boolean_state (
          p_name,
-         case p_state
-           when true  then 'T'
-           when false then 'F'
-         end);
-   end set_boolean_state;
+         CASE p_state WHEN TRUE THEN 'T' WHEN FALSE THEN 'F' END);
+   END set_boolean_state;
 
-   procedure set_boolean_state(
-      p_name  in varchar2,
-      p_state in char)
-   is
-      l_name varchar2(64);
-   begin
-      check_input(p_name);
-      select name
-        into l_name
-        from at_boolean_state
-       where upper(name) = upper(p_name);
-      update at_boolean_state
-         set state = p_state
-       where name = l_name;
-   exception
-     when no_data_found then
-       insert
-         into at_boolean_state
-       values (p_name, p_state);
-   end set_boolean_state;
+   PROCEDURE set_boolean_state (p_name IN VARCHAR2, p_state IN CHAR)
+   IS
+      l_name   VARCHAR2 (64);
+   BEGIN
+      check_input (p_name);
 
-   function get_boolean_state_char(
-      p_name in varchar2)
-      return char
-   is
-      l_state char(1);
-   begin
-      check_input(p_name);
-      begin
-         select state
-           into l_state
-           from at_boolean_state
-          where upper(name) = upper(p_name);
-      exception
-         when others then null;
-      end;
-      return l_state;
-   end get_boolean_state_char;
+      SELECT name
+        INTO l_name
+        FROM at_boolean_state
+       WHERE UPPER (name) = UPPER (p_name);
 
-   function get_boolean_state(
-      p_name in varchar2)
-      return boolean
-   is
-      l_state char(1);
-   begin
-      l_state := get_boolean_state_char(p_name);
-      return case l_state is null
-                when true then null
-                else l_state = 'T'
-             end;
-   end get_boolean_state;
+      UPDATE at_boolean_state
+         SET state = p_state
+       WHERE name = l_name;
+   EXCEPTION
+      WHEN NO_DATA_FOUND
+      THEN
+         INSERT INTO at_boolean_state
+              VALUES (p_name, p_state);
+   END set_boolean_state;
 
-   procedure set_session_info(
-      p_item_name in varchar2,
-      p_txt_value in varchar2,
-      p_num_value in number)
-   is
-      l_item_name varchar2(64);
-   begin
+   FUNCTION get_boolean_state_char (p_name IN VARCHAR2)
+      RETURN CHAR
+   IS
+      l_state   CHAR (1);
+   BEGIN
+      check_input (p_name);
+
+      BEGIN
+         SELECT state
+           INTO l_state
+           FROM at_boolean_state
+          WHERE UPPER (name) = UPPER (p_name);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            NULL;
+      END;
+
+      RETURN l_state;
+   END get_boolean_state_char;
+
+   FUNCTION get_boolean_state (p_name IN VARCHAR2)
+      RETURN BOOLEAN
+   IS
+      l_state   CHAR (1);
+   BEGIN
+      l_state := get_boolean_state_char (p_name);
+      RETURN CASE l_state IS NULL WHEN TRUE THEN NULL ELSE l_state = 'T' END;
+   END get_boolean_state;
+
+   PROCEDURE set_session_info (p_item_name   IN VARCHAR2,
+                               p_txt_value   IN VARCHAR2,
+                               p_num_value   IN NUMBER)
+   IS
+      l_item_name   VARCHAR2 (64);
+   BEGIN
       -------------------
       -- sanity checks --
       -------------------
-      check_inputs(str_tab_t(p_item_name, p_txt_value));
-      if p_item_name is null then cwms_err.raise('NULL_ARGUMENT', 'P_ITEM_NAME'); end if;
+      check_inputs (str_tab_t (p_item_name, p_txt_value));
+
+      IF p_item_name IS NULL
+      THEN
+         cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
+      END IF;
+
       -----------------------------
       -- insert/update the table --
       -----------------------------
-      l_item_name := upper(trim(p_item_name));
-      merge into at_session_info t
-      using (select l_item_name as item_name from dual) d
-         on (t.item_name = d.item_name)
-      when matched then
-         update set str_value = p_txt_value, num_value = p_num_value
-      when not matched then
-         insert values (l_item_name, p_txt_value, p_num_value);
-   end set_session_info;
+      l_item_name := UPPER (TRIM (p_item_name));
 
-   procedure set_session_info(
-      p_item_name in varchar2,
-      p_txt_value in varchar2)
-   is
-      l_item_name varchar2(64);
-   begin
+      MERGE INTO at_session_info t
+           USING (SELECT l_item_name AS item_name FROM DUAL) d
+              ON (t.item_name = d.item_name)
+      WHEN MATCHED
+      THEN
+         UPDATE SET str_value = p_txt_value, num_value = p_num_value
+      WHEN NOT MATCHED
+      THEN
+         INSERT     VALUES (l_item_name, p_txt_value, p_num_value);
+   END set_session_info;
+
+   PROCEDURE set_session_info (p_item_name   IN VARCHAR2,
+                               p_txt_value   IN VARCHAR2)
+   IS
+      l_item_name   VARCHAR2 (64);
+   BEGIN
       -------------------
       -- sanity checks --
       -------------------
-      check_inputs(str_tab_t(p_item_name, p_txt_value));
-      if p_item_name is null then cwms_err.raise('NULL_ARGUMENT', 'P_ITEM_NAME'); end if;
+      check_inputs (str_tab_t (p_item_name, p_txt_value));
+
+      IF p_item_name IS NULL
+      THEN
+         cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
+      END IF;
+
       -----------------------------
       -- insert/update the table --
       -----------------------------
-      l_item_name := upper(trim(p_item_name));
-      merge into at_session_info t
-      using (select l_item_name as item_name from dual) d
-         on (t.item_name = d.item_name)
-      when matched then
-         update set str_value = p_txt_value
-      when not matched then
-         insert values (l_item_name, p_txt_value, null);
-   end set_session_info;
+      l_item_name := UPPER (TRIM (p_item_name));
 
-   procedure set_session_info(
-      p_item_name in varchar2,
-      p_num_value in number)
-   is
-      l_item_name varchar2(64);
-   begin
+      MERGE INTO at_session_info t
+           USING (SELECT l_item_name AS item_name FROM DUAL) d
+              ON (t.item_name = d.item_name)
+      WHEN MATCHED
+      THEN
+         UPDATE SET str_value = p_txt_value
+      WHEN NOT MATCHED
+      THEN
+         INSERT     VALUES (l_item_name, p_txt_value, NULL);
+   END set_session_info;
+
+   PROCEDURE set_session_info (p_item_name   IN VARCHAR2,
+                               p_num_value   IN NUMBER)
+   IS
+      l_item_name   VARCHAR2 (64);
+   BEGIN
       -------------------
       -- sanity checks --
       -------------------
-      check_input(p_item_name);
-      if p_item_name is null then cwms_err.raise('NULL_ARGUMENT', 'P_ITEM_NAME'); end if;
+      check_input (p_item_name);
+
+      IF p_item_name IS NULL
+      THEN
+         cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
+      END IF;
+
       -----------------------------
       -- insert/update the table --
       -----------------------------
-      l_item_name := upper(trim(p_item_name));
-      merge into at_session_info t
-      using (select l_item_name as item_name from dual) d
-         on (t.item_name = d.item_name)
-      when matched then
-         update set num_value = p_num_value
-      when not matched then
-         insert values (l_item_name, null, p_num_value);
-   end set_session_info;
+      l_item_name := UPPER (TRIM (p_item_name));
 
-   procedure get_session_info(
-      p_txt_value out varchar2,
-      p_num_value out number,
-      p_item_name in  varchar2)
-   is
-      l_item_name varchar2(64);
-   begin
+      MERGE INTO at_session_info t
+           USING (SELECT l_item_name AS item_name FROM DUAL) d
+              ON (t.item_name = d.item_name)
+      WHEN MATCHED
+      THEN
+         UPDATE SET num_value = p_num_value
+      WHEN NOT MATCHED
+      THEN
+         INSERT     VALUES (l_item_name, NULL, p_num_value);
+   END set_session_info;
+
+   PROCEDURE get_session_info (p_txt_value      OUT VARCHAR2,
+                               p_num_value      OUT NUMBER,
+                               p_item_name   IN     VARCHAR2)
+   IS
+      l_item_name   VARCHAR2 (64);
+   BEGIN
       -------------------
       -- sanity checks --
       -------------------
-      check_input(p_item_name);
-      if p_item_name is null then cwms_err.raise('NULL_ARGUMENT', 'P_ITEM_NAME'); end if;
+      check_input (p_item_name);
+
+      IF p_item_name IS NULL
+      THEN
+         cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
+      END IF;
+
       -------------------------
       -- retrieve the values --
       -------------------------
-      l_item_name := upper(trim(p_item_name));
-      begin
-         select str_value,
-                num_value
-           into p_txt_value,
-                p_num_value
-           from at_session_info
-          where item_name = l_item_name;
-      exception
-         when no_data_found then null;
-      end;
-   end get_session_info;
+      l_item_name := UPPER (TRIM (p_item_name));
 
-   function get_session_info_txt(
-      p_item_name in varchar2)
-      return varchar2
-   is
-      l_txt_value varchar2(256);
-      l_num_value number;
-   begin
-      get_session_info(
-         l_txt_value,
-         l_num_value,
-         p_item_name);
+      BEGIN
+         SELECT str_value, num_value
+           INTO p_txt_value, p_num_value
+           FROM at_session_info
+          WHERE item_name = l_item_name;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
+   END get_session_info;
 
-      return l_txt_value;
-   end get_session_info_txt;
+   FUNCTION get_session_info_txt (p_item_name IN VARCHAR2)
+      RETURN VARCHAR2
+   IS
+      l_txt_value   VARCHAR2 (256);
+      l_num_value   NUMBER;
+   BEGIN
+      get_session_info (l_txt_value, l_num_value, p_item_name);
 
-   function get_session_info_num(
-      p_item_name in varchar2)
-      return number
-   is
-      l_txt_value varchar2(256);
-      l_num_value number;
-   begin
-      get_session_info(
-         l_txt_value,
-         l_num_value,
-         p_item_name);
+      RETURN l_txt_value;
+   END get_session_info_txt;
 
-      return l_num_value;
-   end get_session_info_num;
+   FUNCTION get_session_info_num (p_item_name IN VARCHAR2)
+      RETURN NUMBER
+   IS
+      l_txt_value   VARCHAR2 (256);
+      l_num_value   NUMBER;
+   BEGIN
+      get_session_info (l_txt_value, l_num_value, p_item_name);
 
-   procedure reset_session_info(
-      p_item_name in varchar2)
-   is
-      l_item_name varchar2(64);
-   begin
+      RETURN l_num_value;
+   END get_session_info_num;
+
+   PROCEDURE reset_session_info (p_item_name IN VARCHAR2)
+   IS
+      l_item_name   VARCHAR2 (64);
+   BEGIN
       -------------------
       -- sanity checks --
       -------------------
-      check_input(p_item_name);
-      if p_item_name is null then cwms_err.raise('NULL_ARGUMENT', 'P_ITEM_NAME'); end if;
+      check_input (p_item_name);
+
+      IF p_item_name IS NULL
+      THEN
+         cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
+      END IF;
+
       -----------------------
       -- delete the record --
       -----------------------
-      l_item_name := upper(trim(p_item_name));
-      begin
-         delete from at_session_info
-          where item_name = l_item_name;
-      exception
-         when no_data_found then null;
-      end;
-   end reset_session_info;
+      l_item_name := UPPER (TRIM (p_item_name));
 
-   function is_nan(
-      p_value in binary_double)
-      return varchar2
-   is
-      l_is_nan boolean := p_value is nan;
-   begin
-      return case l_is_nan when true then 'T' else 'F' end;
-   end is_nan;
+      BEGIN
+         DELETE FROM at_session_info
+               WHERE item_name = l_item_name;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            NULL;
+      END;
+   END reset_session_info;
 
+   FUNCTION is_nan (p_value IN BINARY_DOUBLE)
+      RETURN VARCHAR2
+   IS
+      l_is_nan   BOOLEAN := p_value IS NAN;
+   BEGIN
+      RETURN CASE l_is_nan WHEN TRUE THEN 'T' ELSE 'F' END;
+   END is_nan;
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call

@@ -1,4 +1,4 @@
-/* Formatted on 6/25/2012 2:43:48 PM (QP5 v5.185.11230.41888) */
+/* Formatted on 5/28/2013 1:59:38 PM (QP5 v5.163.1008.3004) */
 SET DEFINE ON
 
 CREATE OR REPLACE PACKAGE cwms_sec
@@ -66,9 +66,6 @@ AS
 
    PROCEDURE get_cwms_permissions (p_cwms_permissions      OUT VARCHAR2,
                                    p_db_office_id       IN     VARCHAR2);
-
-   PROCEDURE set_user_office_id (p_username       IN VARCHAR2,
-                                 p_db_office_id   IN VARCHAR2);
 
    PROCEDURE assign_ts_group_user_group (
       p_ts_group_id     IN VARCHAR2,
@@ -140,7 +137,10 @@ AS
    PROCEDURE create_user (p_username             IN VARCHAR2,
                           p_password             IN VARCHAR2,
                           p_user_group_id_list   IN char_32_array_type,
-                          p_db_office_id         IN VARCHAR2 DEFAULT NULL);
+                          p_db_office_id         IN VARCHAR2 DEFAULT NULL,
+                          p_fullname             IN VARCHAR2 DEFAULT NULL,
+                          p_cwms_permissions     IN VARCHAR2 DEFAULT NULL);
+
 
    PROCEDURE delete_user (p_username IN VARCHAR2);
 
@@ -214,5 +214,21 @@ AS
    PROCEDURE create_ts_group (p_ts_group_id     IN VARCHAR2,
                               p_ts_group_desc   IN VARCHAR2,
                               p_db_office_id    IN VARCHAR2 DEFAULT NULL);
+
+   FUNCTION GET_ADMIN_PERMISSIONS (p_user_name      IN VARCHAR2,
+                                   p_db_office_id   IN VARCHAR2)
+      RETURN VARCHAR2;
+
+   PROCEDURE get_cwms_permissions (
+      p_cwms_permissions      OUT SYS_REFCURSOR,
+      p_db_office_id       IN     VARCHAR2,
+      p_include_all        IN     BOOLEAN DEFAULT FALSE);
+
+   PROCEDURE GET_DB_USERS (p_db_users OUT SYS_REFCURSOR);
+
+   PROCEDURE update_user (p_username           IN VARCHAR2,
+                          p_fullname           IN VARCHAR2,
+                          p_cwms_permissions   IN VARCHAR2,
+                          p_db_office_id       IN VARCHAR2 DEFAULT NULL);
 END cwms_sec;
 /

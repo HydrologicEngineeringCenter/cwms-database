@@ -5239,6 +5239,7 @@ errorCodes = [
     ['-20044', 'SHEF_DUP_TS_ID',        'CWMS_TS_ID "%1" has already been used.'],
     ['-20045', 'ITEM_OWNED_BY_CWMS',    'The %1: "%2" is owned by the system and cannot be changed or deleted.'],
     ['-20046', 'NO_CRIT_FILE_FOUND',    'A crit file for the %1 datastream was not found.'],
+    ['-20047', 'SESSION_OFFICE_ID_NOT_SET',    'Session office id is not set by the application'],
     ['-20102', 'UNIT_CONV_NOT_FOUND',   'The units conversion for "%1" was not found'                 ],
     ['-20103', 'INVALID_TIME_ZONE',     'The time zone "%1" is not a valid Oracle time zone region'   ],
     ['-20104', 'UNITS_NOT_SPECIFIED',   'You must specifiy the UNITS of your data'                    ],
