@@ -99,52 +99,6 @@ AS
       RETURN is_user_admin (p_db_office_code => l_db_office_code);
    END;
 
-   PROCEDURE get_cwms_permissions (p_cwms_permissions      OUT VARCHAR2,
-                                   p_db_office_id       IN     VARCHAR2)
-   AS
-      l_db_office_id     VARCHAR2 (16)
-                            := cwms_util.get_db_office_id (p_db_office_id);
-      l_db_office_code   NUMBER
-                            := cwms_util.get_db_office_code (l_db_office_id);
-      l_is_locked        VARCHAR2 (1);
-      l_username         VARCHAR2 (31) := cwms_util.get_user_id;
-      l_count            NUMBER;
-   BEGIN
-      SELECT COUNT (*)
-        INTO l_count
-        FROM at_sec_user_office
-       WHERE user_db_office_code = l_db_office_code AND username = l_username;
-
-      IF l_count = 0 OR l_db_office_id = 'UNK'
-      THEN
-         cwms_err.raise (
-            'ERROR',
-               'No CWMS Permissions Set. Account '
-            || l_username
-            || ' has no CWMS Permissions set for db_office_id: '
-            || l_db_office_id
-            || '. Please see your CWMS Application Administrator.');
-      END IF;
-
-      IF is_user_cwms_locked (p_db_office_code => l_db_office_code)
-      THEN
-         cwms_err.raise (
-            'ERROR',
-               'Account is Locked. Account '
-            || l_username
-            || ' is locked for db_office_id: '
-            || l_db_office_id
-            || '. Please see your CWMS Application Administrator.');
-      END IF;
-
-      p_cwms_permissions :=
-            'q0hecghk|x|serverAdmin-configure,serverAdminUsers-configure,'
-         || 'Watershed Configuration-configure,Data Acquisition-configure,'
-         || 'Data Visualization-configure,Model Interface-configure,'
-         || 'Res-configure,FloodOpt-configure,GridUtil-configure,FIA-configure,'
-         || 'FDA-configure,Hfp-configure,DataBase-configure| Gerhard Krueger|';
-   END;
-
 
    PROCEDURE confirm_user_admin_priv (p_db_office_code IN NUMBER)
    AS
@@ -805,6 +759,28 @@ AS
       RETURN l_user_group_code;
    END;
 
+   PROCEDURE insert_noaccess_entry (p_username         IN VARCHAR2,
+                                    p_db_office_code      NUMBER)
+   IS
+      l_cwms_permissions   VARCHAR2 (1024)
+         := 'Watershed Configuration-No Access,Data Acquisition-No Access,Data Visualization-No Access,Model Interface-No Access,Res-No Access,FloodOpt-No Access,GridUtil-No Access,FIA-No Access,FDA-No Access,Hfp-No Access,Scripting-No Access';
+      l_count              NUMBER;
+   BEGIN
+      SELECT COUNT (*)
+        INTO L_count
+        FROM AT_SEC_CWMS_PERMISSIONS
+       WHERE USERNAME = p_username AND db_office_code = p_db_office_code;
+
+      IF l_count = 0
+      THEN
+         INSERT
+           INTO AT_SEC_CWMS_PERMISSIONS (USERNAME, PERMISSIONS, DB_OFFICE_CODE)
+         VALUES (UPPER (p_username), l_cwms_permissions, p_db_office_code);
+
+         COMMIT;
+      END IF;
+   END;
+
    PROCEDURE add_user_to_group (p_username         IN VARCHAR2,
                                 p_user_group_id    IN VARCHAR2,
                                 p_db_office_code   IN NUMBER)
@@ -822,6 +798,7 @@ AS
          INSERT INTO at_sec_users (db_office_code, user_group_code, username)
               VALUES (p_db_office_code, l_user_group_code, l_username);
 
+         insert_noaccess_entry (p_username, p_db_office_code);
          COMMIT;
       EXCEPTION
          WHEN DUP_VAL_ON_INDEX
@@ -940,14 +917,14 @@ AS
          SET FULLNAME = P_FULLNAME
        WHERE USERNAME = p_username;
 
-      IF (p_cwms_permissions = NULL)
+      IF (p_cwms_permissions IS NOT NULL)
       THEN
-         l_cwms_permissions := p_cwms_permissions;
+         INSERT
+           INTO AT_SEC_CWMS_PERMISSIONS (USERNAME, PERMISSIONS, DB_OFFICE_CODE)
+         VALUES (UPPER (p_username), p_cwms_permissions, l_db_office_code);
+      ELSE
+         insert_noaccess_entry (UPPER (p_username), l_db_office_code);
       END IF;
-
-      INSERT
-        INTO AT_SEC_CWMS_PERMISSIONS (USERNAME, PERMISSIONS, DB_OFFICE_CODE)
-      VALUES (UPPER (p_username), l_cwms_permissions, l_db_office_code);
 
       COMMIT;
    END CREATE_USER;
@@ -969,7 +946,7 @@ AS
       UPDATE AT_SEC_CWMS_PERMISSIONS
          SET PERMISSIONS = p_cwms_permissions,
              DB_OFFICE_CODE = l_db_office_code
-       WHERE username = p_username;
+       WHERE username = p_username AND DB_OFFICE_CODE=l_db_office_code;
 
       COMMIT;
    END UPDATE_USER;
@@ -1014,7 +991,6 @@ AS
              AND user_group_code IN
                     (user_group_code_dba_users, user_group_code_user_admins);
 
-      DBMS_OUTPUT.PUT_LINE ('COunt ' || l_count);
 
       IF l_count > 0
       THEN
@@ -2337,7 +2313,7 @@ AS
       END IF;
    END;
 
-   FUNCTION GET_ADMIN_PERMISSIONS (p_user_name      IN VARCHAR2,
+   FUNCTION get_admin_permissions (p_user_name      IN VARCHAR2,
                                    p_db_office_id   IN VARCHAR2)
       RETURN VARCHAR2
    IS
@@ -2417,7 +2393,8 @@ AS
              || ''|''
              ||  case when fullname is null or length(fullname)=0 then '' '' else fullname end
              || ''|''
-        FROM at_sec_cwms_permissions p, at_sec_user_office u  WHERE p.username=u.username';
+        FROM at_sec_cwms_permissions p, at_sec_user_office u  WHERE p.username=u.username AND p.db_office_code='
+         || l_db_office_code;
 
       IF NOT L_INCLUDE_ALL
       THEN
@@ -2429,7 +2406,8 @@ AS
       OPEN p_cwms_permissions FOR l_query;
    END;
 
-   PROCEDURE GET_DB_USERS (p_db_users OUT SYS_REFCURSOR)
+   PROCEDURE get_db_users (p_db_users       OUT SYS_REFCURSOR,
+                           p_db_office_id       VARCHAR2)
    IS
    BEGIN
       OPEN p_db_users FOR
@@ -2467,8 +2445,14 @@ AS
                       'XS$NULL')
                   AND username NOT LIKE '%DBI'
                   AND username NOT LIKE 'APEX_%'
-                  AND username NOT IN (SELECT username FROM AT_SEC_USER_OFFICE)
+                  AND username NOT IN
+                         (SELECT username
+                            FROM AT_SEC_CWMS_PERMISSIONS
+                           WHERE DB_OFFICE_CODE =
+                                    cwms_util.get_db_office_code (
+                                       p_db_office_id))
          ORDER BY username;
    END;
 END cwms_sec;
 /
+

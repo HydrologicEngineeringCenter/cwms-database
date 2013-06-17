@@ -64,8 +64,6 @@ AS
                                   p_db_office_code    IN NUMBER)
       RETURN BOOLEAN;
 
-   PROCEDURE get_cwms_permissions (p_cwms_permissions      OUT VARCHAR2,
-                                   p_db_office_id       IN     VARCHAR2);
 
    PROCEDURE assign_ts_group_user_group (
       p_ts_group_id     IN VARCHAR2,
@@ -214,17 +212,17 @@ AS
    PROCEDURE create_ts_group (p_ts_group_id     IN VARCHAR2,
                               p_ts_group_desc   IN VARCHAR2,
                               p_db_office_id    IN VARCHAR2 DEFAULT NULL);
-
-   FUNCTION GET_ADMIN_PERMISSIONS (p_user_name      IN VARCHAR2,
-                                   p_db_office_id   IN VARCHAR2)
-      RETURN VARCHAR2;
-
+                              
+   FUNCTION get_admin_permissions (p_user_name      IN VARCHAR2,
+                                   p_db_office_id   IN VARCHAR2) RETURN VARCHAR2;
+                                   
    PROCEDURE get_cwms_permissions (
       p_cwms_permissions      OUT SYS_REFCURSOR,
       p_db_office_id       IN     VARCHAR2,
       p_include_all        IN     BOOLEAN DEFAULT FALSE);
 
-   PROCEDURE GET_DB_USERS (p_db_users OUT SYS_REFCURSOR);
+   PROCEDURE get_db_users (p_db_users       OUT SYS_REFCURSOR,
+                           p_db_office_id       VARCHAR2);
 
    PROCEDURE update_user (p_username           IN VARCHAR2,
                           p_fullname           IN VARCHAR2,
@@ -232,3 +230,4 @@ AS
                           p_db_office_id       IN VARCHAR2 DEFAULT NULL);
 END cwms_sec;
 /
+
