@@ -2406,52 +2406,60 @@ AS
       OPEN p_cwms_permissions FOR l_query;
    END;
 
-   PROCEDURE get_db_users (p_db_users       OUT SYS_REFCURSOR,
+  PROCEDURE get_db_users (p_db_users       OUT SYS_REFCURSOR,
                            p_db_office_id       VARCHAR2)
    IS
    BEGIN
       OPEN p_db_users FOR
-           SELECT username
-             FROM all_users
-            WHERE username NOT IN
-                     ('ANONYMOUS',
-                      'APPQOSSYS',
-                      '&cwms_schema',
-                      'CWMS_DBX',
-                      'CWMS_DBA',
-                      'CWMS_STR_ADM',
-                      'CTXSYS',
-                      'DBSNMP',
-                      'DIP',
-                      'EXFSYS',
-                      'FLOWS_FILES',
-                      'MDDATA',
-                      'MDSYS',
-                      'MGMT_VIEW',
-                      'ORACLE_OCM',
-                      'ORDDATA',
-                      'ORDSYS',
-                      'OUTLN',
-                      'ORDPLUGINS',
-                      'SI_INFORMTN_SCHEMA',
-                      'SPATIAL_CSW_ADMIN_USR',
-                      'SPATIAL_WFS_ADMIN_USR',
-                      'SYS',
-                      'SYSTEM',
-                      'SYSMAN',
-                      'UPASSADM',
-                      'WMSYS',
-                      'XDB',
-                      'XS$NULL')
-                  AND username NOT LIKE '%DBI'
-                  AND username NOT LIKE 'APEX_%'
-                  AND username NOT IN
-                         (SELECT username
-                            FROM AT_SEC_CWMS_PERMISSIONS
-                           WHERE DB_OFFICE_CODE =
-                                    cwms_util.get_db_office_code (
-                                       p_db_office_id))
-         ORDER BY username;
+         SELECT CASE
+                   WHEN s.fullname IS NULL OR s.fullname = '' THEN a.username
+                   ELSE a.username || '|' || s.fullname
+                END
+                   fullname
+           FROM    (  SELECT username
+                        FROM all_users
+                       WHERE username NOT IN
+                                ('ANONYMOUS',
+                                 'APPQOSSYS',
+                                 '&cwms_schema',
+                                 'CWMS_DBX',
+                                 'CWMS_DBA',
+                                 'CWMS_STR_ADM',
+                                 'CTXSYS',
+                                 'DBSNMP',
+                                 'DIP',
+                                 'EXFSYS',
+                                 'FLOWS_FILES',
+                                 'MDDATA',
+                                 'MDSYS',
+                                 'MGMT_VIEW',
+                                 'ORACLE_OCM',
+                                 'ORDDATA',
+                                 'ORDSYS',
+                                 'OUTLN',
+                                 'ORDPLUGINS',
+                                 'SI_INFORMTN_SCHEMA',
+                                 'SPATIAL_CSW_ADMIN_USR',
+                                 'SPATIAL_WFS_ADMIN_USR',
+                                 'SYS',
+                                 'SYSTEM',
+                                 'SYSMAN',
+                                 'UPASSADM',
+                                 'WMSYS',
+                                 'XDB',
+                                 'XS$NULL')
+                             AND username NOT LIKE '%DBI'
+                             AND username NOT LIKE 'APEX_%'
+                             AND username NOT IN
+                                    (SELECT username
+                                       FROM AT_SEC_CWMS_PERMISSIONS
+                                      WHERE DB_OFFICE_CODE =
+                                               cwms_util.get_db_office_code (
+                                                  p_db_office_id))
+                    ORDER BY username) a
+                LEFT JOIN
+                   at_sec_user_office s
+                ON A.USERNAME = S.USERNAME;
    END;
 END cwms_sec;
 /
