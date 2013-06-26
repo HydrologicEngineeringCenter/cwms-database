@@ -8904,7 +8904,6 @@ end retrieve_existing_item_counts;
       p_time_zone                   IN VARCHAR2 DEFAULT 'UTC')
       RETURN date_table_type
    IS
-      type intervals_t is table of integer;
       c_one_month_interval constant integer := 43200;
       c_one_year_interval  constant integer := 525600;
       l_start_time_utc   date;
@@ -8912,7 +8911,6 @@ end retrieve_existing_item_counts;
       l_months           integer;
       l_valid_interval   boolean := false;
       l_date_times       date_table_type;
-      l_valid_intervals  intervals_t;
    BEGIN
       -------------------
       -- sanity checks --
@@ -8923,7 +8921,7 @@ end retrieve_existing_item_counts;
       if p_interval_minutes is null then cwms_err.raise('NULL_ARGUMENT', 'P_INTERVAL_MINUTES'); end if;
       if p_utc_interval_offset_minutes is null then cwms_err.raise('NULL_ARGUMENT', 'P_UTC_INTERVAL_OFFSET_MINUTES'); end if;
       if p_start_time > p_end_time then cwms_err.raise('ERROR', 'End time is greater than start time'); end if;
-      for rec in (select distinct interval bulk collect into l_valid_intervals from cwms_interval) loop
+      for rec in (select distinct interval from cwms_interval) loop
          if p_interval_minutes = rec.interval then
             l_valid_interval := true;
             exit;
