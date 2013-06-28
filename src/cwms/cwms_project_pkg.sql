@@ -492,8 +492,8 @@ function is_locked(
  *   <tr>
  *     <td class="descr-center">4</td>
  *     <td class="descr">acquire_time</td>
- *     <td class="descr">varchar2(19)</td>
- *     <td class="descr">The time in the specified time zone that the lock was acquired</td>
+ *     <td class="descr">varchar2(25)</td>
+ *     <td class="descr">The time that the lock was acquired (in the specified time zone as XML (ISO 8601) format</td>
  *   </tr>
  *   <tr>
  *     <td class="descr-center">5</td>

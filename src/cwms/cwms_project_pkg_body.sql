@@ -1170,8 +1170,10 @@ begin
    open l_cursor for
       select o.office_id,
              cwms_loc.get_location_id(lck.project_code) as project_id,
-             lck.application_id,
-             to_char(cwms_util.change_timezone(lck.acquire_time, 'UTC', p_time_zone), 'yyyy-mm-dd hh24:mi:ss') as acquire_time,
+             lck.application_id,          
+             cwms_util.get_xml_time(
+                cwms_util.change_timezone(lck.acquire_time, 'UTC', p_time_zone), 
+                p_time_zone) as acquire_time,
              lck.session_user,
              lck.os_user,
              lck.session_program,
