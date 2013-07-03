@@ -102,7 +102,7 @@ table_names constant object_tab_t := object_tab_t(
    'AT_SEC_TS_GROUP_MASKS',
    'AT_SEC_USERS',
    'AT_SEC_USER_GROUPS',
-   'AT_SEC_USER_OFFICE',
+   'AT_SEC_CWMS_USERS',
    'AT_SHEF_CRIT_FILE',
    'AT_SHEF_CRIT_FILE_REC',
    'AT_SHEF_DECODE',

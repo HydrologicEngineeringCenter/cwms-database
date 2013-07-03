@@ -205,78 +205,72 @@ COMMIT;
 --
 
 SET define on
-CREATE TABLE at_sec_user_office
+CREATE TABLE AT_SEC_CWMS_USERS
 (
-	username								VARCHAR2 (31 BYTE),
-	user_db_office_code				NUMBER NOT NULL,
-	fullname								VARCHAR2 (256 BYTE)
+  USERID     VARCHAR2(31 BYTE)                  NOT NULL,
+  FULLNAME   VARCHAR2(96 BYTE),
+  PHONE      VARCHAR2(16 BYTE),
+  OFFICE     VARCHAR2(16 BYTE),
+  ORG        VARCHAR2(16 BYTE),
+  EMAIL      VARCHAR2(128 BYTE),
+  OLDUSERID  VARCHAR2(31 BYTE),
+  CREATEDBY  VARCHAR2(32 BYTE)
 )
-tablespace CWMS_20AT_DATA
-PCTUSED 0
-PCTFREE 10
-INITRANS 1
-MAXTRANS 255
-STORAGE (INITIAL 64 K
-			MINEXTENTS 1
-			MAXEXTENTS 2147483645
-			PCTINCREASE 0
-			BUFFER_POOL DEFAULT
-		  )
-LOGGING
-NOCOMPRESS
+TABLESPACE CWMS_20AT_DATA
+PCTUSED    0
+PCTFREE    10
+INITRANS   1
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+LOGGING 
+NOCOMPRESS 
 NOCACHE
 NOPARALLEL
-MONITORING
-/
+MONITORING;
 
-CREATE UNIQUE INDEX at_sec_user_office_pk
-	ON at_sec_user_office (username)
-	LOGGING
-	tablespace CWMS_20AT_DATA
-	PCTFREE 10
-	INITRANS 2
-	MAXTRANS 255
-	STORAGE (INITIAL 64 K
-				MINEXTENTS 1
-				MAXEXTENTS 2147483645
-				PCTINCREASE 0
-				BUFFER_POOL DEFAULT
-			  )
-	NOPARALLEL
-/
 
-CREATE OR REPLACE TRIGGER at_sec_user_office_trig
-	BEFORE INSERT OR UPDATE OF username
-	ON at_sec_user_office
-	REFERENCING NEW AS new OLD AS old
-	FOR EACH ROW
+CREATE UNIQUE INDEX AT_SEC_CWMS_USERS_PK ON AT_SEC_CWMS_USERS
+(USERID)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL;
+
+
+CREATE OR REPLACE TRIGGER AT_SEC_CWMS_USERS_TRIG
+    BEFORE INSERT OR UPDATE OF userid
+    ON AT_SEC_CWMS_USERS     REFERENCING NEW AS new OLD AS old
+    FOR EACH ROW
 DECLARE
 BEGIN
-	:new.username := UPPER (:new.username);
+    :new.userid := UPPER (:new.userid);
 END;
 /
 
-ALTER TABLE at_sec_user_office ADD (
-  CONSTRAINT at_sec_user_office_pk
- PRIMARY KEY
- (username)
-	 USING INDEX
-	 tablespace CWMS_20AT_DATA
-	 PCTFREE 	10
-	 INITRANS	2
-	 MAXTRANS	255
-	 STORAGE 	(
-					 INITIAL 			64 K
-					 MINEXTENTS 		1
-					 MAXEXTENTS 		2147483645
-					 PCTINCREASE		0
-					))
-/
-ALTER TABLE at_sec_user_office ADD (
-  CONSTRAINT at_sec_user_office_r01
- FOREIGN KEY (user_db_office_code)
- REFERENCES cwms_office (office_code))
-/
+
+ALTER TABLE AT_SEC_CWMS_USERS ADD (
+  CONSTRAINT AT_SEC_CWMS_USERS_PK
+  PRIMARY KEY
+  (USERID)
+  USING INDEX AT_SEC_CWMS_USERS_PK);
+
 --
 --=============================================================================
 --=============================================================================
@@ -403,7 +397,7 @@ ALTER TABLE at_sec_users ADD (
 ALTER TABLE at_sec_users ADD (
   CONSTRAINT at_sec_users_r02
  FOREIGN KEY (username)
- REFERENCES at_sec_user_office (username))
+ REFERENCES at_sec_cwms_users (userid))
 /
 ALTER TABLE at_sec_users ADD (
   CONSTRAINT at_sec_users_r01
@@ -1064,63 +1058,64 @@ AS
 --=============================================================================
 --
 
-CREATE OR REPLACE FORCE VIEW av_sec_users
+CREATE OR REPLACE FORCE VIEW CWMS_20.AV_SEC_USERS
 (
-	username,
-	user_db_office_id,
-	db_office_id,
-	user_group_type,
-	user_group_owner,
-	user_group_id,
-	is_member,
-	is_locked,
-	user_group_desc,
-	user_db_office_code,
-	db_office_code,
-	user_group_code
+   USERNAME,
+   DB_OFFICE_ID,
+   USER_GROUP_TYPE,
+   USER_GROUP_OWNER,
+   USER_GROUP_ID,
+   IS_MEMBER,
+   IS_LOCKED,
+   USER_GROUP_DESC,
+   DB_OFFICE_CODE,
+   USER_GROUP_CODE
 )
 AS
-	SELECT	username, user_db_office_id, db_office_id,
-				CASE
-					WHEN user_group_code < 10 THEN 'Privilege User Group'
-					ELSE 'TS Collection User Group'
-				END
-					user_group_type,
-				CASE WHEN user_group_code < 20 THEN 'CWMS' ELSE db_office_id END
-					user_group_owner, user_group_id, is_member,
-				CASE WHEN is_locked IS NULL THEN 'F' ELSE is_locked END is_locked,
-				user_group_desc, user_db_office_code, db_office_code,
-				user_group_code
-	  FROM		(SELECT	 username, user_db_office_id, db_office_id,
-								 user_group_id, user_group_desc, user_db_office_code,
-								 db_office_code db_office_code, user_group_code,
-								 CASE
-									 WHEN ROWIDTOCHAR (b.ROWID) IS NOT NULL THEN 'T'
-									 ELSE 'F'
-								 END
-									 is_member
-						FROM		 (SELECT   a.username,
-												  d.office_id user_db_office_id,
-												  c.office_id db_office_id,
-												  b.user_group_id, b.user_group_desc,
-												  a.user_db_office_code, b.db_office_code,
-												  b.user_group_code, 'T' is_member
-										 FROM   at_sec_user_office a,
-												  at_sec_user_groups b,
-												  cwms_office c,
-												  cwms_office d
-										WHERE   b.db_office_code = c.office_code
-												  AND a.user_db_office_code =
-														  d.office_code) a
-								 LEFT OUTER JOIN
-									 at_sec_users b
-								 USING (username, db_office_code, user_group_code)) a
-				LEFT OUTER JOIN
-					at_sec_locked_users
-				USING (username, db_office_code);
-
+   SELECT username,
+          db_office_id,
+          CASE
+             WHEN user_group_code < 10 THEN 'Privilege User Group'
+             ELSE 'TS Collection User Group'
+          END
+             user_group_type,
+          CASE WHEN user_group_code < 20 THEN 'CWMS' ELSE db_office_id END
+             user_group_owner,
+          user_group_id,
+          is_member,
+          CASE WHEN is_locked IS NULL THEN 'F' ELSE is_locked END is_locked,
+          user_group_desc,
+          db_office_code,
+          user_group_code
+     FROM    (SELECT username,
+                     db_office_id,
+                     user_group_id,
+                     user_group_desc,
+                     db_office_code db_office_code,
+                     user_group_code,
+                     CASE
+                        WHEN ROWIDTOCHAR (b.ROWID) IS NOT NULL THEN 'T'
+                        ELSE 'F'
+                     END
+                        is_member
+                FROM    (SELECT a.userid username,
+                                c.office_id db_office_id,
+                                b.user_group_id,
+                                b.user_group_desc,
+                                b.db_office_code,
+                                b.user_group_code,
+                                'T' is_member
+                           FROM at_sec_cwms_users a,
+                                at_sec_user_groups b,
+                                cwms_office c
+                          WHERE b.db_office_code = c.office_code) a
+                     LEFT OUTER JOIN
+                        at_sec_users b
+                     USING (username, db_office_code, user_group_code)) a
+          LEFT OUTER JOIN
+             at_sec_locked_users
+          USING (username, db_office_code);
 /
-
 --
 --=============================================================================
 -- av_sec_ts_privileges
@@ -1312,6 +1307,6 @@ ALTER TABLE CWMS_20.AT_SEC_CWMS_PERMISSIONS ADD (
   REFERENCES CWMS_20.CWMS_OFFICE (OFFICE_CODE),
   CONSTRAINT AT_SEC_CWMS_PERMISSIONS_FK2 
   FOREIGN KEY (USERNAME) 
-  REFERENCES CWMS_20.AT_SEC_USER_OFFICE (USERNAME))
+  REFERENCES CWMS_20.AT_SEC_CWMS_USERS (USERID))
 
 /

@@ -1,7 +1,6 @@
 /* Formatted on 5/28/2013 1:59:38 PM (QP5 v5.163.1008.3004) */
 SET DEFINE ON
-
-CREATE OR REPLACE PACKAGE cwms_sec
+CREATE OR REPLACE PACKAGE CWMS_20.cwms_sec
 AS
    max_cwms_priv_ugroup_code     CONSTANT NUMBER := 9;
    max_cwms_ts_ugroup_code       CONSTANT NUMBER := 19;
@@ -32,7 +31,6 @@ AS
    TYPE cat_priv_groups_rec_t IS RECORD
    (
       username            VARCHAR2 (31),
-      user_db_office_id   VARCHAR2 (16),
       db_office_id        VARCHAR2 (16),
       user_group_type     VARCHAR2 (24),
       user_group_owner    VARCHAR2 (16),
@@ -136,7 +134,6 @@ AS
                           p_password             IN VARCHAR2,
                           p_user_group_id_list   IN char_32_array_type,
                           p_db_office_id         IN VARCHAR2 DEFAULT NULL,
-                          p_fullname             IN VARCHAR2 DEFAULT NULL,
                           p_cwms_permissions     IN VARCHAR2 DEFAULT NULL);
 
 
@@ -212,11 +209,12 @@ AS
    PROCEDURE create_ts_group (p_ts_group_id     IN VARCHAR2,
                               p_ts_group_desc   IN VARCHAR2,
                               p_db_office_id    IN VARCHAR2 DEFAULT NULL);
-                              
-   FUNCTION get_admin_permissions (p_user_name      IN VARCHAR2,
-                                   p_db_office_id   IN VARCHAR2) RETURN VARCHAR2;
-                                   
-   PROCEDURE get_cwms_permissions (
+
+   FUNCTION get_admin_cwms_permissions (p_user_name      IN VARCHAR2,
+                                        p_db_office_id   IN VARCHAR2)
+      RETURN VARCHAR2;
+
+   PROCEDURE get_user_cwms_permissions (
       p_cwms_permissions      OUT SYS_REFCURSOR,
       p_db_office_id       IN     VARCHAR2,
       p_include_all        IN     BOOLEAN DEFAULT FALSE);
@@ -224,10 +222,16 @@ AS
    PROCEDURE get_db_users (p_db_users       OUT SYS_REFCURSOR,
                            p_db_office_id       VARCHAR2);
 
-   PROCEDURE update_user (p_username           IN VARCHAR2,
-                          p_fullname           IN VARCHAR2,
-                          p_cwms_permissions   IN VARCHAR2,
-                          p_db_office_id       IN VARCHAR2 DEFAULT NULL);
+   PROCEDURE update_user_cwms_permissions (
+      p_username           IN VARCHAR2,
+      p_cwms_permissions   IN VARCHAR2,
+      p_db_office_id       IN VARCHAR2 DEFAULT NULL);
+
+   PROCEDURE update_user_data (p_userid     IN VARCHAR2,
+                               p_fullname   IN VARCHAR2,
+                               p_org        IN VARCHAR2,
+                               p_office     IN VARCHAR2,
+                               p_phone      IN VARCHAR2,
+                               p_email      IN VARCHAR2);
 END cwms_sec;
 /
-

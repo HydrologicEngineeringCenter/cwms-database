@@ -1,7 +1,7 @@
 /* Formatted on 5/28/2013 4:17:36 PM (QP5 v5.163.1008.3004) */
 SET DEFINE ON
 @@defines.sql
-
+/* Formatted on 7/1/2013 1:09:40 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE BODY cwms_sec
 AS
    FUNCTION is_user_cwms_locked (p_db_office_code IN NUMBER)
@@ -11,7 +11,7 @@ AS
       l_username    VARCHAR2 (31) := cwms_util.get_user_id;
    BEGIN
       --
-      -- cwms_20, system, sys are ok
+      -- &cwms_schema, system, sys are ok
       --
       IF l_username IN ('&cwms_schema', 'SYSTEM', 'SYS')
       THEN
@@ -51,7 +51,7 @@ AS
       l_username    VARCHAR2 (31) := cwms_util.get_user_id;
    BEGIN
       --
-      -- cwms_20, system, sys are ok
+      -- &cwms_schema, system, sys are ok
       --
       IF l_username IN ('&cwms_schema', 'SYSTEM', 'SYS')
       THEN
@@ -292,7 +292,6 @@ AS
       THEN
          OPEN p_priv_groups FOR
             SELECT username,
-                   user_db_office_id,
                    db_office_id,
                    user_group_type,
                    user_group_owner,
@@ -307,7 +306,6 @@ AS
 
          OPEN p_priv_groups FOR
             SELECT username,
-                   user_db_office_id,
                    db_office_id,
                    user_group_type,
                    user_group_owner,
@@ -413,7 +411,6 @@ AS
       THEN
          OPEN p_priv_groups FOR
             SELECT username,
-                   user_db_office_id,
                    db_office_id,
                    user_group_type,
                    user_group_owner,
@@ -432,7 +429,6 @@ AS
       THEN
          OPEN p_priv_groups FOR
             SELECT username,
-                   user_db_office_id,
                    db_office_id,
                    user_group_type,
                    user_group_owner,
@@ -445,7 +441,6 @@ AS
       THEN
          OPEN p_priv_groups FOR
             SELECT username,
-                   user_db_office_id,
                    db_office_id,
                    user_group_type,
                    user_group_owner,
@@ -458,7 +453,6 @@ AS
       ELSE
          OPEN p_priv_groups FOR
             SELECT username,
-                   user_db_office_id,
                    db_office_id,
                    user_group_type,
                    user_group_owner,
@@ -573,6 +567,7 @@ AS
                             := cwms_util.get_db_office_id (p_db_office_id);
       l_db_office_code   NUMBER
                             := cwms_util.get_db_office_code (l_db_office_id);
+      l_count            NUMBER;
    --
    BEGIN
       confirm_user_admin_priv (l_db_office_code);
@@ -590,18 +585,24 @@ AS
                'Unable to create user because a dbi_username was not found for this CWMS Oracle Database.');
       END;
 
+      SELECT COUNT (*)
+        INTO l_count
+        FROM AT_SEC_CWMS_USERS
+       WHERE userid = UPPER (p_username);
+
+      IF (l_count = 0)
+      THEN
+         update_user_data (p_username,
+                           NULL,
+                           NULL,
+                           NULL,
+                           NULL,
+                           NULL);
+      END IF;
+
       cwms_dba.cwms_user_admin.create_cwms_db_account (l_username,
                                                        l_password,
                                                        l_dbi_username);
-
-      BEGIN
-         INSERT INTO at_sec_user_office (username, user_db_office_code)
-              VALUES (l_username, l_db_office_code);
-      EXCEPTION
-         WHEN DUP_VAL_ON_INDEX
-         THEN
-            NULL;
-      END;
 
       BEGIN
          SELECT is_locked
@@ -837,6 +838,45 @@ AS
       set_dbi_user (p_dbi_username, p_db_office_id);
    END;
 
+   PROCEDURE update_user_data (p_userid     IN VARCHAR2,
+                               p_fullname   IN VARCHAR2,
+                               p_org        IN VARCHAR2,
+                               p_office     IN VARCHAR2,
+                               p_phone      IN VARCHAR2,
+                               p_email      IN VARCHAR2)
+   IS
+      l_count   NUMBER;
+   BEGIN
+      SELECT COUNT (*)
+        INTO l_count
+        FROM AT_SEC_CWMS_USERS
+       WHERE USERID = p_userid;
+
+      IF (l_count = 0)
+      THEN
+         INSERT INTO AT_SEC_CWMS_USERS (userid,
+                                        fullname,
+                                        org,
+                                        phone,
+                                        email,
+                                        createdby)
+              VALUES (p_userid,
+                      p_fullname,
+                      p_org,
+                      p_phone,
+                      p_email,
+                      CWMS_UTIL.GET_USER_ID);
+      ELSE
+         UPDATE AT_SEC_CWMS_USERS
+            SET fullname = p_fullname,
+                org = p_org,
+                phone = p_phone,
+                email = p_email,
+                createdby = CWMS_UTIL.GET_USER_ID
+          WHERE userid = p_userid;
+      END IF;
+   END UPDATE_USER_DATA;
+
    ----------------------------------------------------------------------------
    -- create_user
    ----------------------------------------------------------------------------
@@ -869,7 +909,6 @@ AS
                           p_password             IN VARCHAR2,
                           p_user_group_id_list   IN char_32_array_type,
                           p_db_office_id         IN VARCHAR2 DEFAULT NULL,
-                          p_fullname             IN VARCHAR2 DEFAULT NULL,
                           p_cwms_permissions     IN VARCHAR2 DEFAULT NULL)
    IS
       l_db_office_id       VARCHAR2 (16)
@@ -898,7 +937,7 @@ AS
          END IF;
       END IF;
 
-      create_cwms_db_account (l_username, p_password, l_db_office_id);
+      create_cwms_db_account (l_username, p_password, p_db_office_id);
 
       IF (p_user_group_id_list IS NOT NULL)
       THEN
@@ -913,10 +952,6 @@ AS
          END IF;
       END IF;
 
-      UPDATE AT_SEC_USER_OFFICE
-         SET FULLNAME = P_FULLNAME
-       WHERE USERNAME = p_username;
-
       IF (p_cwms_permissions IS NOT NULL)
       THEN
          INSERT
@@ -926,30 +961,41 @@ AS
          insert_noaccess_entry (UPPER (p_username), l_db_office_code);
       END IF;
 
+      SELECT COUNT (*)
+        INTO l_count
+        FROM AT_SEC_CWMS_USERS
+       WHERE userid = UPPER (p_username);
+
+      IF (l_count = 0)
+      THEN
+         update_user_data (p_username,
+                           NULL,
+                           NULL,
+                           NULL,
+                           NULL,
+                           NULL);
+      END IF;
+
       COMMIT;
    END CREATE_USER;
 
-   PROCEDURE update_user (p_username           IN VARCHAR2,
-                          p_fullname           IN VARCHAR2,
-                          p_cwms_permissions   IN VARCHAR2,
-                          p_db_office_id       IN VARCHAR2 DEFAULT NULL)
+   PROCEDURE update_user_cwms_permissions (
+      p_username           IN VARCHAR2,
+      p_cwms_permissions   IN VARCHAR2,
+      p_db_office_id       IN VARCHAR2 DEFAULT NULL)
    IS
       l_db_office_id     VARCHAR2 (16)
                             := cwms_util.get_db_office_id (p_db_office_id);
       l_db_office_code   NUMBER
                             := cwms_util.get_db_office_code (l_db_office_id);
    BEGIN
-      UPDATE AT_SEC_USER_OFFICE
-         SET FULLNAME = p_fullname
-       WHERE username = p_username;
-
       UPDATE AT_SEC_CWMS_PERMISSIONS
          SET PERMISSIONS = p_cwms_permissions,
              DB_OFFICE_CODE = l_db_office_code
-       WHERE username = p_username AND DB_OFFICE_CODE=l_db_office_code;
+       WHERE username = p_username AND DB_OFFICE_CODE = l_db_office_code;
 
       COMMIT;
-   END UPDATE_USER;
+   END update_user_cwms_permissions;
 
    ----------------------------------------------------------------------------
    -- delete_user
@@ -1019,8 +1065,8 @@ AS
          DELETE FROM at_sec_cwms_permissions
                WHERE username = l_username;
 
-         DELETE FROM at_sec_user_office
-               WHERE username = l_username;
+         --DELETE FROM at_sec_cwms_users
+         --WHERE userid = l_username;
 
 
          COMMIT;
@@ -2313,8 +2359,8 @@ AS
       END IF;
    END;
 
-   FUNCTION get_admin_permissions (p_user_name      IN VARCHAR2,
-                                   p_db_office_id   IN VARCHAR2)
+   FUNCTION get_admin_cwms_permissions (p_user_name      IN VARCHAR2,
+                                        p_db_office_id   IN VARCHAR2)
       RETURN VARCHAR2
    IS
       l_permissions   VARCHAR2 (128);
@@ -2336,7 +2382,7 @@ AS
       RETURN l_permissions;
    END;
 
-   PROCEDURE get_cwms_permissions (
+   PROCEDURE get_user_cwms_permissions (
       p_cwms_permissions      OUT SYS_REFCURSOR,
       p_db_office_id       IN     VARCHAR2,
       p_include_all        IN     BOOLEAN DEFAULT FALSE)
@@ -2353,8 +2399,8 @@ AS
    BEGIN
       SELECT COUNT (*)
         INTO l_count
-        FROM at_sec_user_office
-       WHERE username = l_username;
+        FROM at_sec_cwms_users
+       WHERE userid = l_username;
 
       IF l_count = 0 OR l_db_office_id = 'UNK'
       THEN
@@ -2384,16 +2430,15 @@ AS
       END IF;
 
       l_query :=
-         'SELECT    p.username
+         'SELECT    createdby || ''|'' ||  p.username
              || ''|x|''
-             || CWMS_SEC.GET_ADMIN_PERMISSIONS (p.username,'''
+             || CWMS_SEC.GET_ADMIN_CWMS_PERMISSIONS (p.username,'''
          || p_db_office_id
          || ''')
              || permissions
              || ''|''
              ||  case when fullname is null or length(fullname)=0 then '' '' else fullname end
-             || ''|''
-        FROM at_sec_cwms_permissions p, at_sec_user_office u  WHERE p.username=u.username AND p.db_office_code='
+        FROM at_sec_cwms_permissions p, at_sec_cwms_users u  WHERE p.username=u.userid AND p.db_office_code='
          || l_db_office_code;
 
       IF NOT L_INCLUDE_ALL
@@ -2404,16 +2449,16 @@ AS
       DBMS_OUTPUT.PUT_LINE (l_query);
 
       OPEN p_cwms_permissions FOR l_query;
-   END;
+   END get_user_cwms_permissions;
 
-  PROCEDURE get_db_users (p_db_users       OUT SYS_REFCURSOR,
+   PROCEDURE get_db_users (p_db_users       OUT SYS_REFCURSOR,
                            p_db_office_id       VARCHAR2)
    IS
    BEGIN
       OPEN p_db_users FOR
          SELECT CASE
-                   WHEN s.fullname IS NULL OR s.fullname = '' THEN a.username
-                   ELSE a.username || '|' || s.fullname
+                   WHEN s.fullname IS NULL THEN a.username
+                   ELSE a.username || '|' || s.fullname || '|' || s.createdby
                 END
                    fullname
            FROM    (  SELECT username
@@ -2458,9 +2503,8 @@ AS
                                                   p_db_office_id))
                     ORDER BY username) a
                 LEFT JOIN
-                   at_sec_user_office s
-                ON A.USERNAME = S.USERNAME;
-   END;
+                   at_sec_cwms_users s
+                ON A.USERNAME = S.userid;
+   END get_db_users;
 END cwms_sec;
 /
-
