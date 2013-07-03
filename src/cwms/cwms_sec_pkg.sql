@@ -1,6 +1,6 @@
 /* Formatted on 5/28/2013 1:59:38 PM (QP5 v5.163.1008.3004) */
 SET DEFINE ON
-CREATE OR REPLACE PACKAGE CWMS_20.cwms_sec
+CREATE OR REPLACE PACKAGE cwms_sec
 AS
    max_cwms_priv_ugroup_code     CONSTANT NUMBER := 9;
    max_cwms_ts_ugroup_code       CONSTANT NUMBER := 19;

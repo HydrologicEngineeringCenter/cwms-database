@@ -937,7 +937,7 @@ AS
          END IF;
       END IF;
 
-      create_cwms_db_account (l_username, p_password, p_db_office_id);
+      create_cwms_db_account (l_username, p_password, l_db_office_id);
 
       IF (p_user_group_id_list IS NOT NULL)
       THEN
