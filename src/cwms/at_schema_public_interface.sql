@@ -41,7 +41,6 @@ BEGIN
 	 WHERE		 owner = '&cwms_schema'
 				AND object_type = 'PACKAGE'
 				AND object_name NOT LIKE '%_SEC_%'
-				AND object_name <> 'CWMS_ENV'
 			        AND object_name <> 'CWMS_UPASS';
 
 	--
