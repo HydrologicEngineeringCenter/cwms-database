@@ -10,25 +10,34 @@ spool updateCWMS21_DB.log
  
 PROMPT Creating AT_SEC_CWMS_USERS and AT_SEC_CWMS_PERMISSIONS tables
 
-INSERT INTO CWMS_ERROR (ERR_CODE, ERR_NAME, ERR_MSG) VALUES (-20047, 'SESSION_OFFICE_ID_NOT_SET', 'Session office id is not set by the application');
 @@../cwms/at_schema_sec_2
+
+PROMPT Adding an entry to CWMS_ERROR
+
+INSERT INTO CWMS_ERROR (ERR_CODE, ERR_NAME, ERR_MSG) VALUES (-20047, 'SESSION_OFFICE_ID_NOT_SET', 'Session office id is not set by the application');
 
 PROMPT Update packages/types/views
 @@../cwms/updateCwmsSchema
+
+PROMPT Creating AV_SEC_USERS view
 @@../cwms/views/av_sec_users
+
+PROMPT Creating Additional synonyms and grants
 CREATE PUBLIC SYNONYM CWMS_ALARM FOR CWMS_20.CWMS_ALARM;
 GRANT EXECUTE ON &CWMS_SCHEMA..LOC_LVL_INDICATOR_COND_T TO CWMS_USER;
 GRANT EXECUTE ON &CWMS_SCHEMA..RATING_T TO CWMS_USER;
 
--- Context needs to be created after the package is created
+PROMPT Creating CWMS_ENV context
 @@../cwms/at_schema_env
 
+PROMPT Importing CWMS Permissions
 @@import_cwms_permissions
 
 PROMPT Recreating at_sec_users_r02 constraint
 
 alter table at_sec_users drop constraint at_sec_users_r02;
 
+PROMPT Inserting Additional CCP groups
 @@insert_new_groups
 
 ALTER TABLE at_sec_users ADD (
