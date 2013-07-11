@@ -7,6 +7,9 @@
 @@cwms_env_pkg
 @@cwms_env_pkg_body
 
+@@cwms_upass_pkg
+@@cwms_upass_pkg_body
+
 @@cwms/views/av_shef_decode_spec.sql
 
 @@cwms_prop_pkg

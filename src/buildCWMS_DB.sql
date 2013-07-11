@@ -63,8 +63,8 @@ alter session set current_schema = &cwms_schema;
 @@cwms/at_schema_rating
 @@cwms/at_schema_tsv
 @@cwms/at_schema_tr
+@@cwms/at_schema_sec_2
 @@cwms/at_schema_sec
-@@cwms/at_schema_env
 @@cwms/at_schema_apex_debug
 
 --
@@ -78,6 +78,8 @@ alter session set current_schema = &cwms_schema;
 -- CWMS API
 --
 @@cwms/api
+-- Context needs to be created after the package is created
+@@cwms/at_schema_env
 
 --
 -- structure that can't be built without the CWMS API,
