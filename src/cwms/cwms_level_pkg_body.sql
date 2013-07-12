@@ -2884,7 +2884,7 @@ begin
             l_ts := ztsv_array();
             l_ts.extend(l_dates.count);
             for i in 1..l_dates.count loop
-               l_ts(i) := ztsv_type(l_dates(i), l_values(i), 0);
+               l_ts(i) := ztsv_type(l_dates(i), l_values(i), l_quality(i));
             end loop;
             if l_ts is not null and l_ts.count > 0 then
                if l_ts(1).date_time < p_start_time_utc then
