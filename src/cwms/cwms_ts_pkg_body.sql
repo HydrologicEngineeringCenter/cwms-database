@@ -436,6 +436,8 @@ AS
               FROM at_cwms_ts_id
              WHERE ts_code = p_cwms_ts_code;
       END;
+      
+      RETURN l_location_id;
    END;
 
    --
