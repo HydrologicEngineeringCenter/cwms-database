@@ -126,6 +126,9 @@ tableInfo = [
     {"ID" : "streamType",         "TABLE" : "CWMS_STREAM_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "msgId",              "TABLE" : "CWMS_MSG_ID",                "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "schemaObjVersion",   "TABLE" : "CWMS_SCHEMA_OBJECT_VERSION", "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "vertconHeader",      "TABLE" : "CWMS_VERTCON_HEADER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "vertconData",        "TABLE" : "CWMS_VERTCON_DATA",          "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "verticalDatum",      "TABLE" : "CWMS_VERTICAL_DATUM",        "SCHEMA" : "CWMS", "USERACCESS" : True},
 ]
 
 tables = []
@@ -9203,6 +9206,127 @@ def main() :
     COMMIT;
     '''
     
+    sys.stderr.write("Building vertconHeaderCreationTemplate\n")
+    vertconHeaderCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE (
+       DATASET_CODE NUMBER(10)    NOT NULL,
+       OFFICE_CODE  NUMBER(10)    NOT NULL,
+       DATASET_ID   VARCHAR2(32)  NOT NULL,
+       MIN_LAT      BINARY_DOUBLE NOT NULL,
+       MAX_LAT      BINARY_DOUBLE NOT NULL,
+       MIN_LON      BINARY_DOUBLE NOT NULL,
+       MAX_LON      BINARY_DOUBLE NOT NULL,
+       MARGIN       BINARY_DOUBLE NOT NULL,
+       DELTA_LAT    BINARY_DOUBLE NOT NULL,
+       DELTA_LON    BINARY_DOUBLE NOT NULL
+    )
+    TABLESPACE @DATASPACE
+    /
+    -------------------------------
+    -- @TABLE constraints  --
+    --
+    ALTER TABLE @TABLE ADD (
+       CONSTRAINT @TABLE_PK  PRIMARY KEY (DATASET_CODE) USING INDEX TABLESPACE @DATASPACE,
+       CONSTRAINT @TABLE_CK1 CHECK (MIN_LAT BETWEEN -90 AND 90),
+       CONSTRAINT @TABLE_CK2 CHECK (MAX_LAT BETWEEN -90 AND 90),
+       CONSTRAINT @TABLE_CK3 CHECK (MAX_LAT > MIN_LAT),
+       CONSTRAINT @TABLE_CK4 CHECK (MIN_LON BETWEEN -180 AND 180),
+       CONSTRAINT @TABLE_CK5 CHECK (MAX_LON BETWEEN -180 AND 180),
+       CONSTRAINT @TABLE_CK6 CHECK (MAX_LON > MIN_LON),
+       CONSTRAINT @TABLE_CK7 CHECK (MARGIN BETWEEN 0 AND MAX_LON - MIN_LON), 
+       CONSTRAINT @TABLE_CK8 CHECK (DELTA_LAT > 0 AND DELTA_LAT < (MAX_LAT - MIN_LAT) / 2), 
+       CONSTRAINT @TABLE_CK9 CHECK (DELTA_LON > 0 AND DELTA_LON < (MAX_LON - MIN_LON) / 2) 
+    )   
+    /
+    CREATE UNIQUE INDEX @TABLE_U1 ON @TABLE(UPPER(DATASET_ID)) TABLESPACE @DATASPACE
+    /
+    CREATE INDEX @TABLE_IDX1 ON @TABLE(MIN_LAT, MAX_LAT, MIN_LON, MAX_LON) TABLESPACE @DATASPACE
+    /
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE              IS 'Contains header information for a vertcon data set';
+    COMMENT ON COLUMN @TABLE.DATASET_CODE IS 'Unique numeric code of this data set';
+    COMMENT ON COLUMN @TABLE.DATASET_ID   IS 'Unique text identifier of this data set (commonly identifies vertcon data file)';
+    COMMENT ON COLUMN @TABLE.MIN_LAT      IS 'Minimum latitude for this data set';
+    COMMENT ON COLUMN @TABLE.MAX_LAT      IS 'Maximum latitude for this data set';
+    COMMENT ON COLUMN @TABLE.MIN_LON      IS 'Minimum longitude for this data set';
+    COMMENT ON COLUMN @TABLE.MAX_LON      IS 'Maximum longitude for this data set';
+    COMMENT ON COLUMN @TABLE.MARGIN       IS 'Longitude buffer for maximum longitude';
+    COMMENT ON COLUMN @TABLE.DELTA_LAT    IS 'Difference between adjacent latitudes in data set';
+    COMMENT ON COLUMN @TABLE.DELTA_LON    IS 'Difference between adjacent longitudes in data set';
+    
+    COMMIT;
+    '''            
+    
+    sys.stderr.write("Building vertconDataCreationTemplate\n")
+    vertconDataCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE (
+       DATASET_CODE NUMBER(10),
+       TABLE_ROW    INTEGER,
+       TABLE_COL    INTEGER,
+       TABLE_VAL    BINARY_DOUBLE
+    )
+    TABLESPACE @DATASPACE
+    /
+    -------------------------------
+    -- @TABLE constraints  --
+    --
+    ALTER TABLE @TABLE ADD (
+       CONSTRAINT @TABLE_PK  PRIMARY KEY (DATASET_CODE, TABLE_ROW, TABLE_COL) USING INDEX TABLESPACE @DATASPACE,
+       CONSTRAINT @TABLE_FK1 FOREIGN KEY (DATASET_CODE) REFERENCES CWMS_VERTCON_HEADER (DATASET_CODE)
+    )   
+    /
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE              IS 'Contains datum offsets for all loaded vercon data sets';
+    COMMENT ON COLUMN @TABLE.DATASET_CODE IS 'Data set identifier - foreign key to cwms_vertcon_header table';
+    COMMENT ON COLUMN @TABLE.TABLE_ROW    IS 'Row index in vertcon data table';
+    COMMENT ON COLUMN @TABLE.TABLE_COL    IS 'Column index in vertcon data table';
+    COMMENT ON COLUMN @TABLE.TABLE_VAL    IS 'Datum offset in millimeters for row and column in vertcon data table';
+    
+    COMMIT;
+    '''            
+
+    
+    sys.stderr.write("Building verticalDatumCreationTemplate\n")
+    verticalDatumCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    CREATE TABLE @TABLE (
+       VERTICAL_DATUM_ID VARCHAR2(16) PRIMARY KEY
+    )
+    TABLESPACE @DATASPACE
+    /
+    ---------------------------
+    -- @TABLE comments --
+    --
+    COMMENT ON TABLE  @TABLE                   IS 'Contains constrained list of vertical datums';
+    COMMENT ON COLUMN @TABLE.VERTICAL_DATUM_ID IS 'Text identifier of vertical datum';
+    
+    COMMIT;
+    '''            
+    
+    sys.stderr.write("Building verticalDatumLoadTemplate\n")
+    verticalDatumLoadTemplate = \
+    '''
+    INSERT INTO CWMS_VERTICAL_DATUM VALUES ('STAGE');
+    INSERT INTO CWMS_VERTICAL_DATUM VALUES ('LOCAL');
+    INSERT INTO CWMS_VERTICAL_DATUM VALUES ('NGVD29');
+    INSERT INTO CWMS_VERTICAL_DATUM VALUES ('NAVD88');
+    '''
+
     #==
     #====
     #======

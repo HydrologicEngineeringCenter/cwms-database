@@ -1462,6 +1462,297 @@ AS
       p_location_id in varchar2,
       p_office_id   in varchar2 default null)
       return varchar2;
+   /**
+    * Stores (inserts or updates) a vertical datum offset to the database for a location
+    *
+    * @param p_location_id         The location the offset applies to
+    * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_offset              The offset that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
+    * @param p_unit                The unit of the offset
+    * @param p_effective_date      The date and time the offset became effective.  If not specified, the date 01-JAN-1000 representing 'far in the past' is used.
+    * @param p_time_zone           The time zone of the effective date field. If not speciifed or NULL, the location's local time zone is used.
+    * @param p_description         A description of the offset
+    * @param p_fail_if_exists      A flag ('T'/'F') specifying whether to fail if a vertical datum offset already exists for the location and vertical datum identifers
+    * @param p_office_id           The offset that owns the location.  If not specified or NULL the session user's default office is used.
+    */
+   procedure store_vertical_datum_offset(
+      p_location_id         in varchar2,
+      p_vertical_datum_id_1 in varchar2,
+      p_vertical_datum_id_2 in varchar2,
+      p_offset              in binary_double,
+      p_unit                in varchar2,
+      p_effective_date      in date default date '1000-01-01',
+      p_time_zone           in varchar2 default null,
+      p_description         in varchar2 default null,
+      p_fail_if_exists      in varchar2 default 'T',
+      p_office_id           in varchar2 default null);
+   /**
+    * Stores (inserts or updates) a vertical datum offset to the database for a location
+    *
+    * @param p_vertical_datum_offset  The vertical datum offset to store.
+    * @param p_fail_if_exists         A flag ('T'/'F') specifying whether to fail if a vertical datum offset already exists for the location and vertical datum identifers
+    *
+    * @see type vert_datum_offset_t
+    */
+   procedure store_vertical_datum_offset(
+      p_vertical_datum_offset in vert_datum_offset_t,
+      p_fail_if_exists        in varchar2 default 'T');
+   /**
+    * Retrieves a vertical datum offset from the database for a location
+    *
+    * @param p_offset               The value of the offset
+    * @param p_unit_out             The unit of the offset
+    * @param p_description          A description of the offset
+    * @param p_effective_date_out   The effective date of the offset, in the time zone specified or indicated by p_time_zone
+    * @param p_location_id          The location the offset applies to
+    * @param p_vertical_datum_id_1  The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2  The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_effective_date_in    The effective date to use, depending on the value of p_match_effective_date. If p_match_effective_date is 'T' then this parameter, combined with p_time_zone, specifies
+    *                               the actual effective date of the datum offset. If p_match_effective_date is 'F', then this parameter, combined with p_time_zone specifies
+    *                               retrieving the latest effective date on or before this parameter.  If not specified or NULL, the current date and time is used.
+    * @param p_time_zone            The time zone of the effective date field. If not speciifed or NULL, the location's local time zone is used, unless p_effective_date is also unspecified or NULL, in which
+    *                               case the effective date is returned in UTC.
+    * @param p_unit_in              The desired unit of the offset. If not specifed or NULL, the offset will be return with the storage unit of 'm'.
+    * @param p_match_effective_date A flag ('T'/'F') that specifies whether the p_effective_date_in parameter is an actual effective date ('T') or a maximum effective date ('F').
+    * @param p_office_id            The offset that owns the location.  If not specified or NULL the session user's default office is used.
+    */
+   procedure retrieve_vertical_datum_offset(
+      p_offset               out binary_double,
+      p_unit_out             out varchar2,
+      p_description          out varchar2,
+      p_effective_date_out   out date,
+      p_location_id          in  varchar2,
+      p_vertical_datum_id_1  in  varchar2,
+      p_vertical_datum_id_2  in  varchar2,
+      p_effective_date_in    in  date     default null,
+      p_time_zone            in  varchar2 default null,
+      p_unit_in              in  varchar2 default null,
+      p_match_effective_date in  varchar2 default 'F',
+      p_office_id            in  varchar2 default null);
+   /**
+    * Retrieves a vertical datum offset from the database for a location
+    *
+    * @param p_location_id          The location the offset applies to
+    * @param p_vertical_datum_id_1  The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2  The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_effective_date_in    The effective date to use, depending on the value of p_match_effective_date. If p_match_effective_date is 'T' then this parameter, combined with p_time_zone, specifies
+    *                               the actual effective date of the datum offset. If p_match_effective_date is 'F', then this parameter, combined with p_time_zone specifies
+    *                               retrieving the latest effective date on or before this parameter.  If not specified or NULL, the current date and time is used.
+    * @param p_time_zone            The time zone of the effective date field. If not speciifed or NULL, the location's local time zone is used, unless p_effective_date is also unspecified or NULL, in which
+    *                               case the effective date is returned in UTC.
+    * @param p_unit                 The desired unit of the offset. If not specifed or NULL, the offset will be return with the storage unit of 'm'.
+    * @param p_match_effective_date A flag ('T'/'F') that specifies whether the p_effective_date_in parameter is an actual effective date ('T') or a maximum effective date ('F').
+    * @param p_office_id            The offset that owns the location.  If not specified or NULL the session user's default office is used.
+    *
+    * @see type vert_datum_offset_t
+    */
+   function retrieve_vertical_datum_offset(
+      p_location_id          in varchar2,
+      p_vertical_datum_id_1  in varchar2,
+      p_vertical_datum_id_2  in varchar2,
+      p_effective_date_in    in date     default null,
+      p_time_zone            in varchar2 default null,
+      p_unit                 in varchar2 default null,
+      p_match_effective_date in varchar2 default 'F',
+      p_office_id            in varchar2 default null)
+      return vert_datum_offset_t;
+   /**
+    * Deletes a vertical datum offset from the database for a location
+    *
+    * @param p_location_id          The location the offset applies to
+    * @param p_vertical_datum_id_1  The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2  The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_effective_date_in    The effective date to use, depending on the value of p_match_effective_date. If p_match_effective_date is 'T' then this parameter, combined with p_time_zone, specifies
+    *                               the actual effective date of the datum offset. If p_match_effective_date is 'F', then this parameter, combined with p_time_zone specifies
+    *                               retrieving the latest effective date on or before this parameter.  If not specified or NULL, the current date and time is used.
+    * @param p_time_zone            The time zone of the effective date field. If not speciifed or NULL, the location's local time zone is used, unless p_effective_date is also unspecified or NULL, in which
+    *                               case this parameter defaults to 'UTC'.
+    * @param p_match_effective_date A flag ('T'/'F') that specifies whether the p_effective_date_in parameter is an actual effective date ('T') or a maximum effective date ('F').
+    * @param p_office_id            The offset that owns the location.  If not specified or NULL the session user's default office is used.
+    *
+    * @see type vert_datum_offset_t
+    */
+   procedure delete_vertical_datum_offset(
+      p_location_id          in varchar2,
+      p_vertical_datum_id_1  in varchar2,
+      p_vertical_datum_id_2  in varchar2,
+      p_effective_date_in    in date     default null,
+      p_time_zone            in varchar2 default null,
+      p_match_effective_date in varchar2 default 'T',
+      p_office_id            in varchar2 default null);
+   /**
+    * Retrieves a vertical datum offset value in meters from the database for a location
+    *
+    * @param p_location_code       The numeric code that refers to the location the offset applies to
+    * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_datetime_utc        The date of applicability of the offset. The offset returned will be the one having the latest effective date on or before this parameter.
+    * 
+    * @return The offset in meters that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
+    */
+   function get_vertical_datum_offset(
+      p_location_code       in number,
+      p_vertical_datum_id_1 in varchar2,   
+      p_vertical_datum_id_2 in varchar2,
+      p_datetime_utc        in date)
+      return binary_double; 
+   /**
+    * Retrieves a vertical datum offset value in meters and effective date in UTC from the database for a location
+    *
+    * @param p_offset              The offset in meters that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
+    * @param p_effective_date      The effective date of the offset
+    * @param p_location_code       The numeric code that refers to the location the offset applies to
+    * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_datetime_utc        The date of applicability of the offset. The offset returned will be the one having the latest effective date on or before this parameter.
+    */
+   procedure get_vertical_datum_offset(   
+      p_offset              out binary_double, 
+      p_effective_date      out date,
+      p_location_code       in  number,
+      p_vertical_datum_id_1 in  varchar2,   
+      p_vertical_datum_id_2 in  varchar2,
+      p_datetime_utc        in  date); 
+   /**
+    * Retrieves a collection vertical datum offset values in meters and effective dates in UTC from the database for a location and time window
+    *
+    * @param p_location_code       The numeric code that refers to the location the offsets apply to
+    * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_start_time_utc      The beginning of the time window. The earliest effective date retrieved will be in effect on this date.
+    * @param p_end_time_utc        The end of the time window.  The latest effective date retrieved will be in effect on this date.
+    * 
+    * @return The datum offsets values and effective dates. For each item the date_time field contains the effective_date in UTC and the value field contains the datum offset in meters.  The quality field is not used.
+    *
+    * @see type ztsv_array
+    */
+   function get_vertical_datum_offsets(
+      p_location_code       in number,
+      p_vertical_datum_id_1 in varchar2,
+      p_vertical_datum_id_2 in varchar2,
+      p_start_time_utc      in date,
+      p_end_time_utc        in date)
+      return ztsv_array;        
+   /**
+    * Retrieves a collection vertical datum offset values in meters and effective dates in UTC from the database for a location and time window
+    *
+    * @param p_offsets             The datum offsets values and effective dates. For each item the date_time field contains the effective_date in UTC and the value field contains the datum offset in meters.  The quality field is not used.
+    * @param p_location_code       The numeric code that refers to the location the offsets apply to
+    * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_start_time_utc      The beginning of the time window. The earliest effective date retrieved will be in effect on this date.
+    * @param p_end_time_utc        The end of the time window.  The latest effective date retrieved will be in effect on this date.
+    * 
+    * @see type ztsv_array
+    */
+   procedure get_vertical_datum_offsets(  
+      p_offsets             out ztsv_array,
+      p_location_code       in  number,
+      p_vertical_datum_id_1 in  varchar2,
+      p_vertical_datum_id_2 in  varchar2,
+      p_start_time_utc      in  date,
+      p_end_time_utc        in  date);        
+   /**
+    * Retrieves a vertical datum offset value in a specified unit from the database for a location
+    *
+    * @param p_location_id         The text name of the location the offset applies to
+    * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_datetime            The date of applicability of the offset. The offset returned will be the one having the latest effective date on or before this parameter.
+    *                              If not specified or NULL, the current date and time will be used.
+    * @param p_time_zone           The time zone of p_datetime (if specified). If not specified or NULL, the location's location time zone is used.
+    * @param p_unit                The unit to retrieve the offset in.  If not specified or NULL, the offset will be returned in meters.
+    * @param p_office_id           The office that owns the location.
+    * 
+    * @return The offset in the specified unit that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
+    */
+   function get_vertical_datum_offset(
+      p_location_id         in varchar,
+      p_vertical_datum_id_1 in varchar2,   
+      p_vertical_datum_id_2 in varchar2, 
+      p_datetime            in date     default null,
+      p_time_zone           in varchar2 default null,
+      p_unit                in varchar2 default null,
+      p_office_id           in varchar2 default null)
+      return binary_double;   
+   /**
+    * Retrieves a vertical datum offset value in a specified unit and effective date in a specified time zone from the database for a location
+    *
+    * @param p_offset              The offset in the specified unit that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
+    * @param p_effecive_date       The effective date of the offset in the time time zone specified or indicated by p_time_zone
+    * @param p_location_id         The text name of the location the offset applies to
+    * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_datetime            The date of applicability of the offset. The offset returned will be the one having the latest effective date on or before this parameter.
+    *                              If not specified or NULL, the current date and time will be used.
+    * @param p_time_zone           The time zone of p_datetime (if specified). If not specified or NULL, the location's location time zone is used, unless p_effective_date is also unspecified or NULL, in which
+    *                              case the effectie date is returned in UTC.
+    * @param p_unit                The unit to retrieve the offset in.  If not specified or NULL, the offset will be returned in meters.
+    * @param p_office_id           The office that owns the location.
+    */
+   procedure get_vertical_datum_offset(
+      p_offset              out binary_double,  
+      p_effective_date      out date,
+      p_location_id         in  varchar,
+      p_vertical_datum_id_1 in  varchar2,   
+      p_vertical_datum_id_2 in  varchar2,
+      p_datetime            in  date     default null,
+      p_time_zone           in  varchar2 default null,
+      p_unit                in  varchar2 default null,
+      p_office_id           in  varchar2 default null);   
+   /**
+    * Retrieves a collection vertical datum offset values in a specified unit and effective dates in a specified time zone from the database for a location and time window
+    *
+    * @param p_location_id         The text name of the location the offsets apply to
+    * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_start_time          The beginning of the time window in the specified time zone. The earliest effective date retrieved will be in effect on this date.
+    * @param p_end_time            The end of the time window in the specified time zone.  The latest effective date retrieved will be in effect on this date.
+    * @param p_time_zone           The time zone of time window. If not specified or NULL, the location's location time zone is used.
+    * @param p_unit                The unit to retrieve the offsets in.  If not specified or NULL, the offsets will be returned in meters.
+    * @param p_office_id           The office that owns the location.
+    * 
+    * @return The datum offset values and effective dates. For each item the date_time field contains the effective_date in the specified time zone and the value field contains the datum offset in the specified unit. The quality field is not used.
+    *
+    * @see type ztsv_array
+    */
+   function get_vertical_datum_offsets(
+      p_location_id         in varchar,
+      p_vertical_datum_id_1 in varchar2,
+      p_vertical_datum_id_2 in varchar2,
+      p_start_time          in date,
+      p_end_time            in date,
+      p_time_zone           in varchar2 default null,
+      p_unit                in varchar2 default null,
+      p_office_id           in varchar2 default null)
+      return ztsv_array;        
+   /**
+    * Retrieves a collection vertical datum offset values in a specified unit and effective dates in a specified time zone from the database for a location and time window
+    *
+    * @param p_offsets             The datum offset values and effective dates. For each item the date_time field contains the effective_date in the specified time zone and the value field contains the datum offset in the specified unit. The quality field is not used.
+    * @param p_location_id         The text name of the location the offsets apply to
+    * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_start_time          The beginning of the time window in the specified time zone. The earliest effective date retrieved will be in effect on this date.
+    * @param p_end_time            The end of the time window in the specified time zone.  The latest effective date retrieved will be in effect on this date.
+    * @param p_time_zone           The time zone of time window. If not specified or NULL, the location's location time zone is used.
+    * @param p_unit                The unit to retrieve the offsets in.  If not specified or NULL, the offsets will be returned in meters.
+    * @param p_office_id           The office that owns the location.
+    * 
+    * @see type ztsv_array
+    */
+   procedure get_vertical_datum_offsets(
+      p_offsets             out ztsv_array,
+      p_location_id         in  varchar,
+      p_vertical_datum_id_1 in  varchar2,
+      p_vertical_datum_id_2 in  varchar2,
+      p_start_time          in  date,
+      p_end_time            in  date,
+      p_time_zone           in  varchar2 default null,
+      p_unit                in  varchar2 default null,
+      p_office_id           in  varchar2 default null);
+      
 END cwms_loc;
 /
 

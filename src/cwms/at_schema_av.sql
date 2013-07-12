@@ -44,7 +44,8 @@ DECLARE
 			       'av_ts_association',
 			       'av_stream_types',
 			       'av_loc_ts_id_count',
-			       'av_property'
+			       'av_property',
+			       'av_vert_datum_offset'
 			      );
 BEGIN
 	FOR i IN view_names.FIRST .. view_names.LAST
@@ -112,6 +113,7 @@ END;
 @@cwms/views/av_county.sql
 @@cwms/views/av_nation.sql
 @@cwms/views/av_property.sql
+@@cwms/views/av_vert_datum_offset.sql
 
 --------------------------------------------------------------------------------
 SHOW ERRORS;
