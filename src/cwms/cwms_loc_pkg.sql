@@ -1465,6 +1465,8 @@ AS
    /**
     * Stores (inserts or updates) a vertical datum offset to the database for a location
     *
+    * @since CWMS 2.2
+    *
     * @param p_location_id         The location the offset applies to
     * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
     * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
@@ -1490,6 +1492,8 @@ AS
    /**
     * Stores (inserts or updates) a vertical datum offset to the database for a location
     *
+    * @since CWMS 2.2
+    *
     * @param p_vertical_datum_offset  The vertical datum offset to store.
     * @param p_fail_if_exists         A flag ('T'/'F') specifying whether to fail if a vertical datum offset already exists for the location and vertical datum identifers
     *
@@ -1500,6 +1504,8 @@ AS
       p_fail_if_exists        in varchar2 default 'T');
    /**
     * Retrieves a vertical datum offset from the database for a location
+    *
+    * @since CWMS 2.2
     *
     * @param p_offset               The value of the offset
     * @param p_unit_out             The unit of the offset
@@ -1533,6 +1539,8 @@ AS
    /**
     * Retrieves a vertical datum offset from the database for a location
     *
+    * @since CWMS 2.2
+    *
     * @param p_location_id          The location the offset applies to
     * @param p_vertical_datum_id_1  The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
     * @param p_vertical_datum_id_2  The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
@@ -1560,6 +1568,8 @@ AS
    /**
     * Deletes a vertical datum offset from the database for a location
     *
+    * @since CWMS 2.2
+    *
     * @param p_location_id          The location the offset applies to
     * @param p_vertical_datum_id_1  The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
     * @param p_vertical_datum_id_2  The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
@@ -1584,6 +1594,8 @@ AS
    /**
     * Retrieves a vertical datum offset value in meters from the database for a location
     *
+    * @since CWMS 2.2
+    *
     * @param p_location_code       The numeric code that refers to the location the offset applies to
     * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
     * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
@@ -1599,6 +1611,8 @@ AS
       return binary_double; 
    /**
     * Retrieves a vertical datum offset value in meters and effective date in UTC from the database for a location
+    *
+    * @since CWMS 2.2
     *
     * @param p_offset              The offset in meters that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
     * @param p_effective_date      The effective date of the offset
@@ -1616,6 +1630,8 @@ AS
       p_datetime_utc        in  date); 
    /**
     * Retrieves a collection vertical datum offset values in meters and effective dates in UTC from the database for a location and time window
+    *
+    * @since CWMS 2.2
     *
     * @param p_location_code       The numeric code that refers to the location the offsets apply to
     * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
@@ -1637,6 +1653,8 @@ AS
    /**
     * Retrieves a collection vertical datum offset values in meters and effective dates in UTC from the database for a location and time window
     *
+    * @since CWMS 2.2
+    *
     * @param p_offsets             The datum offsets values and effective dates. For each item the date_time field contains the effective_date in UTC and the value field contains the datum offset in meters.  The quality field is not used.
     * @param p_location_code       The numeric code that refers to the location the offsets apply to
     * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
@@ -1655,6 +1673,8 @@ AS
       p_end_time_utc        in  date);        
    /**
     * Retrieves a vertical datum offset value in a specified unit from the database for a location
+    *
+    * @since CWMS 2.2
     *
     * @param p_location_id         The text name of the location the offset applies to
     * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
@@ -1678,6 +1698,8 @@ AS
       return binary_double;   
    /**
     * Retrieves a vertical datum offset value in a specified unit and effective date in a specified time zone from the database for a location
+    *
+    * @since CWMS 2.2
     *
     * @param p_offset              The offset in the specified unit that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
     * @param p_effecive_date       The effective date of the offset in the time time zone specified or indicated by p_time_zone
@@ -1704,6 +1726,8 @@ AS
    /**
     * Retrieves a collection vertical datum offset values in a specified unit and effective dates in a specified time zone from the database for a location and time window
     *
+    * @since CWMS 2.2
+    *
     * @param p_location_id         The text name of the location the offsets apply to
     * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
     * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
@@ -1729,6 +1753,8 @@ AS
       return ztsv_array;        
    /**
     * Retrieves a collection vertical datum offset values in a specified unit and effective dates in a specified time zone from the database for a location and time window
+    *
+    * @since CWMS 2.2
     *
     * @param p_offsets             The datum offset values and effective dates. For each item the date_time field contains the effective_date in the specified time zone and the value field contains the datum offset in the specified unit. The quality field is not used.
     * @param p_location_id         The text name of the location the offsets apply to

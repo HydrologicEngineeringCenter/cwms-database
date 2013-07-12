@@ -4136,6 +4136,8 @@ create type vert_datum_offset_t
 /**
  * Holds a vertical datum conversion offset for a location
  *
+ * @since CWMS 2.2
+ *
  * @field location            The location the offset applies to
  * @field vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
  * @field vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
@@ -4163,6 +4165,8 @@ as object(
 create type vert_datum_offset_tab_t
 /**
  * Holds a table of loc_lvl_cur_max_ind_t records.
+ *
+ * @since CWMS 2.2
  *
  * @see type vert_datum_offset_t
  */
