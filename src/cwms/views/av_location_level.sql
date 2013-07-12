@@ -373,7 +373,6 @@ AS
                             cwms_duration c_d1,
                             cwms_base_parameter c_bp1,
                             cwms_parameter_type c_pt1,
-                            cwms_unit_conversion c_uc1,
                             cwms_office c_o
                   WHERE         a_pl.location_code = a_ll.location_code
                             AND a_bl.base_location_code = a_pl.base_location_code
@@ -401,7 +400,7 @@ AS
                                  c_d2.duration_id AS attribute_duration_id,
                                  a_ll.location_level_date AS level_date,
                                  us.unit_system AS unit_system,
-                                 c_uc1.to_unit_id AS level_unit,
+                                 NULL AS level_unit,
                                  c_uc2.to_unit_id AS attribute_unit,
                                  a_ll.attribute_value * c_uc2.factor + c_uc2.offset AS attribute_value,
                                  NULL AS constant_level,
@@ -424,7 +423,6 @@ AS
                                  cwms_duration c_d1,
                                  cwms_base_parameter c_bp1,
                                  cwms_parameter_type c_pt1,
-                                 cwms_unit_conversion c_uc1,
                                  cwms_duration c_d2,
                                  cwms_base_parameter c_bp2,
                                  cwms_parameter_type c_pt2,
@@ -446,12 +444,6 @@ AS
                                  AND c_d1.duration_code = a_ll.duration_code
                                  AND a_sl.specified_level_code =
                                           a_ll.specified_level_code
-                                 AND c_uc1.from_unit_code = c_bp1.unit_code
-                                 AND c_uc1.to_unit_code =
-                                          DECODE (us.unit_system,
-                                                     'EN', c_bp1.display_unit_code_en,
-                                                     'SI', c_bp1.display_unit_code_si
-                                                    )
                                  AND a_ll.attribute_parameter_code IS NOT NULL
                                  AND a_p2.parameter_code =
                                           a_ll.attribute_parameter_code

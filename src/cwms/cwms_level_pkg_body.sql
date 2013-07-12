@@ -2856,11 +2856,14 @@ begin
          -----------------
          declare
             l_ts_cur sys_refcursor;
-            l_ts     ztsv_array;
-            l_first  pls_integer;
-            l_last   pls_integer;
-            a        pls_integer;
-            b        pls_integer;
+            l_dates   date_table_type;
+            l_values  double_tab_t;
+            l_quality number_tab_t;
+            l_ts      ztsv_array;
+            l_first   pls_integer;
+            l_last    pls_integer;
+            a         pls_integer;
+            b         pls_integer;
          begin
             cwms_ts.retrieve_ts(
                p_at_tsv_rc       => l_ts_cur,
@@ -2876,8 +2879,13 @@ begin
                p_version_date    => cwms_util.non_versioned,
                p_max_version     => 'T',
                p_office_id       => l_office_id);
-            fetch l_ts_cur bulk collect into l_ts;
-            close l_ts_cur;
+            fetch l_ts_cur bulk collect into l_dates, l_values, l_quality;
+            close l_ts_cur;                                              
+            l_ts := ztsv_array();
+            l_ts.extend(l_dates.count);
+            for i in 1..l_dates.count loop
+               l_ts(i) := ztsv_type(l_dates(i), l_values(i), 0);
+            end loop;
             if l_ts is not null and l_ts.count > 0 then
                if l_ts(1).date_time < p_start_time_utc then
                   l_first := 2;
