@@ -7415,7 +7415,7 @@ end retrieve_existing_item_counts;
       l_db_office_code            NUMBER
          := cwms_util.get_db_office_code (p_db_office_id);
       --
-      l_db_office_id_old          NUMBER;
+      l_db_office_code_old        NUMBER;
       l_base_parameter_code_old   NUMBER;
       l_parameter_code_old        NUMBER;
       l_sub_parameter_id_old      VARCHAR2 (32);
@@ -7426,11 +7426,11 @@ end retrieve_existing_item_counts;
       --
       l_new_parameter_id_exists   BOOLEAN := FALSE;
    BEGIN
-      SELECT db_office_id,
+      SELECT db_office_code,
              base_parameter_code,
              parameter_code,
              sub_parameter_id
-        INTO l_db_office_id_old,
+        INTO l_db_office_code_old,
              l_base_parameter_code_old,
              l_parameter_code_old,
              l_sub_parameter_id_old
@@ -7438,7 +7438,7 @@ end retrieve_existing_item_counts;
        WHERE     UPPER (parameter_id) = UPPER (TRIM (p_parameter_id_old))
              AND db_office_code IN (l_db_office_code_all, l_db_office_code);
 
-      IF l_db_office_id_old = l_db_office_code_all
+      IF l_db_office_code_old = l_db_office_code_all
       THEN
          cwms_err.RAISE ('ITEM_OWNED_BY_CWMS', p_parameter_id_old);
       END IF;
@@ -7470,6 +7470,23 @@ end retrieve_existing_item_counts;
 
             l_parameter_code_new := 0;
       END;
+
+
+      IF l_new_parameter_id_exists
+      THEN
+         IF     l_parameter_code_new = l_parameter_code_old
+            AND l_sub_parameter_id_old = l_sub_parameter_id_new
+         THEN
+            cwms_err.RAISE ('CANNOT_RENAME_3', p_parameter_id_new);
+         ELSE
+            cwms_err.RAISE ('CANNOT_RENAME_2', p_parameter_id_new);
+         END IF;
+      END IF;
+
+      UPDATE at_parameter
+         SET sub_parameter_id = l_sub_parameter_id_new
+       WHERE parameter_code = l_parameter_code_old;
+   END;
 
 
       IF l_new_parameter_id_exists
