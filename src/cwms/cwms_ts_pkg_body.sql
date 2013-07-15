@@ -7488,23 +7488,6 @@ end retrieve_existing_item_counts;
        WHERE parameter_code = l_parameter_code_old;
    END;
 
-
-      IF l_new_parameter_id_exists
-      THEN
-         IF     l_parameter_code_new = l_parameter_code_old
-            AND l_sub_parameter_id_old = l_sub_parameter_id_new
-         THEN
-            cwms_err.RAISE ('CANNOT_RENAME_3', p_parameter_id_new);
-         ELSE
-            cwms_err.RAISE ('CANNOT_RENAME_2', p_parameter_id_new);
-         END IF;
-      END IF;
-
-      UPDATE at_parameter
-         SET sub_parameter_id = l_sub_parameter_id_new
-       WHERE parameter_code = l_parameter_code_old;
-   END;
-
    --
    --*******************************************************************   --
    --*******************************************************************   --
