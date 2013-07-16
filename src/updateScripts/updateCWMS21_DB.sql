@@ -372,6 +372,7 @@ begin
     
    commit;    
 end;
+/
 
 COMMIT;
 alter system disable restricted session;
