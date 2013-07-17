@@ -28,6 +28,7 @@ updates  = [
 	['type body', 'rating_t'],
 	['type', 'loc_lvl_indicator_cond_t'],
 	['type body', 'loc_lvl_indicator_cond_t'],
+	['type', 'loc_lvl_cur_max_ind_tab_t'],
 ]
 
 srcdir = os.path.join(os.path.split(sys.argv[0])[0], 'cwms')
