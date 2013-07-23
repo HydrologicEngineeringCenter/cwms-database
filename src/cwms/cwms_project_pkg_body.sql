@@ -1156,6 +1156,21 @@ begin
    return case l_count when 0 then 'F' else 'T' end;      
 end is_locked; 
       
+procedure cat_locks(
+   p_cursor              out sys_refcursor, 
+   p_project_id_mask     in  varchar2 default '*',
+   p_application_id_mask in  varchar2 default '*',
+   p_time_zone           in  varchar2 default 'UTC',
+   p_office_id_mask      in  varchar2 default null)
+is
+begin
+   p_cursor := cat_locks(
+      p_project_id_mask,
+      p_application_id_mask,
+      p_time_zone,
+      p_office_id_mask);
+end cat_locks;   
+      
 function cat_locks(
    p_project_id_mask     in varchar2 default '*',
    p_application_id_mask in varchar2 default '*',
@@ -1285,6 +1300,19 @@ begin
       end if;
    end if;
 end update_lock_revoker_rights;
+      
+procedure cat_lock_revoker_rights(
+   p_cursor              out sys_refcursor,      
+   p_project_id_mask     in  varchar2 default '*',
+   p_application_id_mask in  varchar2 default '*',
+   p_office_id_mask      in  varchar2 default null)
+is
+begin
+   p_cursor := cat_lock_revoker_rights(      
+      p_project_id_mask,
+      p_application_id_mask,
+      p_office_id_mask); 
+end cat_lock_revoker_rights;   
       
 function cat_lock_revoker_rights(      
    p_project_id_mask     in varchar2 default '*',

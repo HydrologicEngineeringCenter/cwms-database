@@ -436,6 +436,99 @@ function is_locked(
    return varchar2; 
       
 /**       
+ * Retrieves catalog of current locks. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cursor A cursor containing all matching locks.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the project</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">project_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the locked projects</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">application_id</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The application for which the project is locked</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">acquire_time</td>
+ *     <td class="descr">varchar2(25)</td>
+ *     <td class="descr">The time that the lock was acquired (in the specified time zone as XML (ISO 8601) format</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">5</td>
+ *     <td class="descr">session_user</td>
+ *     <td class="descr">varchar2(30)</td>
+ *     <td class="descr">The database user name of the user that acquired the lock</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">6</td>
+ *     <td class="descr">os_user</td>
+ *     <td class="descr">varchar2(30)</td>
+ *     <td class="descr">The operating system user name of the user that acquired the lock</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">session_program</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The name of the program that acquired the lock</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">7</td>
+ *     <td class="descr">session_machine</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The name of the computer that acquired the lock</td>
+ *   </tr>
+ * </table>
+ * @param p_project_id_mask      The location identifier mask for the project(s) to be cataloged. If not specified, locks for all projects will be cataloged.
+ * @param p_application_id_mask  A text string identifying the application(s) to be cataloged. If not specified, locks for all applications will be cataloged.     
+ * @param p_time_zone            The time zone in which to display the time the locks were acquired. If not specified, UTC will be used.
+ * @param p_office_id_mask       The text identifier mask of the office(s) to be cataloged.  If NULL or not specified, the session user's default office is used.
+ *
+ */
+procedure cat_locks(
+   p_cursor              out sys_refcursor,
+   p_project_id_mask     in varchar2 default '*',
+   p_application_id_mask in varchar2 default '*',
+   p_time_zone           in varchar2 default 'UTC',
+   p_office_id_mask      in varchar2 default null);
+
+      
+/**       
  * Returns catalog of current locks. Matching is
  * accomplished with glob-style wildcards, as shown below, instead of sql-style
  * wildcards.
@@ -545,6 +638,73 @@ procedure update_lock_revoker_rights(
    p_allow          in varchar2,
    p_application_id in varchar2,
    p_office_id      in varchar2 default null);
+      
+/**       
+ * Rerieves catalog of current lock revoker rights. Matching is
+ * accomplished with glob-style wildcards, as shown below, instead of sql-style
+ * wildcards.
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Wildcard</th>
+ *     <th class="descr">Meaning</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">*</td>
+ *     <td class="descr">Match zero or more characters</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">?</td>
+ *     <td class="descr">Match a single character</td>
+ *   </tr>
+ * </table>
+ *
+ * @param p_cursor A cursor containing all matching locks.  The cursor contains
+ * the following columns:
+ * <p>
+ * <table class="descr">
+ *   <tr>
+ *     <th class="descr">Column No.</th>
+ *     <th class="descr">Column Name</th>
+ *     <th class="descr">Data Type</th>
+ *     <th class="descr">Contents</th>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">1</td>
+ *     <td class="descr">office_id</td>
+ *     <td class="descr">varchar2(16)</td>
+ *     <td class="descr">The office that owns the project</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">2</td>
+ *     <td class="descr">project_id</td>
+ *     <td class="descr">varchar2(49)</td>
+ *     <td class="descr">The location identifier of the locked projects</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">3</td>
+ *     <td class="descr">application_id</td>
+ *     <td class="descr">varchar2(64)</td>
+ *     <td class="descr">The application for which the project is locked</td>
+ *   </tr>
+ *   <tr>
+ *     <td class="descr-center">4</td>
+ *     <td class="descr">user_id</td>
+ *     <td class="descr">varchar2(30)</td>
+ *     <td class="descr">The user who owns the lock revoker rights for the project and application</td>
+ *   </tr>
+ * </table>
+ * @param p_project_id_mask      The location identifier mask for the project(s) to be cataloged. If not specified, locks for all projects will be cataloged.
+ * @param p_application_id_mask  A text string identifying the application(s) to be cataloged. If not specified, locks for all applications will be cataloged.     
+ * @param p_time_zone            The time zone in which to display the time the locks were acquired. If not specified, UTC will be used.
+ * @param p_office_id_mask       The text identifier mask of the office(s) to be cataloged.  If NULL or not specified, the session user's default office is used.
+ *
+ */
+procedure cat_lock_revoker_rights(
+   p_cursor              out sys_refcursor,      
+   p_project_id_mask     in  varchar2 default '*',
+   p_application_id_mask in  varchar2 default '*',
+   p_office_id_mask      in  varchar2 default null);
       
 /**       
  * Returns catalog of current lock revoker rights. Matching is
