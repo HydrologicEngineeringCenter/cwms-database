@@ -614,7 +614,7 @@ procedure cat_locks(
  *   </tr>
  * </table>
  */
-function cat_locks(
+function cat_locks_f(
    p_project_id_mask     in varchar2 default '*',
    p_application_id_mask in varchar2 default '*',
    p_time_zone           in varchar2 default 'UTC',
@@ -767,7 +767,7 @@ procedure cat_lock_revoker_rights(
  *   </tr>
  * </table>
  */
-function cat_lock_revoker_rights(      
+function cat_lock_revoker_rights_f(      
    p_project_id_mask     in varchar2 default '*',
    p_application_id_mask in varchar2 default '*',
    p_office_id_mask      in varchar2 default null)
