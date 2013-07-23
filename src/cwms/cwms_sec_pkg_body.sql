@@ -41,7 +41,7 @@ AS
       ELSE
          RETURN FALSE;
       END IF;
-   END;
+   END is_user_cwms_locked;
 
    FUNCTION is_user_admin (p_db_office_code IN NUMBER)
       RETURN BOOLEAN
@@ -86,7 +86,7 @@ AS
       ELSE
          RETURN FALSE;
       END IF;
-   END;
+   END is_user_admin;
 
    FUNCTION is_user_admin (p_db_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN BOOLEAN
@@ -97,7 +97,7 @@ AS
                             := cwms_util.get_db_office_code (l_db_office_id);
    BEGIN
       RETURN is_user_admin (p_db_office_code => l_db_office_code);
-   END;
+   END is_user_admin;
 
 
    PROCEDURE confirm_user_admin_priv (p_db_office_code IN NUMBER)
@@ -111,14 +111,14 @@ AS
             'ERROR',
             'Permission Denied. Your account needs "CWMS DBA" or "CWMS User Admin" privileges to use the cwms_sec package.');
       END IF;
-   END;
+   END confirm_user_admin_priv;
 
    FUNCTION get_max_cwms_ts_group_code
       RETURN NUMBER
    AS
    BEGIN
       RETURN max_cwms_ts_group_code;
-   END;
+   END get_max_cwms_ts_group_code;
 
    FUNCTION find_lowest_code (p_list_of_codes   IN SYS_REFCURSOR,
                               p_lowest_code     IN NUMBER)
@@ -176,7 +176,7 @@ AS
 
       RETURN l_lowest_code + 1;
    --
-   END;
+   END find_lowest_code;
 
    --
 
@@ -202,14 +202,14 @@ AS
       ELSE
          RETURN FALSE;
       END IF;
-   END;
+   END is_member_user_group;
 
    PROCEDURE get_user_office_data (p_office_id          OUT VARCHAR2,
                                    p_office_long_name   OUT VARCHAR2)
    IS
    BEGIN
       cwms_util.get_user_office_data (p_office_id, p_office_long_name);
-   END;
+   END get_user_office_data;
 
    PROCEDURE set_dbi_user (p_dbi_username   IN VARCHAR2,
                            p_db_office_id   IN VARCHAR2)
@@ -235,7 +235,7 @@ AS
                || l_db_office_id
                || ' db_office_id.');
       END;
-   END;
+   END set_dbi_user;
 
    /*  cwms_sec.get_my_user_priv_groups(p_priv_groups  OUT sys_refcursor,
                                         p_db_office_id IN  VARCHAR2 DEFAULT NULL)
@@ -317,7 +317,7 @@ AS
                    AND username = l_username
                    AND is_member = 'T';
       END IF;
-   END;
+   END get_assigned_priv_groups;
 
    /*--------------------------------------------------------------------------------
    The get_user_priv_groups procedure returns a refcursor of:
@@ -475,7 +475,7 @@ AS
                                                          user_group_code_user_admins))
                                   AND is_locked = 'F');
       END IF;
-   END;
+   END get_user_priv_groups;
 
    ---
    ---
@@ -504,7 +504,7 @@ AS
       ELSE
          RETURN l_user_group;
       END IF;
-   END;
+   END get_ts_user_group_code;
 
    FUNCTION get_ts_group_code (p_ts_group_id      IN VARCHAR2,
                                p_db_office_code   IN NUMBER)
@@ -527,14 +527,14 @@ AS
       END;
 
       RETURN l_ts_group_code;
-   END;
+   END get_ts_group_code;
 
    FUNCTION get_user_office_id
       RETURN VARCHAR2
    IS
    BEGIN
       RETURN cwms_util.user_office_id;
-   END;
+   END get_user_office_id;
 
    PROCEDURE lock_db_account (p_username IN VARCHAR2)
    IS
@@ -543,7 +543,7 @@ AS
       confirm_user_admin_priv (l_db_office_code);
 
       cwms_dba.cwms_user_admin.lock_db_account (p_username);
-   END;
+   END lock_db_account;
 
    PROCEDURE unlock_db_account (p_username IN VARCHAR2)
    IS
@@ -552,7 +552,7 @@ AS
       confirm_user_admin_priv (l_db_office_code);
 
       cwms_dba.cwms_user_admin.unlock_db_account (p_username);
-   END;
+   END unlock_db_account;
 
    PROCEDURE create_cwms_db_account (
       p_username       IN VARCHAR2,
@@ -638,7 +638,7 @@ AS
       END;
 
       COMMIT;
-   END;
+   END create_cwms_db_account;
 
    PROCEDURE delete_cwms_db_account (p_username IN VARCHAR2)
    IS
@@ -646,7 +646,7 @@ AS
       cwms_err.raise (
          'ERROR',
          'Unable to delete user DB account - see your DBA to delete a DB account.');
-   END;
+   END delete_cwms_db_account;
 
    FUNCTION does_db_account_exist (p_username IN VARCHAR2)
       RETURN BOOLEAN
@@ -664,7 +664,7 @@ AS
       ELSE
          RETURN TRUE;
       END IF;
-   END;
+   END does_db_account_exist;
 
    ----------------------------------------------------------------------------
    -- unlock_user
@@ -717,7 +717,7 @@ AS
             SET is_locked = 'F'
           WHERE db_office_code = l_db_office_code AND username = l_username;
       END IF;
-   END;
+   END unlock_user;
 
    ----------------------------------------------------------------------------
    -- add_user_to_group
@@ -758,7 +758,7 @@ AS
       END;
 
       RETURN l_user_group_code;
-   END;
+   END get_user_group_code;
 
    PROCEDURE insert_noaccess_entry (p_username         IN VARCHAR2,
                                     p_db_office_code      NUMBER)
@@ -780,7 +780,7 @@ AS
 
          COMMIT;
       END IF;
-   END;
+   END insert_noaccess_entry;
 
    PROCEDURE add_user_to_group (p_username         IN VARCHAR2,
                                 p_user_group_id    IN VARCHAR2,
@@ -806,7 +806,7 @@ AS
          THEN
             NULL;
       END;
-   END;
+   END add_user_to_group;
 
    PROCEDURE add_user_to_group (p_username        IN VARCHAR2,
                                 p_user_group_id   IN VARCHAR2,
@@ -818,7 +818,7 @@ AS
       add_user_to_group (p_username         => p_username,
                          p_user_group_id    => p_user_group_id,
                          p_db_office_code   => l_db_office_code);
-   END;
+   END add_user_to_group;
 
    PROCEDURE create_cwmsdbi_db_user (
       p_dbi_username   IN VARCHAR2,
@@ -836,7 +836,7 @@ AS
                                                           p_dbi_password);
 
       set_dbi_user (p_dbi_username, p_db_office_id);
-   END;
+   END create_cwmsdbi_db_user;
 
    PROCEDURE update_user_data (p_userid     IN VARCHAR2,
                                p_fullname   IN VARCHAR2,
@@ -1071,7 +1071,7 @@ AS
 
          COMMIT;
       END IF;
-   END;
+   END delete_user;
 
    ----------------------------------------------------------------------------
    -- lock_user
@@ -1143,7 +1143,7 @@ AS
             SET is_locked = 'T'
           WHERE username = l_username AND db_office_code = l_db_office_code;
       END IF;
-   END;
+   END lock_user;
 
 
    ----------------------------------------------------------------------------
@@ -1190,7 +1190,7 @@ AS
                   AND username = UPPER (p_username);
 
       COMMIT;
-   END;
+   END remove_user_from_group;
 
    ----------------------------------------------------------------------------
    -- get_user_state
@@ -1248,7 +1248,7 @@ AS
             RETURN acc_state_unlocked;
          END IF;
       END IF;
-   END;
+   END get_user_state;
 
    /*
 
@@ -1331,7 +1331,7 @@ AS
 
       cwms_dba.cwms_user_admin.set_user_password (l_dbi_username,
                                                   p_dbi_password);
-   END;
+   END set_dbi_user_passwd;
 
 
 
@@ -1413,7 +1413,7 @@ AS
                       l_user_group_code,
                       4);
       END IF;
-   END;
+   END assign_ts_group_user_group;
 
    PROCEDURE cat_at_sec_allow (p_at_sec_allow      OUT SYS_REFCURSOR,
                                p_db_office_id   IN     VARCHAR2 DEFAULT NULL)
@@ -1468,7 +1468,7 @@ AS
                             user_group_id,
                             ts_group_id) a
          ORDER BY user_group_id, ts_group_id;
-   END;
+   END cat_at_sec_allow;
 
    FUNCTION cat_at_sec_allow_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_at_sec_allow_tab_t
@@ -1489,7 +1489,7 @@ AS
       CLOSE query_cursor;
 
       RETURN;
-   END;
+   END cat_at_sec_allow_tab;
 
 
    PROCEDURE refresh_mv_sec_ts_privileges
@@ -1518,7 +1518,7 @@ AS
             atomic_refresh         => TRUE,
             nested                 => FALSE);
       END IF;
-   END;
+   END refresh_mv_sec_ts_privileges;
 
    PROCEDURE start_refresh_mv_sec_privs_job
    IS
@@ -1682,7 +1682,7 @@ AS
                p_db_office_id    => p_db_office_id_list (i));
          END IF;
       END LOOP;
-   END;
+   END store_priv_groups;
 
    --
 
@@ -1752,7 +1752,7 @@ AS
              AND db_office_code = l_db_office_code;
 
       COMMIT;
-   END;
+   END change_user_group_id;
 
    PROCEDURE change_user_group_desc (
       p_user_group_id     IN VARCHAR2,
@@ -1795,7 +1795,7 @@ AS
              AND db_office_code = l_db_office_code;
 
       COMMIT;
-   END;
+   END change_user_group_desc;
 
 
    PROCEDURE delete_user_group (p_user_group_id   IN VARCHAR2,
@@ -1851,7 +1851,7 @@ AS
       --
       COMMIT;
    --
-   END;
+   END delete_user_group;
 
 
    PROCEDURE create_user_group (p_user_group_id     IN VARCHAR2,
@@ -1919,7 +1919,7 @@ AS
                    l_lowest_code,
                    l_user_group_id,
                    TRIM (p_user_group_desc));
-   END;
+   END create_user_group;
 
 
    PROCEDURE delete_ts_group (p_ts_group_id    IN VARCHAR2,
@@ -1975,7 +1975,7 @@ AS
       --
       COMMIT;
    --
-   END;
+   END delete_ts_group;
 
    PROCEDURE change_ts_group_id (
       p_ts_group_id_old   IN VARCHAR2,
@@ -2043,7 +2043,7 @@ AS
              AND db_office_code = l_db_office_code;
 
       COMMIT;
-   END;
+   END change_ts_group_id;
 
    PROCEDURE change_ts_group_desc (
       p_ts_group_id     IN VARCHAR2,
@@ -2086,7 +2086,7 @@ AS
              AND db_office_code = l_db_office_code;
 
       COMMIT;
-   END;
+   END change_ts_group_desc;
 
    PROCEDURE create_ts_group (p_ts_group_id     IN VARCHAR2,
                               p_ts_group_desc   IN VARCHAR2,
@@ -2154,7 +2154,7 @@ AS
                    l_lowest_code,
                    l_ts_group_id,
                    TRIM (p_ts_group_desc));
-   END;
+   END create_ts_group;
 
 
    PROCEDURE assign_ts_masks_to_ts_group (
@@ -2241,7 +2241,7 @@ AS
 
          COMMIT;
       END LOOP;
-   END;
+   END assign_ts_masks_to_ts_group;
 
    /*
    clear_ts_masks deletes all ts masks from the identified ts_group_id.
@@ -2271,7 +2271,7 @@ AS
                   AND db_office_code = l_db_office_code;
 
       COMMIT;
-   END;
+   END clear_ts_masks;
 
    FUNCTION get_this_db_office_code
       RETURN NUMBER
@@ -2284,7 +2284,7 @@ AS
        WHERE sequence_name = 'CWMS_SEQ';
 
       RETURN l_db_office_code;
-   END;
+   END get_this_db_office_code;
 
    FUNCTION get_this_db_office_id
       RETURN VARCHAR2
@@ -2298,7 +2298,7 @@ AS
        WHERE office_code = l_db_office_code;
 
       RETURN l_db_office_id;
-   END;
+   END get_this_db_office_id;
 
    FUNCTION get_this_db_office_name
       RETURN VARCHAR2
@@ -2312,7 +2312,7 @@ AS
        WHERE office_code = l_db_office_code;
 
       RETURN l_db_office_name;
-   END;
+   END get_this_db_office_name;
 
    FUNCTION is_user_admin (P_USERNAME VARCHAR2, P_DB_OFFICE_ID VARCHAR2)
       RETURN BOOLEAN
@@ -2334,7 +2334,7 @@ AS
       ELSE
          RETURN FALSE;
       END IF;
-   END;
+   END is_user_admin;
 
    FUNCTION is_user_server_admin (P_USERNAME        VARCHAR2,
                                   P_DB_OFFICE_ID    VARCHAR2)
@@ -2357,7 +2357,7 @@ AS
       ELSE
          RETURN FALSE;
       END IF;
-   END;
+   END is_user_server_admin;
 
    FUNCTION get_admin_cwms_permissions (p_user_name      IN VARCHAR2,
                                         p_db_office_id   IN VARCHAR2)
@@ -2380,7 +2380,7 @@ AS
       END IF;
 
       RETURN l_permissions;
-   END;
+   END get_admin_cwms_permissions;
 
    PROCEDURE get_user_cwms_permissions (
       p_cwms_permissions      OUT SYS_REFCURSOR,
@@ -2508,3 +2508,4 @@ AS
    END get_db_users;
 END cwms_sec;
 /
+show errors

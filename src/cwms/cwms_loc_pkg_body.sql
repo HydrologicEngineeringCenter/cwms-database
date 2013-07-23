@@ -39,7 +39,7 @@ AS
 												cwms_util.db_office_code_all));
 
 		RETURN l_tmp;
-	END;
+	END znum_group_assigned_to_shef;
 
 	FUNCTION num_group_assigned_to_shef (
 		p_group_cat_array   IN group_cat_tab_t,
@@ -53,7 +53,7 @@ AS
 		RETURN znum_group_assigned_to_shef (p_group_cat_array,
 														l_db_office_code
 													  );
-	END;
+	END num_group_assigned_to_shef;
 
 	--loc_cat_grp_rec_tab_t IS TABLE OF loc_cat_grp_rec_t
 
@@ -289,7 +289,7 @@ AS
 		WHEN OTHERS
 		THEN
 			RAISE;
-	END;
+	END get_state_code;
 
 	--********************************************************************** -
 	--********************************************************************** -
@@ -346,7 +346,7 @@ AS
 		WHEN OTHERS
 		THEN
 			RAISE;
-	END;
+	END get_county_code;
 
 	--********************************************************************** -
 	--********************************************************************** -
@@ -377,7 +377,7 @@ AS
 		WHEN OTHERS
 		THEN
 			RAISE;
-	END;
+	END get_timezone_code;
 
 	--********************************************************************** -
 	--********************************************************************** -
@@ -461,7 +461,7 @@ AS
 		WHEN OTHERS
 		THEN
 			RAISE;
-	END;
+	END get_unit_code;
 
 	FUNCTION is_cwms_id_valid (p_base_loc_id IN VARCHAR2)
 		RETURN BOOLEAN
@@ -3923,7 +3923,7 @@ AS
 										 p_ignore_null,
 										 p_db_office_id
 										);
-	END;
+	END store_loc_category;
 
 	FUNCTION store_loc_category_f (
 		p_loc_category_id 	 IN VARCHAR2,
@@ -4025,7 +4025,7 @@ AS
 		END IF;
 
 		RETURN l_rec.loc_category_code;
-	END;
+	END store_loc_category_f;
 
 	PROCEDURE create_loc_category (
 		p_loc_category_id 	 IN VARCHAR2,
@@ -4040,7 +4040,7 @@ AS
 								  'F',
 								  p_db_office_id
 								 );
-	END;
+	END create_loc_category;
 
 	FUNCTION create_loc_category_f (
 		p_loc_category_id 	 IN VARCHAR2,
@@ -4056,7 +4056,7 @@ AS
 											  'F',
 											  p_db_office_id
 											 );
-	END;
+	END create_loc_category_f;
 
 	PROCEDURE store_loc_group (p_loc_category_id 	 IN VARCHAR2,
 										p_loc_group_id 		 IN VARCHAR2,
@@ -4598,7 +4598,7 @@ AS
 	--   NULL
 	--   );
 
-	END;
+	END assign_loc_groups;
 
 	--
 	-- assign_groups is used to assign one or more location_id's --
@@ -4695,7 +4695,7 @@ AS
 								 b.loc_attribute,
 								 b.loc_alias_id
 							 );
-	END;
+	END assign_loc_groups2;
 
 	--
 	-- assign_groups is used to assign one or more location_id's --
@@ -4812,7 +4812,7 @@ AS
 									 )
 								 )
 							 );
-	END;
+	END assign_loc_groups3;
 
 	-- creates it and will rename the aliases if they already exist.
 	PROCEDURE assign_loc_group (p_loc_category_id	IN VARCHAR2,
@@ -4830,7 +4830,7 @@ AS
 								 p_loc_alias_array	=> l_loc_alias_array,
 								 p_db_office_id		=> p_db_office_id
 								);
-	END;
+	END assign_loc_group;
 
 	PROCEDURE assign_loc_group2 (p_loc_category_id	 IN VARCHAR2,
 										  p_loc_group_id		 IN VARCHAR2,
@@ -4853,7 +4853,7 @@ AS
 								  p_loc_alias_array	 => l_loc_alias_array2,
 								  p_db_office_id		 => p_db_office_id
 								 );
-	END;
+	END assign_loc_group2;
 
 	PROCEDURE assign_loc_group3 (p_loc_category_id	 IN VARCHAR2,
 										  p_loc_group_id		 IN VARCHAR2,
@@ -4880,7 +4880,7 @@ AS
 								  p_loc_alias_array	 => l_loc_alias_array,
 								  p_db_office_id		 => p_db_office_id
 								 );
-	END;
+	END assign_loc_group3;
 
 	-------------------------------------------------------------------------------
 	-------------------------------------------------------------------------------
@@ -4953,7 +4953,7 @@ AS
 					'Cannot unassign Location/Group pair(s). One or more group assignments are still assigned to SHEF Decoding.'
 				);
 		END;
-	END;
+	END unassign_loc_groups;
 
 	-------------------------------------------------------------------------------
 	-------------------------------------------------------------------------------
@@ -4977,7 +4977,7 @@ AS
 									p_unassign_all 	  => p_unassign_all,
 									p_db_office_id 	  => p_db_office_id
 								  );
-	END;
+	END unassign_loc_group;
 
 	PROCEDURE delete_loc_group (p_loc_group_code   IN NUMBER,
 										 p_cascade			  IN VARCHAR2 DEFAULT 'F'
@@ -4999,7 +4999,7 @@ AS
 		--------------------------------------------------------------------
 		DELETE FROM   at_loc_group
 				WHERE   loc_group_code = p_loc_group_code;
-	END;
+	END delete_loc_group;
 
 	PROCEDURE delete_loc_group (p_loc_category_id	IN VARCHAR2,
 										 p_loc_group_id		IN VARCHAR2,
@@ -5029,7 +5029,7 @@ AS
 		delete_loc_group (p_loc_group_code	 => l_loc_group_code,
 								p_cascade			 => p_cascade
 							  );
-	END;
+	END delete_loc_group;
 
 	-- can only delete if there are no assignments to this group.
 	PROCEDURE delete_loc_group (p_loc_category_id	IN VARCHAR2,
@@ -5357,7 +5357,7 @@ AS
 				END;
 			END LOOP;
 		END IF;
-	END;
+	END assign_loc_grps_cat2;
 
 
 	--
@@ -5385,7 +5385,7 @@ AS
 									 l_loc_group_array,
 									 p_db_office_id
 									);
-	END;
+	END assign_loc_grp_cat2;
 
 	--
 	-- used to assign one or more groups to an existing category.
@@ -5434,7 +5434,7 @@ AS
 									p_shared_loc_ref_id	 => NULL,
 									p_db_office_id 		 => p_db_office_id
 								  );
-	END;
+	END assign_loc_grp_cat;
 
 	FUNCTION retrieve_location (p_location_code IN NUMBER)
 		RETURN location_obj_t

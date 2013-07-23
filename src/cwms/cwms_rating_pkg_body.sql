@@ -14,7 +14,7 @@ begin
     where rating_method_id = upper(p_rating_method_id);
 
    return l_code;
-end;
+end get_rating_method_code;
 
 procedure delete_rating_ind_parameter(
    p_rating_ind_param_code in number)
@@ -1542,7 +1542,7 @@ begin
    else
       return stream_rating_t(p_rating_code);
    end if;
-end;
+end get_rating;
 
 --------------------------------------------------------------------------------
 -- RATE

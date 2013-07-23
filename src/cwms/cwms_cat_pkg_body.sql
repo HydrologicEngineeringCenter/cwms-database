@@ -3518,7 +3518,7 @@ END cat_ts_id;
                        p_abbreviated       => p_abbreviated,
                        p_db_office_id      => p_db_office_id
                       );
-   END;
+   END cat_loc_aliases_java;
 
    --
    PROCEDURE cat_loc_aliases (

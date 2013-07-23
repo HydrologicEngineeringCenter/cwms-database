@@ -47,6 +47,6 @@ AS
       -- This return an ORA-01935: missing user or role name...
 --      EXECUTE IMMEDIATE 'alter user :u identified by :p'
 --                  USING l_username, l_password;
-   END;
+   END passwd;
 END cwms_priv;
 /

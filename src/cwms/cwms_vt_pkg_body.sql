@@ -87,7 +87,7 @@ AS
 					const_active_flag = l_const_active_flag,
 					dur_mag_active_flag = p_dur_mag_active_flag
 		 WHERE	screening_code = p_screening_code;
-	END;
+	END store_screening_control;
 
 	PROCEDURE copy_screening_control (p_screening_code_old	IN NUMBER,
 												 p_screening_code_new	IN NUMBER
@@ -115,7 +115,7 @@ AS
 					rate_change_active_flag = l_rate_change_active_flag,
 					rate_change_disp_interval_code = l_rate_change_disp_int_code
 		 WHERE	screening_code = p_screening_code_new;
-	END;
+	END copy_screening_control;
 
 	---- END of Private calls ----
 	---
@@ -131,7 +131,7 @@ AS
 		 WHERE	screening_code = p_screening_code;
 
 		RETURN l_count;
-	END;
+	END get_screening_code_ts_id_count;
 
 	FUNCTION get_screening_code (p_screening_id	 IN VARCHAR2,
 										  p_db_office_id	 IN VARCHAR2 DEFAULT NULL
@@ -150,7 +150,7 @@ AS
 		l_screening_code :=
 			get_screening_code (p_screening_id, l_db_office_code);
 		RETURN l_screening_code;
-	END;
+	END get_screening_code;
 
 	FUNCTION get_screening_code (p_screening_id		IN VARCHAR2,
 										  p_db_office_code	IN NUMBER DEFAULT NULL
@@ -177,7 +177,7 @@ AS
 									 p_screening_id
 									);
 		END;
-	END;
+	END get_screening_code;
 
 	FUNCTION create_screening_code (
 		p_screening_id 		 IN VARCHAR2,
@@ -438,7 +438,7 @@ AS
 										 p_db_office_id
 										);
 		copy_screening_control (l_screening_code_old, l_screening_code_new);
-	END;
+	END copy_screening_id;
 
 	PROCEDURE rename_screening_id (
 		p_screening_id_old	IN VARCHAR2,
@@ -514,7 +514,7 @@ AS
 
 		--
 		COMMIT;
-	END;
+	END rename_screening_id;
 
 	PROCEDURE update_screening_id_desc (
 		p_screening_id 		 IN VARCHAR2,
@@ -772,7 +772,7 @@ AS
 						reject_lo, reject_hi, question_lo, question_hi
 			  FROM	at_screening_dur_mag
 			 WHERE	screening_code = l_screening_code_old;
-	END;
+	END copy_screening_criteria;
 
 	PROCEDURE store_screening_criteria (
 		p_screening_id 						IN VARCHAR2,
@@ -1063,7 +1063,7 @@ AS
 			p_db_office_id 	 => p_db_office_id
 		);
 	--
-	END;
+	END get_process_shefit_files;
 
 	PROCEDURE assign_screening_id (
 		p_screening_id 		IN VARCHAR2,
@@ -1403,7 +1403,7 @@ AS
 						AND a.dep_param_code = c.parameter_code
 						AND d.base_parameter_code = b.base_parameter_code
 						AND e.base_parameter_code = c.base_parameter_code;
-	END;
+	END cat_tr_templates;
 
 	--
 	-- intended to provide a listing of an office's templates.
@@ -1432,7 +1432,7 @@ AS
 		CLOSE query_cursor;
 
 		RETURN;
-	END;
+	END cat_tr_templates_tab;
 
 	FUNCTION get_tr_template_code (p_template_id 	  IN VARCHAR2,
 											 p_db_office_code   IN NUMBER
@@ -1457,7 +1457,7 @@ AS
 		END;
 
 		RETURN l_tr_template_code;
-	END;
+	END get_tr_template_code;
 
 	PROCEDURE cat_tr_template_set_masks (
 		p_query_cursor 	  OUT SYS_REFCURSOR,
@@ -1586,7 +1586,7 @@ AS
 							 WHERE	sequence_no > 0
 										AND template_code = l_tr_template_code) a
 			ORDER BY   sequence_no, variable_name;
-	END;
+	END cat_tr_template_set_masks;
 
 	FUNCTION cat_tr_template_set_masks_tab (
 		p_template_id	  IN VARCHAR2,
@@ -1611,7 +1611,7 @@ AS
 		CLOSE query_cursor;
 
 		RETURN;
-	END;
+	END cat_tr_template_set_masks_tab;
 
 	PROCEDURE cat_tr_template_set (
 		p_query_cursor 	  OUT SYS_REFCURSOR,
@@ -1634,7 +1634,7 @@ AS
 				 FROM   at_tr_template_set a
 				WHERE   a.template_code = l_tr_template_code
 			ORDER BY   a.sequence_no;
-	END;
+	END cat_tr_template_set;
 
 	FUNCTION cat_tr_template_set_tab (
 		p_template_id	  IN VARCHAR2,
@@ -1659,7 +1659,7 @@ AS
 		CLOSE query_cursor;
 
 		RETURN;
-	END;
+	END cat_tr_template_set_tab;
 
 	FUNCTION cat_tr_transforms_tab
 		RETURN cat_tr_transforms_t
@@ -1681,7 +1681,7 @@ AS
 		END LOOP;
 
 		CLOSE query_cursor;
-	END;
+	END cat_tr_transforms_tab;
 
 	PROCEDURE assign_tr_template (
 		p_template_id			 IN VARCHAR2,
@@ -1729,7 +1729,7 @@ AS
 						);
 		END IF;
 	--
-	END;
+	END assign_tr_template;
 
 	PROCEDURE unassign_tr_template (p_template_id	 IN VARCHAR2,
 											  p_cwms_ts_id 	 IN VARCHAR2,
@@ -1738,7 +1738,7 @@ AS
 	AS
 	BEGIN
 		NULL;
-	END;
+	END unassign_tr_template;
 
 	PROCEDURE delete_tr_template (
 		p_template_id					 IN VARCHAR2,
@@ -1781,7 +1781,7 @@ AS
 
 		DELETE FROM   at_tr_template_id a
 				WHERE   a.template_code = l_template_code;
-	END;
+	END delete_tr_template;
 
 	PROCEDURE rename_tr_template (p_template_id		  IN VARCHAR2,
 											p_template_id_new   IN VARCHAR2,
@@ -1790,7 +1790,7 @@ AS
 	AS
 	BEGIN
 		NULL;
-	END;
+	END rename_tr_template;
 
 	PROCEDURE revise_tr_template_desc (
 		p_template_id		IN VARCHAR2,
@@ -1800,7 +1800,7 @@ AS
 	AS
 	BEGIN
 		NULL;
-	END;
+	END revise_tr_template_desc;
 
 	FUNCTION create_tr_template (p_template_id		IN VARCHAR2,
 										  p_description		IN VARCHAR2,
@@ -1826,7 +1826,7 @@ AS
 			  INTO	l_tr_template_code;
 
 		RETURN l_tr_template_code;
-	END;
+	END create_tr_template;
 
 	PROCEDURE store_tr_template (
 		p_template_id			  IN VARCHAR2,
@@ -2049,7 +2049,7 @@ AS
 			SET	a.primary_indep_param_code = l_param_primary_indep,
 					a.dep_param_code = l_param_result_dep
 		 WHERE	a.template_code = l_tr_template_code;
-	END;
+	END store_tr_template;
 
 	PROCEDURE create_tr_ts_mask (p_location_id			IN VARCHAR2,
 										  p_parameter_id			IN VARCHAR2,
@@ -2061,7 +2061,7 @@ AS
 	AS
 	BEGIN
 		NULL;
-	END;
+	END create_tr_ts_mask;
 END cwms_vt;
 /
 /*<TOAD_FILE_CHUNK>*/

@@ -10,7 +10,7 @@ AS
 		INSERT INTO   at_cwms_ts_id
 			SELECT	*
 			  FROM	zav_cwms_ts_id;
-	END;
+	END refresh_at_cwms_ts_id;
 
 	PROCEDURE get_denorm_params_acts (
 		p_cwms_ts_spec   IN		at_cwms_ts_spec%ROWTYPE,
@@ -107,7 +107,7 @@ AS
 				ELSE
 					'F'
 			END;
-	END;
+	END get_denorm_params_acts;
 
 	PROCEDURE get_denorm_params_apl (
 		p_cwms_ts_spec 		  IN		at_cwms_ts_spec%ROWTYPE,
@@ -227,14 +227,14 @@ AS
 				ELSE
 					'F'
 			END;
-	END;
+	END get_denorm_params_apl;
 
 	PROCEDURE delete_from_at_cwms_ts_id (p_ts_code IN NUMBER)
 	IS
 	BEGIN
 		DELETE FROM   at_cwms_ts_id
 				WHERE   ts_code = p_ts_code;
-	END;
+	END delete_from_at_cwms_ts_id;
 
 	PROCEDURE merge_into_at_cwms_ts_id (p_cwms_ts_id IN at_cwms_ts_id%ROWTYPE)
 	IS
@@ -277,7 +277,7 @@ AS
 						version_flag = p_cwms_ts_id.version_flag
 			 WHERE	ts_code = p_cwms_ts_id.ts_code;
 		END IF;
-	END;
+	END merge_into_at_cwms_ts_id;
 
 	PROCEDURE touched_acts (p_cwms_ts_spec IN at_cwms_ts_spec%ROWTYPE)
 	IS
@@ -292,7 +292,7 @@ AS
 		ELSE
 			delete_from_at_cwms_ts_id (p_cwms_ts_spec.ts_code);
 		END IF;
-	END;
+	END touched_acts;
 
 	PROCEDURE touched_apl (p_location_code 		 IN NUMBER,
 								  p_loc_active_flag		 IN VARCHAR2,
@@ -316,7 +316,7 @@ AS
 			);
 			merge_into_at_cwms_ts_id (l_cwms_ts_id);
 		END LOOP;
-	END;
+	END touched_apl;
 
 	PROCEDURE get_denorm_params_abl (
 		p_cwms_ts_spec 			 IN	  at_cwms_ts_spec%ROWTYPE,
@@ -435,7 +435,7 @@ AS
 				ELSE
 					'F'
 			END;
-	END;
+	END get_denorm_params_abl;
 
 	PROCEDURE touched_abl (p_db_office_code			IN NUMBER,
 								  p_base_location_code		IN NUMBER,
@@ -464,7 +464,7 @@ AS
 			);
 			merge_into_at_cwms_ts_id (l_cwms_ts_id);
 		END LOOP;
-	END;
+	END touched_abl;
 
 	PROCEDURE get_denorm_params_api (
 		p_cwms_ts_spec 			IN 	 at_cwms_ts_spec%ROWTYPE,
@@ -581,7 +581,7 @@ AS
 				ELSE
 					'F'
 			END;
-	END;
+	END get_denorm_params_api;
 
 	PROCEDURE touched_api (p_parameter_code		  IN NUMBER,
 								  p_base_parameter_code   IN NUMBER,
@@ -604,6 +604,7 @@ AS
 			);
 			merge_into_at_cwms_ts_id (l_cwms_ts_id);
 		END LOOP;
-	END;
+	END touched_api;
 END cwms_ts_id;
 /
+show errors

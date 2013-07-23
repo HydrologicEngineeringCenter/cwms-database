@@ -179,7 +179,7 @@ AS
    IS
    BEGIN
       RETURN change_timezone (p_in_date, p_in_tz);
-   END;
+   END date_from_tz_to_utc;
 
    --
    -- return the input date in a different time zone
@@ -260,7 +260,7 @@ AS
       ELSE
          RETURN SUBSTR (p_full_id, 1, l_num - 1);
       END IF;
-   END;
+   END get_base_id;
 
    FUNCTION get_base_param_code (p_param_id     IN VARCHAR2,
                                  p_is_full_id   IN VARCHAR2 DEFAULT 'F')
@@ -285,7 +285,7 @@ AS
        WHERE UPPER (base_parameter_id) = UPPER (TRIM (l_base_param_id));
 
       RETURN l_base_param_code;
-   END;
+   END get_base_param_code;
 
    FUNCTION get_sub_id (p_full_id IN VARCHAR2)
       RETURN VARCHAR2
@@ -318,7 +318,7 @@ AS
       ELSE
          RETURN SUBSTR (p_full_id, l_num + 1, l_sub_length);
       END IF;
-   END;
+   END get_sub_id;
 
    FUNCTION is_true (p_true_false IN VARCHAR2)
       RETURN BOOLEAN
@@ -331,7 +331,7 @@ AS
       ELSE
          RETURN FALSE;
       END IF;
-   END;
+   END is_true;
 
    --
    FUNCTION is_false (p_true_false IN VARCHAR2)
@@ -345,7 +345,7 @@ AS
       ELSE
          RETURN FALSE;
       END IF;
-   END;
+   END is_false;
 
    -- Retruns TRUE if p_true_false is T or True
    -- Returns FALSE if p_true_false is F or False.
@@ -363,7 +363,7 @@ AS
       ELSE
          cwms_err.raise ('INVALID_T_F_FLAG', p_true_false);
       END IF;
-   END;
+   END return_true_or_false;
 
    -- Retruns 'T' if p_true_false is T or True
    -- Returns 'F 'if p_true_false is F or False.
@@ -381,7 +381,7 @@ AS
       ELSE
          cwms_err.raise ('INVALID_T_F_FLAG', p_true_false);
       END IF;
-   END;
+   END return_t_or_f_flag;
 
    --------------------------------------------------------------------------------
    -- function get_real_name
@@ -452,7 +452,7 @@ AS
         INTO p_office_id, p_office_long_name
         FROM cwms_office
        WHERE office_id = l_office_id;
-   END;
+   END get_user_office_data;
 
    --------------------------------------------------------
    -- Return the current session user's primary office code
@@ -724,7 +724,7 @@ AS
       l_result := REPLACE (l_result, c_underbar, '_');
 
       RETURN l_result;
-   END;
+   END denormalize_wildcards;
 
    PROCEDURE parse_ts_id (p_base_location_id       OUT VARCHAR2,
                           p_sub_location_id        OUT VARCHAR2,
@@ -746,7 +746,7 @@ AS
                         p_interval_id         => p_interval_id,
                         p_duration_id         => p_duration_id,
                         p_version_id          => p_version_id);
-   END;
+   END parse_ts_id;
 
    --------------------------------------------------------------------------------
    -- Parses a search string into one or more AND/OR LIKE/NOT LIKE predicate lines.
@@ -1111,7 +1111,7 @@ AS
    IS
    BEGIN
       DBMS_OUTPUT.put_line ('successful test');
-   END;
+   END test;
 
    FUNCTION concat_base_sub_id (p_base_id IN VARCHAR2, p_sub_id IN VARCHAR2)
       RETURN VARCHAR2
@@ -1121,7 +1121,7 @@ AS
       RETURN    p_base_id
              || SUBSTR ('-', 1, LENGTH (TRIM (p_sub_id)))
              || TRIM (p_sub_id);
-   END;
+   END concat_base_sub_id;
 
    FUNCTION concat_ts_id (p_base_location_id    IN VARCHAR2,
                           p_sub_location_id     IN VARCHAR2,
@@ -1198,7 +1198,7 @@ AS
              || l_duration_id
              || '.'
              || l_version_id;
-   END;
+   END concat_ts_id;
 
    --------------------------------------------------------------------------------
    -- function get_time_zone_code
@@ -1960,7 +1960,7 @@ AS
                         WHERE UPPER (base_parameter_id) =
                                  UPPER (get_base_id (p_parameter_id)));
       END IF;
-   END;
+   END get_valid_units;
 
    /* get_valid_unit_id return the properly cased unit_id for p_unit_id.
     */
@@ -2020,7 +2020,7 @@ AS
       END;
 
       RETURN l_unit_id;
-   END;
+   END get_valid_unit_id;
 
    FUNCTION get_valid_units_tab (p_parameter_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_unit_tab_t
@@ -2039,7 +2039,7 @@ AS
       END LOOP;
 
       CLOSE l_query_cursor;
-   END;
+   END get_valid_units_tab;
 
    FUNCTION get_unit_code (p_unit_id             IN VARCHAR2,
                            p_abstract_param_id   IN VARCHAR2 DEFAULT NULL,
@@ -2093,7 +2093,7 @@ AS
       END IF;
 
       RETURN l_unit_code;
-   END;
+   END get_unit_code;
 
    FUNCTION get_ts_group_code (p_ts_category_id   IN VARCHAR2,
                                p_ts_group_id      IN VARCHAR2,
@@ -2396,7 +2396,7 @@ AS
 
 
       RETURN l_return;
-   END;
+   END get_interval_string;
 
    FUNCTION get_user_display_unit (p_parameter_id   IN VARCHAR2,
                                    p_user_id        IN VARCHAR2 DEFAULT NULL,
@@ -2453,7 +2453,7 @@ AS
       END IF;
 
       RETURN l_default_units;
-   END;
+   END get_default_units;
 
    FUNCTION get_db_unit_code (p_parameter_id IN VARCHAR2)
       RETURN NUMBER
@@ -2466,7 +2466,7 @@ AS
        WHERE base_parameter_id = get_base_id (p_parameter_id);
 
       RETURN l_unit_code;
-   END;
+   END get_db_unit_code;
 
    FUNCTION get_db_unit_code (p_parameter_code IN NUMBER)
       RETURN NUMBER
@@ -2480,7 +2480,7 @@ AS
              AND bp.base_parameter_code = p.base_parameter_code;
 
       RETURN l_unit_code;
-   END;
+   END get_db_unit_code;
 
    FUNCTION convert_to_db_units (p_value          IN BINARY_DOUBLE,
                                  p_parameter_id   IN VARCHAR2,
@@ -2508,7 +2508,7 @@ AS
             || ' in unit '
             || p_unit_id
             || ' to database unit.');
-   END;
+   END convert_to_db_units;
 
    FUNCTION get_factor_and_offset (p_from_unit_id   IN VARCHAR2,
                                    p_to_unit_id     IN VARCHAR2)
@@ -2548,7 +2548,7 @@ AS
             || p_from_unit_id
             || ' to unit '
             || p_to_unit_id);
-   END;
+   END convert_units;
 
    FUNCTION convert_units (p_value            IN BINARY_DOUBLE,
                            p_from_unit_code   IN NUMBER,
@@ -2643,7 +2643,7 @@ AS
       DBMS_OUTPUT.put_line (
          'Warning: Use of CWMS_UTIL.SIGN_EXTEND is deprecated');
       RETURN p_int;
-   END;
+   END sign_extend;
 
    -----------------------------------
    -- function months_to_yminterval --
@@ -3538,20 +3538,20 @@ AS
    IS
    BEGIN
       DBMS_LOB.append (p_dst, p_src);
-   END;
+   END append;
 
    PROCEDURE append (p_dst IN OUT NOCOPY CLOB, p_src IN VARCHAR2)
    IS
    BEGIN
       DBMS_LOB.writeappend (p_dst, LENGTH (p_src), p_src);
-   END;
+   END append;
 
    PROCEDURE append (p_dst IN OUT NOCOPY CLOB, p_src IN XMLTYPE)
    IS
       l_src   CLOB := p_src.getclobval;
    BEGIN
       append (p_dst, l_src);
-   END;
+   END append;
 
    PROCEDURE append (p_dst IN OUT NOCOPY XMLTYPE, p_src IN CLOB)
    IS
@@ -3559,7 +3559,7 @@ AS
    BEGIN
       append (l_dst, p_src);
       p_dst := xmltype (l_dst);
-   END;
+   END append;
 
    PROCEDURE append (p_dst IN OUT NOCOPY XMLTYPE, p_src IN VARCHAR2)
    IS
@@ -3567,7 +3567,7 @@ AS
    BEGIN
       append (l_dst, p_src);
       p_dst := xmltype (l_dst);
-   END;
+   END append;
 
    PROCEDURE append (p_dst IN OUT NOCOPY XMLTYPE, p_src IN XMLTYPE)
    IS
@@ -3575,7 +3575,7 @@ AS
    BEGIN
       append (l_dst, p_src);
       p_dst := xmltype (l_dst);
-   END;
+   END append;
 
    --------------------------
    -- XML Utility routines --
@@ -3620,14 +3620,14 @@ AS
                             '\s+$');
          RETURN l_text;
       END IF;
-   END;
+   END get_xml_text;
 
    FUNCTION get_xml_number (p_xml IN XMLTYPE, p_path IN VARCHAR)
       RETURN NUMBER
    IS
    BEGIN
       RETURN TO_NUMBER (get_xml_text (p_xml, p_path));
-   END;
+   END get_xml_number;
 
 
    FUNCTION x_minus_y (p_list_1      IN VARCHAR2,
@@ -3650,7 +3650,7 @@ AS
 
       RETURN cwms_util.join_text (p_text_tab    => l_list_3,
                                   p_separator   => p_separator);
-   END;
+   END x_minus_y;
 
 
    PROCEDURE set_boolean_state (p_name IN VARCHAR2, p_state IN BOOLEAN)

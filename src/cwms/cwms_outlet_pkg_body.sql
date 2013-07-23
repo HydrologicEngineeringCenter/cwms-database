@@ -273,7 +273,7 @@ begin
       when no_data_found then null;
    end;
    return l_rating_spec;               
-end;
+end get_rating_spec;
 --------------------------------------------------------------------------------
 -- procedure assign_to_rating_group
 --------------------------------------------------------------------------------

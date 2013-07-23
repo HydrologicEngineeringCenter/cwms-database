@@ -704,7 +704,7 @@ begin
       p_unit_id,
       null,
       l_office_id);
-end;
+end store_user_unit;
 
 --------------------------------------------------------------------------------
 -- procedure retrieve_unit

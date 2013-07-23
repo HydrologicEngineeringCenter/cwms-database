@@ -26,7 +26,7 @@ begin
             'INVALID_OFFICE_ID',
             p_office_id);
    end;     
-end;        
+end validate_specified_level_input;        
             
 --------------------------------------------------------------------------------
 -- PRIVATE PROCEDURE get_units_conversion
@@ -115,7 +115,7 @@ begin
                || p_units);
       end;  
    end if;  
-end;        
+end get_units_conversion;        
             
 --------------------------------------------------------------------------------
 -- PRIVATE PROCEDURE get_location_level_codes
@@ -681,7 +681,7 @@ begin
          end loop;
       end if;
    end if;  
-end;        
+end find_nearest;        
             
 --------------------------------------------------------------------------------
 -- PROCEDURE parse_attribute_id
@@ -3987,7 +3987,7 @@ begin
       p_office_id);
             
    return l_attribute_values;
-end;        
+end retrieve_location_level_attrs2;        
             
 --------------------------------------------------------------------------------
 -- PRIVATE FUNCTION lookup_level_or_attribute

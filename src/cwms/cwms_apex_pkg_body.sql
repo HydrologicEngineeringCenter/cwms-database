@@ -32,7 +32,7 @@ AS
 		ELSE
 			RETURN 500;
 		END IF;
-	END;
+	END get_steps_per_status_update;
 
 	--this function is based on one by Connor McDonald
 	--http://www.jlcomp.demon.co.uk/faq/base_convert.html
@@ -66,7 +66,7 @@ AS
 --		
 --		  COMMIT;
 		NULL;
-	END;
+	END aa1;
 
 	-- Private functions --{{{
 	PROCEDURE delete_collection ( 													 --{{{
@@ -218,7 +218,7 @@ AS
 				p_comment :=
 					'ERROR: Format not recognized, cannot parse this line';
 		END;
-	END;
+	END crit_to_array;
 
 	--
 	PROCEDURE get_records (p_blob IN BLOB, p_records OUT varchar2_t)		 --{{{
@@ -315,7 +315,7 @@ AS
 		--   || l_count
 		--   || ' rows.');
 		cwms_apex.aa1 ('>>check_parsed_crit_file<< ending');
-	END;
+	END check_parsed_crit_file;
 
 	--=============================================================================
 	--=============================================================================
@@ -794,7 +794,7 @@ AS
 			|| ' Row count: '
 			|| l_seq_id
 		);
-	END;
+	END parse_file;
 
 	--=============================================================================
 	--=============================================================================
@@ -838,7 +838,7 @@ AS
 		END IF;
 
 		RETURN l_return_predicate;
-	END;
+	END get_equal_predicate;
 
 	FUNCTION get_primary_db_office_id
 		RETURN VARCHAR2
@@ -858,7 +858,7 @@ AS
 		temp_yr := TO_NUMBER (TRIM (SUBSTR (f_005, 1, INSTR (f_005, '-') - 1)));
 		temp_out := temp_yr * 12 + temp_mn;
 		RETURN temp_out;
-	END;
+	END calc_seasonal_mn_offset;
 
 	FUNCTION get_header_by_column_num (
 		f_column_number	IN apex_collections.c001%TYPE,
@@ -907,7 +907,7 @@ AS
 		END CASE;
 
 		RETURN temp_out;
-	END;
+	END get_header_by_column_num;
 
 	FUNCTION get_unit_code_from_code_id (
 		f_unit_id	IN cwms_unit.unit_id%TYPE,
@@ -999,7 +999,7 @@ AS
 		END CASE;
 
 		RETURN temp_out;
-	END;
+	END get_headers_for_apex_rpt;
 
 	FUNCTION get_location_level_id_param (f_location_level_id	IN VARCHAR2,
 													  f_loc_num 				IN NUMBER
@@ -1024,7 +1024,7 @@ AS
 		END LOOP;
 
 		RETURN temp_out;
-	END;
+	END get_location_level_id_param;
 
 	FUNCTION strip_for_stragg (f_string IN VARCHAR2)
 		RETURN VARCHAR2
@@ -1045,7 +1045,7 @@ AS
 				g_bad_chars := g_bad_chars || CHR (i);
 			END IF;
 		END LOOP;
-	END;
+	END strip_for_stragg;
 
 
 
@@ -1064,7 +1064,7 @@ AS
 		END LOOP;
 
 		RETURN;
-	END;
+	END str2tbl;
 
 	FUNCTION valid_csv_header (f_file_type 	IN NUMBER,
 										f_header_loc	IN NUMBER,
@@ -1314,7 +1314,7 @@ AS
 			l_cmt || LOCALTIMESTAMP,
 			p_db_office_id
 		);
-	END;
+	END store_parsed_crit_file;
 
 	--=============================================================================
 	--=============================================================================
@@ -1525,7 +1525,7 @@ AS
 			l_cmt || LOCALTIMESTAMP,
 			p_db_office_id
 		);
-	END;
+	END store_parsed_crit_csv_file;
 
 	--=============================================================================
 	--=============================================================================
@@ -1636,7 +1636,7 @@ AS
 			l_cmt || LOCALTIMESTAMP,
 			p_db_office_id
 		);
-	END;
+	END store_parsed_loc_short_file;
 
 	--=============================================================================
 	--=============================================================================
@@ -1853,7 +1853,7 @@ AS
 			l_cmt || LOCALTIMESTAMP,
 			p_db_office_id
 		);
-	END;
+	END store_parsed_loc_full_file;
 
 	--=============================================================================
 	--=============================================================================
@@ -1960,7 +1960,7 @@ AS
 			l_cmt || LOCALTIMESTAMP,
 			p_db_office_id
 		);
-	END;
+	END store_parsed_loc_alias_file;
 
 	--=============================================================================
 	--=============================================================================
@@ -2192,7 +2192,7 @@ AS
 			l_cmt || LOCALTIMESTAMP,
 			p_db_office_id
 		);
-	END;
+	END store_parsed_screen_base_file;
 
 	--=============================================================================
 	--=============================================================================
@@ -5219,7 +5219,7 @@ AS
 			l_cmt || LOCALTIMESTAMP,
 			p_db_office_id
 		);
-	END;
+	END store_parsed_loc_egis_file;
 
 	--=============================================================================
 	--====End==store_parsed_loc_egis_file==========================================

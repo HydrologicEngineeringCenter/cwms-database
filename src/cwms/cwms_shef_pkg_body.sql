@@ -38,7 +38,7 @@ AS
          THEN
             cwms_err.raise ('DATA_STREAM_NOT_FOUND', TRIM (p_data_stream_id));
       END;
-   END;
+   END get_update_crit_file_flag;
 
    PROCEDURE set_update_crit_file_flag (
       p_update_crit_file_flag   IN VARCHAR2,
@@ -60,7 +60,7 @@ AS
          THEN
             cwms_err.raise ('DATA_STREAM_NOT_FOUND', TRIM (p_data_stream_id));
       END;
-   END;
+   END set_update_crit_file_flag;
 
    FUNCTION get_data_stream_code_of_feed (p_data_feed_code IN NUMBER)
       RETURN NUMBER
@@ -80,7 +80,7 @@ AS
             cwms_err.raise ('ERROR',
                             'Data Feed is not assigned to a Data Stream.');
       END;
-   END;
+   END get_data_stream_code_of_feed;
 
    --
    FUNCTION get_data_feed_code (p_data_feed_id     IN VARCHAR2,
@@ -104,7 +104,7 @@ AS
                'ERROR',
                'Data Feed: ' || TRIM (p_data_feed_id) || ' not found.');
       END;
-   END;
+   END get_data_feed_code;
 
    FUNCTION get_data_feed_code (p_data_feed_id   IN VARCHAR2,
                                 p_db_office_id   IN VARCHAR2 DEFAULT NULL)
@@ -115,7 +115,7 @@ AS
    BEGIN
       RETURN get_data_feed_code (p_data_feed_id     => p_data_feed_id,
                                  p_db_office_code   => l_db_office_code);
-   END;
+   END get_data_feed_code;
 
    PROCEDURE clean_at_shef_crit_file (
       p_data_stream_code   IN NUMBER,
@@ -123,7 +123,7 @@ AS
    IS
    BEGIN
       NULL;
-   END;
+   END clean_at_shef_crit_file;
 
    FUNCTION is_data_stream_active (
       p_data_stream_id   IN VARCHAR2,
@@ -151,7 +151,7 @@ AS
       ELSE
          RETURN FALSE;
       END IF;
-   END;
+   END is_data_stream_active;
 
    FUNCTION get_crit_file_code (p_data_stream_code   IN NUMBER,
                                 p_utc_version_date   IN DATE DEFAULT NULL,
@@ -240,7 +240,7 @@ AS
       END CASE;
 
       RETURN l_crit_file_code;
-   END;
+   END get_crit_file_code;
 
    FUNCTION is_crit_file_current (
       p_data_stream_id   IN VARCHAR2,
@@ -269,7 +269,7 @@ AS
       ELSE
          RETURN FALSE;
       END IF;
-   END;
+   END is_crit_file_current;
 
    FUNCTION get_loc_category_code (p_loc_category_id   IN VARCHAR2,
                                    p_db_office_code    IN NUMBER)
@@ -285,7 +285,7 @@ AS
                     (p_db_office_code, cwms_util.db_office_code_all);
 
       RETURN l_loc_category_code;
-   END;
+   END get_loc_category_code;
 
    FUNCTION get_loc_group_code (p_loc_category_id   IN VARCHAR2,
                                 p_loc_group_id      IN VARCHAR2,
@@ -305,7 +305,7 @@ AS
                     (p_db_office_code, cwms_util.db_office_code_all);
 
       RETURN l_loc_group_code;
-   END;
+   END get_loc_group_code;
 
    FUNCTION get_data_stream_code (p_data_stream_id   IN VARCHAR2,
                                   p_db_office_code   IN NUMBER)
@@ -327,7 +327,7 @@ AS
          THEN
             cwms_err.raise ('DATA_STREAM_NOT_FOUND', TRIM (p_data_stream_id));
       END;
-   END;
+   END get_data_stream_code;
 
    FUNCTION get_data_stream_code (
       p_data_stream_id   IN VARCHAR2,
@@ -347,7 +347,7 @@ AS
          THEN
             cwms_err.raise ('DATA_STREAM_NOT_FOUND', TRIM (p_data_stream_id));
       END;
-   END;
+   END get_data_stream_code;
 
    FUNCTION get_shef_duration_numeric (p_shef_duration_code IN VARCHAR2)
       RETURN VARCHAR2
@@ -396,7 +396,7 @@ AS
       END IF;
 
       RETURN l_shef_duration_numeric;
-   END;
+   END get_shef_duration_numeric;
 
 
 
@@ -406,7 +406,7 @@ AS
    IS
    BEGIN
       NULL;
-   END;
+   END store_shef_spec;
 
    FUNCTION get_data_feed_prefix_length (p_data_feed_code IN NUMBER)
       RETURN NUMBER
@@ -429,7 +429,7 @@ AS
                || p_data_feed_code
                || ' Unable to retrieve data_feed_prefix.');
       END;
-   END;
+   END get_data_feed_prefix_length;
 
    ----------------------------------------------------
    -- This call can only be called if the office's data stream managment is
@@ -1383,7 +1383,7 @@ AS
              data_feed_code = l_data_feed_code,
              ignore_shef_spec = l_ignore_shef_spec
        WHERE ts_code = l_ts_code_where;
-   END;
+   END store_shef_spec;
 
    PROCEDURE store_shef_spec_feed (
       p_cwms_ts_id              IN VARCHAR2,
@@ -1640,7 +1640,7 @@ AS
                    l_location_code,
                    l_loc_group_code,
                    l_shef_duration_code);
-   END;
+   END store_shef_spec_feed;
 
    PROCEDURE delete_shef_spec (
       p_cwms_ts_id           IN VARCHAR2 DEFAULT NULL,
@@ -1674,7 +1674,7 @@ AS
       ELSE
          l_cwms_ts_code := NULL;
       END IF;
-   END;
+   END delete_shef_spec;
 
    -- ****************************************************************************
    -- cwms_shef.delete_shef_spec is used to delete an existing SHEF spec. SHEF
@@ -1714,7 +1714,7 @@ AS
       DELETE at_shef_decode
        WHERE     ts_code = l_cwms_ts_code
              AND data_stream_code = l_data_stream_code;
-   END;
+   END delete_shef_spec;
 
    -- ****************************************************************************
    -- cwms_shef.store_data_stream is used to:
@@ -1841,7 +1841,7 @@ AS
       set_ds_state (p_data_stream_id      => l_data_stream_id,
                     p_data_stream_state   => l_data_stream_state,
                     p_db_office_id        => l_db_office_id);
-   END;
+   END store_data_stream;
 
    -- ****************************************************************************
    -- cwms_shef.rename_data_stream is used to rename an existing data stream id.
@@ -1914,7 +1914,7 @@ AS
       UPDATE at_data_stream_id
          SET data_stream_id = TRIM (p_data_stream_id_new)
        WHERE data_stream_code = l_data_stream_code;
-   END;
+   END rename_data_stream;
 
    -- ****************************************************************************
    -- cwms_shef.delete_data_stream_entries is used to delete all data stream entries
@@ -1954,7 +1954,7 @@ AS
 
       DELETE FROM at_shef_ignore
             WHERE data_stream_code = l_data_stream_code;
-   END;
+   END delete_data_stream_shef_specs;
 
    PROCEDURE clear_data_stream (p_data_stream_id   IN VARCHAR2,
                                 p_db_office_id     IN VARCHAR2 DEFAULT NULL)
@@ -1972,7 +1972,7 @@ AS
       ELSE
          NULL;
       END IF;
-   END;
+   END clear_data_stream;
 
    PROCEDURE delete_data_feed_shef_specs (p_data_feed_code IN NUMBER)
    IS
@@ -1982,7 +1982,7 @@ AS
 
       DELETE FROM at_shef_ignore
             WHERE data_feed_code = p_data_feed_code;
-   END;
+   END delete_data_feed_shef_specs;
 
    PROCEDURE delete_data_feed_shef_specs (
       p_data_feed_id   IN VARCHAR2,
@@ -2004,7 +2004,7 @@ AS
       END;
 
       delete_data_feed_shef_specs (p_data_feed_code => l_data_feed_code);
-   END;
+   END delete_data_feed_shef_specs;
 
 
 
@@ -2077,7 +2077,7 @@ AS
             cwms_err.raise ('CANNOT_DELETE_DATA_STREAM',
                             TRIM (p_data_stream_id));
       END;
-   END;
+   END delete_data_stream;
 
    PROCEDURE cat_shef_data_streams (
       p_shef_data_streams      OUT SYS_REFCURSOR,
@@ -2158,7 +2158,7 @@ AS
       --
       DELETE FROM at_shef_pe_codes
             WHERE id_code = p_id_code;
-   END;
+   END delete_local_pe_code;
 
    PROCEDURE create_local_pe_code (
       p_shef_pe_code            IN VARCHAR2,
@@ -2353,7 +2353,7 @@ AS
                    l_parameter_type_code,
                    TRIM (p_description),
                    TRIM (p_notes));
-   END;
+   END create_local_pe_code;
 
    PROCEDURE cat_shef_extremum_codes (
       p_shef_extremum_codes OUT SYS_REFCURSOR)
@@ -2364,7 +2364,7 @@ AS
              FROM cwms_shef_extremum_codes csec, cwms_duration cd
             WHERE csec.duration_code = cd.duration_code(+)
          ORDER BY sequence_no;
-   END;
+   END cat_shef_extremum_codes;
 
    PROCEDURE cat_shef_pe_codes (
       p_shef_pe_codes      OUT SYS_REFCURSOR,
@@ -2837,7 +2837,7 @@ AS
       p_int_backward := l_int_backward;
       p_int_forward := l_int_forward;
       p_unit_sys := l_unit_sys;
-   END;
+   END parse_criteria_record;
 
 
    FUNCTION get_shef_crit_file (p_data_stream_code   IN NUMBER,
@@ -2882,7 +2882,7 @@ AS
    BEGIN
       RETURN get_shef_crit_file (p_data_stream_code   => l_data_stream_code,
                                  p_utc_version_date   => p_utc_version_date);
-   END;
+   END get_shef_crit_file;
 
    /*   PROCEDURE store_shef_crit_file (
     p_data_stream_id IN VARCHAR2,
@@ -2957,7 +2957,7 @@ AS
 
       store_shef_crit_file (p_data_stream_id   => l_data_stream_id,
                             p_db_office_id     => l_db_office_id);
-   END;
+   END store_shef_crit_file;
 
 
    PROCEDURE store_shef_crit_file (
@@ -3120,7 +3120,7 @@ AS
       notify_criteria_modified (p_data_stream_id   => p_data_stream_id,
                                 p_office_id        => l_db_office_id);
       COMMIT;
-   END;
+   END store_shef_crit_file;
 
    PROCEDURE cat_shef_decode_spec (
       p_shef_decode_spec_rc      OUT SYS_REFCURSOR,
@@ -3260,7 +3260,7 @@ AS
       CLOSE query_cursor;
 
       RETURN;
-   END;
+   END cat_shef_decode_spec_tab;
 
    PROCEDURE cat_shef_crit_lines (
       p_shef_crit_lines      OUT SYS_REFCURSOR,
@@ -3354,7 +3354,7 @@ AS
              INTO l_data_feed_code;
 
       RETURN l_data_feed_code;
-   END;
+   END create_data_feed;
 
    -- ****************************************************************************
    -- cwms_shef.delete_data_feed is used to delete an existing data feed id.
@@ -3413,7 +3413,7 @@ AS
       --
       DELETE FROM at_data_feed_id
             WHERE data_feed_code = l_data_feed_code;
-   END;
+   END delete_data_feed;
 
    FUNCTION rename_data_feed (p_data_feed_id_old   IN VARCHAR2,
                               p_data_feed_id_new   IN VARCHAR2,
@@ -3423,7 +3423,7 @@ AS
       l_db_office_code   NUMBER;
    BEGIN
       NULL;
-   END;
+   END rename_data_feed;
 
    -- benign error if already assigned.
 
@@ -3447,7 +3447,7 @@ AS
       UPDATE at_shef_decode
          SET data_stream_code = l_data_stream_code
        WHERE data_feed_code = l_data_feed_code;
-   END;
+   END assign_data_feed;
 
 
 
@@ -3466,7 +3466,7 @@ AS
       UPDATE at_shef_decode
          SET data_stream_code = NULL
        WHERE data_feed_code = l_data_feed_code;
-   END;
+   END unassign_data_feed;
 
 
    PROCEDURE cat_shef_data_feeds (
@@ -3506,7 +3506,7 @@ AS
                      AND a.db_office_code = l_db_office_code
             ORDER BY UPPER (a.data_feed_id);
       END IF;
-   END;
+   END cat_shef_data_feeds;
 
    FUNCTION cat_shef_data_feeds_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL)
       RETURN cat_data_feed_tab_t
@@ -3556,7 +3556,7 @@ AS
        WHERE     UPPER (data_feed_id) = UPPER (TRIM (p_data_feed_id))
              AND db_office_code =
                     cwms_util.get_db_office_code (p_db_office_id);
-   END;
+   END set_data_feed_prefix;
 
 
    PROCEDURE set_data_feed_desc (p_data_feed_id     IN VARCHAR2,
@@ -3569,7 +3569,7 @@ AS
        WHERE     UPPER (data_feed_id) = UPPER (TRIM (p_data_feed_id))
              AND db_office_code =
                     cwms_util.get_db_office_code (p_db_office_id);
-   END;
+   END set_data_feed_desc;
 
    PROCEDURE rename_data_feed (p_data_feed_id_old   IN VARCHAR2,
                                p_data_feed_id_new   IN VARCHAR2,
@@ -3582,7 +3582,7 @@ AS
       UPDATE at_data_feed_id
          SET data_feed_id = TRIM (p_data_feed_id_new)
        WHERE data_feed_code = l_data_feed_code;
-   END;
+   END rename_data_feed;
 
    --
 
@@ -3619,7 +3619,7 @@ AS
       UPDATE at_data_stream_id
          SET active_flag = 'F', delete_date = SYSDATE
        WHERE data_stream_code = l_data_stream_code;
-   END;
+   END convert_data_stream_to_feed;
 
 
 
@@ -3635,7 +3635,7 @@ AS
                 p_id          => 'DATA_STREAM_MGT_STYLE',
                 p_default     => 'DATA STREAMS',
                 p_office_id   => l_db_office_id);
-   END;
+   END get_data_stream_mgt_style;
 
 
    FUNCTION get_data_stream_state (
@@ -3661,7 +3661,7 @@ AS
       ELSE
          RETURN data_stream_state_inactive;
       END IF;
-   END;
+   END get_data_stream_state;
 
    PROCEDURE set_data_stream_mgt_style (
       p_data_stream_mgt_style   IN VARCHAR2,
@@ -3778,7 +3778,7 @@ AS
                TRIM (p_data_stream_mgt_style)
             || ' is not a recognized Data Stream Managment Style.');
       END IF;
-   END;
+   END set_data_stream_mgt_style;
 
    -----------------------------------------------------------------------------
    -- Messaging Routines
@@ -4110,7 +4110,7 @@ AS
        WHERE data_stream_code = p_data_stream_code;
 
       RETURN cwms_util.is_true (l_use_db_shef_spec_mapping);
-   END;
+   END get_use_db_shef_spec_mapping;
 
    FUNCTION get_use_db_shef_spec_mapping (
       p_data_stream_id   IN VARCHAR2,
@@ -4123,7 +4123,7 @@ AS
    BEGIN
       RETURN get_use_db_shef_spec_mapping (
                 p_data_stream_code => l_data_stream_code);
-   END;
+   END get_use_db_shef_spec_mapping;
 
    PROCEDURE set_use_db_shef_spec_mapping (p_boolean            IN BOOLEAN,
                                            p_data_stream_code   IN NUMBER)
@@ -4140,7 +4140,7 @@ AS
       UPDATE at_data_stream_id
          SET use_db_shef_spec_mapping = l_use_db_shef_spec_mapping
        WHERE data_stream_code = p_data_stream_code;
-   END;
+   END set_use_db_shef_spec_mapping;
 
    PROCEDURE set_use_db_shef_spec_mapping (
       p_boolean          IN BOOLEAN,
@@ -4154,7 +4154,7 @@ AS
       set_use_db_shef_spec_mapping (
          p_boolean            => p_boolean,
          p_data_stream_code   => l_data_stream_code);
-   END;
+   END set_use_db_shef_spec_mapping;
 
    PROCEDURE get_process_shefit_files (
       p_use_db_crit         OUT VARCHAR2,
@@ -4196,7 +4196,7 @@ AS
       WHEN OTHERS
       THEN
          p_use_db_crit := 'F';
-   END;
+   END get_process_shefit_files;
 
 
 
@@ -4314,7 +4314,7 @@ AS
                         FROM at_data_stream_id
                        WHERE     db_office_code = p_db_office_code
                              AND delete_date IS NULL);
-   END;
+   END set_ds_update_time;
 
    PROCEDURE set_ds_update_time (
       p_update_idle_period   IN NUMBER,
@@ -4329,7 +4329,7 @@ AS
                           p_update_time          => p_update_time,
                           p_time_zone            => p_time_zone,
                           p_db_office_code       => l_db_office_code);
-   END;
+   END set_ds_update_time;
 
 
 
@@ -4370,7 +4370,7 @@ AS
                                 p_new_state        => l_data_stream_state,
                                 p_office_id        => l_db_office_id);
       COMMIT;
-   END;
+   END set_ds_state;
 
 
 
@@ -4402,7 +4402,7 @@ AS
          p_time_zone :=
             TRIM (SUBSTR (l_update_time, INSTR (l_update_time, ' - ') + 3));
       END IF;
-   END;
+   END get_ds_update_time;
 
 
    --
@@ -4583,7 +4583,7 @@ AS
                END IF;
          END CASE;
       END LOOP;
-   END;
+   END update_shef_spec_mapping;
 
    PROCEDURE start_update_shef_spec_map_job
    IS
@@ -4676,6 +4676,7 @@ AS
                                l_job_id || ':' || SQLERRM);
          END;
       END IF;
-   END;
+   END start_update_shef_spec_map_job;
 END cwms_shef;
 /
+show errors;

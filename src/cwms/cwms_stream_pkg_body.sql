@@ -1162,7 +1162,7 @@ begin
             ||'/'
             ||p_stream_id);
    end;
-end;   
+end delete_stream_location;   
    
 --------------------------------------------------------------------------------
 -- procedure cat_stream_locations   

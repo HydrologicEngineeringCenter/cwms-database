@@ -153,7 +153,7 @@ CREATE OR REPLACE package body cwms_xchg as
          || '/'
          || p_f_pathname_part
          || '/';
-   end;
+   end make_dss_pathname;
 
 --------------------------------------------------------------------------------
 -- VARCHAR2 FUNCTION MAKE_DSS_TS_ID(...)

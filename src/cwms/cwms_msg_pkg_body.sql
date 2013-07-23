@@ -33,7 +33,7 @@ begin
    ---------------------------------
    commit;
    return replace(to_char(l_millis)||'_'||to_char(l_seq, '000000'), ' ', '');
-end;
+end get_msg_id;
 
 -------------------------------------------------------------------------------
 -- FUNCTION GET_QUEUE_PREFIX(...)
@@ -1145,7 +1145,7 @@ begin
             dequeue    => true);
          dbms_output.put_line('Started queue '||l_queue_name);
    end loop;
-end;   
+end create_queues;   
 
 procedure purge_queues
 is

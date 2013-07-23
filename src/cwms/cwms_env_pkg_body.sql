@@ -58,6 +58,6 @@ AS
             || l_username
             || ' does not have any assigned privileges for that office.');
       END IF;
-   END;
+   END set_session_office_id;
 END cwms_env;
 /
