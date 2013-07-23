@@ -1164,14 +1164,14 @@ procedure cat_locks(
    p_office_id_mask      in  varchar2 default null)
 is
 begin
-   p_cursor := cat_locks(
+   p_cursor := cat_locks_f(
       p_project_id_mask,
       p_application_id_mask,
       p_time_zone,
       p_office_id_mask);
 end cat_locks;   
       
-function cat_locks(
+function cat_locks_f(
    p_project_id_mask     in varchar2 default '*',
    p_application_id_mask in varchar2 default '*',
    p_time_zone           in varchar2 default 'UTC',
@@ -1204,7 +1204,7 @@ begin
          and bl.base_location_code = pl.base_location_code
          and o.office_code = bl.db_office_code;  
    return l_cursor;
-end cat_locks;
+end cat_locks_f;
 
 procedure update_lock_revoker_rights(
    p_user_id        in varchar2,
@@ -1308,13 +1308,13 @@ procedure cat_lock_revoker_rights(
    p_office_id_mask      in  varchar2 default null)
 is
 begin
-   p_cursor := cat_lock_revoker_rights(      
+   p_cursor := cat_lock_revoker_rights_f(      
       p_project_id_mask,
       p_application_id_mask,
       p_office_id_mask); 
 end cat_lock_revoker_rights;   
       
-function cat_lock_revoker_rights(      
+function cat_lock_revoker_rights_f(      
    p_project_id_mask     in varchar2 default '*',
    p_application_id_mask in varchar2 default '*',
    p_office_id_mask      in varchar2 default null)
@@ -1355,7 +1355,7 @@ begin
                 p_user_id        => r.user_id, 
                 p_office_code    => r.office_code) = 'T';             
    return l_cursor;
-end cat_lock_revoker_rights;
+end cat_lock_revoker_rights_f;
 
 
 END CWMS_PROJECT;
