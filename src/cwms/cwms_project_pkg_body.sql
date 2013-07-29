@@ -1099,11 +1099,10 @@ begin
          cwms_err.raise('INVALID_ITEM', p_lock_id, 'CWMS Project lock identifier');
    end;
    select o.office_id,
-          cwms_loc.get_location_id(lck.project_code)
+          cwms_loc.get_location_id(l_lock_rec.project_code)
      into l_office_id,
           l_project_id             
-     from at_project_lock lck,
-          at_physical_location pl,
+     from at_physical_location pl,
           at_base_location bl,
           cwms_office o
     where pl.location_code = l_lock_rec.project_code
