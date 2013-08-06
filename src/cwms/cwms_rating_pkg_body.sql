@@ -1732,6 +1732,7 @@ begin
             and r.rating_spec_code = rs.rating_spec_code
             and r.active_flag = 'T'
             and r.create_date <= l_rating_time
+          order by r.effective_date  
       )
    loop
       if l_ratings is null then
