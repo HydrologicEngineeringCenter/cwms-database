@@ -642,8 +642,47 @@ function publish_status_update(
    p_office_id      in varchar2 default null)
    return integer
 is
+   l_office_id       varchar2(16);
+   l_id              integer;
+   l_queue_name      varchar2(61);
+   l_text_msg        varchar2(32767);
 begin
-   return null;
+   ------------------------------
+   -- publish the state change --
+   ------------------------------   
+   l_office_id := cwms_util.get_db_office_id(p_office_id);
+   l_queue_name  := l_office_id||'_'||'STATUS';
+   l_text_msg := '
+      <cwms_message type="Status">                                
+         <property name="office"         type="String"> $office                  </property>
+         <property name="project"        type="String"> $project                 </property>
+         <property name="application"    type="String"> $application             </property>
+         <property name="user"           type="String"> $user                    </property>';
+   if p_source_id is not null then
+      l_text_msg := l_text_msg || '
+         <property name="source_id"      type="String"> '|| p_source_id ||'      </property>';
+   end if;      
+   if p_time_series_id is not null then
+      l_text_msg := l_text_msg || '
+         <property name="time_series_id" type="String"> '|| p_time_series_id ||' </property>';
+   end if;      
+   if p_start_time is not null then
+      l_text_msg := l_text_msg || '
+         <property name="start_time"     type="long">   '|| p_start_time ||'     </property>';
+   end if;      
+   if p_end_time is not null then
+      l_text_msg := l_text_msg || '
+         <property name="end_time"       type="long">   '|| p_end_time ||'       </property>';
+   end if;      
+   l_text_msg := l_text_msg || '
+      </cwms_message>';
+   l_text_msg := replace(l_text_msg, '$office',      l_office_id);
+   l_text_msg := replace(l_text_msg, '$project',     p_project_id);
+   l_text_msg := replace(l_text_msg, '$application', lower(p_application_id));
+   l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);    
+   dbms_output.put_line(l_text_msg);
+   l_id := cwms_msg.publish_message(l_text_msg, l_queue_name, true);
+   return l_id;
 end publish_status_update;         
 
 function request_lock(
