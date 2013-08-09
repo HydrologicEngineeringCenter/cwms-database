@@ -680,9 +680,8 @@ begin
    l_text_msg := replace(l_text_msg, '$project',     p_project_id);
    l_text_msg := replace(l_text_msg, '$application', lower(p_application_id));
    l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);    
-   dbms_output.put_line(l_text_msg);
    l_id := cwms_msg.publish_message(l_text_msg, l_queue_name, true);
-   return l_id;
+   return cwms_util.to_millis(systimestamp);
 end publish_status_update;         
 
 function request_lock(
