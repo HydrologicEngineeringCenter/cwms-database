@@ -1014,6 +1014,8 @@ begin
    ---------------------------------
    l_office_id   := cwms_util.get_db_office_id(p_office_id);
    l_queue_name  := l_office_id||'_'||'STATUS';
+   l_start_time  := sysdate;
+   l_end_time    := l_start_time + p_revoke_timeout / 86400;
    l_text_msg := '
       <cwms_message type="RequestAction">
          <property name="action"      type="String">unlock project</property>
@@ -1021,16 +1023,18 @@ begin
          <property name="project"     type="String">$project      </property>
          <property name="application" type="String">$application  </property>
          <property name="user"        type="String">$user         </property>
+         <property name="force_time"  type="long">  $deadline     </property>
       </cwms_message>';
    l_text_msg := replace(l_text_msg, '$office',      l_office_id);
    l_text_msg := replace(l_text_msg, '$project',     p_project_id);
    l_text_msg := replace(l_text_msg, '$application', lower(p_application_id));
-   l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);
+   l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id); 
+   l_text_msg := replace(l_text_msg, '$deadline',    to_char(cwms_util.to_millis(l_end_time)));
    l_id := cwms_msg.publish_message(l_text_msg, l_queue_name, true);
    -------------------------------------------------------------         
    -- wait for project to be unlocked or for a denial message --
    -------------------------------------------------------------
-   l_queue_name := '&cwms_schema..'||l_queue_name;         
+   l_queue_name := ' CWMS_20.'||l_queue_name;         
    dbms_aqadm.add_subscriber(
       queue_name => l_queue_name,
       subscriber => sys.aq$_agent(l_subscriber, null, null));
@@ -1038,8 +1042,6 @@ begin
    l_dequeue_opts.navigation    := dbms_aq.first_message;
    l_dequeue_opts.visibility    := dbms_aq.immediate;
    l_dequeue_opts.wait          := dbms_aq.no_wait;
-   l_start_time := sysdate;
-   l_end_time := l_start_time + p_revoke_timeout / 86400;
    loop
       loop 
          l_msg := null; 
