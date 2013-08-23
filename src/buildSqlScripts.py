@@ -124,7 +124,6 @@ tableInfo = [
     {"ID" : "gageType",           "TABLE" : "CWMS_GAGE_TYPE",             "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "nation",             "TABLE" : "CWMS_NATION",                "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "streamType",         "TABLE" : "CWMS_STREAM_TYPE",           "SCHEMA" : "CWMS", "USERACCESS" : True},
-    {"ID" : "msgId",              "TABLE" : "CWMS_MSG_ID",                "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "schemaObjVersion",   "TABLE" : "CWMS_SCHEMA_OBJECT_VERSION", "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "vertconHeader",      "TABLE" : "CWMS_VERTCON_HEADER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "vertconData",        "TABLE" : "CWMS_VERTCON_DATA",          "SCHEMA" : "CWMS", "USERACCESS" : True},
@@ -9156,35 +9155,6 @@ def main() :
     for v1, v2, v3, v4, v5, v6, v7 in streamTypes :
         streamTypeLoadTemplate += "INSERT INTO @TABLE VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s');\n" % (v1, v2, v3, v4, v5, v6, v7)
     streamTypeLoadTemplate += "COMMIT;\n"
-    
-    sys.stderr.write("Building msgIdCreationTemplate\n")
-    msgIdCreationTemplate = \
-    '''
-    -- ## TABLE ###############################################
-    -- ## @TABLE
-    -- ##
-    CREATE TABLE @TABLE
-    (
-       LAST_MILLIS INTEGER,
-       LAST_SEQ    INTEGER
-    )
-    tablespace @DATASPACE
-    /
-    
-    ---------------------------
-    -- @TABLE comments --
-    --
-    COMMENT ON TABLE  @TABLE             IS 'Contains data to generate message ids based on millisecond and sequence within millisecond';
-    COMMENT ON COLUMN @TABLE.LAST_MILLIS IS 'Millisecond of last message id generated';
-    COMMENT ON COLUMN @TABLE.LAST_SEQ    IS 'Sequence number within millisecond for last message id generated';
-    
-    COMMIT;
-    '''
-    sys.stderr.write("Building msgIdLoadTemplate\n")
-    msgIdLoadTemplate = '''
-       INSERT INTO @TABLE VALUES (0, 0);
-       COMMIT;
-    '''
     
     sys.stderr.write("Building schemaObjVersionCreationTemplate\n")
     schemaObjVersionCreationTemplate = \

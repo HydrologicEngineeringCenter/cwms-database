@@ -4,35 +4,12 @@ create or replace package body cwms_msg
 as
 
 -------------------------------------------------------------------------------
--- FUNCTION GET_MSG_ID(...)  Parameter p_millis is deprecated and not used
+-- FUNCTION GET_MSG_ID
 --
-function get_msg_id (p_millis in integer default null) return varchar2
+function get_msg_id return varchar2
 is
-   pragma autonomous_transaction;
-   l_millis      integer;
-   l_seq         integer;
-   l_last_millis integer;
-   l_last_seq    integer;
 begin
-   --------------------------
-   -- synchronize the code --
-   --------------------------
-   lock table cwms_msg_id in exclusive mode wait 2;
-   ------------------------
-   -- perform the action --
-   ------------------------
-   l_millis := cwms_util.current_millis;
-   select last_millis, last_seq into l_last_millis, l_last_seq from cwms_msg_id;
-   l_seq := case l_millis > l_last_millis
-               when true then 0
-               else l_last_seq + 1
-            end;
-   update cwms_msg_id set last_millis = l_millis, last_seq = l_seq;
-   ---------------------------------
-   -- release the lock and return --
-   ---------------------------------
-   commit;
-   return replace(to_char(l_millis)||'_'||to_char(l_seq, '000000'), ' ', '');
+   return to_char(cwms_util.current_micros);
 end get_msg_id;
 
 -------------------------------------------------------------------------------
@@ -397,7 +374,7 @@ begin
       -----------------------------------------
       l_now         := cwms_util.current_millis;
       l_now_ts      := cwms_util.to_timestamp(l_now);
-      l_msg_id      := get_msg_id(l_now);
+      l_msg_id      := get_msg_id;
       l_office_code := cwms_util.user_office_code;
       l_document    := xmltype(p_short_msg);
       l_msgtype     := l_document.extract('/cwms_message/@type').getstringval();
