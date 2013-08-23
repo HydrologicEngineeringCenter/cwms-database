@@ -1839,6 +1839,35 @@ AS
       RETURN to_millis (SYSTIMESTAMP AT TIME ZONE 'UTC');
    END current_millis;
 
+   --------------------------------------------------------------------
+   -- Return Java microseconds for a specified UTC timestamp.
+   --
+   FUNCTION to_micros (p_timestamp IN TIMESTAMP)
+      RETURN NUMBER
+   IS
+      l_intvl    INTERVAL DAY (9) TO SECOND (9);
+      l_micros   NUMBER;
+   BEGIN
+      l_intvl := p_timestamp - epoch;
+      l_micros :=
+         TRUNC (
+              EXTRACT (DAY FROM l_intvl) * 86400000000
+            + EXTRACT (HOUR FROM l_intvl) * 3600000000
+            + EXTRACT (MINUTE FROM l_intvl) * 60000000
+            + EXTRACT (SECOND FROM l_intvl) * 1000000);
+      RETURN l_micros;
+   END to_micros;
+
+   --------------------------------------------------------------------
+   -- Return Java microseconds for current time.
+   --
+   FUNCTION current_micros
+      RETURN NUMBER
+   IS
+   BEGIN
+      RETURN to_micros (SYSTIMESTAMP AT TIME ZONE 'UTC');
+   END current_micros;
+
 
    FUNCTION get_ts_interval (p_cwms_ts_code IN NUMBER)
       RETURN NUMBER
@@ -1857,7 +1886,7 @@ AS
    FUNCTION get_unit_id (p_unit_or_alias   IN VARCHAR2,
                          p_office_id       IN VARCHAR2 DEFAULT NULL)
       RETURN VARCHAR2
-   IS
+   IS              
       l_unit_id       VARCHAR2 (16);
       l_office_code   NUMBER (10) := get_db_office_code (p_office_id);
    BEGIN

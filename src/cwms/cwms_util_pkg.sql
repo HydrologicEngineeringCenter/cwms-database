@@ -945,6 +945,26 @@ AS
    FUNCTION current_millis
       RETURN NUMBER;
    /**
+    * Genrates the Java microsecond equivalent of a <code><big>TIMESTAMP</big></code>
+    * value.  The Java microsecond value specifies the number of microseconds since
+    * the beginning of the UNIX epoch (01 Jan 1970 00:00:00 UTC)
+    *
+    * @param p_timestamp the <code><big>TIMESTAMP</big></code> value to convert
+    *
+    * @return the Java millsecond value equivalent of the input
+    */
+   FUNCTION to_micros (p_timestamp IN timestamp)
+      RETURN NUMBER;
+   /**
+    * Genrates the Java microsecond value for the current time. The Java microsecond
+    * value specifies the number of microseconds since the beginning of the UNIX epoch
+    * (01 Jan 1970 00:00:00 UTC)
+    *
+    * @return the Java millsecond value representing the current time
+    */
+   FUNCTION current_micros
+      RETURN NUMBER;
+   /**
     * Outputs a test string verifying that the call succeeded. Uses <code><big>dbms_output.put_line</big></code>
     * to output the test string
     */             
@@ -1800,8 +1820,8 @@ AS
       p_value in binary_double)
       return varchar2;
 
-
-
+      
+      
 END cwms_util;
 /
 
