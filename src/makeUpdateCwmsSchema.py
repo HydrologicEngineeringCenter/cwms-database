@@ -23,6 +23,7 @@ updates  = [
 	['package body', 'cwms_alarm'],
 	['package spec', 'cwms_schema'],
 	['package body', 'cwms_level'],
+	['package spec', 'cwms_msg'],
 	['package body', 'cwms_msg'],
 	['type', 'rating_t'],
 	['type body', 'rating_t'],
