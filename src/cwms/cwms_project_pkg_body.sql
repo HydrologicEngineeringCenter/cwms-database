@@ -681,7 +681,7 @@ begin
    l_text_msg := replace(l_text_msg, '$application', lower(p_application_id));
    l_text_msg := replace(l_text_msg, '$user',        cwms_util.get_user_id);    
    l_id := cwms_msg.publish_message(l_text_msg, l_queue_name, true);
-   return cwms_util.to_millis(systimestamp);
+   return cwms_util.to_millis(systimestamp at time zone 'UTC');
 end publish_status_update;         
 
 function request_lock(
@@ -1014,7 +1014,7 @@ begin
    ---------------------------------
    l_office_id   := cwms_util.get_db_office_id(p_office_id);
    l_queue_name  := l_office_id||'_'||'STATUS';
-   l_start_time  := sysdate;
+   l_start_time  := cast(systimestamp at time zone 'UTC' as date);
    l_end_time    := l_start_time + p_revoke_timeout / 86400;
    l_text_msg := '
       <cwms_message type="RequestAction">
@@ -1069,7 +1069,7 @@ begin
          l_msg.clean(l_id);
       end loop;
       l_released := is_locked(p_project_id, p_application_id, l_office_id) = 'F';
-      exit when l_denied or l_released or sysdate >= l_end_time;
+      exit when l_denied or l_released or cast(systimestamp at time zone 'UTC' as date) >= l_end_time;
       dbms_lock.sleep(1);
    end loop;  
    dbms_aqadm.remove_subscriber(
