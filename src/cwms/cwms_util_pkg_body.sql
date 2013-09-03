@@ -1887,27 +1887,28 @@ AS
                          p_office_id       IN VARCHAR2 DEFAULT NULL)
       RETURN VARCHAR2
    IS              
-      l_unit_id       VARCHAR2 (16);
+      l_unit_id_in    VARCHAR2 (16) := parse_unit(p_unit_or_alias);
+      l_unit_id_out   VARCHAR2 (16);
       l_office_code   NUMBER (10) := get_db_office_code (p_office_id);
    BEGIN
       BEGIN
          SELECT unit_id
-           INTO l_unit_id
+           INTO l_unit_id_out
            FROM cwms_unit
-          WHERE unit_id = p_unit_or_alias;
+          WHERE unit_id = l_unit_id_in;
       EXCEPTION
          WHEN NO_DATA_FOUND
          THEN
             NULL;
       END;
 
-      IF l_unit_id IS NULL
+      IF l_unit_id_out IS NULL
       THEN
          BEGIN
             SELECT u.unit_id
-              INTO l_unit_id
+              INTO l_unit_id_out
               FROM at_unit_alias ua, cwms_unit u
-             WHERE ua.alias_id = p_unit_or_alias
+             WHERE ua.alias_id = l_unit_id_in
                    AND ua.db_office_code IN
                           (db_office_code_all, l_office_code)
                    AND u.unit_code = ua.unit_code;
@@ -1918,13 +1919,13 @@ AS
          END;
       END IF;
 
-      IF l_unit_id IS NULL
+      IF l_unit_id_out IS NULL
       THEN
          BEGIN
             SELECT unit_id
-              INTO l_unit_id
+              INTO l_unit_id_out
               FROM cwms_unit
-             WHERE UPPER (unit_id) = (p_unit_or_alias);
+             WHERE UPPER (unit_id) = (l_unit_id_in);
          EXCEPTION
             WHEN OTHERS
             THEN
@@ -1932,13 +1933,13 @@ AS
          END;
       END IF;
 
-      IF l_unit_id IS NULL
+      IF l_unit_id_out IS NULL
       THEN
          BEGIN
             SELECT u.unit_id
-              INTO l_unit_id
+              INTO l_unit_id_out
               FROM at_unit_alias ua, cwms_unit u
-             WHERE UPPER (ua.alias_id) = UPPER (p_unit_or_alias)
+             WHERE UPPER (ua.alias_id) = UPPER (l_unit_id_in)
                    AND ua.db_office_code IN
                           (db_office_code_all, l_office_code)
                    AND u.unit_code = ua.unit_code;
@@ -1949,7 +1950,7 @@ AS
          END;
       END IF;
 
-      RETURN l_unit_id;
+      RETURN l_unit_id_out;
    END get_unit_id;
 
    FUNCTION get_unit_id2 (p_unit_code IN VARCHAR2)
@@ -3926,6 +3927,66 @@ AS
    BEGIN
       RETURN CASE l_is_nan WHEN TRUE THEN 'T' ELSE 'F' END;
    END is_nan;
+
+      
+   function parse_unit_spec(
+      p_unit_spec in varchar2,
+      p_key       in varchar2)
+      return varchar2
+   is
+      l_parts1 str_tab_t;
+      l_parts2 str_tab_t;
+      l_parsed varchar2(16);
+      l_key    varchar2(1) := upper(trim(p_key));
+   begin
+      l_parts1 := split_text(p_unit_spec, '|');
+      for i in 1..l_parts1.count loop
+         l_parts2 := split_text(trim(l_parts1(i)), '=');
+         if l_parts2.count = 2 and upper(trim(l_parts2(1))) = l_key then
+            l_parsed := trim(l_parts2(2));
+            exit;
+         end if;
+      end loop;
+      return l_parsed;
+   end parse_unit_spec;
+   
+   function parse_unit(
+      p_unit_spec in varchar2)
+      return varchar2
+   is
+   begin
+      if instr(p_unit_spec, '=') > 0 then
+         return parse_unit_spec(p_unit_spec, 'U');
+      else
+         return p_unit_spec;
+      end if;
+   end parse_unit;
+
+   function parse_vertical_datum(
+      p_unit_spec in varchar2)
+      return varchar2
+   is
+   begin
+      return parse_unit_spec(p_unit_spec, 'V');
+   end parse_vertical_datum;
+   
+   function get_effective_vertical_datum(
+      p_unit_spec in varchar2)
+      return varchar2
+   is
+      l_vertical_datum varchar2(16);
+   begin
+      l_vertical_datum := parse_vertical_datum(p_unit_spec);
+      if l_vertical_datum is null then
+         l_vertical_datum := cwms_loc.get_default_vertical_datum;
+      end if;
+      l_vertical_datum := upper(trim(l_vertical_datum));
+      if l_vertical_datum = 'NULL' then
+         l_vertical_datum := null;
+      end if;
+      return l_vertical_datum;
+   end get_effective_vertical_datum;
+   
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call

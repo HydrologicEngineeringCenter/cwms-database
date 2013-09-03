@@ -1,4 +1,5 @@
 /* Formatted on 7/29/2011 11:54:36 AM (QP5 v5.163.1008.3004) */
+set define off
 CREATE OR REPLACE PACKAGE cwms_loc
 /**
  * Facilities for working with locations in the CWMS database
@@ -1592,42 +1593,26 @@ AS
       p_match_effective_date in varchar2 default 'T',
       p_office_id            in varchar2 default null);
    /**
-    * Retrieves a vertical datum offset value in meters from the database for a location
-    *
-    * @since CWMS 2.2
-    *
-    * @param p_location_code       The numeric code that refers to the location the offset applies to
-    * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
-    * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
-    * @param p_datetime_utc        The date of applicability of the offset. The offset returned will be the one having the latest effective date on or before this parameter.
-    * 
-    * @return The offset in meters that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
-    */
-   function get_vertical_datum_offset(
-      p_location_code       in number,
-      p_vertical_datum_id_1 in varchar2,   
-      p_vertical_datum_id_2 in varchar2,
-      p_datetime_utc        in date)
-      return binary_double; 
-   /**
     * Retrieves a vertical datum offset value in meters and effective date in UTC from the database for a location
     *
     * @since CWMS 2.2
     *
     * @param p_offset              The offset in meters that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
     * @param p_effective_date      The effective date of the offset
+    * @param p_estimate            A flag (T/F) specifying whether the returned offset is an estimate
     * @param p_location_code       The numeric code that refers to the location the offset applies to
     * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
     * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
-    * @param p_datetime_utc        The date of applicability of the offset. The offset returned will be the one having the latest effective date on or before this parameter.
+    * @param p_datetime_utc        The date of applicability of the offset. The offset returned will be the one having the latest effective date on or before this parameter. If not specified, the current time is used.
     */
    procedure get_vertical_datum_offset(   
       p_offset              out binary_double, 
       p_effective_date      out date,
+      p_estimate            out varchar2,
       p_location_code       in  number,
       p_vertical_datum_id_1 in  varchar2,   
       p_vertical_datum_id_2 in  varchar2,
-      p_datetime_utc        in  date); 
+      p_datetime_utc        in  date default sysdate); 
    /**
     * Retrieves a collection vertical datum offset values in meters and effective dates in UTC from the database for a location and time window
     *
@@ -1676,6 +1661,27 @@ AS
     *
     * @since CWMS 2.2
     *
+    * @param p_location_id         The unique numeric code of the location the offset applies to
+    * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
+    * @param p_datetime_utc        The date of applicability of the offset. The offset returned will be the one having the latest effective date on or before this parameter.
+    *                              If not specified, the current date and time will be used.
+    * @param p_unit                The unit to retrieve the offset in.  If not specified or NULL, the offset will be returned in meters.
+    * 
+    * @return The offset in the specified unit that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
+    */
+   function get_vertical_datum_offset(
+      p_location_code       in number,
+      p_vertical_datum_id_1 in varchar2,   
+      p_vertical_datum_id_2 in varchar2, 
+      p_datetime_utc        in date     default sysdate,
+      p_unit                in varchar2 default null)
+      return binary_double;   
+   /**
+    * Retrieves a vertical datum offset value in a specified unit from the database for a location
+    *
+    * @since CWMS 2.2
+    *
     * @param p_location_id         The text name of the location the offset applies to
     * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
     * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
@@ -1703,6 +1709,7 @@ AS
     *
     * @param p_offset              The offset in the specified unit that must be ADDED to an elevation WRT to the first vertical datum to generate an elevation WRT to the second veritcal datum
     * @param p_effecive_date       The effective date of the offset in the time time zone specified or indicated by p_time_zone
+    * @param p_estimate            A flag (T/F) specifying whether the returned offset is an estimate
     * @param p_location_id         The text name of the location the offset applies to
     * @param p_vertical_datum_id_1 The first vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
     * @param p_vertical_datum_id_2 The second vertical datum. Must be one of 'NGVD29', 'NAVD88', 'LOCAL' or 'STAGE'
@@ -1716,6 +1723,7 @@ AS
    procedure get_vertical_datum_offset(
       p_offset              out binary_double,  
       p_effective_date      out date,
+      p_estimate            out varchar2,
       p_location_id         in  varchar,
       p_vertical_datum_id_1 in  varchar2,   
       p_vertical_datum_id_2 in  varchar2,
@@ -1778,6 +1786,366 @@ AS
       p_time_zone           in  varchar2 default null,
       p_unit                in  varchar2 default null,
       p_office_id           in  varchar2 default null);
+   
+   /**
+    * Sets the default vertical datum for the current session. The default vertical datum is the datum in which all queried elevations
+    * are reported and in which all specified elevations are intepreted. If the default vertical datum is NULL, all queried elevations are
+    * reported - and all specified elvations are interpreted - in the identified vertical datum of their associated location.
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_vertical_datum The default vertical datum for the session.  Must be one of NULL, 'NGVD29', 'NAVD88', or 'LOCAL'.
+    *
+    * @see get_default_vertical_datum
+    * @see get_default_vertical_datum_f
+    */
+   procedure set_default_vertical_datum(
+      p_vertical_datum in varchar2);
+      
+   /**
+    * Retrieves the default vertical datum for the current session. The default vertical datum is the datum in which all queried elevations
+    * are reported and in which all specified elevations are intepreted. If the default vertical datum is NULL, all queried elevations are
+    * reported - and all specified elvations are interpreted - in the identified vertical datum of their associated location.
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_vertical_datum The default vertical datum for the session.  Will be one of NULL, 'NGVD29', 'NAVD88', or 'LOCAL'.
+    *
+    * @see set_default_vertical_datum
+    * @see get_default_vertical_datum_f
+    */
+   procedure get_default_vertical_datum(
+      p_vertical_datum out varchar2);
+      
+   /**
+    * Retrieves the default vertical datum for the current session. The default vertical datum is the datum in which all queried elevations
+    * are reported and in which all specified elevations are intepreted. If the default vertical datum is NULL, all queried elevations are
+    * reported - and all specified elvations are interpreted - in the identified vertical datum of their associated location.
+    *
+    * @since CWMS 2.2
+    *
+    * @return The default vertical datum for the session.  Will be one of NULL, 'NGVD29', 'NAVD88', or 'LOCAL'.
+    *
+    * @see set_default_vertical_datum
+    * @see get_default_vertical_datum
+    */
+   function get_default_vertical_datum
+      return varchar2;
+   /**
+    * Retreives the identified vertical datum for the specified location.  If no vertical datum is identified for a sub-location, the vertical datum identified for its base location is returned, if any.
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_vertical_datum The identified vertical datum for the location
+    * @param p_location_code  The unique numeric code for the location
+    */
+   procedure get_location_vertical_datum(
+      p_vertical_datum out varchar2,
+      p_location_code  in  number);
+   /**
+    * Retreives the identified vertical datum for the specified location.  If no vertical datum is identified for a sub-location, the vertical datum identified for its base location is returned, if any.
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_vertical_datum The identified vertical datum for the location
+    * @param p_location_id  The text identifier for the location
+    * @param p_office_id    The text identifier of the office that owns the location. If not specified or NULL, the session user's default office is used.
+    */
+   procedure get_location_vertical_datum(
+      p_vertical_datum out varchar2,
+      p_location_id    in  varchar2,
+      p_office_id      in  varchar2 default null);
+   /**
+    * Returns the identified vertical datum for the specified location.  If no vertical datum is identified for a sub-location, the vertical datum identified for its base location is returned, if any.
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_location_code  The unique numeric code for the location
+    * @return The identified vertical datum for the location
+    */
+   function get_location_vertical_datum(
+      p_location_code in number)
+      return varchar2;
+   /**
+    * Returns the identified vertical datum for the specified location.  If no vertical datum is identified for a sub-location, the vertical datum identified for its base location is returned, if any.
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_location_id  The text identifier for the location
+    * @param p_office_id    The text identifier of the office that owns the location. If not specified or NULL, the session user's default office is used.
+    * @return The identified vertical datum for the location
+    */
+   function get_location_vertical_datum(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2;
+   /**
+    * Returns the elevation offset (in the specified unit) that must be ADDED to an elevation WRT the specified location's identified datum to generate an elavation WRT to the effective vertical datum.
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_location_code The unique numeric code for the location
+    * @param p_unit_spec     The unit specifier that may have a vertical datum encoded to override the default vertical datum for the session.
+    * @return the elevation offset in the specified unit that must be ADDED to an elevation WRT the specified location's identified datum to generate an elavation WRT to the effective vertical datum.
+    * @see cwms_util.parse_unit
+    */
+   function get_vertical_datum_offset(
+      p_location_code in number,
+      p_unit          in varchar2)
+      return binary_double;
+   /**
+    * Returns the elevation offset (in the specified unit ) that must be ADDED to an elevation WRT the specified location's identified datum to generate an elavation WRT to the effective vertical datum.
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_location_id The text identifier for the location
+    * @param p_unit_spec   The unit specifier that may have a vertical datum encoded to override the default vertical datum for the session.
+    * @param p_office_id   The office that owns the location. If not specified or NULL, the current session user's default office is used.
+    * @return the elevation offsetin the specified unit  that must be ADDED to an elevation WRT the specified location's identified datum to generate an elavation WRT to the effective vertical datum. 
+    * @see cwms_util.parse_unit
+    */
+   function get_vertical_datum_offset(
+      p_location_id   in varchar2,
+      p_unit          in varchar2,
+      p_office_id     in varchar2 default null)
+      return binary_double;
+   /**
+    * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
+    *
+    * @param p_vert_datum_info The XML-encoded vertical datum information string
+    * @param p_location_code   The unique numeric code identifying the location
+    * @param p_unit            The unit to return the elevation and elevation offsets in
+    */
+   procedure get_vertical_datum_info(
+      p_vert_datum_info out varchar2,
+      p_location_code   in  number,
+      p_unit            in  varchar2);
+   /**
+    * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location or locations
+    *
+    * @param p_vert_datum_info The XML-encoded vertical datum information string. If p_location_id is a recordset the XML root element will be
+    * <code><big>&lt;vertical-datum-info-set&gt;</big></code> and will contain one <code><big>&lt;vertical-datum-info&gt;</big></code> element for each location:
+    * <pre><big>&lt;vertical-datum-info-set&gt;
+    *   &lt;vertical-datum-info office="SWT" unit="ft"&gt;
+    *     &lt;location&gt;PENS&lt;/location&gt;
+    *     &lt;native-datum&gt;LOCAL&lt;/native-datum&gt;
+    *     &lt;elevation/&gt;
+    *     &lt;offset estimate="true"&gt;
+    *       &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *       &lt;value&gt;1.457&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *     &lt;offset estimate="false"&gt;
+    *       &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *       &lt;value&gt;1.07&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *   &lt;/vertical-datum-info&gt;
+    *   &lt;vertical-datum-info office="SWT" unit="ft"&gt;
+    *     &lt;location&gt;KEYS&lt;/location&gt;
+    *     &lt;native-datum&gt;NGVD29&lt;/native-datum&gt;
+    *     &lt;elevation/&gt;
+    *     &lt;offset estimate="true"&gt;
+    *       &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *       &lt;value&gt;.362&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *   &lt;/vertical-datum-info&gt;
+    * &lt;/vertical-datum-info-set&gt;</big></pre>
+    * If p_location_id is a single location, the XML root element will be <code><big>&lt;vertical-datum-info&gt;</big></code> and will not contain an <code><big>office</big></code>
+    * attribute or a <code><big>&lt;location&gt;</big></code> child element:
+    * <pre><big>&lt;vertical-datum-info unit="ft"&gt;
+    *   &lt;native-datum&gt;LOCAL&lt;/native-datum&gt;
+    *   &lt;elevation/&gt;
+    *   &lt;offset estimate="true"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.457&lt;/value&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.07&lt;/value&gt;
+    *   &lt;/offset&gt;
+    * &lt;/vertical-datum-info&gt;</big></pre>
+    * @param p_location_id     The text name the location or a recordset of location names. If a recordset is used, it may be a single record with
+    *                          multiple fields, multiple records each with a single field, or multiple records with multiple fields.
+    * @param p_unit            The unit to return the elevation and elevation offsets in
+    * @param p_office_id       The office that owns the location. If not specified or NULL, the session user's default office is used. If p_location_id
+    *                          is a recordset, this parameter may be, but is not required to be, a recordset. If this parameter is not a recordset then
+    *                          the one (specified or implied) office applies to all locations.  If this parameter is a recordset, it must have the same 
+    *                          number of records as p_location_id. Each record may have a single office, which applies to every location on the same record
+    *                          in p_location_id, or it may have one field for each field in the same record of p_location_id.
+    * @see cwms_util.parse_string_recordset
+    */
+   procedure get_vertical_datum_info(
+      p_vert_datum_info out varchar2,
+      p_location_id     in  varchar2,
+      p_unit            in  varchar2,
+      p_office_id       in  varchar2 default null);
+   /**
+    * Returns a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
+    *
+    * @param p_location_code The unique numeric code identifying the location
+    * @param p_unit          The unit to return the elevation and elevation offsets in
+    *
+    * @return The XML-encoded vertical datum information string
+    */
+   function get_vertical_datum_info_f(
+      p_location_code in number,
+      p_unit          in varchar2)
+      return varchar2;
+   /**
+    * Returns a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
+    *
+    * @param p_location_id     The text name the location or a recordset of location names. If a recordset is used, it may be a single record with
+    *                          multiple fields, multiple records each with a single field, or multiple records with multiple fields.
+    * @param p_unit            The unit to return the elevation and elevation offsets in
+    * @param p_office_id       The office that owns the location. If not specified or NULL, the session user's default office is used. If p_location_id
+    *                          is a recordset, this parameter may be, but is not required to be, a recordset. If this parameter is not a recordset then
+    *                          the one (specified or implied) office applies to all locations.  If this parameter is a recordset, it must have the same 
+    *                          number of records as p_location_id. Each record may have a single office, which applies to every location on the same record
+    *                          in p_location_id, or it may have one field for each field in the same record of p_location_id.
+    *
+    * @return The XML-encoded vertical datum information string. If p_location_id is a recordset the XML root element will be
+    * <code><big>&lt;vertical-datum-info-set&gt;</big></code> and will contain one <code><big>&lt;vertical-datum-info&gt;</big></code> element for each location:
+    * <pre><big>&lt;vertical-datum-info-set&gt;
+    *   &lt;vertical-datum-info office="SWT" unit="ft"&gt;
+    *     &lt;location&gt;PENS&lt;/location&gt;
+    *     &lt;native-datum&gt;LOCAL&lt;/native-datum&gt;
+    *     &lt;elevation/&gt;
+    *     &lt;offset estimate="true"&gt;
+    *       &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *       &lt;value&gt;1.457&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *     &lt;offset estimate="false"&gt;
+    *       &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *       &lt;value&gt;1.07&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *   &lt;/vertical-datum-info&gt;
+    *   &lt;vertical-datum-info office="SWT" unit="ft"&gt;
+    *     &lt;location&gt;KEYS&lt;/location&gt;
+    *     &lt;native-datum&gt;NGVD29&lt;/native-datum&gt;
+    *     &lt;elevation/&gt;
+    *     &lt;offset estimate="true"&gt;
+    *       &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *       &lt;value&gt;.362&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *   &lt;/vertical-datum-info&gt;
+    * &lt;/vertical-datum-info-set&gt;</big></pre>
+    * If p_location_id is a single location, the XML root element will be <code><big>&lt;vertical-datum-info&gt;</big></code> and will not contain an <code><big>office</big></code>
+    * attribute or a <code><big>&lt;location&gt;</big></code> child element:
+    * <pre><big>&lt;vertical-datum-info unit="ft"&gt;
+    *   &lt;native-datum&gt;LOCAL&lt;/native-datum&gt;
+    *   &lt;elevation/&gt;
+    *   &lt;offset estimate="true"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.457&lt;/value&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.07&lt;/value&gt;
+    *   &lt;/offset&gt;
+    * &lt;/vertical-datum-info&gt;</big></pre>
+    * @see cwms_util.parse_string_recordset
+    */
+   function get_vertical_datum_info_f(
+      p_location_id in varchar2,
+      p_unit        in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2;                       
+   /**
+    * Sets vertical datum info for one or more locations
+    *
+    * @param p_vert_datum_info A multiple location XML snippet as described in get_vertical_datum_info (root element = <code><big>&lt;vertical-datum-info-set&gt;</big></code>).
+    *                          The XML root element may have one or more <code><big>&lt;vertical-datum-info&gt;</big></code> child elements, each of which must include an
+    *                          <code><big>office</big></code> attribute and <code><big>&lt;location&gt;</big></code> child element.
+    * <pre><big>&lt;vertical-datum-info-set&gt;
+    *   &lt;vertical-datum-info office="SWT" unit="ft"&gt;
+    *     &lt;location&gt;PENS&lt;/location&gt;
+    *     &lt;native-datum&gt;LOCAL&lt;/native-datum&gt;
+    *     &lt;elevation/&gt;
+    *     &lt;offset estimate="true"&gt;
+    *       &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *       &lt;value&gt;1.457&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *     &lt;offset estimate="false"&gt;
+    *       &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *       &lt;value&gt;1.07&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *   &lt;/vertical-datum-info&gt;
+    *   &lt;vertical-datum-info office="SWT" unit="ft"&gt;
+    *     &lt;location&gt;KEYS&lt;/location&gt;
+    *     &lt;native-datum&gt;NGVD29&lt;/native-datum&gt;
+    *     &lt;elevation/&gt;
+    *     &lt;offset estimate="true"&gt;
+    *       &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *       &lt;value&gt;.362&lt;/value&gt;
+    *     &lt;/offset&gt;
+    *   &lt;/vertical-datum-info&gt;
+    * &lt;/vertical-datum-info-set&gt;</big></pre>
+    * This procedure will not update a location's existing native vertical datum nor its existing elevation and will fail if either are specified and do not match the current values in the database.
+    * However, If either of these items are not set in the database they will be initialized from the XML values.  
+    * @param p_fail_if_exists  A flag ('T'/'F') specifying whether the procedure should fail if any of the specified vertical datum info (except native datum and elevation) already exists
+    */
+   procedure set_vertical_datum_info(
+      p_vert_datum_info in varchar2,
+      p_fail_if_exists  in varchar2);     
+   /**
+    * Sets vertical datum information for a specified location
+    *
+    * @param p_location_code   The unique number identifying the location
+    * @param p_vert_datum_info An single location XML snippet as described in get_vertical_datum_info (root element = <code><big>&lt;vertical-datum-info&gt;</big></code>).
+    *                          The <code><big>office</big></code> attribute and <code><big>&lt;location&gt;</big></code> child element are not required. If they exist, they must match the 
+    *                          location specified in p_location_code
+    * <pre><big>&lt;vertical-datum-info unit="ft"&gt;
+    *   &lt;native-datum&gt;LOCAL&lt;/native-datum&gt;
+    *   &lt;elevation/&gt;
+    *   &lt;offset estimate="true"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.457&lt;/value&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.07&lt;/value&gt;
+    *   &lt;/offset&gt;
+    * &lt;/vertical-datum-info&gt;</big></pre>
+    * This procedure will not update a location's existing native vertical datum nor its existing elevation and will fail if either are specified and do not match the current values in the database.
+    * However, If either of these items are not set in the database they will be initialized from the XML values.  
+    * @param p_fail_if_exists  A flag ('T'/'F') specifying whether the procedure should fail if any of the specified vertical datum info (except native datum and elevation) already exists
+    *
+    * @see get_vertical_datum_info
+    */
+   procedure set_vertical_datum_info(
+      p_location_code   in number,
+      p_vert_datum_info in varchar2,
+      p_fail_if_exists  in varchar2);     
+   /**
+    * Sets vertical datum information for a specified location
+    *
+    * @param p_location_id   The text name of the location
+    * @param p_vert_datum_info A single location XML snippet as described in get_vertical_datum_info (root element = <code><big>&lt;vertical-datum-info&gt;</big></code>).
+    *                          The <code><big>office</big></code> attribute and <code><big>&lt;location&gt;</big></code> child element are not required. If they exist, they must match the 
+    *                          location specified in p_location_id and p_office_id
+    * <pre><big>&lt;vertical-datum-info unit="ft"&gt;
+    *   &lt;native-datum&gt;LOCAL&lt;/native-datum&gt;
+    *   &lt;elevation/&gt;
+    *   &lt;offset estimate="true"&gt;
+    *     &lt;to-datum&gt;NAVD88&lt;/to-datum&gt;
+    *     &lt;value&gt;1.457&lt;/value&gt;
+    *   &lt;/offset&gt;
+    *   &lt;offset estimate="false"&gt;
+    *     &lt;to-datum&gt;NGVD29&lt;/to-datum&gt;
+    *     &lt;value&gt;1.07&lt;/value&gt;
+    *   &lt;/offset&gt;
+    * &lt;/vertical-datum-info&gt;</big></pre>
+    * This procedure will not update a location's existing native vertical datum nor its existing elevation and will fail if either are specified and do not match the current values in the database.
+    * However, If either of these items are not set in the database they will be initialized from the XML values.  
+    * @param p_fail_if_exists  A flag ('T'/'F') specifying whether the procedure should fail if any of the specified vertical datum info (except native datum and elevation) already exists
+    * @param p_office_id       The office that owns the location.  If unspecified or NULL, the session user's default location will be used.
+    *
+    * @see get_vertical_datum_info
+    */
+   procedure set_vertical_datum_info(
+      p_location_id     in varchar2,
+      p_vert_datum_info in varchar2,
+      p_fail_if_exists  in varchar2,     
+      p_office_id       in varchar2 default null);     
       
 END cwms_loc;
 /

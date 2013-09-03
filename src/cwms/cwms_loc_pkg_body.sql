@@ -400,8 +400,8 @@ AS
 			SELECT	p_orig_value * factor + offset
 			  INTO	l_return_value
 			  FROM	cwms_unit_conversion
-			 WHERE	from_unit_id = p_from_unit_name
-						AND to_unit_id = p_to_unit_name;
+			 WHERE	from_unit_id = cwms_util.get_unit_id(p_from_unit_name)
+						AND to_unit_id = cwms_util.get_unit_id(p_to_unit_name);
 
 			RETURN l_return_value;
 		--
@@ -426,7 +426,7 @@ AS
 	--********************************************************************** -
 	--********************************************************************** -
 	--
-	-- get_unit_code returns zone_code
+	-- get_unit_code
 	--
 	------------------------------------------------------------------------------*/
 	FUNCTION get_unit_code (unitname 			  IN VARCHAR2,
@@ -439,7 +439,7 @@ AS
 		SELECT	unit_code
 		  INTO	l_unit_code
 		  FROM	cwms_unit
-		 WHERE	UPPER (unit_id) = UPPER (unitname)
+		 WHERE	UPPER (unit_id) = UPPER (cwms_util.get_unit_id(unitname))
 					AND abstract_param_code =
 							 (SELECT   abstract_param_code
 								 FROM   cwms_abstract_parameter
@@ -2414,16 +2414,6 @@ AS
 		p_db_office_id 	IN VARCHAR2 DEFAULT NULL
 	)
 	IS
-		TYPE cat_loc_lvl_rec_t IS RECORD
-		(
-			office_id				 VARCHAR2 (16),
-			location_level_id 	 VARCHAR2 (390),
-			attribute_id			 VARCHAR2 (83),
-			attribute_value		 BINARY_DOUBLE,
-			attribute_unit 		 VARCHAR2 (16),
-			location_level_date	 DATE
-		);
-
 		l_count					  NUMBER;
 		l_base_location_id	  at_base_location.base_location_id%TYPE;
 		--
@@ -2443,7 +2433,6 @@ AS
 		--
 		l_location_codes		  number_tab_t;
 		l_location_ids 		  str_tab_t;
-		cat_loc_lvl_rec		  cat_loc_lvl_rec_t;
 	--
 	BEGIN
 		-------------------
@@ -6454,53 +6443,110 @@ AS
       p_office_id           in varchar2 default null)
    is
       l_rowid          urowid;
-      l_fail_if_exists boolean := cwms_util.is_true(p_fail_if_exists); 
+      l_fail_if_exists boolean := cwms_util.is_true(p_fail_if_exists);
+      l_effective_date date := p_effective_date; 
       l_time_zone      varchar2(28) := nvl(p_time_zone, cwms_loc.get_local_timezone(p_location_id, p_office_id));
-   begin
+      l_reversed       boolean := false;
+      l_delete         boolean := false;
+      l_insert         boolean := false;
+      l_update         boolean := false;
+   begin               
+      ---------------------------
+      -- normalize cookie date --
+      ---------------------------
+      if abs(l_effective_date - date '1000-01-01') < 1 then
+         l_effective_date := date '1000-01-01';
+         l_time_zone := 'UTC';
+      end if;               
+      -------------------------------------------------
+      -- get the existing record if it already exits --
+      -------------------------------------------------
       l_rowid := get_vertical_datum_offset_row(
          p_location_id, 
          p_vertical_datum_id_1, 
          p_vertical_datum_id_2, 
-         p_effective_date, 
+         l_effective_date, 
          l_time_zone, 
          'T', 
          p_office_id);
-      if l_rowid is null then 
+      if l_rowid is null then
+         ------------------------------------------ 
+         -- get the reversed record if it exists --
+         ------------------------------------------ 
+         l_rowid := get_vertical_datum_offset_row(
+            p_location_id, 
+            p_vertical_datum_id_2, 
+            p_vertical_datum_id_1, 
+            l_effective_date, 
+            l_time_zone, 
+            'T', 
+            p_office_id);
+         l_reversed := l_rowid is not null;            
+      end if;
+      if l_rowid is null then
          --------------------------
          -- record doesn't exist --
          --------------------------
+         l_insert := true;
+      else
+         -------------------
+         -- record exists --
+         -------------------
+         if l_fail_if_exists then
+            if l_reversed then
+               cwms_err.raise(
+                  'ITEM_ALREADY_EXISTS',
+                  'CWMS Vertical Datum Offset',
+                  cwms_util.get_db_office_id(p_office_id)
+                  ||'/'||p_location_id
+                  ||'/'||upper(p_vertical_datum_id_2)
+                  ||'/'||upper(p_vertical_datum_id_1)
+                  ||'@'||to_char(l_effective_date, 'yyyy-mm-dd hh24:mi:ss')
+                  ||'('||l_time_zone
+                  ||')');
+            else
+               cwms_err.raise(
+                  'ITEM_ALREADY_EXISTS',
+                  'CWMS Vertical Datum Offset',
+                  cwms_util.get_db_office_id(p_office_id)
+                  ||'/'||p_location_id
+                  ||'/'||upper(p_vertical_datum_id_1)
+                  ||'/'||upper(p_vertical_datum_id_2)
+                  ||'@'||to_char(l_effective_date, 'yyyy-mm-dd hh24:mi:ss')
+                  ||'('||l_time_zone
+                  ||')');
+            end if;
+         end if;
+         if l_reversed then
+            l_delete := true;
+            l_insert := true;
+         else                
+            l_update := true;
+         end if;
+      end if;
+      if l_update then
+            update at_vert_datum_offset
+               set offset = cwms_util.convert_units(p_offset, p_unit, 'm'),
+                   description = p_description 
+             where rowid = l_rowid;
+      elsif l_insert then
+         if l_delete then
+            delete 
+              from at_vert_datum_offset
+             where rowid = l_rowid; 
+         end if;
          insert
            into at_vert_datum_offset
          values (cwms_loc.get_location_code(p_office_id, p_location_id),
                  upper(p_vertical_datum_id_1),
                  upper(p_vertical_datum_id_2),
                  cwms_util.change_timezone(
-                    p_effective_date, 
+                    l_effective_date, 
                     l_time_zone, 
                     'UTC'),
                  cwms_util.convert_units(p_offset, p_unit, 'm'),
                  p_description
                 );
-      else
-         -------------------
-         -- record exists --
-         -------------------
-         if l_fail_if_exists then
-            cwms_err.raise(
-               'ITEM_ALREADY_EXISTS',
-               'CWMS Vertical Datum Offset',
-               cwms_util.get_db_office_id(p_office_id)
-               ||'/'||p_location_id
-               ||'/'||upper(p_vertical_datum_id_1)
-               ||'/'||upper(p_vertical_datum_id_2)
-               ||'@'||to_char(p_effective_date, 'yyyy-mm-dd hh24:mi:ss')
-               ||'('||l_time_zone
-               ||')');
-         end if;
-         update at_vert_datum_offset
-            set offset = cwms_util.convert_units(p_offset, p_unit, 'm'),
-                description = p_description 
-          where rowid = l_rowid;
       end if;
     end store_vertical_datum_offset;
       
@@ -6705,54 +6751,36 @@ AS
                    
    end delete_vertical_datum_offset;
       
-   function get_vertical_datum_offset(
-      p_location_code       in number,
-      p_vertical_datum_id_1 in varchar2,   
-      p_vertical_datum_id_2 in varchar2,
-      p_datetime_utc        in date)
-      return binary_double
-   is
-      l_offset         binary_double;   
-      l_effective_date date;
-   begin
-      get_vertical_datum_offset(   
-         l_offset,
-         l_effective_date,
-         p_location_code,
-         p_vertical_datum_id_1,   
-         p_vertical_datum_id_2,
-         p_datetime_utc);
-      return l_offset;
-   end get_vertical_datum_offset;
-      
    procedure get_vertical_datum_offset(   
-      p_offset              out binary_double,
+      p_offset              out binary_double, 
       p_effective_date      out date,
+      p_estimate            out varchar2,
       p_location_code       in  number,
       p_vertical_datum_id_1 in  varchar2,   
       p_vertical_datum_id_2 in  varchar2,
-      p_datetime_utc        in  date)
+      p_datetime_utc        in  date default sysdate) 
    is       
       pragma autonomous_transaction; -- for inserting VERTCON offset estimate
       l_offset              binary_double;
       l_effective_date      date;
       l_vertical_datum_id_1 varchar2(16);
       l_vertical_datum_id_2 varchar2(16);
+      l_description         varchar2(64);
    begin
       -------------------
       -- sanity checks --
       -------------------
       if p_location_code is null then
-         cwms_err.raise('NULL_ARGUMENT', p_location_code);
+         cwms_err.raise('NULL_ARGUMENT', 'p_location_code');
       end if;
       if p_vertical_datum_id_1 is null then
-         cwms_err.raise('NULL_ARGUMENT', p_vertical_datum_id_1);
+         cwms_err.raise('NULL_ARGUMENT', 'p_vertical_datum_id_1');
       end if;
       if p_vertical_datum_id_2 is null then
-         cwms_err.raise('NULL_ARGUMENT', p_vertical_datum_id_2);
+         cwms_err.raise('NULL_ARGUMENT', 'p_vertical_datum_id_2');
       end if;
       if p_datetime_utc is null then
-         cwms_err.raise('NULL_ARGUMENT', p_datetime_utc); 
+         cwms_err.raise('NULL_ARGUMENT', 'p_datetime_utc'); 
       end if;
       -----------------
       -- do the work --
@@ -6768,13 +6796,34 @@ AS
       end if;
       if l_offset is null then
          begin     
+            -------------------------------------------------
+            -- generate a 29->88 estimate if it might help --
+            -------------------------------------------------
+            if (l_vertical_datum_id_1 in ('NGVD29', 'NAVD88')  or 
+                l_vertical_datum_id_2 in ('NGVD29', 'NAVD88')) and not
+               (l_vertical_datum_id_1 in ('NGVD29', 'NAVD88')  and 
+                l_vertical_datum_id_2 in ('NGVD29', 'NAVD88')) 
+            then
+               get_vertical_datum_offset(
+                  l_offset,
+                  l_effective_date,
+                  l_description,
+                  p_location_code,
+                  'NGVD29',
+                  'NAVD88');
+               l_offset := null;
+               l_effective_date := null;
+               l_description := null;               
+            end if;
             --------------------------------------
             -- search for the specified mapping --
             --------------------------------------
             select offset,
-                   effective_date
+                   effective_date,
+                   description
               into l_offset,
-                   l_effective_date
+                   l_effective_date,
+                   l_description
               from at_vert_datum_offset
              where location_code = p_location_code
                and vertical_datum_id_1 = l_vertical_datum_id_1  
@@ -6795,9 +6844,11 @@ AS
             ------------------------------------
             begin
                select offset,
-                      effective_date
+                      effective_date,
+                      description
                  into l_offset,
-                      l_effective_date
+                      l_effective_date,
+                      l_description
                  from at_vert_datum_offset
                 where location_code = p_location_code
                   and vertical_datum_id_1 = l_vertical_datum_id_2  
@@ -6823,7 +6874,8 @@ AS
             select v1.vertical_datum_id_1,
                    v1.vertical_datum_id_2,
                    v1.offset,
-                   v1.effective_date
+                   v1.effective_date,
+                   v1.description
               from at_vert_datum_offset v1
              where location_code = p_location_code
                and (v1.vertical_datum_id_1 = l_vertical_datum_id_1 or v1.vertical_datum_id_2 = l_vertical_datum_id_1)
@@ -6840,7 +6892,8 @@ AS
                select v2.vertical_datum_id_1,
                       v2.vertical_datum_id_2,
                       v2.offset,
-                      v2.effective_date
+                      v2.effective_date,
+                      v2.description
                  from at_vert_datum_offset v2
                 where location_code = p_location_code
                   and (v2.vertical_datum_id_1 = l_vertical_datum_id_2 or v2.vertical_datum_id_2 = l_vertical_datum_id_2)
@@ -6867,7 +6920,6 @@ AS
                         -- datum_1 ==> common; common ==> datum_2 --
                         --------------------------------------------
                         l_offset := rec_1.offset + rec_2.offset;
-                        l_effective_date := greatest(rec_1.effective_date, rec_2.effective_date);
                      end if; 
                   end if;
                elsif rec_1.vertical_datum_id_2 = l_vertical_datum_id_1 then
@@ -6889,6 +6941,11 @@ AS
                end if; 
                if l_offset is not null then
                   l_effective_date := greatest(rec_1.effective_date, rec_2.effective_date);
+                  if rec_1.description is not null and instr(upper(rec_1.description), 'ESTIMATE') > 0 then
+                     l_description := rec_1.description;
+                  else
+                     l_description := rec_2.description;
+                  end if;
                   exit;
                end if;
             end loop;
@@ -6917,6 +6974,7 @@ AS
                if l_lat is not null and l_lon is not null then
                   l_offset := get_vertcon_offset(l_lat, l_lon);
                   l_effective_date := date '1000-01-01';
+                  l_description := 'VERTCON ESTIMATE';
                   insert
                     into at_vert_datum_offset
                   values (p_location_code,
@@ -6924,7 +6982,7 @@ AS
                           'NAVD88',
                           l_effective_date,
                           l_offset,
-                          'VERTCON');
+                          l_description);
                   if l_vertical_datum_id_1 = 'NAVD88' then
                      l_offset := -l_offset;
                   end if;
@@ -6956,6 +7014,11 @@ AS
       end if;
       p_offset := l_offset;
       p_effective_date := l_effective_date;
+      if l_description is null or instr(upper(l_description), 'ESTIMATE') = 0 then
+         p_estimate := 'F';
+      else
+         p_estimate := 'T';
+      end if; 
    end get_vertical_datum_offset; 
       
    function get_vertical_datum_offsets(
@@ -6991,6 +7054,7 @@ AS
       l_offsets2       ztsv_array;
       l_offset         binary_double;
       l_effective_date date;
+      l_estimate       varchar2(1);
    begin
       -------------------
       -- sanity checks --
@@ -7013,6 +7077,7 @@ AS
             get_vertical_datum_offset(   
                l_offset, 
                l_effective_date,
+               l_estimate,
                p_location_code,
                p_vertical_datum_id_1,   
                p_vertical_datum_id_2,
@@ -7039,6 +7104,41 @@ AS
    end get_vertical_datum_offsets;        
 
    function get_vertical_datum_offset(
+      p_location_code       in number,
+      p_vertical_datum_id_1 in varchar2,   
+      p_vertical_datum_id_2 in varchar2, 
+      p_datetime_utc        in date     default sysdate,
+      p_unit                in varchar2 default null)
+      return binary_double
+   is
+      l_offset         binary_double;
+      l_effective_date date;  
+      l_estimate       varchar2(1);
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_location_code is null then
+         cwms_err.raise('NULL_ARGUMENT', p_location_code);
+      end if;
+      -----------------
+      -- do the work --
+      -----------------    
+      get_vertical_datum_offset(
+          p_offset              => l_offset,
+          p_effective_date      => l_effective_date,
+          p_estimate            => l_estimate,
+          p_location_code       => p_location_code,
+          p_vertical_datum_id_1 => p_vertical_datum_id_1,   
+          p_vertical_datum_id_2 => p_vertical_datum_id_2,
+          p_datetime_utc        => p_datetime_utc);
+      if p_unit is not null then
+         l_offset := cwms_util.convert_units(l_offset, 'm', p_unit);
+      end if;
+      return l_offset;
+   end get_vertical_datum_offset;   
+      
+   function get_vertical_datum_offset(
       p_location_id         in varchar,
       p_vertical_datum_id_1 in varchar2,   
       p_vertical_datum_id_2 in varchar2,
@@ -7049,11 +7149,13 @@ AS
       return binary_double
    is
       l_offset         binary_double;
-      l_effective_date date;
+      l_effective_date date;  
+      l_estimate       varchar2(1);
    begin
       get_vertical_datum_offset(
          l_offset,
          l_effective_date,
+         l_estimate,
          p_location_id,
          p_vertical_datum_id_1,   
          p_vertical_datum_id_2,
@@ -7067,6 +7169,7 @@ AS
    procedure get_vertical_datum_offset(
       p_offset              out binary_double,
       p_effective_date      out date,
+      p_estimate            out varchar2,
       p_location_id         in  varchar,
       p_vertical_datum_id_1 in  varchar2,   
       p_vertical_datum_id_2 in  varchar2,
@@ -7079,6 +7182,7 @@ AS
       l_timezone       varchar2(28);
       l_offset         binary_double;
       l_effective_date date;
+      l_estimate       varchar2(1);
    begin
       -------------------
       -- sanity checks --
@@ -7094,14 +7198,18 @@ AS
       get_vertical_datum_offset(
          l_offset,
          l_effective_date,
+         l_estimate,
          l_location_code,
          p_vertical_datum_id_1,   
          p_vertical_datum_id_2,
          nvl(cwms_util.change_timezone(p_datetime, l_timezone, 'UTC'), sysdate));
-      if p_unit is not null then
+      if p_unit is null then
+         p_offset := l_offset;
+      else
          p_offset := cwms_util.convert_units(l_offset, 'm', p_unit);
-      end if;
+      end if; 
       p_effective_date := cwms_util.change_timezone(l_effective_date, 'UTC', l_timezone);
+      p_estimate := l_estimate;
       
    end get_vertical_datum_offset;   
       
@@ -7173,6 +7281,535 @@ AS
          end loop;
       end if;         
    end get_vertical_datum_offsets;
+            
+   
+   procedure set_default_vertical_datum(
+      p_vertical_datum in varchar2)
+   is
+      l_vertical_datum varchar(16);
+   begin
+      if p_vertical_datum is null then
+         cwms_util.reset_session_info('VERTICAL DATUM');
+      else
+         select vertical_datum_id
+           into l_vertical_datum
+           from cwms_vertical_datum
+          where vertical_datum_id = upper(p_vertical_datum)
+            and vertical_datum_id <> 'STAGE';
+         cwms_util.set_session_info('VERTICAL DATUM', l_vertical_datum);            
+      end if;
+   exception
+      when no_data_found then
+         cwms_err.raise('INVALID_ITEM', p_vertical_datum, 'CWMS vertical datum');
+   end set_default_vertical_datum;
+      
+   procedure get_default_vertical_datum(
+      p_vertical_datum out varchar2)
+   is
+   begin
+      p_vertical_datum := get_default_vertical_datum;
+   end get_default_vertical_datum;
+      
+   function get_default_vertical_datum
+      return varchar2
+   is
+   begin
+      return cwms_util.get_session_info_txt('VERTICAL DATUM');
+   end get_default_vertical_datum;
+      
+   procedure get_location_vertical_datum(
+      p_vertical_datum out varchar2,
+      p_location_code  in  number)
+   is
+      l_vertical_datum     varchar2(16);
+      l_base_location_code number(10);
+   begin
+      select base_location_code, 
+             vertical_datum
+        into l_base_location_code,
+             l_vertical_datum
+        from at_physical_location
+       where location_code = p_location_code;
+      if l_vertical_datum is null and l_base_location_code != p_location_code then
+         select base_location_code, 
+                vertical_datum
+           into l_base_location_code,
+                l_vertical_datum
+           from at_physical_location
+          where location_code = l_base_location_code;
+      end if;
+      p_vertical_datum := l_vertical_datum;
+   end get_location_vertical_datum;
+      
+   procedure get_location_vertical_datum(
+      p_vertical_datum out varchar2,
+      p_location_id    in  varchar2,
+      p_office_id      in  varchar2 default null)
+   is
+   begin
+      get_location_vertical_datum(
+         p_vertical_datum,
+         get_location_code(p_office_id, p_location_id));
+   end get_location_vertical_datum;
+      
+   function get_location_vertical_datum(
+      p_location_code in number)
+      return varchar2
+   is
+      l_vertical_datum varchar2(16);
+   begin
+      get_location_vertical_datum(l_vertical_datum, p_location_code);
+      return l_vertical_datum;
+   end get_location_vertical_datum;
+      
+   function get_location_vertical_datum(
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2
+   is
+      l_vertical_datum varchar2(16);
+   begin
+      get_location_vertical_datum(l_vertical_datum, p_location_id, p_office_id);
+      return l_vertical_datum;
+   end get_location_vertical_datum;
+
+   function get_vertical_datum_offset(
+      p_location_code in number,
+      p_unit          in varchar2)
+      return binary_double
+   is
+      l_location_datum  varchar2(16);
+      l_effective_datum varchar2(16);
+      l_datum_offset    binary_double;
+   begin
+      l_location_datum  := get_location_vertical_datum(p_location_code);
+      l_effective_datum := cwms_util.get_effective_vertical_datum(p_unit);
+      case
+         when l_effective_datum is null or l_location_datum = l_effective_datum then
+            l_datum_offset := 0;
+         when l_location_datum is null then
+            cwms_err.raise('ERROR', 'Cannot convert between NULL and non-NULL vertical datums');
+         else 
+            l_datum_offset := get_vertical_datum_offset(
+                 p_location_code, 
+                 l_location_datum, 
+                 l_effective_datum,
+                 sysdate,
+                 p_unit);
+      end case;
+      return l_datum_offset;
+   end get_vertical_datum_offset;
+
+   function get_vertical_datum_offset(
+      p_location_id  in varchar2,
+      p_unit         in varchar2,
+      p_office_id    in varchar2 default null)
+      return binary_double
+   is
+   begin
+      return get_vertical_datum_offset(
+         get_location_code(p_office_id, p_location_id),
+         p_unit);
+   end get_vertical_datum_offset;
+            
+   
+   procedure get_vertical_datum_info(
+      p_vert_datum_info out varchar2,
+      p_location_code   in  number,
+      p_unit            in  varchar2)
+   is   
+      l_location_id     varchar2(49);
+      l_office_id       varchar2(16);
+      l_elevation       number;
+      l_unit            varchar2(16);
+      l_vert_datum_info varchar2(4000);
+      l_native_datum    varchar2(16);
+      l_datum_offset    binary_double;
+      l_effective_date  date;
+      l_estimate        varchar2(1); 
+      l_rounding_spec   varchar2(10) := '4444444449';
+   begin
+      l_unit := cwms_util.get_unit_id(p_unit);
+
+      select bl.base_location_id
+             ||substr('-', 1, length(pl.sub_location_id))
+             ||pl.sub_location_id,
+             o.office_id,
+             cwms_util.convert_units(elevation, 'm', l_unit),
+             vertical_datum
+        into l_location_id,
+             l_office_id,
+             l_elevation,
+             l_native_datum          
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where pl.location_code = p_location_code
+         and bl.base_location_code = pl.base_location_code
+         and o.office_code = bl.db_office_code;
+      l_vert_datum_info := '<vertical-datum-info office="'
+         ||l_office_id
+         ||'" unit="'
+         ||l_unit
+         ||'">'
+         ||chr(10);
+      l_vert_datum_info := l_vert_datum_info
+         ||'  <location>'
+         ||l_location_id
+         ||'</location>'
+         ||chr(10);
+      l_vert_datum_info := l_vert_datum_info
+         ||'  <native-datum>'
+         ||l_native_datum
+         ||'</native-datum>'
+         ||chr(10);
+      if l_elevation is null then
+         l_vert_datum_info := l_vert_datum_info 
+            ||'  <elevation/>' 
+            ||chr(10); 
+      else
+         l_vert_datum_info := l_vert_datum_info 
+            ||'  <elevation>'
+            ||cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)
+            ||'</elevation>'
+            ||chr(10);
+      end if;
+      
+      for rec in (select vertical_datum_id
+                    from cwms_vertical_datum
+                   where vertical_datum_id != l_native_datum
+                   order by vertical_datum_id
+                 )
+      loop
+         begin
+            get_vertical_datum_offset(
+               l_datum_offset,
+               l_effective_date,
+               l_estimate,
+               p_location_code,
+               l_native_datum,
+               rec.vertical_datum_id);
+            l_vert_datum_info := l_vert_datum_info
+               ||'  <offset estimate="'
+               || case l_estimate when 'T' then 'true' else 'false' end
+               ||'">'
+               ||chr(10)
+               ||'    <to-datum>'
+               ||rec.vertical_datum_id
+               ||'</to-datum>'
+               ||chr(10)
+               ||'    <value>'
+               ||cwms_rounding.round_dt_f(cwms_util.convert_units(l_datum_offset, 'm', l_unit), l_rounding_spec)
+               ||'</value>'
+               ||chr(10)
+               ||'  </offset>'
+               ||chr(10);
+         exception
+            when others then
+               if instr(sqlerrm, 'No vertical offset exists') = 1 then null; end if;
+         end;
+      end loop;                      
+      l_vert_datum_info := l_vert_datum_info
+         ||'</vertical-datum-info>';
+      p_vert_datum_info := l_vert_datum_info;
+   end get_vertical_datum_info;
+
+   procedure get_vertical_datum_info(
+      p_vert_datum_info out varchar2,
+      p_location_id     in  varchar2,
+      p_unit            in  varchar2,
+      p_office_id       in  varchar2 default null)
+   is                            
+      l_location_records str_tab_tab_t;
+      l_office_records   str_tab_tab_t;
+      l_record_count     pls_integer := 0;
+      l_field_count      pls_integer := 0;
+      l_total            pls_integer := 0;
+      l_vert_datum_info  varchar2(4000);
+      l_office_id        varchar2(16);
+      function indent(p_str in varchar2) return varchar2
+      is
+         l_lines str_tab_t;
+         l_str   varchar2(32767);
+      begin
+         l_lines := cwms_util.split_text(p_str, chr(10));
+         for i in 1..l_lines.count loop
+            l_str := l_str
+               ||'  '||replace(l_lines(i), chr(13), null)||chr(10);
+         end loop;
+         return substr(l_str, 1, length(l_str)-1);
+      end;
+   begin           
+      l_location_records := cwms_util.parse_string_recordset(p_location_id);
+      l_record_count := l_location_records.count;
+      for i in 1..l_record_count loop
+         l_total := l_total + l_location_records(i).count;
+      end loop;
+      if p_office_id is not null then
+         l_office_records := cwms_util.parse_string_recordset(p_office_id);
+      end if;
+      if l_total > 1 then
+         l_vert_datum_info := '<vertical-datum-info-set>'||chr(10);
+         for i in 1..l_record_count loop
+            l_field_count := l_location_records(i).count;
+            for j in 1..l_field_count loop
+               case
+                  when l_office_records is null then
+                     -- no office ids
+                     l_office_id := null;
+                  when l_office_records.count = l_record_count then
+                     case 
+                        when l_office_records(i).count = 1 then
+                           -- single office for this record
+                           l_office_id := l_office_records(i)(1);
+                        when l_office_records(i).count = l_field_count then
+                           -- one office per location
+                           l_office_id := l_office_records(i)(j);
+                        else
+                           -- office count error for this record
+                           cwms_err.raise('ERROR', 'Invalid office count on record '||i);
+                     end case;
+                  else
+                     -- total office count error
+                     cwms_err.raise('ERROR', 'Invalid total office count');
+               end case;
+               l_vert_datum_info := l_vert_datum_info
+                  ||indent(get_vertical_datum_info_f(l_location_records(i)(j), p_unit, l_office_id))
+                  ||chr(10);
+            end loop;
+         end loop;
+         l_vert_datum_info := l_vert_datum_info||'</vertical-datum-info-set>';
+      else
+         get_vertical_datum_info(
+            l_vert_datum_info,
+            get_location_code(p_office_id, p_location_id),
+            p_unit);
+      end if;
+      p_vert_datum_info := l_vert_datum_info;
+   end get_vertical_datum_info;
+
+   function get_vertical_datum_info_f(
+      p_location_code in number,
+      p_unit          in varchar2)
+      return varchar2
+   is
+      l_vert_datum_info varchar2(4000);
+   begin
+      get_vertical_datum_info(
+         l_vert_datum_info,
+         p_location_code,
+         p_unit);
+      return l_vert_datum_info;      
+   end get_vertical_datum_info_f;   
+      
+   procedure set_vertical_datum_info(
+      p_location_code   in number,
+      p_vert_datum_info in xmltype,
+      p_fail_if_exists  in varchar2 default 'F')
+   is
+      l_node            xmltype;
+      l_location_id     varchar2(49);
+      l_location_id_2   varchar2(49);
+      l_office_id       varchar2(16);
+      l_office_id_2     varchar2(16);
+      l_native_datum    varchar2(16);
+      l_native_datum_db varchar2(16);
+      l_to_datum        varchar2(16);
+      l_unit            varchar2(16);
+      l_estimate        boolean;
+      l_offset          binary_double;
+      l_elevation       binary_double;
+      l_elevation_db    binary_double;
+      l_fail_if_exists  boolean;
+   begin
+      l_location_id := get_location_id(p_location_code);
+      select o.office_id
+        into l_office_id
+        from at_physical_location pl,
+             at_base_location bl,
+             cwms_office o
+       where pl.location_code = p_location_code
+         and bl.base_location_code = pl.base_location_code
+         and o.office_code = bl.db_office_code;
+      l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
+      l_node := cwms_util.get_xml_node(p_vert_datum_info, '/vertical-datum-info');
+      if l_node is null then
+         cwms_err.raise('ERROR', 'Vertical datum info does not have <vertical-datum-info> as root element');
+      end if;
+      l_office_id_2   := cwms_util.get_xml_text(l_node, '/vertical-datum-info/@office');
+      l_location_id_2 := cwms_util.get_xml_text(l_node, '/vertical-datum-info/location');
+      if (l_office_id_2 is null) != (l_location_id_2 is null) then
+         cwms_err.raise('ERROR', 'Office and location must bet specified together (both or neither)');
+      end if;
+      if l_office_id is not null then
+         if get_location_code(l_office_id_2, l_location_id_2) != p_location_code then
+            cwms_err.raise('ERROR', 'Location specified in XML is not same as that specified in p_location_code parameter');
+         end if;
+      end if;
+      l_unit := cwms_util.get_xml_text(l_node, '/vertical-datum-info/@unit');
+      if l_unit is null then
+         cwms_err.raise('ERROR', 'Vertical datum info does not specify unit');
+      end if;
+      l_native_datum := cwms_util.get_xml_text(l_node, '/vertical-datum-info/native-datum');
+      if l_native_datum is not null then
+         l_native_datum_db := get_location_vertical_datum(p_location_code);
+         if l_native_datum_db is not null and l_native_datum_db != l_native_datum then
+            cwms_err.raise(
+               'ERROR', 
+               'Specified native datum for '
+               ||l_office_id||'/'||l_location_id
+               ||' of '
+               ||l_native_datum
+               ||' does not agree with native datum in database of '
+               ||l_native_datum_db);
+         end if;
+      end if;
+      l_elevation := cwms_util.get_xml_number(l_node, '/vertical-datum-info/elevation');
+      if l_elevation is not null then
+         select cwms_util.convert_units(elevation, 'm', l_unit)
+           into l_elevation_db
+           from at_physical_location
+          where location_code = p_location_code;
+         if l_elevation_db is not null and l_elevation_db != l_elevation then
+            cwms_err.raise(
+               'ERROR', 
+               'Specified elevation for '
+               ||l_office_id||'/'||l_location_id
+               ||' of '
+               ||l_elevation
+               ||' '
+               ||l_unit
+               ||' does not agree with elevation in database of '
+               ||l_elevation_db
+               ||' '
+               ||l_unit);
+         end if;
+      end if;
+      for i in 1..999999 loop
+         l_node := cwms_util.get_xml_node(p_vert_datum_info, '/vertical-datum-info/offset['||i||']');
+         exit when l_node is null;
+         l_to_datum := cwms_util.get_xml_text(l_node, '/offset/to-datum');
+         if l_to_datum is null then
+            cwms_err.raise('ERROR', '<offset> element does not specify datum in <to-datum> child element');
+         end if;
+         l_offset := cwms_util.get_xml_number(l_node, '/offset/value');
+         if l_offset is null then
+            cwms_err.raise('ERROR', '<offset> element does not specify datum in <value> child element');
+         end if;
+         case upper(nvl(cwms_util.get_xml_text(l_node, '/offset/@estimate'), 'NULL'))
+            when 'TRUE'  then l_estimate := true;
+            when 'FALSE' then l_estimate := false;
+            when 'NULL'  then cwms_err.raise('ERROR', 'Estimate attribute is missing from <offset> element for datum '||l_to_datum);
+            else cwms_err.raise('ERROR', 'Estimate attribute in <offset> element for datum '||l_to_datum||' must be "true" or "false"');
+         end case;
+         cwms_loc.store_vertical_datum_offset(
+            p_location_id         => l_location_id,
+            p_vertical_datum_id_1 => l_native_datum,
+            p_vertical_datum_id_2 => l_to_datum,
+            p_offset              => l_offset,
+            p_unit                => l_unit,
+            p_description         => case l_estimate when true then 'ESTIMATE' else null end,
+            p_fail_if_exists      => p_fail_if_exists,
+            p_office_id           => l_office_id);
+      end loop;
+      if l_native_datum_db is null then
+         update at_physical_location
+            set vertical_datum = l_native_datum_db
+          where location_code = p_location_code;  
+      end if;
+      if l_elevation_db is null and l_elevation is not null then
+         update at_physical_location
+            set elevation = cwms_util.convert_units(l_elevation, l_unit, 'm')
+          where location_code = p_location_code;  
+      end if;
+   end set_vertical_datum_info;           
+
+   function get_vertical_datum_info_f(
+      p_location_id in varchar2,
+      p_unit        in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2
+   is
+      l_vert_datum_info varchar2(4000);
+   begin                      
+      get_vertical_datum_info(
+         l_vert_datum_info,
+         p_location_id,
+         p_unit,
+         p_office_id);
+      return l_vert_datum_info;
+   end get_vertical_datum_info_f;
+            
+   procedure set_vertical_datum_info(
+      p_vert_datum_info in varchar2,
+      p_fail_if_exists  in varchar2)
+   is
+      l_xml  xmltype;
+      l_node xmltype;
+      function get_location_code(l_node in xmltype) return varchar2
+      is
+         l_location_id varchar2(49);
+         l_office_id   varchar2(16);
+      begin
+         l_office_id := cwms_util.get_xml_text(l_node, '/vertical-datum-info/@office');
+         if l_office_id is null then
+               cwms_err.raise('ERROR', 'Office attribute is missing from <vertical-datum-info> element');
+         end if;
+         l_location_id := cwms_util.get_xml_text(l_node, '/vertical-datum-info/location');
+         if l_location_id is null then
+               cwms_err.raise('ERROR', '<vertical-datum-info> does not specify location in <location> element');
+         end if;
+         return cwms_loc.get_location_code(l_office_id, l_location_id);
+      end;
+   begin
+      l_xml := xmltype(p_vert_datum_info);
+      case l_xml.getrootelement
+         when 'vertical-datum-info-set' then
+            for i in 1..999999 loop
+               l_node := cwms_util.get_xml_node(l_xml, '/vertical-datum-info-set/vertical-datum-info['||i||']');
+               exit when l_node is null;
+               set_vertical_datum_info(
+                  get_location_code(l_node),
+                  l_node,
+                  p_fail_if_exists);
+            end loop;
+         when 'vertical-datum-info' then
+            set_vertical_datum_info(
+               get_location_code(l_xml),
+               l_xml,
+               p_fail_if_exists);
+         else
+            cwms_err.raise(
+               'ERROR', 
+               'Unexpected root element for vertical datum info: '
+               ||l_xml.getrootelement);
+      end case;
+   end set_vertical_datum_info;
+      
+   procedure set_vertical_datum_info(
+      p_location_code   in number,
+      p_vert_datum_info in varchar2,
+      p_fail_if_exists  in varchar2)
+   is
+   begin
+      set_vertical_datum_info(
+         p_location_code,
+         xmltype(p_vert_datum_info),
+         p_fail_if_exists);
+   end set_vertical_datum_info;
+      
+   procedure set_vertical_datum_info(
+      p_location_id     in varchar2,
+      p_vert_datum_info in varchar2,
+      p_fail_if_exists  in varchar2,     
+      p_office_id       in varchar2 default null)
+   is
+   begin
+      set_vertical_datum_info(
+         get_location_code(p_office_id, p_location_id),
+         p_vert_datum_info,
+         p_fail_if_exists);
+   end set_vertical_datum_info;     
    
 END cwms_loc;
 /

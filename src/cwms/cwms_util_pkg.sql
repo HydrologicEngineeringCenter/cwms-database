@@ -353,7 +353,7 @@ AS
     * <code><big>record_separator</big></code> character. Fields are delmited by the 
     * <code><big>field_separator</big></code> character.
     * 
-    * @param p_clob the delimeted recordset to parse
+    * @param p_string the delimeted recordset to parse
     * @return a table of tables of strings. Each record in the recordset becomes one
     *         outer row (table of fields) in the retured table, with fields within that 
     *         record becoming rows of the inner table.
@@ -1819,9 +1819,53 @@ AS
    function is_nan(
       p_value in binary_double)
       return varchar2;
+   /**
+    * Returns the value associated with a specified key in a unit specification string in the form of <code>x=abc|y=def|z=ghi</code> or NULL if the specified key is not present in the string.
+    * The characters <code>x</code>, <code>y</code>, and <code>z</code> are keys and <code>abc</code>, <code>def</code>, <code>ghi</code> are the values associated with the keys.
+    *
+    * @param p_unit_spec The unit specification string to parse
+    * @param p_key       The key (not case sensitive) whose value is to be returned.
+    *
+    * @return The value associated with the specified key, or NULL if the key is not present in the string.
+    */
+   function parse_unit_spec(
+      p_unit_spec in varchar2,
+      p_key       in varchar2)
+      return varchar2;
+   /**
+    * Returns the unit from a unit specification string.  The unit is the entire string unless the string is format <code>x=abc|y=def|z=ghi</code>, in
+    * which case the value associated with the key <code>U</code> is the unit.
+    *
+    * @param p_unit_spec The unit specification string
+    * @return The unit specified in the string or NULL if the string does not contain a unit.
+    * @see parse_unit_spec
+    */
+   function parse_unit(
+      p_unit_spec in varchar2)
+      return varchar2;
+   /**
+    * Returns the vertical datum (associated with the key <code>V</code>) in a unit specification string of the format <code>x=abc|y=def|z=ghi</code>.
+    * If a non-NULL default vertical datum is to be overriden by a NULL specified vertical datum, the specified vertical datum must be coded as <code>V=NULL</code> 
+    *
+    * @param p_unit_spec The unit specification string
+    * @return The associated vertical datum or NULL if the key <code>V</code> is not in the string.
+    * @see parse_unit_spec
+    */
+   function parse_vertical_datum(
+      p_unit_spec in varchar2)
+      return varchar2;
+   /**
+    * Returns the effective vertical datum. If a vertical datum is encoded into the unit specification string, it is returned. Otherwise the default vertical datum for the session is returned.
+    *
+    * @param p_unit_spec The unit specification string, which may contain an encoded vertical datum
+    * @return The effective vertical datum
+    * @see parse_unit
+    */
+   function get_effective_vertical_datum(
+      p_unit_spec in varchar2)
+      return varchar2;
 
-      
-      
+
 END cwms_util;
 /
 
