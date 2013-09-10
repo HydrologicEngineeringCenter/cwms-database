@@ -7630,7 +7630,7 @@ AS
              cwms_office o
        where pl.location_code = p_location_code
          and bl.base_location_code = pl.base_location_code
-         and o.office_code = bl.db_office_code;
+         and o.office_code = bl.db_office_code;               
       l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
       l_node := cwms_util.get_xml_node(p_vert_datum_info, '/vertical-datum-info');
       if l_node is null then
@@ -7641,7 +7641,7 @@ AS
       if (l_office_id_2 is null) != (l_location_id_2 is null) then
          cwms_err.raise('ERROR', 'Office and location must bet specified together (both or neither)');
       end if;
-      if l_office_id is not null then
+      if l_office_id_2 is not null then
          if get_location_code(l_office_id_2, l_location_id_2) != p_location_code then
             cwms_err.raise('ERROR', 'Location specified in XML is not same as that specified in p_location_code parameter');
          end if;
