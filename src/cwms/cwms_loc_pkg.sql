@@ -1912,6 +1912,8 @@ AS
    /**
     * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
     *
+    * @since CWMS 2.2
+    *
     * @param p_vert_datum_info The XML-encoded vertical datum information string
     * @param p_location_code   The unique numeric code identifying the location
     * @param p_unit            The unit to return the elevation and elevation offsets in
@@ -1922,6 +1924,8 @@ AS
       p_unit            in  varchar2);
    /**
     * Retrieves a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location or locations
+    *
+    * @since CWMS 2.2
     *
     * @param p_vert_datum_info The XML-encoded vertical datum information string. If p_location_id is a recordset the XML root element will be
     * <code><big>&lt;vertical-datum-info-set&gt;</big></code> and will contain one <code><big>&lt;vertical-datum-info&gt;</big></code> element for each location:
@@ -1981,6 +1985,8 @@ AS
    /**
     * Returns a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
     *
+    * @since CWMS 2.2
+    *
     * @param p_location_code The unique numeric code identifying the location
     * @param p_unit          The unit to return the elevation and elevation offsets in
     *
@@ -1992,6 +1998,8 @@ AS
       return varchar2;
    /**
     * Returns a XML string containing the elevation, native datum, and elevation offsets to other datums for the specified location
+    *
+    * @since CWMS 2.2
     *
     * @param p_location_id     The text name the location or a recordset of location names. If a recordset is used, it may be a single record with
     *                          multiple fields, multiple records each with a single field, or multiple records with multiple fields.
@@ -2052,6 +2060,8 @@ AS
    /**
     * Sets vertical datum info for one or more locations
     *
+    * @since CWMS 2.2
+    *
     * @param p_vert_datum_info A multiple location XML snippet as described in get_vertical_datum_info (root element = <code><big>&lt;vertical-datum-info-set&gt;</big></code>).
     *                          The XML root element may have one or more <code><big>&lt;vertical-datum-info&gt;</big></code> child elements, each of which must include an
     *                          <code><big>office</big></code> attribute and <code><big>&lt;location&gt;</big></code> child element.
@@ -2089,6 +2099,8 @@ AS
    /**
     * Sets vertical datum information for a specified location
     *
+    * @since CWMS 2.2
+    *
     * @param p_location_code   The unique number identifying the location
     * @param p_vert_datum_info An single location XML snippet as described in get_vertical_datum_info (root element = <code><big>&lt;vertical-datum-info&gt;</big></code>).
     *                          The <code><big>office</big></code> attribute and <code><big>&lt;location&gt;</big></code> child element are not required. If they exist, they must match the 
@@ -2118,6 +2130,8 @@ AS
    /**
     * Sets vertical datum information for a specified location
     *
+    * @since CWMS 2.2
+    *
     * @param p_location_id   The text name of the location
     * @param p_vert_datum_info A single location XML snippet as described in get_vertical_datum_info (root element = <code><big>&lt;vertical-datum-info&gt;</big></code>).
     *                          The <code><big>office</big></code> attribute and <code><big>&lt;location&gt;</big></code> child element are not required. If they exist, they must match the 
@@ -2146,6 +2160,102 @@ AS
       p_vert_datum_info in varchar2,
       p_fail_if_exists  in varchar2,     
       p_office_id       in varchar2 default null);     
+   /**
+    * Retrieves the name of the local vertical datum for the specified location
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_local_vert_datum_name The name of the local vertical datum, or NULL if the local vertical datum is unnamed.
+    * @param p_location_code         The unique numeric code or the location to retrieve the informaton for.
+    */
+   procedure get_local_vert_datum_name (
+      p_local_vert_datum_name out varchar2,
+      p_location_code         in  number);
+   /**
+    * Returns the name of the local vertical datum for the specified location
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_location_code The unique numeric code of the location to retrieve the informaton for.
+    * @return The name of the local vertical datum, or NULL if the local vertical datum is unnamed.
+    */
+   function get_local_vert_datum_name_f (
+      p_location_code in number)
+      return varchar2;
+   /**
+    * Retrieves the name of the local vertical datum for the specified location
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_local_vert_datum_name The name of the local vertical datum, or NULL if the local vertical datum is unnamed.
+    * @param p_location_id           The text identifier of the location to retrieve the informaton for.
+    * @param p_office_id             The text identifier of the office that owns the location.  If unspecified or NULL, the session user's default office is used.
+    */
+   procedure get_local_vert_datum_name (
+      p_local_vert_datum_name out varchar2,
+      p_location_id           in  varchar2,
+      p_office_id             in  varchar2 default null);
+   /**
+    * Returns the name of the local vertical datum for the specified location
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_location_id  The text identifier of the location to retrieve the informaton for.
+    * @param p_office_id    The text identifier of the office that owns the location.  If unspecified or NULL, the session user's default office is used.
+    * @return The name of the local vertical datum, or NULL if the local vertical datum is unnamed.
+    */
+   function get_local_vert_datum_name_f (
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null)
+      return varchar2;
+   /**
+    * Sets the name of the local vertical datum for the specified location
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_location_code   The unique numeric code of the location to set the informaton for.
+    * @param p_vert_datum_name The name of the local vertical datum for the location
+    * @param p_fail_if_exists  A flag ('T'/'F') specifying whether to fail if a local vertical datum name already exists.
+    */
+   procedure set_local_vert_datum_name(
+      p_location_code   in number,
+      p_vert_datum_name in varchar2,
+      p_fail_if_exists  in varchar2 default 'T');
+   /**
+    * Sets the name of the local vertical datum for the specified location
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_location_id     The text identifier of the location to set the informaton for.
+    * @param p_vert_datum_name The name of the local vertical datum for the location
+    * @param p_fail_if_exists  A flag ('T'/'F') specifying whether to fail if a local vertical datum name already exists.
+    * @param p_office_id       The text identifier of the office that owns the location.  If unspecified or NULL, the session user's default office is used.
+    */
+   procedure set_local_vert_datum_name(
+      p_location_id     in varchar2,
+      p_vert_datum_name in varchar2,
+      p_fail_if_exists  in varchar2 default 'T',
+      p_office_id       in varchar2 default null);
+   /**
+    * Deletes the name of the local vertical datum for the specified location
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_location_code The unique numeric code of the location to delete the informaton for.
+    */
+   procedure delete_local_vert_datum_name (
+      p_location_code in number);
+   /**
+    * Deletes the name of the local vertical datum for the specified location
+    *
+    * @since CWMS 2.2
+    *
+    * @param p_location_id The text identifier of the location to delete the informaton for.
+    * @param p_office_id   The text identifier of the office that owns the location.  If unspecified or NULL, the session user's default office is used.
+    */
+   procedure delete_local_vert_datum_name (
+      p_location_id in varchar2,
+      p_office_id   in varchar2 default null);
       
 END cwms_loc;
 /
