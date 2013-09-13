@@ -23,6 +23,8 @@ updates  = [
 	['package body', 'cwms_alarm'],
 	['package spec', 'cwms_schema'],
 	['package body', 'cwms_level'],
+	['package spec', 'cwms_loc'],
+	['package body', 'cwms_loc'],
 	['package spec', 'cwms_msg'],
 	['package body', 'cwms_msg'],
 	['type', 'rating_t'],
@@ -112,6 +114,42 @@ outfile = os.path.join(srcdir, 'updateCwmsSchema.sql')
 logfile = 'updateCwmsSchema.log'
 f = open(outfile, 'w')
 f.write('\nspool '+logfile+'; \n')
+f.write('''
+create table at_vert_datum_offset (
+   location_code       number(10)    not null,
+   vertical_datum_id_1 varchar2(16)  not null,
+   vertical_datum_id_2 varchar2(16)  not null,
+   effective_date      date          default date '1000-01-01',
+   offset              binary_double not null,
+   description         varchar2(64),
+   constraint at_vert_datum_offset_pk  primary key (location_code, vertical_datum_id_1, vertical_datum_id_2, effective_date),
+   constraint at_vert_datum_offset_fk1 foreign key (location_code) references at_physical_location (location_code),
+   constraint at_vert_datum_offset_fk2 foreign key (vertical_datum_id_1) references cwms_vertical_datum (vertical_datum_id),
+   constraint at_vert_datum_offset_fk3 foreign key (vertical_datum_id_2) references cwms_vertical_datum (vertical_datum_id),
+   constraint at_vert_datum_offset_ck1 check (vertical_datum_id_1 <> vertical_datum_id_2)
+) tablespace cwms_20at_data
+/
+
+comment on table  at_vert_datum_offset                     is 'Contains vertical datum offsets for CWMS locations';
+comment on column at_vert_datum_offset.location_code       is 'References CWMS location';
+comment on column at_vert_datum_offset.vertical_datum_id_1 is 'References vertical datum for input';
+comment on column at_vert_datum_offset.vertical_datum_id_2 is 'References vertical datum for output';
+comment on column at_vert_datum_offset.effective_date      is 'Earliest date/time the offset if in effect';
+comment on column at_vert_datum_offset.offset              is 'Value added to input to generate output';
+comment on column at_vert_datum_offset.description         is 'Description or comment';
+
+create table at_vert_datum_local (
+   location_code    number(10),
+   local_datum_name varchar2(16) not null,
+   constraint at_vert_datum_local_pk  primary key (location_code) using index,
+   constraint at_vert_datum_local_fk1 foreign key (location_code) references at_physical_location(location_code)
+) tablespace cwms_20at_data
+/
+
+comment on table  at_vert_datum_local                  is 'Contains names of local vertical datums for locations.';
+comment on column at_vert_datum_local.location_code    is 'References location with a named local vertical datum.';
+comment on column at_vert_datum_local.local_datum_name is 'Name of local vertical datum for location.';
+''')
 for item_type, item_name in updates :
 	print('%s %s' % (item_type, item_name))
 	item_text = get(item_type, item_name)
