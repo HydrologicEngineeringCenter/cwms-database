@@ -5727,5 +5727,17 @@ comment on column at_vert_datum_offset.effective_date      is 'Earliest date/tim
 comment on column at_vert_datum_offset.offset              is 'Value added to input to generate output';
 comment on column at_vert_datum_offset.description         is 'Description or comment';
 
+create table at_vert_datum_local (
+   location_code    number(10),
+   local_datum_name varchar2(16) not null,
+   constraint at_vert_datum_local_pk  primary key (location_code) using index,
+   constraint at_vert_datum_local_fk1 foreign key (location_code) references at_physical_location(location_code)
+) tablespace cwms_20at_data
+/
+
+comment on table  at_vert_datum_local                  is 'Contains names of local vertical datums for locations.';
+comment on column at_vert_datum_local.location_code    is 'References location with a named local vertical datum.';
+comment on column at_vert_datum_local.local_datum_name is 'Name of local vertical datum for location.';
+
 -- HOST pwd
 @@rowcps_schema.sql
