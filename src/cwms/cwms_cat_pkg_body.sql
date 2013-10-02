@@ -2862,28 +2862,30 @@ END cat_ts_id;
       l_db_office_code NUMBER
             := cwms_util.get_db_office_code (p_db_office_id) ;
    BEGIN
-      OPEN p_cwms_cat FOR
-           SELECT      cp.base_parameter_id
-                    || SUBSTR ('-', 1, LENGTH (atp.sub_parameter_id))
-                    || atp.sub_parameter_id
-                       parameter_id, cp.base_parameter_id, atp.sub_parameter_id,
-                    CASE
-                       WHEN atp.sub_parameter_desc IS NULL THEN cp.description
-                       ELSE atp.sub_parameter_desc
-                    END
-                       sub_parameter_desc, co.office_id db_office_id,
-                    cu.unit_id db_unit_id, cu.long_name unit_long_name,
-                    cu.description unit_description
-             FROM   at_parameter atp,
-                    cwms_base_parameter cp,
-                    cwms_unit cu,
-                    cwms_office co
-            WHERE       atp.base_parameter_code = cp.base_parameter_code
-                    AND cp.unit_code = cu.unit_code
-                    AND co.office_code = atp.db_office_code
-                    AND atp.db_office_code IN
-                             (cwms_util.db_office_code_all, l_db_office_code)
-         ORDER BY   cp.base_parameter_id ASC;
+      open p_cwms_cat for
+         select cp.base_parameter_id 
+                || substr('-', 1, length(atp.sub_parameter_id)) 
+                || atp.sub_parameter_id as parameter_id,
+                cp.base_parameter_id,
+                atp.sub_parameter_id,
+                case 
+                   when atp.sub_parameter_desc is null then cp.description 
+                   else atp.sub_parameter_desc 
+                end as sub_parameter_desc,
+                co.office_id as db_office_id,
+                cu.unit_id as db_unit_id,
+                cu.long_name as unit_long_name,
+                cu.description as unit_description
+           from at_parameter atp,
+                cwms_base_parameter cp,
+                cwms_unit cu,
+                cwms_office co
+          where atp.parameter_code > 0 -- exclude Text, Binary
+            and atp.base_parameter_code = cp.base_parameter_code
+            and cp.unit_code = cu.unit_code
+            and co.office_code = atp.db_office_code
+            and atp.db_office_code in (cwms_util.db_office_code_all, l_db_office_code)
+          order by cp.base_parameter_id asc;   
    END cat_parameter;
 
    FUNCTION cat_parameter_tab (p_db_office_id IN VARCHAR2 DEFAULT NULL )

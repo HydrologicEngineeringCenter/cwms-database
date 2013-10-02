@@ -2201,7 +2201,7 @@ IS
    FUNCTION cat_base_parameter_tab
       RETURN cat_base_param_tab_t PIPELINED;
    /**
-    * Catalogs all parameters in the CWMS database for a specified office
+    * Catalogs all value-capable parameters in the CWMS database for a specified office. Parameters <code>Text</code> and <code>Binary</code> are not included in the catalog. 
     *
     * @param p_cwms_cat The cursor containing the base parameters.  The cursor contains the following columns:
     * <p>
@@ -2273,7 +2273,7 @@ IS
       p_db_office_id   IN       VARCHAR2 DEFAULT NULL
    );
    /**
-    * Catalogs all parameters in the CWMS database for a specified office
+    * Catalogs all value-capable parameters in the CWMS database for a specified office. Parameters <code>Text</code> and <code>Binary</code> are not included in the catalog. 
     *
     * @param p_db_office_id The office to catalog the parameters for. If not specified or NULL, the session user's default office will be used.
     *
