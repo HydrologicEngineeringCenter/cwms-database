@@ -703,6 +703,12 @@ AS
     *       <td class="descr">varchar2(49)</td>
     *       <td class="descr">A referenced location that applies to all locations within the location group</td>
     *    </tr>
+    *   <tr>
+    *     <td class="descr-center">12</td>
+    *     <td class="descr">attribute</td>
+    *     <td class="descr">number</td>
+    *     <td class="descr">A numeric attribute for the location with respect to the group. Can be used for sorting, etc...</td>
+    *   </tr>
     * </table>
     * @param p_db_office_id     The office that owns the location. If not specified or NULL, the session user's default office will be used
     */
