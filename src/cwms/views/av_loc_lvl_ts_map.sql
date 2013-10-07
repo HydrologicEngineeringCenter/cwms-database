@@ -85,6 +85,9 @@ select office_id,
                      and pt.parameter_type_code = ts.parameter_type_code
                      and i.interval_code = ts.interval_code
                      and d.duration_code = ts.duration_code
+                     and bl.active_flag = 'T'
+                     and pl.active_flag = 'T'
+                     and ts.active_flag = 'T'
                      and ll.location_code = pl.location_code
                      and ll.parameter_code = p.parameter_code
                      and ll.parameter_type_code = pt.parameter_type_code
@@ -166,6 +169,9 @@ select office_id,
                      and pt.parameter_type_code = ts.parameter_type_code
                      and i.interval_code = ts.interval_code
                      and d.duration_code = ts.duration_code
+                     and bl.active_flag = 'T'
+                     and pl.active_flag = 'T'
+                     and ts.active_flag = 'T'
                      and ll.location_code = pl.location_code
                      and ll.parameter_code = p.parameter_code
                      and ll.parameter_type_code = pt.parameter_type_code
