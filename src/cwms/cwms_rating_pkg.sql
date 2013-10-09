@@ -1410,7 +1410,8 @@ procedure retrieve_ratings_xml(
  *
  * @param p_spec_id_mask The rating specification pattern to match.  Use glob-style
  * wildcard characters as shown above instead of sql-style wildcard characters for pattern
- * matching.
+ * matching. If the first character is '-' (hyphen), no rating values will be included in the output, 
+ * and the remaining characters are interpreted as the specification pattern to match.
  *
  * @param p_effective_date_start The start time of the effective date time window. If specified
  * and not NULL, no ratings will be matched that have effective dates earlier than this date/time.

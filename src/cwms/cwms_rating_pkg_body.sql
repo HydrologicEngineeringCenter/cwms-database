@@ -1288,16 +1288,22 @@ procedure retrieve_ratings_xml2(
    p_office_id_mask       in  varchar2 default null)
 is
    type id_tab_t is table of boolean index by varchar2(390); 
-   l_id        varchar2(390);
-   l_ids       id_tab_t;
-   l_specs     rating_spec_tab_t := rating_spec_tab_t();
-   l_templates rating_template_tab_t := rating_template_tab_t();
-   l_ratings   rating_tab_t;
-   l_text      clob;
+   l_id           varchar2(390);
+   l_ids          id_tab_t;
+   l_specs        rating_spec_tab_t := rating_spec_tab_t();
+   l_templates    rating_template_tab_t := rating_template_tab_t();
+   l_ratings      rating_tab_t;
+   l_text         clob;
+   l_spec_id_mask varchar2(1024) := p_spec_id_mask;
+   l_values       boolean := true;
 begin
+   if substr(l_spec_id_mask, 1, 1) = '-' then
+      l_values := false;
+      l_spec_id_mask := substr(l_spec_id_mask, 2); 
+   end if;
    retrieve_ratings_obj(
       l_ratings,
-      p_spec_id_mask,
+      l_spec_id_mask,
       p_effective_date_start,
       p_effective_date_end,
       p_time_zone,
@@ -1331,7 +1337,13 @@ begin
    for i in 1..l_specs.count loop
       cwms_util.append(l_text, l_specs(i).to_clob);
    end loop;
-   for i in 1..l_ratings.count loop
+   for i in 1..l_ratings.count loop   
+      if not l_values then
+         l_ratings(i).formula := null;
+         if l_ratings(i).rating_info is not null then
+            l_ratings(i).rating_info.rating_values := rating_value_tab_t();
+         end if;         
+      end if;
       cwms_util.append(l_text, l_ratings(i).to_clob);
    end loop; 
    cwms_util.append(l_text, '</ratings>');     
