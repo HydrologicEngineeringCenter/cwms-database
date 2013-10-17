@@ -3,6 +3,7 @@ import os, re, sys
 pkg_pattern     = re.compile(r'create(\s+or\s+replace)?\s+package', re.I)
 type_pattern1   = re.compile(r'create(\s+or\s+replace)?\s+type\s+(\w+)\s+(\S+)', re.I)
 type_pattern2   = re.compile(r'create(\s+or\s+replace)?\s+type', re.I)
+exec_pattern    = re.compile(r'^/\s*$', re.M)
 view_pattern1   = re.compile(r"'\s*/\*{2}.+\*/\s*'", re.S)
 view_pattern2   = re.compile(r'(create(\s+or\s+replace(\s+force)?)?)\s+view\s+.+$', re.I | re.S)
 commit_pattern  = re.compile(r'^\s*commit\s*$', re.I | re.M)
@@ -76,7 +77,10 @@ def get(item_type, item_name) :
 			type_list[i][2] = type_list[i+1][1]
 		types = {}
 		for i in range(len(type_list)) :
-			types[type_list[i][0]] = [type_list[i][1], type_list[i][2]]
+			type_info, start, end = type_list[i]
+			matcher = exec_pattern.search(text[start:end])
+			if matcher : end = start + matcher.end()
+			types[type_info] = [start, end]
 		start, end = types['%s %s' % (item_name, sub_type)]
 		if not sub_type :
 			str = ('whenever sqlerror continue\ndrop type %s force;\nwhenever sqlerror exit sql.sqlcode\n%s' % (
