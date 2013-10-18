@@ -141,9 +141,6 @@ begin
 end;
 /
 
--- set COMPATIBLE parameter
-alter system set compatible='11.2.0' scope=spfile;
-
 -- Create CWMS_DBXC_ROLE
 
 @@cwms/User-Roles/cwms_dbx_role_et_user
