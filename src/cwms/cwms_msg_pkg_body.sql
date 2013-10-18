@@ -409,27 +409,42 @@ begin
              l_machine
         from v$session
        where audsid = userenv('sessionid');
-
-      insert
-        into at_log_message
-      values (
-                l_msg_id,
-                l_office_code,
-                l_now_ts,
-                l_msg_level,
-                p_component,
-                p_instance,
-                p_host,
-                p_port,
-                p_reported,
-                l_username,
-                l_osuser,
-                l_process,
-                l_program,
-                l_machine,
-                l_typeid,
-                l_message
-             );
+       
+      for i in 1..3 loop
+         begin
+            insert
+              into at_log_message
+            values (
+                      l_msg_id,
+                      l_office_code,
+                      l_now_ts,
+                      l_msg_level,
+                      p_component,
+                      p_instance,
+                      p_host,
+                      p_port,
+                      p_reported,
+                      l_username,
+                      l_osuser,
+                      l_process,
+                      l_program,
+                      l_machine,
+                      l_typeid,
+                      l_message
+                   );
+         exception
+            when others then
+               if sqlcode = -1 then
+                  if i < 10 then
+                     l_msg_id := get_msg_id;
+                     continue;
+                  else
+                     cwms_err.raise('ERROR', 'Could not get unique message id in 3 attempts');
+                     end if;
+               end if;
+         end;
+         exit; -- no exception                   
+      end loop;
 
       -------------------------------
       -- ... next the long message --
