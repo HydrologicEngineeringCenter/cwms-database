@@ -783,7 +783,7 @@ as
             self.parameters_id,
             'Rating template parameters identifier');
       end if;
-      if l_parts(2) != self.dep_parameter_id then
+      if upper(l_parts(2)) != upper(self.dep_parameter_id) then
          cwms_err.raise(
             'ERROR',
             'Rating template dependent parameter ('
@@ -805,7 +805,7 @@ as
             ||' independent parameters');
       end if;
       for i in 1..l_parts.count loop
-         if l_parts(i) != self.ind_parameters(i).parameter_id then
+         if upper(l_parts(i)) != upper(self.ind_parameters(i).parameter_id) then
             cwms_err.raise(
                'ERROR',
                'Rating template independent parameter position '
