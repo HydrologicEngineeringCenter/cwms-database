@@ -435,7 +435,7 @@ begin
          exception
             when others then
                if sqlcode = -1 then
-                  if i < 10 then
+                  if i < 3 then
                      l_msg_id := get_msg_id;
                      continue;
                   else
