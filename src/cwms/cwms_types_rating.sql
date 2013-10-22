@@ -4143,7 +4143,6 @@ as
    return self as result
    is
       l_xml     xmltype;
-      l_node    xmltype;
       l_text    varchar2(64);
       ------------------------------
       -- local function shortcuts --
@@ -4211,7 +4210,7 @@ as
       self.description   := get_text(l_xml, '/rating/description');
       self.rating_info   := rating_ind_parameter_t(l_xml);
       self.current_units := 'N';
-      self.current_time  := 'L';
+      self.current_time  := 'D';
       self.validate_obj;
       return;
    end;
@@ -4619,9 +4618,13 @@ as
       i           integer;
    begin
       if self.current_units = 'N' or self.current_time = 'L' then
-         l_clone := self;
-         l_clone.convert_to_database_units;
-         l_clone.convert_to_database_time;
+         l_clone := self;  
+         if self.current_units = 'N' then
+            l_clone.convert_to_database_units;
+         end if;
+         if self.current_time = 'L' then 
+            l_clone.convert_to_database_time;
+         end if;
          l_clone.store(p_rating_code, p_fail_if_exists);
          return;
       end if;
@@ -5202,35 +5205,40 @@ as
 
    member function get_date(p_timestr in varchar2) return date
    is
-      l_date     date;
-      l_timezone varchar2(28);
-      l_parts    str_tab_t;
-      l_timestr  varchar2(32); -- hides outer declaration
+      l_date  date;
+      l_parts str_tab_t;
+      l_tzstr varchar2(32);
    begin
-      l_date := cwms_util.to_timestamp(substr(p_timestr, 1, 19));
-      l_timestr := substr(p_timestr, 20);
-      if l_timestr is null then
+      l_date  := cwms_util.to_timestamp(substr(p_timestr, 1, 19));
+      l_tzstr := substr(p_timestr, 20);
+      ------------------
+      -- shift to UTC --
+      ------------------
+      if l_tzstr is null then
          ----------------------------
          -- assume local time zone --
          ----------------------------
-         null;
+         l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
+         l_tzstr := cwms_loc.get_local_timezone(l_parts(1), self.office_id); 
+         if l_tzstr is null then
+            cwms_err.raise(
+               'ERROR',
+               'Rating for '
+               ||self.office_id||'/'||l_parts(1)
+               ||' specifies an effective date without a time zone, but no local time zone is set.');
+         end if;
       else
-         ------------------------------
-         -- shift to local time zone --
-         ------------------------------
-         if l_timestr = 'Z' then
-            l_timestr := 'UTC';
+         if l_tzstr = 'Z' then
+            l_tzstr := 'UTC';
          else
-            l_timestr := 'Etc/GMT'
-            ||case substr(l_timestr, 1, 1)
-                 when '+' then '-' || to_number(substr(l_timestr, 2, 2))
-                 when '-' then '+' || to_number(substr(l_timestr, 2, 2))
+            l_tzstr := 'Etc/GMT'
+            ||case substr(l_tzstr, 1, 1)
+                 when '+' then '-' || to_number(substr(l_tzstr, 2, 2))
+                 when '-' then '+' || to_number(substr(l_tzstr, 2, 2))
               end;
          end if;
-         l_parts    := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
-         l_timezone := cwms_loc.get_local_timezone(l_parts(1), self.office_id);
-         l_date     := cwms_util.change_timezone(l_date, l_timestr, l_timezone);
       end if;
+      l_date := cwms_util.change_timezone(l_date, l_tzstr, 'UTC');
       return l_date;
    end;
 
@@ -5781,7 +5789,7 @@ as
             null,                        -- description
             null,                        -- rating_info
             'N',                         -- current_units
-            'L',                         -- current_time
+            'D',                         -- current_time
             null);                       -- formula_tokens
          ----------------------------------
          -- get the shift effective date --
@@ -5879,7 +5887,7 @@ as
             'Logarithmic interpolation offsets', -- description
             null,                                -- rating_info
             'N',                                 -- current_units
-            'L',                                 -- current_time
+            'D',                                 -- current_time
             null);                               -- formula_tokens
          ----------------------------
          -- get the offset units id --
@@ -5950,7 +5958,7 @@ as
          end if;
       end if;
       self.current_units := 'N';
-      self.current_time := 'L';
+      self.current_time := 'D';
       self.validate_obj;
       return;
    end;
@@ -6171,7 +6179,7 @@ as
                      'stream_rating_t.validate_obj',
                      cwms_msg.msg_level_normal,
                      'Rating shift '||i||' skipped due to '||sqlerrm);
-                  for j in i+1..self.shifts.count loop -- static limits 
+                  for j in i+1..self.shifts.count loop -- static limits
                      exit when j > self.shifts.count;  -- dynamically evaluated
                      self.shifts(j-1) := self.shifts(j);
                      self.shifts.trim(1);
@@ -6253,9 +6261,13 @@ as
       l_clone            stream_rating_t;
    begin
       if self.current_units = 'N' or self.current_time = 'L' then
-         l_clone := self;
-         l_clone.convert_to_database_units;
-         l_clone.convert_to_database_time;
+         l_clone := self;  
+         if self.current_units = 'N' then
+            l_clone.convert_to_database_units;
+         end if;
+         if self.current_time = 'L' then
+            l_clone.convert_to_database_time;
+         end if;
          l_clone.store(p_fail_if_exists);
          return;
       end if;

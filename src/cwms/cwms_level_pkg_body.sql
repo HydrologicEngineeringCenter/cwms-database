@@ -1330,17 +1330,6 @@ begin
       end;
    validate_specified_level_input(l_office_code, p_office_id, p_spec_level_id);
    l_location_code := cwms_loc.get_location_code(l_office_code, p_location_id);
-   select time_zone_code
-     into l_location_tz_code
-     from at_physical_location
-    where location_code = l_location_code;
-   if l_location_tz_code is null then
-      cwms_err.raise(
-         'ERROR',
-         'Location '''
-         ||p_location_id
-         ||''' must be assigned a time zone before calling this routine.');
-   end if;    
    if p_attribute_value is not null and p_attribute_parameter_id is null then
       cwms_err.raise(
          'ERROR',
@@ -1373,6 +1362,17 @@ begin
    -- default the time zone to the location's time zone --
    -------------------------------------------------------
    if p_timezone_id is null then
+      select time_zone_code
+        into l_location_tz_code
+        from at_physical_location
+       where location_code = l_location_code;
+      if l_location_tz_code is null then
+         cwms_err.raise(
+            'ERROR',
+            'Location '''
+            ||p_location_id
+            ||''' must be assigned a time zone before calling this routine.');
+      end if;    
       select time_zone_name
         into l_timezone_id
         from cwms_time_zone
