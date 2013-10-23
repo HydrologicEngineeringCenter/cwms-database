@@ -4707,10 +4707,9 @@ as
    member function to_clob
    return clob
    is
-      l_text           clob;
-      l_parts          str_tab_t;
-      l_time_zone      varchar2(28);
-      l_clone          rating_t;
+      l_text  clob;
+      l_clone rating_t;
+      l_tzone varchar2(28);
       function bool_text(
          p_state in boolean)
       return varchar2
@@ -4722,30 +4721,20 @@ as
                 end;
       end;
    begin
-      if self.current_units = 'D' or self.current_time = 'D' then
+      if self.current_units = 'D' then
          l_clone := self;
          l_clone.convert_to_native_units;
-         l_clone.convert_to_local_time;
          return l_clone.to_clob;
       end if;
-      l_parts := cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1);
-      select tz.time_zone_name
-        into l_time_zone
-        from at_physical_location pl,
-             cwms_time_zone tz
-       where pl.location_code = cwms_loc.get_location_code(self.office_id, l_parts(1))
-         and tz.time_zone_code = nvl(pl.time_zone_code, 0);
-      if l_time_zone = 'Unknown or Not Applicable' then
-         l_time_zone := 'UTC';
-      end if;
+      l_tzone := nvl(cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id), 'UTC');
       dbms_lob.createtemporary(l_text, true);
       dbms_lob.open(l_text, dbms_lob.lob_readwrite);
       cwms_util.append(l_text, '<rating office-id="'||self.office_id||'">'
          ||'<rating-spec-id>'||self.rating_spec_id||'</rating-spec-id>'
          ||'<units-id>'||self.native_units||'</units-id>'
-         ||'<effective-date>'||cwms_util.get_xml_time(self.effective_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</effective-date>');
+         ||'<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
       if self.create_date is not null then
-         cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(self.create_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</create-date>');
+         cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
       end if;
       cwms_util.append(l_text,'<active>'||bool_text(cwms_util.is_true(self.active_flag))||'</active>'
          ||case self.description is null
@@ -6362,6 +6351,7 @@ as
    is
       l_text  clob;
       l_clone stream_rating_t;
+      l_tzone varchar2(28);
       function bool_text(
          p_state in boolean)
       return varchar2
@@ -6373,21 +6363,21 @@ as
                 end;
       end;
    begin
-      if self.current_units = 'D' or self.current_time = 'D' then
+      if self.current_units = 'D' then
          l_clone := self;
          l_clone.convert_to_native_units;
-         l_clone.convert_to_local_time;
          return l_clone.to_clob;
-      end if;
+      end if;              
+      l_tzone := nvl(cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id), 'UTC');
       dbms_lob.createtemporary(l_text, true);
       dbms_lob.open(l_text, dbms_lob.lob_readwrite);
       cwms_util.append(l_text,
          '<usgs-stream-rating office-id="'||self.office_id||'">'
          ||'<rating-spec-id>'||self.rating_spec_id||'</rating-spec-id>'
          ||'<units-id>'||self.native_units||'</units-id>'
-         ||'<effective-date>'||cwms_util.get_xml_time(self.effective_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</effective-date>');
+         ||'<effective-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
       if self.create_date is not null then
-         cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(self.create_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</create-date>');
+         cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
       end if;
       cwms_util.append(l_text,
          '<active>'
@@ -6403,9 +6393,9 @@ as
          for i in 1..self.shifts.count loop
             cwms_util.append(l_text,
                '<height-shifts><effective-date>'
-               ||cwms_util.get_xml_time(self.shifts(i).effective_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</effective-date>');
+               ||cwms_util.get_xml_time(cwms_util.change_timezone(self.shifts(i).effective_date, 'UTC', l_tzone), l_tzone)||'</effective-date>');
             if self.shifts(i).create_date is not null then
-               cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(self.shifts(i).create_date, cwms_loc.get_local_timezone(cwms_util.split_text(self.rating_spec_id, cwms_rating.separator1)(1), self.office_id))||'</create-date>');
+               cwms_util.append(l_text, '<create-date>'||cwms_util.get_xml_time(cwms_util.change_timezone(self.shifts(i).create_date, 'UTC', l_tzone), l_tzone)||'</create-date>');
             end if;
             cwms_util.append(l_text,
                '<active>'
