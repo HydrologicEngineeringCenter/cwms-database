@@ -1,4 +1,3 @@
-/* Formatted on 7/29/2011 12:25:57 PM (QP5 v5.163.1008.3004) */
 CREATE OR REPLACE PACKAGE BODY cwms_loc
 AS
 	--
@@ -3832,10 +3831,7 @@ AS
 
 		RETURN l_local_tz;
    exception
-      when no_data_found then
-         cwms_err.raise(
-            'ERROR',
-            'No local time zone specified for '||l_office_id||'/'||p_location_id);
+      when no_data_found then null;
 	END get_local_timezone;
 
 	FUNCTION get_loc_category_code (p_loc_category_id	 IN VARCHAR2,
