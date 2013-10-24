@@ -2327,7 +2327,10 @@ AS
                THEN
                   l_query_str :=
                      'select date_time,
-                          value + :l_value_offset,
+                          case
+                             when value is nan then null
+                             else value + :l_value_offset
+                          end "VALUE",
                           cwms_ts.normalize_quality(quality_code) as quality_code
                      from ((select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as date_time,
                                   value,
@@ -2437,35 +2440,35 @@ AS
                ELSE
                   l_query_str :=
                      'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                                          case
-                                             when value is nan then null
-                                             else value + :l_value_offset
-                         end "VALUE",
-                         cwms_ts.normalize_quality(nvl(quality_code, :missing)) "QUALITY_CODE"
-                                     from (
-                                          select date_time,
-                                                 max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
-                                                 max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
-                                            from av_tsv_dqu
-                                           where ts_code    =  :ts_code
-                                             and date_time  >= to_date(:l_start, :l_date_fmt)
-                                             and date_time  <= to_date(:l_end,   :l_date_fmt)
-                                             and unit_id    =  :units
-                                             and start_date <= to_date(:l_end,   :l_date_fmt)
-                                             and end_date   >  to_date(:l_start, :l_date_fmt)
-                                        group by date_time
-                                          ) v
-                                          right outer join
-                                         (select date_time,
-                                                 cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) local_time
-                                            from (select to_date(:reg_start, :l_date_fmt) + (level-1) * :interval date_time
-                                                    from dual
-                                              connect by level <= round((to_date(:reg_end,   :l_date_fmt)
-                                                                       - to_date(:reg_start, :l_date_fmt)) / :interval + 1)
-                                                 )
-                                          ) t
-                                          on v.date_time = t.date_time
-                         order by t.date_time asc';
+                             case
+                                when value is nan then null
+                                else value + :l_value_offset
+                             end "VALUE",
+                             cwms_ts.normalize_quality(nvl(quality_code, :missing)) "QUALITY_CODE"
+                        from (
+                             select date_time,
+                                    max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
+                                    max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
+                               from av_tsv_dqu
+                              where ts_code    =  :ts_code
+                                and date_time  >= to_date(:l_start, :l_date_fmt)
+                                and date_time  <= to_date(:l_end,   :l_date_fmt)
+                                and unit_id    =  :units
+                                and start_date <= to_date(:l_end,   :l_date_fmt)
+                                and end_date   >  to_date(:l_start, :l_date_fmt)
+                              group by date_time
+                             ) v
+                             right outer join
+                            (select date_time,
+                                    cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) local_time
+                               from (select to_date(:reg_start, :l_date_fmt) + (level-1) * :interval date_time
+                                       from dual
+                                 connect by level <= round((to_date(:reg_end,   :l_date_fmt)
+                                                          - to_date(:reg_start, :l_date_fmt)) / :interval + 1)
+                                    )
+                             ) t
+                             on v.date_time = t.date_time
+                       order by t.date_time asc';
                   replace_strings;
 
                   OPEN l_cursor FOR l_query_str
@@ -2518,8 +2521,8 @@ AS
                            and end_date   >  to_date(:l_start, :l_date_fmt)
                       group by date_time
                       )
-             group by local_time
-             order by local_time';
+                group by local_time
+                order by local_time';
                replace_strings;
 
                OPEN l_cursor FOR l_query_str
@@ -2537,8 +2540,11 @@ AS
                         l_date_format;
             ELSE
                l_query_str :=
-                  'select local_time as date_time,
-                       value + :l_value_offset,
+               'select local_time as date_time,
+                       case
+                         when value is nan then null
+                         else value + :l_value_offset
+                       end "VALUE",
                        cwms_ts.normalize_quality(quality_code) as quality_code
                   from (select date_time,
                                cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as local_time,
@@ -2554,9 +2560,9 @@ AS
                            and unit_id    =  :units
                            and start_date <= to_date(:l_end,   :l_date_fmt)
                            and end_date   >  to_date(:l_start, :l_date_fmt)
-                      group by date_time
+                         group by date_time
                        )
-              order by date_time';
+                 order by date_time';
                replace_strings;
 
                OPEN l_cursor FOR l_query_str
@@ -2660,8 +2666,11 @@ AS
                IF l_strict_times
                THEN
                   l_query_str :=
-                     'select date_time,
-                          value + :l_value_offset,
+                  'select date_time,
+                          case
+                             when value is nan then null
+                             else value + :l_value_offset
+                          end "VALUE",
                           cwms_ts.normalize_quality(quality_code) as quality_code
                      from ((select cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as date_time,
                                   value,
@@ -2771,37 +2780,37 @@ AS
                            l_interval;
                ELSE
                   l_query_str :=
-                     'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
-                                          case
-                                             when value is nan then null
-                                             else value + :l_value_offset
-                         end "VALUE",
-                         cwms_ts.normalize_quality(nvl(quality_code, :missing)) "QUALITY_CODE"
-                                     from (
-                                          select date_time,
-                                                 max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
-                                                 max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
-                                            from av_tsv_dqu
-                                           where ts_code     =  :ts_code
-                                             and date_time   >= to_date(:l_start, :l_date_fmt)
-                                             and date_time   <= to_date(:l_end,   :l_date_fmt)
-                                             and unit_id     =  :units
-                                             and start_date  <= to_date(:l_end,   :l_date_fmt)
-                                             and end_date    >  to_date(:l_start, :l_date_fmt)
-                                             and version_date = :version
-                                        group by date_time
-                                          ) v
-                                          right outer join
-                                         (select date_time,
-                                                 cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) local_time
-                                            from (select to_date(:reg_start, :l_date_fmt) + (level-1) * :interval date_time
-                                                    from dual
-                                              connect by level <= round((to_date(:reg_end,   :l_date_fmt)
-                                                                       - to_date(:reg_start, :l_date_fmt)) / :interval + 1)
-                                                 )
-                                          ) t
-                                          on v.date_time = t.date_time
-                         order by t.date_time asc';
+                  'select cast(from_tz(cast(t.date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) "DATE_TIME",
+                          case
+                             when value is nan then null
+                             else value + :l_value_offset
+                          end "VALUE",
+                          cwms_ts.normalize_quality(nvl(quality_code, :missing)) "QUALITY_CODE"
+                     from (
+                          select date_time,
+                                 max(value) keep(dense_rank :first_or_last order by version_date) "VALUE",
+                                 max(quality_code) keep(dense_rank :first_or_last order by version_date) "QUALITY_CODE"
+                            from av_tsv_dqu
+                           where ts_code     =  :ts_code
+                             and date_time   >= to_date(:l_start, :l_date_fmt)
+                             and date_time   <= to_date(:l_end,   :l_date_fmt)
+                             and unit_id     =  :units
+                             and start_date  <= to_date(:l_end,   :l_date_fmt)
+                             and end_date    >  to_date(:l_start, :l_date_fmt)
+                             and version_date = :version
+                           group by date_time
+                          ) v
+                          right outer join
+                          (select date_time,
+                                  cwms_util.change_timezone(date_time, ''UTC'', :l_time_zone) local_time
+                             from (select to_date(:reg_start, :l_date_fmt) + (level-1) * :interval date_time
+                                     from dual
+                               connect by level <= round((to_date(:reg_end,   :l_date_fmt)
+                                                        - to_date(:reg_start, :l_date_fmt)) / :interval + 1)
+                                  )
+                          ) t
+                          on v.date_time = t.date_time
+                    order by t.date_time asc';
                   replace_strings;
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
@@ -2874,8 +2883,11 @@ AS
                         l_version_date;
             ELSE
                l_query_str :=
-                  'select local_time as date_time,
-                       value + :l_value_offset,
+                'select local_time as date_time,
+                        case
+                          when value is nan then null
+                          else value + :l_value_offset
+                       end "VALUE",
                        cwms_ts.normalize_quality(quality_code) as quality_code
                   from (select date_time,
                                cast(from_tz(cast(date_time as timestamp), ''UTC'') at time zone '':tz'' as :date_time_type) as local_time,
@@ -2892,9 +2904,9 @@ AS
                            and start_date  <= to_date(:l_end,   :l_date_fmt)
                            and end_date    >  to_date(:l_start, :l_date_fmt)
                            and version_date = :version
-                      group by date_time
+                         group by date_time
                        )
-              order by date_time';
+                 order by date_time';
                replace_strings;
 
                OPEN l_cursor FOR l_query_str
