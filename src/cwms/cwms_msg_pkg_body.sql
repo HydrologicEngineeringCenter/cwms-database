@@ -367,6 +367,7 @@ is
    l_program     varchar2(64);
    l_machine     varchar2(64);
    l_result      integer;
+   l_max_tries   pls_integer := 25;
 begin
    if l_msg_level > msg_level_none then
       -----------------------------------------
@@ -410,7 +411,7 @@ begin
         from v$session
        where audsid = userenv('sessionid');
        
-      for i in 1..3 loop
+      for i in 1..l_max_tries loop
          begin
             insert
               into at_log_message
@@ -435,11 +436,11 @@ begin
          exception
             when others then
                if sqlcode = -1 then
-                  if i < 3 then
+                  if i < l_max_tries then
                      l_msg_id := get_msg_id;
                      continue;
                   else
-                     cwms_err.raise('ERROR', 'Could not get unique message id in 3 attempts');
+                     cwms_err.raise('ERROR', 'Could not get unique message id in '||l_max_tries||' attempts');
                      end if;
                end if;
          end;
