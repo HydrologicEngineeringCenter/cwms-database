@@ -2439,7 +2439,7 @@ as
       -- members are null!
       return;
    end;
-   
+
    constructor function rating_ind_parameter_t(
       p_rating_code in number)
    return self as result
@@ -2448,7 +2448,7 @@ as
       init(rating_ind_parameter_t.get_rating_ind_parameter_code(p_rating_code), null);
       return;
    end;
-   
+
 
    constructor function rating_ind_parameter_t(
       p_rating_code in number,
@@ -2459,7 +2459,7 @@ as
       init(rating_ind_parameter_t.get_rating_ind_parameter_code(p_rating_code), p_other_ind);
       return;
    end;
-   
+
    constructor function rating_ind_parameter_t(
       p_rating_ind_parameter_code in number,
       p_other_ind                 in double_tab_t,
@@ -2476,7 +2476,7 @@ as
       init(p_rating_ind_parameter_code, l_other_ind);
       return;
    end;
-   
+
    constructor function rating_ind_parameter_t(
       p_xml in xmltype)
    return self as result
@@ -2505,9 +2505,9 @@ as
       l_ind_params           str_tab_t;
       l_ind_units            str_tab_t;
       l_processed_points     boolean;
-      
+
       pragma autonomous_transaction; -- allows commit to flush temp table
-      
+
       ------------------------------
       -- local function shortcuts --
       ------------------------------
@@ -2555,11 +2555,11 @@ as
                l_rating.extend;
                l_rating(l_rating.count) := rating_value_t();
                l_rating(l_rating.count).ind_value := rec.ind_value;
-               -------------------------------------------------------------------------------- 
+               --------------------------------------------------------------------------------
                -- create a temporary rating_ind_parameter_t object since the rating_values   --
                -- field is not addressable from the more abstract abs_rating_ind_param_t     --
                -- field in l_rating(l_rating.count)                                          --
-               -------------------------------------------------------------------------------- 
+               --------------------------------------------------------------------------------
                l_rating_param := rating_ind_parameter_t();
                -------------------------------------------------------------------------
                -- build the index string to check for pre-built objects (also used as --
@@ -2587,10 +2587,10 @@ as
                -- abs_rating_ind_param_t field of l_rating(l_rating.count)                      --
                -----------------------------------------------------------------------------------
                l_rating(l_rating.count).dep_rating_ind_param := l_rating_param;
-            end if;         
+            end if;
          end loop;
          return l_rating;
-      end;       
+      end;
    begin
       begin
          l_parts := cwms_util.split_text(get_text(p_xml, '/rating/rating-spec-id'), cwms_rating.separator1);
@@ -2607,30 +2607,58 @@ as
          when others then
             cwms_err.raise('ERROR', 'Cannot determine rating independent unit(s)');
       end;
+      <<value_types>>
       for i in 1..l_value_type.count loop
          ----------------------------------------------------------------
          -- for each value type in 'rating-points', 'extension-points' --
          ----------------------------------------------------------------
          l_processed_points := false;
+         <<rating_points>>
          for j in 1..9999999 loop
             ------------------------------------------------------------
             -- for each <rating-points> or <extension-points> element --
             ------------------------------------------------------------
             l_rating_points := get_node(p_xml, '/rating/'||l_value_type(i)||'['||j||']');
-            exit when l_rating_points is null;
+            exit rating_points when l_rating_points is null;
+            if j > 1 and l_ind_params.count = 1 then
+               cwms_err.raise(
+                  'ERROR', 
+                  'Multiple <'||l_value_type(i)||'> elements are not allowed in a single independent parameter rating.');
+            end if; 
             l_processed_points := true;
             l_position := 0;
             l_rating_value_tab_id := l_value_type(i)||'=';
+            <<other_ind>>
             for k in 1..9999999 loop
                ----------------------------------
                -- for each <other-ind> element --
                ----------------------------------
                l_other_ind := get_node(l_rating_points, '/'||l_value_type(i)||'/other-ind['||k||']');
-               exit when l_other_ind is null;
+               if l_other_ind is null then
+                  if k != l_ind_params.count then
+                     cwms_err.raise(
+                        'ERROR',
+                        'Each <'
+                        ||l_value_type(i)
+                        ||'> element in a '
+                        ||l_ind_params.count
+                        ||' independent parameter rating must have '
+                        ||l_ind_params.count-1
+                        ||' <other-ind> elements.');
+                  else
+                     exit other_ind;
+                  end if;
+               else
+                  if l_ind_params.count = 1 then
+               cwms_err.raise(
+                  'ERROR', 
+                  '<other-ind> elements are not allowed in a single independent parameter rating.');
+                  end if;
+               end if;
                -----------------------------------------------
                -- extract the position and value attributes --
                -----------------------------------------------
-               l_position := get_number(l_other_ind, '/other-ind/@position'); 
+               l_position := get_number(l_other_ind, '/other-ind/@position');
                l_value    := get_number(l_other_ind, '/other-ind/@value');
                ---------------------------------------
                -- verify expected position sequence --
@@ -2670,9 +2698,9 @@ as
                for m in l_position+1..l_value_at_pos.count loop
                   l_value_at_pos(m) := null;
                end loop;
-               ------------------------------------------------------------------------------ 
+               ------------------------------------------------------------------------------
                -- save the info to a temporary table so it can be queried in another order --
-               ------------------------------------------------------------------------------ 
+               ------------------------------------------------------------------------------
                insert
                  into at_compound_rating
                values (1000000*i+1000*j+l_position, l_position, l_value_at_pos(l_position), l_rating_value_tab_id);
@@ -2685,15 +2713,16 @@ as
                else
                   l_rating_value_tab_id := l_rating_value_tab_id || l_value_at_pos(l_position);
                end if;
-            end loop;
+            end loop other_ind;
             l_last_ind_value := null;
             l_rating_values  := rating_value_tab_t();
+            <<points>>
             for k in 1..9999999 loop
                ------------------------------
                -- for each <point> element --
                ------------------------------
                l_point := get_node(l_rating_points, '/'||l_value_type(i)||'/point['||k||']');
-               exit when l_point is null;
+               exit points when l_point is null;
                ------------------------------------------------------------------------------------
                -- extract the required <ind> and <dep> node values, and the optional <note> node --
                ------------------------------------------------------------------------------------
@@ -2720,38 +2749,38 @@ as
                l_rating_value.note_id          := l_note_text;
                l_rating_values.extend;
                l_rating_values(l_rating_values.count) := l_rating_value;
-            end loop;
+            end loop points;
             --------------------------------------------------------------------------------
             -- index the new rating_value_t by the rating value table id contructed above --
             --------------------------------------------------------------------------------
             l_rating_value_tab(l_rating_value_tab_id) := l_rating_values;
-         end loop;
+         end loop rating_points;
          -----------------------------------------------------------
          -- construct the rating_values or extension_values field --
          -----------------------------------------------------------
          if l_processed_points then
-            l_rating_values := 
+            l_rating_values :=
                case l_position = 0
-                  when true then 
+                  when true then
                      case l_rating_value_tab.exists(l_rating_value_tab_id) -- only 1 input parameter
                         when true  then l_rating_value_tab(l_rating_value_tab_id)
                         when false then null
                      end
-                  when false then 
-                     build_rating(l_value_type(i)||'=') 
+                  when false then
+                     build_rating(l_value_type(i)||'=')
                end;
             case i
                when 1 then self.rating_values    := l_rating_values;
                when 2 then self.extension_values := l_rating_values;
             end case;
-         end if;            
-      end loop;
+         end if;
+      end loop value_types;
       commit; -- flush temporary table
       self.constructed := 'T';
       validate_obj(1);
       return;
    end;
-   
+
    overriding member procedure init(
       p_rating_ind_parameter_code in number,
       p_other_ind                 in double_tab_t)
@@ -2765,7 +2794,7 @@ as
       for rec in
          (  select *
               from at_rating_ind_parameter
-             where rating_ind_param_code = p_rating_ind_parameter_code 
+             where rating_ind_param_code = p_rating_ind_parameter_code
          )
       loop
          l_other_ind_hash := rating_value_t.hash_other_ind(p_other_ind);
@@ -2782,11 +2811,11 @@ as
             self.rating_values(self.rating_values.count) := rating_value_t(
                   rec.rating_ind_param_code,
                   p_other_ind,
-                  l_other_ind_hash, 
+                  l_other_ind_hash,
                   rec2.ind_value,
                   'F');
          end loop;
-         
+
          self.extension_values := rating_value_tab_t();
          for rec2 in
             (  select ind_value
@@ -2798,9 +2827,9 @@ as
          loop
             self.extension_values.extend;
             self.extension_values(self.extension_values.count) := rating_value_t(
-                  rec.rating_ind_param_code, 
+                  rec.rating_ind_param_code,
                   p_other_ind,
-                  l_other_ind_hash, 
+                  l_other_ind_hash,
                   rec2.ind_value,
                   'T');
          end loop;
@@ -2817,7 +2846,7 @@ as
       self.validate_obj(l_parameter_position);
       self.constructed := 'T';
    end;
-      
+
    overriding member procedure validate_obj(
       p_parameter_position in number)
    is
@@ -2846,7 +2875,7 @@ as
                   'Rating independent parameter '
                   ||p_parameter_position
                   ||' rating value cannot have both a dependent value and a dependent sub-rating');
-            end if; 
+            end if;
             if self.rating_values(i).dep_value is null then
                if self.rating_values(i).dep_rating_ind_param is null then
                   cwms_err.raise(
@@ -2861,11 +2890,11 @@ as
                else
                   self.rating_values(i).dep_rating_ind_param.validate_obj(p_parameter_position + 1);
                end if;
-            end if; 
+            end if;
             ------------------------
             -- independent values --
             ------------------------
-            if self.rating_values(i).ind_value is null or 
+            if self.rating_values(i).ind_value is null or
                (i > 1 and self.rating_values(i).ind_value <= self.rating_values(i-1).ind_value)
             then
                cwms_err.raise(
@@ -2874,7 +2903,7 @@ as
                   ||p_parameter_position
                   ||' rating values do not monotonically increase after value '
                   ||cwms_rounding.round_dt_f(self.rating_values(i-1).ind_value, '9999999999'));
-            end if; 
+            end if;
          end loop;
       end if;
       ----------------------------
@@ -2893,7 +2922,7 @@ as
                   'Rating independent parameter '
                   ||p_parameter_position
                   ||' extension value cannot have both a dependent value and a dependent sub-rating');
-            end if; 
+            end if;
             if self.extension_values(i).dep_value is null then
                if self.extension_values(i).dep_rating_ind_param is null then
                   cwms_err.raise(
@@ -2908,11 +2937,11 @@ as
                else
                   self.extension_values(i).dep_rating_ind_param.validate_obj(p_parameter_position + 1);
                end if;
-            end if; 
+            end if;
             ------------------------
             -- independent values --
             ------------------------
-            if self.extension_values(i).ind_value is null or 
+            if self.extension_values(i).ind_value is null or
                (i > 1 and self.extension_values(i).ind_value <= self.extension_values(i-1).ind_value)
             then
                cwms_err.raise(
@@ -2921,7 +2950,7 @@ as
                   ||p_parameter_position
                   ||' extension values do not monotonically increase after value '
                   ||cwms_rounding.round_dt_f(self.extension_values(i-1).ind_value, '9999999999'));
-            end if; 
+            end if;
          end loop;
       end if;
    end;
@@ -2964,7 +2993,7 @@ as
                and uc.from_unit_id = l_dep_unit_id;
          else
             l_parts := cwms_util.split_text(p_parameters_id, cwms_rating.separator3);
-            l_ind_param_id := l_parts(1);             
+            l_ind_param_id := l_parts(1);
             l_parts := cwms_util.split_text(p_units_id, cwms_rating.separator3);
             l_ind_unit_id := l_parts(1);
             l_remaining_parameters_id := substr(p_parameters_id, instr(p_parameters_id, cwms_rating.separator3) + 1);
@@ -2980,10 +3009,10 @@ as
             and uc.to_unit_code = bp.unit_code
             and uc.from_unit_id = l_ind_unit_id;
          for i in 1..self.rating_values.count loop
-            self.rating_values(i).ind_value := 
+            self.rating_values(i).ind_value :=
                self.rating_values(i).ind_value * l_ind_factor + l_ind_offset;
             if l_deepest then
-               self.rating_values(i).dep_value := 
+               self.rating_values(i).dep_value :=
                   self.rating_values(i).dep_value * l_dep_factor + l_dep_offset;
             else
                self.rating_values(i).dep_rating_ind_param.convert_to_database_units(
@@ -2993,10 +3022,10 @@ as
          end loop;
          if self.extension_values is not null then
             for i in 1..self.extension_values.count loop
-               self.extension_values(i).ind_value := 
+               self.extension_values(i).ind_value :=
                   self.extension_values(i).ind_value * l_ind_factor + l_ind_offset;
                if l_deepest then
-                  self.extension_values(i).dep_value := 
+                  self.extension_values(i).dep_value :=
                      self.extension_values(i).dep_value * l_dep_factor + l_dep_offset;
                else
                   self.extension_values(i).dep_rating_ind_param.convert_to_database_units(
@@ -3004,7 +3033,7 @@ as
                      l_remaining_units_id);
                end if;
             end loop;
-         end if;            
+         end if;
       else
          cwms_err.raise('ERROR', 'Object is not fully constructed');
       end if;
@@ -3048,7 +3077,7 @@ as
                and uc.to_unit_id = l_dep_unit_id;
          else
             l_parts := cwms_util.split_text(p_parameters_id, cwms_rating.separator3);
-            l_ind_param_id := l_parts(1);             
+            l_ind_param_id := l_parts(1);
             l_parts := cwms_util.split_text(p_units_id, cwms_rating.separator3);
             l_ind_unit_id := l_parts(1);
             l_remaining_parameters_id := substr(p_parameters_id, instr(p_parameters_id, cwms_rating.separator3) + 1);
@@ -3064,10 +3093,10 @@ as
             and uc.from_unit_code = bp.unit_code
             and uc.to_unit_id = l_ind_unit_id;
          for i in 1..self.rating_values.count loop
-            self.rating_values(i).ind_value := 
+            self.rating_values(i).ind_value :=
                cwms_rounding.round_dd_f(self.rating_values(i).ind_value * l_ind_factor + l_ind_offset, '9999999999');
             if l_deepest then
-               self.rating_values(i).dep_value := 
+               self.rating_values(i).dep_value :=
                   cwms_rounding.round_dd_f(self.rating_values(i).dep_value * l_dep_factor + l_dep_offset, '9999999999');
             else
                self.rating_values(i).dep_rating_ind_param.convert_to_native_units(
@@ -3077,10 +3106,10 @@ as
          end loop;
          if self.extension_values is not null then
             for i in 1..self.extension_values.count loop
-               self.extension_values(i).ind_value := 
+               self.extension_values(i).ind_value :=
                   cwms_rounding.round_dd_f(self.extension_values(i).ind_value * l_ind_factor + l_ind_offset, '9999999999');
                if l_deepest then
-                  self.extension_values(i).dep_value := 
+                  self.extension_values(i).dep_value :=
                      cwms_rounding.round_dd_f(self.extension_values(i).dep_value * l_dep_factor + l_dep_offset, '9999999999');
                else
                   self.extension_values(i).dep_rating_ind_param.convert_to_native_units(
@@ -3088,12 +3117,12 @@ as
                      l_remaining_units_id);
                end if;
             end loop;
-         end if;            
+         end if;
       else
          cwms_err.raise('ERROR', 'Object is not fully constructed');
       end if;
    end;
-   
+
    overriding member procedure store(
       p_rating_ind_param_code out number,
       p_rating_code           in  number,
@@ -3107,11 +3136,11 @@ as
       l_hash_code          varchar2(40);
    begin
       l_rec.rating_code := p_rating_code;
-      l_parameter_position := 
+      l_parameter_position :=
          case p_other_ind is null
             when true  then 1
             when false then p_other_ind.count + 1
-         end; 
+         end;
       begin
          select rips.ind_param_spec_code
            into l_rec.ind_param_spec_code
@@ -3121,34 +3150,34 @@ as
           where r.rating_code = p_rating_code
             and rs.rating_spec_code = r.rating_spec_code
             and rips.template_code = rs.template_code
-            and rips.parameter_position = l_parameter_position; 
+            and rips.parameter_position = l_parameter_position;
       exception
          when no_data_found then
             cwms_err.raise(
                'ERROR',
                'Invalid parameter position: '||l_parameter_position);
       end;
-      
+
       begin
          select *
            into l_rec
            from at_rating_ind_parameter
           where rating_code = l_rec.rating_code
             and ind_param_spec_code = l_rec.ind_param_spec_code;
-            
+
          if cwms_util.is_true(p_fail_if_exists) then
             cwms_err.raise(
                'ITEM_ALREADY_EXISTS',
                'Rating independent parameter',
                l_rec.rating_ind_param_code);
-         end if;         
-         
+         end if;
+
          l_hash_code := rating_value_t.hash_other_ind(p_other_ind);
          delete
            from at_rating_value
           where rating_ind_param_code = l_rec.rating_ind_param_code
             and other_ind_hash = l_hash_code;
-         
+
          delete
            from at_rating_extension_value
           where rating_ind_param_code = l_rec.rating_ind_param_code
@@ -3156,11 +3185,11 @@ as
       exception
          when no_data_found then
             l_rec.rating_ind_param_code := cwms_seq.nextval;
-            insert 
+            insert
               into at_rating_ind_parameter
             values l_rec;
-      end;            
-      
+      end;
+
       select co.office_id
         into l_office_id
         from at_rating r,
@@ -3170,31 +3199,31 @@ as
        where r.rating_code = p_rating_code
          and rs.rating_spec_code = r.rating_spec_code
          and rt.template_code = rs.template_code
-         and co.office_code = rt.office_code;    
-      
+         and co.office_code = rt.office_code;
+
       for i in 1..self.rating_values.count loop
-         l_value := self.rating_values(i); 
+         l_value := self.rating_values(i);
          l_value.store(
             p_rating_ind_param_code => l_rec.rating_ind_param_code,
-            p_other_ind             => p_other_ind, 
+            p_other_ind             => p_other_ind,
             p_is_extension          => 'F',
             p_office_id             => l_office_id);
-      end loop;       
-          
+      end loop;
+
       if self.extension_values is not null then
          for i in 1..self.extension_values.count loop
             l_value := self.extension_values(i);
             l_value.store(
-               p_rating_ind_param_code => l_rec.rating_ind_param_code, 
-               p_other_ind             => p_other_ind, 
+               p_rating_ind_param_code => l_rec.rating_ind_param_code,
+               p_other_ind             => p_other_ind,
                p_is_extension          => 'T',
                p_office_id             => l_office_id);
-         end loop;       
+         end loop;
       end if;
-      
-      p_rating_ind_param_code := l_rec.rating_ind_param_code;      
-   end;      
-   
+
+      p_rating_ind_param_code := l_rec.rating_ind_param_code;
+   end;
+
    overriding member procedure store(
       p_rating_code           in  number,
       p_other_ind             in  double_tab_t,
@@ -3208,7 +3237,7 @@ as
          p_other_ind,
          p_fail_if_exists);
    end;
-      
+
    overriding member function to_clob(
       p_ind_params   in double_tab_t default null,
       p_is_extension in boolean default false)
@@ -3228,21 +3257,21 @@ as
       l_position := l_ind_params.count + 1;
       for i in 1..self.rating_values.count loop
          if l_deepest is null then
-            l_deepest := self.rating_values(i).dep_rating_ind_param is null; 
+            l_deepest := self.rating_values(i).dep_rating_ind_param is null;
          else
             if(self.rating_values(i).dep_rating_ind_param is null) != l_deepest then
                cwms_err.raise(
                   'ERROR',
                   'Rating parameter position '||l_position||' contains both values and ratings');
-            end if; 
+            end if;
          end if;
          if self.rating_values(i).dep_value is null then
             ----------------------------
             -- recurse down one level --
             ----------------------------
             l_ind_params.extend;
-            l_ind_params(l_ind_params.count) := self.rating_values(i).ind_value;    
-            cwms_util.append(l_text, self.rating_values(i).dep_rating_ind_param.to_clob(l_ind_params, p_is_extension));  
+            l_ind_params(l_ind_params.count) := self.rating_values(i).ind_value;
+            cwms_util.append(l_text, self.rating_values(i).dep_rating_ind_param.to_clob(l_ind_params, p_is_extension));
             l_ind_params.trim(1);
          else
             if i = 1 then
@@ -3250,7 +3279,7 @@ as
                -- output the opening tag --
                ----------------------------
                cwms_util.append(
-                  l_text, 
+                  l_text,
                   case p_is_extension
                      when true  then '<extension-points>'
                      when false then '<rating-points>'
@@ -3261,10 +3290,10 @@ as
                for j in 1..l_ind_params.count loop
                   cwms_util.append(l_text, '<other-ind position="'
                      ||j
-                     ||'" value="'  
-                     ||cwms_rounding.round_dt_f(l_ind_params(j), '9999999999')  
+                     ||'" value="'
+                     ||cwms_rounding.round_dt_f(l_ind_params(j), '9999999999')
                      ||'"/>');
-               end loop;   
+               end loop;
             end if;
             --------------------------------
             -- output the <point> element --
@@ -3285,7 +3314,7 @@ as
          -- output the closing tag --
          ----------------------------
          cwms_util.append(
-            l_text, 
+            l_text,
             case p_is_extension
                when true  then '</extension-points>'
                when false then '</rating-points>'
@@ -3294,7 +3323,7 @@ as
       dbms_lob.close(l_text);
       return l_text;
    end;
-   
+
    overriding member function to_xml
    return xmltype
    is
@@ -3308,14 +3337,14 @@ as
       cwms_util.append(l_text, '</rating-ind-parameter>');
       dbms_lob.close(l_text);
       return xmltype(l_text);
-   end;      
-         
+   end;
+
    overriding member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
       p_param_specs in out nocopy rating_ind_par_spec_tab_t)
    return binary_double
-   is             
+   is
       type int_tab_t is table of pls_integer;
       l_result                  binary_double;
       l_rat_count               pls_integer;
@@ -3336,7 +3365,7 @@ as
       l_ratio                   binary_double;
       l_independent_log         boolean;
       l_dependent_log           boolean;
-   begin      
+   begin
       if p_ind_values is not null then
          ------------------
          -- sanity check --
@@ -3353,8 +3382,8 @@ as
                   'ERROR',
                   'Multiple input parameters specified where single parameter is required');
             end if;
-         end if;  
-         
+         end if;
+
          l_rat_count := rating_values.count;
          l_ext_count := case extension_values is null
                            when true  then 0
@@ -3362,7 +3391,7 @@ as
                         end;
          ---------------------------------
          -- build the independent array --
-         ---------------------------------                       
+         ---------------------------------
          l_ind := double_tab_t();
          l_ind.extend(l_rat_count + l_ext_count);
          l_ndx := int_tab_t();
@@ -3370,9 +3399,9 @@ as
          ------------------------------------------------------------
          -- first add any extension values below the rating values --
          ------------------------------------------------------------
-         while i <= l_ext_count and 
+         while i <= l_ext_count and
                extension_values(i).ind_value < rating_values(1).ind_value
-         loop          
+         loop
             k := k + 1;
             l_ind(k) := extension_values(i).ind_value;
             l_ndx(k) := -i;
@@ -3391,18 +3420,18 @@ as
          -- next add any extension values above the rating values --
          -----------------------------------------------------------
          while i <= l_ext_count loop
-            if extension_values(i).ind_value > 
+            if extension_values(i).ind_value >
                rating_values(l_rat_count).ind_value
             then
                k := k + 1;
                l_ind(k) := extension_values(i).ind_value;
                l_ndx(k) := -i;
-            end if;           
+            end if;
             i := i + 1;
          end loop;
          --------------------------------------------------------------------------
          -- finally trim the independent and dependent arrays to the proper size --
-         --------------------------------------------------------------------------  
+         --------------------------------------------------------------------------
          l_ind.trim(l_rat_count + l_ext_count - k);
          l_independent_properties := cwms_lookup.analyze_sequence(l_ind);
          -----------------------------------------------------
@@ -3412,21 +3441,21 @@ as
             l_in_range_behavior := cwms_lookup.method_linear;
          elsif cwms_lookup.method_by_name(p_param_specs(p_position).in_range_rating_method) = cwms_lookup.method_log_lin then
             l_in_range_behavior := cwms_lookup.method_logarithmic;
-         else 
+         else
             l_in_range_behavior := cwms_lookup.method_by_name(p_param_specs(p_position).in_range_rating_method);
          end if;
          if cwms_lookup.method_by_name(p_param_specs(p_position).out_range_low_rating_method) = cwms_lookup.method_lin_log then
             l_out_range_low_behavior := cwms_lookup.method_linear;
          elsif cwms_lookup.method_by_name(p_param_specs(p_position).out_range_low_rating_method) = cwms_lookup.method_log_lin then
             l_out_range_low_behavior := cwms_lookup.method_logarithmic;
-         else 
+         else
             l_out_range_low_behavior := cwms_lookup.method_by_name(p_param_specs(p_position).out_range_low_rating_method);
          end if;
          if cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method) = cwms_lookup.method_lin_log then
             l_out_range_high_behavior := cwms_lookup.method_linear;
          elsif cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method) = cwms_lookup.method_log_lin then
             l_out_range_high_behavior := cwms_lookup.method_logarithmic;
-         else 
+         else
             l_out_range_high_behavior := cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method);
          end if;
          ---------------------------------------------------------
@@ -3448,16 +3477,16 @@ as
             l_in_range_behavior,
             l_out_range_low_behavior,
             l_out_range_high_behavior);
-         if l_ratio is not null then 
-            ------------------------------------------      
+         if l_ratio is not null then
+            ------------------------------------------
             -- set log properties on dependent axis --
             ------------------------------------------
             if l_ratio < 0. then
-               l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).out_range_low_rating_method) 
+               l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).out_range_low_rating_method)
                                   in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
                if l_dependent_log then
-                  if cwms_lookup.method_by_name(p_param_specs(p_position).out_range_low_rating_method) 
-                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) 
+                  if cwms_lookup.method_by_name(p_param_specs(p_position).out_range_low_rating_method)
+                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin)
                      and not l_independent_log
                   then
                      ---------------------------------------
@@ -3465,13 +3494,13 @@ as
                      ---------------------------------------
                      l_dependent_log := false;
                   end if;
-               end if;      
+               end if;
             elsif l_ratio > 1. then
-               l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method) 
+               l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method)
                                   in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
                if l_dependent_log then
-                  if cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method) 
-                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) 
+                  if cwms_lookup.method_by_name(p_param_specs(p_position).out_range_high_rating_method)
+                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin)
                      and not l_independent_log
                   then
                      ---------------------------------------
@@ -3479,13 +3508,13 @@ as
                      ---------------------------------------
                      l_dependent_log := false;
                   end if;
-               end if;      
+               end if;
             else
-               l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).in_range_rating_method) 
+               l_dependent_log := cwms_lookup.method_by_name(p_param_specs(p_position).in_range_rating_method)
                                   in (cwms_lookup.method_logarithmic, cwms_lookup.method_lin_log);
                if l_dependent_log then
-                  if cwms_lookup.method_by_name(p_param_specs(p_position).in_range_rating_method) 
-                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin) 
+                  if cwms_lookup.method_by_name(p_param_specs(p_position).in_range_rating_method)
+                     in (cwms_lookup.method_logarithmic, cwms_lookup.method_log_lin)
                      and not l_independent_log
                   then
                      ---------------------------------------
@@ -3493,7 +3522,7 @@ as
                      ---------------------------------------
                      l_dependent_log := false;
                   end if;
-               end if;      
+               end if;
             end if;
             if p_ind_values.count - p_position + 1 = 1 then
                ----------------------------
@@ -3517,29 +3546,29 @@ as
                -------------------------------
                -- multiple input parameters --
                -------------------------------
-               if l_ratio != 0. then 
+               if l_ratio != 0. then
                   if l_ndx(l_high_index) > 0 then
                      l_hi_val := rating_values(l_ndx(l_high_index)).dep_rating_ind_param.rate(
-                        p_ind_values, 
-                        p_position+1, 
+                        p_ind_values,
+                        p_position+1,
                         p_param_specs);
                   else
                      l_hi_val := extension_values(-l_ndx(l_high_index)).dep_rating_ind_param.rate(
-                        p_ind_values, 
-                        p_position+1, 
+                        p_ind_values,
+                        p_position+1,
                         p_param_specs);
                   end if;
                end if;
                if l_ratio != 1.0 then
                   if l_ndx(l_high_index-1) > 0 then
                      l_lo_val := rating_values(l_ndx(l_high_index-1)).dep_rating_ind_param.rate(
-                        p_ind_values, 
-                        p_position+1, 
+                        p_ind_values,
+                        p_position+1,
                         p_param_specs);
                   else
                      l_lo_val := extension_values(-l_ndx(l_high_index-1)).dep_rating_ind_param.rate(
-                        p_ind_values, 
-                        p_position+1, 
+                        p_ind_values,
+                        p_position+1,
                         p_param_specs);
                   end if;
                end if;
@@ -3547,7 +3576,7 @@ as
             case l_ratio
                when 0. then
                   l_val := l_lo_val;
-               when 1. then         
+               when 1. then
                   l_val := l_hi_val;
                else
                   ------------------------------------------------------------------
@@ -3556,7 +3585,7 @@ as
                   if l_dependent_log then
                      declare
                         l_log_hi_val binary_double;
-                        l_log_lo_val binary_double; 
+                        l_log_lo_val binary_double;
                      begin
                         begin
                            l_log_hi_val := log(10, l_hi_val);
@@ -3577,7 +3606,7 @@ as
                                     l_independent_properties.increasing_range,
                                     cwms_lookup.method_linear,
                                     cwms_lookup.method_linear,
-                                    cwms_lookup.method_linear);  
+                                    cwms_lookup.method_linear);
                               end if;
                         end;
                         if l_dependent_log then
@@ -3602,7 +3631,7 @@ as
       end if;
       return l_result;
    end;
-      
+
    static function get_rating_ind_parameter_code(
       p_rating_code in number)
    return number
@@ -3622,13 +3651,13 @@ as
        where r.rating_code = p_rating_code
          and rs.rating_spec_code = r.rating_spec_code
          and rips.template_code = rs.template_code
-         and rips.parameter_position = 1 
+         and rips.parameter_position = 1
          and rip.rating_code = r.rating_code
          and rip.ind_param_spec_code = rips.ind_param_spec_code;
-         
+
       return l_rating_in_parameter_code;
    end;
-         
+
 end;
 /
 show errors;
