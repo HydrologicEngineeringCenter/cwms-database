@@ -2500,7 +2500,7 @@ begin
         into l_spec_level_code
         from at_specified_level
        where upper(specified_level_id) = upper(p_spec_level_id)
-         and office_code = l_office_code;
+         and office_code in (l_office_code, cwms_util.db_office_code_all);
    exception
       when no_data_found then
          cwms_err.raise('ITEM_DOES_NOT_EXIST', 'Specified level', p_spec_level_id);
