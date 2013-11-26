@@ -3477,76 +3477,76 @@ offices = [
 #                     bottom of the list, but it must have a new unique number.
 #                     The max ofc code is 999.
 #   **ofc**                                                                               
-#     code   ofc    longName                                        reportTo  dbHost  eroc 
-#     ----   ---    ----------------------------------------------  --------  ------  ---- 
-    [   0,  'UNK',  'Corps of Engineers Office Unknown',            '',       '',     '00'],
-    [   1,  'HQ',   'Headquarters, U.S. Army Corps of Engineers',   '',       'HQ',   'S0'],
-    [   2,  'LRD',  'Great Lakes and Ohio River Division',          'HQ',     'LRD',  'H0'],
-    [   3,  'LRDG', 'Great Lakes Region',                           'LRD',    'LRDG', 'H8'],
-    [   4,  'LRC',  'Chicago District',                             'LRDG',   'LRC',  'H6'],
-    [   5,  'LRE',  'Detroit District',                             'LRDG',   'LRE',  'H7'],
-    [   6,  'LRB',  'Buffalo District',                             'LRDG',   'LRB',  'H5'],
-    [   7,  'LRDO', 'Ohio River Region',                            'LRD',    'LRDO', 'H0'],
-    [   8,  'LRH',  'Huntington District',                          'LRDO',   'LRH',  'H1'],
-    [   9,  'LRL',  'Louisville District',                          'LRDO',   'LRL',  'H2'],
-    [  10,  'LRN',  'Nashville District',                           'LRDO',   'LRN',  'H3'],
-    [  11,  'LRP',  'Pittsburgh District',                          'LRDO',   'LRP',  'H4'],
-    [  12,  'MVD',  'Mississippi Valley Division',                  'HQ',     'MVD',  'B0'],
-    [  13,  'MVK',  'Vicksburg District',                           'MVD',    'MVK',  'B4'],
-    [  14,  'MVM',  'Memphis District',                             'MVD',    'MVM',  'B1'],
-    [  15,  'MVN',  'New Orleans District',                         'MVD',    'MVN',  'B2'],
-    [  16,  'MVP',  'St. Paul District',                            'MVD',    'MVP',  'B6'],
-    [  17,  'MVR',  'Rock Island District',                         'MVD',    'MVR',  'B5'],
-    [  18,  'MVS',  'St. Louis District',                           'MVD',    'MVS',  'B3'],
-    [  19,  'NAD',  'North Atlantic Division',                      'HQ',     'NAD',  'E0'],
-    [  20,  'NAB',  'Baltimore District',                           'NAD',    'NAB',  'E1'],
-    [  21,  'NAE',  'New England District',                         'NAD',    'NAE',  'E6'],
-    [  22,  'NAN',  'New York District',                            'NAD',    'NAN',  'E3'],
-    [  23,  'NAO',  'Norfolk District',                             'NAD',    'NAO',  'E4'],
-    [  24,  'NAP',  'Philadelphia District',                        'NAD',    'NAP',  'E5'],
-    [  25,  'NWD',  'Northwestern Division',                        'HQ',     'NWDP', 'G0'],
-    [  26,  'NWDP', 'Pacific Northwest Region',                     'NWD',    'NWDP', 'G0'],
-    [  27,  'NWP',  'Portland District',                            'NWDP',   'NWP', 'G2'],
-    [  28,  'NWS',  'Seattle District',                             'NWDP',   'NWS', 'G3'],
-    [  29,  'NWW',  'Walla Walla District',                         'NWDP',   'NWW', 'G4'],
-    [  30,  'NWDM', 'Missouri River Region',                        'NWD',    'NWDM', 'G7'],
-    [  31,  'NWK',  'Kansas City District',                         'NWDM',   'NWK',  'G5'],
-    [  32,  'NWO',  'Omaha District',                               'NWDM',   'NWO',  'G6'],
-    [  33,  'POD',  'Pacific Ocean Division',                       'HQ',     'POD',  'J0'],
-    [  34,  'POA',  'Alaska District',                              'POD',    'POA',  'J4'],
-    [  35,  'POH',  'Hawaii District',                              'POD',    'POH',  'J3'],
-    [  36,  'SAD',  'South Atlantic Division',                      'HQ',     'SAD',  'K0'],
-    [  37,  'SAC',  'Charleston District',                          'SAD',    'SAC',  'K2'],
-    [  38,  'SAJ',  'Jacksonville District',                        'SAD',    'SAJ',  'K3'],
-    [  39,  'SAM',  'Mobile District',                              'SAD',    'SAM',  'K5'],
-    [  40,  'SAS',  'Savannah District',                            'SAD',    'SAS',  'K6'],
-    [  41,  'SAW',  'Wilmington District',                          'SAD',    'SAW',  'K7'],
-    [  42,  'SPD',  'South Pacific Division',                       'HQ',     'SPD',  'L0'],
-    [  43,  'SPA',  'Albuquerque District',                         'SPD',    'SPA',  'L4'],
-    [  44,  'SPK',  'Sacramento District',                          'SPD',    'SPK',  'L2'],
-    [  45,  'SPL',  'Los Angeles District',                         'SPD',    'SPL',  'L1'],
-    [  46,  'SPN',  'San Francisco District',                       'SPD',    'SPN',  'L3'],
-    [  47,  'SWD',  'Southwestern Division',                        'HQ',     'SWD',  'M0'],
-    [  48,  'SWF',  'Fort Worth District',                          'SWD',    'SWF',  'M2'],
-    [  49,  'SWG',  'Galveston District',                           'SWD',    'SWG',  'M3'],
-    [  50,  'SWL',  'Little Rock District',                         'SWD',    'SWL',  'M4'],
-    [  51,  'SWT',  'Tulsa District',                               'SWD',    'SWT',  'M5'],
-    [  52,  'LCRA', 'Lower Colorado River Authority',               '',       'LCRA', 'Z0'],
-    [  53,  'CWMS', 'All CWMS Offices',                             '',       '',     'X0'],
-    [  54,  'ERD',  'Engineer Research and Development Center',     'HQ',     'ERD',  'U0'],
-    [  55,  'CRREL','Cold Regions Research and Engineering Lab',    'ERD',    'CRREL','U4'],
-    [  56,  'CHL',  'Coastal and Hydraulics Laboratory',            'ERD',    'CHL',  'U1'],
-    [  57,  'CERL', 'Construction Engineering Research Laboratory', 'ERD',    'CERL', 'U2'],
-    [  58,  'EL',   'Environmental Laboratory',                     'ERD',    'EL',   'U3'],
-    [  59,  'GSL',  'Geotechnical and Structures Laboratory',       'ERD',    'GSL',  'U5'],
-    [  60,  'ITL',  'Information Technology Laboratory',            'ERD',    'ITL',  'U6'],
-    [  61,  'TEC',  'Topographic Engineering Center',               'ERD',    'TEC',  'U7'],
-    [  62,  'IWR',  'Institute for Water Resources',                'HQ',     'IWR',  'Q1'],
-    [  63,  'NDC',  'Navigation Data Center',                       'IWR',    'NDC',  'Q2'],
-    [  64,  'HEC',  'Hydrologic Engineering Cennter',               'IWR',    'HEC',  'Q0'],
-    [  65,  'WCSC', 'Waterborne Commerce Statistics Center',        'IWR',    'WCSC', 'Q3'],
-    [  66,  'CPC',  'Central Processing Center',                    '',       'CPC',  'X1'],
-    [  67,  'WPC',  'Western Processing Center',                    '',       'WPC',  'X2'],
+#     code   ofc    longName                                        reportTo  dbHost  eroc  ofcType
+#     ----   ---    ----------------------------------------------  --------  ------  ----  -----  
+    [   0,  'UNK',  'Corps of Engineers Office Unknown',            '',       '',     '00', 'UNK' ],
+    [   1,  'HQ',   'Headquarters, U.S. Army Corps of Engineers',   '',       'HQ',   'S0', 'HQ'  ],
+    [   2,  'LRD',  'Great Lakes and Ohio River Division',          'HQ',     'LRD',  'H0', 'MSC' ],
+    [   3,  'LRDG', 'Great Lakes Region',                           'LRD',    'LRDG', 'H8', 'MSCR'],
+    [   4,  'LRC',  'Chicago District',                             'LRDG',   'LRC',  'H6', 'DIS' ],
+    [   5,  'LRE',  'Detroit District',                             'LRDG',   'LRE',  'H7', 'DIS' ],
+    [   6,  'LRB',  'Buffalo District',                             'LRDG',   'LRB',  'H5', 'DIS' ],
+    [   7,  'LRDO', 'Ohio River Region',                            'LRD',    'LRDO', 'H0', 'MSCR'],
+    [   8,  'LRH',  'Huntington District',                          'LRDO',   'LRH',  'H1', 'DIS' ],
+    [   9,  'LRL',  'Louisville District',                          'LRDO',   'LRL',  'H2', 'DIS' ],
+    [  10,  'LRN',  'Nashville District',                           'LRDO',   'LRN',  'H3', 'DIS' ],
+    [  11,  'LRP',  'Pittsburgh District',                          'LRDO',   'LRP',  'H4', 'DIS' ],
+    [  12,  'MVD',  'Mississippi Valley Division',                  'HQ',     'MVD',  'B0', 'MSC' ],
+    [  13,  'MVK',  'Vicksburg District',                           'MVD',    'MVK',  'B4', 'DIS' ],
+    [  14,  'MVM',  'Memphis District',                             'MVD',    'MVM',  'B1', 'DIS' ],
+    [  15,  'MVN',  'New Orleans District',                         'MVD',    'MVN',  'B2', 'DIS' ],
+    [  16,  'MVP',  'St. Paul District',                            'MVD',    'MVP',  'B6', 'DIS' ],
+    [  17,  'MVR',  'Rock Island District',                         'MVD',    'MVR',  'B5', 'DIS' ],
+    [  18,  'MVS',  'St. Louis District',                           'MVD',    'MVS',  'B3', 'DIS' ],
+    [  19,  'NAD',  'North Atlantic Division',                      'HQ',     'NAD',  'E0', 'MSC' ],
+    [  20,  'NAB',  'Baltimore District',                           'NAD',    'NAB',  'E1', 'DIS' ],
+    [  21,  'NAE',  'New England District',                         'NAD',    'NAE',  'E6', 'DIS' ],
+    [  22,  'NAN',  'New York District',                            'NAD',    'NAN',  'E3', 'DIS' ],
+    [  23,  'NAO',  'Norfolk District',                             'NAD',    'NAO',  'E4', 'DIS' ],
+    [  24,  'NAP',  'Philadelphia District',                        'NAD',    'NAP',  'E5', 'DIS' ],
+    [  25,  'NWD',  'Northwestern Division',                        'HQ',     'NWDP', 'G0', 'MSC' ],
+    [  26,  'NWDP', 'Pacific Northwest Region',                     'NWD',    'NWDP', 'G0', 'MSCR'],
+    [  27,  'NWP',  'Portland District',                            'NWDP',   'NWP',  'G2', 'DIS' ],
+    [  28,  'NWS',  'Seattle District',                             'NWDP',   'NWS',  'G3', 'DIS' ],
+    [  29,  'NWW',  'Walla Walla District',                         'NWDP',   'NWW',  'G4', 'DIS' ],
+    [  30,  'NWDM', 'Missouri River Region',                        'NWD',    'NWDM', 'G7', 'MSCR'],
+    [  31,  'NWK',  'Kansas City District',                         'NWDM',   'NWK',  'G5', 'DIS' ],
+    [  32,  'NWO',  'Omaha District',                               'NWDM',   'NWO',  'G6', 'DIS' ],
+    [  33,  'POD',  'Pacific Ocean Division',                       'HQ',     'POD',  'J0', 'MSC' ],
+    [  34,  'POA',  'Alaska District',                              'POD',    'POA',  'J4', 'DIS' ],
+    [  35,  'POH',  'Hawaii District',                              'POD',    'POH',  'J3', 'DIS' ],
+    [  36,  'SAD',  'South Atlantic Division',                      'HQ',     'SAD',  'K0', 'MSC' ],
+    [  37,  'SAC',  'Charleston District',                          'SAD',    'SAC',  'K2', 'DIS' ],
+    [  38,  'SAJ',  'Jacksonville District',                        'SAD',    'SAJ',  'K3', 'DIS' ],
+    [  39,  'SAM',  'Mobile District',                              'SAD',    'SAM',  'K5', 'DIS' ],
+    [  40,  'SAS',  'Savannah District',                            'SAD',    'SAS',  'K6', 'DIS' ],
+    [  41,  'SAW',  'Wilmington District',                          'SAD',    'SAW',  'K7', 'DIS' ],
+    [  42,  'SPD',  'South Pacific Division',                       'HQ',     'SPD',  'L0', 'MSC' ],
+    [  43,  'SPA',  'Albuquerque District',                         'SPD',    'SPA',  'L4', 'DIS' ],
+    [  44,  'SPK',  'Sacramento District',                          'SPD',    'SPK',  'L2', 'DIS' ],
+    [  45,  'SPL',  'Los Angeles District',                         'SPD',    'SPL',  'L1', 'DIS' ],
+    [  46,  'SPN',  'San Francisco District',                       'SPD',    'SPN',  'L3', 'DIS' ],
+    [  47,  'SWD',  'Southwestern Division',                        'HQ',     'SWD',  'M0', 'MSC' ],
+    [  48,  'SWF',  'Fort Worth District',                          'SWD',    'SWF',  'M2', 'DIS' ],
+    [  49,  'SWG',  'Galveston District',                           'SWD',    'SWG',  'M3', 'DIS' ],
+    [  50,  'SWL',  'Little Rock District',                         'SWD',    'SWL',  'M4', 'DIS' ],
+    [  51,  'SWT',  'Tulsa District',                               'SWD',    'SWT',  'M5', 'DIS' ],
+    [  52,  'LCRA', 'Lower Colorado River Authority',               '',       'LCRA', 'Z0', 'UNK' ],        
+    [  53,  'CWMS', 'All CWMS Offices',                             '',       '',     'X0', 'UNK' ],
+    [  54,  'ERD',  'Engineer Research and Development Center',     'HQ',     'ERD',  'U0', 'FOA' ],
+    [  55,  'CRREL','Cold Regions Research and Engineering Lab',    'ERD',    'CRREL','U4', 'FOA' ],
+    [  56,  'CHL',  'Coastal and Hydraulics Laboratory',            'ERD',    'CHL',  'U1', 'FOA' ],
+    [  57,  'CERL', 'Construction Engineering Research Laboratory', 'ERD',    'CERL', 'U2', 'FOA' ],
+    [  58,  'EL',   'Environmental Laboratory',                     'ERD',    'EL',   'U3', 'FOA' ],
+    [  59,  'GSL',  'Geotechnical and Structures Laboratory',       'ERD',    'GSL',  'U5', 'FOA' ],
+    [  60,  'ITL',  'Information Technology Laboratory',            'ERD',    'ITL',  'U6', 'FOA' ],
+    [  61,  'TEC',  'Topographic Engineering Center',               'ERD',    'TEC',  'U7', 'FOA' ],
+    [  62,  'IWR',  'Institute for Water Resources',                'HQ',     'IWR',  'Q1', 'FOA' ],
+    [  63,  'NDC',  'Navigation Data Center',                       'IWR',    'NDC',  'Q2', 'FOA' ],
+    [  64,  'HEC',  'Hydrologic Engineering Cennter',               'IWR',    'HEC',  'Q0', 'FOA' ],
+    [  65,  'WCSC', 'Waterborne Commerce Statistics Center',        'IWR',    'WCSC', 'Q3', 'FOA' ],
+    [  66,  'CPC',  'Central Processing Center',                    '',       'CPC',  'X1', 'UNK' ],
+    [  67,  'WPC',  'Western Processing Center',                    '',       'WPC',  'X2', 'UNK' ],
 ]
 
 #-----------#
@@ -5743,7 +5743,7 @@ def main() :
             db_office_id = arg
         else :
             office_ids.append(arg)
-    
+                                   
     #--------------------------------------------------#
     # parse the offices into dbhost_offices dictionary #
     #--------------------------------------------------#
@@ -5751,7 +5751,7 @@ def main() :
     dbhost_offices = {}
     office_erocs = {}
     db_office_code = {}
-    for ofcCode, office_id, office_name, report_to, dbhost, eroc in offices :
+    for ofcCode, office_id, office_name, report_to, dbhost, eroc, ofcType in offices :
         if dbhost == '' : continue
         office_erocs[office_id] = eroc
         db_office_code[office_id] = ofcCode
@@ -6108,7 +6108,8 @@ def main() :
            LONG_NAME             VARCHAR2(80) NULL,
            REPORT_TO_OFFICE_CODE NUMBER(10)   NOT NULL,
            DB_HOST_OFFICE_CODE   NUMBER(10)   NOT NULL,
-           EROC                  VARCHAR2(2)  NOT NULL
+           EROC                  VARCHAR2(2)  NOT NULL,
+           OFFICE_TYPE           VARCHAR2(8)  NOT NULL
        )
            PCTFREE 10
            PCTUSED 40
@@ -6131,11 +6132,12 @@ def main() :
     -----------------------------
     -- @TABLE constraints --
     --
-    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK PRIMARY KEY (OFFICE_CODE);
-    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_UK UNIQUE      (OFFICE_ID);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_PK  PRIMARY KEY (OFFICE_CODE);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_UK  UNIQUE      (OFFICE_ID);
+    ALTER TABLE @TABLE ADD CONSTRAINT @TABLE_CK1 CHECK       (OFFICE_TYPE IN ('UNK','HQ','MSC','MSCR','DIS','FOA'));
     
     
-    -----------------------------
+    -----------------------------                                              
     -- @TABLE comments --
     --
     COMMENT ON TABLE @TABLE IS 'Corps of Engineer''s district and division offices.';
@@ -6145,19 +6147,20 @@ def main() :
     COMMENT ON COLUMN @TABLE.REPORT_TO_OFFICE_CODE IS 'Organizationally, the office to report to.';
     COMMENT ON COLUMN @TABLE.DB_HOST_OFFICE_CODE IS 'The office hosting the database for this office.';
     COMMENT ON COLUMN @TABLE.EROC IS 'Corps of Engineers Reporting Organization Codes as per ER-37-1-27.';
+    COMMENT ON COLUMN @TABLE.OFFICE_TYPE IS 'UNK=unknown, HQ=corps headquarters, MSC=division headquarters, MSCR=division regional, DIS=district, FOA=field operating activity';
     COMMIT;
     '''
     
     sys.stderr.write("Building cwmsOfficeLoadTemplate\n")
     cwmsOfficeLoadTemplate = ''
     code = 0
-    for ofcCode, ofc, longName, reportTo, dbHost, eroc in offices :
+    for ofcCode, ofc, longName, reportTo, dbHost, eroc, ofcType in offices :
         if reportTo :
-            cwmsOfficeLoadTemplate +="INSERT INTO @TABLE (OFFICE_CODE, OFFICE_ID, LONG_NAME, REPORT_TO_OFFICE_CODE, DB_HOST_OFFICE_CODE, EROC)\n"
-            cwmsOfficeLoadTemplate +="\tSELECT %d, '%s', '%s', OFFICE_CODE, %d, '%s' FROM @TABLE WHERE OFFICE_ID='%s';\n" % (ofcCode, ofc, longName, ofcCode, eroc, reportTo)
+            cwmsOfficeLoadTemplate +="INSERT INTO @TABLE (OFFICE_CODE, OFFICE_ID, LONG_NAME, REPORT_TO_OFFICE_CODE, DB_HOST_OFFICE_CODE, EROC, OFFICE_TYPE)\n"
+            cwmsOfficeLoadTemplate +="\tSELECT %d, '%s', '%s', OFFICE_CODE, %d, '%s', '%s' FROM @TABLE WHERE OFFICE_ID='%s';\n" % (ofcCode, ofc, longName, ofcCode, eroc, ofcType, reportTo)
         else :
-            cwmsOfficeLoadTemplate +="INSERT INTO @TABLE (OFFICE_CODE, OFFICE_ID, LONG_NAME, REPORT_TO_OFFICE_CODE, DB_HOST_OFFICE_CODE, EROC)\n"
-            cwmsOfficeLoadTemplate +="\tVALUES (%d, '%s', '%s', %d, %d, '%s');\n" % (ofcCode, ofc, longName, ofcCode, ofcCode, eroc)
+            cwmsOfficeLoadTemplate +="INSERT INTO @TABLE (OFFICE_CODE, OFFICE_ID, LONG_NAME, REPORT_TO_OFFICE_CODE, DB_HOST_OFFICE_CODE, EROC, OFFICE_TYPE)\n"
+            cwmsOfficeLoadTemplate +="\tVALUES (%d, '%s', '%s', %d, %d, '%s', '%s');\n" % (ofcCode, ofc, longName, ofcCode, ofcCode, eroc, ofcType)
         code += 1
         
     cwmsOfficeLoadTemplate +="UPDATE @TABLE SET DB_HOST_OFFICE_CODE=\n"
