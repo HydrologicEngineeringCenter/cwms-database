@@ -21,6 +21,7 @@ DECLARE
 			       'av_loc_cat_grp',
 			       'av_loc_level',
 			       'av_nation',
+			       'av_office',
 			       'av_parameter',
 			       'av_screened_ts_ids',
 			       'av_screening_assignments',
@@ -114,6 +115,7 @@ END;
 @@cwms/views/av_nation.sql
 @@cwms/views/av_property.sql
 @@cwms/views/av_vert_datum_offset.sql
+@@cwms/views/av_office.sql
 
 --------------------------------------------------------------------------------
 SHOW ERRORS;
