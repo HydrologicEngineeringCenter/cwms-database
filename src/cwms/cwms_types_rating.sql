@@ -739,6 +739,8 @@ as
    is
       l_code  number(10);
       l_parts str_tab_t;
+      l_base_id varchar2(16);
+      l_sub_id  varchar2(32);
    begin
       ---------------
       -- office_id --
@@ -762,17 +764,6 @@ as
             'ERROR',
             'Rating template version cannot be null');
       end if;
-      ----------------------
-      -- dep_parameter_id --
-      ----------------------
-      begin
-         l_code := cwms_util.get_base_param_code(self.dep_parameter_id, 'T');
-      exception
-         when no_data_found then
-            cwms_err.raise(
-               'INVALID_PARAM_ID',
-               self.dep_parameter_id);
-      end;
       -------------------
       -- parameters_id --
       -------------------
@@ -817,6 +808,82 @@ as
                ||')');
          end if;
       end loop;
+      -----------------------------
+      -- case correct parameters --
+      -----------------------------
+      for i in 1..self.ind_parameters.count loop
+         l_base_id := cwms_util.get_base_id(self.ind_parameters(i).parameter_id);
+         l_sub_id := cwms_util.get_sub_id(self.ind_parameters(i).parameter_id);
+         begin
+            l_code := cwms_util.get_base_param_code(l_base_id, 'F');
+         exception
+            when no_data_found then
+               cwms_err.raise(
+                  'INVALID_PARAM_ID',
+                  self.ind_parameters(i).parameter_id);
+         end;
+         select base_parameter_id
+           into l_base_id 
+           from cwms_base_parameter
+          where base_parameter_code = l_code;
+         if l_sub_id is not null then
+            begin
+               select distinct
+                      sub_parameter_id
+                 into l_sub_id 
+                 from at_parameter
+                where upper(sub_parameter_id) = upper(l_sub_id)
+                  and db_office_code in (cwms_util.user_office_code, cwms_util.db_office_code_all); 
+            exception                                                                                
+               when no_data_found then null;
+            end;
+         end if;
+         self.ind_parameters(i).parameter_id := l_base_id
+            ||substr('-', 1, length(l_sub_id))
+            ||l_sub_id;            
+      end loop;
+      l_base_id := cwms_util.get_base_id(self.dep_parameter_id);
+      l_sub_id := cwms_util.get_sub_id(self.dep_parameter_id);
+      begin
+         l_code := cwms_util.get_base_param_code(l_base_id, 'F');
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'INVALID_PARAM_ID',
+               self.dep_parameter_id);
+      end;
+      select base_parameter_id
+        into l_base_id 
+        from cwms_base_parameter
+       where base_parameter_code = l_code;
+      if l_sub_id is not null then
+         begin
+            select distinct
+                   sub_parameter_id
+              into l_sub_id 
+              from at_parameter
+             where upper(sub_parameter_id) = upper(l_sub_id)
+               and db_office_code in (cwms_util.user_office_code, cwms_util.db_office_code_all); 
+         exception                                                                                
+            when no_data_found then null;
+         end;
+      end if;
+      self.dep_parameter_id := l_base_id
+         ||substr('-', 1, length(l_sub_id))
+         ||l_sub_id;
+      ----------------------------------------------------------------------                     
+      -- reconstruct the parameters id from the case-corrected parameters --
+      ----------------------------------------------------------------------
+      self.parameters_id := self.ind_parameters(1).parameter_id;
+      for i in 2..self.ind_parameters.count loop
+         self.parameters_id := self.parameters_id 
+            ||cwms_rating.separator3
+            ||self.ind_parameters(i).parameter_id;
+      end loop;                     
+      self.parameters_id := self.parameters_id 
+         ||cwms_rating.separator2
+         ||self.dep_parameter_id;
+         return;
    end;
       
    member function get_office_code
@@ -2247,8 +2314,8 @@ as
    
    member function to_xml
    return xmltype
-   is begin null; end;      
-   
+   is begin null; end;
+         
    member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
@@ -2980,34 +3047,54 @@ as
             l_ind_param_id := l_parts(1);
             l_dep_param_id := l_parts(2);
             l_parts := cwms_util.split_text(p_units_id, cwms_rating.separator2);
-            l_ind_unit_id := l_parts(1);
-            l_dep_unit_id := l_parts(2);
-            select factor,
-                   offset
-              into l_dep_factor,
-                   l_dep_offset
-              from cwms_base_parameter bp,
-                   cwms_unit_conversion uc
-             where bp.base_parameter_id = cwms_util.get_base_id(l_dep_param_id)
-               and uc.to_unit_code = bp.unit_code
-               and uc.from_unit_id = l_dep_unit_id;
+            l_ind_unit_id := cwms_util.get_unit_id(l_parts(1));
+            l_dep_unit_id := cwms_util.get_unit_id(l_parts(2));
+            begin
+               select factor,
+                      offset
+                 into l_dep_factor,
+                      l_dep_offset
+                 from cwms_base_parameter bp,
+                      cwms_unit_conversion uc
+                where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(l_dep_param_id))
+                  and uc.to_unit_code = bp.unit_code
+                  and uc.from_unit_id = l_dep_unit_id;
+            exception
+               when no_data_found then
+                  cwms_err.raise(
+                     'ERROR',
+                     'Don''t know how to convert '
+                     ||l_dep_unit_id
+                     ||' to database unit for parameter '
+                     ||l_dep_param_id);
+            end;
          else
             l_parts := cwms_util.split_text(p_parameters_id, cwms_rating.separator3);
             l_ind_param_id := l_parts(1);
             l_parts := cwms_util.split_text(p_units_id, cwms_rating.separator3);
-            l_ind_unit_id := l_parts(1);
+            l_ind_unit_id := cwms_util.get_unit_id(l_parts(1));
             l_remaining_parameters_id := substr(p_parameters_id, instr(p_parameters_id, cwms_rating.separator3) + 1);
             l_remaining_units_id := substr(p_units_id, instr(p_units_id, cwms_rating.separator3) + 1);
          end if;
-         select factor,
-                offset
-           into l_ind_factor,
-                l_ind_offset
-           from cwms_base_parameter bp,
-                cwms_unit_conversion uc
-          where bp.base_parameter_id = cwms_util.get_base_id(l_ind_param_id)
-            and uc.to_unit_code = bp.unit_code
-            and uc.from_unit_id = l_ind_unit_id;
+         begin
+            select factor,
+                   offset
+              into l_ind_factor,
+                   l_ind_offset
+              from cwms_base_parameter bp,
+                   cwms_unit_conversion uc
+             where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(l_ind_param_id))
+               and uc.to_unit_code = bp.unit_code
+               and uc.from_unit_id = l_ind_unit_id;
+         exception 
+            when no_data_found then
+               cwms_err.raise(
+                  'ERROR',
+                  'Don''t know how to convert '
+                  ||l_ind_unit_id
+                  ||' to database unit for parameter '
+                  ||l_ind_param_id);
+         end;
          for i in 1..self.rating_values.count loop
             self.rating_values(i).ind_value :=
                self.rating_values(i).ind_value * l_ind_factor + l_ind_offset;
@@ -3338,7 +3425,7 @@ as
       dbms_lob.close(l_text);
       return xmltype(l_text);
    end;
-
+   
    overriding member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
@@ -4171,8 +4258,12 @@ as
       p_xml in xmltype)
    return self as result
    is
-      l_xml     xmltype;
-      l_text    varchar2(64);
+      l_xml            xmltype;
+      l_text           varchar2(64);
+      l_params         str_tab_t;
+      l_elev_code      number(10);
+      l_elev_positions number_tab_t;
+      l_datum          varchar2(16);
       ------------------------------
       -- local function shortcuts --
       ------------------------------
@@ -4451,7 +4542,7 @@ as
                ||' independent parameters');
          end if;
          l_units.extend;
-         l_units(l_units.count) := l_parts(2);
+         l_units(l_units.count) := cwms_util.get_unit_id(l_parts(2), self.office_id);
          for i in 1..l_units.count loop
             begin
                select unit_code
@@ -4479,6 +4570,18 @@ as
                      'Native unit "'||l_units(i)||'" is invalid for parameter "'||l_params(i)||'"');
             end;
          end loop;
+         ---------------------------------------------------------------------------
+         -- make sure the native units string specifies actual units, not aliases --
+         ---------------------------------------------------------------------------
+         self.native_units := cwms_util.get_unit_id(l_units(1), self.office_id);
+         for i in 2..l_units.count-1 loop
+            self.native_units := self.native_units
+               ||cwms_rating.separator3
+               ||cwms_util.get_unit_id(l_units(1), self.office_id);
+         end loop;
+         self.native_units := self.native_units
+            ||cwms_rating.separator2
+            ||cwms_util.get_unit_id(l_units(l_units.count), self.office_id);
       end if;
       ----------------------
       -- formula / points --
