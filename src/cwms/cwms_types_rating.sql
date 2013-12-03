@@ -5962,7 +5962,7 @@ as
             ------------------------------------------------------------
             -- create a new rating_value_t object for the shift point --
             ------------------------------------------------------------
-            if j = 1 then
+            if self.shifts(i-l_skipped).rating_info is null then
                self.shifts(i-l_skipped).rating_info := rating_ind_parameter_t(
                   'F',                  -- constructed
                   rating_value_tab_t(), -- rating_values
@@ -5974,19 +5974,21 @@ as
             self.shifts(i-l_skipped).rating_info.rating_values(j).dep_value := get_number(l_point, '/point/dep');
             self.shifts(i-l_skipped).rating_info.rating_values(j).note_id   := get_text(l_point, '/point/note');
          end loop;
-         self.shifts(i-l_skipped).rating_info.constructed := 'T';
-         begin
-            self.shifts(i-l_skipped).rating_info.validate_obj(1);
-            dbms_output.put_line('shift OK');
-         exception
-            when others then
-               cwms_msg.log_db_message(
-                  'stream_rating_t.store',
-                  cwms_msg.msg_level_normal,
-                  'Rating shift '||i||' skipped due to '||sqlerrm);
-               l_skipped := l_skipped + 1;
-               self.shifts.trim;
-         end;
+         if self.shifts(i-l_skipped).rating_info is not null then
+            self.shifts(i-l_skipped).rating_info.constructed := 'T';
+            begin
+               self.shifts(i-l_skipped).rating_info.validate_obj(1);
+               dbms_output.put_line('shift OK');
+            exception
+               when others then
+                  cwms_msg.log_db_message(
+                     'stream_rating_t.store',
+                     cwms_msg.msg_level_normal,
+                     'Rating shift '||i||' skipped due to '||sqlerrm);
+                  l_skipped := l_skipped + 1;
+                  self.shifts.trim;
+            end;
+         end if;
       end loop;
       l_offsets := get_node(l_xml, '/usgs-stream-rating/height-offsets');
       if l_offsets is not null then
@@ -6024,7 +6026,7 @@ as
             ------------------------------------------------------------
             -- create a new rating_value_t object for the offset point --
             ------------------------------------------------------------
-            if i = 1 then
+            if self.offsets.rating_info is null then
                self.offsets.rating_info := rating_ind_parameter_t(
                   'F',                  -- constructed
                   rating_value_tab_t(), -- rating_values
@@ -6037,7 +6039,9 @@ as
             self.offsets.rating_info.rating_values(i).note_id   := get_text(l_point, '/point/note');
          end loop;
          if self.offsets is not null then
-            self.offsets.rating_info.constructed := 'T';
+            if self.offsets.rating_info is not null then
+               self.offsets.rating_info.constructed := 'T';
+            end if;
             begin
                self.offsets.rating_info.validate_obj(1);
             exception
@@ -6061,7 +6065,7 @@ as
             -------------------------------------------------------------
             -- create a new rating_value_t object for the rating point --
             -------------------------------------------------------------
-            if i = 1 then
+            if self.rating_info is null then
                self.rating_info := rating_ind_parameter_t(
                   'F',                  -- constructed
                   rating_value_tab_t(), -- rating_values
