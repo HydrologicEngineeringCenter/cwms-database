@@ -23,6 +23,12 @@ begin
    return l_db_office_id;
 end get_queue_prefix;
 
+function get_exception_queue_name(p_office_id varchar2) return varchar2
+is
+begin
+   return '&cwms_schema..' || p_office_id || '_EX';
+end;
+	
 -------------------------------------------------------------------------------
 -- FUNCTION GET_QUEUE_NAME(...)
 --
@@ -120,6 +126,7 @@ begin
    l_parts := cwms_util.split_text(l_queuename, '.');
    l_office_id := upper(substr(l_parts(l_parts.count), 1, instr(l_parts(l_parts.count), '_')-1));
    l_queueing_paused := is_message_queueing_paused(l_office_id);
+   l_message_properties.exception_queue := get_exception_queue_name(l_office_id);
    if not l_queueing_paused then
       -------------------------
       -- enqueue the message --
@@ -1075,13 +1082,97 @@ begin
 end start_trim_log_job;
 
 --------------------------------------------------------------------------------
--- procedure purge_queues
+-- procedure create_queues
 --
-procedure create_queues(
+PROCEDURE create_queues (p_office_id IN VARCHAR2)
+IS
+   l_office_id     VARCHAR2 (16);
+   l_queue_names   str_tab_t
+                      := str_tab_t ('STATUS', 'REALTIME_OPS', 'TS_STORED');
+   l_queue_name    VARCHAR2 (30);
+   l_table_name    VARCHAR2 (30);
+BEGIN
+-----------------------------------------
+-- make sure we have a valid office id --
+-----------------------------------------
+   cwms_util.check_input (p_office_id);
+
+   SELECT office_id
+     INTO l_office_id
+     FROM cwms_office
+    WHERE office_id = UPPER (p_office_id);
+
+-------------------------------------
+-- eliminate and re-create the queues --
+----------------------------------------
+   FOR i IN 1 .. l_queue_names.COUNT
+   LOOP
+      l_queue_name := l_office_id || '_' || l_queue_names (i);
+      l_table_name := l_queue_name || '_TABLE';
+
+      BEGIN
+         sys.DBMS_AQADM.stop_queue (
+            queue_name   => '&cwms_schema..' || l_queue_name);
+         DBMS_OUTPUT.put_line ('Stopped queue ' || l_queue_name);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            DBMS_OUTPUT.put_line ('Could not stop queue ' || l_queue_name);
+      END;
+
+      BEGIN
+         sys.DBMS_AQADM.drop_queue (
+            queue_name   => '&cwms_schema..' || l_queue_name);
+         DBMS_OUTPUT.put_line ('Dropped queue ' || l_queue_name);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            DBMS_OUTPUT.put_line ('Could not drop queue ' || l_queue_name);
+      END;
+
+      BEGIN
+         sys.DBMS_AQADM.drop_queue_table (
+            queue_table   => '&cwms_schema..' || l_table_name);
+         DBMS_OUTPUT.put_line ('Dropped queue table ' || l_table_name);
+      EXCEPTION
+         WHEN OTHERS
+         THEN
+            DBMS_OUTPUT.put_line (
+               'Could not drop queue table ' || l_table_name);
+      END;
+
+      BEGIN
+         sys.DBMS_AQADM.create_queue_table (
+            queue_table          => '&cwms_schema..' || l_table_name,
+            queue_payload_type   => 'SYS.AQ$_JMS_MAP_MESSAGE',
+            storage_clause       => 'tablespace CWMS_AQ',
+            multiple_consumers   => TRUE);
+         DBMS_OUTPUT.put_line ('Created queue table ' || l_table_name);
+      END;
+
+      sys.DBMS_AQADM.create_queue (
+         queue_name       => '&cwms_schema..' || l_queue_name,
+         queue_table      => '&cwms_schema..' || l_table_name,
+         queue_type       => sys.DBMS_AQADM.normal_queue,
+            max_retries      => 5,
+            retry_delay      => 0,
+            retention_time   => 0);
+      DBMS_OUTPUT.put_line ('Created queue ' || l_queue_name);
+      sys.DBMS_AQADM.start_queue (
+         queue_name   => '&cwms_schema..' || l_queue_name,
+         enqueue      => TRUE,
+         dequeue      => TRUE);
+      DBMS_OUTPUT.put_line ('Started queue ' || l_queue_name);
+   END LOOP;
+END create_queues;
+
+--------------------------------------------------------------------------------
+-- procedure create_exception_queues
+--
+procedure create_exception_queue(
    p_office_id in varchar2)
 is
    l_office_id   varchar2(16);
-   l_queue_names str_tab_t := str_tab_t('STATUS', 'REALTIME_OPS', 'TS_STORED');
    l_queue_name  varchar2(30);
    l_table_name  varchar2(30);
 begin
@@ -1096,199 +1187,104 @@ begin
    ----------------------------------------    
    -- eliminate and re-create the queues --
    ----------------------------------------    
-   for i in 1..l_queue_names.count loop
-      l_queue_name := l_office_id || '_' || l_queue_names(i);
+      l_queue_name := l_office_id || '_EX';
       l_table_name := l_queue_name || '_TABLE'; 
          begin
-            sys.dbms_aqadm.stop_queue(queue_name => l_queue_name);
-            dbms_output.put_line('Stopped queue '||l_queue_name);
-         exception
-            when others then dbms_output.put_line('Could not stop queue '||l_queue_name);   
-         end;
-         begin
-            sys.dbms_aqadm.drop_queue(queue_name => l_queue_name);
+            sys.dbms_aqadm.stop_queue(queue_name => '&cwms_schema..' || l_queue_name);
+            sys.dbms_aqadm.drop_queue(queue_name => '&cwms_schema..' || l_queue_name);
             dbms_output.put_line('Dropped queue '||l_queue_name);
          exception
             when others then dbms_output.put_line('Could not drop queue '||l_queue_name);   
          end;
          begin
-            sys.dbms_aqadm.drop_queue_table(queue_table => l_table_name);
+            sys.dbms_aqadm.drop_queue_table(queue_table => '&cwms_schema..' || l_table_name);
             dbms_output.put_line('Dropped queue table '||l_table_name);
          exception
             when others then dbms_output.put_line('Could not drop queue table '||l_table_name);   
          end;
          begin
             sys.dbms_aqadm.create_queue_table(
-               queue_table        => l_table_name, 
+               queue_table        => '&cwms_schema..' || l_table_name, 
                queue_payload_type => 'SYS.AQ$_JMS_MAP_MESSAGE',
+	       storage_clause        =>  'tablespace CWMS_AQ_EX',
                multiple_consumers => true);
             dbms_output.put_line('Created queue table '||l_table_name);
          end;
          sys.dbms_aqadm.create_queue(
-            queue_name     => l_queue_name,
-            queue_table    => l_table_name,
-            queue_type     => sys.dbms_aqadm.normal_queue,
-            max_retries    => 5,
-            retry_delay    => 0,
-            retention_time => 0);
+            queue_name     => '&cwms_schema..' || l_queue_name,
+            queue_table    => '&cwms_schema..' || l_table_name,
+            queue_type     => sys.dbms_aqadm.exception_queue
+            );
          dbms_output.put_line('Created queue '||l_queue_name);
-         sys.dbms_aqadm.start_queue(
-            queue_name => l_queue_name,
-            enqueue    => true, 
-            dequeue    => true);
          dbms_output.put_line('Started queue '||l_queue_name);
-   end loop;
-end create_queues;   
+end create_exception_queue;
 
-procedure purge_queues
-is
-   type zombie_t is table of boolean index by varchar2(31);
-   l_subscriber_name      varchar2(30);
-   l_subscriber           sys.aq$_agent := sys.aq$_agent(null, null, null);
-   l_msg_state            varchar2(30);
-   l_queue_name           varchar2(30);
-   l_table_name           varchar2(30);
-   l_count                pls_integer;
-   l_last_dequeue         timestamp;
-   l_zombies              zombie_t;
-   l_cursor               sys_refcursor;
-   l_purge_options        dbms_aqadm.aq$_purge_options_t;
-   l_undeliverable_count  pls_integer;
-   l_expired_count        pls_integer;
-   l_purge_count          pls_integer;
-   l_max_purge_count      pls_integer := 50000;
-   l_max_expired_count    constant pls_integer := 10;
-   l_purged               boolean := false;
-begin
-   l_purge_options.block := false; -- don't block enqueues or dequeues when trying to purge
-   for rec in (
-      select name
-        from user_queues
-       where name not like 'AQ$%')
-   loop
+PROCEDURE purge_queues
+IS
+   dequeue_options      DBMS_AQ.DEQUEUE_OPTIONS_T;
+   message_properties   DBMS_AQ.MESSAGE_PROPERTIES_T;
+   dq_msgid             RAW (16);
+   payload              RAW (1);
+   no_messages          EXCEPTION;
+   PRAGMA EXCEPTION_INIT (no_messages, -25263);
+   msg_count            NUMBER;
+   l_table_name         VARCHAR2 (64);
+   l_queue_name         VARCHAR2 (64);
+   l_query              VARCHAR2 (128);
+   l_cur                SYS_REFCURSOR;
+   l_msg_id             RAW (16);
+   l_state              VARCHAR2(32);
+BEGIN
+   FOR rec IN (SELECT name,queue_table
+                 FROM user_queues
+                WHERE QUEUE_TYPE = 'EXCEPTION_QUEUE')
+   LOOP
       l_queue_name := rec.name;
-      l_table_name := l_queue_name || '_TABLE';
-      --------------------------------------------------------------
-      -- determine if there are any zombies and messages to purge --
-      --------------------------------------------------------------
-      l_zombies.delete;
-      l_undeliverable_count := 0;
-      l_expired_count := 0;
-      open l_cursor for
-         'select consumer_name,
-                 msg_state,
-                 count(*),
-                 max(deq_timestamp)
-            from AQ$'||l_table_name||'
-        group by consumer_name,
-                 msg_state';
-      loop
-         fetch l_cursor into l_subscriber_name, l_msg_state, l_count, l_last_dequeue;
-         exit when l_cursor%notfound;
-            case l_msg_state
-               when 'UNDELIVERABLE' then
-                  l_undeliverable_count := l_undeliverable_count + l_count;
-               when 'EXPIRED' then
-                  l_expired_count := l_expired_count + l_count;
-                  cwms_msg.log_db_message(
-                     'purge_queues',
-                     cwms_msg.msg_level_normal,
-                     'Subsciber '
-                        || l_subscriber_name
-                        || ' for queue '
-                        || l_queue_name
-                        || ' has failed to dequeue '
-                        || l_count
-                        || ' messages');
-                  if l_count > l_max_expired_count then
-                     l_zombies(l_subscriber_name) := true;
-                  end if;
-               else null;
-            end case;
-       end loop;
-      close l_cursor;
-      ---------------------------------
-      -- kill any zombie subscribers --
-      ---------------------------------
-      l_subscriber_name := l_zombies.first;
-      loop
-         exit when l_subscriber_name is null;
-         if l_zombies(l_subscriber_name) then
-            cwms_msg.log_db_message(
-               'purge_queues',
-               cwms_msg.msg_level_normal,
-               'Removing zombie subsciber '
-                  || l_subscriber_name
-                  || ' for queue '
-                  || l_queue_name);
-            l_subscriber.name := l_subscriber_name;
-            begin
-               execute immediate
-                  'select address,
-                          protocol
-                     into :address,
-                          :protocol
-                     from AQ$'||l_queue_name||'_TABLE_S
-                    where queue = :queue
-                      and name = :name'
-                     into l_subscriber.address,
-                          l_subscriber.protocol
-                    using l_queue_name,
-                          l_subscriber.name;
-               dbms_aqadm.remove_subscriber(l_queue_name, l_subscriber);
-               commit;
-            exception
-               when others then
-                  cwms_msg.log_db_message(
-                     'purge_queues',
-                     cwms_msg.msg_level_normal,
-                     'Error removing zombie subsciber '
-                        || l_subscriber_name
-                        || ' for queue '
-                        || l_queue_name
-                        || ': '
-                        || sqlcode
-                        || ' - '
-                        || sqlerrm);
-            end;
-         end if;
-         l_subscriber_name := l_zombies.next(l_subscriber_name);
-      end loop;
-      -------------------------------------------------
-      -- purge any expired or undeliverable messages --
-      ------------------------------------------------- 
-      l_purge_count := l_expired_count + l_undeliverable_count;
-      if l_purge_count > 0 then
-         l_purged := false;
-         for i in 1..trunc((l_purge_count - 1)/l_max_purge_count) + 1 loop
-            for j in 1..100 loop
-               begin
-                  dbms_aqadm.purge_queue_table(
-                     l_table_name,
-                     'MSG_STATE IN(''UNDELIVERABLE'', ''EXPIRED'') AND ROWNUM <= '|| l_max_purge_count,
-                     l_purge_options);
-                  commit;
-                  l_purged := true;
-                  exit;
-               exception
-                  when others then null;  -- failed because something else was enqueing or dequeuing
-               end;
-            end loop;
-         end loop;
-         if l_purged then
-            cwms_msg.log_db_message(
-               'purge_queues',
-               cwms_msg.msg_level_normal,
-               'Done purging messages from queues '||l_queue_name);
-         else
-            cwms_msg.log_db_message(
-               'purge_queues',
-               cwms_msg.msg_level_normal,
-               'Failed purging messages from queue '||l_queue_name);
-         end if;
-      end if;
-   end loop;
-end purge_queues;
+      l_table_name := rec.queue_table; 
+      sys.dbms_aqadm.start_queue(
+           queue_name => l_queue_name,
+           enqueue    => false, 
+           dequeue    => true);
+
+      dequeue_options.wait := DBMS_AQ.NO_WAIT;
+      dequeue_options.navigation := DBMS_AQ.FIRST_MESSAGE;
+      dequeue_options.dequeue_mode := DBMS_AQ.remove_nodata;
+      msg_count := 0;
+
+      l_query := 'SELECT msgid FROM ' || l_table_name || ' WHERE Q_NAME= ''' || l_queue_name || '''';
+
+      OPEN l_cur FOR l_query;
+
+      LOOP
+         FETCH l_cur INTO l_msg_id;
+	 EXIT WHEN l_cur%NOTFOUND;
+         dequeue_options.msgid := l_msg_id;
+         BEGIN 
+         	DBMS_AQ.DEQUEUE (queue_name           => l_queue_name,
+                          dequeue_options      => dequeue_options,
+                          message_properties   => message_properties,
+                          payload              => payload,
+                          msgid                => dq_msgid);
+         EXCEPTION 
+		WHEN OTHERS THEN
+		COMMIT;
+	 END;
+
+         msg_count := msg_count + 1;
+
+         IF (MOD (msg_count, 1000) = 0)
+         THEN
+            COMMIT;
+         END IF;
+
+         dequeue_options.msgid := NULL;
+         dequeue_options.navigation := DBMS_AQ.NEXT_MESSAGE;
+      END LOOP;
+
+      COMMIT;
+      sys.dbms_aqadm.stop_queue(queue_name => l_queue_name);
+      END LOOP;
+END purge_queues;
 
 --------------------------------------------------------------------------------
 -- procedure start_purge_queues_job

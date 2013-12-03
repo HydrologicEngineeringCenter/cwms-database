@@ -10,6 +10,8 @@ create user &cwms_schema
 alter user &cwms_schema quota unlimited on CWMS_20_TSV;
 alter user &cwms_schema quota unlimited on CWMS_20AT_DATA;
 alter user &cwms_schema quota unlimited on CWMS_20DATA;
+alter user &cwms_schema quota unlimited on CWMS_AQ;
+alter user &cwms_schema quota unlimited on CWMS_AQ_EX;
 
 grant aq_administrator_role to &cwms_schema;
 grant aq_user_role to &cwms_schema;

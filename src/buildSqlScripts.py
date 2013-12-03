@@ -65,6 +65,8 @@ logFileName["DROPCWMS"]  = "dropCwms.lst"
 
 cwmsTableSpaceName = "CWMS_20DATA"
 atTableSpaceName = "CWMS_20AT_DATA"
+aqTableSpaceName = "CWMS_AQ"
+aqExTableSpaceName = "CWMS_AQ_EX"
 #userTableSpaceName = "%sCWMSDATA" % user
 #tsTableSpaceName = "%sCWMSTS" % user
 #tsTableSpaceName = "CWMS_20_TSV"
@@ -6013,10 +6015,25 @@ def main() :
     /
     '''
     
+    ex_queue_template = '''
+       dbms_aqadm.create_queue_table(
+          queue_table        => '%s_ex_table', 
+          queue_payload_type => 'sys.aq$_jms_map_message',
+          storage_clause        =>  'tablespace %s',
+          multiple_consumers => true);
+          
+       dbms_aqadm.create_queue(
+          queue_name  => '%s_ex',
+          queue_type  =>   sys.dbms_aqadm.exception_queue,
+          queue_table => '%s_ex_table');
+          
+       dbms_aqadm.start_queue(queue_name => '%s_ex',enqueue=>false,dequeue=>true);
+    '''
     queue_template = '''
        dbms_aqadm.create_queue_table(
           queue_table        => '%s_%s_table', 
           queue_payload_type => 'sys.aq$_jms_map_message',
+          storage_clause        =>  'tablespace %s',
           multiple_consumers => true);
           
        dbms_aqadm.create_queue(
@@ -6057,8 +6074,9 @@ def main() :
     f.write("set define off\nbegin")
     for office_id in office_ids :
         id = office_id.lower()
+        f.write(ex_queue_template % (id,aqExTableSpaceName,id,id,id))
         for q in ("realtime_ops", "status", "ts_stored") : 
-            f.write(queue_template % (id,q,id,q,id,q,id,q))
+            f.write(queue_template % (id,q,aqTableSpaceName,id,q,id,q,id,q))
     f.write("end;\n/\ncommit;\n")
     f.close()
     

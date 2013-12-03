@@ -410,6 +410,12 @@ procedure start_trim_log_job;
  */
 procedure create_queues(
    p_office_id in varchar2);
+
+/**
+ * Creates the CWMS exception queue for the specified office. If any of the queues exist, they are deleted and re-created
+ */
+procedure create_exception_queue(
+   p_office_id in varchar2);
 /**
  * Purges message queues of undeliverable messages.  If a queue subscriber aborts without
  * unsubscribing, a zombie subscription is left behind and messages for that subscription accumulate in the queue.
