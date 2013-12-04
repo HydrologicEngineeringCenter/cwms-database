@@ -1,4 +1,6 @@
 /*
+drop type vdatum_stream_rating_t;
+drop type vdatum_rating_t;
 drop type stream_rating_t;
 drop type rating_tab_t;
 drop type rating_t;
@@ -821,7 +823,7 @@ as
                cwms_err.raise(
                   'INVALID_PARAM_ID',
                   self.ind_parameters(i).parameter_id);
-         end;
+   end;
          select base_parameter_id
            into l_base_id 
            from cwms_base_parameter
@@ -2260,6 +2262,12 @@ as object(
    /**
     * Declaration forcing implemenation in sub-type
     */
+   member procedure add_offset(
+      p_offset in binary_double,
+      p_depth  in pls_integer),    
+   /**
+    * Declaration forcing implemenation in sub-type
+    */
    member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
@@ -2314,8 +2322,13 @@ as
    
    member function to_xml
    return xmltype
-   is begin null; end;
-         
+   is begin null; end;      
+   
+   member procedure add_offset(
+      p_offset in binary_double,
+      p_depth  in pls_integer)
+   is begin null; end;    
+   
    member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
@@ -2483,6 +2496,10 @@ under abs_rating_ind_param_t(
    -- not documented
    overriding member function to_xml
    return xmltype,
+   -- not documented
+   overriding member procedure add_offset(
+      p_offset in binary_double,
+      p_depth  in pls_integer),    
    -- not documented
    overriding member function rate(
       p_ind_values  in out nocopy double_tab_t,
@@ -3050,15 +3067,15 @@ as
             l_ind_unit_id := cwms_util.get_unit_id(l_parts(1));
             l_dep_unit_id := cwms_util.get_unit_id(l_parts(2));
             begin
-               select factor,
-                      offset
-                 into l_dep_factor,
-                      l_dep_offset
-                 from cwms_base_parameter bp,
-                      cwms_unit_conversion uc
+            select factor,
+                   offset
+              into l_dep_factor,
+                   l_dep_offset
+              from cwms_base_parameter bp,
+                   cwms_unit_conversion uc
                 where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(l_dep_param_id))
-                  and uc.to_unit_code = bp.unit_code
-                  and uc.from_unit_id = l_dep_unit_id;
+               and uc.to_unit_code = bp.unit_code
+               and uc.from_unit_id = l_dep_unit_id;
             exception
                when no_data_found then
                   cwms_err.raise(
@@ -3077,15 +3094,15 @@ as
             l_remaining_units_id := substr(p_units_id, instr(p_units_id, cwms_rating.separator3) + 1);
          end if;
          begin
-            select factor,
-                   offset
-              into l_ind_factor,
-                   l_ind_offset
-              from cwms_base_parameter bp,
-                   cwms_unit_conversion uc
+         select factor,
+                offset
+           into l_ind_factor,
+                l_ind_offset
+           from cwms_base_parameter bp,
+                cwms_unit_conversion uc
              where upper(bp.base_parameter_id) = upper(cwms_util.get_base_id(l_ind_param_id))
-               and uc.to_unit_code = bp.unit_code
-               and uc.from_unit_id = l_ind_unit_id;
+            and uc.to_unit_code = bp.unit_code
+            and uc.from_unit_id = l_ind_unit_id;
          exception 
             when no_data_found then
                cwms_err.raise(
@@ -3425,7 +3442,40 @@ as
       dbms_lob.close(l_text);
       return xmltype(l_text);
    end;
-   
+
+   overriding member procedure add_offset(
+      p_offset in binary_double,
+      p_depth  in pls_integer)
+   is
+   begin
+      if self.rating_values is not null then
+         for i in 1..self.rating_values.count loop
+            case p_depth
+               when  1 then
+                  self.rating_values(i).ind_value := self.rating_values(i).ind_value + p_offset;
+               when -1 then
+                  if self.rating_values(i).dep_value is not null then
+                     self.rating_values(i).dep_value := self.rating_values(i).dep_value + p_offset;
+                  else
+                     self.rating_values(i).dep_rating_ind_param.add_offset(p_offset, -1); 
+                  end if;
+               else  
+                  self.rating_values(i).dep_rating_ind_param.add_offset(p_offset, p_depth - 1); 
+            end case;
+         end loop;
+      end if;
+      if self.extension_values is not null then
+         for i in 1..self.extension_values.count loop
+            case p_depth
+               when  1 then
+                  self.extension_values(i).ind_value := self.extension_values(i).ind_value + p_offset;
+               when -1 then
+                  self.extension_values(i).dep_value := self.extension_values(i).dep_value + p_offset;
+            end case;
+         end loop;
+      end if;
+   end;    
+
    overriding member function rate(
       p_ind_values  in out nocopy double_tab_t,
       p_position    in            pls_integer,
@@ -3994,6 +4044,14 @@ as object(
    constructor function rating_t(
       p_xml in xmltype)
    return self as result,
+   /**
+    * Construction one rating_t object from another.
+    *
+    * @param p_other another object of type rating_t or one of its subclasses
+    */   
+   constructor function rating_t(
+      p_other in rating_t)
+   return self as result,
    -- not documented
    member procedure init(
       p_rating_code in number),
@@ -4258,8 +4316,8 @@ as
       p_xml in xmltype)
    return self as result
    is
-      l_xml            xmltype;
-      l_text           varchar2(64);
+      l_xml     xmltype;
+      l_text    varchar2(64);
       l_params         str_tab_t;
       l_elev_code      number(10);
       l_elev_positions number_tab_t;
@@ -4332,6 +4390,44 @@ as
       self.current_units := 'N';
       self.current_time  := 'D';
       self.validate_obj;
+      --------------------------------------------------
+      -- convert to native datum if                   --
+      --   a. has elevations, and                     --
+      --   b. xml specifies a non-null vertical datum --
+      --------------------------------------------------
+      l_elev_positions := cwms_rating.get_elevation_positions(cwms_util.split_text(self.rating_spec_id, 2, cwms_rating.separator1)); 
+      if l_elev_positions is not null then
+         l_datum := get_text(l_xml, '/rating/vertical-datum');
+         if l_datum is not null then
+            declare
+               l_vdatum_rating vdatum_rating_t;
+            begin                                      
+               l_vdatum_rating := vdatum_rating_t(self, l_datum, l_elev_positions);
+               l_vdatum_rating.to_native_datum;
+               self := l_vdatum_rating;
+            end;
+         end if;
+      end if;       
+      return;
+   end;
+   
+   constructor function rating_t(
+      p_other in rating_t)
+   return self as result
+   is
+   begin
+      self.office_id      := p_other.office_id;
+      self.rating_spec_id := p_other.rating_spec_id;
+      self.effective_date := p_other.effective_date;
+      self.create_date    := p_other.create_date;
+      self.active_flag    := p_other.active_flag;
+      self.formula        := p_other.formula;
+      self.native_units   := p_other.native_units;
+      self.description    := p_other.description;
+      self.rating_info    := p_other.rating_info;
+      self.current_units  := p_other.current_units;
+      self.current_time   := p_other.current_time;
+      self.formula_tokens := p_other.formula_tokens;
       return;
    end;
 
@@ -4577,7 +4673,7 @@ as
          for i in 2..l_units.count-1 loop
             self.native_units := self.native_units
                ||cwms_rating.separator3
-               ||cwms_util.get_unit_id(l_units(1), self.office_id);
+               ||cwms_util.get_unit_id(l_units(i), self.office_id);
          end loop;
          self.native_units := self.native_units
             ||cwms_rating.separator2
@@ -4750,7 +4846,7 @@ as
       i           integer;
    begin
       if self.current_units = 'N' or self.current_time = 'L' then
-         l_clone := self;  
+         l_clone := rating_t(self);  
          if self.current_units = 'N' then
             l_clone.convert_to_database_units;
          end if;
@@ -4854,7 +4950,7 @@ as
       end;
    begin
       if self.current_units = 'D' then
-         l_clone := self;
+         l_clone := rating_t(self);
          l_clone.convert_to_native_units;
          return l_clone.to_clob;
       end if;
@@ -5096,7 +5192,7 @@ as
       ------------------------------------------------------------------
       -- clone the rating, reversing independent and dependent values --
       ------------------------------------------------------------------
-      l_clone := self;
+      l_clone := rating_t(self);
       for i in 1..rating_info.rating_values.count loop
          l_clone.rating_info.rating_values(i).ind_value := rating_info.rating_values(i).dep_value;
          l_clone.rating_info.rating_values(i).dep_value := rating_info.rating_values(i).ind_value;
@@ -5486,6 +5582,188 @@ as table of rating_t;
 /
 show errors;
 
+create type vdatum_rating_t
+/**
+ * Holds a rating with vertical datum information
+ *
+ * @see type rating_t
+ *
+ * @member native_datum   The location's vertical datum in the datbase
+ * @member current_datum  The vertical datum the rating is currently represented in
+ * @member elev_positions A table of positions in the parameter list that are elevations. Positive positions indicate independent parameters, -1 indicates the dependent parameter.
+ */
+under rating_t
+(
+-- office_id      varchar2(16),
+-- rating_spec_id varchar2(372),
+-- effective_date date,
+-- create_date    date,
+-- active_flag    varchar2(1),
+-- formula        varchar2(1000),
+-- native_units   varchar2(256),
+-- description    varchar2(256),
+-- rating_info    rating_ind_parameter_t,
+-- current_units  varchar2(1), -- 'D' = database, 'N' = native, other = don't know
+-- current_time   varchar2(2), -- 'D' = database, 'L' = native, other = don't know
+   native_datum   varchar2(16),
+   current_datum  varchar2(16),
+   elev_positions number_tab_t,  
+                           
+   /**
+    * Constructs a vdatum_rating_t object from a rating_t object and a current datum
+    *
+    * @param p_rating         The existing rating_t object
+    * @param p_current_datum  The current datum that the rating object is represented in
+    * @param p_elev_positions A table of positions in the parameter list that are elevations. Positive positions indicate independent parameters, -1 indicates the dependent parameter. 
+    *
+    */
+   constructor function vdatum_rating_t(
+      p_rating         in rating_t,
+      p_current_datum  in varchar2,
+      p_elev_positions in number_tab_t
+   ) return self as result,
+   /**
+    * Modifies the elevations in the rating to be in the specified datum
+    *
+    * @param p_vertical_datum The vertical datum to adjust the elevations to
+    */   
+   member procedure to_vertical_datum(
+      p_vertical_datum in varchar2),
+   /**
+    * Modifies the elevations in the rating to be in the location's local datum
+    */      
+   member procedure to_native_datum,
+   /**
+    * Retrieves the rating as an XML instance in an CLOB object
+    *
+    * @return the rating as an XML instance in an CLOB object
+    */
+   overriding member function to_clob
+      return clob,
+   /**
+    * Retrieves the rating as an XML instance in an XMLTYPE object
+    *
+    * @return the rating as an XML instance in an XMLTYPE object
+    */
+   overriding member function to_xml
+      return xmltype      
+);
+/ 
+show errors;
+
+create type body vdatum_rating_t 
+as
+   constructor function vdatum_rating_t(
+      p_rating         in rating_t,
+      p_current_datum  in varchar2,
+      p_elev_positions in number_tab_t
+   ) return self as result
+   is
+   begin 
+      ------------------------------
+      -- initialize from p_rating --
+      ------------------------------
+      self.office_id      := p_rating.office_id;
+      self.rating_spec_id := p_rating.rating_spec_id;
+      self.effective_date := p_rating.effective_date;
+      self.create_date    := p_rating.create_date;
+      self.active_flag    := p_rating.active_flag;
+      self.formula        := p_rating.formula;
+      self.native_units   := p_rating.native_units;
+      self.description    := p_rating.description;
+      self.rating_info    := p_rating.rating_info;
+      self.current_units  := p_rating.current_units;
+      self.current_time   := p_rating.current_time;
+      self.formula_tokens := p_rating.formula_tokens;
+      ---------------------------
+      -- finish initialization --
+      ---------------------------
+      self.current_datum  := p_current_datum;
+      self.elev_positions := p_elev_positions;
+      return;
+   end;
+   
+   member procedure to_vertical_datum(
+      p_vertical_datum in varchar2)
+   is                         
+      l_parts     str_tab_t;
+      l_dep_unit  varchar2(16);
+      l_ind_units str_tab_t;
+      l_elev_unit varchar2(16);
+      l_offset    binary_double;
+   begin   
+      if self.current_datum != upper(p_vertical_datum) then
+         if self.formula is not null then
+            cwms_err.raise('ERROR', 'Can''t change vertical datum on a formula rating.');
+         end if;
+         for i in 1..self.elev_positions.count loop
+            if self.current_units = 'D' then
+               l_elev_unit := 'm';
+            else
+               if l_parts is null then
+                  l_parts     := cwms_util.split_text(self.native_units, cwms_rating.separator2);
+                  l_dep_unit  := l_parts(2);
+                  l_ind_units := cwms_util.split_text(l_parts(1), cwms_rating.separator3);
+               end if;
+               if self.elev_positions(i) = -1 then
+                  l_elev_unit := l_dep_unit;
+               else                                      
+                  l_elev_unit := l_ind_units(self.elev_positions(i));
+               end if;
+            end if;
+            l_offset := cwms_loc.get_vertical_datum_offset(
+               p_location_id         => cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1), 
+               p_vertical_datum_id_1 => self.current_datum, 
+               p_vertical_datum_id_2 => p_vertical_datum, 
+               p_unit                => l_elev_unit, 
+               p_office_id           => self.office_id);
+            self.rating_info.add_offset(l_offset, self.elev_positions(i));
+         end loop;
+         self.current_datum := upper(p_vertical_datum);
+      end if;
+   end;
+         
+   member procedure to_native_datum
+   is
+   begin                                       
+      self.to_vertical_datum(
+         cwms_loc.get_location_vertical_datum(
+            cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1), 
+            self.office_id));
+   end;      
+   
+   overriding member function to_clob
+      return clob
+   is
+      l_clob        clob;
+      l_clone       vdatum_rating_t;
+      l_location_id varchar2(49);
+      l_local_datum varchar2(16);
+   begin           
+      l_clob := (self as rating_t).to_clob;
+      l_location_id := cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1);
+      l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, self.office_id);
+      if l_local_datum is null then
+         l_clob := replace(l_clob, '</rating-spec-id>', '</rating-spec-id><vertical-datum/>');
+      else     
+         l_clone := self;
+         l_clone.to_native_datum;
+         l_clob := replace(l_clob, '</rating-spec-id>', '</rating-spec-id><vertical-datum>'||l_local_datum||'</vertical-datum>');
+      end if;   
+      return l_clob;
+   end;
+      
+   overriding member function to_xml
+      return xmltype      
+   is
+   begin
+      return xmltype(to_clob);
+   end;
+   
+end;
+/
+show errors;
+   
 create type stream_rating_t
 /**
  * Holds a USGS-style stream rating with shifts and offsets
@@ -5543,6 +5821,14 @@ under rating_t (
     */
    constructor function stream_rating_t(
       p_xml in xmltype)
+   return self as result,
+   /**
+    * Construction one stream_rating_t object from another.
+    *
+    * @param p_other another object of type stream_rating_t or one of its subclasses
+    */   
+   constructor function stream_rating_t(
+      p_other in stream_rating_t)
    return self as result,
    -- not documented
    overriding member procedure init(
@@ -5739,7 +6025,7 @@ under rating_t (
    -- not documented
    member function latest_shift_date
    return date      
-);
+) not final;
 /
 show errors;
 
@@ -6088,6 +6374,27 @@ as
       return;
    end;
 
+   constructor function stream_rating_t(
+      p_other in stream_rating_t)
+   return self as result
+   is   
+   begin
+      self.office_id      := p_other.office_id;
+      self.rating_spec_id := p_other.rating_spec_id;
+      self.effective_date := p_other.effective_date;
+      self.create_date    := p_other.create_date;
+      self.active_flag    := p_other.active_flag;
+      self.formula        := p_other.formula;
+      self.native_units   := p_other.native_units;
+      self.description    := p_other.description;
+      self.rating_info    := p_other.rating_info;
+      self.current_units  := p_other.current_units;
+      self.current_time   := p_other.current_time;
+      self.offsets        := p_other.offsets;
+      self.shifts         := p_other.shifts;
+      return;
+   end;
+
    overriding member procedure init(
       p_rating_code in number)
    is
@@ -6386,7 +6693,7 @@ as
       l_clone            stream_rating_t;
    begin
       if self.current_units = 'N' or self.current_time = 'L' then
-         l_clone := self;  
+         l_clone := stream_rating_t(self);  
          if self.current_units = 'N' then
             l_clone.convert_to_database_units;
          end if;
@@ -6500,7 +6807,7 @@ as
       end;
    begin
       if self.current_units = 'D' then
-         l_clone := self;
+         l_clone := stream_rating_t(self);
          l_clone.convert_to_native_units;
          return l_clone.to_clob;
       end if;              
@@ -6702,7 +7009,7 @@ as
          if current_time = 'D' then
             l_ztsv := rate(l_ztsv);
          else
-            l_clone := self;
+            l_clone := stream_rating_t(self);
             l_clone.convert_to_database_time;
             l_ztsv := l_clone.rate(l_ztsv);
          end if;
@@ -7084,7 +7391,7 @@ as
          if current_time = 'D' then
             l_ztsv := reverse_rate(l_ztsv);
          else
-            l_clone := self;
+            l_clone := stream_rating_t(self);
             l_clone.convert_to_database_time;
             l_ztsv := l_clone.reverse_rate(l_ztsv);
          end if;
@@ -7536,7 +7843,187 @@ as
    end;
 end;
 /
-
 show errors;
+
+create type vdatum_stream_rating_t
+/**
+ * Holds a USGS-style stream rating with vertical datum information
+ *
+ * @see type rating_t
+ *
+ * @member native_datum   The location's vertical datum in the datbase
+ * @member current_datum  The vertical datum the rating is currently represented in
+ * @member elev_positions A table of positions in the parameter list that are elevations. Positive positions indicate independent parameters, -1 indicates the dependent parameter.
+ */
+under stream_rating_t
+(
+-- office_id      varchar2(16),
+-- rating_spec_id varchar2(372),
+-- effective_date date,
+-- create_date    date,
+-- active_flag    varchar2(1),
+-- formula        varchar2(1000),
+-- native_units   varchar2(256),
+-- description    varchar2(256),
+-- rating_info    rating_ind_parameter_t,
+-- current_units  varchar2(1), -- 'D' = database, 'N' = native, other = don't know
+-- current_time   varchar2(2), -- 'D' = database, 'L' = native, other = don't know
+-- offsets        rating_t,
+-- shifts         rating_tab_t,
+   native_datum   varchar2(16),
+   current_datum  varchar2(16),
+   elev_position  number,  
+                           
+   /**
+    * Constructs a vdatum_stream_rating_t object from a stream_rating_t object and a current datum
+    *
+    * @param p_rating         The existing stream_rating_t object
+    * @param p_current_datum  The current datum that the rating object is represented in
+    *
+    */
+   constructor function vdatum_stream_rating_t(
+      p_rating         in stream_rating_t,
+      p_current_datum  in varchar2
+   ) return self as result,
+   /**
+    * Modifies the elevations in the rating to be in the specified datum
+    *
+    * @param p_vertical_datum The vertical datum to adjust the elevations to
+    */   
+   member procedure to_vertical_datum(
+      p_vertical_datum in varchar2),
+   /**
+    * Modifies the elevations in the rating to be in the location's local datum
+    */      
+   member procedure to_native_datum,
+   /**
+    * Retrieves the rating as an XML instance in an CLOB object
+    *
+    * @return the rating as an XML instance in an CLOB object
+    */
+   overriding member function to_clob
+      return clob,
+   /**
+    * Retrieves the rating as an XML instance in an XMLTYPE object
+    *
+    * @return the rating as an XML instance in an XMLTYPE object
+    */
+   overriding member function to_xml
+      return xmltype      
+);
+/ 
+show errors  
+
+create type body vdatum_stream_rating_t
+as                           
+   constructor function vdatum_stream_rating_t(
+      p_rating         in stream_rating_t,
+      p_current_datum  in varchar2
+   ) return self as result
+   is
+   begin
+      ------------------------------
+      -- initialize from p_rating --
+      ------------------------------
+      self.office_id      := p_rating.office_id;
+      self.rating_spec_id := p_rating.rating_spec_id;
+      self.effective_date := p_rating.effective_date;
+      self.create_date    := p_rating.create_date;
+      self.active_flag    := p_rating.active_flag;
+      self.formula        := p_rating.formula;
+      self.native_units   := p_rating.native_units;
+      self.description    := p_rating.description;
+      self.rating_info    := p_rating.rating_info;
+      self.current_units  := p_rating.current_units;
+      self.current_time   := p_rating.current_time;
+      self.formula_tokens := p_rating.formula_tokens;
+      self.offsets        := p_rating.offsets;
+      self.shifts         := p_rating.shifts;
+      ---------------------------
+      -- finish initialization --
+      ---------------------------
+      self.current_datum  := p_current_datum;
+      self.elev_position  := 1; -- only and always
+      return;
+   end;
+   
+   member procedure to_vertical_datum(
+      p_vertical_datum in varchar2)
+   is                         
+      l_parts     str_tab_t;
+      l_dep_unit  varchar2(16);
+      l_ind_units str_tab_t;
+      l_elev_unit varchar2(16);
+      l_offset    binary_double;
+   begin   
+      if self.current_datum != upper(p_vertical_datum) then
+         if self.current_units = 'D' then
+            l_elev_unit := 'm';
+         else
+            l_elev_unit := l_ind_units(1);
+         end if;
+         l_offset := cwms_loc.get_vertical_datum_offset(
+            p_location_id         => cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1), 
+            p_vertical_datum_id_1 => self.current_datum, 
+            p_vertical_datum_id_2 => p_vertical_datum, 
+            p_unit                => l_elev_unit, 
+            p_office_id           => self.office_id);
+         self.rating_info.add_offset(l_offset, self.elev_position);
+         if self.offsets is not null and self.offsets.rating_info is not null then
+            self.offsets.rating_info.add_offset(l_offset, self.elev_position);
+         end if;
+         self.current_datum := upper(p_vertical_datum);
+         if self.shifts is not null then
+            for i in 1..self.shifts.count loop
+               if self.shifts(i) is not null and self.shifts(i).rating_info is not null then
+                  self.shifts(i).rating_info.add_offset(l_offset, self.elev_position);
+               end if;
+            end loop;
+         end if;
+      end if;
+   end;
+   
+   member procedure to_native_datum
+   is
+   begin
+      self.to_vertical_datum(
+         cwms_loc.get_location_vertical_datum(
+            cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1), 
+            self.office_id));
+   end;
+   
+   overriding member function to_clob
+      return clob
+   is
+      l_clob        clob;
+      l_clone       vdatum_stream_rating_t;
+      l_location_id varchar2(49);
+      l_local_datum varchar2(16);
+   begin           
+      l_clob := (self as stream_rating_t).to_clob;
+      l_location_id := cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1);
+      l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, self.office_id);
+      if l_local_datum is null then
+         l_clob := replace(l_clob, '</rating-spec-id>', '</rating-spec-id><vertical-datum/>');
+      else     
+         l_clone := self;
+         l_clone.to_native_datum;
+         l_clob := replace(l_clob, '</rating-spec-id>', '</rating-spec-id><vertical-datum>'||l_local_datum||'</vertical-datum>');
+      end if;   
+      return l_clob;
+   end;
+   
+   overriding member function to_xml
+      return xmltype
+   is
+   begin
+      return xmltype(self.to_clob);
+   end;
+         
+end;
+/
+ 
+show errors  
+
 
 commit;

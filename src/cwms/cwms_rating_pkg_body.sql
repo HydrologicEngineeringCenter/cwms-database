@@ -1113,6 +1113,10 @@ is
    l_spec_version_mask     varchar2(32);
    l_office_id_mask        varchar2(16) := nvl(p_office_id_mask, cwms_util.user_office_id);
    l_count                 simple_integer := 0;
+   l_rating                rating_t;
+   l_stream_rating         stream_rating_t;
+   l_elev_positions        number_tab_t;
+   l_local_datum           varchar2(16);
 begin
    l_parts := cwms_util.split_text(p_spec_id_mask, separator1);
    case l_parts.count
@@ -1205,10 +1209,42 @@ begin
         into l_count
         from at_rating
        where ref_rating_code = rec.rating_code;
-      if l_count = 0 then
-         p_ratings(p_ratings.count) := rating_t(rec.rating_code);
+      if l_count = 0 then                      
+         l_rating := rating_t(rec.rating_code);
+         l_elev_positions := get_elevation_positions(l_parts(2));
+         if l_elev_positions is null then
+            p_ratings(p_ratings.count) := l_rating;
+         else
+            l_local_datum := cwms_loc.get_location_vertical_datum(l_parts(1), l_rating.office_id);
+            if l_local_datum is null then
+               p_ratings(p_ratings.count) := l_rating;
+            else
+               p_ratings(p_ratings.count) := vdatum_rating_t(l_rating, l_local_datum, l_elev_positions);
+            end if;   
+         end if;
       else
-         p_ratings(p_ratings.count) := stream_rating_t(rec.rating_code);
+         l_stream_rating := stream_rating_t(rec.rating_code);
+         l_elev_positions := get_elevation_positions(l_parts(2));
+         if l_elev_positions is null then
+            p_ratings(p_ratings.count) := l_stream_rating;
+         else                                             
+            if l_elev_positions = number_tab_t(1) then
+               null;
+            else  
+               cwms_err.raise(
+                  'ERROR', 
+                  l_stream_rating.office_id
+                  ||'/'
+                  ||l_stream_rating.rating_spec_id
+                  ||' doesn''t have ind parameter 1 as the first and only elevation parameter');
+            end if;
+            l_local_datum := cwms_loc.get_location_vertical_datum(l_parts(1), l_stream_rating.office_id);
+            if l_local_datum is null then
+               p_ratings(p_ratings.count) := l_stream_rating;
+            else 
+               p_ratings(p_ratings.count) := vdatum_stream_rating_t(l_stream_rating, l_local_datum);
+            end if;   
+         end if;
       end if;
    end loop;
 end retrieve_ratings_obj;
@@ -1288,14 +1324,20 @@ procedure retrieve_ratings_xml2(
    p_office_id_mask       in  varchar2 default null)
 is
    type id_tab_t is table of boolean index by varchar2(390); 
-   l_id           varchar2(390);
-   l_ids          id_tab_t;
-   l_specs        rating_spec_tab_t := rating_spec_tab_t();
-   l_templates    rating_template_tab_t := rating_template_tab_t();
-   l_ratings      rating_tab_t;
-   l_text         clob;
-   l_spec_id_mask varchar2(1024) := p_spec_id_mask;
-   l_values       boolean := true;
+   l_id            varchar2(390);
+   l_ids           id_tab_t;
+   l_specs         rating_spec_tab_t := rating_spec_tab_t();
+   l_templates     rating_template_tab_t := rating_template_tab_t();
+   l_ratings       rating_tab_t;
+   l_text          clob;
+   l_spec_id_mask  varchar2(1024) := p_spec_id_mask;
+   l_values        boolean := true; 
+   l_parts         str_tab_t;
+   l_location_id   varchar2(49);
+   l_parameters_id varchar2(256);
+   l_has_elev      boolean;
+   l_native_datum  varchar2(16);
+   l_item_text     clob;
 begin
    if substr(l_spec_id_mask, 1, 1) = '-' then
       l_values := false;
@@ -1343,8 +1385,29 @@ begin
          if l_ratings(i).rating_info is not null then
             l_ratings(i).rating_info.rating_values := rating_value_tab_t();
          end if;         
+      end if;                   
+      l_parts := cwms_util.split_text(l_ratings(i).rating_spec_id, cwms_rating.separator1);
+      l_parameters_id := l_parts(2);
+      l_has_elev := regexp_instr(l_parameters_id, '(^|[.,;])Elev([.,;-]|$)') > 0;
+      if l_has_elev then
+         l_item_text := l_ratings(i).to_clob;         
+         l_location_id := l_parts(1);      
+         l_native_datum := cwms_loc.get_location_vertical_datum(l_location_id, l_ratings(i).office_id);
+         if l_native_datum is null then
+            l_item_text := replace(
+               l_item_text,
+               '</rating-spec-id>',
+               '</rating-spec-id><vertical-datum/>');
+         else
+            l_item_text := replace(
+               l_item_text,
+               '</rating-spec-id>',
+               '</rating-spec-id><vertical-datum>'||l_native_datum||'</vertical-datum>');
+         end if;
+         cwms_util.append(l_text, l_item_text);
+      else
+         cwms_util.append(l_text, l_ratings(i).to_clob);
       end if;
-      cwms_util.append(l_text, l_ratings(i).to_clob);
    end loop; 
    cwms_util.append(l_text, '</ratings>');     
    dbms_lob.close(l_text); 
@@ -4631,6 +4694,41 @@ begin
    end if;
 end start_update_mviews_job;
 
+function get_elevation_positions(
+   p_rating_template_id in varchar2)
+   return number_tab_t
+   
+is
+   l_elev_code      number(10);
+   l_params         str_tab_t;
+   l_elev_positions number_tab_t;
+begin
+      select base_parameter_code 
+        into l_elev_code 
+        from cwms_base_parameter 
+       where base_parameter_id = 'Elev';
+         
+      l_params := cwms_util.split_text(
+         cwms_util.split_text(
+            replace(p_rating_template_id, separator2, separator3), 
+            1, 
+            separator1), 
+         separator3);
+      for i in 1..l_params.count loop
+         if cwms_util.get_base_param_code(l_params(i), 'T') = l_elev_code then
+            if l_elev_positions is null then
+               l_elev_positions := number_tab_t();
+            end if;                               
+            l_elev_positions.extend;
+            if i = l_params.count then
+               l_elev_positions(l_elev_positions.count) := -1;
+            else
+               l_elev_positions(l_elev_positions.count) := i;
+            end if;
+         end if;   
+      end loop; 
+      return l_elev_positions;
+end get_elevation_positions;         
 
 end;
 /
