@@ -94,7 +94,7 @@ is
    l_msgid              raw(16);
    l_queuename          varchar2(64);
    l_now                integer := cwms_util.current_millis;
-   l_expiration_time    constant binary_integer := 900; -- 5 minutes
+   l_expiration_time    constant binary_integer := 900; -- 15 minutes
    l_java_action        varchar2(4000);
    l_queueing_paused    boolean;
    l_parts              str_tab_t;
@@ -1279,7 +1279,8 @@ BEGIN
 
          dequeue_options.msgid := NULL;
          dequeue_options.navigation := DBMS_AQ.NEXT_MESSAGE;
-      END LOOP;
+     END LOOP;
+     CLOSE l_cur;
 
       COMMIT;
       sys.dbms_aqadm.stop_queue(queue_name => l_queue_name);
