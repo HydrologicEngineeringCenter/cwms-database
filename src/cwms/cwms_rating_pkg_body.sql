@@ -1332,12 +1332,6 @@ is
    l_text          clob;
    l_spec_id_mask  varchar2(1024) := p_spec_id_mask;
    l_values        boolean := true; 
-   l_parts         str_tab_t;
-   l_location_id   varchar2(49);
-   l_parameters_id varchar2(256);
-   l_has_elev      boolean;
-   l_native_datum  varchar2(16);
-   l_item_text     clob;
 begin
    if substr(l_spec_id_mask, 1, 1) = '-' then
       l_values := false;
@@ -1386,28 +1380,7 @@ begin
             l_ratings(i).rating_info.rating_values := rating_value_tab_t();
          end if;         
       end if;                   
-      l_parts := cwms_util.split_text(l_ratings(i).rating_spec_id, cwms_rating.separator1);
-      l_parameters_id := l_parts(2);
-      l_has_elev := regexp_instr(l_parameters_id, '(^|[.,;])Elev([.,;-]|$)') > 0;
-      if l_has_elev then
-         l_item_text := l_ratings(i).to_clob;         
-         l_location_id := l_parts(1);      
-         l_native_datum := cwms_loc.get_location_vertical_datum(l_location_id, l_ratings(i).office_id);
-         if l_native_datum is null then
-            l_item_text := replace(
-               l_item_text,
-               '</rating-spec-id>',
-               '</rating-spec-id><vertical-datum/>');
-         else
-            l_item_text := replace(
-               l_item_text,
-               '</rating-spec-id>',
-               '</rating-spec-id><vertical-datum>'||l_native_datum||'</vertical-datum>');
-         end if;
-         cwms_util.append(l_text, l_item_text);
-      else
-         cwms_util.append(l_text, l_ratings(i).to_clob);
-      end if;
+      cwms_util.append(l_text, l_ratings(i).to_clob);
    end loop; 
    cwms_util.append(l_text, '</ratings>');     
    dbms_lob.close(l_text); 
