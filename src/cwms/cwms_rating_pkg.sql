@@ -2713,7 +2713,16 @@ function get_min_opening2(
 procedure update_materialized_views;
 
 procedure start_update_mviews_job;
-      
+/**
+ * Returns a table of positions in the template parameters that are elevation parameters. Used for determining whether a rating should include vertical datum information.
+ *
+ * @param p_rating_template_id The rating template to analyze for elevation positions
+ *
+ * @return A table of positions in the template parameters that are elevation parameters. Null if no parameters are elevation parameters. A positive position indicates the independent parameter in that position is an elevation.  -1 indicates the dependent parameter is an elevation. 
+ */
+function get_elevation_positions(
+   p_rating_template_id in varchar2)
+   return number_tab_t;      
 end;
    
 /                                                       
