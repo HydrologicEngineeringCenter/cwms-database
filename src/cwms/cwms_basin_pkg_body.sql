@@ -3,8 +3,8 @@ create or replace package body cwms_basin as
 -- function get_basin_code
 --------------------------------------------------------------------------------
 function get_basin_code(
-   p_basin_id  in varchar2,
-   p_office_id in varchar2 default null)
+   p_office_id in varchar2,
+   p_basin_id  in varchar2)
    return number
 is
    l_basin_code number(10);

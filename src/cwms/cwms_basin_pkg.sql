@@ -9,8 +9,8 @@ create or replace package cwms_basin
 as
 -- not documented
 function get_basin_code(
-   p_basin_id  in varchar2,
-   p_office_id in varchar2 default null)
+   p_office_id in varchar2,
+   p_basin_id  in varchar2)
    return number;
 /**
  * Stores a basin to the database
