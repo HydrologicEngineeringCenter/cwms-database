@@ -1,0 +1,586 @@
+from decimal import *
+import re, string
+
+getcontext().prec = 16 # floating point precision to use
+
+regexQuant = r'(([a-z0-9_ /*-]+_per_[a-z0-9_ /*-]+)(\^(\d+))?)'
+regexUnit  = r'(\[(.+?)\])'
+regexIdent = '%s?%s/%s?%s' % (regexQuant, regexUnit, regexQuant, regexUnit)
+patternIdent = re.compile(regexIdent, re.I)
+
+#
+# Base unit conversion factors to be used in the dimensional analysis
+#
+conversion_factors = {
+#
+#	English	
+#
+	'ft2_per_acre'     : Decimal('43560'),
+	'ft_per_mile'      : Decimal('5280'),
+	'in_per_ft'        : Decimal('12'),
+#
+#	SI
+#
+	'l_per_m3'         : Decimal('1e3'),
+	'm2_per_ha'        : Decimal('1e4'),
+#
+#	EN-->SI from NIST (http://physics.nist.gov/cuu/pdf/sp811.pdf)
+#
+	'J/m2_per_langley' : Decimal('4.184e4'),          # pg 51
+	'm3_per_gal'       : Decimal('3.785412e-3'),      # pg 50
+	'm_per_ft'         : Decimal('3.048e-1'),         # pg 49
+	'Pa_per_bar'       : Decimal('1e5'),              # pg 45
+	'Pa_per_in-hg'     : Decimal('3.386389e3'),       # pg 50
+	'Pa_per_mm-hg'     : Decimal('1.333224e2'),       # pg 52
+	'Pa_per_psi'       : Decimal('6.894757e3'),       # pg 53
+	'C_per_F'          : Decimal('1')/Decimal('1.8'), # pg 48
+#
+#	time	
+#
+	'hr_per_day'       : Decimal('24'),
+	'min_per_hr'       : Decimal('60'),
+	's_per_min'        : Decimal('60'),
+#
+#	angle	
+#
+	'deg_per_rev'      : Decimal('360'),
+#
+#	scale
+#
+	'u*_per_*'         : Decimal('1e6'),  # micro-
+	'm*_per_*'         : Decimal('1e3'),  # milli-
+	'c*_per_*'         : Decimal('1e2'),  # centi-
+	'*_per_k*'         : Decimal('1e3'),  # kilo-
+	'*_per_M*'         : Decimal('1e6'),  # mega-
+	'*_per_G*'         : Decimal('1e9'),  # giga-
+	'*_per_T*'         : Decimal('1e12'), # tera-
+}
+#
+# Handy conversion factors that can be derived from the base factors
+#
+conversion_factors['km_per_mile'] = conversion_factors['ft_per_mile'] * conversion_factors['m_per_ft']   / conversion_factors['*_per_k*']
+conversion_factors['min_per_day'] = conversion_factors['min_per_hr']  * conversion_factors['hr_per_day']
+conversion_factors['s_per_hr']    = conversion_factors['s_per_min']   * conversion_factors['min_per_hr']
+conversion_factors['s_per_day']   = conversion_factors['s_per_hr']    * conversion_factors['hr_per_day']
+conversion_factors['ft3_per_dsf'] = conversion_factors['s_per_day']
+#
+# Offsets for conversions that require them (applied after factors) 
+#
+offsets = {
+	'C_to_F' : Decimal('32'),
+	'F_to_C' : Decimal('-32') * conversion_factors['C_per_F'],
+}
+#
+# Conversion definitions in dimensional analysis format
+#
+# Conversion identities are separated by  the | character
+#
+# Each identity requires a numerator and a denominator with units enclosed in [] characters
+#
+# The numerator and/or denominator may also have quantities which must be specified
+# as keys into the conversion_factors dictionary.  Quantities may be exponentiated
+# using the ^ character
+#
+conversion_definitions = [
+#
+#	from_unit      to_unit         conversion identities
+#	-------------  -------------   --------------------------------------------------------------------------------------------
+	('%',           'n/a',         '[n/a]/c*_per_*[%]'),
+	('1000 m2',     'acre',        '*_per_k*[m2]/[1000 m2] | [ft2]/m_per_ft^2[m2] | [acre]/ft2_per_acre[ft2]'),
+	('1000 m2',     'ft2',         '*_per_k*[m2]/[1000 m2] | [ft2]/m_per_ft^2[m2]'),
+	('1000 m2',     'ha',          '*_per_k*[m2]/[1000 m2] | [ha]/m2_per_ha[m2]'),
+	('1000 m2',     'km2',         '*_per_k*[m2]/[1000 m2] | [km2]/*_per_k*^2[m2]'),
+	('1000 m2',     'm2',          '*_per_k*[m2]/[1000 m2]'),
+	('1000 m2',     'mile2',       '*_per_k*[m2]/[1000 m2] | [ft2]/m_per_ft^2[m2] | [mile2]/ft_per_mile^2[ft2]'),
+	('1000 m3',     'ac-ft',       '*_per_k*[m3]/[1000 m3] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),
+	('1000 m3',     'dsf',         '*_per_k*[m3]/[1000 m3] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3]'),
+	('1000 m3',     'ft3',         '*_per_k*[m3]/[1000 m3] | [ft3]/m_per_ft^3[m3]'),
+	('1000 m3',     'gal',         '*_per_k*[m3]/[1000 m3] | [gal]/m3_per_gal[m3]'),
+	('1000 m3',     'kaf',         '*_per_k*[m3]/[1000 m3] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),
+	('1000 m3',     'kgal',        '*_per_k*[m3]/[1000 m3] | [gal]/m3_per_gal[m3] | [kgal]/*_per_k*[gal]'),
+	('1000 m3',     'km3',         '*_per_k*[m3]/[1000 m3] | [km3]/*_per_k*^3[m3]'),
+	('1000 m3',     'm3',          '*_per_k*[m3]/[1000 m3]'),
+	('1000 m3',     'mgal',        '*_per_k*[m3]/[1000 m3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
+	('1000 m3',     'mile3',       '*_per_k*[m3]/[1000 m3] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),
+	('ac-ft',       '1000 m3',     'ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
+	('ac-ft',       'dsf',         'ft2_per_acre[ft3]/[ac-ft] | [dsf]/ft3_per_dsf[ft3]'),
+	('ac-ft',       'ft3',         'ft2_per_acre[ft3]/[ac-ft]'),
+	('ac-ft',       'gal',         'ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3]'),
+	('ac-ft',       'kaf',         '[kaf]/*_per_k*[ac-ft]'),
+	('ac-ft',       'kgal',        'ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [kgal]/*_per_k*[gal]'),
+	('ac-ft',       'km3',         'ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [km3]/*_per_k*^3[m3]'),
+	('ac-ft',       'm3',          'ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3]'),
+	('ac-ft',       'mgal',        'ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
+	('ac-ft',       'mile3',       'ft2_per_acre[ft3]/[ac-ft] | [mile3]/ft_per_mile^3[ft3]'),
+	('acre',        '1000 m2',     'ft2_per_acre[ft2]/[acre] | m_per_ft^2[m2]/[ft2] | [1000 m2]/*_per_k*[m2]'),
+	('acre',        'ft2',         'ft2_per_acre[ft2]/[acre]'),
+	('acre',        'ha',          'ft2_per_acre[ft2]/[acre] | m_per_ft^2[m2]/[ft2] | [ha]/m2_per_ha[m2]'),
+	('acre',        'km2',         'ft2_per_acre[ft2]/[acre] | m_per_ft^2[m2]/[ft2] | [km2]/*_per_k*^2[m2]'),
+	('acre',        'm2',          'ft2_per_acre[ft2]/[acre] | m_per_ft^2[m2]/[ft2]'),
+	('acre',        'mile2',       'ft2_per_acre[ft2]/[acre] | [mile2]/ft_per_mile^2[ft2]'),
+	('C',           'F',           '[F]/C_per_F[C]'),
+	('cfs',         'cms',         '[ft3/s]/[cfs] | m_per_ft^3[m3]/[ft3] | [cms]/[m3/s]'),
+	('cfs',         'gpm',         '[ft3/s]/[cfs] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | s_per_min[s]/[min] | [gpm]/[gal/min]'),
+	('cfs',         'kcfs',        '[kcfs]/*_per_k*[cfs]'),
+	('cfs',         'mgd',         '[ft3/s]/[cfs] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal] | s_per_day[s]/[day] | [mgd]/[mgal/day]'),
+	('cfs/mi2',     'cms/km2',     '[ft3/s]/[cfs] | m_per_ft^3[m3]/[ft3] | [mi2]/km_per_mile^2[km2] | [cms]/[m3/s]'),
+	('cm',          'ft',          '[m]/c*_per_*[cm] | [ft]/m_per_ft[m]'),
+	('cm',          'in',          '[m]/c*_per_*[cm] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft]'),
+	('cm',          'km',          '[m]/c*_per_*[cm] | [km]/*_per_k*[m]'),
+	('cm',          'm',           '[m]/c*_per_*[cm]'),
+	('cm',          'mi',          '[m]/c*_per_*[cm] | [ft]/m_per_ft[m] | [mi]/ft_per_mile[ft]'),
+	('cm',          'mm',          '[m]/c*_per_*[cm] | m*_per_*[mm]/[m]'),
+	('cms',         'cfs',         '[m3/s]/[cms] | [ft3]/m_per_ft^3[m3] | [cfs]/[ft3/s]'),
+	('cms',         'gpm',         '[m3/s]/[cms] | [gal]/m3_per_gal[m3] | s_per_min[s]/[min] | [gpm]/[gal/min]'),
+	('cms',         'kcfs',        '[m3/s]/[cms] | [ft3]/m_per_ft^3[m3] | [kcfs]/*_per_k*[ft3/s]'),
+	('cms',         'mgd',         '[m3/s]/[cms] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal] | s_per_day[s]/[day] | [mgd]/[mgal/day]'),
+	('cms/km2',     'cfs/mi2',     '[m3/s]/[cms] | [ft3]/m_per_ft^3[m3] | km_per_mile^2[km2]/[mi2] | [cfs]/[ft3/s]'),
+	('deg',         'rev',         '[rev]/deg_per_rev[deg]'),
+	('dsf',         '1000 m3',     'ft3_per_dsf[ft3]/[dsf] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
+	('dsf',         'ac-ft',       'ft3_per_dsf[ft3]/[dsf] | [ac-ft]/ft2_per_acre[ft3]'),
+	('dsf',         'ft3',         'ft3_per_dsf[ft3]/[dsf]'),
+	('dsf',         'gal',         'ft3_per_dsf[ft3]/[dsf] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3]'),
+	('dsf',         'kaf',         'ft3_per_dsf[ft3]/[dsf] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),
+	('dsf',         'kgal',        'ft3_per_dsf[ft3]/[dsf] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [kgal]/*_per_k*[gal]'),
+	('dsf',         'km3',         'ft3_per_dsf[ft3]/[dsf] | m_per_ft^3[m3]/[ft3] | [km3]/*_per_k*^3[m3]'),
+	('dsf',         'm3',          'ft3_per_dsf[ft3]/[dsf] | m_per_ft^3[m3]/[ft3]'),
+	('dsf',         'mgal',        'ft3_per_dsf[ft3]/[dsf] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
+	('dsf',         'mile3',       'ft3_per_dsf[ft3]/[dsf] | [mile3]/ft_per_mile^3[ft3]'),
+	('F',           'C',           'C_per_F[C]/[F]'),           
+	('ft',          'cm',          'm_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),
+	('ft',          'in',          'in_per_ft[in]/[ft]'),
+	('ft',          'km',          'm_per_ft[m]/[ft] | [km]/*_per_k*[m]'),
+	('ft',          'm',           'm_per_ft[m]/[ft]'),
+	('ft',          'mi',          '[mi]/ft_per_mile[ft]'),
+	('ft',          'mm',          'm_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
+	('ft/s',        'in/day',      'in_per_ft[in]/[ft] | s_per_day[s]/[day]'),
+	('ft/s',        'in/hr',       'in_per_ft[in]/[ft] | s_per_hr[s]/[hr]'),
+	('ft/s',        'kph',         'm_per_ft[m]/[ft] | [km]/*_per_k*[m] | s_per_hr[s]/[hr] | [kph]/[km/hr]'),
+	('ft/s',        'm/s',         'm_per_ft[m]/[ft]'),
+	('ft/s',        'mm/day',      'm_per_ft[m]/[ft] | m*_per_*[mm]/[m] | s_per_day[s]/[day]'),
+	('ft/s',        'mm/hr',       'm_per_ft[m]/[ft] | m*_per_*[mm]/[m] | s_per_hr[s]/[hr]'),
+	('ft/s',        'mph',         '[mi]/ft_per_mile[ft] | s_per_hr[s]/[hr] | [mph]/[mi/hr]'),
+	('ft2',         '1000 m2',     'm_per_ft^2[m2]/[ft2] | [1000 m2]/*_per_k*[m2]'),
+	('ft2',         'acre',        '[acre]/ft2_per_acre[ft2]'),
+	('ft2',         'ha',          'm_per_ft^2[m2]/[ft2] | [ha]/m2_per_ha[m2]'),
+	('ft2',         'km2',         'm_per_ft^2[m2]/[ft2] | [km2]/*_per_k*^2[m2]'),
+	('ft2',         'm2',          'm_per_ft^2[m2]/[ft2]'),
+	('ft2',         'mile2',       '[mile2]/ft_per_mile^2[ft2]'),
+	('ft3',         '1000 m3',     'm_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
+	('ft3',         'ac-ft',       '[ac-ft]/ft2_per_acre[ft3]'),
+	('ft3',         'dsf',         '[dsf]/ft3_per_dsf[ft3]'),
+	('ft3',         'gal',         'm_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3]'),  
+	('ft3',         'kaf',         '[ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),
+	('ft3',         'kgal',        'm_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [kgal]/*_per_k*[gal]'),  
+	('ft3',         'km3',         'm_per_ft^3[m3]/[ft3] | [km3]/*_per_k*^3[m3]'),
+	('ft3',         'm3',          'm_per_ft^3[m3]/[ft3]'),
+	('ft3',         'mgal',        'm_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
+	('ft3',         'mile3',       '[mile3]/ft_per_mile^3[ft3]'),
+	('g/l',         'gm/cm3',      'l_per_m3[l]/[m3] | [m3]/c*_per_*^3[cm3] | [gm]/[g]'),
+	('g/l',         'mg/l',        'm*_per_*[mg/l]/[g/l]'),
+	('g/l',         'ppm',         'm*_per_*[mg/l]/[g/l] | [ppm]/[mg/l]'),
+	('gal',         '1000 m3',     'm3_per_gal[m3]/[gal] | [1000 m3]/*_per_k*[m3]'),     
+	('gal',         'ac-ft',       'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),     
+	('gal',         'dsf',         'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3]'),
+	('gal',         'ft3',         'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3]'),     
+	('gal',         'kaf',         'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),     
+	('gal',         'kgal',        '[kgal]/*_per_k*[gal]'),
+	('gal',         'km3',         'm3_per_gal[m3]/[gal] | [km3]/*_per_k*^3[m3]'),     
+	('gal',         'm3',          'm3_per_gal[m3]/[gal]'),     
+	('gal',         'mgal',        '[mgal]/*_per_M*[gal]'),
+	('gal',         'mile3',       'm3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),     
+	('gm/cm3',      'g/l',         '[g]/[gm] | c*_per_*^3[cm3]/[m3] | [m3]/l_per_m3[l]'),
+	('gm/cm3',      'mg/l',        '[g]/[gm] | c*_per_*^3[cm3]/[m3] | [m3]/l_per_m3[l] | m*_per_*[mg]/[g]'),
+	('gm/cm3',      'ppm',         '[g]/[gm] | c*_per_*^3[cm3]/[m3] | [m3]/l_per_m3[l] | m*_per_*[mg]/[g] | [ppm]/[mg/l]'),
+	('gpm',         'cfs',         '[gal/min]/[gpm] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [min]/s_per_min[s] | [cfs]/[ft3/s]'),
+	('gpm',         'cms',         '[gal/min]/[gpm] | m3_per_gal[m3]/[gal] |[min]/s_per_min[s] | [cms]/[m3/s]'),
+	('gpm',         'kcfs',        '[gal/min]/[gpm] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [min]/s_per_min[s] | [cfs]/[ft3/s] | [kcfs]/*_per_k*[cfs]'),
+	('gpm',         'mgd',         '[gal/min]/[gpm] | [Mgal]/*_per_M*[gal] | min_per_day[min]/[day] | [mgd]/[Mgal/day]'),
+	('GW',          'kW',          '*_per_G*[W]/[GW] | [kW]/*_per_k*[W]'),
+	('GW',          'MW',          '*_per_G*[W]/[GW] | [MW]/*_per_M*[W]'),
+	('GW',          'TW',          '*_per_G*[W]/[GW] | [TW]/*_per_T*[W]'),
+	('GW',          'W',           '*_per_G*[W]/[GW]'),
+	('GWh',         'kWh',         '*_per_G*[Wh]/[GWh] | [kWh]/*_per_k*[Wh]'),
+	('GWh',         'MWh',         '*_per_G*[Wh]/[GWh] | [MWh]/*_per_M*[Wh]'),
+	('GWh',         'TWh',         '*_per_G*[Wh]/[GWh] | [TWh]/*_per_T*[Wh]'),
+	('GWh',         'Wh',          '*_per_G*[Wh]/[GWh]'),
+	('ha',          '1000 m2',     'm2_per_ha[m2]/[ha] | [1000 m2]/*_per_k*[m2]'),
+	('ha',          'acre',        'm2_per_ha[m2]/[ha] | [ft2]/m_per_ft^2[m2] | [acre]/ft2_per_acre[ft2]'),
+	('ha',          'ft2',         'm2_per_ha[m2]/[ha] | [ft2]/m_per_ft^2[m2]'),
+	('ha',          'km2',         'm2_per_ha[m2]/[ha] | [km2]/*_per_k*^2[m2]'),
+	('ha',          'm2',          'm2_per_ha[m2]/[ha]'),
+	('ha',          'mile2',       'm2_per_ha[m2]/[ha] | [ft2]/m_per_ft^2[m2] | [mile2]/ft_per_mile^2[ft2]'),
+	('hr',          'min',         'min_per_hr[min]/[hr]'),
+	('hr',          'sec',         's_per_hr[sec]/[hr]'),
+	('in',          'cm',          '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),	
+	('in',          'ft',          '[ft]/in_per_ft[in]'),	
+	('in',          'km',          '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [km]/*_per_k*[m]'),
+	('in',          'm',           '[ft]/in_per_ft[in] | m_per_ft[m]/[ft]'),	
+	('in',          'mi',          '[ft]/in_per_ft[in] | [mi]/ft_per_mile[ft]'),	
+	('in',          'mm',          '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),	
+	('in-hg',       'kPa',         'Pa_per_in-hg[Pa]/[in-hg] | [kPa]/*_per_k*[Pa]'),
+	('in-hg',       'mb',          'Pa_per_in-hg[Pa]/[in-hg] | [bar]/Pa_per_bar[Pa] | m*_per_*[mb]/[bar]'),
+	('in-hg',       'mm-hg',       '[ft-hg]/in_per_ft[in-hg] | m_per_ft[m-hg]/[ft-hg] | m*_per_*[mm-hg]/[m-hg]'),
+	('in-hg',       'psi',         'Pa_per_in-hg[Pa]/[in-hg] | [psi]/Pa_per_psi[Pa]'),
+	('in/day',      'ft/s',        '[ft]/in_per_ft[in] | [day]/s_per_day[s]'),
+	('in/day',      'in/hr',       '[day]/hr_per_day[hr]'),
+	('in/day',      'kph',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [km]/*_per_k*[m] | [day]/hr_per_day[hr] | [kph]/[km/hr]'),
+	('in/day',      'm/s',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [day]/s_per_day[s]'),
+	('in/day',      'mm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),	
+	('in/day',      'mm/hr',       '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | [day]/hr_per_day[hr]'),	
+	('in/day',      'mph',         '[ft]/in_per_ft[in] | [mi]/ft_per_mile[ft] | [day]/hr_per_day[hr] | [mph]/[mi/hr]'),
+	('in/deg-day',  'mm/deg-day',  '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | [deg-day]/C_per_F[deg-day]'),
+	('in/hr',       'ft/s',        '[ft]/in_per_ft[in] | [hr]/s_per_hr[s]'),
+	('in/hr',       'in/day',      'hr_per_day[hr]/[day]'),
+	('in/hr',       'kph',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [km]/*_per_k*[m] | [kph]/[km/hr]'),
+	('in/hr',       'm/s',         '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | [hr]/s_per_hr[s]'),
+	('in/hr',       'mm/day',      '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | hr_per_day[hr]/[day]'),
+	('in/hr',       'mm/hr',       '[ft]/in_per_ft[in] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
+	('in/hr',       'mph',         '[ft]/in_per_ft[in] | [mi]/ft_per_mile[ft] | [mph]/[mi/hr]'),
+	('J/m2',        'langley',     '[langley]/J/m2_per_langley[J/m2]'),
+	('kaf',         '1000 m3',     '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [1000 m3]/*_per_k*[m3]'),
+	('kaf',         'ac-ft',       '*_per_k*[ac-ft]/[kaf]'),
+	('kaf',         'dsf',         '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | [dsf]/ft3_per_dsf[ft3]'),
+	('kaf',         'ft3',         '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft]'),
+	('kaf',         'gal',         '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3]'),
+	('kaf',         'kgal',        '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [kgal]/*_per_k*[gal]'),
+	('kaf',         'km3',         '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [km3]/*_per_k*^3[m3]'),
+	('kaf',         'm3',          '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3]'),
+	('kaf',         'mgal',        '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
+	('kaf',         'mile3',       '*_per_k*[ac-ft]/[kaf] | ft2_per_acre[ft3]/[ac-ft] | [mile3]/ft_per_mile^3[ft3]'),
+	('kcfs',        'cfs',         '*_per_k*[cfs]/[kcfs]'),
+	('kcfs',        'cms',         '*_per_k*[ft3/s]/[kcfs] | m_per_ft^3[m3]/[ft3] | [cms]/[m3/s]'),
+	('kcfs',        'gpm',         '*_per_k*[ft3/s]/[kcfs] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | s_per_min[s]/[min] | [gpm]/[gal/min]'),
+	('kcfs',        'mgd',         '*_per_k*[ft3/s]/[kcfs] | m_per_ft^3[m3]/[ft3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal] | s_per_day[s]/[day] | [mgd]/[mgal/day]'),
+	('kgal',        '1000 m3',     '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [1000 m3]/*_per_k*[m3]'),     
+	('kgal',        'ac-ft',       '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),     
+	('kgal',        'dsf',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3]'),
+	('kgal',        'ft3',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3]'),     
+	('kgal',        'gal',         '*_per_k*[gal]/[kgal]'),
+	('kgal',        'kaf',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),     
+	('kgal',        'km3',         '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [km3]/*_per_k*^3[m3]'),     
+	('kgal',        'm3',          '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal]'),     
+	('kgal',        'mgal',        '*_per_k*[gal]/[kgal] | [mgal]/*_per_M*[gal]'),
+	('kgal',        'mile3',       '*_per_k*[gal]/[kgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),  
+	('km',          'cm',          '*_per_k*[m]/[km] | c*_per_*[cm]/[m]'),
+	('km',          'ft',          '*_per_k*[m]/[km] | [ft]/m_per_ft[m]'),
+	('km',          'in',          '*_per_k*[m]/[km] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft]'),
+	('km',          'm',           '*_per_k*[m]/[km]'),
+	('km',          'mi',          '*_per_k*[m]/[km] | [ft]/m_per_ft[m] | [mi]/ft_per_mile[ft]'),
+	('km',          'mm',          '*_per_k*[m]/[km] | m*_per_*[mm]/[m]'),
+	('km2',         '1000 m2',     '*_per_k*^2[m2]/[km2] | [1000 m2]/*_per_k*[m2]'),
+	('km2',         'acre',        '*_per_k*^2[m2]/[km2] | [ft2]/m_per_ft^2[m2] | [acre]/ft2_per_acre[ft2]'),
+	('km2',         'ft2',         '*_per_k*^2[m2]/[km2] | [ft2]/m_per_ft^2[m2]'),
+	('km2',         'ha',          '*_per_k*^2[m2]/[km2] | [ha]/m2_per_ha[m2]'),
+	('km2',         'm2',          '*_per_k*^2[m2]/[km2]'),
+	('km2',         'mile2',       '[mile2]/km_per_mile^2[km2]'),
+	('km3',         '1000 m3',     '*_per_k*^3[m3]/[km3] | [1000 m3]/*_per_k*[m3]'),
+	('km3',         'ac-ft',       '*_per_k*^3[m3]/[km3] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),
+	('km3',         'dsf',         '*_per_k*^3[m3]/[km3] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3]'),
+	('km3',         'ft3',         '*_per_k*^3[m3]/[km3] | [ft3]/m_per_ft^3[m3]'),
+	('km3',         'gal',         '*_per_k*^3[m3]/[km3] | [gal]/m3_per_gal[m3]'),
+	('km3',         'kaf',         '*_per_k*^3[m3]/[km3] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),
+	('km3',         'kgal',        '*_per_k*^3[m3]/[km3] | [gal]/m3_per_gal[m3] | [kgal]/*_per_k*[gal]'),
+	('km3',         'm3',          '*_per_k*^3[m3]/[km3]'),
+	('km3',         'mgal',        '*_per_k*^3[m3]/[km3] | [gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
+	('km3',         'mile3',       '*_per_k*^3[m3]/[km3] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),
+	('kPa',         'in-hg',       '*_per_k*[Pa]/[kPa] | [in-hg]/Pa_per_in-hg[Pa]'),
+	('kPa',         'mb',          '*_per_k*[Pa]/[kPa] | [bar]/Pa_per_bar[Pa] | m*_per_*[mb]/[bar]'),
+	('kPa',         'mm-hg',       '*_per_k*[Pa]/[kPa] | [mm-hg]/Pa_per_mm-hg[Pa]'),
+	('kPa',         'psi',         '*_per_k*[Pa]/[kPa] | [psi]/Pa_per_psi[Pa]'),
+	('kph',         'ft/s',        '[km/hr]/[kph] | *_per_k*[m]/[km] | [ft]/m_per_ft[m] | [hr]/s_per_hr[s]'),
+	('kph',         'in/day',      '[km/hr]/[kph] | *_per_k*[m]/[km] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft] | hr_per_day[hr]/[day]'),
+	('kph',         'in/hr',        '[km/hr]/[kph] | *_per_k*[m]/[km] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft]'),
+	('kph',         'm/s',         '[km/hr]/[kph] | *_per_k*[m]/[km] | [hr]/s_per_hr[s]'),
+	('kph',         'mm/day',      '[km/hr]/[kph] | *_per_k*[m]/[km] | m*_per_*[mm]/[m] | hr_per_day[hr]/[day]'),
+	('kph',         'mm/hr',       '[km/hr]/[kph] | *_per_k*[m]/[km] | m*_per_*[mm]/[m]'),
+	('kph',         'mph',         '[km/hr]/[kph] | *_per_k*[m]/[km] | [ft]/m_per_ft[m] | [mi]/ft_per_mile[ft] | [mph]/[mi/hr]'),
+	('kW',          'GW',          '*_per_k*[W]/[kW] | [GW]/*_per_G*[W]'),
+	('kW',          'MW',          '*_per_k*[W]/[kW] | [MW]/*_per_M*[W]'),
+	('kW',          'TW',          '*_per_k*[W]/[kW] | [TW]/*_per_T*[W]'),
+	('kW',          'W',           '*_per_k*[W]/[kW]'),
+	('kWh',         'GWh',         '*_per_k*[Wh]/[kWh] | [GWh]/*_per_G*[Wh]'),                                 
+	('kWh',         'MWh',         '*_per_k*[Wh]/[kWh] | [MWh]/*_per_M*[Wh]'),
+	('kWh',         'TWh',         '*_per_k*[Wh]/[kWh] | [TWh]/*_per_T*[Wh]'),    
+	('kWh',         'Wh',          '*_per_k*[Wh]/[kWh]'),                                
+	('langley',     'J/m2',        'J/m2_per_langley[J/m2]/[langley]'),                
+	('langley/min', 'W/m2',        'J/m2_per_langley[J/m2]/[langley] | [W]/[J/s] | [min]/s_per_min[s]'),
+	('m',           'cm',          'c*_per_*[cm]/[m]'),
+	('m',           'ft',          '[ft]/m_per_ft[m]'),
+	('m',           'in',          '[ft]/m_per_ft[m] | in_per_ft[in]/[ft]'),
+	('m',           'km',          '[km]/*_per_k*[m]'),
+	('m',           'mi',          '[ft]/m_per_ft[m] | [mi]/ft_per_mile[ft]'),
+	('m',           'mm',          'm*_per_*[mm]/[m]'),
+	('m/s',         'ft/s',        '[ft]/m_per_ft[m]'),
+	('m/s',         'in/day',      '[ft]/m_per_ft[m] | in_per_ft[in]/[ft] | s_per_day[s]/[day]'),
+	('m/s',         'in/hr',       '[ft]/m_per_ft[m] | in_per_ft[in]/[ft] | s_per_hr[s]/[hr]'),
+	('m/s',         'kph',         '[km]/*_per_k*[m] | s_per_hr[s]/[hr] | [kph]/[km/hr]'),
+	('m/s',         'mm/day',      'm*_per_*[mm]/[m] | s_per_day[s]/[day]'),
+	('m/s',         'mm/hr',       'm*_per_*[mm]/[m] | s_per_hr[s]/[hr]'),
+	('m/s',         'mph',         '[ft]/m_per_ft[m] | [mi]/ft_per_mile[ft] | s_per_hr[s]/[hr] | [mph]/[mi/hr]'),
+	('m2',          '1000 m2',     '[1000 m2]/*_per_k*[m2]'),
+	('m2',          'acre',        '[ft2]/m_per_ft^2[m2] | [acre]/ft2_per_acre[ft2]'),
+	('m2',          'ft2',         '[ft2]/m_per_ft^2[m2]'),
+	('m2',          'ha',          '[ha]/m2_per_ha[m2]'),
+	('m2',          'km2',         '[km2]/*_per_k*^2[m2]'),
+	('m2',          'mile2',       '[ft2]/m_per_ft^2[m2] | [mile2]/ft_per_mile^2[ft2]'),
+	('m3',          '1000 m3',     '[1000 m3]/*_per_k*[m3]'),
+	('m3',          'ac-ft',       '[ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),
+	('m3',          'dsf',         '[ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3]'),
+	('m3',          'ft3',         '[ft3]/m_per_ft^3[m3]'),
+	('m3',          'gal',         '[gal]/m3_per_gal[m3]'),
+	('m3',          'kaf',         '[ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),
+	('m3',          'kgal',        '[gal]/m3_per_gal[m3] | [kgal]/*_per_k*[gal]'),
+	('m3',          'km3',         '[km3]/*_per_k*^3[m3]'),
+	('m3',          'mgal',        '[gal]/m3_per_gal[m3] | [mgal]/*_per_M*[gal]'),
+	('m3',          'mile3',       '[ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'),
+	('mb',          'in-hg',       '[bar]/m*_per_*[mb] | Pa_per_bar[Pa]/[bar] | [in-hg]/Pa_per_in-hg[Pa]'),
+	('mb',          'kPa',         '[bar]/m*_per_*[mb] | Pa_per_bar[Pa]/[bar] | [kPa]/*_per_k*[Pa]'),
+	('mb',          'mm-hg',       '[bar]/m*_per_*[mb] | Pa_per_bar[Pa]/[bar] | [mm-hg]/Pa_per_mm-hg[Pa]'),
+	('mb',          'psi',         '[bar]/m*_per_*[mb] | Pa_per_bar[Pa]/[bar] | [psi]/Pa_per_psi[Pa]'),
+	('mg/l',        'g/l',         '[g/l]/m*_per_*[mg/l]'),
+	('mg/l',        'gm/cm3',      '[g]/m*_per_*[mg] | l_per_m3[l]/[m3] | [m3]/c*_per_*^3[cm3] | [gm]/[g]'),
+	('mg/l',        'ppm',         '[ppm]/[mg/l]'),
+	('mgal',        '1000 m3',     '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [1000 m3]/*_per_k*[m3]'),     
+	('mgal',        'ac-ft',       '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3]'),     
+	('mgal',        'dsf',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [dsf]/ft3_per_dsf[ft3]'),
+	('mgal',        'ft3',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3]'),     
+	('mgal',        'gal',         '*_per_M*[gal]/[mgal]'),
+	('mgal',        'kaf',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),     
+	('mgal',        'kgal',        '*_per_M*[gal]/[mgal] | [kgal]/*_per_k*[gal]'),
+	('mgal',        'km3',         '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [km3]/*_per_k*^3[m3]'),     
+	('mgal',        'm3',          '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal]'),     
+	('mgal',        'mile3',       '*_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [mile3]/ft_per_mile^3[ft3]'), 
+	('mgd',         'cfs',         '[mgal/day]/[mgd] | *_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [day]/s_per_day[s] | [cfs]/[ft3/s]'),
+	('mgd',         'cms',         '[mgal/day]/[mgd] | *_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [day]/s_per_day[s] | [cms]/[m3/s]'),
+	('mgd',         'gpm',         '*_per_M*[gal/day]/[mgd] | [day]/min_per_day[min] | [gpm]/[gal/min]'),
+	('mgd',         'kcfs',        '[mgal/day]/[mgd] | *_per_M*[gal]/[mgal] | m3_per_gal[m3]/[gal] | [ft3]/m_per_ft^3[m3] | [day]/s_per_day[s] | [kcfs]/*_per_k*[ft3/s]'),
+	('mho',         'S',           '[S]/[mho]'),
+	('mho',         'umho',        'u*_per_*[umho]/[mho]'),
+	('mho',         'uS',          '[S]/[mho] | u*_per_*[uS]/[S]'),
+	('mi',          'cm',          'ft_per_mile[ft]/[mi] | m_per_ft[m]/[ft] | c*_per_*[cm]/[m]'),
+	('mi',          'ft',          'ft_per_mile[ft]/[mi]'),
+	('mi',          'in',          'ft_per_mile[ft]/[mi] | in_per_ft[in]/[ft]'),
+	('mi',          'km',          'ft_per_mile[ft]/[mi] | m_per_ft[m]/[ft] | [km]/*_per_k*[m]'),
+	('mi',          'm',           'ft_per_mile[ft]/[mi] | m_per_ft[m]/[ft]'),
+	('mi',          'mm',          'ft_per_mile[ft]/[mi] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
+	('mile2',       '1000 m2',     'ft_per_mile^2[ft2]/[mile2] | m_per_ft^2[m2]/[ft2] | [1000 m2]/*_per_k*[m2]'),
+	('mile2',       'acre',        'ft_per_mile^2[ft2]/[mile2] | [acre]/ft2_per_acre[ft2]'),
+	('mile2',       'ft2',         'ft_per_mile^2[ft2]/[mile2]'),
+	('mile2',       'ha',          'km_per_mile^2[km2]/[mile2] | *_per_k*^2[m2]/[km2] | [ha]/m2_per_ha[m2]'),
+	('mile2',       'km2',         'km_per_mile^2[km2]/[mile2]'),
+	('mile2',       'm2',          'km_per_mile^2[km2]/[mile2] | *_per_k*^2[m2]/[km2]'),
+	('mile3',       '1000 m3',     'km_per_mile^3[km3]/[mile3] | *_per_k*^3[m3]/[km3] | [1000 m3]/*_per_k*[m3]'),
+	('mile3',       'ac-ft',       'ft_per_mile^3[ft3]/[mile3] | [ac-ft]/ft2_per_acre[ft3]'),
+	('mile3',       'dsf',         'ft_per_mile^3[ft3]/[mile3] | [dsf]/ft3_per_dsf[ft3]'),
+	('mile3',       'ft3',         'ft_per_mile^3[ft3]/[mile3]'),
+	('mile3',       'gal',         'km_per_mile^3[km3]/[mile3] | *_per_k*^3[m3]/[km3] | [gal]/m3_per_gal[m3]'),
+	('mile3',       'kaf',         'ft_per_mile^3[ft3]/[mile3] | [ac-ft]/ft2_per_acre[ft3] | [kaf]/*_per_k*[ac-ft]'),
+	('mile3',       'kgal',        'km_per_mile^3[km3]/[mile3] | *_per_k*^3[m3]/[km3] | [gal]/m3_per_gal[m3]] | [kgal]/*_per_k*[gal]'),
+	('mile3',       'km3',         'ft_per_mile^3[ft3]/[mile3] | m_per_ft^3[m3]/[ft3] | [km3]/*_per_k*^3[m3]'),
+	('mile3',       'm3',          'km_per_mile^3[km3]/[mile3] | *_per_k*^3[m3]/[km3]'),
+	('mile3',       'mgal',        'km_per_mile^3[km3]/[mile3] | *_per_k*^3[m3]/[km3] | [gal]/m3_per_gal[m3]] | [mgal]/*_per_M*[gal]'),  
+	('min',         'hr',          '[hr]/min_per_hr[min]'),
+	('min',         'sec',         's_per_min[sec]/[min]'),
+	('mm',          'cm',          '[m]/m*_per_*[mm] | c*_per_*[cm]/[m]'),
+	('mm',          'ft',          '[m]/m*_per_*[mm] | [ft]/m_per_ft[m]'),
+	('mm',          'in',          '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft]'),
+	('mm',          'km',          '[m]/m*_per_*[mm] | [km]/*_per_k*[m]'),
+	('mm',          'm',           '[m]/m*_per_*[mm]'),
+	('mm',          'mi',          '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | [mi]/ft_per_mile[ft]'),
+	('mm-hg',       'in-hg',       '[m-hg]/m*_per_*[mm-hg] | [ft-hg]/m_per_ft[m-hg] | in_per_ft[in-hg]/[ft-hg]'),
+	('mm-hg',       'kPa',         'Pa_per_mm-hg[Pa]/[mm-hg] | [kPa]/*_per_k*[Pa]'),
+	('mm-hg',       'mb',          'Pa_per_mm-hg[Pa]/[mm-hg] | [bar]/Pa_per_bar[Pa] | m*_per_*[mb]/[bar]'),
+	('mm-hg',       'psi',         'Pa_per_mm-hg[Pa]/[mm-hg] | [psi]/Pa_per_psi[Pa]'),
+	('mm/day',      'ft/s',        '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | [day]/s_per_day[s]'),
+	('mm/day',      'in/day',      '[m/day]/m*_per_*[mm/day] | [ft/day]/m_per_ft[m/day] | in_per_ft[in/day]/[ft/day]'),
+	('mm/day',      'in/hr',       '[m/day]/m*_per_*[mm/day] | [ft/day]/m_per_ft[m/day] | in_per_ft[in/day]/[ft/day] | [in/hr]/hr_per_day[in/day]'),
+	('mm/day',      'kph',         '[m/day]/m*_per_*[mm/day] | [km/day]/*_per_k*[m/day] | [km/h]/hr_per_day[km/day] | [kph]/[km/h]'),
+	('mm/day',      'm/s',         '[m/day]/m*_per_*[mm/day] | [m/s]/s_per_day[m/day]'),
+	('mm/day',      'mm/hr',       '[mm/hr]/hr_per_day[mm/day]'),
+	('mm/day',      'mph',         '[m/day]/m*_per_*[mm/day] | [ft/day]/m_per_ft[m/day] | [mile/day]/ft_per_mile[ft/day] | [mile/hr]/hr_per_day[mile/day] | [mph]/[mile/hr]'),
+	('mm/deg-day',  'in/deg-day',  '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft] | C_per_F[deg-day]/[deg-day]'),
+	('mm/hr',       'ft/s',        '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | [hr]/s_per_hr[s]'),
+	('mm/hr',       'in/day',      '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft] | hr_per_day[hr]/[day]'),
+	('mm/hr',       'in/hr',       '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | in_per_ft[in]/[ft]'),
+	('mm/hr',       'kph',         '[m]/m*_per_*[mm] | [km]/*_per_k*[m] | [kph]/[km/hr]'),
+	('mm/hr',       'm/s',         '[m]/m*_per_*[mm] | [hr]/s_per_hr[s]'),
+	('mm/hr',       'mm/day',      'hr_per_day[hr]/[day]'),
+	('mm/hr',       'mph',         '[m]/m*_per_*[mm] | [ft]/m_per_ft[m] | [mile]/ft_per_mile[ft] | [mph]/[mile/hr]'),
+	('mph',         'ft/s',        '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | [hr]/s_per_hr[s]'),
+	('mph',         'in/day',      '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | in_per_ft[in]/[ft] | hr_per_day[hr]/[day]'),
+	('mph',         'in/hr',       '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | in_per_ft[in]/[ft]'),
+	('mph',         'kph',         '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | m_per_ft[m]/[ft] | [km]/*_per_k*[m] | [kph]/[km/hr]'),
+	('mph',         'm/s',         '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | m_per_ft[m]/[ft] | [hr]/s_per_hr[s]'),
+	('mph',         'mm/day',      '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m] | hr_per_day[hr]/[day]'),
+	('mph',         'mm/hr',       '[mile/hr]/[mph] | ft_per_mile[ft]/[mile] | m_per_ft[m]/[ft] | m*_per_*[mm]/[m]'),
+	('MW',          'GW',          '*_per_M*[W]/[MW] | [GW]/*_per_G*[W]'),
+	('MW',          'kW',          '*_per_M*[W]/[MW] | [kW]/*_per_k*[W]'),
+	('MW',          'TW',          '*_per_M*[W]/[MW] | [TW]/*_per_T*[W]'),
+	('MW',          'W',           '*_per_M*[W]/[MW]'),
+	('MWh',         'GWh',         '*_per_M*[Wh]/[MWh] | [GWh]/*_per_G*[Wh]'),
+	('MWh',         'kWh',         '*_per_M*[Wh]/[MWh] | [kWh]/*_per_k*[Wh]'),
+	('MWh',         'TWh',         '*_per_M*[Wh]/[MWh] | [TWh]/*_per_T*[Wh]'),
+	('MWh',         'Wh',          '*_per_M*[Wh]/[MWh]'),
+	('n/a',         '%',           'c*_per_*[%]/[n/a]'),
+	('ppm',         'g/l',         '[mg/l]/[ppm] | [g]/m*_per_*[mg]'),
+	('ppm',         'gm/cm3',      '[mg/l]/[ppm] | [g]/m*_per_*[mg] | l_per_m3[l]/[m3] | [m3]/c*_per_*^3[cm3] | [gm]/[g]'),
+	('ppm',         'mg/l',        '[mg/l]/[ppm]'),
+	('psi',         'in-hg',       'Pa_per_psi[Pa]/[psi] | [in-hg]/Pa_per_in-hg[Pa]'),
+	('psi',         'kPa',         'Pa_per_psi[Pa]/[psi] | [kPa]/*_per_k*[Pa]'),
+	('psi',         'mb',          'Pa_per_psi[Pa]/[psi] | [bar]/Pa_per_bar[Pa] | m*_per_*[mb]/[bar]'),
+	('psi',         'mm-hg',       'Pa_per_psi[Pa]/[psi] | [mm-hg]/Pa_per_mm-hg[Pa]'),
+	('rev',         'deg',         'deg_per_rev[deg]/[rev]'),
+	('S',           'mho',         '[mho]/[S]'),
+	('S',           'umho',        'u*_per_*[umho]/[S]'),
+	('S',           'uS',          'u*_per_*[uS]/[S]'),
+	('sec',         'hr',          '[hr]/s_per_hr[sec]'),
+	('sec',         'min',         '[min]/s_per_min[sec]'),
+	('TW',          'GW',          '*_per_T*[W]/[TW] | [GW]/*_per_G*[W]'),
+	('TW',          'kW',          '*_per_T*[W]/[TW] | [kW]/*_per_k*[W]'),
+	('TW',          'MW',          '*_per_T*[W]/[TW] | [MW]/*_per_M*[W]'),
+	('TW',          'W',           '*_per_T*[W]/[TW]'),
+	('TWh',         'GWh',         '*_per_T*[Wh]/[TWh] | [GWh]/*_per_G*[Wh]'),
+	('TWh',         'kWh',         '*_per_T*[Wh]/[TWh] | [kWh]/*_per_k*[Wh]'),
+	('TWh',         'MWh',         '*_per_T*[Wh]/[TWh] | [MWh]/*_per_M*[Wh]'),
+	('TWh',         'Wh',          '*_per_T*[Wh]/[TWh]'),
+	('umho',        'mho',         '[mho]/u*_per_*[umho]'),
+	('umho',        'S',           '[mho]/u*_per_*[umho] | [S]/[mho]'),
+	('umho',        'uS',          '[uS]/[umho]'),
+	('uS',          'mho',         '[mho]/u*_per_*[uS]'),
+	('uS',          'S',           '[S]/u*_per_*[uS]'),
+	('uS',          'umho',        '[umho]/[uS]'),
+	('W',           'GW',          '[GW]/*_per_G*[W]'),
+	('W',           'kW',          '[kW]/*_per_k*[W]'),
+	('W',           'MW',          '[MW]/*_per_M*[W]'),
+	('W',           'TW',          '[TW]/*_per_T*[W]'),
+	('W/m2',        'langley/min', '[J/s]/[W] | [langley]/J/m2_per_langley[J/m2] | s_per_min[s]/[min]'),
+	('Wh',          'GWh',         '[GWh]/*_per_G*[Wh]'),
+	('Wh',          'kWh',         '[kWh]/*_per_k*[Wh]'),
+	('Wh',          'MWh',         '[MWh]/*_per_M*[Wh]'),
+	('Wh',          'TWh',         '[TWh]/*_per_T*[Wh]'),
+]                                                         
+
+
+def expand_units(unit) :
+	'''
+	m  -> [m]
+	m2 -> [m, m]
+	m3 -> [m, m, m]
+	etc..
+	'''
+	units = []
+	if unit :
+		if unit[-1].isdigit() :
+			unit, count = unit[:-1], int(unit[-1])
+		else :
+			count = 1
+		units = count * [unit]
+	return units
+	
+def process_conversion_definition(from_unit, definition) :
+	'''
+	perform dimensional analysis to determine the conversion factor
+	'''
+	#--------------------------------#
+	# parse the quantities and units #
+	#--------------------------------#
+	n_units = []
+	d_units = []
+	factor  = Decimal(1.0)
+	identities = map(string.strip, definition.split('|'))
+	try    : n, d = map(string.strip, from_unit.split('/'))
+	except : n, d = from_unit.strip(), None
+	n_units.extend(expand_units(n))
+	d_units.extend(expand_units(d))
+	for identity in identities :
+		m = patternIdent.match(identity)
+		assert m is not None
+		n_quant = m.group(2)
+		n_power = m.group(4)
+		n_unit  = m.group(6)
+		d_quant = m.group(8)
+		d_power = m.group(10)
+		d_unit  = m.group(12)
+		if n_quant :
+			if n_power :
+				factor *= conversion_factors[n_quant] ** Decimal(n_power)
+			else :
+				factor *= conversion_factors[n_quant]
+		if d_quant :
+			if d_power :
+				factor /= conversion_factors[d_quant] ** Decimal(d_power)
+			else :
+				factor /= conversion_factors[d_quant]
+		try    : n, d = map(string.strip, n_unit.split('/'))
+		except : n, d = n_unit.strip(), None
+		n_units.extend(expand_units(n))
+		d_units.extend(expand_units(d))
+		try    : n, d = map(string.strip, d_unit.split('/'))
+		except : n, d = d_unit.strip(), None
+		d_units.extend(expand_units(n))
+		n_units.extend(expand_units(d))
+	#------------------#
+	# reduce the units #
+	#------------------#
+	while True :
+		reduced = False
+		for unit in n_units :
+			if unit in d_units :
+				n_units.remove(unit)
+				d_units.remove(unit)
+				reduced = True
+				break                                                                                         
+		if not reduced : break
+	failed = False		
+	if len(n_units) == 1 :
+		n_units = n_units[0]
+	elif n_units == len(n_units) * [n_units[0]] :
+		n_units = '%s%d' % (n_units[0], len(n_units))
+	else :
+		failed = True
+	if len(d_units) == 0 :
+		d_units = None
+	elif len(d_units) == 1 :
+		d_units = d_units[0]
+	elif d_units == len(d_units) * [d_units[0]] :
+		d_units = '%s%d' % (d_units[0], len(d_units))
+	else :
+		failed = True
+	if failed :
+		raise Exception('Unexpected units: %s / %s' % (n_units, d_units))		
+	if d_units : 
+		unit = '%s/%s' % (n_units, d_units)
+	else :
+		unit = n_units		
+	return factor, unit
+
+conversions = {}
+for from_unit, to_unit, definition in conversion_definitions :
+	factor, unit = process_conversion_definition(from_unit, definition)
+	if unit != to_unit :
+		raise Exception('Expected unit %s, got %s' % (to_unit, unit))
+	conversion_to = conversions.setdefault(from_unit, {})
+	try    : offset = offsets['%s_to_%s' % (from_unit, to_unit)]
+	except : offset = Decimal(0)
+	conversion_to[to_unit] = {"factor" : factor, "offset" : offset}
+	
+def convert(value, from_unit, to_unit) :
+	try :
+		factor = conversions[from_unit][to_unit]["factor"]
+		offset = conversions[from_unit][to_unit]["offset"]
+	except :
+		raise Exception("No conversion defined from '%s' to '%s'" % (from_unit, to_unit))
+	return value * factor + offset
+		
+if __name__ == "__main__" :
+	for from_unit in sorted(conversions.keys()) :
+		for to_unit in sorted(conversions[from_unit].keys()) :
+			factor = conversions[from_unit][to_unit]["factor"]
+			offset = conversions[from_unit][to_unit]["offset"]
+			if int(offset) :
+				print("1 %s = %s + %s (%s) %s" % (from_unit, factor, offset, convert(1, from_unit, to_unit), to_unit))
+			else :
+				print("1 %s = %s (%s) %s " % (from_unit, factor, convert(1, from_unit, to_unit), to_unit))
+	
+

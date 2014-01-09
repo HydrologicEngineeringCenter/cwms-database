@@ -1,6 +1,9 @@
 #!/bin/env python
 # -*- coding: utf-8 -*-
 import os, random, sys
+pgmdir = os.path.split(sys.argv[0])[0]
+if pgmdir not in sys.path : sys.path.append(pgmdir)
+import unitConversions
 
 def uniqueCombinationsGenerator(items, n):
     '''
@@ -4217,16 +4220,14 @@ unitDefs = [
 ]
 
 unitDefsById = {}
+unitsByAbsParam = {}
 unitCode = 0
 for abstractParam, id, system, name, description in unitDefs : 
     unitCode = unitCode + 1
     unitDefsById[abstractParam + "." + id] = {"CODE" : unitCode, "ID" : id, "SYSTEM" : system, "NAME" : name, "ABSTRACT" : abstractParam, "DESCRIPTION" : description}
+    unitsByAbsParam.setdefault(abstractParam, []).append(id)
 unitDefIds = unitDefsById.keys()
 unitDefIds.sort()
-
-
-
-
 #---------#
 # Aliases #
 #---------#
@@ -4375,474 +4376,21 @@ for abstract_param, unit_id, unitAlias_id in unitAliases :
 # Unit conversions #
 #------------------#
 if __name__ in ("__main__", "main") : sys.stderr.write("Processing unit conversion definitions.\n")
-unitConversions = [
-#    ABSTRACT PARAMETER                  FROM UNIT ID   TO UNIT ID    OFFSET                FACTOR
-#    ----------------------------------- -------------- ------------- --------------------- -----------------------
-    ["Angle",                            "deg",         "deg",         0.0,                 1.0                    ],
-    ["Angle",                            "deg",         "rev",         0.0,                 2.777777777777778e-003 ],
-    ["Angle",                            "rev",         "deg",         0.0,                 360.0                  ],
-    ["Angular Speed",                    "rpm",         "rpm",         0.0,                 1.0                    ],
-    ["Area",                             "1000 m2",     "1000 m2",     0.0,                 1.0                    ],
-    ["Area",                             "1000 m2",     "acre",        0.0,                 0.2471053814671653     ],
-    ["Area",                             "1000 m2",     "ft2",         0.0,                 10763.91041670972      ],
-    ["Area",                             "1000 m2",     "ha",          0.0,                 0.1                    ],
-    ["Area",                             "1000 m2",     "km2",         0.0,                 0.001                  ],
-    ["Area",                             "1000 m2",     "m2",          0.0,                 1000.0                 ],
-    ["Area",                             "1000 m2",     "mile2",       0.0,                 0.0003861021585424458  ],
-    ["Area",                             "acre",        "1000 m2",     0.0,                 4.0468564224           ],
-    ["Area",                             "acre",        "acre",        0.0,                 1.0                    ],
-    ["Area",                             "acre",        "ft2",         0.0,                 43560.0                ],
-    ["Area",                             "acre",        "ha",          0.0,                 0.40468564224          ],
-    ["Area",                             "acre",        "km2",         0.0,                 0.0040468564224        ],
-    ["Area",                             "acre",        "m2",          0.0,                 4046.8564224           ],
-    ["Area",                             "acre",        "mile2",       0.0,                 0.0015625              ],
-    ["Area",                             "ft2",         "1000 m2",     0.0,                 9.290304e-005          ],
-    ["Area",                             "ft2",         "acre",        0.0,                 2.295684113865932e-005 ],
-    ["Area",                             "ft2",         "ft2",         0.0,                 1.0                    ],
-    ["Area",                             "ft2",         "ha",          0.0,                 9.290304e-6            ],
-    ["Area",                             "ft2",         "km2",         0.0,                 9.290304e-008          ],
-    ["Area",                             "ft2",         "m2",          0.0,                 0.09290304             ],
-    ["Area",                             "ft2",         "mile2",       0.0,                 3.587006427915518e-008 ],
-    ["Area",                             "ha",          "1000 m2",     0.0,                 10.0                   ],
-    ["Area",                             "ha",          "acre",        0.0,                 2.471053814671654      ],
-    ["Area",                             "ha",          "ft2",         0.0,                 107639.1041670972      ],
-    ["Area",                             "ha",          "ha",          0.0,                 1.0                    ],
-    ["Area",                             "ha",          "km2",         0.0,                 0.01                   ],
-    ["Area",                             "ha",          "m2",          0.0,                 1.0e+004               ],
-    ["Area",                             "ha",          "mile2",       0.0,                 0.003861021585424459   ],
-    ["Area",                             "km2",         "1000 m2",     0.0,                 1000.0                 ],
-    ["Area",                             "km2",         "acre",        0.0,                 247.1053814671653      ],
-    ["Area",                             "km2",         "ft2",         0.0,                 10763910.41670972      ],
-    ["Area",                             "km2",         "ha",          0.0,                 100.0                  ],
-    ["Area",                             "km2",         "km2",         0.0,                 1.0                    ],
-    ["Area",                             "km2",         "m2",          0.0,                 1.0e+006               ],
-    ["Area",                             "km2",         "mile2",       0.0,                 3.861021585424458e-001 ],
-    ["Area",                             "m2",          "1000 m2",     0.0,                 0.001                  ],
-    ["Area",                             "m2",          "acre",        0.0,                 0.0002471053814671653  ],
-    ["Area",                             "m2",          "ft2",         0.0,                 10.76391041670972      ],
-    ["Area",                             "m2",          "ha",          0.0,                 1.0e-004               ],
-    ["Area",                             "m2",          "km2",         0.0,                 1.0e-006               ],
-    ["Area",                             "m2",          "m2",          0.0,                 1.0                    ],
-    ["Area",                             "m2",          "mile2",       0.0,                 3.861021585424458e-007 ],
-    ["Area",                             "mile2",       "1000 m2",     0.0,                 2589.988110336         ],
-    ["Area",                             "mile2",       "acre",        0.0,                 640.0                  ],
-    ["Area",                             "mile2",       "ft2",         0.0,                 27878400.0             ],
-    ["Area",                             "mile2",       "ha",          0.0,                 2.589988110336e+002    ],
-    ["Area",                             "mile2",       "km2",         0.0,                 2.589988110336         ],
-    ["Area",                             "mile2",       "m2",          0.0,                 2.589988110336e+006    ],
-    ["Area",                             "mile2",       "mile2",       0.0,                 1.0                    ],
-    ["Areal Volume Rate",                "cfs/mi2",     "cfs/mi2",     0.0,                 1.0                    ],
-    ["Areal Volume Rate",                "cfs/mi2",     "cms/km2",     0.0,                 1.093319559228650e-002 ],
-    ["Areal Volume Rate",                "cms/km2",     "cfs/mi2",     0.0,                 9.146456692913384e+001 ],
-    ["Areal Volume Rate",                "cms/km2",     "cms/km2",     0.0,                 1.0                    ],
-    ["Conductance",                      "mho",         "mho",         0.0,                 1.0                    ],
-    ["Conductance",                      "mho",         "S",           0.0,                 1.0                    ],
-    ["Conductance",                      "mho",         "umho",        0.0,                 1.0e+006               ],
-    ["Conductance",                      "mho",         "uS",          0.0,                 1.0e+006               ],
-    ["Conductance",                      "S",           "mho",         0.0,                 1.0                    ],
-    ["Conductance",                      "S",           "S",           0.0,                 1.0                    ],
-    ["Conductance",                      "S",           "umho",        0.0,                 1.0e+006               ],
-    ["Conductance",                      "S",           "uS",          0.0,                 1.0e+006               ],
-    ["Conductance",                      "umho",        "mho",         0.0,                 1.0e-006               ],
-    ["Conductance",                      "umho",        "S",           0.0,                 1.0e-006               ],
-    ["Conductance",                      "umho",        "umho",        0.0,                 1.0                    ],
-    ["Conductance",                      "umho",        "uS",          0.0,                 1.0                    ],
-    ["Conductance",                      "uS",          "mho",         0.0,                 1.0e-006               ],
-    ["Conductance",                      "uS",          "S",           0.0,                 1.0e-006               ],
-    ["Conductance",                      "uS",          "umho",        0.0,                 1.0                    ],
-    ["Conductance",                      "uS",          "uS",          0.0,                 1.0                    ],
-    ["Conductivity",                     "umho/cm",     "umho/cm",     0.0,                 1.0                    ],
-    ["Count",                            "unit",        "unit",        0.0,                 1.0                    ],
-    ["Currency",                         "$",           "$",           0.0,                 1.0                    ],
-    ["Elapsed Time",                     "hr",          "hr",          0.0,                 1.0                    ],
-    ["Elapsed Time",                     "hr",          "min",         0.0,                 60.0                   ],
-    ["Elapsed Time",                     "hr",          "sec",         0.0,                 3600.0                 ],
-    ["Elapsed Time",                     "min",         "hr",          0.0,                 0.01666666666666667    ],
-    ["Elapsed Time",                     "min",         "min",         0.0,                 1.0                    ],
-    ["Elapsed Time",                     "min",         "sec",         0.0,                 60.0                   ],
-    ["Elapsed Time",                     "sec",         "hr",          0.0,                 0.0002777777777777778  ],
-    ["Elapsed Time",                     "sec",         "min",         0.0,                 0.01666666666666667    ],
-    ["Elapsed Time",                     "sec",         "sec",         0.0,                 1.0                    ],
-    ["Electric Charge Rate",             "ampere",      "ampere",      0.0,                 1.0                    ],
-    ["Electromotive Potential",          "volt",        "volt",        0.0,                 1.0                    ],
-    ["Energy",                           "GWh",         "GWh",         0.0,                 1.0                    ],
-    ["Energy",                           "GWh",         "kWh",         0.0,                 1.0e+006               ],
-    ["Energy",                           "GWh",         "MWh",         0.0,                 1000.0                 ],
-    ["Energy",                           "GWh",         "TWh",         0.0,                 0.001                  ],
-    ["Energy",                           "GWh",         "Wh",          0.0,                 1.0e+009               ],
-    ["Energy",                           "kWh",         "GWh",         0.0,                 1.0e-006               ],
-    ["Energy",                           "kWh",         "kWh",         0.0,                 1.0                    ],
-    ["Energy",                           "kWh",         "MWh",         0.0,                 0.001                  ],
-    ["Energy",                           "kWh",         "TWh",         0.0,                 1.0e-009               ],
-    ["Energy",                           "kWh",         "Wh",          0.0,                 1000.0                 ],
-    ["Energy",                           "MWh",         "GWh",         0.0,                 0.001                  ],
-    ["Energy",                           "MWh",         "kWh",         0.0,                 1000.0                 ],
-    ["Energy",                           "MWh",         "MWh",         0.0,                 1.0                    ],
-    ["Energy",                           "MWh",         "TWh",         0.0,                 1.0e-006               ],
-    ["Energy",                           "MWh",         "Wh",          0.0,                 1.0e+006               ],
-    ["Energy",                           "TWh",         "GWh",         0.0,                 1000.0                 ],
-    ["Energy",                           "TWh",         "kWh",         0.0,                 1.0e+009               ],
-    ["Energy",                           "TWh",         "MWh",         0.0,                 1.0e+006               ],
-    ["Energy",                           "TWh",         "TWh",         0.0,                 1.0                    ],
-    ["Energy",                           "TWh",         "Wh",          0.0,                 1.0e+012               ],
-    ["Energy",                           "Wh",          "GWh",         0.0,                 1.0e-009               ],
-    ["Energy",                           "Wh",          "kWh",         0.0,                 0.001                  ],
-    ["Energy",                           "Wh",          "MWh",         0.0,                 1.0e-006               ],
-    ["Energy",                           "Wh",          "TWh",         0.0,                 1.0e-012               ],
-    ["Energy",                           "Wh",          "Wh",          0.0,                 1.0                    ],
-    ["Force",                            "lb",          "lb",          0.0,                 1.0                    ],
-    ["Hydrogen Ion Concentration Index", "su",          "su",          0.0,                 1.0                    ],
-    ["Irradiance",                       "langley/min", "langley/min", 0.0,                 1.0                    ],
-    ["Irradiance",                       "langley/min", "W/m2",        0.0,                 697.3333333333333      ],
-    ["Irradiance",                       "W/m2",        "langley/min", 0.0,                 1.434034416826004e-003 ],
-    ["Irradiance",                       "W/m2",        "W/m2",        0.0,                 1.0                    ],
-    ["Irradiation",                      "J/m2",        "J/m2",        0.0,                 1.0                    ],
-    ["Irradiation",                      "J/m2",        "langley",     0.0,                 2.390057361376673e-005 ],
-    ["Irradiation",                      "langley",     "J/m2",        0.0,                 41840.0                ],
-    ["Irradiation",                      "langley",     "langley",     0.0,                 1.0                    ],
-    ["Length",                           "cm",          "cm",          0.0,                 1.0                    ],
-    ["Length",                           "cm",          "ft",          0.0,                 0.03280839895013123    ],
-    ["Length",                           "cm",          "in",          0.0,                 0.3937007874015748     ],
-    ["Length",                           "cm",          "km",          0.0,                 1.0e-005               ],
-    ["Length",                           "cm",          "m",           0.0,                 0.01                   ],
-    ["Length",                           "cm",          "mi",          0.0,                 6.213711922373339e-006 ],
-    ["Length",                           "cm",          "mm",          0.0,                 10.0                   ],
-    ["Length",                           "ft",          "cm",          0.0,                 30.48                  ],
-    ["Length",                           "ft",          "ft",          0.0,                 1.0                    ],
-    ["Length",                           "ft",          "in",          0.0,                 12.0                   ],
-    ["Length",                           "ft",          "km",          0.0,                 0.0003048              ],
-    ["Length",                           "ft",          "m",           0.0,                 0.3048                 ],
-    ["Length",                           "ft",          "mi",          0.0,                 0.0001893939393939394  ],
-    ["Length",                           "ft",          "mm",          0.0,                 304.8                  ],
-    ["Length",                           "in",          "cm",          0.0,                 2.54                   ],
-    ["Length",                           "in",          "ft",          0.0,                 0.08333333333333333    ],
-    ["Length",                           "in",          "in",          0.0,                 1.0                    ],
-    ["Length",                           "in",          "km",          0.0,                 2.54e-005              ],
-    ["Length",                           "in",          "m",           0.0,                 0.0254                 ],
-    ["Length",                           "in",          "mi",          0.0,                 1.578282828282828e-005 ],
-    ["Length",                           "in",          "mm",          0.0,                 25.4                   ],
-    ["Length",                           "km",          "cm",          0.0,                 1.0e+005               ],
-    ["Length",                           "km",          "ft",          0.0,                 3280.839895013123      ],
-    ["Length",                           "km",          "in",          0.0,                 3.937007874015748e+004 ],
-    ["Length",                           "km",          "km",          0.0,                 1.0                    ],
-    ["Length",                           "km",          "m",           0.0,                 1000.0                 ],
-    ["Length",                           "km",          "mi",          0.0,                 0.621371192237334      ],
-    ["Length",                           "km",          "mm",          0.0,                 1.0e+006               ],
-    ["Length",                           "m",           "cm",          0.0,                 100.0                  ],
-    ["Length",                           "m",           "ft",          0.0,                 3.280839895013124      ],
-    ["Length",                           "m",           "in",          0.0,                 39.37007874015748      ],
-    ["Length",                           "m",           "km",          0.0,                 0.001                  ],
-    ["Length",                           "m",           "m",           0.0,                 1.0                    ],
-    ["Length",                           "m",           "mi",          0.0,                 0.0006213711922373339  ],
-    ["Length",                           "m",           "mm",          0.0,                 1000.0                 ],
-    ["Length",                           "mi",          "cm",          0.0,                 160934.4               ],
-    ["Length",                           "mi",          "ft",          0.0,                 5280.0                 ],
-    ["Length",                           "mi",          "in",          0.0,                 63360.0                ],
-    ["Length",                           "mi",          "km",          0.0,                 1.609344               ],
-    ["Length",                           "mi",          "m",           0.0,                 1609.344               ],
-    ["Length",                           "mi",          "mi",          0.0,                 1.0                    ],
-    ["Length",                           "mi",          "mm",          0.0,                 1609344.0              ],
-    ["Length",                           "mm",          "cm",          0.0,                 0.1                    ],
-    ["Length",                           "mm",          "ft",          0.0,                 0.003280839895013123   ],
-    ["Length",                           "mm",          "in",          0.0,                 0.03937007874015748    ],
-    ["Length",                           "mm",          "km",          0.0,                 1.0e-006               ],
-    ["Length",                           "mm",          "m",           0.0,                 0.001                  ],
-    ["Length",                           "mm",          "mi",          0.0,                 6.213711922373340e-007 ],
-    ["Length",                           "mm",          "mm",          0.0,                 1.0                    ],
-    ["Linear Speed",                     "ft/s",        "ft/s",        0.0,                 1.0                    ],
-    ["Linear Speed",                     "ft/s",        "in/day",      0.0,                 1036800.0              ],
-    ["Linear Speed",                     "ft/s",        "in/hr",       0.0,                 43200.0                ],
-    ["Linear Speed",                     "ft/s",        "kph",         0.0,                 1.09728                ],
-    ["Linear Speed",                     "ft/s",        "m/s",         0.0,                 0.3048                 ],
-    ["Linear Speed",                     "ft/s",        "mm/day",      0.0,                 26334720.0             ],
-    ["Linear Speed",                     "ft/s",        "mm/hr",       0.0,                 1097280.0              ],
-    ["Linear Speed",                     "ft/s",        "mph",         0.0,                 6.818181818181818e-001 ],
-    ["Linear Speed",                     "in/day",      "ft/s",        0.0,                 9.645061728395062e-007 ],
-    ["Linear Speed",                     "in/day",      "in/day",      0.0,                 1.0                    ],
-    ["Linear Speed",                     "in/day",      "in/hr",       0.0,                 0.04166666666666667    ],
-    ["Linear Speed",                     "in/day",      "kph",         0.0,                 1.058333333333333e-006 ],
-    ["Linear Speed",                     "in/day",      "m/s",         0.0,                 2.939814814814815e-007 ],
-    ["Linear Speed",                     "in/day",      "mm/day",      0.0,                 25.4                   ],
-    ["Linear Speed",                     "in/day",      "mm/hr",       0.0,                 1.058333333333333      ],
-    ["Linear Speed",                     "in/day",      "mph",         0.0,                 6.576178451178451e-007 ],
-    ["Linear Speed",                     "in/hr",       "ft/s",        0.0,                 2.314814814814815e-005 ],
-    ["Linear Speed",                     "in/hr",       "in/day",      0.0,                 24.0                   ],
-    ["Linear Speed",                     "in/hr",       "in/hr",       0.0,                 1.0                    ],
-    ["Linear Speed",                     "in/hr",       "kph",         0.0,                 2.54e-005              ],
-    ["Linear Speed",                     "in/hr",       "m/s",         0.0,                 7.055555555555556e-006 ],
-    ["Linear Speed",                     "in/hr",       "mm/day",      0.0,                 609.6                  ],
-    ["Linear Speed",                     "in/hr",       "mm/hr",       0.0,                 25.4                   ],
-    ["Linear Speed",                     "in/hr",       "mph",         0.0,                 1.578282828282828e-005 ],
-    ["Linear Speed",                     "kph",         "ft/s",        0.0,                 0.9113444152814232     ],
-    ["Linear Speed",                     "kph",         "in/day",      0.0,                 9.448818897637796e+005 ],
-    ["Linear Speed",                     "kph",         "in/hr",       0.0,                 39370.07874015748      ],
-    ["Linear Speed",                     "kph",         "kph",         0.0,                 1.0                    ],
-    ["Linear Speed",                     "kph",         "m/s",         0.0,                 0.2777777777777778     ],
-    ["Linear Speed",                     "kph",         "mm/day",      0.0,                 2.4e+007               ],
-    ["Linear Speed",                     "kph",         "mm/hr",       0.0,                 1.0e+006               ],
-    ["Linear Speed",                     "kph",         "mph",         0.0,                 0.6213711922373340     ],
-    ["Linear Speed",                     "m/s",         "ft/s",        0.0,                 3.280839895013124      ],
-    ["Linear Speed",                     "m/s",         "in/day",      0.0,                 3401574.803149607      ],
-    ["Linear Speed",                     "m/s",         "in/hr",       0.0,                 141732.2834645669      ],
-    ["Linear Speed",                     "m/s",         "kph",         0.0,                 3.6                    ],
-    ["Linear Speed",                     "m/s",         "m/s",         0.0,                 1.0                    ],
-    ["Linear Speed",                     "m/s",         "mm/day",      0.0,                 8.64e+007              ],
-    ["Linear Speed",                     "m/s",         "mm/hr",       0.0,                 3.6e+006               ],
-    ["Linear Speed",                     "m/s",         "mph",         0.0,                 2.236936292054402      ],
-    ["Linear Speed",                     "mm/day",      "ft/s",        0.0,                 3.797268397005930e-008 ],
-    ["Linear Speed",                     "mm/day",      "in/day",      0.0,                 0.03937007874015748    ],
-    ["Linear Speed",                     "mm/day",      "in/hr",       0.0,                 0.001640419947506562   ],
-    ["Linear Speed",                     "mm/day",      "kph",         0.0,                 4.166666666666667e-008 ],
-    ["Linear Speed",                     "mm/day",      "m/s",         0.0,                 1.157407407407407e-008 ],
-    ["Linear Speed",                     "mm/day",      "mm/day",      0.0,                 1.0                    ],
-    ["Linear Speed",                     "mm/day",      "mm/hr",       0.0,                 0.04166666666666667    ],
-    ["Linear Speed",                     "mm/day",      "mph",         0.0,                 2.589046634322225e-008 ],
-    ["Linear Speed",                     "mm/hr",       "ft/s",        0.0,                 9.113444152814230e-007 ],
-    ["Linear Speed",                     "mm/hr",       "in/day",      0.0,                 0.9448818897637795     ],
-    ["Linear Speed",                     "mm/hr",       "in/hr",       0.0,                 0.03937007874015748    ],
-    ["Linear Speed",                     "mm/hr",       "kph",         0.0,                 1.0e-006               ],
-    ["Linear Speed",                     "mm/hr",       "m/s",         0.0,                 2.777777777777778e-007 ],
-    ["Linear Speed",                     "mm/hr",       "mm/day",      0.0,                 24.0                   ],
-    ["Linear Speed",                     "mm/hr",       "mm/hr",       0.0,                 1.0                    ],
-    ["Linear Speed",                     "mm/hr",       "mph",         0.0,                 6.213711922373340e-007 ],
-    ["Linear Speed",                     "mph",         "ft/s",        0.0,                 1.466666666666667      ],
-    ["Linear Speed",                     "mph",         "in/day",      0.0,                 1520640.0              ],
-    ["Linear Speed",                     "mph",         "in/hr",       0.0,                 63360.0                ],
-    ["Linear Speed",                     "mph",         "kph",         0.0,                 1.609344               ],
-    ["Linear Speed",                     "mph",         "m/s",         0.0,                 0.44704                ],
-    ["Linear Speed",                     "mph",         "mm/day",      0.0,                 38624256.0             ],
-    ["Linear Speed",                     "mph",         "mm/hr",       0.0,                 1609344.0              ],
-    ["Linear Speed",                     "mph",         "mph",         0.0,                 1.0                    ],
-    ["Mass Concentration",               "g/l",         "g/l",         0.0,                 1.0                    ],
-    ["Mass Concentration",               "g/l",         "gm/cm3",      0.0,                 0.001                  ],
-    ["Mass Concentration",               "g/l",         "mg/l",        0.0,                 1000.0                 ],
-    ["Mass Concentration",               "g/l",         "ppm",         0.0,                 1000.0                 ],
-    ["Mass Concentration",               "gm/cm3",      "g/l",         0.0,                 1000.0                 ],
-    ["Mass Concentration",               "gm/cm3",      "gm/cm3",      0.0,                 1.0                    ],
-    ["Mass Concentration",               "gm/cm3",      "mg/l",        0.0,                 1.0e+006               ],
-    ["Mass Concentration",               "gm/cm3",      "ppm",         0.0,                 1.0e+006               ],
-    ["Mass Concentration",               "mg/l",        "g/l",         0.0,                 0.001                  ],
-    ["Mass Concentration",               "mg/l",        "gm/cm3",      0.0,                 1.0e-006               ],
-    ["Mass Concentration",               "mg/l",        "mg/l",        0.0,                 1.0                    ],
-    ["Mass Concentration",               "mg/l",        "ppm",         0.0,                 1.0                    ],
-    ["Mass Concentration",               "ppm",         "g/l",         0.0,                 0.001                  ],
-    ["Mass Concentration",               "ppm",         "gm/cm3",      0.0,                 1.0e-006               ],
-    ["Mass Concentration",               "ppm",         "mg/l",        0.0,                 1.0                    ],
-    ["Mass Concentration",               "ppm",         "ppm",         0.0,                 1.0                    ],
-    ["None",                             "%",           "%",           0.0,                 1.0                    ],
-    ["None",                             "n/a",         "n/a",         0.0,                 1.0                    ],
-    ["Phase Change Rate Index",          "in/deg-day",  "in/deg-day",  0.0,                 1.0                    ],
-    ["Phase Change Rate Index",          "in/deg-day",  "mm/deg-day",  0.0,                 45.72                  ],
-    ["Phase Change Rate Index",          "mm/deg-day",  "in/deg-day",  0.0,                 0.02187226596675416    ],
-    ["Phase Change Rate Index",          "mm/deg-day",  "mm/deg-day",  0.0,                 1.0                    ],
-    ["Power",                            "GW",          "GW",          0.0,                 1.0                    ],
-    ["Power",                            "GW",          "kW",          0.0,                 1.0e+006               ],
-    ["Power",                            "GW",          "MW",          0.0,                 1000.0                 ],
-    ["Power",                            "GW",          "TW",          0.0,                 0.001                  ],
-    ["Power",                            "GW",          "W",           0.0,                 1.0e+009               ],
-    ["Power",                            "kW",          "GW",          0.0,                 1.0e-006               ],
-    ["Power",                            "kW",          "kW",          0.0,                 1.0                    ],
-    ["Power",                            "kW",          "MW",          0.0,                 0.001                  ],
-    ["Power",                            "kW",          "TW",          0.0,                 1.0e-009               ],
-    ["Power",                            "kW",          "W",           0.0,                 1000.0                 ],
-    ["Power",                            "MW",          "GW",          0.0,                 0.001                  ],
-    ["Power",                            "MW",          "kW",          0.0,                 1000.0                 ],
-    ["Power",                            "MW",          "MW",          0.0,                 1.0                    ],
-    ["Power",                            "MW",          "TW",          0.0,                 1.0e-006               ],
-    ["Power",                            "MW",          "W",           0.0,                 1.0e+006               ],
-    ["Power",                            "TW",          "GW",          0.0,                 1000.0                 ],
-    ["Power",                            "TW",          "kW",          0.0,                 1.0e+009               ],
-    ["Power",                            "TW",          "MW",          0.0,                 1.0e+006               ],
-    ["Power",                            "TW",          "TW",          0.0,                 1.0                    ],
-    ["Power",                            "TW",          "W",           0.0,                 1.0e+012               ],
-    ["Power",                            "W",           "GW",          0.0,                 1.0e-009               ],
-    ["Power",                            "W",           "kW",          0.0,                 0.001                  ],
-    ["Power",                            "W",           "MW",          0.0,                 1.0e-006               ],
-    ["Power",                            "W",           "TW",          0.0,                 1.0e-012               ],
-    ["Power",                            "W",           "W",           0.0,                 1.0                    ],
-    ["Pressure",                         "in-hg",       "in-hg",       0.0,                 1.0                    ],
-    ["Pressure",                         "in-hg",       "kPa",         0.0,                 3.386388640341         ],
-    ["Pressure",                         "in-hg",       "mb",          0.0,                 3.386388640341e+001    ],
-    ["Pressure",                         "in-hg",       "mm-hg",       0.0,                 25.4                   ],
-    ["Pressure",                         "in-hg",       "psi",         0.0,                 0.4911541474703378     ],
-    ["Pressure",                         "kPa",         "in-hg",       0.0,                 0.2952998330101009     ],
-    ["Pressure",                         "kPa",         "kPa",         0.0,                 1.0                    ],
-    ["Pressure",                         "kPa",         "mb",          0.0,                 10.0                   ],
-    ["Pressure",                         "kPa",         "mm-hg",       0.0,                 7.500615758456562      ],
-    ["Pressure",                         "kPa",         "psi",         0.0,                 0.1450377377302092     ],
-    ["Pressure",                         "mb",          "in-hg",       0.0,                 2.952998330101009e-002 ],
-    ["Pressure",                         "mb",          "kPa",         0.0,                 0.1                    ],
-    ["Pressure",                         "mb",          "mb",          0.0,                 1.0                    ],
-    ["Pressure",                         "mb",          "mm-hg",       0.0,                 7.500615758456562e-001 ],
-    ["Pressure",                         "mb",          "psi",         0.0,                 1.450377377302092e-002 ],
-    ["Pressure",                         "mm-hg",       "in-hg",       0.0,                 0.03937007874015748    ],
-    ["Pressure",                         "mm-hg",       "kPa",         0.0,                 1.33322387415e-001     ],
-    ["Pressure",                         "mm-hg",       "mb",          0.0,                 1.33322387415          ],
-    ["Pressure",                         "mm-hg",       "mm-hg",       0.0,                 1.0                    ],
-    ["Pressure",                         "mm-hg",       "psi",         0.0,                 1.933677745946212e-002 ],
-    ["Pressure",                         "psi",         "in-hg",       0.0,                 2.036020677317793      ],
-    ["Pressure",                         "psi",         "kPa",         0.0,                 6.894757293168362      ],
-    ["Pressure",                         "psi",         "mb",          0.0,                 6.894757293168362e+001 ],
-    ["Pressure",                         "psi",         "mm-hg",       0.0,                 5.171492520387193e+001 ],
-    ["Pressure",                         "psi",         "psi",         0.0,                 1.0                    ],
-    ["Temperature",                      "C",           "C",           0.0,                 1.0                    ],
-    ["Temperature",                      "C",           "F",           32.0,                1.8                    ],
-    ["Temperature",                      "F",           "C",           -17.77777777777778,  0.5555555555555556     ],
-    ["Temperature",                      "F",           "F",           0.0,                 1.0                    ],
-    ["Turbidity",                        "JTU",         "JTU",         0.0,                 1.0                    ],
-    ["Turbidity",                        "NTU",         "NTU",         0.0,                 1.0                    ],
-    ["Turbidity",                        "FNU",         "FNU",         0.0,                 1.0                    ],
-    ["Volume Rate",                      "cfs",         "cfs",         0.0,                 1.0                    ],
-    ["Volume Rate",                      "cfs",         "cms",         0.0,                 0.028316846592         ],
-    ["Volume Rate",                      "cfs",         "gpm",         0.0,                 4.488311688311688e+002 ],
-    ["Volume Rate",                      "cfs",         "kcfs",        0.0,                 0.001                  ],
-    ["Volume Rate",                      "cfs",         "mgd",         0.0,                 0.6463168831168832     ],
-    ["Volume Rate",                      "cms",         "cfs",         0.0,                 35.31466672148859      ],
-    ["Volume Rate",                      "cms",         "cms",         0.0,                 1.0                    ],
-    ["Volume Rate",                      "cms",         "gpm",         0.0,                 1.585032314148891e+004 ],
-    ["Volume Rate",                      "cms",         "kcfs",        0.0,                 0.03531466672148859    ],
-    ["Volume Rate",                      "cms",         "mgd",         0.0,                 22.82446532374403      ],
-    ["Volume Rate",                      "gpm",         "cfs",         0.0,                 2.228009259259259e-003 ],
-    ["Volume Rate",                      "gpm",         "cms",         0.0,                 6.30901964e-005        ],
-    ["Volume Rate",                      "gpm",         "gpm",         0.0,                 1.0                    ],
-    ["Volume Rate",                      "gpm",         "kcfs",        0.0,                 2.228009259259259e-006 ],
-    ["Volume Rate",                      "gpm",         "mgd",         0.0,                 1.44e-3                ],
-    ["Volume Rate",                      "kcfs",        "cfs",         0.0,                 1000.0                 ],
-    ["Volume Rate",                      "kcfs",        "cms",         0.0,                 28.316846592           ],
-    ["Volume Rate",                      "kcfs",        "gpm",         0.0,                 4.488311688311688e+005 ],
-    ["Volume Rate",                      "kcfs",        "kcfs",        0.0,                 1.0                    ],
-    ["Volume Rate",                      "kcfs",        "mgd",         0.0,                 6.463168831168832e+002 ],
-    ["Volume Rate",                      "mgd",         "cfs",         0.0,                 1.547228652263374      ],
-    ["Volume Rate",                      "mgd",         "cms",         0.0,                 4.381263638888889e-002 ],
-    ["Volume Rate",                      "mgd",         "gpm",         0.0,                 6.944444444444444e+002 ],
-    ["Volume Rate",                      "mgd",         "kcfs",        0.0,                 1.547228652263374e-003 ],
-    ["Volume Rate",                      "mgd",         "mgd",         0.0,                 1.0                    ],
-    ["Volume",                           "1000 m3",     "1000 m3",     0.0,                 1.0                    ],
-    ["Volume",                           "1000 m3",     "ac-ft",       0.0,                 0.8107131937899125     ],
-    ["Volume",                           "1000 m3",     "dsf",         0.0,                 0.4087345685357475     ],
-    ["Volume",                           "1000 m3",     "ft3",         0.0,                 3.531466672148858e+004 ],
-    ["Volume",                           "1000 m3",     "gal",         0.0,                 2.641720523581484e+005 ],
-    ["Volume",                           "1000 m3",     "kaf",         0.0,                 0.0008107131937899125  ],
-    ["Volume",                           "1000 m3",     "kgal",        0.0,                 2.641720523581484e+002 ],
-    ["Volume",                           "1000 m3",     "km3",         0.0,                 1.0e-006               ],
-    ["Volume",                           "1000 m3",     "m3",          0.0,                 1000.0                 ],
-    ["Volume",                           "1000 m3",     "mgal",        0.0,                 2.641720523581484e-001 ],
-    ["Volume",                           "1000 m3",     "mile3",       0.0,                 2.399127585789276e-007 ],
-    ["Volume",                           "ac-ft",       "1000 m3",     0.0,                 1.233481837547520      ],
-    ["Volume",                           "ac-ft",       "ac-ft",       0.0,                 1.0                    ],
-    ["Volume",                           "ac-ft",       "dsf",         0.0,                 0.5041666666666667     ],
-    ["Volume",                           "ac-ft",       "ft3",         0.0,                 4.356e+004             ],
-    ["Volume",                           "ac-ft",       "gal",         0.0,                 3.258514285714286e+005 ],
-    ["Volume",                           "ac-ft",       "kaf",         0.0,                 0.001                  ],
-    ["Volume",                           "ac-ft",       "kgal",        0.0,                 3.258514285714286e+002 ],
-    ["Volume",                           "ac-ft",       "km3",         0.0,                 1.233481837547520e-006 ],
-    ["Volume",                           "ac-ft",       "m3",          0.0,                 1233.481837547520      ],
-    ["Volume",                           "ac-ft",       "mgal",        0.0,                 3.258514285714286e-001 ],
-    ["Volume",                           "ac-ft",       "mile3",       0.0,                 2.959280303030303e-007 ],
-    ["Volume",                           "dsf",         "1000 m3",     0.0,                 2.446575545548800      ],
-    ["Volume",                           "dsf",         "ac-ft",       0.0,                 1.983471074380165      ],
-    ["Volume",                           "dsf",         "dsf",         0.0,                 1.0                    ],
-    ["Volume",                           "dsf",         "ft3",         0.0,                 86400                  ],
-    ["Volume",                           "dsf",         "gal",         0.0,                 6.463168831168832e+005 ],
-    ["Volume",                           "dsf",         "kaf",         0.0,                 1.983471074380165e-003 ],
-    ["Volume",                           "dsf",         "kgal",        0.0,                 6.463168831168832e+002 ],
-    ["Volume",                           "dsf",         "km3",         0.0,                 2.446575545548800e-006 ],
-    ["Volume",                           "dsf",         "m3",          0.0,                 2.446575545548800e+003 ],
-    ["Volume",                           "dsf",         "mgal",        0.0,                 0.6463168831168832     ],
-    ["Volume",                           "dsf",         "mile3",       0.0,                 5.869646882043577e-007 ],
-    ["Volume",                           "ft3",         "1000 m3",     0.0,                 2.8316846592e-005      ],
-    ["Volume",                           "ft3",         "ac-ft",       0.0,                 2.295684113865932e-005 ],
-    ["Volume",                           "ft3",         "dsf",         0.0,                 1.157407407407407e-005 ],
-    ["Volume",                           "ft3",         "ft3",         0.0,                 1.0                    ],
-    ["Volume",                           "ft3",         "gal",         0.0,                 7.480519480519483      ],
-    ["Volume",                           "ft3",         "kaf",         0.0,                 2.295684113865932e-008 ],
-    ["Volume",                           "ft3",         "kgal",        0.0,                 7.480519480519483e-003 ],
-    ["Volume",                           "ft3",         "km3",         0.0,                 2.8316846592e-011      ],
-    ["Volume",                           "ft3",         "m3",          0.0,                 2.8316846592e-002      ],
-    ["Volume",                           "ft3",         "mgal",        0.0,                 7.480519480519483e-006 ],
-    ["Volume",                           "ft3",         "mile3",       0.0,                 6.793572780143027e-012 ],
-    ["Volume",                           "gal",         "1000 m3",     0.0,                 3.785411784e-006       ],
-    ["Volume",                           "gal",         "ac-ft",       0.0,                 3.068883277216610e-006 ],
-    ["Volume",                           "gal",         "dsf",         0.0,                 1.547228652263374e-006 ],
-    ["Volume",                           "gal",         "ft3",         0.0,                 1.336805555555556e-001 ],
-    ["Volume",                           "gal",         "gal",         0.0,                 1.0                    ],
-    ["Volume",                           "gal",         "kaf",         0.0,                 3.068883277216610e-009 ],
-    ["Volume",                           "gal",         "kgal",        0.0,                 0.001                  ],
-    ["Volume",                           "gal",         "km3",         0.0,                 3.785411784e-012       ],
-    ["Volume",                           "gal",         "m3",          0.0,                 0.003785411784         ],
-    ["Volume",                           "gal",         "mgal",        0.0,                 1.0e-006               ],
-    ["Volume",                           "gal",         "mile3",       0.0,                 9.081685834566200e-013 ],
-    ["Volume",                           "kaf",         "1000 m3",     0.0,                 1233.481837547520      ],
-    ["Volume",                           "kaf",         "ac-ft",       0.0,                 1000.0                 ],
-    ["Volume",                           "kaf",         "dsf",         0.0,                 504.1666666666667      ],
-    ["Volume",                           "kaf",         "ft3",         0.0,                 4.356e+007             ],
-    ["Volume",                           "kaf",         "gal",         0.0,                 3.258514285714287e+008 ],
-    ["Volume",                           "kaf",         "kaf",         0.0,                 1.0                    ],
-    ["Volume",                           "kaf",         "kgal",        0.0,                 3.258514285714287e+005 ],
-    ["Volume",                           "kaf",         "km3",         0.0,                 1.233481837547520e-003 ],
-    ["Volume",                           "kaf",         "m3",          0.0,                 1233481.837547520      ],
-    ["Volume",                           "kaf",         "mgal",        0.0,                 3.258514285714287e+002 ],
-    ["Volume",                           "kaf",         "mile3",       0.0,                 0.0002959280303030303  ],
-    ["Volume",                           "kgal",        "1000 m3",     0.0,                 0.003785411784         ],
-    ["Volume",                           "kgal",        "ac-ft",       0.0,                 3.068883277216610e-003 ],
-    ["Volume",                           "kgal",        "dsf",         0.0,                 1.547228652263374e-003 ],
-    ["Volume",                           "kgal",        "ft3",         0.0,                 1.336805555555556e+002 ],
-    ["Volume",                           "kgal",        "gal",         0.0,                 1000.0                 ],
-    ["Volume",                           "kgal",        "kaf",         0.0,                 3.068883277216610e-006 ],
-    ["Volume",                           "kgal",        "kgal",        0.0,                 1.0                    ],
-    ["Volume",                           "kgal",        "km3",         0.0,                 3.785411784e-009       ],
-    ["Volume",                           "kgal",        "m3",          0.0,                 3.785411784            ],
-    ["Volume",                           "kgal",        "mgal",        0.0,                 0.001                  ],
-    ["Volume",                           "kgal",        "mile3",       0.0,                 9.081685834566199e-010 ],
-    ["Volume",                           "km3",         "1000 m3",     0.0,                 1.0e+006               ],
-    ["Volume",                           "km3",         "ac-ft",       0.0,                 810713.1937899125      ],
-    ["Volume",                           "km3",         "dsf",         0.0,                 408734.568535745       ],
-    ["Volume",                           "km3",         "ft3",         0.0,                 3.531466672148858e+010 ],
-    ["Volume",                           "km3",         "gal",         0.0,                 2.641720523581485e+011 ],
-    ["Volume",                           "km3",         "kaf",         0.0,                 8.107131937899125e+002 ],
-    ["Volume",                           "km3",         "kgal",        0.0,                 2.641720523581485e+008 ],
-    ["Volume",                           "km3",         "km3",         0.0,                 1.0                    ],
-    ["Volume",                           "km3",         "m3",          0.0,                 1.0e+009               ],
-    ["Volume",                           "km3",         "mgal",        0.0,                 2.641720523581485e+005 ],
-    ["Volume",                           "km3",         "mile3",       0.0,                 0.2399127585789277     ],
-    ["Volume",                           "m3",          "1000 m3",     0.0,                 0.001                  ],
-    ["Volume",                           "m3",          "ac-ft",       0.0,                 0.0008107131937899125  ],
-    ["Volume",                           "m3",          "dsf",         0.0,                 4.087345685357475e-004 ],
-    ["Volume",                           "m3",          "ft3",         0.0,                 3.531466672148859e+001 ],
-    ["Volume",                           "m3",          "gal",         0.0,                 2.641720523581485e+002 ],
-    ["Volume",                           "m3",          "kaf",         0.0,                 8.107131937899126e-007 ],
-    ["Volume",                           "m3",          "kgal",        0.0,                 0.2641720523581485     ],
-    ["Volume",                           "m3",          "km3",         0.0,                 1.0e-009               ],
-    ["Volume",                           "m3",          "m3",          0.0,                 1.0                    ],
-    ["Volume",                           "m3",          "mgal",        0.0,                 2.641720523581484e-004 ],
-    ["Volume",                           "m3",          "mile3",       0.0,                 2.399127585789276e-010 ],
-    ["Volume",                           "mgal",        "1000 m3",     0.0,                 3.785411784            ],
-    ["Volume",                           "mgal",        "ac-ft",       0.0,                 3.068883277216610      ],
-    ["Volume",                           "mgal",        "dsf",         0.0,                 1.547228652263374      ],
-    ["Volume",                           "mgal",        "ft3",         0.0,                 1.336805555555556e+005 ],
-    ["Volume",                           "mgal",        "gal",         0.0,                 1.0e+006               ],
-    ["Volume",                           "mgal",        "kaf",         0.0,                 3.068883277216610e-003 ],
-    ["Volume",                           "mgal",        "kgal",        0.0,                 1000.0                 ],
-    ["Volume",                           "mgal",        "km3",         0.0,                 3.785411784e-006       ],
-    ["Volume",                           "mgal",        "m3",          0.0,                 3785.411784            ],
-    ["Volume",                           "mgal",        "mgal",        0.0,                 1.0                    ],
-    ["Volume",                           "mgal",        "mile3",       0.0,                 9.081685834566199e-007 ],
-    ["Volume",                           "mile3",       "1000 m3",     0.0,                 4.168181825440581e+006 ],
-    ["Volume",                           "mile3",       "ac-ft",       0.0,                 3379200.0              ],
-    ["Volume",                           "mile3",       "dsf",         0.0,                 1703680.0              ],
-    ["Volume",                           "mile3",       "ft3",         0.0,                 1.47197952e+011        ],
-    ["Volume",                           "mile3",       "gal",         0.0,                 1.101117147428572e+012 ],
-    ["Volume",                           "mile3",       "kaf",         0.0,                 3379.2                 ],
-    ["Volume",                           "mile3",       "kgal",        0.0,                 1.101117147428572e+009 ],
-    ["Volume",                           "mile3",       "km3",         0.0,                 4.168181825440581      ],
-    ["Volume",                           "mile3",       "m3",          0.0,                 4.168181825440581e+009 ],
-    ["Volume",                           "mile3",       "mgal",        0.0,                 1.101117147428572e+006 ],
-    ["Volume",                           "mile3",       "mile3",       0.0,                 1.0                    ],
-]
-
 unitConversionsByUnitIds = {}
-for abstractParam, fromUnit, toUnit, offset, factor in unitConversions :
-    unitConversionsByUnitIds[abstractParam, fromUnit, toUnit] = {"OFFSET" : offset, "FACTOR" : factor}
+cannotConvert = ("FNU", "JTU", "NTU")
+for absParam in sorted(unitsByAbsParam.keys()) :
+	allUnits = sorted(unitsByAbsParam[absParam])
+	for fromUnit in allUnits :
+		for toUnit in allUnits :
+			if toUnit == fromUnit : 
+				unitConversionsByUnitIds[absParam, fromUnit, toUnit] = {"FACTOR" : 1, "OFFSET" : 0}
+			else :
+				if fromUnit in cannotConvert and toUnit in cannotConvert : continue
+				unitConversions.convert(1, fromUnit, toUnit) # will raise exception if can't convert
+				unitConversionsByUnitIds[absParam, fromUnit, toUnit] = {
+					"FACTOR" : unitConversions.conversions[fromUnit][toUnit]["factor"],
+					"OFFSET" : unitConversions.conversions[fromUnit][toUnit]["offset"] 
+				}
 
 #--------------#
 # Data quality #
@@ -6855,12 +6403,14 @@ def main() :
     COMMIT;
     '''
     
+    abstractParamCodes = {}
     sys.stderr.write("Building abstractParamLoadTemplate\n")
     abstractParamLoadTemplate = ""
     for i in range(len(abstractParams)) :
         code = i+1
         id = abstractParams[i]
         abstractParamLoadTemplate +="INSERT INTO @abstractParamTableName (ABSTRACT_PARAM_CODE, ABSTRACT_PARAM_ID) VALUES(%d, '%s');\n" % (code, id)
+        abstractParamCodes[id] = code
     abstractParamLoadTemplate +="COMMIT;\n"
     
     sys.stderr.write("Building unitCreationTemplate\n")
@@ -6932,10 +6482,7 @@ def main() :
         unitLoadTemplate +="INSERT INTO @unitTableName (UNIT_CODE, UNIT_ID, ABSTRACT_PARAM_CODE, UNIT_SYSTEM, LONG_NAME, DESCRIPTION) VALUES (\n" 
         unitLoadTemplate +="\t%d,\n" % code 
         unitLoadTemplate +="\t'%s',\n" % id
-        unitLoadTemplate +="\t(\tSELECT ABSTRACT_PARAM_CODE\n"
-        unitLoadTemplate +="\t\tFROM   @abstractParamTableName \n"
-        unitLoadTemplate +="\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
-        unitLoadTemplate +="\t),\n"
+        unitLoadTemplate +="\t%d, -- %s\n" % (abstractParamCodes[abstractParam], abstractParam)
         if system == "NULL" :
           unitLoadTemplate +="\tNULL,\n"
         else :
@@ -7820,31 +7367,13 @@ def main() :
     for abstractParam, fromUnit, toUnit in conversionUnitIds :
         conversion = unitConversionsByUnitIds[abstractParam, fromUnit, toUnit]
         conversionLoadTemplate +="INSERT INTO %s (FROM_UNIT_ID, TO_UNIT_ID, ABSTRACT_PARAM_CODE, FROM_UNIT_CODE, TO_UNIT_CODE, FACTOR, OFFSET) VALUES (\n" % conversionTableName
-        conversionLoadTemplate +="\t\t'%s',\n" % fromUnit
-        conversionLoadTemplate +="\t\t'%s',\n" % toUnit
-        conversionLoadTemplate +="\t\t(SELECT ABSTRACT_PARAM_CODE\n"
-        conversionLoadTemplate +="\t\tFROM   %s \n" % abstractParamTableName
-        conversionLoadTemplate +="\t\tWHERE  ABSTRACT_PARAM_ID='%s'),\n" % abstractParam
-        conversionLoadTemplate +="\t(\tSELECT UNIT_CODE\n"
-        conversionLoadTemplate +="\t\tFROM   %s\n" % unitTableName
-        conversionLoadTemplate +="\t\tWHERE  UNIT_ID='%s'\n" % fromUnit
-        conversionLoadTemplate +="\t\tAND    ABSTRACT_PARAM_CODE=\n"
-        conversionLoadTemplate +="\t\t(\tSELECT ABSTRACT_PARAM_CODE\n"
-        conversionLoadTemplate +="\t\t\tFROM   %s \n" % abstractParamTableName
-        conversionLoadTemplate +="\t\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
-        conversionLoadTemplate +="\t\t)\n"
-        conversionLoadTemplate +="\t),\n"
-        conversionLoadTemplate +="\t(\tSELECT UNIT_CODE\n"
-        conversionLoadTemplate +="\t\tFROM   %s\n" % unitTableName
-        conversionLoadTemplate +="\t\tWHERE  UNIT_ID='%s'\n" % toUnit
-        conversionLoadTemplate +="\t\tAND    ABSTRACT_PARAM_CODE=\n"
-        conversionLoadTemplate +="\t\t(\tSELECT ABSTRACT_PARAM_CODE\n"
-        conversionLoadTemplate +="\t\t\tFROM   %s \n" % abstractParamTableName
-        conversionLoadTemplate +="\t\t\tWHERE  ABSTRACT_PARAM_ID='%s'\n" % abstractParam
-        conversionLoadTemplate +="\t\t)\n"
-        conversionLoadTemplate +="\t),\n"
-        conversionLoadTemplate +="\t%s,\n" % `conversion["FACTOR"]`
-        conversionLoadTemplate +="\t%s\n" % `conversion["OFFSET"]`
+        conversionLoadTemplate +="\t'%s',\n" % fromUnit
+        conversionLoadTemplate +="\t'%s',\n" % toUnit
+        conversionLoadTemplate +="\t%d, -- %s\n" % (abstractParamCodes[abstractParam], abstractParam)
+        conversionLoadTemplate +="\t%d,\n" % unitDefsById["%s.%s" % (abstractParam, fromUnit)]["CODE"]
+        conversionLoadTemplate +="\t%d,\n" % unitDefsById["%s.%s" % (abstractParam, toUnit)]["CODE"]
+        conversionLoadTemplate +="\t%s,\n" % conversion["FACTOR"]
+        conversionLoadTemplate +="\t%s\n" % conversion["OFFSET"]
         conversionLoadTemplate +=");\n"
     conversionLoadTemplate +="COMMIT;\n"
     
@@ -7852,7 +7381,7 @@ def main() :
     conversionTestTemplate = \
     '''
     CREATE OR REPLACE PROCEDURE @TABLE_TEST
-    IS
+    IS                                    
        L_PARAM @abstractParamTableName%ROWTYPE;
        L_FROM  @unitTableName%ROWTYPE;
        L_TO    @unitTableName%ROWTYPE;
@@ -7866,7 +7395,7 @@ def main() :
           L_COUNT := 0;
           DBMS_OUTPUT.PUT_LINE('.');
           DBMS_OUTPUT.PUT_LINE('.  Checking abstract parameter ' || L_PARAM.ABSTRACT_PARAM_ID);
-          FOR L_FROM IN (SELECT * FROM @unitTableName WHERE ABSTRACT_PARAM_CODE=L_PARAM.ABSTRACT_PARAM_CODE)
+          FOR L_FROM IN (SELECT * FROM @unitTableName WHERE ABSTRACT_PARAM_CODE=L_PARAM.ABSTRACT_PARAM_CODE)                                                    
           LOOP
              FOR L_TO IN (SELECT * FROM @unitTableName WHERE ABSTRACT_PARAM_CODE=L_PARAM.ABSTRACT_PARAM_CODE)
              LOOP
