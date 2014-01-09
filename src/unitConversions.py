@@ -487,7 +487,7 @@ def process_conversion_definition(from_unit, definition) :
 	#--------------------------------#
 	n_units = []
 	d_units = []
-	factor  = Decimal(1.0)
+	factor  = Decimal('1.0')
 	identities = map(string.strip, definition.split('|'))
 	try    : n, d = map(string.strip, from_unit.split('/'))
 	except : n, d = from_unit.strip(), None
@@ -562,7 +562,7 @@ for from_unit, to_unit, definition in conversion_definitions :
 		raise Exception('Expected unit %s, got %s' % (to_unit, unit))
 	conversion_to = conversions.setdefault(from_unit, {})
 	try    : offset = offsets['%s_to_%s' % (from_unit, to_unit)]
-	except : offset = Decimal(0)
+	except : offset = Decimal('0')
 	conversion_to[to_unit] = {"factor" : factor, "offset" : offset}
 	
 def convert(value, from_unit, to_unit) :
