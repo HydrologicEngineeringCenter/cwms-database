@@ -56,7 +56,8 @@ insert into at_clob
  * @field bounding_office_id   Office whose boundary encompasses location (may be inherited from base location)
  * @field nation_id            Nation encompassing location (may be inherited from base location)
  * @field nearest_city         City nearest to location (may be inherited from base location)
- * @field active_flag          Depricated - loc_active_flag replaces active_flag as of v2.1
+ * @field active_flag          Deprecated - loc_active_flag replaces active_flag as of v2.1  
+ * @field is_alias             Specifies whether location_id column is contains a location alias instead of an actual location identifier             
  */
 ');
 
@@ -90,7 +91,8 @@ create or replace force view av_loc2(
    bounding_office_id,
    nation_id,
    nearest_city,
-   active_flag)
+   active_flag,
+   is_alias)
 as
    select distinct location_code,
                    base_location_code,
@@ -121,7 +123,8 @@ as
                    bounding_office_id,
                    nation_id,
                    nearest_city,
-                   loc_active_flag
+                   loc_active_flag,
+                   is_alias
      from (select o.office_code db_office_code,
                   p1.location_code,
                   p1.base_location_code,
@@ -149,7 +152,8 @@ as
                   nvl(p1.published_longitude, p2.published_longitude) as published_longitude,
                   nvl(o1.office_id, o2.office_id) as bounding_office_id,
                   nation_id,
-                  nvl(p1.nearest_city, p2.nearest_city) as nearest_city
+                  nvl(p1.nearest_city, p2.nearest_city) as nearest_city,
+                  'F' as is_alias
              from (((((((at_physical_location p1 left outer join cwms_office o1 using (office_code))
                         join (at_physical_location p2 left outer join cwms_office o2 using (office_code))
                            on p2.location_code = p1.base_location_code
@@ -162,46 +166,89 @@ as
                   left outer join cwms_nation n on n.nation_code = coalesce(p1.nation_code, p2.nation_code)
             where p1.location_code != 0
            union all
-           select distinct o$.office_code db_office_code,
-                           p1$.location_code,
-                           p1$.base_location_code,
-                           o$.office_id db_office_id,
+           select distinct o.office_code db_office_code,
+                           p1.location_code,
+                           p1.base_location_code,
+                           o.office_id db_office_id,
                            base_location_id,
-                           p1$.sub_location_id,
-                           a$.loc_alias_id as location_id,
-                           p1$.location_type,
-                           nvl(p1$.elevation, p2$.elevation) as elevation,
-                           nvl(p1$.vertical_datum, p2$.vertical_datum) as vertical_datum,
-                           nvl(p1$.longitude, p2$.longitude) as longitude,
-                           nvl(p1$.latitude, p2$.latitude) as latitude,
-                           nvl(p1$.horizontal_datum, p2$.horizontal_datum) as horizontal_datum,
+                           p1.sub_location_id,
+                           a.loc_alias_id as location_id,
+                           p1.location_type,
+                           nvl(p1.elevation, p2.elevation) as elevation,
+                           nvl(p1.vertical_datum, p2.vertical_datum) as vertical_datum,
+                           nvl(p1.longitude, p2.longitude) as longitude,
+                           nvl(p1.latitude, p2.latitude) as latitude,
+                           nvl(p1.horizontal_datum, p2.horizontal_datum) as horizontal_datum,
                            time_zone_name,
                            county_name,
                            state_initial,
-                           p1$.public_name,
-                           p1$.long_name,
-                           p1$.description,
-                           b$.active_flag base_loc_active_flag,
-                           p1$.active_flag loc_active_flag,
+                           p1.public_name,
+                           p1.long_name,
+                           p1.description,
+                           b.active_flag base_loc_active_flag,
+                           p1.active_flag loc_active_flag,
                            location_kind_id,
-                           nvl(p1$.map_label, p2$.map_label) as map_label,
-                           nvl(p1$.published_latitude, p2$.published_latitude) as published_latitude,
-                           nvl(p1$.published_longitude, p2$.published_longitude) as published_longitude,
-                           nvl(o1$.office_id, o2$.office_id) as bounding_office_id,
+                           nvl(p1.map_label, p2.map_label) as map_label,
+                           nvl(p1.published_latitude, p2.published_latitude) as published_latitude,
+                           nvl(p1.published_longitude, p2.published_longitude) as published_longitude,
+                           nvl(o1.office_id, o2.office_id) as bounding_office_id,
                            nation_id,
-                           nvl(p1$.nearest_city, p2$.nearest_city) as nearest_city
-             from (((((((at_physical_location p1$ left outer join cwms_office o1$ using (office_code))
-                        join (at_physical_location p2$ left outer join cwms_office o2$ using (office_code))
-                           on p2$.location_code = p1$.base_location_code
-                        join at_base_location b$ on b$.base_location_code = p1$.base_location_code)
-                       join at_loc_group_assignment a$ on a$.location_code = p1$.location_code
-                       join cwms_office o$ on b$.db_office_code = o$.office_code)
-                      left outer join at_location_kind on location_kind_code = p1$.location_kind)
-                     left outer join cwms_time_zone t$ on t$.time_zone_code = coalesce(p1$.time_zone_code, p2$.time_zone_code))
-                    left outer join cwms_county c$ on c$.county_code = coalesce(p1$.county_code, p2$.county_code))
+                           nvl(p1.nearest_city, p2.nearest_city) as nearest_city,
+                           'T' as is_alias
+             from (((((((at_physical_location p1 left outer join cwms_office o1 using (office_code))
+                        join (at_physical_location p2 left outer join cwms_office o2 using (office_code))
+                           on p2.location_code = p1.base_location_code
+                        join at_base_location b on b.base_location_code = p1.base_location_code)
+                       join at_loc_group_assignment a on a.location_code = p1.location_code
+                       join cwms_office o on b.db_office_code = o.office_code)
+                      left outer join at_location_kind on location_kind_code = p1.location_kind)
+                     left outer join cwms_time_zone t on t.time_zone_code = coalesce(p1.time_zone_code, p2.time_zone_code))
+                    left outer join cwms_county c on c.county_code = coalesce(p1.county_code, p2.county_code))
                    left outer join cwms_state using (state_code))
-                  left outer join cwms_nation n$ on n$.nation_code = coalesce(p1$.nation_code, p2$.nation_code)
-            where p1$.location_code != 0 and a$.loc_alias_id is not null) aa
+                  left outer join cwms_nation n on n.nation_code = coalesce(p1.nation_code, p2.nation_code)
+            where p1.location_code != 0 and a.loc_alias_id is not null
+           union all
+           select distinct o.office_code db_office_code,
+                           p1.location_code,
+                           p1.base_location_code,
+                           o.office_id db_office_id,
+                           base_location_id,
+                           p1.sub_location_id,
+                           a.loc_alias_id || substr('-', 1, length(p1.sub_location_id)) || p1.sub_location_id as location_id,
+                           p1.location_type,
+                           nvl(p1.elevation, p2.elevation) as elevation,
+                           nvl(p1.vertical_datum, p2.vertical_datum) as vertical_datum,
+                           nvl(p1.longitude, p2.longitude) as longitude,
+                           nvl(p1.latitude, p2.latitude) as latitude,
+                           nvl(p1.horizontal_datum, p2.horizontal_datum) as horizontal_datum,
+                           time_zone_name,
+                           county_name,
+                           state_initial,
+                           p1.public_name,
+                           p1.long_name,
+                           p1.description,
+                           b.active_flag base_loc_active_flag,
+                           p1.active_flag loc_active_flag,
+                           location_kind_id,
+                           nvl(p1.map_label, p2.map_label) as map_label,
+                           nvl(p1.published_latitude, p2.published_latitude) as published_latitude,
+                           nvl(p1.published_longitude, p2.published_longitude) as published_longitude,
+                           nvl(o1.office_id, o2.office_id) as bounding_office_id,
+                           nation_id,
+                           nvl(p1.nearest_city, p2.nearest_city) as nearest_city,
+                           'T' as is_alias
+             from (((((((at_physical_location p1 left outer join cwms_office o1 using (office_code))
+                        join (at_physical_location p2 left outer join cwms_office o2 using (office_code))
+                           on p2.location_code = p1.base_location_code
+                        join at_base_location b on b.base_location_code = p1.base_location_code)
+                       join at_loc_group_assignment a on a.location_code = p1.base_location_code
+                       join cwms_office o on b.db_office_code = o.office_code)
+                      left outer join at_location_kind on location_kind_code = p1.location_kind)
+                     left outer join cwms_time_zone t on t.time_zone_code = coalesce(p1.time_zone_code, p2.time_zone_code))
+                    left outer join cwms_county c on c.county_code = coalesce(p1.county_code, p2.county_code))
+                   left outer join cwms_state using (state_code))
+                  left outer join cwms_nation n on n.nation_code = coalesce(p1.nation_code, p2.nation_code)
+            where p1.location_code != 0 and a.loc_alias_id is not null) aa
           natural join
           (select adu.db_office_code,
                   adu.unit_system,
