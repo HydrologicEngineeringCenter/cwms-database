@@ -8627,7 +8627,10 @@ end retrieve_existing_item_counts;
       SELECT validity_id
         INTO l_validity
         FROM cwms_data_quality
-       WHERE quality_code = p_quality_code;
+       WHERE quality_code = p_quality_code + case 
+                                                when p_quality_code < 0 then 4294967296
+                                                else  0 
+                                             end;
       RETURN l_validity;
    EXCEPTION
       WHEN NO_DATA_FOUND
