@@ -5624,53 +5624,63 @@ AS
 	END store_location_f;
 
 
-	FUNCTION get_location_id_from_alias (
-		p_alias_id		 IN VARCHAR2,
-		p_group_id		 IN VARCHAR2 DEFAULT NULL,
-		p_category_id	 IN VARCHAR2 DEFAULT NULL,
-		p_office_id 	 IN VARCHAR2 DEFAULT NULL
-	)
-		RETURN VARCHAR2
-	IS
-		l_location_id	 VARCHAR2 (49);
-	BEGIN
+	function get_location_id_from_alias (
+		p_alias_id		 in varchar2,
+		p_group_id		 in varchar2 default null,
+		p_category_id	 in varchar2 default null,
+		p_office_id 	 in varchar2 default null)
+		return varchar2
+	is
+		l_location_id varchar2(49); 
+      l_office_id   varchar2(16);
+      l_parts       str_tab_t;
+	begin
 		-------------------
 		-- sanity checks --
 		-------------------
-		cwms_util.check_inputs (
-			str_tab_t (p_alias_id, p_group_id, p_category_id, p_office_id)
-		);
+		cwms_util.check_inputs (str_tab_t (p_alias_id, p_group_id, p_category_id, p_office_id));
+      l_office_id := cwms_util.get_db_office_id(trim(p_office_id));
 
 		-----------------------------------------
 		-- retrieve and return the location id --
 		-----------------------------------------
-		BEGIN
-			SELECT	DISTINCT location_id
-			  INTO	l_location_id
-			  FROM	cwms_v_loc_grp_assgn
-			 WHERE	UPPER (alias_id) = UPPER (TRIM (p_alias_id))
-						AND UPPER (GROUP_ID) =
-								 UPPER (NVL (TRIM (p_group_id), GROUP_ID))
-						AND UPPER (category_id) =
-								 UPPER (NVL (TRIM (p_category_id), category_id))
-						AND db_office_id =
-								 NVL (UPPER (TRIM (p_office_id)),
-										cwms_util.user_office_id
-									  );
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				NULL;
-			WHEN TOO_MANY_ROWS
-			THEN
-				cwms_err.raise (
-					'ERROR',
-					'Alias (' || p_alias_id || ') matches more than one location.'
-				);
-		END;
+      begin
+         select distinct location_id
+           into l_location_id
+           from cwms_v_loc_grp_assgn
+          where upper (alias_id) = upper (trim (p_alias_id))
+            and upper (group_id) = upper (nvl (trim (p_group_id), group_id))
+            and upper (category_id) = upper (nvl (trim (p_category_id), category_id))
+            and db_office_id = l_office_id;
+      exception
+         when no_data_found then
+            -----------------------------------------------
+            -- perhaps only the base location is aliased --
+            -----------------------------------------------
+            l_parts := cwms_util.split_text(trim(p_alias_id), '-', 1);
+            if (l_parts.count = 2) then
+               l_location_id := get_location_id_from_alias(l_parts(1), p_group_id, p_category_id, l_office_id);
+               if l_location_id is not null then    
+                  begin
+                     select location_id
+                       into l_location_id
+                       from cwms_v_loc
+                      where location_id = l_location_id || '-' || trim(l_parts(2))
+                        and db_office_id = l_office_id; 
+                  exception
+                     when no_data_found then
+                        l_location_id := null;
+                  end;
+               end if;
+            end if;
+         when too_many_rows then
+            cwms_err.raise (
+               'ERROR',
+               'Alias (' || p_alias_id || ') matches more than one location.');
+      end;
 
-		RETURN l_location_id;
-	END get_location_id_from_alias;
+		return l_location_id;
+	end get_location_id_from_alias;
 
 
 	FUNCTION get_location_code_from_alias (
@@ -7457,7 +7467,7 @@ AS
          ||chr(10);
       l_vert_datum_info := l_vert_datum_info
          ||'  <native-datum>'
-         ||l_native_datum
+         ||nvl(replace(l_native_datum, 'LOCAL', 'OTHER'), 'UNKNOWN')
          ||'</native-datum>'
          ||chr(10);
       if l_native_datum = 'LOCAL' then 
@@ -7474,11 +7484,7 @@ AS
                ||chr(10);
          end if;
       end if;   
-      if l_elevation is null then
-         l_vert_datum_info := l_vert_datum_info 
-            ||'  <elevation/>' 
-            ||chr(10); 
-      else
+      if l_elevation is not null then
          l_vert_datum_info := l_vert_datum_info 
             ||'  <elevation>'
             ||cwms_rounding.round_nt_f(l_elevation, l_rounding_spec)
@@ -7522,6 +7528,7 @@ AS
       end loop;                      
       l_vert_datum_info := l_vert_datum_info
          ||'</vertical-datum-info>';
+      l_vert_datum_info := regexp_replace(l_vert_datum_info, '(N[AG]VD)(29|88)', '\1-\2');         
       p_vert_datum_info := l_vert_datum_info;
    end get_vertical_datum_info;
 
@@ -7652,7 +7659,7 @@ AS
       l_office_id_2   := cwms_util.get_xml_text(l_node, '/vertical-datum-info/@office');
       l_location_id_2 := cwms_util.get_xml_text(l_node, '/vertical-datum-info/location');
       if (l_office_id_2 is null) != (l_location_id_2 is null) then
-         cwms_err.raise('ERROR', 'Office and location must bet specified together (both or neither)');
+         cwms_err.raise('ERROR', 'Office and location must be specified together (both or neither)');
       end if;
       if l_office_id_2 is not null then
          if get_location_code(l_office_id_2, l_location_id_2) != p_location_code then
@@ -7663,8 +7670,10 @@ AS
       if l_unit is null then
          cwms_err.raise('ERROR', 'Vertical datum info does not specify unit');
       end if;
-      l_native_datum := cwms_util.get_xml_text(l_node, '/vertical-datum-info/native-datum');
-      if l_native_datum is not null then
+      l_native_datum := upper(cwms_util.get_xml_text(l_node, '/vertical-datum-info/native-datum'));
+      if l_native_datum is not null then 
+         l_native_datum := replace(l_native_datum, 'OTHER', 'LOCAL');
+         l_native_datum := regexp_replace(l_native_datum, '(N[AG]VD).+(29|88)', '\1\2');
          l_native_datum_db := get_location_vertical_datum(p_location_code);
          if l_native_datum_db is not null and l_native_datum_db != l_native_datum then
             cwms_err.raise(
@@ -7672,7 +7681,7 @@ AS
                'Specified native datum for '
                ||l_office_id||'/'||l_location_id
                ||' of '
-               ||l_native_datum
+               ||cwms_util.get_xml_text(l_node, '/vertical-datum-info/native-datum')
                ||' does not agree with native datum in database of '
                ||l_native_datum_db);
          end if;
