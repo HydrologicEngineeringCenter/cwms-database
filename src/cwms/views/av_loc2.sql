@@ -13,6 +13,8 @@
 --   AT_DISPLAY_UNITS (Table)
 --   AT_PHYSICAL_LOCATION (Table)
 --   AT_LOC_GROUP_ASSIGNMENT (Table)
+--   AT_LOC_GROUP (Table)
+--   AT_LOC_CATEGORY (Table)
 --
 
 insert into at_clob
@@ -56,8 +58,10 @@ insert into at_clob
  * @field bounding_office_id   Office whose boundary encompasses location (may be inherited from base location)
  * @field nation_id            Nation encompassing location (may be inherited from base location)
  * @field nearest_city         City nearest to location (may be inherited from base location)
- * @field active_flag          Deprecated - loc_active_flag replaces active_flag as of v2.1  
- * @field is_alias             Specifies whether location_id column is contains a location alias instead of an actual location identifier             
+ * @field active_flag          Deprecated - loc_active_flag replaces active_flag as of v2.1
+ * @field aliased_item         Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.  
+ * @field loc_alias_category   The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.  
+ * @field loc_alias_group      The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.              
  */
 ');
 
@@ -92,7 +96,9 @@ create or replace force view av_loc2(
    nation_id,
    nearest_city,
    active_flag,
-   is_alias)
+   aliased_item,
+   loc_alias_category,
+   loc_alias_group)
 as
    select distinct location_code,
                    base_location_code,
@@ -124,7 +130,9 @@ as
                    nation_id,
                    nearest_city,
                    loc_active_flag,
-                   is_alias
+                   aliased_item,
+                   loc_alias_category,
+                   loc_alias_group
      from (select o.office_code db_office_code,
                   p1.location_code,
                   p1.base_location_code,
@@ -153,7 +161,9 @@ as
                   nvl(o1.office_id, o2.office_id) as bounding_office_id,
                   nation_id,
                   nvl(p1.nearest_city, p2.nearest_city) as nearest_city,
-                  'F' as is_alias
+                  null as aliased_item,
+                  null as loc_alias_category,
+                  null as loc_alias_group
              from (((((((at_physical_location p1 left outer join cwms_office o1 using (office_code))
                         join (at_physical_location p2 left outer join cwms_office o2 using (office_code))
                            on p2.location_code = p1.base_location_code
@@ -194,12 +204,16 @@ as
                            nvl(o1.office_id, o2.office_id) as bounding_office_id,
                            nation_id,
                            nvl(p1.nearest_city, p2.nearest_city) as nearest_city,
-                           'T' as is_alias
+                           'LOCATION' as aliased_item,
+                           lc.loc_category_id as loc_alias_category,
+                           lg.loc_group_id as loc_alias_group
              from (((((((at_physical_location p1 left outer join cwms_office o1 using (office_code))
                         join (at_physical_location p2 left outer join cwms_office o2 using (office_code))
                            on p2.location_code = p1.base_location_code
                         join at_base_location b on b.base_location_code = p1.base_location_code)
                        join at_loc_group_assignment a on a.location_code = p1.location_code
+                       join at_loc_group lg on lg.loc_group_code = a.loc_group_code
+                       join at_loc_category lc on lc.loc_category_code = lg.loc_category_code
                        join cwms_office o on b.db_office_code = o.office_code)
                       left outer join at_location_kind on location_kind_code = p1.location_kind)
                      left outer join cwms_time_zone t on t.time_zone_code = coalesce(p1.time_zone_code, p2.time_zone_code))
@@ -236,19 +250,27 @@ as
                            nvl(o1.office_id, o2.office_id) as bounding_office_id,
                            nation_id,
                            nvl(p1.nearest_city, p2.nearest_city) as nearest_city,
-                           'T' as is_alias
+                           'BASE LOCATION' as aliased_item,
+                           lc.loc_category_id as loc_alias_category,
+                           lg.loc_group_id as loc_alias_group
              from (((((((at_physical_location p1 left outer join cwms_office o1 using (office_code))
                         join (at_physical_location p2 left outer join cwms_office o2 using (office_code))
                            on p2.location_code = p1.base_location_code
                         join at_base_location b on b.base_location_code = p1.base_location_code)
                        join at_loc_group_assignment a on a.location_code = p1.base_location_code
+                       join at_loc_group lg on lg.loc_group_code = a.loc_group_code
+                       join at_loc_category lc on lc.loc_category_code = lg.loc_category_code
                        join cwms_office o on b.db_office_code = o.office_code)
                       left outer join at_location_kind on location_kind_code = p1.location_kind)
                      left outer join cwms_time_zone t on t.time_zone_code = coalesce(p1.time_zone_code, p2.time_zone_code))
                     left outer join cwms_county c on c.county_code = coalesce(p1.county_code, p2.county_code))
                    left outer join cwms_state using (state_code))
                   left outer join cwms_nation n on n.nation_code = coalesce(p1.nation_code, p2.nation_code)
-            where p1.location_code != 0 and a.loc_alias_id is not null) aa
+            where p1.location_code != 0
+              and p1.sub_location_id is not null 
+              and a.loc_alias_id is not null
+              and lg.loc_group_code = a.loc_group_code
+              and lc.loc_category_code = lg.loc_category_code) aa
           natural join
           (select adu.db_office_code,
                   adu.unit_system,
