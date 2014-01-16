@@ -38,7 +38,11 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', nul
  * @field base_location_code  Unique numeric code that identifies the base location of the time series
  * @field location_code       Unique numeric code that identifies the full location of the time series
  * @field parameter_code      Unique numeric code that identifies the parameter for the time series
- * @field is_alias            Flag (<code><big>''T''</big></code> or <code><big>''F''</big></code>) specifying whether the cwms_ts_id is an alias.  If <code><big>''T''</big></code>, all other columns refer to the actual time series identifier.             
+ * @field aliased_item        Null if the cwms_ts_id is not an alias, ''LOCATION'' if the entire location is aliased, ''BASE LOCATION'' if only the base location is alaised, or ''TIME SERIES'' if the entire cwms_time_series_id is aliased.  
+ * @field loc_alias_category  The location category for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''  
+ * @field loc_alias_group     The location group for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''              
+ * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''  
+ * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''              
 */
 ');
 
@@ -70,7 +74,11 @@ CREATE OR REPLACE FORCE VIEW av_cwms_ts_id
     base_location_code,
     location_code,
     parameter_code,
-    is_alias
+    aliased_item,
+    loc_alias_category,
+    loc_alias_group,
+    ts_alias_category,
+    ts_alias_group
 )
 AS
    select db_office_id,
@@ -99,11 +107,15 @@ AS
           base_location_code,
           location_code,
           parameter_code,
-          'F' as is_alias
+          null as aliased_item,
+          null as loc_alias_category,
+          null as loc_alias_group,
+          null as ts_alias_category,
+          null as ts_alias_group
      from at_cwms_ts_id
    union all  
    select ts.db_office_id,
-          lg.loc_alias_id || substr(ts.cwms_ts_id, instr(ts.cwms_ts_id, '.')) as cwms_ts_id,
+          lga.loc_alias_id || substr(ts.cwms_ts_id, instr(ts.cwms_ts_id, '.')) as cwms_ts_id,
           ts.unit_id,
           ts.abstract_param_id,
           ts.base_location_id,
@@ -128,14 +140,22 @@ AS
           ts.base_location_code,
           ts.location_code,
           ts.parameter_code,
-          'T' as is_alias
+          'LOCATION' as aliased_item,
+          lc.loc_category_id as loc_alias_category,
+          lg.loc_group_id as loc_alias_group,
+          null as ts_alias_category,
+          null as ts_alias_group
      from at_cwms_ts_id ts,
-          at_loc_group_assignment lg
-    where lg.loc_alias_id is not null
-      and ts.location_code = lg.location_code       
+          at_loc_group_assignment lga,
+          at_loc_group lg,
+          at_loc_category lc
+    where lga.loc_alias_id is not null
+      and ts.location_code = lga.location_code
+      and lg.loc_group_code = lga.loc_group_code
+      and lc.loc_category_code = lg.loc_category_code        
    union all  
    select ts.db_office_id,
-          lg.loc_alias_id || substr(ts.cwms_ts_id, instr(ts.cwms_ts_id, '-')) as cwms_ts_id,
+          lga.loc_alias_id || substr(ts.cwms_ts_id, instr(ts.cwms_ts_id, '-')) as cwms_ts_id,
           ts.unit_id,
           ts.abstract_param_id,
           ts.base_location_id,
@@ -160,15 +180,23 @@ AS
           ts.base_location_code,
           ts.location_code,
           ts.parameter_code,
-          'T' as is_alias
+          'BASE LOCATION' as aliased_item,
+          lc.loc_category_id as loc_alias_category,
+          lg.loc_group_id as loc_alias_group,
+          null as ts_alias_category,
+          null as ts_alias_group
      from at_cwms_ts_id ts,
-          at_loc_group_assignment lg
-    where lg.loc_alias_id is not null
-      and ts.base_location_code = lg.location_code
+          at_loc_group_assignment lga,
+          at_loc_group lg,
+          at_loc_category lc
+    where lga.loc_alias_id is not null
+      and ts.base_location_code = lga.location_code
+      and lg.loc_group_code = lga.loc_group_code
+      and lc.loc_category_code = lg.loc_category_code        
       and ts.sub_location_id is not null       
    union all  
    select ts.db_office_id,
-          tsg.ts_alias_id as cwms_ts_id,
+          tsga.ts_alias_id as cwms_ts_id,
           ts.unit_id,
           ts.abstract_param_id,
           ts.base_location_id,
@@ -193,9 +221,17 @@ AS
           ts.base_location_code,
           ts.location_code,
           ts.parameter_code,
-          'T' as is_alias
+          'TIME SERIES' as aliased_item,
+          null as loc_alias_category,
+          null as loc_alias_group,
+          tsg.ts_group_id as ts_alias_category,
+          tsg.ts_group_id as ts_alias_group
      from at_cwms_ts_id ts,
-          at_ts_group_assignment tsg
-    where tsg.ts_alias_id is not null
-      and ts.ts_code = tsg.ts_code       
+          at_ts_group_assignment tsga,
+          at_ts_group tsg,
+          at_ts_category tsc
+    where tsga.ts_alias_id is not null
+      and ts.ts_code = tsga.ts_code
+      and tsg.ts_group_code = tsga.ts_group_code
+      and tsc.ts_category_code = tsc.ts_category_code       
 /
