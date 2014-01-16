@@ -8,17 +8,17 @@
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', null,
 '
 /**
- * Displays CWMS Time Series Identifiers
+ * Displays CWMS Time Series Identifiers, including aliases
  *
- * @since CWMS 2.0
+ * @since CWMS 2.0 (modified in CWMS 2.1)
  *
  * @field db_office_id        Identifies office that owns time series
- * @field cwms_ts_id          Identifies the time series
+ * @field cwms_ts_id          Identifies the time series or alias
  * @field unit_id             Identifies the database storage unit for the time series
  * @field abstract_param_id   Identifies the abstract parameter (length, volume, etc...) for the time series
  * @field base_location_id    Identifies the base location for the time series
  * @field sub_location_id     Identifies the sub-location for the time series, if any
- * @field location_id         Identifies te full location for the time series
+ * @field location_id         Identifies the full location for the time series
  * @field base_parameter_id   Identifies the base parameter for the time series
  * @field sub_parameter_id    Identifies the sub-parameter for the time series, if any
  * @field parameter_id        Identifies the full parameter for the time series
