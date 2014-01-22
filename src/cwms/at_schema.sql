@@ -1116,7 +1116,8 @@ CREATE TABLE at_loc_group_assignment
   loc_group_code  NUMBER,
   loc_attribute   NUMBER,
   loc_alias_id    VARCHAR2(256 BYTE),
-  loc_ref_code    NUMBER
+  loc_ref_code    NUMBER,
+  office_code     NUMBER NOT NULL
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -1143,6 +1144,7 @@ comment on column at_loc_group_assignment.loc_group_code is 'Reference to locati
 comment on column at_loc_group_assignment.loc_attribute  is 'General purpose value (can be used for sorting, etc...)';
 comment on column at_loc_group_assignment.loc_alias_id   is 'Alias of location with respect to the assignment';
 comment on column at_loc_group_assignment.loc_ref_code   is 'Reference to an existing location with respect to the assignment';
+comment on column at_loc_group_assignment.office_code    is 'Reference to the office that owns the location - used for index';
 
 CREATE UNIQUE INDEX at_loc_group_assignment_pk ON at_loc_group_assignment
 (location_code, loc_group_code)
@@ -1193,11 +1195,20 @@ ALTER TABLE at_loc_group_assignment ADD (
  FOREIGN KEY (loc_ref_code)
  REFERENCES at_physical_location (location_code))
 /
-
+ALTER TABLE at_loc_group_assignment ADD (
+  CONSTRAINT at_loc_group_assignment_fk4
+ FOREIGN KEY (office_code)
+ REFERENCES cwms_office(office_code))
+/
+CREATE INDEX at_loc_group_assignment_idx1 ON 
+ at_loc_group_assignment(office_code, upper(loc_alias_id))
+ LOGGING
+ TABLESPACE CWMS_20DATA
+/
 INSERT INTO at_loc_group_assignment
-            (location_code, loc_group_code, loc_alias_id, loc_ref_code
+            (location_code, loc_group_code, loc_alias_id, loc_ref_code, office_code
             )
-     VALUES (0, 0, NULL, NULL
+     VALUES (0, 0, NULL, NULL, 53
             );
 COMMIT ;
 ----------
@@ -1975,7 +1986,8 @@ CREATE TABLE at_ts_group_assignment
   ts_group_code  NUMBER,
   ts_attribute   NUMBER,
   ts_alias_id    VARCHAR2(256 BYTE),
-  ts_ref_code    NUMBER
+  ts_ref_code    NUMBER,
+  office_code    NUMBER NOT NULL
 )
 TABLESPACE CWMS_20AT_DATA
 PCTUSED    0
@@ -2002,6 +2014,7 @@ comment on column at_ts_group_assignment.ts_group_code is 'Reference to ts group
 comment on column at_ts_group_assignment.ts_attribute  is 'General purpose value (can be used for sorting, etc...)';
 comment on column at_ts_group_assignment.ts_alias_id   is 'Alias of ts with respect to the assignment';
 comment on column at_ts_group_assignment.ts_ref_code   is 'Reference to an existing ts with respect to the assignment';
+comment on column at_ts_group_assignment.office_code   is 'Reference to the office that owns the time series - used for index';
 
 CREATE UNIQUE INDEX at_ts_group_assignment_pk ON at_ts_group_assignment
 (ts_code, ts_group_code)
@@ -2051,6 +2064,16 @@ ALTER TABLE at_ts_group_assignment ADD (
   CONSTRAINT at_ts_group_assignment_fk3
  FOREIGN KEY (ts_ref_code)
  REFERENCES at_cwms_ts_spec (ts_code))
+/
+ALTER TABLE at_ts_group_assignment ADD (
+  CONSTRAINT at_ts_group_assignment_fk4
+ FOREIGN KEY (office_code)
+ REFERENCES cwms_office(office_code))
+/
+CREATE INDEX at_ts_group_assignment_idx1 ON 
+ at_ts_group_assignment(office_code, upper(ts_alias_id))
+ LOGGING
+ TABLESPACE CWMS_20DATA
 /
 COMMIT ;
 

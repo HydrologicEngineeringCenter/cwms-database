@@ -284,7 +284,8 @@ procedure assign_to_rating_group(
 is
    l_category_rec   at_loc_category%rowtype;
    l_group_rec      at_loc_group%rowtype;
-   l_assignment_rec at_loc_group_assignment%rowtype;     
+   l_assignment_rec at_loc_group_assignment%rowtype;
+   l_office_code    number(10);     
 begin
    --------------------------------------------
    -- retrieve or create the rating category --
@@ -303,6 +304,25 @@ begin
          l_category_rec.loc_category_desc := 'Contains groups the relate outlets to ratings';
          insert into at_loc_category values l_category_rec;
    end;
+   -----------------------------------------------------------
+   -- verify the project and outlet are for the same office --
+   -----------------------------------------------------------
+   begin
+      select bl2.db_office_code
+        into l_office_code
+        from at_physical_location pl1,
+             at_base_location bl1,
+             at_physical_location pl2,
+             at_base_location bl2
+       where pl1.location_code = p_outlet_location_code
+         and bl1.base_location_code = pl1.base_location_code
+         and pl2.location_code = p_project_location_code
+         and bl2.base_location_code = pl2.base_location_code;          
+   exception
+      when no_data_found then
+         cwms_err.raise('ERROR', 'Outlet and Project do not belong to the same office');
+   end;
+     
    --------------------------------------------------          
    -- retrieve or create the assigned rating group --
    --------------------------------------------------
@@ -349,6 +369,7 @@ begin
    ------------------------------------------------
    l_assignment_rec.location_code  := p_outlet_location_code;
    l_assignment_rec.loc_group_code := l_group_rec.loc_group_code;
+   l_assignment_rec.office_code    := l_office_code;
    begin
       select *
         into l_assignment_rec

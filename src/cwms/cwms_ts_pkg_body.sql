@@ -7802,6 +7802,7 @@ end retrieve_existing_item_counts;
       -----------------------------------
       -- insert or update the category --
       -----------------------------------
+      l_rec.ts_category_id := cwms_util.strip(p_ts_category_id);
       IF NOT l_exists OR p_ts_category_desc IS NOT NULL OR NOT l_ignore_null
       THEN
          l_rec.ts_category_desc := cwms_util.strip(p_ts_category_desc);
@@ -8291,99 +8292,98 @@ end retrieve_existing_item_counts;
             WHERE ts_group_code = l_rec.ts_group_code;
    END delete_ts_group;
 
-   PROCEDURE assign_ts_group (p_ts_category_id   IN VARCHAR2,
-                              p_ts_group_id      IN VARCHAR2,
-                              p_ts_id            IN VARCHAR2,
-                              p_ts_attribute     IN NUMBER DEFAULT NULL,
-                              p_ts_alias_id      IN VARCHAR2 DEFAULT NULL,
-                              p_ref_ts_id        IN VARCHAR2 DEFAULT NULL,
-                              p_db_office_id     IN VARCHAR2 DEFAULT NULL)
-   IS
-      l_office_code     NUMBER (10);
-      l_ts_group_code   NUMBER (10);
-      l_ts_code         NUMBER (10);
-      l_ts_ref_code     NUMBER (10);
-      l_rec             at_ts_group_assignment%ROWTYPE;
-      l_exists          BOOLEAN;
-   BEGIN
+   procedure assign_ts_group (
+      p_ts_category_id   in varchar2,
+      p_ts_group_id      in varchar2,
+      p_ts_id            in varchar2,
+      p_ts_attribute     in number default null,
+      p_ts_alias_id      in varchar2 default null,
+      p_ref_ts_id        in varchar2 default null,
+      p_db_office_id     in varchar2 default null)
+   is
+      l_office_code     number(10);
+      l_ts_group_code   number(10);
+      l_ts_code         number(10);
+      l_ts_ref_code     number(10);
+      l_rec             at_ts_group_assignment%rowtype;
+      l_exists          boolean;
+   begin
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (str_tab_t (p_ts_category_id,
-                                         p_ts_group_id,
-                                         p_ts_id,
-                                         p_ts_alias_id,
-                                         p_ref_ts_id,
-                                         p_db_office_id));
-      l_office_code := cwms_util.get_db_office_code (p_db_office_id);
+      cwms_util.check_inputs(str_tab_t(p_ts_category_id,
+                                       p_ts_group_id,
+                                       p_ts_id,
+                                       p_ts_alias_id,
+                                       p_ref_ts_id,
+                                       p_db_office_id));
+      l_office_code := cwms_util.get_db_office_code(p_db_office_id);
 
       ------------------------
       -- get the group code --
       ------------------------
-      BEGIN
-         SELECT ts_group_code
-           INTO l_ts_group_code
-           FROM at_ts_category c, at_ts_group g
-          WHERE     UPPER (c.ts_category_id) = UPPER (p_ts_category_id)
-                AND UPPER (g.ts_group_id) = UPPER (p_ts_group_id)
-                AND g.ts_category_code = c.ts_category_code
-                AND g.db_office_code IN
-                       (l_office_code, cwms_util.db_office_code_all);
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            cwms_err.raise ('ITEM_DOES_NOT_EXIST',
-                            'Time series group',
-                            p_ts_category_id || '/' || p_ts_group_id);
-      END;
+      begin
+         select ts_group_code
+           into l_ts_group_code
+           from at_ts_category c, at_ts_group g
+          where upper(c.ts_category_id) = upper(p_ts_category_id)
+            and upper(g.ts_group_id) = upper(p_ts_group_id)
+            and g.ts_category_code = c.ts_category_code
+            and g.db_office_code in (l_office_code, cwms_util.db_office_code_all);
+      exception
+         when no_data_found
+         then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Time series group',
+               p_ts_category_id || '/' || p_ts_group_id);
+      end;
 
       -----------------------------------------------
       -- determine if an assignment already exists --
       -----------------------------------------------
-      l_ts_code := get_ts_code (p_ts_id, l_office_code);
+      l_ts_code := get_ts_code(p_ts_id, l_office_code);
 
-      IF p_ref_ts_id IS NOT NULL
-      THEN
-         l_ts_ref_code := get_ts_code (p_ref_ts_id, l_office_code);
-      END IF;
+      if p_ref_ts_id is not null then
+         l_ts_ref_code := get_ts_code(p_ref_ts_id, l_office_code);
+      end if;
 
-      BEGIN
-         SELECT *
-           INTO l_rec
-           FROM at_ts_group_assignment
-          WHERE ts_code = l_ts_code AND ts_group_code = l_ts_group_code;
+      begin
+         select *
+           into l_rec
+           from at_ts_group_assignment
+          where ts_code = l_ts_code and ts_group_code = l_ts_group_code;
 
-         l_exists := TRUE;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            l_exists := FALSE;
-      END;
+         l_exists := true;
+      exception
+         when no_data_found then
+            l_exists := false;
+      end;
 
       ------------------------
       -- prepare the record --
       ------------------------
-      l_rec.ts_attribute := NVL (p_ts_attribute, l_rec.ts_attribute);
-      l_rec.ts_alias_id := NVL (p_ts_alias_id, l_rec.ts_alias_id);
-      l_rec.ts_ref_code := NVL (l_ts_ref_code, l_rec.ts_ref_code);
+      l_rec.ts_attribute := nvl(p_ts_attribute, l_rec.ts_attribute);
+      l_rec.ts_alias_id  := nvl(p_ts_alias_id, l_rec.ts_alias_id);
+      l_rec.ts_ref_code  := nvl(l_ts_ref_code, l_rec.ts_ref_code);
+      l_rec.office_code  := l_office_code;
 
       ---------------------------------
       -- insert or update the record --
       ---------------------------------
-      IF l_exists
-      THEN
-         UPDATE at_ts_group_assignment
-            SET row = l_rec
-          WHERE     ts_code = l_rec.ts_code
-                AND ts_group_code = l_rec.ts_group_code;
-      ELSE
+      if l_exists then
+         update at_ts_group_assignment
+            set row = l_rec
+          where ts_code = l_rec.ts_code
+            and ts_group_code = l_rec.ts_group_code;
+      else
          l_rec.ts_code := l_ts_code;
          l_rec.ts_group_code := l_ts_group_code;
 
-         INSERT INTO at_ts_group_assignment
-              VALUES l_rec;
-      END IF;
-   END assign_ts_group;
+         insert into at_ts_group_assignment
+              values l_rec;
+      end if;
+   end assign_ts_group;
 
    PROCEDURE unassign_ts_group (p_ts_category_id   IN VARCHAR2,
                                 p_ts_group_id      IN VARCHAR2,
@@ -8488,42 +8488,42 @@ end retrieve_existing_item_counts;
       END IF;
    END unassign_ts_groups;
 
-   FUNCTION get_ts_id_from_alias (p_alias_id      IN VARCHAR2,
-                                  p_group_id      IN VARCHAR2 DEFAULT NULL,
-                                  p_category_id   IN VARCHAR2 DEFAULT NULL,
-                                  p_office_id     IN VARCHAR2 DEFAULT NULL)
-      RETURN VARCHAR2
-   IS
-      l_ts_code     NUMBER (10);
-      l_ts_id       VARCHAR2 (183); 
+   function get_ts_id_from_alias (
+      p_alias_id      in varchar2,
+      p_group_id      in varchar2 default null,
+      p_category_id   in varchar2 default null,
+      p_office_id     in varchar2 default null)
+      return varchar2
+   is
+      l_office_code number(10);
+      l_ts_code     number(10);
+      l_ts_id       varchar2(183); 
       l_parts       str_tab_t;
       l_location_id varchar2(49);
-   BEGIN
+   begin
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (str_tab_t (p_alias_id,
-                                         p_group_id,
-                                         p_category_id,
-                                         p_office_id));
+      cwms_util.check_inputs(str_tab_t(p_alias_id, p_group_id, p_category_id, p_office_id));
+      l_office_code := cwms_util.get_db_office_code(p_office_id);
 
       -----------------------------------
       -- retrieve and return the ts id --
       -----------------------------------
-      BEGIN
-         SELECT DISTINCT ts_code
-           INTO l_ts_code
-           FROM at_ts_group_assignment a, at_ts_group g, at_ts_category c
-          WHERE     UPPER (c.ts_category_id) =
-                       UPPER (NVL (p_category_id, c.ts_category_id))
-                AND UPPER (g.ts_group_id) =
-                       UPPER (NVL (p_group_id, g.ts_group_id))
-                AND UPPER (a.ts_alias_id) = UPPER (p_alias_id)
-                AND g.ts_category_code = c.ts_category_code
-                AND a.ts_group_code = g.ts_group_code;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
+      begin
+         select distinct ts_code
+           into l_ts_code
+           from at_ts_group_assignment a, 
+                at_ts_group g, 
+                at_ts_category c
+          where a.office_code = l_office_code
+            and upper(c.ts_category_id) = upper(nvl(p_category_id, c.ts_category_id))
+            and upper(g.ts_group_id) = upper(nvl(p_group_id, g.ts_group_id))
+            and upper(a.ts_alias_id) = upper(p_alias_id)
+            and g.ts_category_code = c.ts_category_code
+            and a.ts_group_code = g.ts_group_code;
+      exception
+         when no_data_found then
             ------------------------------------
             -- see if the location is aliased --
             ------------------------------------
@@ -8534,26 +8534,25 @@ end retrieve_existing_item_counts;
                   l_parts(1) := l_location_id;
                   l_ts_id := cwms_util.join_text(l_parts, '.');
                   l_ts_code := cwms_ts.get_ts_code(l_ts_id, p_office_id);
-                  if l_ts_code is not null then
-                     return l_ts_id;
+                  if l_ts_code is null then
+                     l_ts_id := null;
                   end if;
                end if;
             end if;
-         WHEN TOO_MANY_ROWS
-         THEN
+         when too_many_rows
+         then
             cwms_err.raise (
                'ERROR',
-                  'Alias ('
+               'Alias ('
                || p_alias_id
                || ') matches more than one time series.');
-      END;
+      end;
 
-      IF l_ts_code IS NOT NULL
-      THEN
+      if l_ts_code is not null and l_ts_id is null then
          l_ts_id := get_ts_id (l_ts_code);
-      END IF;
+      end if;
 
-      RETURN l_ts_id;
+      return l_ts_id;
    END get_ts_id_from_alias;
 
 

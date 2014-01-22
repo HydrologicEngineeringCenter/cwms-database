@@ -178,9 +178,9 @@ AS
 		RESULT_CACHE
 	IS
 		l_location_code	NUMBER;
-	BEGIN
+	BEGIN     
 		IF p_location_id IS NULL
-		THEN
+		THEN         
 			cwms_err.raise ('ERROR',
 								 'The P_LOCATION_ID parameter cannot be NULL'
 								);
@@ -198,7 +198,7 @@ AS
 					AND abl.db_office_code = p_db_office_code;
 
 		--
-		RETURN l_location_code;
+   	RETURN l_location_code;
 	--
 	EXCEPTION
 		WHEN NO_DATA_FOUND
@@ -213,13 +213,12 @@ AS
                 WHERE   office_code = p_db_office_code;
 
                l_location_code :=
-                  get_location_code_from_alias (p_alias_id     => p_location_id,
-                                                p_office_id   => l_office_id
+                  get_location_code_from_alias (p_alias_id  => p_location_id,
+                                                p_office_id => l_office_id
                                                );
-
                IF l_location_code IS NULL
                THEN
-                  cwms_err.raise ('LOCATION_ID_NOT_FOUND', p_location_id);
+                  cwms_err.raise('LOCATION_ID_NOT_FOUND', p_location_id);
                END IF;
 
                RETURN l_location_code;
@@ -228,7 +227,7 @@ AS
             RAISE;
          END IF;
 		WHEN OTHERS
-		THEN
+		THEN     
 			RAISE;
 	END get_location_code;
    
@@ -4531,14 +4530,16 @@ AS
 																 loc_group_code,
 																 loc_attribute,
 																 loc_alias_id,
-																 loc_ref_code
+																 loc_ref_code,
+                                                 office_code
 																)
 					VALUES	(
 									l_location_code,
 									l_loc_group_code,
 									NULL,
 									p_loc_alias_array (i).loc_alias_id,
-									NULL
+									NULL,
+                           l_db_office_code
 								);
 				ELSE
 					UPDATE	at_loc_group_assignment
@@ -4672,13 +4673,15 @@ AS
 			INSERT		 (location_code,
 							  loc_group_code,
 							  loc_attribute,
-							  loc_alias_id
+							  loc_alias_id,
+                       office_code
 							 )
 				 VALUES	 (
 								 b.location_code,
 								 l_loc_group_code,
 								 b.loc_attribute,
-								 b.loc_alias_id
+								 b.loc_alias_id,
+                         l_db_office_code
 							 );
 	END assign_loc_groups2;
 
@@ -4780,7 +4783,8 @@ AS
 							  loc_group_code,
 							  loc_attribute,
 							  loc_alias_id,
-							  loc_ref_code
+							  loc_ref_code,
+                       office_code
 							 )
 				 VALUES	 (
 								 b.location_code,
@@ -4795,7 +4799,8 @@ AS
 										 p_location_id 	  => b.loc_ref_id,
                                p_check_aliases    => 'F'
 									 )
-								 )
+								 ),
+                         l_db_office_code
 							 );
 	END assign_loc_groups3;
 
@@ -5630,28 +5635,36 @@ AS
 		p_category_id	 in varchar2 default null,
 		p_office_id 	 in varchar2 default null)
 		return varchar2
-	is
-		l_location_id varchar2(49); 
-      l_office_id   varchar2(16);
-      l_parts       str_tab_t;
+	is  
+      l_office_code   number(10);  
+      l_location_code number(10);
+      l_office_id     varchar2(16);
+		l_location_id   varchar2(49); 
+      l_parts         str_tab_t;
 	begin
 		-------------------
 		-- sanity checks --
 		-------------------
 		cwms_util.check_inputs (str_tab_t (p_alias_id, p_group_id, p_category_id, p_office_id));
-      l_office_id := cwms_util.get_db_office_id(trim(p_office_id));
+      l_office_code := cwms_util.get_db_office_code(upper(trim(p_office_id)));
+      select office_id into l_office_id from cwms_office where office_code = l_office_code;
 
-		-----------------------------------------
+   	-----------------------------------------
 		-- retrieve and return the location id --
 		-----------------------------------------
       begin
-         select distinct location_id
-           into l_location_id
-           from cwms_v_loc_grp_assgn
-          where upper (alias_id) = upper (trim (p_alias_id))
-            and upper (group_id) = upper (nvl (trim (p_group_id), group_id))
-            and upper (category_id) = upper (nvl (trim (p_category_id), category_id))
-            and db_office_id = l_office_id;
+         select distinct
+                a.location_code
+           into l_location_code
+           from at_loc_group_assignment a,
+                at_loc_group g,
+                at_loc_category c
+          where a.office_code = l_office_code
+            and g.loc_group_code = a.loc_group_code
+            and c.loc_category_code = g.loc_category_code
+            and upper(a.loc_alias_id) = upper(trim(p_alias_id))
+            and upper(g.loc_group_id) = upper(trim(nvl(p_group_id, g.loc_group_id)))           
+            and upper(c.loc_category_id) = upper(trim(nvl(p_category_id, c.loc_category_id)));           
       exception
          when no_data_found then
             -----------------------------------------------
@@ -5662,7 +5675,8 @@ AS
                l_location_id := get_location_id_from_alias(l_parts(1), p_group_id, p_category_id, l_office_id);
                if l_location_id is not null then    
                   begin
-                     select location_id
+                     select distinct
+                            location_id
                        into l_location_id
                        from cwms_v_loc
                       where location_id = l_location_id || '-' || trim(l_parts(2))
@@ -5679,57 +5693,42 @@ AS
                'Alias (' || p_alias_id || ') matches more than one location.');
       end;
 
-		return l_location_id;
+		if l_location_id is null and l_location_code is not null then
+         l_location_id := cwms_loc.get_location_id(l_location_code);
+      end if;
+      return l_location_id;
 	end get_location_id_from_alias;
 
 
-	FUNCTION get_location_code_from_alias (
-		p_alias_id		 IN VARCHAR2,
-		p_group_id		 IN VARCHAR2 DEFAULT NULL,
-		p_category_id	 IN VARCHAR2 DEFAULT NULL,
-		p_office_id 	 IN VARCHAR2 DEFAULT NULL
-	)
-		RETURN NUMBER
-	IS
-		l_location_code	NUMBER (10);
-	BEGIN
+	function get_location_code_from_alias (
+		p_alias_id    in varchar2,
+		p_group_id    in varchar2 default null,
+		p_category_id in varchar2 default null,
+		p_office_id   in varchar2 default null)
+		return number
+	is
+		l_location_code number(10);
+      l_location_id   varchar2(256);
+      l_office_id     varchar2(16);
+	begin
 		-------------------
 		-- sanity checks --
 		-------------------
-		cwms_util.check_inputs (
-			str_tab_t (p_alias_id, p_group_id, p_category_id, p_office_id)
-		);
-
-		-------------------------------------------
-		-- retrieve and return the location code --
-		-------------------------------------------
-		BEGIN
-			SELECT	DISTINCT location_code
-			  INTO	l_location_code
-			  FROM	cwms_v_loc_grp_assgn
-			 WHERE	UPPER (alias_id) = UPPER (TRIM (p_alias_id))
-						AND UPPER (GROUP_ID) =
-								 UPPER (NVL (TRIM (p_group_id), GROUP_ID))
-						AND UPPER (category_id) =
-								 UPPER (NVL (TRIM (p_category_id), category_id))
-						AND db_office_id =
-								 NVL (UPPER (TRIM (p_office_id)),
-										cwms_util.user_office_id
-									  );
-		EXCEPTION
-			WHEN NO_DATA_FOUND
-			THEN
-				NULL;
-			WHEN TOO_MANY_ROWS
-			THEN
-				cwms_err.raise (
-					'ERROR',
-					'Alias (' || p_alias_id || ') matches more than one location.'
-				);
-		END;
-
-		RETURN l_location_code;
-	END get_location_code_from_alias;
+		cwms_util.check_inputs (str_tab_t (p_alias_id, p_group_id, p_category_id, p_office_id));
+      
+      l_office_id := cwms_util.get_db_office_id(p_office_id);
+                       
+      l_location_id := get_location_id_from_alias(p_alias_id, p_group_id, p_category_id, l_office_id);
+      if l_location_id is not null then
+         l_location_code := cwms_loc.get_location_code(
+            p_db_office_id  => l_office_id,
+            p_location_id   => l_location_id, 
+            p_check_aliases => 'F');
+      end if; 
+         
+      return l_location_code; 
+         
+	end get_location_code_from_alias;
 
 	PROCEDURE check_alias_id (p_alias_id		IN VARCHAR2,
 									  p_location_id	IN VARCHAR2,
