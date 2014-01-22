@@ -224,7 +224,7 @@ AS
           'TIME SERIES' as aliased_item,
           null as loc_alias_category,
           null as loc_alias_group,
-          tsg.ts_group_id as ts_alias_category,
+          tsc.ts_category_id as ts_alias_category,
           tsg.ts_group_id as ts_alias_group
      from at_cwms_ts_id ts,
           at_ts_group_assignment tsga,
@@ -233,5 +233,5 @@ AS
     where tsga.ts_alias_id is not null
       and ts.ts_code = tsga.ts_code
       and tsg.ts_group_code = tsga.ts_group_code
-      and tsc.ts_category_code = tsc.ts_category_code       
+      and tsc.ts_category_code = tsg.ts_category_code       
 /
