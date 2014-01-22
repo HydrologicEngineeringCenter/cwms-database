@@ -1091,6 +1091,9 @@ AS
       l_first   PLS_INTEGER := 1;
       l_last    PLS_INTEGER := LENGTH (p_text);
    BEGIN
+      if p_text is null then 
+         return null; 
+      end if;
       FOR i IN l_first .. l_last
       LOOP
          l_first := i;
