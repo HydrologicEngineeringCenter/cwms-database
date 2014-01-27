@@ -5739,17 +5739,33 @@ as
       l_clone       vdatum_rating_t;
       l_location_id varchar2(49);
       l_local_datum varchar2(16);
-   begin           
-      l_clob := (self as rating_t).to_clob;
-      l_location_id := cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1);
-      l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, self.office_id);
-      if l_local_datum is null then
-         l_clob := replace(l_clob, '</rating-spec-id>', '</rating-spec-id><vertical-datum/>');
-      else     
+      l_parts       str_tab_t;  
+      l_unit_id     varchar2(16);
+      l_vdatum_info varchar2(32767);
+   begin
+      if self.current_datum != self.native_datum then
          l_clone := self;
          l_clone.to_native_datum;
-         l_clob := replace(l_clob, '</rating-spec-id>', '</rating-spec-id><vertical-datum>'||l_local_datum||'</vertical-datum>');
-      end if;   
+      else 
+         l_clob := (self as rating_t).to_clob;
+         l_location_id := cwms_util.split_text(self.rating_spec_id, 1, cwms_rating.separator1);
+         l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, self.office_id);
+         l_parts       := cwms_util.split_text(replace(self.native_units, cwms_rating.separator2, cwms_rating.separator3), cwms_rating.separator3);
+         if self.elev_positions(1) = -1 then
+            l_unit_id := l_parts(l_parts.count);
+         else
+            l_unit_id := l_parts(self.elev_positions(1));
+         end if; 
+         l_vdatum_info := cwms_loc.get_vertical_datum_info_f(l_location_id, l_unit_id, self.office_id);
+         l_vdatum_info := regexp_replace(l_vdatum_info, '\s+office="\w+"', null); 
+         l_vdatum_info := regexp_replace(l_vdatum_info, '<location>.+</location>', null); 
+         l_vdatum_info := regexp_replace(l_vdatum_info, '(>)\s+(\S)', '\1\2'); 
+         l_vdatum_info := regexp_replace(l_vdatum_info, '(\S)\s+(<)', '\1\2'); 
+         l_clob := replace(
+            l_clob, 
+            '</rating-spec-id>', 
+            '</rating-spec-id>'||l_vdatum_info);
+      end if;
       return l_clob;
    end;
       
