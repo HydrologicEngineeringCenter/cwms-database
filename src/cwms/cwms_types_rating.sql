@@ -1589,7 +1589,8 @@ as
       LOCATION_ID_NOT_FOUND exception; 
       pragma exception_init (LOCATION_ID_NOT_FOUND, -20025);
       l_code     number(10);
-      l_template rating_template_t;
+      l_template rating_template_t; 
+      l_invalid  boolean;
       
       -------------------------------------------------------
       -- local routine to validate 10-digit rounding specs --
@@ -1677,39 +1678,54 @@ as
       ----------------------------
       -- in_range_rating_method --
       ----------------------------
-      begin
-         l_code := cwms_rating.get_rating_method_code(self.in_range_rating_method);
-      exception
-         when no_data_found then
-            cwms_err.raise(
-               'INVALID_ITEM',
-               nvl(self.in_range_rating_method, '<NULL>'),
-               'CWMS rating method');
-      end;
+      l_invalid := upper(self.in_range_rating_method) in ('LOGARITHMIC', 'LOG-LIN', 'LIN-LOG');
+      if not l_invalid then
+         begin
+            l_code := cwms_rating.get_rating_method_code(self.in_range_rating_method);
+         exception
+            when no_data_found then l_invalid := true;
+         end;
+      end if;
+      if l_invalid then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            nvl(self.in_range_rating_method, '<NULL>'),
+            'CWMS in-range rating method');
+      end if;
       ---------------------------------
       -- out_range_low_rating_method --
       ---------------------------------
-      begin
-         l_code := cwms_rating.get_rating_method_code(self.out_range_low_rating_method);
-      exception
-         when no_data_found then
-            cwms_err.raise(
-               'INVALID_ITEM',
-               nvl(self.out_range_low_rating_method, '<NULL>'),
-               'CWMS rating method');
-      end;
+      l_invalid := upper(self.out_range_low_rating_method) in ('LOGARITHMIC', 'LOG-LIN', 'LIN-LOG', 'PREVIOUS');
+      if not l_invalid then
+         begin
+            l_code := cwms_rating.get_rating_method_code(self.out_range_low_rating_method);
+         exception
+            when no_data_found then l_invalid := true;
+         end;
+      end if;
+      if l_invalid then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            nvl(self.in_range_rating_method, '<NULL>'),
+            'CWMS out-range-low rating method');
+      end if;
       ----------------------------------
       -- out_range_high_rating_method --
       ----------------------------------
-      begin
-         l_code := cwms_rating.get_rating_method_code(self.out_range_high_rating_method);
-      exception
-         when no_data_found then
-            cwms_err.raise(
-               'INVALID_ITEM',
-               nvl(self.out_range_high_rating_method, '<NULL>'),
-               'CWMS rating method');
-      end;
+      l_invalid := upper(self.out_range_high_rating_method) in ('LOGARITHMIC', 'LOG-LIN', 'LIN-LOG', 'NEXT');
+      if not l_invalid then
+         begin
+            l_code := cwms_rating.get_rating_method_code(self.out_range_high_rating_method);
+         exception
+            when no_data_found then l_invalid := true;
+         end;
+      end if;
+      if l_invalid then
+         cwms_err.raise(
+            'INVALID_ITEM',
+            nvl(self.in_range_rating_method, '<NULL>'),
+            'CWMS out-range-high rating method');
+      end if;
       --------------------
       -- boolean fields --
       --------------------
