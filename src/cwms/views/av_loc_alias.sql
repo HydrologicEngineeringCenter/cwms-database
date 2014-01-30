@@ -43,5 +43,6 @@ AS
                 AND atpl.base_location_code = abl.base_location_code
                 AND atlga.loc_group_code = atlg.loc_group_code
                 AND atlg.loc_category_code = atlc.loc_category_code
+                AND atlga.loc_alias_id IS NOT NULL
                 AND abl.db_office_code = co.office_code
 /
