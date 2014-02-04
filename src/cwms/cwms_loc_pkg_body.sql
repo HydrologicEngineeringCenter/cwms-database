@@ -1723,7 +1723,7 @@ AS
 			l_db_office_id := UPPER (p_db_office_id);
 		END IF;
 
-		DBMS_APPLICATION_INFO.set_module ('rename_ts_code', 'get office code');
+		DBMS_APPLICATION_INFO.set_module ('create_location2', 'get office code');
 		--------------------------------------------------------
 		-- Get the office_code...
 		--------------------------------------------------------
@@ -1770,7 +1770,9 @@ AS
 								 'cwms_loc',
 								 l_db_office_id || ':' || p_location_id
 								);
-		END IF;
+		END IF;  
+      
+      check_alias_id(p_location_id, p_location_id, null, null, l_db_office_id);
 
 		----------------------------------------------------------
 		----------------------------------------------------------
@@ -3808,30 +3810,36 @@ AS
 	--------------------------------------------------------------------------------
 	-- FUNCTION get_local_timezone
 	--------------------------------------------------------------------------------
-	FUNCTION get_local_timezone (p_location_id	IN VARCHAR2,
-										  p_office_id		IN VARCHAR2
-										 )
-		RETURN VARCHAR2
-	IS
-		l_local_tz	 VARCHAR2 (28);  
-      l_office_id  varchar2(16) := cwms_util.get_db_office_id(p_office_id);
-	BEGIN
-		SELECT	vl.time_zone_name
-		  INTO	l_local_tz
-		  FROM	av_loc vl
-		 WHERE		 vl.location_id = p_location_id
-					AND vl.db_office_id = l_office_id
-					AND vl.unit_system = 'SI';
+	function get_local_timezone (
+      p_location_id	in varchar2,
+		p_office_id		in varchar2)
+		return varchar2
+	is
+		l_local_tz	varchar2(28);
+      l_office_id varchar2(16) := cwms_util.get_db_office_id(p_office_id);  
+   begin
+      select distinct
+             vl.time_zone_name
+        into l_local_tz
+        from av_loc2 vl
+       where upper(vl.location_id) = upper(trim(p_location_id))
+         and vl.db_office_id = l_office_id 
+         and vl.unit_system = 'SI';
 
-		IF l_local_tz = 'Unknown or Not Applicable'
-		THEN
-			l_local_tz := 'UTC';
-		END IF;
+      if l_local_tz is null then
+         l_local_tz := 'UTC';
+      end if;
 
-		RETURN l_local_tz;
+      return l_local_tz;
    exception
-      when no_data_found then null;
-	END get_local_timezone;
+     when too_many_rows then
+        cwms_err.raise(
+           'ERROR', 
+           l_office_id
+           ||'/'
+           ||p_location_id
+           ||' references more than one location.');      
+   end get_local_timezone;
 
 	FUNCTION get_loc_category_code (p_loc_category_id	 IN VARCHAR2,
 											  p_db_office_code	 IN NUMBER
@@ -5730,110 +5738,93 @@ AS
          
 	end get_location_code_from_alias;
 
-	PROCEDURE check_alias_id (p_alias_id		IN VARCHAR2,
-									  p_location_id	IN VARCHAR2,
-									  p_category_id	IN VARCHAR2,
-									  p_group_id		IN VARCHAR2,
-									  p_office_id		IN VARCHAR2 DEFAULT NULL
-									 )
-	IS
-		l_location_id	  VARCHAR2 (49);
-		l_office_id 	  VARCHAR2 (16);
-		l_count			  PLS_INTEGER;
-		l_multiple_ids   BOOLEAN;
-		l_property_id	  VARCHAR2 (256);
-	BEGIN
-		cwms_util.check_inputs (
-			str_tab_t (p_alias_id, p_location_id, p_office_id)
-		);
-		l_office_id :=
-			NVL (UPPER (TRIM (p_office_id)), cwms_util.user_office_id);
+   procedure check_alias_id (p_alias_id      in varchar2,
+                             p_location_id   in varchar2,
+                             p_category_id   in varchar2,
+                             p_group_id      in varchar2,
+                             p_office_id      in varchar2 default null
+                            )
+   is
+      l_location_id     varchar2(49);
+      l_location_code  number(10);
+      l_office_id      varchar2(16);
+      l_count           pls_integer;
+      l_multiple_ids   boolean;
+      l_property_id     varchar2(256);
+   begin
+      cwms_util.check_inputs(str_tab_t (p_alias_id, p_location_id, p_office_id));
+      l_office_id := cwms_util.get_db_office_id(p_office_id);
 
-		-----------------------------------------------------------
-		-- first, check for multiple locations in the same group --
-		-----------------------------------------------------------
-		IF p_alias_id IS NOT NULL
-		THEN
-			BEGIN
-				SELECT	COUNT (*)
-				  INTO	l_count
-				  FROM	at_loc_category c,
-							at_loc_group g,
-							at_loc_group_assignment a
-				 WHERE		 UPPER (c.loc_category_id) = UPPER (p_category_id)
-							AND UPPER (g.loc_group_id) = UPPER (p_group_id)
-							AND UPPER (a.loc_alias_id) = UPPER (p_alias_id)
-							AND a.location_code !=
-									 get_location_code (l_office_id, p_location_id)
-							AND g.loc_category_code = c.loc_category_code
-							AND a.loc_group_code = g.loc_group_code;
-			EXCEPTION
-				WHEN NO_DATA_FOUND
-				THEN
-					l_count := 0;
-			END;
+      -----------------------------------------------------------
+      -- first, check for multiple locations in the same group --
+      -----------------------------------------------------------
+      if p_alias_id is not null and p_category_id is not null and p_group_id is not null then
+         l_location_code := nvl(get_location_code(l_office_id, p_location_id, 'F'), -1);
+         begin
+            select count(*)
+              into l_count
+              from at_loc_category c,
+                   at_loc_group g,
+                   at_loc_group_assignment a
+             where upper(c.loc_category_id) = upper(p_category_id)
+               and upper(g.loc_group_id) = upper(p_group_id)
+               and upper(a.loc_alias_id) = upper(p_alias_id)
+               and a.location_code != l_location_code 
+               and g.loc_category_code = c.loc_category_code
+               and a.loc_group_code = g.loc_group_code;
+         exception
+            when no_data_found then
+               l_count := 0;
+         end;
 
-			IF l_count > 0
-			THEN
-				cwms_err.raise (
-					'ERROR',
-						'Alias '
-					|| p_alias_id
-					|| ' is already in use in location office/category/group ('
-					|| l_office_id
-					|| '/'
-					|| p_category_id
-					|| '/'
-					|| p_group_id
-					|| ').'
-				);
-			END IF;
-		END IF;
+         if l_count > 0 then
+            cwms_err.raise (
+               'ERROR',
+               'Alias '
+               || p_alias_id
+               || ' is already in use in location office/category/group ('
+               || l_office_id
+               || '/'
+               || p_category_id
+               || '/'
+               || p_group_id
+               || ').');
+         end if;
+      end if;
 
-		-----------------------------------------------------------
-		-- next, check for multiple locations in multiple groups --
-		-----------------------------------------------------------
-		BEGIN
-			l_location_id :=
-				get_location_id_from_alias (p_alias_id, NULL, NULL, p_office_id);
-			l_multiple_ids :=
-				l_location_id IS NOT NULL
-				AND UPPER (l_location_id) != UPPER (p_location_id);
-		EXCEPTION
-			WHEN TOO_MANY_ROWS
-			THEN
-				l_multiple_ids := TRUE;
-		END;
+      -----------------------------------------------------------
+      -- next, see if the alias is already a location id or is --
+      -- used in another group to references anothter location --
+      -----------------------------------------------------------
+      begin
+         l_location_id  := get_location_id(p_alias_id, p_office_id);
+      exception
+         when too_many_rows then
+            l_multiple_ids := true;
+      end;
+      l_multiple_ids := l_multiple_ids or (l_location_id is not null and upper(l_location_id) != upper(p_location_id));
 
-		IF l_multiple_ids
-		THEN
-			l_property_id := 'Allow_multiple_locations_for_alias';
+      if l_multiple_ids then
+         l_property_id := 'Allow_multiple_locations_for_alias';
 
-			IF NOT cwms_util.is_true (
-						 cwms_properties.get_property ('CWMSDB',
-																 l_property_id,
-																 'F',
-																 p_office_id
-																)
-					 )
-			THEN
-				cwms_err.raise (
-					'ERROR',
-						'Alias ('
-					|| p_alias_id
-					|| ') would reference multiple locations.  '
-					|| 'If you want to allow this, set the CWMSDB/'
-					|| l_property_id
-					|| ' '
-					|| 'property to ''T'' for office id '
-					|| l_office_id
-					|| '.  Note that this action will '
-					|| 'eliminate the ability to look up a location using the alias or any others that '
-					|| 'reference multiple locations.'
-				);
-			END IF;
-		END IF;
-	END check_alias_id;
+         if not cwms_util.is_true(cwms_properties.get_property('CWMSDB', l_property_id, 'F', l_office_id)) then
+            cwms_err.raise(
+               'ERROR',
+               'Alias ('
+               || p_alias_id
+               || ') would reference multiple locations.  '
+               || 'If you want to allow this, set the CWMSDB/'
+               || l_property_id
+               || ' '
+               || 'property to ''T'' for office id '
+               || l_office_id
+               || '.  Note that this action will '
+               || 'eliminate the ability to look up a location using the alias or any others that '
+               || 'reference multiple locations.'
+            );
+         end if;
+      end if;
+   end check_alias_id;
 
 	FUNCTION check_alias_id_f (p_alias_id		 IN VARCHAR2,
 										p_location_id	 IN VARCHAR2,
