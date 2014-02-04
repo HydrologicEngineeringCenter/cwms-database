@@ -693,7 +693,9 @@ procedure retrieve_specs_obj(
    p_spec_id_mask   in  varchar2 default '*',
    p_office_id_mask in  varchar2 default null)
 is
-   l_parts str_tab_t;
+   type codes_t is table of boolean index by pls_integer;
+   l_codes                 codes_t;
+   l_parts                 str_tab_t;
    l_location_id_mask      varchar2(49);
    l_parameters_id_mask    varchar2(256);
    l_template_version_mask varchar2(32);
@@ -735,33 +737,34 @@ begin
 
    p_specs := rating_spec_tab_t();
    for rec in
-      (  select rs.rating_spec_code
+      (  select v.location_id,
+                rs.rating_spec_code
            from at_rating_spec rs,
                 at_rating_template rt,
-                at_physical_location pl,
-                at_base_location bl,
+                av_loc2 v,
                 cwms_office o
-          where o.office_id like upper(l_office_id_mask) escape '\'
+          where v.db_office_id like upper(l_office_id_mask) escape '\'
+            and o.office_id = v.db_office_id
             and rt.office_code = o.office_code
             and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
             and upper(rt.version) like upper(l_template_version_mask) escape '\'
             and rs.template_code = rt.template_code
             and upper(rs.version) like upper(l_spec_version_mask) escape '\'
-            and pl.location_code = rs.location_code
-            and bl.base_location_code = pl.base_location_code
-            and upper(bl.base_location_id
-                ||substr('-', 1, length(pl.sub_location_id))
-                ||pl.sub_location_id) like upper(l_location_id_mask) escape '\'
-       order by o.office_id,
-                bl.base_location_id,
-                pl.sub_location_id,
+            and v.location_code = rs.location_code
+            and upper(v.location_id) like upper(l_location_id_mask) escape '\'
+       order by v.db_office_id,
+                v.location_id,
                 rt.parameters_id,
                 rt.version,
                 rs.version
       )
    loop
-      p_specs.extend;
-      p_specs(p_specs.count) := rating_spec_t(rec.rating_spec_code);
+      if not l_codes.exists(rec.rating_spec_code) then
+         l_codes(rec.rating_spec_code) := true;
+         p_specs.extend;
+         p_specs(p_specs.count) := rating_spec_t(rec.rating_spec_code);
+         p_specs(p_specs.count).location_id := rec.location_id;
+      end if;
    end loop;
 end retrieve_specs_obj;
 
@@ -1112,6 +1115,7 @@ is
    l_template_version_mask varchar2(32);
    l_spec_version_mask     varchar2(32);
    l_office_id_mask        varchar2(16) := nvl(p_office_id_mask, cwms_util.user_office_id);
+   l_location_id           varchar2(49);
    l_count                 simple_integer := 0;
    l_rating                rating_t;
    l_stream_rating         stream_rating_t;
@@ -1154,27 +1158,27 @@ begin
 
    p_ratings := rating_tab_t();
    for rec in
-      (  select r.rating_code
+      (  select v.location_id,
+                r.rating_code
            from at_rating r,
                 at_rating_spec rs,
                 at_rating_template rt,
+                av_loc2 v,
                 at_physical_location pl,
-                at_base_location bl,
                 cwms_office o,
                 cwms_time_zone tz1,
                 cwms_time_zone tz2
-          where o.office_id like upper(l_office_id_mask) escape '\'
+          where v.db_office_id like upper(l_office_id_mask) escape '\'
+            and o.office_id = v.db_office_id
             and rt.office_code = o.office_code
             and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
             and upper(rt.version) like upper(l_template_version_mask) escape '\'
             and rs.template_code = rt.template_code
             and upper(rs.version) like upper(l_spec_version_mask) escape '\'
             and r.rating_spec_code = rs.rating_spec_code
-            and pl.location_code = rs.location_code
-            and bl.base_location_code = pl.base_location_code
-            and upper(bl.base_location_id
-                ||substr('-', 1, length(pl.sub_location_id))
-                ||pl.sub_location_id) like upper(l_location_id_mask) escape '\'
+            and v.location_code = rs.location_code
+            and upper(v.location_id) like upper(l_location_id_mask) escape '\'
+            and pl.location_code = v.location_code
             and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
             and tz2.time_zone_name = case
                                         when p_time_zone is null then
@@ -1195,9 +1199,8 @@ begin
                                           cwms_util.change_timezone(p_effective_date_end, tz2.time_zone_name, 'UTC')
                                     end
             and r.ref_rating_code is null -- don't pick up stream rating shifts and offsets
-       order by o.office_id,
-                bl.base_location_id,
-                pl.sub_location_id,
+       order by v.db_office_id,
+                v.location_id,
                 rt.parameters_id,
                 rt.version,
                 rs.version,
@@ -1211,11 +1214,14 @@ begin
        where ref_rating_code = rec.rating_code;
       if l_count = 0 then                      
          l_rating := rating_t(rec.rating_code);
+         l_parts  := cwms_util.split_text(l_rating.rating_spec_id, separator1);
+         l_location_id := l_parts(1);
+         l_parts(1) := rec.location_id;
          l_elev_positions := get_elevation_positions(l_parts(2));
          if l_elev_positions is null then
             p_ratings(p_ratings.count) := l_rating;
          else
-            l_local_datum := cwms_loc.get_location_vertical_datum(l_parts(1), l_rating.office_id);
+            l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, l_rating.office_id);
             if l_local_datum is null then
                p_ratings(p_ratings.count) := l_rating;
             else
@@ -1224,6 +1230,9 @@ begin
          end if;
       else
          l_stream_rating := stream_rating_t(rec.rating_code);
+         l_parts  := cwms_util.split_text(l_stream_rating.rating_spec_id, separator1);
+         l_location_id := l_parts(1);
+         l_parts(1) := rec.location_id;
          l_elev_positions := get_elevation_positions(l_parts(2));
          if l_elev_positions is null then
             p_ratings(p_ratings.count) := l_stream_rating;
@@ -1238,7 +1247,7 @@ begin
                   ||l_stream_rating.rating_spec_id
                   ||' doesn''t have ind parameter 1 as the first and only elevation parameter');
             end if;
-            l_local_datum := cwms_loc.get_location_vertical_datum(l_parts(1), l_stream_rating.office_id);
+            l_local_datum := cwms_loc.get_location_vertical_datum(l_location_id, l_stream_rating.office_id);
             if l_local_datum is null then
                p_ratings(p_ratings.count) := l_stream_rating;
             else 
@@ -1246,6 +1255,7 @@ begin
             end if;   
          end if;
       end if;
+      p_ratings(p_ratings.count).rating_spec_id := cwms_util.join_text(l_parts, separator1);
    end loop;
 end retrieve_ratings_obj;
 
