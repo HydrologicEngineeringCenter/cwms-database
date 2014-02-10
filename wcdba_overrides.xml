@@ -26,7 +26,7 @@
 	<property name="oracle.cwms.password" value="cwms20db"/>
 
 	<!-- the password for the ${office.primary.code}cwmsdbi account -->
-	<property name="oracle.cwmsdbi.password" value="cwms20db"/>
+	<property name="oracle.cwmspd.password" value="cwms20db"/>
 
 	<!-- the password for the ${office.primary.code}hectest account -->
 	<property name="oracle.hectest.password" value="cwms20db"/>
