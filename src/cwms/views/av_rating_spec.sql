@@ -51,12 +51,13 @@ create or replace force view av_rating_spec
    loc_alias_group
 )
 as
-select office_id,
+select distinct
+       office_id,
        rating_id,
        location_id,
        template_id,
        version,
-       source_agency,
+       cwms_util.split_text(source_agency, 1) as source_agency,
        active_flag,
        auto_update_flag,
        auto_activate_flag,

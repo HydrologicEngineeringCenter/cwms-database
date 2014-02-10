@@ -1498,6 +1498,7 @@ as
    is
       l_template_parameters_id varchar2(256);
       l_template_version       varchar2(32);
+      l_parts                  str_tab_t;
    begin
       ----------------------------------------------------------
       -- use loop for convenience - only 1 at most will match --
@@ -1535,6 +1536,10 @@ as
               into self.source_agency_id
               from at_loc_group
              where loc_group_code = rec.source_agency_code;
+            if self.source_agency_id is not null then 
+               l_parts := cwms_util.split_text(self.source_agency_id);
+               self.source_agency_id := l_parts(1);
+            end if;
          end if; 
           
          select rating_method_id
@@ -1706,7 +1711,7 @@ as
       if l_invalid then
          cwms_err.raise(
             'INVALID_ITEM',
-            nvl(self.in_range_rating_method, '<NULL>'),
+            nvl(self.out_range_low_rating_method, '<NULL>'),
             'CWMS out-range-low rating method');
       end if;
       ----------------------------------
@@ -1723,7 +1728,7 @@ as
       if l_invalid then
          cwms_err.raise(
             'INVALID_ITEM',
-            nvl(self.in_range_rating_method, '<NULL>'),
+            nvl(self.out_range_high_rating_method, '<NULL>'),
             'CWMS out-range-high rating method');
       end if;
       --------------------
@@ -1783,8 +1788,9 @@ as
                 at_loc_category lc
           where lc.loc_category_id = 'Agency Aliases'
             and lg.loc_category_code = lc.loc_category_code
-            and lg.db_office_code in (get_location_code, cwms_util.db_office_code_all)
-            and upper(lg.loc_group_id) = upper(self.source_agency_id);
+            and lg.db_office_code in (cwms_util.get_db_office_code(self.office_id), cwms_util.db_office_code_all)
+            and substr(upper(lg.loc_group_id), 1, length(self.source_agency_id)) = upper(self.source_agency_id)
+            and rownum = 1;
       end if;
       return l_source_agency_code;
    exception
@@ -1834,7 +1840,6 @@ as
       p_fail_if_exists in varchar2)
    is
       l_rec                 at_rating_spec%rowtype;
-      l_office_code         number := cwms_util.get_office_code(self.office_id);
       l_template_code       number;
       l_base_location_code  number;
       l_location_code       number;
@@ -6791,7 +6796,7 @@ as
                rating_ind_param_spec_t(
                   1,
                   l_ind_param,
-                  'PREVIOUS',
+                  'NEAREST',
                   'NEAREST',
                   'NEAREST')),
             l_ind_param||'-Offset',
@@ -6804,7 +6809,7 @@ as
             l_spec_version,
             l_rating_spec.source_agency_id,
             'NEAREST',
-            'PREVIOUS',
+            'NEAREST',
             'NEAREST',
             l_rating_spec.active_flag,
             l_rating_spec.auto_update_flag,
