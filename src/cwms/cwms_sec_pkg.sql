@@ -78,15 +78,6 @@ AS
       p_password       IN VARCHAR2,
       p_db_office_id   IN VARCHAR2 DEFAULT NULL);
 
-   PROCEDURE create_cwmsdbi_db_user (
-      p_dbi_username   IN VARCHAR2,
-      p_dbi_password   IN VARCHAR2 DEFAULT NULL,
-      p_db_office_id   IN VARCHAR2 DEFAULT NULL);
-
-   PROCEDURE set_dbi_user_passwd (p_dbi_password   IN VARCHAR2,
-                                  p_dbi_username   IN VARCHAR2 DEFAULT NULL,
-                                  p_db_office_id   IN VARCHAR2 DEFAULT NULL);
-
    PROCEDURE delete_cwms_db_account (p_username IN VARCHAR2);
 
    PROCEDURE get_assigned_priv_groups (

@@ -5535,25 +5535,23 @@ def main() :
     whenever sqlerror continue
     
     drop user &eroc.cwmspd;
-    drop user &eroc.cwmsdbi;
     
     --
     -- notice errors
     --
     whenever sqlerror exit sql.sqlcode
     
-    variable dbi_passwd varchar2(50)
-    exec :dbi_passwd := '&dbi_passwd';
+    variable pd_passwd varchar2(50)
+    exec :pd_passwd := '&pd_passwd';
     
     clear
     
     DECLARE
-        dbi_passwd      VARCHAR2 (50) := :dbi_passwd;
+        pd_passwd      VARCHAR2 (50) := :pd_passwd;
         group_list      "&cwms_schema"."CHAR_32_ARRAY_TYPE" := "&cwms_schema"."CHAR_32_ARRAY_TYPE"('CWMS PD Users');
     BEGIN
-        "&cwms_schema"."CWMS_SEC"."CREATE_CWMSDBI_DB_USER"('&eroc.cwmsdbi', dbi_passwd, '&office_id');
     
-        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.cwmspd', NULL, group_list, '&office_id');
+        "&cwms_schema"."CWMS_SEC"."CREATE_USER" ('&eroc.cwmspd', pd_passwd, group_list, '&office_id');
         
         "&cwms_schema"."CWMS_SEC"."ASSIGN_TS_GROUP_USER_GROUP" ('All Rev TS IDs', 'Viewer Users', 'Read', '&office_id');
         
@@ -5636,7 +5634,7 @@ def main() :
     accept inst        char prompt 'Enter the database SID           : '
     accept sys_passwd  char prompt 'Enter the password for SYS       : '
     accept cwms_passwd char prompt 'Enter the password for &cwms_schema   : '
-    accept dbi_passwd  char prompt 'Enter the password for %scwmsdbi : '
+    accept pd_passwd  char prompt 'Enter the password for %scwmspd : '
     '''
     
     prompt_test_line_template = '''

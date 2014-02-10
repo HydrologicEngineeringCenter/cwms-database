@@ -89,7 +89,7 @@ alter session set current_schema = &cwms_schema;
 @@cwms/at_schema_mv2
 --@@cwms/cwms_types_rating
 --
--- Create dbi and pd user accounts...
+-- Create pd user accounts...
 ---
 set define on
 @@py_ErocUsers
