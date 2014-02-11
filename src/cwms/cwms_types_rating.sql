@@ -1498,7 +1498,6 @@ as
    is
       l_template_parameters_id varchar2(256);
       l_template_version       varchar2(32);
-      l_parts                  str_tab_t;
    begin
       ----------------------------------------------------------
       -- use loop for convenience - only 1 at most will match --
@@ -1532,14 +1531,10 @@ as
          self.template_id := l_template_parameters_id || cwms_rating.separator1 || l_template_version;             
          
          if rec.source_agency_code is not null then
-            select loc_group_id
+            select cwms_util.split_text(loc_group_id, 1)
               into self.source_agency_id
               from at_loc_group
              where loc_group_code = rec.source_agency_code;
-            if self.source_agency_id is not null then 
-               l_parts := cwms_util.split_text(self.source_agency_id);
-               self.source_agency_id := l_parts(1);
-            end if;
          end if; 
           
          select rating_method_id
@@ -1789,7 +1784,7 @@ as
           where lc.loc_category_id = 'Agency Aliases'
             and lg.loc_category_code = lc.loc_category_code
             and lg.db_office_code in (cwms_util.get_db_office_code(self.office_id), cwms_util.db_office_code_all)
-            and substr(upper(lg.loc_group_id), 1, length(self.source_agency_id)) = upper(self.source_agency_id)
+            and cwms_util.split_text(upper(lg.loc_group_id), 1) = upper(self.source_agency_id)
             and rownum = 1;
       end if;
       return l_source_agency_code;
