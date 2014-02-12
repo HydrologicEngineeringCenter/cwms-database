@@ -33,8 +33,6 @@ GRANT EXECUTE ON &CWMS_SCHEMA..CWMS_ENV TO CWMS_USER;
 PROMPT Creating CWMS_ENV context
 @@../cwms/at_schema_env
 
-PROMPT Importing CWMS Permissions
-@@import_cwms_permissions
 
 PROMPT Recreating at_sec_users_r02 constraint
 
@@ -53,6 +51,10 @@ ALTER TABLE at_sec_users ADD (
 PROMPT Dropping AT_SEC_USER_OFFICE table
 
 drop table at_sec_user_office;
+
+PROMPT Dropping AT_SEC_USER_OFFICE table
+
+drop table at_sec_dbi_user;
 
 PROMPT Adding Vertical Datum Offset Types
 
