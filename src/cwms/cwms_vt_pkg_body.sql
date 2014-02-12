@@ -1134,7 +1134,7 @@ AS
 						atcts.duration_code
 			  INTO	l_ts_code, l_base_parameter_code_a, l_parameter_code_a,
 						l_parameter_type_code_a, l_duration_code_a
-			  FROM	mv_cwms_ts_id mvcti,
+			  FROM	at_cwms_ts_id mvcti,
 						at_cwms_ts_spec atcts,
 						at_parameter atp
 			 WHERE	mvcti.ts_code = atcts.ts_code
@@ -1188,7 +1188,7 @@ AS
 
 		MERGE INTO	 at_screening ats
 			  USING	 (SELECT   (SELECT	mvcti.ts_code
-										  FROM	mv_cwms_ts_id mvcti
+										  FROM	at_cwms_ts_id mvcti
 										 WHERE	UPPER (cwms_ts_id) =
 														UPPER (a.cwms_ts_id)
 													AND mvcti.db_office_code =
@@ -1200,7 +1200,7 @@ AS
 									  END
 										  active_flag,
 									  (SELECT	mvcti.ts_code
-										  FROM	mv_cwms_ts_id mvcti
+										  FROM	at_cwms_ts_id mvcti
 										 WHERE	UPPER (cwms_ts_id) =
 														UPPER (a.resultant_ts_id))
 										  resultant_ts_code
@@ -1270,7 +1270,7 @@ AS
 					WHERE   screening_code = l_screening_code
 							  AND ts_code IN
 										(SELECT	 mvcti.ts_code
-											FROM	 mv_cwms_ts_id mvcti,
+											FROM	 at_cwms_ts_id mvcti,
 													 TABLE (p_cwms_ts_id_array) a
 										  WHERE	 UPPER (mvcti.cwms_ts_id) =
 														 UPPER (a.cwms_ts_id));

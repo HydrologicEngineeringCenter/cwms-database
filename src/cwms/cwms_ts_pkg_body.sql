@@ -41,7 +41,7 @@ AS
       BEGIN
          SELECT a.ts_code
            INTO l_cwms_ts_code
-           FROM mv_cwms_ts_id a
+           FROM at_cwms_ts_id a
           WHERE     UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
                 AND a.db_office_code = p_db_office_code;
       EXCEPTION
@@ -73,7 +73,7 @@ AS
       BEGIN
          SELECT cwms_ts_id
            INTO l_cwms_ts_id
-           FROM mv_cwms_ts_id
+           FROM at_cwms_ts_id
           WHERE ts_code = p_ts_code;
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -124,7 +124,7 @@ AS
       BEGIN
          SELECT cwms_ts_id
            INTO l_cwms_ts_id
-           FROM mv_cwms_ts_id mcti
+           FROM at_cwms_ts_id mcti
           WHERE     UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
                 AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
       EXCEPTION
@@ -426,7 +426,7 @@ AS
       BEGIN
          SELECT location_id
            INTO l_location_id
-           FROM mv_cwms_ts_id
+           FROM at_cwms_ts_id
           WHERE ts_code = p_cwms_ts_code;
       EXCEPTION
          WHEN NO_DATA_FOUND
@@ -1047,7 +1047,7 @@ AS
             THEN
                SELECT cwms_ts_id, db_office_id
                  INTO l_tsid, l_office_id
-                 FROM mv_cwms_ts_id
+                 FROM at_cwms_ts_id
                 WHERE ts_code = p_ts_code;
 
                cwms_err.raise (
@@ -1084,7 +1084,7 @@ AS
       BEGIN
          SELECT ts_code
            INTO l_ts_code
-           FROM mv_cwms_ts_id
+           FROM at_cwms_ts_id
           WHERE     UPPER (cwms_ts_id) = UPPER (p_ts_id)
                 AND UPPER (db_office_id) = UPPER (l_office_id);
       EXCEPTION
@@ -1145,7 +1145,7 @@ AS
       BEGIN
          SELECT ts_code
            INTO l_ts_code
-           FROM mv_cwms_ts_id
+           FROM at_cwms_ts_id
           WHERE     UPPER (cwms_ts_id) = UPPER (p_ts_id)
                 AND UPPER (db_office_id) = UPPER (l_office_id);
       EXCEPTION
@@ -2183,7 +2183,7 @@ AS
                 l_utc_offset,
                 l_base_parameter_id,
                 l_location_code
-           from mv_cwms_ts_id
+           from at_cwms_ts_id
           where upper(db_office_id) = upper(l_office_id)
             and upper(cwms_ts_id) = upper(p_cwms_ts_id_out);
       EXCEPTION
@@ -5214,7 +5214,7 @@ AS
       begin
          select ts_code
            into l_ts_code
-           from mv_cwms_ts_id mcts
+           from at_cwms_ts_id mcts
           where upper(mcts.cwms_ts_id) = upper(l_cwms_ts_id) and mcts.db_office_code = l_db_office_code;
       exception
          when no_data_found then
@@ -6216,7 +6216,7 @@ AS
                 l_ts_offset,
                 l_versioned,
                 l_ts_code
-           FROM mv_cwms_ts_id
+           FROM at_cwms_ts_id
           WHERE     db_office_id = UPPER (l_db_office_id)
                 AND UPPER (cwms_ts_id) = UPPER (p_cwms_ts_id);
       EXCEPTION

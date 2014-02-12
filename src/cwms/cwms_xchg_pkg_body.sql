@@ -630,7 +630,7 @@ CREATE OR REPLACE package body cwms_xchg as
                    z.time_zone_name,
                    u.tz_usage_id
               from at_xchg_dss_ts_mappings m,
-                   mv_cwms_ts_id v,
+                   at_cwms_ts_id v,
                    cwms_dss_parameter_type p,
                    cwms_time_zone z,
                    cwms_tz_usage u
@@ -705,7 +705,7 @@ CREATE OR REPLACE package body cwms_xchg as
                 at_xchg_dss_ts_mappings map2,
                 at_xchg_set set1,
                 at_xchg_set set2,
-                mv_cwms_ts_id v
+                at_cwms_ts_id v
           where map2.cwms_ts_code = map1.cwms_ts_code
             and set1.xchg_set_code = map1.xchg_set_code
             and set2.xchg_set_code = map2.xchg_set_code
@@ -1789,7 +1789,7 @@ begin
                   where message_time between l_start_time and l_end_time
                     and ts_code in (select cwms_ts_code from at_xchg_dss_ts_mappings where xchg_set_code = l_xchg_code)
                  )) msg,
-                 mv_cwms_ts_id tsid
+                 at_cwms_ts_id tsid
            where tsid.ts_code = msg.ts_code
            order by msg.message_time asc
       )
@@ -2473,7 +2473,7 @@ begin
       begin
          select cwms_ts_id
            into l_tsid
-           from mv_cwms_ts_id
+           from at_cwms_ts_id
           where ts_code = p_cwms_ts_code;
          select s.xchg_set_id,
                 o.office_id

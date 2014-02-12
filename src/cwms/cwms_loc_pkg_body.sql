@@ -2503,12 +2503,12 @@ AS
 		THEN
 			OPEN l_cursor FOR
 				SELECT	cwms_ts_id
-				  FROM	mv_cwms_ts_id
+				  FROM	at_cwms_ts_id
 				 WHERE	base_location_code = l_base_location_code;
 		ELSE
 			OPEN l_cursor FOR
 				SELECT	cwms_ts_id
-				  FROM	mv_cwms_ts_id
+				  FROM	at_cwms_ts_id
 				 WHERE	location_code = l_location_code;
 		END IF;
 

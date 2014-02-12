@@ -67,7 +67,7 @@ select tsv.ts_code,
        tsv.start_date,
        tsv.end_date
 from av_tsv               tsv,
-     mv_cwms_ts_id        ts,
+     at_cwms_ts_id        ts,
      cwms_unit_conversion c
  where
      tsv.ts_code    = ts.ts_code
@@ -116,7 +116,7 @@ select tsv.ts_code,
        tsv.start_date,
        tsv.end_date
 from av_tsv               tsv,
-     mv_cwms_ts_id        ts,
+     at_cwms_ts_id        ts,
      cwms_unit_conversion c
  where
      tsv.ts_code    = ts.ts_code
@@ -166,7 +166,7 @@ select tsv.ts_code,
        tsv.start_date,
        tsv.end_date
 from av_tsv               tsv,
-     mv_cwms_ts_id        ts,
+     at_cwms_ts_id        ts,
      cwms_unit_conversion c
  where
      tsv.ts_code    = ts.ts_code

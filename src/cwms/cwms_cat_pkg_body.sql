@@ -1147,7 +1147,7 @@ IS
          ---------------------------
          OPEN p_cwms_cat FOR
               SELECT   db_office_id, cwms_ts_id, interval_utc_offset
-                FROM   mv_cwms_ts_id
+                FROM   at_cwms_ts_id
                WHERE   db_office_id = UPPER (l_office_id)
             ORDER BY   UPPER (cwms_ts_id) ASC;
       ELSE
@@ -1156,7 +1156,7 @@ IS
          ---------------------------------------
          OPEN p_cwms_cat FOR
               SELECT   db_office_id, cwms_ts_id, interval_utc_offset
-                FROM   mv_cwms_ts_id
+                FROM   at_cwms_ts_id
                WHERE   db_office_id = UPPER (l_office_id)
                        AND UPPER (cwms_ts_id) LIKE cwms_util.normalize_wildcards(upper(p_ts_subselect_string)) escape '\'
             ORDER BY   UPPER (cwms_ts_id) ASC;
@@ -1229,7 +1229,7 @@ IS
                           ELSE z.time_zone_name
                        END
                           AS lrts_timezone
-                FROM   mv_cwms_ts_id v, at_cwms_ts_spec s, cwms_time_zone z
+                FROM   at_cwms_ts_id v, at_cwms_ts_spec s, cwms_time_zone z
                WHERE       s.ts_code = v.ts_code
                        AND z.time_zone_code = NVL (s.time_zone_code, 0)
                        AND v.db_office_id = UPPER (l_office_id)
@@ -1247,7 +1247,7 @@ IS
                           ELSE z.time_zone_name
                        END
                           AS lrts_time_zone
-                FROM   mv_cwms_ts_id v, at_cwms_ts_spec s, cwms_time_zone z
+                FROM   at_cwms_ts_id v, at_cwms_ts_spec s, cwms_time_zone z
                WHERE       s.ts_code = v.ts_code
                        AND z.time_zone_code = NVL (s.time_zone_code, 0)
                        AND v.db_office_id = UPPER (l_office_id)
@@ -1364,7 +1364,7 @@ IS
         SELECT      v.db_office_id, v.base_location_id, v.cwms_ts_id,
                       v.interval_utc_offset, z.time_zone_name lrts_timezone,
                       v.ts_active_flag, a.user_privileges
-             FROM   mv_cwms_ts_id v
+             FROM   at_cwms_ts_id v
                       JOIN (SELECT   ts_code, net_privilege_bit user_privileges
                                  FROM   av_sec_ts_privileges
                                 WHERE   username = cwms_util.get_user_id) a
@@ -1407,7 +1407,7 @@ IS
 --                                     v.interval_utc_offset,
 --                                     v.ts_active_flag,
 --                                     a.user_privileges
---                              FROM mv_cwms_ts_id v,
+--                              FROM at_cwms_ts_id v,
 --                                     (     SELECT ts_code,
 --                                                   net_privilege_bit user_privileges
 --                                             FROM av_sec_ts_privileges
@@ -3420,7 +3420,7 @@ END cat_ts_id;
                     tzuse.tz_usage_id AS dss_tz_usage_id
              FROM   at_xchg_set xset,
                     at_xchg_dss_ts_mappings xmap,
-                    mv_cwms_ts_id tspec,
+                    at_cwms_ts_id tspec,
                     cwms_office o,
                     cwms_dss_parameter_type ptype,
                     cwms_time_zone tzone,
