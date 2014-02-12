@@ -17,14 +17,14 @@ AS
          cwms_sec.update_user_data (p_userid,
                                          p_firstname || ' ' || 
                                          p_middlename || ' ' ||
-                                         p_firstname,
+                                         p_lastname,
                                          p_org,
                                          p_office,
                                          p_phone,
                                          p_email);
       ELSIF ( (UPPER (p_control_code)) = 'D')
       THEN
-         CWMS_SEC.DELETE_USER (p_userid);
+         CWMS_SEC.DELETE_UPASS_USER (p_userid);
       ELSE
          l_msgid := CWMS_MSG.LOG_MESSAGE ('UPASS',
                                NULL,

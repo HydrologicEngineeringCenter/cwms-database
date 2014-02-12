@@ -124,8 +124,7 @@ AS
    PROCEDURE create_user (p_username             IN VARCHAR2,
                           p_password             IN VARCHAR2,
                           p_user_group_id_list   IN char_32_array_type,
-                          p_db_office_id         IN VARCHAR2 DEFAULT NULL,
-                          p_cwms_permissions     IN VARCHAR2 DEFAULT NULL);
+                          p_db_office_id         IN VARCHAR2 DEFAULT NULL);
 
 
    PROCEDURE delete_user (p_username IN VARCHAR2);
@@ -213,16 +212,14 @@ AS
    PROCEDURE get_db_users (p_db_users       OUT SYS_REFCURSOR,
                            p_db_office_id       VARCHAR2);
 
-   PROCEDURE update_user_cwms_permissions (
-      p_username           IN VARCHAR2,
-      p_cwms_permissions   IN VARCHAR2,
-      p_db_office_id       IN VARCHAR2 DEFAULT NULL);
-
    PROCEDURE update_user_data (p_userid     IN VARCHAR2,
                                p_fullname   IN VARCHAR2,
                                p_org        IN VARCHAR2,
                                p_office     IN VARCHAR2,
                                p_phone      IN VARCHAR2,
                                p_email      IN VARCHAR2);
+   PROCEDURE DELETE_UPASS_USER (p_userid IN VARCHAR2);
+   PROCEDURE set_pd_user_passwd (p_pd_password   IN VARCHAR2,
+                                  p_pd_username   IN VARCHAR2);
 END cwms_sec;
 /

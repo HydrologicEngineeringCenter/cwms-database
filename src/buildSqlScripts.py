@@ -5601,10 +5601,10 @@ def main() :
                 f.write(user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
                 user_id = eroc+"cwmspd"
                 users_created.append(eroc)
-    if test_user_id : 
-        db_ofc_code = db_office_code[db_office_id]
-        db_ofc_eroc = office_erocs[db_office_id]
-        f.write(test_user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
+    	if test_user_id : 
+        	db_ofc_code = db_office_code[db_office_id]
+        	db_ofc_eroc = office_erocs[db_office_id]
+        	f.write(test_user_template.replace("&eroc.", eroc).replace("&office_id", dbhost_id))
     f.close()
     
     #==============================================================================

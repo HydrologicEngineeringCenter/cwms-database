@@ -723,8 +723,6 @@ AS
    PROCEDURE insert_noaccess_entry (p_username         IN VARCHAR2,
                                     p_db_office_code      NUMBER)
    IS
-      l_cwms_permissions   VARCHAR2 (1024)
-         := 'Watershed Configuration-No Access,Data Acquisition-No Access,Data Visualization-No Access,Model Interface-No Access,Res-No Access,FloodOpt-No Access,GridUtil-No Access,FIA-No Access,FDA-No Access,Hfp-No Access,Scripting-No Access';
       l_count              NUMBER;
    BEGIN
       SELECT COUNT (*)
@@ -735,8 +733,8 @@ AS
       IF l_count = 0
       THEN
          INSERT
-           INTO AT_SEC_CWMS_PERMISSIONS (USERNAME, PERMISSIONS, DB_OFFICE_CODE)
-         VALUES (UPPER (p_username), l_cwms_permissions, p_db_office_code);
+           INTO AT_SEC_CWMS_PERMISSIONS (USERNAME, DB_OFFICE_CODE)
+         VALUES (UPPER (p_username), p_db_office_code);
 
          COMMIT;
       END IF;
@@ -850,8 +848,7 @@ AS
    PROCEDURE create_user (p_username             IN VARCHAR2,
                           p_password             IN VARCHAR2,
                           p_user_group_id_list   IN char_32_array_type,
-                          p_db_office_id         IN VARCHAR2 DEFAULT NULL,
-                          p_cwms_permissions     IN VARCHAR2 DEFAULT NULL)
+                          p_db_office_id         IN VARCHAR2 DEFAULT NULL)
    IS
       l_db_office_id       VARCHAR2 (16)
                               := cwms_util.get_db_office_id (p_db_office_id);
@@ -860,8 +857,6 @@ AS
       l_username           VARCHAR2 (31) := UPPER (TRIM (p_username));
       l_user_group_code    NUMBER;
       l_count              NUMBER;
-      l_cwms_permissions   VARCHAR2 (1024)
-         := 'Watershed Configuration-No Access,Data Acquisition-No Access,Data Visualization-No Access,Model Interface-No Access,Res-No Access,FloodOpt-No Access,GridUtil-No Access,FIA-No Access,FDA-No Access,Hfp-No Access,Scripting-No Access';
    BEGIN
       confirm_user_admin_priv (l_db_office_code);
 
@@ -893,14 +888,7 @@ AS
          END IF;
       END IF;
 
-      IF (p_cwms_permissions IS NOT NULL)
-      THEN
-         INSERT
-           INTO AT_SEC_CWMS_PERMISSIONS (USERNAME, PERMISSIONS, DB_OFFICE_CODE)
-         VALUES (UPPER (p_username), p_cwms_permissions, l_db_office_code);
-      ELSE
-         insert_noaccess_entry (UPPER (p_username), l_db_office_code);
-      END IF;
+      insert_noaccess_entry (UPPER (p_username), l_db_office_code);
 
       SELECT COUNT (*)
         INTO l_count
@@ -919,24 +907,6 @@ AS
 
       COMMIT;
    END CREATE_USER;
-
-   PROCEDURE update_user_cwms_permissions (
-      p_username           IN VARCHAR2,
-      p_cwms_permissions   IN VARCHAR2,
-      p_db_office_id       IN VARCHAR2 DEFAULT NULL)
-   IS
-      l_db_office_id     VARCHAR2 (16)
-                            := cwms_util.get_db_office_id (p_db_office_id);
-      l_db_office_code   NUMBER
-                            := cwms_util.get_db_office_code (l_db_office_id);
-   BEGIN
-      UPDATE AT_SEC_CWMS_PERMISSIONS
-         SET PERMISSIONS = p_cwms_permissions,
-             DB_OFFICE_CODE = l_db_office_code
-       WHERE username = p_username AND DB_OFFICE_CODE = l_db_office_code;
-
-      COMMIT;
-   END update_user_cwms_permissions;
 
    ----------------------------------------------------------------------------
    -- delete_user
@@ -2292,7 +2262,6 @@ AS
              || CWMS_SEC.GET_ADMIN_CWMS_PERMISSIONS (p.username,'''
          || p_db_office_id
          || ''')
-             || permissions
              || ''|''
              ||  case when fullname is null or length(fullname)=0 then '' '' else fullname end
         FROM at_sec_cwms_permissions p, at_sec_cwms_users u  WHERE p.username=u.userid AND p.db_office_code='
@@ -2362,6 +2331,22 @@ AS
                    at_sec_cwms_users s
                 ON A.USERNAME = S.userid;
    END get_db_users;
+   PROCEDURE DELETE_UPASS_USER (p_userid IN VARCHAR2)
+   IS
+   BEGIN
+      DELETE FROM AT_SEC_CWMS_USERS
+            WHERE USERID = UPPER (p_userid);
+
+      DELETE_USER (p_userid);
+      COMMIT;
+   END DELETE_UPASS_USER;
+   PROCEDURE set_pd_user_passwd (p_pd_password   IN VARCHAR2,
+                                  p_pd_username   IN VARCHAR2)
+   IS
+   BEGIN
+      cwms_dba.cwms_user_admin.set_user_password (p_pd_username,
+                                                  p_pd_password);
+   END;
 END cwms_sec;
 /
 show errors
