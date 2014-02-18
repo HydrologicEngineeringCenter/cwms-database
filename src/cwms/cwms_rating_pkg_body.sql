@@ -751,7 +751,8 @@ begin
             and rs.template_code = rt.template_code
             and upper(rs.version) like upper(l_spec_version_mask) escape '\'
             and v.location_code = rs.location_code
-            and upper(v.location_id) like upper(l_location_id_mask) escape '\'
+            and upper(v.location_id) like upper(l_location_id_mask) escape '\' 
+            and v.unit_system = 'SI'
        order by v.db_office_id,
                 v.location_id,
                 rt.parameters_id,
@@ -1178,6 +1179,7 @@ begin
             and r.rating_spec_code = rs.rating_spec_code
             and v.location_code = rs.location_code
             and upper(v.location_id) like upper(l_location_id_mask) escape '\'
+            and v.unit_system = 'SI'
             and pl.location_code = v.location_code
             and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
             and tz2.time_zone_name = case
