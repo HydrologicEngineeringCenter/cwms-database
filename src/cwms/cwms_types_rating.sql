@@ -810,6 +810,35 @@ as
                ||')');
          end if;
       end loop;
+      ---------------------------------         
+      -- validate the lookup methods --
+      ---------------------------------         
+      for i in 1..self.ind_parameters.count loop
+         if self.ind_parameters(i).in_range_rating_method is null or
+            self.ind_parameters(i).in_range_rating_method = 'NEAREST'
+         then
+            cwms_err.raise(
+               'INVALID_ITEM',
+               nvl(self.ind_parameters(i).in_range_rating_method, '<NULL>'),
+               'CWMS in-range rating template method');
+         end if;
+         if self.ind_parameters(i).out_range_low_rating_method is null or
+            self.ind_parameters(i).out_range_low_rating_method in ('PREVIOUS', 'LOWER')
+         then
+            cwms_err.raise(
+               'INVALID_ITEM',
+               nvl(self.ind_parameters(i).out_range_low_rating_method, '<NULL>'),
+               'CWMS out-range-low rating template method');
+         end if;
+         if self.ind_parameters(i).out_range_high_rating_method is null or
+            self.ind_parameters(i).out_range_high_rating_method in ('NEXT', 'HIGHER')
+         then
+            cwms_err.raise(
+               'INVALID_ITEM',
+               nvl(self.ind_parameters(i).out_range_high_rating_method, '<NULL>'),
+               'CWMS out-range-high rating template method');
+         end if;
+      end loop;
       -----------------------------
       -- case correct parameters --
       -----------------------------
@@ -823,7 +852,7 @@ as
                cwms_err.raise(
                   'INVALID_PARAM_ID',
                   self.ind_parameters(i).parameter_id);
-   end;
+         end;
          select base_parameter_id
            into l_base_id 
            from cwms_base_parameter
@@ -1678,7 +1707,7 @@ as
       ----------------------------
       -- in_range_rating_method --
       ----------------------------
-      l_invalid := upper(self.in_range_rating_method) in ('LOGARITHMIC', 'LOG-LIN', 'LIN-LOG');
+      l_invalid := upper(self.in_range_rating_method) in ('LOGARITHMIC', 'LOG-LIN', 'LIN-LOG', 'NEAREST');
       if not l_invalid then
          begin
             l_code := cwms_rating.get_rating_method_code(self.in_range_rating_method);
@@ -1690,12 +1719,12 @@ as
          cwms_err.raise(
             'INVALID_ITEM',
             nvl(self.in_range_rating_method, '<NULL>'),
-            'CWMS in-range rating method');
+            'CWMS in-range rating specification method');
       end if;
       ---------------------------------
       -- out_range_low_rating_method --
       ---------------------------------
-      l_invalid := upper(self.out_range_low_rating_method) in ('LOGARITHMIC', 'LOG-LIN', 'LIN-LOG', 'PREVIOUS');
+      l_invalid := upper(self.out_range_low_rating_method) in ('LOGARITHMIC', 'LOG-LIN', 'LIN-LOG', 'PREVIOUS', 'LOWER');
       if not l_invalid then
          begin
             l_code := cwms_rating.get_rating_method_code(self.out_range_low_rating_method);
@@ -1707,12 +1736,12 @@ as
          cwms_err.raise(
             'INVALID_ITEM',
             nvl(self.out_range_low_rating_method, '<NULL>'),
-            'CWMS out-range-low rating method');
+            'CWMS out-range-low rating specification method');
       end if;
       ----------------------------------
       -- out_range_high_rating_method --
       ----------------------------------
-      l_invalid := upper(self.out_range_high_rating_method) in ('LOGARITHMIC', 'LOG-LIN', 'LIN-LOG', 'NEXT');
+      l_invalid := upper(self.out_range_high_rating_method) in ('LOGARITHMIC', 'LOG-LIN', 'LIN-LOG', 'NEXT', 'HIGHER');
       if not l_invalid then
          begin
             l_code := cwms_rating.get_rating_method_code(self.out_range_high_rating_method);
@@ -1724,7 +1753,7 @@ as
          cwms_err.raise(
             'INVALID_ITEM',
             nvl(self.out_range_high_rating_method, '<NULL>'),
-            'CWMS out-range-high rating method');
+            'CWMS out-range-high rating specification method');
       end if;
       --------------------
       -- boolean fields --
