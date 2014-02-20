@@ -1715,7 +1715,7 @@ is
    l_request_id    varchar2(64) := nvl(p_request_id, rawtohex(sys_guid()));
    l_message       sys.aq$_jms_map_message;
    l_messageid     pls_integer;
-   l_message_count integer;
+   l_message_count integer := 0;
    l_tsids         assoc_bool_vc183;
    l_earliest      date;
    l_latest        date;
@@ -1817,6 +1817,9 @@ begin
       l_message.set_long(l_messageid, 'original_millis', cwms_util.to_millis(rec.message_time));
       l_message.set_string(l_messageid, 'replay_id', l_request_id);
       l_ts := cwms_msg.publish_message(l_message, l_messageid, 'realtime_ops');
+      if mod(l_message_count, 50) = 0 then
+         commit; -- force the messages to be enqueued
+      end if;
    end loop;
    ------------------------------------------
    -- publish the replay completed message --
