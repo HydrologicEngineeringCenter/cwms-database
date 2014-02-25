@@ -8,17 +8,17 @@
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', null,
 '
 /**
- * Displays CWMS Time Series Identifiers, including aliases
+ * Displays CWMS Time Series Identifiers
  *
- * @since CWMS 2.0 (modified in CWMS 2.1)
+ * @since CWMS 2.0
  *
  * @field db_office_id        Identifies office that owns time series
- * @field cwms_ts_id          Identifies the time series or alias
+ * @field cwms_ts_id          Identifies the time series
  * @field unit_id             Identifies the database storage unit for the time series
  * @field abstract_param_id   Identifies the abstract parameter (length, volume, etc...) for the time series
  * @field base_location_id    Identifies the base location for the time series
  * @field sub_location_id     Identifies the sub-location for the time series, if any
- * @field location_id         Identifies the full location for the time series
+ * @field location_id         Identifies te full location for the time series
  * @field base_parameter_id   Identifies the base parameter for the time series
  * @field sub_parameter_id    Identifies the sub-parameter for the time series, if any
  * @field parameter_id        Identifies the full parameter for the time series
@@ -38,11 +38,6 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_CWMS_TS_ID', nul
  * @field base_location_code  Unique numeric code that identifies the base location of the time series
  * @field location_code       Unique numeric code that identifies the full location of the time series
  * @field parameter_code      Unique numeric code that identifies the parameter for the time series
- * @field aliased_item        Null if the cwms_ts_id is not an alias, ''LOCATION'' if the entire location is aliased, ''BASE LOCATION'' if only the base location is alaised, or ''TIME SERIES'' if the entire cwms_time_series_id is aliased.  
- * @field loc_alias_category  The location category for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''  
- * @field loc_alias_group     The location group for the location alias if aliased_item is ''LOCATION'' or ''BASE LOCATION''              
- * @field ts_alias_category   The time series category for the time series alias if aliased_item is ''TIME SERIES''  
- * @field ts_alias_group      The time series group for the time series alias if aliased_item is ''TIME SERIES''              
 */
 ');
 
@@ -73,165 +68,15 @@ CREATE OR REPLACE FORCE VIEW av_cwms_ts_id
     db_office_code,
     base_location_code,
     location_code,
-    parameter_code,
-    aliased_item,
-    loc_alias_category,
-    loc_alias_group,
-    ts_alias_category,
-    ts_alias_group
+    parameter_code
 )
 AS
-   select db_office_id,
-          cwms_ts_id,
-          unit_id,
-          abstract_param_id,
-          base_location_id,
-          sub_location_id,
-          location_id,
-          base_parameter_id,
-          sub_parameter_id,
-          parameter_id,
-          parameter_type_id,
-          interval_id,
-          duration_id,
-          version_id,
-          interval,
-          interval_utc_offset,
-          base_loc_active_flag,
-          loc_active_flag,
-          ts_active_flag,
-          net_ts_active_flag,
-          version_flag,
-          ts_code,
-          db_office_code,
-          base_location_code,
-          location_code,
-          parameter_code,
-          null as aliased_item,
-          null as loc_alias_category,
-          null as loc_alias_group,
-          null as ts_alias_category,
-          null as ts_alias_group
-     from at_cwms_ts_id
-   union all  
-   select ts.db_office_id,
-          lga.loc_alias_id || substr(ts.cwms_ts_id, instr(ts.cwms_ts_id, '.')) as cwms_ts_id,
-          ts.unit_id,
-          ts.abstract_param_id,
-          ts.base_location_id,
-          ts.sub_location_id,
-          ts.location_id,
-          ts.base_parameter_id,
-          ts.sub_parameter_id,
-          ts.parameter_id,
-          ts.parameter_type_id,
-          ts.interval_id,
-          ts.duration_id,
-          ts.version_id,
-          ts.interval,
-          ts.interval_utc_offset,
-          ts.base_loc_active_flag,
-          ts.loc_active_flag,
-          ts.ts_active_flag,
-          ts.net_ts_active_flag,
-          ts.version_flag,
-          ts.ts_code,
-          ts.db_office_code,
-          ts.base_location_code,
-          ts.location_code,
-          ts.parameter_code,
-          'LOCATION' as aliased_item,
-          lc.loc_category_id as loc_alias_category,
-          lg.loc_group_id as loc_alias_group,
-          null as ts_alias_category,
-          null as ts_alias_group
-     from at_cwms_ts_id ts,
-          at_loc_group_assignment lga,
-          at_loc_group lg,
-          at_loc_category lc
-    where lga.loc_alias_id is not null
-      and ts.location_code = lga.location_code
-      and lg.loc_group_code = lga.loc_group_code
-      and lc.loc_category_code = lg.loc_category_code        
-   union all  
-   select ts.db_office_id,
-          lga.loc_alias_id || substr(ts.cwms_ts_id, instr(ts.cwms_ts_id, '-')) as cwms_ts_id,
-          ts.unit_id,
-          ts.abstract_param_id,
-          ts.base_location_id,
-          ts.sub_location_id,
-          ts.location_id,
-          ts.base_parameter_id,
-          ts.sub_parameter_id,
-          ts.parameter_id,
-          ts.parameter_type_id,
-          ts.interval_id,
-          ts.duration_id,
-          ts.version_id,
-          ts.interval,
-          ts.interval_utc_offset,
-          ts.base_loc_active_flag,
-          ts.loc_active_flag,
-          ts.ts_active_flag,
-          ts.net_ts_active_flag,
-          ts.version_flag,
-          ts.ts_code,
-          ts.db_office_code,
-          ts.base_location_code,
-          ts.location_code,
-          ts.parameter_code,
-          'BASE LOCATION' as aliased_item,
-          lc.loc_category_id as loc_alias_category,
-          lg.loc_group_id as loc_alias_group,
-          null as ts_alias_category,
-          null as ts_alias_group
-     from at_cwms_ts_id ts,
-          at_loc_group_assignment lga,
-          at_loc_group lg,
-          at_loc_category lc
-    where lga.loc_alias_id is not null
-      and ts.base_location_code = lga.location_code
-      and lg.loc_group_code = lga.loc_group_code
-      and lc.loc_category_code = lg.loc_category_code        
-      and ts.sub_location_id is not null       
-   union all  
-   select ts.db_office_id,
-          tsga.ts_alias_id as cwms_ts_id,
-          ts.unit_id,
-          ts.abstract_param_id,
-          ts.base_location_id,
-          ts.sub_location_id,
-          ts.location_id,
-          ts.base_parameter_id,
-          ts.sub_parameter_id,
-          ts.parameter_id,
-          ts.parameter_type_id,
-          ts.interval_id,
-          ts.duration_id,
-          ts.version_id,
-          ts.interval,
-          ts.interval_utc_offset,
-          ts.base_loc_active_flag,
-          ts.loc_active_flag,
-          ts.ts_active_flag,
-          ts.net_ts_active_flag,
-          ts.version_flag,
-          ts.ts_code,
-          ts.db_office_code,
-          ts.base_location_code,
-          ts.location_code,
-          ts.parameter_code,
-          'TIME SERIES' as aliased_item,
-          null as loc_alias_category,
-          null as loc_alias_group,
-          tsc.ts_category_id as ts_alias_category,
-          tsg.ts_group_id as ts_alias_group
-     from at_cwms_ts_id ts,
-          at_ts_group_assignment tsga,
-          at_ts_group tsg,
-          at_ts_category tsc
-    where tsga.ts_alias_id is not null
-      and ts.ts_code = tsga.ts_code
-      and tsg.ts_group_code = tsga.ts_group_code
-      and tsc.ts_category_code = tsg.ts_category_code       
+    SELECT    db_office_id, cwms_ts_id, unit_id, abstract_param_id,
+                base_location_id, sub_location_id, location_id, base_parameter_id,
+                sub_parameter_id, parameter_id, parameter_type_id, interval_id,
+                duration_id, version_id, interval, interval_utc_offset,base_loc_active_flag,
+                loc_active_flag, ts_active_flag, net_ts_active_flag, version_flag,
+                ts_code, db_office_code, base_location_code, location_code,
+                parameter_code
+      FROM    at_cwms_ts_id
 /

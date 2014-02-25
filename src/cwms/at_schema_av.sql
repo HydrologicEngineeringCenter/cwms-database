@@ -18,6 +18,7 @@ DECLARE
 			       'av_loc2',         -- av_loc2 is created in at_schema_2...
 			       'av_county',
 			       'av_cwms_ts_id',
+			       'av_cwms_ts_id2',
 			       'av_loc_alias',
 			       'av_loc_cat_grp',
 			       'av_loc_level',
@@ -82,6 +83,7 @@ END;
 @@cwms/views/av_screening_dur_mag.sql
 @@cwms/views/av_screening_id.sql
 @@cwms/views/av_cwms_ts_id.sql
+@@cwms/views/av_cwms_ts_id2.sql
 @@cwms/views/av_unit.sql
 @@cwms/views/av_storage_unit.sql
 @@cwms/views/av_dataexchange_job.sql
