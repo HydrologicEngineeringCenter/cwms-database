@@ -78,7 +78,7 @@ select tsv.ts_code,
        ts.ts_alias_category,
        ts.ts_alias_group
   from av_tsv               tsv,
-       av_cwms_ts_id        ts,
+       av_cwms_ts_id2       ts,
        cwms_unit_conversion c
  where tsv.ts_code = ts.ts_code
    and ts.unit_id  = c.from_unit_id
@@ -137,7 +137,7 @@ select tsv.ts_code,
        ts.ts_alias_category,
        ts.ts_alias_group
   from av_tsv               tsv,
-       av_cwms_ts_id        ts,
+       av_cwms_ts_id2       ts,
        cwms_unit_conversion c
  where tsv.ts_code    = ts.ts_code
    and ts.unit_id     = c.from_unit_id
@@ -197,7 +197,7 @@ select tsv.ts_code,
        ts.ts_alias_category,
        ts.ts_alias_group
   from av_tsv               tsv,
-       av_cwms_ts_id        ts,
+       av_cwms_ts_id2       ts,
        cwms_unit_conversion c
  where tsv.ts_code    = ts.ts_code
    and ts.unit_id     = c.from_unit_id
