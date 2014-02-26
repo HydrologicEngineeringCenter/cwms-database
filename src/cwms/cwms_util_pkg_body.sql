@@ -3518,10 +3518,10 @@ AS
 
    PROCEDURE check_inputs (p_input IN str_tab_t)
    IS
-      PROCEDURE invalid
+      PROCEDURE invalid(p_offending in varchar2, p_text in varchar2)
       IS
       BEGIN
-         cwms_err.raise ('ERROR', 'Invalid input');
+         cwms_err.raise ('ERROR', 'Invalid input: '''||p_offending||''' is not allowed in '''||p_text||'''');
       END;
    BEGIN
       IF p_input IS NOT NULL
@@ -3531,16 +3531,16 @@ AS
             CASE
                WHEN SUBSTR (p_input (i), 1, 1) = ''
                THEN
-                  invalid;
+                  invalid('', p_input(i));
                WHEN INSTR (p_input (i), '--') != 0
                THEN
-                  invalid;
+                  invalid('--', p_input(i));
                WHEN INSTR (p_input (i), '/*') != 0
                THEN
-                  invalid;
+                  invalid('/*', p_input(i));
                WHEN INSTR (p_input (i), ';') != 0
                THEN
-                  invalid;
+                  invalid(';', p_input(i));
                ELSE
                   NULL;
             END CASE;
