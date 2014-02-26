@@ -517,6 +517,9 @@ function get_opening_unit(
 is
 begin
    return cwms_util.get_default_units(get_opening_parameter(p_template), p_unit_system);
+exception
+   when others then
+      return null;      
 end get_opening_unit;
 
 --------------------------------------------------------------------------------

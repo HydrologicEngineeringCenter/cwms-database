@@ -3049,7 +3049,7 @@ select o.office_id as office_id,
    and lga.location_code = ou.outlet_location_code
    and lg.loc_group_code = lga.loc_group_code
    and lc.loc_category_code = lg.loc_category_code
-   and lc.loc_category_id = 'RATING'
+   and upper(lc.loc_category_id) = 'RATING'
 /            
 insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_GATE_CHANGE', null,
 '

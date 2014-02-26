@@ -320,7 +320,7 @@ begin
          and bl2.base_location_code = pl2.base_location_code;          
    exception
       when no_data_found then
-         cwms_err.raise('ERROR', 'Outlet and Project do not belong to the same office');
+         cwms_err.raise('ERROR', 'Outlet ('||p_outlet_location_code||') and Project ('||p_project_location_code||') do not belong to the same office');
    end;
      
    --------------------------------------------------          
