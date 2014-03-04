@@ -550,6 +550,8 @@ begin
          l_project,
          p_outlets(i).project_location_ref.get_location_id,
          p_outlets(i).project_location_ref.get_office_id);
+      -- project exists, so get its location code   
+      l_rec.project_location_code := l_project.project_location.location_ref.get_location_code('F');
       -----------------------------------------------         
       -- create a rating group id if not specified --
       -----------------------------------------------
@@ -590,7 +592,6 @@ begin
       cwms_loc.store_location(p_outlets(i).structure_location, 'F');
       if not l_exists then
          l_rec.outlet_location_code := p_outlets(i).structure_location.location_ref.get_location_code('T');
-         l_rec.project_location_code := l_project.project_location.location_ref.get_location_code('F');
          insert into at_outlet values l_rec; 
       end if;
       -----------------------------------------------------
