@@ -1384,7 +1384,7 @@ begin
    -- get the codes for input ids --
    ---------------------------------
    l_effective_date := cwms_util.change_timezone(
-      nvl(p_effective_date, '01-JAN-1900'),
+      nvl(p_effective_date, date '1900-01-01'),
       l_timezone_id, 
       'UTC');
    get_location_level_codes(
@@ -2757,8 +2757,7 @@ begin
             l_rec,
             p_start_time_utc,
             'BEFORE',
-            p_timezone_id);
-         l_date_prev := cwms_util.change_timezone(l_date_prev, p_timezone_id, 'UTC');
+            'UTC');
          if l_date_prev = p_start_time_utc then
             l_value := l_value_prev * l_factor + l_offset;
          else
@@ -2771,8 +2770,7 @@ begin
                l_rec,
                p_start_time_utc,
                'AFTER',
-               p_timezone_id);
-            l_date_next := cwms_util.change_timezone(l_date_next, p_timezone_id, 'UTC');
+               'UTC');
             if l_date_next = p_start_time_utc then
                l_value := l_value_next * l_factor + l_offset;
             else
@@ -2809,8 +2807,7 @@ begin
                   l_rec,
                   p_level_values(p_level_values.count).date_time + 1 / 86400,
                   'AFTER',
-                  p_timezone_id);
-               l_date_next := cwms_util.change_timezone(l_date_next, p_timezone_id, 'UTC');
+                  'UTC');
                p_level_values.extend;
                if l_date_next <= p_end_time_utc then
                   -------------------------------------
@@ -2828,8 +2825,7 @@ begin
                      l_rec,
                      l_date_next - 1 / 86400,
                      'BEFORE',
-                     p_timezone_id);
-                  l_date_prev := cwms_util.change_timezone(l_date_prev, p_timezone_id, 'UTC');
+                     'UTC');
                   -----------------------------
                   -- compute the level value --
                   -----------------------------
@@ -2964,24 +2960,28 @@ procedure retrieve_location_level_values(
    p_timezone_id             in  varchar2 default 'UTC',
    p_office_id               in  varchar2 default null)
 is
+   l_office_id   varchar2(16);
+   l_timezone_id varchar2(28);
    l_start_time date;
    l_end_time   date;
 begin
    -----------------------------------------------------------
    -- get the start and end times of the time window in UTC --
    -----------------------------------------------------------
+   l_office_id := cwms_util.get_db_office_id(p_office_id);
+   l_timezone_id := nvl(p_timezone_id, cwms_loc.get_local_timezone(p_location_id, l_office_id)); 
    if p_start_time is null then
       l_start_time := cast(systimestamp at time zone 'UTC' as date);
    else
       l_start_time := cast(
-               from_tz(cast(p_start_time as timestamp), p_timezone_id)
+               from_tz(cast(p_start_time as timestamp), l_timezone_id)
                at time zone 'UTC' as date);
    end if;
    if p_end_time is null then
       l_end_time := null;
    else
       l_end_time := cast(
-               from_tz(cast(p_end_time as timestamp), p_timezone_id)
+               from_tz(cast(p_end_time as timestamp), l_timezone_id)
                at time zone 'UTC' as date);
    end if;
    -----------------------------------------------
@@ -3002,15 +3002,15 @@ begin
       p_attribute_parameter_id  =>  p_attribute_parameter_id,
       p_attribute_param_type_id =>  p_attribute_param_type_id,
       p_attribute_duration_id   =>  p_attribute_duration_id,
-      p_timezone_id             =>  p_timezone_id,
+      p_timezone_id             =>  l_timezone_id,
       p_office_id               =>  p_office_id);
      
    -------------------------------------------------------   
    -- convert the times back to the specified time zone --
    -------------------------------------------------------   
-   if (p_level_values is not null and p_timezone_id != 'UTC') then
+   if (p_level_values is not null and l_timezone_id != 'UTC') then
       for i in 1..p_level_values.count loop
-         p_level_values(i).date_time := cwms_util.change_timezone(p_level_values(i).date_time, 'UTC', p_timezone_id);
+         p_level_values(i).date_time := cwms_util.change_timezone(p_level_values(i).date_time, 'UTC', l_timezone_id);
       end loop;
    end if;
 end;   
