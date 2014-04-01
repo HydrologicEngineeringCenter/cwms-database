@@ -2388,11 +2388,11 @@ NOPARALLEL
 
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_ck1
-  CHECK (nvl(pump_out_location_code, -1) not in (nvl(pump_out_below_location_code, -2), nvl(pump_in_location_code, -3)))
+  CHECK (nvl(pump_out_location_code, -1) not in (nvl(pump_out_below_location_code, -2), nvl(pump_in_location_code, -3))))
 /      
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_ck2
-  CHECK (nvl(pump_out_below_location_code, -2) != nvl(pump_in_location_code, -3))
+  CHECK (nvl(pump_out_below_location_code, -2) != nvl(pump_in_location_code, -3)))
 /
 ALTER TABLE at_water_user_contract ADD (
   CONSTRAINT at_water_user_contract_fk2
