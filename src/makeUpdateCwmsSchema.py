@@ -12,27 +12,37 @@ defines_pattern = re.compile('@@defines.sql', re.I)
 synonyms = {}
 updates  = [
 	['script',       'stop_all_jobs'],
-	['package spec', 'cwms_util'],
-	['package body', 'cwms_util'],
-	['package spec', 'cwms_sec'],
-	['package body', 'cwms_sec'],
-	['package spec', 'cwms_env'],
-	['package body', 'cwms_env'],
-	['package spec', 'cwms_upass'],
-	['package body', 'cwms_upass'],
 	['package spec', 'cwms_alarm'],
 	['package body', 'cwms_alarm'],
-	['package spec', 'cwms_schema'],
+	['package spec', 'cwms_env'],
+	['package body', 'cwms_env'],
 	['package body', 'cwms_level'],
 	['package spec', 'cwms_loc'],
 	['package body', 'cwms_loc'],
 	['package spec', 'cwms_msg'],
 	['package body', 'cwms_msg'],
-	['type', 'rating_t'],
-	['type body', 'rating_t'],
-	['type', 'loc_lvl_indicator_cond_t'],
-	['type body', 'loc_lvl_indicator_cond_t'],
-	['type', 'loc_lvl_cur_max_ind_tab_t'],
+	['package spec', 'cwms_rating'],
+	['package body', 'cwms_rating'],
+	['package spec', 'cwms_schema'],
+	['package spec', 'cwms_sec'],
+	['package body', 'cwms_sec'],
+	['package body', 'cwms_ts'],
+	['package spec', 'cwms_upass'],
+	['package body', 'cwms_upass'],
+	['package spec', 'cwms_util'],
+	['package body', 'cwms_util'],
+	['type',         'abs_rating_ind_param_t'],
+	['type body',    'abs_rating_ind_param_t'],
+	['type',         'loc_lvl_cur_max_ind_tab_t'],
+	['type',         'loc_lvl_indicator_cond_t'],
+	['type body',    'loc_lvl_indicator_cond_t'],
+	['type',         'rating_ind_parameter_t'],
+	['type body',    'rating_ind_parameter_t'],
+	['type',         'rating_t'],
+	['type body',    'rating_t'],
+	['type',         'stream_rating_t'],
+	['type body',    'stream_rating_t'],
+	['view',         'av_sec_users'],
 ]
 
 srcdir = os.path.join(os.path.split(sys.argv[0])[0], 'cwms')
@@ -175,8 +185,21 @@ if synonyms :
 f.write('\ncommit;\n')
 f.write(
 '''
+whenever sqlerror continue
+ALTER TABLE AT_SEC_USERS DROP CONSTRAINT AT_SEC_USERS_R02;
+ 
+ALTER TABLE AT_SEC_USERS ADD (
+  CONSTRAINT AT_SEC_USERS_R02 
+  FOREIGN KEY (USERNAME) 
+  REFERENCES AT_SEC_CWMS_USERS (USERID)
+  ENABLE VALIDATE);
+/  
+''');
+f.write(
+'''
 set echo off
 set define on
+whenever sqlerror exit sql.sqlcode
 prompt Invalid objects...
   select substr(object_name, 1, 31) "INVALID OBJECT", object_type
     from dba_objects
