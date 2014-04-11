@@ -107,3 +107,6 @@
 @@cwms_alarm_pkg
 @@cwms_alarm_pkg_body
 
+@@cwms_doc_pkg
+@@cwms_doc_pkg_body
+

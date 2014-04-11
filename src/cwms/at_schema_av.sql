@@ -14,6 +14,10 @@ DECLARE
 		:= id_array_t ('av_current_map_data',
 			       'av_active_flag',
 			       'av_basin',        -- av_basin is created in at_schema_2...
+			       'av_clob',
+			       'av_cwms_media',
+			       'av_document',
+			       'av_document_type',
 			       'av_loc',          -- av_loc is created in at_schema_2...
 			       'av_loc2',         -- av_loc2 is created in at_schema_2...
 			       'av_county',
@@ -72,6 +76,10 @@ END;
 
 @@cwms/views/av_shef_pe_codes.sql
 @@cwms/views/av_active_flag.sql
+@@cwms/views/av_clob.sql
+@@cwms/views/av_cwms_media_type.sql
+@@cwms/views/av_document.sql
+@@cwms/views/av_document_type.sql
 @@cwms/views/av_loc_alias.sql
 @@cwms/views/av_loc_grp_assgn.sql
 @@cwms/views/av_loc_cat_grp.sql

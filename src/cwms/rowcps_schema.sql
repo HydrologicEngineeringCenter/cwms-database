@@ -422,8 +422,11 @@ CONSTRAINT at_dt_active_ck
 CHECK ( document_type_active = 'T' OR document_type_active = 'F'))
 /
 
--- INSERT INTO at_document_type VALUES (0, 53, 'Default', 'Default', 'T');
-
+INSERT INTO at_document_type VALUES (1, 53, 'TS Uploaded CSVs',     'TS Uploaded CSVs',    'T');
+INSERT INTO at_document_type VALUES (2, 53, 'COE Office Page',      'COE Office Page',     'T');
+INSERT INTO at_document_type VALUES (3, 53, 'Wikipedia URLs',       'Wikipedia URLs',      'T');
+INSERT INTO at_document_type VALUES (4, 53, 'Water Control Manual', 'Water Control Manual','T');
+INSERT INTO at_document_type VALUES (5, 53, 'Other Documents',      'Other Documents',     'T');
 --------
 --------
 
