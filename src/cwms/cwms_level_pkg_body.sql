@@ -4385,8 +4385,6 @@ begin
          'ERROR',
          'Location Level IDs must not be null.');
    end if;
-   cwms_util.check_input(p_old_location_level_id);
-   cwms_util.check_input(p_new_location_level_id);
    l_old_parts := cwms_util.split_text(p_old_location_level_id, '.');
    if l_old_parts.count != 5 then
       cwms_err.raise(
@@ -5007,7 +5005,8 @@ begin
       l_attr_duration_mask       != '%'
    then
       l_query_str := replace(l_query_str, 'left outer join', 'inner join');
-   end if; 
+   end if;
+   cwms_util.check_dynamic_sql(l_query_str); 
    --------------------------
    -- retrieve the catalog --
    --------------------------

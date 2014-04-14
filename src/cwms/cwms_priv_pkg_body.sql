@@ -7,9 +7,10 @@ AS
                               := dbms_assert.enquote_name (TRIM (p_username));
       l_password   VARCHAR2 (30)
                        := dbms_assert.enquote_name (TRIM (p_password), FALSE);
+      l_sql        VARCHAR2(32767);                       
    BEGIN
-      -- Make sure there are not blanks in either the username or password...
-      IF INSTR (l_username, ' ') != 0
+      -- Make sure there is not whitespace in either the username or password...
+      IF REGEXP_INSTR (l_username, '\s') != 0
       THEN
          cwms_err.RAISE
                      ('GENERIC_ERROR',
@@ -17,7 +18,7 @@ AS
                      );
       END IF;
 
-      IF INSTR (l_password, ' ') != 0
+      IF REGEXP_INSTR (l_password, '\s') != 0
       THEN
          cwms_err.RAISE
                      ('GENERIC_ERROR',
@@ -38,12 +39,12 @@ AS
                          'Password must be at least eight charcters long'
                         );
       END IF;
-
+                        
+      l_sql := 'alter user '||l_username||' identified by '||l_password;
+      cwms_util.check_dynamic_sql(l_sql);
+      
       -- This works...
-      EXECUTE IMMEDIATE    'alter user '
-                        || l_username
-                        || ' identified by '
-                        || l_password;
+      EXECUTE IMMEDIATE l_sql;
       -- This return an ORA-01935: missing user or role name...
 --      EXECUTE IMMEDIATE 'alter user :u identified by :p'
 --                  USING l_username, l_password;

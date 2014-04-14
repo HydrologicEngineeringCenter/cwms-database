@@ -1582,38 +1582,6 @@ AS
       p_args_offset in integer default 0)
       return number;
    /**
-    * Checks mulitple input strings for common SQL injection exploits
-    * 
-    * @param p_input the strings to check
-    * 
-    * @throws ERROR if a common SQL injection exploit is detected                
-    */                
-   procedure check_inputs(
-      p_input in str_tab_t
-   );
-   /**
-    * Checks a single input string for common SQL injection exploits
-    * 
-    * @param p_input the strings to check
-    * 
-    * @throws ERROR if a common SQL injection exploit is detected                
-    */                
-   procedure check_input(
-      p_input in varchar2
-   );
-   /**
-    * Checks a single input string for common SQL injection exploits
-    * 
-    * @param p_input the strings to check
-    * 
-    * @return the input string        
-    * 
-    * @throws ERROR if a common SQL injection exploit is detected                
-    */                
-   function check_input_f(
-      p_input in varchar2
-   ) return varchar2;
-   /**
     * Appends text to a <code><big>CLOB</big></code>
     * 
     * @param p_dst the <code><big>CLOB</big></code> to append to
@@ -1864,8 +1832,9 @@ AS
    function get_effective_vertical_datum(
       p_unit_spec in varchar2)
       return varchar2;
-
-
+   -- not documented
+   procedure check_dynamic_sql(
+      p_sql in varchar);
 END cwms_util;
 /
 

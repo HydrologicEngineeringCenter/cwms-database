@@ -6,11 +6,6 @@ procedure check_lookup(
    p_lookup in lookup_type_obj_t)
 is
 begin
-   cwms_util.check_inputs(str_tab_t(
-      p_lookup.office_id,
-      p_lookup.display_value,
-      p_lookup.tooltip,
-      p_lookup.active));
    if p_lookup.display_value is null then
       cwms_err.raise(
          'ERROR',
@@ -24,10 +19,6 @@ procedure check_location_ref(
    p_location in location_ref_t)
 is
 begin
-   cwms_util.check_inputs(str_tab_t(
-      p_location.base_location_id,
-      p_location.sub_location_id,
-      p_location.office_id));
    if p_location.base_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -47,24 +38,6 @@ begin
          'The location_ref member of a location_obj_t object cannot be null.');
    end if;
    check_location_ref(p_location.location_ref);
-   cwms_util.check_inputs(str_tab_t(
-      p_location.state_initial,
-      p_location.county_name,
-      p_location.time_zone_name,
-      p_location.location_type,
-      p_location.horizontal_datum,
-      p_location.elev_unit_id,
-      p_location.vertical_datum,
-      p_location.public_name,
-      p_location.long_name,
-      p_location.description,
-      p_location.active_flag,
-      p_location.location_kind_id,
-      p_location.map_label,
-      p_location.bounding_office_id,
-      p_location.bounding_office_name,
-      p_location.nation_id,
-      p_location.nearest_city));
 end check_location_obj;
 --------------------------------------------------------------------------------
 -- procedure check_characteristic_ref
@@ -83,9 +56,6 @@ begin
          'ERROR',
          'The characteristic_id member of a characteristic_ref_t object cannot be null.');
    end if;
-   cwms_util.check_inputs(str_tab_t(
-      p_characteristic.office_id,
-      p_characteristic.characteristic_id));
 end check_characteristic_ref;   
 --------------------------------------------------------------------------------
 -- procedure check_project_structure
@@ -118,7 +88,6 @@ procedure check_gate_setting(
 is
 begin
    check_location_ref(p_gate_setting.outlet_location_ref);
-   cwms_util.check_input(p_gate_setting.opening_units);
 end check_gate_setting;   
 --------------------------------------------------------------------------------
 -- procedure check_gate_change
@@ -135,11 +104,6 @@ begin
          check_gate_setting(p_gate_change.settings(i));
       end loop;
    end if;
-   cwms_util.check_inputs(str_tab_t(
-      p_gate_change.elev_units,
-      p_gate_change.discharge_units,
-      p_gate_change.change_notes,
-      p_gate_change.protected));
 end check_gate_change;
 --------------------------------------------------------------------------------
 -- function get_office_from_outlet
@@ -538,7 +502,6 @@ begin
    if p_outlets is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_outlets');
    end if;
-   cwms_util.check_inputs(str_tab_t(p_rating_group, p_fail_if_exists));
    l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
    for i in 1..p_outlets.count loop
       ------------------------
@@ -625,7 +588,6 @@ begin
    if p_office_id is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_office_id');
    end if;
-   cwms_util.check_inputs(str_tab_t(p_outlet_id_old, p_outlet_id_new, p_office_id));
    l_outlet := retrieve_outlet_f(location_ref_t(p_outlet_id_old, p_office_id));
    cwms_loc.rename_location(p_outlet_id_old, p_outlet_id_new, p_office_id);
 end rename_outlet;
@@ -653,7 +615,6 @@ begin
    if p_office_id is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_office_id');
    end if;
-   cwms_util.check_inputs(str_tab_t(p_outlet_id, p_delete_action, p_office_id));
    l_outlet := retrieve_outlet_f(location_ref_t(p_outlet_id, p_office_id));
    if upper(p_delete_action) not in (
       cwms_util.delete_key,
@@ -731,7 +692,6 @@ begin
    if p_outlets is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_outlets');
    end if;
-   cwms_util.check_input(p_rating_group);
    for i in 1..p_outlets.count loop
       check_project_structure(p_outlets(i));
       assign_to_rating_group(
@@ -775,11 +735,6 @@ begin
    for i in 1..p_gate_changes.count loop
       check_gate_change(p_gate_changes(i));
    end loop;
-   cwms_util.check_inputs(str_tab_t(
-      p_time_zone,
-      p_start_time_inclusive,
-      p_end_time_inclusive,
-      p_override_protection));
    if p_override_protection not in ('T','F') then
       cwms_err.raise('ERROR', 
       'Parameter p_override_protection must be either ''T'' or ''F''');
@@ -1003,10 +958,6 @@ begin
          'Start time must not be later than end time.');
    end if;
    check_location_ref(p_project_location);
-   cwms_util.check_inputs(str_tab_t(
-      p_time_zone,
-      p_start_time_inclusive,
-      p_end_time_inclusive));
    -- will barf if not a valid project
    cwms_project.retrieve_project(
       l_project,
@@ -1221,11 +1172,6 @@ begin
          'Start time must not be later than end time.');
    end if;
    check_location_ref(p_project_location);
-   cwms_util.check_inputs(str_tab_t(
-      p_time_zone,
-      p_start_time_inclusive,
-      p_end_time_inclusive,
-      p_override_protection));
    if p_override_protection not in ('T','F') then
       cwms_err.raise('ERROR', 
       'Parameter p_override_protection must be either ''T'' or ''F''');
@@ -1324,11 +1270,6 @@ begin
          'Start time must not be later than end time.');
    end if;
    check_location_ref(p_project_location);
-   cwms_util.check_inputs(str_tab_t(
-      p_protected,
-      p_time_zone,
-      p_start_time_inclusive,
-      p_end_time_inclusive));
    if p_protected not in ('T','F') then
       cwms_err.raise('ERROR', 
       'Parameter p_protected must be either ''T'' or ''F''');

@@ -445,7 +445,6 @@ is
    l_child_loc_code NUMBER;
 begin
 
-  cwms_util.check_inputs(str_tab_t(p_lock_id, p_delete_action,p_db_office_id));
   IF NOT p_delete_action IN (cwms_util.delete_key, cwms_util.delete_all ) THEN
     cwms_err.raise(
        'ERROR',

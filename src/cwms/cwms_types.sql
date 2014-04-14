@@ -1340,7 +1340,6 @@ as
    return self as result
    is
    begin
-      cwms_util.check_inputs(str_tab_t(p_location_id, p_office_id));
       base_location_id := cwms_util.get_base_id(p_location_id);
       sub_location_id  := cwms_util.get_sub_id(p_location_id);
       office_id        := cwms_util.get_db_office_id(p_office_id);

@@ -6,11 +6,6 @@ procedure check_lookup(
    p_lookup in lookup_type_obj_t)
 is
 begin
-   cwms_util.check_inputs(str_tab_t(
-      p_lookup.office_id,
-      p_lookup.display_value,
-      p_lookup.tooltip,
-      p_lookup.active));
    if p_lookup.display_value is null then
       cwms_err.raise(
          'ERROR',
@@ -24,10 +19,6 @@ procedure check_location_ref(
    p_location in location_ref_t)
 is
 begin
-   cwms_util.check_inputs(str_tab_t(
-      p_location.base_location_id,
-      p_location.sub_location_id,
-      p_location.office_id));
    if p_location.base_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -47,24 +38,6 @@ begin
          'The location_ref member of a location_obj_t object cannot be null.');
    end if;
    check_location_ref(p_location.location_ref);
-   cwms_util.check_inputs(str_tab_t(
-      p_location.state_initial,
-      p_location.county_name,
-      p_location.time_zone_name,
-      p_location.location_type,
-      p_location.horizontal_datum,
-      p_location.elev_unit_id,
-      p_location.vertical_datum,
-      p_location.public_name,
-      p_location.long_name,
-      p_location.description,
-      p_location.active_flag,
-      p_location.location_kind_id,
-      p_location.map_label,
-      p_location.bounding_office_id,
-      p_location.bounding_office_name,
-      p_location.nation_id,
-      p_location.nearest_city));
 end check_location_obj;
 --------------------------------------------------------------------------------
 -- procedure check_characteristic_ref
@@ -83,9 +56,6 @@ begin
          'ERROR',
          'The characteristic_id member of a characteristic_ref_t object cannot be null.');
    end if;
-   cwms_util.check_inputs(str_tab_t(
-      p_characteristic.office_id,
-      p_characteristic.characteristic_id));
 end check_characteristic_ref;   
 --------------------------------------------------------------------------------
 -- procedure check_project_structure
@@ -128,7 +98,6 @@ begin
          'ERROR',
          'The new_flow member of a p_turbine_setting object cannot be null.');
    end if;
-   cwms_util.check_input(p_turbine_setting.generation_units);
 end check_turbine_setting;   
 --------------------------------------------------------------------------------
 -- procedure check_turbine_change
@@ -145,10 +114,6 @@ begin
          check_turbine_setting(p_turbine_change.settings(i));
       end loop;
    end if;
-   cwms_util.check_inputs(str_tab_t(
-      p_turbine_change.discharge_units,
-      p_turbine_change.change_notes,
-      p_turbine_change.protected));
 end check_turbine_change;
 --------------------------------------------------------------------------------
 -- procedure retrieve_turbine
@@ -304,7 +269,6 @@ begin
    if p_turbines is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_turbines');
    end if;
-   cwms_util.check_input(p_fail_if_exists);
    l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
    for i in 1..p_turbines.count loop
       ------------------------
@@ -379,7 +343,6 @@ begin
    if p_office_id is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_office_id');
    end if;
-   cwms_util.check_inputs(str_tab_t(p_turbine_id_old, p_turbine_id_new, p_office_id));
    l_turbine := retrieve_turbine_f(location_ref_t(p_turbine_id_old, p_office_id));
    cwms_loc.rename_location(p_turbine_id_old, p_turbine_id_new, p_office_id);
 end rename_turbine;
@@ -407,7 +370,6 @@ begin
    if p_office_id is null then
       cwms_err.raise('NULL_ARGUMENT', 'p_office_id');
    end if;
-   cwms_util.check_inputs(str_tab_t(p_turbine_id, p_delete_action, p_office_id));
    l_turbine := retrieve_turbine_f(location_ref_t(p_turbine_id, p_office_id));
    if upper(p_delete_action) not in (
       cwms_util.delete_key,
@@ -488,11 +450,6 @@ begin
    for i in 1..p_turbine_changes.count loop
       check_turbine_change(p_turbine_changes(i));
    end loop;
-   cwms_util.check_inputs(str_tab_t(
-      p_time_zone,
-      p_start_time_inclusive,
-      p_end_time_inclusive,
-      p_override_protection));
    if p_override_protection not in ('T','F') then
       cwms_err.raise('ERROR', 
       'Parameter p_override_protection must be either ''T'' or ''F''');
@@ -690,16 +647,6 @@ is
    l_db_flow_unit     varchar2(16);
    l_db_elev_unit     varchar2(16);
    l_db_power_unit    varchar2(16);
-   l_sql              varchar2(1024) := '
-        select *
-          from ( select *
-                   from at_turbine_change
-                  where project_location_code = :project_location_code
-                    and turbine_change_datetime between :start_time and :end_time
-               order by turbine_change_datetime ~direction~
-               ) 
-         where rownum <= :max_items
-      order by turbine_change_datetime'; 
 begin
    -------------------
    -- sanity checks --
@@ -724,10 +671,6 @@ begin
          'Start time must not be later than end time.');
    end if;
    check_location_ref(p_project_location);
-   cwms_util.check_inputs(str_tab_t(
-      p_time_zone,
-      p_start_time_inclusive,
-      p_end_time_inclusive));
    -- will barf if not a valid project
    cwms_project.retrieve_project(
       l_project,
@@ -777,16 +720,30 @@ begin
        
    else
       if p_max_item_count < 0 then
-         l_sql := replace(l_sql, '~direction~', 'desc');
+         select *
+           bulk collect
+           into l_turbine_changes
+           from ( select *
+                    from at_turbine_change
+                   where project_location_code = l_proj_loc_code
+                     and turbine_change_datetime between l_start_time and l_end_time
+                order by turbine_change_datetime desc
+                ) 
+          where rownum <= -p_max_item_count
+          order by turbine_change_datetime; 
       else
-         l_sql := replace(l_sql, '~direction~', 'asc');
+         select *
+           bulk collect
+           into l_turbine_changes
+           from ( select *
+                    from at_turbine_change
+                   where project_location_code = l_proj_loc_code
+                     and turbine_change_datetime between l_start_time and l_end_time
+                order by turbine_change_datetime
+                ) 
+          where rownum <= p_max_item_count
+          order by turbine_change_datetime; 
       end if;
-      execute immediate l_sql bulk collect 
-        into l_turbine_changes 
-       using l_proj_loc_code, 
-             l_start_time, 
-             l_end_time, 
-             abs(p_max_item_count);
    end if;
    ----------------------------
    -- build the out variable --
@@ -951,11 +908,6 @@ begin
          'Start time must not be later than end time.');
    end if;
    check_location_ref(p_project_location);
-   cwms_util.check_inputs(str_tab_t(
-      p_time_zone,
-      p_start_time_inclusive,
-      p_end_time_inclusive,
-      p_override_protection));
    if p_override_protection not in ('T','F') then
       cwms_err.raise('ERROR', 
       'Parameter p_override_protection must be either ''T'' or ''F''');
@@ -1054,11 +1006,6 @@ begin
          'Start time must not be later than end time.');
    end if;
    check_location_ref(p_project_location);
-   cwms_util.check_inputs(str_tab_t(
-      p_protected,
-      p_time_zone,
-      p_start_time_inclusive,
-      p_end_time_inclusive));
    if p_protected not in ('T','F') then
       cwms_err.raise('ERROR', 
       'Parameter p_protected must be either ''T'' or ''F''');

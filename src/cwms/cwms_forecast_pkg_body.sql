@@ -15,10 +15,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -86,16 +82,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_fail_if_exists,
-      p_ignore_nulls,
-      p_source_agency,
-      p_source_office,
-      p_forecast_type,
-      p_source_loc_id,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -219,10 +205,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -282,11 +264,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_delete_action,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -363,11 +340,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_old_forecast_id,
-      p_new_forecast_id,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -419,17 +391,6 @@ is
    l_source_loc_id_mask varchar2(49);
    l_office_id_mask     varchar2(16);
 begin
-   -------------------
-   -- sanity checks --
-   -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id_mask,
-      p_forecast_id_mask,
-      p_source_agency_mask,
-      p_source_office_mask,
-      p_forecast_type_mask,
-      p_source_loc_id_mask,
-      p_office_id_mask));
    ----------------------
    -- set up the masks --
    ----------------------
@@ -554,15 +515,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_cwms_ts_id,
-      p_units,
-      p_time_zone,
-      p_fail_if_exists,
-      p_store_rule,
-      p_office_id));
    if p_cwms_ts_id is null then
       cwms_err.raise(
          'ERROR',
@@ -755,18 +707,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_cwms_ts_id,
-      p_units,
-      p_time_zone,
-      p_trim,
-      p_start_inclusive,
-      p_end_inclusive,
-      p_previous,
-      p_next,
-      p_office_id));
    if p_cwms_ts_id is null then
       cwms_err.raise('ERROR', 'Time series identifier cannot be null.');
    end if;
@@ -858,15 +798,6 @@ is
    l_issue_time         date; 
    l_count              pls_integer := 0;
 begin
-   -------------------
-   -- sanity checks --
-   -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_cwms_ts_id,
-      p_time_zone,
-      p_office_id));
    -------------------      
    -- get the codes --
    -------------------
@@ -937,15 +868,6 @@ is
    l_cwms_ts_id_mask varchar2(183);
    l_time_zone       varchar2(28);
 begin
-   -------------------
-   -- sanity checks --
-   -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_cwms_ts_id_mask,
-      p_time_zone,
-      p_office_id));
    -------------------------
    -- set local variables --
    -------------------------
@@ -1038,12 +960,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_time_zone,
-      p_fail_if_exists,
-      p_office_id));
    if p_text is null or dbms_lob.getlength(p_text) = 0  then
       cwms_err.raise(
          'ERROR',
@@ -1162,11 +1078,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_time_zone,
-      p_office_id));
    if p_forecast_time is null then
       cwms_err.raise(
          'ERROR',
@@ -1245,11 +1156,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_time_zone,
-      p_office_id));
    if p_forecast_time is null then
       cwms_err.raise(
          'ERROR',
@@ -1316,11 +1222,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_time_zone,
-      p_office_id));
    -------------------------
    -- set local variables --
    -------------------------
@@ -1390,16 +1291,6 @@ is
    l_time_zone    varchar2(28);
    l_version_date date;
 begin
-   -------------------
-   -- sanity checks --
-   -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_time_zone,
-      p_fail_if_exists,
-      p_store_rule,
-      p_office_id));
    -------------------------
    -- set local variables --
    -------------------------
@@ -1483,15 +1374,6 @@ is
    l_parts              str_tab_t;
    l_units              varchar2(16);
 begin
-   -------------------
-   -- sanity checks --
-   -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_forecast_id,
-      p_unit_system,
-      p_time_zone,
-      p_office_id));
    --------------------------------
    -- get the forecast spec code --
    --------------------------------

@@ -525,7 +525,6 @@ is
    l_object_type varchar2(30);
    l_object_name varchar2(30);
 begin
-   cwms_util.check_inputs(str_tab_t(p_object_type, p_object_name));
    l_object_type := upper(p_object_type);
    l_object_name := upper(p_object_name);
    

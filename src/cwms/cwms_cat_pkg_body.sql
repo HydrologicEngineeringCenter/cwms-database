@@ -1471,12 +1471,6 @@ END cat_ts_id;
    is
       l_office_code number(10);
    begin
-      ------------------
-      -- sanity check --
-      ------------------
-      cwms_util.check_inputs(str_tab_t(
-         p_cwms_ts_id,
-         p_db_office_id));
       l_office_code := cwms_util.get_db_office_code(p_db_office_id);
       -----------------------------
       -- open the catalog cursor --
@@ -1512,16 +1506,6 @@ END cat_ts_id;
       l_abbreviated boolean;
       l_office_code number(10);   
    begin
-      ------------------
-      -- sanity check --
-      ------------------
-      cwms_util.check_inputs(str_tab_t(
-         p_ts_id,
-         p_ts_category_id,
-         p_ts_group_id,
-         p_abbreviated,
-         p_db_office_id));
-      
       l_office_code := cwms_util.get_db_office_code(p_db_office_id);
       l_abbreviated := cwms_util.is_true(p_abbreviated);
 
@@ -1677,7 +1661,6 @@ END cat_ts_id;
    is
       l_office_code number(10);
    begin
-      cwms_util.check_input(p_db_office_id);
       l_office_code := cwms_util.get_db_office_code(p_db_office_id);
       open p_cwms_cat for
          select o1.office_id as cat_db_office_id,
@@ -3895,131 +3878,137 @@ END cat_ts_id;
 --
 
 -- retrieves a set of lookups
-  procedure get_lookup_table( 
-    -- the set of lookups for the office and type specified.
-    p_lookup_type_tab OUT lookup_type_tab_t,
-    -- the category of lookup to retrieve. currently should be the table name.
-    p_lookup_category IN VARCHAR2,
-    -- the lookups have a prefix on the column name.
-    p_lookup_prefix IN VARCHAR2,
-    -- defaults to the connected user's office if null
-    p_db_office_id IN VARCHAR2 DEFAULT NULL )
-  is
-    l_db_office_id VARCHAR2(16) := nvl(p_db_office_id, cwms_util.user_office_id);
-  begin
-    dbms_application_info.set_module ('cwms_cat.get_lookup_table','querying lookups');
-    
-    --sanitize vars
-    dbms_application_info.set_action('sanitizing vars');
-    cwms_util.check_inputs(str_tab_t(
-      p_lookup_category,
-      p_lookup_prefix,
-      p_db_office_id));
-    
-    -- check args for errors
-    dbms_application_info.set_action('checking args');
-    if p_lookup_category is null then
-      cwms_err.raise(
-            'NULL_ARGUMENT',
-            'Lookup Category');
-    end if;
-    
-    if p_lookup_prefix is null then
-      cwms_err.raise(
-            'NULL_ARGUMENT',
-            'Lookup Prefix');
-    end if;
-    
-    --do work.
-    dbms_application_info.set_action('querying lookups for: '||p_lookup_category);
-    p_lookup_type_tab := lookup_type_tab_t();
-    
-    EXECUTE IMMEDIATE 'SELECT CAST (MULTISET (SELECT :bv1 office_id,
-        '|| p_lookup_prefix || '_display_value display_value,
-        '|| p_lookup_prefix || '_tooltip tooltip,
-        '|| p_lookup_prefix || '_active active
-      FROM '||p_lookup_category||'
-      WHERE db_office_code = cwms_util.get_office_code(:bv2)
-      ) AS lookup_type_tab_t) FROM dual'
-    INTO p_lookup_type_tab
-    USING l_db_office_id, l_db_office_id;
+   procedure get_lookup_table(
+      -- the set of lookups for the office and type specified.
+      p_lookup_type_tab OUT lookup_type_tab_t,
+      -- the category of lookup to retrieve. currently should be the table name.
+      p_lookup_category IN VARCHAR2,
+      -- the lookups have a prefix on the column name.
+      p_lookup_prefix IN VARCHAR2,
+      -- defaults to the connected user's office if null
+      p_db_office_id IN VARCHAR2 DEFAULT NULL )
+   is
+      l_db_office_id    VARCHAR2(16) := trim(p_db_office_id);
+      l_lookup_category VARCHAR2(30) := trim(p_lookup_category);
+      l_lookup_prefix   VARCHAR2(30) := trim(p_lookup_prefix);
+      l_str             varchar2(32767);
+   begin
+      dbms_application_info.set_module ('cwms_cat.get_lookup_table','querying lookups');
 
-  end get_lookup_table;
+      -- check args for errors
+      dbms_application_info.set_action('checking args');
+      if l_lookup_category is null then
+         cwms_err.raise('NULL_ARGUMENT', 'p_lookup_category');
+      end if;
+      if l_lookup_category is null then
+         cwms_err.raise('NULL_ARGUMENT', 'p_lookup_prefix');
+      end if;
+      
+      begin
+         l_str := dbms_assert.simple_sql_name(nvl(l_db_office_id, cwms_util.user_office_id));
+      exception
+         when others then
+            cwms_err.raise('INVALID_OFFICE_ID', l_db_office_id);
+      end;
+      begin
+         l_str := dbms_assert.simple_sql_name(l_lookup_category);
+      exception
+         when others then
+            cwms_err.raise('INVALID_ITEM', l_lookup_category, 'lookup category');
+      end;
+      begin
+         l_str := dbms_assert.simple_sql_name(l_lookup_prefix);
+      exception
+         when others then
+            cwms_err.raise('INVALID_ITEM', l_lookup_prefix, 'lookup prefix');
+      end;
+
+
+      --do work.
+      dbms_application_info.set_action('querying lookups for: '||p_lookup_category);
+      p_lookup_type_tab := lookup_type_tab_t();
+      
+      l_str := 'SELECT CAST (MULTISET (SELECT :bv1 office_id,
+        '|| l_lookup_prefix || '_display_value display_value,
+        '|| l_lookup_prefix || '_tooltip tooltip,
+        '|| l_lookup_prefix || '_active active
+      FROM '||l_lookup_category||'
+      WHERE db_office_code = cwms_util.get_office_code(:bv2)
+      ) AS lookup_type_tab_t) FROM dual';
+      
+      cwms_util.check_dynamic_sql(l_str);
+      
+      EXECUTE IMMEDIATE l_str
+      INTO p_lookup_type_tab
+      USING l_db_office_id, l_db_office_id;
+
+   end get_lookup_table;
 
 -- stores a set of lookups replacing the existing lookups for the given category
 -- and office id.
-  procedure set_lookup_table(
-    p_lookup_type_tab IN lookup_type_tab_t,
-    -- the category of the incoming lookups, should be the table name.
-    p_lookup_category IN VARCHAR2,
-    -- the lookups have a prefix on the column name.
-    p_lookup_prefix IN VARCHAR2
-    )
-  is
-    
-    child_rec_exception EXCEPTION; 
-    PRAGMA exception_init (child_rec_exception, -2292);   
-    
-  begin
-    dbms_application_info.set_module ('cwms_cat.get_lookup_table','setting lookups');
-    
-    --sanitize vars
-    dbms_application_info.set_action('sanitizing vars');
-    cwms_util.check_inputs(str_tab_t(
-      p_lookup_category,
-      p_lookup_prefix));
-    
-    -- check args for errors
-    dbms_application_info.set_action('checking args');
-    if p_lookup_category is null then
-      cwms_err.raise(
-            'NULL_ARGUMENT',
-            'Lookup Category');
-    end if;
-    
-    if p_lookup_prefix is null then
-      cwms_err.raise(
-            'NULL_ARGUMENT',
-            'Lookup Prefix');
-    END IF;
-
--- removed use the delete_lookups() procedure instead.
---    begin
---      --clear out existing. this should probably be a loop to handle lus that are fked.
---      EXECUTE IMMEDIATE 'delete 
---          from '||p_lookup_category||' 
---          where db_office_code in (
---            select cwms_util.get_office_code(cwms_util.check_input_f(ltab.office_id)) 
---            from table (cast (:bv1 as lookup_type_tab_t)) ltab )'
---        using p_lookup_type_tab;
---        EXCEPTION
---            WHEN child_rec_exception THEN
---              null;
---    end;
-
-    --this should be a merge.
-    --incoming object array sanitized when being used.
-    EXECUTE IMMEDIATE 'MERGE INTO '||p_lookup_category||' lutab
-        USING (  SELECT cwms_util.get_office_code(cwms_util.check_input_f(ltab.office_id)) office_code, 
-                    cwms_util.check_input_f(ltab.display_value) display_value, 
-                    cwms_util.check_input_f(ltab.tooltip) tooltip, 
-                    cwms_util.check_input_f(ltab.active) active 
+   procedure set_lookup_table(
+      p_lookup_type_tab IN lookup_type_tab_t,
+      -- the category of the incoming lookups, should be the table name.
+      p_lookup_category IN VARCHAR2,
+      -- the lookups have a prefix on the column name.
+      p_lookup_prefix IN VARCHAR2
+      )
+   is
+   
+      child_rec_exception EXCEPTION; 
+      PRAGMA exception_init (child_rec_exception, -2292);   
+      l_lookup_category VARCHAR2(30) := trim(p_lookup_category);
+      l_lookup_prefix   VARCHAR2(30) := trim(p_lookup_prefix);
+      l_str             varchar2(32767);
+      
+   begin
+      dbms_application_info.set_module ('cwms_cat.set_lookup_table','setting lookups');
+      
+      --sanitize vars
+      dbms_application_info.set_action('sanitizing vars');
+      if l_lookup_category is null then
+         cwms_err.raise('NULL_ARGUMENT', 'p_lookup_category');
+      end if;
+      begin
+         l_str := dbms_assert.simple_sql_name(l_lookup_category);
+      exception
+         when others then
+            cwms_err.raise('INVALID_ITEM', l_lookup_category, 'lookup category');
+      end;
+      if l_lookup_category is null then
+         cwms_err.raise('NULL_ARGUMENT', 'p_lookup_prefix');
+      end if;
+      begin
+         l_str := dbms_assert.simple_sql_name(l_lookup_prefix);
+      exception
+         when others then
+            cwms_err.raise('INVALID_ITEM', l_lookup_prefix, 'lookup prefix');
+      end;
+      
+      --this should be a merge.
+      --incoming object array sanitized when being used. 
+      
+      l_str := 'MERGE INTO '||l_lookup_category||' lutab
+        USING (  SELECT cwms_util.get_office_code(ltab.office_id) office_code, 
+                    ltab.display_value display_value, 
+                    ltab.tooltip tooltip, 
+                    ltab.active active 
                 from table (cast (:bv1 as lookup_type_tab_t)) ltab
         ) mtab
         ON (  lutab.db_office_code = mtab.office_code 
-              AND upper(lutab.'||p_lookup_prefix||'_display_value) = upper(mtab.display_value)
+              AND upper(lutab.'||l_lookup_prefix||'_display_value) = upper(mtab.display_value)
         )  
         WHEN MATCHED THEN
             UPDATE SET 
-              lutab.'||p_lookup_prefix||'_tooltip = mtab.tooltip,
-              lutab.'||p_lookup_prefix||'_active = mtab.active
+              lutab.'||l_lookup_prefix||'_tooltip = mtab.tooltip,
+              lutab.'||l_lookup_prefix||'_active = mtab.active
         WHEN NOT MATCHED THEN
             INSERT 
-            ( lutab.'||p_lookup_prefix||'_code,
+            ( lutab.'||l_lookup_prefix||'_code,
               lutab.db_office_code,
-              lutab.'||p_lookup_prefix||'_display_value,
-              lutab.'||p_lookup_prefix||'_tooltip,
-              lutab.'||p_lookup_prefix||'_active 
+              lutab.'||l_lookup_prefix||'_display_value,
+              lutab.'||l_lookup_prefix||'_tooltip,
+              lutab.'||l_lookup_prefix||'_active 
             )
             VALUES (
               cwms_seq.nextval,
@@ -4027,65 +4016,80 @@ END cat_ts_id;
               mtab.display_value,
               mtab.tooltip,
               mtab.active
-            )'
+            )';
+            
+      cwms_util.check_dynamic_sql(l_str);
+                   
+      EXECUTE IMMEDIATE l_str
       USING p_lookup_type_tab;
-
-  end set_lookup_table;
+   
+   end set_lookup_table;
 
 --Deletes a set of lookup values that conform to a common structure but different names. 
 --The identifying parts within the arg lookup table type are used to determine which row
 --values to delete from the look up table.d.
-  procedure delete_lookups(
-    -- the lookups to delete. only the identifying parts need be defined.
-    p_lookup_type_tab IN lookup_type_tab_t,
-    -- the category of the incoming lookups, should be the table name.
-    p_lookup_category IN VARCHAR2,
-    -- the lookups have a prefix on the column name.
-    p_lookup_prefix IN VARCHAR2
-    )
-  is
+   procedure delete_lookups(
+      -- the lookups to delete. only the identifying parts need be defined.
+      p_lookup_type_tab IN lookup_type_tab_t,
+      -- the category of the incoming lookups, should be the table name.
+      p_lookup_category IN VARCHAR2,
+      -- the lookups have a prefix on the column name.
+      p_lookup_prefix IN VARCHAR2
+      )
+   is
 
-    child_rec_exception EXCEPTION; 
-    PRAGMA exception_init (child_rec_exception, -2292);   
+      child_rec_exception EXCEPTION; 
+      PRAGMA exception_init (child_rec_exception, -2292);   
+      l_lookup_category VARCHAR2(30) := trim(p_lookup_category);
+      l_lookup_prefix   VARCHAR2(30) := trim(p_lookup_prefix);
+      l_str             varchar2(32767);
 
-  begin
-    dbms_application_info.set_module ('cwms_cat.delete_lookups','deleting lookups');  
-   
-    --sanitize vars
-    dbms_application_info.set_action('sanitizing vars');
-    cwms_util.check_inputs(str_tab_t(
-      p_lookup_category,
-      p_lookup_prefix));
-    
-    -- check args for errors
-    dbms_application_info.set_action('checking args');
-    if p_lookup_category is null then
-      cwms_err.raise(
-            'NULL_ARGUMENT',
-            'Lookup Category');
-    end if;
-    
-    if p_lookup_prefix is null then
-      cwms_err.raise(
-            'NULL_ARGUMENT',
-            'Lookup Prefix');
-    end if;
+   begin
+      dbms_application_info.set_module ('cwms_cat.delete_lookups','deleting lookups');  
+      
+      --sanitize vars
+      dbms_application_info.set_action('sanitizing vars');
+      --sanitize vars
+      dbms_application_info.set_action('sanitizing vars');
+      if l_lookup_category is null then
+         cwms_err.raise('NULL_ARGUMENT', 'p_lookup_category');
+      end if;
+      begin
+         l_str := dbms_assert.simple_sql_name(l_lookup_category);
+      exception
+         when others then
+            cwms_err.raise('INVALID_ITEM', l_lookup_category, 'lookup category');
+      end;
+      if l_lookup_category is null then
+         cwms_err.raise('NULL_ARGUMENT', 'p_lookup_prefix');
+      end if;
+      begin
+         l_str := dbms_assert.simple_sql_name(l_lookup_prefix);
+      exception
+         when others then
+            cwms_err.raise('INVALID_ITEM', l_lookup_prefix, 'lookup prefix');
+      end;
 
-    BEGIN
-      --delete the passed in lookups. this will fail if lookups are fked.
-      EXECUTE IMMEDIATE 
-      'DELETE FROM '||p_lookup_category||'   
-      WHERE '||p_lookup_prefix||'_code IN (    
-        SELECT lu.'||p_lookup_prefix||'_code     
-        FROM '||p_lookup_category||' lu    
-        INNER JOIN TABLE (CAST (:bv1 AS lookup_type_tab_t)) ltab     
-          ON lu.db_office_code = cwms_util.get_office_code(ltab.office_id)    
-          AND UPPER(lu.'||p_lookup_prefix||'_display_value) = UPPER(ltab.display_value))' 
-      USING p_lookup_type_tab;
+      l_str := 'DELETE FROM '||l_lookup_category||'   
+         WHERE '||l_lookup_prefix||'_code IN (    
+         SELECT lu.'||l_lookup_prefix||'_code     
+         FROM '||l_lookup_category||' lu    
+         INNER JOIN TABLE (CAST (:bv1 AS lookup_type_tab_t)) ltab     
+         ON lu.db_office_code = cwms_util.get_office_code(ltab.office_id)    
+         AND UPPER(lu.'||l_lookup_prefix||'_display_value) = UPPER(ltab.display_value))';
+         
+      cwms_util.check_dynamic_sql(l_str);
+         
+      BEGIN
+         --delete the passed in lookups. this will fail if lookups are fked. 
+         
+         EXECUTE IMMEDIATE 
+            l_str 
+            USING p_lookup_type_tab;
       EXCEPTION
-          WHEN CHILD_REC_EXCEPTION THEN
+         WHEN CHILD_REC_EXCEPTION THEN
             NULL;
-    END;    
+      END;    
  
   END delete_lookups;
 

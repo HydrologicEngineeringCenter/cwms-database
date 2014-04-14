@@ -89,8 +89,6 @@ AS
    IS
       l_timezone   VARCHAR2 (28);
    BEGIN
-      check_input (p_timezone);
-
       IF p_timezone IS NOT NULL
       THEN
          l_timezone := UPPER (p_timezone);
@@ -1319,7 +1317,6 @@ AS
       END LOOP;
 
       cwms_util.DUMP (l_sql);
-
       EXECUTE IMMEDIATE l_sql;
    EXCEPTION
       -- ORA-24344: success with compilation error
@@ -3512,56 +3509,6 @@ AS
          cwms_err.raise ('ERROR', 'Invalid expression: ' || p_expr);
    END eval_expression;
 
-   -----------------------------
-   -- check for SQL injection --
-   -----------------------------
-
-   PROCEDURE check_inputs (p_input IN str_tab_t)
-   IS
-      PROCEDURE invalid(p_offending in varchar2, p_text in varchar2)
-      IS
-      BEGIN
-         cwms_err.raise ('ERROR', 'Invalid input: '''||p_offending||''' is not allowed in '''||p_text||'''');
-      END;
-   BEGIN
-      IF p_input IS NOT NULL
-      THEN
-         FOR i IN 1 .. p_input.COUNT
-         LOOP
-            CASE
-               WHEN SUBSTR (p_input (i), 1, 1) = ''
-               THEN
-                  invalid('', p_input(i));
-               WHEN INSTR (p_input (i), '--') != 0
-               THEN
-                  invalid('--', p_input(i));
-               WHEN INSTR (p_input (i), '/*') != 0
-               THEN
-                  invalid('/*', p_input(i));
-               WHEN INSTR (p_input (i), ';') != 0
-               THEN
-                  invalid(';', p_input(i));
-               ELSE
-                  NULL;
-            END CASE;
-         END LOOP;
-      END IF;
-   END check_inputs;
-
-   PROCEDURE check_input (p_input IN VARCHAR2)
-   IS
-   BEGIN
-      check_inputs (str_tab_t (p_input));
-   END check_input;
-
-   FUNCTION check_input_f (p_input IN VARCHAR2)
-      RETURN VARCHAR2
-   IS
-   BEGIN
-      check_inputs (str_tab_t (p_input));
-      RETURN p_input;
-   END check_input_f;
-
 
    ---------------------
    -- Append routines --
@@ -3698,8 +3645,6 @@ AS
    IS
       l_name   VARCHAR2 (64);
    BEGIN
-      check_input (p_name);
-
       SELECT name
         INTO l_name
         FROM at_boolean_state
@@ -3720,8 +3665,6 @@ AS
    IS
       l_state   CHAR (1);
    BEGIN
-      check_input (p_name);
-
       BEGIN
          SELECT state
            INTO l_state
@@ -3754,8 +3697,6 @@ AS
       -------------------
       -- sanity checks --
       -------------------
-      check_inputs (str_tab_t (p_item_name, p_txt_value));
-
       IF p_item_name IS NULL
       THEN
          cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
@@ -3785,8 +3726,6 @@ AS
       -------------------
       -- sanity checks --
       -------------------
-      check_inputs (str_tab_t (p_item_name, p_txt_value));
-
       IF p_item_name IS NULL
       THEN
          cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
@@ -3816,8 +3755,6 @@ AS
       -------------------
       -- sanity checks --
       -------------------
-      check_input (p_item_name);
-
       IF p_item_name IS NULL
       THEN
          cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
@@ -3848,8 +3785,6 @@ AS
       -------------------
       -- sanity checks --
       -------------------
-      check_input (p_item_name);
-
       IF p_item_name IS NULL
       THEN
          cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
@@ -3901,8 +3836,6 @@ AS
       -------------------
       -- sanity checks --
       -------------------
-      check_input (p_item_name);
-
       IF p_item_name IS NULL
       THEN
          cwms_err.raise ('NULL_ARGUMENT', 'P_ITEM_NAME');
@@ -3989,6 +3922,55 @@ AS
       end if;
       return l_vertical_datum;
    end get_effective_vertical_datum;
+
+   procedure check_dynamic_sql(
+      p_sql in varchar)
+   is 
+      l_sql_no_quotes varchar2(32767);
+      
+      function remove_quotes(p_text in varchar2) return varchar2
+      as
+         l_test varchar2(32767);
+         l_result varchar2(32767);
+         l_pos    pls_integer;
+      begin
+         l_test := p_text;
+         loop
+            l_pos := regexp_instr(l_test, '[''"]');
+            if l_pos > 0 then
+               if substr(l_test, l_pos, 1) = '"' then 
+                  ------------------------
+                  -- double-quote first --
+                  ------------------------
+                  l_result := regexp_replace(l_test, '"[^"]*?"', '#', 1, 1);
+                  l_result := regexp_replace(l_result, '''[^'']*?''', '$', 1, 1);
+               else
+                  ------------------------
+                  -- single-quote first --
+                  ------------------------
+                  l_result := regexp_replace(l_test, '''[^'']*?''', '$', 1, 1);
+                  l_result := regexp_replace(l_result, '"[^"]*?"', '#', 1, 1);
+               end if;
+            else
+              -----------------------
+              -- no quotes in text --
+              -----------------------
+               l_result := l_test;
+            end if;
+            exit when l_result = l_test;
+            l_test := l_result;
+         end loop;
+         return l_result;
+      end;
+   begin
+      l_sql_no_quotes := remove_quotes(p_sql);
+      if regexp_instr(l_sql_no_quotes, '([''";]|--|/\*)') > 0 then
+         cwms_err.raise(
+            'ERROR',
+            'UNSAFE DYNAMIC SQL : '||p_sql);
+      end if;
+   end check_dynamic_sql;      
+
    
 /*
 BEGIN

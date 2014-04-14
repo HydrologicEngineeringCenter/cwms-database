@@ -10,10 +10,6 @@ is
    l_basin_code number(10);
    l_office_id  varchar2(16);
 begin
-   ------------------
-   -- sanity check --
-   ------------------
-   cwms_util.check_inputs(str_tab_t(p_basin_id, p_office_id));
    if p_basin_id is null then
       cwms_err.raise(
          'INVALID_ITEM',
@@ -64,14 +60,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_basin_id, 
-      p_fail_if_exists, 
-      p_ignore_nulls, 
-      p_parent_basin_id, 
-      p_primary_stream_id, 
-      p_area_unit, 
-      p_office_id));
    if p_basin_id is null then
       cwms_err.raise(
          'INVALID_ITEM',
@@ -188,10 +176,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_basin_id, 
-      p_area_unit, 
-      p_office_id));
    if p_basin_id is null then
       cwms_err.raise(
          'INVALID_ITEM',
@@ -258,9 +242,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_delete_action, 
-      p_office_id));
    if p_basin_id is null then
       cwms_err.raise(
          'INVALID_ITEM',
@@ -328,10 +309,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_old_basin_id, 
-      p_new_basin_id, 
-      p_office_id));
    if p_old_basin_id is null then
       cwms_err.raise(
          'INVALID_ITEM',
@@ -383,12 +360,6 @@ begin
    ------------------
    -- sanity check --
    ------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_basin_id_mask, 
-      p_parent_basin_id_mask, 
-      p_primary_stream_id_mask, 
-      p_area_unit, 
-      p_office_id_mask));
    l_basin_id_mask          := cwms_util.normalize_wildcards(upper(p_basin_id_mask));
    l_parent_basin_id_mask   := cwms_util.normalize_wildcards(upper(p_parent_basin_id_mask));
    l_primary_stream_id_mask := cwms_util.normalize_wildcards(upper(p_primary_stream_id_mask));
@@ -533,11 +504,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_basin_id, 
-      p_precip_unit,
-      p_volume_unit, 
-      p_office_id));
    if p_basin_id is null then
       cwms_err.raise(
          'INVALID_ITEM',

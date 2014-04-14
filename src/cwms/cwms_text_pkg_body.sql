@@ -36,8 +36,6 @@ as
    is
       l_media_type_code   number(10);
    begin
-      cwms_util.check_input(p_type_or_ext);
-
       if p_type_or_ext is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TYPE_OR_EXT');
       end if;
@@ -623,7 +621,6 @@ as
 
       for i in 1 .. l_office_id_mask_tab.count loop
          l_id_mask := cwms_util.normalize_wildcards(upper(l_office_id_mask_tab(i)), true);
-
          for rec in (select office_id
                        from cwms_office
                       where office_id like l_id_mask) loop
@@ -658,8 +655,6 @@ as
       l_id_mask_tab        := cwms_util.split_text(p_id_masks, p_delimiter);
 
       for i in 1 .. l_id_mask_tab.count loop
-         l_id_mask := cwms_util.normalize_wildcards(upper(l_id_mask_tab(i)), true);
-
          for rec in (select id
                        from at_clob
                       where id like l_id_mask) loop
@@ -684,27 +679,29 @@ as
       -- build the query string --
       ----------------------------
       if l_include_descriptions then
-         l_query_str := 'select o.office_id,
-                 c.id,
-                 c.description
-            from cwms_office o,
-                 at_clob c
-           where o.office_id in (:office_ids)
-             and c.office_code = o.office_code
-             and c.id in (:ids)';
+         l_query_str := 
+            'select o.office_id,
+                    c.id,
+                    c.description
+               from cwms_office o,
+                    at_clob c
+              where o.office_id in (:office_ids)
+                and c.office_code = o.office_code
+                and c.id in (:ids)';
       else
-         l_query_str := 'select o.office_id,
-                 c.id
-            from cwms_office o,
-                 at_clob c
-           where o.office_id in (:office_ids)
-             and c.office_code = o.office_code
-             and c.id in (:ids)';
+         l_query_str := 
+            'select o.office_id,
+                    c.id
+               from cwms_office o,
+                    at_clob c
+              where o.office_id in (:office_ids)
+                and c.office_code = o.office_code
+                and c.id in (:ids)';
       end if;
 
-      l_query_str          := replace(l_query_str, ':office_ids', l_office_id_bind_str);
-      l_query_str          := replace(l_query_str, ':ids', l_id_bind_str);
-
+      l_query_str := replace(l_query_str, ':office_ids', l_office_id_bind_str);
+      l_query_str := replace(l_query_str, ':ids', l_id_bind_str);
+      cwms_util.check_dynamic_sql(l_query_str);
       -----------------------
       -- perform the query --
       -----------------------
@@ -843,8 +840,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(p_std_text_id, p_fail_if_exists, p_office_id));
-
       if p_std_text_id is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_STD_TEXT_ID');
       end if;
@@ -993,8 +988,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(p_std_text_id, p_office_id));
-
       if p_std_text_id is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_STD_TEXT_ID');
       end if;
@@ -1310,16 +1303,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_std_text_id,
-                                p_time_zone,
-                                p_max_version,
-                                p_existing,
-                                p_non_existing,
-                                p_replace_all,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -1541,14 +1524,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_std_text_id,
-                                p_time_zone,
-                                p_max_version,
-                                p_replace_all,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -1693,14 +1668,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_std_text_id_mask,
-                                p_time_zone,
-                                p_max_version,
-                                p_retrieve_text,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -1834,13 +1801,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_std_text_id_mask,
-                                p_time_zone,
-                                p_max_version,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -1947,13 +1907,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_std_text_id_mask,
-                                p_time_zone,
-                                p_max_version,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -2267,15 +2220,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_time_zone,
-                                p_max_version,
-                                p_existing,
-                                p_non_existing,
-                                p_replace_all,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -2496,13 +2440,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_time_zone,
-                                p_max_version,
-                                p_replace_all,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -2629,16 +2566,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_text_id,
-                                p_time_zone,
-                                p_max_version,
-                                p_existing,
-                                p_non_existing,
-                                p_replace_all,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -2854,13 +2781,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_time_zone,
-                                p_max_version,
-                                p_replace_all,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -2996,13 +2916,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_text_mask,
-                                p_time_zone,
-                                p_max_version,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -3104,13 +3017,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_text_mask,
-                                p_time_zone,
-                                p_max_version,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -3217,13 +3123,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_text_mask,
-                                p_time_zone,
-                                p_max_version,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -3295,8 +3194,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(p_text_id, p_delete_action, p_office_id));
-
       if p_text_id is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TEXT_ID');
       end if;
@@ -3593,16 +3490,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_binary_type,
-                                p_time_zone,
-                                p_max_version,
-                                p_existing,
-                                p_non_existing,
-                                p_replace_all,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -3832,14 +3719,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_binary_type,
-                                p_time_zone,
-                                p_max_version,
-                                p_replace_all,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -3972,16 +3851,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_binary_id,
-                                p_time_zone,
-                                p_max_version,
-                                p_existing,
-                                p_non_existing,
-                                p_replace_all,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -4197,13 +4066,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_time_zone,
-                                p_max_version,
-                                p_replace_all,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -4343,14 +4205,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_binary_type_mask,
-                                p_time_zone,
-                                p_max_version,
-                                p_retrieve_binary,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -4511,13 +4365,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_binary_type_mask,
-                                p_time_zone,
-                                p_max_version,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -4638,13 +4485,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_tsid,
-                                p_binary_type_mask,
-                                p_time_zone,
-                                p_max_version,
-                                p_office_id));
-
       if p_tsid is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_TSID');
       end if;
@@ -4731,8 +4571,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(p_binary_id, p_delete_action, p_office_id));
-
       if p_binary_id is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_BINARY_ID');
       end if;
@@ -4789,12 +4627,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(
-                                p_file_extension,
-                                p_media_type,
-                                p_fail_if_exists,
-                                p_office_id));
-
       if p_file_extension is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_FILE_EXTENSION');
       end if;
@@ -4877,8 +4709,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(p_file_extension, p_office_id));
-
       if p_file_extension is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_FILE_EXTENSION');
       end if;
@@ -4931,8 +4761,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(p_file_extension_mask, p_office_id_mask));
-
       if p_file_extension_mask is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_FILE_EXTENSION_MASK');
       end if;
@@ -4992,8 +4820,6 @@ as
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(p_media_type_mask, p_office_id_mask));
-
       if p_media_type_mask is null then
          cwms_err.raise('NULL_ARGUMENT', 'P_MEDIA_TYPE_MASK');
       end if;

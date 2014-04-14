@@ -51,6 +51,7 @@ AS
 		l_prop_id							VARCHAR2 (256);
 		l_query								VARCHAR2 (32767);
 		l_output 							VARCHAR (1000);
+		l_pos                         PLS_INTEGER;
 	BEGIN
 		p_cwms_cat := NULL;
 
@@ -67,7 +68,6 @@ AS
 				l_prop_id := upper(cwms_util.normalize_wildcards(
                p_property_info(i).prop_id,
                true));
-
 				IF i = 1
 				THEN
 					l_query :=
@@ -98,7 +98,7 @@ AS
 						|| ' order by o.office_id, upper(p.prop_category), upper(p.prop_id) asc';
 				END IF;
 			END LOOP;
-
+         cwms_util.check_dynamic_sql(l_query);
 			OPEN p_cwms_cat FOR l_query;
 		END IF;
 	END get_properties;

@@ -14,10 +14,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_office_id,
-      p_location_id,
-      p_gage_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -85,23 +81,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_gage_id,
-      p_gage_type,
-      p_fail_if_exists,
-      p_ignore_nulls,
-      p_assoc_loc_id,
-      p_discontinued,
-      p_out_of_service,
-      p_manufacturer,
-      p_model_number,
-      p_serial_number,
-      p_phone_number,
-      p_internet_addr,
-      p_other_access_id,
-      p_comments,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -242,10 +221,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_office_id,
-      p_location_id,
-      p_gage_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -306,10 +281,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_office_id,
-      p_location_id,
-      p_gage_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -367,11 +338,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_office_id,
-      p_location_id,
-      p_old_gage_id,
-      p_new_gage_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -434,21 +400,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id_mask,
-      p_gage_id_mask,
-      p_gage_type_mask,
-      p_discontinued_mask,
-      p_out_of_service_mask,
-      p_manufacturer_mask,
-      p_model_number_mask,
-      p_serial_number_mask,
-      p_phone_number_mask,
-      p_internet_addr_mask,
-      p_other_access_id_mask,
-      p_assoc_location_id_mask,
-      p_comments_mask,
-      p_office_id_mask));
    ----------------------      
    -- set up the masks --
    ----------------------      
@@ -640,18 +591,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_gage_id,
-      p_sensor_id,
-      p_fail_if_exists,
-      p_ignore_nulls,
-      p_parameter_id,
-      p_report_unit_id,
-      p_out_of_service,
-      p_values_unit,
-      p_comments,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -813,12 +752,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_gage_id,
-      p_sensor_id,
-      p_values_unit,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -906,11 +839,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_gage_id,
-      p_sensor_id,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -963,12 +891,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_gage_id,
-      p_old_sensor_id,
-      p_new_sensor_id,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -1046,19 +968,6 @@ begin
    -------------------   
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(   
-      p_location_id_mask,
-      p_gage_id_mask,
-      p_sensor_id_mask,
-      p_parameter_id_mask,
-      p_reporting_unit_id_mask,
-      p_out_of_service_mask,
-      p_manufacturer_mask,
-      p_model_number_mask,
-      p_serial_number_mask,
-      p_comments_mask,
-      p_unit_system,
-      p_office_id_mask));
    if p_unit_system not in ('EN', 'SI') then
       cwms_err.raise(
          'INVALID_ITEM',
@@ -1239,14 +1148,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_gage_id,
-      p_goes_id,
-      p_fail_if_exists,
-      p_ignore_nulls,
-      p_goes_satellite,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise('ERROR', 'Location identifier must not be null.');
    end if;      
@@ -1386,10 +1287,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_gage_id,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise('ERROR', 'Location identifier must not be null.');
    end if;      
@@ -1462,10 +1359,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_gage_id,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise('ERROR', 'Location identifier must not be null.');
    end if;      
@@ -1502,11 +1395,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_gage_id,
-      p_new_goes_id,
-      p_office_id));
    if p_location_id is null then
       cwms_err.raise('ERROR', 'Location identifier must not be null.');
    end if;      
@@ -1557,15 +1445,6 @@ is
    l_satellite_mask   varchar2(1);
    l_office_id_mask   varchar2(16);
 begin
-   -------------------
-   -- sanity checks --
-   -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id_mask,
-      p_gage_id_mask,
-      p_goes_id_mask,
-      p_satellite_mask, 
-      p_office_id_mask));
    ----------------------
    -- set up the masks --
    ----------------------

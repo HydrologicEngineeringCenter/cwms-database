@@ -3800,10 +3800,6 @@ AS
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (str_tab_t (p_data_stream_id,
-                                         p_new_state,
-                                         p_old_state,
-                                         p_office_id));
       l_office_id := cwms_util.get_db_office_id (p_office_id);
 
       BEGIN
@@ -3895,13 +3891,6 @@ AS
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (str_tab_t (p_component,
-                                         p_instance,
-                                         p_host,
-                                         p_data_stream_id,
-                                         p_new_state,
-                                         p_old_state,
-                                         p_office_id));
       l_office_id := cwms_util.get_db_office_id (p_office_id);
 
       BEGIN
@@ -4002,7 +3991,6 @@ AS
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (str_tab_t (p_data_stream_id, p_office_id));
       l_office_id := cwms_util.get_db_office_id (p_office_id);
 
       l_data_stream_id := TRIM (p_data_stream_id);
@@ -4060,11 +4048,6 @@ AS
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (str_tab_t (p_component,
-                                         p_instance,
-                                         p_host,
-                                         p_data_stream_id,
-                                         p_office_id));
       l_office_id := cwms_util.get_db_office_id (p_office_id);
 
       l_data_stream_id := TRIM (p_data_stream_id);

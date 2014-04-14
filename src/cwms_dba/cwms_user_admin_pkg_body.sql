@@ -10,12 +10,59 @@ AS
 		  --------- ----------	---------------	------------------------------------
 				1.0		  10/6/2008 				1. Created this package body.
 			 ******************************************************************************/
-	PROCEDURE lock_db_account (p_username IN VARCHAR2 DEFAULT NULL )
+   procedure check_dynamic_sql(
+      p_sql in varchar)
+   is 
+      l_sql_no_quotes varchar2(32767);
+      
+      function remove_quotes(p_text in varchar2) return varchar2
+      as
+         l_test varchar2(32767);
+         l_result varchar2(32767);
+         l_pos    pls_integer;
+      begin
+         l_test := p_text;
+         loop
+            l_pos := regexp_instr(l_test, '[''"]');
+            if l_pos > 0 then
+               if substr(l_test, l_pos, 1) = '"' then 
+                  ------------------------
+                  -- double-quote first --
+                  ------------------------
+                  l_result := regexp_replace(l_test, '"[^"]*?"', '#', 1, 1);
+                  l_result := regexp_replace(l_result, '''[^'']*?''', '$', 1, 1);
+               else
+                  ------------------------
+                  -- single-quote first --
+                  ------------------------
+                  l_result := regexp_replace(l_test, '''[^'']*?''', '$', 1, 1);
+                  l_result := regexp_replace(l_result, '"[^"]*?"', '#', 1, 1);
+               end if;
+            else
+              -----------------------
+              -- no quotes in text --
+              -----------------------
+               l_result := l_test;
+            end if;
+            exit when l_result = l_test;
+            l_test := l_result;
+         end loop;
+         return l_result;
+      end;
+   begin
+      l_sql_no_quotes := remove_quotes(p_sql);
+      if regexp_instr(l_sql_no_quotes, '([''";]|--|/\*)') > 0 then
+         raise_application_error(-20998, 'ERROR: UNSAFE DYNAMIC SQL : '||p_sql);
+      end if;
+   end check_dynamic_sql;
+         
+   PROCEDURE lock_db_account (p_username IN VARCHAR2 DEFAULT NULL )
 	AS
 		l_sql_string						VARCHAR2 (400);
 	BEGIN
 		l_sql_string := 'ALTER user ' || p_username || ' account lock';
 		DBMS_OUTPUT.put_line (l_sql_string);
+      check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
 	END;
@@ -26,6 +73,7 @@ AS
 	BEGIN
 		l_sql_string := 'ALTER user ' || p_username || ' account unlock';
 		DBMS_OUTPUT.put_line (l_sql_string);
+      check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
 	END;
@@ -62,7 +110,8 @@ AS
 		THEN
 			IF l_account_status != 'OPEN'
 			THEN
-				l_sql_string := 'alter user ' || l_username || ' account unlock';
+				l_sql_string := 'alter user ' || dbms_assert.simple_sql_name(l_username) || ' account unlock';
+            check_dynamic_sql(l_sql_string);
 
 				EXECUTE IMMEDIATE l_sql_string;
 			--
@@ -71,19 +120,20 @@ AS
 			IF l_password IS NULL
 			THEN
 				l_sql_string :=
-					'create user ' || l_username
+					'create user ' || dbms_assert.simple_sql_name(l_username)
 					|| ' PROFILE CWMS_PROF IDENTIFIED BY values ''FEDCBA9876543210''
 									 DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP ACCOUNT UNLOCK';
 			ELSE
 				l_sql_string :=
 						'create user '
-					|| l_username
-					|| ' PROFILE CWMS_PROF IDENTIFIED BY "'
-					|| l_password
-					|| '" DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP ACCOUNT UNLOCK';
+					|| dbms_assert.simple_sql_name(l_username)
+					|| ' PROFILE CWMS_PROF IDENTIFIED BY '
+					|| dbms_assert.enquote_name(l_password, false)
+					|| ' DEFAULT TABLESPACE USERS TEMPORARY TABLESPACE TEMP ACCOUNT UNLOCK';
 			END IF;
 
 			--DBMS_OUTPUT.put_line (l_sql_string);
+         check_dynamic_sql(l_sql_string);
 
 			EXECUTE IMMEDIATE l_sql_string;
 		--
@@ -100,13 +150,15 @@ AS
 	BEGIN
 		create_db_account (p_username, p_password);
 
-		l_sql_string := 'GRANT CONNECT TO ' || p_username;
+		l_sql_string := 'GRANT CONNECT TO ' || dbms_assert.simple_sql_name(p_username);
 		DBMS_OUTPUT.put_line (l_sql_string);
+      check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
 
-		l_sql_string := 'GRANT CWMS_USER TO ' || p_username;
+		l_sql_string := 'GRANT CWMS_USER TO ' || dbms_assert.simple_sql_name(p_username);
 		DBMS_OUTPUT.put_line (l_sql_string);
+      check_dynamic_sql(l_sql_string);
 
 		EXECUTE IMMEDIATE l_sql_string;
 
@@ -122,16 +174,14 @@ AS
 										  p_password	IN VARCHAR2
 										 )
 	AS
-		l_username							VARCHAR2 (31);
-		l_password							VARCHAR2 (31);
-	BEGIN
-		l_username := p_username;
-		l_password := p_password;
-
-		EXECUTE IMMEDIATE   'alter user '
-							  || l_username
-							  || ' identified by '
-							  || l_password;
+      l_sql_string VARCHAR2 (400);
+   BEGIN
+      l_sql_string := 'alter user '
+                       || dbms_assert.simple_sql_name(p_username)
+                       || ' identified by '
+                       || dbms_assert.enquote_name(p_password);
+      check_dynamic_sql(l_sql_string);                        
+		EXECUTE IMMEDIATE l_sql_string;   
 	END;
 END cwms_user_admin;
 /

@@ -82,8 +82,6 @@ AS
 	IS
 		l_office_id   VARCHAR2 (16);
 	BEGIN
-		cwms_util.check_inputs (str_tab_t (p_location_id_or_alias, p_office_id)
-									  );
 		l_office_id :=
 			NVL (UPPER (TRIM (p_office_id)), cwms_util.user_office_id);
 
@@ -2438,10 +2436,6 @@ AS
 		-------------------
 		-- sanity checks --
 		-------------------
-		cwms_util.check_inputs (
-			str_tab_t (p_location_id, p_delete_action, p_db_office_id)
-		);
-
 		IF p_location_id IS NULL
 		THEN
 			cwms_err.raise ('ERROR', 'Location identifier must not be null.');
@@ -2762,7 +2756,7 @@ AS
 						IN (SELECT	 DISTINCT office_id, location_level_id,
 													 level_date, attribute_id,
 													 attribute_value, attribute_unit
-								FROM	 cwms_v_location_level
+                        FROM	 cwms_v_location_level
 							  WHERE	 office_id =
 											 NVL (UPPER (TRIM (p_db_office_id)),
 													cwms_util.user_office_id
@@ -5653,7 +5647,6 @@ AS
 		-------------------
 		-- sanity checks --
 		-------------------
-		cwms_util.check_inputs (str_tab_t (p_alias_id, p_group_id, p_category_id, p_office_id));
       l_office_code := cwms_util.get_db_office_code(upper(trim(p_office_id)));
       select office_id into l_office_id from cwms_office where office_code = l_office_code;
 
@@ -5722,8 +5715,6 @@ AS
 		-------------------
 		-- sanity checks --
 		-------------------
-		cwms_util.check_inputs (str_tab_t (p_alias_id, p_group_id, p_category_id, p_office_id));
-      
       l_office_id := cwms_util.get_db_office_id(p_office_id);
                        
       l_location_id := get_location_id_from_alias(p_alias_id, p_group_id, p_category_id, l_office_id);
@@ -5752,7 +5743,6 @@ AS
       l_multiple_ids   boolean;
       l_property_id     varchar2(256);
    begin
-      cwms_util.check_inputs(str_tab_t (p_alias_id, p_location_id, p_office_id));
       l_office_id := cwms_util.get_db_office_id(p_office_id);
 
       -----------------------------------------------------------
@@ -5861,17 +5851,6 @@ AS
 		-------------------
 		-- sanity checks --
 		-------------------
-		cwms_util.check_inputs (
-			str_tab_t (p_location_id,
-						  p_url_id,
-						  p_url_address,
-						  p_fail_if_exists,
-						  p_ignore_nulls,
-						  p_url_title,
-						  p_office_id
-						 )
-		);
-
 		IF p_location_id IS NULL
 		THEN
 			cwms_err.raise ('ERROR', 'Location identifier must not be null.');
@@ -5965,10 +5944,6 @@ AS
 		-------------------
 		-- sanity checks --
 		-------------------
-		cwms_util.check_inputs (
-			str_tab_t (p_location_id, p_url_id, p_office_id)
-		);
-
 		IF p_location_id IS NULL
 		THEN
 			cwms_err.raise ('ERROR', 'Location identifier must not be null.');
@@ -6021,10 +5996,6 @@ AS
 		-------------------
 		-- sanity checks --
 		-------------------
-		cwms_util.check_inputs (
-			str_tab_t (p_location_id, p_url_id, p_office_id)
-		);
-
 		IF p_location_id IS NULL
 		THEN
 			cwms_err.raise ('ERROR', 'Location identifier must not be null.');
@@ -6063,10 +6034,6 @@ AS
 		-------------------
 		-- sanity checks --
 		-------------------
-		cwms_util.check_inputs (
-			str_tab_t (p_location_id, p_old_url_id, p_new_url_id, p_office_id)
-		);
-
 		IF p_location_id IS NULL
 		THEN
 			cwms_err.raise ('ERROR', 'Location identifier must not be null.');
@@ -6122,17 +6089,6 @@ AS
 		l_url_title_mask		VARCHAR2 (256);
 		l_office_id_mask		VARCHAR2 (16);
 	BEGIN
-		-------------------
-		-- sanity checks --
-		-------------------
-		cwms_util.check_inputs (
-			str_tab_t (p_location_id_mask,
-						  p_url_id_mask,
-						  p_url_address_mask,
-						  p_url_title_mask,
-						  p_office_id_mask
-						 )
-		);
 		----------------------
 		-- set up the masks --
 		----------------------
@@ -6237,7 +6193,6 @@ AS
       return varchar2
    is
    begin
-      cwms_util.check_inputs(str_tab_t(p_location_id, p_office_id));
       return get_location_type(cwms_loc.get_location_code(p_office_id, p_location_id));
    end get_location_type;
 

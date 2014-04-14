@@ -1470,7 +1470,6 @@ is
    l_effective_start date;
    l_effective_end   date;
 begin
-   cwms_util.check_inputs(str_tab_t(p_time_zone, p_office_id_mask));
    l_spec_id_mask    := cwms_util.normalize_wildcards(p_spec_id_mask);
    l_office_id_mask  := cwms_util.normalize_wildcards(nvl(p_office_id_mask, cwms_util.user_office_id));
    l_time_zone       := nvl(p_time_zone, 'UTC');
@@ -1656,9 +1655,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_input(p_time_zone);
-   cwms_util.check_input(p_office_id);
-   cwms_util.check_inputs(p_units);
    if regexp_instr(p_rating_spec, '\*|\?') != 0 then
       cwms_err.raise(
          'ERROR',
@@ -2640,9 +2636,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_input(p_time_zone);
-   cwms_util.check_input(p_office_id);
-   cwms_util.check_inputs(p_units);
    if regexp_instr(p_rating_spec, '\*|\?') != 0 then
       cwms_err.raise(
          'ERROR',
@@ -4368,13 +4361,6 @@ is
         where rating_code = :rating_code';
 
 begin
-   -------------------
-   -- sanity checks --
-   -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_native_units,
-      p_time_zone,
-      p_office_id));
    -----------
    -- setup --
    -----------
@@ -4489,10 +4475,6 @@ is
    l_opening_pos   pls_integer;
    l_min_opening   binary_double;
 begin
-   --------------------------------------------------------
-   -- sanity check (others happen in get_rating_extents) --
-   --------------------------------------------------------
-   cwms_util.check_input(p_unit);
    ----------------------------
    -- get the rating extents --
    ----------------------------

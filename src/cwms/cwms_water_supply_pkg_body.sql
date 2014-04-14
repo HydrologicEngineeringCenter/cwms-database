@@ -46,9 +46,6 @@ IS
    l_project_id_mask VARCHAR2(49) := 
       cwms_util.normalize_wildcards(nvl(upper(p_project_id_mask), '%'), TRUE);
 BEGIN
-	cwms_util.check_inputs(str_tab_t(
-		p_project_id_mask,
-		p_db_office_id_mask));
    OPEN p_cursor FOR
       SELECT o.office_id AS project_office_id,
              bl.base_location_id
@@ -113,10 +110,6 @@ IS
    l_entity_name_mask VARCHAR2(49) := 
       cwms_util.normalize_wildcards(nvl(upper(p_entity_name_mask), '%'), TRUE);
 BEGIN
-	cwms_util.check_inputs(str_tab_t(
-		p_project_id_mask,
-		p_entity_name_mask,
-		p_db_office_id_mask));
    OPEN p_cursor FOR
       SELECT o.office_id AS project_office_id,
              bl.base_location_id
@@ -184,7 +177,6 @@ IS
    l_rec           at_water_user%rowtype;
    l_proj_loc_code NUMBER := p_water_user.project_location_ref.get_location_code; 
 BEGIN
-	cwms_util.check_input(p_fail_if_exists);
    BEGIN
       SELECT *
         INTO l_rec
@@ -231,7 +223,6 @@ PROCEDURE store_water_users(
    p_fail_if_exists IN VARCHAR2 DEFAULT 'T' )
 IS
 BEGIN
-	cwms_util.check_input(p_fail_if_exists);
    IF p_water_users IS NOT NULL THEN
       FOR i IN 1..p_water_users.count loop
          store_water_user(p_water_users(i), p_fail_if_exists);
@@ -258,7 +249,6 @@ PROCEDURE delete_water_user(
 IS
    l_proj_loc_code NUMBER := p_project_location_ref.get_location_code;
 BEGIN
-	cwms_util.check_inputs(str_tab_t(p_entity_name, p_delete_action));
    IF NOT p_delete_action IN (cwms_util.delete_key, cwms_util.delete_all ) THEN
       cwms_err.raise(
          'ERROR',
@@ -334,7 +324,6 @@ PROCEDURE rename_water_user(
 	p_entity_name_new      IN VARCHAR2 )
 IS
 BEGIN
-	cwms_util.check_inputs(str_tab_t(p_entity_name_old, p_entity_name_new));
    UPDATE at_water_user
       SET entity_name = p_entity_name_new
     WHERE project_location_code = p_project_location_ref.get_location_code
@@ -356,7 +345,6 @@ PROCEDURE retrieve_contracts(
    p_entity_name          IN  VARCHAR2 )
 IS
 BEGIN
-	cwms_util.check_input(p_entity_name);
    p_contracts := water_user_contract_tab_t();
    FOR rec IN (
       SELECT wuc.contract_name,
@@ -505,7 +493,6 @@ IS
       p_rec.storage_unit_code := l_storage_unit_code;
    END;
 BEGIN
-	cwms_util.check_input(p_fail_if_exists);
    l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);
    IF p_contracts IS NOT NULL THEN
       FOR i IN 1..p_contracts.count loop
@@ -619,7 +606,6 @@ PROCEDURE rename_contract(
    p_new_contract_name   IN VARCHAR2 )
 IS
 BEGIN
-	cwms_util.check_inputs(str_tab_t(p_old_contract_name, p_new_contract_name));
    UPDATE at_water_user_contract
       SET contract_name = p_new_contract_name
     WHERE water_user_code = 
@@ -645,7 +631,6 @@ PROCEDURE get_contract_types(
 	p_db_office_id   IN  VARCHAR2 DEFAULT NULL )
 IS
 BEGIN
-	cwms_util.check_input(p_db_office_id);
    p_contract_types := lookup_type_tab_t();
    FOR rec IN (
       SELECT o.office_id,
@@ -685,7 +670,6 @@ IS
    l_fail_if_exists boolean; 
    l_rec            at_ws_contract_type%rowtype;
 BEGIN
-	cwms_util.check_input(p_fail_if_exists);
    l_fail_if_exists := cwms_util.is_true(p_fail_if_exists); 
    IF p_contract_types IS NOT NULL THEN
       FOR i IN 1..p_contract_types.count loop
@@ -913,15 +897,6 @@ PROCEDURE retrieve_pump_accounting(
    
 BEGIN
 
-    cwms_util.check_inputs(str_tab_t(
-       p_units,
-       l_time_zone,
-       p_start_inclusive,
-       p_end_inclusive,
-       p_ascending_flag,
-       p_transfer_type
-       ));
-        
     -- get the out going unit code.
     select unit_code 
     into l_unit_code 
@@ -1111,7 +1086,6 @@ BEGIN
             'NULL_ARGUMENT',
             'Water User Contract Name');
     END IF; 
-    cwms_util.check_input(l_contract_name);
     
     IF  p_contract_ref.water_user IS NULL THEN
       cwms_err.raise(
@@ -1125,7 +1099,6 @@ BEGIN
             'NULL_ARGUMENT',
             'Water User Entity Name');
     END IF; 
-    cwms_util.check_input(l_entity_name);
     
     IF p_contract_ref.water_user.project_location_ref IS NULL THEN
       cwms_err.raise(

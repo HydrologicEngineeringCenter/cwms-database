@@ -1000,6 +1000,7 @@ AS
       l_tz_offset        NUMBER;
       l_office_id        VARCHAR2 (16);
       l_tsid             VARCHAR2 (193);
+      l_query            VARCHAR2 (32767);
    BEGIN
       IF p_time_zone_name IS NULL
       THEN
@@ -1026,17 +1027,21 @@ AS
 
       IF l_interval_val > 60
       THEN
-         BEGIN
-            EXECUTE IMMEDIATE REPLACE (
-                                '
-            select distinct mod(round((cast((cast(date_time as timestamp) at time zone ''$tz'') as date)
-                               - trunc(cast((cast(date_time as timestamp) at time zone ''$tz'') as date)))
-                               * 1440, 0), :a)
-              from (select distinct date_time
-                      from av_tsv_dqu
-                     where ts_code = :b)',
-                                '$tz',
-                                l_time_zone_name)
+         BEGIN   
+            l_query := REPLACE (
+               'select distinct mod(round((cast((cast(date_time as timestamp) at time zone ''$tz'') as date)
+                                   - trunc(cast((cast(date_time as timestamp) at time zone ''$tz'') as date)))
+                                   * 1440, 0), :a)
+                  from (select distinct date_time
+                          from av_tsv_dqu
+                         where ts_code = :b
+                       )',
+                       '$tz',
+                       l_time_zone_name);
+                       
+            cwms_util.check_dynamic_sql(l_query);
+                                    
+            EXECUTE IMMEDIATE l_query               
                INTO l_tz_offset
                USING l_interval_val, p_ts_code;
          EXCEPTION
@@ -1278,7 +1283,6 @@ AS
       l_start_time DATE;
       l_end_time   DATE;
    BEGIN
-      cwms_util.check_input(p_time_zone);
       l_start_time := cwms_util.change_timezone(p_start_time, p_time_zone, 'UTC');
       l_end_time   := cwms_util.change_timezone(p_end_time,   p_time_zone, 'UTC');
       OPEN p_date_cat FOR
@@ -1302,7 +1306,6 @@ AS
       p_db_office_id   IN     VARCHAR2 DEFAULT NULL)
    IS
    BEGIN
-      cwms_util.check_inputs(str_tab_t(p_cwms_ts_id, p_db_office_id));
       get_ts_version_dates (p_date_cat,
                             get_ts_code (p_cwms_ts_id, p_db_office_id),
                             p_start_time,
@@ -2109,20 +2112,6 @@ AS
          END IF;
       END;
    BEGIN
-      -------------------
-      -- sanity checks --
-      -------------------
-      cwms_util.check_inputs (str_tab_t (p_cwms_ts_id,
-                                         p_units,
-                                         p_date_time_type,
-                                         p_time_zone,
-                                         p_trim,
-                                         p_start_inclusive,
-                                         p_end_inclusive,
-                                         p_previous,
-                                         p_next,
-                                         p_max_version,
-                                         p_office_id));
       --------------------
       -- initialization --
       --------------------
@@ -2294,7 +2283,8 @@ AS
                       on v.date_time = t.date_time
                       order by t.date_time asc';
                replace_strings;
-
+               cwms_util.check_dynamic_sql(l_query_str);
+               
                OPEN l_cursor FOR l_query_str
                   USING l_value_offset,
                         l_missing,
@@ -2396,6 +2386,7 @@ AS
                            ))
                  order by date_time';
                   replace_strings;
+                  cwms_util.check_dynamic_sql(l_query_str);
 
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
@@ -2470,6 +2461,7 @@ AS
                              on v.date_time = t.date_time
                        order by t.date_time asc';
                   replace_strings;
+                  cwms_util.check_dynamic_sql(l_query_str);
 
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
@@ -2524,6 +2516,7 @@ AS
                 group by local_time
                 order by local_time';
                replace_strings;
+               cwms_util.check_dynamic_sql(l_query_str);
 
                OPEN l_cursor FOR l_query_str
                   USING l_value_offset,
@@ -2564,6 +2557,7 @@ AS
                        )
                  order by date_time';
                replace_strings;
+               cwms_util.check_dynamic_sql(l_query_str);
 
                OPEN l_cursor FOR l_query_str
                   USING l_value_offset,
@@ -2633,6 +2627,7 @@ AS
                       on v.date_time = t.date_time
                       order by t.date_time asc';
                replace_strings;
+               cwms_util.check_dynamic_sql(l_query_str);
 
                OPEN l_cursor FOR l_query_str
                   USING l_value_offset,
@@ -2736,6 +2731,7 @@ AS
                            ))
                  order by date_time';
                   replace_strings;
+                  cwms_util.check_dynamic_sql(l_query_str);
 
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
@@ -2812,6 +2808,7 @@ AS
                           on v.date_time = t.date_time
                     order by t.date_time asc';
                   replace_strings;
+                  cwms_util.check_dynamic_sql(l_query_str);
                   OPEN l_cursor FOR l_query_str
                      USING l_value_offset,
                            l_missing,
@@ -2866,6 +2863,7 @@ AS
              group by local_time
              order by local_time';
                replace_strings;
+               cwms_util.check_dynamic_sql(l_query_str);
 
                OPEN l_cursor FOR l_query_str
                   USING l_value_offset,
@@ -2908,6 +2906,7 @@ AS
                        )
                  order by date_time';
                replace_strings;
+               cwms_util.check_dynamic_sql(l_query_str);
 
                OPEN l_cursor FOR l_query_str
                   USING l_value_offset,
@@ -4180,6 +4179,7 @@ AS
                                        t2.value,
                                        t2.quality_code,
                                        :l_version_date)';
+               cwms_util.check_dynamic_sql(l_sql_txt);
 
                EXECUTE IMMEDIATE l_sql_txt
                   USING l_value_offset,
@@ -4254,7 +4254,7 @@ AS
                                        t2.value,
                                        t2.quality_code,
                                        :l_version_date)';
-
+               cwms_util.check_dynamic_sql(l_sql_txt);
                EXECUTE IMMEDIATE l_sql_txt
                   USING l_value_offset,
                         l_timeseries_data,
@@ -4318,6 +4318,7 @@ AS
                                        t2.value,
                                        t2.quality_code,
                                        :l_version_date)';
+               cwms_util.check_dynamic_sql(l_sql_txt);
 
                EXECUTE IMMEDIATE l_sql_txt
                   USING l_value_offset,
@@ -4447,6 +4448,7 @@ AS
                                           t2.quality_code,
                                           :l_version_date)';
                end if;
+               cwms_util.check_dynamic_sql(l_sql_txt);
 
                EXECUTE IMMEDIATE l_sql_txt
                   USING l_value_offset,
@@ -4523,6 +4525,7 @@ AS
                                        t2.value,
                                        t2.quality_code,
                                        :l_version_date)';
+               cwms_util.check_dynamic_sql(l_sql_txt);
 
                EXECUTE IMMEDIATE l_sql_txt
                   USING l_value_offset,
@@ -4605,6 +4608,7 @@ AS
                                        t2.value,
                                        t2.quality_code,
                                        :l_version_date)';
+               cwms_util.check_dynamic_sql(l_sql_txt);
                EXECUTE IMMEDIATE l_sql_txt
                   USING l_value_offset,
                         l_timeseries_data,
@@ -4637,7 +4641,7 @@ AS
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
                EXECUTE IMMEDIATE REPLACE (
-                                   'insert
+                  'insert
                      into at_ts_deleted_times
                    select :millis,
                           :ts_code,
@@ -4666,7 +4670,7 @@ AS
                         l_timeseries_data;
 
                EXECUTE IMMEDIATE REPLACE (
-                                   'delete
+                  'delete
                      from table_name t1
                     where t1.ts_code = :ts_code
                       and t1.version_date = :version_date
@@ -4687,7 +4691,7 @@ AS
                         l_timeseries_data;
 
                EXECUTE IMMEDIATE REPLACE (
-                                   'MERGE INTO table_name t1
+                  'MERGE INTO table_name t1
                      USING (SELECT trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi'') as date_time,
                                    (t.value * c.factor + c.offset) - :l_value_offset as value,
                                    cwms_ts.clean_quality_code(t.quality_code) as quality_code
@@ -4764,7 +4768,7 @@ AS
                        WHERE start_date <= maxdate AND end_date > mindate)
             LOOP
                EXECUTE IMMEDIATE REPLACE (
-                                   'insert
+                  'insert
                      into at_ts_deleted_times
                    select :millis,
                           :ts_code,
@@ -4790,7 +4794,7 @@ AS
                         l_timeseries_data;
 
                EXECUTE IMMEDIATE REPLACE (
-                                   'delete
+                  'delete
                      from table_name t1
                     where t1.ts_code = :ts_code
                       and t1.version_date = :version_date
@@ -4808,7 +4812,7 @@ AS
                         l_timeseries_data;
 
                EXECUTE IMMEDIATE REPLACE (
-                                   'MERGE INTO table_name t1
+                  'MERGE INTO table_name t1
                      USING (SELECT trunc(CAST ((cwms_util.fixup_timezone(t.date_time) AT TIME ZONE ''GMT'') AS DATE), ''mi'') as date_time,
                                    (t.value * c.factor + c.offset) - :l_value_offset as value,
                                    cwms_ts.clean_quality_code(t.quality_code) as quality_code
@@ -5372,7 +5376,6 @@ AS
       l_times_binary             date2_tab_t := date2_tab_t();
       l_cursor                   sys_refcursor;
    begin
-      cwms_util.check_input(p_max_version);
       l_max_version := cwms_util.return_true_or_false(p_max_version);
 
       --------------------------------------------------------------------
@@ -5517,8 +5520,10 @@ AS
               where start_date in (select distinct v.start_date
                                      from cwms_v_tsv v, table(l_times_values) d
                                     where v.ts_code = p_ts_code and v.date_time = d.date_1 and v.version_date = d.date_2)) loop
-         execute immediate replace('delete from $t
-                 where rowid in (select t.rowid
+         execute immediate replace(
+              'delete 
+                 from $t
+                where rowid in (select t.rowid
                                    from $t t,
                                         table(:1) d
                                   where t.ts_code = :2
@@ -5692,8 +5697,9 @@ AS
               where start_date in (select distinct v.start_date
                                      from cwms_v_tsv v, table(l_times_values) d
                                     where v.ts_code = p_ts_code and v.date_time = d.date_1 and v.version_date = d.date_2)) loop
-         execute immediate replace('update $t
-                                    set version_date = :1
+         execute immediate replace(
+                 'update $t
+                     set version_date = :1
                     where rowid in (select t.rowid
                                       from $t t,
                                            table(:2) d
@@ -7246,7 +7252,7 @@ end retrieve_existing_item_counts;
       FOR i IN 1 .. l_table_names.COUNT
       LOOP
          EXECUTE IMMEDIATE REPLACE (
-                             'insert
+            'insert
                into at_ts_deleted_times
              select :millis,
                     :ts_code,
@@ -7748,11 +7754,6 @@ end retrieve_existing_item_counts;
       --------------------
       -- santity checks --
       --------------------
-      cwms_util.check_inputs (str_tab_t (p_ts_category_id,
-                                         p_ts_category_desc,
-                                         p_fail_if_exists,
-                                         p_ignore_null,
-                                         p_db_office_id));
       l_fail_if_exists := cwms_util.is_true (p_fail_if_exists);
       l_ignore_null := cwms_util.is_true (p_ignore_null);
       l_office_code := cwms_util.get_db_office_code (p_db_office_id);
@@ -7832,13 +7833,6 @@ end retrieve_existing_item_counts;
       l_office_code    NUMBER;
       l_category_rec   at_ts_category%ROWTYPE;
    BEGIN
-      --------------------
-      -- santity checks --
-      --------------------
-      cwms_util.check_inputs (
-         str_tab_t (p_ts_category_id_old,
-                    p_ts_category_id_old,
-                    p_db_office_id));
       l_office_code := cwms_util.get_db_office_code (p_db_office_id);
 
       --------------------------------------
@@ -7911,8 +7905,6 @@ end retrieve_existing_item_counts;
       --------------------
       -- santity checks --
       --------------------
-      cwms_util.check_inputs (
-         str_tab_t (p_ts_category_id, p_cascade, p_db_office_id));
       l_cascade := cwms_util.is_true (p_cascade);
       l_office_code := cwms_util.get_db_office_code (p_db_office_id);
 
@@ -8043,14 +8035,6 @@ end retrieve_existing_item_counts;
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (str_tab_t (p_ts_category_id,
-                                         p_ts_group_id,
-                                         p_ts_group_desc,
-                                         p_fail_if_exists,
-                                         p_ignore_nulls,
-                                         p_shared_alias_id,
-                                         p_shared_ts_ref_id,
-                                         p_db_office_id));
       l_fail_if_exists := cwms_util.is_true (p_fail_if_exists);
       l_ignore_nulls := cwms_util.is_true (p_ignore_nulls);
       l_office_code := cwms_util.get_db_office_code (p_db_office_id);
@@ -8162,10 +8146,6 @@ end retrieve_existing_item_counts;
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (str_tab_t (p_ts_category_id,
-                                         p_ts_group_id_old,
-                                         p_ts_group_id_new,
-                                         p_db_office_id));
       l_office_code := cwms_util.get_db_office_code (p_db_office_id);
 
       -----------------------------------
@@ -8227,8 +8207,6 @@ end retrieve_existing_item_counts;
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (
-         str_tab_t (p_ts_category_id, p_ts_group_id, p_db_office_id));
       l_office_code := cwms_util.get_db_office_code (p_db_office_id);
 
       -----------------------------------
@@ -8311,12 +8289,6 @@ end retrieve_existing_item_counts;
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(p_ts_category_id,
-                                       p_ts_group_id,
-                                       p_ts_id,
-                                       p_ts_alias_id,
-                                       p_ref_ts_id,
-                                       p_db_office_id));
       l_office_code := cwms_util.get_db_office_code(p_db_office_id);
 
       ------------------------
@@ -8399,11 +8371,6 @@ end retrieve_existing_item_counts;
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (str_tab_t (p_ts_category_id,
-                                         p_ts_group_id,
-                                         p_ts_id,
-                                         p_unassign_all,
-                                         p_db_office_id));
       l_office_code := cwms_util.get_db_office_code (p_db_office_id);
 
       ------------------------
@@ -8504,7 +8471,6 @@ end retrieve_existing_item_counts;
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs(str_tab_t(p_alias_id, p_group_id, p_category_id, p_office_id));
       l_office_code := cwms_util.get_db_office_code(p_office_id);
 
       -----------------------------------
@@ -8968,7 +8934,6 @@ end retrieve_existing_item_counts;
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_input(p_time_zone);
       if p_start_time is null then cwms_err.raise('NULL_ARGUMENT', 'P_START_TIME'); end if;
       if p_end_time is null then cwms_err.raise('NULL_ARGUMENT', 'P_END_TIME'); end if;
       if p_interval_minutes is null then cwms_err.raise('NULL_ARGUMENT', 'P_INTERVAL_MINUTES'); end if;
@@ -9071,7 +9036,6 @@ end retrieve_existing_item_counts;
       RETURN date_table_type
    IS
    BEGIN
-      cwms_util.check_inputs(str_tab_t(p_ts_id, p_office_id));
       return get_times_for_time_window(
          p_start_time,
          p_end_time,
@@ -9091,13 +9055,10 @@ end retrieve_existing_item_counts;
                   ORDER BY start_date)
       LOOP
          EXECUTE IMMEDIATE
-               '
-         select min(date_time)
-           from '
-            || rec.table_name
-            || '
-          where ts_code = :1
-            and version_date = :2'
+            'select min(date_time)
+               from '|| rec.table_name||'
+              where ts_code = :1
+                and version_date = :2'
             INTO l_min_date_utc
             USING p_ts_code, p_version_date_utc;
 
@@ -9145,13 +9106,10 @@ end retrieve_existing_item_counts;
                   ORDER BY start_date DESC)
       LOOP
          EXECUTE IMMEDIATE
-               '
-         select max(date_time)
-           from '
-            || rec.table_name
-            || '
-          where ts_code = :1
-            and version_date = :2'
+            'select max(date_time)
+               from '||rec.table_name||'
+              where ts_code = :1
+                and version_date = :2'
             INTO l_max_date_utc
             USING p_ts_code, p_version_date_utc;
 
@@ -9254,10 +9212,6 @@ end retrieve_existing_item_counts;
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (str_tab_t (p_ts_id,
-                                         p_unit,
-                                         p_time_zone,
-                                         p_office_id));
       ----------------------------
       -- set values from inputs --
       ----------------------------
@@ -9307,14 +9261,11 @@ end retrieve_existing_item_counts;
 
          BEGIN
             EXECUTE IMMEDIATE
-                  '
-            select min(value),
-                   max(value)
-              from '
-               || rec.table_name
-               || '
-             where ts_code = :1
-               and date_time between :2 and :3'
+               'select min(value),
+                       max(value)
+                  from '||rec.table_name||'
+                 where ts_code = :1
+                   and date_time between :2 and :3'
                INTO l_temp_min, l_temp_max
                USING l_ts_code, l_min_date, l_max_date;
 
@@ -9375,13 +9326,6 @@ end retrieve_existing_item_counts;
       l_location_id      VARCHAR2 (49);
       l_parameter_id     VARCHAR2 (49);
    BEGIN
-      -------------------
-      -- sanity checks --
-      -------------------
-      cwms_util.check_inputs (str_tab_t (p_ts_id,
-                                         p_unit,
-                                         p_time_zone,
-                                         p_office_id));
       ----------------------------
       -- set values from inputs --
       ----------------------------
@@ -9431,22 +9375,17 @@ end retrieve_existing_item_counts;
 
          BEGIN
             EXECUTE IMMEDIATE
-                  '
-            select date_time,
-                   value
-              from '
-               || rec.table_name
-               || '
-             where ts_code = :1
-               and date_time between :2 and :3
-               and value = (  select min(value)
-                                from '
-               || rec.table_name
-               || '
-                               where ts_code = :4
-                                 and date_time between :5 and :6
-                           )
-               and rownum = 1'
+               'select date_time,
+                       value
+                  from '||rec.table_name||'
+                 where ts_code = :1
+                   and date_time between :2 and :3
+                   and value = (select min(value)
+                                  from '||rec.table_name||'
+                                 where ts_code = :4
+                                   and date_time between :5 and :6
+                               )
+                   and rownum = 1'
                INTO l_temp_min_date, l_temp_min
                USING l_ts_code,
                      l_min_date,
@@ -9468,22 +9407,17 @@ end retrieve_existing_item_counts;
 
          BEGIN
             EXECUTE IMMEDIATE
-                  '
-            select date_time,
-                   value
-              from '
-               || rec.table_name
-               || '
-             where ts_code = :1
-               and date_time between :2 and :3
-               and value = (  select max(value)
-                                from '
-               || rec.table_name
-               || '
-                               where ts_code = :4
-                                 and date_time between :5 and :6
-                           )
-               and rownum = 1'
+               'select date_time,
+                       value
+                  from '||rec.table_name||'
+                 where ts_code = :1
+                   and date_time between :2 and :3
+                   and value = (select max(value)
+                                  from '||rec.table_name||'
+                                 where ts_code = :4
+                                   and date_time between :5 and :6
+                               )
+                   and rownum = 1'
                INTO l_temp_max_date, l_temp_max
                USING l_ts_code,
                      l_min_date,
@@ -9560,10 +9494,6 @@ end retrieve_existing_item_counts;
       -------------------
       -- sanity checks --
       -------------------
-      cwms_util.check_inputs (str_tab_t (p_criteria.office_id,
-                                         p_criteria.time_series_id,
-                                         p_criteria.time_zone,
-                                         p_criteria.unit));
       ----------------------------
       -- set values from inputs --
       ----------------------------
@@ -9693,14 +9623,11 @@ end retrieve_existing_item_counts;
 
             BEGIN
                EXECUTE IMMEDIATE
-                     '
-               select ztsv_type(date_time, value, quality_code)
-                 from '
-                  || rec.table_name
-                  || '
-                where ts_code = :1
-                  and date_time between :1 and :2
-                  and value between :3 and :4'
+                  'select ztsv_type(date_time, value, quality_code)
+                    from '||rec.table_name||'
+                   where ts_code = :1
+                     and date_time between :1 and :2
+                     and value between :3 and :4'
                   BULK COLLECT INTO l_table_results
                   USING l_ts_code,
                         l_min_date,
@@ -10044,14 +9971,6 @@ end retrieve_existing_item_counts;
       l_office_id   VARCHAR2 (16);
       l_tsid        VARCHAR2 (183);
    BEGIN
-      -------------------
-      -- sanity checks --
-      -------------------
-      cwms_util.check_inputs (str_tab_t (p_location_id,
-         p_association_type,
-         p_usage_category_id,
-         p_usage_id,
-         p_office_id));
       l_office_id := cwms_util.get_db_office_id (p_office_id);
 
       ----------------------------------------------------------------------------

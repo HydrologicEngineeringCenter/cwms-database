@@ -2223,7 +2223,7 @@ AS
       l_query            VARCHAR2 (1256);
       l_count            NUMBER;
       l_include_all      BOOLEAN := P_INCLUDE_ALL;
-   BEGIN
+   BEGIN  
       SELECT COUNT (*)
         INTO l_count
         FROM at_sec_cwms_users
@@ -2256,25 +2256,35 @@ AS
          L_INCLUDE_ALL := FALSE;
       END IF;
 
-      l_query :=
-         'SELECT    createdby || ''|'' ||  p.username
-             || ''|x|''
-             || CWMS_SEC.GET_ADMIN_CWMS_PERMISSIONS (p.username,'''
-         || p_db_office_id
-         || ''')
-             || ''|''
-             ||  case when fullname is null or length(fullname)=0 then '' '' else fullname end
-        FROM at_sec_cwms_permissions p, at_sec_cwms_users u  WHERE p.username=u.userid AND p.db_office_code='
-         || l_db_office_code;
-
-      IF NOT L_INCLUDE_ALL
-      THEN
-         l_query := l_query || ' AND p.username = ''' || l_username || '''';
+      IF L_INCLUDE_ALL THEN
+         open p_cwms_permissions for
+            SELECT createdby
+                   || '|'
+                   ||  p.username
+                   || '|x|'
+                   || CWMS_SEC.GET_ADMIN_CWMS_PERMISSIONS (p.username, l_db_office_id)
+                   || '|'
+                   ||  case when fullname is null or length(fullname)=0 then ' ' else fullname end
+              FROM at_sec_cwms_permissions p,
+                   at_sec_cwms_users u
+             WHERE p.username=u.userid
+               AND p.db_office_code=l_db_office_code;
+      ELSE
+         open p_cwms_permissions for
+            SELECT createdby
+                   || '|'
+                   ||  p.username
+                   || '|x|'
+                   || CWMS_SEC.GET_ADMIN_CWMS_PERMISSIONS (p.username, l_db_office_id)
+                   || '|'
+                   ||  case when fullname is null or length(fullname)=0 then ' ' else fullname end
+              FROM at_sec_cwms_permissions p,
+                   at_sec_cwms_users u
+             WHERE p.username=u.userid
+               AND p.db_office_code=l_db_office_code
+               AND p.username = l_username;
       END IF;
 
-      DBMS_OUTPUT.PUT_LINE (l_query);
-
-      OPEN p_cwms_permissions FOR l_query;
    END get_user_cwms_permissions;
 
    PROCEDURE get_db_users (p_db_users       OUT SYS_REFCURSOR,

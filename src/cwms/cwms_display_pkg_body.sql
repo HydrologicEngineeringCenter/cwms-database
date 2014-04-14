@@ -94,14 +94,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_parameter_id, 
-      p_unit_id,
-      p_fail_if_exists,
-      p_ignore_nulls,
-      p_office_id));
-      
    l_fail_if_exists := cwms_util.is_true(p_fail_if_exists);   
    l_ignore_nulls   := cwms_util.is_true(p_ignore_nulls);
    l_office_id      := nvl(upper(p_office_id), cwms_util.user_office_id);
@@ -219,12 +211,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_parameter_id, 
-      p_unit_id,
-      p_office_id));
-      
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -341,12 +327,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id,
-      p_parameter_id, 
-      p_unit_id,
-      p_office_id));
-      
    if p_location_id is null then
       cwms_err.raise(
          'ERROR',
@@ -418,14 +398,6 @@ is
    l_unit_id_mask      varchar2(16);
    l_office_id_mask    varchar2(16);
 begin
-   -------------------
-   -- sanity checks --
-   -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_location_id_mask,
-      p_parameter_id_mask, 
-      p_unit_id_mask,
-      p_office_id_mask));
    ----------------------
    -- set up the masks --
    ----------------------
@@ -517,12 +489,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_parameter_id,
-      p_unit_system,
-      p_unit_id,
-      p_fail_if_exists,
-      p_office_id));
    if p_parameter_id is null then
       cwms_err.raise(
          'ERROR',
@@ -642,13 +608,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_parameter_id,
-      p_unit_system,
-      p_unit_id,
-      p_fail_if_exists,
-      p_user_id,
-      p_office_id));
    if upper(p_unit_system) not in ('EN', 'SI') then
       cwms_err.raise('INVALID_ITEM', p_unit_system, 'CWMS unit system');
    end if;
@@ -720,10 +679,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_parameter_id,
-      p_unit_system,
-      p_office_id));
    if p_parameter_id is null then
       cwms_err.raise(
          'ERROR',
@@ -801,11 +756,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_parameter_id,
-      p_unit_system,
-      p_user_id,
-      p_office_id));
    if p_unit_system is not null and upper(p_unit_system) not in ('EN', 'SI') then
       cwms_err.raise('INVALID_ITEM', p_unit_system, 'CWMS unit system');
    end if;
@@ -898,10 +848,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_parameter_id,
-      p_unit_system,
-      p_office_id));
    if p_parameter_id is null then
       cwms_err.raise(
          'ERROR',
@@ -950,11 +896,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_parameter_id,
-      p_unit_system,
-      p_user_id,
-      p_office_id));
    l_user_id   := upper(nvl(p_user_id, cwms_util.get_user_id));
    l_office_id := nvl(p_office_id, cwms_util.user_office_id);
    -------------------------
@@ -983,13 +924,6 @@ is
    l_unit_system_mask  varchar2(2);
    l_office_id_mask    varchar2(16);
 begin
-   -------------------
-   -- sanity checks --
-   -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_parameter_id_mask,
-      p_unit_system_mask,
-      p_office_id_mask));
    ----------------------      
    -- set up the masks --
    ----------------------      
@@ -1080,15 +1014,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_tsid,
-      p_level_id,
-      p_indicator_id,
-      p_attribute_id,
-      p_attribute_unit,
-      p_time_zone,
-      p_expression,
-      p_office_id));
    if p_tsid is null then
       cwms_err.raise(
          'ERROR',
@@ -1260,12 +1185,6 @@ begin
    -------------------
    -- sanity checks --
    -------------------
-   cwms_util.check_inputs(str_tab_t(
-      p_tsid,
-      p_level_id,
-      p_indicator_id,
-      p_time_zone,
-      p_office_id));
    if p_tsid is null then
       cwms_err.raise(
          'ERROR',

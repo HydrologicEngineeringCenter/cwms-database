@@ -1095,8 +1095,6 @@ BEGIN
 -----------------------------------------
 -- make sure we have a valid office id --
 -----------------------------------------
-   cwms_util.check_input (p_office_id);
-
    SELECT office_id
      INTO l_office_id
      FROM cwms_office
@@ -1179,7 +1177,6 @@ begin
    -----------------------------------------
    -- make sure we have a valid office id --
    -----------------------------------------
-   cwms_util.check_input(p_office_id);
    select office_id
      into l_office_id 
      from cwms_office
@@ -1630,7 +1627,6 @@ is
    l_all_sessions boolean;
    l_until        date;
 begin
-   cwms_util.check_inputs(str_tab_t(p_unit, p_office_id, p_all_sessions));
    l_office_id := cwms_util.get_db_office_id(p_office_id);
    l_unit := upper(substr(p_unit, 1, 8));
    if l_unit not in ('MINUTE', 'MINUTES', 'HOUR', 'HOURS', 'DAY', 'DAYS') then
@@ -1694,7 +1690,6 @@ is
    l_office_id    varchar2(16);
    l_prop_id_mask at_properties.prop_id%type;
 begin
-   cwms_util.check_inputs(str_tab_t(p_all_sessions, p_force, p_office_id));
    l_all_sessions := cwms_util.return_true_or_false(p_all_sessions);
    l_force := cwms_util.return_true_or_false(p_force);
    l_office_id := cwms_util.get_db_office_id(p_office_id);
@@ -1749,7 +1744,6 @@ is
    l_until      date;
    l_minutes    integer;
 begin
-   cwms_util.check_input(p_office_id);
    l_office_id := cwms_util.get_db_office_id(p_office_id);
    l_until := greatest(
       get_pause_until(true,  l_office_id),
