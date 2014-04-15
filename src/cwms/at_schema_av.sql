@@ -29,6 +29,8 @@ DECLARE
 			       'av_nation',
 			       'av_office',
 			       'av_parameter',
+			       'av_project_purpose',
+			       'av_project_purposes',
 			       'av_screened_ts_ids',
 			       'av_screening_assignments',
 			       'av_screening_criteria',
@@ -36,6 +38,8 @@ DECLARE
 			       'av_screening_id',
 			       'av_shef_decode_spec',
 			       'av_shef_pe_codes',
+			       'av_specified_level',
+			       'av_specified_level_ui',
 			       'av_state',
 			       'av_unit',
 			       'av_storage_unit',
@@ -50,6 +54,8 @@ DECLARE
 			       'av_rating_values_native',
 			       'av_ts_association',
 			       'av_stream_types',
+			       'av_store_rule',
+			       'av_store_rule_ui',
 			       'av_loc_ts_id_count',
 			       'av_property',
 			       'av_vert_datum_offset'
@@ -85,6 +91,8 @@ END;
 @@cwms/views/av_loc_cat_grp.sql
 @@cwms/views/av_loc_ts_id_count.sql
 @@cwms/views/av_parameter.sql
+@@cwms/views/av_project_purpose.sql
+@@cwms/views/av_project_purposes.sql
 @@cwms/views/av_screened_ts_ids.sql
 @@cwms/views/av_screening_assignments.sql
 @@cwms/views/av_screening_criteria.sql
@@ -93,7 +101,11 @@ END;
 @@cwms/views/av_cwms_ts_id.sql
 @@cwms/views/av_cwms_ts_id2.sql
 @@cwms/views/av_unit.sql
+@@cwms/views/av_specified_level.sql
+@@cwms/views/av_specified_level_ui.sql
 @@cwms/views/av_storage_unit.sql
+@@cwms/views/av_store_rule.sql
+@@cwms/views/av_store_rule_ui.sql
 @@cwms/views/av_dataexchange_job.sql
 @@cwms/views/av_location_level.sql
 @@cwms/views/av_location_type.sql

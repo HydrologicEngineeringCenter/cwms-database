@@ -5764,6 +5764,52 @@ create table at_vert_datum_local (
 comment on table  at_vert_datum_local                  is 'Contains names of local vertical datums for locations.';
 comment on column at_vert_datum_local.location_code    is 'References location with a named local vertical datum.';
 comment on column at_vert_datum_local.local_datum_name is 'Name of local vertical datum for location.';
+commit;
+
+create table at_specified_level_order (
+   office_code          integer,
+   specified_level_code integer,
+   sort_order           integer not null,
+   constraint at_specified_level_order_pk  primary key (office_code, specified_level_code),
+   constraint at_specified_level_order_fk1 foreign key (office_code) references cwms_office (office_code), 
+   constraint at_specified_level_order_fk2 foreign key (specified_level_code) references at_specified_level (specified_level_code) 
+) tablespace cwms_20data
+/
+
+comment on table at_specified_level_order is 'Contains specified level sort order for UI components';
+comment on column at_specified_level_order.office_code is          'The office that the sort order is for. References CWMS_OFFICE';
+comment on column at_specified_level_order.specified_level_code is 'The specified level.  References AT_SPECIFIED_LEVEL';
+comment on column at_specified_level_order.sort_order is           'The sort order of this specified level relative to others for this office';
+commit;
+
+create table at_store_rule_order (
+   office_code   integer, 
+   store_rule_id varchar2(32),
+   sort_order    integer not null,
+   constraint at_store_rule_order_pk  primary key(office_code, store_rule_id),
+   constraint at_store_rule_order_fk1 foreign key(office_code) references cwms_office(office_code),
+   constraint at_store_rule_order_fk2 foreign key(store_rule_id) references cwms_store_rule(store_rule_id)
+) tablespace cwms_20at_data
+/
+
+comment on table at_store_rule_order is 'Holds sort order for store rules for UI lists';
+comment on column at_store_rule_order.office_code   is 'Foreign key to CWMS_OFFICE';
+comment on column at_store_rule_order.store_rule_id is 'Foreign key to CWMS_STORE_RULE';
+comment on column at_store_rule_order.sort_order    is 'Sort order for this store rule for office';
+
+create table at_store_rule_default (
+   office_code integer,
+   default_store_rule varchar2(32),
+   constraint at_store_rule_default_pk  primary key(office_code, default_store_rule),
+   constraint at_store_rule_default_fk1 foreign key(office_code) references cwms_office(office_code),
+   constraint at_store_rule_default_fk2 foreign key(default_store_rule) references cwms_store_rule(store_rule_id)
+) tablespace cwms_20at_data
+/
+
+comment on table at_store_rule_default is 'Hold default store rules for UI lists';
+comment on column at_store_rule_default.office_code        is 'Office that default office applie to (foreign key to CWMS_OFFICE)';
+comment on column at_store_rule_default.default_store_rule is 'Default store rule for office (foreign key to CWMS_STORE_RULE)';
+commit;
 
 -- HOST pwd
 @@rowcps_schema.sql

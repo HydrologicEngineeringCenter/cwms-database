@@ -783,7 +783,32 @@ function retrieve_status_indicator_f(
    p_expression      in varchar2 default null,
    p_office_id       in varchar2 default null)
    return integer;
-   
+/**
+ * Sets store rule sort order and default store rule for UI components for an office
+ *
+ * @param p_ordered_rules A comma-separated list of the store rules in the desired sort order for the office.  If this is NULL, the sort order for the office will revert to the default.  If not all the store rules are specified, the non-specified store rules will follow the specified store rules in default order.
+ * @param p_default_rule  The default store rule for the office.  If this is NULL the default store rule will revert to the standard default.  
+ * @param p_office_id     The office set the store rule information for.  If unspecified or NULL, the session users' default office is used.
+ *
+ * @see view av_store_rule_ui
+ * @see view av_store_rule
+ */    
+procedure set_store_rule_ui_info(
+   p_ordered_rules in varchar2,
+   p_default_rule  in varchar2,
+   p_office_id     in varchar2 default null);
+/**
+ * Sets specified level sort order for UI components for an office
+ *
+ * @param p_ordered_levels A comma-separated list of the specified levels in the desired sort order for the office.  If this is NULL, the sort order for the office will revert to the default.  If not all the specified levels are included, the unincluded specified levels will follow the included specified levels in default order.
+ * @param p_office_id     The office set the store rule information for.  If unspecified or NULL, the session users' default office is used.
+ *
+ * @see view av_specified_level_ui
+ * @see view av_specified_level
+ */    
+procedure set_specified_level_ui_info (
+   p_ordered_levels in varchar2,
+   p_office_id      in varchar2 default null);   
 end cwms_display;
 /
 show errors;

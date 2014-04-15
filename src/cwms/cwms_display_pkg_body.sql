@@ -1243,7 +1243,77 @@ begin
    close l_cursor;
    
    return l_value;            
-end retrieve_status_indicator_f;   
+end retrieve_status_indicator_f;
+
+--------------------------------------------------------------------------------
+-- procedure set_store_rule_ui_info
+--------------------------------------------------------------------------------
+procedure set_store_rule_ui_info(
+   p_ordered_rules in varchar2,
+   p_default_rule  in varchar2,
+   p_office_id     in varchar2 default null)
+is
+   l_ordered_rules str_tab_t;
+   l_default_rule  varchar2(32);
+   l_office_code   integer;
+   l_max_count     integer;
+begin
+   l_office_code  := cwms_util.get_office_code(upper(trim(p_office_id)));
+   ----------------
+   -- sort order --
+   ----------------
+   l_default_rule := upper(trim(p_default_rule));
+   delete from at_store_rule_order where office_code = l_office_code;
+   if p_ordered_rules is not null then
+      l_ordered_rules := cwms_util.split_text(regexp_replace(upper(trim(p_ordered_rules)), '\s*,\s*', ','), ',');
+      select count(*)
+        into l_max_count
+        from cwms_store_rule;
+      for i in 1..least(l_ordered_rules.count, l_max_count) loop
+         insert
+           into at_store_rule_order
+         values (l_office_code, l_ordered_rules(i), i);
+      end loop;  
+   end if;
+   ------------------
+   -- default rule --
+   ------------------
+   delete from at_store_rule_default where office_code = l_office_code;
+   if l_default_rule is not null then
+      insert
+        into at_store_rule_default
+      values (l_office_code, l_default_rule);  
+   end if;
+end set_store_rule_ui_info;   
+
+--------------------------------------------------------------------------------
+-- procedure set_specified_level_ui_info
+--------------------------------------------------------------------------------
+procedure set_specified_level_ui_info (
+   p_ordered_levels in varchar2,
+   p_office_id      in varchar2 default null)
+is
+   l_ordered_levels       str_tab_t;
+   l_office_code          integer;
+   l_specified_level_code integer;
+begin
+   l_office_code := cwms_util.get_office_code(upper(trim(p_office_id)));
+   delete from at_specified_level_order where office_code = l_office_code;
+   if p_ordered_levels is not null then
+      l_ordered_levels := cwms_util.split_text(regexp_replace(upper(trim(p_ordered_levels)), '\s*,\s*', ','), ',');
+      for i in 1..l_ordered_levels.count loop
+         select specified_level_code
+           into l_specified_level_code
+           from at_specified_level
+          where upper(specified_level_id) = l_ordered_levels(i)
+            and office_code in (l_office_code, cwms_util.db_office_code_all); 
+         insert
+           into at_specified_level_order
+         values (l_office_code, l_specified_level_code, i);  
+      end loop;
+   end if;
+end set_specified_level_ui_info;      
+
 
 end cwms_display;
 /
