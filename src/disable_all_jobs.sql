@@ -5,7 +5,7 @@ BEGIN
    LOOP
       BEGIN
          DBMS_OUTPUT.PUT_LINE (c.job_name);
-         DBMS_SCHEDULER.stop_job (c.owner || '.' || c.job_name, TRUE);
+         DBMS_SCHEDULER.DISABLE (c.owner || '.' || c.job_name, TRUE);
       EXCEPTION
          WHEN OTHERS
          THEN

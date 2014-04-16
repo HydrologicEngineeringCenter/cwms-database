@@ -11,7 +11,7 @@ defines_pattern = re.compile('@@defines.sql', re.I)
 
 synonyms = {}
 updates  = [
-	['script',       'stop_all_jobs'],
+	['script',       'disable_all_jobs'],
 	['package spec', 'cwms_alarm'],
 	['package body', 'cwms_alarm'],
 	['package spec', 'cwms_env'],
@@ -35,14 +35,21 @@ updates  = [
 	['type body',    'abs_rating_ind_param_t'],
 	['type',         'loc_lvl_cur_max_ind_tab_t'],
 	['type',         'loc_lvl_indicator_cond_t'],
+	['type',         'location_ref_t'],
+	['type body',    'location_ref_t'],
 	['type body',    'loc_lvl_indicator_cond_t'],
 	['type',         'rating_ind_parameter_t'],
 	['type body',    'rating_ind_parameter_t'],
 	['type',         'rating_t'],
 	['type body',    'rating_t'],
+	['type',         'vdatum_rating_t'],
+	['type body',    'vdatum_rating_t'],
+	['type',         'vdatum_stream_rating_t'],
+	['type body',    'vdatum_stream_rating_t'],
 	['type',         'stream_rating_t'],
 	['type body',    'stream_rating_t'],
 	['view',         'av_sec_users'],
+	['script',       'enable_all_jobs'],
 ]
 
 srcdir = os.path.join(os.path.split(sys.argv[0])[0], 'cwms')
@@ -208,6 +215,10 @@ prompt Invalid objects...
 order by object_name, object_type asc;
 
 prompt Recompiling all invalid objects...
+exec sys.utl_recomp.recomp_serial('&cwms_schema');
+--  Some of the packages/types don't compile first time
+commit;
+exec dbms_lock.sleep(10);
 exec sys.utl_recomp.recomp_serial('&cwms_schema');
 /
 
