@@ -133,6 +133,7 @@ tableInfo = [
     {"ID" : "vertconHeader",      "TABLE" : "CWMS_VERTCON_HEADER",        "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "vertconData",        "TABLE" : "CWMS_VERTCON_DATA",          "SCHEMA" : "CWMS", "USERACCESS" : True},
     {"ID" : "verticalDatum",      "TABLE" : "CWMS_VERTICAL_DATUM",        "SCHEMA" : "CWMS", "USERACCESS" : True},
+    {"ID" : "storeRule",          "TABLE" : "CWMS_STORE_RULE",            "SCHEMA" : "CWMS", "USERACCESS" : True},
 ]
 
 tables = []
@@ -8822,7 +8823,6 @@ def main() :
     COMMIT;
     '''            
 
-    
     sys.stderr.write("Building verticalDatumCreationTemplate\n")
     verticalDatumCreationTemplate = \
     '''
@@ -8850,6 +8850,41 @@ def main() :
     INSERT INTO CWMS_VERTICAL_DATUM VALUES ('LOCAL');
     INSERT INTO CWMS_VERTICAL_DATUM VALUES ('NGVD29');
     INSERT INTO CWMS_VERTICAL_DATUM VALUES ('NAVD88');
+    '''
+
+    sys.stderr.write("Building storeRuleCreationTemplate\n")
+    storeRuleCreationTemplate = \
+    '''
+    -- ## TABLE ###############################################
+    -- ## @TABLE
+    -- ##
+    create table @TABLE (
+       store_rule_code integer,
+       store_rule_id   varchar2(32),
+       description     varchar2(128),
+       constraint @TABLE_pk primary key(store_rule_code),
+       constraint @TABLE_u1 unique(store_rule_id),
+       constraint @TABLE_ck1 check(upper(trim(store_rule_id)) = store_rule_id)
+    ) tablespace @DATASPACE
+    /
+    ---------------------------
+    -- @TABLE comments --
+    --
+    comment on table @TABLE is 'Holds CWMS data storage rules'; 
+    comment on column @TABLE.store_rule_id is 'Text identifier, which is also the primary key';
+    comment on column @TABLE.description   is 'Describes store rule behavior';
+        
+    COMMIT;
+    '''            
+    
+    sys.stderr.write("Building storeRuleLoadTemplate\n")
+    storeRuleLoadTemplate = \
+    '''
+    insert into @TABLE values(1, 'REPLACE WITH NON MISSING',    'Insert values at new times and replace any values at existing times, unless the incoming values are specified as missing');
+    insert into @TABLE values(2, 'REPLACE ALL',                 'Insert values at new times and replace any values at existing times, even if incoming values are specified as missing');
+    insert into @TABLE values(3, 'REPLACE MISSING VALUES ONLY', 'Insert values at new times but do not replace any values at existing times unless the existing values are specified as missing');
+    insert into @TABLE values(4, 'DO NOT REPLACE',              'Insert values at new times but do not replace any values at existing times');
+    insert into @TABLE values(5, 'DELETE INSERT',               'Delete all existing values in time window of incoming data and then insert incoming data');
     '''
 
     #==
