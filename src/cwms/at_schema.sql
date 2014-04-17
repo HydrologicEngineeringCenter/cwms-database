@@ -1457,7 +1457,7 @@ INSERT INTO AT_SPECIFIED_LEVEL VALUES(20, 53, 'Top of Power',                   
 INSERT INTO AT_SPECIFIED_LEVEL VALUES(21, 53, 'Bottom of Multi-Purpose',           'Bottom of Multi-Purpose Level');
 INSERT INTO AT_SPECIFIED_LEVEL VALUES(22, 53, 'Top of Multi-Purpose',              'Top of Multi-Purpose Level');
 INSERT INTO at_specified_level VALUES(23, 53, 'Top of Inlet',                      'Top of Inlet Level');
-INSERT INTO at_specified_level VALUES(24, 53,' Bottom of Inlet',                   'Bottom of Inlet Level');
+INSERT INTO at_specified_level VALUES(24, 53, 'Bottom of Inlet',                   'Bottom of Inlet Level');
 INSERT INTO at_specified_level VALUES(25, 53, 'Top of Outlet',                     'Top of Outlet Level');
 INSERT INTO at_specified_level VALUES(26, 53, 'Streambed',                         'Streambed Level');
 
