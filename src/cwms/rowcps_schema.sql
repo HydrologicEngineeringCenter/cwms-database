@@ -261,11 +261,12 @@ CHECK ( release_reason_active = 'T' OR release_reason_active = 'F'))
 
 CREATE TABLE at_project_purposes
 (
-  purpose_code        NUMBER(10)        NOT NULL,
-  db_office_code      NUMBER                    NOT NULL,
-  purpose_display_value           VARCHAR2(25 BYTE)     NOT NULL,
-  purpose_tooltip     VARCHAR2(255 BYTE)      NOT NULL,
-  purpose_active      VARCHAR2(1 BYTE) DEFAULT 'T'          NOT NULL
+  purpose_code          NUMBER(10)         NOT NULL,
+  db_office_code        NUMBER             NOT NULL,
+  purpose_display_value VARCHAR2(25 BYTE)  NOT NULL,
+  purpose_tooltip       VARCHAR2(255 BYTE) NOT NULL,
+  purpose_active        VARCHAR2(1 BYTE)   DEFAULT 'T' NOT NULL,
+  purpose_nid_code      VARCHAR2(1 BYTE)
 )
 TABLESPACE cwms_20at_data
 PCTUSED    0
@@ -290,6 +291,7 @@ COMMENT ON COLUMN at_project_purposes.db_office_code IS 'Refererences the "ownin
 COMMENT ON COLUMN at_project_purposes.purpose_display_value IS 'The value to display for this project_purpose record';
 COMMENT ON COLUMN at_project_purposes.purpose_tooltip IS 'The tooltip or meaning of this project_purpose record';
 COMMENT ON COLUMN at_project_purposes.purpose_active IS 'Whether the project_purpose entry is currently active';
+COMMENT ON COLUMN at_project_purposes.purpose_nid_code IS 'National Inventory of Dams code for this purpose';
 
 -- unique index
 CREATE UNIQUE INDEX project_purpose_idx1 ON at_project_purposes
@@ -338,8 +340,19 @@ CONSTRAINT at_proj_purpose_active_ck
 CHECK ( purpose_active = 'T' OR purpose_active = 'F'))
 /
 
--- INSERT INTO at_project_purposes VALUES (0, 53, 'Default', 'Default', 'T');
-
+insert into at_project_purposes values ( 1, 53, 'Debris Control', 'Debris Control', 'T', 'D');
+insert into at_project_purposes values ( 2, 53, 'Fire Prot/Small Fish Pond', 'Fire Protection Stock or Small Fish Pond', 'T', 'P');
+insert into at_project_purposes values ( 3, 53, 'Fish & Wildlife Pond', 'Fish & Wildlife Pond', 'T', 'F');
+insert into at_project_purposes values ( 4, 53, 'Flood Control', 'Flood Control', 'T', 'C');
+insert into at_project_purposes values ( 5, 53, 'Grade Stabilization', 'Grade Stabilization', 'T', 'G');
+insert into at_project_purposes values ( 6, 53, 'HydroElectric', 'HydroElectric', 'T', 'H');
+insert into at_project_purposes values ( 7, 53, 'Irrigation', 'Irrigation', 'T', 'I');
+insert into at_project_purposes values ( 8, 53, 'Navigation', 'Navigation', 'T', 'N');
+insert into at_project_purposes values ( 9, 53, 'Recreation', 'Recreation', 'T', 'R');
+insert into at_project_purposes values (10, 53, 'Tailings', 'Tailings', 'T', 'T');
+insert into at_project_purposes values (11, 53, 'Water Supply', 'Water Supply', 'T', 'S');
+insert into at_project_purposes values (12, 53, 'Other', 'Other', 'T', 'O');
+commit;
 --------
 --------
 
