@@ -31,6 +31,7 @@ DECLARE
 			       'av_parameter',
 			       'av_project_purpose',
 			       'av_project_purposes',
+			       'av_project_purposes_ui',
 			       'av_screened_ts_ids',
 			       'av_screening_assignments',
 			       'av_screening_criteria',
@@ -41,6 +42,8 @@ DECLARE
 			       'av_specified_level',
 			       'av_specified_level_ui',
 			       'av_state',
+			       'av_stream',                    -- located in at_schema_2
+			       'av_stream_location',           -- located in at_schema_2
 			       'av_unit',
 			       'av_storage_unit',
 			       'av_log_message',               -- located in at_schema_2
@@ -93,6 +96,7 @@ END;
 @@cwms/views/av_parameter.sql
 @@cwms/views/av_project_purpose.sql
 @@cwms/views/av_project_purposes.sql
+@@cwms/views/av_project_purposes_ui.sql
 @@cwms/views/av_screened_ts_ids.sql
 @@cwms/views/av_screening_assignments.sql
 @@cwms/views/av_screening_criteria.sql

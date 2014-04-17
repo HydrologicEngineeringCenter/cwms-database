@@ -1396,6 +1396,149 @@ begin
    return l_cursor;
 end cat_lock_revoker_rights_f;
 
+procedure store_project_purpose(
+   p_project_code   in integer,
+   p_purpose_code   in integer,
+   p_purpose_type   in varchar2,
+   p_notes          in varchar2 default null,
+   p_fail_if_exists in varchar2 default 'T',
+   p_ignore_nulls   in varchar2 default 'T')
+is
+   l_exists         boolean;
+   l_fail_if_exists boolean := cwms_util.is_true(p_fail_if_exists);
+   l_ignore_nulls   boolean := cwms_util.is_true(p_ignore_nulls);
+   l_rec at_project_purpose%rowtype;
+   l_purpose        varchar2(25);
+   l_office_id      varchar2(16);
+   l_project_id     varchar2(49);
+begin
+   begin
+      select *
+        into l_rec
+        from at_project_purpose
+       where project_location_code = p_project_code
+         and project_purpose_code  = p_purpose_code;
+         
+      l_exists := true;          
+   exception
+      when no_data_found then l_exists := false;      
+   end;
+   if l_exists then 
+      if l_fail_if_exists then
+         select purpose_display_value
+           into l_purpose
+           from av_project_purposes
+          where purpose_code = p_purpose_code;
+          
+         select db_office_id,
+                location_id
+           into l_office_id,
+                l_project_id
+           from av_loc
+          where location_code = p_project_code;
+                             
+         if l_fail_if_exists then
+            cwms_err.raise(
+               'ERROR',
+               'Purpose '
+               ||l_purpose
+               ||' already exists for project '
+               ||l_office_id||'/'||l_project_id);
+         end if;
+      end if;
+      --------------------
+      -- update purpose --
+      --------------------
+      if l_ignore_nulls then
+         l_rec.purpose_type := nvl(l_purpose, l_rec.purpose_type);
+         l_rec.additional_notes := nvl(p_notes, l_rec.additional_notes);
+      else
+         l_rec.purpose_type := upper(trim(p_purpose_type));
+         l_rec.additional_notes := trim(p_notes);
+      end if;
+      update at_project_purpose
+         set row = l_rec
+       where project_location_code = l_rec.project_location_code
+         and project_purpose_code  = l_rec.project_purpose_code;   
+   else
+      --------------------
+      -- insert purpose --
+      --------------------
+      l_rec.project_location_code := p_project_code;
+      l_rec.project_purpose_code  := p_purpose_code;
+      l_rec.purpose_type := upper(trim(p_purpose_type));
+      l_rec.additional_notes := trim(p_notes);
+      insert
+        into at_project_purpose
+      values l_rec;  
+   end if;
+end store_project_purpose;
+   
+procedure store_project_purpose(
+   p_project_id            in varchar2,
+   p_purpose_display_value in varchar2,
+   p_purpose_type          in varchar2,
+   p_notes                 in varchar2 default null,
+   p_fail_if_exists        in varchar2 default 'T',
+   p_ignore_nulls          in varchar2 default 'T',
+   p_office_id             in varchar2 default null)
+is
+   l_office_code  integer;
+   l_project_code integer;
+   l_purpose_code integer;
+begin
+   l_office_code  := cwms_util.get_office_code(p_office_id);
+   l_project_code := cwms_loc.get_location_code(l_office_code, p_project_id);
+   
+   select purpose_code
+     into l_purpose_code
+     from at_project_purposes
+    where upper(purpose_display_value) = upper(trim(p_purpose_display_value))
+      and db_office_code in (l_office_code, cwms_util.db_office_code_all);
+      
+   store_project_purpose(
+      l_project_code,
+      l_purpose_code,
+      p_purpose_type,
+      p_notes,
+      p_fail_if_exists,
+      p_ignore_nulls);
+end store_project_purpose;
+   
+procedure delete_project_purpose(         
+   p_project_code in integer,
+   p_purpose_code in integer)
+is
+begin
+   delete 
+     from at_project_purpose 
+    where project_location_code = p_project_code
+      and project_purpose_code = p_purpose_code;
+end delete_project_purpose;
+   
+procedure delete_project_purpose(
+   p_project_id            in varchar2,
+   p_purpose_display_value in varchar2,
+   p_office_id             in varchar2 default null)
+is
+   l_office_code  integer;
+   l_project_code integer;
+   l_purpose_code integer;
+begin
+   l_office_code  := cwms_util.get_office_code(p_office_id);
+   l_project_code := cwms_loc.get_location_code(l_office_code, p_project_id);
+   
+   select purpose_code
+     into l_purpose_code
+     from at_project_purposes
+    where upper(purpose_display_value) = upper(trim(p_purpose_display_value))
+      and db_office_code in (l_office_code, cwms_util.db_office_code_all);
+       
+   delete 
+     from at_project_purpose 
+    where project_location_code = l_project_code
+      and project_purpose_code = l_purpose_code;
+end delete_project_purpose;
 
 END CWMS_PROJECT;
  

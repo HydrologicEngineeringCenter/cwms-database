@@ -772,8 +772,68 @@ function cat_lock_revoker_rights_f(
    p_application_id_mask in varchar2 default '*',
    p_office_id_mask      in varchar2 default null)
    return sys_refcursor;
-                  
-      
+
+/**
+ * Stores a project purpose for a project to the database
+ *
+ * @param p_project_code   The location code from the av_loc or av_loc2 views that identifies the project.
+ * @param p_purpose_code   The code from the av_project_purposes or av_project_purposes_ui views that identifies the project purpose.
+ * @param p_purpose_type   The type for this purpose of the project.  Either 'OPERATING' or 'AUTHORIZED'
+ * @param p_notes          Any additional notes pertinent to this projects purpose
+ * @param p_fail_if_exists A flag (T/F) specifying whether to fail if the purposes already exists for the project
+ * @param p_ignore_nulls   A flag (T/F) specifying whether nulls in p_purpose_type and p_notes should override any existing values if p_fail_if_exists is 'F'.
+ *
+ */                  
+procedure store_project_purpose(
+   p_project_code   in integer,
+   p_purpose_code   in integer,
+   p_purpose_type   in varchar2,
+   p_notes          in varchar2 default null,
+   p_fail_if_exists in varchar2 default 'T',
+   p_ignore_nulls   in varchar2 default 'T');
+/**
+ * Stores a project purpose for a project to the database
+ *
+ * @param p_project_id            The location identifier of the project.
+ * @param p_purpose_display_value The display valuee from the av_project_purposes or av_project_purposes_ui views.
+ * @param p_purpose_type          The type for this purpose of the project.  Either 'OPERATING' or 'AUTHORIZED'
+ * @param p_notes                 Any additional notes pertinent to this projects purpose
+ * @param p_fail_if_exists        A flag (T/F) specifying whether to fail if the purposes already exists for the project
+ * @param p_ignore_nulls          A flag (T/F) specifying whether nulls in p_purpose_type and p_notes should override any existing values if p_fail_if_exists is 'F'.
+ * @param p_office_id             The office that owns the project location.  If not specified or NULL, the current user's default office is used.
+ *
+ */                  
+procedure store_project_purpose(
+   p_project_id            in varchar2,
+   p_purpose_display_value in varchar2,
+   p_purpose_type          in varchar2,
+   p_notes                 in varchar2 default null,
+   p_fail_if_exists        in varchar2 default 'T',
+   p_ignore_nulls          in varchar2 default 'T',
+   p_office_id             in varchar2 default null);
+/**
+ * Deletes a project purpose for a project from the database
+ *
+ * @param p_project_code The location code from the av_loc or av_loc2 views that identifies the project.
+ * @param p_purpose_code The code from the av_project_purposes or av_project_purposes_ui views that identifies the project purpose.
+ *
+ */                  
+procedure delete_project_purpose(         
+   p_project_code in integer,
+   p_purpose_code in integer);
+/**
+ * Deletes a project purpose for a project from the database
+ *
+ * @param p_project_id            The location identifier of the project.
+ * @param p_purpose_display_value The display valuee from the av_project_purposes or av_project_purposes_ui views.
+ * @param p_office_id             The office that owns the project location.  If not specified or NULL, the current user's default office is used.
+ *
+ */                  
+procedure delete_project_purpose(
+   p_project_id            in varchar2,
+   p_purpose_display_value in varchar2,
+   p_office_id             in varchar2 default null);
+   
 END CWMS_PROJECT;
 
 /

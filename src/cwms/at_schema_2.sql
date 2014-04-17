@@ -13,6 +13,8 @@ create index at_loc_lvl_indicator_u1 on at_loc_lvl_indicator (
 @@cwms/views/av_loc.sql
 @@cwms/views/av_loc2.sql
 @@cwms/views/av_log_message.sql
+@@cwms/views/av_stream.sql
+@@cwms/views/av_stream_location.sql
 @@cwms/views/av_ts_alias.sql
 @@cwms/views/av_ts_grp_assgn.sql
 @@cwms/views/av_ts_cat_grp.sql

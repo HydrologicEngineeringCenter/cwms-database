@@ -955,13 +955,11 @@ begin
    -- get the existing record if it exists --
    ------------------------------------------
    l_rec.location_code        := cwms_loc.get_location_code(l_office_id, p_location_id);
-   l_rec.stream_location_code := get_stream_code(l_office_id, p_stream_id);
    begin
       select *
         into l_rec
         from at_stream_location
-       where location_code = l_rec.location_code
-         and stream_location_code = l_rec.stream_location_code;
+       where location_code = l_rec.location_code;
          
       l_exists := true;
    exception
@@ -983,6 +981,7 @@ begin
    --------------------------- 
    -- set the record values --
    ---------------------------
+   l_rec.stream_location_code := get_stream_code(l_office_id, p_stream_id);
    if p_station is not null or not l_ignore_nulls then
       l_rec.station := cwms_util.convert_units(p_station, l_station_unit, 'km');
    end if;
