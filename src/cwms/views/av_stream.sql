@@ -78,6 +78,6 @@ as
           av_loc l3
     where o.office_id = l1.db_office_id
       and l1.location_code = s.stream_location_code
-      and l2.location_code = s.diverting_stream_code
-      and l3.location_code = s.receiving_stream_code;
+      and l2.location_code(+) = s.diverting_stream_code
+      and l3.location_code(+) = s.receiving_stream_code
 /
