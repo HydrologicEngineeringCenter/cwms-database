@@ -80,4 +80,6 @@ as
       and l1.location_code = s.stream_location_code
       and l2.location_code(+) = s.diverting_stream_code
       and l3.location_code(+) = s.receiving_stream_code
+      and nvl(l2.unit_system, l1.unit_system) = l1.unit_system
+      and nvl(l3.unit_system, l1.unit_system) = l1.unit_system
 /

@@ -57,7 +57,6 @@ is
    l_diverting_stream_code number(10);
    l_receiving_stream_code number(10);
    l_office_id             varchar2(16) := nvl(upper(p_office_id), cwms_util.user_office_id); 
-   l_location_kind_id      varchar2(32);
    l_station_units         varchar2(16) := cwms_util.get_unit_id(p_station_units, l_office_id);
    l_rec                   at_stream%rowtype;
 begin
@@ -116,7 +115,7 @@ begin
             'Station and/or length values supplied without units.');
       end if;
    end if;
-   if not l_exists then
+   if not l_exists or not l_ignore_nulls then
       if p_flows_into_stream is null then
          if p_flows_into_station is not null or
             p_flows_into_bank is not null
@@ -125,8 +124,6 @@ begin
                'ERROR',
                'Confluence station and/or bank supplied without stream name.');
          end if;
-      else
-         l_receiving_stream_code := get_stream_code(l_office_id, p_flows_into_stream);
       end if;
       if p_diverts_from_stream is null then
          if p_diverts_from_station is not null or
@@ -136,8 +133,6 @@ begin
                'ERROR',
                'Diversion station and/or bank supplied without stream name.');
          end if;
-      else
-         l_diverting_stream_code := get_stream_code(l_office_id, p_diverts_from_stream);
       end if;
    end if;
    if p_flows_into_bank is not null and upper(p_flows_into_bank) not in ('L','R') then
@@ -167,6 +162,12 @@ begin
    ---------------------------------
    -- set the record to be stored --
    ---------------------------------
+   if not p_flows_into_stream is null then
+      l_receiving_stream_code := get_stream_code(l_office_id, p_flows_into_stream);
+   end if;
+   if not p_diverts_from_stream is null then
+      l_diverting_stream_code := get_stream_code(l_office_id, p_diverts_from_stream);
+   end if;
    if not l_exists then
       l_rec.stream_location_code := l_location_code;
    end if;
@@ -190,7 +191,7 @@ begin
       l_rec.diversion_bank := upper(p_diverts_from_bank);
    end if;
    if l_receiving_stream_code is not null or l_ignore_nulls then
-      l_rec.receiving_stream_code := l_diverting_stream_code;
+      l_rec.receiving_stream_code := l_receiving_stream_code;
    end if;
    if p_flows_into_station is not null or l_ignore_nulls then
       l_rec.confluence_station := cwms_util.convert_units(p_flows_into_station, l_station_units, 'km');
