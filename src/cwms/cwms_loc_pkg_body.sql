@@ -4910,7 +4910,7 @@ AS
 										  p_db_office_code	 => l_db_office_code
 										 );
 		l_tmp 				 NUMBER;
-		l_unassign_all 	 BOOLEAN := FALSE;
+		l_unassign_all 	 BOOLEAN := FALSE;  
 	BEGIN
 		IF UPPER (TRIM (p_unassign_all)) = 'T'
 		THEN
@@ -4920,8 +4920,14 @@ AS
 		BEGIN
 			IF l_unassign_all
 			THEN							  -- delete all group/location assignments...
-				DELETE FROM   at_loc_group_assignment
-						WHERE   loc_group_code = l_loc_group_code;
+				DELETE FROM   at_loc_group_assignment lga
+						WHERE   loc_group_code = l_loc_group_code
+                    AND   l_db_office_code = (select bl.db_office_code
+                                                from at_physical_location pl,
+                                                     at_base_location bl
+                                               where pl.location_code = location_code
+                                                 and bl.base_location_code = bl.base_location_code      
+                                             );
 			ELSE						 -- delete only group/location assignments for -
 				-- given locations...
 				DELETE FROM   at_loc_group_assignment
@@ -4942,7 +4948,7 @@ AS
 			THEN
 				cwms_err.raise (
 					'GENERIC_ERROR',
-					'Cannot unassign Location/Group pair(s). One or more group assignments are still assigned to SHEF Decoding.'
+					'Cannot unassign Location/Group pair(s). One or more group assignments are still assigned.'
 				);
 		END;
 	END unassign_loc_groups;
