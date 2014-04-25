@@ -394,9 +394,10 @@ type_links = {}
 view_links = {}
 brief_descriptions = {}
 external_files = [
-   'cwms location levels.pdf',
-   'cwms ratings.pdf',
-   'cwms properties dictionary.pdf',
+   'CWMS Database Naming.pdf',
+   'CWMS LOCATION LEVELS.pdf',
+   'CWMS RATINGS.pdf',
+   'CWMS Properties Dictionary.pdf',
    'Text and Binary Data in the CWMS Database.pdf'
 ]
 
@@ -1216,11 +1217,13 @@ def build_main_page() :
    ]
    documents_list = [
       HtmlElem('h3', content='General Documents'),
-      HtmlElem('a', attrs=[('href', 'cwms ratings.pdf')], content='CWMS Ratings'),
+      HtmlElem('a', attrs=[('href', 'CWMS Database Naming.pdf')], content='CWMS Database Naming'),
       HtmlElem('br'),
-      HtmlElem('a', attrs=[('href', 'cwms location levels.pdf')], content='CWMS Location Levels'),
+      HtmlElem('a', attrs=[('href', 'CWMS RATINGS.pdf')], content='CWMS Ratings'),
       HtmlElem('br'),
-      HtmlElem('a', attrs=[('href', 'cwms properties dictionary.pdf')], content='CWMS User Properties'),
+      HtmlElem('a', attrs=[('href', 'CWMS LOCATION LEVELS.pdf')], content='CWMS Location Levels'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', 'CWMS Properties Dictionary.pdf')], content='CWMS User Properties'),
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', 'Text and Binary Data in the CWMS Database.pdf')], content='CWMS Text and Binary Data (Standalone and Time Series)')
    ]
