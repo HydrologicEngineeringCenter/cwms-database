@@ -395,6 +395,7 @@ view_links = {}
 brief_descriptions = {}
 external_files = [
    'CWMS Database Naming.pdf',
+   'CWMS Location and Time Series Groups.pdf',
    'CWMS LOCATION LEVELS.pdf',
    'CWMS RATINGS.pdf',
    'CWMS Properties Dictionary.pdf',
@@ -1219,9 +1220,11 @@ def build_main_page() :
       HtmlElem('h3', content='General Documents'),
       HtmlElem('a', attrs=[('href', 'CWMS Database Naming.pdf')], content='CWMS Database Naming'),
       HtmlElem('br'),
-      HtmlElem('a', attrs=[('href', 'CWMS RATINGS.pdf')], content='CWMS Ratings'),
+      HtmlElem('a', attrs=[('href', 'CWMS Location and Time Series Groups.pdf')], content='CWMS Location and Time Series Groups'),
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', 'CWMS LOCATION LEVELS.pdf')], content='CWMS Location Levels'),
+      HtmlElem('br'),
+      HtmlElem('a', attrs=[('href', 'CWMS RATINGS.pdf')], content='CWMS Ratings'),
       HtmlElem('br'),
       HtmlElem('a', attrs=[('href', 'CWMS Properties Dictionary.pdf')], content='CWMS User Properties'),
       HtmlElem('br'),
