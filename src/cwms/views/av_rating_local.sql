@@ -76,5 +76,6 @@ as
     where rs.rating_spec_code = r.rating_spec_code
       and rt.template_code = rs.template_code
       and v.location_code = rs.location_code
-      and v.time_zone_name is not null;
+      and v.time_zone_name is not null
+      and v.unit_system = 'SI';
 /
