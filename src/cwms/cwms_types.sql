@@ -3208,7 +3208,7 @@ create type seasonal_value_t
  */
 is object (
    offset_months  number(2),
-   offset_minutes number(5),
+   offset_minutes number,
    value          number,
    /**
     * Constructs a seasonal_value_t object from Oracle interval types instead of integer types
