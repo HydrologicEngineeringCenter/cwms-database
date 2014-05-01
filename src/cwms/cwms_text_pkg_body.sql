@@ -4849,6 +4849,469 @@ as
 
       return l_cursor;
    end cat_media_types_f;
+
+   procedure store_text_filter(
+      p_text_filter_id in varchar2,
+      p_description    in varchar2,
+      p_text_filter    in str_tab_t,
+      p_fail_if_exists in varchar2 default 'T',
+      p_uses_regex     in varchar2 default 'F',
+      p_regex_flags    in varchar2 default null,
+      p_office_id      in varchar2 default null)
+   is      
+      type filter_elements_t is table of at_text_filter_element%rowtype; 
+      l_header_rec     at_text_filter%rowtype;
+      l_elements       filter_elements_t;
+      l_exists         boolean;
+      l_fail_if_exists boolean := cwms_util.is_true(p_fail_if_exists);
+      l_is_regex       boolean := cwms_util.is_true(p_uses_regex);
+      l_office_id      varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+      l_office_code    integer := cwms_util.get_db_office_code(l_office_id);
+      l_parts          str_tab_t;
+   begin                     
+      -------------------------------------------------
+      -- get the existing header record if it exists --
+      -------------------------------------------------
+      l_header_rec.text_filter_id := trim(p_text_filter_id);
+      begin
+         select *
+           into l_header_rec
+           from at_text_filter
+          where office_code in (l_office_code, cwms_util.db_office_code_all)
+            and upper(text_filter_id) = upper(l_header_rec.text_filter_id);
+         l_exists := true;            
+      exception
+         when no_data_found then l_exists := false; 
+      end;
+      if l_exists then
+         if l_header_rec.office_code = cwms_util.db_office_code_all then
+            if l_office_code != cwms_util.db_office_code_all then
+               cwms_err.raise(
+                  'ERROR',
+                  'Text filter '
+                  ||l_header_rec.text_filter_id
+                  ||' is owned by CWMS - cannot update.');
+            end if;
+         end if;
+         if l_fail_if_exists then
+            cwms_err.raise(
+               'ITEM_ALREADY_EXISTS',
+               'Text filter',
+               l_office_id||'/'||l_header_rec.text_filter_id);
+         end if;
+         ------------------------------------------
+         -- exists, delete the existing elements --
+         ------------------------------------------
+         delete 
+           from at_text_filter_element
+          where text_filter_code = l_header_rec.text_filter_code;
+      else
+         --------------------------------------------
+         -- doesn't exist, prime header for insert --
+         --------------------------------------------
+         l_header_rec.text_filter_code := cwms_seq.nextval; 
+         l_header_rec.office_code      := l_office_code;
+      end if;
+      ------------------------------------------------      
+      -- finish setting header for update or insert --
+      ------------------------------------------------
+      l_header_rec.description := trim(p_description);      
+      l_header_rec.is_regex := case l_is_regex when true then 'T' else 'F' end;
+      l_header_rec.regex_flags := lower(trim(p_regex_flags));
+      ---------------------------------      
+      -- update or insert the header --
+      ---------------------------------      
+      if l_exists then
+         update at_text_filter
+            set row = l_header_rec
+          where text_filter_code = l_header_rec.text_filter_code;  
+      else
+         insert
+           into at_text_filter
+         values l_header_rec;  
+      end if;                                              
+      
+      if p_text_filter is not null then
+         l_elements := filter_elements_t();
+         for i in 1..p_text_filter.count loop
+            l_elements.extend;
+            l_elements(i).text_filter_code := l_header_rec.text_filter_code;
+            l_elements(i).element_sequence := i;
+            l_elements(i).regex_flags := l_header_rec.regex_flags; -- may be overwritten       
+            l_parts := cwms_util.split_text(p_text_filter(i), ':', 1);
+            if l_parts.count != 2 then
+               cwms_err.raise(
+                  'ERROR',
+                  'Filter element must be like (INCLUDE|EXCLUDE):<filter>');
+            end if;
+            l_parts(1) := upper(trim(l_parts(1)));    
+            case
+               when instr('INCLUDE', l_parts(1)) = 1 then
+                  l_elements(i).include := 'T';
+               when instr('EXCLUDE', l_parts(1)) = 1 then
+                  l_elements(i).include := 'F';
+               else   
+                  cwms_err.raise(
+                  'ERROR', 
+                  'Filter element must start with ''INCLUDE'' or ''EXCLUDE'' (or some beginning portion thereof)');
+            end case;
+            if l_is_regex then
+               l_elements(i).filter_text := trim(l_parts(2));
+               if regexp_like(l_elements(i).filter_text, 'f(l(a(gs?)?)?)?\s*=\s*[cimn]*\s*:.+', 'i') then
+                  l_parts := cwms_util.split_text(l_elements(i).filter_text, ':', 1);
+                  l_elements(i).filter_text := trim(l_parts(2));
+                  l_parts := cwms_util.split_text(l_parts(1), '=', 1);
+                  l_elements(i).regex_flags := lower(trim(l_parts(2))); -- overwrites common flags
+               end if;
+               l_parts := cwms_util.split_text(l_parts(2), ':', 1);
+            else
+               l_elements(i).filter_text := trim(l_parts(2)); 
+            end if;
+         end loop;
+         forall i in 1..l_elements.count
+            insert into at_text_filter_element values l_elements(i);
+      end if;
+   end store_text_filter;      
+      
+   procedure retrieve_text_filter(
+      p_text_filter    out str_tab_t,
+      p_uses_regex     out varchar2,
+      p_text_filter_id in  varchar2,
+      p_office_id      in  varchar2 default null)
+   is
+      type filter_elements_t is table of at_text_filter_element%rowtype;
+      l_office_code integer := cwms_util.get_db_office_code(p_office_id);
+      l_header_rec  at_text_filter%rowtype;
+      l_elements    filter_elements_t;
+      l_text_filter str_tab_t;
+   begin
+      l_header_rec.text_filter_id := trim(p_text_filter_id);
+      begin
+         select *
+           into l_header_rec
+           from at_text_filter
+          where office_code in (l_office_code, cwms_util.db_office_code_all)
+            and upper(text_filter_id) = upper(l_header_rec.text_filter_id);
+      exception
+         when no_data_found then 
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Text filter',
+               l_header_rec.text_filter_id);
+      end;
+      begin
+         select *      
+           bulk collect
+           into l_elements
+           from at_text_filter_element
+          where text_filter_code = l_header_rec.text_filter_code
+          order by element_sequence;
+          
+         l_text_filter := str_tab_t();
+         l_text_filter.extend(l_elements.count);
+         for i in 1..l_elements.count loop
+            l_text_filter(i) := case l_elements(i).include when 'T' then 'include:' else 'exclude:' end;
+            if l_elements(i).regex_flags is not null and length(l_elements(i).regex_flags) > 0 then
+               l_text_filter(i) := l_text_filter(i)||'flags='||l_elements(i).regex_flags||':';
+            elsif l_header_rec.regex_flags is not null and length(l_header_rec.regex_flags) > 0 then
+               l_text_filter(i) := l_text_filter(i)||'flags='||l_header_rec.regex_flags||':';
+            end if;
+            l_text_filter(i) := l_text_filter(i)||l_elements(i).filter_text;
+         end loop;            
+      exception
+         when no_data_found then null;
+      end;
+      p_text_filter := l_text_filter;
+      p_uses_regex := l_header_rec.is_regex; 
+   end retrieve_text_filter;               
+                                      
+   procedure delete_text_filter(
+      p_text_filter_id in varchar2,
+      p_office_id      in varchar2 default null)
+   is      
+      l_header_rec  at_text_filter%rowtype;
+      l_office_id   varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+      l_office_code integer := cwms_util.get_db_office_code(l_office_id);
+   begin                     
+      l_header_rec.text_filter_id := trim(p_text_filter_id);
+      begin
+         select *
+           into l_header_rec
+           from at_text_filter
+          where office_code in (l_office_code, cwms_util.db_office_code_all)
+            and upper(text_filter_id) = upper(l_header_rec.text_filter_id);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Text filter',
+               l_office_id||'/'||l_header_rec.text_filter_id); 
+      end;
+      if l_header_rec.office_code = cwms_util.db_office_code_all then
+         if l_office_code != cwms_util.db_office_code_all then
+            cwms_err.raise(
+               'ERROR',
+               'Text filter '
+               ||l_header_rec.text_filter_id
+               ||' is owned by CWMS - cannot delete.');
+         end if;
+      end if;
+      delete 
+        from at_text_filter_element
+       where text_filter_code = l_header_rec.text_filter_code;
+       
+      delete 
+        from at_text_filter
+       where text_filter_code = l_header_rec.text_filter_code;
+       
+   end delete_text_filter;
+                                      
+   procedure rename_text_filter(
+      p_old_text_filter_id in varchar2,
+      p_new_text_filter_id in varchar2,
+      p_office_id          in varchar2 default null)
+   is      
+      l_header_old  at_text_filter%rowtype;
+      l_header_new at_text_filter%rowtype;
+      l_office_id   varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+      l_office_code integer := cwms_util.get_db_office_code(l_office_id);
+   begin                     
+      l_header_old.text_filter_id := trim(p_old_text_filter_id);
+      begin
+         select *
+           into l_header_old
+           from at_text_filter
+          where office_code in (l_office_code, cwms_util.db_office_code_all)
+            and upper(text_filter_id) = upper(l_header_old.text_filter_id);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Text filter',
+               l_office_id||'/'||l_header_old.text_filter_id); 
+      end;
+      l_header_new.text_filter_id := trim(p_new_text_filter_id);
+      begin
+         select *
+           into l_header_new
+           from at_text_filter
+          where office_code in (l_office_code, cwms_util.db_office_code_all)
+            and upper(text_filter_id) = upper(l_header_new.text_filter_id);
+            
+         cwms_err.raise(
+            'ITEM_ALREADY_EXISTS',
+            'Text filter',
+            l_office_id||'/'||l_header_new.text_filter_id);           
+      exception
+         when no_data_found then null;
+      end;
+      
+      update at_text_filter
+         set text_filter_id = l_header_new.text_filter_id
+       where text_filter_code = l_header_old.text_filter_code;         
+       
+   end rename_text_filter;
+            
+   function filter_text(
+      p_text_filter_id in varchar2,
+      p_values         in str_tab_t,
+      p_office_id      in varchar2 default null)
+      return str_tab_t
+   is
+      type filter_elements_t is table of at_text_filter_element%rowtype;
+      l_office_id   varchar2(16) := cwms_util.get_db_office_id(p_office_id);
+      l_office_code integer := cwms_util.get_db_office_code(l_office_id);
+      l_header_rec  at_text_filter%rowtype;
+      l_elements    filter_elements_t;
+      l_filters     str_tab_t;
+      l_is_regex    boolean;
+      l_included    boolean;
+      l_matched     boolean;
+      l_filtered str_tab_t;
+   begin
+      l_header_rec.text_filter_id := trim(p_text_filter_id);
+      begin
+         select *
+           into l_header_rec
+           from at_text_filter
+          where office_code in (l_office_code, cwms_util.db_office_code_all)
+            and upper(text_filter_id) = upper(l_header_rec.text_filter_id);
+      exception
+         when no_data_found then
+            cwms_err.raise(
+               'ITEM_DOES_NOT_EXIST',
+               'Text filter',
+               l_office_id||'/'||l_header_rec.text_filter_id); 
+      end;
+      begin
+         select *      
+           bulk collect
+           into l_elements
+           from at_text_filter_element
+          where text_filter_code = l_header_rec.text_filter_code
+          order by element_sequence;
+      exception
+         when no_data_found then null;
+      end;
+      
+      if p_values is not null and l_elements is not null then
+         l_is_regex := l_header_rec.is_regex = 'T';
+         if not l_is_regex then
+            select cwms_util.normalize_wildcards(filter_text)      
+              bulk collect
+              into l_filters
+              from at_text_filter_element
+             where text_filter_code = l_header_rec.text_filter_code
+             order by element_sequence;
+         end if;
+         for i in 1..p_values.count loop
+            l_included := l_elements(1).include = 'F';
+            for j in 1..l_elements.count loop
+               if l_included != (l_elements(j).include = 'T') then
+                  if l_is_regex then
+                     if l_elements(j).regex_flags is not null then
+                        l_matched := regexp_like(p_values(i), l_elements(j).filter_text, l_elements(j).regex_flags); 
+                     else
+                        if l_header_rec.regex_flags is not null then
+                           l_matched := regexp_like(p_values(i), l_elements(j).filter_text, l_header_rec.regex_flags); 
+                        else
+                           l_matched := regexp_like(p_values(i), l_elements(j).filter_text); 
+                        end if;
+                     end if;
+                  else
+                     l_matched := p_values(i) like l_filters(j);
+                  end if;
+                  if l_matched then
+                     l_included := not l_included;
+                  end if;
+               end if;
+            end loop;
+            if l_included then
+               if l_filtered is null then
+                  l_filtered := str_tab_t();
+               end if;
+               l_filtered.extend;
+               l_filtered(l_filtered.count) := p_values(i);
+            end if;
+         end loop;
+      else 
+         l_filtered := p_values;
+      end if;
+            
+      return l_filtered;
+   end filter_text;           
+      
+   function filter_text(
+      p_text_filter_id in varchar2,
+      p_value          in varchar2,
+      p_office_id      in varchar2 default null)
+      return varchar2
+   is
+      l_filtered str_tab_t;
+   begin
+      l_filtered := filter_text(p_text_filter_id, str_tab_t(p_value), p_office_id);
+      return case l_filtered is null
+                when true then null
+                else l_filtered(0)
+             end; 
+   end filter_text;           
+   
+   function filter_text(
+      p_filter in str_tab_t,
+      p_values in str_tab_t,
+      p_regex  in varchar2 default 'F')
+      return str_tab_t
+   is                      
+      type filter_element_t is record(include boolean, flags varchar2(16), text varchar2(256));
+      type filter_element_tab_t is table of filter_element_t;
+      l_filtered str_tab_t;
+      l_regex    boolean := cwms_util.is_true(p_regex);
+      l_filter   filter_element_tab_t;
+      l_parts    str_tab_t;
+      l_included boolean;
+      l_matched  boolean;
+   begin   
+      if p_filter is null then
+         l_filtered := p_values;
+      else 
+         ----------------------
+         -- build the filter --
+         ----------------------         
+         l_filter := filter_element_tab_t();
+         l_filter.extend(p_filter.count);
+         for i in 1..p_filter.count loop
+            l_parts := cwms_util.split_text(p_filter(i), ':', 1);
+            if l_parts.count != 2 then
+               cwms_err.raise(
+                  'ERROR',
+                  'Filter element must be like (INCLUDE|EXCLUDE):<filter>');
+            end if;
+            l_parts(1) := upper(trim(l_parts(1)));
+            if instr('INCLUDE', l_parts(1)) = 1 then
+               l_filter(i).include := true;
+            elsif instr('EXCLUDE', l_parts(1)) = 1 then
+               l_filter(i).include := false;
+            else   
+               cwms_err.raise(
+               'ERROR', 
+               'Filter element must start with ''INCLUDE'' or ''EXCLUDE'' (or some beginning portion)');
+            end if; 
+            if l_regex then
+               l_filter(i).text := trim(l_parts(2));
+               if regexp_like(l_filter(i).text, 'f(l(a(gs?)?)?)?\s*=\s*[cimn]*\s*:.+', 'i') then
+                  l_parts := cwms_util.split_text(l_filter(i).text, ':', 1);
+                  l_filter(i).text := trim(l_parts(2));
+                  l_parts := cwms_util.split_text(l_parts(1), '=', 1);
+                  l_filter(i).flags := lower(trim(l_parts(2)));
+               end if;
+               l_parts := cwms_util.split_text(l_parts(2), ':', 1);
+            else
+               l_filter(i).text := cwms_util.normalize_wildcards(trim(l_parts(2))); 
+            end if;
+         end loop;
+         ---------------------      
+         -- filter the text --
+         ---------------------
+         for i in 1..p_values.count loop
+            l_included := not l_filter(1).include;
+            for j in 1..l_filter.count loop
+               if l_filter(j).include != l_included then
+                  if l_regex then
+                     l_matched := regexp_like(p_values(i), l_filter(j).text, l_filter(j).flags);
+                  else
+                     l_matched := p_values(i) like l_filter(j).text;
+                  end if;
+                  if l_matched then
+                     l_included := not l_included;
+                  end if;
+               end if;
+            end loop;
+            if l_included then
+               if l_filtered is null then
+                  l_filtered := str_tab_t(); 
+               end if;
+               l_filtered.extend;
+               l_filtered(l_filtered.count) := p_values(i);
+            end if; 
+         end loop;      
+      end if;
+      return l_filtered;
+   end filter_text;            
+      
+   function filter_text(
+      p_filter in str_tab_t,
+      p_value  in varchar2,
+      p_regex  in varchar2 default 'F')
+      return varchar2
+   is
+      l_filtered str_tab_t;
+   begin
+      l_filtered := filter_text(p_filter, str_tab_t(p_value), p_regex);
+      return case l_filtered is null
+                when true then null
+                else l_filtered(0)
+             end; 
+    end filter_text;
 end;
 /
 

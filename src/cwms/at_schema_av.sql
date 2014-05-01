@@ -59,6 +59,8 @@ DECLARE
 			       'av_stream_types',
 			       'av_store_rule',
 			       'av_store_rule_ui',
+			       'av_text_filter',
+			       'av_text_filter_element',
 			       'av_loc_ts_id_count',
 			       'av_property',
 			       'av_vert_datum_offset'
@@ -102,6 +104,8 @@ END;
 @@cwms/views/av_screening_criteria.sql
 @@cwms/views/av_screening_dur_mag.sql
 @@cwms/views/av_screening_id.sql
+@@cwms/views/av_text_filter.sql
+@@cwms/views/av_text_filter_element.sql
 @@cwms/views/av_cwms_ts_id.sql
 @@cwms/views/av_cwms_ts_id2.sql
 @@cwms/views/av_unit.sql

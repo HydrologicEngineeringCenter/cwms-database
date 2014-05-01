@@ -5810,10 +5810,51 @@ create table at_store_rule_default (
 ) tablespace cwms_20at_data
 /
 
-comment on table at_store_rule_default is 'Hold default store rules for UI lists';
+comment on table at_store_rule_default is 'Holds default store rules for UI lists';
 comment on column at_store_rule_default.office_code        is 'Office that default office applie to (foreign key to CWMS_OFFICE)';
 comment on column at_store_rule_default.default_store_rule is 'Default store rule for office (foreign key to CWMS_STORE_RULE)';
 commit;
 
+create table at_text_filter (
+   text_filter_code integer,
+   office_code      integer,
+   text_filter_id   varchar2(32),
+   is_regex         varchar2(1),
+   regex_flags      varchar2(4),
+   description      varchar2(256),
+   constraint at_text_filter_pk  primary key (text_filter_code),
+   constraint at_text_filter_ck1 check (trim(text_filter_id) = text_filter_id)
+) tablespace cwms_20at_data
+/
+
+comment on table  at_text_filter is 'Holds text filter definitions';
+comment on column at_text_filter.text_filter_code is 'Synthetic key';
+comment on column at_text_filter.office_code      is 'Foreign key to office that owns this text filter';
+comment on column at_text_filter.text_filter_id   is 'The text identifier (name) of this text filter';
+comment on column at_text_filter.is_regex         is 'Flag (T/F) specifying whether this text filter uses regular expressions (''F'' = uses glob-style wildcards)';
+comment on column at_text_filter.regex_flags      is 'Regex flags (match parameter) for all elements (overridden by individual element flags)';
+comment on column at_text_filter.description      is 'Descriptive text about text filter';
+
+create unique index at_text_filter_u1 on at_text_filter(office_code, upper(text_filter_id)) tablespace cwms_20at_data;
+
+create table at_text_filter_element (
+   text_filter_code integer,
+   element_sequence integer,
+   include          varchar2(1),
+   filter_text      varchar2(256) not null,
+   regex_flags      varchar2(4),
+   constraint at_text_filter_element_pk  primary key (text_filter_code, element_sequence),
+   constraint at_text_filter_element_fk1 foreign key (text_filter_code) references at_text_filter (text_filter_code),
+   constraint at_text_filter_element_ck1 check (include in ('T', 'F'))
+) tablespace cwms_20at_data
+/
+
+comment on table  at_text_filter_element is 'Holds sequenced filter definitions for text filters.';
+comment on column at_text_filter_element.text_filter_code is 'Foreign key to the text filter this element is for';
+comment on column at_text_filter_element.element_sequence is 'Sequence in the filter for this element';
+comment on column at_text_filter_element.include          is 'Flag (T/F) specifying whether this element is an include filter element (''F'' = is exclude filter element)';
+comment on column at_text_filter_element.filter_text      is 'The filter element text. If not regex, it should be glob-style wildcard';
+comment on column at_text_filter_element.regex_flags      is 'Regex flags (match parameter) for this element only';
+commit;
 -- HOST pwd
 @@rowcps_schema.sql
