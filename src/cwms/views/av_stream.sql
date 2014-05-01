@@ -3,7 +3,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_STREAM', null,'
  * Contains non-geographic information for streams
  *
  * @since CWMS 2.1
- 
+ *
  * @field stream_location_code  References stream location.
  * @field diverting_stream_code Reference to stream this stream diverts from, if any 
  * @field receiving_stream_code Reference to stream this stream flows into, if any 
