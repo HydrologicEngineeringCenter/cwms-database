@@ -29,6 +29,8 @@ updates  = [
 	['package body', 'cwms_ts'],
 	['package spec', 'cwms_upass'],
 	['package body', 'cwms_upass'],
+	['package spec', 'cwms_text'],
+	['package body', 'cwms_text'],
 	['package spec', 'cwms_util'],
 	['package body', 'cwms_util'],
 	['type',         'abs_rating_ind_param_t'],
@@ -49,6 +51,8 @@ updates  = [
 	['type',         'stream_rating_t'],
 	['type body',    'stream_rating_t'],
 	['view',         'av_sec_users'],
+	['view',         'av_text_filter'],
+	['view',         'av_text_filter_element'],
 	['script',       'enable_all_jobs'],
 ]
 
