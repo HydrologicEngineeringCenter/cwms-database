@@ -976,7 +976,6 @@ CREATE OR REPLACE package body cwms_xchg as
       type dss_filemgr_by_id is table of dss_filemgr_t index by varchar2(49);
       l_mappings           str_tab_t;
       l_parts              str_tab_t;
-      l_parts2             str_tab_t;
       l_offices            int_by_id16;
       l_dss_filemgrs       dss_filemgr_by_id;
       l_id                 varchar2(32);
@@ -987,7 +986,6 @@ CREATE OR REPLACE package body cwms_xchg as
       l_url                varchar2(262);
       l_filename           varchar2(256);
       l_description        varchar2(256);
-      l_pos                integer;
       l_xchg_set_text      varchar2(32767);
       l_xchg_set_1         dataexchange_set_t;
       l_xchg_set_2         dataexchange_set_t;
@@ -1004,10 +1002,6 @@ CREATE OR REPLACE package body cwms_xchg as
       l_map_2              mapping_t;
       d_path_part          varchar2(64);
       l_pathname           varchar2(391);
-      l_type_id            varchar2(8);
-      l_units_id           varchar2(16);
-      l_time_zone_id       varchar2(28);
-      l_tz_usage_id        varchar2(16);
       l_tsid               varchar2(193);
       l_att_text           varchar2(512);
       l_attributes         str_by_str;
@@ -1024,7 +1018,8 @@ CREATE OR REPLACE package body cwms_xchg as
       l_text               varchar2(32767);
       l_can_insert         boolean := false;
       l_can_update         boolean := false;
-      l_can_delete         boolean := false;
+      l_can_delete         boolean := false; 
+      l_log_msg            varchar2(4000);
 
       -------------------
       -- local modules --
@@ -1078,28 +1073,42 @@ CREATE OR REPLACE package body cwms_xchg as
          end loop;
          return l_attr;
       end;
-
-   begin
+        
+      procedure log_entry(p_msg in varchar2, p_msg_level in integer default cwms_msg.msg_level_normal)
+      is
+      begin
+         cwms_msg.log_db_message('store_dataexchange_conf', p_msg_level, p_msg);
+      end;
+   begin 
+      log_entry('Storing data exchange configuration with store rule '''||p_store_rule||'''');
       -----------------------------
       -- validate the store rule --
       -----------------------------
-      if substr('MERGE',      1, length(p_store_rule)) = p_store_rule then
-         l_can_insert := true;
-         l_can_update := true;
-      elsif substr('INSERT',  1, length(p_store_rule)) = p_store_rule then
-         l_can_insert := true;
-      elsif substr('UPDATE',  1, length(p_store_rule)) = p_store_rule then
-         l_can_update := true;
-      elsif substr('REPLACE', 1, length(p_store_rule)) = p_store_rule then
-         l_can_insert := true;
-         l_can_update := true;
-         l_can_delete := true;
-      else
-         cwms_err.raise(
-            'INVALID_ITEM',
-            p_store_rule,
-            'HEC-DSS exhange set store rule, should be [I]nsert, [U]pdate, [R]eplace, or [M]erge');
-      end if;
+      case
+         when substr('MERGE',      1, length(p_store_rule)) = p_store_rule then
+            l_can_insert := true;
+            l_can_update := true;
+            l_can_delete := false;
+         when substr('INSERT',  1, length(p_store_rule)) = p_store_rule then
+            l_can_insert := true;
+            l_can_update := false;
+            l_can_delete := false;
+         when substr('UPDATE',  1, length(p_store_rule)) = p_store_rule then
+            l_can_insert := false;
+            l_can_update := true;
+            l_can_delete := false;
+         when substr('REPLACE', 1, length(p_store_rule)) = p_store_rule then
+            l_can_insert := true;
+            l_can_update := true;
+            l_can_delete := true;
+         else    
+            log_entry('ERROR: HEC-DSS exhange set store rule, should be [I]nsert, [U]pdate, [R]eplace, or [M]erge');
+            cwms_err.raise(
+               'INVALID_ITEM',
+               p_store_rule,
+               'HEC-DSS exhange set store rule, should be [I]nsert, [U]pdate, [R]eplace, or [M]erge');
+      end case;
+      
       -------------------------------------------------
       -- log the incoming XML for debugging purposes --
       -------------------------------------------------
@@ -1132,6 +1141,7 @@ CREATE OR REPLACE package body cwms_xchg as
          l_filename     := trim(split(split(l_parts(i), 'filepath>')(2), '<')(1));
          l_host         := trim(split(split(l_parts(i), 'host>')(2), '<')(1));
          l_port         := trim(split(split(l_parts(i), 'port>')(2), '<')(1));
+         log_entry('Processing data store '''||l_attributes('id')||'''');
          if instr(l_parts(i), '<description>') > 0 then
             l_description := trim(split(split(l_parts(i), 'description>')(2), '<')(1));
          else
@@ -1141,7 +1151,9 @@ CREATE OR REPLACE package body cwms_xchg as
             l_office_id := l_attributes('office-id');
          else
             if l_offices.count > 1 then
-               cwms_err.raise('ERROR', 'dssfilemanagager with no office-id attribute is ambiguous');
+               l_log_msg := 'dssfilemanagager with no office-id attribute is ambiguous';
+               log_entry('ERROR: '||l_log_msg);
+               cwms_err.raise('ERROR', l_log_msg);
             end if;
             l_office_id := l_offices.first;
          end if;
@@ -1200,6 +1212,7 @@ CREATE OR REPLACE package body cwms_xchg as
             l_attributes    := make_attributes(l_att_text);
             l_set_id        := l_attributes('id');
             l_office_id     := l_attributes('office-id');
+            log_entry('Processing data exchange set '''||l_set_id||'''');
             if l_attributes.exists('realtime-source-id') then
                if l_dss_filemgrs.exists(l_attributes('realtime-source-id')||'@'||l_office_id) then
                   l_realtime_dir := 'DssToOracle';
@@ -1223,13 +1236,13 @@ CREATE OR REPLACE package body cwms_xchg as
                if l_dss_filemgrs.exists(l_compound_id) then
                   l_xchg_set_1.datastore_id := l_compound_id;
                else
-                  cwms_err.raise(
-                     'ERROR',
-                     'dataexchange-set '
+                  l_log_msg := 'dataexchange-set '
                      ||l_set_id
                      ||' for office '
                      ||l_office_id
-                     ||' references non-existent datastore');
+                     ||' references non-existent datastore';
+                  log_entry('ERROR: '||l_log_msg); 
+                  cwms_err.raise('ERROR', l_log_msg);
                end if;
             end if;
             if instr(l_xchg_set_text, '<description>') > 0  then
@@ -1276,7 +1289,9 @@ CREATE OR REPLACE package body cwms_xchg as
                l_set_id,
                l_office_id);
             if l_xchg_set_1.code is null then
+               log_entry('Data exchange set is new');
                if l_can_insert then
+                  log_entry('Inserting new data exchange set');
                   cwms_xchg.store_xchg_set(
                      l_xchg_set_1.code,
                      l_xchg_set_1.id,
@@ -1292,6 +1307,7 @@ CREATE OR REPLACE package body cwms_xchg as
                   l_sets_inserted := l_sets_inserted + 1;
                end if;
             else
+               log_entry('Data exchange set already exists');
                l_xchg_set_2.datastore_id := l_xchg_set_2.datastore_id || '@' || l_office_id;
                if l_can_update and
                      (upper(l_xchg_set_1.datastore_id) != upper(l_xchg_set_2.datastore_id) or
@@ -1301,6 +1317,7 @@ CREATE OR REPLACE package body cwms_xchg as
                       upper(nvl(l_xchg_set_1.interp_units, '@')) != upper(nvl(l_xchg_set_2.interp_units, '@')) or
                       upper(nvl(l_xchg_set_1.realtime_dir, '@')) != upper(nvl(l_xchg_set_2.realtime_dir, '@')))
                then
+                  log_entry('Updating existing data exchange set');
                   update at_xchg_set
                      set datastore_code = l_dss_filemgrs(l_xchg_set_1.datastore_id).code,
                          description = l_xchg_set_1.description,
@@ -1325,6 +1342,7 @@ CREATE OR REPLACE package body cwms_xchg as
             -------------------------------------
             -- now back to the mapping at hand --
             -------------------------------------
+            log_entry('Processing times series mapping');
             l_pathname   := split(l_mappings(i), 'dss-timeseries')(2);
             l_parts      := split(l_pathname, '>');
             l_att_text   := l_parts(1);
@@ -1334,12 +1352,18 @@ CREATE OR REPLACE package body cwms_xchg as
             l_parts      := split(l_tsid, '>');
             l_att_text   := l_parts(1);
             l_tsid       := trim(split(l_parts(2), '<')(1));
+            log_entry('=>'||l_tsid);
+            log_entry('=>'||l_pathname);
             if not l_attributes.exists('type') then
-               cwms_err.raise('ERROR', 'No data type specified for pathname ' || l_pathname);
+               l_log_msg := 'No data type specified for pathname ' || l_pathname;
+               log_entry('ERROR: '||l_log_msg);
+               cwms_err.raise('ERROR', l_log_msg);
             end if;
             l_map_1.param_type := l_attributes('type');
             if not l_attributes.exists('units') then
-               cwms_err.raise('ERROR', 'No units specified for pathname ' || l_pathname);
+               l_log_msg := 'No units specified for pathname ' || l_pathname;
+               log_entry('ERROR: '||l_log_msg);
+               cwms_err.raise('ERROR', l_log_msg);
             end if;
             l_map_1.units := l_attributes('units');
             if l_attributes.exists('timezone') then
@@ -1381,7 +1405,9 @@ CREATE OR REPLACE package body cwms_xchg as
                l_xchg_set_code,
                l_ts_code);
             if l_map_1.code is null then
+               log_entry('Time series mapping is new');
                if l_can_insert then
+                  log_entry('Inserting time series mapping');
                   cwms_xchg.store_xchg_dss_ts_mapping(
                      l_map_1.code,
                      l_xchg_set_code,
@@ -1398,62 +1424,66 @@ CREATE OR REPLACE package body cwms_xchg as
                      'T');
                   l_mappings_inserted := l_mappings_inserted + 1;
                end if;
-            elsif l_can_update then
-               if nvl(l_map_1.a_path_part, '@') != upper(nvl(l_map_2.a_path_part, '@')) or
-                  l_map_1.b_path_part != upper(l_map_2.b_path_part) or
-                  l_map_1.c_path_part != upper(l_map_2.c_path_part) or
-                  l_map_1.e_path_part != upper(l_map_2.e_path_part) or
-                  nvl(l_map_1.f_path_part, '@') != upper(nvl(l_map_2.f_path_part, '@'))
-               then
-                  select xchg_set_id
-                    into l_set_id
-                    from at_xchg_set
-                   where xchg_set_code = l_xchg_set_code;
-                  cwms_err.raise(
-                     'ERROR',
-                     'MULTIPLE TIMESERIES MAPPING:'
-                     || chr(10)
-                     || 'CWMS timeseries '
-                     || chr(10) || chr(9)
-                     || l_tsid
-                     || chr(10)
-                     || ' cannot be mapped to '
-                     || chr(10) || chr(9)
-                     || make_dss_pathname(l_map_2.a_path_part,l_map_2.b_path_part,l_map_2.c_path_part,null,l_map_2.e_path_part,l_map_2.f_path_part)
-                     || chr(10)|| chr(9)
-                     || make_dss_pathname(l_map_1.a_path_part,l_map_1.b_path_part,l_map_1.c_path_part,null,l_map_1.e_path_part,l_map_1.f_path_part)
-                     || chr(10)
-                     || 'in data exchange set '
-                     || chr(10) || chr(9)
-                     || l_set_id);
-               end if;
-               if l_map_1.param_type != l_map_2.param_type or
-                  l_map_1.units != l_map_2.units or
-                  l_map_1.time_zone != l_map_2.time_zone or
-                  l_map_1.tz_usage != l_map_2.tz_usage
-               then
-                  update at_xchg_dss_ts_mappings
-                     set a_pathname_part = upper(l_map_1.a_path_part),
-                         b_pathname_part = upper(l_map_1.b_path_part),
-                         c_pathname_part = upper(l_map_1.c_path_part),
-                         e_pathname_part = upper(l_map_1.e_path_part),
-                         f_pathname_part = upper(l_map_1.f_path_part),
-                         dss_parameter_type_code = (select dss_parameter_type_code
-                                                      from cwms_dss_parameter_type
-                                                     where upper(dss_parameter_type_id) = upper(l_map_1.param_type)),
-                         unit_id = l_map_1.units,
-                         time_zone_code = (select time_zone_code
-                                             from mv_time_zone
-                                            where upper(time_zone_name) = upper(l_map_1.time_zone)),
-                         tz_usage_code = (select tz_usage_code
-                                            from cwms_tz_usage
-                                           where upper(tz_usage_id) = upper(l_map_1.tz_usage))
-                   where mapping_code = l_map_1.code;
-                  l_mappings_updated := l_mappings_updated + 1;
+            else
+               log_entry('Time series mapping already exists');
+               if l_can_update then
+                  if nvl(l_map_1.a_path_part, '@') != upper(nvl(l_map_2.a_path_part, '@')) or
+                     l_map_1.b_path_part != upper(l_map_2.b_path_part) or
+                     l_map_1.c_path_part != upper(l_map_2.c_path_part) or
+                     l_map_1.e_path_part != upper(l_map_2.e_path_part) or
+                     nvl(l_map_1.f_path_part, '@') != upper(nvl(l_map_2.f_path_part, '@'))
+                  then
+                     select xchg_set_id
+                       into l_set_id
+                       from at_xchg_set
+                      where xchg_set_code = l_xchg_set_code;
+                     cwms_err.raise(
+                        'ERROR',
+                        'MULTIPLE TIMESERIES MAPPING:'
+                        || chr(10)
+                        || 'CWMS timeseries '
+                        || chr(10) || chr(9)
+                        || l_tsid
+                        || chr(10)
+                        || ' cannot be mapped to '
+                        || chr(10) || chr(9)
+                        || make_dss_pathname(l_map_2.a_path_part,l_map_2.b_path_part,l_map_2.c_path_part,null,l_map_2.e_path_part,l_map_2.f_path_part)
+                        || chr(10)|| chr(9)
+                        || make_dss_pathname(l_map_1.a_path_part,l_map_1.b_path_part,l_map_1.c_path_part,null,l_map_1.e_path_part,l_map_1.f_path_part)
+                        || chr(10)
+                        || 'in data exchange set '
+                        || chr(10) || chr(9)
+                        || l_set_id);
+                  end if;
+                  if l_map_1.param_type != l_map_2.param_type or
+                     l_map_1.units != l_map_2.units or
+                     l_map_1.time_zone != l_map_2.time_zone or
+                     l_map_1.tz_usage != l_map_2.tz_usage
+                  then
+                     log_entry('Updating existing time series mapping');
+                     update at_xchg_dss_ts_mappings
+                        set a_pathname_part = upper(l_map_1.a_path_part),
+                            b_pathname_part = upper(l_map_1.b_path_part),
+                            c_pathname_part = upper(l_map_1.c_path_part),
+                            e_pathname_part = upper(l_map_1.e_path_part),
+                            f_pathname_part = upper(l_map_1.f_path_part),
+                            dss_parameter_type_code = (select dss_parameter_type_code
+                                                         from cwms_dss_parameter_type
+                                                        where upper(dss_parameter_type_id) = upper(l_map_1.param_type)),
+                            unit_id = l_map_1.units,
+                            time_zone_code = (select time_zone_code
+                                                from mv_time_zone
+                                               where upper(time_zone_name) = upper(l_map_1.time_zone)),
+                            tz_usage_code = (select tz_usage_code
+                                               from cwms_tz_usage
+                                              where upper(tz_usage_id) = upper(l_map_1.tz_usage))
+                      where mapping_code = l_map_1.code;
+                     l_mappings_updated := l_mappings_updated + 1;
+                  end if;
                end if;
             end if;
             l_mappings_specified.extend;
-            l_mappings_specified(l_mappings_specified.last) := l_map_1.code;
+            l_mappings_specified(l_mappings_specified.count) := l_map_1.code;
          end if;
          l_xchg_set_code := l_xchg_set_1.code;
       end loop;
@@ -1461,6 +1491,16 @@ CREATE OR REPLACE package body cwms_xchg as
          --------------------------------------------
          -- delete mappings that weren't specified --
          --------------------------------------------
+         for rec in 
+            (select * 
+               from at_xchg_dss_ts_mappings 
+              where mapping_code not in (select * from table(l_mappings_specified))
+            )
+         loop
+            log_entry('Deleting time series mapping '||rec.mapping_code);
+            log_entry('=>'||cwms_ts.get_ts_id(rec.cwms_ts_code));
+            log_entry('=>/'||rec.a_pathname_part||'/'||rec.b_pathname_part||'/'||rec.c_pathname_part||'//'||rec.e_pathname_part||'/'||rec.f_pathname_part||'/');
+         end loop;
          select count(*)
            into l_mappings_deleted
            from at_xchg_dss_ts_mappings
@@ -1468,19 +1508,7 @@ CREATE OR REPLACE package body cwms_xchg as
          delete
            from at_xchg_dss_ts_mappings
           where mapping_code not in (select * from table(l_mappings_specified));
-         -------------------------------------------------------------------
-         -- delete datastores and xchg sets that are no longer referenced --
-         -------------------------------------------------------------------
       end if;
-      for rec in (
-         select dss_filemgr_url
-           from at_xchg_datastore_dss
-          where datastore_code not in (select distinct datastore_code from at_xchg_dss_ts_mappings))
-      loop
-         if not l_dss_filemgr_urls.exists(rec.dss_filemgr_url) then
-            l_dss_filemgr_urls(rec.dss_filemgr_url) := true;
-         end if;
-      end loop;
       -----------------------------------------------------------
       -- verify that we didn't use and invalid units or create --
       -- a realtime import/export loop                         --
@@ -1497,24 +1525,40 @@ CREATE OR REPLACE package body cwms_xchg as
       -------------------------------------------------------------
       -- notify listeners that the configuation has been updated --
       -------------------------------------------------------------
+      for rec in (
+         select dss_filemgr_url
+           from at_xchg_datastore_dss
+          where datastore_code not in (select distinct datastore_code from at_xchg_dss_ts_mappings))
+      loop
+         if not l_dss_filemgr_urls.exists(rec.dss_filemgr_url) then
+            l_dss_filemgr_urls(rec.dss_filemgr_url) := true;
+         end if;
+      end loop;
+      
       if l_dss_filemgr_urls.count > 0 then
-         l_text := '';
+         l_text := null;
          l_url := l_dss_filemgr_urls.first;
          while l_url is not null loop
             l_text := l_text || ',' || l_url || '/DssFileManager';
             l_url := l_dss_filemgr_urls.next(l_url);
          end loop;
+         log_entry('Notifying DSS File Mangers: '||substr(l_text, 1));
          xchg_config_updated(substr(l_text, 1));
       end if;
       ----------------------------
       -- set the out parameters --
       ----------------------------
+      log_entry('Sets inserted = '||l_sets_inserted);
+      log_entry('Sets updated = '||l_sets_updated);
+      log_entry('Mappings inserted = '||l_mappings_inserted);
+      log_entry('Mappings updated = '||l_mappings_updated);
+      log_entry('Mappings deleted = '||l_mappings_deleted);
       p_sets_inserted     := l_sets_inserted;
       p_sets_updated      := l_sets_updated;
       p_mappings_inserted := l_mappings_inserted;
       p_mappings_updated  := l_mappings_updated;
       p_mappings_deleted  := l_mappings_deleted;
-
+      log_entry('Done');
    end store_dataexchange_conf;
 
 --------------------------------------------------------------------------------
@@ -2498,8 +2542,8 @@ begin
    end if;
    if l_mapping_code is null then
       insert
-         into at_xchg_dss_ts_mappings
-       values(cwms_seq.nextval,
+        into at_xchg_dss_ts_mappings
+      values(cwms_seq.nextval,
               p_xchg_set_code,
               p_cwms_ts_code,
               upper(p_a_pathname_part),
@@ -2516,7 +2560,9 @@ begin
                 where upper(time_zone_name) = upper(p_time_zone)),
               (select tz_usage_code
                  from cwms_tz_usage
-                where upper(tz_usage_id) = upper(p_tz_usage)));
+                where upper(tz_usage_id) = upper(p_tz_usage)))
+      return mapping_code
+        into l_mapping_code;
    else
       select dss_parameter_type_code
         into l_parameter_type
