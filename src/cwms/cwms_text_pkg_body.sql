@@ -5125,9 +5125,9 @@ as
       l_elements    filter_elements_t;
       l_filters     str_tab_t;
       l_is_regex    boolean;
-      l_included    boolean;
-      l_matched     boolean;
-      l_filtered str_tab_t;
+      l_included str_tab_t := str_tab_t();
+      l_excluded str_tab_t := str_tab_t();
+      l_matched  str_tab_t := str_tab_t();
    begin
       l_header_rec.text_filter_id := trim(p_text_filter_id);
       begin
@@ -5164,41 +5164,84 @@ as
              where text_filter_code = l_header_rec.text_filter_code
              order by element_sequence;
          end if;
-         for i in 1..p_values.count loop
-            l_included := l_elements(1).include = 'F';
-            for j in 1..l_elements.count loop
-               if l_included != (l_elements(j).include = 'T') then
-                  if l_is_regex then
-                     if l_elements(j).regex_flags is not null then
-                        l_matched := regexp_like(p_values(i), l_elements(j).filter_text, l_elements(j).regex_flags); 
-                     else
-                        if l_header_rec.regex_flags is not null then
-                           l_matched := regexp_like(p_values(i), l_elements(j).filter_text, l_header_rec.regex_flags); 
-                        else
-                           l_matched := regexp_like(p_values(i), l_elements(j).filter_text); 
-                        end if;
-                     end if;
+         
+         if l_elements(1).include = 'T' then
+            l_excluded := p_values;
+         else
+            l_included := p_values;
+         end if;
+         for i in 1..l_elements.count loop
+            if l_elements(i).include = 'T' then
+               if l_is_regex then
+                  if l_elements(i).regex_flags is not null then
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_excluded)
+                      where regexp_like(column_value, l_elements(i).filter_text, l_elements(i).regex_flags); 
                   else
-                     l_matched := p_values(i) like l_filters(j);
+                     if l_header_rec.regex_flags is not null then
+                        select *
+                          bulk collect
+                          into l_matched
+                          from table(l_excluded)
+                         where regexp_like(column_value, l_elements(i).filter_text, l_header_rec.regex_flags); 
+                     else
+                        select *
+                          bulk collect
+                          into l_matched
+                          from table(l_excluded)
+                         where regexp_like(column_value, l_elements(i).filter_text); 
+                     end if;
                   end if;
-                  if l_matched then
-                     l_included := not l_included;
+               else
+                  select *
+                    bulk collect
+                    into l_matched
+                    from table(l_excluded)
+                   where column_value like l_elements(i).filter_text; 
+               end if;
+               l_included := l_included multiset union all l_matched;
+               l_excluded := l_excluded multiset except all l_matched;
+            else
+               if l_is_regex then
+                  if l_elements(i).regex_flags is not null then
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_included)
+                      where regexp_like(column_value, l_elements(i).filter_text, l_elements(i).regex_flags); 
+                  else
+                     if l_header_rec.regex_flags is not null then
+                        select *
+                          bulk collect
+                          into l_matched
+                          from table(l_included)
+                         where regexp_like(column_value, l_elements(i).filter_text, l_header_rec.regex_flags); 
+                     else
+                        select *
+                          bulk collect
+                          into l_matched
+                          from table(l_included)
+                         where regexp_like(column_value, l_elements(i).filter_text); 
+                     end if;
                   end if;
+               else
+                  select *
+                    bulk collect
+                    into l_matched
+                    from table(l_included)
+                   where column_value like l_elements(i).filter_text; 
                end if;
-            end loop;
-            if l_included then
-               if l_filtered is null then
-                  l_filtered := str_tab_t();
-               end if;
-               l_filtered.extend;
-               l_filtered(l_filtered.count) := p_values(i);
+               l_included := l_included multiset except all l_matched;
+               l_excluded := l_excluded multiset union all l_matched;
             end if;
          end loop;
       else 
-         l_filtered := p_values;
+         l_included := p_values;
       end if;
             
-      return l_filtered;
+      return l_included;
    end filter_text;           
       
    function filter_text(
