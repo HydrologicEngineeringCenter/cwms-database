@@ -2169,6 +2169,18 @@ as
          -- valid dates/times already retrieved --
          -----------------------------------------
          for i in 1 .. p_date_times_utc.count loop
+            ---------------------------------------
+            -- delete existing text if necessary --
+            ---------------------------------------
+            if p_replace_all then
+               begin
+                  delete from at_tsv_text
+                        where ts_code = p_ts_code and date_time = p_date_times_utc(i) and version_date = p_version_dates_utc(i);
+               exception
+                  when no_data_found then
+                     null;
+               end;
+            end if;
             store_ts_text(
                p_ts_code,
                p_date_times_utc(i),
