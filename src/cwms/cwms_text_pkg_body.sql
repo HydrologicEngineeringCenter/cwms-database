@@ -5211,7 +5211,7 @@ as
                     bulk collect
                     into l_matched
                     from table(l_excluded)
-                   where column_value like l_elements(i).filter_text; 
+                   where column_value like l_filters(i); 
                end if;
                l_included := l_included multiset union all l_matched;
                l_excluded := l_excluded multiset except all l_matched;
@@ -5243,7 +5243,7 @@ as
                     bulk collect
                     into l_matched
                     from table(l_included)
-                   where column_value like l_elements(i).filter_text; 
+                   where column_value like l_filters(i); 
                end if;
                l_included := l_included multiset except all l_matched;
                l_excluded := l_excluded multiset union all l_matched;
@@ -5279,15 +5279,15 @@ as
    is                      
       type filter_element_t is record(include boolean, flags varchar2(16), text varchar2(256));
       type filter_element_tab_t is table of filter_element_t;
-      l_filtered str_tab_t;
       l_regex    boolean := cwms_util.is_true(p_regex);
       l_filter   filter_element_tab_t;
       l_parts    str_tab_t;
-      l_included boolean;
-      l_matched  boolean;
+      l_included str_tab_t := str_tab_t();
+      l_excluded str_tab_t := str_tab_t();
+      l_matched  str_tab_t := str_tab_t();
    begin   
       if p_filter is null then
-         l_filtered := p_values;
+         l_included := p_values;
       else 
          ----------------------
          -- build the filter --
@@ -5327,30 +5327,64 @@ as
          ---------------------      
          -- filter the text --
          ---------------------
-         for i in 1..p_values.count loop
-            l_included := not l_filter(1).include;
-            for j in 1..l_filter.count loop
-               if l_filter(j).include != l_included then
-                  if l_regex then
-                     l_matched := regexp_like(p_values(i), l_filter(j).text, l_filter(j).flags);
+         if l_filter(1).include then
+            l_excluded := p_values;
+         else
+            l_included := p_values;
+         end if;
+         for i in 1..l_filter.count loop
+            if l_filter(i).include then
+               if l_regex then
+                  if l_filter(i).flags is not null then
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_excluded)
+                      where regexp_like(column_value, l_filter(i).text, l_filter(i).flags); 
                   else
-                     l_matched := p_values(i) like l_filter(j).text;
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_excluded)
+                      where regexp_like(column_value, l_filter(i).text); 
                   end if;
-                  if l_matched then
-                     l_included := not l_included;
+               else
+                  select *
+                    bulk collect
+                    into l_matched
+                    from table(l_excluded)
+                   where column_value like l_filter(i).text; 
+               end if;
+               l_included := l_included multiset union all l_matched;
+               l_excluded := l_excluded multiset except all l_matched;
+            else
+               if l_regex then
+                  if l_filter(i).flags is not null then
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_included)
+                      where regexp_like(column_value, l_filter(i).text, l_filter(i).flags); 
+                  else
+                     select *
+                       bulk collect
+                       into l_matched
+                       from table(l_included)
+                      where regexp_like(column_value, l_filter(i).text); 
                   end if;
+               else
+                  select *
+                    bulk collect
+                    into l_matched
+                    from table(l_included)
+                   where column_value like l_filter(i).text; 
                end if;
-            end loop;
-            if l_included then
-               if l_filtered is null then
-                  l_filtered := str_tab_t(); 
-               end if;
-               l_filtered.extend;
-               l_filtered(l_filtered.count) := p_values(i);
-            end if; 
-         end loop;      
+               l_included := l_included multiset except all l_matched;
+               l_excluded := l_excluded multiset union all l_matched;
+            end if;
+         end loop;
       end if;
-      return l_filtered;
+      return l_included;
    end filter_text;            
       
    function filter_text(
