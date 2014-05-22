@@ -32,36 +32,29 @@ AS
                                         p_db_office_id));
    END get_ts_code;
 
-   FUNCTION get_ts_code (p_cwms_ts_id       IN VARCHAR2,
-                         p_db_office_code   IN NUMBER)
-      RETURN NUMBER
-   IS
-      l_cwms_ts_code   NUMBER;
-   BEGIN
-      BEGIN
-         SELECT a.ts_code
-           INTO l_cwms_ts_code
-           FROM at_cwms_ts_id a
-          WHERE     UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
-                AND a.db_office_code = p_db_office_code;
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            BEGIN
-               SELECT a.ts_code
-                 INTO l_cwms_ts_code
-                 FROM at_cwms_ts_id a
-                WHERE     UPPER (a.cwms_ts_id) = UPPER (TRIM (p_cwms_ts_id))
-                      AND a.db_office_code = p_db_office_code;
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN
-                  cwms_err.raise ('TS_ID_NOT_FOUND', TRIM (p_cwms_ts_id),cwms_util.get_db_office_id_from_code(p_db_office_code)); 
-            END;
-      END;
-
-      RETURN l_cwms_ts_code;
-   END get_ts_code;
+   function get_ts_code (
+      p_cwms_ts_id     in varchar2,
+      p_db_office_code in number)
+      return number
+   is
+      l_office_id    varchar2(16) := cwms_util.get_db_office_id_from_code(p_db_office_code);
+      l_cwms_ts_code number;
+   begin
+      begin
+         select ts_code
+           into l_cwms_ts_code
+           from at_cwms_ts_id
+          where upper(cwms_ts_id) = upper(get_cwms_ts_id(trim(p_cwms_ts_id), l_office_id))
+            and db_office_code = p_db_office_code;
+      exception
+         when no_data_found then
+            cwms_err.raise (
+               'TS_ID_NOT_FOUND', 
+               trim (p_cwms_ts_id),
+               l_office_id); 
+      end;
+      return l_cwms_ts_code;
+   end get_ts_code;
 
    ---------------------------------------------------------------------------
 
@@ -115,42 +108,49 @@ AS
    --
    -- GET_CWMS_TS_ID -
    --
-   FUNCTION get_cwms_ts_id (p_cwms_ts_id   IN VARCHAR2,
-                            p_office_id    IN VARCHAR2)
-      RETURN VARCHAR2
-   IS
-      l_cwms_ts_id   VARCHAR2 (183);
-   BEGIN
-      BEGIN
-         SELECT cwms_ts_id
-           INTO l_cwms_ts_id
-           FROM at_cwms_ts_id mcti
-          WHERE     UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
-                AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
-      EXCEPTION
-         WHEN NO_DATA_FOUND
-         THEN
-            BEGIN
-               SELECT cwms_ts_id
-                 INTO l_cwms_ts_id
-                 FROM at_cwms_ts_id mcti
-                WHERE     UPPER (mcti.cwms_ts_id) = UPPER (p_cwms_ts_id)
-                      AND UPPER (mcti.db_office_id) = UPPER (p_office_id);
-            EXCEPTION
-               WHEN NO_DATA_FOUND
-               THEN    
-                  l_cwms_ts_id := cwms_ts.get_ts_id_from_alias(
-                     p_alias_id  => p_cwms_ts_id, 
-                     p_office_id => p_office_id);
-                  if l_cwms_ts_id is null then
-                     CWMS_ERR.RAISE ('TS_ID_NOT_FOUND', p_cwms_ts_id,p_office_id);
-                  end if;
-            END;
-      END;
-
-      --
-      RETURN l_cwms_ts_id;
-   END;
+   function get_cwms_ts_id (
+      p_cwms_ts_id   in varchar2,
+      p_office_id    in varchar2)
+      return varchar2
+   is
+      l_cwms_ts_id varchar2(183);
+      l_parts      str_tab_t;
+   begin
+      -----------
+      -- as is --
+      -----------
+      begin
+         select cwms_ts_id
+           into l_cwms_ts_id
+           from at_cwms_ts_id
+          where upper(cwms_ts_id) = upper(p_cwms_ts_id)
+            and upper(db_office_id) = upper(p_office_id);
+      exception
+         when no_data_found then
+            ---------------------------
+            -- try time series alias --
+            ---------------------------
+            l_cwms_ts_id := cwms_ts.get_ts_id_from_alias(p_cwms_ts_id, p_office_id);
+            if l_cwms_ts_id is null then
+               ------------------------
+               -- try location alias --
+               ------------------------
+               l_parts := cwms_util.split_text(p_cwms_ts_id, '.', 1); 
+               l_parts(1) := cwms_loc.get_location_id(l_parts(1), p_office_id);
+               begin
+                  select cwms_ts_id
+                    into l_cwms_ts_id
+                    from at_cwms_ts_id
+                   where upper(cwms_ts_id) = upper(cwms_util.join_text(l_parts, '.'))
+                     and upper(db_office_id) = upper(p_office_id);
+               exception
+                  when no_data_found then
+                     cwms_err.raise('TS_ID_NOT_FOUND', p_cwms_ts_id, p_office_id);
+               end;
+            end if;
+      end;
+      return l_cwms_ts_id;
+   end;
 
    --*******************************************************************   --
    --*******************************************************************   --
@@ -1432,6 +1432,8 @@ AS
       l_all_office_code       NUMBER := cwms_util.db_office_code_all;
       l_ts_id_exists          BOOLEAN := FALSE;
       l_can_create            BOOLEAN := TRUE;
+      l_cwms_ts_id            varchar2(183);
+      l_parts                 str_tab_t;
    BEGIN
       IF p_office_id IS NULL
       THEN
@@ -1443,8 +1445,14 @@ AS
 
       DBMS_APPLICATION_INFO.set_module ('create_ts_code',
                                         'parse timeseries_desc using regexp');
+      -----------------------------------------------                                        
+      -- remove any aliases from location  portion --
+      -----------------------------------------------
+      l_parts := cwms_util.split_text(p_cwms_ts_id, '.', 1);
+      l_parts(1) := cwms_loc.get_location_id(l_parts(1), p_office_id);
+      l_cwms_ts_id := cwms_util.join_text(l_parts, '.');                                        
       --parse values from timeseries_desc using regular expressions
-      parse_ts (p_cwms_ts_id,
+      parse_ts (l_cwms_ts_id,
                 l_base_location_id,
                 l_sub_location_id,
                 l_base_parameter_id,
