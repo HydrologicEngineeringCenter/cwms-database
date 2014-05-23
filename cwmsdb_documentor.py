@@ -608,31 +608,36 @@ def make_reference_elem(text, local_names=None) :
    '''
    Builds a reference element for the specified text
    '''
-   ref_text = text.lower()
+   ref_text = text.lower().strip()
    matcher = get_pattern(r'\W%s\.' % username.lower()).matcher(ref_text)
    if matcher.find() : ref_text = matcher.replaceAll('')
-   if ref_text.startswith('type ') :
-      parts = ref_text[5:].strip().split('.', 1)
+   parts = ref_text.split(None, 1)
+   if len(parts) == 2 :
+      ref_type, ref_arg = parts
+   else :
+      ref_type, ref_arg = parts[0], None
+   if ref_type == 'type' :
+      parts = ref_arg.split('.', 1)
       if local_names and len(parts) == 1 and parts[0] in local_names :
          target = '#%s' % parts[0]
       else :
          target = './type_%s.html' % alias(parts[0]).lower()
          if len(parts) > 1 : target += '#%s' % parts[1]
-   elif ref_text.startswith('package ') :
-      parts = ref_text[5:].strip().split('.', 1)
+   elif ref_type == 'package' :
+      parts = ref_arg.split('.', 1)
       target = './pkg_%s.html' % parts[0]
       if len(parts) > 1 : target += '#%s' % parts[1]
-   elif ref_text.startswith('dflt ') :
-      parts = ref_text[5:].strip().split('.', 1)
+   elif ref_type == 'dflt' :
+      parts = ref_arg.split('.', 1)
       if local_names and len(parts) == 1 and parts[0] in local_names :
          target = '#%s' % parts[0]
       else :
          target = './pkg_%s.html' % parts[0]
          if len(parts) > 1 : target += '#%s' % parts[1]
-   elif ref_text.startswith('view ') :
-      target = './view_%s.html' % alias(ref_text[5:].strip()).lower()
-   elif ref_text.startswith('constant ') or ref_text.startswith('variable ') :
-      parts = ref_text[9:].strip().split('.', 1)
+   elif ref_type == 'view' :
+      target = './view_%s.html' % alias(ref_arg).lower()
+   elif ref_type in ('constant', 'variable') :
+      parts = ref_arg.split('.', 1)
       if local_names and len(parts) == 1 and parts[0] in local_names :
          target = '#%s' % parts[0]
       else :
