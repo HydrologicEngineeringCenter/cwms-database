@@ -10,6 +10,7 @@ VERSIONS:
    1.2   19Sep2011   MDP   Added links to categories on initial page
    1.3   07Mar2012   MDP   Fixed tokenize(), added documents to initial page
    1.4   12Jul2012   MDP   Added API Usage Note to main page
+   1.5   23May2014   MDP   Added web links
 
 JAVADOCS:
    Standard javadoc syntax applies as shown below, but the list of tags is a
@@ -70,16 +71,19 @@ JAVADOCS:
     * <ul>
     *  <li>To reference a database type, use "@see type typename"</li>
     *  <li>To reference a view use "@see view viewname"</li>
-    *  <li>To reference a package in general, use "@see packagename" or
-    *      or "@see package packagename"</li>
-    *  <li>To reference an package itemitem (type, variable, constant, function,
+    *  <li>To reference a package in general, use "@see package packagename"</li>
+    *  <li>To reference an package item (type, variable, constant, function,
     *      or procedure) in a package use "@see packagename.itemname"
     *      <ul>
     *       <li>for variables you can also use "@see variable variablename"</li>
     *       <li>for constants you can also use "@see constant constantname"</li>
     *      </ul>
     *  </li>
+    *  <li>To reference a web link use "@see http://..." or "@see https://..."
+    *  </li> 
     * </ul>
+    * The anchor text for web link will be its title if it has one - otherwise
+    * the anchor text will be the link URL.
     */
 
 PACKAGES:
@@ -223,7 +227,7 @@ EMBEDDED LINKS:
           <a href="view_av_tsv_dqu.html">
 '''
 
-import getopt, java, oracle, os, shutil, string, StringIO, sys, time, traceback
+import getopt, htmlentitydefs, java, oracle, os, shutil, string, StringIO, sys, time, traceback, urllib
 
 #---------------------#
 # regular expressions #
@@ -386,6 +390,7 @@ css = '''
      white-space:nowrap;
    }
 '''
+web_titles = {}
 compiled_regexs = {}
 synonyms = {}
 css_filename = 'pljdoc.css'
@@ -523,22 +528,45 @@ def untokenize(text, replacements) :
          template = '!%s%%d%s!' % (squiggle, squiggle)
          for j in range(len(replacements[i])) :
             text = text.replace(template % j, replacements[i][j])
-   return text
+   return text                                                                               
 
+def get_web_title(url) :
+   global web_titles
+   if not web_titles.has_key(url) :
+      conn = urllib.urlopen(url)
+      data = conn.read()
+      conn.close()
+      matcher = get_pattern(r'<title>(.+)</title>', 'md').matcher(data)
+      if matcher.find() :
+         web_titles[url] = matcher.group(1).strip()
+      else :
+         web_titles[url] = url
+   return web_titles[url]
+	   
 def format(item, useSynonym=None) :
    '''
    Format text according to the format_type setting, optionally using an alias
    '''
-   tokenized, replacements = tokenize(item)
-   if useSynonym is None : useSynonym = use_synonyms
-   if useSynonym : tokenized = alias(tokenized)
-   tokenized = format_funcs[format_type](tokenized)
-   return untokenize(tokenized, replacements)
+   if item.startswith('http://') or item.startswith('https://') :
+      formatted = get_web_title(item)
+   else :                   
+      tokenized, replacements = tokenize(item)
+      if useSynonym is None : useSynonym = use_synonyms
+      if useSynonym : tokenized = alias(tokenized)
+      tokenized = format_funcs[format_type](tokenized)
+      formatted = untokenize(tokenized, replacements)
+   chars = map(None, formatted)
+   for i in range(len(chars)) : 
+      cp = ord(chars[i])
+      if htmlentitydefs.codepoint2name.has_key(cp) :
+         chars[i] = '&%s;' % htmlentitydefs.codepoint2name[cp]
+   formatted = ''.join(chars)
+   return formatted
 
 def get_pattern(expr, flags=None) :
    '''
    Returns a compiled version of the regular expression, caching results for reuse
-   '''
+   '''                                                                                                  
    global compiled_regexs
    pattern_flags = 0
    if flags is not None :
@@ -615,7 +643,7 @@ def make_reference_elem(text, local_names=None) :
    if len(parts) == 2 :
       ref_type, ref_arg = parts
    else :
-      ref_type, ref_arg = parts[0], None
+      ref_type, ref_arg = parts[0], None                                                 
    if ref_type == 'type' :
       parts = ref_arg.split('.', 1)
       if local_names and len(parts) == 1 and parts[0] in local_names :
@@ -644,11 +672,14 @@ def make_reference_elem(text, local_names=None) :
          target = './pkg_%s.html' % parts[0]
          if len(parts) > 1 :target += '#%s' % parts[1]
    else :
-      parts = ref_text.strip().split('.', 1)
-      if len(parts) > 1 :
-         target = './pkg_%s.html#%s' % (parts[0], parts[1])
+      if ref_text.startswith('http://') :
+         target = text.strip()
       else :
-         target = '#%s' % parts[0]
+         parts = ref_text.strip().split('.', 1)
+         if len(parts) > 1 :
+            target = './pkg_%s.html#%s' % (parts[0], parts[1])
+         else :
+            target = '#%s' % parts[0]
    return HtmlElem('a', attrs=[('href', target)])
 
 def parse_params(params_text, jdoc_text) :
@@ -1762,7 +1793,7 @@ try :
                HtmlElem('', [
                   HtmlElem('br'),
                   HtmlElem('span', attrs=[('class', 'param-name')], content=[
-                     HtmlElem('a', attrs=[('name', anchor)], content=format(const_name))]),
+                     HtmlElem('a', attrs=[('name', anchor)], content=format(const_name))]),                                                    
                   const_elem,
                   HtmlElem('span', attrs=[('class', 'keyword')], content=' := '),
                   HtmlElem('span', attrs=[('class', 'param-value')], content=mark_parentheses(format(const_val, False))),
@@ -1782,7 +1813,7 @@ try :
             HtmlElem('table', attrs=[('class', 'summary')], content=[
                HtmlElem('tr', [HtmlElem('th', attrs=[('colspan', '2')], content='Variables Details')])])])
          for var_name, var_type, var_size, var_val, jdoc_text in vars :
-            anchor = var_name
+            anchor = var_name                                                                        
             jdoc = JDoc(jdoc_text);
             if var_size :
                var_elem = HtmlElem('', [
