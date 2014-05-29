@@ -4969,7 +4969,7 @@ as
             end case;
             if l_is_regex then
                l_elements(i).filter_text := trim(l_parts(2));
-               if regexp_like(l_elements(i).filter_text, 'f(l(a(gs?)?)?)?\s*=\s*[cimn]*\s*:.+', 'i') then
+               if regexp_like(l_elements(i).filter_text, 'f(l(a(gs?)?)?)?\s*=\s*[cimnx]*\s*:.+', 'i') then
                   l_parts := cwms_util.split_text(l_elements(i).filter_text, ':', 1);
                   l_elements(i).filter_text := trim(l_parts(2));
                   l_parts := cwms_util.split_text(l_parts(1), '=', 1);
@@ -5313,7 +5313,7 @@ as
             end if; 
             if l_regex then
                l_filter(i).text := trim(l_parts(2));
-               if regexp_like(l_filter(i).text, 'f(l(a(gs?)?)?)?\s*=\s*[cimn]*\s*:.+', 'i') then
+               if regexp_like(l_filter(i).text, 'f(l(a(gs?)?)?)?\s*=\s*[cimnx]*\s*:.+', 'i') then
                   l_parts := cwms_util.split_text(l_filter(i).text, ':', 1);
                   l_filter(i).text := trim(l_parts(2));
                   l_parts := cwms_util.split_text(l_parts(1), '=', 1);
