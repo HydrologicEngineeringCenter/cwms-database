@@ -9,14 +9,14 @@ as
     *
     * @param p_binary_code       A unique numeric value that identifies the binary
     * @param p_binary            The binary to store
-    * @param p_id                A binary identifier for the binary to store    
+    * @param p_id                A text identifier for the binary to store    
     * @param p_media_type_or_ext The MIME media type or file extension for the binary
     * @param p_description       A description of the binary
-    * @param p_fail_if_exists    A flag ('T' or 'F') that specifies whether the routine should fail if the binary identifier already exists in the database
+    * @param p_fail_if_exists    A flag ('T' or 'F') that specifies whether the routine should fail if the text identifier already exists in the database
     * @param p_ignore_nulls      A flag ('T' or 'F') that specifies whether the routine should ignore null parameters when updating existing an binary
     * @param p_office_id         The office that owns the binary. If not specified or NULL, the session user's default office is used
     *
-    * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the binary identifier already exists in the database
+    * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the text identifier already exists in the database
     */
    procedure store_binary(
       p_binary_code          out number, -- the code for use in foreign keys
@@ -114,7 +114,7 @@ as
     * Retrieve binary from the database
     *
     * @param p_binary      The retrieved binary
-    * @param p_id          A binary identifier of the binary to retrieve
+    * @param p_id          A text identifier of the binary to retrieve
     * @param p_office_id   The office that owns the binary. If not specified or NULL, the session user's default office is used
     */
    procedure retrieve_binary(
@@ -125,7 +125,7 @@ as
    /**
     * Retrieve binary from the database
     *
-    * @param p_id          A binary identifier of the binary to retrieve
+    * @param p_id          A text identifier of the binary to retrieve
     * @param p_office_id   The office that owns the binary. If not specified or NULL, the session user's default office is used
     *
     * @return      The retrieved binary
@@ -142,7 +142,7 @@ as
     * @param p_description The retrieved description
     * @param p_media_type  The MIME media type of the binary
     * @param p_file_extensions  A comma-separated list of file extensions, if any
-    * @param p_id          A binary identifier of the binary to retrieve
+    * @param p_id          A text identifier of the binary to retrieve
     * @param p_office_id   The office that owns the binary. If not specified or NULL, the session user's default office is used
     */
    procedure retrieve_binary2(
@@ -233,7 +233,7 @@ as
    /**
     * Delete a binary from the database
     *
-    * @param p_id        The binary identifier for the existing binary to delete
+    * @param p_id        The text identifier for the existing binary to delete
     * @param p_office_id The office that owns the binary. If not specified or NULL, the session user's default office is used
     */
    procedure delete_binary(p_id        in varchar2, -- identifier used to store binary (256 chars max)
