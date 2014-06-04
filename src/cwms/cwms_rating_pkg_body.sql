@@ -740,27 +740,31 @@ begin
 
    p_specs := rating_spec_tab_t();
    for rec in
-      (  select v.location_id,
-                rs.rating_spec_code
-           from at_rating_spec rs,
-                at_rating_template rt,
-                av_loc2 v,
-                cwms_office o
-          where v.db_office_id like upper(l_office_id_mask) escape '\'
-            and o.office_id = v.db_office_id
-            and rt.office_code = o.office_code
-            and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
-            and upper(rt.version) like upper(l_template_version_mask) escape '\'
-            and rs.template_code = rt.template_code
-            and upper(rs.version) like upper(l_spec_version_mask) escape '\'
-            and v.location_code = rs.location_code
-            and upper(v.location_id) like upper(l_location_id_mask) escape '\' 
-            and v.unit_system = 'SI'
-       order by v.db_office_id,
-                v.location_id,
-                rt.parameters_id,
-                rt.version,
-                rs.version
+      (  select distinct
+                location_id,
+                rating_spec_code
+           from (select v.location_id,
+                        rs.rating_spec_code
+                   from at_rating_spec rs,
+                        at_rating_template rt,
+                        av_loc2 v,
+                        cwms_office o
+                  where v.db_office_id like upper(l_office_id_mask) escape '\'
+                    and o.office_id = v.db_office_id
+                    and rt.office_code = o.office_code
+                    and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
+                    and upper(rt.version) like upper(l_template_version_mask) escape '\'
+                    and rs.template_code = rt.template_code
+                    and upper(rs.version) like upper(l_spec_version_mask) escape '\'
+                    and v.location_code = rs.location_code
+                    and upper(v.location_id) like upper(l_location_id_mask) escape '\'
+                    and v.unit_system = 'SI'
+                  order by v.db_office_id,
+                        v.location_id,
+                        rt.parameters_id,
+                        rt.version,
+                        rs.version
+                )
       )
    loop
       if not l_codes.exists(rec.rating_spec_code) then
@@ -1162,54 +1166,58 @@ begin
 
    p_ratings := rating_tab_t();
    for rec in
-      (  select v.location_id,
-                r.rating_code
-           from at_rating r,
-                at_rating_spec rs,
-                at_rating_template rt,
-                av_loc2 v,
-                at_physical_location pl,
-                cwms_office o,
-                cwms_time_zone tz1,
-                cwms_time_zone tz2
-          where v.db_office_id like upper(l_office_id_mask) escape '\'
-            and o.office_id = v.db_office_id
-            and rt.office_code = o.office_code
-            and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
-            and upper(rt.version) like upper(l_template_version_mask) escape '\'
-            and rs.template_code = rt.template_code
-            and upper(rs.version) like upper(l_spec_version_mask) escape '\'
-            and r.rating_spec_code = rs.rating_spec_code
-            and v.location_code = rs.location_code
-            and upper(v.location_id) like upper(l_location_id_mask) escape '\'
-            and v.unit_system = 'SI'
-            and pl.location_code = v.location_code
-            and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
-            and tz2.time_zone_name = case
-                                        when p_time_zone is null then
-                                           tz1.time_zone_name
-                                        else
-                                           p_time_zone
-                                     end
-            and r.effective_date >= case
-                                       when p_effective_date_start is null then
-                                          c_default_start_date
-                                       else
-                                          cwms_util.change_timezone(p_effective_date_start, tz2.time_zone_name, 'UTC')
-                                    end
-            and r.effective_date <= case
-                                       when p_effective_date_end is null then
-                                          c_default_end_date
-                                       else
-                                          cwms_util.change_timezone(p_effective_date_end, tz2.time_zone_name, 'UTC')
-                                    end
-            and r.ref_rating_code is null -- don't pick up stream rating shifts and offsets
-       order by v.db_office_id,
-                v.location_id,
-                rt.parameters_id,
-                rt.version,
-                rs.version,
-                r.effective_date nulls first
+      (  select distinct
+                location_id,
+                rating_code
+           from (select v.location_id,
+                        r.rating_code
+                   from at_rating r,
+                        at_rating_spec rs,
+                        at_rating_template rt,
+                        av_loc2 v,
+                        at_physical_location pl,
+                        cwms_office o,
+                        cwms_time_zone tz1,
+                        cwms_time_zone tz2
+                  where v.db_office_id like upper(l_office_id_mask) escape '\'
+                    and o.office_id = v.db_office_id
+                    and rt.office_code = o.office_code
+                    and upper(rt.parameters_id) like upper(l_parameters_id_mask) escape '\'
+                    and upper(rt.version) like upper(l_template_version_mask) escape '\'
+                    and rs.template_code = rt.template_code
+                    and upper(rs.version) like upper(l_spec_version_mask) escape '\'
+                    and r.rating_spec_code = rs.rating_spec_code
+                    and v.location_code = rs.location_code
+                    and upper(v.location_id) like upper(l_location_id_mask) escape '\'
+                    and v.unit_system = 'SI'
+                    and pl.location_code = v.location_code
+                    and tz1.time_zone_code = nvl(pl.time_zone_code, 0)
+                    and tz2.time_zone_name = case
+                                                when p_time_zone is null then
+                                                   tz1.time_zone_name
+                                                else
+                                                   p_time_zone
+                                             end
+                    and r.effective_date >= case
+                                               when p_effective_date_start is null then
+                                                  c_default_start_date
+                                               else
+                                                  cwms_util.change_timezone(p_effective_date_start, tz2.time_zone_name, 'UTC')
+                                            end
+                    and r.effective_date <= case
+                                               when p_effective_date_end is null then
+                                                  c_default_end_date
+                                               else
+                                                  cwms_util.change_timezone(p_effective_date_end, tz2.time_zone_name, 'UTC')
+                                            end
+                    and r.ref_rating_code is null -- don't pick up stream rating shifts and offsets
+                  order by v.db_office_id,
+                        v.location_id,
+                        rt.parameters_id,
+                        rt.version,
+                        rs.version,
+                        r.effective_date nulls first
+                )
       )
    loop
       p_ratings.extend;
@@ -1476,7 +1484,8 @@ begin
    l_effective_start := cwms_util.change_timezone(p_effective_date_start, l_time_zone, 'UTC');
    l_effective_end   := cwms_util.change_timezone(p_effective_date_end, l_time_zone, 'UTC');
    for rec in
-      (  select rating_code
+      (  select distinct
+                rating_code
            from cwms_v_rating
           where upper(rating_id) like upper(l_spec_id_mask) escape '\'
             and office_id like upper(l_office_id_mask) escape '\'
@@ -4374,7 +4383,8 @@ begin
    -------------------------
    -- get the rating code --
    -------------------------
-   select rating_code,
+   select distinct
+          rating_code,
           last_value(effective_date) over (order by effective_date)
      into l_rating_code,
           l_effective_date
@@ -4395,7 +4405,8 @@ begin
       declare
          l_units varchar2(256);
       begin
-         select native_units
+         select distinct
+                native_units
            into l_units
            from cwms_v_rating
           where rating_code = l_rating_code;
