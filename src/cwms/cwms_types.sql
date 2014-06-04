@@ -3218,8 +3218,8 @@ is object (
     * @param p_value           The value at the specified offset into the interval
     */
    constructor function seasonal_value_t(
-      p_calendar_offset in interval year to month,
-      p_time_offset     in interval day to second,
+      p_calendar_offset in yminterval_unconstrained,
+      p_time_offset     in dsinterval_unconstrained,
       p_value           in number)
       return self as result,
 
@@ -3233,8 +3233,8 @@ is object (
 create type body seasonal_value_t
 as
    constructor function seasonal_value_t(
-      p_calendar_offset in interval year to month,
-      p_time_offset     in interval day to second,
+      p_calendar_offset in yminterval_unconstrained,
+      p_time_offset     in dsinterval_unconstrained,
       p_value           in number)
       return self as result
    is

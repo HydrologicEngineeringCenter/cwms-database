@@ -1351,7 +1351,7 @@ AS
     * @return an equivalent number of months                
     */       
    function yminterval_to_months(
-      p_intvl in interval year to month) 
+      p_intvl in yminterval_unconstrained) 
       return integer;
    /**
     * Converts an <code><big>INTERVAL DAY TO SECOND</big></code> to an equivalent number of minutes 
@@ -1361,7 +1361,7 @@ AS
     * @return an equivalent number of minutes                
     */       
    function dsinterval_to_minutes(
-      p_intvl in interval day to second) 
+      p_intvl in dsinterval_unconstrained) 
       return integer;
    /**
     * Converts an ODBC timestamp string to an equivalent <code><big>DATE</big></code>

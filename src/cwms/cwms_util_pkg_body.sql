@@ -2719,7 +2719,7 @@ AS
    -- function yminterval_to_months --
    -----------------------------------
 
-   FUNCTION yminterval_to_months (p_intvl IN INTERVAL YEAR TO MONTH)
+   FUNCTION yminterval_to_months (p_intvl IN yminterval_unconstrained)
       RETURN INTEGER
    IS
    BEGIN
@@ -2735,7 +2735,7 @@ AS
    -- function dsinterval_to_minutes --
    ------------------------------------
 
-   FUNCTION dsinterval_to_minutes (p_intvl IN INTERVAL DAY TO SECOND)
+   FUNCTION dsinterval_to_minutes (p_intvl IN dsinterval_unconstrained)
       RETURN INTEGER
    IS
    BEGIN
