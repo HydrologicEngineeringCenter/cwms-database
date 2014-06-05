@@ -1299,8 +1299,8 @@ is
    l_attribute_parameter_code  number(10);
    l_attribute_param_type_code number(10);
    l_attribute_duration_code   number(10);
-   l_calendar_interval         interval year to month;
-   l_time_interval             interval day to second;
+   l_calendar_interval         yminterval_unconstrained;
+   l_time_interval             dsinterval_unconstrained;
    l_ts_code                   number(10);
    l_count                     pls_integer;
    l_interpolate               varchar2(1);
@@ -5385,7 +5385,7 @@ procedure store_loc_lvl_indicator_cond(
    p_rate_connector              in varchar2               default null, 
    p_rate_comparison_operator_2  in varchar2               default null,
    p_rate_comparison_value_2     in binary_double          default null,
-   p_rate_interval               in interval day to second default null,
+   p_rate_interval               in dsinterval_unconstrained default null,
    p_description                 in varchar2               default null,
    p_fail_if_exists              in varchar2               default 'F',
    p_ignore_nulls_on_update      in varchar2               default 'T')
@@ -5657,8 +5657,8 @@ procedure store_loc_lvl_indicator_out(
    p_attr_duration_code       in  number default null,
    p_ref_specified_level_code in  number default null,
    p_ref_attr_value           in  number default null,
-   p_minimum_duration         in  interval day to second default null,
-   p_maximum_age              in  interval day to second default null,
+   p_minimum_duration         in  dsinterval_unconstrained default null,
+   p_maximum_age              in  dsinterval_unconstrained default null,
    p_fail_if_exists           in  varchar2 default 'F',
    p_ignore_nulls_on_update   in  varchar2 default 'T')
 is          
@@ -5743,8 +5743,8 @@ procedure store_loc_lvl_indicator(
    p_attr_duration_id       in  varchar2 default null,
    p_ref_specified_level_id in  varchar2 default null,
    p_ref_attr_value         in  number   default null,
-   p_minimum_duration       in  interval day to second default null,
-   p_maximum_age            in  interval day to second default null,
+   p_minimum_duration       in  dsinterval_unconstrained default null,
+   p_maximum_age            in  dsinterval_unconstrained default null,
    p_fail_if_exists         in  varchar2 default 'F',
    p_ignore_nulls_on_update in  varchar2 default 'T',
    p_office_id              in  varchar2 default null)
@@ -5806,8 +5806,8 @@ procedure store_loc_lvl_indicator(
    p_attribute_id           in  varchar2 default null,
    p_ref_specified_level_id in  varchar2 default null,
    p_ref_attr_value         in  number   default null,
-   p_minimum_duration       in  interval day to second default null,
-   p_maximum_age            in  interval day to second default null,
+   p_minimum_duration       in  dsinterval_unconstrained default null,
+   p_maximum_age            in  dsinterval_unconstrained default null,
    p_fail_if_exists         in  varchar2 default 'F',
    p_ignore_nulls_on_update in  varchar2 default 'T',
    p_office_id              in  varchar2 default null)
@@ -6694,8 +6694,8 @@ end cat_loc_lvl_indicator2;
 --  17 : description                 varchar2(256)  
 --------------------------------------------------------------------------------
 procedure retrieve_loc_lvl_indicator(
-   p_minimum_duration       out interval day to second,
-   p_maximum_age            out interval day to second,
+   p_minimum_duration       out dsinterval_unconstrained,
+   p_maximum_age            out dsinterval_unconstrained,
    p_conditions             out sys_refcursor,
    p_loc_lvl_indicator_id   in  varchar2,
    p_level_units_id         in  varchar2 default null,
