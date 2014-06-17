@@ -3956,6 +3956,11 @@ AS
                end if;
             end loop;
       end case;
+
+      if l_timeseries_data.count = 0 then
+         dbms_application_info.set_action ('Returning due to no data passed null filter');
+         return;      -- have already created ts_code if it didn't exist
+      end if;
       
          
       DBMS_APPLICATION_INFO.set_action (
