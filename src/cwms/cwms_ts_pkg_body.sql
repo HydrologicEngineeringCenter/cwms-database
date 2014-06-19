@@ -5358,6 +5358,42 @@ AS
          i := cwms_msg.publish_message(l_msg, l_msgid, l_db_office_id || '_ts_stored');
       end if;
    end delete_ts;
+   
+   procedure delete_ts (
+      p_cwms_ts_id     in varchar2,
+      p_start_time     in date,
+      p_end_time       in date,                        
+      p_version_date   in date,
+      p_time_zone      in varchar2 default null,
+      p_date_times     in date_table_type default null,
+      p_max_version    in varchar2 default 'T',
+      p_ts_item_mask   in integer default cwms_util.ts_all,
+      p_db_office_id   in varchar2 default null)
+   is
+      l_ts_code    integer;
+      l_time_zone  varchar2(28);
+      l_date_times date_table_type;
+   begin
+      l_ts_code := get_ts_code(p_cwms_ts_id, p_db_office_id);
+      l_time_zone := cwms_util.get_timezone(nvl(p_time_zone, cwms_loc.get_local_timezone(cwms_util.split_text(p_cwms_ts_id, 1, '.'), p_db_office_id)));
+      if p_date_times is not null then
+         select cwms_util.change_timezone(column_value, l_time_zone, 'UTC')
+           bulk collect
+           into l_date_times
+           from table(p_date_times);
+      end if;
+      purge_ts_data(
+         l_ts_code, 
+         case p_version_date = cwms_util.non_versioned 
+            when true then p_version_date
+            else cwms_util.change_timezone(p_version_date, l_time_zone, 'UTC')
+         end, 
+         cwms_util.change_timezone(p_start_time, l_time_zone, 'UTC'), 
+         cwms_util.change_timezone(p_end_time, l_time_zone, 'UTC'), 
+         l_date_times, 
+         p_max_version, 
+         p_ts_item_mask);
+   end delete_ts;      
 
    procedure purge_ts_data(
       p_ts_code          in number,

@@ -416,7 +416,40 @@ AS
                         p_db_office_code   IN NUMBER);
 
    /**
-    * Deletes time series values for a specified time series, version date, and time window
+    * Deletes time series values for a specified time series, version date, and time window or specified times
+    *
+    * @see constant cwms_util.non_versioned
+    * @see constant cwms_util.all_version_dates
+    * @see constant cwms_util.ts_values
+    * @see constant cwms_util.ts_std_text
+    * @see constant cwms_util.ts_text
+    * @see constant cwms_util.ts_all_text
+    * @see constant cwms_util.ts_binary
+    * @see constant cwms_util.ts_all_non_values
+    * @see constant cwms_util.ts_all
+    *
+    * @param p_cwms_ts_id    The identifier of the time series to delete
+    * @param p_start_time    The start of the time window in the specified or default time zone
+    * @param p_end_time      The end of the time window in the specified or default time zone
+    * @param p_version_date  The version date/time of the time series in the specified or default time zone. If NULL, the earliest or latest version date will be used depending on p_max_version.
+    * @param p_date_times    A table of specific times to use, instead of a time window, in the specified or default time zone.
+    * @param p_max_version   A flag ('T'/'F') specifying whether to use the earliest ('F') or latest ('T') version date for each time if p_version_date is NULL.
+    * @param p_ts_item_mask  A cookie specifying what time series items to purge.
+    * @param p_db_office_id  The office that owns the time series.  If not specified or NULL, the session user's default office will be used.
+    */
+   PROCEDURE delete_ts (
+      p_cwms_ts_id     in varchar2,
+      p_start_time     in date,
+      p_end_time       in date,                        
+      p_version_date   in date,
+      p_time_zone      in varchar2 default null,
+      p_date_times     in date_table_type default null,
+      p_max_version    in varchar2 default 'T',
+      p_ts_item_mask   in integer default cwms_util.ts_all,
+      p_db_office_id   in varchar2 default null);
+
+   /**
+    * Deletes time series values for a specified time series, version date, and time window or specified times
     *
     * @see constant cwms_util.non_versioned
     * @see constant cwms_util.all_version_dates
