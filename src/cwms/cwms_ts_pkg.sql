@@ -432,6 +432,7 @@ AS
     * @param p_start_time    The start of the time window in the specified or default time zone
     * @param p_end_time      The end of the time window in the specified or default time zone
     * @param p_version_date  The version date/time of the time series in the specified or default time zone. If NULL, the earliest or latest version date will be used depending on p_max_version.
+    * @param p_time_zone     The time zone of any/all specified times. If not specified or NULL, the local time zone of the time series location is used.
     * @param p_date_times    A table of specific times to use, instead of a time window, in the specified or default time zone.
     * @param p_max_version   A flag ('T'/'F') specifying whether to use the earliest ('F') or latest ('T') version date for each time if p_version_date is NULL.
     * @param p_ts_item_mask  A cookie specifying what time series items to purge.
