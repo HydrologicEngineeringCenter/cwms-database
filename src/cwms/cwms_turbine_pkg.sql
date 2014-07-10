@@ -87,20 +87,20 @@ function retrieve_turbines_f(
  * 
  * @param p_turbine the turbine information to store. The turbine will be created
  *        if it doesn't already exist in the database 
- * @param p_fail_if_exists specifies whether to fail if the specified turbine
+ * @param p_fail_if_exists specifies whether to fail if the specified location for the turbine
  *        already exists in the database.
  *        </ul>
  *            <li><code><big>'T'</big></code> - the procedure will raise an exception if 
- *                the specified turbine already exists in the database</li>   
+ *                the specified location for the turbine already exists in the database</li>   
  *            <li><code><big>'F'</big></code> - the procedure will update the update the 
- *                information if the specified turbine already exists in the  database</li>   
+ *                information if the specified location for the turbine already exists in the  database</li>   
  *        </ul> 
  * 
- * @throws ITEM_ALREADY_EXISTS if the specified turbine already exists in the 
+ * @throws ITEM_ALREADY_EXISTS if the specified location for the turbine already exists in the 
  *         database and <code><big>p_fail_if_exists</big></code> is specified as <code><big>'T'</big></code>
- * @throws ERROR if the specified turbine already exists in the database and 
+ * @throws ERROR if the specified location for the turbine already exists in the database and 
  *         <code><big>p_fail_if_exists</big></code> is specified as <code><big>'F'</big></code> and the
- *         existing location is not identified as an turbine                                
+ *         existing location is identified as some type of object other than a turbine                                
  */ 
 procedure store_turbine(
    p_turbine        in project_structure_obj_t,
@@ -114,16 +114,16 @@ procedure store_turbine(
  *        already exists in the database.
  *        </ul>
  *            <li><code><big>'T'</big></code> - the procedure will raise an exception if 
- *                the any of the specified turbines already exists in the database</li>   
+ *                the any of the specified locations for the turbines already exists in the database</li>   
  *            <li><code><big>'F'</big></code> - the procedure will update the update the 
- *                information if any of the specified turbines already exists in the  database</li>   
+ *                information if any of the specified locations for the turbines already exists in the  database</li>   
  *        </ul> 
  * 
- * @throws ITEM_ALREADY_EXISTS if any of the specified turbines already exists in the 
+ * @throws ITEM_ALREADY_EXISTS if any of the specified locations for the turbines already exists in the 
  *         database and <code><big>p_fail_if_exists</big></code> is specified as <code><big>'T'</big></code>                    
  * @throws ERROR if any of the specified turbines already exists in the database and 
  *         <code><big>p_fail_if_exists</big></code> is specified as <code><big>'F'</big></code> and the
- *         existing location is not identified as an turbine                                
+ *         existing location is identified as some type of object other than a turbine.                                
  */ 
 procedure store_turbines(
    p_turbines       in project_structure_tab_t,
