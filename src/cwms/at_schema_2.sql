@@ -21,5 +21,8 @@ create index at_loc_lvl_indicator_u1 on at_loc_lvl_indicator (
 @@cwms/views/av_loc_lvl_attribute.sql
 @@cwms/views/av_loc_lvl_ts_map.sql
 @@cwms/views/av_loc_lvl_cur_max_ind.sql
+@@cwms/views/av_embankment.sql
+@@cwms/views/av_embank_protection_type.sql
+@@cwms/views/av_embank_structure_type.sql
 ---------------------------------------------------------
 COMMIT;                                                                                                                                                     
