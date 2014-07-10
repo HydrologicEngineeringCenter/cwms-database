@@ -1450,7 +1450,9 @@ AS
       -----------------------------------------------
       l_parts := cwms_util.split_text(p_cwms_ts_id, '.', 1);
       l_parts(1) := cwms_loc.get_location_id(l_parts(1), p_office_id);
-      l_cwms_ts_id := cwms_util.join_text(l_parts, '.');                                        
+      if l_parts(1) is not null then
+         l_cwms_ts_id := cwms_util.join_text(l_parts, '.');
+      end if;
       --parse values from timeseries_desc using regular expressions
       parse_ts (l_cwms_ts_id,
                 l_base_location_id,
