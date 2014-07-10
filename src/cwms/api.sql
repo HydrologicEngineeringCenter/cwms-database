@@ -81,6 +81,9 @@
 @@cwms_gage_pkg
 @@cwms_gage_pkg_body
 
+@@cwms_usgs_pkg
+@@cwms_usgs_pkg_body
+
 -- HOST pwd
 
 @@cwms_project_pkg

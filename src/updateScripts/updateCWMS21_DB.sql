@@ -29,6 +29,9 @@ GRANT EXECUTE ON &CWMS_SCHEMA..LOC_LVL_INDICATOR_COND_T TO CWMS_USER;
 GRANT EXECUTE ON &CWMS_SCHEMA..LOC_LVL_CUR_MAX_IND_TAB_T TO CWMS_USER;
 GRANT EXECUTE ON &CWMS_SCHEMA..RATING_T TO CWMS_USER;
 GRANT EXECUTE ON &CWMS_SCHEMA..CWMS_ENV TO CWMS_USER;
+grant select on dba_scheduler_jobs to cwms_user;
+grant select on dba_scheduler_job_log to cwms_user;
+grant select on dba_scheduler_job_run_details to cwms_user;
 
 PROMPT Creating CWMS_ENV context
 @@../cwms/at_schema_env

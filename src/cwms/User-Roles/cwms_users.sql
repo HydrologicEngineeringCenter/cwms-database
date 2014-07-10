@@ -133,5 +133,28 @@ begin
 end;
 /
 
-
-
+begin
+   --
+   -- grant http connect privilege
+   --
+   begin
+      dbms_network_acl_admin.drop_acl('www.xml');
+   exception
+      when others then null;
+   end;
+   dbms_network_acl_admin.create_acl(
+      acl         => 'www.xml', 
+      description => 'WWW ACL', 
+      principal   => '&cwms_schema', 
+      is_grant    => true, 
+      privilege   => 'connect');    
+   dbms_network_acl_admin.add_privilege(     
+      acl         => 'www.xml', 
+      principal   => '&cwms_schema', 
+      is_grant    => true, 
+      privilege   => 'resolve');
+   dbms_network_acl_admin.assign_acl(
+      acl  => 'www.xml',
+      host => '*');      
+end;
+/

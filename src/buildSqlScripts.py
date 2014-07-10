@@ -4613,7 +4613,7 @@ subParameters = [
     [ 314,  "Flow",     "Spill",       "Spillway Flow",                   "cms",     "cfs"],                                   
     [ 315,  "Flow",     "Unreg",       "Unregulated Flow",                "cms",     "cfs"],                                   
     [ 316,  "Temp",     "Air",         "Air Temperature",                 "C",       "F"],                                       
-    [ 317,  "Temp",     "Water",       "Water Temperature",               "C",       "F"],                                     
+    [ 317,  "Temp",     "Water",       "Water Temperature",               "C",       "F"],
 ]
 
 #-----------------#
@@ -7551,6 +7551,14 @@ def main() :
     base_tzs = ['GMT', 'UTC']
     signs    = ['-', '+']
     seps     = [':', '']
+    # these two timezones are broken in Java and Oracle (they include a DST offst)
+    timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('CST', 'Etc/GMT+6');\n" % timezoneAliasTableName)
+    timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('PST', 'Etc/GMT+8');\n" % timezoneAliasTableName)
+    # american daylight zones
+    timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('EDT', 'Etc/GMT+4');\n" % timezoneAliasTableName)
+    timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('CDT', 'Etc/GMT+5');\n" % timezoneAliasTableName)
+    timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('MDT', 'Etc/GMT+6');\n" % timezoneAliasTableName)
+    timezoneAliasLoadTemplate += ("INSERT INTO %s VALUES ('PDT', 'Etc/GMT+7');\n" % timezoneAliasTableName)
     for base_tz in range(len(base_tzs)) :
        for hour in range(13) :
           for sign in range(len(signs)) :

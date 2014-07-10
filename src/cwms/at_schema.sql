@@ -5856,5 +5856,264 @@ comment on column at_text_filter_element.include          is 'Flag (T/F) specify
 comment on column at_text_filter_element.filter_text      is 'The filter element text. If not regex, it should be glob-style wildcard';
 comment on column at_text_filter_element.regex_flags      is 'Regex flags (match parameter) for this element only';
 commit;
+
+create table at_usgs_parameter(
+   office_code              integer,
+   usgs_parameter_code      integer,
+   cwms_parameter_code      integer not null,
+   cwms_parameter_type_code integer not null,
+   cwms_unit_code           integer not null,
+   factor                   binary_double default 1.0,
+   offset                   binary_double default 0.0,
+   constraint at_usgs_parameter_pk  primary key (office_code, usgs_parameter_code),
+   constraint at_usgs_parameter_fk1 foreign key (cwms_parameter_code) references at_parameter (parameter_code),
+   constraint at_usgs_parameter_fk2 foreign key (cwms_parameter_type_code) references cwms_parameter_type (parameter_type_code),
+   constraint at_usgs_parameter_fk3 foreign key (cwms_unit_code) references cwms_unit (unit_code)
+) tablespace cwms_20at_data
+/
+
+comment on table  at_usgs_parameter is 'Holds information for storing time series retrieved from USGS into CWMS';
+comment on column at_usgs_parameter.office_code              is 'Office that owns this conversion record. CWMS office applies to all unless overridden';
+comment on column at_usgs_parameter.usgs_parameter_code      is 'The USGS parameter code of the retrieved data';
+comment on column at_usgs_parameter.cwms_parameter_code      is 'The CWMS parameter to use when storing the data';
+comment on column at_usgs_parameter.cwms_parameter_type_code is 'The CWMS parameter type to use when storing the data';
+comment on column at_usgs_parameter.cwms_unit_code           is 'The CWMS unit to use when storing the data';
+comment on column at_usgs_parameter.factor                   is 'CWMS = USGS * factor + offset to get to CWMS unit';
+comment on column at_usgs_parameter.offset                   is 'CWMS = USGS * factor + offset to get to CWMS unit';
+-- 00010 - Temp-Water.Inst in C
+insert 
+  into at_usgs_parameter 
+ values(53,
+        10,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Temp'
+                                      ) 
+            and sub_parameter_id = 'Water'
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'C'
+        ),
+        1.0,
+        0.0);
+-- 00021 - Temp-Air.Inst in F
+insert 
+  into at_usgs_parameter 
+ values(53,
+        21,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Temp'
+                                      ) 
+            and sub_parameter_id = 'Air'
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'F'
+        ),
+        1.0,
+        0.0);
+-- 00045 - Precip.Total in in
+insert 
+  into at_usgs_parameter 
+ values(53,
+        45,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Precip'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Total'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'in'
+        ),
+        1.0,
+        0.0);
+-- 00060 - Flow.Inst in cfs
+--
+-- USGS specifies this is average discharge over 1 day but then uses it in
+-- combination with instantaneous gage heights on hourly or sub-hourly data!
+insert 
+  into at_usgs_parameter 
+ values(53,
+        60,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Flow'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'cfs'
+        ),
+        1.0,
+        0.0);
+-- 00061 - Flow.Inst in cfs
+insert 
+  into at_usgs_parameter 
+ values(53,
+        61,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Flow'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'cfs'
+        ),
+        1.0,
+        0.0);
+-- 00062 - Elev.Inst in ft
+insert 
+  into at_usgs_parameter 
+ values(53,
+        62,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Elev'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'ft'
+        ),
+        1.0,
+        0.0);
+-- 00065 - Stage.Inst in ft
+insert 
+  into at_usgs_parameter 
+ values(53,
+        65,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Stage'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'ft'
+        ),
+        1.0,
+        0.0);
+-- 00095 - Cond.Inst in umho/cm
+insert 
+  into at_usgs_parameter 
+ values(53,
+        95,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Cond'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'umho/cm'
+        ),
+        1.0,
+        0.0);
+-- 00096 - Conc-Salinity.Inst in mg/l
+insert 
+  into at_usgs_parameter 
+ values(53,
+        96,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Conc'
+                                      ) 
+            and sub_parameter_id = 'Salinity'
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'mg/l'
+        ),
+        0.001,
+        0.0);
+-- 72036 - Stor.Inst in ac-ft
+insert 
+  into at_usgs_parameter 
+ values(53,
+        72036,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Stor'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'ac-ft'
+        ),
+        1000.0,
+        0.0);
+commit;        
+
 -- HOST pwd
 @@rowcps_schema.sql

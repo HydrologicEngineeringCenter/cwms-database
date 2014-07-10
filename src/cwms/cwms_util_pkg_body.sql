@@ -84,31 +84,23 @@ AS
 
    --
    -- Filter out PST and CST
-   FUNCTION get_timezone (p_timezone IN VARCHAR2)
-      RETURN VARCHAR2
-   IS
-      l_timezone   VARCHAR2 (28);
-   BEGIN
-      IF p_timezone IS NOT NULL
-      THEN
-         l_timezone := UPPER (p_timezone);
-
-         IF l_timezone = 'PST'
-         THEN
-            l_timezone := 'Etc/GMT+8';
-         ELSIF l_timezone = 'CST'
-         THEN
-            l_timezone := 'Etc/GMT+6';
-         ELSE
-            SELECT time_zone_name
-              INTO l_timezone
-              FROM mv_time_zone
-             WHERE UPPER (time_zone_name) = l_timezone;
-         END IF;
-      END IF;
-
-      RETURN l_timezone;
-   END get_timezone;
+   function get_timezone (p_timezone in varchar2)
+   return varchar2
+   is
+      l_timezone varchar2(28);
+   begin
+      if p_timezone is not null then
+         begin
+            select time_zone_name
+              into l_timezone
+              from cwms_time_zone_alias
+             where upper(time_zone_alias) = upper(p_timezone); 
+         exception
+            when no_data_found then l_timezone := p_timezone;
+         end;
+      end if;
+      return l_timezone;
+   end get_timezone;
 
    FUNCTION get_xml_time (p_local_time IN DATE, p_local_tz IN VARCHAR2)
       RETURN VARCHAR2
@@ -2749,6 +2741,89 @@ AS
              + EXTRACT (MINUTE FROM p_intvl);
    END dsinterval_to_minutes;
 
+   ----------------------------------
+   -- function minutes_to_duration --
+   ----------------------------------
+
+   function minutes_to_duration (
+      p_minutes in integer)
+      return varchar2
+   is
+      l_duration varchar2(16);
+      l_dsintvl  dsinterval_unconstrained;
+      l_days     integer;
+      l_hours    integer;
+      l_minutes  integer;
+   begin
+      if p_minutes is not null then
+         l_duration := 'P';
+         l_dsintvl  := minutes_to_dsinterval(p_minutes);
+         l_days     := extract(day from l_dsintvl);
+         l_hours    := extract(hour from l_dsintvl);
+         l_minutes  := extract(minute from l_dsintvl);
+         if l_days > 0 then
+            l_duration := l_duration || l_days || 'D';
+         end if;
+         if l_hours + l_minutes > 0 then
+            l_duration := l_duration || 'T';
+         end if;
+         if l_hours > 0 then
+            l_duration := l_duration || l_hours || 'H';
+         end if;
+         if l_minutes > 0 or l_days + l_hours = 0 then
+            l_duration := l_duration || l_minutes || 'M';
+         end if;
+      end if;                      
+      return l_duration;
+   end minutes_to_duration;
+
+   ----------------------------------
+   -- function duration_to_minutes --
+   ----------------------------------
+
+   function duration_to_minutes(
+      p_duration in varchar2)
+      return integer
+   is
+      --                                     1      2      3      4 5      6      7   8
+      l_pattern constant varchar2(128) := '^P(\d+Y)?(\d+M)?(\d+D)?(T(\d+H)?(\d+M)?(\d+([.]\d+)?S)?)?$';
+      l_duration varchar2(64) := trim(p_duration);
+      l_text    varchar2(8);        
+      l_minutes integer;
+   begin                                                                                     
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 0) is null then
+         cwms_err.raise('INVALID_ITEM', l_duration, 'ISO 8601 duration');
+      end if;                                             
+      for i in 1..2 loop
+         if regexp_substr(l_duration, l_pattern, 1, 1, 'i', i) is not null then
+            l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', i);
+            if to_number(substr(l_text, 1, length(l_text)-1)) > 0 then
+               cwms_err.raise('ERROR', 'Cannont compute minutes. Duration "'||l_duration||'" contains years and/or months');
+            end if;
+         end if;
+      end loop;
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 7) is not null then
+            l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', 7);
+            if to_number(substr(l_text, 1, length(l_text)-1)) > 0 then
+               cwms_err.raise('ERROR', 'Cannont compute minutes. Duration "'||l_duration||'" contains seconds');
+            end if;
+      end if;
+      l_minutes := 0;
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 3) is not null then
+         l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', 3);
+         l_minutes := l_minutes + 1440 * to_number(substr(l_text, 1, length(l_text)-1));
+      end if;
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 5) is not null then
+         l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', 5);
+         l_minutes := l_minutes + 60 * to_number(substr(l_text, 1, length(l_text)-1));
+      end if;
+      if regexp_substr(l_duration, l_pattern, 1, 1, 'i', 6) is not null then
+         l_text := regexp_substr(l_duration, l_pattern, 1, 1, 'i', 6);
+         l_minutes := l_minutes + to_number(substr(l_text, 1, length(l_text)-1));
+      end if;
+      return l_minutes;
+   end duration_to_minutes;      
+
    -----------------------------------
    -- function parse_odbc_ts_string --
    -----------------------------------
@@ -3924,7 +3999,7 @@ AS
    end get_effective_vertical_datum;
 
    procedure check_dynamic_sql(
-      p_sql in varchar)
+      p_sql in varchar2)
    is 
       l_sql_no_quotes varchar2(32767);
       
@@ -3972,6 +4047,43 @@ AS
    end check_dynamic_sql;      
 
    
+   function get_url(
+      p_url     in varchar2,
+      p_timeout in integer default 60)
+      return clob
+   is
+      l_req  utl_http.req;
+      l_resp utl_http.resp;
+      l_buf  varchar2(32767);
+      l_clob clob;
+      
+      procedure write_clob(p_text in varchar2)
+      is
+         l_len binary_integer := length(p_text);
+      begin
+         dbms_lob.writeappend(l_clob, l_len, p_text);
+      end;
+   begin       
+      dbms_lob.createtemporary(l_clob, true);
+      dbms_lob.open(l_clob, dbms_lob.lob_readwrite);   
+      begin   
+         utl_http.set_transfer_timeout(p_timeout);
+         l_req := utl_http.begin_request(p_url);
+         utl_http.set_header(l_req, 'User-Agent', 'Mozilla/4.0');
+         l_resp := utl_http.get_response(l_req);
+         utl_http.set_transfer_timeout;
+          loop                             
+            utl_http.read_text(l_resp, l_buf);
+            write_clob(l_buf);
+         end loop;
+      exception
+         when utl_http.end_of_body then
+            utl_http.end_response(l_resp);
+      end;
+      dbms_lob.close(l_clob);
+      return l_clob;
+   end get_url;      
+
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call

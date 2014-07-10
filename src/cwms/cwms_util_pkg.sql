@@ -1364,6 +1364,26 @@ AS
       p_intvl in dsinterval_unconstrained) 
       return integer;
    /**
+    * Converts an integer number of minutes to an equivalent ISO 8601 Duration string
+    * 
+    * @param p_minutes the duration to convert
+    * 
+    * @return an equivalent ISO 8601 Duration string                
+    */       
+   function minutes_to_duration (
+      p_minutes in integer)
+      return varchar2;
+   /**
+    * Converts an ISO 8601 Duration string to an equivalent number of minutes
+    * 
+    * @param p_minutes the duration to convert
+    * 
+    * @return an equivalent number of minutes                
+    */       
+   function duration_to_minutes(
+      p_duration in varchar2)
+      return integer;
+   /**
     * Converts an ODBC timestamp string to an equivalent <code><big>DATE</big></code>
     * 
     * @param p_odbc_str the ODBC string to convert
@@ -1834,7 +1854,20 @@ AS
       return varchar2;
    -- not documented
    procedure check_dynamic_sql(
-      p_sql in varchar);
+      p_sql in varchar2);
+   /**
+    * Retrieves data from a URL
+    *
+    * @param p_url The URL to retrieve data from
+    * @param p_timeout The session timeout in seconds for this request 
+    *
+    * @return The URL data as a CLOB
+    */   
+   function get_url(
+      p_url     in varchar2,
+      p_timeout in integer default 60)
+      return clob;
+      
 END cwms_util;
 /
 

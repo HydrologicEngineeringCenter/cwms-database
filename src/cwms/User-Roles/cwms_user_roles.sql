@@ -14,6 +14,9 @@ create role cwms_user not identified;
 grant create session to cwms_user;
 grant aq_user_role to cwms_user;
 grant aq_administrator_role to cwms_user;
+grant select on dba_scheduler_jobs to cwms_user;
+grant select on dba_scheduler_job_log to cwms_user;
+grant select on dba_scheduler_job_run_details to cwms_user;
 
 -- execute on packages granted later
 -- select on views granted later
