@@ -1445,12 +1445,14 @@ AS
 
       DBMS_APPLICATION_INFO.set_module ('create_ts_code',
                                         'parse timeseries_desc using regexp');
-      -----------------------------------------------                                        
-      -- remove any aliases from location  portion --
-      -----------------------------------------------
+      ----------------------------------------------                                        
+      -- remove any aliases from location portion --
+      ----------------------------------------------
       l_parts := cwms_util.split_text(p_cwms_ts_id, '.', 1);
       l_parts(1) := cwms_loc.get_location_id(l_parts(1), p_office_id);
-      if l_parts(1) is not null then
+      if l_parts(1) is null then
+         l_cwms_ts_id := p_cwms_ts_id;
+      else
          l_cwms_ts_id := cwms_util.join_text(l_parts, '.');
       end if;
       --parse values from timeseries_desc using regular expressions
