@@ -212,6 +212,32 @@ AS
    END get_user_office_data;
 
 
+   PROCEDURE set_dbi_user (p_dbi_username   IN VARCHAR2,
+                           p_db_office_id   IN VARCHAR2)
+   AS
+      l_dbi_username     VARCHAR2 (30) := UPPER (TRIM (p_dbi_username));
+      l_db_office_id     VARCHAR2 (16)
+                            := cwms_util.get_db_office_id (p_db_office_id);
+      l_db_office_code   NUMBER
+                            := cwms_util.get_db_office_code (l_db_office_id);
+   BEGIN
+      confirm_user_admin_priv (l_db_office_code);
+
+      BEGIN
+         INSERT INTO at_sec_dbi_user (db_office_code, dbi_username)
+              VALUES (l_db_office_code, l_dbi_username);
+      EXCEPTION
+         WHEN DUP_VAL_ON_INDEX
+         THEN
+            cwms_err.raise (
+               'ERROR',
+                  l_dbi_username
+               || ' is alrady a registered dbi username for the '
+               || l_db_office_id
+               || ' db_office_id.');
+      END;
+   END set_dbi_user;
+
    /*  cwms_sec.get_my_user_priv_groups(p_priv_groups  OUT sys_refcursor,
                                         p_db_office_id IN  VARCHAR2 DEFAULT NULL)
 
@@ -537,6 +563,7 @@ AS
       l_username         VARCHAR2 (31) := UPPER (TRIM (p_username));
       l_password         VARCHAR2 (31) := TRIM (p_password);
       l_is_locked        VARCHAR2 (1);
+      l_dbi_username     VARCHAR2 (31);
       l_db_office_id     VARCHAR2 (16)
                             := cwms_util.get_db_office_id (p_db_office_id);
       l_db_office_code   NUMBER
@@ -545,6 +572,19 @@ AS
    --
    BEGIN
       confirm_user_admin_priv (l_db_office_code);
+
+      BEGIN
+         SELECT dbi_username
+           INTO l_dbi_username
+           FROM at_sec_dbi_user
+          WHERE db_office_code = l_db_office_code;
+      EXCEPTION
+         WHEN NO_DATA_FOUND
+         THEN
+            cwms_err.raise (
+               'ERROR',
+               'Unable to create user because a dbi_username was not found for this CWMS Oracle Database.');
+      END;
 
       SELECT COUNT (*)
         INTO l_count
@@ -562,7 +602,8 @@ AS
       END IF;
 
       cwms_dba.cwms_user_admin.create_cwms_db_account (l_username,
-                                                       l_password);
+                                                       l_password,
+						       l_dbi_username);
 
       BEGIN
          SELECT is_locked
@@ -777,6 +818,24 @@ AS
                          p_user_group_id    => p_user_group_id,
                          p_db_office_code   => l_db_office_code);
    END add_user_to_group;
+
+   PROCEDURE create_cwmsdbi_db_user (
+      p_dbi_username   IN VARCHAR2,
+      p_dbi_password   IN VARCHAR2 DEFAULT NULL,
+      p_db_office_id   IN VARCHAR2 DEFAULT NULL)
+   AS
+      l_db_office_id     VARCHAR2 (16)
+                            := cwms_util.get_db_office_id (p_db_office_id);
+      l_db_office_code   NUMBER
+                            := cwms_util.get_db_office_code (l_db_office_id);
+   BEGIN
+      confirm_user_admin_priv (l_db_office_code);
+
+      cwms_dba.cwms_user_admin.create_cwmsdbi_db_account (p_dbi_username,
+                                                          p_dbi_password);
+
+      set_dbi_user (p_dbi_username, p_db_office_id);
+   END create_cwmsdbi_db_user;
 
    PROCEDURE update_user_data (p_userid     IN VARCHAR2,
                                p_fullname   IN VARCHAR2,
@@ -1161,6 +1220,70 @@ AS
       END IF;
    END get_user_state;
 
+
+   PROCEDURE set_dbi_user_passwd (p_dbi_password   IN VARCHAR2,
+                                  p_dbi_username   IN VARCHAR2 DEFAULT NULL,
+                                  p_db_office_id   IN VARCHAR2 DEFAULT NULL)
+   AS
+      l_db_office_id     VARCHAR2 (16)
+                            := cwms_util.get_db_office_id (p_db_office_id);
+      l_db_office_code   NUMBER
+                            := cwms_util.get_db_office_code (l_db_office_id);
+
+      l_dbi_username     VARCHAR2 (31);
+   BEGIN
+      confirm_user_admin_priv (l_db_office_code);
+
+
+      -- Confirm that the p_dbi_username is the valid dbi username for the db_office_id
+      IF p_dbi_username IS NULL
+      THEN
+         BEGIN
+            SELECT dbi_username
+              INTO l_dbi_username
+              FROM at_sec_dbi_user
+             WHERE db_office_code = l_db_office_code;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise (
+                  'ERROR',
+                  'Sorry, unable to set the DBI User Password because the '
+                  || l_db_office_id
+                  || ' database does not have a DBI User set.');
+            WHEN TOO_MANY_ROWS
+            THEN
+               cwms_err.raise (
+                  'ERROR',
+                  'Sorry, unable to set the DBI User Password because there are more than one set DBI Users set for the '
+                  || l_db_office_id
+                  || ' database. Please specify which DBI User''''s password you wish to reset.');
+         END;
+      ELSE
+         BEGIN
+            SELECT dbi_username
+              INTO l_dbi_username
+              FROM at_sec_dbi_user
+             WHERE dbi_username = UPPER (p_dbi_username)
+                   AND db_office_code = l_db_office_code;
+         EXCEPTION
+            WHEN NO_DATA_FOUND
+            THEN
+               cwms_err.raise (
+                  'ERROR',
+                     'Sorry, unable to set the DBI User Password. '
+                  || UPPER (p_dbi_username)
+                  || ' is not a registered DBI Username for the '
+                  || l_db_office_id
+                  || ' database.');
+         END;
+      END IF;
+
+      -- l_dbi_username should now have a valid username - so reset it's password...
+
+      cwms_dba.cwms_user_admin.set_user_password (l_dbi_username,
+                                                  p_dbi_password);
+   END set_dbi_user_passwd;
 
    PROCEDURE assign_ts_group_user_group (
       p_ts_group_id     IN VARCHAR2,
@@ -2329,6 +2452,7 @@ AS
                                  'WMSYS',
                                  'XDB',
                                  'XS$NULL')
+                             AND username NOT LIKE '%DBI'
                              AND username NOT LIKE 'APEX_%'
                              AND username NOT IN
                                     (SELECT username
