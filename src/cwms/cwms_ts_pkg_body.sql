@@ -130,7 +130,7 @@ AS
             ---------------------------
             -- try time series alias --
             ---------------------------
-            l_cwms_ts_id := cwms_ts.get_ts_id_from_alias(p_cwms_ts_id, p_office_id);
+            l_cwms_ts_id := cwms_ts.get_ts_id_from_alias(p_cwms_ts_id, null, null, p_office_id);
             if l_cwms_ts_id is null then
                ------------------------
                -- try location alias --
