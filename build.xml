@@ -108,7 +108,7 @@
 		
 		<echo message="Creating new CWMS Schema..."/>
 
-		<property name="autobuild-arg-line" value="/c python autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} pd_passwd=${oracle.cwmspd.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
+		<property name="autobuild-arg-line" value="/c python autobuild.py echo=${autobuild.echo} inst=${oracle.cwms.instance} sys_passwd=${oracle.sys.password} cwms_schema=${oracle.cwms.user} cwms_passwd=${oracle.cwms.password} dbi_passwd=${oracle.cwmsdbi.password} test_passwd=${oracle.hectest.password} ${build.restricted}"/>
 		<echo message="${autobuild-arg-line}"/>
 		
 		<exec dir="${src}" executable="cmd" output="auto-build-output.txt" error="auto-build-error.txt" resultproperty="auto-build-result">
@@ -371,7 +371,7 @@
 
                 <echo message="Recreate  CWMS users ..."/>
 
-                <property name="autocreateusers-arg-line" value="/c python autoCreateCWMSUsers.py echo=${autocreateusers.echo} inst=${oracle.cwms.instance} pd_passwd=${oracle.cwmspd.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} ${autocreateusers.force}"/>
+                <property name="autocreateusers-arg-line" value="/c python autoCreateCWMSUsers.py echo=${autocreateusers.echo} inst=${oracle.cwms.instance} dbi_passwd=${oracle.dbi.password} cwms_passwd=${oracle.cwms.password} cwms_schema=${oracle.cwms.user} sys_passwd=${oracle.sys.password} ${autocreateusers.force}"/>
                 <echo message="${autocreateusers-arg-line}"/>
 
                 <exec dir="${src}" executable="cmd" output="auto-createusers-output.txt" error="auto-createusers-error.txt" resultproperty="auto-createusers-result" failonerror="true">
