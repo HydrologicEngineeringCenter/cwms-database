@@ -59,6 +59,380 @@ PROMPT Dropping AT_SEC_USER_OFFICE table
 
 drop table at_sec_dbi_user;
 
+PROMPT Updating CWMS_UTIL Package
+
+@@../cwms/cwms_util_pkg.sql
+@@../cwms/cwms_util_pkg_body.sql
+
+PROMPT Adding Text Filter Table
+
+create table at_text_filter (
+   text_filter_code integer,
+   office_code      integer,
+   text_filter_id   varchar2(32),
+   is_regex         varchar2(1),
+   regex_flags      varchar2(4),
+   description      varchar2(256),
+   constraint at_text_filter_pk  primary key (text_filter_code),
+   constraint at_text_filter_ck1 check (trim(text_filter_id) = text_filter_id)
+) tablespace cwms_20at_data
+/
+
+comment on table  at_text_filter is 'Holds text filter definitions';
+comment on column at_text_filter.text_filter_code is 'Synthetic key';
+comment on column at_text_filter.office_code      is 'Foreign key to office that owns this text filter';
+comment on column at_text_filter.text_filter_id   is 'The text identifier (name) of this text filter';
+comment on column at_text_filter.is_regex         is 'Flag (T/F) specifying whether this text filter uses regular expressions (''F'' = uses glob-style wildcards)';
+comment on column at_text_filter.regex_flags      is 'Regex flags (match parameter) for all elements (overridden by individual element flags)';
+comment on column at_text_filter.description      is 'Descriptive text about text filter';
+
+create unique index at_text_filter_u1 on at_text_filter(office_code, upper(text_filter_id)) tablespace cwms_20at_data;
+
+create table at_text_filter_element (
+   text_filter_code integer,
+   element_sequence integer,
+   include          varchar2(1),
+   filter_text      varchar2(256) not null,
+   regex_flags      varchar2(4),
+   constraint at_text_filter_element_pk  primary key (text_filter_code, element_sequence),
+   constraint at_text_filter_element_fk1 foreign key (text_filter_code) references at_text_filter (text_filter_code),
+   constraint at_text_filter_element_ck1 check (include in ('T', 'F'))
+) tablespace cwms_20at_data
+/
+
+comment on table  at_text_filter_element is 'Holds sequenced filter definitions for text filters.';
+comment on column at_text_filter_element.text_filter_code is 'Foreign key to the text filter this element is for';
+comment on column at_text_filter_element.element_sequence is 'Sequence in the filter for this element';
+comment on column at_text_filter_element.include          is 'Flag (T/F) specifying whether this element is an include filter element (''F'' = is exclude filter element)';
+comment on column at_text_filter_element.filter_text      is 'The filter element text. If not regex, it should be glob-style wildcard';
+comment on column at_text_filter_element.regex_flags      is 'Regex flags (match parameter) for this element only';
+commit;
+
+PROMPT Updating CWMS_TEXT Package
+
+@@../cwms/cwms_text_pkg.sql
+@@../cwms/cwms_text_pkg_body.sql
+
+PROMPT Adding Text Filter Data
+
+begin
+   cwms_text.store_text_filter(
+      p_text_filter_id => 'LOCATION', 
+      p_description    => 'Matches valid CWMS locations', 
+      p_text_filter    => str_tab_t('in:^[^.-]{0,15}[^. -](-[^. -][^.]{0,31})?$', 'ex:^\W', 'ex:\W$'), 
+      p_fail_if_exists => 'F', 
+      p_uses_regex     => 'T', 
+      p_regex_flags    => null, 
+      p_office_id      => 'CWMS');
+      
+   cwms_text.store_text_filter(
+      p_text_filter_id => 'BASE_PARAMETER', 
+      p_description    => 'Matches valid CWMS base parameters', 
+      p_text_filter    => str_tab_t('in:^(%|Area|Code|Con[cd]|Count|Currency|Depth|Dir|Dist|Elev|Energy|Evap(Rate)?|Fish|Flow|Frost|Irrad|Opening|pH|Power|Precip|Pres|Rad|Ratio|Speed|SpinRate|Stage|Stor|Temp|Thick|Timing|Travel|Turb[FJN]?|Volt)$'), 
+      p_fail_if_exists => 'F', 
+      p_uses_regex     => 'T', 
+      p_regex_flags    => null, 
+      p_office_id      => 'CWMS');
+      
+   cwms_text.store_text_filter(
+      p_text_filter_id => 'PARAMETER', 
+      p_description    => 'Matches valid CWMS parameters', 
+      p_text_filter    => str_tab_t('in:^(%|Area|Code|Con[cd]|Count|Currency|Depth|Dir|Dist|Elev|Energy|Evap(Rate)?|Fish|Flow|Frost|Irrad|Opening|pH|Power|Precip|Pres|Rad|Ratio|Speed|SpinRate|Stage|Stor|Temp|Thick|Timing|Travel|Turb[FJN]?|Volt)(-[^.]{1,32})?$'), 
+      p_fail_if_exists => 'F', 
+      p_uses_regex     => 'T', 
+      p_regex_flags    => null, 
+      p_office_id      => 'CWMS');
+      
+   cwms_text.store_text_filter(
+      p_text_filter_id => 'PARAMETER_TYPE', 
+      p_description    => 'Matches valid CWMS parameter types', 
+      p_text_filter    => str_tab_t('in:^(Total|Max|Min|Const|Ave|Inst)$'), 
+      p_fail_if_exists => 'F', 
+      p_uses_regex     => 'T', 
+      p_regex_flags    => null, 
+      p_office_id      => 'CWMS');
+      
+   cwms_text.store_text_filter(
+      p_text_filter_id => 'INTERVAL', 
+      p_description    => 'Matches valid CWMS intervals', 
+      p_text_filter    => str_tab_t('in:^(0|~?(1(Minute|Hour|Day|Week|Month|Year|Decade)|([234568]|1[025]|[23]0)Minutes|([23468]|12)Hours|[23456]Days))$'), 
+      p_fail_if_exists => 'F', 
+      p_uses_regex     => 'T', 
+      p_regex_flags    => null, 
+      p_office_id      => 'CWMS');
+      
+   cwms_text.store_text_filter(
+      p_text_filter_id => 'DURATION', 
+      p_description    => 'Matches valid CWMS durations', 
+      p_text_filter    => str_tab_t('in:^(0|(1(Minute|Hour|Day|Week|Month|Year|Decade)|([234568]|1[025]|[23]0)Minutes|([23468]|12)Hours|[23456]Days)(BOP)?)$'), 
+      p_fail_if_exists => 'F', 
+      p_uses_regex     => 'T', 
+      p_regex_flags    => null, 
+      p_office_id      => 'CWMS');
+end
+/
+commit;
+
+PROMPT Adding USGS Parameter Table
+
+create table at_usgs_parameter(
+   office_code              integer,
+   usgs_parameter_code      integer,
+   cwms_parameter_code      integer not null,
+   cwms_parameter_type_code integer not null,
+   cwms_unit_code           integer not null,
+   factor                   binary_double default 1.0,
+   offset                   binary_double default 0.0,
+   constraint at_usgs_parameter_pk  primary key (office_code, usgs_parameter_code),
+   constraint at_usgs_parameter_fk1 foreign key (cwms_parameter_code) references at_parameter (parameter_code),
+   constraint at_usgs_parameter_fk2 foreign key (cwms_parameter_type_code) references cwms_parameter_type (parameter_type_code),
+   constraint at_usgs_parameter_fk3 foreign key (cwms_unit_code) references cwms_unit (unit_code)
+) tablespace cwms_20at_data
+/
+
+comment on table  at_usgs_parameter is 'Holds information for storing time series retrieved from USGS into CWMS';
+comment on column at_usgs_parameter.office_code              is 'Office that owns this conversion record. CWMS office applies to all unless overridden';
+comment on column at_usgs_parameter.usgs_parameter_code      is 'The USGS parameter code of the retrieved data';
+comment on column at_usgs_parameter.cwms_parameter_code      is 'The CWMS parameter to use when storing the data';
+comment on column at_usgs_parameter.cwms_parameter_type_code is 'The CWMS parameter type to use when storing the data';
+comment on column at_usgs_parameter.cwms_unit_code           is 'The CWMS unit to use when storing the data';
+comment on column at_usgs_parameter.factor                   is 'CWMS = USGS * factor + offset to get to CWMS unit';
+comment on column at_usgs_parameter.offset                   is 'CWMS = USGS * factor + offset to get to CWMS unit';
+-- 00010 - Temp-Water.Inst in C
+insert 
+  into at_usgs_parameter 
+ values(53,
+        10,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Temp'
+                                      ) 
+            and sub_parameter_id = 'Water'
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'C'
+        ),
+        1.0,
+        0.0);
+-- 00021 - Temp-Air.Inst in F
+insert 
+  into at_usgs_parameter 
+ values(53,
+        21,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Temp'
+                                      ) 
+            and sub_parameter_id = 'Air'
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'F'
+        ),
+        1.0,
+        0.0);
+-- 00045 - Precip.Total in in
+insert 
+  into at_usgs_parameter 
+ values(53,
+        45,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Precip'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Total'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'in'
+        ),
+        1.0,
+        0.0);
+-- 00060 - Flow.Inst in cfs
+--
+-- USGS specifies this is average discharge over 1 day but then uses it in
+-- combination with instantaneous gage heights on hourly or sub-hourly data!
+insert 
+  into at_usgs_parameter 
+ values(53,
+        60,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Flow'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'cfs'
+        ),
+        1.0,
+        0.0);
+-- 00061 - Flow.Inst in cfs
+insert 
+  into at_usgs_parameter 
+ values(53,
+        61,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Flow'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'cfs'
+        ),
+        1.0,
+        0.0);
+-- 00062 - Elev.Inst in ft
+insert 
+  into at_usgs_parameter 
+ values(53,
+        62,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Elev'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'ft'
+        ),
+        1.0,
+        0.0);
+-- 00065 - Stage.Inst in ft
+insert 
+  into at_usgs_parameter 
+ values(53,
+        65,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Stage'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'ft'
+        ),
+        1.0,
+        0.0);
+-- 00095 - Cond.Inst in umho/cm
+insert 
+  into at_usgs_parameter 
+ values(53,
+        95,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Cond'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'umho/cm'
+        ),
+        1.0,
+        0.0);
+-- 00096 - Conc-Salinity.Inst in mg/l
+insert 
+  into at_usgs_parameter 
+ values(53,
+        96,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Conc'
+                                      ) 
+            and sub_parameter_id = 'Salinity'
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'mg/l'
+        ),
+        0.001,
+        0.0);
+-- 72036 - Stor.Inst in ac-ft
+insert 
+  into at_usgs_parameter 
+ values(53,
+        72036,
+        (select parameter_code 
+           from at_parameter 
+          where base_parameter_code = (select base_parameter_code 
+                                         from cwms_base_parameter 
+                                        where base_parameter_id = 'Stor'
+                                      ) 
+            and sub_parameter_id is null
+        ),
+        (select parameter_type_code 
+           from cwms_parameter_type 
+          where parameter_type_id = 'Inst'
+        ),
+        (select unit_code 
+           from cwms_unit 
+          where unit_id = 'ac-ft'
+        ),
+        1000.0,
+        0.0);
+commit;        
+
 PROMPT Adding USGS Views
 
 @@../cwms/views/av_usgs_parameters.sql
@@ -239,6 +613,11 @@ PROMPT Adding Vertical Datum Conversion Code
 
 @@../cwms/cwms_loc_pkg.sql
 @@../cwms/cwms_loc_pkg_body.sql
+
+PROMPT Updating CWMS_RATING Package
+
+@@../cwms/cwms_rating_pkg.sql
+@@../cwms/cwms_rating_pkg_body.sql
 
 PROMPT Adding VERTCON Data as CLOBs            
 
