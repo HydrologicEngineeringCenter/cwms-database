@@ -59,6 +59,16 @@ PROMPT Dropping AT_SEC_USER_OFFICE table
 
 drop table at_sec_dbi_user;
 
+PROMPT Adding USGS Views
+
+@@../cwms/views/av_usgs_parameters.sql
+@@../cwms/views/av_usgs_rating.sql
+
+PROMPT Added USGS Package
+
+@@../cwms/usgs_pkg.sql
+@@../cwms/usgs_pkg_body.sql
+
 PROMPT Adding Vertical Datum Offset Types
 
 CREATE OR REPLACE TYPE &cwms_schema..vert_datum_offset_t
