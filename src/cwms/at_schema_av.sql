@@ -110,6 +110,7 @@ END;
 @@cwms/views/av_text_filter.sql
 @@cwms/views/av_text_filter_element.sql
 @@cwms/views/av_usgs_parameter.sql
+@@cwms/views/av_usgs_rating.sql
 @@cwms/views/av_cwms_ts_id.sql
 @@cwms/views/av_cwms_ts_id2.sql
 @@cwms/views/av_unit.sql
