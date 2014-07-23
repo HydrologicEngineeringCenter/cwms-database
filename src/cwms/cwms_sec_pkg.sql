@@ -63,6 +63,9 @@ AS
       RETURN BOOLEAN;
 
 
+   PROCEDURE set_user_office_id (p_username                  IN VARCHAR2,
+                                 p_db_office_id   IN VARCHAR2);
+
    PROCEDURE assign_ts_group_user_group (
       p_ts_group_id     IN VARCHAR2,
       p_user_group_id   IN VARCHAR2,

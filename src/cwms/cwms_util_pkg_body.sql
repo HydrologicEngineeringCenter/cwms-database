@@ -426,7 +426,15 @@ AS
          THEN
             RETURN 'CWMS';
          ELSE
-            cwms_err.raise ('SESSION_OFFICE_ID_NOT_SET');
+            BEGIN
+		SELECT a.office_id
+		INTO l_office_id
+		FROM cwms_office a, at_sec_user_office b
+		WHERE b.username=l_username 
+		AND a.office_code=b.db_office_code;
+	    EXCEPTION WHEN OTHERS THEN
+                cwms_err.raise ('SESSION_OFFICE_ID_NOT_SET');
+            END;
          END IF;
       END IF;
 

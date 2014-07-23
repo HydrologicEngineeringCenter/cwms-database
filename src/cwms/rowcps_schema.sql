@@ -342,7 +342,9 @@ CHECK ( purpose_active = 'T' OR purpose_active = 'F'))
 
 insert into at_project_purposes values ( 1, 53, 'Debris Control', 'Debris Control', 'T', 'D');
 insert into at_project_purposes values ( 2, 53, 'Fire Prot/Small Fish Pond', 'Fire Protection Stock or Small Fish Pond', 'T', 'P');
-insert into at_project_purposes values ( 3, 53, 'Fish & Wildlife Pond', 'Fish & Wildlife Pond', 'T', 'F');
+set escape on
+insert into at_project_purposes values ( 3, 53, 'Fish \& Wildlife Pond', 'Fish \& Wildlife Pond', 'T', 'F');
+set escape off
 insert into at_project_purposes values ( 4, 53, 'Flood Control', 'Flood Control', 'T', 'C');
 insert into at_project_purposes values ( 5, 53, 'Grade Stabilization', 'Grade Stabilization', 'T', 'G');
 insert into at_project_purposes values ( 6, 53, 'HydroElectric', 'HydroElectric', 'T', 'H');

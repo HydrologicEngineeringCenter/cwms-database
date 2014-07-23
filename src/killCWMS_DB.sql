@@ -122,6 +122,7 @@ exception
 end;
 /
 
+purge recyclebin;
 --ALTER SYSTEM DISABLE RESTRICTED SESSION;
 --EXEC DBMS_LOCK.SLEEP(1);
 exit 0

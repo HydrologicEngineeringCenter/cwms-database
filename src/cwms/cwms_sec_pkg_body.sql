@@ -113,6 +113,37 @@ AS
       END IF;
    END confirm_user_admin_priv;
 
+    PROCEDURE set_user_office_id (p_username              IN VARCHAR2,
+                                            p_db_office_id   IN VARCHAR2
+                                          )
+    AS
+        l_db_office_code         NUMBER := cwms_util.get_db_office_code (p_db_office_id);
+        l_count                          NUMBER;
+        l_username                       VARCHAR2 (31);
+    BEGIN
+        confirm_user_admin_priv (l_db_office_code);
+
+        SELECT  COUNT (*)
+          INTO  l_count
+          FROM  at_sec_user_office
+         WHERE  username = UPPER (TRIM (p_username));
+
+        IF l_count > 0
+        THEN
+            UPDATE      at_sec_user_office
+                SET     db_office_code = l_db_office_code
+             WHERE      username = UPPER (TRIM (p_username));
+        ELSE
+            cwms_err.
+            raise (
+                'ERROR',
+                    'User: '
+                || UPPER (TRIM (p_username))
+                || ' is not a valid CWMS account name.'
+            );
+        END IF;
+    END;
+
    FUNCTION get_max_cwms_ts_group_code
       RETURN NUMBER
    AS
@@ -307,6 +338,7 @@ AS
 
          OPEN p_priv_groups FOR
             SELECT username,
+                   db_office_id,
                    db_office_id,
                    user_group_type,
                    user_group_owner,
@@ -605,6 +637,15 @@ AS
                                                        l_password,
 						       l_dbi_username);
 
+       BEGIN
+          INSERT INTO at_sec_user_office (username, db_office_code)
+              VALUES   (l_username, l_db_office_code);
+        EXCEPTION
+            WHEN DUP_VAL_ON_INDEX
+            THEN
+                NULL;
+        END;
+
       BEGIN
          SELECT is_locked
            INTO l_is_locked
@@ -768,13 +809,13 @@ AS
    BEGIN
       SELECT COUNT (*)
         INTO L_count
-        FROM AT_SEC_CWMS_PERMISSIONS
+        FROM AT_SEC_USER_OFFICE
        WHERE USERNAME = p_username AND db_office_code = p_db_office_code;
 
       IF l_count = 0
       THEN
          INSERT
-           INTO AT_SEC_CWMS_PERMISSIONS (USERNAME, DB_OFFICE_CODE)
+           INTO AT_SEC_USER_OFFICE (USERNAME, DB_OFFICE_CODE)
          VALUES (UPPER (p_username), p_db_office_code);
 
          COMMIT;
@@ -1032,8 +1073,16 @@ AS
                                            (user_group_code_dba_users,
                                             user_group_code_user_admins));
 
-         DELETE FROM at_sec_cwms_permissions
-               WHERE username = l_username;
+         DELETE FROM at_sec_user_office
+               WHERE username = l_username
+                     AND db_office_code IN
+                            (SELECT UNIQUE db_office_code
+                               FROM at_sec_users
+                              WHERE username = cwms_util.get_user_id
+                                    AND user_group_code IN
+                                           (user_group_code_dba_users,
+                                            user_group_code_user_admins));
+
 
          --DELETE FROM at_sec_cwms_users
          --WHERE userid = l_username;
@@ -2388,7 +2437,7 @@ AS
                    || CWMS_SEC.GET_ADMIN_CWMS_PERMISSIONS (p.username, l_db_office_id)
                    || '|'
                    ||  case when fullname is null or length(fullname)=0 then ' ' else fullname end
-              FROM at_sec_cwms_permissions p,
+              FROM at_sec_user_office p,
                    at_sec_cwms_users u
              WHERE p.username=u.userid
                AND p.db_office_code=l_db_office_code;
@@ -2401,7 +2450,7 @@ AS
                    || CWMS_SEC.GET_ADMIN_CWMS_PERMISSIONS (p.username, l_db_office_id)
                    || '|'
                    ||  case when fullname is null or length(fullname)=0 then ' ' else fullname end
-              FROM at_sec_cwms_permissions p,
+              FROM at_sec_user_office p,
                    at_sec_cwms_users u
              WHERE p.username=u.userid
                AND p.db_office_code=l_db_office_code
@@ -2456,7 +2505,7 @@ AS
                              AND username NOT LIKE 'APEX_%'
                              AND username NOT IN
                                     (SELECT username
-                                       FROM AT_SEC_CWMS_PERMISSIONS
+                                       FROM at_sec_user_office
                                       WHERE DB_OFFICE_CODE =
                                                cwms_util.get_db_office_code (
                                                   p_db_office_id))
