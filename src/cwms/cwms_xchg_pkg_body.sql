@@ -377,8 +377,6 @@ CREATE OR REPLACE package body cwms_xchg as
       l_xml                  clob;
       l_level                binary_integer := 0;
       l_indent_str           varchar2(256) := null;
-      -- l_dss_filemgr_url_mask varchar2(256);
-      -- l_dss_file_name_mask   varchar2(256);
       l_xchg_set_id_mask     varchar2(256);
       l_office_id_mask       varchar2(256);
       l_xchg_set_codes       number_tab_t := new number_tab_t();
@@ -427,8 +425,6 @@ CREATE OR REPLACE package body cwms_xchg as
       end;
 
    begin
-      -- l_dss_filemgr_url_mask := cwms_util.normalize_wildcards(regexp_replace(p_dss_filemgr_url, '/DssFileManger$', '', 1, 1, 'i'));
-      -- l_dss_file_name_mask   := cwms_util.normalize_wildcards(p_dss_file_name);
       l_xchg_set_id_mask     := cwms_util.normalize_wildcards(nvl(p_dss_xchg_set_id, '%'), true);
       l_office_id_mask       := cwms_util.normalize_wildcards(nvl(p_office_id, cwms_util.user_office_id), true);
       ----------------------------------------------
@@ -520,7 +516,7 @@ CREATE OR REPLACE package body cwms_xchg as
       ---------------------------
       -- output the datastores --
       ---------------------------
-      select name into l_db_name from v$database;
+      select db_unique_name into l_db_name from v$database;
       l_oracle_id := db_datastore_id;
       writeln_xml('<datastore>');
       indent;
@@ -574,7 +570,8 @@ CREATE OR REPLACE package body cwms_xchg as
                 end_time,
                 interpolate_count,
                 interpolate_units,
-                realtime
+                realtime,
+                override_time_zone
            from at_xchg_set
           where xchg_set_code in (select * from table(l_xchg_set_codes))
        order by xchg_set_id)
@@ -610,6 +607,9 @@ CREATE OR REPLACE package body cwms_xchg as
               from cwms_interpolate_units
              where interpolate_units_code = rec.interpolate_units;
             writeln_xml('<max-interpolate units="'||l_interpolate_units||'">'||rec.interpolate_count||'</max-interpolate>');
+         end if;
+         if rec.override_time_zone is not null then
+            writeln_xml('<override-timezone>'||rec.override_time_zone||'</override-timezone>');
          end if;
          ---------------------------------------------------
          -- output the mappings for this dataexchange set --
@@ -952,16 +952,17 @@ CREATE OR REPLACE package body cwms_xchg as
          filename    varchar2(256),
          description varchar2(256));
       type dataexchange_set_t is record(
-         code         integer,
-         id           varchar2(32),
-         office       varchar2(16),
-         datastore_id varchar2(32),
-         start_time   varchar2(32),
-         end_time     varchar2(32),
-         interp_count integer,
-         interp_units varchar2(16),
-         realtime_dir varchar2(16),
-         description  varchar2(256));
+         code              integer,
+         id                varchar2(32),
+         office            varchar2(16),
+         datastore_id      varchar2(32),
+         start_time        varchar2(32),
+         end_time          varchar2(32),
+         interp_count      integer,
+         interp_units      varchar2(16),
+         realtime_dir      varchar2(16),
+         override_timezone varchar2(28),
+         description       varchar2(256));
       type mapping_t is record(
          code        integer,
          a_path_part varchar2(64),
@@ -996,10 +997,11 @@ CREATE OR REPLACE package body cwms_xchg as
       l_end_time           varchar2(32);
       l_interp_count       integer;
       l_interp_units       varchar2(16);
+      l_override_time_zone varchar2(28);
       l_realtime_dir       varchar2(16);
       l_last_update        timestamp;
       l_map_1              mapping_t;
-      l_map_2              mapping_t;
+      l_map_2              mapping_t;                             
       d_path_part          varchar2(64);
       l_pathname           varchar2(391);
       l_tsid               varchar2(193);
@@ -1250,12 +1252,24 @@ CREATE OR REPLACE package body cwms_xchg as
             else
                l_description := null;
             end if;
-            if instr(l_xchg_set_text, '<starttime') > 0  then
+            if instr(l_xchg_set_text, '<starttime>') > 0  then
                l_start_time := trim(split(split(l_xchg_set_text, '<starttime>')(2), '<')(1));
-               l_end_time   := trim(split(split(l_xchg_set_text, '<endtime>')(2), '<')(1));
             else
                l_start_time := null;
-               l_end_time   := null;
+            end if;
+            if instr(l_xchg_set_text, '<endtime>') > 0  then
+               l_end_time := trim(split(split(l_xchg_set_text, '<endtime>')(2), '<')(1));
+            else
+               l_end_time := null;
+            end if;
+            if (l_start_time is null) != (l_end_time is null) then
+               l_log_msg := 'dataexchange-set '
+                  ||l_set_id
+                  ||' for office '
+                  ||l_office_id
+                  ||' specifies incomplete time window';
+               log_entry('ERROR: '||l_log_msg); 
+               cwms_err.raise('ERROR', l_log_msg);
             end if;
             if instr(l_xchg_set_text, '<max-interpolate') > 0  then
                l_att_text := split(split(l_xchg_set_text, '<max-interpolate')(2), '<')(1);
@@ -1266,15 +1280,21 @@ CREATE OR REPLACE package body cwms_xchg as
                l_interp_count := null;
                l_interp_units := null;
             end if;
-            l_xchg_set_1.code         := null;
-            l_xchg_set_1.id           := l_set_id;
-            l_xchg_set_1.office       := l_office_id;
-            l_xchg_set_1.start_time   := l_start_time;
-            l_xchg_set_1.end_time     := l_end_time;
-            l_xchg_set_1.interp_count := l_interp_count;
-            l_xchg_set_1.interp_units := l_interp_units;
-            l_xchg_set_1.description  := l_description;
-            l_xchg_set_1.realtime_dir := l_realtime_dir;
+            if instr(l_xchg_set_text, '<override-timezone>') > 0  then
+               l_override_time_zone := trim(split(split(l_xchg_set_text, '<override-timezone>')(2), '<')(1));
+            else
+               l_override_time_zone := null;
+            end if;
+            l_xchg_set_1.code              := null;
+            l_xchg_set_1.id                := l_set_id;
+            l_xchg_set_1.office            := l_office_id;
+            l_xchg_set_1.start_time        := l_start_time;
+            l_xchg_set_1.end_time          := l_end_time;
+            l_xchg_set_1.interp_count      := l_interp_count;
+            l_xchg_set_1.interp_units      := l_interp_units;
+            l_xchg_set_1.description       := l_description;
+            l_xchg_set_1.realtime_dir      := l_realtime_dir; 
+            l_xchg_set_1.override_timezone := l_override_time_zone;
 
             cwms_xchg.retrieve_xchg_set(
                l_xchg_set_1.code,
@@ -1285,6 +1305,7 @@ CREATE OR REPLACE package body cwms_xchg as
                l_xchg_set_2.interp_count,
                l_xchg_set_2.interp_units,
                l_xchg_set_2.realtime_dir,
+               l_xchg_set_2.override_timezone,
                l_last_update,
                l_set_id,
                l_office_id);
@@ -1302,6 +1323,7 @@ CREATE OR REPLACE package body cwms_xchg as
                      l_xchg_set_1.interp_count,
                      l_xchg_set_1.interp_units,
                      l_xchg_set_1.realtime_dir,
+                     l_xchg_set_1.override_timezone,
                      'T',
                      l_office_id);
                   l_sets_inserted := l_sets_inserted + 1;
@@ -1315,7 +1337,8 @@ CREATE OR REPLACE package body cwms_xchg as
                       upper(nvl(l_xchg_set_1.start_time, '@')) != upper(nvl(l_xchg_set_2.start_time, '@')) or
                       nvl(l_xchg_set_1.interp_count, -1) != nvl(l_xchg_set_2.interp_count, -1) or
                       upper(nvl(l_xchg_set_1.interp_units, '@')) != upper(nvl(l_xchg_set_2.interp_units, '@')) or
-                      upper(nvl(l_xchg_set_1.realtime_dir, '@')) != upper(nvl(l_xchg_set_2.realtime_dir, '@')))
+                      upper(nvl(l_xchg_set_1.realtime_dir, '@')) != upper(nvl(l_xchg_set_2.realtime_dir, '@')) or
+                      upper(nvl(l_xchg_set_1.override_timezone, '@')) != upper(nvl(l_xchg_set_2.override_timezone, '@')))
                then
                   log_entry('Updating existing data exchange set');
                   update at_xchg_set
@@ -1329,7 +1352,8 @@ CREATE OR REPLACE package body cwms_xchg as
                                                where interpolate_units_id = l_xchg_set_1.interp_units),
                          realtime = (select dss_xchg_direction_code
                                        from cwms_dss_xchg_direction
-                                      where dss_xchg_direction_id = l_xchg_set_1.realtime_dir)
+                                      where dss_xchg_direction_id = l_xchg_set_1.realtime_dir),
+                         override_time_zone = l_xchg_set_1.override_timezone
                    where xchg_set_code = l_xchg_set_1.code;
                   l_sets_updated := l_sets_updated + 1;
                end if;
@@ -2121,17 +2145,18 @@ end store_dss_datastore;
 -- PROCEDURE RETRIEVE_XCHG_SET(...)
 --
 procedure retrieve_xchg_set(
-   p_xchg_set_code out number,
-   p_datastore_id  out nocopy varchar2,
-   p_description   out nocopy varchar2,
-   p_start_time    out nocopy varchar2,
-   p_end_time      out nocopy varchar2,
-   p_interp_count  out number,
-   p_interp_units  out nocopy varchar2,
-   p_realtime_dir  out nocopy varchar2,
-   p_last_update   out timestamp,
-   p_xchg_set_id   in  varchar2,
-   p_office_id     in  varchar2 default null)
+   p_xchg_set_code     out number,
+   p_datastore_id      out nocopy varchar2,
+   p_description       out nocopy varchar2,
+   p_start_time        out nocopy varchar2,
+   p_end_time          out nocopy varchar2,
+   p_interp_count      out number,
+   p_interp_units      out nocopy varchar2,
+   p_realtime_dir      out nocopy varchar2,
+   p_override_timezone out nocopy varchar2,
+   p_last_update       out timestamp,
+   p_xchg_set_id       in  varchar2,
+   p_office_id         in  varchar2 default null)
 is
    l_office_code    number := cwms_util.get_office_code(p_office_id);
    l_datastore_code number;
@@ -2140,14 +2165,15 @@ is
 begin
    begin
       select xchg_set_code,
-             datastore_code,
+             datastore_code,    
              description,
              start_time,
              end_time,
              interpolate_count,
              interpolate_units,
              realtime,
-             last_update
+             last_update,
+             override_time_zone
         into p_xchg_set_code,
              l_datastore_code,
              p_description,
@@ -2156,21 +2182,23 @@ begin
              p_interp_count,
              l_interp_units,
              l_realtime_dir,
-             p_last_update
-        from at_xchg_set
+             p_last_update,
+             p_override_timezone
+        from at_xchg_set 
        where upper(xchg_set_id) = upper(p_xchg_set_id)
          and office_code = l_office_code;
    exception
       when no_data_found then
-         p_xchg_set_code := null;
-         p_datastore_id  := null;
-         p_description   := null;
-         p_start_time    := null;
-         p_end_time      := null;
-         p_interp_count  := null;
-         p_interp_units  := null;
-         p_realtime_dir  := null;
-         p_last_update   := null;
+         p_xchg_set_code     := null;
+         p_datastore_id      := null;
+         p_description       := null;
+         p_start_time        := null;
+         p_end_time          := null;
+         p_interp_count      := null;
+         p_interp_units      := null;
+         p_realtime_dir      := null;
+         p_last_update       := null;
+         p_override_timezone := null;
    end;
    if p_xchg_set_code is not null then
       select datastore_id
@@ -2200,17 +2228,18 @@ end retrieve_xchg_set;
 -- PROCEDURE STORE_XCHG_SET(...)
 --
 procedure store_xchg_set(
-   p_xchg_set_code  out number,
-   p_xchg_set_id    in  varchar2,
-   p_datastore_id   in  varchar2,
-   p_description    in  varchar2 default null,
-   p_start_time     in  varchar2 default null,
-   p_end_time       in  varchar2 default null,
-   p_interp_count   in  integer  default null,
-   p_interp_units   in  varchar2 default null, -- Intervals or Minutes
-   p_realtime_dir   in  varchar2 default null, -- DssToOracle or OracleToDss
-   p_fail_if_exists in  varchar2 default 'T',  -- T or F
-   p_office_id      in  varchar2 default null)
+   p_xchg_set_code      out number,
+   p_xchg_set_id        in  varchar2,
+   p_datastore_id       in  varchar2,
+   p_description        in  varchar2 default null,
+   p_start_time         in  varchar2 default null,
+   p_end_time           in  varchar2 default null,
+   p_interp_count       in  integer  default null,
+   p_interp_units       in  varchar2 default null, -- Intervals or Minutes
+   p_realtime_dir       in  varchar2 default null, -- DssToOracle or OracleToDss
+   p_override_time_zone in  varchar2 default null,
+   p_fail_if_exists     in  varchar2 default 'T',  -- T or F
+   p_office_id          in  varchar2 default null)
 is
    l_office_id           varchar2(16)  := nvl(p_office_id, cwms_util.user_office_id);
    l_office_code         number        := cwms_util.get_office_code(l_office_id);
@@ -2223,6 +2252,7 @@ is
    l_parameterized_end   boolean;
    l_interpolate_units   integer := null;
    l_realtime_dir        integer := null;
+   l_tz_code             integer := null;
 begin
    begin
       select xchg_set_code
@@ -2320,6 +2350,12 @@ begin
             cwms_err.raise('INVALID_ITEM', p_realtime_dir, 'Xchg realtime direction.');
       end;
    end if;
+   if p_override_time_zone is not null then
+      -------------------------------------
+      -- validate the override time zone --
+      -------------------------------------
+      l_tz_code := cwms_util.get_time_zone_code(p_override_time_zone);
+   end if;
    ----------------------------------------------------
    -- everything is validated, insert into the table --
    ----------------------------------------------------
@@ -2336,7 +2372,8 @@ begin
                 p_interp_count,
                 l_interpolate_units,
                 l_realtime_dir,
-                null)
+                null,
+                p_override_time_zone)
       returning xchg_set_code
            into l_xchg_set_code;
    else
@@ -2347,7 +2384,8 @@ begin
              end_time = p_end_time,
              interpolate_count = p_interp_count,
              interpolate_units = l_interpolate_units,
-             realtime = l_realtime_dir
+             realtime = l_realtime_dir,
+             override_time_zone = p_override_time_zone
        where xchg_set_code = l_xchg_set_code;
    end if;
    p_xchg_set_code := l_xchg_set_code;
@@ -2493,15 +2531,7 @@ begin
          and cwms_ts_code = p_cwms_ts_code;
    exception
       when no_data_found then 
-         begin
-            select time_zone_code
-              into l_time_zone
-              from mv_time_zone
-             where upper(time_zone_name) = upper(p_time_zone);
-         exception
-            when no_data_found then
-               cwms_err.raise('INVALID_TIME_ZONE', p_time_zone);
-         end;
+         l_time_zone := cwms_util.get_time_zone_code(p_time_zone);
          begin    
             select tz_usage_code
               into l_tz_usage
@@ -2555,9 +2585,7 @@ begin
                  from cwms_dss_parameter_type
                 where upper(dss_parameter_type_id) = upper(p_parameter_type)),
               p_units,
-              (select time_zone_code
-                 from mv_time_zone
-                where upper(time_zone_name) = upper(p_time_zone)),
+              cwms_util.get_time_zone_code(p_time_zone),
               (select tz_usage_code
                  from cwms_tz_usage
                 where upper(tz_usage_id) = upper(p_tz_usage)))

@@ -351,59 +351,63 @@ procedure store_dss_datastore(
 /**
  * Retrieves a data exchange set from the database
  *
- * @param p_xchg_set_code The unique numeric code identifying the data exchange set
- * @param p_datastore_id  The datastore identifier of the data exchange set
- * @param p_description   A description of the data exchange set
- * @param p_start_time    Parameterized or explicit start of default time window for data exchange set
- * @param p_end_time      Parameterized or explicit end of default time window for data exchange set
- * @param p_interp_count  Maximum number of intervals or minutes over which to interpolate for missing data
- * @param p_interp_units  Specifies whether p_interp_count refers to intervals or minutes
- * @param p_realtime_dir  Specifies the real time data exchange direction, if any
- * @param p_last_update   Specifies thea last time the data exchange set has been updated
- * @param p_xchg_set_id   The data exchange set identifer
- * @param p_office_id     The office that owns the data exchanage set.  If not specified or NULL, the session user's default office is used
+ * @param p_xchg_set_code      The unique numeric code identifying the data exchange set
+ * @param p_datastore_id       The datastore identifier of the data exchange set
+ * @param p_description        A description of the data exchange set
+ * @param p_start_time         Parameterized or explicit start of default time window for data exchange set
+ * @param p_end_time           Parameterized or explicit end of default time window for data exchange set
+ * @param p_interp_count       Maximum number of intervals or minutes over which to interpolate for missing data
+ * @param p_interp_units       Specifies whether p_interp_count refers to intervals or minutes
+ * @param p_realtime_dir       Specifies the real time data exchange direction, if any
+ * @param p_override_time_zone Specifies an optional time zone to override any DSS time zone information
+ * @param p_last_update        Specifies thea last time the data exchange set has been updated
+ * @param p_xchg_set_id        The data exchange set identifer
+ * @param p_office_id          The office that owns the data exchanage set.  If not specified or NULL, the session user's default office is used
  */
 procedure retrieve_xchg_set(
-   p_xchg_set_code out number,
-   p_datastore_id  out nocopy varchar2,
-   p_description   out nocopy varchar2,
-   p_start_time    out nocopy varchar2,
-   p_end_time      out nocopy varchar2,
-   p_interp_count  out number,
-   p_interp_units  out nocopy varchar2,
-   p_realtime_dir  out nocopy varchar2,
-   p_last_update   out timestamp,
-   p_xchg_set_id   in  varchar2,
-   p_office_id     in  varchar2 default null);
+   p_xchg_set_code     out number,
+   p_datastore_id      out nocopy varchar2,
+   p_description       out nocopy varchar2,
+   p_start_time        out nocopy varchar2,
+   p_end_time          out nocopy varchar2,
+   p_interp_count      out number,
+   p_interp_units      out nocopy varchar2,
+   p_realtime_dir      out nocopy varchar2,
+   p_override_timezone out nocopy varchar2,
+   p_last_update       out timestamp,
+   p_xchg_set_id       in  varchar2,
+   p_office_id         in  varchar2 default null);
 /**
  * Retrieves a data exchange set from the database
  *
- * @param p_xchg_set_code  The unique numeric code identifying the data exchange set
- * @param p_xchg_set_id    The data exchange set identifer
- * @param p_datastore_id   The datastore identifier of the data exchange set
- * @param p_description    A description of the data exchange set
- * @param p_start_time     Parameterized or explicit start of default time window for data exchange set
- * @param p_end_time       Parameterized or explicit end of default time window for data exchange set
- * @param p_interp_count   Maximum number of intervals or minutes over which to interpolate for missing data
- * @param p_interp_units   Specifies what p_interp_count refers to. Valid values are <ul><li>'Intervals'</li><li>'Minutes'</li></ul>
- * @param p_realtime_dir   Specifies the real time data exchange direction, if any. Valid values are <ul><li>'DssToOracle'</li><li>'OracleToDss'</li></ul>
- * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if the data exchange set already exists is the database
- * @param p_office_id      The office that owns the data exchanage set.  If not specified or NULL, the session user's default office is used
+ * @param p_xchg_set_code      The unique numeric code identifying the data exchange set
+ * @param p_xchg_set_id        The data exchange set identifer
+ * @param p_datastore_id       The datastore identifier of the data exchange set
+ * @param p_description        A description of the data exchange set
+ * @param p_start_time         Parameterized or explicit start of default time window for data exchange set
+ * @param p_end_time           Parameterized or explicit end of default time window for data exchange set
+ * @param p_interp_count       Maximum number of intervals or minutes over which to interpolate for missing data
+ * @param p_interp_units       Specifies what p_interp_count refers to. Valid values are <ul><li>'Intervals'</li><li>'Minutes'</li></ul>
+ * @param p_realtime_dir       Specifies the real time data exchange direction, if any. Valid values are <ul><li>'DssToOracle'</li><li>'OracleToDss'</li></ul>
+ * @param p_override_time_zone Specifies an optional time zone to override any DSS time zone information
+ * @param p_fail_if_exists     A flag ('T' or 'F') that specifies whether the routine should fail if the data exchange set already exists is the database
+ * @param p_office_id          The office that owns the data exchanage set.  If not specified or NULL, the session user's default office is used
  *
  * @exception ITEM_ALREADY_EXISTS if p_fail_if_exists is 'T' and the data exchange set already exists is the database
  */
 procedure store_xchg_set(
-   p_xchg_set_code  out number,
-   p_xchg_set_id    in  varchar2,
-   p_datastore_id   in  varchar2,
-   p_description    in  varchar2 default null,
-   p_start_time     in  varchar2 default null,
-   p_end_time       in  varchar2 default null,
-   p_interp_count   in  integer  default null,
-   p_interp_units   in  varchar2 default null, -- Intervals or Minutes
-   p_realtime_dir   in  varchar2 default null, -- DssToOracle or OracleToDss
-   p_fail_if_exists in  varchar2 default 'T',  -- T or F
-   p_office_id      in  varchar2 default null);
+   p_xchg_set_code      out number,
+   p_xchg_set_id        in  varchar2,
+   p_datastore_id       in  varchar2,
+   p_description        in  varchar2 default null,
+   p_start_time         in  varchar2 default null,
+   p_end_time           in  varchar2 default null,
+   p_interp_count       in  integer  default null,
+   p_interp_units       in  varchar2 default null, -- Intervals or Minutes
+   p_realtime_dir       in  varchar2 default null, -- DssToOracle or OracleToDss
+   p_override_time_zone in  varchar2 default null,
+   p_fail_if_exists     in  varchar2 default 'T',  -- T or F
+   p_office_id          in  varchar2 default null);
 /**
  * Retrieves a time series mapping for a CWMS time series in a data exchange set
  *
@@ -420,7 +424,7 @@ procedure store_xchg_set(
  * @param p_xchg_set_code   The unique numeric code identifying the data exchange set
  * @param p_cwms_ts_code    The unique numeric code identifying the CWMS time series
  */
-procedure retrieve_xchg_dss_ts_mapping(
+procedure retrieve_xchg_dss_ts_mapping(       
    p_mapping_code    out number,
    p_a_pathname_part out nocopy varchar2,
    p_b_pathname_part out nocopy varchar2,
