@@ -64,7 +64,7 @@ AS
 		IF p_location_code IS NOT NULL
 		THEN
 			SELECT		bl.base_location_id
-						|| SUBSTR ('_', 1, LENGTH (pl.sub_location_id))
+						|| SUBSTR ('-', 1, LENGTH (pl.sub_location_id))
 						|| pl.sub_location_id
 			  INTO	l_location_id
 			  FROM	at_physical_location pl, at_base_location bl
