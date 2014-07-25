@@ -1,68 +1,19 @@
-connect / as sysdba
 define cwms_schema = CWMS_20
+set echo on
 set define on
 set verify off
 alter session set current_schema=&cwms_schema;
-alter system enable restricted session;
+--alter system enable restricted session;
 whenever sqlerror exit sql.sqlcode
 
 spool updateCWMS21_DB.log
  
-PROMPT Creating AT_SEC_CWMS_USERS and AT_SEC_CWMS_PERMISSIONS tables
+PROMPT rename at_sec_user_office column
 
-@@../cwms/at_schema_sec_2
-
-PROMPT Adding an entry to CWMS_ERROR
-
-INSERT INTO CWMS_ERROR (ERR_CODE, ERR_NAME, ERR_MSG) VALUES (-20047, 'SESSION_OFFICE_ID_NOT_SET', 'Session office id is not set by the application');
-
-PROMPT Update packages/types/views
-@@../cwms/updateCwmsSchema
-
-PROMPT Creating AV_SEC_USERS view
-@@../cwms/views/av_sec_users
-
-PROMPT Creating Additional synonyms and grants
-CREATE PUBLIC SYNONYM CWMS_ALARM FOR &CWMS_SCHEMA..CWMS_ALARM;
-CREATE PUBLIC SYNONYM CWMS_ENV FOR &CWMS_SCHEMA..CWMS_ENV;
-GRANT EXECUTE ON &CWMS_SCHEMA..LOC_LVL_INDICATOR_COND_T TO CWMS_USER;
-GRANT EXECUTE ON &CWMS_SCHEMA..LOC_LVL_CUR_MAX_IND_TAB_T TO CWMS_USER;
-GRANT EXECUTE ON &CWMS_SCHEMA..RATING_T TO CWMS_USER;
-GRANT EXECUTE ON &CWMS_SCHEMA..CWMS_ENV TO CWMS_USER;
-grant select on dba_scheduler_jobs to cwms_user;
-grant select on dba_scheduler_job_log to cwms_user;
-grant select on dba_scheduler_job_run_details to cwms_user;
-
-PROMPT Creating CWMS_ENV context
-@@../cwms/at_schema_env
+ALTER TABLE at_sec_user_office
+  RENAME COLUMN user_db_office_code to db_office_code;
 
 
-PROMPT Recreating at_sec_users_r02 constraint
-
-alter table at_sec_users drop constraint at_sec_users_r02;
-
-PROMPT Inserting Additional CCP groups
-@@insert_new_groups
-
-ALTER TABLE at_sec_users ADD (
-  CONSTRAINT at_sec_users_r02
- FOREIGN KEY (username)
- REFERENCES at_sec_cwms_users (userid))
-/
-
-
-PROMPT Dropping AT_SEC_USER_OFFICE table
-
-drop table at_sec_user_office;
-
-PROMPT Dropping AT_SEC_USER_OFFICE table
-
-drop table at_sec_dbi_user;
-
-PROMPT Updating CWMS_UTIL Package
-
-@@../cwms/cwms_util_pkg.sql
-@@../cwms/cwms_util_pkg_body.sql
 
 PROMPT Adding USGS Parameter Table
 
@@ -323,16 +274,6 @@ insert
         1000.0,
         0.0);
 commit;        
-
-PROMPT Adding USGS Views
-
-@@../cwms/views/av_usgs_parameters.sql
-@@../cwms/views/av_usgs_rating.sql
-
-PROMPT Added USGS Package
-
-@@../cwms/usgs_pkg.sql
-@@../cwms/usgs_pkg_body.sql
 
 PROMPT Adding Vertical Datum Offset Types
 
@@ -672,6 +613,99 @@ begin
 end;
 /
 
+
+PROMPT Adding an entry to CWMS_ERROR
+
+INSERT INTO CWMS_ERROR (ERR_CODE, ERR_NAME, ERR_MSG) VALUES (-20047, 'SESSION_OFFICE_ID_NOT_SET', 'Session office id is not set by the application');
+alter table at_xchg_set drop column override_time_zone;
+
+PROMPT Creating AV_SEC_USERS view
+@@../cwms/views/av_sec_users
+
+PROMPT Recreating at_sec_users_r02 constraint
+
+alter table at_sec_users drop constraint at_sec_users_r02;
+
+PROMPT Inserting Additional CCP groups
+@@insert_new_groups
+
+insert into at_sec_cwms_users(userid,createdby) (select unique username,user from at_sec_users where username not in (select userid from at_sec_cwms_users));
+
+ALTER TABLE at_sec_users ADD (
+  CONSTRAINT at_sec_users_r02
+ FOREIGN KEY (username)
+ REFERENCES at_sec_cwms_users (userid))
+/
+
+ALTER TABLE AT_SEC_USER_OFFICE DROP CONSTRAINT AT_SEC_USER_OFFICE_PK;
+DROP INDEX AT_SEC_USER_OFFICE_PK;
+ALTER TABLE AT_SEC_USER_OFFICE DROP CONSTRAINT AT_SEC_USER_OFFICE_R01;
+COMMENT ON TABLE AT_SEC_USER_OFFICE IS 'Table to indicate whether a user has any permissions for a given office';
+CREATE UNIQUE INDEX AT_SEC_USER_OFFICE_PK ON AT_SEC_USER_OFFICE
+(USERNAME,DB_OFFICE_CODE)
+LOGGING
+TABLESPACE CWMS_20AT_DATA
+PCTFREE    10
+INITRANS   2
+MAXTRANS   255
+STORAGE    (
+            INITIAL          64K
+            NEXT             1M
+            MINEXTENTS       1
+            MAXEXTENTS       UNLIMITED
+            PCTINCREASE      0
+            BUFFER_POOL      DEFAULT
+           )
+NOPARALLEL;
+ALTER TABLE CWMS_20.AT_SEC_USER_OFFICE ADD (
+  CONSTRAINT AT_SEC_USER_OFFICE_PK
+  PRIMARY KEY
+  (USERNAME, DB_OFFICE_CODE)
+  USING INDEX CWMS_20.AT_SEC_USER_OFFICE_PK
+  ENABLE VALIDATE);
+
+ALTER TABLE CWMS_20.AT_SEC_USER_OFFICE ADD (
+  CONSTRAINT AT_SEC_USER_OFFICE_FK1 
+  FOREIGN KEY (DB_OFFICE_CODE) 
+  REFERENCES CWMS_20.CWMS_OFFICE (OFFICE_CODE)
+  ENABLE VALIDATE,
+  CONSTRAINT AT_SEC_USER_OFFICE_FK2 
+  FOREIGN KEY (USERNAME) 
+  REFERENCES CWMS_20.AT_SEC_CWMS_USERS (USERID)
+  ENABLE VALIDATE);
 COMMIT;
-alter system disable restricted session;
+
+PROMPT Update packages/types/views
+@@../cwms/updateCwmsSchema
+
+PROMPT Creating CWMS_ENV context
+@@../cwms/at_schema_env
+
+PROMPT Creating Additional synonyms and grants
+@@../cwms/at_schema_public_interface
+revoke execute on &cwms_schema..cwms_upass from cwms_user;
+grant select on dba_scheduler_jobs to cwms_user;
+grant select on dba_scheduler_job_log to cwms_user;
+grant select on dba_scheduler_job_run_details to cwms_user;
+prompt Recompiling all invalid objects...
+exec sys.utl_recomp.recomp_serial('&cwms_schema');
+declare
+   obj_count integer;
+begin
+   select count(*)
+     into obj_count
+     from dba_objects
+    where owner = '&cwms_schema'
+      and status = 'INVALID';
+   if obj_count > 0 then
+      dbms_output.put_line('' || obj_count || ' objects are still invalid.');
+      raise_application_error(-20999, 'Some objects are still invalid.');
+   else
+      dbms_output.put_line('All invalid objects successfully compiled.');
+   end if;
+end;
+/
+
+COMMIT;
+--alter system disable restricted session;
 exit;

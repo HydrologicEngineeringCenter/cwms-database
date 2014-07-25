@@ -236,7 +236,7 @@ begin
       p_uses_regex     => 'T', 
       p_regex_flags    => null, 
       p_office_id      => 'CWMS');
-end
+end;
 /
 commit;
 --------------------------------------

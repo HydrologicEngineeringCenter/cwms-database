@@ -12,47 +12,66 @@ defines_pattern = re.compile('@@defines.sql', re.I)
 synonyms = {}
 updates  = [
 	['script',       'disable_all_jobs'],
-	['package spec', 'cwms_alarm'],
-	['package body', 'cwms_alarm'],
-	['package spec', 'cwms_env'],
-	['package body', 'cwms_env'],
-	['package body', 'cwms_level'],
-	['package spec', 'cwms_loc'],
-	['package body', 'cwms_loc'],
-	['package spec', 'cwms_msg'],
-	['package body', 'cwms_msg'],
-	['package spec', 'cwms_rating'],
-	['package body', 'cwms_rating'],
-	['package spec', 'cwms_schema'],
-	['package spec', 'cwms_sec'],
-	['package body', 'cwms_sec'],
-	['package body', 'cwms_ts'],
-	['package spec', 'cwms_upass'],
-	['package body', 'cwms_upass'],
-	['package spec', 'cwms_text'],
-	['package body', 'cwms_text'],
-	['package spec', 'cwms_util'],
-	['package body', 'cwms_util'],
-	['type',         'abs_rating_ind_param_t'],
-	['type body',    'abs_rating_ind_param_t'],
-	['type',         'loc_lvl_cur_max_ind_tab_t'],
-	['type',         'loc_lvl_indicator_cond_t'],
-	['type',         'location_ref_t'],
-	['type body',    'location_ref_t'],
-	['type body',    'loc_lvl_indicator_cond_t'],
-	['type',         'rating_ind_parameter_t'],
-	['type body',    'rating_ind_parameter_t'],
-	['type',         'rating_t'],
-	['type body',    'rating_t'],
-	['type',         'vdatum_rating_t'],
-	['type body',    'vdatum_rating_t'],
-	['type',         'vdatum_stream_rating_t'],
-	['type body',    'vdatum_stream_rating_t'],
-	['type',         'stream_rating_t'],
-	['type body',    'stream_rating_t'],
-	['view',         'av_sec_users'],
-	['view',         'av_text_filter'],
-	['view',         'av_text_filter_element'],
+        ['package spec', 'cwms_alarm'],
+        ['package body', 'cwms_alarm'],
+        ['package body', 'cwms_apex'],
+        ['package body', 'cwms_basin'],
+        ['package body', 'cwms_cat'],
+        ['package body', 'cwms_display'],
+        ['package spec', 'cwms_env'],
+        ['package body', 'cwms_env'],
+        ['package body', 'cwms_forecast'],
+        ['package body', 'cwms_gage'],
+        ['package body', 'cwms_level'],
+        ['package spec', 'cwms_loc'],
+        ['package body', 'cwms_loc'],
+        ['package body', 'cwms_lock'],
+        ['package body', 'cwms_msg'],
+        ['package body', 'cwms_outlet'],
+        ['package body', 'cwms_priv'],
+        ['package body', 'cwms_prop'],
+        ['package spec', 'cwms_rating'],
+        ['package body', 'cwms_rating'],
+        ['package spec', 'cwms_schema'],
+        ['package body', 'cwms_schema'],
+        ['package spec', 'cwms_sec'],
+        ['package body', 'cwms_sec'],
+        ['package body', 'cwms_shef'],
+        ['package body', 'cwms_stream'],
+        ['package body', 'cwms_text'],
+        ['package body', 'cwms_ts'],
+        ['package body', 'cwms_ts_id'],
+        ['package body', 'cwms_turbine'],
+        ['package spec', 'cwms_usgs'],
+        ['package body', 'cwms_usgs'],
+        ['package spec', 'cwms_util'],
+        ['package body', 'cwms_util'],
+        ['package body', 'cwms_vt'],
+        ['package body', 'cwms_water_supply'],
+        ['package spec', 'cwms_xchg'],
+        ['package body', 'cwms_xchg'],
+        ['type',         'abs_rating_ind_param_t'],
+        ['type body',    'abs_rating_ind_param_t'],
+        ['type',         'loc_lvl_cur_max_ind_tab_t'],
+        ['type body',    'loc_lvl_indicator_cond_t'],
+        ['type body',    'location_ref_t'],
+        ['type',         'rating_ind_parameter_t'],
+        ['type body',    'rating_ind_parameter_t'],
+        ['type',         'rating_t'],
+        ['type body',    'rating_t'],
+        ['type',         'stream_rating_t'],
+        ['type body',    'stream_rating_t'],
+        ['type',         'tsv_array'],
+        ['type',         'tsv_array_tab'],
+        ['type',         'vdatum_rating_t'],
+        ['type body',    'vdatum_rating_t'],
+        ['type',         'vdatum_stream_rating_t'],
+        ['type body',    'vdatum_stream_rating_t'],
+        ['type',         'vert_datum_offset_t'],
+        ['type',         'vert_datum_offset_tab_t'],
+        ['type',         'ztsv_array_tab'],
+        ['view',         'av_usgs_parameter'],
+        ['view',         'av_usgs_rating'],
 	['script',       'enable_all_jobs'],
 ]
 
@@ -138,6 +157,14 @@ def get(item_type, item_name) :
 outfile = os.path.join(srcdir, 'updateCwmsSchema.sql')
 logfile = 'updateCwmsSchema.log'
 f = open(outfile, 'w')
+f.write(
+'''
+define cwms_schema = CWMS_20
+set define on
+set verify off
+alter session set current_schema=&cwms_schema;
+whenever sqlerror exit sql.sqlcode
+''')
 f.write('\nspool '+logfile+'; \n')
 for item_type, item_name in updates :
 	print('%s %s' % (item_type, item_name))
@@ -158,18 +185,6 @@ if synonyms :
 	for view in sorted(synonyms.keys()) :
 		f.write('create public synonym %s for &cwms_schema..%s;\n' % (synonyms[view], view))
 f.write('\ncommit;\n')
-f.write(
-'''
-whenever sqlerror continue
-ALTER TABLE AT_SEC_USERS DROP CONSTRAINT AT_SEC_USERS_R02;
- 
-ALTER TABLE AT_SEC_USERS ADD (
-  CONSTRAINT AT_SEC_USERS_R02 
-  FOREIGN KEY (USERNAME) 
-  REFERENCES AT_SEC_CWMS_USERS (USERID)
-  ENABLE VALIDATE);
-/  
-''');
 f.write(
 '''
 set echo off
