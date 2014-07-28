@@ -4557,6 +4557,36 @@ begin
    return l_result;
 end get_min_opening2;
 
+function get_database_units(
+   p_id in varchar2)
+   return varchar2
+is
+   l_parts str_tab_t;
+   l_index integer;   
+   l_units varchar2(128);
+begin
+   l_parts := cwms_util.split_text(p_id, separator1);
+   l_index := case l_parts.count
+                 when 4 then 2 -- rating id
+                 else 1        -- template id, or parameters id
+              end;
+   l_parts := cwms_util.split_text(replace(l_parts(l_index), separator2, separator3), separator3);
+   if l_parts.count < 2 then
+      cwms_err.raise('INVALID_ITEM', p_id, 'rating specification, rating template, or parameters id');
+   end if;
+   for i in 1..l_parts.count loop
+      begin
+         l_parts(i) := cwms_util.get_default_units(l_parts(i), 'SI');
+      exception
+         when others then cwms_err.raise('INVALID_ITEM', l_parts(i), 'parameter'); 
+      end;         
+   end loop;
+   l_units := cwms_util.join_text(l_parts, separator3);
+   l_index := instr(l_units, separator3, -1, 1);
+   l_units := substr(l_units, 1, l_index-1)||separator2||substr(l_units, l_index+1);
+   return l_units;
+end get_database_units;   
+
 procedure update_materialized_views
 is
 begin
