@@ -359,6 +359,7 @@ procedure store_dss_datastore(
  * @param p_interp_count  Maximum number of intervals or minutes over which to interpolate for missing data
  * @param p_interp_units  Specifies whether p_interp_count refers to intervals or minutes
  * @param p_realtime_dir  Specifies the real time data exchange direction, if any
+ * @param p_override_time_zone Specifies an optional time zone to override any DSS time zone information
  * @param p_last_update   Specifies thea last time the data exchange set has been updated
  * @param p_xchg_set_id   The data exchange set identifer
  * @param p_office_id     The office that owns the data exchanage set.  If not specified or NULL, the session user's default office is used
@@ -372,6 +373,7 @@ procedure retrieve_xchg_set(
    p_interp_count  out number,
    p_interp_units  out nocopy varchar2,
    p_realtime_dir  out nocopy varchar2,
+   p_override_timezone out nocopy varchar2,
    p_last_update   out timestamp,
    p_xchg_set_id   in  varchar2,
    p_office_id     in  varchar2 default null);
@@ -387,6 +389,7 @@ procedure retrieve_xchg_set(
  * @param p_interp_count   Maximum number of intervals or minutes over which to interpolate for missing data
  * @param p_interp_units   Specifies what p_interp_count refers to. Valid values are <ul><li>'Intervals'</li><li>'Minutes'</li></ul>
  * @param p_realtime_dir   Specifies the real time data exchange direction, if any. Valid values are <ul><li>'DssToOracle'</li><li>'OracleToDss'</li></ul>
+ * @param p_override_time_zone Specifies an optional time zone to override any DSS time zone information
  * @param p_fail_if_exists A flag ('T' or 'F') that specifies whether the routine should fail if the data exchange set already exists is the database
  * @param p_office_id      The office that owns the data exchanage set.  If not specified or NULL, the session user's default office is used
  *
@@ -402,6 +405,7 @@ procedure store_xchg_set(
    p_interp_count   in  integer  default null,
    p_interp_units   in  varchar2 default null, -- Intervals or Minutes
    p_realtime_dir   in  varchar2 default null, -- DssToOracle or OracleToDss
+   p_override_time_zone in  varchar2 default null,
    p_fail_if_exists in  varchar2 default 'T',  -- T or F
    p_office_id      in  varchar2 default null);
 /**
