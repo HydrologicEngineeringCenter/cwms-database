@@ -24,6 +24,7 @@ insert into at_clob values (cwms_seq.nextval, 53, '/VIEWDOCS/AV_RATING_LOCAL', n
  * @field aliased_item       Null if the location_id is not an alias, ''LOCATION'' if the entire location_id is aliased, or ''BASE LOCATION'' if only the base_location_id is alaised.  
  * @field loc_alias_category The location category that owns the location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.  
  * @field loc_alias_group    The location group to which the alias for the location_id or base_location_id belongs. Null if location_id is not an alias.              
+ * @field database_units     The databse storage units for each parameter for this rating
  */
 ');
 create or replace force view av_rating_local
@@ -43,7 +44,8 @@ create or replace force view av_rating_local
    description,
    aliased_item,
    loc_alias_category,
-   loc_alias_group
+   loc_alias_group,
+   database_units
 )
 as
    select r.rating_code, 
@@ -68,7 +70,8 @@ as
           r.description,
           v.aliased_item,
           v.loc_alias_category,
-          v.loc_alias_group
+          v.loc_alias_group,
+          cwms_rating.get_database_units(rt.parameters_id) as database_units
      from at_rating r,
           at_rating_spec rs,
           at_rating_template rt,

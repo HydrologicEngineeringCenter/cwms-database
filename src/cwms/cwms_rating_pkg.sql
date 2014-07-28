@@ -2709,7 +2709,17 @@ function get_min_opening2(
    p_time_zone   in  varchar2 default 'UTC',
    p_office_id   in  varchar2 default null)
    return double_tab_t;   
-
+/**
+ * Retrieves the database units string for a rating specification, rating template, or parameters identifier
+ *
+ * @param p_id The rating specification, rating template, or parameters identifier to get the database units for 
+ *
+ * @return the database units string for the specified identifier 
+ */                         
+function get_database_units(
+   p_id in varchar2)
+   return varchar2;
+      
 procedure update_materialized_views;
 
 procedure start_update_mviews_job;
