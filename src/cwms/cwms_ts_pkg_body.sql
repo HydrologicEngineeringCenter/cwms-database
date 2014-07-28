@@ -5397,7 +5397,33 @@ AS
          l_date_times, 
          p_max_version, 
          p_ts_item_mask);
+   end delete_ts;
+   
+   procedure delete_ts (
+      p_timeseries_info in timeseries_req_array,
+      p_version_date    in date,
+      p_time_zone       in varchar2 default null,
+      p_max_version     in varchar2 default 'T',
+      p_ts_item_mask    in integer default cwms_util.ts_all,
+      p_db_office_id    in varchar2 default null)
+   is
+   begin
+      if p_timeseries_info is not null then
+         for i in 1..p_timeseries_info.count loop
+            delete_ts(
+                p_cwms_ts_id    => p_timeseries_info(i).tsid,
+                p_start_time    => p_timeseries_info(i).start_time,
+                p_end_time      => p_timeseries_info(i).end_time,
+                p_version_date  => p_version_date,
+                p_time_zone     => p_time_zone,
+                p_date_times    => null,
+                p_max_version   => p_max_version,
+                p_ts_item_mask  => p_ts_item_mask,
+                p_db_office_id  => p_db_office_id);
+         end loop;
+      end if;
    end delete_ts;      
+         
 
    procedure purge_ts_data(
       p_ts_code          in number,
