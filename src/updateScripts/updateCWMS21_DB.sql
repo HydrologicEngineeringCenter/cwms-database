@@ -617,7 +617,6 @@ end;
 PROMPT Adding an entry to CWMS_ERROR
 
 INSERT INTO CWMS_ERROR (ERR_CODE, ERR_NAME, ERR_MSG) VALUES (-20047, 'SESSION_OFFICE_ID_NOT_SET', 'Session office id is not set by the application');
-alter table at_xchg_set drop column override_time_zone;
 
 PROMPT Creating AV_SEC_USERS view
 @@../cwms/views/av_sec_users
@@ -683,7 +682,9 @@ PROMPT Creating CWMS_ENV context
 
 PROMPT Creating Additional synonyms and grants
 @@../cwms/at_schema_public_interface
+whenever sqlerror continue 
 revoke execute on &cwms_schema..cwms_upass from cwms_user;
+whenever sqlerror exit sql.sqlcode
 grant select on dba_scheduler_jobs to cwms_user;
 grant select on dba_scheduler_job_log to cwms_user;
 grant select on dba_scheduler_job_run_details to cwms_user;
