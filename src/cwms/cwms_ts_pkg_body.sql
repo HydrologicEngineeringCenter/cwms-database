@@ -5364,15 +5364,16 @@ AS
    end delete_ts;
    
    procedure delete_ts (
-      p_cwms_ts_id     in varchar2,
-      p_start_time     in date,
-      p_end_time       in date,                        
-      p_version_date   in date,
-      p_time_zone      in varchar2 default null,
-      p_date_times     in date_table_type default null,
-      p_max_version    in varchar2 default 'T',
-      p_ts_item_mask   in integer default cwms_util.ts_all,
-      p_db_office_id   in varchar2 default null)
+      p_cwms_ts_id          in varchar2,
+      p_override_protection in varchar2,
+      p_start_time          in date,
+      p_end_time            in date,                        
+      p_version_date        in date,
+      p_time_zone           in varchar2 default null,
+      p_date_times          in date_table_type default null,
+      p_max_version         in varchar2 default 'T',
+      p_ts_item_mask        in integer default cwms_util.ts_all,
+      p_db_office_id        in varchar2 default null)
    is
       l_ts_code    integer;
       l_time_zone  varchar2(28);
@@ -5387,7 +5388,8 @@ AS
            from table(p_date_times);
       end if;
       purge_ts_data(
-         l_ts_code, 
+         l_ts_code,
+         p_override_protection, 
          case p_version_date = cwms_util.non_versioned 
             when true then p_version_date
             else cwms_util.change_timezone(p_version_date, l_time_zone, 'UTC')
@@ -5400,31 +5402,32 @@ AS
    end delete_ts;
    
    procedure delete_ts (
-      p_timeseries_info in timeseries_req_array,
-      p_version_date    in date,
-      p_time_zone       in varchar2 default null,
-      p_max_version     in varchar2 default 'T',
-      p_ts_item_mask    in integer default cwms_util.ts_all,
-      p_db_office_id    in varchar2 default null)
+      p_timeseries_info     in timeseries_req_array,
+      p_override_protection in varchar2,
+      p_version_date        in date,
+      p_time_zone           in varchar2 default null,
+      p_max_version         in varchar2 default 'T',
+      p_ts_item_mask        in integer default cwms_util.ts_all,
+      p_db_office_id        in varchar2 default null)
    is
    begin
       if p_timeseries_info is not null then
          for i in 1..p_timeseries_info.count loop
             delete_ts(
-                p_cwms_ts_id    => p_timeseries_info(i).tsid,
-                p_start_time    => p_timeseries_info(i).start_time,
-                p_end_time      => p_timeseries_info(i).end_time,
-                p_version_date  => p_version_date,
-                p_time_zone     => p_time_zone,
-                p_date_times    => null,
-                p_max_version   => p_max_version,
-                p_ts_item_mask  => p_ts_item_mask,
-                p_db_office_id  => p_db_office_id);
+                p_cwms_ts_id          => p_timeseries_info(i).tsid,
+                p_override_protection => p_override_protection,
+                p_start_time          => p_timeseries_info(i).start_time,
+                p_end_time            => p_timeseries_info(i).end_time,
+                p_version_date        => p_version_date,
+                p_time_zone           => p_time_zone,
+                p_date_times          => null,
+                p_max_version         => p_max_version,
+                p_ts_item_mask        => p_ts_item_mask,
+                p_db_office_id        => p_db_office_id);
          end loop;
       end if;
    end delete_ts;      
          
-
    procedure purge_ts_data(
       p_ts_code          in number,
       p_version_date_utc in date,
@@ -5434,12 +5437,37 @@ AS
       p_max_version      in varchar2 default 'T',
       p_ts_item_mask     in integer default cwms_util.ts_all)
    is
+   begin
+      purge_ts_data(
+         p_ts_code,
+         'ERROR',
+         p_version_date_utc,
+         p_start_time_utc,
+         p_end_time_utc,
+         p_date_times_utc,
+         p_max_version,
+         p_ts_item_mask);
+   end purge_ts_data;
+         
+   procedure purge_ts_data(
+      p_ts_code             in number,
+      p_override_protection in varchar2,
+      p_version_date_utc    in date,
+      p_start_time_utc      in date,
+      p_end_time_utc        in date,
+      p_date_times_utc      in date_table_type default null,
+      p_max_version         in varchar2 default 'T',
+      p_ts_item_mask        in integer default cwms_util.ts_all)
+   is
       l_tsid                     varchar2(183);
       l_office_id                varchar2(16);
+      l_override_protection      boolean;
+      l_error_on_protection      boolean;
       l_deleted_time             timestamp := systimestamp at time zone 'UTC';
       l_msg                      sys.aq$_jms_map_message;
       l_msgid                    pls_integer;
       i                          integer;
+      l_protected_count          integer;
       l_max_version              boolean;
       l_date_times_values        date_table_type := date_table_type();
       l_version_dates_values     date_table_type := date_table_type();
@@ -5456,6 +5484,13 @@ AS
       l_cursor                   sys_refcursor;
    begin
       l_max_version := cwms_util.return_true_or_false(p_max_version);
+      if instr('ERROR', upper(trim(p_override_protection))) = 1 then
+         l_override_protection := false;
+         l_error_on_protection := true;
+      else
+         l_override_protection := cwms_util.return_true_or_false(p_override_protection);
+         l_error_on_protection := false;
+      end if;      
 
       --------------------------------------------------------------------
       -- get the date_times and version_dates of all the items to purge --
@@ -5555,6 +5590,35 @@ AS
       -- perform actions specific to values --
       ----------------------------------------
       if l_times_values.count > 0 then
+         if l_error_on_protection then
+            ------------------------------
+            -- check for protected data --
+            ------------------------------
+            for rec
+               in (select table_name
+                     from at_ts_table_properties
+                    where start_date in (select distinct v.start_date
+                                           from cwms_v_tsv v, table(l_times_values) d
+                                          where v.ts_code = p_ts_code and v.date_time = d.date_1 and v.version_date = d.date_2)) loop
+               execute immediate replace(
+                    'select count(*)
+                       from $t
+                      where rowid in (select t.rowid
+                                         from $t t,
+                                              table(:1) d
+                                        where t.ts_code = :2
+                                          and t.date_time = d.date_1
+                                          and t.version_date = d.date_2
+                                          and bitand(t.quality_code, 2147483648) <> 0)', '$t', rec.table_name)
+                  into l_protected_count
+                 using l_times_values, p_ts_code;
+                 
+               if l_protected_count > 0 then
+                  cwms_err.raise('ERROR', 'One or more values are protected');
+               end if;     
+            end loop;
+
+         end if;
          ------------------------------------------
          -- insert records into at_deleted_times --
          ------------------------------------------
@@ -5564,8 +5628,7 @@ AS
                    d.version_date,
                    d.date_time
               from (select date_1 as date_time, date_2 as version_date from table(l_times_values)) d;
-
-         ------------------------------------
+        ------------------------------------
          -- Publish TSDataDeleted messages --
          ------------------------------------
          select cwms_ts_id, db_office_id
@@ -5589,7 +5652,6 @@ AS
             end loop;
          end loop;
       end if;
-
       ------------------------------
       -- actually delete the data --
       ------------------------------
@@ -5599,16 +5661,30 @@ AS
               where start_date in (select distinct v.start_date
                                      from cwms_v_tsv v, table(l_times_values) d
                                     where v.ts_code = p_ts_code and v.date_time = d.date_1 and v.version_date = d.date_2)) loop
-         execute immediate replace(
-              'delete 
-                 from $t
-                where rowid in (select t.rowid
-                                   from $t t,
-                                        table(:1) d
-                                  where t.ts_code = :2
-                                    and t.date_time = d.date_1
-                                    and t.version_date = d.date_2)', '$t', rec.table_name)
-            using l_times_values, p_ts_code;
+         if l_override_protection then
+            execute immediate replace(
+                 'delete 
+                    from $t
+                   where rowid in (select t.rowid
+                                      from $t t,
+                                           table(:1) d
+                                     where t.ts_code = :2
+                                       and t.date_time = d.date_1
+                                       and t.version_date = d.date_2)', '$t', rec.table_name)
+               using l_times_values, p_ts_code;
+         else
+            execute immediate replace(
+                 'delete 
+                    from $t
+                   where rowid in (select t.rowid
+                                      from $t t,
+                                           table(:1) d
+                                     where t.ts_code = :2
+                                       and t.date_time = d.date_1
+                                       and t.version_date = d.date_2
+                                       and bitand(t.quality_code, 2147483648) = 0)', '$t', rec.table_name)
+               using l_times_values, p_ts_code;
+         end if;                                    
       end loop;
 
       delete from at_tsv_std_text
