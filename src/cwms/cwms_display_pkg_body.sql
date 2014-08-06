@@ -1009,7 +1009,8 @@ is
    l_rec    l_cursor_rec_t;
    l_tokens str_tab_t;   
    l_parts  str_tab_t;
-   l_match  boolean := false;   
+   l_match  boolean := false;
+   l_values double_tab_t;   
 begin
    -------------------
    -- sanity checks --
@@ -1095,9 +1096,10 @@ begin
       --------------------------------------------------
       for i in 1..p_indicators.count loop
          if p_indicators(i).value > 0 then
+            l_values := double_tab_t(p_indicators(i).value);
             p_indicators(i).value := cwms_util.eval_tokenized_expression(
                l_tokens,
-               double_tab_t(p_indicators(i).value));
+               l_values);
          end if;
       end loop;
    end if;

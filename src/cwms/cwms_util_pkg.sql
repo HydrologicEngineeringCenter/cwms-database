@@ -1504,6 +1504,26 @@ AS
     * @param p_RPN_tokens the tokens representing the mathematical expression to
     *        evaluate. Variables are named arg1, arg2, ... argN.  Negated variables
     *        of the form -argN are accepted.    
+    * @param p_args the actual values to use.  Each element contains one set of values for arg1...argN. Values are assigned 
+    *        positionally beginning with the specified or default offset
+    * @param p_args_offset the offset into <code><big>p_args</big></code> from which
+    *        to start assigning values.  If 0 (default) then the arg1 will be assigned
+    *        the first value, etc...        
+    *                                                   
+    * @return the results of the compuatation      
+    */             
+   function eval_tokenized_expression(
+      p_RPN_tokens  in out nocopy str_tab_t,
+      p_args        in out nocopy double_tab_tab_t,
+      p_args_offset in integer default 0)
+      return double_tab_t;      
+   /**
+    * Computes a value from tokens in postfix (reverse Polish) notation (RPN) and
+    * specified values for variables
+    * 
+    * @param p_RPN_tokens the tokens representing the mathematical expression to
+    *        evaluate. Variables are named arg1, arg2, ... argN.  Negated variables
+    *        of the form -argN are accepted.    
     * @param p_args the actual values to use for arg1...argN. Values are assigned 
     *        positionally beginning with the specified or default offset
     * @param p_args_offset the offset into <code><big>p_args</big></code> from which
@@ -1513,10 +1533,38 @@ AS
     * @return the result of the compuatation      
     */             
    function eval_tokenized_expression(
-      p_RPN_tokens in str_tab_t,
-      p_args           in double_tab_t,
-      p_args_offset    in integer default 0)
+      p_RPN_tokens  in out nocopy str_tab_t,
+      p_args        in out nocopy double_tab_t,
+      p_args_offset in integer default 0)
       return number;      
+   /**
+    * Evaluates an arithmetic expression in infix (algebraic) notation and computes
+    * a value based on specified variables.
+    *
+    * @see expression_constants
+    * @see expression_operators
+    * @see expression_function
+    * 
+    * @param p_algebraic_expr a mathematical expression in infix (algebraic) notation.
+    *        Standard algebraic operator precedence (order of operations) applies
+    *        and can be overridden by parentheses.  All tokens in the expression 
+    *        (numbers, variables, operators, constants, functions) must be separated
+    *        from adjacent tokens by whitespace. No whitespace is required before
+    *        or after parentheses. Variables are specified as arg1, arg2, ... argN.
+    *        Negated variables (e.g., -argN) are accepted.                        
+    * @param p_args the actual values to use.  Each element contains one set of values for arg1...argN. Values are assigned 
+    *        positionally beginning with the specified or default offset
+    * @param p_args_offset the offset into <code><big>p_args</big></code> from which
+    *        to start assigning values.  If 0 (default) then the arg1 will be assigned
+    *        the first value, etc...        
+    *                                                   
+    * @return the result of the compuatation      
+    */             
+   function eval_algebraic_expression(
+      p_algebraic_expr in out nocopy varchar2,
+      p_args           in out nocopy double_tab_tab_t,
+      p_args_offset    in integer default 0)
+      return double_tab_t;      
    /**
     * Evaluates an arithmetic expression in infix (algebraic) notation and computes
     * a value based on specified variables.
@@ -1541,10 +1589,36 @@ AS
     * @return the result of the compuatation      
     */             
    function eval_algebraic_expression(
-      p_algebraic_expr in varchar2,
-      p_args           in double_tab_t,
+      p_algebraic_expr in out nocopy varchar2,
+      p_args           in out nocopy double_tab_t,
       p_args_offset    in integer default 0)
       return number;      
+   /**
+    * Evaluates an arithmetic expression in postfix (reverse Polish) notation (RPN)
+    * and computes a value based on specified variables.    
+    *
+    * @see expression_constants
+    * @see expression_operators
+    * @see expression_function
+    *
+    * @param p_RPN_expr a mathematical expression in postfix (reverse Polish) notation (RPN).
+    *        All tokens in the expression (numbers, variables, operators, constants, 
+    *        functions) must be separated from adjacent tokens by whitespace. Parentheses
+    *        are not used in RPN notation. Variables are specified as arg1, arg2, ... argN.
+    *        Negated variables (e.g., -argN) are accepted.                        
+    * @param p_args the actual values to use.  Each element contains one set of values for arg1...argN. Values are assigned 
+    *        positionally beginning with the specified or default offset
+    * @param p_args_offset the offset into <code><big>p_args</big></code> from which
+    *        to start assigning values.  If 0 (default) then the arg1 will be assigned
+    *        the first value, etc...        
+    *                                                   
+    * @return the result of the compuatation      
+    */             
+   function eval_RPN_expression(
+      p_RPN_expr    in out nocopy varchar2,
+      p_args        in out nocopy double_tab_tab_t,
+      p_args_offset in integer default 0)
+      return double_tab_t;      
    /**
     * Evaluates an arithmetic expression in postfix (reverse Polish) notation (RPN)
     * and computes a value based on specified variables.    
@@ -1567,10 +1641,40 @@ AS
     * @return the result of the compuatation      
     */             
    function eval_RPN_expression(
-      p_RPN_expr    in varchar2,
-      p_args        in double_tab_t,
+      p_RPN_expr    in out nocopy varchar2,
+      p_args        in out nocopy double_tab_t,
       p_args_offset in integer default 0)
       return number;      
+   /**
+    * Evaluates an arithmetic expression in infix (algebraic) notation or in postfix 
+    * (reverse Polish) notation (RPN) and computes a value based on specified variables.    
+    *
+    * @see expression_constants
+    * @see expression_operators
+    * @see expression_functions
+    *
+    * @param p_expr a mathematical expression in infix (algebraic) notation or
+    *        in postfix (reverse Polish) notation (RPN). Standard algebraic operator
+    *        precedence (order of operations) applies for infix notation and can be
+    *        overridden by parentheses.  All tokens in the expression (numbers, 
+    *        variables, operators, constants, functions) must be separated from
+    *        adjacent tokens by whitespace. No whitespace is required before or
+    *        after parentheses. Parentheses are not used in RPN notation. Variables 
+    *        are specified as arg1, arg2, ... argN. Negated variables (e.g., -argN)
+    *        are accepted.                    
+    * @param p_args the actual values to use.  Each element contains one set of values for arg1...argN. Values are assigned 
+    *        positionally beginning with the specified or default offset
+    * @param p_args_offset the offset into <code><big>p_args</big></code> from which
+    *        to start assigning values.  If 0 (default) then the arg1 will be assigned
+    *        the first value, etc...        
+    *                                                   
+    * @return the result of the compuatation      
+    */             
+   function eval_expression(
+      p_expr        in out nocopy varchar2,
+      p_args        in out nocopy double_tab_tab_t,
+      p_args_offset in integer default 0)
+      return double_tab_t;
    /**
     * Evaluates an arithmetic expression in infix (algebraic) notation or in postfix 
     * (reverse Polish) notation (RPN) and computes a value based on specified variables.    
@@ -1597,8 +1701,8 @@ AS
     * @return the result of the compuatation      
     */             
    function eval_expression(
-      p_expr        in varchar2,
-      p_args        in double_tab_t,
+      p_expr        in out nocopy varchar2,
+      p_args        in out nocopy double_tab_t,
       p_args_offset in integer default 0)
       return number;
    /**
