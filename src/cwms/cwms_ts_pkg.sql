@@ -428,28 +428,32 @@ AS
     * @see constant cwms_util.ts_all_non_values
     * @see constant cwms_util.ts_all
     *
-    * @param p_cwms_ts_id          The identifier of the time series to delete
-    * @param p_override_protection A flag ('T'/'F') specifying whether to delete protected data, may also be set to 'E' (or 'ERROR', or anything in between) to raise an exception if protected values are encountered.
-    * @param p_start_time          The start of the time window in the specified or default time zone
-    * @param p_end_time            The end of the time window in the specified or default time zone
-    * @param p_version_date        The version date/time of the time series in the specified or default time zone. If NULL, the earliest or latest version date will be used depending on p_max_version.
-    * @param p_time_zone           The time zone of any/all specified times. If not specified or NULL, the local time zone of the time series location is used.
-    * @param p_date_times          A table of specific times to use, instead of a time window, in the specified or default time zone.
-    * @param p_max_version         A flag ('T'/'F') specifying whether to use the earliest ('F') or latest ('T') version date for each time if p_version_date is NULL.
-    * @param p_ts_item_mask        A cookie specifying what time series items to purge.
-    * @param p_db_office_id        The office that owns the time series.  If not specified or NULL, the session user's default office will be used.
+    * @param p_cwms_ts_id            The identifier of the time series to delete
+    * @param p_override_protection   A flag ('T'/'F') specifying whether to delete protected data, may also be set to 'E' (or 'ERROR', or anything in between) to raise an exception if protected values are encountered.
+    * @param p_start_time            The start of the time window in the specified or default time zone
+    * @param p_end_time              The end of the time window in the specified or default time zone
+    * @param p_start_time_inclusive  A flag ('T'/'F') specifying whether any data at the start time should be deleted ('T') or only data <b><em>after</em></b> the start time ('F')
+    * @param p_end_time_inclusive    A flag ('T'/'F') specifying whether any data at the end time should be deleted ('T') or only data <b><em>before</em></b> the end time ('F')
+    * @param p_version_date          The version date/time of the time series in the specified or default time zone. If NULL, the earliest or latest version date will be used depending on p_max_version.
+    * @param p_time_zone             The time zone of any/all specified times. If not specified or NULL, the local time zone of the time series location is used.
+    * @param p_date_times            A table of specific times to use, instead of a time window, in the specified or default time zone.
+    * @param p_max_version           A flag ('T'/'F') specifying whether to use the earliest ('F') or latest ('T') version date for each time if p_version_date is NULL.
+    * @param p_ts_item_mask          A cookie specifying what time series items to purge.
+    * @param p_db_office_id          The office that owns the time series.  If not specified or NULL, the session user's default office will be used.
     */
    PROCEDURE delete_ts (
-      p_cwms_ts_id          in varchar2,
-      p_override_protection in varchar2,
-      p_start_time          in date,
-      p_end_time            in date,                        
-      p_version_date        in date,
-      p_time_zone           in varchar2 default null,
-      p_date_times          in date_table_type default null,
-      p_max_version         in varchar2 default 'T',
-      p_ts_item_mask        in integer default cwms_util.ts_all,
-      p_db_office_id        in varchar2 default null);
+      p_cwms_ts_id           in varchar2,
+      p_override_protection  in varchar2,
+      p_start_time           in date,
+      p_end_time             in date,                        
+      p_start_time_inclusive in varchar2,
+      p_end_time_inclusive   in varchar2,
+      p_version_date         in date,
+      p_time_zone            in varchar2 default null,
+      p_date_times           in date_table_type default null,
+      p_max_version          in varchar2 default 'T',
+      p_ts_item_mask         in integer default cwms_util.ts_all,
+      p_db_office_id         in varchar2 default null);
 
    /**
     * Deletes time series values for specified time series, version date, and time windows
@@ -465,22 +469,26 @@ AS
     * @see constant cwms_util.ts_all_non_values
     * @see constant cwms_util.ts_all
     *
-    * @param p_timeseries_info     Identifies the combinations of time series and time windows to delete data for.  The unit member of each element is ignored.
-    * @param p_override_protection A flag ('T'/'F') specifying whether to delete protected data, may also be set to 'E' (or 'ERROR', or anything in between) to raise an exception if protected values are encountered.
-    * @param p_version_date        The version date/time of the time series in the specified or default time zone. If NULL, the earliest or latest version date will be used depending on p_max_version.
-    * @param p_time_zone           The time zone of any/all specified times. If not specified or NULL, the local time zone of the time series location is used.
-    * @param p_max_version         A flag ('T'/'F') specifying whether to use the earliest ('F') or latest ('T') version date for each time if p_version_date is NULL.
-    * @param p_ts_item_mask        A cookie specifying what time series items to purge.
-    * @param p_db_office_id        The office that owns the time series.  If not specified or NULL, the session user's default office will be used.
+    * @param p_timeseries_info       Identifies the combinations of time series and time windows to delete data for.  The unit member of each element is ignored.
+    * @param p_override_protection   A flag ('T'/'F') specifying whether to delete protected data, may also be set to 'E' (or 'ERROR', or anything in between) to raise an exception if protected values are encountered.
+    * @param p_start_time_inclusive  A flag ('T'/'F') specifying whether any data at the start time should be deleted ('T') or only data <b><em>after</em></b> the start time ('F')
+    * @param p_end_time_inclusive    A flag ('T'/'F') specifying whether any data at the end time should be deleted ('T') or only data <b><em>before</em></b> the end time ('F')
+    * @param p_version_date          The version date/time of the time series in the specified or default time zone. If NULL, the earliest or latest version date will be used depending on p_max_version.
+    * @param p_time_zone             The time zone of any/all specified times. If not specified or NULL, the local time zone of the time series location is used.
+    * @param p_max_version           A flag ('T'/'F') specifying whether to use the earliest ('F') or latest ('T') version date for each time if p_version_date is NULL.
+    * @param p_ts_item_mask          A cookie specifying what time series items to purge.
+    * @param p_db_office_id          The office that owns the time series.  If not specified or NULL, the session user's default office will be used.
     */
    PROCEDURE delete_ts (
-      p_timeseries_info     in timeseries_req_array,
-      p_override_protection in varchar2,
-      p_version_date        in date,
-      p_time_zone           in varchar2 default null,
-      p_max_version         in varchar2 default 'T',
-      p_ts_item_mask        in integer default cwms_util.ts_all,
-      p_db_office_id        in varchar2 default null);
+      p_timeseries_info      in timeseries_req_array,
+      p_override_protection  in varchar2,
+      p_start_time_inclusive in varchar2,
+      p_end_time_inclusive   in varchar2,
+      p_version_date         in date,
+      p_time_zone            in varchar2 default null,
+      p_max_version          in varchar2 default 'T',
+      p_ts_item_mask         in integer default cwms_util.ts_all,
+      p_db_office_id         in varchar2 default null);
 
    /**
     * Deletes time series values for a specified time series, version date, and time window or specified times. Raises an exception if protected values are encountered.
