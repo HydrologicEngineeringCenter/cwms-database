@@ -1,3 +1,4 @@
+/* Formatted on 12/29/2011 8:07:55 AM (QP5 v5.185.11230.41888) */
 SET DEFINE ON
 @@defines.sql
 
@@ -3229,324 +3230,367 @@ AS
 
       RETURN l_tokens;
    END tokenize_expression;
-                           
-   ----------------------------------------
-   -- mathematical expression evaluators --
-   ----------------------------------------
-   function eval_tokenized_expression(
-      p_rpn_tokens  in out nocopy str_tab_t,
-      p_args        in out nocopy double_tab_tab_t,
-      p_args_offset in integer default 0)
-      return double_tab_t
-   is
-      l_stack   double_tab_t := new double_tab_t();
-      l_val1    binary_double;
-      l_val2    binary_double;
-      l_idx     binary_integer;
-      l_results double_tab_t;
 
-      procedure token_error(token in varchar2)
-      is
-      begin
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_tokenized_expression
+   --
+   -- Returns the result of evaluating RPN tokens against specified arguments
+   --
+   -- The tokens are not case sensitive
+   --
+   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
+   -- are accepted
+   --
+   -- p_args_offset is the offset into the args table for arg1
+   -----------------------------------------------------------------------------
+
+   FUNCTION eval_tokenized_expression (p_rpn_tokens    IN str_tab_t,
+                                       p_args          IN double_tab_t,
+                                       p_args_offset   IN INTEGER DEFAULT 0)
+      RETURN NUMBER
+   IS
+      l_stack   number_tab_t := NEW number_tab_t ();
+      l_val1    BINARY_DOUBLE;
+      l_val2    BINARY_DOUBLE;
+      l_idx     BINARY_INTEGER;
+
+      PROCEDURE token_error (token IN VARCHAR2)
+      IS
+      BEGIN
          cwms_err.raise ('ERROR', 'Invalid token in equation: ' || token);
-      end;
+      END;
 
-      procedure argument_error(l_set_idx in integer, l_arg_idx in integer)
-      is
-      begin
-         cwms_err.raise ('ERROR', 'ARG'||l_arg_idx||' does not exist on argument set '||l_set_idx);
-      end;
+      PROCEDURE argument_error (l_idx IN INTEGER)
+      IS
+      BEGIN
+         cwms_err.raise ('ERROR', 'ARG' || l_idx || ' does not exist');
+      END;
 
-      procedure push(val in binary_double)
-      is
-      begin
-         l_stack.extend;
-         l_stack (l_stack.count) := val;
-      end;
+      PROCEDURE push (val IN NUMBER)
+      IS
+      BEGIN
+         l_stack.EXTEND;
+         l_stack (l_stack.COUNT) := val;
+      -- dbms_output.put_line('pushed '||val);
+      END;
 
-      function pop
-         return binary_double
-      is
-         val binary_double;
-      begin
-         val := l_stack(l_stack.last);
-         l_stack.trim;
-         return val;
-      end;
-   begin
-      if p_args is not null then
-         l_results := double_tab_t();
-         l_results.extend(p_args(1).count);
-         <<args_loop>>
-         for i in 1..p_args.count loop
-            <<tokens_loop>>
-            for j in 1..p_rpn_tokens.count
-            loop
-               case
-                  ---------------
-                  -- operators --
-                  ---------------
-                  when p_rpn_tokens(j) = '+'       then
-                     push(pop + pop);              
-                  when p_rpn_tokens(j) = '-'       then
-                     push(-pop + pop);             
-                  when p_rpn_tokens(j) = '*'       then
-                     push(pop * pop);              
-                  when p_rpn_tokens(j) = '/'       then
-                     l_val2 := nullif(pop, 0);     
-                     l_val1 := pop;                
-                     push(l_val1 / l_val2);        
-                  when p_rpn_tokens(j) = '//'      then -- same as Python
-                     l_val2 := nullif(pop, 0);     
-                     l_val1 := pop;                
-                     push(floor(l_val1 / l_val2)); 
-                  when p_rpn_tokens(j) = '%'       then -- same as Python math.fmod, not %
-                     l_val2 := nullif(pop, 0);     
-                     l_val1 := pop;                
-                     push(mod(l_val1, l_val2));    
-                  when p_rpn_tokens(j) = '^'       then
-                     l_val2 := pop;                
-                     l_val1 := pop;                
-                     push(power(l_val1, l_val2));  
-                  ---------------                  
-                  -- constants --                  
-                  ---------------                  
-                  when p_rpn_tokens(j) = 'E'       then
-                     push(2.7182818284590451);     
-                  when p_rpn_tokens(j) = 'PI'      then
-                     push(3.1415926535897931);     
-                  ---------------------            
-                  -- unary functions --            
-                  ---------------------            
-                  when p_rpn_tokens(j) = 'ABS'     then
-                     push(abs(pop));               
-                  when p_rpn_tokens(j) = 'ACOS'    then
-                     push(acos(pop));              
-                  when p_rpn_tokens(j) = 'ASIN'    then
-                     push(asin(pop));              
-                  when p_rpn_tokens(j) = 'ATAN'    then
-                     push(atan(pop));              
-                  when p_rpn_tokens(j) = 'CEIL'    then
-                     push(ceil(pop));              
-                  when p_rpn_tokens(j) = 'COS'     then
-                     push(cos(pop));               
-                  when p_rpn_tokens(j) = 'EXP'     then
-                     push(exp(pop));               
-                  when p_rpn_tokens(j) = 'FLOOR'   then
-                     push(floor(pop));             
-                  when p_rpn_tokens(j) = 'INV'     then
-                     push(1 / pop);                
-                  when p_rpn_tokens(j) = 'LN'      then
-                     push(ln(pop));                
-                  when p_rpn_tokens(j) = 'LOG'     then -- log base 10
-                     push(log(10, pop));           
-                  when p_rpn_tokens(j) = 'NEG'     then
-                     push(pop * -1);               
-                  when p_rpn_tokens(j) = 'ROUND'   then
-                     push(round(pop));             
-                  when p_rpn_tokens(j) = 'SIGN'    then -- not SQL sign, but +1, 0, or -1
-                     l_val1 := pop;                
-                                                   
-                     case                          
-                        when l_val1 < 0 then       
-                           push(-1);               
-                        when l_val1 > 0 then       
-                           push(1);                
-                        else                       
-                           push(0);                
-                     end case;                     
-                  when p_rpn_tokens(j) = 'SIN'     then
-                     push(sin(pop));               
-                  when p_rpn_tokens(j) = 'SQRT'    then
-                     push(sqrt(pop));              
-                  when p_rpn_tokens(j) = 'TAN'     then
-                     push(tan(pop));               
-                  when p_rpn_tokens(j) = 'TRUNC'   then
-                     push(trunc(pop));
-                  ---------------
-                  -- arguments --
-                  ---------------
-                  when substr(p_rpn_tokens(j), 1, 3) = 'ARG'  then
-                     begin
-                        l_idx := to_number(substr(p_rpn_tokens(j), 4)) + p_args_offset;
+      FUNCTION pop
+         RETURN NUMBER
+      IS
+         val   NUMBER;
+      BEGIN
+         val := l_stack (l_stack.LAST);
+         l_stack.TRIM;
+         -- dbms_output.put_line('popped '||val);
+         RETURN val;
+      END;
+   BEGIN
+      FOR i IN 1 .. p_rpn_tokens.COUNT
+      LOOP
+         -- dbms_output.put_line('token('||i||') = '||p_RPN_tokens(i));
+         CASE
+            ---------------
+            -- operators --
+            ---------------
+            WHEN p_rpn_tokens (i) = '+'
+            THEN
+               push (pop + pop);
+            WHEN p_rpn_tokens (i) = '-'
+            THEN
+               push (-pop + pop);
+            WHEN p_rpn_tokens (i) = '*'
+            THEN
+               push (pop * pop);
+            WHEN p_rpn_tokens (i) = '/'
+            THEN
+               l_val2 := NULLIF (pop, 0);
+               l_val1 := pop;
+               push (l_val1 / l_val2);
+            WHEN p_rpn_tokens (i) = '//'
+            THEN                                             -- same as Python
+               l_val2 := NULLIF (pop, 0);
+               l_val1 := pop;
+               push (FLOOR (l_val1 / l_val2));
+            WHEN p_rpn_tokens (i) = '%'
+            THEN                            -- same as Python math.fmod, not %
+               l_val2 := NULLIF (pop, 0);
+               l_val1 := pop;
+               push (MOD (l_val1, l_val2));
+            WHEN p_rpn_tokens (i) = '^'
+            THEN
+               l_val2 := pop;
+               l_val1 := pop;
+               push (POWER (l_val1, l_val2));
+            ---------------
+            -- constants --
+            ---------------
+            WHEN p_rpn_tokens (i) = 'E'
+            THEN
+               push (2.7182818284590451);
+            WHEN p_rpn_tokens (i) = 'PI'
+            THEN
+               push (3.1415926535897931);
+            ---------------------
+            -- unary functions --
+            ---------------------
+            WHEN p_rpn_tokens (i) = 'ABS'
+            THEN
+               push (ABS (pop));
+            WHEN p_rpn_tokens (i) = 'ACOS'
+            THEN
+               push (ACOS (pop));
+            WHEN p_rpn_tokens (i) = 'ASIN'
+            THEN
+               push (ASIN (pop));
+            WHEN p_rpn_tokens (i) = 'ATAN'
+            THEN
+               push (ATAN (pop));
+            WHEN p_rpn_tokens (i) = 'CEIL'
+            THEN
+               push (CEIL (pop));
+            WHEN p_rpn_tokens (i) = 'COS'
+            THEN
+               push (COS (pop));
+            WHEN p_rpn_tokens (i) = 'EXP'
+            THEN
+               push (EXP (pop));
+            WHEN p_rpn_tokens (i) = 'FLOOR'
+            THEN
+               push (FLOOR (pop));
+            WHEN p_rpn_tokens (i) = 'INV'
+            THEN
+               push (1 / pop);
+            WHEN p_rpn_tokens (i) = 'LN'
+            THEN
+               push (LN (pop));
+            WHEN p_rpn_tokens (i) = 'LOG'
+            THEN                                                -- log base 10
+               push (LOG (10, pop));
+            WHEN p_rpn_tokens (i) = 'NEG'
+            THEN
+               push (pop * -1);
+            WHEN p_rpn_tokens (i) = 'ROUND'
+            THEN
+               push (ROUND (pop));
+            WHEN p_rpn_tokens (i) = 'SIGN'
+            THEN                             -- not SQL sign, but +1, 0, or -1
+               l_val1 := pop;
 
-                        if l_idx < 1 or l_idx > p_args(i).count  then
-                           argument_error(i, l_idx - p_args_offset);
-                        end if;
+               CASE
+                  WHEN l_val1 < 0
+                  THEN
+                     push (-1);
+                  WHEN l_val1 > 0
+                  THEN
+                     push (1);
+                  ELSE
+                     push (0);
+               END CASE;
+            WHEN p_rpn_tokens (i) = 'SIN'
+            THEN
+               push (SIN (pop));
+            WHEN p_rpn_tokens (i) = 'SQRT'
+            THEN
+               push (SQRT (pop));
+            WHEN p_rpn_tokens (i) = 'TAN'
+            THEN
+               push (TAN (pop));
+            WHEN p_rpn_tokens (i) = 'TRUNC'
+            THEN
+               push (TRUNC (pop));
+            ---------------
+            -- arguments --
+            ---------------
+            WHEN SUBSTR (p_rpn_tokens (i), 1, 3) = 'ARG'
+            THEN
+               BEGIN
+                  l_idx :=
+                     TO_NUMBER (SUBSTR (p_rpn_tokens (i), 4)) + p_args_offset;
 
-                        if p_args(i)(l_idx) is null then
-                           exit tokens_loop; -- leave results(i) = null
-                        end if;
+                  IF l_idx < 1 OR l_idx > p_args.COUNT
+                  THEN
+                     argument_error (l_idx - p_args_offset);
+                  END IF;
 
-                        push(p_args(i)(l_idx));
-                     exception
-                        when others then
-                           token_error(p_rpn_tokens(j));
-                     end;
-                  when substr(p_rpn_tokens(j), 1, 4) = '-ARG' then
-                     begin
-                        l_idx := to_number(substr(p_rpn_tokens(j), 5));
+                  IF p_args (l_idx) IS NULL
+                  THEN
+                     RETURN NULL;
+                  END IF;
 
-                        if l_idx < 1 or l_idx > p_args(i).count then
-                           argument_error(i, l_idx - p_args_offset);
-                        end if;
+                  push (p_args (l_idx));
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     token_error (p_rpn_tokens (i));
+               END;
+            WHEN SUBSTR (p_rpn_tokens (i), 1, 4) = '-ARG'
+            THEN
+               BEGIN
+                  l_idx := TO_NUMBER (SUBSTR (p_rpn_tokens (i), 5));
 
-                        if p_args(i)(l_idx) is null then
-                           exit tokens_loop; -- leave results(i) = null
-                        end if;
+                  IF l_idx < 1 OR l_idx > p_args.COUNT
+                  THEN
+                     argument_error (l_idx - p_args_offset);
+                  END IF;
 
-                        push(-1*p_args(i)(l_idx));
-                     exception
-                        when others then
-                           token_error(p_rpn_tokens(j));
-                     end;
-                  -------------
-                  -- numbers --
-                  -------------
-                  else
-                     begin
-                        push(to_binary_double(p_rpn_tokens(j)));
-                     exception
-                        when others then
-                           token_error(p_rpn_tokens(j));
-                     end;
-               end case;
-            end loop;
+                  IF p_args (l_idx) IS NULL
+                  THEN
+                     RETURN NULL;
+                  END IF;
 
-            if l_stack.count != 1
-            then
-               cwms_err.raise('ERROR', 'Remaining items on stack');
-            end if;
+                  push (p_args (l_idx));
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     token_error (p_rpn_tokens (i));
+               END;
+            -------------
+            -- numbers --
+            -------------
+            ELSE
+               BEGIN
+                  push (TO_NUMBER (p_rpn_tokens (i)));
+               EXCEPTION
+                  WHEN OTHERS
+                  THEN
+                     token_error (p_rpn_tokens (i));
+               END;
+         END CASE;
+      END LOOP;
 
-            l_results(i) := pop;
-         end loop;
-      end if;
-      return l_results;
-   end eval_tokenized_expression;
-   
-   function eval_tokenized_expression (
-      p_rpn_tokens  in out nocopy str_tab_t,
-      p_args        in out nocopy double_tab_t,
-      p_args_offset in integer default 0)
-      return number
-   is 
-      l_args    double_tab_tab_t;
-      l_results double_tab_t;
-   begin
-      l_args := double_tab_tab_t(p_args); 
-      l_results := eval_tokenized_expression(
-         p_rpn_tokens,
-         l_args,
-         p_args_offset);
-         
-      return to_number(l_results(1));         
-   end eval_tokenized_expression;
+      IF l_stack.COUNT != 1
+      THEN
+         cwms_err.raise ('ERROR', 'Remaining items on stack');
+      END IF;
 
-   function eval_algebraic_expression (
-      p_algebraic_expr   in out nocopy varchar2,
-      p_args             in out nocopy double_tab_tab_t,
-      p_args_offset      in integer default 0)
-      return double_tab_t
-   is
-      l_tokens str_tab_t;
-   begin                
-      l_tokens := tokenize_algebraic(p_algebraic_expr);
-      return eval_tokenized_expression (
-                l_tokens,
+      RETURN pop;
+   END eval_tokenized_expression;
+
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_algebraic_expression
+   --
+   -- Returns the result of evaluating an algebraic expression against specified
+   -- arguments
+   --
+   -- The expression is not case sensitive
+   --
+   -- The operators supported are +, -, *, /, //, %, and ^
+   --
+   -- The constants supported are pi and e
+   --
+   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
+   --           ln, log, sign, sin, tan, trunc
+   --
+   -- Standard operator precedence (order of operations) applies and can be
+   -- overridden by parentheses
+   --
+   -- All numbers, arguments and operators must be separated by whitespace,
+   -- except than no space is required adjacent to parentheses
+   --
+   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
+   -- are accepted
+   --
+   -- p_args_offset is the offset into the args table for arg1
+   -----------------------------------------------------------------------------
+
+   FUNCTION eval_algebraic_expression (
+      p_algebraic_expr   IN VARCHAR2,
+      p_args             IN double_tab_t,
+      p_args_offset      IN INTEGER DEFAULT 0)
+      RETURN NUMBER
+   IS
+   BEGIN
+      RETURN eval_tokenized_expression (
+                tokenize_algebraic (p_algebraic_expr),
                 p_args,
                 p_args_offset);
-   exception
-      when others then
+   EXCEPTION
+      WHEN OTHERS
+      THEN
          cwms_err.raise (
             'ERROR',
             'Invalid algebraic expression: ' || p_algebraic_expr);
-   end eval_algebraic_expression;
+   END eval_algebraic_expression;
 
-   function eval_algebraic_expression(
-      p_algebraic_expr   in out nocopy varchar2,
-      p_args             in out nocopy double_tab_t,
-      p_args_offset      in integer default 0)
-      return number
-   is
-      l_tokens str_tab_t;
-   begin                
-      l_tokens := tokenize_algebraic(p_algebraic_expr);
-      return eval_tokenized_expression(
-                l_tokens,
-                p_args,
-                p_args_offset);
-   exception
-      when others then
-         cwms_err.raise (
-            'ERROR',
-            'Invalid algebraic expression: ' || p_algebraic_expr);
-   end eval_algebraic_expression;
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_RPN_expression
+   --
+   -- Returns the result of evaluating a delimited RPN expression against
+   -- specified arguments
+   --
+   -- The expression is not case sensitive
+   --
+   -- The operators supported are +, -, *, /, //, %, and ^
+   --
+   -- The constants supported are pi and e
+   --
+   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
+   --           ln, log, sign, sin, tan, trunc
+   --
+   -- All numbers, arguments and operators must be separated by whitespace
+   --
+   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
+   -- are accepted
+   --
+   -- p_args_offset is the offset into the args table for arg1
+   -----------------------------------------------------------------------------
 
-   function eval_rpn_expression(
-      p_rpn_expr      in out nocopy varchar2,
-      p_args          in out nocopy double_tab_tab_t,
-      p_args_offset   in integer default 0)
-      return double_tab_t
-   is
-      l_tokens str_tab_t;
-   begin                 
-      l_tokens := tokenize_rpn(p_rpn_expr);
-      return eval_tokenized_expression(
-         l_tokens,
-         p_args,
-         p_args_offset);
-   exception
-      when others then
+   FUNCTION eval_rpn_expression (p_rpn_expr      IN VARCHAR2,
+                                 p_args          IN double_tab_t,
+                                 p_args_offset   IN INTEGER DEFAULT 0)
+      RETURN NUMBER
+   IS
+   BEGIN
+      RETURN eval_tokenized_expression (tokenize_rpn (p_rpn_expr),
+                                        p_args,
+                                        p_args_offset);
+   EXCEPTION
+      WHEN OTHERS
+      THEN
          cwms_err.raise ('ERROR', 'Invalid RPN expression: ' || p_rpn_expr);
-   end eval_rpn_expression;
+   END eval_rpn_expression;
 
-   function eval_rpn_expression(
-      p_rpn_expr      in out nocopy varchar2,
-      p_args          in out nocopy double_tab_t,
-      p_args_offset   in integer default 0)
-      return number
-   is
-      l_tokens str_tab_t;
-   begin                 
-      l_tokens := tokenize_rpn(p_rpn_expr);
-      return eval_tokenized_expression(
-         l_tokens,
-         p_args,
-         p_args_offset);
-   exception
-      when others then
-         cwms_err.raise ('ERROR', 'Invalid RPN expression: ' || p_rpn_expr);
-   end eval_rpn_expression;
+   -----------------------------------------------------------------------------
+   -- FUNCTION eval_expression
+   --
+   -- Returns the result of evaluating an algebraic or RPN expression against
+   -- specified arguments
+   --
+   -- The expression is not case sensitive
+   --
+   -- The operators supported are +, -, *, /, //, %, and ^
+   --
+   -- The constants supported are pi and e
+   --
+   -- The functions supported are abs, acos, asin, atan, ceil, cos, exp, floor,
+   --           ln, log, sign, sin, tan, trunc
+   --
+   -- Standard operator precedence (order of operations) applies and can be
+   -- overridden by parentheses
+   --
+   -- All numbers, arguments and operators must be separated by whitespace,
+   -- except than no space is required adjacent to parentheses
+   --
+   -- Arguments are specified as arg1, arg2, etc...  Negated arguments (-arg1)
+   -- are accepted
+   --
+   -- p_args_offset is the offset into the args table for arg1
+   -----------------------------------------------------------------------------
 
-   function eval_expression(
-      p_expr        in out nocopy varchar2,
-      p_args        in out nocopy double_tab_tab_t,
-      p_args_offset in integer default 0)
-      return double_tab_t  
-   is
+   FUNCTION eval_expression (p_expr          IN VARCHAR2,
+                             p_args          IN double_tab_t,
+                             p_args_offset   IN INTEGER DEFAULT 0)
+      RETURN NUMBER
+   IS
       l_tokens   str_tab_t;
-   begin
+   BEGIN
       l_tokens := tokenize_expression (p_expr);
-      return eval_tokenized_expression (l_tokens, p_args, p_args_offset);
-   exception
-      when others then
+      RETURN eval_tokenized_expression (l_tokens, p_args, p_args_offset);
+   EXCEPTION
+      WHEN OTHERS
+      THEN
          cwms_err.raise ('ERROR', 'Invalid expression: ' || p_expr);
-   end eval_expression;
-
-   function eval_expression(
-      p_expr        in out nocopy varchar2,
-      p_args        in out nocopy double_tab_t,
-      p_args_offset in integer default 0)
-      return number  
-   is
-      l_tokens   str_tab_t;
-   begin
-      l_tokens := tokenize_expression (p_expr);
-      return eval_tokenized_expression (l_tokens, p_args, p_args_offset);
-   exception
-      when others then
-         cwms_err.raise ('ERROR', 'Invalid expression: ' || p_expr);
-   end eval_expression;
+   END eval_expression;
 
 
    ---------------------

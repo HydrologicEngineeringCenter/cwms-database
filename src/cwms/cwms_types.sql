@@ -2352,7 +2352,6 @@ as
       l_comparison_2 boolean;
       l_is_set       boolean;
       l_arguments    double_tab_t;
-      l_tokens       str_tab_t;
    begin
       -------------------------------------------------
       -- evaluate the expression with the parameters --
@@ -2363,8 +2362,7 @@ as
       l_arguments(2) :=  p_level   * factor + offset;
       l_arguments(3) :=  p_level_2 * factor + offset;
       l_arguments(4) := (p_rate    * rate_factor + rate_offset) * interval_factor;
-      l_tokens := expression_tokens;
-      l_result := cwms_util.eval_tokenized_expression(l_tokens, l_arguments); -- may return null
+      l_result := cwms_util.eval_tokenized_expression(expression_tokens, l_arguments); -- may return null
       -----------------------------------
       -- evaluate the first comparison --
       -----------------------------------
@@ -2402,11 +2400,7 @@ as
       -- evaluate the rate if a rate expression exists --
       ---------------------------------------------------
       if l_is_set and rate_expression_tokens is not null then
-         declare
-            l_rate_expression_tokens str_tab_t := self.rate_expression_tokens;
-         begin
-            l_result := cwms_util.eval_tokenized_expression(l_rate_expression_tokens, l_arguments); -- may return null
-         end;
+         l_result := cwms_util.eval_tokenized_expression(rate_expression_tokens, l_arguments); -- may return null
          ----------------------------------------
          -- evaluate the first rate comparison --
          ----------------------------------------

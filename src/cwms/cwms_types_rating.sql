@@ -5084,11 +5084,7 @@ as
                --------------------
                -- formula rating --
                --------------------
-               declare
-                  l_tokens str_tab_t := formula_tokens;
-               begin
-                  l_results(j) := cwms_util.eval_tokenized_expression(l_tokens, l_ind_set);
-               end;
+               l_results(j) := cwms_util.eval_tokenized_expression(formula_tokens, l_ind_set);
             else
                ------------------
                -- table rating --
