@@ -2117,7 +2117,7 @@ is
 begin
    if p_values is not null then
       l_values := double_tab_tab_t();
-      l_values.extend;
+      l_values.extend(p_values.count);
       for i in 1..p_values.count loop
          l_values(i) := double_tab_t(p_values(i));
       end loop;
