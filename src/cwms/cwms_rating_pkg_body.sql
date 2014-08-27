@@ -2188,7 +2188,10 @@ begin
       l_values,
       p_units,
       p_round,
-      date_table_type(p_value_time),
+      case p_value_time is null
+         when true then null
+         else date_table_type(p_value_time)
+      end,
       p_rating_time,
       p_time_zone,
       p_office_id);
