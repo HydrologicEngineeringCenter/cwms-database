@@ -4092,6 +4092,96 @@ AS
       return l_clob;
    end get_url;      
 
+   function get_column(
+      p_table  in double_tab_tab_t,
+      p_column in pls_integer)
+      return double_tab_t
+   is
+      l_results double_tab_t;
+      l_count   pls_integer;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_table is null then
+         cwms_err.raise('NULL_ARGUMENT', 'p_table');
+      end if;
+      if p_column is null then
+         cwms_err.raise('NULL_ARGUMENT', 'p_column');
+      end if;
+      select count(*) into l_count from table(p_table) where column_value is null;
+      if l_count != 0 then 
+         cwms_err.raise(
+            'ERROR',
+            'Table has one or more null rows');
+      end if;
+      l_count := p_table(1).count;
+      if not p_column between 1 and l_count then
+         cwms_err.raise(
+            'ERROR',
+            'Specified column ('
+            ||p_column
+            ||') is not valid for a table of width '
+            ||l_count);
+      end if;
+      select value_in_column
+        bulk collect
+        into l_results 
+        from (select t2.column_value as value_in_column, 
+                     rownum as r 
+                from table(p_table) t1,
+                     table(t1.column_value) t2
+               where t2.column_value in (select column_value from table(t1.column_value))             
+             )
+             where mod(r, l_count) = mod(p_column, l_count);
+      return l_results;
+   end get_column;            
+
+   function get_column(
+      p_table  in str_tab_tab_t,
+      p_column in pls_integer)
+      return str_tab_t
+   is
+      l_results str_tab_t;
+      l_count   pls_integer;
+   begin
+      -------------------
+      -- sanity checks --
+      -------------------
+      if p_table is null then
+         cwms_err.raise('NULL_ARGUMENT', 'p_table');
+      end if;
+      if p_column is null then
+         cwms_err.raise('NULL_ARGUMENT', 'p_column');
+      end if;
+      select count(*) into l_count from table(p_table) where column_value is null;
+      if l_count != 0 then 
+         cwms_err.raise(
+            'ERROR',
+            'Table has one or more null rows');
+      end if;
+      l_count := p_table(1).count;
+      if not p_column between 1 and l_count then
+         cwms_err.raise(
+            'ERROR',
+            'Specified column ('
+            ||p_column
+            ||') is not valid for a table of width '
+            ||l_count);
+      end if;
+      select value_in_column
+        bulk collect
+        into l_results 
+        from (select t2.column_value as value_in_column, 
+                     rownum as r 
+                from table(p_table) t1,
+                     table(t1.column_value) t2
+               where t2.column_value in (select column_value from table(t1.column_value))             
+             )
+             where mod(r, l_count) = mod(p_column, l_count);
+      return l_results;
+   end get_column;            
+
 /*
 BEGIN
  -- anything put here will be executed on every mod_plsql call

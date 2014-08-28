@@ -1867,6 +1867,32 @@ AS
       p_url     in varchar2,
       p_timeout in integer default 60)
       return clob;
+   /**
+    * Returns a column of data from a table of rows of data. All rows should be of the same length.
+    *
+    * @param p_table  The table of data
+    * @param p_column The column (1-based) to return
+    * 
+    * @return the column of data as a double_tab_t
+    * @exception if p_column is greater than the length of the first row
+    */      
+   function get_column(
+      p_table  in double_tab_tab_t,
+      p_column in pls_integer)
+      return double_tab_t;      
+   /**
+    * Returns a column of data from a table of rows of data. All rows should be of the same length.
+    *
+    * @param p_table  The table of data
+    * @param p_column The column (1-based) to return
+    * 
+    * @return the column of data as a str_tab_t
+    * @exception if p_column is greater than the length of the first row
+    */      
+   function get_column(
+      p_table  in str_tab_tab_t,
+      p_column in pls_integer)
+      return str_tab_t;      
       
 END cwms_util;
 /
